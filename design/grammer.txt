@@ -1,0 +1,9 @@
+declaration ::> id '=' expr
+
+id ::> alpha alphanumeric*
+
+alpha ::> (range a-z) | (range A-Z)
+
+alphanumeric ::> alpha | (range 0-9)
+
+expr ::> 🫩
