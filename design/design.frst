@@ -2,108 +2,116 @@
 # In a complete implementation, this file should run without error
 
 # function definition
-id = fn (x) -> { x }
+def id = fn (x) -> { x }
 
 # unused parameters
-funky = fn (a, _, c) -> { a + c }
+def funky = fn (a, _, c) -> { a + c }
 
 # last expression :: implicit return
-plus = fn (x, y) -> { x + y }
+def plus = fn (x, y) -> { x + y }
 
 # explicit return is available
-also_plus = fn (x, y) -> { return x + y }
+def also_plus = fn (x, y) -> { return x + y }
 
-# future syntax sugar?
-sugary1 = fn {
-            let a = 2
-            let b = 4
+# future syntax sugar? Should be easier with `fn` keyword (was not present in earlier design)
+def sugary1 = fn {
+            def a = 2
+            def b = 4
             a + b
         } # sugary1 == 6
 # equivalent to:
-desugary1 = fn () -> { let a = 2 ; let b = 4 ; a + b }
+def desugary1 = fn () -> { def a = 2 ; def b = 4 ; a + b }
 
 # if expressions
-fib = fn (n) -> {
+def fib = fn (n) -> {
     if n <= 1: n
     else: fib(n-1) + fib(n-2) # recursion is available
 }
 
-more_if = fn (n) -> {
+def more_if = fn (n) -> {
     if n == 1: 2
     elif n == 2: 10
     else: n - 1
 }
 
 # sane array syntax
-arr = [ 1, 2, 3 ]
+def arr = [ 1, 2, 3 ]
 
 # name scoping
-sum_arr = fn (arr) -> {
+def sum_arr = fn (arr) -> {
     # arr is local to function, and is distinct from global `arr`
     reduce arr with plus # language-level reduction (also, closure captures `plus`)
     # reduce <expr evaluating to array> with <expr evaluating to function> [init: <some value>] # optional init (reduction over empty w/o init can give null)
 }
 
-arr_sum = sum_arr(arr) # 6
+def arr_sum = sum_arr(arr) # 6
 
-double_arr = fn (arr) -> {
+def double_arr = fn (arr) -> {
     map arr with fn (x) -> { 2 * x }
 }
 
-mapped_arr = double_arr(arr) # [2, 4, 6]
+def mapped_arr = double_arr(arr) # [2, 4, 6]
 
 # types:
 
-an_int = 42
+def an_int = 42
 
-a_float = 3.14
+def a_float = 3.14
 
-a_bool = true
+def a_bool = true
 
-a_string = "foo"
+def a_string = "foo"
 
-null_exists = null
+def null_exists = null
 
-a_function = fn (x) -> { x }
+def a_function = fn (x) -> { x }
 
-an_array = [1, 2.3, false] # dynamic typing, duck typing
+def an_array = [1, 2.3, false] # dynamic typing, duck typing
 
-array_access = an_array[1] # 2.3
+def array_access = an_array[1] # 2.3
 
-a_map = %{ k1: 42, k2: ["foo", "bar"], [4]: 4, [a_string]: 18 } # key-value pairs
+def a_map = %{ k1: 42, k2: ["foo", "bar"], [4]: 4, [a_string]: 18 } # key-value pairs
 
-map_access = a_map["k1"]
+def map_access = a_map["k1"]
 
-sugared_map_access = a_map.k1 # only for string keys (equivalent to above)
+def sugared_map_access = a_map.k1 # only for string keys (equivalent to above)
 
 # map reduction
-map_reduce = fn (dict) -> {
+def map_reduce = fn (dict) -> {
     reduce dict with fn (acc, k, v) -> { acc + v } init: 0
 }
 
-map_reduce_res = map_reduce( %{ k1: 3, k2: 5 } ) # 8
+def map_reduce_res = map_reduce( %{ k1: 3, k2: 5 } ) # 8
 
 # map mapping
-map_map = fn (dict) -> {
-    map dict with fn (k, v) -> { [ k, v + 1] } # values at index >1 are ignored
+def map_map = fn (dict) -> {
+    # map traversal order is unspecified, so key collisions result in
+    # *something* getting overwritten. Which? Depends. Don't do that.
+    map dict with fn (k, v) -> { %{ [k]: v + 1, [k + k]: v + 2 } }
 }
 
-map_map_res = map_map( %{ k1: 1, k2: 4 } ) # %{ k1: 2, k2: 5 }
+def map_map_res = map_map( %{ k1: 1, k2: 4 } ) # %{ k1: 2, k2: 5, k1k1: 3, k2k2: 6 }
+
+def arr_to_map = fn (arr) -> {
+    map arr into map with fn (x) -> { %{ [tostring(x)]: x } }
+}
+
+def map_arr_to_map_res = arr_to_map( [ 1, 2 ] ) # %{ ["1"]: 1, ["2"]: 2 }
 
 # array iteration
-iterate_array = fn (arr) -> {
+def iterate_array = fn (arr) -> {
     foreach arr with fn (item) -> { print(item) }
 }
 
 # map iteration
-iterate_map = fn (dict) -> {
+def iterate_map = fn (dict) -> {
     foreach dict with fn (k, v) -> { print("%: %", k, v) }
 }
 
 # print("hi") # would be an error to uncomment
 
 # top-level is *only* declarations, here's the entry point for proper execution
-main = fn (args) -> {
+def main = fn (args) -> {
     print("Hello World!")
 
     say_hi = fn () -> {
@@ -113,14 +121,15 @@ main = fn (args) -> {
 }
 
 # loose ends
-arr_concat = [1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
+def arr_concat = [1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
 
 # functions can only return one value (which can be an array or map)
 
-str_concat = "foo" + " " + "bar" # "foo bar"
+def str_concat = "foo" + " " + "bar" # "foo bar"
 
-map_combine = %{ foo: "bar", baz: "beep" } + %{ beep: "boop", foo: "bloop" } # %{ foo: "bloop", baz: "beep", beep: "boop" }
+# %{ foo: "bloop", baz: "beep", beep: "boop" }
+def map_combine = %{ foo: "bar", baz: "beep" } + %{ beep: "boop", foo: "bloop" }
 
-logical_operations = ( true and true ) or not false
+def logical_operations = ( true and true ) or not false
 
-boolean_coersion = "everything except false or null is truthy" or false # true
+def boolean_coersion = "everything except false or null is truthy" or false # true

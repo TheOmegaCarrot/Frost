@@ -27,6 +27,7 @@
 - `if_expr` else-branch syntax is wrong: it requires `else <expr> : <expr>` but the design uses `else: <expr>`.
 - `if_expr` and `reduce_expr` include `sep` inside the expression, which will force double separators when used inside `{ (expr | decl), sep }`.
 - `return` is statement‑only, so the grammar needs a statement form distinct from expression forms (and should prevent `return` inside expression positions).
+- `return_statement` is only allowed at the end of a function body; the design likely needs `return` to be permitted anywhere within the body as a statement.
 
 ## Declarations vs expressions
 - `decl` already ends with `sep`, but function bodies use `(expr | decl), sep`, so a declaration inside a function body would require two separators.
@@ -41,3 +42,11 @@
 - No comment syntax for `#`.
 - The design uses `null`, comparison ops (`<=`, `==`), logical ops (`and`, `or`, `not`), and string/number map keys like `"k2":` and `4:`; none are in the grammar.
 - A declaration keyword (e.g., `let`) and an assignment form are not modeled.
+
+## Todo items (ordered by importance)
+- Define a non‑empty separator policy (newline vs whitespace) and refactor `sep`/`blank`/`mustblank` to enforce it consistently.
+- Split declarations vs assignments (introduce `let` and an assignment form) and align statement lists with that split.
+- Replace left‑recursive/ambiguous expression rules with precedence tiers and a postfix‑chainable primary.
+- Fix control/statement forms: `if` syntax, remove embedded `sep` in expressions, and allow `return` as a statement anywhere in function bodies.
+- Add missing terminals/keywords/comments (`id`, `chars`, `#` comments, `null`, comparisons, `and/or/not`, literal key forms).
+- Correct list/argument/literal productions (non‑empty ints/floats, allow final elements without trailing commas).
