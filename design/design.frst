@@ -15,12 +15,12 @@ also_plus = fn (x, y) -> { return x + y }
 
 # future syntax sugar?
 sugary1 = fn {
-            a = 2
-            b = 4
+            let a = 2
+            let b = 4
             a + b
         } # sugary1 == 6
 # equivalent to:
-desugary1 = fn () -> { a = 2 ; b = 4 ; a + b }
+desugary1 = fn () -> { let a = 2 ; let b = 4 ; a + b }
 
 # if expressions
 fib = fn (n) -> {
@@ -85,7 +85,7 @@ map_reduce_res = map_reduce( %{ k1: 3, k2: 5 } ) # 8
 
 # map mapping
 map_map = fn (dict) -> {
-    map a_map with fn (k, v) -> { [ k, v + 1] } # values at index >1 are ignored
+    map dict with fn (k, v) -> { [ k, v + 1] } # values at index >1 are ignored
 }
 
 map_map_res = map_map( %{ k1: 1, k2: 4 } ) # %{ k1: 2, k2: 5 }
