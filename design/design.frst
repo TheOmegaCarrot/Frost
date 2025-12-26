@@ -85,6 +85,8 @@ def map_reduce_res = map_reduce( %{ k1: 3, k2: 5 } ) # 8
 
 # map mapping
 def map_map = fn (dict) -> {
+    # mapping a map - lambda returns a map which is merged into the under-the-hood accumulator
+    #
     # map traversal order is unspecified, so key collisions result in
     # *something* getting overwritten. Which? Depends. Don't do that.
     map dict with fn (k, v) -> { %{ [k]: v + 1, [k + k]: v + 2 } }
@@ -92,6 +94,7 @@ def map_map = fn (dict) -> {
 
 def map_map_res = map_map( %{ k1: 1, k2: 4 } ) # %{ k1: 2, k2: 5, k1k1: 3, k2k2: 6 }
 
+# into map syntax may be omitted in early versions
 def arr_to_map = fn (arr) -> {
     map arr into map with fn (x) -> { %{ [tostring(x)]: x } }
 }
