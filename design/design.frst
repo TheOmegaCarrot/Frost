@@ -70,7 +70,7 @@ an_array = [1, 2.3, false] # dynamic typing, duck typing
 
 array_access = an_array[1] # 2.3
 
-a_map = %{ k1: 42, "k2": ["foo", "bar"], 4: 4, [a_string]: 18 } # key-value pairs (implicit string keys if not a literal of another type)
+a_map = %{ k1: 42, k2: ["foo", "bar"], [4]: 4, [a_string]: 18 } # key-value pairs
 
 map_access = a_map["k1"]
 
