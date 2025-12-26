@@ -4,6 +4,8 @@
 # function definition
 def id = fn (x) -> { x }
 
+# All name declarations must start with `def`
+
 # unused parameters
 def funky = fn (a, _, c) -> { a + c }
 
@@ -13,19 +15,14 @@ def plus = fn (x, y) -> { x + y }
 # explicit return is available
 def also_plus = fn (x, y) -> { return x + y }
 
-# future syntax sugar? Should be easier with `fn` keyword (was not present in earlier design)
-def sugary1 = fn {
-            def a = 2
-            def b = 4
-            a + b
-        } # sugary1 == 6
-# equivalent to:
-def desugary1 = fn () -> { def a = 2 ; def b = 4 ; a + b }
-
 # if expressions
 def fib = fn (n) -> {
     if n <= 1: n
     else: fib(n-1) + fib(n-2) # recursion is available
+}
+
+def make_counter = fn (init) -> {
+    fn () -> { init = init + 1 ; init } # mutation is allowed ( `=` with no `def` before rhs )
 }
 
 def more_if = fn (n) -> {
@@ -41,7 +38,8 @@ def arr = [ 1, 2, 3 ]
 def sum_arr = fn (arr) -> {
     # arr is local to function, and is distinct from global `arr`
     reduce arr with plus # language-level reduction (also, closure captures `plus`)
-    # reduce <expr evaluating to array> with <expr evaluating to function> [init: <some value>] # optional init (reduction over empty w/o init can give null)
+    # reduce <expr evaluating to array> with <expr evaluating to function> [init: <some value>]
+    # optional init (reduction over empty without init returns null)
 }
 
 def arr_sum = sum_arr(arr) # 6
@@ -94,13 +92,6 @@ def map_map = fn (dict) -> {
 
 def map_map_res = map_map( %{ k1: 1, k2: 4 } ) # %{ k1: 2, k2: 5, k1k1: 3, k2k2: 6 }
 
-# into map syntax may be omitted in early versions
-def arr_to_map = fn (arr) -> {
-    map arr into map with fn (x) -> { %{ [tostring(x)]: x } }
-}
-
-def map_arr_to_map_res = arr_to_map( [ 1, 2 ] ) # %{ ["1"]: 1, ["2"]: 2 }
-
 # array iteration
 def iterate_array = fn (arr) -> {
     foreach arr with fn (item) -> { print(item) }
@@ -117,7 +108,7 @@ def iterate_map = fn (dict) -> {
 def main = fn (args) -> {
     print("Hello World!")
 
-    say_hi = fn () -> {
+    def say_hi = fn () -> {
         print("Hi!")
     }
     say_hi() ; say_hi() # you can have semicolons
@@ -136,3 +127,21 @@ def map_combine = %{ foo: "bar", baz: "beep" } + %{ beep: "boop", foo: "bloop" }
 def logical_operations = ( true and true ) or not false
 
 def boolean_coersion = "everything except false or null is truthy" or false # true
+
+# deferred from v1
+
+# function literal sugar (stretch)
+def sugary1 = fn {
+            def a = 2
+            def b = 4
+            a + b
+        } # sugary1 == 6
+# equivalent to:
+def desugary1 = fn () -> { def a = 2 ; def b = 4 ; a + b }
+
+# array -> map mapping (deferred)
+def arr_to_map = fn (arr) -> {
+    map arr into map with fn (x) -> { %{ [tostring(x)]: x } }
+}
+
+def map_arr_to_map_res = arr_to_map( [ 1, 2 ] ) # %{ ["1"]: 1, ["2"]: 2 }
