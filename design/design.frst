@@ -2,33 +2,33 @@
 # In a complete implementation, this file should run without error
 
 # function definition
-id = (x) -> { x }
+id = fn (x) -> { x }
 
 # unused parameters
-funky = (a, _, c) -> { a + c }
+funky = fn (a, _, c) -> { a + c }
 
 # last expression :: implicit return
-plus = (x, y) -> { x + y }
+plus = fn (x, y) -> { x + y }
 
 # explicit return is available
-also_plus = (x, y) -> { return x + y }
+also_plus = fn (x, y) -> { return x + y }
 
 # future syntax sugar?
-sugary1 = {
+sugary1 = fn {
             a = 2
             b = 4
             a + b
         } # sugary1 == 6
 # equivalent to:
-desugary1 = () -> { a = 2 ; b = 4 ; a + b }
+desugary1 = fn () -> { a = 2 ; b = 4 ; a + b }
 
 # if expressions
-fib = (n) -> {
+fib = fn (n) -> {
     if n <= 1: n
     else: fib(n-1) + fib(n-2) # recursion is available
 }
 
-more_if = (n) -> {
+more_if = fn (n) -> {
     if n == 1: 2
     elif n == 2: 10
     else: n - 1
@@ -38,7 +38,7 @@ more_if = (n) -> {
 arr = [ 1, 2, 3 ]
 
 # name scoping
-sum_arr = (arr) -> {
+sum_arr = fn (arr) -> {
     # arr is local to function, and is distinct from global `arr`
     reduce arr with plus # language-level reduction (also, closure captures `plus`)
     # reduce <expr evaluating to array> with <expr evaluating to function> [init: <some value>] # optional init (reduction over empty w/o init can give null)
@@ -46,8 +46,8 @@ sum_arr = (arr) -> {
 
 arr_sum = sum_arr(arr) # 6
 
-double_arr = (arr) -> {
-    map arr with (x) -> { 2 * x }
+double_arr = fn (arr) -> {
+    map arr with fn (x) -> { 2 * x }
 }
 
 mapped_arr = double_arr(arr) # [2, 4, 6]
@@ -64,7 +64,7 @@ a_string = "foo"
 
 null_exists = null
 
-a_function = (x) -> { x }
+a_function = fn (x) -> { x }
 
 an_array = [1, 2.3, false] # dynamic typing, duck typing
 
@@ -77,36 +77,36 @@ map_access = a_map["k1"]
 sugared_map_access = a_map.k1 # only for string keys (equivalent to above)
 
 # map reduction
-map_reduce = (dict) -> {
-    reduce dict with (acc, k, v) -> { acc + v } init: 0
+map_reduce = fn (dict) -> {
+    reduce dict with fn (acc, k, v) -> { acc + v } init: 0
 }
 
 map_reduce_res = map_reduce( %{ k1: 3, k2: 5 } ) # 8
 
 # map mapping
-map_map = (dict) -> {
-    map a_map with (k, v) -> { [ k, v + 1] } # values at index >1 are ignored
+map_map = fn (dict) -> {
+    map a_map with fn (k, v) -> { [ k, v + 1] } # values at index >1 are ignored
 }
 
 map_map_res = map_map( %{ k1: 1, k2: 4 } ) # %{ k1: 2, k2: 5 }
 
 # array iteration
-iterate_array = (arr) -> {
-    foreach arr with (item) -> { print(item) }
+iterate_array = fn (arr) -> {
+    foreach arr with fn (item) -> { print(item) }
 }
 
 # map iteration
-iterate_map = (dict) -> {
-    foreach dict with (k, v) -> { print("%: %", k, v) }
+iterate_map = fn (dict) -> {
+    foreach dict with fn (k, v) -> { print("%: %", k, v) }
 }
 
 # print("hi") # would be an error to uncomment
 
 # top-level is *only* declarations, here's the entry point for proper execution
-main = (args) -> {
+main = fn (args) -> {
     print("Hello World!")
 
-    say_hi = () -> {
+    say_hi = fn () -> {
         print("Hi!")
     }
     say_hi() ; say_hi() # you can have semicolons
