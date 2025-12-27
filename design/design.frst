@@ -31,6 +31,21 @@ def more_if = fn (n) -> {
     else: n - 1
 }
 
+# this has the same meaning as the `more_if` function,
+# but the formatting is ugly (but equivalent)
+def also_allowed_for_if = fn (n) -> {
+    if
+        n == 1
+        :
+        2
+        elif
+    n == 2
+        :
+    10
+    else:
+n - 1
+}
+
 # sane array syntax
 def arr = [ 1, 2, 3 ]
 
@@ -76,6 +91,7 @@ def sugared_map_access = a_map.k1 # only for string keys (equivalent to above)
 
 # map reduction
 def map_reduce = fn (dict) -> {
+    # map reduction requires an `init: <expr>` clause
     reduce dict with fn (acc, k, v) -> { acc + v } init: 0
 }
 
@@ -126,7 +142,15 @@ def map_combine = %{ foo: "bar", baz: "beep" } + %{ beep: "boop", foo: "bloop" }
 
 def logical_operations = ( true and true ) or not false
 
-def boolean_coersion = "everything except false or null is truthy" or false # true
+def or_1 = "everything except false or null is truthy" or false # equals the string
+
+def or_2 = false or 42 # 42
+
+def map1 = %{ foo: "bar" }
+
+def map2 = %{ foo: "bar" }
+
+def maps_eq = map1 == map2 # maps and arrays use identity equality (maps_eq is false)
 
 # deferred from v1
 

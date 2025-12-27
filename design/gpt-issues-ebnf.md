@@ -4,6 +4,7 @@
 - Grammar does not model `def` declarations or the separation between declarations and assignments (assignment is statement-only and requires an existing binding).
 - `return` is statement-only in the design, but the grammar only permits it as a final optional clause at the end of `long_fn_defn`.
 - Newline handling is not aligned with "newline is whitespace or separator"; `sep` is empty-capable and `blank`/`mustblank` do not enforce spacing.
+- Map reductions require `init` in the design; the grammar permits `reduce <map> with <expr>` without `init`.
 - `#` comments are not modeled.
 - Keywords are not reserved in the grammar.
 

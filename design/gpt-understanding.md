@@ -3,31 +3,50 @@
 ## Syntax
 - Top-level is declarations only, using `def`.
 - New bindings must use `def`; `=` assigns to an already-bound name.
-- Assignment is statement-only (not an expression).
+- Assignment is statement-only (not an expression); assigning to an unbound name is an error.
 - Function literals require `fn` and use `fn (args) -> { body }`.
 - Zero-arg functions are `fn () -> { ... }`.
 - `fn { ... }` is a future stretch goal, not v1.
 - `return` is a statement only (not allowed in expression positions).
 - Newlines can act as ordinary whitespace or as statement separators; semicolons are optional.
-- Newlines are separators at top-level and inside `{ ... }` bodies; inside `()`, `[]`, and `%{ ... }` they are treated as whitespace only.
+- Newlines are separators at top-level and inside `{ ... }` bodies.
+- Inside `()`, `[]`, and `%{ ... }`, newlines are treated as whitespace only.
+- `if` expressions may span arbitrary newlines between tokens (`if`/`elif`/`else`, condition, `:`, branch), and are parsed as a single expression despite newline separators.
 - Comments are `#` line comments only.
 - Identifiers are ASCII-only; `_` is a discard placeholder.
 - Keywords are fully reserved (`def`, `fn`, `if/elif/else`, `return`, `reduce/map/foreach/with/into`, `true/false/null`, `and/or/not`).
+- Strings use double quotes; escape sequences are TBD (likely C-like). Multiline string literals are not supported with `"` (future syntaxes may add multiline strings).
 
 ## Expressions and operators
 - `if` is an expression form with optional `else`; if `else` is omitted and the condition is false, the result is `null`.
+- The branch expression may appear on the same line as `:` or on the following line; same-line is idiomatic for short expressions.
 - Logical ops are `and`, `or`, `not` and short-circuit.
+- `and`/`or` return one of their operands (Lua-style), not necessarily a boolean.
 - Comparison operators exist (`<`, `<=`, `==`, `!=`, `>=`); precedence/associativity are TBD (likely C++-like, to be finalized during implementation).
 - Truthiness: only `false` and `null` are falsy; `0` and `""` are truthy.
 - Coercions: implicit numeric conversions allowed; `bool -> number` disallowed; `any -> bool` allowed; `string -> number` allowed.
+- Invalid string-to-number coercions raise a runtime error.
+- V1 error handling is immediate abort (no recovery). Error recovery (e.g., Lua-style `pcall`) is deferred.
 - `+` is overloaded for numeric addition, string concatenation, array concatenation, and map merge (right-hand value wins on key collision).
+- `==`/`!=` use identity equality for arrays, maps, functions, and handles.
+
+## Types
+- Value kinds include `null`, `bool`, numbers (integer/float literals), `string`, `array`, `map`, `function`, and `handle`.
+- Numeric literals are plain decimal integers/floats (no exponent notation or underscores). Integer bounds are int64; float bounds are IEEE 754 double. Exact overflow/parse behavior follows the implementation's string-to-number conversion.
 
 ## Data structures
 - Arrays use `[ ... ]` and allow indexing with `[expr]`.
+- Arrays are 0-indexed.
 - Maps use `%{ ... }` with keys:
   - `k1: v` for identifier-like string keys.
   - `[expr]: v` for any other key.
 - Dot access `a.k` desugars to `a["k"]` (identifier-like string only).
+- Out-of-bounds array access and missing map keys return `null`.
+- Arrays and maps are mutable after construction (index assignment is allowed). Out-of-bounds array assignment extends the array and null-fills gaps (may change later).
+- Map assignment via `m["k"] = v` inserts or overwrites; `m.k = v` is equivalent to `m["k"] = v`.
+- Map literal duplicate keys:
+  - Duplicate literal keys are an error.
+  - Duplicate computed keys are allowed but have unspecified winner (avoid).
 - `handle` is a distinct, opaque type for interpreter-managed resources (primarily file-like); operated on only via builtins.
 - Sockets or directories, if ever added, are treated as file-like handles (Linux-focused implementation).
 - Subprocess management can be represented via file handles for standard IO streams.
@@ -40,7 +59,10 @@
 - `reduce`:
   - Arrays: callback receives `(acc, item)`.
   - Maps: callback receives `(acc, k, v)`.
+  - Without `init`, arrays seed `acc` with the first element and start from the second (foldl1-style).
+  - Map reductions require `init`.
   - Reduction over an empty collection without `init` yields `null`.
+- Reductions are expected to use associative operations to avoid order-dependent results.
 - `map` (v1):
   - Array -> array mapping is allowed.
   - Map -> map mapping is allowed; callback must evaluate to a map, which is merged into an accumulator.
@@ -53,16 +75,22 @@
 ## Recursion and binding
 - Recursive value definitions are an error.
 - Recursive function definitions are allowed; the name is bound after the function value is evaluated.
+- Functions are first-class and capture lexical scope.
+- Closures capture by reference (mutable cells), so assignments inside closures mutate the captured binding.
 
 ## Functions and blocks
 - Function bodies are sequences of statements separated by newlines or semicolons.
 - Expression statements are allowed; the last expression in a function body is the implicit return value if no explicit `return` is executed.
 - Functions return a single value.
 - If a function body ends with a non-expression statement (e.g., `def` or assignment), the implicit return value is `null`.
+- Statements include `def`, assignment, `return`, and expression statements.
+- Function calls: too few arguments fill missing parameters with `null`; too many arguments are an error (unless the function is variadic).
+- `main` receives `args` as an array of strings equivalent to process `argv` (including the script name at `args[0]`).
 
 ## Builtins and examples
 - Builtin functions are deferred until late in v1 development; a minimal set will exist for early testing.
 - Minimal testing set: `print`, `format`, `tostring`, `assert`, `type`, `len`.
 - Variadic calls are required (at least for `print`/`format`).
-- User-defined functions support variadic arguments; syntax is TBD.
+- User-defined functions support variadic arguments; syntax is TBD. Extra args are collected into an array parameter.
 - Formatting behavior and the full builtin set are not finalized.
+- The `init:` keyword-argument syntax is a special-case for `reduce`, not a general named-argument feature.
