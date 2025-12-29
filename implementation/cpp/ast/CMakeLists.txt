@@ -12,6 +12,7 @@ target_link_libraries( frost-ast
     frost-common
 )
 
-make_test( basic-ast-dump
-    tests/basic-ast-dump.cpp
+make_test( tests/basic-ast-dump.cpp 
+    LIBS
+    frost-ast
 )

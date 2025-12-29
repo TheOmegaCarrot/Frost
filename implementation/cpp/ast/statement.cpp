@@ -60,3 +60,13 @@ void Statement::print_child(std::ostream& out, const Print_Context& context,
     child.node->debug_dump_ast_impl(out,
                                     Print_Context{labeled_prefix, true, false});
 }
+
+std::string Statement::child_prefix(const Print_Context& context)
+{
+    std::string out(context.prefix);
+    // For non-root nodes, extend the prefix: keep a vertical bar if more
+    // siblings follow, otherwise add whitespace.
+    if (!context.is_root)
+        out += (context.is_last ? "    " : "│   ");
+    return out;
+}
