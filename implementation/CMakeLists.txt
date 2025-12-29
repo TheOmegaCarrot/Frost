@@ -20,7 +20,7 @@ include(FetchContent)
 include(get-lexy)
 
 add_library(common INTERFACE)
-target_compile_features(common INTERFACE cxx_std_23)
+target_compile_features(common INTERFACE cxx_std_26)
 target_compile_options(common INTERFACE
     -Wall
     -Wextra
