@@ -6,3 +6,8 @@ target_include_directories( frost-ast
     PUBLIC
     include/
 )
+
+target_link_libraries( frost-ast
+    PUBLIC
+    frost-common
+)

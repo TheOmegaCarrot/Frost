@@ -19,9 +19,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(FetchContent)
 include(get-lexy)
 
-add_library(common INTERFACE)
-target_compile_features(common INTERFACE cxx_std_26)
-target_compile_options(common INTERFACE
+add_library(frost-common INTERFACE)
+target_compile_features(frost-common INTERFACE cxx_std_26)
+target_compile_options(frost-common INTERFACE
     -Wall
     -Wextra
 )

@@ -1,17 +1,19 @@
 #ifndef FROST_STATEMENT_HPP
 #define FROST_STATEMENT_HPP
 
+#include <generator>
 #include <memory>
-#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
 
-namespace frst::ast {
+namespace frst::ast
+{
 
 //! @brief Common base class of all AST nodes / statements
-class Statement {
-   public:
+class Statement
+{
+  public:
     using Ptr = std::unique_ptr<Statement>;
 
     Statement() = default;
@@ -24,24 +26,46 @@ class Statement {
     //! @brief Print AST of this node and all descendents
     void debug_dump_ast(std::ostream& out) const;
 
-   protected:
-    struct Child_Info {
+  protected:
+    struct Child_Info
+    {
         const Statement* node = nullptr;
         std::string_view label;
     };
 
-    virtual std::string node_label() const = 0;
-
-    //! @brief Index into list of children. Out-of-bounds
-    virtual std::optional<Child_Info> child_at(std::size_t index) const {
-        return std::nullopt;
+    static Child_Info make_child(const Ptr& child, std::string_view label = {})
+    {
+        return Child_Info{child.get(), label};
     }
 
-   private:
-    void debug_dump_ast_impl(std::ostream& out, std::string_view prefix,
-                             bool is_last, bool is_root) const;
+    virtual std::string node_label() const = 0;
+
+    //! @brief Iterate over children (possibly empty)
+    virtual std::generator<Child_Info> children() const
+    {
+        co_return;
+    }
+
+  private:
+    struct Print_Context
+    {
+        std::string_view prefix;
+        bool is_last;
+        bool is_root;
+    };
+
+    void debug_dump_ast_impl(std::ostream& out,
+                             const Print_Context& context) const;
+
+    static void print_node(std::ostream& out, const Print_Context& context,
+                           std::string_view label);
+
+    static void print_child(std::ostream& out, const Print_Context& context,
+                            const Child_Info& child);
+
+    static std::string child_prefix(const Print_Context& context);
 };
 
-}  // namespace frst::ast
+} // namespace frst::ast
 
 #endif
