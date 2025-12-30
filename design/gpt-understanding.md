@@ -27,6 +27,7 @@
 - Invalid string-to-number coercions raise a runtime error.
 - V1 error handling is immediate abort (no recovery). Error recovery (e.g., Lua-style `pcall`) is deferred.
 - `+` is overloaded for numeric addition, string concatenation, array concatenation, and map merge (right-hand value wins on key collision).
+- Array concatenation and map merge always produce new values (no in-place mutation).
 - `==`/`!=` use identity equality for arrays, maps, functions, and handles.
 
 ## Types
