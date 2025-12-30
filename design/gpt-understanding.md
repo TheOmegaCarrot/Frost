@@ -1,9 +1,8 @@
 # Design understanding (current)
 
 ## Syntax
-- Top-level is declarations only, using `def`.
-- New bindings must use `def`; `=` assigns to an already-bound name.
-- Assignment is statement-only (not an expression); assigning to an unbound name is an error.
+- Top-level uses the same statement rules as function bodies; expressions are allowed at top-level.
+- New bindings must use `def`; reassignment/mutation syntax is not supported.
 - Function literals require `fn` and use `fn (args) -> { body }`.
 - Zero-arg functions are `fn () -> { ... }`.
 - `fn { ... }` is a future stretch goal, not v1.
@@ -42,8 +41,7 @@
   - `[expr]: v` for any other key.
 - Dot access `a.k` desugars to `a["k"]` (identifier-like string only).
 - Out-of-bounds array access and missing map keys return `null`.
-- Arrays and maps are mutable after construction (index assignment is allowed). Out-of-bounds array assignment extends the array and null-fills gaps (may change later).
-- Map assignment via `m["k"] = v` inserts or overwrites; `m.k = v` is equivalent to `m["k"] = v`.
+- Arrays and maps are immutable after construction; index assignment is not supported.
 - Map literal duplicate keys:
   - Duplicate literal keys are an error.
   - Duplicate computed keys are allowed but have unspecified winner (avoid).
@@ -76,16 +74,17 @@
 - Recursive value definitions are an error.
 - Recursive function definitions are allowed; the name is bound after the function value is evaluated.
 - Functions are first-class and capture lexical scope.
-- Closures capture by reference (mutable cells), so assignments inside closures mutate the captured binding.
+- Closures capture lexical scope; bindings are immutable.
 
 ## Functions and blocks
 - Function bodies are sequences of statements separated by newlines or semicolons.
 - Expression statements are allowed; the last expression in a function body is the implicit return value if no explicit `return` is executed.
 - Functions return a single value.
-- If a function body ends with a non-expression statement (e.g., `def` or assignment), the implicit return value is `null`.
-- Statements include `def`, assignment, `return`, and expression statements.
+- If a function body ends with a `def` statement (no trailing expression), the implicit return value is `null`.
+- Statements include `def`, `return`, and expression statements.
 - Function calls: too few arguments fill missing parameters with `null`; too many arguments are an error (unless the function is variadic).
-- `main` receives `args` as an array of strings equivalent to process `argv` (including the script name at `args[0]`).
+- `args` is a predefined global array of strings equivalent to process `argv` (including the script name at `args[0]`).
+- `main` has no special role; it is an ordinary function unless user code calls it.
 
 ## Builtins and examples
 - Builtin functions are deferred until late in v1 development; a minimal set will exist for early testing.

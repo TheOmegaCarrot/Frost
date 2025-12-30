@@ -11,7 +11,6 @@ None.
 - Builtin surface area beyond the minimal testing set is not defined; formatting behavior is TBD.
 - Variadic function syntax (including user-defined functions) is not specified.
 - String escape sequences and future multiline string syntax are not specified.
-- Out-of-bounds array assignment null-fill is tentative and may change.
 - Error recovery is deferred (potentially Lua-style `pcall`).
 
 ## Deferred todo items (ordered by importance)

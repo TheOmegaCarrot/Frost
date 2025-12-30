@@ -1,7 +1,8 @@
 # EBNF issues (current)
 
 ## Mismatches vs design
-- Grammar does not model `def` declarations or the separation between declarations and assignments (assignment is statement-only and requires an existing binding).
+- Grammar models declarations/assignments, but the design disallows assignment and allows expressions at top-level.
+- Grammar enforces top-level declarations only, but the design permits top-level expressions/statements (no special `main`).
 - `return` is statement-only in the design, but the grammar only permits it as a final optional clause at the end of `long_fn_defn`.
 - Newline handling is not aligned with "newline is whitespace or separator"; `sep` is empty-capable and `blank`/`mustblank` do not enforce spacing.
 - Map reductions require `init` in the design; the grammar permits `reduce <map> with <expr>` without `init`.
@@ -26,7 +27,7 @@
 
 ## Todo items (ordered by importance)
 - Rewrite separators/whitespace to match the newline policy and make `sep` non-empty.
-- Add `def` declarations and distinguish declaration vs assignment forms.
+- Remove assignment from the grammar, add `def` declarations, and allow top-level expressions.
 - Rebuild expression grammar with precedence tiers and postfix chaining.
 - Fix control forms (`if`/`elif`/`else`, `return` as statement) and remove embedded `sep` from expressions.
 - Add terminals for identifiers, comments, keywords, and literals (`null`, comparisons, `and/or/not`).
