@@ -64,59 +64,146 @@ concept Frost_Type =
 template <Frost_Type T>
 struct coerce_to;
 
-#define COERCE(T)                                                              \
-    static std::optional<T> operator()([[maybe_unused]] const T& value)
+#define COERCIONS_TO(Target)                                                   \
+    template <>                                                                \
+    struct coerce_to<Target>                                                   \
+    {                                                                          \
+        using target_t = Target;                                               \
+        void completeness_check()                                              \
+        {                                                                      \
+            (*this)(Null{});                                                   \
+            (*this)(Int{});                                                    \
+            (*this)(Float{});                                                  \
+            (*this)(Bool{});                                                   \
+            (*this)(String{});                                                 \
+            (*this)(Array{});                                                  \
+            (*this)(Map{});                                                    \
+        }
 
-template <>
-struct coerce_to<Null>
+#define COERCE(From)                                                           \
+    static std::optional<target_t> operator()(                                 \
+        [[maybe_unused]] const From& value)
+
+#define NO_COERCE(From)                                                        \
+    COERCE(From)                                                               \
+    {                                                                          \
+        return std::nullopt;                                                   \
+    }
+
+#define VALUE_COERCE(From)                                                     \
+    COERCE(From)                                                               \
+    {                                                                          \
+        return value;                                                          \
+    }
+
+#define END_COERCIONS                                                          \
+    }                                                                          \
+    ;
+
+COERCIONS_TO(Null)
+VALUE_COERCE(Null)
+NO_COERCE(Int)
+NO_COERCE(Float)
+NO_COERCE(Bool)
+NO_COERCE(String)
+NO_COERCE(Array)
+NO_COERCE(Map)
+END_COERCIONS
+
+COERCIONS_TO(Int)
+NO_COERCE(Null)
+VALUE_COERCE(Int)
+VALUE_COERCE(Float)
+NO_COERCE(Bool)
+NO_COERCE(String)
+NO_COERCE(Array)
+NO_COERCE(Map)
+END_COERCIONS
+
+COERCIONS_TO(Float)
+NO_COERCE(Null)
+VALUE_COERCE(Int)
+VALUE_COERCE(Float)
+NO_COERCE(Bool)
+NO_COERCE(String)
+NO_COERCE(Array)
+NO_COERCE(Map)
+END_COERCIONS
+
+COERCIONS_TO(Bool)
+
+COERCE(Null)
 {
-    template <Frost_Type T>
-    static std::optional<Null> operator()(const T&)
-    {
-        assert(false && "Attempting to coerce to null!");
-    }
-};
+    return false;
+}
 
-template <>
-struct coerce_to<Int>
+COERCE(Int)
 {
-    COERCE(Null)
-    {
-        return std::nullopt;
-    }
+    return true;
+}
 
-    COERCE(Int)
-    {
-        return value;
-    }
-
-    COERCE(Float)
-    {
-        return value; // use builtin C++ truncation
-    }
-
-    COERCE(String)
-    {
-        return std::nullopt;
-    }
-
-    COERCE(Array)
-    {
-        return std::nullopt;
-    }
-
-    COERCE(Map)
-    {
-        return std::nullopt;
-    }
-};
-
-template <>
-struct coerce_to<Float>
+COERCE(Float)
 {
-};
+    return true;
+}
 
+VALUE_COERCE(Bool)
+
+COERCE(String)
+{
+    return true;
+}
+
+COERCE(Array)
+{
+    return true;
+}
+
+COERCE(Map)
+{
+    return true;
+}
+
+END_COERCIONS
+
+COERCIONS_TO(String)
+NO_COERCE(Null)
+NO_COERCE(Int)
+NO_COERCE(Float)
+NO_COERCE(Bool)
+VALUE_COERCE(String)
+NO_COERCE(Array)
+NO_COERCE(Map)
+END_COERCIONS
+
+COERCIONS_TO(Array)
+NO_COERCE(Null)
+NO_COERCE(Int)
+NO_COERCE(Float)
+NO_COERCE(Bool)
+NO_COERCE(String)
+VALUE_COERCE(Array)
+NO_COERCE(Map)
+END_COERCIONS
+
+COERCIONS_TO(Map)
+NO_COERCE(Null)
+NO_COERCE(Int)
+NO_COERCE(Float)
+NO_COERCE(Bool)
+NO_COERCE(String)
+NO_COERCE(Array)
+VALUE_COERCE(Map)
+END_COERCIONS
+
+#undef COERSIONS_TO
 #undef COERCE
+#undef NO_COERCE
+#undef END_COERCIONS
+
+// ==========================================
+// The actual Value class
+// ==========================================
 
 class Value
 {
@@ -158,11 +245,11 @@ class Value
     }
 
     //! @brief Attempt to coerce the Value to a particular type
-    // template <Frost_Type T>
-    // std::optional<T> as()
-    // {
-    //     return value_.visit(coerce_to<T>{});
-    // }
+    template <Frost_Type T>
+    std::optional<T> as()
+    {
+        return value_.visit(coerce_to<T>{});
+    }
 
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map> value_;
