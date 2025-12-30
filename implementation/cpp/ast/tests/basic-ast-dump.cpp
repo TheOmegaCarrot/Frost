@@ -1,5 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
-#include <frost/ast/ast.hpp>
+#include <frost/ast.hpp>
 #include <ranges>
 #include <sstream>
 #include <utility>
@@ -10,7 +10,8 @@
 class String_Node : public frst::ast::Statement
 {
   public:
-    String_Node(std::string label) : label_{label}
+    String_Node(std::string label)
+        : label_{label}
     {
     }
 
@@ -61,9 +62,9 @@ class Three_Children : public frst::ast::Statement
 {
   public:
     Three_Children(std::string first, std::string second, std::string third)
-        : first_{std::make_unique<String_Node>(first)},
-          second_{std::make_unique<String_Node>(second)},
-          third_{std::make_unique<String_Node>(third)}
+        : first_{std::make_unique<String_Node>(first)}
+        , second_{std::make_unique<String_Node>(second)}
+        , third_{std::make_unique<String_Node>(third)}
     {
     }
 
@@ -95,7 +96,8 @@ class Tree_Node : public frst::ast::Statement
         std::string label;
     };
 
-    explicit Tree_Node(std::string label) : label_{std::move(label)}
+    explicit Tree_Node(std::string label)
+        : label_{std::move(label)}
     {
     }
 
@@ -135,34 +137,37 @@ std::string dump_helper(const frst::ast::Statement& node)
     return std::move(buf).str();
 }
 
-TEST_CASE("String Node")
+TEST_CASE("Basic AST Dump")
 {
-    String_Node node{"Testing"};
-    auto result = dump_helper(node);
-    INFO(result);
-    CHECK(result == "String_Node(Testing)\n");
-}
 
-TEST_CASE("Multi String Node")
-{
-    Multi_String_Node node{3};
-    auto result = dump_helper(node);
-    INFO(result);
-    CHECK(result ==
-          R"(Multi_String_Node(3)
+    SECTION("String Node")
+    {
+        String_Node node{"Testing"};
+        auto result = dump_helper(node);
+        INFO(result);
+        CHECK(result == "String_Node(Testing)\n");
+    }
+
+    SECTION("Multi String Node")
+    {
+        Multi_String_Node node{3};
+        auto result = dump_helper(node);
+        INFO(result);
+        CHECK(result ==
+              R"(Multi_String_Node(3)
 ├── String_Node(Child_1)
 ├── String_Node(Child_2)
 └── String_Node(Child_3)
 )");
-}
+    }
 
-TEST_CASE("Three Children")
-{
-    Three_Children node{"One", "Two", "Three"};
-    auto result = dump_helper(node);
-    INFO(result);
-    CHECK(result ==
-          R"(Three_Children()
+    SECTION("Three Children")
+    {
+        Three_Children node{"One", "Two", "Three"};
+        auto result = dump_helper(node);
+        INFO(result);
+        CHECK(result ==
+              R"(Three_Children()
 ├── First
 │   └── String_Node(One)
 ├── Second
@@ -170,66 +175,67 @@ TEST_CASE("Three Children")
 └── Third
     └── String_Node(Three)
 )");
-}
+    }
 
-TEST_CASE("Nested Unlabeled Children")
-{
-    Tree_Node root{"Root"};
-    auto child_one = std::make_unique<Tree_Node>("Child_One");
-    child_one->add_child(std::make_unique<Tree_Node>("Leaf_A"))
-        .add_child(std::make_unique<Tree_Node>("Leaf_B"));
-    auto child_two = std::make_unique<Tree_Node>("Child_Two");
-    child_two->add_child(std::make_unique<Tree_Node>("Leaf_C"));
-    root.add_child(std::move(child_one));
-    root.add_child(std::move(child_two));
+    SECTION("Nested Unlabeled Children")
+    {
+        Tree_Node root{"Root"};
+        auto child_one = std::make_unique<Tree_Node>("Child_One");
+        child_one->add_child(std::make_unique<Tree_Node>("Leaf_A"))
+            .add_child(std::make_unique<Tree_Node>("Leaf_B"));
+        auto child_two = std::make_unique<Tree_Node>("Child_Two");
+        child_two->add_child(std::make_unique<Tree_Node>("Leaf_C"));
+        root.add_child(std::move(child_one));
+        root.add_child(std::move(child_two));
 
-    auto result = dump_helper(root);
-    INFO(result);
-    CHECK(result ==
-          R"(Root
+        auto result = dump_helper(root);
+        INFO(result);
+        CHECK(result ==
+              R"(Root
 ├── Child_One
 │   ├── Leaf_A
 │   └── Leaf_B
 └── Child_Two
     └── Leaf_C
 )");
-}
+    }
 
-TEST_CASE("Labeled Child Inserts Wrapper")
-{
-    Tree_Node root{"Mixed"};
-    root.add_child(std::make_unique<Tree_Node>("Alpha"));
-    root.add_child(std::make_unique<Tree_Node>("Bravo"), "Wrapped");
-    root.add_child(std::make_unique<Tree_Node>("Charlie"));
+    SECTION("Labeled Child Inserts Wrapper")
+    {
+        Tree_Node root{"Mixed"};
+        root.add_child(std::make_unique<Tree_Node>("Alpha"));
+        root.add_child(std::make_unique<Tree_Node>("Bravo"), "Wrapped");
+        root.add_child(std::make_unique<Tree_Node>("Charlie"));
 
-    auto result = dump_helper(root);
-    INFO(result);
-    CHECK(result ==
-          R"(Mixed
+        auto result = dump_helper(root);
+        INFO(result);
+        CHECK(result ==
+              R"(Mixed
 ├── Alpha
 ├── Wrapped
 │   └── Bravo
 └── Charlie
 )");
-}
+    }
 
-TEST_CASE("Labeled Child With Subtree")
-{
-    Tree_Node root{"Root"};
-    auto branch = std::make_unique<Tree_Node>("Branch");
-    branch->add_child(std::make_unique<Tree_Node>("Leaf_X"))
-        .add_child(std::make_unique<Tree_Node>("Leaf_Y"));
-    root.add_child(std::move(branch), "Group");
-    root.add_child(std::make_unique<Tree_Node>("Tail"));
+    SECTION("Labeled Child With Subtree")
+    {
+        Tree_Node root{"Root"};
+        auto branch = std::make_unique<Tree_Node>("Branch");
+        branch->add_child(std::make_unique<Tree_Node>("Leaf_X"))
+            .add_child(std::make_unique<Tree_Node>("Leaf_Y"));
+        root.add_child(std::move(branch), "Group");
+        root.add_child(std::make_unique<Tree_Node>("Tail"));
 
-    auto result = dump_helper(root);
-    INFO(result);
-    CHECK(result ==
-          R"(Root
+        auto result = dump_helper(root);
+        INFO(result);
+        CHECK(result ==
+              R"(Root
 ├── Group
 │   └── Branch
 │       ├── Leaf_X
 │       └── Leaf_Y
 └── Tail
 )");
+    }
 }

@@ -1,0 +1,11 @@
+# vim:ft=yaml
+CompileFlags:
+  Add: [-xc++, -std=c++26]
+  Compiler: clang++
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+  Designators: Yes
+Hover:
+  ShowAKA: Yes

@@ -3,6 +3,6 @@
 
 // Amalgam header including all AST components
 
-#include "../../../statement.hpp"
+#include "../../statement.hpp"
 
 #endif
