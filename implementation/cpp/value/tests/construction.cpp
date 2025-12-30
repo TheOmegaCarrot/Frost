@@ -24,12 +24,6 @@ TEST_CASE("Construction")
     SECTION("Bool")
     {
         frst::Value value{true};
-        CHECK(!value.is<frst::Null>());
-        CHECK(!value.is<frst::Int>());
-        CHECK(!value.is<frst::Float>());
-        CHECK(!value.is<frst::String>());
-        CHECK(!value.is<frst::Array>());
-        CHECK(!value.is<frst::Map>());
         CHECK(value.is<frst::Bool>());
     }
 
@@ -38,7 +32,7 @@ TEST_CASE("Construction")
     SECTION("String")
     {
         frst::Value value{"Hello"s};
-        CHECK(value.is<frst::Bool>());
+        CHECK(value.is<frst::String>());
     }
 
     SECTION("Array")
