@@ -1,6 +1,6 @@
 # vim:ft=yaml
 CompileFlags:
-  Add: [-xc++, -std=c++26]
+  Add: [-xc++, -std=c++2c]
   Compiler: clang++
 InlayHints:
   Enabled: Yes

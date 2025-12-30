@@ -255,6 +255,14 @@ class Value
     std::variant<Null, Int, Float, Bool, String, Array, Map> value_;
 };
 
+inline namespace literals
+{
+consteval frst::Int operator""_f(unsigned long long val)
+{
+    return val;
+}
+} // namespace literals
+
 } // namespace frst
 
 #endif

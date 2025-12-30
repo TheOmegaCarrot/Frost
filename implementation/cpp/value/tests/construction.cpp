@@ -3,9 +3,15 @@
 
 TEST_CASE("Construction")
 {
-    SECTION("Null")
+    SECTION("Default")
     {
         frst::Value value{};
+        CHECK(value.is<frst::Null>());
+    }
+
+    SECTION("Null")
+    {
+        frst::Value value{frst::Null{}};
         CHECK(value.is<frst::Null>());
     }
 

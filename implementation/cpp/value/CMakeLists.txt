@@ -16,3 +16,8 @@ make_test( tests/construction.cpp
     LIBS
     frost-value
 )
+
+make_test( tests/coercions.cpp
+    LIBS
+    frost-value
+)
