@@ -22,7 +22,7 @@ def fib = fn (n) -> {
 }
 
 def make_counter = fn (init) -> {
-    fn () -> { init = init + 1 ; init } # mutation is allowed ( `=` with no `def` before rhs )
+    # fn () -> { init = init + 1 ; init } # mutation is not allowed (immutable everything)
 }
 
 def more_if = fn (n) -> {
@@ -118,17 +118,7 @@ def iterate_map = fn (dict) -> {
     foreach dict with fn (k, v) -> { print("%: %", k, v) }
 }
 
-# print("hi") # would be an error to uncomment
-
-# top-level is *only* declarations, here's the entry point for proper execution
-def main = fn (args) -> {
-    print("Hello World!")
-
-    def say_hi = fn () -> {
-        print("Hi!")
-    }
-    say_hi() ; say_hi() # you can have semicolons
-}
+print("hi")
 
 # loose ends
 def arr_concat = [1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
@@ -151,6 +141,16 @@ def map1 = %{ foo: "bar" }
 def map2 = %{ foo: "bar" }
 
 def maps_eq = map1 == map2 # maps and arrays use identity equality (maps_eq is false)
+
+def main = fn (args) -> {
+    print("Hello World!")
+
+    def say_hi = fn () -> {
+        print("Hi!")
+    }
+    say_hi() ; say_hi() # you can have semicolons
+}
+main(args)
 
 # deferred from v1
 
