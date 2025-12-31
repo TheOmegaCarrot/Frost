@@ -51,6 +51,14 @@ using Map = std::unordered_map<Value_Ptr, Value_Ptr>;
 
 // TODO: Closure
 
+inline namespace literals
+{
+consteval frst::Int operator""_f(unsigned long long val)
+{
+    return val;
+}
+} // namespace literals
+
 template <typename T>
 concept Frost_Type =
     std::same_as<Null, T> || std::same_as<Int, T> || std::same_as<Float, T> ||
@@ -254,14 +262,6 @@ class Value
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map> value_;
 };
-
-inline namespace literals
-{
-consteval frst::Int operator""_f(unsigned long long val)
-{
-    return val;
-}
-} // namespace literals
 
 } // namespace frst
 
