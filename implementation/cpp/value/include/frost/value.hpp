@@ -51,6 +51,14 @@ using Map = std::unordered_map<Value_Ptr, Value_Ptr>;
 
 // TODO: Closure
 
+struct Frost_Error : std::runtime_error
+{
+    Frost_Error(const auto& err)
+        : std::runtime_error{err}
+    {
+    }
+};
+
 inline namespace literals
 {
 consteval frst::Int operator""_f(unsigned long long val)
@@ -69,26 +77,37 @@ concept Frost_Type =
 // Type name table
 // ==========================================
 
-struct Type_Name_Impl
-{
 #define STRINGIZE(X) #X
-#define TYPE_NAME(T)                                                           \
-    static std::string_view operator()(const T&)                               \
+
+template <Frost_Type T>
+std::string_view type_str() = delete;
+
+#define TYPE_STR_SPEC(T)                                                       \
+    template <>                                                                \
+    inline std::string_view type_str<T>()                                      \
     {                                                                          \
         return STRINGIZE(T);                                                   \
     }
 
-    TYPE_NAME(Null)
-    TYPE_NAME(Int)
-    TYPE_NAME(Float)
-    TYPE_NAME(String)
-    TYPE_NAME(Bool)
-    TYPE_NAME(Array)
-    TYPE_NAME(Map)
+TYPE_STR_SPEC(Null)
+TYPE_STR_SPEC(Int)
+TYPE_STR_SPEC(Float)
+TYPE_STR_SPEC(String)
+TYPE_STR_SPEC(Bool)
+TYPE_STR_SPEC(Array)
+TYPE_STR_SPEC(Map)
 
+#undef TYPE_STR_SPEC
 #undef STRINGIZE
-#undef TYPE_NAME
-} type_name_impl;
+
+struct Type_Str_Fn
+{
+    template <Frost_Type T>
+    static std::string_view operator()(const T&)
+    {
+        return type_str<T>();
+    }
+} constexpr inline type_str_niebloid;
 
 // ==========================================
 // Type coercion tables
@@ -260,6 +279,12 @@ class Value
     {
     }
 
+    template <typename... Args>
+    static Ptr create(Args&&... args)
+    {
+        return std::make_shared<Value>(std::forward<Args>(args)...);
+    }
+
     //! @brief Check if a Value is a particular type
     template <Frost_Type T>
     bool is() const
@@ -286,7 +311,7 @@ class Value
 
     std::string_view type_name() const
     {
-        return value_.visit(type_name_impl);
+        return value_.visit(type_str_niebloid);
     }
 
     static Value_Ptr add(const Value_Ptr& lhs, const Value_Ptr& rhs);

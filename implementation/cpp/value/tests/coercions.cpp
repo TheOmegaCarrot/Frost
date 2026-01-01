@@ -13,16 +13,15 @@ TEST_CASE("Coercions")
     Value floating{3.14};
     Value boolean{true};
     Value string{"Hello!"s};
-    Value array{frst::Array{std::make_shared<Value>(64.314),
-                            std::make_shared<Value>(true)}};
+    Value array{frst::Array{Value::create(64.314), Value::create(true)}};
     Value map{frst::Map{
         {
-            std::make_shared<Value>("foo"s),
-            std::make_shared<Value>(500_f),
+            Value::create("foo"s),
+            Value::create(500_f),
         },
         {
-            std::make_shared<Value>("bar"s),
-            std::make_shared<Value>(100.42),
+            Value::create("bar"s),
+            Value::create(100.42),
         },
     }};
 

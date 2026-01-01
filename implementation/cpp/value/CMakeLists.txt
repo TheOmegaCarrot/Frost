@@ -1,14 +1,14 @@
 add_library( frost-value
-    INTERFACE
+    operators/add.cpp
 )
 
 target_include_directories( frost-value
-    INTERFACE
+    PUBLIC
     include/
 )
 
 target_link_libraries( frost-value
-    INTERFACE
+    PUBLIC
     frost-common
 )
 

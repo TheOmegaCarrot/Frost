@@ -64,9 +64,8 @@ TEST_CASE("Get")
     Value floating{3.14};
     Value boolean{true};
     Value string{"Hello"s};
-    Value array{frst::Array{std::make_shared<Value>(42_f)}};
-    Value map{frst::Map{
-        {std::make_shared<Value>(42_f), std::make_shared<Value>("Hello"s)}}};
+    Value array{frst::Array{Value::create(42_f)}};
+    Value map{frst::Map{{Value::create(42_f), Value::create("Hello"s)}}};
 
     SECTION("Null")
     {
@@ -144,4 +143,24 @@ TEST_CASE("Get")
         CHECK(!map.get<frst::Array>().has_value());
         CHECK(map.get<frst::Map>().has_value());
     }
+}
+
+TEST_CASE("Type Name")
+{
+    using namespace frst::literals;
+    Value null{};
+    Value integer{42_f};
+    Value floating{3.14};
+    Value boolean{true};
+    Value string{"Hello"s};
+    Value array{frst::Array{Value::create(42_f)}};
+    Value map{frst::Map{{Value::create(42_f), Value::create("Hello"s)}}};
+
+    CHECK(null.type_name() == "Null");
+    CHECK(integer.type_name() == "Int");
+    CHECK(floating.type_name() == "Float");
+    CHECK(boolean.type_name() == "Bool");
+    CHECK(string.type_name() == "String");
+    CHECK(array.type_name() == "Array");
+    CHECK(map.type_name() == "Map");
 }
