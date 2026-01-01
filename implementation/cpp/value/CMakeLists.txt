@@ -12,7 +12,7 @@ target_link_libraries( frost-value
     frost-common
 )
 
-make_test( tests/construction.cpp
+make_test( tests/basic-behavior.cpp
     LIBS
     frost-value
 )

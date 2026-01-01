@@ -66,6 +66,31 @@ concept Frost_Type =
     std::same_as<Array, T> || std::same_as<Map, T>;
 
 // ==========================================
+// Type name table
+// ==========================================
+
+struct Type_Name_Impl
+{
+#define STRINGIZE(X) #X
+#define TYPE_NAME(T)                                                           \
+    static std::string_view operator()(const T&)                               \
+    {                                                                          \
+        return STRINGIZE(T);                                                   \
+    }
+
+    TYPE_NAME(Null)
+    TYPE_NAME(Int)
+    TYPE_NAME(Float)
+    TYPE_NAME(String)
+    TYPE_NAME(Bool)
+    TYPE_NAME(Array)
+    TYPE_NAME(Map)
+
+#undef STRINGIZE
+#undef TYPE_NAME
+} type_name_impl;
+
+// ==========================================
 // Type coercion tables
 // ==========================================
 
@@ -254,10 +279,17 @@ class Value
 
     //! @brief Attempt to coerce the Value to a particular type
     template <Frost_Type T>
-    std::optional<T> as()
+    std::optional<T> as() const
     {
         return value_.visit(coerce_to<T>{});
     }
+
+    std::string_view type_name() const
+    {
+        return value_.visit(type_name_impl);
+    }
+
+    static Value_Ptr add(const Value_Ptr& lhs, const Value_Ptr& rhs);
 
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map> value_;
