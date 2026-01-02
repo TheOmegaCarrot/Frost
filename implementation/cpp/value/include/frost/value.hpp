@@ -292,6 +292,11 @@ class Value
         return std::holds_alternative<T>(value_);
     }
 
+    bool is_numeric() const
+    {
+        return is<Int>() || is<Float>();
+    }
+
     //! @brief Get the contained value by exact type
     template <Frost_Type T>
     std::optional<T> get() const
@@ -319,6 +324,14 @@ class Value
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map> value_;
 };
+
+#define STRINGIZE(X) #X
+#define THROW_UNREACHABLE                                                      \
+    throw Frost_Error                                                          \
+    {                                                                          \
+        "Hit point which should be unreachable at: " __FILE__                  \
+        ":" STRINGIZE(__LINE__)                                                          \
+    }
 
 } // namespace frst
 
