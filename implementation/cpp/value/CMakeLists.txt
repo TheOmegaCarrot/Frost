@@ -12,12 +12,15 @@ target_link_libraries( frost-value
     frost-common
 )
 
-make_test( tests/basic-behavior.cpp
-    LIBS
-    frost-value
-)
+macro(value_test file)
+    make_test( ${file}
+        LIBS
+        frost-value
+    )
+endmacro()
 
-make_test( tests/coercions.cpp
-    LIBS
-    frost-value
-)
+value_test(tests/basic-behavior.cpp)
+
+value_test(tests/coercions.cpp)
+
+value_test(tests/addition.cpp)
