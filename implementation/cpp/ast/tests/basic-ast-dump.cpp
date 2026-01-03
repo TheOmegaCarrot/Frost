@@ -1,11 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
+#include <fmt/format.h>
+
 #include <frost/ast.hpp>
+
 #include <ranges>
 #include <sstream>
 #include <utility>
 #include <vector>
-
-#include <print>
 
 class String_Node : public frst::ast::Statement
 {
@@ -18,7 +19,7 @@ class String_Node : public frst::ast::Statement
   protected:
     std::string node_label() const override
     {
-        return std::format("String_Node({})", label_);
+        return fmt::format("String_Node({})", label_);
     }
 
     std::generator<Child_Info> children() const override
@@ -37,13 +38,13 @@ class Multi_String_Node : public frst::ast::Statement
     {
         for (auto i = 1uz; i != num + 1; ++i)
             children_.emplace_back(
-                std::make_unique<String_Node>(std::format("Child_{}", i)));
+                std::make_unique<String_Node>(fmt::format("Child_{}", i)));
     }
 
   protected:
     std::string node_label() const override
     {
-        return std::format("Multi_String_Node({})", children_.size());
+        return fmt::format("Multi_String_Node({})", children_.size());
     }
 
     std::generator<Child_Info> children() const override
@@ -71,7 +72,7 @@ class Three_Children : public frst::ast::Statement
   protected:
     std::string node_label() const override
     {
-        return std::format("Three_Children()");
+        return fmt::format("Three_Children()");
     }
 
     std::generator<Child_Info> children() const override

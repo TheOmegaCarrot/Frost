@@ -20,12 +20,24 @@ include(CTest)
 include(FetchContent)
 include(get-lexy)
 include(get-catch)
+include(get-fmt)
 
 add_library(frost-common INTERFACE)
-target_compile_features(frost-common INTERFACE cxx_std_26)
-target_compile_options(frost-common INTERFACE
+
+target_compile_features( frost-common
+    INTERFACE
+    cxx_std_26
+)
+
+target_compile_options( frost-common
+    INTERFACE
     -Wall
     -Wextra
+)
+
+target_link_libraries( frost-common
+    INTERFACE
+    fmt::fmt
 )
 
 add_subdirectory(cpp/)

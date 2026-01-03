@@ -3,7 +3,8 @@
 
 #include <frost/value.hpp>
 
-#include <format>
+#include <fmt/format.h>
+
 #include <string_view>
 
 namespace frst
@@ -12,7 +13,7 @@ namespace frst
                                 std::string_view lhs_type,
                                 std::string_view rhs_type)
 {
-    throw Frost_Error{std::format("Cannot {} incompatible types: {} and {}",
+    throw Frost_Error{fmt::format("Cannot {} incompatible types: {} and {}",
                                   op_verb, lhs_type, rhs_type)};
 }
 
