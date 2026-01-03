@@ -42,7 +42,13 @@ struct Map_Union_Impl
 {
     static Value operator()(const Map& lhs, const Map& rhs)
     {
-        return std::views::concat(lhs, rhs) | std::ranges::to<Map>();
+        Map acc;
+        for (const auto& [k, v] : std::views::concat(lhs, rhs))
+        {
+            acc.insert_or_assign(k, v);
+        }
+
+        return acc;
     }
     static Value operator()(const auto&, const auto&)
     {

@@ -1,9 +1,24 @@
 #include <catch2/catch_test_macros.hpp>
+
+#include <fmt/std.h>
+
 #include <frost/value.hpp>
 
 using namespace std::literals;
 using namespace frst::literals;
 using frst::Value, frst::Value_Ptr;
+
+namespace Catch
+{
+template <typename T>
+struct StringMaker<std::optional<T>>
+{
+    static std::string convert(const std::optional<T>& value)
+    {
+        return fmt::format("{}", value);
+    }
+};
+} // namespace Catch
 
 TEST_CASE("Numeric Add")
 {
@@ -238,6 +253,12 @@ TEST_CASE("Map Union")
     {
         auto res = Value::add(map1, map3);
 
+        // Unioning maps with key collisions should result in
+        // zero duplicate keys
+        // And the union should take the value from the second map
+        //
+        // This should be based on the underlying value,
+        // rather than the identity of the value
         CHECK(res->get<frst::Map>()->size() == 4);
         for (const auto& [k, v] : *res->get<frst::Map>())
         {

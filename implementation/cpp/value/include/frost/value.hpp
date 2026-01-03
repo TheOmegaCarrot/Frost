@@ -4,10 +4,10 @@
 #include <cassert>
 #include <concepts>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -21,33 +21,34 @@ namespace frst
 class Value;
 using Value_Ptr = std::shared_ptr<const Value>;
 
+namespace impl
+{
+//! An implementation of less-than ONLY for comparing keys in a map
+struct Value_Ptr_Less
+{
+    static bool operator()(const Value_Ptr& lhs, const Value_Ptr& rhs);
+};
+} // namespace impl
+
 struct Null
 {
+    friend bool operator<(Null, Null)
+    {
+        return false;
+    }
 };
 
-struct Int_Tag
-{
-};
 using Int = std::int64_t;
 
-struct Float_Tag
-{
-};
 using Float = double;
 
-struct Bool_Tag
-{
-};
 using Bool = bool;
 
-struct String_Tag
-{
-};
 using String = std::string;
 
 using Array = std::vector<Value_Ptr>;
 
-using Map = std::unordered_map<Value_Ptr, Value_Ptr>;
+using Map = std::map<Value_Ptr, Value_Ptr, impl::Value_Ptr_Less>;
 
 // TODO: Closure
 
@@ -261,6 +262,7 @@ class Value
 {
   public:
     using Ptr = Value_Ptr;
+    friend impl::Value_Ptr_Less;
 
     Value()
         : value_{Null{}}
@@ -332,6 +334,12 @@ class Value
         "Hit point which should be unreachable at: " __FILE__                  \
         ":" STRINGIZE(__LINE__)                                                          \
     }
+
+inline bool impl::Value_Ptr_Less::operator()(const Value_Ptr& lhs,
+                                             const Value_Ptr& rhs)
+{
+    return lhs->value_ < rhs->value_;
+}
 
 } // namespace frst
 
