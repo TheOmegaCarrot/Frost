@@ -29,7 +29,7 @@
 - `+` is overloaded for numeric addition, string concatenation, array concatenation, and map merge (right-hand value wins on key collision).
 - Array concatenation and map merge always produce new values (no in-place mutation).
 - `==`/`!=` use deep equality for arrays and maps (map key order is ignored).
-- Equality is undefined for functions (comparing functions is a runtime error).
+- `==`/`!=` use identity equality for functions.
 
 ## Types
 - Value kinds include `null`, `bool`, numbers (integer/float literals), `string`, `array`, `map`, and `function`.
@@ -47,7 +47,7 @@
 - Map literal duplicate keys:
   - Duplicate literal keys are an error.
   - Duplicate computed keys are allowed but have unspecified winner (avoid).
-- Map keys may be any value (including arrays/maps/functions), but performance can degrade with deep key comparisons.
+- Map keys may be any value (including arrays/maps/functions), but performance can degrade with deep key comparisons. Function keys use identity equality.
 - Floating-point keys are allowed but equality is imprecise; users should not rely on float keys for stable lookup.
 - No `handle` type: file I/O is expected via builtins that take a filename.
 - Time handling is expected via a `now` builtin returning an integer.
@@ -81,15 +81,18 @@
 - Expression statements are allowed; the last expression in a function body is the implicit return value if no explicit `return` is executed.
 - Functions return a single value.
 - If a function body ends with a `def` statement (no trailing expression), the implicit return value is `null`.
+- Empty function bodies (or bodies with only comments/`def`) return `null`.
 - Statements include `def`, `return`, and expression statements.
 - Function calls: too few arguments fill missing parameters with `null`; too many arguments are an error (unless the function is variadic).
 - `args` is a predefined global array of strings equivalent to process `argv` (including the script name at `args[0]`).
 - `main` has no special role; it is an ordinary function unless user code calls it.
+- Top-level expression results are discarded; top-level expressions are for side-effects only.
 
 ## Builtins and examples
 - Builtin functions are deferred until late in v1 development; a minimal set will exist for early testing.
 - Minimal testing set: `print`, `format`, `tostring`, `assert`, `type`, `len`.
+- A builtin like `pack_call(fun, args)` is expected to apply a function to an array of arguments (no true multi-value semantics). `args` must be an array; normal arity rules apply.
 - Variadic calls are required (at least for `print`/`format`).
-- User-defined functions support variadic arguments; syntax is TBD. Extra args are collected into an array parameter.
+- User-defined functions support variadic arguments using `...rest` in the parameter list (rest must be last). Extra args are collected into an array parameter (no special varargs type).
 - Formatting behavior and the full builtin set are not finalized.
 - The `init:` keyword-argument syntax is a special-case for `reduce`, not a general named-argument feature.

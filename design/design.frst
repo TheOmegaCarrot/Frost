@@ -65,6 +65,12 @@ def double_arr = fn (arr) -> {
 
 def mapped_arr = double_arr(arr) # [2, 4, 6]
 
+def reduce_rest = fn (f, ...beeps) -> {
+    reduce beeps with f
+}
+
+def reduce_rest_res = reduce_rest(fn (a, b) -> {a + b}, 1, 2, 3, 4) # 10
+
 # types:
 
 def an_int = 42
@@ -118,7 +124,7 @@ def iterate_map = fn (dict) -> {
     foreach dict with fn (k, v) -> { print("%: %", k, v) }
 }
 
-print("hi")
+print("hi") # any values returned by top-level expressions are discarded (even the last one)
 
 # loose ends
 def arr_concat = [1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
@@ -142,6 +148,16 @@ def map2 = %{ foo: "bar" }
 
 def maps_eq = map1 == map2 # maps and arrays use deep equality (maps_eq is true)
 
+def bind_front = fn (fun, ...args1) -> {
+    fn (...args2) -> {
+        pack_call(fun, args1 + args2) # pack_call "unpacks" an array into an argument list
+    }
+}
+
+def plus_3 = bind_front(plus, 3)
+
+def seven = plus_3(4)
+
 def main = fn (args) -> {
     print("Hello World!")
 
@@ -150,7 +166,7 @@ def main = fn (args) -> {
     }
     say_hi() ; say_hi() # you can have semicolons
 }
-main(args)
+main(args) # main isn't special, but it's probably good practice in larger scripts
 
 # deferred from v1
 
