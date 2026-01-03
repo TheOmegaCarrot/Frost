@@ -129,6 +129,10 @@ print("hi") # any values returned by top-level expressions are discarded (even t
 # loose ends
 def arr_concat = [1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
 
+def arr_cat_value_1 = [1, 2, 3] + 42 # [1, 2, 3, 42]
+
+def arr_cat_value_2 = 42 + [1, 2, 3] # [42, 1, 2, 3]
+
 # functions can only return one value (which can be an array or map)
 
 def str_concat = "foo" + " " + "bar" # "foo bar"

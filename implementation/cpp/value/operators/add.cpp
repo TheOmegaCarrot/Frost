@@ -32,6 +32,21 @@ struct Array_Cat_Impl
     {
         return std::views::concat(lhs, rhs) | std::ranges::to<Array>();
     }
+
+    static Value operator()(const Frost_Type auto& lhs, const Array& rhs)
+    {
+        return std::views::concat(std::views::single(Value::create(auto{lhs})),
+                                  rhs) |
+               std::ranges::to<Array>();
+    }
+
+    static Value operator()(const Array& lhs, const Frost_Type auto& rhs)
+    {
+        return std::views::concat(
+                   lhs, std::views::single(Value::create(auto{rhs}))) |
+               std::ranges::to<Array>();
+    }
+
     static Value operator()(const auto&, const auto&)
     {
         THROW_UNREACHABLE;
@@ -64,7 +79,7 @@ Value_Ptr Value::add(const Value_Ptr& lhs, const Value_Ptr& rhs)
     if (lhs->is_numeric() && rhs->is_numeric())
         return Value::create(std::visit(numeric_add_impl, lhs_var, rhs_var));
 
-    if (lhs->is<Array>() && rhs->is<Array>())
+    if (lhs->is<Array>() || rhs->is<Array>())
         return Value::create(std::visit(array_cat_impl, lhs_var, rhs_var));
 
     if (lhs->is<Map>() && rhs->is<Map>())
