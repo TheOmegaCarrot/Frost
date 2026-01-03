@@ -28,10 +28,11 @@
 - V1 error handling is immediate abort (no recovery). Error recovery (e.g., Lua-style `pcall`) is deferred.
 - `+` is overloaded for numeric addition, string concatenation, array concatenation, and map merge (right-hand value wins on key collision).
 - Array concatenation and map merge always produce new values (no in-place mutation).
-- `==`/`!=` use identity equality for arrays, maps, functions, and handles.
+- `==`/`!=` use deep equality for arrays and maps (map key order is ignored).
+- Equality is undefined for functions (comparing functions is a runtime error).
 
 ## Types
-- Value kinds include `null`, `bool`, numbers (integer/float literals), `string`, `array`, `map`, `function`, and `handle`.
+- Value kinds include `null`, `bool`, numbers (integer/float literals), `string`, `array`, `map`, and `function`.
 - Numeric literals are plain decimal integers/floats (no exponent notation or underscores). Integer bounds are int64; float bounds are IEEE 754 double. Exact overflow/parse behavior follows the implementation's string-to-number conversion.
 
 ## Data structures
@@ -46,13 +47,11 @@
 - Map literal duplicate keys:
   - Duplicate literal keys are an error.
   - Duplicate computed keys are allowed but have unspecified winner (avoid).
-- `handle` is a distinct, opaque type for interpreter-managed resources (primarily file-like); operated on only via builtins.
-- Sockets or directories, if ever added, are treated as file-like handles (Linux-focused implementation).
-- Subprocess management can be represented via file handles for standard IO streams.
+- Map keys may be any value (including arrays/maps/functions), but performance can degrade with deep key comparisons.
+- Floating-point keys are allowed but equality is imprecise; users should not rely on float keys for stable lookup.
+- No `handle` type: file I/O is expected via builtins that take a filename.
 - Time handling is expected via a `now` builtin returning an integer.
 - Concurrency, database connections, networking, and UI/media are likely out of scope.
-- Handle equality is identity-based.
-- `type(x)` returns `"handle"` for handles (no subtype tags).
 
 ## Higher-order forms
 - `reduce`:
