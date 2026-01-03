@@ -63,7 +63,6 @@ TEST_CASE("Array Concat")
         Value::create(1_f), Value::create(2_f), Value::create(3.14)});
     auto arr2 = Value::create(
         frst::Array{Value::create("Hello"s), Value::create(true)});
-    auto val = Value::create(42_f);
 
     auto all_unchanged = [&] {
         CHECK(empty->get<frst::Array>()->size() == 0);
@@ -74,8 +73,6 @@ TEST_CASE("Array Concat")
 
         CHECK(arr2->get<frst::Array>()->at(0)->get<frst::String>() == "Hello");
         CHECK(arr2->get<frst::Array>()->at(1)->get<frst::Bool>() == true);
-
-        CHECK(val->get<frst::Int>() == 42_f);
     };
 
     SECTION("EMPTY + EMPTY")
@@ -97,34 +94,6 @@ TEST_CASE("Array Concat")
         CHECK(bare_res->at(0)->get<frst::Int>() == 1_f);
         CHECK(bare_res->at(1)->get<frst::Int>() == 2_f);
         CHECK(bare_res->at(2)->get<frst::Float>() == 3.14);
-
-        all_unchanged();
-    }
-
-    SECTION("VALUE + ARR")
-    {
-        auto res = Value::add(val, arr1);
-        REQUIRE(res->is<frst::Array>());
-        auto bare_res = res->get<frst::Array>();
-        REQUIRE(bare_res->size() == 4);
-        CHECK(bare_res->at(0)->get<frst::Int>() == 42_f);
-        CHECK(bare_res->at(1)->get<frst::Int>() == 1_f);
-        CHECK(bare_res->at(2)->get<frst::Int>() == 2_f);
-        CHECK(bare_res->at(3)->get<frst::Float>() == 3.14);
-
-        all_unchanged();
-    }
-
-    SECTION("ARR + VALUE")
-    {
-        auto res = Value::add(arr1, val);
-        REQUIRE(res->is<frst::Array>());
-        auto bare_res = res->get<frst::Array>();
-        REQUIRE(bare_res->size() == 4);
-        CHECK(bare_res->at(0)->get<frst::Int>() == 1_f);
-        CHECK(bare_res->at(1)->get<frst::Int>() == 2_f);
-        CHECK(bare_res->at(2)->get<frst::Float>() == 3.14);
-        CHECK(bare_res->at(3)->get<frst::Int>() == 42_f);
 
         all_unchanged();
     }

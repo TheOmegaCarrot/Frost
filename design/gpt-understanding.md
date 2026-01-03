@@ -30,7 +30,6 @@
 - Array concatenation and map merge always produce new values (no in-place mutation).
 - `==`/`!=` use deep equality for arrays and maps (map key order is ignored).
 - `==`/`!=` use identity equality for functions.
-- UFCS: `lhs @ func(args...)` is equivalent to `func(lhs, args...)`; the left side can be any expression.
 
 ## Types
 - Value kinds include `null`, `bool`, numbers (integer/float literals), `string`, `array`, `map`, and `function`.
