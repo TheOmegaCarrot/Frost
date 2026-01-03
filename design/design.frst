@@ -140,7 +140,7 @@ def map1 = %{ foo: "bar" }
 
 def map2 = %{ foo: "bar" }
 
-def maps_eq = map1 == map2 # maps and arrays use identity equality (maps_eq is false)
+def maps_eq = map1 == map2 # maps and arrays use deep equality (maps_eq is true)
 
 def main = fn (args) -> {
     print("Hello World!")
