@@ -324,6 +324,8 @@ class Value
 
     static Value_Ptr add(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static Value_Ptr subtract(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static Value_Ptr multiply(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static Value_Ptr divide(const Value_Ptr& lhs, const Value_Ptr& rhs);
 
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map> value_;
