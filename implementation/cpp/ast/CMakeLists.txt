@@ -14,7 +14,13 @@ target_link_libraries( frost-ast
     frost-value
 )
 
-make_test( tests/basic-ast-dump.cpp 
-    LIBS
-    frost-ast
-)
+macro(make_ast_test file)
+    make_test( ${file}
+        LIBS
+        frost-ast
+    )
+endmacro()
+
+make_ast_test(tests/basic-ast-dump.cpp)
+
+make_ast_test(tests/literal.cpp)

@@ -3,6 +3,8 @@
 
 #include "expression.hpp"
 
+#include <fmt/format.h>
+
 namespace frst::ast
 {
 //! @brief A literal is exactly a primative literal
@@ -10,7 +12,6 @@ namespace frst::ast
 //          This node type does NOT include arrays, maps, or closures
 class Literal final : public Expression
 {
-#pragma message("TODO: Test Literal")
   public:
     using Ptr = std::unique_ptr<Literal>;
 
@@ -19,6 +20,12 @@ class Literal final : public Expression
     Literal(Value_Ptr value)
         : value_{std::move(value)}
     {
+        if (!value_->is_primitive())
+        {
+            throw Frost_Error{fmt::format(
+                "Literal AST node created with non-primitive type: {}",
+                value_->type_name())};
+        }
     }
 
     Literal(const Literal&) = delete;
@@ -35,7 +42,7 @@ class Literal final : public Expression
   protected:
     std::string node_label() const final
     {
-        return "Literal(<TODO: TOSTRING VALUE HERE>)";
+        return fmt::format("Literal({})", value_->to_internal_string(true));
     }
 
   private:
