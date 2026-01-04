@@ -40,7 +40,7 @@ class Statement
         std::string_view label;
     };
 
-    static Child_Info make_child(const Ptr& child, std::string_view label = {})
+    static Child_Info make_child(const auto& child, std::string_view label = {})
     {
         return Child_Info{child.get(), label};
     }

@@ -1,6 +1,7 @@
 #ifndef FROST_AST_ALL_HPP
 #define FROST_AST_ALL_HPP
 
+#include "define.hpp"
 #include "expression.hpp"
 #include "literal.hpp"
 #include "statement.hpp"
