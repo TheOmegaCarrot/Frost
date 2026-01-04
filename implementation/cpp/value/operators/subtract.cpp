@@ -26,7 +26,7 @@ struct Numeric_minus_Impl
     }
 } constexpr static numeric_minus_impl;
 
-Value_Ptr Value::minus(const Value_Ptr& lhs, const Value_Ptr& rhs)
+Value_Ptr Value::subtract(const Value_Ptr& lhs, const Value_Ptr& rhs)
 {
     const auto& lhs_var = lhs->value_;
     const auto& rhs_var = rhs->value_;

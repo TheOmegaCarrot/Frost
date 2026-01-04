@@ -334,19 +334,10 @@ TEST_CASE("Add All Permutations")
         },
     });
 
-#define STRINGIZE(X) #X
-#define INCOMPAT(T1, T2)                                                       \
-    SECTION("Incompatible: "s + STRINGIZE(T1) + " + " + STRINGIZE(T2) )        \
-    {                                                                          \
-        CHECK_THROWS_WITH(Value::add(T1, T2),                                  \
-                          "Cannot add incompatible types: " STRINGIZE(T1) " and " STRINGIZE(T2));                      \
-    }
+#define OP_CHAR +
+#define OP_VERB add
 
-#define COMPAT(T1, T2)                                                         \
-    SECTION("Compatible: "s + STRINGIZE(T1) + " + " + STRINGIZE(T2))           \
-    {                                                                          \
-        CHECK_NOTHROW(Value::add(T1, T2));                                     \
-    }
+#include "op-test-macros.hpp"
 
     INCOMPAT(Null, Null)
     INCOMPAT(Null, Int)

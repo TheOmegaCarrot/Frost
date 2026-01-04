@@ -1,6 +1,6 @@
 add_library( frost-value
     operators/add.cpp
-    operators/minus.cpp
+    operators/subtract.cpp
 )
 
 target_include_directories( frost-value
