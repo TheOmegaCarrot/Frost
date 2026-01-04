@@ -29,13 +29,14 @@
 - `+` is overloaded for numeric addition, string concatenation, array concatenation, and map merge (right-hand value wins on key collision).
 - Array concatenation and map merge always produce new values (no in-place mutation).
 - Array concatenation requires both operands to be arrays; `array + non-array` is an error (use `arr + [value]` to append).
-- Map merge requires both operands to be maps; `map + non-map` is an error.
-- String concatenation requires both operands to be strings; no implicit `tostring` coercion for `+`.
+- Map merge requires both operands to be maps; `map + non-map` is a runtime error.
+- String concatenation requires both operands to be strings; no implicit `tostring` coercion for `+` (string + non-string is a runtime error).
+- Any other mixed-type use of `+` is a runtime error.
 - `==`/`!=` use deep equality for arrays and maps (map key order is ignored).
 - `==`/`!=` use identity equality for functions.
 - UFCS: `lhs @ func(args...)` is equivalent to `func(lhs, args...)`.
 - `@` binds tightly and is left-associative; `a@f()@g()` is equivalent to `g(f(a))`.
-- The RHS must be a call; `a@b` is invalid.
+- The RHS must be a call; `a@b` is a runtime error.
 - `a@f().g` is equivalent to `(a@f()).g`; `a@f()[0]` is equivalent to `f(a)[0]`.
 
 ## Types
@@ -99,6 +100,7 @@
 - Builtin functions are deferred until late in v1 development; a minimal set will exist for early testing.
 - Minimal testing set: `print`, `format`, `tostring`, `assert`, `type`, `len`, `pack_call`.
 - `pack_call(fun, args)` applies a function to an array of arguments (no true multi-value semantics). `args` must be an array; normal arity rules apply.
+- `pack_call` with a non-array `args` is a runtime error.
 - Variadic calls are required (at least for `print`/`format`).
 - User-defined functions support variadic arguments using `...rest` in the parameter list (rest must be last). Extra args are collected into an array parameter (no special varargs type).
 - Formatting behavior and the full builtin set are not finalized.

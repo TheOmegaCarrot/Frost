@@ -26,6 +26,18 @@ struct Numeric_Add_Impl
     }
 } constexpr static numeric_add_impl;
 
+struct String_Cat_Impl
+{
+    static Value operator()(const String& lhs, const String& rhs)
+    {
+        return lhs + rhs;
+    }
+    static Value operator()(const auto&, const auto&)
+    {
+        THROW_UNREACHABLE;
+    }
+} constexpr static string_cat_impl;
+
 struct Array_Cat_Impl
 {
     static Value operator()(const Array& lhs, const Array& rhs)
@@ -63,6 +75,9 @@ Value_Ptr Value::add(const Value_Ptr& lhs, const Value_Ptr& rhs)
 
     if (lhs->is_numeric() && rhs->is_numeric())
         return Value::create(std::visit(numeric_add_impl, lhs_var, rhs_var));
+
+    if (lhs->is<String>() && rhs->is<String>())
+        return Value::create(std::visit(string_cat_impl, lhs_var, rhs_var));
 
     if (lhs->is<Array>() && rhs->is<Array>())
         return Value::create(std::visit(array_cat_impl, lhs_var, rhs_var));
