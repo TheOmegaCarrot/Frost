@@ -18,13 +18,6 @@ namespace frst
                                   op_verb, lhs_type, op_glyph, rhs_type)};
 }
 
-[[noreturn]] inline void compare_err(std::string_view op_glyph,
-                                     std::string_view lhs_type,
-                                     std::string_view rhs_type)
-{
-    op_err("compare", op_glyph, lhs_type, rhs_type);
-}
-
 } // namespace frst
 
 #endif

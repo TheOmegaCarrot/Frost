@@ -146,7 +146,7 @@ def map1 = %{ foo: "bar" }
 
 def map2 = %{ foo: "bar" }
 
-def maps_eq = map1 == map2 # maps and arrays use deep equality (maps_eq is true)
+def maps_eq = map1 == map2 # maps and arrays use identity equality (maps_eq is false)
 
 def bind_front = fn (fun, ...args1) -> {
     fn (...args2) -> {

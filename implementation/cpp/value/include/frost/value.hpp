@@ -32,6 +32,11 @@ struct Value_Ptr_Less
 
 struct Null
 {
+    friend bool operator==(Null, Null)
+    {
+        return true;
+    }
+
     friend bool operator<(Null, Null)
     {
         return false;
@@ -359,17 +364,44 @@ class Value
     static Value_Ptr multiply(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static Value_Ptr divide(const Value_Ptr& lhs, const Value_Ptr& rhs);
 
-    // static Value_Ptr equal(const Value_Ptr& lhs, const Value_Ptr& rhs);
-    // static Value_Ptr not_equal(const Value_Ptr& lhs, const Value_Ptr& rhs);
-    // static Value_Ptr less_than(const Value_Ptr& lhs, const Value_Ptr& rhs);
-    // static Value_Ptr less_than_or_equal(const Value_Ptr& lhs,
-    //                                     const Value_Ptr& rhs);
-    // static Value_Ptr greater_than(const Value_Ptr& lhs, const Value_Ptr&
-    // rhs); static Value_Ptr greater_than_or_equal(const Value_Ptr& lhs,
-    //                                        const Value_Ptr& rhs);
+    static Value_Ptr equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
+    {
+        return create(equal_impl(lhs, rhs));
+    }
+    static Value_Ptr not_equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
+    {
+        return create(not_equal_impl(lhs, rhs));
+    }
+    static Value_Ptr less_than(const Value_Ptr& lhs, const Value_Ptr& rhs)
+    {
+        return create(less_than_impl(lhs, rhs));
+    }
+    static Value_Ptr less_than_or_equal(const Value_Ptr& lhs,
+                                        const Value_Ptr& rhs)
+    {
+        return create(less_than_or_equal_impl(lhs, rhs));
+    }
+    static Value_Ptr greater_than(const Value_Ptr& lhs, const Value_Ptr& rhs)
+    {
+        return create(greater_than_impl(lhs, rhs));
+    }
+    static Value_Ptr greater_than_or_equal(const Value_Ptr& lhs,
+                                           const Value_Ptr& rhs)
+    {
+        return create(greater_than_or_equal_impl(lhs, rhs));
+    }
 
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map> value_;
+
+    static bool equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static bool not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static bool less_than_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static bool less_than_or_equal_impl(const Value_Ptr& lhs,
+                                        const Value_Ptr& rhs);
+    static bool greater_than_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static bool greater_than_or_equal_impl(const Value_Ptr& lhs,
+                                           const Value_Ptr& rhs);
 };
 
 #define STRINGIZE(X) #X

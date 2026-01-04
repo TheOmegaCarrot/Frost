@@ -32,8 +32,7 @@
 - Map merge requires both operands to be maps; `map + non-map` is a runtime error.
 - String concatenation requires both operands to be strings; no implicit `tostring` coercion for `+` (string + non-string is a runtime error).
 - Any other mixed-type use of `+` is a runtime error.
-- `==`/`!=` use deep equality for arrays and maps (map key order is ignored).
-- `==`/`!=` use identity equality for functions.
+- `==`/`!=` use identity equality for arrays, maps, and functions.
 - UFCS: `lhs @ func(args...)` is equivalent to `func(lhs, args...)`.
 - `@` binds tightly and is left-associative; `a@f()@g()` is equivalent to `g(f(a))`.
 - The RHS must be a call; `a@b` is a runtime error.
@@ -55,7 +54,7 @@
 - Map literal duplicate keys:
   - Duplicate literal keys are an error.
   - Duplicate computed keys are allowed but have unspecified winner (avoid).
-- Map keys may be any value (including arrays/maps/functions), but performance can degrade with deep key comparisons. Function keys use identity equality.
+- Map keys may be any value (including arrays/maps/functions). Arrays/maps/functions use identity equality as keys.
 - Floating-point keys are allowed but equality is imprecise; users should not rely on float keys for stable lookup.
 - No `handle` type: file I/O is expected via builtins that take a filename.
 - Time handling is expected via a `now` builtin returning an integer.
