@@ -2,7 +2,6 @@
 
 #include "operators-common.hpp"
 
-#include <algorithm>
 #include <ranges>
 
 namespace frst
