@@ -1,11 +1,13 @@
-#ifndef FROST_STATEMENT_HPP
-#define FROST_STATEMENT_HPP
+#ifndef FROST_AST_STATEMENT_HPP
+#define FROST_AST_STATEMENT_HPP
 
 #include <generator>
 #include <memory>
 #include <ostream>
 #include <string>
 #include <string_view>
+
+#include <frost/symbol-table.hpp>
 
 namespace frst::ast
 {
@@ -22,6 +24,11 @@ class Statement
     Statement& operator=(const Statement&) = delete;
     Statement& operator=(Statement&&) = delete;
     virtual ~Statement() = default;
+
+    //! @brief Execute this statement
+    //! @param table Symbol table to use for lookup, and in which to define new
+    //!                 names
+    virtual void execute(Symbol_Table& table) const = 0;
 
     //! @brief Print AST of this node and all descendents
     void debug_dump_ast(std::ostream& out) const;

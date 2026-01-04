@@ -1,3 +1,4 @@
+#include "frost/symbol-table.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <fmt/format.h>
 
@@ -13,6 +14,10 @@ class String_Node : public frst::ast::Statement
   public:
     String_Node(std::string label)
         : label_{label}
+    {
+    }
+
+    void execute(frst::Symbol_Table&) const override
     {
     }
 
@@ -41,6 +46,10 @@ class Multi_String_Node : public frst::ast::Statement
                 std::make_unique<String_Node>(fmt::format("Child_{}", i)));
     }
 
+    void execute(frst::Symbol_Table&) const override
+    {
+    }
+
   protected:
     std::string node_label() const override
     {
@@ -66,6 +75,10 @@ class Three_Children : public frst::ast::Statement
         : first_{std::make_unique<String_Node>(first)}
         , second_{std::make_unique<String_Node>(second)}
         , third_{std::make_unique<String_Node>(third)}
+    {
+    }
+
+    void execute(frst::Symbol_Table&) const override
     {
     }
 
@@ -99,6 +112,10 @@ class Tree_Node : public frst::ast::Statement
 
     explicit Tree_Node(std::string label)
         : label_{std::move(label)}
+    {
+    }
+
+    void execute(frst::Symbol_Table&) const override
     {
     }
 

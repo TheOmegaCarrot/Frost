@@ -10,6 +10,8 @@ target_include_directories( frost-ast
 target_link_libraries( frost-ast
     PUBLIC
     frost-common
+    frost-symbol-table
+    frost-value
 )
 
 make_test( tests/basic-ast-dump.cpp 
