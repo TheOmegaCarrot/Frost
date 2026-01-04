@@ -4,6 +4,7 @@ add_library( frost-value
     operators/multiply.cpp
     operators/divide.cpp
     operators/compare.cpp
+    to_string.cpp
 )
 
 target_include_directories( frost-value

@@ -359,6 +359,15 @@ class Value
         return value_.visit(type_str_niebloid);
     }
 
+    // Convert the value to a string as for user-facing output
+    std::string to_internal_string() const;
+
+    // The user-facing to_string function
+    Value_Ptr to_string() const
+    {
+        return create(to_internal_string());
+    }
+
     static Value_Ptr add(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static Value_Ptr subtract(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static Value_Ptr multiply(const Value_Ptr& lhs, const Value_Ptr& rhs);
