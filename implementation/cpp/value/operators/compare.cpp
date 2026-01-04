@@ -89,12 +89,18 @@ bool Value::less_than_or_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
     if (lhs->value_.index() != rhs->value_.index())
         compare_err("<=", lhs->type_name(), rhs->type_name());
 
+    if (lhs->is<Bool>() || lhs->is<Null>())
+        compare_err("<=", lhs->type_name(), rhs->type_name());
+
     return less_than_impl(lhs, rhs) || equal_impl(lhs, rhs);
 }
 
 bool Value::greater_than_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
 {
     if (lhs->value_.index() != rhs->value_.index())
+        compare_err(">", lhs->type_name(), rhs->type_name());
+
+    if (lhs->is<Bool>() || lhs->is<Null>())
         compare_err(">", lhs->type_name(), rhs->type_name());
 
     return !less_than_or_equal_impl(lhs, rhs);
@@ -104,6 +110,9 @@ bool Value::greater_than_or_equal_impl(const Value_Ptr& lhs,
                                        const Value_Ptr& rhs)
 {
     if (lhs->value_.index() != rhs->value_.index())
+        compare_err(">=", lhs->type_name(), rhs->type_name());
+
+    if (lhs->is<Bool>() || lhs->is<Null>())
         compare_err(">=", lhs->type_name(), rhs->type_name());
 
     return greater_than_impl(lhs, rhs) || equal_impl(lhs, rhs);
