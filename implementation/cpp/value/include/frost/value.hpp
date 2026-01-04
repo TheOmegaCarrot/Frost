@@ -360,7 +360,7 @@ class Value
     }
 
     // Convert the value to a string as for user-facing output
-    std::string to_internal_string() const;
+    std::string to_internal_string(bool in_structure = false) const;
 
     // The user-facing to_string function
     Value_Ptr to_string() const

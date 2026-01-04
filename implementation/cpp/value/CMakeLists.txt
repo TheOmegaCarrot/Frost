@@ -39,3 +39,5 @@ value_test(tests/division.cpp)
 value_test(tests/eq.cpp)
 
 value_test(tests/lt.cpp)
+
+value_test(tests/to_string.cpp)
