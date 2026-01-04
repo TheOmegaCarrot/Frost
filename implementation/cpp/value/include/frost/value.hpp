@@ -69,10 +69,23 @@ consteval frst::Int operator""_f(unsigned long long val)
 } // namespace literals
 
 template <typename T>
-concept Frost_Type =
-    std::same_as<Null, T> || std::same_as<Int, T> || std::same_as<Float, T> ||
-    std::same_as<Bool, T> || std::same_as<String, T> ||
-    std::same_as<Array, T> || std::same_as<Map, T>;
+concept Frost_Numeric = std::same_as<Int, T> || std::same_as<Float, T>;
+
+template <typename T>
+concept Frost_Primitive = Frost_Numeric<T> || std::same_as<Null, T> ||
+                          std::same_as<Bool, T> || std::same_as<String, T>;
+
+template <typename T>
+concept Frost_Structured = std::same_as<Array, T> || std::same_as<Map, T>;
+
+template <typename T>
+concept Frost_Type = Frost_Primitive<T> || Frost_Structured<T>;
+
+template <typename... Ls>
+struct Overload : Ls...
+{
+    using Ls::operator()...;
+};
 
 // ==========================================
 // Type name table
@@ -297,7 +310,26 @@ class Value
 
     bool is_numeric() const
     {
-        return is<Int>() || is<Float>();
+        return value_.visit(Overload{
+            [](const Frost_Numeric auto&) { return true; },
+            [](const auto&) { return false; },
+        });
+    }
+
+    bool is_primitive() const
+    {
+        return value_.visit(Overload{
+            [](const Frost_Primitive auto&) { return true; },
+            [](const auto&) { return false; },
+        });
+    }
+
+    bool is_structured() const
+    {
+        return value_.visit(Overload{
+            [](const Frost_Structured auto&) { return true; },
+            [](const auto&) { return false; },
+        });
     }
 
     //! @brief Get the contained value by exact type

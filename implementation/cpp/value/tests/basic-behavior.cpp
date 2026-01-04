@@ -4,18 +4,24 @@
 using namespace std::literals;
 using frst::Value;
 
-TEST_CASE("Construction and .is<T>")
+TEST_CASE("Construction and .is*<T>")
 {
     SECTION("Default")
     {
         Value value{};
         CHECK(value.is<frst::Null>());
+        CHECK_FALSE(value.is_numeric());
+        CHECK(value.is_primitive());
+        CHECK_FALSE(value.is_structured());
     }
 
     SECTION("Null")
     {
         Value value{frst::Null{}};
         CHECK(value.is<frst::Null>());
+        CHECK_FALSE(value.is_numeric());
+        CHECK(value.is_primitive());
+        CHECK_FALSE(value.is_structured());
     }
 
     SECTION("Int")
@@ -23,36 +29,54 @@ TEST_CASE("Construction and .is<T>")
         using namespace frst::literals;
         Value value{42_f};
         CHECK(value.is<frst::Int>());
+        CHECK(value.is_numeric());
+        CHECK(value.is_primitive());
+        CHECK_FALSE(value.is_structured());
     }
 
     SECTION("Float")
     {
         Value value{frst::Float{3.14}};
         CHECK(value.is<frst::Float>());
+        CHECK(value.is_numeric());
+        CHECK(value.is_primitive());
+        CHECK_FALSE(value.is_structured());
     }
 
     SECTION("Bool")
     {
         Value value{true};
         CHECK(value.is<frst::Bool>());
+        CHECK_FALSE(value.is_numeric());
+        CHECK(value.is_primitive());
+        CHECK_FALSE(value.is_structured());
     }
 
     SECTION("String")
     {
         Value value{"Hello"s};
         CHECK(value.is<frst::String>());
+        CHECK_FALSE(value.is_numeric());
+        CHECK(value.is_primitive());
+        CHECK_FALSE(value.is_structured());
     }
 
     SECTION("Array")
     {
         Value value{frst::Array{}};
         CHECK(value.is<frst::Array>());
+        CHECK_FALSE(value.is_numeric());
+        CHECK_FALSE(value.is_primitive());
+        CHECK(value.is_structured());
     }
 
     SECTION("Map")
     {
         Value value{frst::Map{}};
         CHECK(value.is<frst::Map>());
+        CHECK_FALSE(value.is_numeric());
+        CHECK_FALSE(value.is_primitive());
+        CHECK(value.is_structured());
     }
 }
 
