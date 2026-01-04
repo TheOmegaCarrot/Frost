@@ -78,7 +78,8 @@ concept Frost_Type =
 // Type name table
 // ==========================================
 
-#define STRINGIZE(X) #X
+#define VALUE_STRINGIZE_IMPL(X) #X
+#define VALUE_STRINGIZE(X) VALUE_STRINGIZE_IMPL(X)
 
 template <Frost_Type T>
 std::string_view type_str() = delete;
@@ -87,7 +88,7 @@ std::string_view type_str() = delete;
     template <>                                                                \
     inline std::string_view type_str<T>()                                      \
     {                                                                          \
-        return STRINGIZE(T);                                                   \
+        return VALUE_STRINGIZE(T);                                             \
     }
 
 TYPE_STR_SPEC(Null)
