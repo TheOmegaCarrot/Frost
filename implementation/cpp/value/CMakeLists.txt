@@ -35,4 +35,6 @@ value_test(tests/multiplication.cpp)
 
 value_test(tests/division.cpp)
 
-value_test(tests/equal.cpp)
+value_test(tests/eq.cpp)
+
+value_test(tests/lt.cpp)

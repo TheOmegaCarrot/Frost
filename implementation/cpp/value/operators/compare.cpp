@@ -74,6 +74,9 @@ bool Value::less_than_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
     if (lhs_var.index() != rhs_var.index())
         compare_err("<", lhs->type_name(), rhs->type_name());
 
+    if (lhs->is<Bool>() || lhs->is<Null>())
+        compare_err("<", lhs->type_name(), rhs->type_name());
+
     // primitives use value comparison
     if (lhs->is_primitive()) // types are the same, so only need to check one
         return std::visit(compare_primitive_less_than_impl, lhs_var, rhs_var);
