@@ -151,14 +151,19 @@ def maps_eq = map1 == map2 # maps and arrays use deep equality (maps_eq is true)
 def bind_front = fn (fun, ...args1) -> {
     fn (...args2) -> {
         pack_call(fun, args1 + args2) # pack_call "unpacks" an array into an argument list
+        # first arg MUST be a function, second arg MUST be an array, normal arity rules apply
     }
 }
 
 def plus_3 = bind_front(plus, 3)
 
+plus_3 == plus_3 # true (functions use identity equality)
+
 def seven = plus_3(4)
 
-def main = fn (args) -> {
+def ufcs_seven = 4@plus_3()
+
+def main = fn () -> {
     print("Hello World!")
 
     def say_hi = fn () -> {
@@ -166,7 +171,10 @@ def main = fn (args) -> {
     }
     say_hi() ; say_hi() # you can have semicolons
 }
-main(args) # main isn't special, but it's probably good practice in larger scripts
+
+main() # main isn't special, but it's probably good practice in larger scripts
+
+def script_name = args[0] # predefined args array (basically argv)
 
 # deferred from v1
 
