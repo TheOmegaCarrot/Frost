@@ -1,0 +1,37 @@
+#include <frost/symbol-table.hpp>
+
+#include <fmt/format.h>
+
+using frst::Symbol_Table;
+
+std::optional<std::string> Symbol_Table::define(std::string name,
+                                                Value_Ptr value)
+{
+    if (const auto [itr, ok] =
+            table_.try_emplace(std::move(name), std::move(value));
+        ok)
+    {
+        return std::nullopt;
+    }
+    else
+    {
+        return fmt::format("Cannot define {} as it is already defined", name);
+    }
+}
+
+std::optional<frst::Value_Ptr> Symbol_Table::lookup(
+    const std::string& name) const
+{
+    if (const auto itr = table_.find(name); itr != table_.end())
+    {
+        return itr->second;
+    }
+    else if (failover_table_)
+    {
+        return failover_table_->lookup(name);
+    }
+    else
+    {
+        return std::nullopt;
+    }
+}
