@@ -1,5 +1,6 @@
 add_library( frost-value
     operators/add.cpp
+    operators/minus.cpp
 )
 
 target_include_directories( frost-value
@@ -24,3 +25,5 @@ value_test(tests/basic-behavior.cpp)
 value_test(tests/coercions.cpp)
 
 value_test(tests/addition.cpp)
+
+value_test(tests/subtraction.cpp)

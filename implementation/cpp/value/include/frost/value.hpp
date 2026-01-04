@@ -322,6 +322,7 @@ class Value
     }
 
     static Value_Ptr add(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static Value_Ptr minus(const Value_Ptr& lhs, const Value_Ptr& rhs);
 
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map> value_;
