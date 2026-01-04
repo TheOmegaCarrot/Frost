@@ -2,6 +2,7 @@
 #define FROST_AST_ALL_HPP
 
 #include "expression.hpp"
+#include "literal.hpp"
 #include "statement.hpp"
 
 #endif
