@@ -327,6 +327,15 @@ class Value
     static Value_Ptr multiply(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static Value_Ptr divide(const Value_Ptr& lhs, const Value_Ptr& rhs);
 
+    // static Value_Ptr equal(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    // static Value_Ptr not_equal(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    // static Value_Ptr less_than(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    // static Value_Ptr less_than_or_equal(const Value_Ptr& lhs,
+    //                                     const Value_Ptr& rhs);
+    // static Value_Ptr greater_than(const Value_Ptr& lhs, const Value_Ptr&
+    // rhs); static Value_Ptr greater_than_or_equal(const Value_Ptr& lhs,
+    //                                        const Value_Ptr& rhs);
+
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map> value_;
 };

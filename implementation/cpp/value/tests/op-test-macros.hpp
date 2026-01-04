@@ -10,8 +10,8 @@
         CHECK_THROWS_WITH(                                                     \
             Value::OP_VERB(T1, T2),                                            \
             "Cannot "s + OP_TEST_STRINGIZE(OP_VERB) +                          \
-                " incompatible types: " + OP_TEST_STRINGIZE(T1) + " and " +    \
-                OP_TEST_STRINGIZE(T2));                                        \
+                " incompatible types: " + OP_TEST_STRINGIZE(T1) + " " +        \
+                OP_TEST_STRINGIZE(OP_CHAR) + " " + OP_TEST_STRINGIZE(T2));     \
     }
 
 #define COMPAT(T1, T2)                                                         \

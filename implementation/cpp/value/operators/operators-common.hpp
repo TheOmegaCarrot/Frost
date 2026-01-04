@@ -10,11 +10,12 @@
 namespace frst
 {
 [[noreturn]] inline void op_err(std::string_view op_verb,
+                                std::string_view op_glyph,
                                 std::string_view lhs_type,
                                 std::string_view rhs_type)
 {
-    throw Frost_Error{fmt::format("Cannot {} incompatible types: {} and {}",
-                                  op_verb, lhs_type, rhs_type)};
+    throw Frost_Error{fmt::format("Cannot {} incompatible types: {} {} {}",
+                                  op_verb, lhs_type, op_glyph, rhs_type)};
 }
 
 template <typename T>

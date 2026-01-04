@@ -3,6 +3,7 @@ add_library( frost-value
     operators/subtract.cpp
     operators/multiply.cpp
     operators/divide.cpp
+    operators/compare.cpp
 )
 
 target_include_directories( frost-value

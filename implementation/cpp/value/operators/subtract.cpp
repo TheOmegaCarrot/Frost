@@ -8,7 +8,7 @@ namespace frst
 [[noreturn]] void subtract_err(std::string_view lhs_type,
                                std::string_view rhs_type)
 {
-    op_err("subtract", lhs_type, rhs_type);
+    op_err("subtract", "-", lhs_type, rhs_type);
 }
 
 struct Numeric_Subtract_Impl

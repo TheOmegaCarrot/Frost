@@ -9,7 +9,7 @@ namespace frst
 
 [[noreturn]] void add_err(std::string_view lhs_type, std::string_view rhs_type)
 {
-    op_err("add", lhs_type, rhs_type);
+    op_err("add", "+", lhs_type, rhs_type);
 }
 
 struct Numeric_Add_Impl

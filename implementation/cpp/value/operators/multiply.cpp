@@ -8,7 +8,7 @@ namespace frst
 [[noreturn]] void multiply_err(std::string_view lhs_type,
                                std::string_view rhs_type)
 {
-    op_err("multiply", lhs_type, rhs_type);
+    op_err("multiply", "*", lhs_type, rhs_type);
 }
 
 struct Numeric_Multiply_Impl

@@ -8,7 +8,7 @@ namespace frst
 [[noreturn]] void divide_err(std::string_view lhs_type,
                              std::string_view rhs_type)
 {
-    op_err("divide", lhs_type, rhs_type);
+    op_err("divide", "/", lhs_type, rhs_type);
 }
 
 struct Numeric_Divide_Impl
