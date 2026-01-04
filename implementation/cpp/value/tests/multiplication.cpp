@@ -1,25 +1,13 @@
 #include <catch2/catch_all.hpp>
-#include <catch2/catch_test_macros.hpp>
 
-#include <fmt/std.h>
+#include "catch-stringmaker-specializations.hpp"
+#include "op-test-macros.hpp"
 
 #include <frost/value.hpp>
 
 using namespace std::literals;
 using namespace frst::literals;
 using frst::Value, frst::Value_Ptr;
-
-namespace Catch
-{
-template <typename T>
-struct StringMaker<std::optional<T>>
-{
-    static std::string convert(const std::optional<T>& value)
-    {
-        return fmt::format("{}", value);
-    }
-};
-} // namespace Catch
 
 TEST_CASE("Numeric Multiplication")
 {
@@ -79,8 +67,7 @@ TEST_CASE("Multiply All Permutations")
 
 #define OP_CHAR *
 #define OP_VERB multiply
-
-#include "op-test-macros.hpp"
+#define OP_METHOD multiply
 
     INCOMPAT(Null, Null)
     INCOMPAT(Null, Int)
