@@ -15,8 +15,6 @@ class Literal final : public Expression
   public:
     using Ptr = std::unique_ptr<Literal>;
 
-    Literal() = delete;
-
     Literal(Value_Ptr value)
         : value_{std::move(value)}
     {
@@ -28,6 +26,7 @@ class Literal final : public Expression
         }
     }
 
+    Literal() = delete;
     Literal(const Literal&) = delete;
     Literal(Literal&&) = delete;
     Literal& operator=(const Literal&) = delete;

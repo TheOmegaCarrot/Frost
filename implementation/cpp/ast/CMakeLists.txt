@@ -26,3 +26,5 @@ make_ast_test(tests/basic-ast-dump.cpp)
 make_ast_test(tests/literal.cpp)
 
 make_ast_test(tests/define.cpp)
+
+make_ast_test(tests/if.cpp)

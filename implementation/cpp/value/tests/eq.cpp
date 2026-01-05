@@ -1,7 +1,8 @@
 #include <catch2/catch_all.hpp>
 
-#include "catch-stringmaker-specializations.hpp"
 #include "op-test-macros.hpp"
+
+#include <frost/testing/stringmaker-specializations.hpp>
 
 #include <frost/value.hpp>
 

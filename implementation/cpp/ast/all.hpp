@@ -3,6 +3,7 @@
 
 #include "define.hpp"
 #include "expression.hpp"
+#include "if.hpp"
 #include "literal.hpp"
 #include "statement.hpp"
 

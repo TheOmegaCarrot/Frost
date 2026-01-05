@@ -16,6 +16,7 @@ target_link_libraries( frost-testing
 target_include_directories( frost-testing
     INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/external/trompeloeil/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/test-helpers/include
 )
 
 macro(make_test file)

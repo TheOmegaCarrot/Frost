@@ -15,7 +15,7 @@ class Define final : public Statement
     using Ptr = std::unique_ptr<Define>;
 
     Define() = delete;
-    Define(std::string name, std::unique_ptr<Expression> expr)
+    Define(std::string name, Expression::Ptr expr)
         : name_{std::move(name)}
         , expr_{std::move(expr)}
     {
@@ -45,7 +45,7 @@ class Define final : public Statement
 
   private:
     std::string name_;
-    std::unique_ptr<Expression> expr_;
+    Expression::Ptr expr_;
 };
 
 } // namespace frst::ast
