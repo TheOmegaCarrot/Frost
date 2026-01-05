@@ -19,8 +19,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CTest)
 include(FetchContent)
 include(get-lexy)
-include(get-catch)
 include(get-fmt)
+
+include(get-test-libs)
 
 add_library(frost-common INTERFACE)
 

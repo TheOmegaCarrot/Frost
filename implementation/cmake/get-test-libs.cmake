@@ -8,6 +8,16 @@ FetchContent_MakeAvailable(Catch2)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 
+add_library( frost-testing INTERFACE )
+target_link_libraries( frost-testing
+    INTERFACE
+    Catch2::Catch2WithMain
+)
+target_include_directories( frost-testing
+    INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/trompeloeil/include
+)
+
 macro(make_test file)
     set(multi_value_args LIBS)
     cmake_parse_arguments(MAKE_TEST "" "" "${multi_value_args}" ${ARGN})
@@ -17,7 +27,7 @@ macro(make_test file)
 
     target_link_libraries( ${target}
         PRIVATE
-        Catch2::Catch2WithMain
+        frost-testing
         ${MAKE_TEST_LIBS}
     )
 
