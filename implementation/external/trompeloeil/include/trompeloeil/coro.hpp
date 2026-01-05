@@ -21,7 +21,6 @@
 #endif
 
 #ifdef TROMPELOEIL_COROUTINES_SUPPORTED
-#include <ranges>
 
 #ifndef TROMPELOEIL_MOCK_HPP_
 #include "mock.hpp"
@@ -46,21 +45,13 @@ namespace trompeloeil
   {
     static auto func()
     {
-      if constexpr (requires(T coro){ coro.operator co_await(); })
+      if constexpr (requires {std::declval<T>().operator co_await();})
       {
         return type_wrapper<decltype(std::declval<T>().operator co_await().await_resume())>{};
       }
       else
-      if constexpr (requires(T coro){ coro.await_resume(); })
       {
         return type_wrapper<decltype(std::declval<T>().await_resume())>{};
-      }
-      else
-      {
-        static_assert(
-            std::ranges::input_range<T>,
-            "non-awaitable coroutine shall be a range");
-        return type_wrapper<std::ranges::range_value_t<T>>{};
       }
     }
     using type = typename decltype(func())::type;
