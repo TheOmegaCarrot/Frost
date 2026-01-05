@@ -4,23 +4,23 @@
 
 using frst::Symbol_Table;
 
-std::optional<std::string> Symbol_Table::define(std::string name,
-                                                Value_Ptr value)
+std::expected<void, std::string> Symbol_Table::define(std::string name,
+                                                      Value_Ptr value)
 {
     if (const auto [itr, ok] =
             table_.try_emplace(std::move(name), std::move(value));
         ok)
     {
-        return std::nullopt;
+        return {};
     }
     else
     {
-        return fmt::format("Cannot define {} as it is already defined", name);
+        return std::unexpected{
+            fmt::format("Cannot define {} as it is already defined", name)};
     }
 }
 
-std::optional<frst::Value_Ptr> Symbol_Table::lookup(
-    const std::string& name) const
+frst::Value_Ptr Symbol_Table::lookup(const std::string& name) const
 {
     if (const auto itr = table_.find(name); itr != table_.end())
     {
@@ -32,6 +32,6 @@ std::optional<frst::Value_Ptr> Symbol_Table::lookup(
     }
     else
     {
-        return std::nullopt;
+        throw Frost_Error{fmt::format("Symbol {} is not defined", name)};
     }
 }

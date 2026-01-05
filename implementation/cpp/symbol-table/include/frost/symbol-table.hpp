@@ -3,7 +3,7 @@
 
 #include <frost/value.hpp>
 
-#include <optional>
+#include <expected>
 #include <string>
 #include <unordered_map>
 
@@ -25,14 +25,14 @@ class Symbol_Table
     ~Symbol_Table() = default;
 
     // Bind a value to a name within this symbol table
-    // Returns nullopt on success, or a useful error message on failure
-    std::optional<std::string> define(std::string name, Value_Ptr value);
+    // Returns void on success, else an error string suitable for user-facing
+    // errors
+    std::expected<void, std::string> define(std::string name, Value_Ptr value);
 
     // Looks up a value by name within the symbol table
     // If not found in this table, attempty to lookup
     //      in the failover table, if present
-    // Returns nullopt if the name is not defined
-    std::optional<Value_Ptr> lookup(const std::string& name) const;
+    Value_Ptr lookup(const std::string& name) const;
 
   private:
     std::unordered_map<std::string, Value_Ptr> table_;

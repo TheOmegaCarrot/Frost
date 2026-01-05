@@ -7,14 +7,13 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
-namespace frost::ast::mock
+namespace frst::ast::mock
 {
 
-class Mock_Expression : public frst::ast::Expression
+class Mock_Expression : public Expression
 {
   public:
-    MAKE_CONST_MOCK(evaluate, frst::Value_Ptr(const frst::Symbol_Table&),
-                    override);
+    MAKE_CONST_MOCK(evaluate, auto(const Symbol_Table&)->Value_Ptr, override);
 
   protected:
     std::string node_label() const override
@@ -23,6 +22,6 @@ class Mock_Expression : public frst::ast::Expression
     }
 };
 
-} // namespace frost::ast::mock
+} // namespace frst::ast::mock
 
 #endif
