@@ -4,6 +4,7 @@ add_library( frost-value
     operators/multiply.cpp
     operators/divide.cpp
     operators/compare.cpp
+    operators/negate.cpp
     to_string.cpp
 )
 
@@ -41,3 +42,5 @@ value_test(tests/eq.cpp)
 value_test(tests/lt.cpp)
 
 value_test(tests/to_string.cpp)
+
+value_test(tests/negate.cpp)
