@@ -13,11 +13,11 @@ TEST_CASE("Define and Lookup")
     Symbol_Table table1;
     Symbol_Table table2(&table1);
 
-    REQUIRE(table1.define("foo", Value::create("foo1"s)).has_value());
-    REQUIRE(table1.define("bar", Value::create("bar1"s)).has_value());
+    REQUIRE_NOTHROW(table1.define("foo", Value::create("foo1"s)));
+    REQUIRE_NOTHROW(table1.define("bar", Value::create("bar1"s)));
 
-    REQUIRE(table2.define("bar", Value::create("bar2"s)).has_value());
-    REQUIRE(table2.define("beep", Value::create("beep2"s)).has_value());
+    REQUIRE_NOTHROW(table2.define("bar", Value::create("bar2"s)));
+    REQUIRE_NOTHROW(table2.define("beep", Value::create("beep2"s)));
 
     SECTION("Direct Fail")
     {
@@ -46,9 +46,7 @@ TEST_CASE("Define and Lookup")
 
     SECTION("Redefine")
     {
-        auto res = table2.define("beep", Value::create("uh oh"s));
-        REQUIRE_FALSE(res.has_value());
-        CHECK(res.error() == "Cannot define beep as it is already defined");
+        CHECK_THROWS(table2.define("beep", Value::create("uh oh"s)));
         CHECK(table2.lookup("beep")->get<frst::String>() == "beep2");
     }
 }

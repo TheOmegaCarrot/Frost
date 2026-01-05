@@ -25,13 +25,13 @@ class Symbol_Table
     ~Symbol_Table() = default;
 
     // Bind a value to a name within this symbol table
-    // Returns void on success, else an error string suitable for user-facing
-    // errors
-    std::expected<void, std::string> define(std::string name, Value_Ptr value);
+    // Throws on redefinition error
+    void define(std::string name, Value_Ptr value);
 
     // Looks up a value by name within the symbol table
     // If not found in this table, attempty to lookup
     //      in the failover table, if present
+    // Throws on failed lookup
     Value_Ptr lookup(const std::string& name) const;
 
   private:
