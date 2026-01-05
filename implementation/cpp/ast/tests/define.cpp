@@ -34,12 +34,16 @@ TEST_CASE("Define")
 
     SECTION("Redefine")
     {
+        trompeloeil::sequence seq;
+
         REQUIRE_CALL(*expr, evaluate(_))
             .LR_WITH(&_1 == &syms)
+            .IN_SEQUENCE(seq)
             .RETURN(Value::create(42_f));
 
         REQUIRE_CALL(*expr, evaluate(_))
             .LR_WITH(&_1 == &syms)
+            .IN_SEQUENCE(seq)
             .RETURN(Value::create("well that's not right"s));
 
         ast::Define node{"foo", std::move(expr)};
