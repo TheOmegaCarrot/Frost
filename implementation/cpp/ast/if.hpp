@@ -60,7 +60,7 @@ class If final : public Expression
     //
     // ```
     // if foo: 1
-    // elseif bar: 2
+    // elif bar: 2
     // else: 3
     // ```
     // The above is effectively syntax sugar for the equivalent syntax below:

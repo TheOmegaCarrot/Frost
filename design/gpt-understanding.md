@@ -8,12 +8,12 @@
 - `fn { ... }` is a future stretch goal, not v1.
 - There is no `return` statement; functions return the value of the last expression in their body (or `null` if none).
 - Newlines can act as ordinary whitespace or as statement separators; semicolons are optional.
-- Newlines are separators at top-level and inside `{ ... }` bodies.
+- Newlines are separators at top-level and inside `{ ... }` bodies, unless the parser can see the current expression is incomplete (e.g., after an infix operator).
 - Inside `()`, `[]`, and `%{ ... }`, newlines are treated as whitespace only.
-- `if` expressions may span arbitrary newlines between tokens (`if`/`elif`/`else`, condition, `:`, branch), and are parsed as a single expression despite newline separators.
+- `if` expressions may span arbitrary newlines between tokens (`if`/`elif/else`, condition, `:`, branch), and are parsed as a single expression despite newline separators.
 - Comments are `#` line comments only.
 - Identifiers are ASCII-only; `_` is a discard placeholder.
-- Keywords are fully reserved (`def`, `fn`, `if/elif/else`, `reduce/map/foreach/with/into`, `true/false/null`, `and/or/not`).
+- Keywords are fully reserved (`def`, `fn`, `if/elif/else`, `reduce/map/foreach/with/into/init`, `true/false/null`, `and/or/not`).
 - `return` is not a keyword and may be used as an identifier.
 - Strings use double quotes; escape sequences are TBD (likely C-like). Multiline string literals are not supported with `"` (future syntaxes may add multiline strings).
 - String literal encoding is implementation-dependent; UTF-8 will be supported if it is easy, but it is not a priority.
@@ -25,7 +25,7 @@
 - `and`/`or` return one of their operands (Lua-style), not necessarily a boolean.
 - Comparison operators exist (`<`, `<=`, `==`, `!=`, `>=`); precedence/associativity are TBD (likely C++-like, to be finalized during implementation).
 - Truthiness: only `false` and `null` are falsy; `0` and `""` are truthy.
-- Coercions: implicit numeric conversions allowed; `bool -> number` disallowed; `any -> bool` allowed; `string -> number` allowed.
+- Coercions: implicit numeric conversions allowed; `bool -> number` disallowed; `any -> bool` allowed; `string -> number` allowed for numeric operators.
 - Invalid string-to-number coercions raise a runtime error.
 - V1 error handling is immediate abort (no recovery). Error recovery (e.g., Lua-style `pcall`) is deferred.
 - `+` is overloaded for numeric addition, string concatenation, array concatenation, and map merge (right-hand value wins on key collision).
@@ -33,6 +33,7 @@
 - Array concatenation requires both operands to be arrays; `array + non-array` is an error (use `arr + [value]` to append).
 - Map merge requires both operands to be maps; `map + non-map` is a runtime error.
 - String concatenation requires both operands to be strings; no implicit `tostring` coercion for `+` (string + non-string is a runtime error).
+- Numeric addition with strings requires explicit conversion.
 - Any other mixed-type use of `+` is a runtime error.
 - `==`/`!=` use identity equality for arrays, maps, and functions.
 - UFCS: `lhs @ func(args...)` is equivalent to `func(lhs, args...)`.
@@ -97,7 +98,7 @@
 - Empty function bodies (or bodies with only comments/`def`) return `null`.
 - Statements include `def` and expression statements.
 - Function calls: too few arguments fill missing parameters with `null`; too many arguments are an error (unless the function is variadic).
-- `args` is a predefined global array of strings equivalent to process `argv` (including the script name at `args[0]`).
+- `args` is a predefined global array of strings equivalent to process `argv` (including the script name at `args[0]`); it can be shadowed (discouraged).
 - `main` has no special role; it is an ordinary function unless user code calls it.
 - Top-level expression results are discarded; top-level expressions are for side-effects only.
 
