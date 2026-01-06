@@ -40,7 +40,19 @@ value_test(tests/division.cpp)
 
 value_test(tests/eq.cpp)
 
+# AI-generated test entry by Codex (GPT-5).
+value_test(tests/not_equal.cpp)
+
 value_test(tests/lt.cpp)
+
+# AI-generated test entries by Codex (GPT-5).
+value_test(tests/lte.cpp)
+
+# AI-generated test entries by Codex (GPT-5).
+value_test(tests/gt.cpp)
+
+# AI-generated test entries by Codex (GPT-5).
+value_test(tests/gte.cpp)
 
 value_test(tests/to_string.cpp)
 
