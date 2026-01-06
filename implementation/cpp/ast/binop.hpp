@@ -11,7 +11,7 @@
 namespace frst::ast
 {
 
-enum class Op
+enum class Binary_Op
 {
     PLUS,
     MINUS,
@@ -19,10 +19,10 @@ enum class Op
     DIVIDE,
 };
 
-struct Convert_Op
+struct Convert_Binary_Op
 {
-    using enum Op;
-    static std::optional<Op> operator()(char op)
+    using enum Binary_Op;
+    static std::optional<Binary_Op> operator()(char op)
     {
         switch (op)
         {
@@ -37,7 +37,7 @@ struct Convert_Op
         }
         return std::nullopt;
     }
-    static char operator()(Op op)
+    static char operator()(Binary_Op op)
     {
         switch (op)
         {
@@ -50,20 +50,21 @@ struct Convert_Op
         case DIVIDE:
             return '/';
         }
+        THROW_UNREACHABLE;
     }
-} constexpr static convert_op;
+} constexpr static convert_binary_op;
 
 class Binop final : public Expression
 {
 
   public:
-    using Ptr = std::unique_ptr<Expression>;
+    using Ptr = std::unique_ptr<Binop>;
 
     Binop(Expression::Ptr lhs, char op_c, Expression::Ptr rhs)
         : lhs_{std::move(lhs)}
         , rhs_{std::move(rhs)}
-        , op_{convert_op(op_c)
-                  .or_else([&] -> std::optional<Op> {
+        , op_{convert_binary_op(op_c)
+                  .or_else([&] -> std::optional<Binary_Op> {
                       throw Frost_Error{
                           fmt::format("Bad binary operator {}", op_c)};
                       return {};
@@ -85,7 +86,7 @@ class Binop final : public Expression
         auto rhs_value = rhs_->evaluate(syms);
         switch (op_)
         {
-            using enum Op;
+            using enum Binary_Op;
         case PLUS:
             return Value::add(lhs_value, rhs_value);
         case MINUS:
@@ -95,12 +96,13 @@ class Binop final : public Expression
         case DIVIDE:
             return Value::divide(lhs_value, rhs_value);
         }
+        THROW_UNREACHABLE;
     }
 
   protected:
     std::string node_label() const final
     {
-        return fmt::format("Binary({})", convert_op(op_));
+        return fmt::format("Binary({})", convert_binary_op(op_));
     }
 
     std::generator<Child_Info> children() const final
@@ -112,7 +114,7 @@ class Binop final : public Expression
   private:
     Expression::Ptr lhs_;
     Expression::Ptr rhs_;
-    Op op_;
+    Binary_Op op_;
 };
 } // namespace frst::ast
 

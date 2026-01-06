@@ -30,3 +30,5 @@ make_ast_test(tests/define.cpp)
 make_ast_test(tests/if.cpp)
 
 make_ast_test(tests/binop.cpp)
+
+make_ast_test(tests/unop.cpp)
