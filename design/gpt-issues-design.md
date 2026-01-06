@@ -9,6 +9,7 @@ None.
 ## Deferred issues (later in development)
 - Operator precedence and associativity are not specified (likely C++-like, to be finalized during implementation).
 - Builtin surface area beyond the minimal testing set is not defined; formatting behavior is TBD.
+- Explicit numeric parsing/conversion builtin(s) are not specified (needed since string->number coercion is disallowed).
 - Newline continuation / ambiguity rules are pending parser implementation.
 - String escape sequences, string literal encoding (ASCII vs UTF-8), and future multiline string syntax are not specified.
 - Error recovery is deferred (potentially Lua-style `pcall`).

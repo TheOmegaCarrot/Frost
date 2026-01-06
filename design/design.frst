@@ -18,8 +18,8 @@ def fib = fn (n) -> {
     else: fib(n-1) + fib(n-2) # recursion is available
 }
 
-def make_counter = fn (init) -> {
-    # fn () -> { init = init + 1 ; init } # mutation is not allowed (immutable everything)
+def make_counter = fn (start) -> {
+    # fn () -> { start = start + 1 ; start } # mutation is not allowed (immutable everything)
 }
 
 def more_if = fn (n) -> {

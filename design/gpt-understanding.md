@@ -86,7 +86,7 @@
 ## Recursion and binding
 - Self-referential non-function definitions are errors (e.g., `def x = x + 1`).
 - Recursive function definitions are allowed; the function name is bound before its body is evaluated at call time, so self-recursion works without special syntax.
-- Functions are first-class and capture their lexical environment by reference (late-bound names become visible once bound).
+- Functions are first-class and capture their lexical environment by reference.
 - Bindings are immutable.
 - Forward references to later `def` in the same scope are errors (except for self-recursive function definitions), and are detected when the function is defined.
 
