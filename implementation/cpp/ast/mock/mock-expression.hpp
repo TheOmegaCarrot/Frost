@@ -15,6 +15,13 @@ class Mock_Expression : public Expression
   public:
     MAKE_CONST_MOCK(evaluate, auto(const Symbol_Table&)->Value_Ptr, override);
 
+    using Ptr = std::unique_ptr<Mock_Expression>;
+
+    static Ptr make()
+    {
+        return std::make_unique<Mock_Expression>();
+    }
+
   protected:
     std::string node_label() const override
     {

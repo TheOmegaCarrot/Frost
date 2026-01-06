@@ -16,9 +16,9 @@ using trompeloeil::_;
 
 TEST_CASE("If")
 {
-    auto condition = std::make_unique<ast::mock::Mock_Expression>();
-    auto consequent = std::make_unique<ast::mock::Mock_Expression>();
-    auto alternate = std::make_unique<ast::mock::Mock_Expression>();
+    auto condition = ast::mock::Mock_Expression::make();
+    auto consequent = ast::mock::Mock_Expression::make();
+    auto alternate = ast::mock::Mock_Expression::make();
 
     Symbol_Table syms;
 

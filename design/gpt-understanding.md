@@ -8,7 +8,7 @@
 - `fn { ... }` is a future stretch goal, not v1.
 - There is no `return` statement; functions return the value of the last expression in their body (or `null` if none).
 - Newlines can act as ordinary whitespace or as statement separators; semicolons are optional.
-- Newlines are separators at top-level and inside `{ ... }` bodies, unless the parser can see the current expression is incomplete (e.g., after an infix operator).
+- Newlines are separators at top-level and inside `{ ... }` bodies, unless the parser can see the current expression is incomplete (e.g., after an infix operator); exact continuation rules are deferred to parser implementation.
 - Inside `()`, `[]`, and `%{ ... }`, newlines are treated as whitespace only.
 - `if` expressions may span arbitrary newlines between tokens (`if`/`elif/else`, condition, `:`, branch), and are parsed as a single expression despite newline separators.
 - Comments are `#` line comments only.
@@ -16,7 +16,7 @@
 - Keywords are fully reserved (`def`, `fn`, `if/elif/else`, `reduce/map/foreach/with/into/init`, `true/false/null`, `and/or/not`).
 - `return` is not a keyword and may be used as an identifier.
 - Strings use double quotes; escape sequences are TBD (likely C-like). Multiline string literals are not supported with `"` (future syntaxes may add multiline strings).
-- String literal encoding is implementation-dependent; UTF-8 will be supported if it is easy, but it is not a priority.
+- String literal encoding rules depend on parser implementation; UTF-8 may be supported if it is easy, but it is not a priority.
 
 ## Expressions and operators
 - `if` is an expression form with optional `else`; if `else` is omitted and the condition is false, the result is `null`.
@@ -25,15 +25,15 @@
 - `and`/`or` return one of their operands (Lua-style), not necessarily a boolean.
 - Comparison operators exist (`<`, `<=`, `==`, `!=`, `>=`); precedence/associativity are TBD (likely C++-like, to be finalized during implementation).
 - Truthiness: only `false` and `null` are falsy; `0` and `""` are truthy.
-- Coercions: implicit numeric conversions allowed; `bool -> number` disallowed; `any -> bool` allowed; `string -> number` allowed for numeric operators.
-- Invalid string-to-number coercions raise a runtime error.
+- Coercions: implicit numeric conversions allowed; `bool -> number` disallowed; `string -> number` disallowed; `any -> bool` allowed.
+- Use explicit conversion functions when numeric parsing is desired.
 - V1 error handling is immediate abort (no recovery). Error recovery (e.g., Lua-style `pcall`) is deferred.
 - `+` is overloaded for numeric addition, string concatenation, array concatenation, and map merge (right-hand value wins on key collision).
 - Array concatenation and map merge always produce new values (no in-place mutation).
 - Array concatenation requires both operands to be arrays; `array + non-array` is an error (use `arr + [value]` to append).
 - Map merge requires both operands to be maps; `map + non-map` is a runtime error.
 - String concatenation requires both operands to be strings; no implicit `tostring` coercion for `+` (string + non-string is a runtime error).
-- Numeric addition with strings requires explicit conversion.
+- Numeric operators with string operands require explicit conversion.
 - Any other mixed-type use of `+` is a runtime error.
 - `==`/`!=` use identity equality for arrays, maps, and functions.
 - UFCS: `lhs @ func(args...)` is equivalent to `func(lhs, args...)`.
@@ -67,10 +67,10 @@
 - `reduce`:
   - Arrays: callback receives `(acc, item)`.
   - Maps: callback receives `(acc, k, v)`.
-- Without `init`, arrays seed `acc` with the first element and start from the second (foldl1-style).
-- Map reductions require `init`.
-- Reduction over an empty collection without `init` yields `null`.
-- Reduction over an empty collection with `init` yields the `init` value.
+  - Without `init`, arrays seed `acc` with the first element and start from the second (foldl1-style).
+  - Map reductions require `init`.
+  - Reduction over an empty collection without `init` yields `null`.
+  - Reduction over an empty collection with `init` yields the `init` value.
 - Reductions are expected to use associative operations to avoid order-dependent results.
 - `map` (v1):
   - Array callbacks receive `(item)`.
@@ -88,7 +88,7 @@
 - Recursive function definitions are allowed; the function name is bound before its body is evaluated at call time, so self-recursion works without special syntax.
 - Functions are first-class and capture their lexical environment by reference (late-bound names become visible once bound).
 - Bindings are immutable.
-- Forward references to later `def` in the same scope are errors (except for self-recursive function definitions).
+- Forward references to later `def` in the same scope are errors (except for self-recursive function definitions), and are detected when the function is defined.
 
 ## Functions and blocks
 - Function bodies are sequences of statements separated by newlines or semicolons.
