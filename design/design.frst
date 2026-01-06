@@ -12,9 +12,6 @@ def funky = fn (a, _, c) -> { a + c }
 # last expression :: implicit return
 def plus = fn (x, y) -> { x + y }
 
-# explicit return is available
-def also_plus = fn (x, y) -> { return x + y }
-
 # if expressions
 def fib = fn (n) -> {
     if n <= 1: n

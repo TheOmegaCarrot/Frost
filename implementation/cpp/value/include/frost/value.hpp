@@ -61,7 +61,7 @@ class Callable
   public:
     virtual ~Callable() = default;
 
-    virtual Value_Ptr call(const Symbol_Table&) const = 0;
+    virtual Value_Ptr call(const std::vector<Value_Ptr>& args) const = 0;
     virtual std::string debug_dump() const = 0;
 };
 

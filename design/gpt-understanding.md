@@ -6,15 +6,17 @@
 - Function literals require `fn` and use `fn (args) -> { body }`.
 - Zero-arg functions are `fn () -> { ... }`.
 - `fn { ... }` is a future stretch goal, not v1.
-- `return` is a statement only (not allowed in expression positions).
+- There is no `return` statement; functions return the value of the last expression in their body (or `null` if none).
 - Newlines can act as ordinary whitespace or as statement separators; semicolons are optional.
 - Newlines are separators at top-level and inside `{ ... }` bodies.
 - Inside `()`, `[]`, and `%{ ... }`, newlines are treated as whitespace only.
 - `if` expressions may span arbitrary newlines between tokens (`if`/`elif`/`else`, condition, `:`, branch), and are parsed as a single expression despite newline separators.
 - Comments are `#` line comments only.
 - Identifiers are ASCII-only; `_` is a discard placeholder.
-- Keywords are fully reserved (`def`, `fn`, `if/elif/else`, `return`, `reduce/map/foreach/with/into`, `true/false/null`, `and/or/not`).
+- Keywords are fully reserved (`def`, `fn`, `if/elif/else`, `reduce/map/foreach/with/into`, `true/false/null`, `and/or/not`).
+- `return` is not a keyword and may be used as an identifier.
 - Strings use double quotes; escape sequences are TBD (likely C-like). Multiline string literals are not supported with `"` (future syntaxes may add multiline strings).
+- String literal encoding is implementation-dependent; UTF-8 will be supported if it is easy, but it is not a priority.
 
 ## Expressions and operators
 - `if` is an expression form with optional `else`; if `else` is omitted and the condition is false, the result is `null`.
@@ -35,7 +37,7 @@
 - `==`/`!=` use identity equality for arrays, maps, and functions.
 - UFCS: `lhs @ func(args...)` is equivalent to `func(lhs, args...)`.
 - `@` binds tightly and is left-associative; `a@f()@g()` is equivalent to `g(f(a))`.
-- The RHS must be a call; `a@b` is a runtime error.
+- The RHS must be a call; `a@b` is a syntax error.
 - `a@f().g` is equivalent to `(a@f()).g`; `a@f()[0]` is equivalent to `f(a)[0]`.
 
 ## Types
@@ -64,32 +66,36 @@
 - `reduce`:
   - Arrays: callback receives `(acc, item)`.
   - Maps: callback receives `(acc, k, v)`.
-  - Without `init`, arrays seed `acc` with the first element and start from the second (foldl1-style).
-  - Map reductions require `init`.
-  - Reduction over an empty collection without `init` yields `null`.
+- Without `init`, arrays seed `acc` with the first element and start from the second (foldl1-style).
+- Map reductions require `init`.
+- Reduction over an empty collection without `init` yields `null`.
+- Reduction over an empty collection with `init` yields the `init` value.
 - Reductions are expected to use associative operations to avoid order-dependent results.
 - `map` (v1):
+  - Array callbacks receive `(item)`.
+  - Map callbacks receive `(k, v)`.
   - Array -> array mapping is allowed.
   - Map -> map mapping is allowed; callback must evaluate to a map, which is merged into an accumulator.
   - Map traversal order is unspecified; duplicate keys are last-wins and nondeterministic.
   - Array -> map mapping via `map <array> into map ...` is deferred (not parsed in v1).
   - Map -> array mapping is disallowed.
-- `foreach` iterates with callbacks similar to `map`/`reduce`.
+- `foreach` iterates with callbacks similar to `map`/`reduce` (arrays: `(item)`, maps: `(k, v)`).
 - `foreach` always returns `null`.
 
 ## Recursion and binding
-- Recursive value definitions are an error.
-- Recursive function definitions are allowed; the name is bound after the function value is evaluated.
-- Functions are first-class and capture lexical scope.
-- Closures capture lexical scope; bindings are immutable.
+- Self-referential non-function definitions are errors (e.g., `def x = x + 1`).
+- Recursive function definitions are allowed; the function name is bound before its body is evaluated at call time, so self-recursion works without special syntax.
+- Functions are first-class and capture their lexical environment by reference (late-bound names become visible once bound).
+- Bindings are immutable.
+- Forward references to later `def` in the same scope are errors (except for self-recursive function definitions).
 
 ## Functions and blocks
 - Function bodies are sequences of statements separated by newlines or semicolons.
-- Expression statements are allowed; the last expression in a function body is the implicit return value if no explicit `return` is executed.
+- Expression statements are allowed; the last expression in a function body is the return value.
 - Functions return a single value.
-- If a function body ends with a `def` statement (no trailing expression), the implicit return value is `null`.
+- If a function body ends with a `def` statement (no trailing expression), the return value is `null`.
 - Empty function bodies (or bodies with only comments/`def`) return `null`.
-- Statements include `def`, `return`, and expression statements.
+- Statements include `def` and expression statements.
 - Function calls: too few arguments fill missing parameters with `null`; too many arguments are an error (unless the function is variadic).
 - `args` is a predefined global array of strings equivalent to process `argv` (including the script name at `args[0]`).
 - `main` has no special role; it is an ordinary function unless user code calls it.
