@@ -55,7 +55,17 @@ using Array = std::vector<Value_Ptr>;
 
 using Map = std::map<Value_Ptr, Value_Ptr, impl::Value_Ptr_Less>;
 
-// TODO: Closure
+class Symbol_Table;
+class Callable
+{
+  public:
+    virtual ~Callable() = default;
+
+    virtual Value_Ptr call(const Symbol_Table&) const = 0;
+    virtual std::string debug_dump() const = 0;
+};
+
+using Function = std::shared_ptr<Callable>;
 
 struct Frost_Error : std::runtime_error
 {
@@ -84,7 +94,8 @@ template <typename T>
 concept Frost_Structured = std::same_as<Array, T> || std::same_as<Map, T>;
 
 template <typename T>
-concept Frost_Type = Frost_Primitive<T> || Frost_Structured<T>;
+concept Frost_Type =
+    Frost_Primitive<T> || Frost_Structured<T> || std::same_as<Function, T>;
 
 template <typename... Ls>
 struct Overload : Ls...
@@ -116,9 +127,11 @@ TYPE_STR_SPEC(String)
 TYPE_STR_SPEC(Bool)
 TYPE_STR_SPEC(Array)
 TYPE_STR_SPEC(Map)
+TYPE_STR_SPEC(Function)
 
 #undef TYPE_STR_SPEC
-#undef STRINGIZE
+#undef VALUE_STRINGIZE
+#undef VALUE_STRINGIZE_IMPL
 
 struct Type_Str_Fn
 {
@@ -150,6 +163,7 @@ struct coerce_to;
             (*this)(String{});                                                 \
             (*this)(Array{});                                                  \
             (*this)(Map{});                                                    \
+            (*this)(Function{});                                               \
         }
 
 #define COERCE(From)                                                           \
@@ -180,6 +194,7 @@ NO_COERCE(Bool)
 NO_COERCE(String)
 NO_COERCE(Array)
 NO_COERCE(Map)
+NO_COERCE(Function)
 END_COERCIONS
 
 COERCIONS_TO(Int)
@@ -190,6 +205,7 @@ NO_COERCE(Bool)
 NO_COERCE(String)
 NO_COERCE(Array)
 NO_COERCE(Map)
+NO_COERCE(Function)
 END_COERCIONS
 
 COERCIONS_TO(Float)
@@ -200,6 +216,7 @@ NO_COERCE(Bool)
 NO_COERCE(String)
 NO_COERCE(Array)
 NO_COERCE(Map)
+NO_COERCE(Function)
 END_COERCIONS
 
 COERCIONS_TO(Bool)
@@ -236,6 +253,11 @@ COERCE(Map)
     return true;
 }
 
+COERCE(Function)
+{
+    return true;
+}
+
 END_COERCIONS
 
 COERCIONS_TO(String)
@@ -246,6 +268,7 @@ NO_COERCE(Bool)
 VALUE_COERCE(String)
 NO_COERCE(Array)
 NO_COERCE(Map)
+NO_COERCE(Function)
 END_COERCIONS
 
 COERCIONS_TO(Array)
@@ -256,6 +279,7 @@ NO_COERCE(Bool)
 NO_COERCE(String)
 VALUE_COERCE(Array)
 NO_COERCE(Map)
+NO_COERCE(Function)
 END_COERCIONS
 
 COERCIONS_TO(Map)
@@ -266,6 +290,7 @@ NO_COERCE(Bool)
 NO_COERCE(String)
 NO_COERCE(Array)
 VALUE_COERCE(Map)
+NO_COERCE(Function)
 END_COERCIONS
 
 #undef COERSIONS_TO
@@ -404,7 +429,7 @@ class Value
     }
 
   private:
-    std::variant<Null, Int, Float, Bool, String, Array, Map> value_;
+    std::variant<Null, Int, Float, Bool, String, Array, Map, Function> value_;
 
     static bool equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static bool not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);

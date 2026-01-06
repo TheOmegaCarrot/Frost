@@ -69,6 +69,12 @@ struct To_String_Impl
         return fmt::format("{{ {} }}", map_insides);
     }
 
+    std::string operator()(const Function&,
+                           [[maybe_unused]] bool in_structure = false) const
+    {
+        return "<Function>";
+    }
+
 } constexpr static to_string_impl;
 
 std::string Value::to_internal_string(bool in_structure) const
