@@ -5,6 +5,7 @@ add_library( frost-value
     operators/divide.cpp
     operators/compare.cpp
     operators/negate.cpp
+    operators/logical_ops.cpp
     to_string.cpp
 )
 
