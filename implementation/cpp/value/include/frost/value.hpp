@@ -288,9 +288,9 @@ class Value
     {
     }
 
-    Value(const Value&) = default;
+    Value(const Value&) = delete;
     Value(Value&&) = default;
-    Value& operator=(const Value&) = default;
+    Value& operator=(const Value&) = delete;
     Value& operator=(Value&&) = default;
     ~Value() = default;
 
