@@ -326,19 +326,19 @@ class Value
     }
 
     template <typename... Args>
-    static Ptr create(Args&&... args)
+    [[nodiscard]] static Ptr create(Args&&... args)
     {
         return std::make_shared<Value>(std::forward<Args>(args)...);
     }
 
     //! @brief Check if a Value is a particular type
     template <Frost_Type T>
-    bool is() const
+    [[nodiscard]] bool is() const
     {
         return std::holds_alternative<T>(value_);
     }
 
-    bool is_numeric() const
+    [[nodiscard]] bool is_numeric() const
     {
         return value_.visit(Overload{
             [](const Frost_Numeric auto&) { return true; },
@@ -346,7 +346,7 @@ class Value
         });
     }
 
-    bool is_primitive() const
+    [[nodiscard]] bool is_primitive() const
     {
         return value_.visit(Overload{
             [](const Frost_Primitive auto&) { return true; },
@@ -354,7 +354,7 @@ class Value
         });
     }
 
-    bool is_structured() const
+    [[nodiscard]] bool is_structured() const
     {
         return value_.visit(Overload{
             [](const Frost_Structured auto&) { return true; },
@@ -364,7 +364,7 @@ class Value
 
     //! @brief Get the contained value by exact type
     template <Frost_Type T>
-    std::optional<T> get() const
+    [[nodiscard]] std::optional<T> get() const
     {
         if (is<T>())
             return std::get<T>(value_);
@@ -374,12 +374,12 @@ class Value
 
     //! @brief Attempt to coerce the Value to a particular type
     template <Frost_Type T>
-    std::optional<T> as() const
+    [[nodiscard]] std::optional<T> as() const
     {
         return value_.visit(coerce_to<T>{});
     }
 
-    std::string_view type_name() const
+    [[nodiscard]] std::string_view type_name() const
     {
         return value_.visit(type_str_niebloid);
     }
@@ -388,13 +388,13 @@ class Value
     std::string to_internal_string(bool in_structure = false) const;
 
     // The user-facing to_string function
-    Value_Ptr to_string() const
+    [[nodiscard]] Value_Ptr to_string() const
     {
         return create(to_internal_string());
     }
 
     // unary -
-    Value_Ptr negate() const;
+    [[nodiscard]] Value_Ptr negate() const;
 
     static Value_Ptr add(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static Value_Ptr subtract(const Value_Ptr& lhs, const Value_Ptr& rhs);
@@ -427,6 +427,10 @@ class Value
     {
         return create(greater_than_or_equal_impl(lhs, rhs));
     }
+
+    static Value_Ptr logical_and(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static Value_Ptr logical_or(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    [[nodiscard]] Value_Ptr logical_not() const;
 
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map, Function> value_;

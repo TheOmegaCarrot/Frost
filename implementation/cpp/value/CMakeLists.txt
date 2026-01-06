@@ -44,3 +44,5 @@ value_test(tests/lt.cpp)
 value_test(tests/to_string.cpp)
 
 value_test(tests/negate.cpp)
+
+value_test(tests/logical-ops.cpp)
