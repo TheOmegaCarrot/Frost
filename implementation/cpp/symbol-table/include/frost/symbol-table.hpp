@@ -3,7 +3,6 @@
 
 #include <frost/value.hpp>
 
-#include <expected>
 #include <string>
 #include <unordered_map>
 
@@ -26,13 +25,13 @@ class Symbol_Table
 
     // Bind a value to a name within this symbol table
     // Throws on redefinition error
-    void define(std::string name, Value_Ptr value);
+    virtual void define(std::string name, Value_Ptr value);
 
     // Looks up a value by name within the symbol table
     // If not found in this table, attempty to lookup
     //      in the failover table, if present
     // Throws on failed lookup
-    Value_Ptr lookup(const std::string& name) const;
+    virtual Value_Ptr lookup(const std::string& name) const;
 
   private:
     std::unordered_map<std::string, Value_Ptr> table_;

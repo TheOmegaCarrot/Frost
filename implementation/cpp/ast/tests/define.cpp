@@ -2,7 +2,8 @@
 
 #include <catch2/trompeloeil.hpp>
 
-#include "../mock/mock-expression.hpp"
+#include <frost/mock/mock-expression.hpp>
+#include <frost/mock/mock-symbol-table.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
@@ -16,42 +17,50 @@ using trompeloeil::_;
 
 TEST_CASE("Define")
 {
-    auto expr = std::make_unique<ast::mock::Mock_Expression>();
-    Symbol_Table syms;
+    auto expr = std::make_unique<mock::Mock_Expression>();
+    mock::Mock_Symbol_Table syms;
+    trompeloeil::sequence seq;
 
     SECTION("Normal")
     {
+        auto value = Value::create(42_f);
+
         REQUIRE_CALL(*expr, evaluate(_))
+            .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
-            .RETURN(Value::create(42_f));
+            .RETURN(value);
+
+        REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
 
         ast::Define node{"foo", std::move(expr)};
 
-        CHECK_THROWS(syms.lookup("foo"));
         CHECK_NOTHROW(node.execute(syms));
-        CHECK(syms.lookup("foo")->get<Int>() == 42_f);
     }
 
     SECTION("Redefine")
     {
-        trompeloeil::sequence seq;
+        auto value1 = Value::create(42_f);
+        auto value2 = Value::create("well that's not right"s);
 
         REQUIRE_CALL(*expr, evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
-            .RETURN(Value::create(42_f));
+            .RETURN(value1);
+
+        REQUIRE_CALL(syms, define("foo", value1)).IN_SEQUENCE(seq);
 
         REQUIRE_CALL(*expr, evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
-            .RETURN(Value::create("well that's not right"s));
+            .RETURN(value2);
+
+        REQUIRE_CALL(syms, define("foo", value2))
+            .IN_SEQUENCE(seq)
+            .THROW(Frost_Error{"uh oh"});
 
         ast::Define node{"foo", std::move(expr)};
 
-        CHECK_THROWS(syms.lookup("foo"));
         CHECK_NOTHROW(node.execute(syms));
-        CHECK(syms.lookup("foo")->get<Int>() == 42_f);
         CHECK_THROWS(node.execute(syms));
-        CHECK(syms.lookup("foo")->get<Int>() == 42_f);
     }
 }

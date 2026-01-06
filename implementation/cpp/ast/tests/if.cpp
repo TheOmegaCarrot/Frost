@@ -2,7 +2,8 @@
 
 #include <catch2/trompeloeil.hpp>
 
-#include "../mock/mock-expression.hpp"
+#include <frost/mock/mock-expression.hpp>
+#include <frost/mock/mock-symbol-table.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
@@ -16,11 +17,11 @@ using trompeloeil::_;
 
 TEST_CASE("If")
 {
-    auto condition = ast::mock::Mock_Expression::make();
-    auto consequent = ast::mock::Mock_Expression::make();
-    auto alternate = ast::mock::Mock_Expression::make();
+    auto condition = mock::Mock_Expression::make();
+    auto consequent = mock::Mock_Expression::make();
+    auto alternate = mock::Mock_Expression::make();
 
-    Symbol_Table syms;
+    mock::Mock_Symbol_Table syms;
 
     auto make_if = [&](bool with_alternate = true) {
         if (with_alternate)

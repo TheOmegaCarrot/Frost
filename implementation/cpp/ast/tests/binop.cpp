@@ -2,12 +2,12 @@
 
 #include <catch2/trompeloeil.hpp>
 
-#include "../mock/mock-expression.hpp"
+#include <frost/mock/mock-expression.hpp>
+#include <frost/mock/mock-symbol-table.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
 #include <frost/ast.hpp>
-#include <frost/symbol-table.hpp>
 
 using namespace frst;
 using namespace std::literals;
@@ -16,9 +16,9 @@ using trompeloeil::_;
 
 TEST_CASE("Binop")
 {
-    auto lhs = std::make_unique<ast::mock::Mock_Expression>();
-    auto rhs = std::make_unique<ast::mock::Mock_Expression>();
-    Symbol_Table syms;
+    auto lhs = std::make_unique<mock::Mock_Expression>();
+    auto rhs = std::make_unique<mock::Mock_Expression>();
+    mock::Mock_Symbol_Table syms;
 
     auto lhs_val = Value::create(42_f);
     auto rhs_val = Value::create(10_f);

@@ -2,7 +2,7 @@
 
 #include <catch2/trompeloeil.hpp>
 
-#include "../mock/mock-expression.hpp"
+#include <frost/mock/mock-expression.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
@@ -16,9 +16,9 @@ using trompeloeil::_;
 
 TEST_CASE("Array Constructor")
 {
-    constexpr auto make = ast::mock::Mock_Expression::make;
+    constexpr auto make = mock::Mock_Expression::make;
 
-    std::vector<ast::mock::Mock_Expression::Ptr> elems;
+    std::vector<mock::Mock_Expression::Ptr> elems;
     elems.emplace_back(make());
 
     Symbol_Table syms;
