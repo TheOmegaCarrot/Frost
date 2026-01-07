@@ -51,6 +51,9 @@ using Bool = bool;
 
 using String = std::string;
 
+// Idea: replace structured types with classes which allow for computed values
+// e.g. `1..10` -> "An array" without actually creating the Values
+
 using Array = std::vector<Value_Ptr>;
 
 using Map = std::map<Value_Ptr, Value_Ptr, impl::Value_Ptr_Less>;

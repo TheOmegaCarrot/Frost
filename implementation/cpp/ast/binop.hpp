@@ -90,6 +90,7 @@ class Binop final : public Expression
 
     Value_Ptr evaluate(const Symbol_Table& syms) const final
     {
+        // uh oh, and and or don't short-circuit like this
         auto lhs_value = lhs_->evaluate(syms);
         auto rhs_value = rhs_->evaluate(syms);
         switch (op_)

@@ -5,19 +5,23 @@
 using namespace frst;
 using namespace frst::ast;
 
-static Value_Ptr index_array(const Array& array, const Int& index)
+static Value_Ptr index_array(const Array& array, const Value_Ptr& index_val)
 {
-    const Int len = array.size();
-
     /*   -3 -2 -1
      *  [ a, b, c ]  The same indexing rules as Python
      *    0  1  2
      */
 
-    if (len >= 0 && index < len)
+    if (!index_val->is<Int>())
+        throw Frost_Error{"Cannot index array with non-integer"};
+
+    const Int len = array.size();
+    const Int index = index_val->raw_get<Int>();
+
+    if (index >= 0 && index < len)
         return array.at(index);
 
-    if (len < 0 && (index + len) < len)
+    if (index < 0 && (index + len) < len)
         return array.at(index + len);
 
     return Value::create(Null{}); // out-of-bounds -> null
@@ -43,9 +47,8 @@ Value_Ptr Index::evaluate(const Symbol_Table& syms) const
 
     auto index_val = index_->evaluate(syms);
 
-    if (struct_val->is<Array>() && index_val->is<Int>())
-        return index_array(struct_val->raw_get<Array>(),
-                           index_val->raw_get<Int>());
+    if (struct_val->is<Array>())
+        return index_array(struct_val->raw_get<Array>(), index_val);
 
     if (struct_val->is<Map>())
         return index_map(struct_val->raw_get<Map>(), index_val);

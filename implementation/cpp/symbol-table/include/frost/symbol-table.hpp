@@ -21,7 +21,7 @@ class Symbol_Table
     Symbol_Table(Symbol_Table&&) = default;
     Symbol_Table& operator=(const Symbol_Table&) = default;
     Symbol_Table& operator=(Symbol_Table&&) = default;
-    ~Symbol_Table() = default;
+    virtual ~Symbol_Table() = default;
 
     // Bind a value to a name within this symbol table
     // Throws on redefinition error
