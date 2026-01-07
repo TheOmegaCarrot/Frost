@@ -34,6 +34,10 @@ struct Convert_Binary_Op
             return TIMES;
         if (op == "/")
             return DIVIDE;
+        if (op == "and")
+            return AND;
+        if (op == "or")
+            return OR;
 
         return std::nullopt;
     }

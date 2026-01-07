@@ -70,7 +70,7 @@ TEST_CASE("String Lexicographical LT")
     CHECK(Value::less_than(foo, foobar)->get<frst::Bool>().value());
 }
 
-TEST_CASE("Equals Compare All Permutations")
+TEST_CASE("LT Compare All Permutations")
 {
     auto Null = Value::create();
     auto Int = Value::create(42_f);

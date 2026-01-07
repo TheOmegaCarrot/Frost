@@ -7,10 +7,20 @@ using namespace frst::ast;
 
 static Value_Ptr index_array(const Array& array, const Int& index)
 {
-    if (array.size() <= index - 1uz)
+    const Int len = array.size();
+
+    /*   -3 -2 -1
+     *  [ a, b, c ]  The same indexing rules as Python
+     *    0  1  2
+     */
+
+    if (len >= 0 && index < len)
         return array.at(index);
 
-    return Value::create(Null{});
+    if (len < 0 && (index + len) < len)
+        return array.at(index + len);
+
+    return Value::create(Null{}); // out-of-bounds -> null
 }
 
 static Value_Ptr index_map(const Map& map, const Value_Ptr& key_val)

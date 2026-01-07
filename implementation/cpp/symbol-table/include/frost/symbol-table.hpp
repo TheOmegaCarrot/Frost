@@ -35,7 +35,7 @@ class Symbol_Table
 
   private:
     std::unordered_map<std::string, Value_Ptr> table_;
-    const Symbol_Table* failover_table_;
+    const Symbol_Table* failover_table_ = nullptr;
 };
 
 } // namespace frst
