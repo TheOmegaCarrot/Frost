@@ -21,7 +21,7 @@ TEST_CASE("Unop")
 
     auto operand_val = Value::create(42_f);
 
-    for (const char op : {'-'})
+    for (const std::string op : {"-", "not"})
     {
         DYNAMIC_SECTION("Operator " << op)
         {
@@ -33,12 +33,10 @@ TEST_CASE("Unop")
 
             auto res = node.evaluate(syms);
 
-            switch (op)
-            {
-            case '-':
+            if (op == "-")
                 CHECK(res->get<Int>() == -42_f);
-                break;
-            }
+            if (op == "not")
+                CHECK(res->get<Bool>() == false);
         }
     }
 }

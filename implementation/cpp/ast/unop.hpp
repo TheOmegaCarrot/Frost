@@ -14,26 +14,28 @@ namespace frst::ast
 enum class Unary_Op
 {
     NEGATE,
+    NOT,
 };
 
 struct Convert_Unary_Op
 {
     using enum Unary_Op;
-    static std::optional<Unary_Op> operator()(char op)
+    static std::optional<Unary_Op> operator()(const std::string& op)
     {
-        switch (op)
-        {
-        case '-':
+        if (op == "-")
             return NEGATE;
-        }
+        if (op == "not")
+            return NOT;
         return std::nullopt;
     }
-    static char operator()(Unary_Op op)
+    static std::string_view operator()(Unary_Op op)
     {
         switch (op)
         {
         case NEGATE:
-            return '-';
+            return "-";
+        case NOT:
+            return "not";
         }
         THROW_UNREACHABLE;
     }
@@ -45,12 +47,12 @@ class Unop final : public Expression
   public:
     using Ptr = std::unique_ptr<Unop>;
 
-    Unop(Expression::Ptr operand, char op_c)
+    Unop(Expression::Ptr operand, const std::string& op)
         : operand_{std::move(operand)}
-        , op_{convert_unary_op(op_c)
+        , op_{convert_unary_op(op)
                   .or_else([&] -> std::optional<Unary_Op> {
                       throw Frost_Error{
-                          fmt::format("Bad unary operator {}", op_c)};
+                          fmt::format("Bad unary operator {}", op)};
                       return {};
                   })
                   .value()}
@@ -72,6 +74,8 @@ class Unop final : public Expression
             using enum Unary_Op;
         case NEGATE:
             return operand_value->negate();
+        case NOT:
+            return operand_value->logical_not();
         }
         THROW_UNREACHABLE;
     }

@@ -17,38 +17,42 @@ enum class Binary_Op
     MINUS,
     TIMES,
     DIVIDE,
+    AND,
+    OR,
 };
 
 struct Convert_Binary_Op
 {
     using enum Binary_Op;
-    static std::optional<Binary_Op> operator()(char op)
+    static std::optional<Binary_Op> operator()(const std::string& op)
     {
-        switch (op)
-        {
-        case '+':
+        if (op == "+")
             return PLUS;
-        case '-':
+        if (op == "-")
             return MINUS;
-        case '*':
+        if (op == "*")
             return TIMES;
-        case '/':
+        if (op == "/")
             return DIVIDE;
-        }
+
         return std::nullopt;
     }
-    static char operator()(Binary_Op op)
+    static std::string_view operator()(Binary_Op op)
     {
         switch (op)
         {
         case PLUS:
-            return '+';
+            return "+";
         case MINUS:
-            return '-';
+            return "-";
         case TIMES:
-            return '*';
+            return "*";
         case DIVIDE:
-            return '/';
+            return "/";
+        case AND:
+            return "and";
+        case OR:
+            return "or";
         }
         THROW_UNREACHABLE;
     }
@@ -60,13 +64,13 @@ class Binop final : public Expression
   public:
     using Ptr = std::unique_ptr<Binop>;
 
-    Binop(Expression::Ptr lhs, char op_c, Expression::Ptr rhs)
+    Binop(Expression::Ptr lhs, const std::string& op, Expression::Ptr rhs)
         : lhs_{std::move(lhs)}
         , rhs_{std::move(rhs)}
-        , op_{convert_binary_op(op_c)
+        , op_{convert_binary_op(op)
                   .or_else([&] -> std::optional<Binary_Op> {
                       throw Frost_Error{
-                          fmt::format("Bad binary operator {}", op_c)};
+                          fmt::format("Bad binary operator {}", op)};
                       return {};
                   })
                   .value()}
@@ -95,6 +99,10 @@ class Binop final : public Expression
             return Value::multiply(lhs_value, rhs_value);
         case DIVIDE:
             return Value::divide(lhs_value, rhs_value);
+        case AND:
+            return Value::logical_and(lhs_value, rhs_value);
+        case OR:
+            return Value::logical_or(lhs_value, rhs_value);
         }
         THROW_UNREACHABLE;
     }

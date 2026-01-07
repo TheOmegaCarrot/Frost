@@ -23,7 +23,7 @@ TEST_CASE("Binop")
     auto lhs_val = Value::create(42_f);
     auto rhs_val = Value::create(10_f);
 
-    for (const char op : {'+', '-', '*', '/'})
+    for (const std::string op : {"+", "-", "*", "/"})
     {
         DYNAMIC_SECTION("Operator " << op)
         {
@@ -43,21 +43,18 @@ TEST_CASE("Binop")
 
             auto res = node.evaluate(syms);
 
-            switch (op)
-            {
-            case '+':
+            if (op == "+")
                 CHECK(res->get<Int>() == 42_f + 10_f);
-                break;
-            case '-':
+            if (op == "-")
                 CHECK(res->get<Int>() == 42_f - 10_f);
-                break;
-            case '*':
+            if (op == "*")
                 CHECK(res->get<Int>() == 42_f * 10_f);
-                break;
-            case '/':
+            if (op == "/")
                 CHECK(res->get<Int>() == 42_f / 10_f);
-                break;
-            }
+            if (op == "and")
+                CHECK(res->get<Int>() == 10_f);
+            if (op == "or")
+                CHECK(res->get<Int>() == 42_f);
         }
     }
 }
