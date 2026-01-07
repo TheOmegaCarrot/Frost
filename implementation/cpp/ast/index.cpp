@@ -21,7 +21,7 @@ static Value_Ptr index_array(const Array& array, const Value_Ptr& index_val)
     if (index >= 0 && index < len)
         return array.at(index);
 
-    if (index < 0 && (index + len) < len)
+    if (index < 0 && len + index >= 0)
         return array.at(index + len);
 
     return Value::create(Null{}); // out-of-bounds -> null
