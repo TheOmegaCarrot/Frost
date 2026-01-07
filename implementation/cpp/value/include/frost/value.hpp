@@ -75,6 +75,16 @@ struct Frost_Error : std::runtime_error
     }
 };
 
+#define VALUE_STRINGIZE_IMPL(X) #X
+#define VALUE_STRINGIZE(X) VALUE_STRINGIZE_IMPL(X)
+
+#define THROW_UNREACHABLE                                                      \
+    throw Frost_Error                                                          \
+    {                                                                          \
+        "Hit point which should be unreachable at: " __FILE__                  \
+        ":" VALUE_STRINGIZE(__LINE__)                                          \
+    }
+
 inline namespace literals
 {
 consteval frst::Int operator""_f(unsigned long long val)
@@ -107,9 +117,6 @@ struct Overload : Ls...
 // Type name table
 // ==========================================
 
-#define VALUE_STRINGIZE_IMPL(X) #X
-#define VALUE_STRINGIZE(X) VALUE_STRINGIZE_IMPL(X)
-
 template <Frost_Type T>
 std::string_view type_str() = delete;
 
@@ -130,8 +137,6 @@ TYPE_STR_SPEC(Map)
 TYPE_STR_SPEC(Function)
 
 #undef TYPE_STR_SPEC
-#undef VALUE_STRINGIZE
-#undef VALUE_STRINGIZE_IMPL
 
 struct Type_Str_Fn
 {
@@ -372,6 +377,17 @@ class Value
             return std::nullopt;
     }
 
+    //! @brief CAREFULLY get a reference
+    //! (optional<T&> would make this unnecessary)
+    template <Frost_Type T>
+    [[nodiscard]] const T& raw_get() const
+    {
+        if (is<T>())
+            return std::get<T>(value_);
+        else
+            THROW_UNREACHABLE;
+    }
+
     //! @brief Attempt to coerce the Value to a particular type
     template <Frost_Type T>
     [[nodiscard]] std::optional<T> as() const
@@ -444,14 +460,6 @@ class Value
     static bool greater_than_or_equal_impl(const Value_Ptr& lhs,
                                            const Value_Ptr& rhs);
 };
-
-#define STRINGIZE(X) #X
-#define THROW_UNREACHABLE                                                      \
-    throw Frost_Error                                                          \
-    {                                                                          \
-        "Hit point which should be unreachable at: " __FILE__                  \
-        ":" STRINGIZE(__LINE__)                                                          \
-    }
 
 inline bool impl::Value_Ptr_Less::operator()(const Value_Ptr& lhs,
                                              const Value_Ptr& rhs)

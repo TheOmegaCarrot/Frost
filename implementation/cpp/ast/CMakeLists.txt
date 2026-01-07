@@ -1,5 +1,6 @@
 add_library( frost-ast
     statement.cpp
+    index.cpp
 )
 
 target_include_directories( frost-ast

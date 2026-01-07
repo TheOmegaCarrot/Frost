@@ -6,6 +6,7 @@
 #include "define.hpp"
 #include "expression.hpp"
 #include "if.hpp"
+#include "index.hpp"
 #include "literal.hpp"
 #include "statement.hpp"
 #include "unop.hpp"

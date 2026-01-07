@@ -33,7 +33,7 @@ class Literal final : public Expression
     Literal& operator=(Literal&&) = delete;
     ~Literal() final = default;
 
-    [[nodiscard]] virtual Value_Ptr evaluate(const Symbol_Table&) const final
+    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table&) const final
     {
         return value_;
     }
