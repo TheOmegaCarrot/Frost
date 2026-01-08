@@ -143,4 +143,71 @@ TEST_CASE("Map Index Primitive Key")
 
 TEST_CASE("Map Index Structure Key")
 {
+    // AI-generated test additions by Codex (GPT-5).
+    auto shared_elem1 = Value::create(1_f);
+    auto shared_elem2 = Value::create("x"s);
+
+    auto array_key = Value::create(Array{shared_elem1, shared_elem2});
+    auto array_key_equiv = Value::create(Array{shared_elem1, shared_elem2});
+    auto array_key_diff =
+        Value::create(Array{Value::create(1_f), Value::create("x"s)});
+
+    auto shared_map_key = Value::create("k"s);
+    auto shared_map_val = Value::create(42_f);
+
+    auto map_key = Value::create(Map{{shared_map_key, shared_map_val}});
+    auto map_key_equiv = Value::create(Map{{shared_map_key, shared_map_val}});
+    auto map_key_diff =
+        Value::create(Map{{Value::create("k"s), Value::create(42_f)}});
+
+    auto array_val = Value::create("array-val"s);
+    auto map_val = Value::create("map-val"s);
+
+    auto map = Value::create(Map{
+        {array_key, array_val},
+        {map_key, map_val},
+    });
+
+    auto run_case = [&](const char* name, Value_Ptr query, Value_Ptr expected) {
+        DYNAMIC_SECTION("Structure key: " << name)
+        {
+            auto struct_expr = mock::Mock_Expression::make();
+            auto idx_expr = mock::Mock_Expression::make();
+            auto syms = mock::Mock_Symbol_Table{};
+            trompeloeil::sequence seq;
+
+            REQUIRE_CALL(*struct_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(map);
+
+            REQUIRE_CALL(*idx_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(query);
+
+            ast::Index node{std::move(struct_expr), std::move(idx_expr)};
+
+            auto res = node.evaluate(syms);
+
+            if (expected->is<Null>())
+                CHECK(res->is<Null>());
+            else
+                CHECK(res == expected);
+        }
+    };
+
+    SECTION("Array key identity")
+    {
+        run_case("array_same_ptr", array_key, array_val);
+        run_case("array_equiv_ptrs", array_key_equiv, Value::create(Null{}));
+        run_case("array_diff_ptrs", array_key_diff, Value::create(Null{}));
+    }
+
+    SECTION("Map key identity")
+    {
+        run_case("map_same_ptr", map_key, map_val);
+        run_case("map_equiv_ptrs", map_key_equiv, Value::create(Null{}));
+        run_case("map_diff_ptrs", map_key_diff, Value::create(Null{}));
+    }
 }
