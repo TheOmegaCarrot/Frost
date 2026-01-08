@@ -36,4 +36,6 @@ make_ast_test(tests/unop.cpp)
 
 make_ast_test(tests/array-constructor.cpp)
 
+make_ast_test(tests/map-constructor.cpp)
+
 make_ast_test(tests/index.cpp)
