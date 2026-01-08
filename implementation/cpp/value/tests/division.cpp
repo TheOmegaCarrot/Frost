@@ -17,6 +17,12 @@ TEST_CASE("Numeric Division")
     auto flt1 = Value::create(3.14);
     auto flt2 = Value::create(2.17);
 
+    SECTION("Divide by zero")
+    {
+        CHECK_THROWS_WITH(Value::divide(int1, Value::create(0_f)),
+                          "Division by zero");
+    }
+
     SECTION("INT / INT")
     {
         auto res = Value::divide(int1, int2);

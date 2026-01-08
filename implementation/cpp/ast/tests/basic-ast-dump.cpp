@@ -58,7 +58,7 @@ class Multi_String_Node : public frst::ast::Statement
 
     std::generator<Child_Info> children() const override
     {
-        for (const auto& [i, child] : std::views::enumerate(children_))
+        for (const auto& child : children_)
         {
             co_yield make_child(child);
         }

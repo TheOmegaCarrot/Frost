@@ -14,7 +14,7 @@ using namespace std::literals;
 
 using trompeloeil::_;
 
-TEST_CASE("Binop")
+TEST_CASE("Numeric Binary ops")
 {
     auto lhs = std::make_unique<mock::Mock_Expression>();
     auto rhs = std::make_unique<mock::Mock_Expression>();
@@ -51,10 +51,6 @@ TEST_CASE("Binop")
                 CHECK(res->get<Int>() == 42_f * 10_f);
             if (op == "/")
                 CHECK(res->get<Int>() == 42_f / 10_f);
-            if (op == "and")
-                CHECK(res->get<Int>() == 10_f);
-            if (op == "or")
-                CHECK(res->get<Int>() == 42_f);
         }
     }
 }

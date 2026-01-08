@@ -207,7 +207,7 @@ TEST_CASE("Map Union")
         }
     };
 
-    SECTION("EMPTY + MAP")
+    SECTION("EMPTY + EMPTY")
     {
         auto res = Value::add(empty, empty);
 

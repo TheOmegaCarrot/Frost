@@ -4,8 +4,6 @@
 
 #include <frost/mock/mock-symbol-table.hpp>
 
-#include <frost/mock/mock-symbol-table.hpp>
-
 using namespace frst;
 
 using namespace literals;

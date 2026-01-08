@@ -16,6 +16,9 @@ struct Numeric_Divide_Impl
     template <Frost_Numeric LHS_T, Frost_Numeric RHS_T>
     static Value operator()(const LHS_T& lhs, const RHS_T& rhs)
     {
+        if (rhs == 0)
+            throw Frost_Error{"Division by zero"};
+
         return lhs / rhs;
     }
     static Value operator()(const auto&, const auto&)
