@@ -8,6 +8,7 @@
 #include "if.hpp"
 #include "index.hpp"
 #include "literal.hpp"
+#include "name_lookup.hpp"
 #include "statement.hpp"
 #include "unop.hpp"
 
