@@ -4,10 +4,9 @@
 
 using frst::Symbol_Table;
 
-void Symbol_Table::define(std::string name, Value_Ptr value)
+void Symbol_Table::define(const std::string& name, Value_Ptr value)
 {
-    if (const auto [itr, ok] =
-            table_.try_emplace(std::move(name), std::move(value));
+    if (const auto [itr, ok] = table_.try_emplace(name, std::move(value));
         not ok)
         throw Frost_Error{
             fmt::format("Cannot define {} as it is already defined", name)};

@@ -25,7 +25,7 @@ class Symbol_Table
 
     // Bind a value to a name within this symbol table
     // Throws on redefinition error
-    virtual void define(std::string name, Value_Ptr value);
+    virtual void define(const std::string& name, Value_Ptr value);
 
     // Looks up a value by name within the symbol table
     // If not found in this table, attempty to lookup
