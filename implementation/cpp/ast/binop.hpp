@@ -90,25 +90,38 @@ class Binop final : public Expression
 
     Value_Ptr evaluate(const Symbol_Table& syms) const final
     {
-        // uh oh, and and or don't short-circuit like this
-        auto lhs_value = lhs_->evaluate(syms);
-        auto rhs_value = rhs_->evaluate(syms);
-        switch (op_)
+        using enum Binary_Op;
+        static const std::map<Binary_Op, decltype(&Value::add)> fn_map{
+            {PLUS, &Value::add},
+            {MINUS, &Value::subtract},
+            {TIMES, &Value::multiply},
+            {DIVIDE, &Value::divide},
+        };
+
+        auto lhs_val = lhs_->evaluate(syms);
+
+        if (auto itr = fn_map.find(op_); itr != fn_map.end())
         {
-            using enum Binary_Op;
-        case PLUS:
-            return Value::add(lhs_value, rhs_value);
-        case MINUS:
-            return Value::subtract(lhs_value, rhs_value);
-        case TIMES:
-            return Value::multiply(lhs_value, rhs_value);
-        case DIVIDE:
-            return Value::divide(lhs_value, rhs_value);
-        case AND:
-            return Value::logical_and(lhs_value, rhs_value);
-        case OR:
-            return Value::logical_or(lhs_value, rhs_value);
+            auto rhs_val = rhs_->evaluate(syms);
+            return itr->second(lhs_val, rhs_val);
         }
+
+        if (op_ == AND)
+        {
+            if (lhs_val->as<Bool>().value())
+                return rhs_->evaluate(syms);
+            else
+                return lhs_val;
+        }
+
+        if (op_ == OR)
+        {
+            if (lhs_val->as<Bool>().value())
+                return lhs_val;
+            else
+                return rhs_->evaluate(syms);
+        }
+
         THROW_UNREACHABLE;
     }
 

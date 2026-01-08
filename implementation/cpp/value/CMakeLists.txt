@@ -5,7 +5,6 @@ add_library( frost-value
     operators/divide.cpp
     operators/compare.cpp
     operators/negate.cpp
-    operators/logical_ops.cpp
     to_string.cpp
 )
 
@@ -58,4 +57,4 @@ value_test(tests/to_string.cpp)
 
 value_test(tests/negate.cpp)
 
-value_test(tests/logical-ops.cpp)
+value_test(tests/logical-not.cpp)

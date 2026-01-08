@@ -448,9 +448,10 @@ class Value
         return create(greater_than_or_equal_impl(lhs, rhs));
     }
 
-    static Value_Ptr logical_and(const Value_Ptr& lhs, const Value_Ptr& rhs);
-    static Value_Ptr logical_or(const Value_Ptr& lhs, const Value_Ptr& rhs);
-    [[nodiscard]] Value_Ptr logical_not() const;
+    [[nodiscard]] Value_Ptr logical_not() const
+    {
+        return Value::create(not as<Bool>().value());
+    }
 
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map, Function> value_;

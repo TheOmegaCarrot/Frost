@@ -33,42 +33,6 @@ std::vector<Logical_Case> logical_cases()
 }
 } // namespace
 
-TEST_CASE("Logical And")
-{
-    auto cases = logical_cases();
-
-    for (const auto& lhs : cases)
-    {
-        for (const auto& rhs : cases)
-        {
-            DYNAMIC_SECTION("lhs=" << lhs.name << " rhs=" << rhs.name)
-            {
-                auto res = Value::logical_and(lhs.value, rhs.value);
-                auto expected = lhs.truthy ? rhs.value : lhs.value;
-                CHECK(res == expected);
-            }
-        }
-    }
-}
-
-TEST_CASE("Logical Or")
-{
-    auto cases = logical_cases();
-
-    for (const auto& lhs : cases)
-    {
-        for (const auto& rhs : cases)
-        {
-            DYNAMIC_SECTION("lhs=" << lhs.name << " rhs=" << rhs.name)
-            {
-                auto res = Value::logical_or(lhs.value, rhs.value);
-                auto expected = lhs.truthy ? lhs.value : rhs.value;
-                CHECK(res == expected);
-            }
-        }
-    }
-}
-
 TEST_CASE("Logical Not")
 {
     auto cases = logical_cases();
