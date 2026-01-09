@@ -13,13 +13,13 @@ using namespace std::literals;
 
 using namespace Catch::Matchers;
 
-TEST_CASE("Builtin keys")
+TEST_CASE("Builtin values")
 {
     Symbol_Table table;
     inject_builtins(table);
-    auto keys_val = table.lookup("keys");
-    REQUIRE(keys_val->is<Function>());
-    auto keys = keys_val->get<Function>().value();
+    auto values_val = table.lookup("values");
+    REQUIRE(values_val->is<Function>());
+    auto values = values_val->get<Function>().value();
 
     SECTION("Wrong Type")
     {
@@ -35,7 +35,7 @@ TEST_CASE("Builtin keys")
 
         for (const auto& val : not_maps)
         {
-            CHECK_THROWS_WITH(keys->call({val}),
+            CHECK_THROWS_WITH(values->call({val}),
                               EndsWith(std::string{val->type_name()}));
         }
     }
@@ -47,12 +47,12 @@ TEST_CASE("Builtin keys")
             {Value::create("world"s), Value::create(10_f)},
         });
 
-        auto res = keys->call({map});
+        auto res = values->call({map});
 
         CHECK(res->is<Array>());
         auto res_arr = res->get<Array>().value();
         CHECK(res_arr.size() == 2);
-        CHECK(res_arr.at(0)->get<String>().value_or("") == "hello");
-        CHECK(res_arr.at(1)->get<String>().value_or("") == "world");
+        CHECK(res_arr.at(0)->get<Int>().value_or(0) == 42_f);
+        CHECK(res_arr.at(1)->get<Int>().value_or(0) == 10_f);
     }
 }
