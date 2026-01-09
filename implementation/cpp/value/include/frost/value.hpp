@@ -72,7 +72,12 @@ using Function = std::shared_ptr<Callable>;
 
 struct Frost_Error : std::runtime_error
 {
-    Frost_Error(const auto& err)
+    Frost_Error(const char* err)
+        : std::runtime_error{err}
+    {
+    }
+
+    Frost_Error(const std::string& err)
         : std::runtime_error{err}
     {
     }

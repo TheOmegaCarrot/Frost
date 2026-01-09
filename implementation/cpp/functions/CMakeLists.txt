@@ -1,5 +1,6 @@
 add_library( frost-functions
     closure.cpp
+    builtin.cpp
 )
 
 target_include_directories( frost-functions
@@ -15,10 +16,11 @@ target_link_libraries( frost-functions
     frost-symbol-table
 )
 
-macro(closure_test file)
+macro(functions_test file)
     make_test( ${file}
         LIBS
         frost-functions
     )
 endmacro()
 
+functions_test(tests/builtins/keys.cpp)
