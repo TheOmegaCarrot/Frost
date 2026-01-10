@@ -22,6 +22,12 @@ class Builtin final : public Callable
   public:
     using Ptr = std::shared_ptr<Function>;
 
+    struct Arity
+    {
+        std::size_t min;
+        std::optional<std::size_t> max;
+    };
+
     Builtin() = delete;
     Builtin(const Builtin&) = delete;
     Builtin(Builtin&&) = delete;
@@ -30,22 +36,28 @@ class Builtin final : public Callable
     ~Builtin() final = default;
 
     // nullopt max_arity indicates a variadic builtin function
-    Builtin(function_t function, std::string name,
-            std::optional<std::size_t> max_arity)
+    Builtin(function_t function, std::string name, const Arity& arity)
         : function_{std::move(function)}
         , name_{std::move(name)}
-        , max_arity_{max_arity}
+        , arity_{arity}
     {
     }
 
     Value_Ptr call(builtin_args_t args) const final
     {
-        if (auto num_args = args.size(); num_args > max_arity_)
+        if (auto num_args = args.size(); num_args > arity_.max)
         {
             throw Frost_Error{
                 fmt::format("Function {} called with too many arguments. "
                             "Called with {} but accepts no more than {}.",
-                            name_, num_args, max_arity_.value())};
+                            name_, num_args, arity_.max.value())};
+        }
+        else if (num_args < arity_.min)
+        {
+            throw Frost_Error{
+                fmt::format("Function {} called with insufficient arguments. "
+                            "Called with {} but requires at least {}.",
+                            name_, num_args, arity_.min)};
         }
 
         return function_(args);
@@ -59,7 +71,7 @@ class Builtin final : public Callable
   private:
     function_t function_;
     std::string name_;
-    std::optional<std::size_t> max_arity_;
+    Arity arity_;
 };
 
 void inject_builtins(Symbol_Table& table);

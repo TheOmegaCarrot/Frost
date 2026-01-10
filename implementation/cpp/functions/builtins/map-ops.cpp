@@ -1,7 +1,3 @@
-#include <frost/builtin.hpp>
-
-#include <frost/symbol-table.hpp>
-
 #include "builtins-common.h"
 
 #include <ranges>
@@ -47,7 +43,7 @@ Value_Ptr values(builtin_args_t args)
 
 void inject_map_ops(Symbol_Table& table)
 {
-    INJECT(keys, 1);
-    INJECT(values, 1);
+    INJECT(keys, 1, 1);
+    INJECT(values, 1, 1);
 }
 } // namespace frst
