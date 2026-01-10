@@ -129,12 +129,10 @@ std::optional<Int> Value::to_internal_int() const
 
 Value_Ptr Value::to_int() const
 {
-    return create(to_internal_int()
-                      .or_else([&] -> std::optional<Int> {
-                          throw Frost_Error{fmt::format(
-                              "Cannot convert {} to Int", type_name())};
-                      })
-                      .value());
+    return to_internal_int()
+        .transform([](const Int v) { return create(auto{v}); })
+        .or_else([&] { return std::optional{create()}; })
+        .value();
 }
 
 struct To_Float_Impl
@@ -168,12 +166,10 @@ std::optional<Float> Value::to_internal_float() const
 
 Value_Ptr Value::to_float() const
 {
-    return create(to_internal_float()
-                      .or_else([&] -> std::optional<Float> {
-                          throw Frost_Error{fmt::format(
-                              "Cannot convert {} to Float", type_name())};
-                      })
-                      .value());
+    return to_internal_float()
+        .transform([](const Float v) { return create(auto{v}); })
+        .or_else([&] { return std::optional{create()}; })
+        .value();
 }
 
 } // namespace frst

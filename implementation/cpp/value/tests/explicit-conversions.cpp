@@ -37,3 +37,208 @@ TEST_CASE("to_string")
 
     CHECK(Nested->to_internal_string() == R"([ 42, [ 42, "hello" ] ])");
 }
+
+// AI-generated test additions by Codex (GPT-5).
+// Signed: Codex (GPT-5).
+
+TEST_CASE("to_internal_int")
+{
+    struct Dummy final : frst::Callable
+    {
+        frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+        {
+            return Value::create();
+        }
+        std::string debug_dump() const override
+        {
+            return "<dummy>";
+        }
+    };
+
+    auto v_null = Value::create();
+    auto v_int = Value::create(42_f);
+    auto v_float = Value::create(3.9);
+    auto v_float_neg = Value::create(-3.9);
+    auto v_bool = Value::create(true);
+    auto v_string = Value::create("123"s);
+    auto v_string_plus = Value::create("+17"s);
+    auto v_string_neg = Value::create("-5"s);
+    auto v_string_leading_zero = Value::create("003"s);
+    auto v_string_bad = Value::create("42abc"s);
+    auto v_string_empty = Value::create(""s);
+    auto v_string_ws_lead = Value::create(" 1"s);
+    auto v_string_ws_trail = Value::create("1 "s);
+    auto v_string_float = Value::create("3.14"s);
+    auto v_array = Value::create(frst::Array{Value::create(1_f)});
+    auto v_map =
+        Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
+    auto v_func = Value::create(
+        frst::Function{std::make_shared<Dummy>()});
+
+    CHECK(v_int->to_internal_int() == 42);
+    CHECK(v_float->to_internal_int() == 3);
+    CHECK(v_float_neg->to_internal_int() == -3);
+    CHECK(v_string->to_internal_int() == 123);
+    CHECK(v_string_neg->to_internal_int() == -5);
+    CHECK(v_string_leading_zero->to_internal_int() == 3);
+
+    CHECK_FALSE(v_null->to_internal_int().has_value());
+    CHECK_FALSE(v_bool->to_internal_int().has_value());
+    CHECK_FALSE(v_array->to_internal_int().has_value());
+    CHECK_FALSE(v_map->to_internal_int().has_value());
+    CHECK_FALSE(v_func->to_internal_int().has_value());
+    CHECK_FALSE(v_string_bad->to_internal_int().has_value());
+    CHECK_FALSE(v_string_empty->to_internal_int().has_value());
+    CHECK_FALSE(v_string_plus->to_internal_int().has_value());
+    CHECK_FALSE(v_string_ws_lead->to_internal_int().has_value());
+    CHECK_FALSE(v_string_ws_trail->to_internal_int().has_value());
+    CHECK_FALSE(v_string_float->to_internal_int().has_value());
+}
+
+TEST_CASE("to_int")
+{
+    struct Dummy final : frst::Callable
+    {
+        frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+        {
+            return Value::create();
+        }
+        std::string debug_dump() const override
+        {
+            return "<dummy>";
+        }
+    };
+
+    auto v_int = Value::create(42_f);
+    auto v_float = Value::create(3.9);
+    auto v_string = Value::create("123"s);
+    auto v_string_plus = Value::create("+17"s);
+    auto v_string_float = Value::create("3.14"s);
+    auto v_bool = Value::create(true);
+    auto v_null = Value::create();
+    auto v_array = Value::create(frst::Array{Value::create(1_f)});
+    auto v_map =
+        Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
+    auto v_func = Value::create(
+        frst::Function{std::make_shared<Dummy>()});
+
+    auto res_int = v_int->to_int();
+    REQUIRE(res_int->is<frst::Int>());
+    CHECK(res_int->get<frst::Int>().value() == 42);
+
+    auto res_float = v_float->to_int();
+    REQUIRE(res_float->is<frst::Int>());
+    CHECK(res_float->get<frst::Int>().value() == 3);
+
+    auto res_string = v_string->to_int();
+    REQUIRE(res_string->is<frst::Int>());
+    CHECK(res_string->get<frst::Int>().value() == 123);
+
+    CHECK(v_string_float->to_int()->is<frst::Null>());
+    CHECK(v_string_plus->to_int()->is<frst::Null>());
+    CHECK(v_bool->to_int()->is<frst::Null>());
+    CHECK(v_null->to_int()->is<frst::Null>());
+    CHECK(v_array->to_int()->is<frst::Null>());
+    CHECK(v_map->to_int()->is<frst::Null>());
+    CHECK(v_func->to_int()->is<frst::Null>());
+}
+
+TEST_CASE("to_internal_float")
+{
+    struct Dummy final : frst::Callable
+    {
+        frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+        {
+            return Value::create();
+        }
+        std::string debug_dump() const override
+        {
+            return "<dummy>";
+        }
+    };
+
+    auto v_null = Value::create();
+    auto v_int = Value::create(42_f);
+    auto v_float = Value::create(3.14);
+    auto v_bool = Value::create(true);
+    auto v_string = Value::create("3.14"s);
+    auto v_string_plus = Value::create("+2.5"s);
+    auto v_string_neg = Value::create("-0.25"s);
+    auto v_string_int = Value::create("3"s);
+    auto v_string_bad = Value::create("3.14.15"s);
+    auto v_string_empty = Value::create(""s);
+    auto v_string_ws_lead = Value::create(" 1"s);
+    auto v_string_ws_trail = Value::create("1 "s);
+    auto v_array = Value::create(frst::Array{Value::create(1_f)});
+    auto v_map =
+        Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
+    auto v_func = Value::create(
+        frst::Function{std::make_shared<Dummy>()});
+
+    CHECK(v_int->to_internal_float() == 42.0);
+    CHECK(v_float->to_internal_float() == 3.14);
+    CHECK(v_string->to_internal_float() == 3.14);
+    CHECK(v_string_neg->to_internal_float() == -0.25);
+    CHECK(v_string_int->to_internal_float() == 3.0);
+
+    CHECK_FALSE(v_null->to_internal_float().has_value());
+    CHECK_FALSE(v_bool->to_internal_float().has_value());
+    CHECK_FALSE(v_array->to_internal_float().has_value());
+    CHECK_FALSE(v_map->to_internal_float().has_value());
+    CHECK_FALSE(v_func->to_internal_float().has_value());
+    CHECK_FALSE(v_string_bad->to_internal_float().has_value());
+    CHECK_FALSE(v_string_empty->to_internal_float().has_value());
+    CHECK_FALSE(v_string_plus->to_internal_float().has_value());
+    CHECK_FALSE(v_string_ws_lead->to_internal_float().has_value());
+    CHECK_FALSE(v_string_ws_trail->to_internal_float().has_value());
+}
+
+TEST_CASE("to_float")
+{
+    struct Dummy final : frst::Callable
+    {
+        frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+        {
+            return Value::create();
+        }
+        std::string debug_dump() const override
+        {
+            return "<dummy>";
+        }
+    };
+
+    auto v_int = Value::create(42_f);
+    auto v_float = Value::create(3.14);
+    auto v_string = Value::create("3.14"s);
+    auto v_string_plus = Value::create("+2.5"s);
+    auto v_string_bad = Value::create("3.14.15"s);
+    auto v_string_empty = Value::create(""s);
+    auto v_bool = Value::create(true);
+    auto v_null = Value::create();
+    auto v_array = Value::create(frst::Array{Value::create(1_f)});
+    auto v_map =
+        Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
+    auto v_func = Value::create(
+        frst::Function{std::make_shared<Dummy>()});
+
+    auto res_int = v_int->to_float();
+    REQUIRE(res_int->is<frst::Float>());
+    CHECK(res_int->get<frst::Float>().value() == 42.0);
+
+    auto res_float = v_float->to_float();
+    REQUIRE(res_float->is<frst::Float>());
+    CHECK(res_float->get<frst::Float>().value() == 3.14);
+
+    auto res_string = v_string->to_float();
+    REQUIRE(res_string->is<frst::Float>());
+    CHECK(res_string->get<frst::Float>().value() == 3.14);
+
+    CHECK(v_string_bad->to_float()->is<frst::Null>());
+    CHECK(v_string_empty->to_float()->is<frst::Null>());
+    CHECK(v_string_plus->to_float()->is<frst::Null>());
+    CHECK(v_bool->to_float()->is<frst::Null>());
+    CHECK(v_null->to_float()->is<frst::Null>());
+    CHECK(v_array->to_float()->is<frst::Null>());
+    CHECK(v_map->to_float()->is<frst::Null>());
+    CHECK(v_func->to_float()->is<frst::Null>());
+}
