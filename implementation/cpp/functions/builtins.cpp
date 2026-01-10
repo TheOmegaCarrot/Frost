@@ -7,8 +7,8 @@ namespace frst
 #define X_INJECT                                                               \
     X(map_ops)                                                                 \
     X(type_checks)                                                             \
-    X(pack_call)                                                               \
-    X(to_string)
+    X(type_conversions)                                                        \
+    X(pack_call)
 
 #define X(F) void inject_##F(Symbol_Table&);
 

@@ -104,10 +104,11 @@
 
 ## Builtins and examples
 - Builtin functions are deferred until late in v1 development; a minimal set will exist for early testing.
-- Minimal testing set: `print`, `format`, `tostring`, `assert`, `type`, `len`, `pack_call`.
+- Minimal testing set: `print`, `format`, `tostring`, `assert`, `len`, `pack_call`, and type predicates.
 - `pack_call(fun, args)` applies a function to an array of arguments (no true multi-value semantics). `args` must be an array; normal arity rules apply.
 - `pack_call` with a non-array `args` is a runtime error.
 - Variadic calls are required (at least for `print`/`format`).
 - User-defined functions support variadic arguments using `...rest` in the parameter list (rest must be last). Extra args are collected into an array parameter (no special varargs type).
 - Formatting behavior and the full builtin set are not finalized.
 - The `init:` keyword-argument syntax is a special-case for `reduce`, not a general named-argument feature.
+- `type` is not a builtin; type checks use predicates: `is_null`, `is_int`, `is_float`, `is_bool`, `is_string`, `is_array`, `is_map`, `is_function`, `is_nonnull`, `is_numeric`, `is_primitive`, `is_structured`.

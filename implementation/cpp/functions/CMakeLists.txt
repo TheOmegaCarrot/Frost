@@ -3,8 +3,8 @@ add_library( frost-functions
     builtins.cpp
     builtins/map-ops.cpp
     builtins/type-tests.cpp
+    builtins/type-conversions.cpp
     builtins/pack_call.cpp
-    builtins/to_string.cpp
 )
 
 target_include_directories( frost-functions
@@ -33,8 +33,8 @@ functions_test(tests/builtins/keys.cpp)
 
 functions_test(tests/builtins/type-tests.cpp)
 
+functions_test(tests/builtins/type-conversions.cpp)
+
 functions_test(tests/builtins/values.cpp)
 
 functions_test(tests/builtins/pack_call.cpp)
-
-functions_test(tests/builtins/builtin_to_string.cpp)
