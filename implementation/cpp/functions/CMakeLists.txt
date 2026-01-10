@@ -2,6 +2,7 @@ add_library( frost-functions
     closure.cpp
     builtins.cpp
     builtins/map-ops.cpp
+    builtins/type-tests.cpp
 )
 
 target_include_directories( frost-functions
@@ -27,5 +28,7 @@ endmacro()
 functions_test(tests/builtin.cpp)
 
 functions_test(tests/builtins/keys.cpp)
+
+functions_test(tests/builtins/type-tests.cpp)
 
 functions_test(tests/builtins/values.cpp)
