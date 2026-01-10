@@ -6,6 +6,7 @@
 namespace frst
 {
 
+#pragma message("TODO: test debug_dump")
 Value_Ptr debug_dump(builtin_args_t args)
 {
     if (const auto& arg = args.at(0); arg->is<Function>())
