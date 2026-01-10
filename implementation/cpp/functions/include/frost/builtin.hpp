@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 
 #include <functional>
+#include <optional>
 
 namespace frst
 {
@@ -28,7 +29,9 @@ class Builtin final : public Callable
     Builtin& operator=(Builtin&&) = delete;
     ~Builtin() final = default;
 
-    Builtin(function_t function, std::string name, std::size_t max_arity)
+    // nullopt max_arity indicates a variadic builtin function
+    Builtin(function_t function, std::string name,
+            std::optional<std::size_t> max_arity)
         : function_{std::move(function)}
         , name_{std::move(name)}
         , max_arity_{max_arity}
@@ -42,7 +45,7 @@ class Builtin final : public Callable
             throw Frost_Error{
                 fmt::format("Function {} called with too many arguments. "
                             "Called with {} but accepts no more than {}.",
-                            name_, num_args, max_arity_)};
+                            name_, num_args, max_arity_.value())};
         }
 
         return function_(args);
@@ -56,7 +59,7 @@ class Builtin final : public Callable
   private:
     function_t function_;
     std::string name_;
-    std::size_t max_arity_;
+    std::optional<std::size_t> max_arity_;
 };
 
 void inject_builtins(Symbol_Table& table);

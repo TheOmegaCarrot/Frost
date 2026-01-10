@@ -24,6 +24,8 @@ macro(functions_test file)
     )
 endmacro()
 
+functions_test(tests/builtin.cpp)
+
 functions_test(tests/builtins/keys.cpp)
 
 functions_test(tests/builtins/values.cpp)
