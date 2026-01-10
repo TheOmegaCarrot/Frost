@@ -5,6 +5,7 @@ add_library( frost-functions
     builtins/type-tests.cpp
     builtins/type-conversions.cpp
     builtins/pack_call.cpp
+    builtins/debug-helpers.cpp
 )
 
 target_include_directories( frost-functions
