@@ -1,5 +1,7 @@
 #include <catch2/catch_all.hpp>
 
+#include <cmath>
+
 #include <frost/value.hpp>
 
 using namespace std::literals;
@@ -66,9 +68,13 @@ TEST_CASE("to_internal_int")
     auto v_string_leading_zero = Value::create("003"s);
     auto v_string_bad = Value::create("42abc"s);
     auto v_string_empty = Value::create(""s);
+    auto v_string_hex = Value::create("0x10"s);
+    auto v_string_exp = Value::create("1e3"s);
     auto v_string_ws_lead = Value::create(" 1"s);
     auto v_string_ws_trail = Value::create("1 "s);
     auto v_string_float = Value::create("3.14"s);
+    auto v_string_overflow = Value::create("9223372036854775808"s);
+    auto v_string_underflow = Value::create("-9223372036854775809"s);
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
@@ -88,10 +94,14 @@ TEST_CASE("to_internal_int")
     CHECK_FALSE(v_func->to_internal_int().has_value());
     CHECK_FALSE(v_string_bad->to_internal_int().has_value());
     CHECK_FALSE(v_string_empty->to_internal_int().has_value());
+    CHECK_FALSE(v_string_hex->to_internal_int().has_value());
+    CHECK_FALSE(v_string_exp->to_internal_int().has_value());
     CHECK_FALSE(v_string_plus->to_internal_int().has_value());
     CHECK_FALSE(v_string_ws_lead->to_internal_int().has_value());
     CHECK_FALSE(v_string_ws_trail->to_internal_int().has_value());
     CHECK_FALSE(v_string_float->to_internal_int().has_value());
+    CHECK_FALSE(v_string_overflow->to_internal_int().has_value());
+    CHECK_FALSE(v_string_underflow->to_internal_int().has_value());
 }
 
 TEST_CASE("to_int")
@@ -112,7 +122,12 @@ TEST_CASE("to_int")
     auto v_float = Value::create(3.9);
     auto v_string = Value::create("123"s);
     auto v_string_plus = Value::create("+17"s);
+    auto v_string_neg = Value::create("-5"s);
     auto v_string_float = Value::create("3.14"s);
+    auto v_string_hex = Value::create("0x10"s);
+    auto v_string_exp = Value::create("1e3"s);
+    auto v_string_overflow = Value::create("9223372036854775808"s);
+    auto v_string_underflow = Value::create("-9223372036854775809"s);
     auto v_bool = Value::create(true);
     auto v_null = Value::create();
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
@@ -132,8 +147,16 @@ TEST_CASE("to_int")
     REQUIRE(res_string->is<frst::Int>());
     CHECK(res_string->get<frst::Int>().value() == 123);
 
+    auto res_string_neg = v_string_neg->to_int();
+    REQUIRE(res_string_neg->is<frst::Int>());
+    CHECK(res_string_neg->get<frst::Int>().value() == -5);
+
     CHECK(v_string_float->to_int()->is<frst::Null>());
+    CHECK(v_string_hex->to_int()->is<frst::Null>());
+    CHECK(v_string_exp->to_int()->is<frst::Null>());
     CHECK(v_string_plus->to_int()->is<frst::Null>());
+    CHECK(v_string_overflow->to_int()->is<frst::Null>());
+    CHECK(v_string_underflow->to_int()->is<frst::Null>());
     CHECK(v_bool->to_int()->is<frst::Null>());
     CHECK(v_null->to_int()->is<frst::Null>());
     CHECK(v_array->to_int()->is<frst::Null>());
@@ -162,9 +185,13 @@ TEST_CASE("to_internal_float")
     auto v_string = Value::create("3.14"s);
     auto v_string_plus = Value::create("+2.5"s);
     auto v_string_neg = Value::create("-0.25"s);
-    auto v_string_int = Value::create("3"s);
+    auto v_string_int = Value::create("42"s);
     auto v_string_bad = Value::create("3.14.15"s);
     auto v_string_empty = Value::create(""s);
+    auto v_string_hex = Value::create("0x10"s);
+    auto v_string_exp = Value::create("1e3"s);
+    auto v_string_overflow = Value::create(std::string(400, '9'));
+    auto v_string_overflow_neg = Value::create("-" + std::string(400, '9'));
     auto v_string_ws_lead = Value::create(" 1"s);
     auto v_string_ws_trail = Value::create("1 "s);
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
@@ -176,7 +203,7 @@ TEST_CASE("to_internal_float")
     CHECK(v_float->to_internal_float() == 3.14);
     CHECK(v_string->to_internal_float() == 3.14);
     CHECK(v_string_neg->to_internal_float() == -0.25);
-    CHECK(v_string_int->to_internal_float() == 3.0);
+    CHECK(v_string_int->to_internal_float() == 42.0);
 
     CHECK_FALSE(v_null->to_internal_float().has_value());
     CHECK_FALSE(v_bool->to_internal_float().has_value());
@@ -185,9 +212,13 @@ TEST_CASE("to_internal_float")
     CHECK_FALSE(v_func->to_internal_float().has_value());
     CHECK_FALSE(v_string_bad->to_internal_float().has_value());
     CHECK_FALSE(v_string_empty->to_internal_float().has_value());
+    CHECK_FALSE(v_string_hex->to_internal_float().has_value());
+    CHECK(v_string_exp->to_internal_float() == 1000.0);
     CHECK_FALSE(v_string_plus->to_internal_float().has_value());
     CHECK_FALSE(v_string_ws_lead->to_internal_float().has_value());
     CHECK_FALSE(v_string_ws_trail->to_internal_float().has_value());
+    CHECK_FALSE(v_string_overflow->to_internal_float().has_value());
+    CHECK_FALSE(v_string_overflow_neg->to_internal_float().has_value());
 }
 
 TEST_CASE("to_float")
@@ -208,8 +239,14 @@ TEST_CASE("to_float")
     auto v_float = Value::create(3.14);
     auto v_string = Value::create("3.14"s);
     auto v_string_plus = Value::create("+2.5"s);
+    auto v_string_neg = Value::create("-0.25"s);
+    auto v_string_int = Value::create("42"s);
     auto v_string_bad = Value::create("3.14.15"s);
     auto v_string_empty = Value::create(""s);
+    auto v_string_hex = Value::create("0x10"s);
+    auto v_string_exp = Value::create("1e3"s);
+    auto v_string_overflow = Value::create(std::string(400, '9'));
+    auto v_string_overflow_neg = Value::create("-" + std::string(400, '9'));
     auto v_bool = Value::create(true);
     auto v_null = Value::create();
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
@@ -229,9 +266,23 @@ TEST_CASE("to_float")
     REQUIRE(res_string->is<frst::Float>());
     CHECK(res_string->get<frst::Float>().value() == 3.14);
 
+    auto res_string_neg = v_string_neg->to_float();
+    REQUIRE(res_string_neg->is<frst::Float>());
+    CHECK(res_string_neg->get<frst::Float>().value() == -0.25);
+
+    auto res_string_int = v_string_int->to_float();
+    REQUIRE(res_string_int->is<frst::Float>());
+    CHECK(res_string_int->get<frst::Float>().value() == 42.0);
+
     CHECK(v_string_bad->to_float()->is<frst::Null>());
     CHECK(v_string_empty->to_float()->is<frst::Null>());
+    CHECK(v_string_hex->to_float()->is<frst::Null>());
+    auto res_string_exp = v_string_exp->to_float();
+    REQUIRE(res_string_exp->is<frst::Float>());
+    CHECK(res_string_exp->get<frst::Float>().value() == 1000.0);
     CHECK(v_string_plus->to_float()->is<frst::Null>());
+    CHECK(v_string_overflow->to_float()->is<frst::Null>());
+    CHECK(v_string_overflow_neg->to_float()->is<frst::Null>());
     CHECK(v_bool->to_float()->is<frst::Null>());
     CHECK(v_null->to_float()->is<frst::Null>());
     CHECK(v_array->to_float()->is<frst::Null>());
