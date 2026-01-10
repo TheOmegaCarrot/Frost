@@ -11,16 +11,9 @@ namespace frst
 // basically `map a_map with fn (k, v) -> { k }`
 Value_Ptr keys(builtin_args_t args)
 {
-    const auto& arg = args.at(0);
+    REQUIRE_ARGS(keys, TYPES(Map));
 
-    if (not arg->is<Map>())
-    {
-        throw Frost_Error{
-            fmt::format("Function keys requires Map as argument 1, got {}",
-                        arg->type_name())};
-    }
-
-    return Value::create(arg->raw_get<Map>() | std::views::keys |
+    return Value::create(args.at(0)->raw_get<Map>() | std::views::keys |
                          std::ranges::to<std::vector>());
 }
 
@@ -28,16 +21,9 @@ Value_Ptr keys(builtin_args_t args)
 // basically `map a_map with fn (k, v) -> { b }`
 Value_Ptr values(builtin_args_t args)
 {
-    const auto& arg = args.at(0);
+    REQUIRE_ARGS(values, TYPES(Map));
 
-    if (not arg->is<Map>())
-    {
-        throw Frost_Error{
-            fmt::format("Function values requires Map as argument 1, got {}",
-                        arg->type_name())};
-    }
-
-    return Value::create(arg->raw_get<Map>() | std::views::values |
+    return Value::create(args.at(0)->raw_get<Map>() | std::views::values |
                          std::ranges::to<std::vector>());
 }
 
