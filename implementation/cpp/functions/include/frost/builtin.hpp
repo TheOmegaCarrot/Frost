@@ -45,7 +45,7 @@ class Builtin final : public Callable
 
     Value_Ptr call(builtin_args_t args) const final
     {
-        if (auto num_args = args.size(); num_args > arity_.max)
+        if (auto num_args = args.size(); arity_.max && num_args > arity_.max)
         {
             throw Frost_Error{
                 fmt::format("Function {} called with too many arguments. "
