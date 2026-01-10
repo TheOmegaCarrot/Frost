@@ -20,6 +20,11 @@ auto is_array = is_impl<Array>;
 auto is_map = is_impl<Map>;
 auto is_function = is_impl<Function>;
 
+Value_Ptr is_nonnull(builtin_args_t args)
+{
+    return is_null(args)->logical_not();
+}
+
 Value_Ptr is_numeric(builtin_args_t args)
 {
     return Value::create(args.at(0)->is_numeric());
@@ -46,6 +51,7 @@ void inject_type_checks(Symbol_Table& table)
     INJECT(is_array, 1, 1);
     INJECT(is_map, 1, 1);
     INJECT(is_function, 1, 1);
+    INJECT(is_nonnull, 1, 1);
     INJECT(is_numeric, 1, 1);
     INJECT(is_primitive, 1, 1);
     INJECT(is_structured, 1, 1);

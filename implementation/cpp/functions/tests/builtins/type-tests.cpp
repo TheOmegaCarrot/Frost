@@ -59,7 +59,7 @@ TEST_CASE("Type Tests")
         const std::vector<std::string> names{
             "is_null",    "is_int",       "is_float",      "is_bool",
             "is_string",  "is_array",     "is_map",        "is_function",
-            "is_numeric", "is_primitive", "is_structured",
+            "is_nonnull", "is_numeric",   "is_primitive",  "is_structured",
         };
 
         for (const auto& name : names)
@@ -115,6 +115,18 @@ TEST_CASE("Type Tests")
     {
         CHECK(call_bool("is_function", v_func));
         CHECK_FALSE(call_bool("is_function", v_null));
+    }
+
+    SECTION("is_nonnull")
+    {
+        CHECK_FALSE(call_bool("is_nonnull", v_null));
+        CHECK(call_bool("is_nonnull", v_int));
+        CHECK(call_bool("is_nonnull", v_float));
+        CHECK(call_bool("is_nonnull", v_bool));
+        CHECK(call_bool("is_nonnull", v_string));
+        CHECK(call_bool("is_nonnull", v_array));
+        CHECK(call_bool("is_nonnull", v_map));
+        CHECK(call_bool("is_nonnull", v_func));
     }
 
     SECTION("is_numeric")

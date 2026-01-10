@@ -62,6 +62,18 @@ def double_arr = fn (arr) -> {
 
 def mapped_arr = double_arr(arr) # [2, 4, 6]
 
+def remove_nulls = fn (arr) -> {
+    filter arr with is_nonnull # positive filter
+}
+
+def filter_example = remove_nulls( [ 42, null, "hello" ] ) # [ 42, "hello" ]
+
+def only_string_keys = fn (dict) -> {
+    filter dict with fn (k, v) -> { is_string(k) }
+}
+
+def map_filter_example = only_string_keys( %{ foo: 42, [10]: "hi" } ) # %{ foo: 42 }
+
 def reduce_rest = fn (f, ...beeps) -> {
     reduce beeps with f
 }
@@ -82,7 +94,7 @@ def null_exists = null
 
 def a_function = fn (x) -> { x }
 
-def an_array = [1, 2.3, false] # dynamic typing, duck typing
+def an_array = [1, 2.3, false] # dynamic typing
 
 def array_access = an_array[1] # 2.3
 
