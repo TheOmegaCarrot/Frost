@@ -71,9 +71,8 @@ TEST_CASE("Builtin to_int")
     {
         CHECK_THROWS_WITH(to_int->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(
-            to_int->call({Value::create(), Value::create()}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(to_int->call({Value::create(), Value::create()}),
+                          ContainsSubstring("too many arguments"));
     }
 
     SECTION("Success")
@@ -116,9 +115,8 @@ TEST_CASE("Builtin to_float")
     {
         CHECK_THROWS_WITH(to_float->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(
-            to_float->call({Value::create(), Value::create()}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(to_float->call({Value::create(), Value::create()}),
+                          ContainsSubstring("too many arguments"));
     }
 
     SECTION("Success")
