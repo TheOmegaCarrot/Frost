@@ -1,6 +1,7 @@
 add_library( frost-functions
     closure.cpp
-    builtin.cpp
+    builtins.cpp
+    builtins/map-ops.cpp
 )
 
 target_include_directories( frost-functions

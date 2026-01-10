@@ -2,6 +2,8 @@
 
 #include <frost/symbol-table.hpp>
 
+#include "builtins-common.h"
+
 #include <ranges>
 
 namespace frst
@@ -43,12 +45,8 @@ Value_Ptr values(builtin_args_t args)
                          std::ranges::to<std::vector>());
 }
 
-void inject_builtins(Symbol_Table& table)
+void inject_map_ops(Symbol_Table& table)
 {
-#define INJECT(NAME, MAX_ARITY)                                                \
-    table.define(#NAME, Value::create(Function{std::make_shared<Builtin>(      \
-                            &NAME, #NAME, MAX_ARITY)}))
-
     INJECT(keys, 1);
     INJECT(values, 1);
 }
