@@ -16,7 +16,7 @@ Value_Ptr keys(builtin_args_t args)
     if (not arg->is<Map>())
     {
         throw Frost_Error{
-            fmt::format("Function keys requires Map as argument, got {}",
+            fmt::format("Function keys requires Map as argument 1, got {}",
                         arg->type_name())};
     }
 
@@ -33,7 +33,7 @@ Value_Ptr values(builtin_args_t args)
     if (not arg->is<Map>())
     {
         throw Frost_Error{
-            fmt::format("Function values requires Map as argument, got {}",
+            fmt::format("Function values requires Map as argument 1, got {}",
                         arg->type_name())};
     }
 
