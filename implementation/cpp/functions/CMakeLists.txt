@@ -4,6 +4,7 @@ add_library( frost-functions
     builtins/map-ops.cpp
     builtins/type-tests.cpp
     builtins/pack_call.cpp
+    builtins/to_string.cpp
 )
 
 target_include_directories( frost-functions
@@ -35,3 +36,5 @@ functions_test(tests/builtins/type-tests.cpp)
 functions_test(tests/builtins/values.cpp)
 
 functions_test(tests/builtins/pack_call.cpp)
+
+functions_test(tests/builtins/builtin_to_string.cpp)

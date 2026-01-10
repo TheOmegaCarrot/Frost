@@ -3,14 +3,25 @@
 
 namespace frst
 {
-void inject_map_ops(Symbol_Table&);
-void inject_type_checks(Symbol_Table&);
-void inject_pack_call(Symbol_Table&);
+
+#define X_INJECT                                                               \
+    X(map_ops)                                                                 \
+    X(type_checks)                                                             \
+    X(pack_call)                                                               \
+    X(to_string)
+
+#define X(F) void inject_##F(Symbol_Table&);
+
+X_INJECT
+
+#undef X
 
 void inject_builtins(Symbol_Table& table)
 {
-    inject_map_ops(table);
-    inject_type_checks(table);
-    inject_pack_call(table);
+#define X(F) inject_##F(table);
+
+    X_INJECT
+
+#undef X
 }
 } // namespace frst
