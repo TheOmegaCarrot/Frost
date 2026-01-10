@@ -98,4 +98,82 @@ std::string Value::to_internal_string(bool in_structure) const
         [&](const auto& value) { return to_string_impl(value, in_structure); });
 }
 
+struct To_Int_Impl
+{
+    static std::optional<Int> operator()(const String& value)
+    {
+        Int result;
+        auto begin = value.data();
+        auto end = begin + value.size();
+        auto [ptr, err] = std::from_chars(begin, end, result);
+
+        if (err != std::error_code{})
+            return std::nullopt;
+
+        if (ptr != end)
+            return std::nullopt;
+
+        return result;
+    }
+
+    static std::optional<Int> operator()(const auto&)
+    {
+        return std::nullopt;
+    }
+} constexpr static to_int_impl;
+
+std::optional<Int> Value::to_internal_int() const
+{
+    return as<Int>().or_else([&] { return value_.visit(to_int_impl); });
+}
+
+Value_Ptr Value::to_int() const
+{
+    return create(to_internal_int()
+                      .or_else([&] -> std::optional<Int> {
+                          throw Frost_Error{fmt::format(
+                              "Cannot convert {} to Int", type_name())};
+                      })
+                      .value());
+}
+
+struct To_Float_Impl
+{
+    static std::optional<Float> operator()(const String& value)
+    {
+        Float result;
+        auto begin = value.data();
+        auto end = begin + value.size();
+        auto [ptr, err] = std::from_chars(begin, end, result);
+
+        if (err != std::error_code{})
+            return std::nullopt;
+
+        if (ptr != end)
+            return std::nullopt;
+
+        return result;
+    }
+
+    static std::optional<Float> operator()(const auto&)
+    {
+        return std::nullopt;
+    }
+} constexpr static to_float_impl;
+
+std::optional<Float> Value::to_internal_float() const
+{
+    return as<Float>().or_else([&] { return value_.visit(to_float_impl); });
+}
+
+Value_Ptr Value::to_float() const
+{
+    return create(to_internal_float()
+                      .or_else([&] -> std::optional<Float> {
+                          throw Frost_Error{fmt::format(
+                              "Cannot convert {} to Float", type_name())};
+                      })
+                      .value());
+}
+
 } // namespace frst

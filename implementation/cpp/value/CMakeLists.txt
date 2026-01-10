@@ -5,7 +5,7 @@ add_library( frost-value
     operators/divide.cpp
     operators/compare.cpp
     operators/negate.cpp
-    to_string.cpp
+    explicit-conversions.cpp
 )
 
 target_include_directories( frost-value
@@ -53,7 +53,7 @@ value_test(tests/gt.cpp)
 # AI-generated test entries by Codex (GPT-5).
 value_test(tests/gte.cpp)
 
-value_test(tests/to_string.cpp)
+value_test(tests/explicit-conversions.cpp)
 
 value_test(tests/negate.cpp)
 

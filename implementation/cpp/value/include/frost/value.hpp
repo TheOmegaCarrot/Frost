@@ -11,6 +11,8 @@
 #include <variant>
 #include <vector>
 
+#include <fmt/format.h>
+
 namespace frst
 {
 
@@ -410,13 +412,22 @@ class Value
     }
 
     // Convert the value to a string as for user-facing output
-    std::string to_internal_string(bool in_structure = false) const;
+    [[nodiscard]] std::string to_internal_string(
+        bool in_structure = false) const;
 
     // The user-facing to_string function
     [[nodiscard]] Value_Ptr to_string() const
     {
         return create(to_internal_string());
     }
+
+    [[nodiscard]] std::optional<Int> to_internal_int() const;
+
+    [[nodiscard]] Value_Ptr to_int() const;
+
+    [[nodiscard]] std::optional<Float> to_internal_float() const;
+
+    [[nodiscard]] Value_Ptr to_float() const;
 
     // unary -
     [[nodiscard]] Value_Ptr negate() const;
