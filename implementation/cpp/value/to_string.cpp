@@ -2,6 +2,7 @@
 
 #include <fmt/format.h>
 
+#include <charconv>
 #include <ranges>
 
 using namespace std::literals;
@@ -20,13 +21,27 @@ struct To_String_Impl
     std::string operator()(const Int& value,
                            [[maybe_unused]] bool in_structure = false) const
     {
-        return std::to_string(value);
+        char buf[24]{};
+        auto [ptr, err] = std::to_chars(std::ranges::begin(buf),
+                                        std::ranges::end(buf), value);
+        if (err != std::errc{})
+            throw Frost_Error{fmt::format("Int->String error: {}",
+                                          std::make_error_code(err).message())};
+
+        return buf;
     }
 
     std::string operator()(const Float& value,
                            [[maybe_unused]] bool in_structure = false) const
     {
-        return std::to_string(value);
+        char buf[24]{};
+        auto [ptr, err] = std::to_chars(std::ranges::begin(buf),
+                                        std::ranges::end(buf), value);
+        if (err != std::errc{})
+            throw Frost_Error{fmt::format("Float->String error: {}",
+                                          std::make_error_code(err).message())};
+
+        return buf;
     }
 
     std::string operator()(const String& value, bool in_structure = false) const
