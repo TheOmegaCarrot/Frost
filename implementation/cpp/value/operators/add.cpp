@@ -12,45 +12,21 @@ namespace frst
     op_err("add", "+", lhs_type, rhs_type);
 }
 
-struct Numeric_Add_Impl
+struct Add_Impl
 {
-    template <Frost_Numeric LHS_T, Frost_Numeric RHS_T>
-    static Value operator()(const LHS_T& lhs, const RHS_T& rhs)
+    static Value operator()(const Frost_Numeric auto& lhs,
+                            const Frost_Numeric auto& rhs)
     {
         return lhs + rhs;
     }
-    static Value operator()(const auto&, const auto&)
-    {
-        THROW_UNREACHABLE;
-    }
-} constexpr static numeric_add_impl;
-
-struct String_Cat_Impl
-{
     static Value operator()(const String& lhs, const String& rhs)
     {
         return lhs + rhs;
     }
-    static Value operator()(const auto&, const auto&)
-    {
-        THROW_UNREACHABLE;
-    }
-} constexpr static string_cat_impl;
-
-struct Array_Cat_Impl
-{
     static Value operator()(const Array& lhs, const Array& rhs)
     {
         return std::views::concat(lhs, rhs) | std::ranges::to<Array>();
     }
-    static Value operator()(const auto&, const auto&)
-    {
-        THROW_UNREACHABLE;
-    }
-} constexpr static array_cat_impl;
-
-struct Map_Union_Impl
-{
     static Value operator()(const Map& lhs, const Map& rhs)
     {
         Map acc;
@@ -61,30 +37,16 @@ struct Map_Union_Impl
 
         return acc;
     }
-    static Value operator()(const auto&, const auto&)
+    template <typename T, typename U>
+    static Value operator()(const T&, const U&)
     {
-        THROW_UNREACHABLE;
+        add_err(type_str<T>(), type_str<U>());
     }
-} constexpr static map_union_impl;
+} constexpr static add_impl;
 
 Value_Ptr Value::add(const Value_Ptr& lhs, const Value_Ptr& rhs)
 {
-    const auto& lhs_var = lhs->value_;
-    const auto& rhs_var = rhs->value_;
-
-    if (lhs->is_numeric() && rhs->is_numeric())
-        return Value::create(std::visit(numeric_add_impl, lhs_var, rhs_var));
-
-    if (lhs->is<String>() && rhs->is<String>())
-        return Value::create(std::visit(string_cat_impl, lhs_var, rhs_var));
-
-    if (lhs->is<Array>() && rhs->is<Array>())
-        return Value::create(std::visit(array_cat_impl, lhs_var, rhs_var));
-
-    if (lhs->is<Map>() && rhs->is<Map>())
-        return Value::create(std::visit(map_union_impl, lhs_var, rhs_var));
-
-    add_err(lhs->type_name(), rhs->type_name());
+    return Value::create(std::visit(add_impl, lhs->value_, rhs->value_));
 }
 
 } // namespace frst
