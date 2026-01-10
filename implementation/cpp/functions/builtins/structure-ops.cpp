@@ -32,7 +32,7 @@ Value_Ptr values(builtin_args_t args)
 
 Value_Ptr len(builtin_args_t args)
 {
-    REQUIRE_ARGS(values, TYPES(Map, Array));
+    REQUIRE_ARGS(len, TYPES(Map, Array, String));
 
     if (const auto& arg = args.at(0); arg->is<Map>())
     {
@@ -41,6 +41,10 @@ Value_Ptr len(builtin_args_t args)
     else if (arg->is<Array>())
     {
         return Value::create(static_cast<Int>(arg->raw_get<Array>().size()));
+    }
+    else if (arg->is<String>())
+    {
+        return Value::create(static_cast<Int>(arg->raw_get<String>().size()));
     }
 
     THROW_UNREACHABLE;
