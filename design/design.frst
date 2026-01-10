@@ -130,7 +130,7 @@ def iterate_array = fn (arr) -> {
 
 # map iteration
 def iterate_map = fn (dict) -> {
-    foreach dict with fn (k, v) -> { print("%: %", k, v) }
+    foreach dict with fn (k, v) -> { pprint("%1: %2", k, v) }
 }
 
 print("hi") # any values returned by top-level expressions are discarded (even the last one)

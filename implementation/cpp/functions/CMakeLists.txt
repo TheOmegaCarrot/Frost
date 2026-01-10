@@ -1,11 +1,12 @@
 add_library( frost-functions
     closure.cpp
     builtins.cpp
-    builtins/structure-ops.cpp
-    builtins/type-tests.cpp
-    builtins/type-conversions.cpp
-    builtins/pack_call.cpp
     builtins/debug-helpers.cpp
+    builtins/format.cpp
+    builtins/pack_call.cpp
+    builtins/structure-ops.cpp
+    builtins/type-conversions.cpp
+    builtins/type-tests.cpp
 )
 
 target_include_directories( frost-functions
@@ -43,3 +44,5 @@ functions_test(tests/builtins/len.cpp)
 functions_test(tests/builtins/pack_call.cpp)
 
 functions_test(tests/builtins/debug-helpers.cpp)
+
+functions_test(tests/builtins/pformat.cpp)

@@ -104,11 +104,13 @@
 
 ## Builtins and examples
 - Builtin functions are deferred until late in v1 development; a minimal set will exist for early testing.
-- Minimal testing set: `print`, `format`, `tostring`, `assert`, `len`, `pack_call`, and type predicates.
+- Minimal testing set: `print`, `mformat`, `pformat`, `tostring`, `assert`, `len`, `pack_call`, and type predicates.
 - `pack_call(fun, args)` applies a function to an array of arguments (no true multi-value semantics). `args` must be an array; normal arity rules apply.
 - `pack_call` with a non-array `args` is a runtime error.
-- Variadic calls are required (at least for `print`/`format`).
+- Variadic calls are required (at least for `print` and formatting builtins).
 - User-defined functions support variadic arguments using `...rest` in the parameter list (rest must be last). Extra args are collected into an array parameter (no special varargs type).
 - Formatting behavior and the full builtin set are not finalized.
+- `mformat(fmt, map)` is intended for map-key interpolation (example: `mformat("${foo} ${bar}", %{foo: "hello", bar: "world"})`).
+- `pformat(fmt, ...)` is intended for a tiny printf-like format where substitutions require `%N` placeholders (1-based); `%N` out of range is an error; unused args are ignored; exact escaping rules and leading-zero rules are TBD.
 - The `init:` keyword-argument syntax is a special-case for `reduce`, not a general named-argument feature.
 - `type` is not a builtin; type checks use predicates: `is_null`, `is_int`, `is_float`, `is_bool`, `is_string`, `is_array`, `is_map`, `is_function`, `is_nonnull`, `is_numeric`, `is_primitive`, `is_structured`.
