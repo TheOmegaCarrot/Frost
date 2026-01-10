@@ -25,6 +25,20 @@ TEST_CASE("pack_call")
     REQUIRE(pack_call_val->is<Function>());
     auto pack_call_fn = pack_call_val->get<Function>().value();
 
+    SECTION("Arity: too few arguments")
+    {
+        CHECK_THROWS_WITH(pack_call_fn->call({}),
+                          ContainsSubstring("insufficient arguments"));
+    }
+
+    SECTION("Arity: too many arguments")
+    {
+        CHECK_THROWS_WITH(
+            pack_call_fn->call(
+                {Value::create(), Value::create(), Value::create()}),
+            ContainsSubstring("too many arguments"));
+    }
+
     struct RecordingCallable final : Callable
     {
         const Array* expected_args = nullptr;
