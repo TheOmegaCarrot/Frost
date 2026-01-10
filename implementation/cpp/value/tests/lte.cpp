@@ -54,21 +54,17 @@ TEST_CASE("Numeric LTE")
 
     SECTION("Mixed LTE")
     {
-        CHECK(
-            Value::less_than_or_equal(flt1, int1)->get<frst::Bool>().value());
-        CHECK(
-            Value::less_than_or_equal(flt1, int3)->get<frst::Bool>().value());
+        CHECK(Value::less_than_or_equal(flt1, int1)->get<frst::Bool>().value());
+        CHECK(Value::less_than_or_equal(flt1, int3)->get<frst::Bool>().value());
         CHECK_FALSE(
             Value::less_than_or_equal(flt3, int1)->get<frst::Bool>().value());
-        CHECK(
-            Value::less_than_or_equal(flt3, int3)->get<frst::Bool>().value());
+        CHECK(Value::less_than_or_equal(flt3, int3)->get<frst::Bool>().value());
 
         CHECK_FALSE(
             Value::less_than_or_equal(int1, flt1)->get<frst::Bool>().value());
         CHECK_FALSE(
             Value::less_than_or_equal(int3, flt1)->get<frst::Bool>().value());
-        CHECK(
-            Value::less_than_or_equal(int1, flt3)->get<frst::Bool>().value());
+        CHECK(Value::less_than_or_equal(int1, flt3)->get<frst::Bool>().value());
         CHECK_FALSE(
             Value::less_than_or_equal(int3, flt3)->get<frst::Bool>().value());
     }

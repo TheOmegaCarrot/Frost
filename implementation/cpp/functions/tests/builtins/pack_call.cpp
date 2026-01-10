@@ -33,10 +33,9 @@ TEST_CASE("pack_call")
 
     SECTION("Arity: too many arguments")
     {
-        CHECK_THROWS_WITH(
-            pack_call_fn->call(
-                {Value::create(), Value::create(), Value::create()}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(pack_call_fn->call({Value::create(), Value::create(),
+                                              Value::create()}),
+                          ContainsSubstring("too many arguments"));
     }
 
     struct RecordingCallable final : Callable

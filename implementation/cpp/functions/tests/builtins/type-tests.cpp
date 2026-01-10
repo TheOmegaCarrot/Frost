@@ -57,9 +57,9 @@ TEST_CASE("Type Tests")
     SECTION("Injected")
     {
         const std::vector<std::string> names{
-            "is_null",    "is_int",       "is_float",      "is_bool",
-            "is_string",  "is_array",     "is_map",        "is_function",
-            "is_nonnull", "is_numeric",   "is_primitive",  "is_structured",
+            "is_null",    "is_int",     "is_float",     "is_bool",
+            "is_string",  "is_array",   "is_map",       "is_function",
+            "is_nonnull", "is_numeric", "is_primitive", "is_structured",
         };
 
         for (const auto& name : names)

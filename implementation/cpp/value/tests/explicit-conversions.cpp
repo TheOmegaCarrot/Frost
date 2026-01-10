@@ -72,8 +72,7 @@ TEST_CASE("to_internal_int")
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
-    auto v_func = Value::create(
-        frst::Function{std::make_shared<Dummy>()});
+    auto v_func = Value::create(frst::Function{std::make_shared<Dummy>()});
 
     CHECK(v_int->to_internal_int() == 42);
     CHECK(v_float->to_internal_int() == 3);
@@ -119,8 +118,7 @@ TEST_CASE("to_int")
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
-    auto v_func = Value::create(
-        frst::Function{std::make_shared<Dummy>()});
+    auto v_func = Value::create(frst::Function{std::make_shared<Dummy>()});
 
     auto res_int = v_int->to_int();
     REQUIRE(res_int->is<frst::Int>());
@@ -172,8 +170,7 @@ TEST_CASE("to_internal_float")
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
-    auto v_func = Value::create(
-        frst::Function{std::make_shared<Dummy>()});
+    auto v_func = Value::create(frst::Function{std::make_shared<Dummy>()});
 
     CHECK(v_int->to_internal_float() == 42.0);
     CHECK(v_float->to_internal_float() == 3.14);
@@ -218,8 +215,7 @@ TEST_CASE("to_float")
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
-    auto v_func = Value::create(
-        frst::Function{std::make_shared<Dummy>()});
+    auto v_func = Value::create(frst::Function{std::make_shared<Dummy>()});
 
     auto res_int = v_int->to_float();
     REQUIRE(res_int->is<frst::Float>());

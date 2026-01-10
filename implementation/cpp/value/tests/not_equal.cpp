@@ -18,14 +18,12 @@ TEST_CASE("Null Not Equal")
 
     SECTION("Identity Equals")
     {
-        CHECK_FALSE(
-            Value::not_equal(null1, null1)->get<frst::Bool>().value());
+        CHECK_FALSE(Value::not_equal(null1, null1)->get<frst::Bool>().value());
     }
 
     SECTION("Diff Identity Equals")
     {
-        CHECK_FALSE(
-            Value::not_equal(null1, null2)->get<frst::Bool>().value());
+        CHECK_FALSE(Value::not_equal(null1, null2)->get<frst::Bool>().value());
     }
 }
 

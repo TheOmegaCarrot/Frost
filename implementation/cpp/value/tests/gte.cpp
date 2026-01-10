@@ -26,51 +26,77 @@ TEST_CASE("Numeric GTE")
 
     SECTION("Int Identity GTE")
     {
-        CHECK(Value::greater_than_or_equal(int1, int1)->get<frst::Bool>().value());
+        CHECK(Value::greater_than_or_equal(int1, int1)
+                  ->get<frst::Bool>()
+                  .value());
     }
 
     SECTION("Int GTE")
     {
-        CHECK(Value::greater_than_or_equal(int1, int2)->get<frst::Bool>().value());
-        CHECK(Value::greater_than_or_equal(int3, int1)->get<frst::Bool>().value());
-        CHECK_FALSE(
-            Value::greater_than_or_equal(int1, int3)->get<frst::Bool>().value());
-        CHECK(Value::greater_than_or_equal(int3, int4)->get<frst::Bool>().value());
+        CHECK(Value::greater_than_or_equal(int1, int2)
+                  ->get<frst::Bool>()
+                  .value());
+        CHECK(Value::greater_than_or_equal(int3, int1)
+                  ->get<frst::Bool>()
+                  .value());
+        CHECK_FALSE(Value::greater_than_or_equal(int1, int3)
+                        ->get<frst::Bool>()
+                        .value());
+        CHECK(Value::greater_than_or_equal(int3, int4)
+                  ->get<frst::Bool>()
+                  .value());
     }
 
     SECTION("Float Identity GTE")
     {
-        CHECK(Value::greater_than_or_equal(flt1, flt1)->get<frst::Bool>().value());
+        CHECK(Value::greater_than_or_equal(flt1, flt1)
+                  ->get<frst::Bool>()
+                  .value());
     }
 
     SECTION("Float GTE")
     {
-        CHECK(Value::greater_than_or_equal(flt1, flt2)->get<frst::Bool>().value());
-        CHECK(Value::greater_than_or_equal(flt3, flt1)->get<frst::Bool>().value());
-        CHECK_FALSE(
-            Value::greater_than_or_equal(flt1, flt3)->get<frst::Bool>().value());
-        CHECK(Value::greater_than_or_equal(flt3, flt4)->get<frst::Bool>().value());
+        CHECK(Value::greater_than_or_equal(flt1, flt2)
+                  ->get<frst::Bool>()
+                  .value());
+        CHECK(Value::greater_than_or_equal(flt3, flt1)
+                  ->get<frst::Bool>()
+                  .value());
+        CHECK_FALSE(Value::greater_than_or_equal(flt1, flt3)
+                        ->get<frst::Bool>()
+                        .value());
+        CHECK(Value::greater_than_or_equal(flt3, flt4)
+                  ->get<frst::Bool>()
+                  .value());
     }
 
     SECTION("Mixed GTE")
     {
-        CHECK_FALSE(
-            Value::greater_than_or_equal(flt1, int1)->get<frst::Bool>().value());
-        CHECK_FALSE(
-            Value::greater_than_or_equal(flt1, int3)->get<frst::Bool>().value());
-        CHECK(
-            Value::greater_than_or_equal(flt3, int1)->get<frst::Bool>().value());
-        CHECK_FALSE(
-            Value::greater_than_or_equal(flt3, int3)->get<frst::Bool>().value());
+        CHECK_FALSE(Value::greater_than_or_equal(flt1, int1)
+                        ->get<frst::Bool>()
+                        .value());
+        CHECK_FALSE(Value::greater_than_or_equal(flt1, int3)
+                        ->get<frst::Bool>()
+                        .value());
+        CHECK(Value::greater_than_or_equal(flt3, int1)
+                  ->get<frst::Bool>()
+                  .value());
+        CHECK_FALSE(Value::greater_than_or_equal(flt3, int3)
+                        ->get<frst::Bool>()
+                        .value());
 
-        CHECK(
-            Value::greater_than_or_equal(int1, flt1)->get<frst::Bool>().value());
-        CHECK(
-            Value::greater_than_or_equal(int3, flt1)->get<frst::Bool>().value());
-        CHECK_FALSE(
-            Value::greater_than_or_equal(int1, flt3)->get<frst::Bool>().value());
-        CHECK(
-            Value::greater_than_or_equal(int3, flt3)->get<frst::Bool>().value());
+        CHECK(Value::greater_than_or_equal(int1, flt1)
+                  ->get<frst::Bool>()
+                  .value());
+        CHECK(Value::greater_than_or_equal(int3, flt1)
+                  ->get<frst::Bool>()
+                  .value());
+        CHECK_FALSE(Value::greater_than_or_equal(int1, flt3)
+                        ->get<frst::Bool>()
+                        .value());
+        CHECK(Value::greater_than_or_equal(int3, flt3)
+                  ->get<frst::Bool>()
+                  .value());
     }
 }
 
@@ -81,7 +107,8 @@ TEST_CASE("String Lexicographical GTE")
     auto foobar = Value::create("foobar"s);
 
     CHECK(Value::greater_than_or_equal(foo, bar)->get<frst::Bool>().value());
-    CHECK_FALSE(Value::greater_than_or_equal(bar, foo)->get<frst::Bool>().value());
+    CHECK_FALSE(
+        Value::greater_than_or_equal(bar, foo)->get<frst::Bool>().value());
     CHECK(Value::greater_than_or_equal(foo, foo)->get<frst::Bool>().value());
     CHECK(Value::greater_than_or_equal(foobar, foo)->get<frst::Bool>().value());
 }

@@ -52,18 +52,14 @@ TEST_CASE("Numeric GT")
 
     SECTION("Mixed GT")
     {
-        CHECK_FALSE(
-            Value::greater_than(flt1, int1)->get<frst::Bool>().value());
-        CHECK_FALSE(
-            Value::greater_than(flt1, int3)->get<frst::Bool>().value());
+        CHECK_FALSE(Value::greater_than(flt1, int1)->get<frst::Bool>().value());
+        CHECK_FALSE(Value::greater_than(flt1, int3)->get<frst::Bool>().value());
         CHECK(Value::greater_than(flt3, int1)->get<frst::Bool>().value());
-        CHECK_FALSE(
-            Value::greater_than(flt3, int3)->get<frst::Bool>().value());
+        CHECK_FALSE(Value::greater_than(flt3, int3)->get<frst::Bool>().value());
 
         CHECK(Value::greater_than(int1, flt1)->get<frst::Bool>().value());
         CHECK(Value::greater_than(int3, flt1)->get<frst::Bool>().value());
-        CHECK_FALSE(
-            Value::greater_than(int1, flt3)->get<frst::Bool>().value());
+        CHECK_FALSE(Value::greater_than(int1, flt3)->get<frst::Bool>().value());
         CHECK(Value::greater_than(int3, flt3)->get<frst::Bool>().value());
     }
 }
