@@ -17,6 +17,12 @@ enum class Binary_Op
     MINUS,
     TIMES,
     DIVIDE,
+    EQ,
+    NE,
+    LT,
+    LE,
+    GT,
+    GE,
     AND,
     OR,
 };
@@ -34,6 +40,18 @@ struct Convert_Binary_Op
             return TIMES;
         if (op == "/")
             return DIVIDE;
+        if (op == "==")
+            return EQ;
+        if (op == "!=")
+            return NE;
+        if (op == "<")
+            return LT;
+        if (op == "<=")
+            return LE;
+        if (op == ">")
+            return GT;
+        if (op == ">=")
+            return GE;
         if (op == "and")
             return AND;
         if (op == "or")
@@ -53,6 +71,18 @@ struct Convert_Binary_Op
             return "*";
         case DIVIDE:
             return "/";
+        case EQ:
+            return "==";
+        case NE:
+            return "!=";
+        case LT:
+            return "<";
+        case LE:
+            return "<=";
+        case GT:
+            return ">";
+        case GE:
+            return ">=";
         case AND:
             return "and";
         case OR:
@@ -92,10 +122,11 @@ class Binop final : public Expression
     {
         using enum Binary_Op;
         static const std::map<Binary_Op, decltype(&Value::add)> fn_map{
-            {PLUS, &Value::add},
-            {MINUS, &Value::subtract},
-            {TIMES, &Value::multiply},
-            {DIVIDE, &Value::divide},
+            {PLUS, &Value::add},        {MINUS, &Value::subtract},
+            {TIMES, &Value::multiply},  {DIVIDE, &Value::divide},
+            {EQ, &Value::equal},        {NE, &Value::not_equal},
+            {LT, &Value::less_than},    {LE, &Value::less_than_or_equal},
+            {GT, &Value::greater_than}, {GE, &Value::greater_than_or_equal},
         };
 
         auto lhs_val = lhs_->evaluate(syms);
