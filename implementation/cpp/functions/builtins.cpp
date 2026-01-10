@@ -5,10 +5,12 @@ namespace frst
 {
 void inject_map_ops(Symbol_Table&);
 void inject_type_checks(Symbol_Table&);
+void inject_pack_call(Symbol_Table&);
 
 void inject_builtins(Symbol_Table& table)
 {
     inject_map_ops(table);
     inject_type_checks(table);
+    inject_pack_call(table);
 }
 } // namespace frst
