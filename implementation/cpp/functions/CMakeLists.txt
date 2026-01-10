@@ -1,7 +1,7 @@
 add_library( frost-functions
     closure.cpp
     builtins.cpp
-    builtins/map-ops.cpp
+    builtins/structure-ops.cpp
     builtins/type-tests.cpp
     builtins/type-conversions.cpp
     builtins/pack_call.cpp
@@ -38,4 +38,8 @@ functions_test(tests/builtins/type-conversions.cpp)
 
 functions_test(tests/builtins/values.cpp)
 
+functions_test(tests/builtins/len.cpp)
+
 functions_test(tests/builtins/pack_call.cpp)
+
+functions_test(tests/builtins/debug-helpers.cpp)

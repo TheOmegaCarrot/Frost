@@ -13,7 +13,7 @@ using namespace frst;
 using namespace std::literals;
 using Catch::Matchers::ContainsSubstring;
 
-TEST_CASE("pack_call")
+TEST_CASE("Builtin pack_call")
 {
     // AI-generated test additions by Codex (GPT-5).
     // Signed: Codex (GPT-5).

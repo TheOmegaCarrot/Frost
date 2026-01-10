@@ -1,4 +1,7 @@
 #include "builtins-common.hpp"
+#include "frost/value.hpp"
+
+#include <frost/builtin.hpp>
 
 #include <ranges>
 
@@ -27,9 +30,26 @@ Value_Ptr values(builtin_args_t args)
                          std::ranges::to<std::vector>());
 }
 
+Value_Ptr len(builtin_args_t args)
+{
+    REQUIRE_ARGS(values, TYPES(Map, Array));
+
+    if (const auto& arg = args.at(0); arg->is<Map>())
+    {
+        return Value::create(static_cast<Int>(arg->raw_get<Map>().size()));
+    }
+    else if (arg->is<Array>())
+    {
+        return Value::create(static_cast<Int>(arg->raw_get<Array>().size()));
+    }
+
+    THROW_UNREACHABLE;
+}
+
 void inject_map_ops(Symbol_Table& table)
 {
     INJECT(keys, 1, 1);
     INJECT(values, 1, 1);
+    INJECT(len, 1, 1);
 }
 } // namespace frst
