@@ -47,7 +47,7 @@ class Define final : public Statement
 
     std::generator<Child_Info> children() const final
     {
-        co_yield make_child(expr_, "Assignment_Expr");
+        co_yield make_child(expr_);
     }
 
   private:
