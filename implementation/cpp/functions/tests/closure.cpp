@@ -133,6 +133,66 @@ TEST_CASE("Construct Closure")
         CHECK_FALSE(closure.debug_capture_table().has("x"));
     }
 
+    SECTION("Use before and after local define")
+    {
+        Symbol_Table env;
+        auto x_val = Value::create(10_f);
+        auto y_val = Value::create(20_f);
+        env.define("x", x_val);
+        env.define("y", y_val);
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(
+            node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
+        body.push_back(node<Define>("x", node<Literal>(Value::create(3_f))));
+        body.push_back(node<Name_Lookup>("x"));
+
+        Closure closure{{}, std::move(body), env};
+
+        CHECK(capture_names(closure) == std::set<std::string>{"x", "y"});
+        CHECK(closure.debug_capture_table().lookup("x") == x_val);
+        CHECK(closure.debug_capture_table().lookup("y") == y_val);
+    }
+
+    SECTION("Multiple parameters are not captured")
+    {
+        Symbol_Table env;
+        auto a_val = Value::create(1_f);
+        auto b_val = Value::create(2_f);
+        auto c_val = Value::create(3_f);
+        env.define("a", a_val);
+        env.define("b", b_val);
+        env.define("c", c_val);
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(
+            node<Binop>(node<Name_Lookup>("a"), "+", node<Name_Lookup>("c")));
+        body.push_back(
+            node<Binop>(node<Name_Lookup>("b"), "+", node<Name_Lookup>("c")));
+
+        Closure closure{{"a", "b"}, std::move(body), env};
+
+        CHECK(capture_names(closure) == std::set<std::string>{"c"});
+        CHECK(closure.debug_capture_table().lookup("c") == c_val);
+        CHECK_FALSE(closure.debug_capture_table().has("a"));
+        CHECK_FALSE(closure.debug_capture_table().has("b"));
+    }
+
+    SECTION("Definition without usage does not capture")
+    {
+        Symbol_Table env;
+        auto x_val = Value::create(5_f);
+        env.define("x", x_val);
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("x", node<Literal>(Value::create(7_f))));
+
+        Closure closure{{}, std::move(body), env};
+
+        CHECK(capture_names(closure).empty());
+        CHECK_FALSE(closure.debug_capture_table().has("x"));
+    }
+
     SECTION("If captures condition and both branches (structural)")
     {
         Symbol_Table env;
