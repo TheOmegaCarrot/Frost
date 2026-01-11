@@ -136,7 +136,7 @@ TEST_CASE("Construct Closure")
 
         CHECK_THROWS_WITH(
             ([&] { return Closure{{"x"}, std::move(body), env}; }()),
-            ContainsSubstring("parameter"));
+            ContainsSubstring("parameter") && ContainsSubstring("x"));
     }
 
     SECTION("Use before define captures from environment")
@@ -268,7 +268,8 @@ TEST_CASE("Construct Closure")
 
         CHECK_THROWS_WITH(
             ([&] { return Closure{{}, std::move(body), env}; }()),
-            ContainsSubstring("No definition found for captured symbol"));
+            ContainsSubstring("No definition found for captured symbol")
+                && ContainsSubstring("missing"));
     }
 
     SECTION("Mock expression sequence controls capture set")
