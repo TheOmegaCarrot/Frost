@@ -65,11 +65,12 @@ Closure::Closure(std::vector<std::string> parameters,
     }
 }
 
-Value_Ptr eval_or_null(const ast::Statement::Ptr& node,
-                       const Symbol_Table& syms)
+Value_Ptr eval_or_null(const ast::Statement::Ptr& node, Symbol_Table& syms)
 {
     if (auto expr_ptr = dynamic_cast<ast::Expression*>(node.get()))
         return expr_ptr->evaluate(syms);
+
+    node->execute(syms);
     return Value::create(Null{});
 }
 

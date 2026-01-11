@@ -1,5 +1,6 @@
 #include <catch2/catch_all.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <catch2/trompeloeil.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
@@ -18,6 +19,7 @@ using namespace frst;
 using namespace frst::ast;
 using namespace std::literals;
 using Catch::Matchers::ContainsSubstring;
+using trompeloeil::_;
 
 namespace
 {
@@ -44,6 +46,60 @@ struct Seq_Mock_Expression final : mock::Mock_Expression
 
   private:
     std::vector<Statement::Symbol_Action> seq_;
+};
+
+struct Flag_Statement final : Statement
+{
+    explicit Flag_Statement(int* count)
+        : count_{count}
+    {
+    }
+
+    void execute(Symbol_Table&) const override
+    {
+        ++(*count_);
+    }
+
+  protected:
+    std::string node_label() const override
+    {
+        return "Flag_Statement";
+    }
+
+    std::generator<Child_Info> children() const override
+    {
+        co_return;
+    }
+
+  private:
+    int* count_;
+};
+
+struct Uncaptured_Lookup final : Expression
+{
+    explicit Uncaptured_Lookup(std::string name)
+        : name_{std::move(name)}
+    {
+    }
+
+    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
+    {
+        return syms.lookup(name_);
+    }
+
+    std::generator<Symbol_Action> symbol_sequence() const final
+    {
+        co_return;
+    }
+
+  protected:
+    std::string node_label() const final
+    {
+        return "Uncaptured_Lookup";
+    }
+
+  private:
+    std::string name_;
 };
 
 template <typename T, typename... Args>
@@ -394,6 +450,27 @@ TEST_CASE("Call Closure")
         CHECK(result->is<Null>());
     }
 
+    SECTION("Multiple missing parameters are bound to null")
+    {
+        Symbol_Table env;
+        std::vector<Expression::Ptr> elems;
+        elems.push_back(node<Name_Lookup>("a"));
+        elems.push_back(node<Name_Lookup>("b"));
+        elems.push_back(node<Name_Lookup>("c"));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Array_Constructor>(std::move(elems)));
+
+        Closure closure{{"a", "b", "c"}, std::move(body), env};
+
+        auto result = closure.call({});
+        auto arr = result->get<Array>().value();
+        CHECK(arr.size() == 3);
+        CHECK(arr[0]->is<Null>());
+        CHECK(arr[1]->is<Null>());
+        CHECK(arr[2]->is<Null>());
+    }
+
     SECTION("Parameter values are passed by pointer")
     {
         Symbol_Table env;
@@ -436,6 +513,44 @@ TEST_CASE("Call Closure")
         CHECK(closure.call({second}) == second);
     }
 
+    SECTION("Evaluation order follows statement order")
+    {
+        Symbol_Table env;
+
+        auto first = std::make_unique<mock::Mock_Expression>();
+        auto second = std::make_unique<mock::Mock_Expression>();
+        auto third = std::make_unique<mock::Mock_Expression>();
+
+        auto* first_ptr = first.get();
+        auto* second_ptr = second.get();
+        auto* third_ptr = third.get();
+
+        auto first_val = Value::create(1_f);
+        auto second_val = Value::create(2_f);
+        auto third_val = Value::create(3_f);
+
+        trompeloeil::sequence seq;
+        REQUIRE_CALL(*first_ptr, evaluate(_))
+            .IN_SEQUENCE(seq)
+            .RETURN(first_val);
+        REQUIRE_CALL(*second_ptr, evaluate(_))
+            .IN_SEQUENCE(seq)
+            .RETURN(second_val);
+        REQUIRE_CALL(*third_ptr, evaluate(_))
+            .IN_SEQUENCE(seq)
+            .RETURN(third_val);
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(std::move(first));
+        body.push_back(std::move(second));
+        body.push_back(std::move(third));
+
+        Closure closure{{}, std::move(body), env};
+
+        auto result = closure.call({});
+        CHECK(result == third_val);
+    }
+
     SECTION("Closure with local define can be called multiple times")
     {
         Symbol_Table env;
@@ -452,6 +567,23 @@ TEST_CASE("Call Closure")
 
         CHECK(first->get<Int>() == 1_f);
         CHECK(second->get<Int>() == 1_f);
+    }
+
+    SECTION("Local definitions do not persist across calls")
+    {
+        Symbol_Table env;
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("x", node<Name_Lookup>("p")));
+        body.push_back(node<Name_Lookup>("x"));
+
+        Closure closure{{"p"}, std::move(body), env};
+
+        auto first = Value::create(10_f);
+        auto second = Value::create(20_f);
+
+        CHECK(closure.call({first}) == first);
+        CHECK(closure.call({second}) == second);
     }
 
     SECTION("Captured value used before local define")
@@ -517,6 +649,40 @@ TEST_CASE("Call Closure")
         CHECK(result->is<Null>());
     }
 
+    SECTION("Last non-expression statement is executed")
+    {
+        Symbol_Table env;
+        int executed = 0;
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Literal>(Value::create(1_f)));
+        body.push_back(node<Flag_Statement>(&executed));
+
+        Closure closure{{}, std::move(body), env};
+
+        auto result = closure.call({});
+        CHECK(result->is<Null>());
+        CHECK(executed == 1);
+    }
+
+    SECTION("Argument error prevents body execution")
+    {
+        Symbol_Table env;
+
+        auto expr = std::make_unique<mock::Mock_Expression>();
+        auto* expr_ptr = expr.get();
+        FORBID_CALL(*expr_ptr, evaluate(_));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(std::move(expr));
+
+        Closure closure{{"p"}, std::move(body), env};
+
+        CHECK_THROWS_WITH(
+            closure.call({Value::create(1_f), Value::create(2_f)}),
+            ContainsSubstring("too many arguments"));
+    }
+
     SECTION("Too many arguments is an error")
     {
         Symbol_Table env;
@@ -541,6 +707,20 @@ TEST_CASE("Call Closure")
 
         CHECK_THROWS_WITH(closure.call({}),
                           ContainsSubstring("Cannot add incompatible types"));
+    }
+
+    SECTION("Undefined name lookup propagates")
+    {
+        Symbol_Table env;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Uncaptured_Lookup>("missing"));
+
+        Closure closure{{}, std::move(body), env};
+
+        CHECK_THROWS_WITH(closure.call({}),
+                          ContainsSubstring("Symbol")
+                              && ContainsSubstring("missing")
+                              && ContainsSubstring("not defined"));
     }
 }
 
