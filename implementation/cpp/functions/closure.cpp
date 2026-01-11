@@ -3,6 +3,7 @@
 #include <frost/symbol-table.hpp>
 
 #include <set>
+#include <sstream>
 
 using namespace frst;
 
@@ -60,10 +61,23 @@ Value_Ptr eval_or_null(const ast::Statement::Ptr& node,
 
 Value_Ptr Closure::call(const std::vector<Value_Ptr>& args) const
 {
-    if (body_.size() == 0)
-        return Value::create(Null{});
+    if (args.size() > parameters_.size())
+    {
+        throw Frost_Error{fmt::format("Closure called with too many arguments. "
+                                      "Expected up to {}, but got {}.",
+                                      parameters_.size(), args.size())};
+    }
 
     Symbol_Table exec_table(&captures_);
+    for (const auto& [arg_name, arg_val] : std::views::zip(
+             parameters_, std::views::concat(
+                              args, std::views::repeat(Value::create(Null{})))))
+    {
+        exec_table.define(arg_name, arg_val);
+    }
+
+    if (body_.size() == 0)
+        return Value::create(Null{});
 
     for (const ast::Statement::Ptr& node : body_
                                                | std::views::reverse

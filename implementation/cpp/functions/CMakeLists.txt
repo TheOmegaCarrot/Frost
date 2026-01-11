@@ -46,3 +46,5 @@ functions_test(tests/builtins/pack_call.cpp)
 functions_test(tests/builtins/debug-helpers.cpp)
 
 functions_test(tests/builtins/pformat.cpp)
+
+functions_test(tests/closure.cpp)

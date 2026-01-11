@@ -5,8 +5,6 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
-#include <sstream>
-
 namespace frst
 {
 class Closure : public Callable
@@ -25,6 +23,10 @@ class Closure : public Callable
 
     Value_Ptr call(const std::vector<Value_Ptr>& args) const override;
     std::string debug_dump() const override;
+    const Symbol_Table& debug_capture_table() const
+    {
+        return captures_;
+    }
 
   private:
     std::vector<std::string> parameters_;
