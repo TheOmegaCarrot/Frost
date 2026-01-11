@@ -172,8 +172,10 @@ TEST_CASE("Not Equal Compare All Permutations")
 #define OP_METHOD not_equal
 
 #define ID_NOT_EQUAL_TEST(T1, T2)                                              \
-    SECTION("Id Inequality: "s + OP_TEST_STRINGIZE(T1) + " and " +             \
-            OP_TEST_STRINGIZE(T2))                                             \
+    SECTION("Id Inequality: "s                                                 \
+            + OP_TEST_STRINGIZE(T1)                                            \
+            + " and "                                                          \
+            + OP_TEST_STRINGIZE(T2))                                           \
     {                                                                          \
         if constexpr (std::is_same_v<frst::T1, frst::T2>)                      \
             CHECK_FALSE(Value::OP_METHOD(T1, T2)->get<frst::Bool>().value());  \

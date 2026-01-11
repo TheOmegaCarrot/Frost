@@ -68,8 +68,8 @@ bool Value::not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
                                                                                \
     bool Value::NAME##_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)        \
     {                                                                          \
-        if ((lhs->is_numeric() && rhs->is_numeric()) ||                        \
-            (lhs->is<String>() && rhs->is<String>()))                          \
+        if ((lhs->is_numeric() && rhs->is_numeric())                           \
+            || (lhs->is<String>() && rhs->is<String>()))                       \
             return raw_##NAME(lhs->value_, rhs->value_);                       \
                                                                                \
         compare_err(#OP, lhs->type_name(), rhs->type_name());                  \

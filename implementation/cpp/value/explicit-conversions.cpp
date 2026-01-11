@@ -61,11 +61,12 @@ struct To_String_Impl
     std::string operator()(const Array& value,
                            [[maybe_unused]] bool in_structure = false) const
     {
-        auto array_insides =
-            value | std::views::transform([&](const auto& value) {
-                return value->to_internal_string(true);
-            }) |
-            std::views::join_with(", "sv) | std::ranges::to<std::string>();
+        auto array_insides = value
+                             | std::views::transform([&](const auto& value) {
+                                   return value->to_internal_string(true);
+                               })
+                             | std::views::join_with(", "sv)
+                             | std::ranges::to<std::string>();
 
         return fmt::format("[ {} ]", array_insides);
     }
@@ -74,12 +75,14 @@ struct To_String_Impl
                            [[maybe_unused]] bool in_structure = false) const
     {
         auto map_insides =
-            value | std::views::transform([&](const auto& kv) {
-                const auto& [k, v] = kv;
-                return fmt::format(R"([{}]: {})", k->to_internal_string(true),
-                                   v->to_internal_string(true));
-            }) |
-            std::views::join_with(", "sv) | std::ranges::to<std::string>();
+            value
+            | std::views::transform([&](const auto& kv) {
+                  const auto& [k, v] = kv;
+                  return fmt::format(R"([{}]: {})", k->to_internal_string(true),
+                                     v->to_internal_string(true));
+              })
+            | std::views::join_with(", "sv)
+            | std::ranges::to<std::string>();
 
         return fmt::format("{{ {} }}", map_insides);
     }

@@ -38,7 +38,10 @@ void Statement::print_node(std::ostream& out, const Print_Context& context,
     if (context.is_root)
         out << label << "\n";
     else
-        out << context.prefix << (context.is_last ? "└── " : "├── ") << label
+        out
+            << context.prefix
+            << (context.is_last ? "└── " : "├── ")
+            << label
             << "\n";
 }
 

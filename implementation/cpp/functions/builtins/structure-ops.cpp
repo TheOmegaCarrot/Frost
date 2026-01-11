@@ -16,8 +16,9 @@ Value_Ptr keys(builtin_args_t args)
 {
     REQUIRE_ARGS(keys, TYPES(Map));
 
-    return Value::create(args.at(0)->raw_get<Map>() | std::views::keys |
-                         std::ranges::to<std::vector>());
+    return Value::create(args.at(0)->raw_get<Map>()
+                         | std::views::keys
+                         | std::ranges::to<std::vector>());
 }
 
 // Map -> array of values
@@ -26,8 +27,9 @@ Value_Ptr values(builtin_args_t args)
 {
     REQUIRE_ARGS(values, TYPES(Map));
 
-    return Value::create(args.at(0)->raw_get<Map>() | std::views::values |
-                         std::ranges::to<std::vector>());
+    return Value::create(args.at(0)->raw_get<Map>()
+                         | std::views::values
+                         | std::ranges::to<std::vector>());
 }
 
 Value_Ptr len(builtin_args_t args)

@@ -55,8 +55,8 @@ TEST_CASE("Builtin debug_dump")
         {
             auto res = debug_dump->call({val});
             REQUIRE(res->is<frst::String>());
-            CHECK(res->get<frst::String>().value() ==
-                  val->to_internal_string());
+            CHECK(res->get<frst::String>().value()
+                  == val->to_internal_string());
         }
     }
 

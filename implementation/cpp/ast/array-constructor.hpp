@@ -26,11 +26,11 @@ class Array_Constructor final : public Expression
 
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
     {
-        return Value::create(elems_ |
-                             std::views::transform([&](const auto& each) {
-                                 return each->evaluate(syms);
-                             }) |
-                             std::ranges::to<std::vector>());
+        return Value::create(elems_
+                             | std::views::transform([&](const auto& each) {
+                                   return each->evaluate(syms);
+                               })
+                             | std::ranges::to<std::vector>());
     }
 
   protected:

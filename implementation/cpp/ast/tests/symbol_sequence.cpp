@@ -17,19 +17,19 @@ namespace
 {
 std::vector<std::string> collect_sequence(const Statement& node)
 {
-    std::vector<std::string> out;
-    for (auto action : node.symbol_sequence())
-    {
-        out.push_back(action.visit(Overload{
-            [](const Statement::Definition& action) {
-                return fmt::format("def:{}", action.name);
-            },
-            [](const Statement::Usage& action) {
-                return fmt::format("use:{}", action.name);
-            },
-        }));
-    }
-    return out;
+    return node.symbol_sequence()
+           | std::views::transform([](const Statement::Symbol_Action& action) {
+                 return action.visit(Overload{
+                     [](const Statement::Definition& action) {
+                         return fmt::format("def:{}", action.name);
+                     },
+                     [](const Statement::Usage& action) {
+                         return fmt::format("use:{}", action.name);
+                     },
+                 });
+             })
+           | std::ranges::to<std::vector>();
+    ;
 }
 
 Expression::Ptr name(std::string_view n)
@@ -63,8 +63,8 @@ TEST_CASE("Symbol Sequence")
     SECTION("Define yields RHS then definition")
     {
         Define node{"x", name("y")};
-        CHECK(collect_sequence(node) ==
-              std::vector<std::string>{"use:y", "def:x"});
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:y", "def:x"});
     }
 
     SECTION("Define with literal yields only definition")
@@ -76,16 +76,16 @@ TEST_CASE("Symbol Sequence")
     SECTION("Binary op yields left then right")
     {
         Binop node{name("a"), "+", name("b")};
-        CHECK(collect_sequence(node) ==
-              std::vector<std::string>{"use:a", "use:b"});
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:a", "use:b"});
     }
 
     SECTION("Binary op nests depth-first")
     {
         Binop node{name("a"), "+",
                    std::make_unique<Binop>(name("b"), "+", name("c"))};
-        CHECK(collect_sequence(node) ==
-              std::vector<std::string>{"use:a", "use:b", "use:c"});
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:a", "use:b", "use:c"});
     }
 
     SECTION("Unary op yields operand sequence")
@@ -102,8 +102,8 @@ TEST_CASE("Symbol Sequence")
         elems.push_back(lit_int(7_f));
 
         Array_Constructor node{std::move(elems)};
-        CHECK(collect_sequence(node) ==
-              std::vector<std::string>{"use:a", "use:b", "use:c"});
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:a", "use:b", "use:c"});
     }
 
     SECTION("Map constructor yields key then value, per pair")
@@ -114,37 +114,37 @@ TEST_CASE("Symbol Sequence")
             name("k2"), std::make_unique<Binop>(name("v2"), "+", name("v3")));
 
         Map_Constructor node{std::move(pairs)};
-        CHECK(collect_sequence(node) ==
-              std::vector<std::string>{"use:k1", "use:v1", "use:k2", "use:v2",
-                                       "use:v3"});
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:k1", "use:v1", "use:k2",
+                                          "use:v2", "use:v3"});
     }
 
     SECTION("Index yields structure then index")
     {
         Index node{name("arr"), name("i")};
-        CHECK(collect_sequence(node) ==
-              std::vector<std::string>{"use:arr", "use:i"});
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:arr", "use:i"});
     }
 
     SECTION("If yields condition, consequent, alternate (structural)")
     {
         If node{name("cond"), name("then"),
                 std::optional<Expression::Ptr>{name("else")}};
-        CHECK(collect_sequence(node) ==
-              std::vector<std::string>{"use:cond", "use:then", "use:else"});
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:cond", "use:then", "use:else"});
     }
 
     SECTION("If without alternate omits alternate sequence")
     {
         If node{name("cond"), name("then")};
-        CHECK(collect_sequence(node) ==
-              std::vector<std::string>{"use:cond", "use:then"});
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:cond", "use:then"});
     }
 
     SECTION("Define with nested expression keeps RHS order")
     {
         Define node{"x", std::make_unique<Binop>(name("y"), "+", name("z"))};
-        CHECK(collect_sequence(node) ==
-              std::vector<std::string>{"use:y", "use:z", "def:x"});
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:y", "use:z", "def:x"});
     }
 }

@@ -44,10 +44,10 @@ TEST_CASE("Builtin to_string")
             "3.14"));
         CHECK(to_string->call({Bool_})->get<String>().value() == "true");
         CHECK(to_string->call({String_})->get<String>().value() == "Hello!");
-        CHECK(to_string->call({Array_})->get<String>().value() ==
-              "[ 42, \"hello\" ]");
-        CHECK(to_string->call({Map_})->get<String>().value() ==
-              R"({ [true]: "value2", ["key1"]: 42 })");
+        CHECK(to_string->call({Array_})->get<String>().value()
+              == "[ 42, \"hello\" ]");
+        CHECK(to_string->call({Map_})->get<String>().value()
+              == R"({ [true]: "value2", ["key1"]: 42 })");
     }
 }
 

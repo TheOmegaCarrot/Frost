@@ -107,8 +107,10 @@ template <typename T>
 concept Frost_Numeric = std::same_as<Int, T> || std::same_as<Float, T>;
 
 template <typename T>
-concept Frost_Primitive = Frost_Numeric<T> || std::same_as<Null, T> ||
-                          std::same_as<Bool, T> || std::same_as<String, T>;
+concept Frost_Primitive = Frost_Numeric<T>
+                          || std::same_as<Null, T>
+                          || std::same_as<Bool, T>
+                          || std::same_as<String, T>;
 
 template <typename T>
 concept Frost_Structured = std::same_as<Array, T> || std::same_as<Map, T>;
