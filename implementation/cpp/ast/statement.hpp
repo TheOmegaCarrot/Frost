@@ -53,12 +53,12 @@ class Statement
     struct Child_Info
     {
         const Statement* node = nullptr;
-        std::string_view label;
+        std::string label;
     };
 
-    static Child_Info make_child(const auto& child, std::string_view label = {})
+    static Child_Info make_child(const auto& child, std::string label = {})
     {
-        return Child_Info{child.get(), label};
+        return Child_Info{child.get(), std::move(label)};
     }
 
     virtual std::string node_label() const = 0;

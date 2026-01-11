@@ -5,6 +5,7 @@
 #include "binop.hpp"
 #include "define.hpp"
 #include "expression.hpp"
+#include "function_call.hpp"
 #include "if.hpp"
 #include "index.hpp"
 #include "literal.hpp"
