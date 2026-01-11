@@ -7,6 +7,15 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
+namespace
+{
+std::generator<ast::Statement::Symbol_Action> node_to_sym_seq(
+    const ast::Statement::Ptr& node)
+{
+    return node->symbol_sequence();
+}
+} // namespace
+
 namespace frst::ast
 {
 class Lambda final : public Expression
@@ -25,10 +34,50 @@ class Lambda final : public Expression
         : params_{std::move(params)}
         , body_{std::move(body)}
     {
+        auto param_set = params | std::ranges::to<std::flat_set>();
+        if (params.size() != param_set.size())
+        {
+            throw Frost_Error{"Closure has duplicate parameters"};
+        }
+        std::flat_set<std::string> names_defined_so_far{std::from_range,
+                                                        params_};
+        for (const ast::Statement::Symbol_Action& name :
+             body_ | std::views::transform(&node_to_sym_seq) | std::views::join)
+        {
+            name.visit(Overload{
+                [&](const ast::Statement::Definition& defn) {
+                    if (param_set.contains(defn.name))
+                    {
+                        throw Frost_Error{
+                            fmt::format("Closure local definition cannot "
+                                        "shadow parameter: {}",
+                                        defn.name)};
+                    }
+
+                    names_defined_so_far.insert(defn.name);
+                },
+                [&](const ast::Statement::Usage& used) {
+                    if (!names_defined_so_far.contains(used.name))
+                        names_to_capture_.insert(used.name);
+                },
+            });
+        }
     }
 
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
     {
+        Symbol_Table captures;
+        for (const std::string& name : names_to_capture_)
+        {
+            if (not syms.has(name))
+            {
+                throw Frost_Error{fmt::format(
+                    "No definition found for captured symbol: {}", name)};
+            }
+
+            captures.define(name, syms.lookup(name));
+        }
+
         return Value::create(
             Function{std::make_shared<Closure>(params_, &body_, syms)});
     }
@@ -52,6 +101,7 @@ class Lambda final : public Expression
 
   private:
     std::vector<std::string> params_;
+    std::flat_set<std::string> names_to_capture_;
     std::vector<Statement::Ptr> body_;
 };
 } // namespace frst::ast

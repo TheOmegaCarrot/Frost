@@ -5,6 +5,8 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
+#include <flat_set>
+
 namespace frst
 {
 class Closure : public Callable
