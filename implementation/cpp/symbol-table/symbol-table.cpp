@@ -27,3 +27,12 @@ frst::Value_Ptr Symbol_Table::lookup(const std::string& name) const
         throw Frost_Error{fmt::format("Symbol {} is not defined", name)};
     }
 }
+
+bool Symbol_Table::has(const std::string& name) const
+{
+    return (table_.find(name) != table_.end()) || [&] {
+        if (failover_table_)
+            return failover_table_->has(name);
+        return false;
+    }();
+}

@@ -33,6 +33,19 @@ class Symbol_Table
     // Throws on failed lookup
     virtual Value_Ptr lookup(const std::string& name) const;
 
+    // Check if a name is defined within the symbol table
+    virtual bool has(const std::string& name) const;
+
+    const auto& debug_table() const
+    {
+        return table_;
+    }
+
+    const auto* debug_failover() const
+    {
+        return failover_table_;
+    }
+
   private:
     std::unordered_map<std::string, Value_Ptr> table_;
     const Symbol_Table* failover_table_ = nullptr;

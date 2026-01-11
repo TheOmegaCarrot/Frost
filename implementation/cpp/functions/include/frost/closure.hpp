@@ -19,21 +19,15 @@ class Closure : public Callable
     Closure& operator=(Closure&&) = delete;
     ~Closure() override = default;
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const override;
-    std::string debug_dump() const override
-    {
-        std::ostringstream os;
-        os << "<Closure>";
-        for (const auto& statement : body_)
-        {
-            os << "    ";
-            statement->debug_dump_ast(os);
-        }
+    Closure(std::vector<std::string> parameters,
+            std::vector<ast::Statement::Ptr> body,
+            const Symbol_Table& construction_environment);
 
-        return std::move(os).str();
-    }
+    Value_Ptr call(const std::vector<Value_Ptr>& args) const override;
+    std::string debug_dump() const override;
 
   private:
+    std::vector<std::string> parameters_;
     std::vector<ast::Statement::Ptr> body_;
     Symbol_Table captures_;
 };

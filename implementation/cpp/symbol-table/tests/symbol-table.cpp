@@ -8,7 +8,7 @@ using frst::Value;
 using namespace frst::literals;
 using namespace std::literals;
 
-TEST_CASE("Define and Lookup")
+TEST_CASE("Symbol Table")
 {
     Symbol_Table table1;
     Symbol_Table table2(&table1);
@@ -48,5 +48,17 @@ TEST_CASE("Define and Lookup")
     {
         CHECK_THROWS(table2.define("beep", Value::create("uh oh"s)));
         CHECK(table2.lookup("beep")->get<frst::String>() == "beep2");
+    }
+
+    SECTION("Has")
+    {
+        CHECK(table1.has("foo"));
+        CHECK(table1.has("bar"));
+
+        CHECK(table2.has("foo"));
+        CHECK(table2.has("bar"));
+        CHECK(table2.has("beep"));
+
+        CHECK_FALSE(table1.has("beep"));
     }
 }
