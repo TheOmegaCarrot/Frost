@@ -77,6 +77,23 @@ TEST_CASE("Construct Closure")
         CHECK(closure.debug_capture_table().lookup("y") == y_val);
     }
 
+    SECTION("Captures through a failover table")
+    {
+        Symbol_Table outer;
+        auto x_val = Value::create(42_f);
+        outer.define("x", x_val);
+
+        Symbol_Table env{&outer};
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("x"));
+
+        Closure closure{{}, std::move(body), env};
+
+        CHECK(capture_names(closure) == std::set<std::string>{"x"});
+        CHECK(closure.debug_capture_table().lookup("x") == x_val);
+    }
+
     SECTION("Parameters are not captured")
     {
         Symbol_Table env;
@@ -95,6 +112,31 @@ TEST_CASE("Construct Closure")
         CHECK(closure.debug_capture_table().lookup("x") == env.lookup("x"));
         CHECK(closure.debug_capture_table().lookup("x") == x_val);
         CHECK_FALSE(closure.debug_capture_table().has("p"));
+    }
+
+    SECTION("Duplicate parameters are an error")
+    {
+        Symbol_Table env;
+
+        std::vector<Statement::Ptr> body;
+
+        CHECK_THROWS_WITH(
+            ([&] { return Closure{{"x", "x"}, std::move(body), env}; }()),
+            ContainsSubstring("duplicate"));
+    }
+
+    SECTION("Defining a parameter name is an error at construction")
+    {
+        Symbol_Table env;
+        auto x_val = Value::create(1_f);
+        env.define("x", x_val);
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("x", node<Literal>(Value::create(2_f))));
+
+        CHECK_THROWS_WITH(
+            ([&] { return Closure{{"x"}, std::move(body), env}; }()),
+            ContainsSubstring("parameter"));
     }
 
     SECTION("Use before define captures from environment")

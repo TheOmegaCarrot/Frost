@@ -2,6 +2,7 @@
 #include <frost/closure.hpp>
 #include <frost/symbol-table.hpp>
 
+#include <flat_set>
 #include <set>
 #include <sstream>
 
@@ -22,6 +23,12 @@ Closure::Closure(std::vector<std::string> parameters,
     : parameters_{std::move(parameters)}
     , body_{std::move(body)}
 {
+    auto param_set = parameters_ | std::ranges::to<std::flat_set>();
+    if (parameters_.size() != param_set.size())
+    {
+        throw Frost_Error{"Closure has duplicate parameters"};
+    }
+
     std::set<std::string> names_defined_so_far{std::from_range, parameters_};
     std::set<std::string> names_to_capture;
 
@@ -30,6 +37,13 @@ Closure::Closure(std::vector<std::string> parameters,
     {
         name.visit(Overload{
             [&](const ast::Statement::Definition& defn) {
+                if (param_set.contains(defn.name))
+                {
+                    throw Frost_Error{fmt::format(
+                        "Closure local definition cannot shadow parameter: {}",
+                        defn.name)};
+                }
+
                 names_defined_so_far.insert(defn.name);
             },
             [&](const ast::Statement::Usage& used) {
