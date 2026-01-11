@@ -34,11 +34,12 @@ class Lambda final : public Expression
         : params_{std::move(params)}
         , body_{std::move(body)}
     {
-        auto param_set = params_ | std::ranges::to<std::flat_set>();
+        const auto param_set = params_ | std::ranges::to<std::flat_set>();
         if (params_.size() != param_set.size())
         {
             throw Frost_Error{"Closure has duplicate parameters"};
         }
+
         std::flat_set<std::string> names_defined_so_far{std::from_range,
                                                         params_};
         for (const ast::Statement::Symbol_Action& name :

@@ -165,6 +165,17 @@ TEST_CASE("Call Closure")
         CHECK(result->is<Null>());
     }
 
+    SECTION("Empty body with parameters returns null")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+
+        Closure closure{{"p", "q"}, &body, captures};
+
+        auto result = closure.call({Value::create(1_f)});
+        CHECK(result->is<Null>());
+    }
+
     SECTION("Missing parameters are bound to null")
     {
         Symbol_Table captures;
@@ -470,6 +481,19 @@ TEST_CASE("Debug Dump Closure")
         CHECK(dump == R"(<Closure>
 Literal(42)
 )");
+    }
+
+    SECTION("Empty body debug dump")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+
+        Closure closure{{}, &body, captures};
+
+        const auto dump = closure.debug_dump();
+        std::cout << dump;
+
+        CHECK(dump == "<Closure>\n");
     }
 
     SECTION("Captures and structured AST body")

@@ -98,6 +98,21 @@ TEST_CASE("Lambda")
         CHECK(count == 0);
     }
 
+    SECTION("Empty body with parameters is allowed")
+    {
+        Symbol_Table env;
+        std::vector<Statement::Ptr> body;
+
+        Lambda node{{"p", "q"}, std::move(body)};
+
+        auto result = node.evaluate(env);
+        REQUIRE(result->is<Function>());
+        auto fn = result->get<Function>().value();
+
+        auto out = fn->call({Value::create(1_f)});
+        CHECK(out->is<Null>());
+    }
+
     SECTION("Duplicate parameters are rejected at construction")
     {
         std::vector<Statement::Ptr> body;
