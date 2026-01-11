@@ -21,7 +21,7 @@ class Closure : public Callable
 
     Closure(std::vector<std::string> parameters,
             const std::vector<ast::Statement::Ptr>* body,
-            const Symbol_Table& construction_environment);
+            Symbol_Table captures);
 
     Value_Ptr call(const std::vector<Value_Ptr>& args) const override;
     std::string debug_dump() const override;

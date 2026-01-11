@@ -9,8 +9,8 @@
 
 namespace
 {
-std::generator<ast::Statement::Symbol_Action> node_to_sym_seq(
-    const ast::Statement::Ptr& node)
+std::generator<frst::ast::Statement::Symbol_Action> node_to_sym_seq(
+    const frst::ast::Statement::Ptr& node)
 {
     return node->symbol_sequence();
 }
@@ -34,8 +34,8 @@ class Lambda final : public Expression
         : params_{std::move(params)}
         , body_{std::move(body)}
     {
-        auto param_set = params | std::ranges::to<std::flat_set>();
-        if (params.size() != param_set.size())
+        auto param_set = params_ | std::ranges::to<std::flat_set>();
+        if (params_.size() != param_set.size())
         {
             throw Frost_Error{"Closure has duplicate parameters"};
         }
@@ -78,8 +78,8 @@ class Lambda final : public Expression
             captures.define(name, syms.lookup(name));
         }
 
-        return Value::create(
-            Function{std::make_shared<Closure>(params_, &body_, syms)});
+        return Value::create(Function{
+            std::make_shared<Closure>(params_, &body_, std::move(captures))});
     }
 
     std::generator<Symbol_Action> symbol_sequence() const final
