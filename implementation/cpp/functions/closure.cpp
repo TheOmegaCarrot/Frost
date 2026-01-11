@@ -17,7 +17,7 @@ std::generator<ast::Statement::Symbol_Action> node_to_sym_seq(
 } // namespace
 
 Closure::Closure(std::vector<std::string> parameters,
-                 std::vector<ast::Statement::Ptr> body,
+                 std::vector<ast::Statement::Ptr>* body,
                  const Symbol_Table& construction_environment)
     : parameters_{std::move(parameters)}
     , body_{std::move(body)}
@@ -33,7 +33,7 @@ Closure::Closure(std::vector<std::string> parameters,
     std::flat_set<std::string> names_to_capture;
 
     for (const ast::Statement::Symbol_Action& name :
-         body_ | std::views::transform(&node_to_sym_seq) | std::views::join)
+         *body_ | std::views::transform(&node_to_sym_seq) | std::views::join)
     {
         name.visit(Overload{
             [&](const ast::Statement::Definition& defn) {
@@ -91,10 +91,10 @@ Value_Ptr Closure::call(const std::vector<Value_Ptr>& args) const
         exec_table.define(arg_name, arg_val);
     }
 
-    if (body_.size() == 0)
+    if (body_->size() == 0)
         return Value::create(Null{});
 
-    for (const ast::Statement::Ptr& node : body_
+    for (const ast::Statement::Ptr& node : *body_
                                                | std::views::reverse
                                                | std::views::drop(1)
                                                | std::views::reverse)
@@ -102,7 +102,7 @@ Value_Ptr Closure::call(const std::vector<Value_Ptr>& args) const
         node->execute(exec_table);
     }
 
-    return eval_or_null(body_.back(), exec_table);
+    return eval_or_null(body_->back(), exec_table);
 }
 
 std::string Closure::debug_dump() const
@@ -123,7 +123,7 @@ std::string Closure::debug_dump() const
 
     os << '\n';
 
-    for (const auto& statement : body_)
+    for (const auto& statement : *body_)
     {
         statement->debug_dump_ast(os);
     }

@@ -158,7 +158,7 @@ TEST_CASE("Construct Closure")
         body.push_back(
             node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x", "y"});
         CHECK(closure.debug_capture_table().lookup("x") == env.lookup("x"));
@@ -178,7 +178,7 @@ TEST_CASE("Construct Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("x"));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x"});
         CHECK(closure.debug_capture_table().lookup("x") == x_val);
@@ -196,7 +196,7 @@ TEST_CASE("Construct Closure")
         body.push_back(
             node<Binop>(node<Name_Lookup>("p"), "+", node<Name_Lookup>("x")));
 
-        Closure closure{{"p"}, std::move(body), env};
+        Closure closure{{"p"}, &body, env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x"});
         CHECK(closure.debug_capture_table().lookup("x") == env.lookup("x"));
@@ -210,7 +210,7 @@ TEST_CASE("Construct Closure")
 
         std::vector<Statement::Ptr> body;
 
-        CHECK_THROWS_WITH((Closure{{"x", "x"}, std::move(body), env}),
+        CHECK_THROWS_WITH((Closure{{"x", "x"}, &body, env}),
                           ContainsSubstring("duplicate"));
     }
 
@@ -223,7 +223,7 @@ TEST_CASE("Construct Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("x", node<Literal>(Value::create(2_f))));
 
-        CHECK_THROWS_WITH((Closure{{"x"}, std::move(body), env}),
+        CHECK_THROWS_WITH((Closure{{"x"}, &body, env}),
                           ContainsSubstring("parameter")
                               && ContainsSubstring("x"));
     }
@@ -239,7 +239,7 @@ TEST_CASE("Construct Closure")
                                    node<Literal>(Value::create(1_f))));
         body.push_back(node<Define>("x", node<Literal>(Value::create(2_f))));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x"});
         CHECK(closure.debug_capture_table().lookup("x") == x_val);
@@ -257,7 +257,7 @@ TEST_CASE("Construct Closure")
         body.push_back(node<Define>("x", node<Name_Lookup>("y")));
         body.push_back(node<Name_Lookup>("x"));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"y"});
         CHECK(closure.debug_capture_table().lookup("y") == y_val);
@@ -278,7 +278,7 @@ TEST_CASE("Construct Closure")
         body.push_back(node<Define>("x", node<Literal>(Value::create(3_f))));
         body.push_back(node<Name_Lookup>("x"));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x", "y"});
         CHECK(closure.debug_capture_table().lookup("x") == x_val);
@@ -301,7 +301,7 @@ TEST_CASE("Construct Closure")
         body.push_back(
             node<Binop>(node<Name_Lookup>("b"), "+", node<Name_Lookup>("c")));
 
-        Closure closure{{"a", "b"}, std::move(body), env};
+        Closure closure{{"a", "b"}, &body, env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"c"});
         CHECK(closure.debug_capture_table().lookup("c") == c_val);
@@ -318,7 +318,7 @@ TEST_CASE("Construct Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("x", node<Literal>(Value::create(7_f))));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK(capture_names(closure).empty());
         CHECK_FALSE(closure.debug_capture_table().has("x"));
@@ -335,7 +335,7 @@ TEST_CASE("Construct Closure")
             node<Define>("x", node<Binop>(node<Literal>(Value::create(1_f)),
                                           "+", node<Name_Lookup>("x"))));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x"});
         CHECK(closure.debug_capture_table().lookup("x") == x_val);
@@ -352,7 +352,7 @@ TEST_CASE("Construct Closure")
             node<Define>("x", node<Binop>(node<Name_Lookup>("p"), "+",
                                           node<Literal>(Value::create(1_f)))));
 
-        Closure closure{{"p"}, std::move(body), env};
+        Closure closure{{"p"}, &body, env};
 
         CHECK(capture_names(closure).empty());
         CHECK_FALSE(closure.debug_capture_table().has("p"));
@@ -373,7 +373,7 @@ TEST_CASE("Construct Closure")
             node<If>(node<Name_Lookup>("cond"), node<Name_Lookup>("t"),
                      std::optional<Expression::Ptr>{node<Name_Lookup>("f")}));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK(capture_names(closure)
               == std::set<std::string>{"cond", "f", "t"});
@@ -389,7 +389,7 @@ TEST_CASE("Construct Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("missing"));
 
-        CHECK_THROWS_WITH((Closure{{}, std::move(body), env}),
+        CHECK_THROWS_WITH((Closure{{}, &body, env}),
                           ContainsSubstring("No definition found for captured "
                                             "symbol")
                               && ContainsSubstring("missing"));
@@ -413,7 +413,7 @@ TEST_CASE("Construct Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Seq_Mock_Expression>(std::move(seq)));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"a", "c"});
         CHECK(closure.debug_capture_table().lookup("a") == a_val);
@@ -432,7 +432,7 @@ TEST_CASE("Call Closure")
         Symbol_Table env;
         std::vector<Statement::Ptr> body;
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         auto result = closure.call({});
         CHECK(result->is<Null>());
@@ -444,7 +444,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("q"));
 
-        Closure closure{{"p", "q"}, std::move(body), env};
+        Closure closure{{"p", "q"}, &body, env};
 
         auto result = closure.call({Value::create(1_f)});
         CHECK(result->is<Null>());
@@ -461,7 +461,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Array_Constructor>(std::move(elems)));
 
-        Closure closure{{"a", "b", "c"}, std::move(body), env};
+        Closure closure{{"a", "b", "c"}, &body, env};
 
         auto result = closure.call({});
         auto arr = result->get<Array>().value();
@@ -478,7 +478,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Name_Lookup>("p"));
 
         auto p_val = Value::create(99_f);
-        Closure closure{{"p"}, std::move(body), env};
+        Closure closure{{"p"}, &body, env};
 
         auto result = closure.call({p_val});
         CHECK(result == p_val);
@@ -492,7 +492,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Literal>(lit_val));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         auto result = closure.call({});
         CHECK(result == lit_val);
@@ -504,7 +504,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("p"));
 
-        Closure closure{{"p"}, std::move(body), env};
+        Closure closure{{"p"}, &body, env};
 
         auto first = Value::create(1_f);
         auto second = Value::create(2_f);
@@ -545,7 +545,7 @@ TEST_CASE("Call Closure")
         body.push_back(std::move(second));
         body.push_back(std::move(third));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         auto result = closure.call({});
         CHECK(result == third_val);
@@ -560,7 +560,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Define>("x", node<Literal>(Value::create(1_f))));
         body.push_back(node<Name_Lookup>("x"));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         auto first = closure.call({});
         auto second = closure.call({});
@@ -577,7 +577,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Define>("x", node<Name_Lookup>("p")));
         body.push_back(node<Name_Lookup>("x"));
 
-        Closure closure{{"p"}, std::move(body), env};
+        Closure closure{{"p"}, &body, env};
 
         auto first = Value::create(10_f);
         auto second = Value::create(20_f);
@@ -597,7 +597,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Binop>(node<Name_Lookup>("x"), "+",
                                    node<Name_Lookup>("y")));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         auto result = closure.call({});
         CHECK(result->get<Int>() == 6_f);
@@ -612,7 +612,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("x"));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         auto result = closure.call({});
         CHECK(result == x_val);
@@ -630,7 +630,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Define>("x", node<Literal>(local_val)));
         body.push_back(node<Name_Lookup>("x"));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         auto result = closure.call({});
         CHECK(result == local_val);
@@ -643,7 +643,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("x", node<Literal>(Value::create(1_f))));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         auto result = closure.call({});
         CHECK(result->is<Null>());
@@ -658,7 +658,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Literal>(Value::create(1_f)));
         body.push_back(node<Flag_Statement>(&executed));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         auto result = closure.call({});
         CHECK(result->is<Null>());
@@ -676,7 +676,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(std::move(expr));
 
-        Closure closure{{"p"}, std::move(body), env};
+        Closure closure{{"p"}, &body, env};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f), Value::create(2_f)}),
@@ -689,7 +689,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Literal>(Value::create(1_f)));
 
-        Closure closure{{"p"}, std::move(body), env};
+        Closure closure{{"p"}, &body, env};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f), Value::create(2_f)}),
@@ -703,7 +703,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Binop>(node<Literal>(Value::create(1_f)), "+",
                                    node<Literal>(Value::create(true))));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK_THROWS_WITH(closure.call({}),
                           ContainsSubstring("Cannot add incompatible types"));
@@ -715,7 +715,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Uncaptured_Lookup>("missing"));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         CHECK_THROWS_WITH(closure.call({}),
                           ContainsSubstring("Symbol")
@@ -736,7 +736,7 @@ TEST_CASE("Debug Dump Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Literal>(Value::create(42_f)));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;
@@ -760,7 +760,7 @@ Literal(42)
             std::optional<Expression::Ptr>{
                 node<Literal>(Value::create(0_f))}));
 
-        Closure closure{{}, std::move(body), env};
+        Closure closure{{}, &body, env};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;
