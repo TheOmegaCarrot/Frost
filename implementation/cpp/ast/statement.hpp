@@ -33,6 +33,22 @@ class Statement
     //! @brief Print AST of this node and all descendents
     void debug_dump_ast(std::ostream& out) const;
 
+    struct Definition
+    {
+        std::string name;
+    };
+    struct Usage
+    {
+        std::string name;
+    };
+    using Symbol_Action = std::variant<Definition, Usage>;
+
+    virtual std::generator<Symbol_Action> symbol_sequence() const
+    {
+        for (const Child_Info& child : children())
+            co_yield std::ranges::elements_of(child.node->symbol_sequence());
+    }
+
   protected:
     struct Child_Info
     {

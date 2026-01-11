@@ -31,6 +31,11 @@ class Name_Lookup final : public Expression
         return syms.lookup(name_);
     }
 
+    std::generator<Symbol_Action> symbol_sequence() const final
+    {
+        co_yield Usage{name_};
+    }
+
   protected:
     std::string node_label() const final
     {

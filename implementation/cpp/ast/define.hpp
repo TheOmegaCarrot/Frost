@@ -32,6 +32,13 @@ class Define final : public Statement
         table.define(name_, expr_->evaluate(table));
     }
 
+    std::generator<Symbol_Action> symbol_sequence() const final
+    {
+        co_yield std::ranges::elements_of(
+            static_cast<Statement*>(expr_.get())->symbol_sequence());
+        co_yield Definition{name_};
+    }
+
   protected:
     std::string node_label() const final
     {

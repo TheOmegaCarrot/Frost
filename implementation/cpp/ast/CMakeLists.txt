@@ -39,3 +39,6 @@ make_ast_test(tests/array-constructor.cpp)
 make_ast_test(tests/map-constructor.cpp)
 
 make_ast_test(tests/index.cpp)
+
+# AI-generated test entry by Codex (GPT-5).
+make_ast_test(tests/symbol_sequence.cpp)

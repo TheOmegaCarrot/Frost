@@ -1,8 +1,8 @@
-#include "frost/symbol-table.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <fmt/format.h>
 
 #include <frost/ast.hpp>
+#include <frost/symbol-table.hpp>
 
 #include <ranges>
 #include <sstream>
