@@ -3,7 +3,6 @@
 #include <frost/symbol-table.hpp>
 
 #include <flat_set>
-#include <set>
 #include <sstream>
 
 using namespace frst;
@@ -29,8 +28,9 @@ Closure::Closure(std::vector<std::string> parameters,
         throw Frost_Error{"Closure has duplicate parameters"};
     }
 
-    std::set<std::string> names_defined_so_far{std::from_range, parameters_};
-    std::set<std::string> names_to_capture;
+    std::flat_set<std::string> names_defined_so_far{std::from_range,
+                                                    parameters_};
+    std::flat_set<std::string> names_to_capture;
 
     for (const ast::Statement::Symbol_Action& name :
          body_ | std::views::transform(&node_to_sym_seq) | std::views::join)

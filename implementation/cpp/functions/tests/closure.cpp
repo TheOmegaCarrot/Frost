@@ -234,6 +234,40 @@ TEST_CASE("Construct Closure")
         CHECK_FALSE(closure.debug_capture_table().has("x"));
     }
 
+    SECTION("Self-referential define captures prior usage in expression")
+    {
+        Symbol_Table env;
+        auto x_val = Value::create(10_f);
+        env.define("x", x_val);
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(
+            node<Define>("x", node<Binop>(node<Literal>(Value::create(1_f)),
+                                          "+", node<Name_Lookup>("x"))));
+
+        Closure closure{{}, std::move(body), env};
+
+        CHECK(capture_names(closure) == std::set<std::string>{"x"});
+        CHECK(closure.debug_capture_table().lookup("x") == x_val);
+    }
+
+    SECTION("Parameter used only in define RHS is not captured")
+    {
+        Symbol_Table env;
+        auto p_val = Value::create(3_f);
+        env.define("p", p_val);
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(
+            node<Define>("x", node<Binop>(node<Name_Lookup>("p"), "+",
+                                          node<Literal>(Value::create(1_f)))));
+
+        Closure closure{{"p"}, std::move(body), env};
+
+        CHECK(capture_names(closure).empty());
+        CHECK_FALSE(closure.debug_capture_table().has("p"));
+    }
+
     SECTION("If captures condition and both branches (structural)")
     {
         Symbol_Table env;
@@ -265,10 +299,10 @@ TEST_CASE("Construct Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("missing"));
 
-        CHECK_THROWS_WITH(
-            (Closure{{}, std::move(body), env}),
-            ContainsSubstring("No definition found for captured symbol")
-                && ContainsSubstring("missing"));
+        CHECK_THROWS_WITH((Closure{{}, std::move(body), env}),
+                          ContainsSubstring("No definition found for captured "
+                                            "symbol")
+                              && ContainsSubstring("missing"));
     }
 
     SECTION("Mock expression sequence controls capture set")
