@@ -120,9 +120,8 @@ TEST_CASE("Construct Closure")
 
         std::vector<Statement::Ptr> body;
 
-        CHECK_THROWS_WITH(
-            ([&] { return Closure{{"x", "x"}, std::move(body), env}; }()),
-            ContainsSubstring("duplicate"));
+        CHECK_THROWS_WITH((Closure{{"x", "x"}, std::move(body), env}),
+                          ContainsSubstring("duplicate"));
     }
 
     SECTION("Defining a parameter name is an error at construction")
@@ -134,9 +133,9 @@ TEST_CASE("Construct Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("x", node<Literal>(Value::create(2_f))));
 
-        CHECK_THROWS_WITH(
-            ([&] { return Closure{{"x"}, std::move(body), env}; }()),
-            ContainsSubstring("parameter") && ContainsSubstring("x"));
+        CHECK_THROWS_WITH((Closure{{"x"}, std::move(body), env}),
+                          ContainsSubstring("parameter")
+                              && ContainsSubstring("x"));
     }
 
     SECTION("Use before define captures from environment")
@@ -267,7 +266,7 @@ TEST_CASE("Construct Closure")
         body.push_back(node<Name_Lookup>("missing"));
 
         CHECK_THROWS_WITH(
-            ([&] { return Closure{{}, std::move(body), env}; }()),
+            (Closure{{}, std::move(body), env}),
             ContainsSubstring("No definition found for captured symbol")
                 && ContainsSubstring("missing"));
     }
