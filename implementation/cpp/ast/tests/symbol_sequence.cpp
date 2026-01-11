@@ -147,6 +147,37 @@ TEST_CASE("Symbol Sequence")
               == std::vector<std::string>{"use:arr", "use:i"});
     }
 
+    SECTION("Function call yields function then args")
+    {
+        std::vector<Expression::Ptr> args;
+        args.push_back(name("a"));
+        args.push_back(std::make_unique<Binop>(name("b"), "+", name("c")));
+
+        Function_Call node{name("fn"), std::move(args)};
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:fn", "use:a", "use:b",
+                                          "use:c"});
+    }
+
+    SECTION("Nested function call yields in order")
+    {
+        std::vector<Expression::Ptr> inner_args;
+        inner_args.push_back(name("b"));
+        inner_args.push_back(name("c"));
+
+        auto inner_call =
+            std::make_unique<Function_Call>(name("g"), std::move(inner_args));
+
+        std::vector<Expression::Ptr> args;
+        args.push_back(name("a"));
+        args.push_back(std::move(inner_call));
+
+        Function_Call node{name("f"), std::move(args)};
+        CHECK(collect_sequence(node)
+              == std::vector<std::string>{"use:f", "use:a", "use:g", "use:b",
+                                          "use:c"});
+    }
+
     SECTION("If yields condition, consequent, alternate (structural)")
     {
         If node{name("cond"), name("then"),
@@ -280,6 +311,17 @@ TEST_CASE("Symbol Sequence")
 
         program.push_back(std::move(stmt_eq));
 
+        std::vector<Expression::Ptr> call_args;
+
+        call_args.push_back(name("arg1"));
+
+        call_args.push_back(name("arg2"));
+
+        auto stmt_call =
+            std::make_unique<Function_Call>(name("func"), std::move(call_args));
+
+        program.push_back(std::move(stmt_call));
+
         for (const auto& node : program)
         {
             node->debug_dump_ast(std::cout);
@@ -304,6 +346,9 @@ TEST_CASE("Symbol Sequence")
                   "use:i",
                   "use:x",
                   "use:y",
+                  "use:func",
+                  "use:arg1",
+                  "use:arg2",
               });
     }
 }

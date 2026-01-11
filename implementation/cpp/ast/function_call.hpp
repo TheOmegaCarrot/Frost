@@ -45,7 +45,7 @@ class Function_Call final : public Expression
               })
             | std::ranges::to<std::vector>();
 
-        [[gnu::musttail]] return fn->raw_get<Function>()->call(std::move(args));
+        return fn->raw_get<Function>()->call(std::move(args));
     }
 
   protected:
