@@ -7,11 +7,11 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
-/*
 namespace frst::ast
 {
 class Lambda final : public Expression
 {
+  public:
     using Ptr = std::unique_ptr<Lambda>;
 
     Lambda() = delete;
@@ -56,5 +56,4 @@ class Lambda final : public Expression
 };
 } // namespace frst::ast
 
-*/
 #endif

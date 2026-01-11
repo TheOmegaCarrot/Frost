@@ -17,7 +17,7 @@ std::generator<ast::Statement::Symbol_Action> node_to_sym_seq(
 } // namespace
 
 Closure::Closure(std::vector<std::string> parameters,
-                 std::vector<ast::Statement::Ptr>* body,
+                 const std::vector<ast::Statement::Ptr>* body,
                  const Symbol_Table& construction_environment)
     : parameters_{std::move(parameters)}
     , body_{std::move(body)}

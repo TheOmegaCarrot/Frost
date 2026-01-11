@@ -48,3 +48,5 @@ functions_test(tests/builtins/debug-helpers.cpp)
 functions_test(tests/builtins/pformat.cpp)
 
 functions_test(tests/closure.cpp)
+
+functions_test(tests/lambda.cpp)

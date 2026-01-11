@@ -18,7 +18,7 @@ class Closure : public Callable
     ~Closure() override = default;
 
     Closure(std::vector<std::string> parameters,
-            std::vector<ast::Statement::Ptr>* body,
+            const std::vector<ast::Statement::Ptr>* body,
             const Symbol_Table& construction_environment);
 
     Value_Ptr call(const std::vector<Value_Ptr>& args) const override;
@@ -30,7 +30,7 @@ class Closure : public Callable
 
   private:
     std::vector<std::string> parameters_;
-    std::vector<ast::Statement::Ptr>* body_;
+    const std::vector<ast::Statement::Ptr>* body_;
     Symbol_Table captures_;
 };
 } // namespace frst
