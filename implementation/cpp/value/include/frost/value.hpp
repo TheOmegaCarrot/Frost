@@ -32,8 +32,11 @@ struct Value_Ptr_Less
 };
 } // namespace impl
 
+/*
 #pragma message(                                                               \
-    "TODO: single global Null to reference, rather than repeatedly allocating Nulls")
+    "TODO: single global Null to reference, rather than repeatedly allocating
+Nulls")
+    */
 struct Null
 {
     friend bool operator==(Null, Null)
