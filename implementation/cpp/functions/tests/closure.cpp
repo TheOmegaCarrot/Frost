@@ -368,6 +368,180 @@ TEST_CASE("Construct Closure")
 
 TEST_CASE("Call Closure")
 {
+    // AI-generated test additions by Codex (GPT-5).
+    // Signed: Codex (GPT-5).
+
+    SECTION("Empty body returns null")
+    {
+        Symbol_Table env;
+        std::vector<Statement::Ptr> body;
+
+        Closure closure{{}, std::move(body), env};
+
+        auto result = closure.call({});
+        CHECK(result->is<Null>());
+    }
+
+    SECTION("Missing parameters are bound to null")
+    {
+        Symbol_Table env;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("q"));
+
+        Closure closure{{"p", "q"}, std::move(body), env};
+
+        auto result = closure.call({Value::create(1_f)});
+        CHECK(result->is<Null>());
+    }
+
+    SECTION("Parameter values are passed by pointer")
+    {
+        Symbol_Table env;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("p"));
+
+        auto p_val = Value::create(99_f);
+        Closure closure{{"p"}, std::move(body), env};
+
+        auto result = closure.call({p_val});
+        CHECK(result == p_val);
+    }
+
+    SECTION("Literal returns exact pointer from last expression")
+    {
+        Symbol_Table env;
+        auto lit_val = Value::create(123_f);
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Literal>(lit_val));
+
+        Closure closure{{}, std::move(body), env};
+
+        auto result = closure.call({});
+        CHECK(result == lit_val);
+    }
+
+    SECTION("Single closure can be called multiple times")
+    {
+        Symbol_Table env;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("p"));
+
+        Closure closure{{"p"}, std::move(body), env};
+
+        auto first = Value::create(1_f);
+        auto second = Value::create(2_f);
+
+        CHECK(closure.call({first}) == first);
+        CHECK(closure.call({second}) == second);
+    }
+
+    SECTION("Closure with local define can be called multiple times")
+    {
+        Symbol_Table env;
+        env.define("x", Value::create(100_f));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("x", node<Literal>(Value::create(1_f))));
+        body.push_back(node<Name_Lookup>("x"));
+
+        Closure closure{{}, std::move(body), env};
+
+        auto first = closure.call({});
+        auto second = closure.call({});
+
+        CHECK(first->get<Int>() == 1_f);
+        CHECK(second->get<Int>() == 1_f);
+    }
+
+    SECTION("Captured value used before local define")
+    {
+        Symbol_Table env;
+        env.define("x", Value::create(2_f));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("y", node<Name_Lookup>("x")));
+        body.push_back(node<Define>("x", node<Literal>(Value::create(4_f))));
+        body.push_back(node<Binop>(node<Name_Lookup>("x"), "+",
+                                   node<Name_Lookup>("y")));
+
+        Closure closure{{}, std::move(body), env};
+
+        auto result = closure.call({});
+        CHECK(result->get<Int>() == 6_f);
+    }
+
+    SECTION("Captures are visible during call")
+    {
+        Symbol_Table env;
+        auto x_val = Value::create(7_f);
+        env.define("x", x_val);
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("x"));
+
+        Closure closure{{}, std::move(body), env};
+
+        auto result = closure.call({});
+        CHECK(result == x_val);
+    }
+
+    SECTION("Local definitions shadow captured values")
+    {
+        Symbol_Table env;
+        auto x_val = Value::create(1_f);
+        env.define("x", x_val);
+        auto local_val = Value::create(2_f);
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("x"));
+        body.push_back(node<Define>("x", node<Literal>(local_val)));
+        body.push_back(node<Name_Lookup>("x"));
+
+        Closure closure{{}, std::move(body), env};
+
+        auto result = closure.call({});
+        CHECK(result == local_val);
+        CHECK(closure.debug_capture_table().lookup("x") == x_val);
+    }
+
+    SECTION("Last statement that is not an expression returns null")
+    {
+        Symbol_Table env;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("x", node<Literal>(Value::create(1_f))));
+
+        Closure closure{{}, std::move(body), env};
+
+        auto result = closure.call({});
+        CHECK(result->is<Null>());
+    }
+
+    SECTION("Too many arguments is an error")
+    {
+        Symbol_Table env;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Literal>(Value::create(1_f)));
+
+        Closure closure{{"p"}, std::move(body), env};
+
+        CHECK_THROWS_WITH(
+            closure.call({Value::create(1_f), Value::create(2_f)}),
+            ContainsSubstring("too many arguments"));
+    }
+
+    SECTION("Evaluation errors propagate")
+    {
+        Symbol_Table env;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Binop>(node<Literal>(Value::create(1_f)), "+",
+                                   node<Literal>(Value::create(true))));
+
+        Closure closure{{}, std::move(body), env};
+
+        CHECK_THROWS_WITH(closure.call({}),
+                          ContainsSubstring("Cannot add incompatible types"));
+    }
 }
 
 TEST_CASE("Debug Dump Closure")
