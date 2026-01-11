@@ -4,6 +4,7 @@
 #include <frost/testing/stringmaker-specializations.hpp>
 
 #include <set>
+#include <utility>
 
 #include <frost/ast.hpp>
 #include <frost/closure.hpp>
@@ -12,6 +13,7 @@
 #include <frost/value.hpp>
 
 using namespace frst;
+using namespace frst::ast;
 using namespace std::literals;
 using Catch::Matchers::ContainsSubstring;
 
@@ -27,20 +29,26 @@ std::set<std::string> capture_names(const Closure& closure)
 
 struct Seq_Mock_Expression final : mock::Mock_Expression
 {
-    explicit Seq_Mock_Expression(std::vector<ast::Statement::Symbol_Action> seq)
+    explicit Seq_Mock_Expression(std::vector<Statement::Symbol_Action> seq)
         : seq_{std::move(seq)}
     {
     }
 
-    std::generator<ast::Statement::Symbol_Action> symbol_sequence() const final
+    std::generator<Statement::Symbol_Action> symbol_sequence() const final
     {
         for (const auto& action : seq_)
             co_yield action;
     }
 
   private:
-    std::vector<ast::Statement::Symbol_Action> seq_;
+    std::vector<Statement::Symbol_Action> seq_;
 };
+
+template <typename T, typename... Args>
+std::unique_ptr<T> node(Args&&... args)
+{
+    return std::make_unique<T>(std::forward<Args>(args)...);
+}
 } // namespace
 
 TEST_CASE("Construct Closure")
@@ -51,124 +59,139 @@ TEST_CASE("Construct Closure")
     SECTION("Captures only free variables")
     {
         Symbol_Table env;
-        env.define("x", Value::create(10_f));
-        env.define("y", Value::create(20_f));
+        auto x_val = Value::create(10_f);
+        auto y_val = Value::create(20_f);
+        env.define("x", x_val);
+        env.define("y", y_val);
 
-        std::vector<ast::Statement::Ptr> body;
-        body.push_back(std::make_unique<ast::Binop>(
-            std::make_unique<ast::Name_Lookup>("x"), "+",
-            std::make_unique<ast::Name_Lookup>("y")));
+        std::vector<Statement::Ptr> body;
+        body.push_back(
+            node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
 
         Closure closure{{}, std::move(body), env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x", "y"});
         CHECK(closure.debug_capture_table().lookup("x") == env.lookup("x"));
         CHECK(closure.debug_capture_table().lookup("y") == env.lookup("y"));
+        CHECK(closure.debug_capture_table().lookup("x") == x_val);
+        CHECK(closure.debug_capture_table().lookup("y") == y_val);
     }
 
     SECTION("Parameters are not captured")
     {
         Symbol_Table env;
-        env.define("p", Value::create(1_f));
-        env.define("x", Value::create(2_f));
+        auto p_val = Value::create(1_f);
+        auto x_val = Value::create(2_f);
+        env.define("p", p_val);
+        env.define("x", x_val);
 
-        std::vector<ast::Statement::Ptr> body;
-        body.push_back(std::make_unique<ast::Binop>(
-            std::make_unique<ast::Name_Lookup>("p"), "+",
-            std::make_unique<ast::Name_Lookup>("x")));
+        std::vector<Statement::Ptr> body;
+        body.push_back(
+            node<Binop>(node<Name_Lookup>("p"), "+", node<Name_Lookup>("x")));
 
         Closure closure{{"p"}, std::move(body), env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x"});
         CHECK(closure.debug_capture_table().lookup("x") == env.lookup("x"));
+        CHECK(closure.debug_capture_table().lookup("x") == x_val);
         CHECK_FALSE(closure.debug_capture_table().has("p"));
     }
 
     SECTION("Use before define captures from environment")
     {
         Symbol_Table env;
-        env.define("x", Value::create(5_f));
+        auto x_val = Value::create(5_f);
+        env.define("x", x_val);
 
-        std::vector<ast::Statement::Ptr> body;
-        body.push_back(std::make_unique<ast::Binop>(
-            std::make_unique<ast::Name_Lookup>("x"), "+",
-            std::make_unique<ast::Literal>(Value::create(1_f))));
-        body.push_back(std::make_unique<ast::Define>(
-            "x", std::make_unique<ast::Literal>(Value::create(2_f))));
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Binop>(node<Name_Lookup>("x"), "+",
+                                   node<Literal>(Value::create(1_f))));
+        body.push_back(node<Define>("x", node<Literal>(Value::create(2_f))));
 
         Closure closure{{}, std::move(body), env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x"});
+        CHECK(closure.debug_capture_table().lookup("x") == x_val);
     }
 
-    SECTION("Definitions shadow later usages")
+    SECTION("Locals shadowing construction environment are not captured")
     {
         Symbol_Table env;
-        env.define("x", Value::create(5_f));
-        env.define("y", Value::create(7_f));
+        auto x_val = Value::create(5_f);
+        auto y_val = Value::create(7_f);
+        env.define("x", x_val);
+        env.define("y", y_val);
 
-        std::vector<ast::Statement::Ptr> body;
-        body.push_back(std::make_unique<ast::Define>(
-            "x", std::make_unique<ast::Name_Lookup>("y")));
-        body.push_back(std::make_unique<ast::Name_Lookup>("x"));
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("x", node<Name_Lookup>("y")));
+        body.push_back(node<Name_Lookup>("x"));
 
         Closure closure{{}, std::move(body), env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"y"});
+        CHECK(closure.debug_capture_table().lookup("y") == y_val);
         CHECK_FALSE(closure.debug_capture_table().has("x"));
     }
 
     SECTION("If captures condition and both branches (structural)")
     {
         Symbol_Table env;
-        env.define("cond", Value::create(true));
-        env.define("t", Value::create(1_f));
-        env.define("f", Value::create(0_f));
+        auto cond_val = Value::create(true);
+        auto t_val = Value::create(1_f);
+        auto f_val = Value::create(0_f);
+        env.define("cond", cond_val);
+        env.define("t", t_val);
+        env.define("f", f_val);
 
-        std::vector<ast::Statement::Ptr> body;
-        body.push_back(std::make_unique<ast::If>(
-            std::make_unique<ast::Name_Lookup>("cond"),
-            std::make_unique<ast::Name_Lookup>("t"),
-            std::optional<ast::Expression::Ptr>{
-                std::make_unique<ast::Name_Lookup>("f")}));
+        std::vector<Statement::Ptr> body;
+        body.push_back(
+            node<If>(node<Name_Lookup>("cond"), node<Name_Lookup>("t"),
+                     std::optional<Expression::Ptr>{node<Name_Lookup>("f")}));
 
         Closure closure{{}, std::move(body), env};
 
         CHECK(capture_names(closure)
               == std::set<std::string>{"cond", "f", "t"});
+        CHECK(closure.debug_capture_table().lookup("cond") == cond_val);
+        CHECK(closure.debug_capture_table().lookup("t") == t_val);
+        CHECK(closure.debug_capture_table().lookup("f") == f_val);
     }
 
     SECTION("Missing capture throws during construction")
     {
         Symbol_Table env;
 
-        std::vector<ast::Statement::Ptr> body;
-        body.push_back(std::make_unique<ast::Name_Lookup>("missing"));
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("missing"));
 
         CHECK_THROWS_WITH(
-            (Closure{{}, std::move(body), env}),
+            ([&] { return Closure{{}, std::move(body), env}; }()),
             ContainsSubstring("No definition found for captured symbol"));
     }
 
     SECTION("Mock expression sequence controls capture set")
     {
         Symbol_Table env;
-        env.define("a", Value::create(1_f));
-        env.define("c", Value::create(2_f));
+        auto a_val = Value::create(1_f);
+        auto c_val = Value::create(2_f);
+        env.define("a", a_val);
+        env.define("c", c_val);
 
-        std::vector<ast::Statement::Symbol_Action> seq{
-            ast::Statement::Usage{"a"},
-            ast::Statement::Definition{"b"},
-            ast::Statement::Usage{"b"},
-            ast::Statement::Usage{"c"},
+        std::vector<Statement::Symbol_Action> seq{
+            Statement::Usage{"a"},
+            Statement::Definition{"b"},
+            Statement::Usage{"b"},
+            Statement::Usage{"c"},
         };
 
-        std::vector<ast::Statement::Ptr> body;
-        body.push_back(std::make_unique<Seq_Mock_Expression>(seq));
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Seq_Mock_Expression>(std::move(seq)));
 
         Closure closure{{}, std::move(body), env};
 
         CHECK(capture_names(closure) == std::set<std::string>{"a", "c"});
+        CHECK(closure.debug_capture_table().lookup("a") == a_val);
+        CHECK(closure.debug_capture_table().lookup("c") == c_val);
         CHECK_FALSE(closure.debug_capture_table().has("b"));
     }
 }
