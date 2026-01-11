@@ -117,12 +117,13 @@ std::string Closure::debug_dump() const
                 | std::views::keys
                 | std::views::join_with(',')
                 | std::ranges::to<std::string>())
-            << ")\n";
+            << ")";
     }
+
+    os << '\n';
 
     for (const auto& statement : body_)
     {
-        os << "    ";
         statement->debug_dump_ast(os);
     }
 
