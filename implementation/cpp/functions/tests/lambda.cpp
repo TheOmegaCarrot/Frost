@@ -809,16 +809,16 @@ TEST_CASE("Lambda")
         {
             auto sum_xy = node<Binop>(node<Name_Lookup>("x"), "+",
                                       node<Name_Lookup>("y"));
-            auto sum_xyp = node<Binop>(std::move(sum_xy), "+",
-                                       node<Name_Lookup>("p"));
+            auto sum_xyp =
+                node<Binop>(std::move(sum_xy), "+", node<Name_Lookup>("p"));
             inner_body.push_back(
                 node<Binop>(std::move(sum_xyp), "+", node<Name_Lookup>("q")));
         }
 
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(node<Define>("y", node<Literal>(y_val)));
-        outer_body.push_back(node<Lambda>(std::vector<std::string>{"q"},
-                                          std::move(inner_body)));
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{"q"}, std::move(inner_body)));
 
         Lambda outer{{"p"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
@@ -976,14 +976,12 @@ TEST_CASE("Lambda")
                                          std::move(inner_x_body)));
             elems.push_back(node<Lambda>(std::vector<std::string>{},
                                          std::move(inner_y_body)));
-            outer_body.push_back(
-                node<Array_Constructor>(std::move(elems)));
+            outer_body.push_back(node<Array_Constructor>(std::move(elems)));
         }
 
         Lambda outer{{}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
-        CHECK(capture_names(*outer_closure)
-              == std::set<std::string>{"x", "y"});
+        CHECK(capture_names(*outer_closure) == std::set<std::string>{"x", "y"});
 
         auto result = outer_closure->call({});
         auto arr = result->get<Array>().value();
@@ -1015,19 +1013,19 @@ TEST_CASE("Lambda")
         {
             auto sum_ga = node<Binop>(node<Name_Lookup>("g"), "+",
                                       node<Name_Lookup>("a"));
-            auto sum_gab = node<Binop>(std::move(sum_ga), "+",
-                                       node<Name_Lookup>("b"));
+            auto sum_gab =
+                node<Binop>(std::move(sum_ga), "+", node<Name_Lookup>("b"));
             inner_body.push_back(
                 node<Binop>(std::move(sum_gab), "+", node<Name_Lookup>("c")));
         }
 
         std::vector<Statement::Ptr> mid_body;
-        mid_body.push_back(node<Lambda>(std::vector<std::string>{"c"},
-                                        std::move(inner_body)));
+        mid_body.push_back(
+            node<Lambda>(std::vector<std::string>{"c"}, std::move(inner_body)));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Lambda>(std::vector<std::string>{"b"},
-                                          std::move(mid_body)));
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{"b"}, std::move(mid_body)));
 
         Lambda outer{{"a"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
@@ -1036,8 +1034,7 @@ TEST_CASE("Lambda")
         auto a_val = Value::create(2_f);
         auto mid_val = outer_closure->call({a_val});
         auto mid_closure = value_to_closure(mid_val);
-        CHECK(capture_names(*mid_closure)
-              == std::set<std::string>{"a", "g"});
+        CHECK(capture_names(*mid_closure) == std::set<std::string>{"a", "g"});
 
         auto b_val = Value::create(3_f);
         auto inner_val = mid_closure->call({b_val});
@@ -1075,9 +1072,8 @@ TEST_CASE("Lambda")
         outer_body.push_back(node<If>(
             node<Name_Lookup>("cond"),
             node<Lambda>(std::vector<std::string>{}, std::move(inner_x_body)),
-            std::optional<Expression::Ptr>{
-                node<Lambda>(std::vector<std::string>{},
-                             std::move(inner_y_body))}));
+            std::optional<Expression::Ptr>{node<Lambda>(
+                std::vector<std::string>{}, std::move(inner_y_body))}));
 
         Lambda outer{{}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
@@ -1108,8 +1104,7 @@ TEST_CASE("Lambda")
             elems.push_back(node<Lambda>(std::vector<std::string>{},
                                          std::move(inner_body)));
             elems.push_back(node<Literal>(Value::create(0_f)));
-            outer_body.push_back(
-                node<Array_Constructor>(std::move(elems)));
+            outer_body.push_back(node<Array_Constructor>(std::move(elems)));
         }
 
         Lambda outer{{}, std::move(outer_body)};
@@ -1216,14 +1211,12 @@ TEST_CASE("Lambda")
                                          std::move(inner_xy_body)));
             elems.push_back(node<Lambda>(std::vector<std::string>{},
                                          std::move(inner_y_body)));
-            outer_body.push_back(
-                node<Array_Constructor>(std::move(elems)));
+            outer_body.push_back(node<Array_Constructor>(std::move(elems)));
         }
 
         Lambda outer{{}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
-        CHECK(capture_names(*outer_closure)
-              == std::set<std::string>{"x", "y"});
+        CHECK(capture_names(*outer_closure) == std::set<std::string>{"x", "y"});
 
         auto arr_val = outer_closure->call({});
         auto arr = arr_val->get<Array>().value();
@@ -1276,7 +1269,8 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(node<If>(
             node<Name_Lookup>("cond"),
-            node<Lambda>(std::vector<std::string>{"q"}, std::move(inner_x_body)),
+            node<Lambda>(std::vector<std::string>{"q"},
+                         std::move(inner_x_body)),
             std::optional<Expression::Ptr>{node<Lambda>(
                 std::vector<std::string>{"q"}, std::move(inner_y_body))}));
 
@@ -1329,7 +1323,8 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(node<If>(
             node<Name_Lookup>("cond"),
-            node<Lambda>(std::vector<std::string>{"q"}, std::move(inner_x_body)),
+            node<Lambda>(std::vector<std::string>{"q"},
+                         std::move(inner_x_body)),
             std::optional<Expression::Ptr>{node<Lambda>(
                 std::vector<std::string>{"q"}, std::move(inner_y_body))}));
 
@@ -1357,8 +1352,8 @@ TEST_CASE("Lambda")
         inner_body.push_back(node<Name_Lookup>("x"));
 
         std::vector<Statement::Ptr> mid_body;
-        mid_body.push_back(node<Lambda>(std::vector<std::string>{},
-                                        std::move(inner_body)));
+        mid_body.push_back(
+            node<Lambda>(std::vector<std::string>{}, std::move(inner_body)));
 
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(
