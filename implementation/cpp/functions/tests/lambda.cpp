@@ -92,19 +92,23 @@ TEST_CASE("Lambda")
         CHECK(result->is<Function>());
     }
 
-    SECTION("Symbol sequence is empty even with a body")
+    SECTION("Symbol sequence yields free usages")
     {
+        // Frost:
+        // def f = fn (p) -> { x ; def y = 1 }
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("x"));
         body.push_back(node<Define>("y", node<Literal>(Value::create(1_f))));
 
         Lambda node{{"p"}, std::move(body)};
 
-        std::size_t count = 0;
-        for ([[maybe_unused]] const auto& action : node.symbol_sequence())
-            ++count;
+        std::vector<Statement::Symbol_Action> actions;
+        for (const auto& action : node.symbol_sequence())
+            actions.push_back(action);
 
-        CHECK(count == 0);
+        REQUIRE(actions.size() == 1);
+        CHECK(std::holds_alternative<Statement::Usage>(actions[0]));
+        CHECK(std::get<Statement::Usage>(actions[0]).name == "x");
     }
 
     SECTION("Empty body with parameters is allowed")
