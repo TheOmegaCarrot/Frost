@@ -21,6 +21,10 @@
 
 namespace frst::builtin_detail
 {
+struct Any
+{
+};
+
 template <typename... Ts>
 struct Types
 {
@@ -33,24 +37,43 @@ struct ParamSpec
     std::string_view label;
 };
 
+template <typename Spec>
+struct Optional
+{
+    Spec spec;
+};
+
+template <typename T>
+inline constexpr bool is_any_v = std::same_as<T, Any>;
+
 template <typename... Ts>
 constexpr bool matches(const Value_Ptr& v)
 {
-    return (v->is<Ts>() || ...);
+    if constexpr ((is_any_v<Ts> || ...))
+        return true;
+    else
+        return (v->is<Ts>() || ...);
 }
 
 template <typename... Ts>
 std::string expected_list()
 {
-    std::array<std::string_view, sizeof...(Ts)> names{type_str<Ts>()...};
-    std::string out;
-    for (std::size_t i = 0; i < names.size(); ++i)
+    if constexpr ((is_any_v<Ts> || ...))
     {
-        if (i > 0)
-            out += " or ";
-        out += names[i];
+        return "Any";
     }
-    return out;
+    else
+    {
+        std::array<std::string_view, sizeof...(Ts)> names{type_str<Ts>()...};
+        std::string out;
+        for (std::size_t i = 0; i < names.size(); ++i)
+        {
+            if (i > 0)
+                out += " or ";
+            out += names[i];
+        }
+        return out;
+    }
 }
 
 template <typename... Ts>
@@ -76,6 +99,15 @@ void require_arg(std::string_view fn, builtin_args_t args, std::size_t idx,
     require_arg(fn, args, idx, spec.types, spec.label);
 }
 
+template <typename Spec>
+void require_arg(std::string_view fn, builtin_args_t args, std::size_t idx,
+                 Optional<Spec> spec)
+{
+    if (idx >= args.size())
+        return;
+    require_arg(fn, args, idx, spec.spec);
+}
+
 template <typename... Specs>
 void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
 {
@@ -94,6 +126,14 @@ void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
     {                                                                          \
         TYPES_SPEC, LABEL                                                      \
     }
+
+#define OPTIONAL(SPEC)                                                         \
+    frst::builtin_detail::Optional                                             \
+    {                                                                          \
+        SPEC                                                                   \
+    }
+
+#define ANY frst::builtin_detail::Types<frst::builtin_detail::Any>{}
 
 #define REQUIRE_ARGS(NAME, ...)                                                \
     frst::builtin_detail::require_args(#NAME, args __VA_OPT__(, ) __VA_ARGS__)
