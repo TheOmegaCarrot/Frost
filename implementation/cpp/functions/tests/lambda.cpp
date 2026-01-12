@@ -1048,4 +1048,336 @@ TEST_CASE("Lambda")
         auto out = inner_closure->call({Value::create(4_f)});
         CHECK(out->get<Int>() == 10_f);
     }
+
+    SECTION("Nested lambdas in conditional branches capture union of names")
+    {
+        // Frost:
+        // def cond = true
+        // def x = 1
+        // def y = 2
+        // def outer = fn () -> {
+        //     if cond: fn () -> { x } else: fn () -> { y }
+        // }
+        Symbol_Table env;
+        auto cond_val = Value::create(true);
+        auto x_val = Value::create(1_f);
+        auto y_val = Value::create(2_f);
+        env.define("cond", cond_val);
+        env.define("x", x_val);
+        env.define("y", y_val);
+
+        std::vector<Statement::Ptr> inner_x_body;
+        inner_x_body.push_back(node<Name_Lookup>("x"));
+        std::vector<Statement::Ptr> inner_y_body;
+        inner_y_body.push_back(node<Name_Lookup>("y"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(node<If>(
+            node<Name_Lookup>("cond"),
+            node<Lambda>(std::vector<std::string>{}, std::move(inner_x_body)),
+            std::optional<Expression::Ptr>{
+                node<Lambda>(std::vector<std::string>{},
+                             std::move(inner_y_body))}));
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure)
+              == std::set<std::string>{"cond", "x", "y"});
+
+        auto inner_val = outer_closure->call({});
+        auto inner_closure = value_to_closure(inner_val);
+        CHECK(capture_names(*inner_closure) == std::set<std::string>{"x"});
+        CHECK(inner_closure->call({}) == x_val);
+    }
+
+    SECTION("Nested lambda embedded in a larger expression")
+    {
+        // Frost:
+        // def x = 7
+        // def outer = fn () -> { [ fn () -> { x }, 0 ] }
+        Symbol_Table env;
+        auto x_val = Value::create(7_f);
+        env.define("x", x_val);
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("x"));
+
+        std::vector<Statement::Ptr> outer_body;
+        {
+            std::vector<Expression::Ptr> elems;
+            elems.push_back(node<Lambda>(std::vector<std::string>{},
+                                         std::move(inner_body)));
+            elems.push_back(node<Literal>(Value::create(0_f)));
+            outer_body.push_back(
+                node<Array_Constructor>(std::move(elems)));
+        }
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure) == std::set<std::string>{"x"});
+
+        auto arr_val = outer_closure->call({});
+        auto arr = arr_val->get<Array>().value();
+        REQUIRE(arr.size() == 2);
+        auto inner_closure = value_to_closure(arr[0]);
+        CHECK(capture_names(*inner_closure) == std::set<std::string>{"x"});
+        CHECK(inner_closure->call({}) == x_val);
+    }
+
+    SECTION("Nested lambda use-before-define with later local shadow")
+    {
+        // Frost:
+        // def y = 10
+        // def outer = fn () -> { fn () -> { y ; def y = 1 ; y } }
+        Symbol_Table env;
+        auto y_val = Value::create(10_f);
+        env.define("y", y_val);
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("y"));
+        inner_body.push_back(
+            node<Define>("y", node<Literal>(Value::create(1_f))));
+        inner_body.push_back(node<Name_Lookup>("y"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{}, std::move(inner_body)));
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure) == std::set<std::string>{"y"});
+
+        auto inner_val = outer_closure->call({});
+        auto inner_closure = value_to_closure(inner_val);
+        CHECK(capture_names(*inner_closure) == std::set<std::string>{"y"});
+        CHECK(inner_closure->debug_capture_table().lookup("y") == y_val);
+
+        auto out = inner_closure->call({});
+        CHECK(out->get<Int>() == 1_f);
+    }
+
+    SECTION("Nested lambda captures from failover chain")
+    {
+        // Frost:
+        // def x = 5
+        // def outer = fn () -> { fn () -> { x } }
+        Symbol_Table outer_env;
+        auto x_val = Value::create(5_f);
+        outer_env.define("x", x_val);
+        Symbol_Table env{&outer_env};
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("x"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{}, std::move(inner_body)));
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure) == std::set<std::string>{"x"});
+        CHECK(outer_closure->debug_capture_table().lookup("x") == x_val);
+
+        auto inner_val = outer_closure->call({});
+        auto inner_closure = value_to_closure(inner_val);
+        CHECK(capture_names(*inner_closure) == std::set<std::string>{"x"});
+        CHECK(inner_closure->debug_capture_table().lookup("x") == x_val);
+        CHECK(inner_closure->call({}) == x_val);
+    }
+
+    SECTION("Multiple nested lambdas with overlapping free names")
+    {
+        // Frost:
+        // def x = 1
+        // def y = 2
+        // def outer = fn () -> {
+        //     [ fn () -> { x }, fn () -> { x + y }, fn () -> { y } ]
+        // }
+        Symbol_Table env;
+        auto x_val = Value::create(1_f);
+        auto y_val = Value::create(2_f);
+        env.define("x", x_val);
+        env.define("y", y_val);
+
+        std::vector<Statement::Ptr> inner_x_body;
+        inner_x_body.push_back(node<Name_Lookup>("x"));
+        std::vector<Statement::Ptr> inner_xy_body;
+        inner_xy_body.push_back(
+            node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
+        std::vector<Statement::Ptr> inner_y_body;
+        inner_y_body.push_back(node<Name_Lookup>("y"));
+
+        std::vector<Statement::Ptr> outer_body;
+        {
+            std::vector<Expression::Ptr> elems;
+            elems.push_back(node<Lambda>(std::vector<std::string>{},
+                                         std::move(inner_x_body)));
+            elems.push_back(node<Lambda>(std::vector<std::string>{},
+                                         std::move(inner_xy_body)));
+            elems.push_back(node<Lambda>(std::vector<std::string>{},
+                                         std::move(inner_y_body)));
+            outer_body.push_back(
+                node<Array_Constructor>(std::move(elems)));
+        }
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure)
+              == std::set<std::string>{"x", "y"});
+
+        auto arr_val = outer_closure->call({});
+        auto arr = arr_val->get<Array>().value();
+        REQUIRE(arr.size() == 3);
+        auto f_x = value_to_closure(arr[0]);
+        auto f_xy = value_to_closure(arr[1]);
+        auto f_y = value_to_closure(arr[2]);
+
+        CHECK(capture_names(*f_x) == std::set<std::string>{"x"});
+        CHECK(capture_names(*f_xy) == std::set<std::string>{"x", "y"});
+        CHECK(capture_names(*f_y) == std::set<std::string>{"y"});
+
+        CHECK(f_x->call({}) == x_val);
+        CHECK(f_y->call({}) == y_val);
+        CHECK(f_xy->call({})->get<Int>() == 3_f);
+    }
+
+    SECTION("Conditional branches with parameters (true branch)")
+    {
+        // Frost:
+        // def cond = true
+        // def x = 1
+        // def y = 2
+        // def outer = fn (p) -> {
+        //     if cond: fn (q) -> { x + p + q }
+        //     else: fn (q) -> { y + p + q }
+        // }
+        Symbol_Table env;
+        env.define("cond", Value::create(true));
+        auto x_val = Value::create(1_f);
+        auto y_val = Value::create(2_f);
+        env.define("x", x_val);
+        env.define("y", y_val);
+
+        std::vector<Statement::Ptr> inner_x_body;
+        {
+            auto sum_xp = node<Binop>(node<Name_Lookup>("x"), "+",
+                                      node<Name_Lookup>("p"));
+            inner_x_body.push_back(
+                node<Binop>(std::move(sum_xp), "+", node<Name_Lookup>("q")));
+        }
+        std::vector<Statement::Ptr> inner_y_body;
+        {
+            auto sum_yp = node<Binop>(node<Name_Lookup>("y"), "+",
+                                      node<Name_Lookup>("p"));
+            inner_y_body.push_back(
+                node<Binop>(std::move(sum_yp), "+", node<Name_Lookup>("q")));
+        }
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(node<If>(
+            node<Name_Lookup>("cond"),
+            node<Lambda>(std::vector<std::string>{"q"}, std::move(inner_x_body)),
+            std::optional<Expression::Ptr>{node<Lambda>(
+                std::vector<std::string>{"q"}, std::move(inner_y_body))}));
+
+        Lambda outer{{"p"}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure)
+              == std::set<std::string>{"cond", "x", "y"});
+
+        auto p_val = Value::create(3_f);
+        auto inner_val = outer_closure->call({p_val});
+        auto inner_closure = value_to_closure(inner_val);
+
+        CHECK(capture_names(*inner_closure) == std::set<std::string>{"p", "x"});
+        auto out = inner_closure->call({Value::create(4_f)});
+        CHECK(out->get<Int>() == 8_f);
+    }
+
+    SECTION("Conditional branches with parameters (false branch)")
+    {
+        // Frost:
+        // def cond = false
+        // def x = 1
+        // def y = 2
+        // def outer = fn (p) -> {
+        //     if cond: fn (q) -> { x + p + q }
+        //     else: fn (q) -> { y + p + q }
+        // }
+        Symbol_Table env;
+        env.define("cond", Value::create(false));
+        auto x_val = Value::create(1_f);
+        auto y_val = Value::create(2_f);
+        env.define("x", x_val);
+        env.define("y", y_val);
+
+        std::vector<Statement::Ptr> inner_x_body;
+        {
+            auto sum_xp = node<Binop>(node<Name_Lookup>("x"), "+",
+                                      node<Name_Lookup>("p"));
+            inner_x_body.push_back(
+                node<Binop>(std::move(sum_xp), "+", node<Name_Lookup>("q")));
+        }
+        std::vector<Statement::Ptr> inner_y_body;
+        {
+            auto sum_yp = node<Binop>(node<Name_Lookup>("y"), "+",
+                                      node<Name_Lookup>("p"));
+            inner_y_body.push_back(
+                node<Binop>(std::move(sum_yp), "+", node<Name_Lookup>("q")));
+        }
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(node<If>(
+            node<Name_Lookup>("cond"),
+            node<Lambda>(std::vector<std::string>{"q"}, std::move(inner_x_body)),
+            std::optional<Expression::Ptr>{node<Lambda>(
+                std::vector<std::string>{"q"}, std::move(inner_y_body))}));
+
+        Lambda outer{{"p"}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure)
+              == std::set<std::string>{"cond", "x", "y"});
+
+        auto p_val = Value::create(3_f);
+        auto inner_val = outer_closure->call({p_val});
+        auto inner_closure = value_to_closure(inner_val);
+
+        CHECK(capture_names(*inner_closure) == std::set<std::string>{"p", "y"});
+        auto out = inner_closure->call({Value::create(4_f)});
+        CHECK(out->get<Int>() == 9_f);
+    }
+
+    SECTION("Same-name parameters shadow across levels")
+    {
+        // Frost:
+        // def outer = fn (x) -> { fn (x) -> { fn () -> { x } } }
+        Symbol_Table env;
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("x"));
+
+        std::vector<Statement::Ptr> mid_body;
+        mid_body.push_back(node<Lambda>(std::vector<std::string>{},
+                                        std::move(inner_body)));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{"x"}, std::move(mid_body)));
+
+        Lambda outer{{"x"}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure).empty());
+
+        auto outer_arg = Value::create(1_f);
+        auto mid_val = outer_closure->call({outer_arg});
+        auto mid_closure = value_to_closure(mid_val);
+        CHECK(capture_names(*mid_closure).empty());
+
+        auto mid_arg = Value::create(2_f);
+        auto inner_val = mid_closure->call({mid_arg});
+        auto inner_closure = value_to_closure(inner_val);
+
+        CHECK(capture_names(*inner_closure) == std::set<std::string>{"x"});
+        CHECK(inner_closure->call({}) == mid_arg);
+    }
 }
