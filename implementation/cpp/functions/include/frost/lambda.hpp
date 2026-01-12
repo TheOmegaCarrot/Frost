@@ -7,17 +7,17 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
+namespace frst::ast
+{
 namespace
 {
-std::generator<frst::ast::Statement::Symbol_Action> node_to_sym_seq(
+std::generator<Statement::Symbol_Action> node_to_sym_seq(
     const frst::ast::Statement::Ptr& node)
 {
     return node->symbol_sequence();
 }
 } // namespace
 
-namespace frst::ast
-{
 class Lambda final : public Expression
 {
   public:
@@ -42,11 +42,11 @@ class Lambda final : public Expression
 
         std::flat_set<std::string> names_defined_so_far{std::from_range,
                                                         params_};
-        for (const ast::Statement::Symbol_Action& name :
+        for (const Statement::Symbol_Action& name :
              body_ | std::views::transform(&node_to_sym_seq) | std::views::join)
         {
             name.visit(Overload{
-                [&](const ast::Statement::Definition& defn) {
+                [&](const Statement::Definition& defn) {
                     if (param_set.contains(defn.name))
                     {
                         throw Frost_Error{
@@ -57,7 +57,7 @@ class Lambda final : public Expression
 
                     names_defined_so_far.insert(defn.name);
                 },
-                [&](const ast::Statement::Usage& used) {
+                [&](const Statement::Usage& used) {
                     if (!names_defined_so_far.contains(used.name))
                         names_to_capture_.insert(used.name);
                 },
@@ -85,7 +85,17 @@ class Lambda final : public Expression
 
     std::generator<Symbol_Action> symbol_sequence() const final
     {
-        co_return;
+        const auto get_name = [](const auto& action) { return action.name; };
+        std::flat_set<std::string> defns;
+        for (const Statement::Symbol_Action& action :
+             body_ | std::views::transform(&node_to_sym_seq) | std::views::join)
+        {
+            const auto name = action.visit(get_name);
+            if (std::holds_alternative<Statement::Definition>(action))
+                defns.insert(name);
+            else if (not defns.contains(name))
+                co_yield action;
+        }
     }
 
   protected:
