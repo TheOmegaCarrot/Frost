@@ -20,7 +20,7 @@ class Builtin final : public Callable
     using function_t = std::function<Value_Ptr(builtin_args_t)>;
 
   public:
-    using Ptr = std::shared_ptr<Function>;
+    using Ptr = std::shared_ptr<Builtin>;
 
     struct Arity
     {
