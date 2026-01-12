@@ -864,4 +864,188 @@ TEST_CASE("Lambda")
         auto out = inner_closure->call({});
         CHECK(out->get<Int>() == 1_f);
     }
+
+    SECTION("Inner parameter shadows outer local definition")
+    {
+        // Frost:
+        // def outer = fn () -> { def x = 1 ; fn (x) -> { x } }
+        Symbol_Table env;
+        auto x_outer = Value::create(1_f);
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("x"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(node<Define>("x", node<Literal>(x_outer)));
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{"x"}, std::move(inner_body)));
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure).empty());
+
+        auto inner_val = outer_closure->call({});
+        auto inner_closure = value_to_closure(inner_val);
+        CHECK(capture_names(*inner_closure).empty());
+
+        auto arg = Value::create(2_f);
+        CHECK(inner_closure->call({arg}) == arg);
+    }
+
+    SECTION("Inner parameter shadows outer parameter")
+    {
+        // Frost:
+        // def outer = fn (x) -> { fn (x) -> { x } }
+        Symbol_Table env;
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("x"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{"x"}, std::move(inner_body)));
+
+        Lambda outer{{"x"}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure).empty());
+
+        auto outer_arg = Value::create(1_f);
+        auto inner_val = outer_closure->call({outer_arg});
+        auto inner_closure = value_to_closure(inner_val);
+
+        CHECK(capture_names(*inner_closure).empty());
+        auto inner_arg = Value::create(3_f);
+        CHECK(inner_closure->call({inner_arg}) == inner_arg);
+    }
+
+    SECTION("Use-before-define allowed with later local shadow (nested params)")
+    {
+        // Frost:
+        // def outer = fn (p) -> {
+        //     fn () -> { p ; def p = 1 ; p }
+        // }
+        Symbol_Table env;
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("p"));
+        inner_body.push_back(
+            node<Define>("p", node<Literal>(Value::create(1_f))));
+        inner_body.push_back(node<Name_Lookup>("p"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{}, std::move(inner_body)));
+
+        Lambda outer{{"p"}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure).empty());
+
+        auto p_val = Value::create(5_f);
+        auto inner_val = outer_closure->call({p_val});
+        auto inner_closure = value_to_closure(inner_val);
+        CHECK(capture_names(*inner_closure) == std::set<std::string>{"p"});
+        CHECK(inner_closure->debug_capture_table().lookup("p") == p_val);
+
+        auto out = inner_closure->call({});
+        CHECK(out->get<Int>() == 1_f);
+    }
+
+    SECTION("Multiple nested lambdas capture distinct free names")
+    {
+        // Frost:
+        // def x = 1
+        // def y = 2
+        // def outer = fn () -> {
+        //     [ fn () -> { x }, fn () -> { y } ]
+        // }
+        Symbol_Table env;
+        auto x_val = Value::create(1_f);
+        auto y_val = Value::create(2_f);
+        env.define("x", x_val);
+        env.define("y", y_val);
+
+        std::vector<Statement::Ptr> inner_x_body;
+        inner_x_body.push_back(node<Name_Lookup>("x"));
+        std::vector<Statement::Ptr> inner_y_body;
+        inner_y_body.push_back(node<Name_Lookup>("y"));
+
+        std::vector<Statement::Ptr> outer_body;
+        {
+            std::vector<Expression::Ptr> elems;
+            elems.push_back(node<Lambda>(std::vector<std::string>{},
+                                         std::move(inner_x_body)));
+            elems.push_back(node<Lambda>(std::vector<std::string>{},
+                                         std::move(inner_y_body)));
+            outer_body.push_back(
+                node<Array_Constructor>(std::move(elems)));
+        }
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure)
+              == std::set<std::string>{"x", "y"});
+
+        auto result = outer_closure->call({});
+        auto arr = result->get<Array>().value();
+        REQUIRE(arr.size() == 2);
+        auto first_inner = value_to_closure(arr[0]);
+        auto second_inner = value_to_closure(arr[1]);
+
+        CHECK(capture_names(*first_inner) == std::set<std::string>{"x"});
+        CHECK(capture_names(*second_inner) == std::set<std::string>{"y"});
+        CHECK(first_inner->call({}) == x_val);
+        CHECK(second_inner->call({}) == y_val);
+    }
+
+    SECTION("Three-level nesting with parameters at each level")
+    {
+        // Frost:
+        // def g = 1
+        // def outer = fn (a) -> {
+        //     def mid = fn (b) -> {
+        //         fn (c) -> { g + a + b + c }
+        //     }
+        //     mid
+        // }
+        Symbol_Table env;
+        auto g_val = Value::create(1_f);
+        env.define("g", g_val);
+
+        std::vector<Statement::Ptr> inner_body;
+        {
+            auto sum_ga = node<Binop>(node<Name_Lookup>("g"), "+",
+                                      node<Name_Lookup>("a"));
+            auto sum_gab = node<Binop>(std::move(sum_ga), "+",
+                                       node<Name_Lookup>("b"));
+            inner_body.push_back(
+                node<Binop>(std::move(sum_gab), "+", node<Name_Lookup>("c")));
+        }
+
+        std::vector<Statement::Ptr> mid_body;
+        mid_body.push_back(node<Lambda>(std::vector<std::string>{"c"},
+                                        std::move(inner_body)));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(node<Lambda>(std::vector<std::string>{"b"},
+                                          std::move(mid_body)));
+
+        Lambda outer{{"a"}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure) == std::set<std::string>{"g"});
+
+        auto a_val = Value::create(2_f);
+        auto mid_val = outer_closure->call({a_val});
+        auto mid_closure = value_to_closure(mid_val);
+        CHECK(capture_names(*mid_closure)
+              == std::set<std::string>{"a", "g"});
+
+        auto b_val = Value::create(3_f);
+        auto inner_val = mid_closure->call({b_val});
+        auto inner_closure = value_to_closure(inner_val);
+        CHECK(capture_names(*inner_closure)
+              == std::set<std::string>{"a", "b", "g"});
+
+        auto out = inner_closure->call({Value::create(4_f)});
+        CHECK(out->get<Int>() == 10_f);
+    }
 }
