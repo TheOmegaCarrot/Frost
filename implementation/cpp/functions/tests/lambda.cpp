@@ -77,6 +77,8 @@ TEST_CASE("Lambda")
 
     SECTION("Evaluating a lambda constructs a function without evaluating body")
     {
+        // Frost:
+        // def f = fn () -> { side_effect() }
         Symbol_Table env;
 
         auto expr = std::make_unique<mock::Mock_Expression>();
@@ -113,6 +115,8 @@ TEST_CASE("Lambda")
 
     SECTION("Empty body with parameters is allowed")
     {
+        // Frost:
+        // def f = fn (p, q) -> { }
         Symbol_Table env;
         std::vector<Statement::Ptr> body;
 
@@ -128,6 +132,8 @@ TEST_CASE("Lambda")
 
     SECTION("Duplicate parameters are rejected at construction")
     {
+        // Frost:
+        // def f = fn (x, x) -> { }
         std::vector<Statement::Ptr> body;
 
         CHECK_THROWS_WITH((Lambda{{"x", "x"}, std::move(body)}),
@@ -136,6 +142,8 @@ TEST_CASE("Lambda")
 
     SECTION("Local definition cannot shadow a parameter")
     {
+        // Frost:
+        // def f = fn (x) -> { def x = 2 }
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("x", node<Literal>(Value::create(2_f))));
 
@@ -724,5 +732,136 @@ TEST_CASE("Lambda")
         REQUIRE(arr.size() == 2);
         CHECK(arr[0]->get<String>().value() == "A");
         CHECK(arr[1]->get<String>().value() == "B");
+    }
+
+    SECTION("Nested lambda parameter shadows outer name")
+    {
+        // Frost:
+        // def x = 10
+        // def outer = fn () -> { fn (x) -> { x } }
+        Symbol_Table env;
+        auto x_val = Value::create(10_f);
+        env.define("x", x_val);
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("x"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{"x"}, std::move(inner_body)));
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure).empty());
+
+        auto inner_val = outer_closure->call({});
+        auto inner_closure = value_to_closure(inner_val);
+        CHECK(capture_names(*inner_closure).empty());
+
+        auto arg = Value::create(20_f);
+        CHECK(inner_closure->call({arg}) == arg);
+    }
+
+    SECTION("Nested lambda captures outer parameter but not inner parameter")
+    {
+        // Frost:
+        // def outer = fn (p) -> { fn (q) -> { p + q } }
+        Symbol_Table env;
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(
+            node<Binop>(node<Name_Lookup>("p"), "+", node<Name_Lookup>("q")));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{"q"}, std::move(inner_body)));
+
+        Lambda outer{{"p"}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure).empty());
+
+        auto p_val = Value::create(3_f);
+        auto inner_val = outer_closure->call({p_val});
+        auto inner_closure = value_to_closure(inner_val);
+
+        CHECK(capture_names(*inner_closure) == std::set<std::string>{"p"});
+        CHECK(inner_closure->debug_capture_table().lookup("p") == p_val);
+
+        auto out = inner_closure->call({Value::create(4_f)});
+        CHECK(out->get<Int>() == 7_f);
+    }
+
+    SECTION("Nested lambda captures global, local, and parameter")
+    {
+        // Frost:
+        // def x = 1
+        // def outer = fn (p) -> {
+        //     def y = 2
+        //     fn (q) -> { x + y + p + q }
+        // }
+        Symbol_Table env;
+        auto x_val = Value::create(1_f);
+        env.define("x", x_val);
+
+        auto y_val = Value::create(2_f);
+
+        std::vector<Statement::Ptr> inner_body;
+        {
+            auto sum_xy = node<Binop>(node<Name_Lookup>("x"), "+",
+                                      node<Name_Lookup>("y"));
+            auto sum_xyp = node<Binop>(std::move(sum_xy), "+",
+                                       node<Name_Lookup>("p"));
+            inner_body.push_back(
+                node<Binop>(std::move(sum_xyp), "+", node<Name_Lookup>("q")));
+        }
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(node<Define>("y", node<Literal>(y_val)));
+        outer_body.push_back(node<Lambda>(std::vector<std::string>{"q"},
+                                          std::move(inner_body)));
+
+        Lambda outer{{"p"}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure) == std::set<std::string>{"x"});
+
+        auto p_val = Value::create(3_f);
+        auto inner_val = outer_closure->call({p_val});
+        auto inner_closure = value_to_closure(inner_val);
+
+        CHECK(capture_names(*inner_closure)
+              == std::set<std::string>{"p", "x", "y"});
+        CHECK(inner_closure->debug_capture_table().lookup("x") == x_val);
+        CHECK(inner_closure->debug_capture_table().lookup("y") == y_val);
+        CHECK(inner_closure->debug_capture_table().lookup("p") == p_val);
+
+        auto out = inner_closure->call({Value::create(4_f)});
+        CHECK(out->get<Int>() == 10_f);
+    }
+
+    SECTION("Nested lambda local define prevents capture")
+    {
+        // Frost:
+        // def outer = fn () -> { fn () -> { def x = 1 ; x } }
+        Symbol_Table env;
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(
+            node<Define>("x", node<Literal>(Value::create(1_f))));
+        inner_body.push_back(node<Name_Lookup>("x"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{}, std::move(inner_body)));
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+        CHECK(capture_names(*outer_closure).empty());
+
+        auto inner_val = outer_closure->call({});
+        auto inner_closure = value_to_closure(inner_val);
+        CHECK(capture_names(*inner_closure).empty());
+
+        auto out = inner_closure->call({});
+        CHECK(out->get<Int>() == 1_f);
     }
 }

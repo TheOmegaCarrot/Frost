@@ -86,7 +86,8 @@ class Lambda final : public Expression
     std::generator<Symbol_Action> symbol_sequence() const final
     {
         const auto get_name = [](const auto& action) { return action.name; };
-        std::flat_set<std::string> defns;
+
+        std::flat_set<std::string> defns{std::from_range, params_};
         for (const Statement::Symbol_Action& action :
              body_ | std::views::transform(&node_to_sym_seq) | std::views::join)
         {
