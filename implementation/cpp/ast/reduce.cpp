@@ -8,13 +8,13 @@ using namespace frst;
 namespace
 {
 Value_Ptr reduce_array(const Array& arr, const Function& op,
-                       const Value_Ptr& init)
+                       const std::optional<Value_Ptr>& init)
 {
     const auto reduction = [&](const Value_Ptr& acc, const Value_Ptr& elem) {
         return op->call({acc, elem});
     };
 
-    if (init->is<Null>())
+    if (not init)
     {
         return std::ranges::fold_left_first(arr, reduction)
             .or_else([&] { return std::optional{Value::create(Null{})}; })
@@ -22,8 +22,22 @@ Value_Ptr reduce_array(const Array& arr, const Function& op,
     }
     else
     {
-        return std::ranges::fold_left(arr, init, reduction);
+        return std::ranges::fold_left(arr, *init, reduction);
     }
+}
+
+Value_Ptr reduce_map(const Map& arr, const Function& op,
+                     const std::optional<Value_Ptr>& init)
+{
+    const auto reduction = [&](const Value_Ptr& acc, const auto& elem) {
+        const auto& [k, v] = elem;
+        return op->call({acc, k, v});
+    };
+
+    if (not init)
+        throw Frost_Error{"Map reduction requires init"};
+
+    return std::ranges::fold_left(arr, *init, reduction);
 }
 } // namespace
 
@@ -32,7 +46,7 @@ Value_Ptr reduce_array(const Array& arr, const Function& op,
     const auto& structure_val = structure_->evaluate(syms);
     if (not structure_val->is_structured())
     {
-        throw Frost_Error{fmt::format("Cannot reduce value with type",
+        throw Frost_Error{fmt::format("Cannot reduce value with type {}",
                                       structure_val->type_name())};
     }
 
@@ -43,18 +57,16 @@ Value_Ptr reduce_array(const Array& arr, const Function& op,
                                       op_val->type_name())};
     }
 
-    auto init = init_
-                    .transform([&](const Expression::Ptr& expr) {
-                        return expr->evaluate(syms);
-                    })
-                    .or_else([] -> std::optional<Value_Ptr> {
-                        return Value::create(Null{});
-                    })
-                    .value();
+    auto init = init_.transform(
+        [&](const Expression::Ptr& expr) { return expr->evaluate(syms); });
 
     if (structure_val->is<Array>())
         return reduce_array(structure_val->raw_get<Array>(),
                             op_val->raw_get<Function>(), init);
+
+    if (structure_val->is<Map>())
+        return reduce_map(structure_val->raw_get<Map>(),
+                          op_val->raw_get<Function>(), init);
 
     THROW_UNREACHABLE;
 }
