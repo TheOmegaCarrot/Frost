@@ -1,6 +1,7 @@
 add_library( frost-ast
-    statement.cpp
     index.cpp
+    reduce.cpp
+    statement.cpp
 )
 
 target_include_directories( frost-ast
@@ -43,3 +44,5 @@ make_ast_test(tests/index.cpp)
 make_ast_test(tests/symbol_sequence.cpp)
 
 make_ast_test(tests/function_call.cpp)
+
+make_ast_test(tests/reduce.cpp)
