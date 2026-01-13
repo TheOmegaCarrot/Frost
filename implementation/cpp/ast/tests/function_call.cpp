@@ -28,7 +28,7 @@ struct RecordingCallable final : Callable
         called = true;
         ++call_count;
         args_match = (args == expected_args);
-        return result ? result : Value::create();
+        return result ? result : Value::null();
     }
 
     std::string debug_dump() const override

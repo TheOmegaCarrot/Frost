@@ -165,7 +165,7 @@ TEST_CASE("Map Union")
     auto map2 = Value::create(frst::Map{
         {Value::create("beep"s), Value::create("foo"s)},
         {Value::create("boop"s), Value::create(true)},
-        {Value::create("derp"s), Value::create()},
+        {Value::create("derp"s), Value::null()},
     });
     auto map3 = Value::create(frst::Map{
         {Value::create("foo"s), Value::create(510_f)},
@@ -305,7 +305,7 @@ TEST_CASE("Map Union")
 
 TEST_CASE("Add All Permutations")
 {
-    auto Null = Value::create();
+    auto Null = Value::null();
     auto Int = Value::create(42_f);
     auto Float = Value::create(3.14);
     auto Bool = Value::create(true);

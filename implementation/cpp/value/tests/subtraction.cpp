@@ -48,7 +48,7 @@ TEST_CASE("Numeric Subtraction")
 
 TEST_CASE("Subtract All Permutations")
 {
-    auto Null = Value::create();
+    auto Null = Value::null();
     auto Int = Value::create(42_f);
     auto Float = Value::create(3.14);
     auto Bool = Value::create(true);

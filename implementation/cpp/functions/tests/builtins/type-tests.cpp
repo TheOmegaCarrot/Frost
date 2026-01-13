@@ -36,7 +36,7 @@ TEST_CASE("Type Tests")
     {
         Value_Ptr call(builtin_args_t) const override
         {
-            return Value::create();
+            return Value::null();
         }
         std::string debug_dump() const override
         {
@@ -44,7 +44,7 @@ TEST_CASE("Type Tests")
         }
     };
 
-    auto v_null = Value::create();
+    auto v_null = Value::null();
     auto v_int = Value::create(42_f);
     auto v_float = Value::create(3.14);
     auto v_bool = Value::create(true);

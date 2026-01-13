@@ -31,7 +31,7 @@ struct Recording_Reducer final : Callable
         calls.push_back(args);
         if (call_index < results.size())
             return results.at(call_index++);
-        return Value::create();
+        return Value::null();
     }
 
     std::string debug_dump() const override
@@ -652,7 +652,7 @@ TEST_CASE("Reduce Map")
             Map map;
             map.insert_or_assign(k1, v1);
             auto map_val = Value::create(std::move(map));
-            auto init_val = Value::create(Null{});
+            auto init_val = Value::null();
 
             auto reducer = std::make_shared<Recording_Reducer>();
             auto r1 = Value::create(7_f);

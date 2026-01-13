@@ -13,8 +13,8 @@ using frst::Value, frst::Value_Ptr;
 
 TEST_CASE("Null Not Equal")
 {
-    auto null1 = Value::create();
-    auto null2 = Value::create();
+    auto null1 = Value::null();
+    auto null2 = Value::null();
 
     SECTION("Identity Equals")
     {
@@ -149,7 +149,7 @@ TEST_CASE("Map Not Equal")
 
 TEST_CASE("Not Equal Compare All Permutations")
 {
-    auto Null = Value::create();
+    auto Null = Value::null();
     auto Int = Value::create(42_f);
     auto Float = Value::create(3.14);
     auto Bool = Value::create(true);

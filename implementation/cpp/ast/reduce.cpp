@@ -17,8 +17,7 @@ Value_Ptr reduce_array(const Array& arr, const Function& op,
     if (not init)
     {
         return std::ranges::fold_left_first(arr, reduction)
-            .or_else([&] { return std::optional{Value::create(Null{})}; })
-            .value();
+            .value_or(Value::null());
     }
     else
     {
@@ -41,7 +40,7 @@ Value_Ptr reduce_map(const Map& arr, const Function& op,
 }
 } // namespace
 
-[[nodiscard]] Value_Ptr ast::Reduce::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Reduce::evaluate(const Symbol_Table& syms) const
 {
     const auto& structure_val = structure_->evaluate(syms);
     if (not structure_val->is_structured())

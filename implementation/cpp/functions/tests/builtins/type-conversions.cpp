@@ -22,7 +22,7 @@ TEST_CASE("Builtin to_string")
     REQUIRE(to_string_val->is<Function>());
     auto to_string = to_string_val->get<Function>().value();
 
-    auto Null_ = Value::create();
+    auto Null_ = Value::null();
     auto Int_ = Value::create(42_f);
     auto Float_ = Value::create(3.14);
     auto Bool_ = Value::create(true);
@@ -71,7 +71,7 @@ TEST_CASE("Builtin to_int")
     {
         CHECK_THROWS_WITH(to_int->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(to_int->call({Value::create(), Value::create()}),
+        CHECK_THROWS_WITH(to_int->call({Value::null(), Value::null()}),
                           ContainsSubstring("too many arguments"));
     }
 
@@ -93,7 +93,7 @@ TEST_CASE("Builtin to_int")
     SECTION("Errors return Null")
     {
         CHECK(to_int->call({Value::create(true)})->is<frst::Null>());
-        CHECK(to_int->call({Value::create()})->is<frst::Null>());
+        CHECK(to_int->call({Value::null()})->is<frst::Null>());
         CHECK(to_int->call({Value::create("3.14"s)})->is<frst::Null>());
     }
 }
@@ -115,7 +115,7 @@ TEST_CASE("Builtin to_float")
     {
         CHECK_THROWS_WITH(to_float->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(to_float->call({Value::create(), Value::create()}),
+        CHECK_THROWS_WITH(to_float->call({Value::null(), Value::null()}),
                           ContainsSubstring("too many arguments"));
     }
 
@@ -137,7 +137,7 @@ TEST_CASE("Builtin to_float")
     SECTION("Errors return Null")
     {
         CHECK(to_float->call({Value::create(true)})->is<frst::Null>());
-        CHECK(to_float->call({Value::create()})->is<frst::Null>());
+        CHECK(to_float->call({Value::null()})->is<frst::Null>());
         CHECK(to_float->call({Value::create("0x10"s)})->is<frst::Null>());
     }
 }

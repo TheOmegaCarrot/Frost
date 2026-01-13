@@ -24,7 +24,7 @@ static Value_Ptr index_array(const Array& array, const Value_Ptr& index_val)
     if (index < 0 && len + index >= 0)
         return array.at(index + len);
 
-    return Value::create(Null{}); // out-of-bounds -> null
+    return Value::null(); // out-of-bounds -> null
 }
 
 static Value_Ptr index_map(const Map& map, const Value_Ptr& key_val)
@@ -32,7 +32,7 @@ static Value_Ptr index_map(const Map& map, const Value_Ptr& key_val)
     if (auto itr = map.find(key_val); itr != map.end())
         return itr->second;
 
-    return Value::create(Null{});
+    return Value::null();
 }
 
 Value_Ptr Index::evaluate(const Symbol_Table& syms) const

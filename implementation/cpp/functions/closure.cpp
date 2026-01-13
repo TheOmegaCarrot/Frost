@@ -22,7 +22,7 @@ Value_Ptr eval_or_null(const ast::Statement::Ptr& node, Symbol_Table& syms)
         return expr_ptr->evaluate(syms);
 
     node->execute(syms);
-    return Value::create(Null{});
+    return Value::null();
 }
 
 Value_Ptr Closure::call(const std::vector<Value_Ptr>& args) const
@@ -37,13 +37,13 @@ Value_Ptr Closure::call(const std::vector<Value_Ptr>& args) const
     Symbol_Table exec_table(&captures_);
     for (const auto& [arg_name, arg_val] : std::views::zip(
              parameters_, std::views::concat(
-                              args, std::views::repeat(Value::create(Null{})))))
+                              args, std::views::repeat(Value::null()))))
     {
         exec_table.define(arg_name, arg_val);
     }
 
     if (body_->size() == 0)
-        return Value::create(Null{});
+        return Value::null();
 
     for (const ast::Statement::Ptr& node : *body_
                                                | std::views::reverse

@@ -8,7 +8,7 @@ namespace frst
 Value_Ptr pformat(builtin_args_t args)
 {
     REQUIRE_ARGS(pformat, TYPES(String));
-    return Value::create();
+    return Value::null();
 }
 
 void inject_format(Symbol_Table& table)

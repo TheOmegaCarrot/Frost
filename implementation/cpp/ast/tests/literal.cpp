@@ -17,7 +17,7 @@ TEST_CASE("Literal")
 
     SECTION("Null Literal")
     {
-        auto node = Literal{Value::create()};
+        auto node = Literal{Value::null()};
         CHECK(node.evaluate(table)->is<Null>());
         node.debug_dump_ast(os);
         CHECK(os.str() == "Literal(null)\n");

@@ -42,7 +42,7 @@ TEST_CASE("Array Index")
 
             auto res = node.evaluate(syms);
 
-            Value_Ptr expect = Value::create(Null{});
+            Value_Ptr expect = Value::null();
             switch (index)
             {
             case 0:
@@ -72,7 +72,7 @@ TEST_CASE("Array Index")
 TEST_CASE("Map Index Primitive Key")
 {
     // AI-generated test additions by Codex (GPT-5).
-    auto key_null = Value::create();
+    auto key_null = Value::null();
     auto key_int = Value::create(1_f);
     auto key_float = Value::create(1.0);
     auto key_bool = Value::create(true);
@@ -100,14 +100,14 @@ TEST_CASE("Map Index Primitive Key")
     };
 
     std::vector<Case> cases = {
-        {"null", Value::create(), val_null},
+        {"null", Value::null(), val_null},
         {"int", Value::create(1_f), val_int},
         {"float", Value::create(1.0), val_float},
         {"bool", Value::create(true), val_bool},
         {"string", Value::create("hello"s), val_string},
-        {"missing_int", Value::create(2_f), Value::create(Null{})},
-        {"missing_float", Value::create(2.0), Value::create(Null{})},
-        {"missing_string", Value::create("nope"s), Value::create(Null{})},
+        {"missing_int", Value::create(2_f), Value::null()},
+        {"missing_float", Value::create(2.0), Value::null()},
+        {"missing_string", Value::create("nope"s), Value::null()},
     };
 
     for (const auto& test : cases)
@@ -200,14 +200,14 @@ TEST_CASE("Map Index Structure Key")
     SECTION("Array key identity")
     {
         run_case("array_same_ptr", array_key, array_val);
-        run_case("array_equiv_ptrs", array_key_equiv, Value::create(Null{}));
-        run_case("array_diff_ptrs", array_key_diff, Value::create(Null{}));
+        run_case("array_equiv_ptrs", array_key_equiv, Value::null());
+        run_case("array_diff_ptrs", array_key_diff, Value::null());
     }
 
     SECTION("Map key identity")
     {
         run_case("map_same_ptr", map_key, map_val);
-        run_case("map_equiv_ptrs", map_key_equiv, Value::create(Null{}));
-        run_case("map_diff_ptrs", map_key_diff, Value::create(Null{}));
+        run_case("map_equiv_ptrs", map_key_equiv, Value::null());
+        run_case("map_diff_ptrs", map_key_diff, Value::null());
     }
 }

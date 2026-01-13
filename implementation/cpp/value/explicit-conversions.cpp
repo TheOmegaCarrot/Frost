@@ -134,8 +134,7 @@ Value_Ptr Value::to_int() const
 {
     return to_internal_int()
         .transform([](const Int v) { return create(auto{v}); })
-        .or_else([&] { return std::optional{create()}; })
-        .value();
+        .value_or(Value::null());
 }
 
 struct To_Float_Impl
@@ -171,8 +170,7 @@ Value_Ptr Value::to_float() const
 {
     return to_internal_float()
         .transform([](const Float v) { return create(auto{v}); })
-        .or_else([&] { return std::optional{create()}; })
-        .value();
+        .value_or(Value::null());
 }
 
 } // namespace frst

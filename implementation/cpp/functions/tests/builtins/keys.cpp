@@ -24,7 +24,7 @@ TEST_CASE("Builtin keys")
     SECTION("Wrong Type")
     {
         std::vector<Value_Ptr> not_maps{
-            Value::create(),
+            Value::null(),
             Value::create(42_f),
             Value::create(3.14),
             Value::create(true),

@@ -21,7 +21,7 @@ TEST_CASE("Builtin Function")
     SECTION("debug_dump format")
     {
         Builtin builtin{
-            [](builtin_args_t) { return Value::create(); },
+            [](builtin_args_t) { return Value::null(); },
             "debug",
             Builtin::Arity{0, 0},
         };
@@ -35,7 +35,7 @@ TEST_CASE("Builtin Function")
         Builtin builtin{
             [&](builtin_args_t) {
                 called = true;
-                return Value::create();
+                return Value::null();
             },
             "zero",
             Builtin::Arity{0, 0},
@@ -58,7 +58,7 @@ TEST_CASE("Builtin Function")
         Builtin builtin{
             [&](builtin_args_t in) {
                 same_address = (&in == expected);
-                return Value::create();
+                return Value::null();
             },
             "forward",
             Builtin::Arity{0, std::nullopt},
@@ -74,7 +74,7 @@ TEST_CASE("Builtin Function")
         Builtin builtin{
             [&](builtin_args_t) {
                 ++calls;
-                return Value::create();
+                return Value::null();
             },
             "bounded",
             Builtin::Arity{1, 3},
@@ -101,7 +101,7 @@ TEST_CASE("Builtin Function")
         Builtin builtin{
             [&](builtin_args_t) {
                 called = true;
-                return Value::create();
+                return Value::null();
             },
             "too_many",
             Builtin::Arity{1, 1},
@@ -134,7 +134,7 @@ TEST_CASE("Builtin Function")
         Builtin builtin{
             [&](builtin_args_t) {
                 called = true;
-                return Value::create();
+                return Value::null();
             },
             "too_few",
             Builtin::Arity{2, 4},
@@ -166,7 +166,7 @@ TEST_CASE("Builtin Function")
         Builtin builtin{
             [&](builtin_args_t) {
                 called = true;
-                return Value::create();
+                return Value::null();
             },
             "variadic",
             Builtin::Arity{1, std::nullopt},

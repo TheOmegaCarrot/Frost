@@ -21,7 +21,7 @@ struct Logical_Case
 std::vector<Logical_Case> logical_cases()
 {
     return {
-        {"null", Value::create(), false},
+        {"null", Value::null(), false},
         {"false", Value::create(false), false},
         {"true", Value::create(true), true},
         {"int_zero", Value::create(0_f), true},

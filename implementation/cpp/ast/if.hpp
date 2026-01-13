@@ -34,7 +34,7 @@ class If final : public Expression
 
         // If an if-expression has no alternate branch,
         // and the condition is false, then evaluate to null
-        return Value::create(Null{});
+        return Value::null();
     }
 
   protected:

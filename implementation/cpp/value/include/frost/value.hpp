@@ -336,6 +336,12 @@ class Value
     {
     }
 
+    static Value_Ptr null()
+    {
+        static Value_Ptr null_singleton = Value::create();
+        return null_singleton;
+    }
+
     Value(const Value&) = delete;
     Value(Value&&) = default;
     Value& operator=(const Value&) = delete;

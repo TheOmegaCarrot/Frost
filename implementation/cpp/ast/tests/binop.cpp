@@ -170,7 +170,7 @@ TEST_CASE("Comparison Binary ops")
 
     SECTION("Equality and inequality")
     {
-        auto v_null = Value::create();
+        auto v_null = Value::null();
         auto v_int = Value::create(42_f);
         auto v_int_same = Value::create(42_f);
         auto v_int_other = Value::create(7_f);
@@ -211,7 +211,7 @@ TEST_CASE("Comparison Binary ops")
         {
             Value_Ptr call(const std::vector<Value_Ptr>&) const override
             {
-                return Value::create();
+                return Value::null();
             }
             std::string debug_dump() const override
             {

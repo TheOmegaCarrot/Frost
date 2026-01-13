@@ -10,7 +10,7 @@ using frst::Value, frst::Value_Ptr;
 
 TEST_CASE("to_string")
 {
-    auto Null = Value::create();
+    auto Null = Value::null();
     auto Int = Value::create(42_f);
     auto Float = Value::create(3.14);
     auto Bool = Value::create(true);
@@ -49,7 +49,7 @@ TEST_CASE("to_internal_int")
     {
         frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
         {
-            return Value::create();
+            return Value::null();
         }
         std::string debug_dump() const override
         {
@@ -57,7 +57,7 @@ TEST_CASE("to_internal_int")
         }
     };
 
-    auto v_null = Value::create();
+    auto v_null = Value::null();
     auto v_int = Value::create(42_f);
     auto v_float = Value::create(3.9);
     auto v_float_neg = Value::create(-3.9);
@@ -110,7 +110,7 @@ TEST_CASE("to_int")
     {
         frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
         {
-            return Value::create();
+            return Value::null();
         }
         std::string debug_dump() const override
         {
@@ -129,7 +129,7 @@ TEST_CASE("to_int")
     auto v_string_overflow = Value::create("9223372036854775808"s);
     auto v_string_underflow = Value::create("-9223372036854775809"s);
     auto v_bool = Value::create(true);
-    auto v_null = Value::create();
+    auto v_null = Value::null();
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
@@ -170,7 +170,7 @@ TEST_CASE("to_internal_float")
     {
         frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
         {
-            return Value::create();
+            return Value::null();
         }
         std::string debug_dump() const override
         {
@@ -178,7 +178,7 @@ TEST_CASE("to_internal_float")
         }
     };
 
-    auto v_null = Value::create();
+    auto v_null = Value::null();
     auto v_int = Value::create(42_f);
     auto v_float = Value::create(3.14);
     auto v_bool = Value::create(true);
@@ -227,7 +227,7 @@ TEST_CASE("to_float")
     {
         frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
         {
-            return Value::create();
+            return Value::null();
         }
         std::string debug_dump() const override
         {
@@ -248,7 +248,7 @@ TEST_CASE("to_float")
     auto v_string_overflow = Value::create(std::string(400, '9'));
     auto v_string_overflow_neg = Value::create("-" + std::string(400, '9'));
     auto v_bool = Value::create(true);
-    auto v_null = Value::create();
+    auto v_null = Value::null();
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});

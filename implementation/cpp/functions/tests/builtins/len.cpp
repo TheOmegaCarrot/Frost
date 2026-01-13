@@ -33,7 +33,7 @@ TEST_CASE("Builtin len")
     {
         CHECK_THROWS_WITH(len->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(len->call({Value::create(), Value::create()}),
+        CHECK_THROWS_WITH(len->call({Value::null(), Value::null()}),
                           ContainsSubstring("too many arguments"));
     }
 

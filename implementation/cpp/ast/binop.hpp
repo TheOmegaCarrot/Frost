@@ -118,7 +118,7 @@ class Binop final : public Expression
     Binop& operator=(Binop&&) = delete;
     ~Binop() override = default;
 
-    Value_Ptr evaluate(const Symbol_Table& syms) const final
+    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
     {
         using enum Binary_Op;
         static const std::map<Binary_Op, decltype(&Value::add)> fn_map{

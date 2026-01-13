@@ -33,8 +33,8 @@ TEST_CASE("Builtin pack_call")
 
     SECTION("Arity: too many arguments")
     {
-        CHECK_THROWS_WITH(pack_call_fn->call({Value::create(), Value::create(),
-                                              Value::create()}),
+        CHECK_THROWS_WITH(pack_call_fn->call({Value::null(), Value::null(),
+                                              Value::null()}),
                           ContainsSubstring("too many arguments"));
     }
 
@@ -67,7 +67,7 @@ TEST_CASE("Builtin pack_call")
                     }
                 }
             }
-            return return_value ? return_value : Value::create();
+            return return_value ? return_value : Value::null();
         }
 
         std::string debug_dump() const override
@@ -175,7 +175,7 @@ TEST_CASE("Builtin pack_call")
     SECTION("Callee arity errors propagate")
     {
         auto callee = std::make_shared<Builtin>(
-            [](builtin_args_t) { return Value::create(); }, "exact_arity_0",
+            [](builtin_args_t) { return Value::null(); }, "exact_arity_0",
             Builtin::Arity{0, 0});
         auto func_val = Value::create(Function{callee});
         auto args = Value::create(frst::Array{

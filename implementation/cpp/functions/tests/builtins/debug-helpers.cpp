@@ -34,14 +34,14 @@ TEST_CASE("Builtin debug_dump")
     {
         CHECK_THROWS_WITH(debug_dump->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(debug_dump->call({Value::create(), Value::create()}),
+        CHECK_THROWS_WITH(debug_dump->call({Value::null(), Value::null()}),
                           ContainsSubstring("too many arguments"));
     }
 
     SECTION("Non-function values use to_string")
     {
         std::vector<Value_Ptr> values{
-            Value::create(), // Null
+            Value::null(), // Null
             Value::create(42_f),
             Value::create(3.14),
             Value::create(true),
@@ -64,7 +64,7 @@ TEST_CASE("Builtin debug_dump")
     SECTION("Builtin function debug_dump")
     {
         auto func = Value::create(Function{std::make_shared<Builtin>(
-            [](builtin_args_t) { return Value::create(); }, "dbg",
+            [](builtin_args_t) { return Value::null(); }, "dbg",
             Builtin::Arity{0, 0})});
 
         auto res = debug_dump->call({func});
@@ -78,7 +78,7 @@ TEST_CASE("Builtin debug_dump")
         {
             Value_Ptr call(builtin_args_t) const override
             {
-                return Value::create();
+                return Value::null();
             }
             std::string debug_dump() const override
             {
@@ -114,8 +114,8 @@ TEST_CASE("Assert")
     {
         CHECK_THROWS_WITH(assert_fn->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(assert_fn->call({Value::create(), Value::create(),
-                                           Value::create()}),
+        CHECK_THROWS_WITH(assert_fn->call({Value::null(), Value::null(),
+                                           Value::null()}),
                           ContainsSubstring("too many arguments"));
     }
 
@@ -136,7 +136,7 @@ TEST_CASE("Assert")
 
     SECTION("Falsy values fail with exact default message")
     {
-        auto v_null = Value::create();
+        auto v_null = Value::null();
         auto v_false = Value::create(false);
 
         CHECK_THROWS_WITH(assert_fn->call({v_null}),
