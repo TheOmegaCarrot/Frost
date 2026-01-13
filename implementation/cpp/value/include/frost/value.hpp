@@ -32,11 +32,6 @@ struct Value_Ptr_Less
 };
 } // namespace impl
 
-/*
-#pragma message(                                                               \
-    "TODO: single global Null to reference, rather than repeatedly allocating
-Nulls")
-    */
 struct Null
 {
     friend bool operator==(Null, Null)
@@ -337,7 +332,7 @@ class Value
     }
 
     static Value_Ptr null()
-    {
+    { // TODO? replicate this for bools?
         static Value_Ptr null_singleton = Value::create();
         return null_singleton;
     }

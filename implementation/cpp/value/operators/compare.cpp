@@ -27,6 +27,9 @@ struct Compare_Equal_Impl
 
 bool Value::equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
 {
+    if (lhs == rhs)
+        return true; // quick identity check
+
     const auto& lhs_var = lhs->value_;
     const auto& rhs_var = rhs->value_;
 
@@ -36,7 +39,7 @@ bool Value::equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
     if (lhs->is_primitive()) // primitives use value comparison
         return std::visit(compare_equal_impl, lhs_var, rhs_var);
 
-    return lhs == rhs;
+    return false;
 }
 
 bool Value::not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
