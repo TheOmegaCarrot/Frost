@@ -49,3 +49,5 @@ make_ast_test(tests/function_call.cpp)
 make_ast_test(tests/reduce.cpp)
 
 make_ast_test(tests/map.cpp)
+
+make_ast_test(tests/foreach.cpp)
