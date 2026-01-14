@@ -52,7 +52,7 @@ Value_Ptr ast::Reduce::evaluate(const Symbol_Table& syms) const
     const auto& op_val = operation_->evaluate(syms);
     if (not op_val->is<Function>())
     {
-        throw Frost_Error{fmt::format("Reduce with expected Function, got {}",
+        throw Frost_Error{fmt::format("Reduce expected Function, got {}",
                                       op_val->type_name())};
     }
 

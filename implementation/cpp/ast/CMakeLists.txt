@@ -1,5 +1,6 @@
 add_library( frost-ast
     index.cpp
+    map.cpp
     reduce.cpp
     statement.cpp
 )
@@ -46,3 +47,5 @@ make_ast_test(tests/symbol_sequence.cpp)
 make_ast_test(tests/function_call.cpp)
 
 make_ast_test(tests/reduce.cpp)
+
+make_ast_test(tests/map.cpp)
