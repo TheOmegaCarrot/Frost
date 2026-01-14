@@ -420,6 +420,78 @@ TEST_CASE("Map Map")
             REQUIRE(mapper->calls.size() == 2);
         }
 
+        SECTION("Collision on value-equal primitive keys with distinct ptrs")
+        {
+            auto k1 = Value::create("k1"s);
+            auto v1 = Value::create(1_f);
+            auto k2 = Value::create("k2"s);
+            auto v2 = Value::create(2_f);
+            auto input_map = Value::create(Map{{k1, v1}, {k2, v2}});
+
+            auto dup_key1 = Value::create(99_f);
+            auto dup_key2 = Value::create(99_f);
+
+            auto mapper = std::make_shared<Recording_Mapper>();
+            mapper->results = {
+                Value::create(Map{{dup_key1, Value::create(10_f)}}),
+                Value::create(Map{{dup_key2, Value::create(20_f)}}),
+            };
+            auto op_val = Value::create(Function{mapper});
+
+            trompeloeil::sequence seq;
+            REQUIRE_CALL(*structure_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(input_map);
+            REQUIRE_CALL(*operation_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(op_val);
+
+            ast::Map node{std::move(structure_expr),
+                          std::move(operation_expr)};
+
+            CHECK_THROWS_WITH(node.evaluate(syms),
+                              ContainsSubstring("collision"));
+            REQUIRE(mapper->calls.size() == 2);
+        }
+
+        SECTION("Collision on structured keys uses identity semantics")
+        {
+            auto k1 = Value::create("k1"s);
+            auto v1 = Value::create(1_f);
+            auto k2 = Value::create("k2"s);
+            auto v2 = Value::create(2_f);
+            auto input_map = Value::create(Map{{k1, v1}, {k2, v2}});
+
+            auto shared_key = Value::create(Map{{Value::create(1_f),
+                                                 Value::create(2_f)}});
+
+            auto mapper = std::make_shared<Recording_Mapper>();
+            mapper->results = {
+                Value::create(Map{{shared_key, Value::create(10_f)}}),
+                Value::create(Map{{shared_key, Value::create(20_f)}}),
+            };
+            auto op_val = Value::create(Function{mapper});
+
+            trompeloeil::sequence seq;
+            REQUIRE_CALL(*structure_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(input_map);
+            REQUIRE_CALL(*operation_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(op_val);
+
+            ast::Map node{std::move(structure_expr),
+                          std::move(operation_expr)};
+
+            CHECK_THROWS_WITH(node.evaluate(syms),
+                              ContainsSubstring("collision"));
+            REQUIRE(mapper->calls.size() == 2);
+        }
+
         SECTION("Mapper return must be a map")
         {
             auto k1 = Value::create("k1"s);
