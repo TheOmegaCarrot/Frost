@@ -121,6 +121,38 @@ TEST_CASE("Reduce Array")
             CHECK(reducer->calls.empty());
         }
 
+        // Frost: reduce [] with fn (acc, elem) -> { acc + elem } init: null
+        SECTION("Empty array with explicit null init returns null")
+        {
+            auto empty_array = Value::create(Array{});
+            auto init_val = Value::null();
+            auto reducer = std::make_shared<Recording_Reducer>();
+            auto op_val = Value::create(Function{reducer});
+
+            trompeloeil::sequence seq;
+            REQUIRE_CALL(*structure_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(empty_array);
+            REQUIRE_CALL(*operation_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(op_val);
+            REQUIRE_CALL(*init_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(init_val);
+
+            ast::Reduce node{
+                std::move(structure_expr), std::move(operation_expr),
+                std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
+
+            auto res = node.evaluate(syms);
+            CHECK(res == init_val);
+            CHECK(res->is<Null>());
+            CHECK(reducer->calls.empty());
+        }
+
         // Frost: reduce [1] with fn (acc, elem) -> { acc + elem }
         SECTION("Single element without init returns element; op not called")
         {
