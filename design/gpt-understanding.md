@@ -29,6 +29,7 @@
 - Use explicit conversion functions when numeric parsing is desired.
 - V1 error handling is immediate abort (no recovery). Error recovery (e.g., Lua-style `pcall`) is deferred.
 - `+` is overloaded for numeric addition, string concatenation, array concatenation, and map merge (right-hand value wins on key collision).
+- A stricter merge will be available via a builtin (e.g., `strict_merge`) that errors on key collisions.
 - Array concatenation and map merge always produce new values (no in-place mutation).
 - Array concatenation requires both operands to be arrays; `array + non-array` is an error (use `arr + [value]` to append).
 - Map merge requires both operands to be maps; `map + non-map` is a runtime error.

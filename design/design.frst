@@ -195,10 +195,3 @@ def sugary1 = fn {
         } # sugary1 == 6
 # equivalent to:
 def desugary1 = fn () -> { def a = 2 ; def b = 4 ; a + b }
-
-# array -> map mapping (deferred)
-def arr_to_map = fn (arr) -> {
-    map arr into map with fn (x) -> { %{ [to_string(x)]: x } }
-}
-
-def map_arr_to_map_res = arr_to_map( [ 1, 2 ] ) # %{ ["1"]: 1, ["2"]: 2 }
