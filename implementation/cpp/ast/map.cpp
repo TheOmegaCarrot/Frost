@@ -1,4 +1,3 @@
-#include <numeric>
 #include <ranges>
 
 #include <frost/symbol-table.hpp>
@@ -33,13 +32,34 @@ Value_Ptr map_map(const Value_Ptr& map_val, const Function& op)
     if (map.empty())
         return map_val;
 
-    auto transform = [&](const auto& kv) {
-        const auto& [k, v] = kv;
-        return op->call({k, v});
-    };
+    Map acc;
+    for (const auto& [k, v] : map)
+    {
+        auto intermediate_val = op->call({k, v});
 
-    return std::transform_reduce(map.begin(), map.end(), Value::create(Map{}),
-                                 &Value::add, transform);
+        if (not intermediate_val->is<Map>())
+        {
+            throw Frost_Error{fmt::format(
+                "Map with map input requires map intermediates, got {}",
+                intermediate_val->type_name())};
+        }
+
+        const Map& intermediate = intermediate_val->raw_get<Map>();
+
+        for (const auto& [i_k, i_v] : intermediate)
+        {
+            if (acc.contains(i_k))
+            {
+                throw Frost_Error(
+                    fmt::format("Map operation key collision with key: {}",
+                                i_k->to_internal_string()));
+            }
+
+            acc.insert({i_k, i_v});
+        }
+    }
+
+    return Value::create(std::move(acc));
 }
 } // namespace
 

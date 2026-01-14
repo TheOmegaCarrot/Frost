@@ -344,10 +344,82 @@ TEST_CASE("Map Map")
             CHECK(out.at(out_k3) == out_v3);
             CHECK(out.at(out_k4) == out_v4);
         }
+
+        SECTION("Mapper can return an empty map for an entry")
+        {
+            auto k1 = Value::create("k1"s);
+            auto v1 = Value::create(1_f);
+            auto k2 = Value::create("k2"s);
+            auto v2 = Value::create(2_f);
+
+            auto input_map = Value::create(Map{{k1, v1}, {k2, v2}});
+
+            auto out_k1 = Value::create("a"s);
+            auto out_v1 = Value::create(10_f);
+
+            auto mapper = std::make_shared<Recording_Mapper>();
+            mapper->results = {
+                Value::create(Map{{out_k1, out_v1}}),
+                Value::create(Map{}),
+            };
+            auto op_val = Value::create(Function{mapper});
+
+            trompeloeil::sequence seq;
+            REQUIRE_CALL(*structure_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(input_map);
+            REQUIRE_CALL(*operation_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(op_val);
+
+            ast::Map node{std::move(structure_expr),
+                          std::move(operation_expr)};
+
+            auto res = node.evaluate(syms);
+            auto out = res->get<Map>().value();
+            REQUIRE(out.size() == 1);
+            CHECK(out.at(out_k1) == out_v1);
+        }
     }
 
     SECTION("Error cases")
     {
+        SECTION("Key collision errors")
+        {
+            auto k1 = Value::create("k1"s);
+            auto v1 = Value::create(1_f);
+            auto k2 = Value::create("k2"s);
+            auto v2 = Value::create(2_f);
+            auto input_map = Value::create(Map{{k1, v1}, {k2, v2}});
+
+            auto dup_key = Value::create("dup"s);
+            auto mapper = std::make_shared<Recording_Mapper>();
+            mapper->results = {
+                Value::create(Map{{dup_key, Value::create(10_f)}}),
+                Value::create(Map{{dup_key, Value::create(20_f)}}),
+            };
+            auto op_val = Value::create(Function{mapper});
+
+            trompeloeil::sequence seq;
+            REQUIRE_CALL(*structure_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(input_map);
+            REQUIRE_CALL(*operation_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(op_val);
+
+            ast::Map node{std::move(structure_expr),
+                          std::move(operation_expr)};
+
+            CHECK_THROWS_WITH(node.evaluate(syms),
+                              ContainsSubstring("collision"));
+            REQUIRE(mapper->calls.size() == 2);
+        }
+
         SECTION("Mapper return must be a map")
         {
             auto k1 = Value::create("k1"s);
