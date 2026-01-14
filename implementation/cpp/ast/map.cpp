@@ -36,8 +36,8 @@ Value_Ptr ast::Map::evaluate(const Symbol_Table& syms) const
     const auto& op_val = operation_->evaluate(syms);
     if (not op_val->is<Function>())
     {
-        throw Frost_Error{
-            fmt::format("Map expected Function, got {}", op_val->type_name())};
+        throw Frost_Error{fmt::format("Map operation expected Function, got {}",
+                                      op_val->type_name())};
     }
 
     if (structure_val->is<Array>())

@@ -10,7 +10,9 @@
 #include "index.hpp"
 #include "literal.hpp"
 #include "map-constructor.hpp"
+#include "map.hpp"
 #include "name_lookup.hpp"
+#include "reduce.hpp"
 #include "statement.hpp"
 #include "unop.hpp"
 

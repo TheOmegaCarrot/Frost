@@ -10,8 +10,6 @@
 #include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 
-#include "../reduce.hpp"
-
 using namespace frst;
 using namespace std::literals;
 
@@ -388,9 +386,8 @@ TEST_CASE("Reduce Array")
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
-            CHECK_THROWS_WITH(
-                node.evaluate(syms),
-                ContainsSubstring("Reduce with expected Function"));
+            CHECK_THROWS_WITH(node.evaluate(syms),
+                              "Reduce operation expected Function, got Int");
         }
 
         // Frost reduce [1, 2] with fn_that_goes_kaboom
@@ -791,9 +788,8 @@ TEST_CASE("Reduce Map")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            CHECK_THROWS_WITH(
-                node.evaluate(syms),
-                ContainsSubstring("Reduce with expected Function"));
+            CHECK_THROWS_WITH(node.evaluate(syms),
+                              "Reduce operation expected Function, got Int");
         }
 
         // Frost: reduce { [1]: "a" } with fn_that_goes_kaboom init: 0
