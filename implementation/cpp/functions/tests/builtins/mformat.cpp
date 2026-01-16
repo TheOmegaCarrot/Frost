@@ -1,4 +1,5 @@
 #include <catch2/catch_all.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
@@ -31,17 +32,16 @@ TEST_CASE("Builtin mformat")
 
     SECTION("Arity")
     {
-        CHECK_THROWS_WITH(mformat->call({}),
-                          ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(mformat->call({}),
-                          ContainsSubstring("requires at least 2"));
+        CHECK_THROWS_MATCHES(
+            mformat->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")
+                           && ContainsSubstring("requires at least 2")));
 
-        CHECK_THROWS_WITH(mformat->call({Value::null(), Value::null(),
-                                         Value::null()}),
-                          ContainsSubstring("too many arguments"));
-        CHECK_THROWS_WITH(mformat->call({Value::null(), Value::null(),
-                                         Value::null()}),
-                          ContainsSubstring("no more than 2"));
+        CHECK_THROWS_MATCHES(
+            mformat->call({Value::null(), Value::null(), Value::null()}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("too many arguments")
+                           && ContainsSubstring("no more than 2")));
     }
 
     SECTION("Type checks")
@@ -50,24 +50,23 @@ TEST_CASE("Builtin mformat")
         {
             auto bad_fmt = Value::create(42_f);
             auto repl = Value::create(Map{});
-            CHECK_THROWS_WITH(mformat->call({bad_fmt, repl}),
-                              ContainsSubstring("Function mformat requires"));
-            CHECK_THROWS_WITH(mformat->call({bad_fmt, repl}),
-                              ContainsSubstring("format string"));
-            CHECK_THROWS_WITH(mformat->call({bad_fmt, repl}),
-                              EndsWith(std::string{bad_fmt->type_name()}));
+            CHECK_THROWS_MATCHES(
+                mformat->call({bad_fmt, repl}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Function mformat requires")
+                               && ContainsSubstring("format string")
+                               && EndsWith(std::string{bad_fmt->type_name()})));
         }
 
         SECTION("Second argument must be Map")
         {
             auto fmt = Value::create("${k}"s);
             auto bad_repl = Value::create("nope"s);
-            CHECK_THROWS_WITH(mformat->call({fmt, bad_repl}),
-                              ContainsSubstring("Function mformat requires"));
-            CHECK_THROWS_WITH(mformat->call({fmt, bad_repl}),
-                              ContainsSubstring("replacement map"));
-            CHECK_THROWS_WITH(mformat->call({fmt, bad_repl}),
-                              EndsWith(std::string{bad_repl->type_name()}));
+            CHECK_THROWS_MATCHES(
+                mformat->call({fmt, bad_repl}), Frost_User_Error,
+                MessageMatches(
+                    ContainsSubstring("Function mformat requires")
+                    && ContainsSubstring("replacement map")
+                    && EndsWith(std::string{bad_repl->type_name()})));
         }
     }
 
@@ -97,6 +96,101 @@ TEST_CASE("Builtin mformat")
             REQUIRE(res->is<String>());
             CHECK(res->get<String>().value() == "x42y");
         }
+
+        SECTION("No placeholders leaves string unchanged")
+        {
+            auto fmt = Value::create("plain text"s);
+            auto repl = Value::create(Map{
+                {Value::create("k"s), Value::create("v"s)},
+                {Value::create(1_f), Value::create("ignored"s)},
+            });
+
+            auto res = mformat->call({fmt, repl});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == "plain text");
+        }
+
+        SECTION("Literal dollar without brace is preserved")
+        {
+            auto fmt = Value::create("$$ and $x and price: $5"s);
+            auto repl = Value::create(Map{
+                {Value::create("x"s), Value::create("ignored"s)},
+            });
+
+            auto res = mformat->call({fmt, repl});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == "$$ and $x and price: $5");
+        }
+
+        SECTION("Adjacent placeholders are concatenated")
+        {
+            auto fmt = Value::create("${a}${b}"s);
+            auto repl = Value::create(Map{
+                {Value::create("a"s), Value::create("foo"s)},
+                {Value::create("b"s), Value::create("bar"s)},
+            });
+
+            auto res = mformat->call({fmt, repl});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == "foobar");
+        }
+
+        SECTION("Placeholders at boundaries are supported")
+        {
+            auto repl = Value::create(Map{
+                {Value::create("a"s), Value::create("X"s)},
+            });
+
+            auto prefix = Value::create("${a}suffix"s);
+            auto res_prefix = mformat->call({prefix, repl});
+            REQUIRE(res_prefix->is<String>());
+            CHECK(res_prefix->get<String>().value() == "Xsuffix");
+
+            auto suffix = Value::create("prefix${a}"s);
+            auto res_suffix = mformat->call({suffix, repl});
+            REQUIRE(res_suffix->is<String>());
+            CHECK(res_suffix->get<String>().value() == "prefixX");
+        }
+
+        SECTION("Identifier edge cases are accepted")
+        {
+            auto fmt = Value::create("${_} ${_x} ${a1_b2}"s);
+            auto repl = Value::create(Map{
+                {Value::create("_"s), Value::create("u"s)},
+                {Value::create("_x"s), Value::create("ux"s)},
+                {Value::create("a1_b2"s), Value::create("ab"s)},
+            });
+
+            auto res = mformat->call({fmt, repl});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == "u ux ab");
+        }
+
+        SECTION("Repeated placeholders reuse the same key")
+        {
+            auto fmt = Value::create("${x} ${x}"s);
+            auto repl = Value::create(Map{
+                {Value::create("x"s), Value::create("rep"s)},
+            });
+
+            auto res = mformat->call({fmt, repl});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == "rep rep");
+        }
+
+        SECTION("Unused map keys are ignored")
+        {
+            auto fmt = Value::create("${ok}"s);
+            auto repl = Value::create(Map{
+                {Value::create("ok"s), Value::create("yes"s)},
+                {Value::create("not_used"s), Value::null()},
+                {Value::create(1_f), Value::create("ignored"s)},
+            });
+
+            auto res = mformat->call({fmt, repl});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == "yes");
+        }
     }
 
     SECTION("Errors")
@@ -108,10 +202,10 @@ TEST_CASE("Builtin mformat")
                 {Value::create("k1"s), Value::create("hello"s)},
             });
 
-            CHECK_THROWS_WITH(mformat->call({fmt, repl}),
-                              ContainsSubstring("Missing replacement for key"));
-            CHECK_THROWS_WITH(mformat->call({fmt, repl}),
-                              ContainsSubstring("k2"));
+            CHECK_THROWS_MATCHES(
+                mformat->call({fmt, repl}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Missing replacement for key")
+                               && ContainsSubstring("k2")));
         }
 
         SECTION("Null replacement value errors")
@@ -121,10 +215,10 @@ TEST_CASE("Builtin mformat")
                 {Value::create("k1"s), Value::null()},
             });
 
-            CHECK_THROWS_WITH(mformat->call({fmt, repl}),
-                              ContainsSubstring("Replacement value"));
-            CHECK_THROWS_WITH(mformat->call({fmt, repl}),
-                              ContainsSubstring("k1"));
+            CHECK_THROWS_MATCHES(
+                mformat->call({fmt, repl}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Replacement value")
+                               && ContainsSubstring("k1")));
         }
 
         SECTION("Unterminated placeholder errors")
@@ -157,11 +251,11 @@ TEST_CASE("Builtin mformat")
                     {Value::create("1abc"s), Value::create("x"s)},
                 });
 
-                CHECK_THROWS_WITH(
-                    mformat->call({fmt, repl}),
-                    ContainsSubstring("Invalid format placeholder"));
-                CHECK_THROWS_WITH(mformat->call({fmt, repl}),
-                                  ContainsSubstring("1abc"));
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt, repl}), Frost_User_Error,
+                    MessageMatches(
+                        ContainsSubstring("Invalid format placeholder")
+                        && ContainsSubstring("1abc")));
             }
 
             SECTION("Contains non-identifier characters")
@@ -171,11 +265,11 @@ TEST_CASE("Builtin mformat")
                     {Value::create("a-b"s), Value::create("x"s)},
                 });
 
-                CHECK_THROWS_WITH(
-                    mformat->call({fmt, repl}),
-                    ContainsSubstring("Invalid format placeholder"));
-                CHECK_THROWS_WITH(mformat->call({fmt, repl}),
-                                  ContainsSubstring("a-b"));
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt, repl}), Frost_User_Error,
+                    MessageMatches(
+                        ContainsSubstring("Invalid format placeholder")
+                        && ContainsSubstring("a-b")));
             }
         }
     }

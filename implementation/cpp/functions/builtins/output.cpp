@@ -47,6 +47,7 @@ bool is_identifier_like(const String& key)
     return true;
 }
 
+// ChatGPT wrote this because I really didn't want to
 std::string mformat_impl(const String& fmt_str, const Map& repl_map)
 {
     std::string out;
