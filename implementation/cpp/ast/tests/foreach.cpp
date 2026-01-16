@@ -45,7 +45,7 @@ struct Throw_On_Call final : Callable
     {
         calls.push_back(args);
         if (call_index++ == throw_on_index)
-            throw Frost_Error{"kaboom"};
+            throw Frost_User_Error{"kaboom"};
         return Value::null();
     }
 
@@ -151,8 +151,7 @@ TEST_CASE("Foreach Array")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
-                              ContainsSubstring("kaboom"));
+            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
             REQUIRE(op->calls.size() == 2);
             REQUIRE(op->calls.at(0).size() == 1);
             REQUIRE(op->calls.at(1).size() == 1);
@@ -175,8 +174,7 @@ TEST_CASE("Foreach Array")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
-                              ContainsSubstring("Int"));
+            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("Int"));
         }
 
         SECTION("Non-function operation errors and includes type name")
@@ -197,8 +195,7 @@ TEST_CASE("Foreach Array")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
-                              ContainsSubstring("Int"));
+            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("Int"));
         }
     }
 }
@@ -269,8 +266,8 @@ TEST_CASE("Foreach Map")
                 REQUIRE(call.size() == 2);
             }
 
-            std::vector<std::pair<Value_Ptr, Value_Ptr>> expected = {
-                {k1, v1}, {k2, v2}};
+            std::vector<std::pair<Value_Ptr, Value_Ptr>> expected = {{k1, v1},
+                                                                     {k2, v2}};
             for (const auto& call : op->calls)
             {
                 bool matched = false;
@@ -312,8 +309,7 @@ TEST_CASE("Foreach Map")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
-                              ContainsSubstring("kaboom"));
+            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
             REQUIRE(op->calls.size() == 1);
             REQUIRE(op->calls.at(0).size() == 2);
         }
@@ -333,8 +329,7 @@ TEST_CASE("Foreach Map")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
-                              ContainsSubstring("Int"));
+            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("Int"));
         }
 
         SECTION("Non-function operation errors and includes type name")
@@ -355,8 +350,7 @@ TEST_CASE("Foreach Map")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
-                              ContainsSubstring("String"));
+            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("String"));
         }
     }
 }

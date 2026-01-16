@@ -56,7 +56,7 @@ TEST_CASE("Define")
 
         REQUIRE_CALL(syms, define("foo", value2))
             .IN_SEQUENCE(seq)
-            .THROW(Frost_Error{"uh oh"});
+            .THROW(Frost_User_Error{"uh oh"});
 
         ast::Define node{"foo", std::move(expr)};
 

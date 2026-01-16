@@ -21,7 +21,9 @@ TEST_CASE("Builtin Function")
     SECTION("debug_dump format")
     {
         Builtin builtin{
-            [](builtin_args_t) { return Value::null(); },
+            [](builtin_args_t) {
+                return Value::null();
+            },
             "debug",
             Builtin::Arity{0, 0},
         };
@@ -117,7 +119,7 @@ TEST_CASE("Builtin Function")
             builtin.call(args);
             FAIL("Expected too-many-arguments error");
         }
-        catch (const Frost_Error& err)
+        catch (const Frost_User_Error& err)
         {
             const std::string msg = err.what();
             CHECK_THAT(msg, ContainsSubstring("Function too_many"));
@@ -149,7 +151,7 @@ TEST_CASE("Builtin Function")
             builtin.call(args);
             FAIL("Expected insufficient-arguments error");
         }
-        catch (const Frost_Error& err)
+        catch (const Frost_User_Error& err)
         {
             const std::string msg = err.what();
             CHECK_THAT(msg, ContainsSubstring("Function too_few"));

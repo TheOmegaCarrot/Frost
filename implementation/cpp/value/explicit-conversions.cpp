@@ -25,8 +25,8 @@ struct To_String_Impl
         auto [ptr, err] = std::to_chars(std::ranges::begin(buf),
                                         std::ranges::end(buf), value);
         if (err != std::errc{})
-            throw Frost_Error{fmt::format("Int->String error: {}",
-                                          std::make_error_code(err).message())};
+            throw Frost_Internal_Error{fmt::format(
+                "Int->String error: {}", std::make_error_code(err).message())};
 
         return buf;
     }
@@ -38,8 +38,9 @@ struct To_String_Impl
         auto [ptr, err] = std::to_chars(std::ranges::begin(buf),
                                         std::ranges::end(buf), value);
         if (err != std::errc{})
-            throw Frost_Error{fmt::format("Float->String error: {}",
-                                          std::make_error_code(err).message())};
+            throw Frost_Internal_Error{
+                fmt::format("Float->String error: {}",
+                            std::make_error_code(err).message())};
 
         return buf;
     }
@@ -97,8 +98,9 @@ struct To_String_Impl
 
 std::string Value::to_internal_string(bool in_structure) const
 {
-    return value_.visit(
-        [&](const auto& value) { return to_string_impl(value, in_structure); });
+    return value_.visit([&](const auto& value) {
+        return to_string_impl(value, in_structure);
+    });
 }
 
 struct To_Int_Impl
@@ -127,13 +129,17 @@ struct To_Int_Impl
 
 std::optional<Int> Value::to_internal_int() const
 {
-    return as<Int>().or_else([&] { return value_.visit(to_int_impl); });
+    return as<Int>().or_else([&] {
+        return value_.visit(to_int_impl);
+    });
 }
 
 Value_Ptr Value::to_int() const
 {
     return to_internal_int()
-        .transform([](const Int v) { return create(auto{v}); })
+        .transform([](const Int v) {
+            return create(auto{v});
+        })
         .value_or(Value::null());
 }
 
@@ -163,13 +169,17 @@ struct To_Float_Impl
 
 std::optional<Float> Value::to_internal_float() const
 {
-    return as<Float>().or_else([&] { return value_.visit(to_float_impl); });
+    return as<Float>().or_else([&] {
+        return value_.visit(to_float_impl);
+    });
 }
 
 Value_Ptr Value::to_float() const
 {
     return to_internal_float()
-        .transform([](const Float v) { return create(auto{v}); })
+        .transform([](const Float v) {
+            return create(auto{v});
+        })
         .value_or(Value::null());
 }
 

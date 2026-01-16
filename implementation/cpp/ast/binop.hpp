@@ -103,7 +103,7 @@ class Binop final : public Expression
         , rhs_{std::move(rhs)}
         , op_{convert_binary_op(op)
                   .or_else([&] -> std::optional<Binary_Op> {
-                      throw Frost_Error{
+                      throw Frost_Internal_Error{
                           fmt::format("Bad binary operator {}", op)};
                       return {};
                   })

@@ -13,7 +13,7 @@ static Value_Ptr index_array(const Array& array, const Value_Ptr& index_val)
      */
 
     if (!index_val->is<Int>())
-        throw Frost_Error{"Cannot index array with non-integer"};
+        throw Frost_User_Error{"Cannot index array with non-integer"};
 
     const Int len = array.size();
     const Int index = index_val->raw_get<Int>();
@@ -40,7 +40,7 @@ Value_Ptr Index::evaluate(const Symbol_Table& syms) const
     auto struct_val = structure_->evaluate(syms);
     if (!struct_val->is_structured())
     {
-        throw Frost_Error{
+        throw Frost_User_Error{
             fmt::format("Cannot index type {}, expected structure",
                         struct_val->type_name())};
     }

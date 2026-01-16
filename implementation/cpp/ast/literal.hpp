@@ -20,7 +20,7 @@ class Literal final : public Expression
     {
         if (!value_->is_primitive())
         {
-            throw Frost_Error{fmt::format(
+            throw Frost_Internal_Error{fmt::format(
                 "Literal AST node created with non-primitive type: {}",
                 value_->type_name())};
         }

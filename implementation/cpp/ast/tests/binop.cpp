@@ -278,7 +278,7 @@ TEST_CASE("Comparison Binary ops")
                     eval_binop(lhs, op, rhs);
                     FAIL("Expected type error");
                 }
-                catch (const Frost_Error& err)
+                catch (const Frost_User_Error& err)
                 {
                     const std::string msg = err.what();
                     CHECK_THAT(msg, ContainsSubstring("Cannot compare"));

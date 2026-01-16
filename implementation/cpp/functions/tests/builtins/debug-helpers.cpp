@@ -64,8 +64,10 @@ TEST_CASE("Builtin debug_dump")
     SECTION("Builtin function debug_dump")
     {
         auto func = Value::create(Function{std::make_shared<Builtin>(
-            [](builtin_args_t) { return Value::null(); }, "dbg",
-            Builtin::Arity{0, 0})});
+            [](builtin_args_t) {
+                return Value::null();
+            },
+            "dbg", Builtin::Arity{0, 0})});
 
         auto res = debug_dump->call({func});
         REQUIRE(res->is<frst::String>());
@@ -114,9 +116,9 @@ TEST_CASE("Assert")
     {
         CHECK_THROWS_WITH(assert_fn->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(assert_fn->call({Value::null(), Value::null(),
-                                           Value::null()}),
-                          ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(
+            assert_fn->call({Value::null(), Value::null(), Value::null()}),
+            ContainsSubstring("too many arguments"));
     }
 
     SECTION("Truthy values pass through (pointer-equal)")
@@ -164,7 +166,7 @@ TEST_CASE("Assert")
             assert_fn->call({v_true, bad_msg});
             FAIL("Expected type error");
         }
-        catch (const Frost_Error& err)
+        catch (const Frost_User_Error& err)
         {
             const std::string msg = err.what();
             CHECK_THAT(msg, ContainsSubstring("Function assert"));

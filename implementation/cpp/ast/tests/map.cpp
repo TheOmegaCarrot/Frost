@@ -49,7 +49,7 @@ struct Throw_On_Index_Mapper final : Callable
     {
         calls.push_back(args);
         if (call_index++ == throw_on_index)
-            throw Frost_Error{"kaboom"};
+            throw Frost_User_Error{"kaboom"};
         return Value::null();
     }
 
@@ -374,8 +374,7 @@ TEST_CASE("Map Map")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
-            ast::Map node{std::move(structure_expr),
-                          std::move(operation_expr)};
+            ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             auto res = node.evaluate(syms);
             auto out = res->get<Map>().value();
@@ -412,8 +411,7 @@ TEST_CASE("Map Map")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
-            ast::Map node{std::move(structure_expr),
-                          std::move(operation_expr)};
+            ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms),
                               ContainsSubstring("collision"));
@@ -448,8 +446,7 @@ TEST_CASE("Map Map")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
-            ast::Map node{std::move(structure_expr),
-                          std::move(operation_expr)};
+            ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms),
                               ContainsSubstring("collision"));
@@ -464,8 +461,8 @@ TEST_CASE("Map Map")
             auto v2 = Value::create(2_f);
             auto input_map = Value::create(Map{{k1, v1}, {k2, v2}});
 
-            auto shared_key = Value::create(Map{{Value::create(1_f),
-                                                 Value::create(2_f)}});
+            auto shared_key =
+                Value::create(Map{{Value::create(1_f), Value::create(2_f)}});
 
             auto mapper = std::make_shared<Recording_Mapper>();
             mapper->results = {
@@ -484,8 +481,7 @@ TEST_CASE("Map Map")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
-            ast::Map node{std::move(structure_expr),
-                          std::move(operation_expr)};
+            ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms),
                               ContainsSubstring("collision"));

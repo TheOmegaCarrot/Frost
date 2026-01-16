@@ -41,7 +41,7 @@ struct ThrowingCallable final : Callable
 {
     Value_Ptr call(const std::vector<Value_Ptr>&) const override
     {
-        throw Frost_Error{"boom"};
+        throw Frost_User_Error{"boom"};
     }
 
     std::string debug_dump() const override
@@ -223,7 +223,7 @@ TEST_CASE("Function Call")
 
         REQUIRE_CALL(*fn_ptr, evaluate(_))
             .LR_WITH(&_1 == &syms)
-            .THROW(Frost_Error{"fn boom"});
+            .THROW(Frost_User_Error{"fn boom"});
         FORBID_CALL(*arg_ptr, evaluate(_));
 
         std::vector<Expression::Ptr> args;
@@ -250,7 +250,7 @@ TEST_CASE("Function Call")
         REQUIRE_CALL(*fn_ptr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
         REQUIRE_CALL(*arg1_ptr, evaluate(_))
             .LR_WITH(&_1 == &syms)
-            .THROW(Frost_Error{"arg boom"});
+            .THROW(Frost_User_Error{"arg boom"});
         FORBID_CALL(*arg2_ptr, evaluate(_));
 
         std::vector<Expression::Ptr> args;

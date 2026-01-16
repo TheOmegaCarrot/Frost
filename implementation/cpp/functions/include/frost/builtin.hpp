@@ -47,14 +47,14 @@ class Builtin final : public Callable
     {
         if (auto num_args = args.size(); arity_.max && num_args > arity_.max)
         {
-            throw Frost_Error{
+            throw Frost_User_Error{
                 fmt::format("Function {} called with too many arguments. "
                             "Called with {} but accepts no more than {}.",
                             name_, num_args, arity_.max.value())};
         }
         else if (num_args < arity_.min)
         {
-            throw Frost_Error{
+            throw Frost_User_Error{
                 fmt::format("Function {} called with insufficient arguments. "
                             "Called with {} but requires at least {}.",
                             name_, num_args, arity_.min)};

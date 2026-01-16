@@ -37,7 +37,7 @@ class Lambda final : public Expression
         const auto param_set = params_ | std::ranges::to<std::flat_set>();
         if (params_.size() != param_set.size())
         {
-            throw Frost_Error{"Closure has duplicate parameters"};
+            throw Frost_Internal_Error{"Closure has duplicate parameters"};
         }
 
         std::flat_set<std::string> names_defined_so_far{std::from_range,
@@ -49,7 +49,7 @@ class Lambda final : public Expression
                 [&](const Statement::Definition& defn) {
                     if (param_set.contains(defn.name))
                     {
-                        throw Frost_Error{
+                        throw Frost_Internal_Error{
                             fmt::format("Closure local definition cannot "
                                         "shadow parameter: {}",
                                         defn.name)};
@@ -72,7 +72,7 @@ class Lambda final : public Expression
         {
             if (not syms.has(name))
             {
-                throw Frost_Error{fmt::format(
+                throw Frost_Internal_Error{fmt::format(
                     "No definition found for captured symbol: {}", name)};
             }
 
@@ -85,7 +85,9 @@ class Lambda final : public Expression
 
     std::generator<Symbol_Action> symbol_sequence() const final
     {
-        const auto get_name = [](const auto& action) { return action.name; };
+        const auto get_name = [](const auto& action) {
+            return action.name;
+        };
 
         std::flat_set<std::string> defns{std::from_range, params_};
         for (const Statement::Symbol_Action& action :

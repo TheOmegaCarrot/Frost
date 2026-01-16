@@ -331,8 +331,8 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("y", node<Name_Lookup>("x")));
         body.push_back(node<Define>("x", node<Literal>(Value::create(4_f))));
-        body.push_back(node<Binop>(node<Name_Lookup>("x"), "+",
-                                   node<Name_Lookup>("y")));
+        body.push_back(
+            node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
 
         Closure closure{{}, &body, captures};
 
@@ -507,8 +507,7 @@ Literal(42)
             node<Name_Lookup>("x"),
             node<Binop>(node<Literal>(Value::create(1_f)), "+",
                         node<Name_Lookup>("y")),
-            std::optional<Expression::Ptr>{
-                node<Literal>(Value::create(0_f))}));
+            std::optional<Expression::Ptr>{node<Literal>(Value::create(0_f))}));
 
         Closure closure{{}, &body, captures};
 
@@ -527,10 +526,8 @@ Literal(42)
 
         const auto capture_list_start =
             header.find("capturing: ") + std::string_view{"capturing: "}.size();
-        const auto capture_list =
-            std::string_view{header}.substr(capture_list_start,
-                                            header.size() - capture_list_start
-                                                - 1);
+        const auto capture_list = std::string_view{header}.substr(
+            capture_list_start, header.size() - capture_list_start - 1);
         CHECK(capture_list.find(' ') == std::string_view::npos);
 
         CHECK(body_dump == R"(If

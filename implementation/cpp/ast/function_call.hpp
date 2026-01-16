@@ -34,7 +34,7 @@ class Function_Call final : public Expression
 
         if (not fn->is<Function>())
         {
-            throw Frost_Error{
+            throw Frost_User_Error{
                 fmt::format("Cannot call value of type {}", fn->type_name())};
         }
 

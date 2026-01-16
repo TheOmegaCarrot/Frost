@@ -15,7 +15,9 @@ using namespace frst::ast;
 using namespace std::literals;
 
 #define LIFT(F)                                                                \
-    []<typename... Ts>(Ts&&... args) { return F(std::forward<Ts>(args)...); }
+    []<typename... Ts>(Ts&&... args) {                                         \
+        return F(std::forward<Ts>(args)...);                                   \
+    }
 
 namespace
 {
@@ -155,8 +157,7 @@ TEST_CASE("Symbol Sequence")
 
         Function_Call node{name("fn"), std::move(args)};
         CHECK(collect_sequence(node)
-              == std::vector<std::string>{"use:fn", "use:a", "use:b",
-                                          "use:c"});
+              == std::vector<std::string>{"use:fn", "use:a", "use:b", "use:c"});
     }
 
     SECTION("Nested function call yields in order")
@@ -329,26 +330,10 @@ TEST_CASE("Symbol Sequence")
 
         CHECK(collect_program_sequence(program)
               == std::vector<std::string>{
-                  "use:a",
-                  "def:x",
-                  "use:x",
-                  "use:cond",
-                  "use:t",
-                  "use:f",
-                  "def:arr",
-                  "use:k1",
-                  "use:v1",
-                  "use:k2",
-                  "use:v2",
-                  "use:v3",
-                  "def:map",
-                  "use:arr",
-                  "use:i",
-                  "use:x",
-                  "use:y",
-                  "use:func",
-                  "use:arg1",
-                  "use:arg2",
+                  "use:a",  "def:x",   "use:x",    "use:cond", "use:t",
+                  "use:f",  "def:arr", "use:k1",   "use:v1",   "use:k2",
+                  "use:v2", "use:v3",  "def:map",  "use:arr",  "use:i",
+                  "use:x",  "use:y",   "use:func", "use:arg1", "use:arg2",
               });
     }
 }

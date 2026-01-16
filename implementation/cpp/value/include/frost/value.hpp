@@ -76,6 +76,7 @@ using Function = std::shared_ptr<Callable>;
 
 struct Frost_Error : std::runtime_error
 {
+  protected:
     Frost_Error(const char* err)
         : std::runtime_error{err}
     {
@@ -87,11 +88,37 @@ struct Frost_Error : std::runtime_error
     }
 };
 
+struct Frost_Internal_Error : Frost_Error
+{
+    Frost_Internal_Error(const char* err)
+        : Frost_Error{err}
+    {
+    }
+
+    Frost_Internal_Error(const std::string& err)
+        : Frost_Error{err}
+    {
+    }
+};
+
+struct Frost_User_Error : Frost_Error
+{
+    Frost_User_Error(const char* err)
+        : Frost_Error{err}
+    {
+    }
+
+    Frost_User_Error(const std::string& err)
+        : Frost_Error{err}
+    {
+    }
+};
+
 #define VALUE_STRINGIZE_IMPL(X) #X
 #define VALUE_STRINGIZE(X) VALUE_STRINGIZE_IMPL(X)
 
 #define THROW_UNREACHABLE                                                      \
-    throw Frost_Error                                                          \
+    throw Frost_Internal_Error                                                 \
     {                                                                          \
         "Hit point which should be unreachable at: " __FILE__                  \
         ":" VALUE_STRINGIZE(__LINE__)                                          \
@@ -367,24 +394,36 @@ class Value
     [[nodiscard]] bool is_numeric() const
     {
         return value_.visit(Overload{
-            [](const Frost_Numeric auto&) { return true; },
-            [](const auto&) { return false; },
+            [](const Frost_Numeric auto&) {
+                return true;
+            },
+            [](const auto&) {
+                return false;
+            },
         });
     }
 
     [[nodiscard]] bool is_primitive() const
     {
         return value_.visit(Overload{
-            [](const Frost_Primitive auto&) { return true; },
-            [](const auto&) { return false; },
+            [](const Frost_Primitive auto&) {
+                return true;
+            },
+            [](const auto&) {
+                return false;
+            },
         });
     }
 
     [[nodiscard]] bool is_structured() const
     {
         return value_.visit(Overload{
-            [](const Frost_Structured auto&) { return true; },
-            [](const auto&) { return false; },
+            [](const Frost_Structured auto&) {
+                return true;
+            },
+            [](const auto&) {
+                return false;
+            },
         });
     }
 
@@ -503,12 +542,15 @@ inline bool impl::Value_Ptr_Less::operator()(const Value_Ptr& lhs,
 
     if (lhs->is_primitive())
     {
-        return std::visit(
-            Overload{
-                []<Frost_Primitive T>(const T& a, const T& b) { return a < b; },
-                [](const auto&, const auto&) -> bool { THROW_UNREACHABLE; },
-            },
-            lhs->value_, rhs->value_);
+        return std::visit(Overload{
+                              []<Frost_Primitive T>(const T& a, const T& b) {
+                                  return a < b;
+                              },
+                              [](const auto&, const auto&) -> bool {
+                                  THROW_UNREACHABLE;
+                              },
+                          },
+                          lhs->value_, rhs->value_);
     }
 
     return lhs.get() < rhs.get();

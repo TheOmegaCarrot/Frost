@@ -33,9 +33,9 @@ TEST_CASE("Builtin pack_call")
 
     SECTION("Arity: too many arguments")
     {
-        CHECK_THROWS_WITH(pack_call_fn->call({Value::null(), Value::null(),
-                                              Value::null()}),
-                          ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(
+            pack_call_fn->call({Value::null(), Value::null(), Value::null()}),
+            ContainsSubstring("too many arguments"));
     }
 
     struct RecordingCallable final : Callable
@@ -80,7 +80,7 @@ TEST_CASE("Builtin pack_call")
     {
         Value_Ptr call(builtin_args_t) const override
         {
-            throw Frost_Error{"boom"};
+            throw Frost_User_Error{"boom"};
         }
         std::string debug_dump() const override
         {
@@ -96,7 +96,7 @@ TEST_CASE("Builtin pack_call")
             pack_call_fn->call({Value::create(1_f), arg_list});
             FAIL("Expected type error for function argument");
         }
-        catch (const Frost_Error& err)
+        catch (const Frost_User_Error& err)
         {
             const std::string msg = err.what();
             CHECK_THAT(msg, ContainsSubstring("Function pack_call"));
@@ -116,7 +116,7 @@ TEST_CASE("Builtin pack_call")
             pack_call_fn->call({func_val, Value::create(1_f)});
             FAIL("Expected type error for args argument");
         }
-        catch (const Frost_Error& err)
+        catch (const Frost_User_Error& err)
         {
             const std::string msg = err.what();
             CHECK_THAT(msg, ContainsSubstring("Function pack_call"));
@@ -175,8 +175,10 @@ TEST_CASE("Builtin pack_call")
     SECTION("Callee arity errors propagate")
     {
         auto callee = std::make_shared<Builtin>(
-            [](builtin_args_t) { return Value::null(); }, "exact_arity_0",
-            Builtin::Arity{0, 0});
+            [](builtin_args_t) {
+                return Value::null();
+            },
+            "exact_arity_0", Builtin::Arity{0, 0});
         auto func_val = Value::create(Function{callee});
         auto args = Value::create(frst::Array{
             Value::create(42_f),
@@ -188,7 +190,7 @@ TEST_CASE("Builtin pack_call")
             pack_call_fn->call({func_val, args});
             FAIL("Expected arity error from callee");
         }
-        catch (const Frost_Error& err)
+        catch (const Frost_User_Error& err)
         {
             const std::string msg = err.what();
             CHECK_THAT(msg, ContainsSubstring("Function exact_arity_0"));

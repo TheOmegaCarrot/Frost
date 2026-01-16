@@ -14,8 +14,8 @@ namespace frst
                                 std::string_view lhs_type,
                                 std::string_view rhs_type)
 {
-    throw Frost_Error{fmt::format("Cannot {} incompatible types: {} {} {}",
-                                  op_verb, lhs_type, op_glyph, rhs_type)};
+    throw Frost_User_Error{fmt::format("Cannot {} incompatible types: {} {} {}",
+                                       op_verb, lhs_type, op_glyph, rhs_type)};
 }
 
 } // namespace frst

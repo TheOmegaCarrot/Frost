@@ -86,9 +86,9 @@ void require_arg(std::string_view fn, builtin_args_t args, std::size_t idx,
         const auto label_part =
             label.empty() ? fmt::format("argument {}", idx + 1)
                           : fmt::format("argument {} ({})", idx + 1, label);
-        throw Frost_Error{fmt::format("Function {} requires {} as {}, got {}",
-                                      fn, expected_list<Ts...>(), label_part,
-                                      arg->type_name())};
+        throw Frost_User_Error{
+            fmt::format("Function {} requires {} as {}, got {}", fn,
+                        expected_list<Ts...>(), label_part, arg->type_name())};
     }
 }
 
@@ -133,7 +133,10 @@ void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
         SPEC                                                                   \
     }
 
-#define ANY frst::builtin_detail::Types<frst::builtin_detail::Any>{}
+#define ANY                                                                    \
+    frst::builtin_detail::Types<frst::builtin_detail::Any>                     \
+    {                                                                          \
+    }
 
 #define REQUIRE_ARGS(NAME, ...)                                                \
     frst::builtin_detail::require_args(#NAME, args __VA_OPT__(, ) __VA_ARGS__)

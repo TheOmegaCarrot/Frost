@@ -29,15 +29,16 @@ Value_Ptr Closure::call(const std::vector<Value_Ptr>& args) const
 {
     if (args.size() > parameters_.size())
     {
-        throw Frost_Error{fmt::format("Closure called with too many arguments. "
-                                      "Expected up to {}, but got {}.",
-                                      parameters_.size(), args.size())};
+        throw Frost_User_Error{
+            fmt::format("Closure called with too many arguments. "
+                        "Expected up to {}, but got {}.",
+                        parameters_.size(), args.size())};
     }
 
     Symbol_Table exec_table(&captures_);
     for (const auto& [arg_name, arg_val] : std::views::zip(
-             parameters_, std::views::concat(
-                              args, std::views::repeat(Value::null()))))
+             parameters_,
+             std::views::concat(args, std::views::repeat(Value::null()))))
     {
         exec_table.define(arg_name, arg_val);
     }
