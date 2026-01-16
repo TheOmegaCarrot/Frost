@@ -51,7 +51,7 @@ class Unop final : public Expression
         : operand_{std::move(operand)}
         , op_{convert_unary_op(op)
                   .or_else([&] -> std::optional<Unary_Op> {
-                      throw Frost_User_Error{
+                      throw Frost_Internal_Error{
                           fmt::format("Bad unary operator {}", op)};
                       return {};
                   })
