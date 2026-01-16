@@ -107,7 +107,7 @@ struct To_Int_Impl
 {
     static std::optional<Int> operator()(const String& value)
     {
-        Int result;
+        Int result{};
         auto begin = value.data();
         auto end = begin + value.size();
         auto [ptr, err] = std::from_chars(begin, end, result);
@@ -147,7 +147,7 @@ struct To_Float_Impl
 {
     static std::optional<Float> operator()(const String& value)
     {
-        Float result;
+        Float result{};
         auto begin = value.data();
         auto end = begin + value.size();
         auto [ptr, err] = std::from_chars(begin, end, result);
