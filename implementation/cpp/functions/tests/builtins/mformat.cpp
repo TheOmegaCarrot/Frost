@@ -272,5 +272,196 @@ TEST_CASE("Builtin mformat")
                         && ContainsSubstring("a-b")));
             }
         }
+
+        SECTION("Pathological format strings do not throw unexpectedly")
+        {
+            auto repl = Value::create(Map{
+                {Value::create("a"s), Value::create("x"s)},
+                {Value::create("_"s), Value::create("y"s)},
+            });
+
+            SECTION("Trailing dollar")
+            {
+                auto fmt = Value::create("$"s);
+                auto res = mformat->call({fmt, repl});
+                REQUIRE(res->is<String>());
+                CHECK(res->get<String>().value() == "$");
+            }
+
+            SECTION("Many dollars without braces")
+            {
+                auto fmt = Value::create("$$$$$$$"s);
+                auto res = mformat->call({fmt, repl});
+                REQUIRE(res->is<String>());
+                CHECK(res->get<String>().value() == "$$$$$$$");
+            }
+
+            SECTION("Dollar followed by brace-like text but no placeholder")
+            {
+                auto fmt = Value::create("$ { } $ { }"s);
+                auto res = mformat->call({fmt, repl});
+                REQUIRE(res->is<String>());
+                CHECK(res->get<String>().value() == "$ { } $ { }");
+            }
+
+            SECTION("Lone closing brace is literal")
+            {
+                auto fmt = Value::create("}"s);
+                auto res = mformat->call({fmt, repl});
+                REQUIRE(res->is<String>());
+                CHECK(res->get<String>().value() == "}");
+            }
+
+            SECTION("Many closing braces are literal")
+            {
+                auto fmt = Value::create("}}}"s);
+                auto res = mformat->call({fmt, repl});
+                REQUIRE(res->is<String>());
+                CHECK(res->get<String>().value() == "}}}");
+            }
+
+            SECTION("Extra closing brace after placeholder is literal")
+            {
+                auto fmt = Value::create("${a}}"s);
+                auto res = mformat->call({fmt, repl});
+                REQUIRE(res->is<String>());
+                CHECK(res->get<String>().value() == "x}");
+            }
+
+            SECTION("Placeholder followed by opening brace is literal")
+            {
+                auto fmt = Value::create("${a}{"s);
+                auto res = mformat->call({fmt, repl});
+                REQUIRE(res->is<String>());
+                CHECK(res->get<String>().value() == "x{");
+            }
+
+            SECTION("Dollar directly before placeholder keeps literal dollar")
+            {
+                auto fmt = Value::create("$${a}"s);
+                auto res = mformat->call({fmt, repl});
+                REQUIRE(res->is<String>());
+                CHECK(res->get<String>().value() == "$x");
+            }
+
+            SECTION("Stray closing brace before placeholder is literal")
+            {
+                auto fmt = Value::create("}${a}"s);
+                auto res = mformat->call({fmt, repl});
+                REQUIRE(res->is<String>());
+                CHECK(res->get<String>().value() == "}x");
+            }
+
+            SECTION("Nested placeholder text triggers error")
+            {
+                auto fmt = Value::create("${${a}}"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Invalid format placeholder")
+                        && ContainsSubstring("${a")));
+            }
+
+            SECTION("Nested placeholder with extra text triggers error")
+            {
+                auto fmt = Value::create("${x${a}y}"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Invalid format placeholder")
+                        && ContainsSubstring("x${a")));
+            }
+
+            SECTION("Nested placeholder with suffix triggers error")
+            {
+                auto fmt = Value::create("${a${a}}"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Invalid format placeholder")
+                        && ContainsSubstring("a${a")));
+            }
+
+            SECTION("Multiple placeholders with trailing unterminated error")
+            {
+                auto fmt = Value::create("${a}${a}${"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Unterminated format placeholder")));
+            }
+
+            SECTION("Multiple placeholder markers with one missing brace")
+            {
+                auto fmt = Value::create("x${a}y${"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Unterminated format placeholder")));
+            }
+
+            SECTION("Just placeholder opener")
+            {
+                auto fmt = Value::create("${"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Unterminated format placeholder")));
+            }
+
+            SECTION("Whitespace inside placeholder errors")
+            {
+                auto fmt = Value::create("${ a}"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Invalid format placeholder")
+                        && ContainsSubstring(" a")));
+
+                auto fmt_suffix = Value::create("${a }"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt_suffix, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Invalid format placeholder")
+                        && ContainsSubstring("a ")));
+
+                auto fmt_tab = Value::create("${a\t}"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt_tab, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Invalid format placeholder")
+                        && ContainsSubstring("a\t")));
+            }
+
+            SECTION("Non-ASCII placeholder identifiers error")
+            {
+                auto fmt = Value::create("${naïve}"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Invalid format placeholder")
+                        && ContainsSubstring("naïve")));
+
+                auto fmt_emoji = Value::create("${😀}"s);
+                CHECK_THROWS_MATCHES(
+                    mformat->call({fmt_emoji, repl}), std::exception,
+                    MessageMatches(
+                        ContainsSubstring("Invalid format placeholder")
+                        && ContainsSubstring("😀")));
+            }
+
+            SECTION("Very long identifier is accepted")
+            {
+                std::string key(1024, 'a');
+                auto fmt = Value::create("${" + key + "}"s);
+                auto repl_long = Value::create(Map{
+                    {Value::create(auto{key}), Value::create("ok"s)},
+                });
+
+                auto res = mformat->call({fmt, repl_long});
+                REQUIRE(res->is<String>());
+                CHECK(res->get<String>().value() == "ok");
+            }
+        }
     }
 }
