@@ -1,4 +1,5 @@
 add_library( frost-ast
+    filter.cpp
     index.cpp
     map.cpp
     reduce.cpp
@@ -51,3 +52,5 @@ make_ast_test(tests/reduce.cpp)
 make_ast_test(tests/map.cpp)
 
 make_ast_test(tests/foreach.cpp)
+
+make_ast_test(tests/filter.cpp)

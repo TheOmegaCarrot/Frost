@@ -1,5 +1,6 @@
 #include "reduce.hpp"
-#include "frost/value.hpp"
+
+#include <frost/value.hpp>
 
 #include <algorithm>
 
