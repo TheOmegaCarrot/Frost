@@ -3,7 +3,7 @@ add_library( frost-functions
     builtins.cpp
     builtins/debug-helpers.cpp
     builtins/error-handling.cpp
-    builtins/format.cpp
+    builtins/output.cpp
     builtins/pack_call.cpp
     builtins/structure-ops.cpp
     builtins/type-conversions.cpp
