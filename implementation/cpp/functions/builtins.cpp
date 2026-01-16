@@ -9,7 +9,8 @@ namespace frst
     X(type_checks)                                                             \
     X(type_conversions)                                                        \
     X(pack_call)                                                               \
-    X(debug_helpers)
+    X(debug_helpers)                                                           \
+    X(error_handling)
 
 #define X(F) void inject_##F(Symbol_Table&);
 
