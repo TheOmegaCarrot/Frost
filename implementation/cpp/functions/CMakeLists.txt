@@ -41,6 +41,8 @@ functions_test(tests/builtins/values.cpp)
 
 functions_test(tests/builtins/len.cpp)
 
+functions_test(tests/builtins/range.cpp)
+
 functions_test(tests/builtins/pack_call.cpp)
 
 functions_test(tests/builtins/debug-helpers.cpp)

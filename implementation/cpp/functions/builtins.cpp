@@ -5,7 +5,7 @@ namespace frst
 {
 
 #define X_INJECT                                                               \
-    X(map_ops)                                                                 \
+    X(structure_ops)                                                           \
     X(type_checks)                                                             \
     X(type_conversions)                                                        \
     X(pack_call)                                                               \
