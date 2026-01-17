@@ -20,8 +20,8 @@ namespace dsl = lexy::dsl;
 constexpr auto line_comment =
     dsl::token(dsl::lit_c<'#'> >> dsl::until(dsl::newline).or_eof());
 constexpr auto ws = dsl::whitespace(dsl::ascii::space | line_comment);
-constexpr auto ws_with_semicolons =
-    dsl::whitespace(dsl::ascii::space | line_comment | dsl::lit_c<';'>);
+constexpr auto statement_ws =
+    dsl::while_(dsl::ascii::space | line_comment | dsl::lit_c<';'>);
 
 struct identifier
 {
@@ -188,20 +188,46 @@ struct primary_expression
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
 };
 
-struct expression
+struct expression : lexy::expression_production
 {
-    static constexpr auto rule = dsl::p<primary_expression>;
-    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
+    static constexpr auto whitespace = ws;
+    static constexpr auto atom = dsl::p<primary_expression>;
+
+    struct op_neg
+    {
+    };
+    struct op_not
+    {
+    };
+
+    struct prefix : dsl::prefix_op
+    {
+        static constexpr auto op =
+            dsl::op<op_neg>(dsl::lit_c<'-'>)
+            / dsl::op<op_not>(LEXY_KEYWORD("not", identifier::base));
+        using operand = dsl::atom;
+    };
+
+    using operation = prefix;
+
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](ast::Expression::Ptr value) { return value; },
+        [](op_neg, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Unop>(std::move(rhs), "-");
+        },
+        [](op_not, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Unop>(std::move(rhs), "not");
+        });
 };
 
-constexpr auto expression_start = dsl::peek(dsl::ascii::alpha_underscore
-                                            | dsl::digit<>
-                                            | dsl::lit_c<'('>
-                                            | dsl::lit_c<'"'>);
+constexpr auto expression_start =
+    dsl::peek(statement_ws + (dsl::ascii::alpha_underscore | dsl::digit<>
+                              | dsl::lit_c<'('> | dsl::lit_c<'"'>
+                              | dsl::lit_c<'-'>));
 
 struct statement
 {
-    static constexpr auto rule = dsl::p<expression>;
+    static constexpr auto rule = statement_ws + dsl::p<expression>;
     static constexpr auto value =
         lexy::callback<ast::Statement::Ptr>([](ast::Expression::Ptr expr) {
             return ast::Statement::Ptr{std::move(expr)};
@@ -218,8 +244,9 @@ struct statement_list
 
 struct program
 {
-    static constexpr auto whitespace = ws_with_semicolons;
-    static constexpr auto rule = dsl::opt(dsl::p<statement_list>) + dsl::eof;
+    static constexpr auto whitespace = ws;
+    static constexpr auto rule =
+        dsl::opt(dsl::p<statement_list>) + statement_ws + dsl::eof;
     static constexpr auto value =
         lexy::callback<std::vector<ast::Statement::Ptr>>(
             [](lexy::nullopt) {
