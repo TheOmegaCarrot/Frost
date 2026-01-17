@@ -129,7 +129,7 @@ TEST_CASE("Parser UFCS Expressions")
         auto result = parse("a @ f()");
         REQUIRE(result);
         auto expr = require_expression(result);
-        expr->evaluate(table);
+        (void)expr->evaluate(table);
 
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
@@ -155,12 +155,12 @@ TEST_CASE("Parser UFCS Expressions")
         auto result1 = parse("a @ obj.m()");
         REQUIRE(result1);
         auto expr1 = require_expression(result1);
-        expr1->evaluate(table);
+        (void)expr1->evaluate(table);
 
         auto result2 = parse("a @ arr[0]()");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        expr2->evaluate(table);
+        (void)expr2->evaluate(table);
 
         REQUIRE(callable_dot->received.size() == 1);
         CHECK(callable_dot->received[0] == a_val);
@@ -234,7 +234,7 @@ TEST_CASE("Parser UFCS Expressions")
         auto result = parse("a @ f() @ g()");
         REQUIRE(result);
         auto expr = require_expression(result);
-        expr->evaluate(table);
+        (void)expr->evaluate(table);
 
         REQUIRE(callable_f->received.size() == 1);
         CHECK(callable_f->received[0] == a_val);
@@ -279,7 +279,7 @@ TEST_CASE("Parser UFCS Expressions")
         auto result = parse("a\n @  f( )");
         REQUIRE(result);
         auto expr = require_expression(result);
-        expr->evaluate(table);
+        (void)expr->evaluate(table);
 
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
@@ -300,7 +300,7 @@ TEST_CASE("Parser UFCS Expressions")
         auto result = parse("a @ obj .\n m ( )");
         REQUIRE(result);
         auto expr = require_expression(result);
-        expr->evaluate(table);
+        (void)expr->evaluate(table);
 
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
@@ -353,7 +353,7 @@ TEST_CASE("Parser UFCS Expressions")
         auto result = parse("a @ f()(b)");
         REQUIRE(result);
         auto expr = require_expression(result);
-        expr->evaluate(table);
+        (void)expr->evaluate(table);
 
         REQUIRE(f_callable->received.size() == 1);
         CHECK(f_callable->received[0] == a_val);

@@ -38,6 +38,7 @@ target_compile_options( frost-common
     INTERFACE
     -Wall
     -Wextra
+    -Wpedantic
 )
 
 target_link_libraries( frost-common
