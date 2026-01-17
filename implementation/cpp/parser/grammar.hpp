@@ -168,6 +168,30 @@ struct Name_Lookup
 };
 } // namespace node
 
+struct expression;
+
+struct parenthesized_expression
+{
+    static constexpr auto rule =
+        dsl::parenthesized(dsl::recurse<expression>);
+    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
+};
+
+struct primary_expression
+{
+    static constexpr auto rule =
+        (dsl::peek(dsl::lit_c<'('>) >> dsl::p<parenthesized_expression>)
+        | dsl::p<node::Literal>
+        | dsl::p<node::Name_Lookup>;
+    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
+};
+
+struct expression
+{
+    static constexpr auto rule = dsl::p<primary_expression>;
+    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
+};
+
 } // namespace frst::grammar
 
 #endif
