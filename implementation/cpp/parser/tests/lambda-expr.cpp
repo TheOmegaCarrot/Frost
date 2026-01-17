@@ -37,6 +37,24 @@ frst::Value_Ptr call_function(const frst::Value_Ptr& value,
     auto fn = value->get<frst::Function>().value();
     return fn->call(args);
 }
+
+struct IdentityCallable final : frst::Callable
+{
+    frst::Value_Ptr call(
+        const std::vector<frst::Value_Ptr>& args) const override
+    {
+        if (args.empty())
+        {
+            return frst::Value::null();
+        }
+        return args.front();
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<identity>";
+    }
+};
 } // namespace
 
 TEST_CASE("Parser Lambda Expressions")
@@ -99,6 +117,108 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
 
+    SECTION("Lambda as a top-level statement parses in program input")
+    {
+        auto src = lexy::string_input(std::string_view{"fn() -> {}"});
+        auto program_result =
+            lexy::parse<frst::grammar::program>(src, lexy::noop);
+        REQUIRE(program_result);
+        auto program = std::move(program_result).value();
+        REQUIRE(program.size() == 1);
+        auto* expr =
+            dynamic_cast<const frst::ast::Expression*>(program.front().get());
+        REQUIRE(expr);
+    }
+
+    SECTION("Lambda can appear on the RHS of def")
+    {
+        auto src = lexy::string_input(
+            std::string_view{"def f = fn(x) -> { x }\n f(3)"});
+        auto program_result =
+            lexy::parse<frst::grammar::program>(src, lexy::noop);
+        REQUIRE(program_result);
+        auto program = std::move(program_result).value();
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        auto* expr =
+            dynamic_cast<const frst::ast::Expression*>(program[1].get());
+        REQUIRE(expr);
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 3_f);
+    }
+
+    SECTION("Lambda in binary expression without call parses")
+    {
+        auto result = parse("1 + fn() -> { 2 }");
+        REQUIRE(result);
+    }
+
+    SECTION("Lambda can be passed as a call argument")
+    {
+        frst::Symbol_Table table;
+        auto callable = std::make_shared<IdentityCallable>();
+        table.define("id", frst::Value::create(frst::Function{callable}));
+
+        auto result = parse("id(fn(x) -> { x })");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Function>());
+        auto fn = out->get<frst::Function>().value();
+        auto fn_out = fn->call({frst::Value::create(5_f)});
+        REQUIRE(fn_out->is<frst::Int>());
+        CHECK(fn_out->get<frst::Int>().value() == 5_f);
+    }
+
+    SECTION("Lambda can appear inside indexing and call arguments")
+    {
+        frst::Symbol_Table table;
+        auto arr_val = frst::Value::create(frst::Array{
+            frst::Value::create(11_f),
+        });
+        table.define("arr", arr_val);
+
+        auto callable = std::make_shared<IdentityCallable>();
+        table.define("id", frst::Value::create(frst::Function{callable}));
+
+        auto result = parse("arr[fn() -> { 0 }()]");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 11_f);
+
+        auto result2 = parse("id(fn() -> { 3 }())");
+        REQUIRE(result2);
+        auto expr2 = require_expression(result2);
+        auto out2 = expr2->evaluate(table);
+        REQUIRE(out2->is<frst::Int>());
+        CHECK(out2->get<frst::Int>().value() == 3_f);
+    }
+
+    SECTION("Lambda participates in comparisons and logical ops")
+    {
+        auto result = parse("fn() -> { 1 }() < 2");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Bool>());
+        CHECK(out->get<frst::Bool>().value() == true);
+
+        auto result2 = parse("fn() -> { true }() and false");
+        REQUIRE(result2);
+        auto expr2 = require_expression(result2);
+        auto out2 = expr2->evaluate(table);
+        REQUIRE(out2->is<frst::Bool>());
+        CHECK(out2->get<frst::Bool>().value() == false);
+    }
+
     SECTION("Lambda can be called as an atom")
     {
         auto result = parse("fn(x) -> { x }(5)");
@@ -109,6 +229,28 @@ TEST_CASE("Parser Lambda Expressions")
         auto out = expr->evaluate(table);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 5_f);
+    }
+
+    SECTION("Whitespace between tokens around arrow and body is allowed")
+    {
+        auto result = parse("fn()  ->\n { 1 }()");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Postfix can follow a lambda with intervening whitespace")
+    {
+        auto result = parse("fn() -> { 1 } ( )");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 1_f);
     }
 
     SECTION("Lambda can be followed by indexing and dot access after call")
@@ -137,6 +279,26 @@ TEST_CASE("Parser Lambda Expressions")
         auto dot_out = dot_expr->evaluate(table);
         REQUIRE(dot_out->is<frst::Int>());
         CHECK(dot_out->get<frst::Int>().value() == 7_f);
+    }
+
+    SECTION("Lambda can be followed by postfix operators without call")
+    {
+        frst::Symbol_Table table;
+        auto arr_val = frst::Value::create(frst::Array{
+            frst::Value::create(4_f),
+        });
+        table.define("arr", arr_val);
+
+        frst::Map obj;
+        obj.emplace(frst::Value::create(std::string{"k"}),
+                    frst::Value::create(6_f));
+        table.define("obj", frst::Value::create(std::move(obj)));
+
+        auto parse_index = parse("(fn() -> { arr })[0]");
+        REQUIRE(parse_index);
+
+        auto parse_dot = parse("(fn() -> { obj }).k");
+        REQUIRE(parse_dot);
     }
 
     SECTION("Lambda captures outer names")
@@ -179,6 +341,45 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
 
+    SECTION("Lambda body allows leading/trailing semicolons")
+    {
+        auto result = parse("fn() -> { ;; 1 ;; 2 ;; }");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("Lambda body allows def and expression without semicolons")
+    {
+        auto result = parse("fn() -> { def x = 1 x }");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Lambda body allows if expression followed by another statement")
+    {
+        auto result = parse("fn() -> { if true: 1 else: 2 3 }");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 3_f);
+    }
+
     SECTION("Lambda body accepts multiple statements without semicolons")
     {
         auto result = parse("fn() -> { 1 2 }");
@@ -202,6 +403,32 @@ TEST_CASE("Parser Lambda Expressions")
         auto out = expr->evaluate(table);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 6_f);
+    }
+
+    SECTION("Lambda body can contain multiple lambda calls without semicolons")
+    {
+        auto result = parse("fn() -> { fn() -> { 1 }() fn() -> { 2 }() }");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("Lambda body supports multiple defs without semicolons")
+    {
+        auto result = parse("fn() -> { def x = 1 def y = 2 y }");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 2_f);
     }
 
     SECTION("Lambda body can end with a definition and return Null")
@@ -239,6 +466,37 @@ TEST_CASE("Parser Lambda Expressions")
         auto out = expr->evaluate(table);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 7_f);
+    }
+
+    SECTION("Parameter list allows whitespace and comments between params")
+    {
+        auto result = parse("fn(a,\n # comment\n b) -> { a + b }(1,2)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 3_f);
+    }
+
+    SECTION("Lambda can appear as an if condition")
+    {
+        auto result = parse("if fn() -> { true }(): 1 else: 2");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Malformed trailing tokens are rejected")
+    {
+        CHECK_FALSE(parse("fn() -> {} )"));
+        CHECK_FALSE(parse("fn() -> { 1 } }"));
+        CHECK_FALSE(parse("fn() -> { 1 } extra"));
     }
 
     SECTION("Parameter list syntax errors are rejected")
