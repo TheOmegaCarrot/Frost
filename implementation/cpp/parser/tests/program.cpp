@@ -223,6 +223,33 @@ TEST_CASE("Parser Program")
         CHECK(value->get<frst::Int>().value() == 2_f);
     }
 
+    SECTION("Mixed grammar in a single program")
+    {
+        auto result =
+            parse("1+2*3; not false; (1<2)==true; false or true; -5");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 5);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+        auto v4 = evaluate_statement(program[3], table);
+        auto v5 = evaluate_statement(program[4], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 7_f);
+        REQUIRE(v2->is<frst::Bool>());
+        CHECK(v2->get<frst::Bool>().value() == true);
+        REQUIRE(v3->is<frst::Bool>());
+        CHECK(v3->get<frst::Bool>().value() == true);
+        REQUIRE(v4->is<frst::Bool>());
+        CHECK(v4->get<frst::Bool>().value() == true);
+        REQUIRE(v5->is<frst::Int>());
+        CHECK(v5->get<frst::Int>().value() == -5_f);
+    }
+
     SECTION("Whitespace and comments are ignored between statements")
     {
         auto result = parse("# comment\n42;\n# next\n\"hi\"");

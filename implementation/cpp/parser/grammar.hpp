@@ -199,6 +199,42 @@ struct expression : lexy::expression_production
     struct op_not
     {
     };
+    struct op_mul
+    {
+    };
+    struct op_div
+    {
+    };
+    struct op_add
+    {
+    };
+    struct op_sub
+    {
+    };
+    struct op_lt
+    {
+    };
+    struct op_le
+    {
+    };
+    struct op_gt
+    {
+    };
+    struct op_ge
+    {
+    };
+    struct op_eq
+    {
+    };
+    struct op_ne
+    {
+    };
+    struct op_and
+    {
+    };
+    struct op_or
+    {
+    };
 
     struct prefix : dsl::prefix_op
     {
@@ -208,7 +244,55 @@ struct expression : lexy::expression_production
         using operand = dsl::atom;
     };
 
-    using operation = prefix;
+    struct product : dsl::infix_op_left
+    {
+        static constexpr auto op =
+            dsl::op<op_mul>(dsl::lit_c<'*'>)
+            / dsl::op<op_div>(dsl::lit_c<'/'>);
+        using operand = prefix;
+    };
+
+    struct sum : dsl::infix_op_left
+    {
+        static constexpr auto op =
+            dsl::op<op_add>(dsl::lit_c<'+'>)
+            / dsl::op<op_sub>(dsl::lit_c<'-'>);
+        using operand = product;
+    };
+
+    struct compare : dsl::infix_op_single
+    {
+        static constexpr auto op =
+            dsl::op<op_le>(LEXY_LIT("<="))
+            / dsl::op<op_lt>(LEXY_LIT("<"))
+            / dsl::op<op_ge>(LEXY_LIT(">="))
+            / dsl::op<op_gt>(LEXY_LIT(">"));
+        using operand = sum;
+    };
+
+    struct equal : dsl::infix_op_single
+    {
+        static constexpr auto op =
+            dsl::op<op_eq>(LEXY_LIT("=="))
+            / dsl::op<op_ne>(LEXY_LIT("!="));
+        using operand = compare;
+    };
+
+    struct logical_and : dsl::infix_op_left
+    {
+        static constexpr auto op =
+            dsl::op<op_and>(LEXY_KEYWORD("and", identifier::base));
+        using operand = equal;
+    };
+
+    struct logical_or : dsl::infix_op_left
+    {
+        static constexpr auto op =
+            dsl::op<op_or>(LEXY_KEYWORD("or", identifier::base));
+        using operand = logical_and;
+    };
+
+    using operation = logical_or;
 
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr value) { return value; },
@@ -217,6 +301,54 @@ struct expression : lexy::expression_production
         },
         [](op_not, ast::Expression::Ptr rhs) {
             return std::make_unique<ast::Unop>(std::move(rhs), "not");
+        },
+        [](ast::Expression::Ptr lhs, op_mul, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), "*",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_div, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), "/",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_add, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), "+",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_sub, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), "-",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_lt, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), "<",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_le, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), "<=",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_gt, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), ">",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_ge, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), ">=",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_eq, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), "==",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_ne, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), "!=",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_and, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), "and",
+                                                std::move(rhs));
+        },
+        [](ast::Expression::Ptr lhs, op_or, ast::Expression::Ptr rhs) {
+            return std::make_unique<ast::Binop>(std::move(lhs), "or",
+                                                std::move(rhs));
         });
 };
 
