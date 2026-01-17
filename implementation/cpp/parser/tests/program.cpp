@@ -312,6 +312,64 @@ TEST_CASE("Parser Program")
         CHECK(v5->get<frst::Int>().value() == 11_f);
     }
 
+    SECTION("Pathological postfix whitespace and comments in a program")
+    {
+        auto result = parse(
+            "arr[ # c\n 1 ]\n"
+            "obj .\n key\n"
+            "f( # c\n )\n"
+            "arr[\n -1\n]\n"
+            "obj.# c\nkey\n"
+            "obj .\n inner .\n value\n");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 6);
+
+        frst::Symbol_Table table;
+
+        auto arr_val = frst::Value::create(frst::Array{
+            frst::Value::create(1_f),
+            frst::Value::create(2_f),
+            frst::Value::create(3_f),
+        });
+        table.define("arr", arr_val);
+
+        auto f_callable = std::make_shared<Constant_Callable>();
+        f_callable->result = frst::Value::create(42_f);
+        table.define("f", frst::Value::create(frst::Function{f_callable}));
+
+        frst::Map inner;
+        inner.emplace(frst::Value::create(std::string{"value"}),
+                      frst::Value::create(9_f));
+
+        frst::Map obj;
+        obj.emplace(frst::Value::create(std::string{"key"}),
+                    frst::Value::create(7_f));
+        obj.emplace(frst::Value::create(std::string{"inner"}),
+                    frst::Value::create(std::move(inner)));
+        table.define("obj", frst::Value::create(std::move(obj)));
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+        auto v4 = evaluate_statement(program[3], table);
+        auto v5 = evaluate_statement(program[4], table);
+        auto v6 = evaluate_statement(program[5], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 2_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 7_f);
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 42_f);
+        REQUIRE(v4->is<frst::Int>());
+        CHECK(v4->get<frst::Int>().value() == 3_f);
+        REQUIRE(v5->is<frst::Int>());
+        CHECK(v5->get<frst::Int>().value() == 7_f);
+        REQUIRE(v6->is<frst::Int>());
+        CHECK(v6->get<frst::Int>().value() == 9_f);
+    }
+
     SECTION("Whitespace and comments are ignored between statements")
     {
         auto result = parse("# comment\n42;\n# next\n\"hi\"");

@@ -342,6 +342,113 @@ TEST_CASE("Parser Postfix Expressions")
         CHECK(out->get<frst::Int>().value() == 10_f);
     }
 
+    SECTION("Deep postfix chains parse and evaluate")
+    {
+        frst::Symbol_Table table;
+
+        auto callable = std::make_shared<RecordingCallable>();
+        frst::Map inner;
+        inner.emplace(frst::Value::create(std::string{"key"}),
+                      frst::Value::create(77_f));
+        frst::Array arr;
+        arr.push_back(frst::Value::create(std::move(inner)));
+        callable->result = frst::Value::create(std::move(arr));
+
+        frst::Map obj;
+        obj.emplace(frst::Value::create(std::string{"f"}),
+                    frst::Value::create(frst::Function{callable}));
+        table.define("obj", frst::Value::create(std::move(obj)));
+
+        auto result = parse("obj.f()[0].key");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto out = expr->evaluate(table);
+
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 77_f);
+    }
+
+    SECTION("Pathological whitespace and comments in postfix chains")
+    {
+        frst::Symbol_Table table;
+
+        auto arr_val = frst::Value::create(frst::Array{
+            frst::Value::create(1_f),
+            frst::Value::create(2_f),
+            frst::Value::create(3_f),
+        });
+        table.define("arr", arr_val);
+
+        frst::Map inner;
+        inner.emplace(frst::Value::create(std::string{"value"}),
+                      frst::Value::create(10_f));
+
+        frst::Map obj;
+        obj.emplace(frst::Value::create(std::string{"key"}),
+                    frst::Value::create(7_f));
+        obj.emplace(frst::Value::create(std::string{"inner"}),
+                    frst::Value::create(std::move(inner)));
+        table.define("obj", frst::Value::create(std::move(obj)));
+
+        auto callable = std::make_shared<RecordingCallable>();
+        callable->result = frst::Value::create(42_f);
+        table.define("f", frst::Value::create(frst::Function{callable}));
+
+        auto index_comment = parse("arr[ # comment\n 1 ]");
+        REQUIRE(index_comment);
+        auto index_expr = require_expression(index_comment);
+        auto index_out = index_expr->evaluate(table);
+        REQUIRE(index_out->is<frst::Int>());
+        CHECK(index_out->get<frst::Int>().value() == 2_f);
+
+        auto index_newlines = parse("arr[\n -1 \n]");
+        REQUIRE(index_newlines);
+        auto index_expr2 = require_expression(index_newlines);
+        auto index_out2 = index_expr2->evaluate(table);
+        REQUIRE(index_out2->is<frst::Int>());
+        CHECK(index_out2->get<frst::Int>().value() == 3_f);
+
+        auto dot_newlines = parse("obj.\nkey");
+        REQUIRE(dot_newlines);
+        auto dot_expr = require_expression(dot_newlines);
+        auto dot_out = dot_expr->evaluate(table);
+        REQUIRE(dot_out->is<frst::Int>());
+        CHECK(dot_out->get<frst::Int>().value() == 7_f);
+
+        auto dot_comment = parse("obj.# comment\nkey");
+        REQUIRE(dot_comment);
+        auto dot_expr2 = require_expression(dot_comment);
+        auto dot_out2 = dot_expr2->evaluate(table);
+        REQUIRE(dot_out2->is<frst::Int>());
+        CHECK(dot_out2->get<frst::Int>().value() == 7_f);
+
+        auto chain_spaced = parse("obj .\n inner \n.\n value");
+        REQUIRE(chain_spaced);
+        auto chain_expr = require_expression(chain_spaced);
+        auto chain_out = chain_expr->evaluate(table);
+        REQUIRE(chain_out->is<frst::Int>());
+        CHECK(chain_out->get<frst::Int>().value() == 10_f);
+
+        auto call_empty = parse("f( # comment\n )");
+        REQUIRE(call_empty);
+        auto call_expr = require_expression(call_empty);
+        auto call_out = call_expr->evaluate(table);
+        CHECK(call_out == callable->result);
+        CHECK(callable->received.empty());
+
+        auto call_split =
+            parse("f(\n 1 # comment\n ,\n 2\n)");
+        REQUIRE(call_split);
+        auto call_expr2 = require_expression(call_split);
+        auto call_out2 = call_expr2->evaluate(table);
+        CHECK(call_out2 == callable->result);
+        REQUIRE(callable->received.size() == 2);
+        REQUIRE(callable->received.at(0)->is<frst::Int>());
+        REQUIRE(callable->received.at(1)->is<frst::Int>());
+        CHECK(callable->received.at(0)->get<frst::Int>().value() == 1_f);
+        CHECK(callable->received.at(1)->get<frst::Int>().value() == 2_f);
+    }
+
     SECTION("Parenthesized base supports postfix chaining")
     {
         frst::Symbol_Table table;
@@ -397,5 +504,33 @@ TEST_CASE("Parser Postfix Expressions")
         CHECK_FALSE(parse("obj.or"));
         CHECK_FALSE(parse("obj.not"));
         CHECK_FALSE(parse("obj.null"));
+    }
+
+    SECTION("Malformed postfix chains fail to parse")
+    {
+        const std::string_view cases[] = {
+            "obj..key",
+            "obj.[0]",
+            "obj.(1)",
+            "obj.# comment\n",
+            "arr[]",
+            "arr[ ]",
+            "arr[ # comment\n ]",
+            "arr[0,1]",
+            "arr[0]]",
+            "arr[0][)",
+            "arr[)",
+            "f(1,2))",
+            "f((1,2))",
+            "f(1,2,,3)",
+            "f(1)(,2)",
+            "f(,)",
+            "f(1,2,)",
+        };
+
+        for (const auto& input : cases)
+        {
+            CHECK_FALSE(parse(input));
+        }
     }
 }
