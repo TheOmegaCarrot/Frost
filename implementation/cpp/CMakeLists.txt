@@ -15,4 +15,9 @@ target_link_libraries( frost
     frost-functions
     frost-symbol-table
     frost-value
+    frost-common
+)
+
+set_target_properties( frost PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )

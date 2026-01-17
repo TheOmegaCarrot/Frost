@@ -12,7 +12,8 @@
 
 #include "grammar.hpp"
 
-using namespace frst;
+namespace frst
+{
 
 std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_program(
     const std::string& program_text)
@@ -54,3 +55,5 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_file(
 
     return std::move(result).value();
 }
+
+} // namespace frst
