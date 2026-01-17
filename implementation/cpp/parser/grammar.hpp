@@ -27,6 +27,7 @@ constexpr auto expression_start = dsl::peek(statement_ws
                                             + (dsl::ascii::alpha_underscore
                                                | dsl::digit<>
                                                | dsl::lit_c<'('>
+                                               | dsl::lit_c<'['>
                                                | dsl::lit_c<'"'>
                                                | dsl::lit_c<'-'>));
 
@@ -308,12 +309,42 @@ struct If
 };
 } // namespace node
 
+struct array_elements
+{
+    static constexpr auto rule = dsl::square_bracketed.opt_list(
+        dsl::recurse<expression>, dsl::trailing_sep(dsl::lit_c<','>));
+    static constexpr auto value = [] {
+        auto sink = lexy::as_list<std::vector<ast::Expression::Ptr>>;
+        auto cb = lexy::callback<std::vector<ast::Expression::Ptr>>(
+            [](lexy::nullopt) {
+                return std::vector<ast::Expression::Ptr>{};
+            },
+            [](std::vector<ast::Expression::Ptr> elems) {
+                return elems;
+            });
+        return sink >> cb;
+    }();
+};
+
+namespace node
+{
+struct Array
+{
+    static constexpr auto rule = dsl::p<array_elements>;
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](std::vector<ast::Expression::Ptr> elems) {
+            return std::make_unique<ast::Array_Constructor>(std::move(elems));
+        });
+};
+} // namespace node
+
 struct primary_expression
 {
     static constexpr auto rule =
         (dsl::peek(dsl::lit_c<'('>) >> dsl::p<parenthesized_expression>)
         | dsl::p<node::If>
         | dsl::p<node::Lambda>
+        | dsl::p<node::Array>
         | dsl::p<node::Literal>
         | dsl::p<node::Name_Lookup>;
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;

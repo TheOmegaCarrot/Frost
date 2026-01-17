@@ -225,6 +225,74 @@ TEST_CASE("Parser Program")
         REQUIRE(v4->is<frst::Null>());
     }
 
+    SECTION("Array literals in a program")
+    {
+        auto result = parse("[]; [1, 2]; [1, 2,]; [1, 2][0]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 4);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+        auto v4 = evaluate_statement(program[3], table);
+
+        REQUIRE(v1->is<frst::Array>());
+        CHECK(v1->raw_get<frst::Array>().empty());
+
+        REQUIRE(v2->is<frst::Array>());
+        CHECK(v2->raw_get<frst::Array>().size() == 2);
+
+        REQUIRE(v3->is<frst::Array>());
+        CHECK(v3->raw_get<frst::Array>().size() == 2);
+
+        REQUIRE(v4->is<frst::Int>());
+        CHECK(v4->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Array literals separated by semicolons are distinct statements")
+    {
+        auto result = parse("[1, 2]; [1]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+
+        REQUIRE(v1->is<frst::Array>());
+        REQUIRE(v2->is<frst::Array>());
+        CHECK(v1->raw_get<frst::Array>().size() == 2);
+        CHECK(v2->raw_get<frst::Array>().size() == 1);
+    }
+
+    SECTION("Array literals as adjacent statements")
+    {
+        auto result = parse("[1][0] 2");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("Array literals followed by indexing across newlines")
+    {
+        auto result = parse("[]\n[1]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+    }
+
     SECTION("Parenthesized expressions are valid statements")
     {
         auto result = parse("((2))");
