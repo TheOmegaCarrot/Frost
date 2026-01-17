@@ -9,7 +9,7 @@ add_executable( frost
 )
 
 target_link_libraries( frost
-    PRIVATE
+    PUBLIC
     frost-parser
     frost-ast
     frost-functions
