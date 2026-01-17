@@ -135,5 +135,6 @@ void inject_output(Symbol_Table& table)
 {
     INJECT(mformat, 2, 2);
     INJECT(mprint, 2, 2);
+    INJECT(print, 1, 1);
 }
 } // namespace frst
