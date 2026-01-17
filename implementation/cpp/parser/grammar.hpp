@@ -31,6 +31,7 @@ constexpr auto expression_start = dsl::peek(statement_ws
                                                | dsl::lit_c<'['>
                                                | dsl::lit_c<'%'>
                                                | dsl::lit_c<'"'>
+                                               | dsl::lit_c<'\''>
                                                | dsl::lit_c<'-'>));
 
 struct identifier
@@ -131,7 +132,7 @@ struct null_literal
 
 struct string_literal
 {
-    struct raw
+    struct raw_double
     {
         static constexpr auto escapes = lexy::symbol_table<char>
                                             .map<'n'>('\n')
@@ -145,7 +146,21 @@ struct string_literal
         static constexpr auto value = lexy::as_string<std::string>;
     };
 
-    static constexpr auto rule = dsl::p<raw>;
+    struct raw_single
+    {
+        static constexpr auto escapes = lexy::symbol_table<char>
+                                            .map<'n'>('\n')
+                                            .map<'t'>('\t')
+                                            .map<'r'>('\r')
+                                            .map<'\\'>('\\')
+                                            .map<'\''>('\'');
+
+        static constexpr auto rule = dsl::single_quoted.limit(dsl::ascii::newline)(
+            dsl::ascii::character, dsl::backslash_escape.symbol<escapes>());
+        static constexpr auto value = lexy::as_string<std::string>;
+    };
+
+    static constexpr auto rule = dsl::p<raw_double> | dsl::p<raw_single>;
     static constexpr auto value =
         lexy::callback<Value_Ptr>([](std::string str) {
             return Value::create(std::move(str));
@@ -207,6 +222,20 @@ struct lambda_parameters
             });
         return sink >> cb;
     }();
+};
+
+struct lambda_param_clause
+{
+    static constexpr auto rule =
+        dsl::opt(dsl::peek(dsl::lit_c<'('>)
+                 >> (dsl::lit_c<'('> + dsl::p<lambda_parameters>));
+    static constexpr auto value = lexy::callback<std::vector<std::string>>(
+        [](lexy::nullopt) {
+            return std::vector<std::string>{};
+        },
+        [](std::vector<std::string> params) {
+            return params;
+        });
 };
 
 struct lambda_body
@@ -311,8 +340,7 @@ struct Lambda
     static constexpr auto rule = [] {
         auto kw_fn = LEXY_KEYWORD("fn", identifier::base);
         return kw_fn
-               >> (dsl::lit_c<'('>
-                   + dsl::p<lambda_parameters>
+               >> (dsl::p<lambda_param_clause>
                    + LEXY_LIT("->")
                    + dsl::p<lambda_body>);
     }();

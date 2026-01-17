@@ -78,6 +78,30 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(out->is<frst::Null>());
     }
 
+    SECTION("Empty parameter list can be elided")
+    {
+        auto result = parse("fn -> { 2 }()");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("Elided empty parameter list tolerates whitespace")
+    {
+        auto result = parse("fn  -> { 3 } ( )");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 3_f);
+    }
+
     SECTION("Empty body tolerates whitespace, comments, and semicolons")
     {
         auto result = parse("fn (\n ) -> { ; # comment\n ; ; }");
@@ -119,7 +143,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda as a top-level statement parses in program input")
     {
-        auto src = lexy::string_input(std::string_view{"fn() -> {}"});
+        auto src = lexy::string_input(std::string_view{"fn -> {}"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -133,7 +157,7 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Multiple lambdas as top-level statements parse correctly")
     {
         auto src =
-            lexy::string_input(std::string_view{"fn() -> {} fn() -> {}"});
+            lexy::string_input(std::string_view{"fn -> {} fn() -> {}"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -144,7 +168,7 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Multiple lambdas with semicolons parse correctly")
     {
         auto src =
-            lexy::string_input(std::string_view{"fn() -> {}; fn() -> {}"});
+            lexy::string_input(std::string_view{"fn -> {}; fn() -> {}"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -599,6 +623,7 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Missing arrow or body is rejected")
     {
         CHECK_FALSE(parse("fn() {}"));
+        CHECK_FALSE(parse("fn ->"));
         CHECK_FALSE(parse("fn() ->"));
         CHECK_FALSE(parse("fn() -> {"));
         CHECK_FALSE(parse("fn() -> }"));

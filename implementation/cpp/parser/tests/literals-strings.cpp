@@ -33,51 +33,74 @@ TEST_CASE("Parser String Literals")
     {
         struct Case
         {
-            std::string input;
-            std::string expected;
+            std::string double_input;
+            std::string single_input;
+            std::string double_expected;
+            std::string single_expected;
         };
 
         const Case cases[] = {
-            {"\"\"", ""},
-            {"\"hello\"", "hello"},
-            {"\"a b c\"", "a b c"},
-            {"\"line1\\nline2\"", "line1\nline2"},
-            {"\"tab\\tsep\"", "tab\tsep"},
-            {"\"carriage\\rreturn\"", "carriage\rreturn"},
-            {"\"quote: \\\"\"", "quote: \""},
-            {"\"backslash: \\\\\"", "backslash: \\"},
+            {"\"\"", "''", "", ""},
+            {"\"hello\"", "'hello'", "hello", "hello"},
+            {"\"a b c\"", "'a b c'", "a b c", "a b c"},
+            {"\"line1\\nline2\"", "'line1\\nline2'", "line1\nline2", "line1\nline2"},
+            {"\"tab\\tsep\"", "'tab\\tsep'", "tab\tsep", "tab\tsep"},
+            {"\"carriage\\rreturn\"", "'carriage\\rreturn'", "carriage\rreturn",
+             "carriage\rreturn"},
+            {"\"quote: \\\"\"", "'quote: \\''", "quote: \"", "quote: '"},
+            {"\"backslash: \\\\\"", "'backslash: \\\\'", "backslash: \\",
+             "backslash: \\"},
         };
 
         for (const auto& c : cases)
         {
-            auto result = parse(c.input);
+            auto result = parse(c.double_input);
             REQUIRE(result);
             auto value = std::move(result).value();
             REQUIRE(value->is<frst::String>());
-            CHECK(value->get<frst::String>().value() == c.expected);
+            CHECK(value->get<frst::String>().value() == c.double_expected);
+
+            auto result2 = parse(c.single_input);
+            REQUIRE(result2);
+            auto value2 = std::move(result2).value();
+            REQUIRE(value2->is<frst::String>());
+            CHECK(value2->get<frst::String>().value() == c.single_expected);
         }
     }
 
     SECTION("Invalid strings")
     {
-        const std::string cases[] = {
-            "\"unterminated",
-            "\"bad\\qescape\"",
-            "\"bad\\xescape\"",
-            "\"bad\\u1234\"",
+        struct Case
+        {
+            std::string double_input;
+            std::string single_input;
         };
 
-        for (const auto& input : cases)
+        const Case cases[] = {
+            {"\"unterminated", "'unterminated"},
+            {"\"bad\\qescape\"", "'bad\\qescape'"},
+            {"\"bad\\xescape\"", "'bad\\xescape'"},
+            {"\"bad\\u1234\"", "'bad\\u1234'"},
+        };
+
+        for (const auto& c : cases)
         {
-            auto result = parse(input);
+            auto result = parse(c.double_input);
             CHECK_FALSE(result);
+
+            auto result2 = parse(c.single_input);
+            CHECK_FALSE(result2);
         }
     }
 
     SECTION("Newlines are not allowed in strings")
     {
-        std::string input = "\"line1\nline2\"";
-        auto result = parse(input);
+        std::string double_input = "\"line1\nline2\"";
+        auto result = parse(double_input);
         CHECK_FALSE(result);
+
+        std::string single_input = "'line1\nline2'";
+        auto result2 = parse(single_input);
+        CHECK_FALSE(result2);
     }
 }

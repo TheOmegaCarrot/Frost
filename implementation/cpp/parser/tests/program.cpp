@@ -241,24 +241,27 @@ TEST_CASE("Parser Program")
 
     SECTION("Mixed literal types in a single program")
     {
-        auto result = parse("1; \"s\"; true; null");
+        auto result = parse("1; \"s\"; 't'; true; null");
         REQUIRE(result);
         auto program = require_program(result);
-        REQUIRE(program.size() == 4);
+        REQUIRE(program.size() == 5);
 
         frst::Symbol_Table table;
         auto v1 = evaluate_statement(program[0], table);
         auto v2 = evaluate_statement(program[1], table);
         auto v3 = evaluate_statement(program[2], table);
         auto v4 = evaluate_statement(program[3], table);
+        auto v5 = evaluate_statement(program[4], table);
 
         REQUIRE(v1->is<frst::Int>());
         CHECK(v1->get<frst::Int>().value() == 1_f);
         REQUIRE(v2->is<frst::String>());
         CHECK(v2->get<frst::String>().value() == "s");
-        REQUIRE(v3->is<frst::Bool>());
-        CHECK(v3->get<frst::Bool>().value() == true);
-        REQUIRE(v4->is<frst::Null>());
+        REQUIRE(v3->is<frst::String>());
+        CHECK(v3->get<frst::String>().value() == "t");
+        REQUIRE(v4->is<frst::Bool>());
+        CHECK(v4->get<frst::Bool>().value() == true);
+        REQUIRE(v5->is<frst::Null>());
     }
 
     SECTION("Array literals in a program")
