@@ -477,13 +477,36 @@ constexpr auto expression_start = dsl::peek(statement_ws
                                                | dsl::lit_c<'"'>
                                                | dsl::lit_c<'-'>));
 
-struct statement
+struct def_statement
 {
-    static constexpr auto rule = statement_ws + dsl::p<expression>;
+    static constexpr auto rule = [] {
+        auto kw_def = LEXY_KEYWORD("def", identifier::base);
+        return kw_def
+               >> (dsl::p<identifier> + dsl::lit_c<'='>
+                   + dsl::recurse<expression>);
+    }();
+    static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
+        [](std::string name, ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Define>(std::move(name),
+                                                 std::move(expr));
+        });
+};
+
+struct expression_statement
+{
+    static constexpr auto rule = expression_start >> dsl::p<expression>;
     static constexpr auto value =
         lexy::callback<ast::Statement::Ptr>([](ast::Expression::Ptr expr) {
             return ast::Statement::Ptr{std::move(expr)};
         });
+};
+
+struct statement
+{
+    static constexpr auto rule =
+        statement_ws
+        + (dsl::p<def_statement> | dsl::p<expression_statement>);
+    static constexpr auto value = lexy::forward<ast::Statement::Ptr>;
 };
 
 struct statement_list

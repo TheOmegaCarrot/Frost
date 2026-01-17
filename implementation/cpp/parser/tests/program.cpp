@@ -338,6 +338,44 @@ TEST_CASE("Parser Program")
         REQUIRE(v4->is<frst::Null>());
     }
 
+    SECTION("Definition statements in a program")
+    {
+        auto result = parse(
+            "def x = 1;\n"
+            "def y = x + 2;\n"
+            "y\n");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 3);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        program[1]->execute(table);
+        auto value = evaluate_statement(program[2], table);
+
+        REQUIRE(value->is<frst::Int>());
+        CHECK(value->get<frst::Int>().value() == 3_f);
+    }
+
+    SECTION("Definitions separated by whitespace and semicolons")
+    {
+        auto result = parse("def a = 1;; def b = 2; a; b");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 4);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        program[1]->execute(table);
+        auto v1 = evaluate_statement(program[2], table);
+        auto v2 = evaluate_statement(program[3], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        CHECK(v2->get<frst::Int>().value() == 2_f);
+    }
+
     SECTION("If expressions with comments and whitespace in a program")
     {
         auto result = parse(
