@@ -11,6 +11,7 @@ target_link_libraries( frost-parser
     PUBLIC
     frost-common
     frost-ast
+    foonathan::lexy
 )
 
 macro(parser_test file)
@@ -20,3 +21,4 @@ macro(parser_test file)
     )
 endmacro()
 
+parser_test(tests/name-lookup.cpp)
