@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <frost/ast.hpp>
+#include <frost/lambda.hpp>
 
 #include <lexy/callback.hpp>
 #include <lexy/dsl.hpp>
@@ -22,6 +23,12 @@ constexpr auto line_comment =
 constexpr auto ws = dsl::whitespace(dsl::ascii::space | line_comment);
 constexpr auto statement_ws =
     dsl::while_(dsl::ascii::space | line_comment | dsl::lit_c<';'>);
+constexpr auto expression_start = dsl::peek(statement_ws
+                                            + (dsl::ascii::alpha_underscore
+                                               | dsl::digit<>
+                                               | dsl::lit_c<'('>
+                                               | dsl::lit_c<'"'>
+                                               | dsl::lit_c<'-'>));
 
 struct identifier
 {
@@ -173,6 +180,7 @@ struct Name_Lookup
 
 struct expression;
 struct call_arguments;
+struct statement_list;
 
 struct parenthesized_expression
 {
@@ -180,14 +188,67 @@ struct parenthesized_expression
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
 };
 
-struct if_tail
+struct lambda_parameters
+{
+    static constexpr auto rule =
+        dsl::terminator(dsl::lit_c<')'>)
+            .opt_list(dsl::p<identifier>, dsl::sep(dsl::lit_c<','>));
+    static constexpr auto value = [] {
+        auto sink = lexy::as_list<std::vector<std::string>>;
+        auto cb = lexy::callback<std::vector<std::string>>(
+            [](lexy::nullopt) {
+                return std::vector<std::string>{};
+            },
+            [](std::vector<std::string> params) {
+                return params;
+            });
+        return sink >> cb;
+    }();
+};
+
+struct lambda_body
+{
+    static constexpr auto rule = dsl::curly_bracketed(
+        dsl::opt(expression_start >> dsl::recurse<statement_list>)
+        + statement_ws);
+    static constexpr auto value =
+        lexy::callback<std::vector<ast::Statement::Ptr>>(
+            [](lexy::nullopt) {
+                return std::vector<ast::Statement::Ptr>{};
+            },
+            [](std::vector<ast::Statement::Ptr> body) {
+                return body;
+            });
+};
+
+namespace node
+{
+struct Lambda
+{
+    static constexpr auto rule = [] {
+        auto kw_fn = LEXY_KEYWORD("fn", identifier::base);
+        return kw_fn
+               >> (dsl::lit_c<'('>
+                   + dsl::p<lambda_parameters>
+                   + LEXY_LIT("->")
+                   + dsl::p<lambda_body>);
+    }();
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](std::vector<std::string> params,
+           std::vector<ast::Statement::Ptr> body) {
+            return std::make_unique<ast::Lambda>(std::move(params),
+                                                 std::move(body));
+        });
+};
+
+struct If_Tail
 {
     static constexpr auto rule = [] {
         auto kw_elif = LEXY_KEYWORD("elif", identifier::base);
         auto kw_else = LEXY_KEYWORD("else", identifier::base);
 
         auto tail =
-            dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::recurse<if_tail>);
+            dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::recurse<If_Tail>);
 
         auto elif_branch = kw_elif
                            >> (dsl::recurse<expression>
@@ -218,13 +279,13 @@ struct if_tail
         });
 };
 
-struct if_expression
+struct If
 {
     static constexpr auto rule = [] {
         auto kw_if = LEXY_KEYWORD("if", identifier::base);
         auto kw_elif = LEXY_KEYWORD("elif", identifier::base);
         auto kw_else = LEXY_KEYWORD("else", identifier::base);
-        auto tail = dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::p<if_tail>);
+        auto tail = dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::p<If_Tail>);
         return kw_if
                >> (dsl::recurse<expression>
                    + dsl::lit_c<':'>
@@ -245,12 +306,14 @@ struct if_expression
                                              std::move(alternate));
         });
 };
+} // namespace node
 
 struct primary_expression
 {
     static constexpr auto rule =
         (dsl::peek(dsl::lit_c<'('>) >> dsl::p<parenthesized_expression>)
-        | dsl::p<if_expression>
+        | dsl::p<node::If>
+        | dsl::p<node::Lambda>
         | dsl::p<node::Literal>
         | dsl::p<node::Name_Lookup>;
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
@@ -470,19 +533,15 @@ struct expression : lexy::expression_production
         });
 };
 
-constexpr auto expression_start = dsl::peek(statement_ws
-                                            + (dsl::ascii::alpha_underscore
-                                               | dsl::digit<>
-                                               | dsl::lit_c<'('>
-                                               | dsl::lit_c<'"'>
-                                               | dsl::lit_c<'-'>));
-
-struct def_statement
+namespace node
+{
+struct Define
 {
     static constexpr auto rule = [] {
         auto kw_def = LEXY_KEYWORD("def", identifier::base);
         return kw_def
-               >> (dsl::p<identifier> + dsl::lit_c<'='>
+               >> (dsl::p<identifier>
+                   + dsl::lit_c<'='>
                    + dsl::recurse<expression>);
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
@@ -491,6 +550,7 @@ struct def_statement
                                                  std::move(expr));
         });
 };
+} // namespace node
 
 struct expression_statement
 {
@@ -504,8 +564,7 @@ struct expression_statement
 struct statement
 {
     static constexpr auto rule =
-        statement_ws
-        + (dsl::p<def_statement> | dsl::p<expression_statement>);
+        statement_ws + (dsl::p<node::Define> | dsl::p<expression_statement>);
     static constexpr auto value = lexy::forward<ast::Statement::Ptr>;
 };
 

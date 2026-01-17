@@ -11,6 +11,7 @@ target_link_libraries( frost-parser
     PUBLIC
     frost-common
     frost-ast
+    frost-functions
     foonathan::lexy
 )
 
@@ -18,7 +19,6 @@ macro(parser_test file)
     make_test( ${file}
         LIBS
         frost-parser
-        frost-functions
     )
 endmacro()
 
@@ -34,3 +34,4 @@ parser_test(tests/program.cpp)
 parser_test(tests/postfix-expr.cpp)
 parser_test(tests/unary-expr.cpp)
 parser_test(tests/binary-expr.cpp)
+parser_test(tests/lambda-expr.cpp)
