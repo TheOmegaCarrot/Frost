@@ -2,6 +2,7 @@
 #define FROST_GRAMMAR_HPP
 
 #include <charconv>
+#include <optional>
 #include <vector>
 
 #include <frost/ast.hpp>
@@ -225,6 +226,86 @@ struct lambda_body
 
 namespace node
 {
+struct Map_Expr
+{
+    static constexpr auto rule = [] {
+        auto kw_map = LEXY_KEYWORD("map", identifier::base);
+        auto kw_with = LEXY_KEYWORD("with", identifier::base);
+        return kw_map
+               >> (dsl::recurse<expression>
+                   + kw_with
+                   + dsl::recurse<expression>);
+    }();
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
+            return std::make_unique<ast::Map>(std::move(structure),
+                                              std::move(operation));
+        });
+};
+
+struct Filter
+{
+    static constexpr auto rule = [] {
+        auto kw_filter = LEXY_KEYWORD("filter", identifier::base);
+        auto kw_with = LEXY_KEYWORD("with", identifier::base);
+        return kw_filter
+               >> (dsl::recurse<expression>
+                   + kw_with
+                   + dsl::recurse<expression>);
+    }();
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
+            return std::make_unique<ast::Filter>(std::move(structure),
+                                                 std::move(operation));
+        });
+};
+
+struct Reduce
+{
+    static constexpr auto rule = [] {
+        auto kw_reduce = LEXY_KEYWORD("reduce", identifier::base);
+        auto kw_with = LEXY_KEYWORD("with", identifier::base);
+        auto kw_init = LEXY_KEYWORD("init", identifier::base);
+        auto init_clause =
+            dsl::opt(kw_init >> (dsl::lit_c<':'> + dsl::recurse<expression>));
+        return kw_reduce
+               >> (dsl::recurse<expression>
+                   + kw_with
+                   + dsl::recurse<expression>
+                   + init_clause);
+    }();
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation,
+           lexy::nullopt) {
+            return std::make_unique<ast::Reduce>(
+                std::move(structure), std::move(operation),
+                std::optional<ast::Expression::Ptr>{});
+        },
+        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation,
+           ast::Expression::Ptr init) {
+            return std::make_unique<ast::Reduce>(
+                std::move(structure), std::move(operation),
+                std::optional<ast::Expression::Ptr>{std::move(init)});
+        });
+};
+
+struct Foreach
+{
+    static constexpr auto rule = [] {
+        auto kw_foreach = LEXY_KEYWORD("foreach", identifier::base);
+        auto kw_with = LEXY_KEYWORD("with", identifier::base);
+        return kw_foreach
+               >> (dsl::recurse<expression>
+                   + kw_with
+                   + dsl::recurse<expression>);
+    }();
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
+            return std::make_unique<ast::Foreach>(std::move(structure),
+                                                  std::move(operation));
+        });
+};
+
 struct Lambda
 {
     static constexpr auto rule = [] {
@@ -398,6 +479,10 @@ struct primary_expression
         (dsl::peek(dsl::lit_c<'('>) >> dsl::p<parenthesized_expression>)
         | dsl::p<node::If>
         | dsl::p<node::Lambda>
+        | dsl::p<node::Map_Expr>
+        | dsl::p<node::Filter>
+        | dsl::p<node::Reduce>
+        | dsl::p<node::Foreach>
         | dsl::p<node::Array>
         | dsl::p<node::Map>
         | dsl::p<node::Literal>

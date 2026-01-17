@@ -311,6 +311,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK_FALSE(parse("a @ f"));
         CHECK_FALSE(parse("a @ obj.key"));
         CHECK_FALSE(parse("a @ b @ f()"));
+        CHECK_FALSE(parse("a @ map [1] with f"));
     }
 
     SECTION("UFCS rejects malformed call arguments")

@@ -210,7 +210,18 @@ TEST_CASE("Parser Primary Expressions")
 
     SECTION("Reserved keywords fail as expressions")
     {
-        const std::string_view cases[] = {"def", "if", "else", "elif"};
+        const std::string_view cases[] = {
+            "def",
+            "if",
+            "else",
+            "elif",
+            "map",
+            "filter",
+            "reduce",
+            "foreach",
+            "with",
+            "init",
+        };
 
         for (const auto& input : cases)
         {

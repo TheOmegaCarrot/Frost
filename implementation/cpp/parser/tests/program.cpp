@@ -67,6 +67,25 @@ struct IdentityCallable final : frst::Callable
         return "<identity>";
     }
 };
+
+struct CountingCallable final : frst::Callable
+{
+    mutable std::vector<frst::Value_Ptr> args;
+
+    frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& call_args) const override
+    {
+        if (!call_args.empty())
+        {
+            args.push_back(call_args.front());
+        }
+        return frst::Value::null();
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<counting>";
+    }
+};
 } // namespace
 
 TEST_CASE("Parser Program")
@@ -444,6 +463,231 @@ TEST_CASE("Parser Program")
         REQUIRE(v2->is<frst::Int>());
         CHECK(v2->get<frst::Int>().value() == 2_f);
         CHECK(v3 == b_val);
+    }
+
+    SECTION("Map, filter, reduce, and foreach expressions in a program")
+    {
+        auto result = parse(
+            "map [1, 2, 3] with fn (x) -> { x + 1 };"
+            "filter [1, 2, 3] with fn (x) -> { x > 1 };"
+            "reduce [1, 2, 3] with fn (acc, x) -> { acc + x };"
+            "foreach [1, 2] with f");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 4);
+
+        frst::Symbol_Table table;
+        auto callable = std::make_shared<CountingCallable>();
+        table.define("f", frst::Value::create(frst::Function{callable}));
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+        auto v4 = evaluate_statement(program[3], table);
+
+        REQUIRE(v1->is<frst::Array>());
+        const auto& mapped = v1->raw_get<frst::Array>();
+        REQUIRE(mapped.size() == 3);
+        CHECK(mapped[0]->get<frst::Int>().value() == 2_f);
+        CHECK(mapped[1]->get<frst::Int>().value() == 3_f);
+        CHECK(mapped[2]->get<frst::Int>().value() == 4_f);
+
+        REQUIRE(v2->is<frst::Array>());
+        const auto& filtered = v2->raw_get<frst::Array>();
+        REQUIRE(filtered.size() == 2);
+        CHECK(filtered[0]->get<frst::Int>().value() == 2_f);
+        CHECK(filtered[1]->get<frst::Int>().value() == 3_f);
+
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 6_f);
+
+        REQUIRE(v4->is<frst::Null>());
+        REQUIRE(callable->args.size() == 2);
+        CHECK(callable->args[0]->get<frst::Int>().value() == 1_f);
+        CHECK(callable->args[1]->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("Map/filter/reduce/foreach compose with other operators")
+    {
+        auto result = parse(
+            "not map [1] with fn (x) -> { x };"
+            "map [1] with fn (x) -> { x + 1 };"
+            "map [1] with f @ g();"
+            "(map [1] with fn (x) -> { x })[0] @ g();"
+            "(filter [1, 2, 3] with fn (x) -> { x > 1 })[0] + 10;"
+            "(reduce [1, 2, 3] with fn (acc, x) -> { acc + x }) * 3");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 6);
+
+        frst::Symbol_Table table;
+        auto g_callable = std::make_shared<IdentityCallable>();
+        auto f_callable = std::make_shared<IdentityCallable>();
+        table.define("g", frst::Value::create(frst::Function{g_callable}));
+        table.define("f", frst::Value::create(frst::Function{f_callable}));
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+        auto v4 = evaluate_statement(program[3], table);
+        auto v5 = evaluate_statement(program[4], table);
+        auto v6 = evaluate_statement(program[5], table);
+
+        REQUIRE(v1->is<frst::Bool>());
+        CHECK(v1->get<frst::Bool>().value() == false);
+        REQUIRE(v2->is<frst::Array>());
+        CHECK(v2->raw_get<frst::Array>().at(0)->get<frst::Int>().value() == 2_f);
+        REQUIRE(v3->is<frst::Array>());
+        CHECK(v3->raw_get<frst::Array>().at(0)->get<frst::Int>().value() == 1_f);
+        REQUIRE(v4->is<frst::Int>());
+        CHECK(v4->get<frst::Int>().value() == 1_f);
+        REQUIRE(v5->is<frst::Int>());
+        CHECK(v5->get<frst::Int>().value() == 12_f);
+        REQUIRE(v6->is<frst::Int>());
+        CHECK(v6->get<frst::Int>().value() == 18_f);
+    }
+
+    SECTION("Nested map/filter/reduce/foreach expressions in a program")
+    {
+        auto result = parse(
+            "map (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
+            "with fn (x) -> { (reduce [1, 2] with fn (acc, y) -> { acc + y }) + x };"
+            "reduce (map [1, 2] with fn (x) -> { x }) "
+            "with fn (acc, x) -> { acc + x } "
+            "init: (reduce [1, 2] with fn (acc, x) -> { acc + x });"
+            "map [1] with fn (x) -> { foreach [1] with fn (y) -> { y }; x }");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 3);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+
+        REQUIRE(v1->is<frst::Array>());
+        const auto& arr = v1->raw_get<frst::Array>();
+        REQUIRE(arr.size() == 2);
+        CHECK(arr[0]->get<frst::Int>().value() == 5_f);
+        CHECK(arr[1]->get<frst::Int>().value() == 6_f);
+
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 6_f);
+
+        REQUIRE(v3->is<frst::Array>());
+        const auto& arr2 = v3->raw_get<frst::Array>();
+        REQUIRE(arr2.size() == 1);
+        CHECK(arr2[0]->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Deeply nested higher-order expressions in calls and UFCS")
+    {
+        auto result = parse(
+            "def id = fn (x) -> { x };\n"
+            "def inc = fn (x) -> { x + 1 };\n"
+            "id(map [1, 2] with inc)[0];\n"
+            "(filter [1, 2, 3] with fn (x) -> { x > 1 }) @ id();\n"
+            "reduce (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
+            "with fn (acc, x) -> { acc + x } init: 0");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 5);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        program[1]->execute(table);
+
+        auto v1 = evaluate_statement(program[2], table);
+        auto v2 = evaluate_statement(program[3], table);
+        auto v3 = evaluate_statement(program[4], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 2_f);
+
+        REQUIRE(v2->is<frst::Array>());
+        const auto& arr = v2->raw_get<frst::Array>();
+        REQUIRE(arr.size() == 2);
+        CHECK(arr[0]->get<frst::Int>().value() == 2_f);
+        CHECK(arr[1]->get<frst::Int>().value() == 3_f);
+
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 5_f);
+    }
+
+    SECTION("Statement boundaries with map/filter/reduce")
+    {
+        {
+            auto result = parse("map [1] with f def x = 1");
+            REQUIRE(result);
+            auto program = require_program(result);
+            REQUIRE(program.size() == 2);
+
+            frst::Symbol_Table table;
+            auto f_callable = std::make_shared<IdentityCallable>();
+            table.define("f", frst::Value::create(frst::Function{f_callable}));
+
+            auto v1 = evaluate_statement(program[0], table);
+            program[1]->execute(table);
+
+            REQUIRE(v1->is<frst::Array>());
+            auto x_val = table.lookup("x");
+            REQUIRE(x_val->is<frst::Int>());
+            CHECK(x_val->get<frst::Int>().value() == 1_f);
+        }
+
+        {
+            auto result = parse("def y = map [1] with f z");
+            REQUIRE(result);
+            auto program = require_program(result);
+            REQUIRE(program.size() == 2);
+
+            frst::Symbol_Table table;
+            auto f_callable = std::make_shared<IdentityCallable>();
+            table.define("f", frst::Value::create(frst::Function{f_callable}));
+            auto z_val = frst::Value::create(9_f);
+            table.define("z", z_val);
+
+            program[0]->execute(table);
+            auto y_val = table.lookup("y");
+            REQUIRE(y_val->is<frst::Array>());
+
+            auto v2 = evaluate_statement(program[1], table);
+            CHECK(v2 == z_val);
+        }
+    }
+
+    SECTION("Map/filter/reduce/foreach appear in defs and if expressions")
+    {
+        auto result = parse(
+            "def x = map [1] with fn (v) -> { v };"
+            "def y = filter [1, 2] with fn (v) -> { v > 1 };"
+            "def z = reduce [1, 2] with fn (a, b) -> { a + b };"
+            "if true: map [1] with fn (v) -> { v } else: map [2] with fn (v) -> { v };"
+            "foreach [1] with fn (v) -> { v };"
+            "x[0] y[0] z");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 8);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        program[1]->execute(table);
+        program[2]->execute(table);
+
+        auto if_out = evaluate_statement(program[3], table);
+        auto foreach_out = evaluate_statement(program[4], table);
+        auto v1 = evaluate_statement(program[5], table);
+        auto v2 = evaluate_statement(program[6], table);
+        auto v3 = evaluate_statement(program[7], table);
+
+        REQUIRE(if_out->is<frst::Array>());
+        REQUIRE(foreach_out->is<frst::Null>());
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 2_f);
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 3_f);
     }
 
     SECTION("UFCS allows postfix after newlines")
