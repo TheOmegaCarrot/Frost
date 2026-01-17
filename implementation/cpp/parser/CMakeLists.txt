@@ -22,3 +22,7 @@ macro(parser_test file)
 endmacro()
 
 parser_test(tests/name-lookup.cpp)
+parser_test(tests/identifiers.cpp)
+parser_test(tests/literals-numbers.cpp)
+parser_test(tests/literals-strings.cpp)
+parser_test(tests/literals-keywords.cpp)
