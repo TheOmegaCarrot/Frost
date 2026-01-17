@@ -2,6 +2,7 @@
 #define FROST_GRAMMAR_HPP
 
 #include <charconv>
+#include <vector>
 
 #include <frost/ast.hpp>
 
@@ -19,6 +20,8 @@ namespace dsl = lexy::dsl;
 constexpr auto line_comment =
     dsl::token(dsl::lit_c<'#'> >> dsl::until(dsl::newline).or_eof());
 constexpr auto ws = dsl::whitespace(dsl::ascii::space | line_comment);
+constexpr auto ws_with_semicolons =
+    dsl::whitespace(dsl::ascii::space | line_comment | dsl::lit_c<';'>);
 
 struct identifier
 {
@@ -172,8 +175,7 @@ struct expression;
 
 struct parenthesized_expression
 {
-    static constexpr auto rule =
-        dsl::parenthesized(dsl::recurse<expression>);
+    static constexpr auto rule = dsl::parenthesized(dsl::recurse<expression>);
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
 };
 
@@ -190,6 +192,42 @@ struct expression
 {
     static constexpr auto rule = dsl::p<primary_expression>;
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
+};
+
+constexpr auto expression_start = dsl::peek(dsl::ascii::alpha_underscore
+                                            | dsl::digit<>
+                                            | dsl::lit_c<'('>
+                                            | dsl::lit_c<'"'>);
+
+struct statement
+{
+    static constexpr auto rule = dsl::p<expression>;
+    static constexpr auto value =
+        lexy::callback<ast::Statement::Ptr>([](ast::Expression::Ptr expr) {
+            return ast::Statement::Ptr{std::move(expr)};
+        });
+};
+
+struct statement_list
+{
+    static constexpr auto rule =
+        dsl::list(expression_start >> dsl::p<statement>);
+    static constexpr auto value =
+        lexy::as_list<std::vector<ast::Statement::Ptr>>;
+};
+
+struct program
+{
+    static constexpr auto whitespace = ws_with_semicolons;
+    static constexpr auto rule = dsl::opt(dsl::p<statement_list>) + dsl::eof;
+    static constexpr auto value =
+        lexy::callback<std::vector<ast::Statement::Ptr>>(
+            [](lexy::nullopt) {
+                return std::vector<ast::Statement::Ptr>{};
+            },
+            [](std::vector<ast::Statement::Ptr> stmts) {
+                return stmts;
+            });
 };
 
 } // namespace frst::grammar
