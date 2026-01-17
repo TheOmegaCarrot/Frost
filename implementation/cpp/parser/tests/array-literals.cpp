@@ -265,5 +265,10 @@ TEST_CASE("Parser Array Literals")
         CHECK_FALSE(parse("[1, ,2]"));
         CHECK_FALSE(parse("[1,,]"));
         CHECK_FALSE(parse("[1,2,,]"));
+        CHECK_FALSE(parse("[1;2]"));
+        CHECK_FALSE(parse("[1; 2, 3]"));
+        CHECK_FALSE(parse("[1, 2; 3]"));
+        CHECK_FALSE(parse("[1;]"));
+        CHECK_FALSE(parse("[;1]"));
     }
 }

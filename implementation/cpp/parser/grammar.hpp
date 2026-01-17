@@ -28,6 +28,7 @@ constexpr auto expression_start = dsl::peek(statement_ws
                                                | dsl::digit<>
                                                | dsl::lit_c<'('>
                                                | dsl::lit_c<'['>
+                                               | dsl::lit_c<'%'>
                                                | dsl::lit_c<'"'>
                                                | dsl::lit_c<'-'>));
 
@@ -326,6 +327,50 @@ struct array_elements
     }();
 };
 
+struct map_entry
+{
+    static constexpr auto rule = [] {
+        auto bracket_key = dsl::square_bracketed(dsl::recurse<expression>);
+        auto expr_key =
+            bracket_key + dsl::lit_c<':'> + dsl::recurse<expression>;
+        auto ident_key =
+            dsl::p<identifier> + dsl::lit_c<':'> + dsl::recurse<expression>;
+        return (dsl::peek(dsl::lit_c<'['>) >> expr_key)
+               | (dsl::peek(dsl::ascii::alpha_underscore) >> ident_key);
+    }();
+
+    static constexpr auto value =
+        lexy::callback<ast::Map_Constructor::KV_Pair>(
+            [](ast::Expression::Ptr key, ast::Expression::Ptr value) {
+                return std::make_pair(std::move(key), std::move(value));
+            },
+            [](std::string key, ast::Expression::Ptr value) {
+                auto key_value = Value::create(std::move(key));
+                auto key_expr = std::make_unique<ast::Literal>(key_value);
+                return std::make_pair(std::move(key_expr), std::move(value));
+            });
+};
+
+struct map_entries
+{
+    static constexpr auto rule =
+        LEXY_LIT("%{")
+        >> dsl::terminator(dsl::lit_c<'}'>)
+               .opt_list(dsl::p<map_entry>,
+                         dsl::trailing_sep(dsl::lit_c<','>));
+    static constexpr auto value = [] {
+        auto sink = lexy::as_list<std::vector<ast::Map_Constructor::KV_Pair>>;
+        auto cb = lexy::callback<std::vector<ast::Map_Constructor::KV_Pair>>(
+            [](lexy::nullopt) {
+                return std::vector<ast::Map_Constructor::KV_Pair>{};
+            },
+            [](std::vector<ast::Map_Constructor::KV_Pair> elems) {
+                return elems;
+            });
+        return sink >> cb;
+    }();
+};
+
 namespace node
 {
 struct Array
@@ -334,6 +379,15 @@ struct Array
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](std::vector<ast::Expression::Ptr> elems) {
             return std::make_unique<ast::Array_Constructor>(std::move(elems));
+        });
+};
+
+struct Map
+{
+    static constexpr auto rule = dsl::p<map_entries>;
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](std::vector<ast::Map_Constructor::KV_Pair> pairs) {
+            return std::make_unique<ast::Map_Constructor>(std::move(pairs));
         });
 };
 } // namespace node
@@ -345,6 +399,7 @@ struct primary_expression
         | dsl::p<node::If>
         | dsl::p<node::Lambda>
         | dsl::p<node::Array>
+        | dsl::p<node::Map>
         | dsl::p<node::Literal>
         | dsl::p<node::Name_Lookup>;
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;

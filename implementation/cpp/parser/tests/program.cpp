@@ -251,6 +251,31 @@ TEST_CASE("Parser Program")
         CHECK(v4->get<frst::Int>().value() == 1_f);
     }
 
+    SECTION("Map literals in a program")
+    {
+        auto result = parse("%{a: 1}; %{[2]: 3}; %{a: 1, [2]: 3,}");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 3);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+
+        REQUIRE(v1->is<frst::Map>());
+        REQUIRE(v2->is<frst::Map>());
+        REQUIRE(v3->is<frst::Map>());
+    }
+
+    SECTION("Adjacent map literals are separate statements")
+    {
+        auto result = parse("%{a: 1} %{b: 2}");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+    }
+
     SECTION("Array literals separated by semicolons are distinct statements")
     {
         auto result = parse("[1, 2]; [1]");
