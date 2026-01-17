@@ -268,6 +268,396 @@ TEST_CASE("Parser Program")
         REQUIRE(v3->is<frst::Map>());
     }
 
+    SECTION("Lambda expressions and calls in a program")
+    {
+        auto result = parse("fn () -> { 1 }(); fn (x) -> { x }(3); fn () -> { 5 }");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 3);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 3_f);
+        REQUIRE(v3->is<frst::Function>());
+    }
+
+    SECTION("Statements can follow lambda expressions without separators")
+    {
+        auto result = parse("fn () -> { 1 } 2");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        auto v2 = evaluate_statement(program[1], table);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("Definitions with complex right-hand sides")
+    {
+        auto result = parse(
+            "def a = if cond: 10 else: 20\n"
+            "def b = [1, 2][0]\n"
+            "def c = %{k: 5}.k\n"
+            "def d = fn (x) -> { x + 1 }(4)\n"
+            "a b c d");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 8);
+
+        frst::Symbol_Table table;
+        table.define("cond", frst::Value::create(true));
+
+        program[0]->execute(table);
+        program[1]->execute(table);
+        program[2]->execute(table);
+        program[3]->execute(table);
+
+        auto v1 = evaluate_statement(program[4], table);
+        auto v2 = evaluate_statement(program[5], table);
+        auto v3 = evaluate_statement(program[6], table);
+        auto v4 = evaluate_statement(program[7], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 10_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 1_f);
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 5_f);
+        REQUIRE(v4->is<frst::Int>());
+        CHECK(v4->get<frst::Int>().value() == 5_f);
+    }
+
+    SECTION("Definitions without semicolons are separated by keywords")
+    {
+        auto result = parse("def x = 1 def y = 2 x y");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 4);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        program[1]->execute(table);
+        auto v1 = evaluate_statement(program[2], table);
+        auto v2 = evaluate_statement(program[3], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("If expressions can contain calls and indexing in branches")
+    {
+        auto result = parse("if a: f(1) else: arr[0]\nif false: arr[1] else: f(2)");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        table.define("a", frst::Value::create(false));
+        table.define("arr", frst::Value::create(frst::Array{
+                               frst::Value::create(5_f),
+                               frst::Value::create(6_f),
+                           }));
+
+        auto f_callable = std::make_shared<Constant_Callable>();
+        f_callable->result = frst::Value::create(9_f);
+        table.define("f", frst::Value::create(frst::Function{f_callable}));
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 5_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 9_f);
+    }
+
+    SECTION("Map literals can be postfixed in programs")
+    {
+        auto result = parse("%{a: 1}[\"a\"]; (%{b: 2}).b");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("If expressions can be followed by definitions without separators")
+    {
+        auto result = parse("if a: b else: c def x = 1");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        auto a_val = frst::Value::create(true);
+        auto b_val = frst::Value::create(7_f);
+        auto c_val = frst::Value::create(9_f);
+        table.define("a", a_val);
+        table.define("b", b_val);
+        table.define("c", c_val);
+
+        auto v1 = evaluate_statement(program[0], table);
+        program[1]->execute(table);
+        auto x_val = table.lookup("x");
+
+        CHECK(v1 == b_val);
+        REQUIRE(x_val->is<frst::Int>());
+        CHECK(x_val->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Definitions can follow expressions without separators")
+    {
+        auto result = parse("1 def x = 2 x");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 3);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        program[1]->execute(table);
+        auto v3 = evaluate_statement(program[2], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("Postfix can cross newlines after lambda expressions")
+    {
+        auto result = parse("fn () -> { 1 }\n[0]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+    }
+
+    SECTION("Postfix can cross newlines after map literals")
+    {
+        auto result = parse("%{a: 1}\n[\"a\"]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Lambda calls can be postfixed by indexing")
+    {
+        auto result = parse("fn (x) -> { [x] }(3)[0]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 3_f);
+    }
+
+    SECTION("Dot access can return a function which is then called")
+    {
+        auto result = parse("(%{a: fn () -> { 1 }}).a()");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Functions stored in array literals can be indexed and called")
+    {
+        auto result = parse("([fn (x) -> { x }][0])(5)");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 5_f);
+    }
+
+    SECTION("Definitions can use lambdas and if expressions on the right-hand side")
+    {
+        auto result = parse(
+            "def make = fn () -> { def y = 1; y }\n"
+            "def choose = if cond: fn () -> { 1 } else: fn () -> { 2 }\n"
+            "make() choose()");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 4);
+
+        frst::Symbol_Table table;
+        table.define("cond", frst::Value::create(true));
+
+        program[0]->execute(table);
+        program[1]->execute(table);
+
+        auto v1 = evaluate_statement(program[2], table);
+        auto v2 = evaluate_statement(program[3], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Mixed program combines defs, if, arrays, maps, lambdas, calls, and indexing")
+    {
+        auto result = parse(
+            "def arr = [1, 2, 3];\n"
+            "def m = %{a: 10, b: 20};\n"
+            "def pick = fn (x) -> { x };\n"
+            "if true: m.a else: m.b;\n"
+            "pick(arr[1]);\n"
+            "m[\"b\"]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 6);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        program[1]->execute(table);
+        program[2]->execute(table);
+
+        auto v1 = evaluate_statement(program[3], table);
+        auto v2 = evaluate_statement(program[4], table);
+        auto v3 = evaluate_statement(program[5], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 10_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 2_f);
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 20_f);
+    }
+
+    SECTION("Chained postfix expressions work across maps and calls")
+    {
+        auto result = parse("obj.f(1)[0].g; arr[0](3)");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+
+        auto f_callable = std::make_shared<Constant_Callable>();
+        frst::Map g_map;
+        g_map.emplace(frst::Value::create(std::string{"g"}),
+                      frst::Value::create(7_f));
+        f_callable->result = frst::Value::create(frst::Array{
+            frst::Value::create(std::move(g_map)),
+        });
+
+        frst::Map obj;
+        obj.emplace(frst::Value::create(std::string{"f"}),
+                    frst::Value::create(frst::Function{f_callable}));
+        table.define("obj", frst::Value::create(std::move(obj)));
+
+        auto arr_callable = std::make_shared<Constant_Callable>();
+        arr_callable->result = frst::Value::create(42_f);
+        table.define("arr",
+                     frst::Value::create(frst::Array{
+                         frst::Value::create(frst::Function{arr_callable}),
+                     }));
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 7_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 42_f);
+    }
+
+    SECTION("Arrays and maps can appear inside larger expressions")
+    {
+        auto result = parse("([1, 2])[0] + 3; %{a: 1}[\"a\"] == 1");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 4_f);
+        REQUIRE(v2->is<frst::Bool>());
+        CHECK(v2->get<frst::Bool>().value() == true);
+    }
+
+    SECTION("Bracketed literals do not swallow following statements")
+    {
+        auto result = parse("[1] b\n%{a: 1} b");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 4);
+
+        frst::Symbol_Table table;
+        table.define("b", frst::Value::create(9_f));
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+        auto v4 = evaluate_statement(program[3], table);
+
+        REQUIRE(v1->is<frst::Array>());
+        CHECK(v2->get<frst::Int>().value() == 9_f);
+        REQUIRE(v3->is<frst::Map>());
+        CHECK(v4->get<frst::Int>().value() == 9_f);
+    }
+
+    SECTION("Whitespace and comments around new constructs")
+    {
+        auto result = parse(
+            "def x = [1,\n# c\n2]\n"
+            "# mid\n"
+            "def y = %{a: 1,\n# c\nb: 2}\n"
+            "def z = fn () -> { ; ; 3 }\n"
+            "x y z()");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 6);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        program[1]->execute(table);
+        program[2]->execute(table);
+
+        auto v1 = evaluate_statement(program[3], table);
+        auto v2 = evaluate_statement(program[4], table);
+        auto v3 = evaluate_statement(program[5], table);
+
+        REQUIRE(v1->is<frst::Array>());
+        REQUIRE(v2->is<frst::Map>());
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 3_f);
+    }
+
     SECTION("Adjacent map literals are separate statements")
     {
         auto result = parse("%{a: 1} %{b: 2}");
@@ -636,6 +1026,15 @@ TEST_CASE("Parser Program")
             ")",
             "(",
             ";; )",
+            "[1;2]",
+            "%{a: 1; b: 2}",
+            "%{a: 1\nb: 2}",
+            "if true: def x = 1 else: 2",
+            "def x = [1;2]",
+            "def x = %{a: 1; b: 2}",
+            "fn (x, ) -> {}",
+            "obj.if",
+            "def if = 1",
         };
 
         for (const auto& input : cases)
