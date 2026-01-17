@@ -74,12 +74,6 @@ def only_string_keys = fn (dict) -> {
 
 def map_filter_example = only_string_keys( %{ foo: 42, [10]: "hi" } ) # %{ foo: 42 }
 
-def reduce_rest = fn (f, ...beeps) -> {
-    reduce beeps with f
-}
-
-def reduce_rest_res = reduce_rest(fn (a, b) -> {a + b}, 1, 2, 3, 4) # 10
-
 # types:
 
 def an_int = 42
@@ -157,15 +151,6 @@ def map2 = %{ foo: "bar" }
 
 def maps_eq = map1 == map2 # maps and arrays use identity equality (maps_eq is false)
 
-def bind_front = fn (fun, ...args1) -> {
-    fn (...args2) -> {
-        pack_call(fun, args1 + args2) # pack_call "unpacks" an array into an argument list
-        # first arg MUST be a function, second arg MUST be an array, normal arity rules apply
-    }
-}
-
-def plus_3 = bind_front(plus, 3)
-
 plus_3 == plus_3 # true (functions use identity equality)
 
 def seven = plus_3(4)
@@ -195,3 +180,20 @@ def sugary1 = fn {
         } # sugary1 == 6
 # equivalent to:
 def desugary1 = fn () -> { def a = 2 ; def b = 4 ; a + b }
+
+# variadics
+def bind_front = fn (fun, ...args1) -> {
+    fn (...args2) -> {
+        pack_call(fun, args1 + args2) # pack_call "unpacks" an array into an argument list
+        # first arg MUST be a function, second arg MUST be an array, normal arity rules apply
+    }
+}
+
+def plus_3 = bind_front(plus, 3)
+
+def reduce_rest = fn (f, ...beeps) -> {
+    reduce beeps with f
+}
+
+def reduce_rest_res = reduce_rest(fn (a, b) -> {a + b}, 1, 2, 3, 4) # 10
+
