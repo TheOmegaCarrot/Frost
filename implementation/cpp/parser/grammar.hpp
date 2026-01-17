@@ -172,6 +172,7 @@ struct Name_Lookup
 } // namespace node
 
 struct expression;
+struct call_arguments;
 
 struct parenthesized_expression
 {
@@ -188,6 +189,25 @@ struct primary_expression
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
 };
 
+struct call_arguments
+{
+    static constexpr auto rule =
+        dsl::terminator(dsl::lit_c<')'>)
+            .opt_list(dsl::recurse<expression>, dsl::sep(dsl::lit_c<','>));
+    static constexpr auto value = [] {
+        auto sink = lexy::as_list<std::vector<ast::Expression::Ptr>>;
+        auto cb =
+            lexy::callback<std::vector<ast::Expression::Ptr>>(
+                [](lexy::nullopt) {
+                    return std::vector<ast::Expression::Ptr>{};
+                },
+                [](std::vector<ast::Expression::Ptr> args) {
+                    return args;
+                });
+        return sink >> cb;
+    }();
+};
+
 struct expression : lexy::expression_production
 {
     static constexpr auto whitespace = ws;
@@ -197,6 +217,15 @@ struct expression : lexy::expression_production
     {
     };
     struct op_not
+    {
+    };
+    struct op_index
+    {
+    };
+    struct op_call
+    {
+    };
+    struct op_dot
     {
     };
     struct op_mul
@@ -236,12 +265,21 @@ struct expression : lexy::expression_production
     {
     };
 
+    struct postfix : dsl::postfix_op
+    {
+        static constexpr auto op =
+            dsl::op<op_index>(dsl::square_bracketed(dsl::recurse<expression>))
+            / dsl::op<op_call>(dsl::lit_c<'('> >> dsl::p<call_arguments>)
+            / dsl::op<op_dot>(dsl::lit_c<'.'> >> dsl::p<identifier>);
+        using operand = dsl::atom;
+    };
+
     struct prefix : dsl::prefix_op
     {
         static constexpr auto op =
             dsl::op<op_neg>(dsl::lit_c<'-'>)
             / dsl::op<op_not>(LEXY_KEYWORD("not", identifier::base));
-        using operand = dsl::atom;
+        using operand = postfix;
     };
 
     struct product : dsl::infix_op_left
@@ -301,6 +339,22 @@ struct expression : lexy::expression_production
         },
         [](op_not, ast::Expression::Ptr rhs) {
             return std::make_unique<ast::Unop>(std::move(rhs), "not");
+        },
+        [](ast::Expression::Ptr lhs, op_index,
+           ast::Expression::Ptr index_expr) {
+            return std::make_unique<ast::Index>(std::move(lhs),
+                                                std::move(index_expr));
+        },
+        [](ast::Expression::Ptr lhs, op_call,
+           std::vector<ast::Expression::Ptr> args) {
+            return std::make_unique<ast::Function_Call>(std::move(lhs),
+                                                        std::move(args));
+        },
+        [](ast::Expression::Ptr lhs, op_dot, std::string key) {
+            auto key_value = Value::create(std::move(key));
+            auto key_expr = std::make_unique<ast::Literal>(key_value);
+            return std::make_unique<ast::Index>(std::move(lhs),
+                                                std::move(key_expr));
         },
         [](ast::Expression::Ptr lhs, op_mul, ast::Expression::Ptr rhs) {
             return std::make_unique<ast::Binop>(std::move(lhs), "*",

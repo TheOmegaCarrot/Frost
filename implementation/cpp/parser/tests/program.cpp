@@ -35,6 +35,21 @@ frst::Value_Ptr evaluate_statement(const frst::ast::Statement::Ptr& statement,
     REQUIRE(expr);
     return expr->evaluate(table);
 }
+
+struct Constant_Callable final : frst::Callable
+{
+    frst::Value_Ptr result;
+
+    frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+    {
+        return result ? result : frst::Value::null();
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<constant>";
+    }
+};
 } // namespace
 
 TEST_CASE("Parser Program")
@@ -248,6 +263,53 @@ TEST_CASE("Parser Program")
         CHECK(v4->get<frst::Bool>().value() == true);
         REQUIRE(v5->is<frst::Int>());
         CHECK(v5->get<frst::Int>().value() == -5_f);
+    }
+
+    SECTION("Postfix expressions in a program")
+    {
+        auto result = parse("arr[0]; f(1,2); obj.key; arr[\n0\n]; obj.f(3)");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 5);
+
+        frst::Symbol_Table table;
+
+        auto arr_val = frst::Value::create(frst::Array{
+            frst::Value::create(1_f),
+            frst::Value::create(2_f),
+        });
+        table.define("arr", arr_val);
+
+        auto f_callable = std::make_shared<Constant_Callable>();
+        f_callable->result = frst::Value::create(9_f);
+        table.define("f", frst::Value::create(frst::Function{f_callable}));
+
+        auto obj_callable = std::make_shared<Constant_Callable>();
+        obj_callable->result = frst::Value::create(11_f);
+
+        frst::Map obj;
+        obj.emplace(frst::Value::create(std::string{"key"}),
+                    frst::Value::create(5_f));
+        obj.emplace(frst::Value::create(std::string{"f"}),
+                    frst::Value::create(frst::Function{obj_callable}));
+        table.define("obj", frst::Value::create(std::move(obj)));
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+        auto v4 = evaluate_statement(program[3], table);
+        auto v5 = evaluate_statement(program[4], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 9_f);
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 5_f);
+        REQUIRE(v4->is<frst::Int>());
+        CHECK(v4->get<frst::Int>().value() == 1_f);
+        REQUIRE(v5->is<frst::Int>());
+        CHECK(v5->get<frst::Int>().value() == 11_f);
     }
 
     SECTION("Whitespace and comments are ignored between statements")
