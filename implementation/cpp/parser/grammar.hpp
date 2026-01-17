@@ -443,6 +443,9 @@ struct expression : lexy::expression_production
     struct op_dot
     {
     };
+    struct op_ufcs
+    {
+    };
     struct op_mul
     {
     };
@@ -480,12 +483,69 @@ struct expression : lexy::expression_production
     {
     };
 
+    struct ufcs_call
+    {
+        struct callee : lexy::expression_production
+        {
+            static constexpr auto whitespace = ws;
+            static constexpr auto atom = dsl::p<primary_expression>;
+
+            struct op_index
+            {
+            };
+            struct op_dot
+            {
+            };
+
+            struct postfix : dsl::postfix_op
+            {
+                static constexpr auto op =
+                    dsl::op<op_index>(
+                        dsl::square_bracketed(dsl::recurse<expression>))
+                    / dsl::op<op_dot>(dsl::lit_c<'.'> >> dsl::p<identifier>);
+                using operand = dsl::atom;
+            };
+
+            using operation = postfix;
+
+            static constexpr auto value =
+                lexy::callback<ast::Expression::Ptr>(
+                    [](ast::Expression::Ptr value) { return value; },
+                    [](ast::Expression::Ptr lhs, op_index,
+                       ast::Expression::Ptr index_expr) {
+                        return std::make_unique<ast::Index>(
+                            std::move(lhs), std::move(index_expr));
+                    },
+                    [](ast::Expression::Ptr lhs, op_dot, std::string key) {
+                        auto key_value = Value::create(std::move(key));
+                        auto key_expr = std::make_unique<ast::Literal>(key_value);
+                        return std::make_unique<ast::Index>(
+                            std::move(lhs), std::move(key_expr));
+                    });
+        };
+
+        struct result
+        {
+            ast::Expression::Ptr callee;
+            std::vector<ast::Expression::Ptr> args;
+        };
+
+        static constexpr auto rule =
+            dsl::p<callee> + dsl::lit_c<'('> + dsl::p<call_arguments>;
+        static constexpr auto value = lexy::callback<result>(
+            [](ast::Expression::Ptr callee,
+               std::vector<ast::Expression::Ptr> args) {
+                return result{std::move(callee), std::move(args)};
+            });
+    };
+
     struct postfix : dsl::postfix_op
     {
         static constexpr auto op =
             dsl::op<op_index>(dsl::square_bracketed(dsl::recurse<expression>))
             / dsl::op<op_call>(dsl::lit_c<'('> >> dsl::p<call_arguments>)
-            / dsl::op<op_dot>(dsl::lit_c<'.'> >> dsl::p<identifier>);
+            / dsl::op<op_dot>(dsl::lit_c<'.'> >> dsl::p<identifier>)
+            / dsl::op<op_ufcs>(dsl::lit_c<'@'> >> dsl::p<ufcs_call>);
         using operand = dsl::atom;
     };
 
@@ -568,6 +628,12 @@ struct expression : lexy::expression_production
             auto key_expr = std::make_unique<ast::Literal>(key_value);
             return std::make_unique<ast::Index>(std::move(lhs),
                                                 std::move(key_expr));
+        },
+        [](ast::Expression::Ptr lhs, op_ufcs, ufcs_call::result rhs) {
+            auto args = std::move(rhs.args);
+            args.insert(args.begin(), std::move(lhs));
+            return std::make_unique<ast::Function_Call>(std::move(rhs.callee),
+                                                        std::move(args));
         },
         [](ast::Expression::Ptr lhs, op_mul, ast::Expression::Ptr rhs) {
             return std::make_unique<ast::Binop>(std::move(lhs), "*",

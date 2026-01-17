@@ -50,6 +50,23 @@ struct Constant_Callable final : frst::Callable
         return "<constant>";
     }
 };
+
+struct IdentityCallable final : frst::Callable
+{
+    frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+    {
+        if (args.empty())
+        {
+            return frst::Value::null();
+        }
+        return args.front();
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<identity>";
+    }
+};
 } // namespace
 
 TEST_CASE("Parser Program")
@@ -396,6 +413,58 @@ TEST_CASE("Parser Program")
         CHECK(v1->get<frst::Int>().value() == 1_f);
         REQUIRE(v2->is<frst::Int>());
         CHECK(v2->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("UFCS expressions can appear in programs")
+    {
+        auto result = parse("a @ f(1); 2 @ f(); b @ obj.m()");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 3);
+
+        frst::Symbol_Table table;
+        auto a_val = frst::Value::create(10_f);
+        auto b_val = frst::Value::create(20_f);
+        table.define("a", a_val);
+        table.define("b", b_val);
+
+        auto callable = std::make_shared<IdentityCallable>();
+        table.define("f", frst::Value::create(frst::Function{callable}));
+
+        frst::Map obj;
+        obj.emplace(frst::Value::create(std::string{"m"}),
+                    frst::Value::create(frst::Function{callable}));
+        table.define("obj", frst::Value::create(std::move(obj)));
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+
+        CHECK(v1 == a_val);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 2_f);
+        CHECK(v3 == b_val);
+    }
+
+    SECTION("UFCS allows postfix after newlines")
+    {
+        auto result = parse("a @ f()\n[0]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        frst::Symbol_Table table;
+        auto a_val = frst::Value::create(11_f);
+        table.define("a", a_val);
+
+        frst::Array arr;
+        arr.push_back(a_val);
+        auto callable = std::make_shared<Constant_Callable>();
+        callable->result = frst::Value::create(std::move(arr));
+        table.define("f", frst::Value::create(frst::Function{callable}));
+
+        auto v1 = evaluate_statement(program[0], table);
+        CHECK(v1 == a_val);
     }
 
     SECTION("If expressions can be followed by definitions without separators")
@@ -1035,6 +1104,8 @@ TEST_CASE("Parser Program")
             "fn (x, ) -> {}",
             "obj.if",
             "def if = 1",
+            "a @ f",
+            "a @ obj.key",
         };
 
         for (const auto& input : cases)
