@@ -312,6 +312,106 @@ TEST_CASE("Parser Program")
         CHECK(v5->get<frst::Int>().value() == 11_f);
     }
 
+    SECTION("If expressions in a program")
+    {
+        auto result = parse(
+            "if true: 1 else: 2;\n"
+            "if false: 1;\n"
+            "if false: 1 elif true: 3 else: 4;\n"
+            "if false: 1 elif false: 2;\n");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 4);
+
+        frst::Symbol_Table table;
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+        auto v4 = evaluate_statement(program[3], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v2->is<frst::Null>());
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 3_f);
+        REQUIRE(v4->is<frst::Null>());
+    }
+
+    SECTION("If expressions with comments and whitespace in a program")
+    {
+        auto result = parse(
+            "if true : 1 else : 2\n"
+            "if true: # c\n"
+            "1 else: 2\n"
+            "if false:\n"
+            "1\n"
+            "else:\n"
+            "2\n");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 3);
+
+        frst::Symbol_Table table;
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 1_f);
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("Statements after an if expression are separate statements")
+    {
+        auto result = parse("if a: b\nelse: c\nfun()");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+
+        auto a_val = frst::Value::create(true);
+        auto b_val = frst::Value::create(3_f);
+        auto c_val = frst::Value::create(4_f);
+
+        table.define("a", a_val);
+        table.define("b", b_val);
+        table.define("c", c_val);
+
+        struct RecordingCallable final : frst::Callable
+        {
+            mutable int calls = 0;
+            frst::Value_Ptr result;
+
+            frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+            {
+                ++calls;
+                return result ? result : frst::Value::null();
+            }
+
+            std::string debug_dump() const override
+            {
+                return "<recording>";
+            }
+        };
+
+        auto callable = std::make_shared<RecordingCallable>();
+        callable->result = frst::Value::create(9_f);
+        table.define("fun", frst::Value::create(frst::Function{callable}));
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+
+        CHECK(v1 == b_val);
+        CHECK(v2 == callable->result);
+        CHECK(callable->calls == 1);
+    }
+
     SECTION("Pathological postfix whitespace and comments in a program")
     {
         auto result = parse(

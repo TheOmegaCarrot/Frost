@@ -180,10 +180,77 @@ struct parenthesized_expression
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
 };
 
+struct if_tail
+{
+    static constexpr auto rule = [] {
+        auto kw_elif = LEXY_KEYWORD("elif", identifier::base);
+        auto kw_else = LEXY_KEYWORD("else", identifier::base);
+
+        auto tail =
+            dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::recurse<if_tail>);
+
+        auto elif_branch = kw_elif
+                           >> (dsl::recurse<expression>
+                               + dsl::lit_c<':'>
+                               + dsl::recurse<expression>
+                               + tail);
+
+        auto else_branch =
+            kw_else >> (dsl::lit_c<':'> + dsl::recurse<expression>);
+
+        return elif_branch | else_branch;
+    }();
+
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
+           lexy::nullopt) {
+            return std::make_unique<ast::If>(std::move(condition),
+                                             std::move(consequent));
+        },
+        [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
+           ast::Expression::Ptr alternate) {
+            return std::make_unique<ast::If>(std::move(condition),
+                                             std::move(consequent),
+                                             std::move(alternate));
+        },
+        [](ast::Expression::Ptr alternate) {
+            return alternate;
+        });
+};
+
+struct if_expression
+{
+    static constexpr auto rule = [] {
+        auto kw_if = LEXY_KEYWORD("if", identifier::base);
+        auto kw_elif = LEXY_KEYWORD("elif", identifier::base);
+        auto kw_else = LEXY_KEYWORD("else", identifier::base);
+        auto tail = dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::p<if_tail>);
+        return kw_if
+               >> (dsl::recurse<expression>
+                   + dsl::lit_c<':'>
+                   + dsl::recurse<expression>
+                   + tail);
+    }();
+
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
+           lexy::nullopt) {
+            return std::make_unique<ast::If>(std::move(condition),
+                                             std::move(consequent));
+        },
+        [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
+           ast::Expression::Ptr alternate) {
+            return std::make_unique<ast::If>(std::move(condition),
+                                             std::move(consequent),
+                                             std::move(alternate));
+        });
+};
+
 struct primary_expression
 {
     static constexpr auto rule =
         (dsl::peek(dsl::lit_c<'('>) >> dsl::p<parenthesized_expression>)
+        | dsl::p<if_expression>
         | dsl::p<node::Literal>
         | dsl::p<node::Name_Lookup>;
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
@@ -196,14 +263,13 @@ struct call_arguments
             .opt_list(dsl::recurse<expression>, dsl::sep(dsl::lit_c<','>));
     static constexpr auto value = [] {
         auto sink = lexy::as_list<std::vector<ast::Expression::Ptr>>;
-        auto cb =
-            lexy::callback<std::vector<ast::Expression::Ptr>>(
-                [](lexy::nullopt) {
-                    return std::vector<ast::Expression::Ptr>{};
-                },
-                [](std::vector<ast::Expression::Ptr> args) {
-                    return args;
-                });
+        auto cb = lexy::callback<std::vector<ast::Expression::Ptr>>(
+            [](lexy::nullopt) {
+                return std::vector<ast::Expression::Ptr>{};
+            },
+            [](std::vector<ast::Expression::Ptr> args) {
+                return args;
+            });
         return sink >> cb;
     }();
 };
@@ -285,34 +351,30 @@ struct expression : lexy::expression_production
     struct product : dsl::infix_op_left
     {
         static constexpr auto op =
-            dsl::op<op_mul>(dsl::lit_c<'*'>)
-            / dsl::op<op_div>(dsl::lit_c<'/'>);
+            dsl::op<op_mul>(dsl::lit_c<'*'>) / dsl::op<op_div>(dsl::lit_c<'/'>);
         using operand = prefix;
     };
 
     struct sum : dsl::infix_op_left
     {
         static constexpr auto op =
-            dsl::op<op_add>(dsl::lit_c<'+'>)
-            / dsl::op<op_sub>(dsl::lit_c<'-'>);
+            dsl::op<op_add>(dsl::lit_c<'+'>) / dsl::op<op_sub>(dsl::lit_c<'-'>);
         using operand = product;
     };
 
     struct compare : dsl::infix_op_single
     {
-        static constexpr auto op =
-            dsl::op<op_le>(LEXY_LIT("<="))
-            / dsl::op<op_lt>(LEXY_LIT("<"))
-            / dsl::op<op_ge>(LEXY_LIT(">="))
-            / dsl::op<op_gt>(LEXY_LIT(">"));
+        static constexpr auto op = dsl::op<op_le>(LEXY_LIT("<="))
+                                   / dsl::op<op_lt>(LEXY_LIT("<"))
+                                   / dsl::op<op_ge>(LEXY_LIT(">="))
+                                   / dsl::op<op_gt>(LEXY_LIT(">"));
         using operand = sum;
     };
 
     struct equal : dsl::infix_op_single
     {
         static constexpr auto op =
-            dsl::op<op_eq>(LEXY_LIT("=="))
-            / dsl::op<op_ne>(LEXY_LIT("!="));
+            dsl::op<op_eq>(LEXY_LIT("==")) / dsl::op<op_ne>(LEXY_LIT("!="));
         using operand = compare;
     };
 
@@ -333,7 +395,9 @@ struct expression : lexy::expression_production
     using operation = logical_or;
 
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
-        [](ast::Expression::Ptr value) { return value; },
+        [](ast::Expression::Ptr value) {
+            return value;
+        },
         [](op_neg, ast::Expression::Ptr rhs) {
             return std::make_unique<ast::Unop>(std::move(rhs), "-");
         },
@@ -377,24 +441,24 @@ struct expression : lexy::expression_production
                                                 std::move(rhs));
         },
         [](ast::Expression::Ptr lhs, op_le, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), "<=",
-                                                std::move(rhs));
+            return std::make_unique<ast::Binop>(std::move(lhs),
+                                                "<=", std::move(rhs));
         },
         [](ast::Expression::Ptr lhs, op_gt, ast::Expression::Ptr rhs) {
             return std::make_unique<ast::Binop>(std::move(lhs), ">",
                                                 std::move(rhs));
         },
         [](ast::Expression::Ptr lhs, op_ge, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), ">=",
-                                                std::move(rhs));
+            return std::make_unique<ast::Binop>(std::move(lhs),
+                                                ">=", std::move(rhs));
         },
         [](ast::Expression::Ptr lhs, op_eq, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), "==",
-                                                std::move(rhs));
+            return std::make_unique<ast::Binop>(std::move(lhs),
+                                                "==", std::move(rhs));
         },
         [](ast::Expression::Ptr lhs, op_ne, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), "!=",
-                                                std::move(rhs));
+            return std::make_unique<ast::Binop>(std::move(lhs),
+                                                "!=", std::move(rhs));
         },
         [](ast::Expression::Ptr lhs, op_and, ast::Expression::Ptr rhs) {
             return std::make_unique<ast::Binop>(std::move(lhs), "and",
@@ -406,10 +470,12 @@ struct expression : lexy::expression_production
         });
 };
 
-constexpr auto expression_start =
-    dsl::peek(statement_ws + (dsl::ascii::alpha_underscore | dsl::digit<>
-                              | dsl::lit_c<'('> | dsl::lit_c<'"'>
-                              | dsl::lit_c<'-'>));
+constexpr auto expression_start = dsl::peek(statement_ws
+                                            + (dsl::ascii::alpha_underscore
+                                               | dsl::digit<>
+                                               | dsl::lit_c<'('>
+                                               | dsl::lit_c<'"'>
+                                               | dsl::lit_c<'-'>));
 
 struct statement
 {
