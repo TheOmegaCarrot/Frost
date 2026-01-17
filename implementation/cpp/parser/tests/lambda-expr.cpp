@@ -130,6 +130,28 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(expr);
     }
 
+    SECTION("Multiple lambdas as top-level statements parse correctly")
+    {
+        auto src =
+            lexy::string_input(std::string_view{"fn() -> {} fn() -> {}"});
+        auto program_result =
+            lexy::parse<frst::grammar::program>(src, lexy::noop);
+        REQUIRE(program_result);
+        auto program = std::move(program_result).value();
+        REQUIRE(program.size() == 2);
+    }
+
+    SECTION("Multiple lambdas with semicolons parse correctly")
+    {
+        auto src =
+            lexy::string_input(std::string_view{"fn() -> {}; fn() -> {}"});
+        auto program_result =
+            lexy::parse<frst::grammar::program>(src, lexy::noop);
+        REQUIRE(program_result);
+        auto program = std::move(program_result).value();
+        REQUIRE(program.size() == 2);
+    }
+
     SECTION("Lambda can appear on the RHS of def")
     {
         auto src = lexy::string_input(
@@ -219,6 +241,25 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out2->get<frst::Bool>().value() == false);
     }
 
+    SECTION("Prefix operators apply to lambda calls")
+    {
+        auto result = parse("-fn() -> { 2 }()");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == -2_f);
+
+        auto result2 = parse("not fn() -> { true }()");
+        REQUIRE(result2);
+        auto expr2 = require_expression(result2);
+        auto out2 = expr2->evaluate(table);
+        REQUIRE(out2->is<frst::Bool>());
+        CHECK(out2->get<frst::Bool>().value() == false);
+    }
+
     SECTION("Lambda can be called as an atom")
     {
         auto result = parse("fn(x) -> { x }(5)");
@@ -251,6 +292,18 @@ TEST_CASE("Parser Lambda Expressions")
         auto out = expr->evaluate(table);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Postfix with newline after lambda body is parsed")
+    {
+        frst::Symbol_Table table;
+        auto arr_val = frst::Value::create(frst::Array{
+            frst::Value::create(5_f),
+        });
+        table.define("arr", arr_val);
+
+        auto result = parse("fn() -> { arr }\n[0]");
+        REQUIRE(result);
     }
 
     SECTION("Lambda can be followed by indexing and dot access after call")
@@ -367,6 +420,19 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 1_f);
     }
 
+    SECTION("Lambda body supports semicolons mixed with defs")
+    {
+        auto result = parse("fn() -> { ; def x = 1 ; x }");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 1_f);
+    }
+
     SECTION("Lambda body allows if expression followed by another statement")
     {
         auto result = parse("fn() -> { if true: 1 else: 2 3 }");
@@ -454,6 +520,29 @@ TEST_CASE("Parser Lambda Expressions")
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Non-identifier parameters are rejected")
+    {
+        CHECK_FALSE(parse("fn(1) -> {}"));
+        CHECK_FALSE(parse("fn(\"x\") -> {}"));
+    }
+
+    SECTION("Arrow token must be contiguous")
+    {
+        CHECK_FALSE(parse("fn() - > {}"));
+    }
+
+    SECTION("Prefix not before lambda without call is allowed")
+    {
+        auto result = parse("not fn () -> {}");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Bool>());
+        CHECK(out->get<frst::Bool>().value() == false);
     }
 
     SECTION("Whitespace and comments around lambda tokens are allowed")
