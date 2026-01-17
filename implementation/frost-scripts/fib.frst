@@ -1,0 +1,16 @@
+# I wrote this before getting self-capturing lambdas working
+
+def fib_ = fn (self, n) -> {
+    if n < 2: n
+    else: self(self, n-1) + self(self, n-2)
+}
+
+def fib = fn (n) -> { fib_(fib_, n) }
+
+def input = range(10)
+
+print(input)
+
+def fibs = map input with fib
+
+print(fibs)

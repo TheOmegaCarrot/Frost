@@ -39,7 +39,7 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_file(
     auto file = lexy::read_file<lexy::utf8_encoding>(path_str.c_str());
     if (!file)
     {
-        throw Frost_User_Error{
+        return std::unexpected{
             fmt::format("Failed to read file '{}'", path_str)};
     }
 
