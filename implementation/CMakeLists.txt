@@ -23,6 +23,10 @@ include(get-fmt)
 
 include(get-test-libs)
 
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+    set(CMAKE_INTERPROCEDUAL_OPTIMIZATION YES)
+endif()
+
 add_library(frost-common INTERFACE)
 
 target_compile_features( frost-common
