@@ -16,19 +16,12 @@
 
 using namespace std::literals;
 
-void repl_exec(const std::string& code, frst::Symbol_Table& symbols)
+void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
+               frst::Symbol_Table& symbols)
 {
-    auto parse_result = frst::parse_program(code);
-
-    if (!parse_result)
-    {
-        fmt::println(stderr, "{}", parse_result.error());
-        return;
-    }
-
     try
     {
-        for (const auto& statement : parse_result.value()
+        for (const auto& statement : ast
                                          | std::views::reverse
                                          | std::views::drop(1)
                                          | std::views::reverse)
@@ -36,7 +29,7 @@ void repl_exec(const std::string& code, frst::Symbol_Table& symbols)
             statement->execute(symbols);
         }
 
-        auto* last_statement = parse_result.value().back().get();
+        auto* last_statement = ast.back().get();
         if (auto expr_ptr =
                 dynamic_cast<frst::ast::Expression*>(last_statement))
             fmt::println("{}",
@@ -69,7 +62,15 @@ void repl(frst::Symbol_Table& symbols)
 
         std::string s(line);
 
-        repl_exec(line, symbols);
+        auto parse_result = frst::parse_program(s);
+
+        if (not parse_result)
+        {
+            fmt::println(stderr, "{}", parse_result.error());
+            continue;
+        }
+
+        repl_exec(parse_result.value(), symbols);
     }
 }
 
