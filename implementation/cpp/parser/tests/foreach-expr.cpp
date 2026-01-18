@@ -33,9 +33,9 @@ struct RecordingCallable final : frst::Callable
 {
     mutable std::vector<std::vector<frst::Value_Ptr>> calls;
 
-    frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
     {
-        calls.push_back(args);
+        calls.emplace_back(args.begin(), args.end());
         return frst::Value::null();
     }
 

@@ -2,7 +2,6 @@
 #include <frost/closure.hpp>
 #include <frost/symbol-table.hpp>
 
-#include <flat_set>
 #include <sstream>
 
 using namespace frst;
@@ -25,7 +24,7 @@ Value_Ptr eval_or_null(const ast::Statement::Ptr& node, Symbol_Table& syms)
     return Value::null();
 }
 
-Value_Ptr Closure::call(const std::vector<Value_Ptr>& args) const
+Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
 {
     if (args.size() > parameters_.size())
     {

@@ -23,11 +23,11 @@ namespace
 struct Recording_Predicate final : Callable
 {
     mutable std::vector<std::vector<Value_Ptr>> calls;
-    std::function<Value_Ptr(const std::vector<Value_Ptr>&)> behavior;
+    std::function<Value_Ptr(std::span<const Value_Ptr>)> behavior;
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const override
+    Value_Ptr call(std::span<const Value_Ptr> args) const override
     {
-        calls.push_back(args);
+        calls.emplace_back(args.begin(), args.end());
         if (behavior)
             return behavior(args);
         return Value::create(true);
@@ -84,7 +84,7 @@ TEST_CASE("Filter")
             auto array_val = Value::create(Array{v1, v2, v3});
 
             auto pred = std::make_shared<Recording_Predicate>();
-            pred->behavior = [&](const std::vector<Value_Ptr>& args) {
+            pred->behavior = [&](std::span<const Value_Ptr> args) {
                 const auto& elem = args.at(0);
                 if (elem == v1)
                     return Value::create(true);
@@ -143,7 +143,7 @@ TEST_CASE("Filter")
             auto array_val = Value::create(Array{v1, v2, v3});
 
             auto pred = std::make_shared<Recording_Predicate>();
-            pred->behavior = [&](const std::vector<Value_Ptr>& args) {
+            pred->behavior = [&](std::span<const Value_Ptr> args) {
                 const auto& elem = args.at(0);
                 if (elem == v1)
                     return Value::null();
@@ -184,7 +184,7 @@ TEST_CASE("Filter")
             auto array_val = Value::create(Array{v1, v2, v3});
 
             auto pred = std::make_shared<Recording_Predicate>();
-            pred->behavior = [&](const std::vector<Value_Ptr>& args) {
+            pred->behavior = [&](std::span<const Value_Ptr> args) {
                 if (args.at(0) == v2)
                     throw Frost_User_Error{"kaboom"};
                 return Value::create(true);
@@ -253,7 +253,7 @@ TEST_CASE("Filter")
             auto map_val = Value::create(Map{{k1, v1}, {k2, v2}});
 
             auto pred = std::make_shared<Recording_Predicate>();
-            pred->behavior = [&](const std::vector<Value_Ptr>& args) {
+            pred->behavior = [&](std::span<const Value_Ptr> args) {
                 if (args.at(0) == k1)
                     return Value::create(true);
                 if (args.at(0) == k2)
@@ -308,7 +308,7 @@ TEST_CASE("Filter")
             auto map_val = Value::create(Map{{k1, v1}, {k2, v2}});
 
             auto pred = std::make_shared<Recording_Predicate>();
-            pred->behavior = [&](const std::vector<Value_Ptr>& args) {
+            pred->behavior = [&](std::span<const Value_Ptr> args) {
                 if (args.at(0) == k1)
                     return Value::null();
                 if (args.at(0) == k2)
@@ -349,7 +349,7 @@ TEST_CASE("Filter")
             auto map_val = Value::create(Map{{k1, v1}, {k2, v2}});
 
             auto pred = std::make_shared<Recording_Predicate>();
-            pred->behavior = [&](const std::vector<Value_Ptr>&) -> Value_Ptr {
+            pred->behavior = [&](std::span<const Value_Ptr>) -> Value_Ptr {
                 throw Frost_User_Error{"kaboom"};
             };
             auto pred_val = Value::create(Function{pred});

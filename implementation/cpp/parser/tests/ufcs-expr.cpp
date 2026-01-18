@@ -36,9 +36,9 @@ struct RecordingCallable final : frst::Callable
     frst::Value_Ptr result;
 
     frst::Value_Ptr call(
-        const std::vector<frst::Value_Ptr>& args) const override
+        std::span<const frst::Value_Ptr> args) const override
     {
-        received = args;
+        received.assign(args.begin(), args.end());
         return result ? result : frst::Value::null();
     }
 
@@ -51,7 +51,7 @@ struct RecordingCallable final : frst::Callable
 struct IdentityCallable final : frst::Callable
 {
     frst::Value_Ptr call(
-        const std::vector<frst::Value_Ptr>& args) const override
+        std::span<const frst::Value_Ptr> args) const override
     {
         if (args.empty())
         {
@@ -69,7 +69,7 @@ struct IdentityCallable final : frst::Callable
 struct ArgsArrayCallable final : frst::Callable
 {
     frst::Value_Ptr call(
-        const std::vector<frst::Value_Ptr>& args) const override
+        std::span<const frst::Value_Ptr> args) const override
     {
         frst::Array arr;
         arr.reserve(args.size());

@@ -7,10 +7,11 @@
 
 #include <functional>
 #include <optional>
+#include <span>
 
 namespace frst
 {
-using builtin_args_t = const std::vector<Value_Ptr>&;
+using builtin_args_t = std::span<const Value_Ptr>;
 
 // Class wrapping a C++ function exposed to Frost
 // e.g. builtins

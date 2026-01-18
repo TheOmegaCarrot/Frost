@@ -245,7 +245,7 @@ TEST_CASE("Parser Reduce Expressions")
     {
         struct Identity_Callable final : frst::Callable
         {
-            frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                     return frst::Value::null();
@@ -279,7 +279,7 @@ TEST_CASE("Parser Reduce Expressions")
     {
         struct IdentityCallable final : frst::Callable
         {
-            frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                 {
@@ -312,7 +312,7 @@ TEST_CASE("Parser Reduce Expressions")
     {
         struct IdentityCallable final : frst::Callable
         {
-            frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                 {
@@ -364,7 +364,7 @@ TEST_CASE("Parser Reduce Expressions")
 
         struct Return_Acc final : frst::Callable
         {
-            frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
             {
                 return args.front();
             }
@@ -379,9 +379,9 @@ TEST_CASE("Parser Reduce Expressions")
         {
             mutable std::vector<std::vector<frst::Value_Ptr>> calls;
 
-            frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
             {
-                calls.push_back(args);
+                calls.emplace_back(args.begin(), args.end());
                 return args.front();
             }
 

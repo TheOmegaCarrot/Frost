@@ -161,7 +161,7 @@ TEST_CASE("Parser Define Statements")
         {
             frst::Value_Ptr value;
             frst::Value_Ptr call(
-                const std::vector<frst::Value_Ptr>&) const override
+                std::span<const frst::Value_Ptr>) const override
             {
                 return value ? value : frst::Value::null();
             }

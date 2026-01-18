@@ -7,6 +7,8 @@
 #include <frost/mock/mock-symbol-table.hpp>
 #include <frost/value.hpp>
 
+#include <algorithm>
+
 using namespace frst;
 using namespace frst::ast;
 using namespace std::literals;
@@ -23,11 +25,13 @@ struct RecordingCallable final : Callable
     std::vector<Value_Ptr> expected_args;
     Value_Ptr result;
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const override
+    Value_Ptr call(std::span<const Value_Ptr> args) const override
     {
         called = true;
         ++call_count;
-        args_match = (args == expected_args);
+        args_match = args.size() == expected_args.size()
+                     && std::equal(args.begin(), args.end(),
+                                   expected_args.begin());
         return result ? result : Value::null();
     }
 
@@ -39,7 +43,7 @@ struct RecordingCallable final : Callable
 
 struct ThrowingCallable final : Callable
 {
-    Value_Ptr call(const std::vector<Value_Ptr>&) const override
+    Value_Ptr call(std::span<const Value_Ptr>) const override
     {
         throw Frost_User_Error{"boom"};
     }

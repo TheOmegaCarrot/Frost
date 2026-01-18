@@ -40,7 +40,7 @@ struct Constant_Callable final : frst::Callable
 {
     frst::Value_Ptr result;
 
-    frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
     {
         return result ? result : frst::Value::null();
     }
@@ -53,7 +53,7 @@ struct Constant_Callable final : frst::Callable
 
 struct IdentityCallable final : frst::Callable
 {
-    frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
     {
         if (args.empty())
         {
@@ -72,7 +72,7 @@ struct CountingCallable final : frst::Callable
 {
     mutable std::vector<frst::Value_Ptr> args;
 
-    frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& call_args) const override
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr> call_args) const override
     {
         if (!call_args.empty())
         {
@@ -1225,7 +1225,7 @@ TEST_CASE("Parser Program")
             mutable int calls = 0;
             frst::Value_Ptr result;
 
-            frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+            frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
             {
                 ++calls;
                 return result ? result : frst::Value::null();

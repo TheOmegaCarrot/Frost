@@ -24,9 +24,9 @@ struct Recording_Reducer final : Callable
     mutable std::size_t call_index = 0;
     std::vector<Value_Ptr> results;
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const override
+    Value_Ptr call(std::span<const Value_Ptr> args) const override
     {
-        calls.push_back(args);
+        calls.emplace_back(args.begin(), args.end());
         if (call_index < results.size())
             return results.at(call_index++);
         return Value::null();
@@ -40,7 +40,7 @@ struct Recording_Reducer final : Callable
 
 struct Throwing_Reducer final : Callable
 {
-    Value_Ptr call(const std::vector<Value_Ptr>&) const override
+    Value_Ptr call(std::span<const Value_Ptr>) const override
     {
         throw Frost_User_Error{"kaboom"};
     }
@@ -655,7 +655,7 @@ TEST_CASE("Reduce Map")
             CHECK(call0.at(0) == init_val);
             CHECK(call1.at(0) == r1);
 
-            auto matches_kv = [&](const std::vector<Value_Ptr>& call,
+            auto matches_kv = [&](std::span<const Value_Ptr> call,
                                   const Value_Ptr& k, const Value_Ptr& v) {
                 return call.at(1) == k && call.at(2) == v;
             };

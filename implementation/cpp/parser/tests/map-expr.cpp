@@ -225,7 +225,7 @@ TEST_CASE("Parser Map Expressions")
     {
         struct IdentityCallable final : frst::Callable
         {
-            frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                 {
@@ -261,7 +261,7 @@ TEST_CASE("Parser Map Expressions")
     {
         struct WrapCallable final : frst::Callable
         {
-            frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                 {

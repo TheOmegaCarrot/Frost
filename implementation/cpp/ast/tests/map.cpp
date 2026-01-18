@@ -24,9 +24,9 @@ struct Recording_Mapper final : Callable
     mutable std::size_t call_index = 0;
     std::vector<Value_Ptr> results;
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const override
+    Value_Ptr call(std::span<const Value_Ptr> args) const override
     {
-        calls.push_back(args);
+        calls.emplace_back(args.begin(), args.end());
         if (call_index < results.size())
             return results.at(call_index++);
         return Value::null();
@@ -45,9 +45,9 @@ struct Throw_On_Index_Mapper final : Callable
     {
     }
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const override
+    Value_Ptr call(std::span<const Value_Ptr> args) const override
     {
-        calls.push_back(args);
+        calls.emplace_back(args.begin(), args.end());
         if (call_index++ == throw_on_index)
             throw Frost_User_Error{"kaboom"};
         return Value::null();

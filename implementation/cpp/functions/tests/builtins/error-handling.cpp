@@ -20,9 +20,9 @@ struct Recording_Callable final : Callable
     mutable std::vector<std::vector<Value_Ptr>> calls;
     Value_Ptr result;
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const override
+    Value_Ptr call(std::span<const Value_Ptr> args) const override
     {
-        calls.push_back(args);
+        calls.emplace_back(args.begin(), args.end());
         return result ? result : Value::null();
     }
 
@@ -39,7 +39,7 @@ struct Throwing_User_Callable final : Callable
     {
     }
 
-    Value_Ptr call(const std::vector<Value_Ptr>&) const override
+    Value_Ptr call(std::span<const Value_Ptr>) const override
     {
         throw Frost_User_Error{msg};
     }
@@ -54,7 +54,7 @@ struct Throwing_User_Callable final : Callable
 
 struct Throwing_Internal_Callable final : Callable
 {
-    Value_Ptr call(const std::vector<Value_Ptr>&) const override
+    Value_Ptr call(std::span<const Value_Ptr>) const override
     {
         throw Frost_Internal_Error{"internal boom"};
     }

@@ -209,7 +209,7 @@ TEST_CASE("Comparison Binary ops")
 
         struct Dummy final : Callable
         {
-            Value_Ptr call(const std::vector<Value_Ptr>&) const override
+            Value_Ptr call(std::span<const Value_Ptr>) const override
             {
                 return Value::null();
             }

@@ -47,7 +47,7 @@ TEST_CASE("to_internal_int")
 {
     struct Dummy final : frst::Callable
     {
-        frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+        frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
         {
             return Value::null();
         }
@@ -108,7 +108,7 @@ TEST_CASE("to_int")
 {
     struct Dummy final : frst::Callable
     {
-        frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+        frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
         {
             return Value::null();
         }
@@ -168,7 +168,7 @@ TEST_CASE("to_internal_float")
 {
     struct Dummy final : frst::Callable
     {
-        frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+        frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
         {
             return Value::null();
         }
@@ -225,7 +225,7 @@ TEST_CASE("to_float")
 {
     struct Dummy final : frst::Callable
     {
-        frst::Value_Ptr call(const std::vector<frst::Value_Ptr>&) const override
+        frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
         {
             return Value::null();
         }

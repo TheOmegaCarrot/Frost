@@ -53,7 +53,7 @@ TEST_CASE("Builtin pack_call")
             observed_size = args.size();
             if (expected_args != nullptr)
             {
-                same_vector = (&args == expected_args);
+                same_vector = (args.data() == expected_args->data());
                 same_elements = (args.size() == expected_args->size());
                 if (same_elements)
                 {

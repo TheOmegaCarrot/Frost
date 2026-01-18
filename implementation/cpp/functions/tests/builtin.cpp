@@ -59,7 +59,8 @@ TEST_CASE("Builtin Function")
 
         Builtin builtin{
             [&](builtin_args_t in) {
-                same_address = (&in == expected);
+                same_address =
+                    in.data() == expected->data() && in.size() == expected->size();
                 return Value::null();
             },
             "forward",

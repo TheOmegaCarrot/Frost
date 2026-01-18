@@ -46,7 +46,7 @@ frst::Value_Ptr evaluate_expression(const frst::ast::Statement::Ptr& statement,
 
 struct IdentityCallable final : frst::Callable
 {
-    frst::Value_Ptr call(const std::vector<frst::Value_Ptr>& args) const override
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
     {
         if (args.empty())
         {

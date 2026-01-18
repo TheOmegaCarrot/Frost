@@ -41,7 +41,7 @@ frst::Value_Ptr call_function(const frst::Value_Ptr& value,
 struct IdentityCallable final : frst::Callable
 {
     frst::Value_Ptr call(
-        const std::vector<frst::Value_Ptr>& args) const override
+        std::span<const frst::Value_Ptr> args) const override
     {
         if (args.empty())
         {

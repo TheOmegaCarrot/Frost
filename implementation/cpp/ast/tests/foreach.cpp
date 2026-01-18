@@ -22,9 +22,9 @@ struct Recording_Foreach final : Callable
 {
     mutable std::vector<std::vector<Value_Ptr>> calls;
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const override
+    Value_Ptr call(std::span<const Value_Ptr> args) const override
     {
-        calls.push_back(args);
+        calls.emplace_back(args.begin(), args.end());
         return Value::null();
     }
 
@@ -41,9 +41,9 @@ struct Throw_On_Call final : Callable
     {
     }
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const override
+    Value_Ptr call(std::span<const Value_Ptr> args) const override
     {
-        calls.push_back(args);
+        calls.emplace_back(args.begin(), args.end());
         if (call_index++ == throw_on_index)
             throw Frost_User_Error{"kaboom"};
         return Value::null();

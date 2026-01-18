@@ -21,7 +21,7 @@ class Closure : public Callable
             const std::vector<ast::Statement::Ptr>* body,
             Symbol_Table captures);
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const override;
+    Value_Ptr call(std::span<const Value_Ptr> args) const override;
     std::string debug_dump() const override;
     const Symbol_Table& debug_capture_table() const
     {
@@ -54,7 +54,7 @@ class Weak_Closure final : public Callable
     {
     }
 
-    Value_Ptr call(const std::vector<Value_Ptr>& args) const final
+    Value_Ptr call(std::span<const Value_Ptr> args) const final
     {
         auto closure = closure_.lock();
         if (!closure)
