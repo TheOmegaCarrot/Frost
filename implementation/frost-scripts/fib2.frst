@@ -1,0 +1,12 @@
+def fib = fn (n) -> {
+    if n < 2: n
+    else: self(n-1) + self(n-2)
+}
+
+def input = range(10)
+
+print(input)
+
+def fibs = map input with fib
+
+print(fibs)

@@ -1,8 +1,8 @@
 # I wrote this before getting self-capturing lambdas working
 
-def fib_ = fn (self, n) -> {
+def fib_ = fn (me, n) -> {
     if n < 2: n
-    else: self(self, n-1) + self(self, n-2)
+    else: me(me, n-1) + me(me, n-2)
 }
 
 def fib = fn (n) -> { fib_(fib_, n) }

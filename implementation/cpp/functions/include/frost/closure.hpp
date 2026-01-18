@@ -5,8 +5,6 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
-#include <flat_set>
-
 namespace frst
 {
 class Closure : public Callable
@@ -30,10 +28,47 @@ class Closure : public Callable
         return captures_;
     }
 
+    void inject_capture(const std::string& name, Value_Ptr value)
+    {
+        captures_.define(name, value);
+    }
+
   private:
     std::vector<std::string> parameters_;
     const std::vector<ast::Statement::Ptr>* body_;
     Symbol_Table captures_;
+};
+
+class Weak_Closure final : public Callable
+{
+  public:
+    Weak_Closure() = delete;
+    Weak_Closure(const Weak_Closure&) = delete;
+    Weak_Closure(Weak_Closure&&) = delete;
+    Weak_Closure& operator=(const Weak_Closure&) = delete;
+    Weak_Closure& operator=(Weak_Closure&&) = delete;
+    ~Weak_Closure() override = default;
+
+    Weak_Closure(std::weak_ptr<Closure> closure)
+        : closure_{closure}
+    {
+    }
+
+    Value_Ptr call(const std::vector<Value_Ptr>& args) const final
+    {
+        auto closure = closure_.lock();
+        if (!closure)
+            throw Frost_Internal_Error{"Closure self-reference expired"};
+        return closure->call(args);
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<closure self-reference>";
+    }
+
+  private:
+    std::weak_ptr<Closure> closure_;
 };
 } // namespace frst
 

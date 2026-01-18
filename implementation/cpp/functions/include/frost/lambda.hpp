@@ -7,6 +7,9 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
+#include <flat_set>
+#include <memory>
+
 namespace frst::ast
 {
 namespace
@@ -58,8 +61,12 @@ class Lambda final : public Expression
                     names_defined_so_far.insert(defn.name);
                 },
                 [&](const Statement::Usage& used) {
-                    if (!names_defined_so_far.contains(used.name))
+                    if (used.name
+                        != "self"
+                        && !names_defined_so_far.contains(used.name))
+                    {
                         names_to_capture_.insert(used.name);
+                    }
                 },
             });
         }
@@ -79,8 +86,15 @@ class Lambda final : public Expression
             captures.define(name, syms.lookup(name));
         }
 
-        return Value::create(Function{
-            std::make_shared<Closure>(params_, &body_, std::move(captures))});
+        auto closure =
+            std::make_shared<Closure>(params_, &body_, std::move(captures));
+
+        auto weak_closure = Value::create(
+            Function{std::make_shared<Weak_Closure>(std::weak_ptr{closure})});
+
+        closure->inject_capture("self", weak_closure);
+
+        return Value::create(Function{std::move(closure)});
     }
 
     std::generator<Symbol_Action> symbol_sequence() const final
