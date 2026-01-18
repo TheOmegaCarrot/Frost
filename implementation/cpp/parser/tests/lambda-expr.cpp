@@ -127,6 +127,80 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
 
+    SECTION("Elided parameter list with one parameter")
+    {
+        auto result = parse("fn x -> x + 2");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {frst::Value::create(2_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 4_f);
+    }
+
+    SECTION("Elided parameter list with multiple parameters")
+    {
+        auto result = parse("fn a, b -> a + b");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(
+            value, {frst::Value::create(1_f), frst::Value::create(3_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 4_f);
+    }
+
+    SECTION("Elided parameter list with variadic parameter")
+    {
+        auto result = parse("fn a, ...rest -> rest");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {frst::Value::create(1_f),
+                                         frst::Value::create(2_f),
+                                         frst::Value::create(3_f)});
+        REQUIRE(out->is<frst::Array>());
+        const auto& arr = out->raw_get<frst::Array>();
+        REQUIRE(arr.size() == 2);
+        CHECK(arr[0]->get<frst::Int>().value() == 2_f);
+        CHECK(arr[1]->get<frst::Int>().value() == 3_f);
+    }
+
+    SECTION("Elided parameter list with only variadic parameter")
+    {
+        auto result = parse("fn ...rest -> rest");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {frst::Value::create(9_f)});
+        REQUIRE(out->is<frst::Array>());
+        const auto& arr = out->raw_get<frst::Array>();
+        REQUIRE(arr.size() == 1);
+        CHECK(arr[0]->get<frst::Int>().value() == 9_f);
+    }
+
+    SECTION("Elided parameter list tolerates whitespace and comments")
+    {
+        auto result = parse("fn a,\n # comment\n b -> a + b");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(
+            value, {frst::Value::create(2_f), frst::Value::create(5_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 7_f);
+    }
+
     SECTION("Variadic-only parameter collects all args")
     {
         auto result = parse("fn(...rest) -> { rest }(1, 2)");
@@ -873,6 +947,11 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK_FALSE(parse("fn(a, ...rest,) -> {}"));
         CHECK_FALSE(parse("fn(, ...rest) -> {}"));
         CHECK_FALSE(parse("fn(...rest, ...more) -> {}"));
+        CHECK_FALSE(parse("fn a b -> {}"));
+        CHECK_FALSE(parse("fn a, -> {}"));
+        CHECK_FALSE(parse("fn ... -> {}"));
+        CHECK_FALSE(parse("fn a, ...rest, b -> {}"));
+        CHECK_FALSE(parse("fn a, ...rest, -> {}"));
     }
 
     SECTION("Missing arrow or body is rejected")
@@ -882,12 +961,6 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK_FALSE(parse("fn() ->"));
         CHECK_FALSE(parse("fn() -> {"));
         CHECK_FALSE(parse("fn() -> }"));
-    }
-
-    SECTION("Missing braces or parameter parentheses are rejected")
-    {
-        CHECK_FALSE(parse("fn x -> {}"));
-        CHECK_FALSE(parse("fn ...rest -> {}"));
     }
 
     SECTION("Keyword parameters are rejected")
