@@ -5,6 +5,7 @@
 #include <frost/testing/stringmaker-specializations.hpp>
 
 #include <iostream>
+#include <memory>
 #include <set>
 #include <string_view>
 #include <utility>
@@ -91,6 +92,12 @@ std::unique_ptr<T> node(Args&&... args)
     return std::make_unique<T>(std::forward<Args>(args)...);
 }
 
+std::shared_ptr<std::vector<Statement::Ptr>> make_body(
+    std::vector<Statement::Ptr> body)
+{
+    return std::make_shared<std::vector<Statement::Ptr>>(std::move(body));
+}
+
 std::pair<std::string, std::string> split_header_body(const std::string& dump)
 {
     const auto pos = dump.find('\n');
@@ -139,8 +146,9 @@ TEST_CASE("Construct Closure")
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("missing"));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, &body, captures};
+        Closure closure{{"p"}, body_ptr, captures};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x", "y"});
         CHECK(closure.debug_capture_table().lookup("x") == x_val);
@@ -158,8 +166,9 @@ TEST_CASE("Call Closure")
     {
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         auto result = closure.call({});
         CHECK(result->is<Null>());
@@ -169,8 +178,9 @@ TEST_CASE("Call Closure")
     {
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p", "q"}, &body, captures};
+        Closure closure{{"p", "q"}, body_ptr, captures};
 
         auto result = closure.call({Value::create(1_f)});
         CHECK(result->is<Null>());
@@ -181,8 +191,9 @@ TEST_CASE("Call Closure")
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("q"));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p", "q"}, &body, captures};
+        Closure closure{{"p", "q"}, body_ptr, captures};
 
         auto result = closure.call({Value::create(1_f)});
         CHECK(result->is<Null>());
@@ -198,8 +209,9 @@ TEST_CASE("Call Closure")
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Array_Constructor>(std::move(elems)));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"a", "b", "c"}, &body, captures};
+        Closure closure{{"a", "b", "c"}, body_ptr, captures};
 
         auto result = closure.call({});
         auto arr = result->get<Array>().value();
@@ -214,9 +226,10 @@ TEST_CASE("Call Closure")
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("p"));
+        auto body_ptr = make_body(std::move(body));
 
         auto p_val = Value::create(99_f);
-        Closure closure{{"p"}, &body, captures};
+        Closure closure{{"p"}, body_ptr, captures};
 
         auto result = closure.call({p_val});
         CHECK(result == p_val);
@@ -229,8 +242,9 @@ TEST_CASE("Call Closure")
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Literal>(lit_val));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         auto result = closure.call({});
         CHECK(result == lit_val);
@@ -241,8 +255,9 @@ TEST_CASE("Call Closure")
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("p"));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, &body, captures};
+        Closure closure{{"p"}, body_ptr, captures};
 
         auto first = Value::create(1_f);
         auto second = Value::create(2_f);
@@ -282,8 +297,9 @@ TEST_CASE("Call Closure")
         body.push_back(std::move(first));
         body.push_back(std::move(second));
         body.push_back(std::move(third));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         auto result = closure.call({});
         CHECK(result == third_val);
@@ -296,8 +312,9 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("x", node<Literal>(Value::create(1_f))));
         body.push_back(node<Name_Lookup>("x"));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         auto first = closure.call({});
         auto second = closure.call({});
@@ -313,8 +330,9 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("x", node<Name_Lookup>("p")));
         body.push_back(node<Name_Lookup>("x"));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, &body, captures};
+        Closure closure{{"p"}, body_ptr, captures};
 
         auto first = Value::create(10_f);
         auto second = Value::create(20_f);
@@ -333,8 +351,9 @@ TEST_CASE("Call Closure")
         body.push_back(node<Define>("x", node<Literal>(Value::create(4_f))));
         body.push_back(
             node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         auto result = closure.call({});
         CHECK(result->get<Int>() == 6_f);
@@ -348,8 +367,9 @@ TEST_CASE("Call Closure")
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("x"));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         auto result = closure.call({});
         CHECK(result == x_val);
@@ -366,8 +386,9 @@ TEST_CASE("Call Closure")
         body.push_back(node<Name_Lookup>("x"));
         body.push_back(node<Define>("x", node<Literal>(local_val)));
         body.push_back(node<Name_Lookup>("x"));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         auto result = closure.call({});
         CHECK(result == local_val);
@@ -379,8 +400,9 @@ TEST_CASE("Call Closure")
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("x", node<Literal>(Value::create(1_f))));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         auto result = closure.call({});
         CHECK(result->is<Null>());
@@ -394,8 +416,9 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Literal>(Value::create(1_f)));
         body.push_back(node<Flag_Statement>(&executed));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         auto result = closure.call({});
         CHECK(result->is<Null>());
@@ -412,8 +435,9 @@ TEST_CASE("Call Closure")
 
         std::vector<Statement::Ptr> body;
         body.push_back(std::move(expr));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, &body, captures};
+        Closure closure{{"p"}, body_ptr, captures};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f), Value::create(2_f)}),
@@ -425,8 +449,9 @@ TEST_CASE("Call Closure")
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
         body.push_back(node<Literal>(Value::create(1_f)));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, &body, captures};
+        Closure closure{{"p"}, body_ptr, captures};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f), Value::create(2_f)}),
@@ -439,8 +464,9 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Binop>(node<Literal>(Value::create(1_f)), "+",
                                    node<Literal>(Value::create(true))));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         CHECK_THROWS_WITH(closure.call({}),
                           ContainsSubstring("Cannot add incompatible types"));
@@ -451,8 +477,9 @@ TEST_CASE("Call Closure")
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
         body.push_back(node<Uncaptured_Lookup>("missing"));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         CHECK_THROWS_WITH(closure.call({}),
                           ContainsSubstring("Symbol")
@@ -472,8 +499,9 @@ TEST_CASE("Debug Dump Closure")
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Literal>(Value::create(42_f)));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;
@@ -487,8 +515,9 @@ Literal(42)
     {
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;
@@ -508,8 +537,9 @@ Literal(42)
             node<Binop>(node<Literal>(Value::create(1_f)), "+",
                         node<Name_Lookup>("y")),
             std::optional<Expression::Ptr>{node<Literal>(Value::create(0_f))}));
+        auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, &body, captures};
+        Closure closure{{}, body_ptr, captures};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;
