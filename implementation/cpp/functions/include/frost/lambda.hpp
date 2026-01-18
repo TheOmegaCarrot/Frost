@@ -39,8 +39,7 @@ class Lambda final : public Expression
         , body_{std::make_shared<std::vector<Statement::Ptr>>(std::move(body))}
         , vararg_param_{std::move(vararg_param)}
     {
-        auto param_set =
-            params_ | std::ranges::to<std::flat_set<std::string>>();
+        std::flat_set<std::string> param_set{std::from_range, params_};
 
         if (vararg_param_)
             param_set.insert(vararg_param_.value());
