@@ -15,7 +15,7 @@ def plus = fn (x, y) -> { x + y }
 # if expressions
 def fib = fn (n) -> {
     if n <= 1: n
-    else: fib(n-1) + fib(n-2) # recursion is available
+    else: self(n-1) + self(n-2) # recursion is available
 }
 
 def make_counter = fn (start) -> {
@@ -151,7 +151,9 @@ def map2 = %{ foo: "bar" }
 
 def maps_eq = map1 == map2 # maps and arrays use identity equality (maps_eq is false)
 
-plus_3 == plus_3 # true (functions use identity equality)
+def plus_3 = fn (x) -> { 3 + x }
+
+assert(plus_3 == plus_3) # true (functions use identity equality)
 
 def seven = plus_3(4)
 
@@ -170,10 +172,8 @@ main() # main isn't special, but it's probably good practice in larger scripts
 
 def script_name = args[0] # predefined args array (basically argv)
 
-# deferred from v1
-
 # function literal sugar (stretch)
-def sugary1 = fn {
+def sugary1 = fn -> {
             def a = 2
             def b = 4
             a + b
@@ -181,19 +181,21 @@ def sugary1 = fn {
 # equivalent to:
 def desugary1 = fn () -> { def a = 2 ; def b = 4 ; a + b }
 
+# deferred from v1
+
 # variadics
-def bind_front = fn (fun, ...args1) -> {
-    fn (...args2) -> {
-        pack_call(fun, args1 + args2) # pack_call "unpacks" an array into an argument list
-        # first arg MUST be a function, second arg MUST be an array, normal arity rules apply
-    }
-}
-
-def plus_3 = bind_front(plus, 3)
-
-def reduce_rest = fn (f, ...beeps) -> {
-    reduce beeps with f
-}
-
-def reduce_rest_res = reduce_rest(fn (a, b) -> {a + b}, 1, 2, 3, 4) # 10
+# def bind_front = fn (fun, ...args1) -> {
+#     fn (...args2) -> {
+#         pack_call(fun, args1 + args2) # pack_call "unpacks" an array into an argument list
+#         # first arg MUST be a function, second arg MUST be an array, normal arity rules apply
+#     }
+# }
+# 
+# def plus_3 = bind_front(plus, 3)
+# 
+# def reduce_rest = fn (f, ...beeps) -> {
+#     reduce beeps with f
+# }
+# 
+# def reduce_rest_res = reduce_rest(fn (a, b) -> {a + b}, 1, 2, 3, 4) # 10
 

@@ -153,6 +153,7 @@ int main(int argc, const char** argv)
         if (not file_to_evaluate)
         {
             file_to_evaluate.emplace(current);
+            args_for_frost.emplace_back(current);
             continue;
         }
 
