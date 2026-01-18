@@ -16,6 +16,7 @@ target_link_libraries( frost
     frost-symbol-table
     frost-value
     frost-common
+    replxx::replxx
 )
 
 set_target_properties( frost PROPERTIES

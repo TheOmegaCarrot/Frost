@@ -22,6 +22,7 @@ include(CTest)
 include(FetchContent)
 include(get-lexy)
 include(get-fmt)
+include(get-replxx)
 
 include(get-test-libs)
 

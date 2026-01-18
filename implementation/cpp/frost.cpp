@@ -1,3 +1,4 @@
+#include "frost/value.hpp"
 #include <frost/ast.hpp>
 #include <frost/builtin.hpp>
 #include <frost/parser.hpp>
@@ -6,12 +7,71 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
+#include <replxx.hxx>
+
 #include <iostream>
 #include <optional>
 #include <ranges>
 #include <string_view>
 
 using namespace std::literals;
+
+void repl_exec(const std::string& code, frst::Symbol_Table& symbols)
+{
+    auto parse_result = frst::parse_program(code);
+
+    if (!parse_result)
+    {
+        fmt::println(stderr, "{}", parse_result.error());
+        return;
+    }
+
+    try
+    {
+        for (const auto& statement : parse_result.value()
+                                         | std::views::reverse
+                                         | std::views::drop(1)
+                                         | std::views::reverse)
+        {
+            statement->execute(symbols);
+        }
+
+        auto* last_statement = parse_result.value().back().get();
+        if (auto expr_ptr =
+                dynamic_cast<frst::ast::Expression*>(last_statement))
+            fmt::println("{}",
+                         expr_ptr->evaluate(symbols)->to_internal_string());
+        else
+            last_statement->execute(symbols);
+    }
+    catch (const frst::Frost_User_Error& e)
+    {
+        fmt::println(stderr, "Error: {}", e.what());
+    }
+    catch (const frst::Frost_Internal_Error& e)
+    {
+        fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
+    }
+}
+
+void repl(frst::Symbol_Table& symbols)
+{
+    using replxx::Replxx;
+
+    Replxx rx;
+
+    while (true)
+    {
+        char const* line = rx.input("~> ");
+
+        if (!line)
+            break;
+
+        std::string s(line);
+
+        repl_exec(line, symbols);
+    }
+}
 
 void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
                   frst::Symbol_Table& symbols, bool do_dump)
@@ -100,6 +160,12 @@ int main(int argc, const char** argv)
             args_for_frost.emplace_back(current);
     }
 
+    if (do_dump && do_repl)
+    {
+        std::fputs("Refusing to dump repl", stderr);
+        return 1;
+    }
+
     // fmt::println(R"(strings to eval: {}
     // file to eval: {}
     // args for frost: {}
@@ -141,5 +207,5 @@ int main(int argc, const char** argv)
     }
 
     if (do_repl)
-        std::fputs("REPL not yet implemented\n", stderr);
+        repl(symbols);
 }
