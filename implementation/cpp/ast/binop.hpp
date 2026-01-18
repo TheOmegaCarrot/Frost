@@ -98,16 +98,10 @@ class Binop final : public Expression
   public:
     using Ptr = std::unique_ptr<Binop>;
 
-    Binop(Expression::Ptr lhs, const std::string& op, Expression::Ptr rhs)
+    Binop(Expression::Ptr lhs, Binary_Op op, Expression::Ptr rhs)
         : lhs_{std::move(lhs)}
         , rhs_{std::move(rhs)}
-        , op_{convert_binary_op(op)
-                  .or_else([&] -> std::optional<Binary_Op> {
-                      throw Frost_Internal_Error{
-                          fmt::format("Bad binary operator {}", op)};
-                      return {};
-                  })
-                  .value()}
+        , op_{op}
     {
     }
 

@@ -21,9 +21,9 @@ TEST_CASE("Unop")
 
     auto operand_val = Value::create(42_f);
 
-    for (const std::string op : {"-", "not"})
+    for (const auto op : {ast::Unary_Op::NEGATE, ast::Unary_Op::NOT})
     {
-        DYNAMIC_SECTION("Operator " << op)
+        DYNAMIC_SECTION("Operator " << ast::convert_unary_op(op))
         {
             REQUIRE_CALL(*operand, evaluate(_))
                 .LR_WITH(&_1 == &syms)
@@ -33,9 +33,9 @@ TEST_CASE("Unop")
 
             auto res = node.evaluate(syms);
 
-            if (op == "-")
+            if (op == ast::Unary_Op::NEGATE)
                 CHECK(res->get<Int>() == -42_f);
-            if (op == "not")
+            if (op == ast::Unary_Op::NOT)
                 CHECK(res->get<Bool>() == false);
         }
     }

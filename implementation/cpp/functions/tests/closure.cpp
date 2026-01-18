@@ -349,8 +349,8 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("y", node<Name_Lookup>("x")));
         body.push_back(node<Define>("x", node<Literal>(Value::create(4_f))));
-        body.push_back(
-            node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
+        body.push_back(node<Binop>(node<Name_Lookup>("x"), Binary_Op::PLUS,
+                                   node<Name_Lookup>("y")));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{}, body_ptr, captures};
@@ -462,7 +462,8 @@ TEST_CASE("Call Closure")
     {
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Binop>(node<Literal>(Value::create(1_f)), "+",
+        body.push_back(node<Binop>(node<Literal>(Value::create(1_f)),
+                                   Binary_Op::PLUS,
                                    node<Literal>(Value::create(true))));
         auto body_ptr = make_body(std::move(body));
 
@@ -534,7 +535,7 @@ Literal(42)
         std::vector<Statement::Ptr> body;
         body.push_back(node<If>(
             node<Name_Lookup>("x"),
-            node<Binop>(node<Literal>(Value::create(1_f)), "+",
+            node<Binop>(node<Literal>(Value::create(1_f)), Binary_Op::PLUS,
                         node<Name_Lookup>("y")),
             std::optional<Expression::Ptr>{node<Literal>(Value::create(0_f))}));
         auto body_ptr = make_body(std::move(body));

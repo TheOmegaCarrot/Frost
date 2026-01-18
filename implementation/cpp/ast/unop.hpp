@@ -47,15 +47,9 @@ class Unop final : public Expression
   public:
     using Ptr = std::unique_ptr<Unop>;
 
-    Unop(Expression::Ptr operand, const std::string& op)
+    Unop(Expression::Ptr operand, Unary_Op op)
         : operand_{std::move(operand)}
-        , op_{convert_unary_op(op)
-                  .or_else([&] -> std::optional<Unary_Op> {
-                      throw Frost_Internal_Error{
-                          fmt::format("Bad unary operator {}", op)};
-                      return {};
-                  })
-                  .value()}
+        , op_{op}
     {
     }
 

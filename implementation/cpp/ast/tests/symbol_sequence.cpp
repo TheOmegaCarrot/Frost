@@ -98,22 +98,23 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("Binary op yields left then right")
     {
-        Binop node{name("a"), "+", name("b")};
+        Binop node{name("a"), Binary_Op::PLUS, name("b")};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:a", "use:b"});
     }
 
     SECTION("Binary op nests depth-first")
     {
-        Binop node{name("a"), "+",
-                   std::make_unique<Binop>(name("b"), "+", name("c"))};
+        Binop node{
+            name("a"), Binary_Op::PLUS,
+            std::make_unique<Binop>(name("b"), Binary_Op::PLUS, name("c"))};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:a", "use:b", "use:c"});
     }
 
     SECTION("Unary op yields operand sequence")
     {
-        Unop node{name("x"), "-"};
+        Unop node{name("x"), Unary_Op::NEGATE};
         CHECK(collect_sequence(node) == std::vector<std::string>{"use:x"});
     }
 
@@ -121,7 +122,8 @@ TEST_CASE("Symbol Sequence")
     {
         std::vector<Expression::Ptr> elems;
         elems.push_back(name("a"));
-        elems.push_back(std::make_unique<Binop>(name("b"), "+", name("c")));
+        elems.push_back(
+            std::make_unique<Binop>(name("b"), Binary_Op::PLUS, name("c")));
         elems.push_back(lit_int(7_f));
 
         Array_Constructor node{std::move(elems)};
@@ -134,7 +136,8 @@ TEST_CASE("Symbol Sequence")
         std::vector<Map_Constructor::KV_Pair> pairs;
         pairs.emplace_back(name("k1"), name("v1"));
         pairs.emplace_back(
-            name("k2"), std::make_unique<Binop>(name("v2"), "+", name("v3")));
+            name("k2"),
+            std::make_unique<Binop>(name("v2"), Binary_Op::PLUS, name("v3")));
 
         Map_Constructor node{std::move(pairs)};
         CHECK(collect_sequence(node)
@@ -153,7 +156,8 @@ TEST_CASE("Symbol Sequence")
     {
         std::vector<Expression::Ptr> args;
         args.push_back(name("a"));
-        args.push_back(std::make_unique<Binop>(name("b"), "+", name("c")));
+        args.push_back(
+            std::make_unique<Binop>(name("b"), Binary_Op::PLUS, name("c")));
 
         Function_Call node{name("fn"), std::move(args)};
         CHECK(collect_sequence(node)
@@ -196,7 +200,8 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("Define with nested expression keeps RHS order")
     {
-        Define node{"x", std::make_unique<Binop>(name("y"), "+", name("z"))};
+        Define node{"x", std::make_unique<Binop>(name("y"), Binary_Op::PLUS,
+                                                 name("z"))};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:y", "use:z", "def:x"});
     }
@@ -205,8 +210,10 @@ TEST_CASE("Symbol Sequence")
     {
         std::vector<Statement::Ptr> program;
         program.push_back(std::make_unique<Define>(
-            "x", std::make_unique<Binop>(name("a"), "+", name("b"))));
-        program.push_back(std::make_unique<Binop>(name("x"), "*", name("c")));
+            "x",
+            std::make_unique<Binop>(name("a"), Binary_Op::PLUS, name("b"))));
+        program.push_back(
+            std::make_unique<Binop>(name("x"), Binary_Op::TIMES, name("c")));
         program.push_back(std::make_unique<Define>(
             "y",
             std::make_unique<If>(name("cond"), name("x"),
@@ -226,14 +233,16 @@ TEST_CASE("Symbol Sequence")
         elems.push_back(
             std::make_unique<If>(name("cond"), name("t"),
                                  std::optional<Expression::Ptr>{name("f")}));
-        elems.push_back(std::make_unique<Binop>(name("b"), "+", name("c")));
+        elems.push_back(
+            std::make_unique<Binop>(name("b"), Binary_Op::PLUS, name("c")));
         program.push_back(std::make_unique<Define>(
             "z", std::make_unique<Array_Constructor>(std::move(elems))));
 
         std::vector<Map_Constructor::KV_Pair> pairs;
         pairs.emplace_back(name("k"), name("v1"));
         pairs.emplace_back(
-            name("k2"), std::make_unique<Binop>(name("v2"), "+", name("v3")));
+            name("k2"),
+            std::make_unique<Binop>(name("v2"), Binary_Op::PLUS, name("v3")));
         program.push_back(std::make_unique<Define>(
             "m", std::make_unique<Map_Constructor>(std::move(pairs))));
 
@@ -255,10 +264,10 @@ TEST_CASE("Symbol Sequence")
     {
         std::vector<Statement::Ptr> program;
 
-        auto negate = std::make_unique<Unop>(name("a"), "-");
+        auto negate = std::make_unique<Unop>(name("a"), Unary_Op::NEGATE);
 
-        auto add =
-            std::make_unique<Binop>(std::move(negate), "+", lit_int(1_f));
+        auto add = std::make_unique<Binop>(std::move(negate), Binary_Op::PLUS,
+                                           lit_int(1_f));
 
         auto stmt_define_x = std::make_unique<Define>("x", std::move(add));
 
@@ -295,7 +304,8 @@ TEST_CASE("Symbol Sequence")
         pairs.emplace_back(name("k1"), name("v1"));
 
         pairs.emplace_back(
-            name("k2"), std::make_unique<Binop>(name("v2"), "+", name("v3")));
+            name("k2"),
+            std::make_unique<Binop>(name("v2"), Binary_Op::PLUS, name("v3")));
 
         auto map_expr = std::make_unique<Map_Constructor>(std::move(pairs));
 
@@ -308,7 +318,8 @@ TEST_CASE("Symbol Sequence")
 
         program.push_back(std::move(stmt_index));
 
-        auto stmt_eq = std::make_unique<Binop>(name("x"), "==", name("y"));
+        auto stmt_eq =
+            std::make_unique<Binop>(name("x"), Binary_Op::EQ, name("y"));
 
         program.push_back(std::move(stmt_eq));
 

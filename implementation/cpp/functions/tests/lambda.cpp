@@ -172,8 +172,8 @@ TEST_CASE("Lambda")
         env.define("y", y_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
+        body.push_back(node<Binop>(node<Name_Lookup>("x"), Binary_Op::PLUS,
+                                   node<Name_Lookup>("y")));
 
         Lambda node{{}, std::move(body)};
         auto closure = eval_to_closure(node, env);
@@ -217,8 +217,8 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Binop>(node<Name_Lookup>("p"), "+", node<Name_Lookup>("x")));
+        body.push_back(node<Binop>(node<Name_Lookup>("p"), Binary_Op::PLUS,
+                                   node<Name_Lookup>("x")));
 
         Lambda node{{"p"}, std::move(body)};
         auto closure = eval_to_closure(node, env);
@@ -238,7 +238,7 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Binop>(node<Name_Lookup>("x"), "+",
+        body.push_back(node<Binop>(node<Name_Lookup>("x"), Binary_Op::PLUS,
                                    node<Literal>(Value::create(1_f))));
         body.push_back(node<Define>("x", node<Literal>(Value::create(2_f))));
 
@@ -286,8 +286,8 @@ TEST_CASE("Lambda")
         env.define("y", y_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
+        body.push_back(node<Binop>(node<Name_Lookup>("x"), Binary_Op::PLUS,
+                                   node<Name_Lookup>("y")));
         body.push_back(node<Define>("x", node<Literal>(Value::create(3_f))));
         body.push_back(node<Name_Lookup>("x"));
 
@@ -328,9 +328,9 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Define>("x", node<Binop>(node<Literal>(Value::create(1_f)),
-                                          "+", node<Name_Lookup>("x"))));
+        body.push_back(node<Define>(
+            "x", node<Binop>(node<Literal>(Value::create(1_f)), Binary_Op::PLUS,
+                             node<Name_Lookup>("x"))));
 
         Lambda node{{}, std::move(body)};
         auto closure = eval_to_closure(node, env);
@@ -349,9 +349,9 @@ TEST_CASE("Lambda")
         env.define("p", p_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Define>("x", node<Binop>(node<Name_Lookup>("p"), "+",
-                                          node<Literal>(Value::create(1_f)))));
+        body.push_back(node<Define>(
+            "x", node<Binop>(node<Name_Lookup>("p"), Binary_Op::PLUS,
+                             node<Literal>(Value::create(1_f)))));
 
         Lambda node{{"p"}, std::move(body)};
         auto closure = eval_to_closure(node, env);
@@ -444,8 +444,8 @@ TEST_CASE("Lambda")
         env.define("x", Value::create(2_f));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
+        body.push_back(node<Binop>(node<Name_Lookup>("x"), Binary_Op::PLUS,
+                                   node<Name_Lookup>("y")));
 
         Lambda node{{"y"}, std::move(body)};
 
@@ -517,8 +517,8 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(
-            node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
+        inner_body.push_back(node<Binop>(
+            node<Name_Lookup>("x"), Binary_Op::PLUS, node<Name_Lookup>("y")));
 
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(node<Define>("y", node<Literal>(y_val)));
@@ -776,8 +776,8 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(
-            node<Binop>(node<Name_Lookup>("p"), "+", node<Name_Lookup>("q")));
+        inner_body.push_back(node<Binop>(
+            node<Name_Lookup>("p"), Binary_Op::PLUS, node<Name_Lookup>("q")));
 
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(
@@ -814,12 +814,12 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> inner_body;
         {
-            auto sum_xy = node<Binop>(node<Name_Lookup>("x"), "+",
+            auto sum_xy = node<Binop>(node<Name_Lookup>("x"), Binary_Op::PLUS,
                                       node<Name_Lookup>("y"));
-            auto sum_xyp =
-                node<Binop>(std::move(sum_xy), "+", node<Name_Lookup>("p"));
-            inner_body.push_back(
-                node<Binop>(std::move(sum_xyp), "+", node<Name_Lookup>("q")));
+            auto sum_xyp = node<Binop>(std::move(sum_xy), Binary_Op::PLUS,
+                                       node<Name_Lookup>("p"));
+            inner_body.push_back(node<Binop>(
+                std::move(sum_xyp), Binary_Op::PLUS, node<Name_Lookup>("q")));
         }
 
         std::vector<Statement::Ptr> outer_body;
@@ -1018,12 +1018,12 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> inner_body;
         {
-            auto sum_ga = node<Binop>(node<Name_Lookup>("g"), "+",
+            auto sum_ga = node<Binop>(node<Name_Lookup>("g"), Binary_Op::PLUS,
                                       node<Name_Lookup>("a"));
-            auto sum_gab =
-                node<Binop>(std::move(sum_ga), "+", node<Name_Lookup>("b"));
-            inner_body.push_back(
-                node<Binop>(std::move(sum_gab), "+", node<Name_Lookup>("c")));
+            auto sum_gab = node<Binop>(std::move(sum_ga), Binary_Op::PLUS,
+                                       node<Name_Lookup>("b"));
+            inner_body.push_back(node<Binop>(
+                std::move(sum_gab), Binary_Op::PLUS, node<Name_Lookup>("c")));
         }
 
         std::vector<Statement::Ptr> mid_body;
@@ -1204,8 +1204,8 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> inner_x_body;
         inner_x_body.push_back(node<Name_Lookup>("x"));
         std::vector<Statement::Ptr> inner_xy_body;
-        inner_xy_body.push_back(
-            node<Binop>(node<Name_Lookup>("x"), "+", node<Name_Lookup>("y")));
+        inner_xy_body.push_back(node<Binop>(
+            node<Name_Lookup>("x"), Binary_Op::PLUS, node<Name_Lookup>("y")));
         std::vector<Statement::Ptr> inner_y_body;
         inner_y_body.push_back(node<Name_Lookup>("y"));
 
@@ -1260,17 +1260,17 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> inner_x_body;
         {
-            auto sum_xp = node<Binop>(node<Name_Lookup>("x"), "+",
+            auto sum_xp = node<Binop>(node<Name_Lookup>("x"), Binary_Op::PLUS,
                                       node<Name_Lookup>("p"));
-            inner_x_body.push_back(
-                node<Binop>(std::move(sum_xp), "+", node<Name_Lookup>("q")));
+            inner_x_body.push_back(node<Binop>(
+                std::move(sum_xp), Binary_Op::PLUS, node<Name_Lookup>("q")));
         }
         std::vector<Statement::Ptr> inner_y_body;
         {
-            auto sum_yp = node<Binop>(node<Name_Lookup>("y"), "+",
+            auto sum_yp = node<Binop>(node<Name_Lookup>("y"), Binary_Op::PLUS,
                                       node<Name_Lookup>("p"));
-            inner_y_body.push_back(
-                node<Binop>(std::move(sum_yp), "+", node<Name_Lookup>("q")));
+            inner_y_body.push_back(node<Binop>(
+                std::move(sum_yp), Binary_Op::PLUS, node<Name_Lookup>("q")));
         }
 
         std::vector<Statement::Ptr> outer_body;
@@ -1314,17 +1314,17 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> inner_x_body;
         {
-            auto sum_xp = node<Binop>(node<Name_Lookup>("x"), "+",
+            auto sum_xp = node<Binop>(node<Name_Lookup>("x"), Binary_Op::PLUS,
                                       node<Name_Lookup>("p"));
-            inner_x_body.push_back(
-                node<Binop>(std::move(sum_xp), "+", node<Name_Lookup>("q")));
+            inner_x_body.push_back(node<Binop>(
+                std::move(sum_xp), Binary_Op::PLUS, node<Name_Lookup>("q")));
         }
         std::vector<Statement::Ptr> inner_y_body;
         {
-            auto sum_yp = node<Binop>(node<Name_Lookup>("y"), "+",
+            auto sum_yp = node<Binop>(node<Name_Lookup>("y"), Binary_Op::PLUS,
                                       node<Name_Lookup>("p"));
-            inner_y_body.push_back(
-                node<Binop>(std::move(sum_yp), "+", node<Name_Lookup>("q")));
+            inner_y_body.push_back(node<Binop>(
+                std::move(sum_yp), Binary_Op::PLUS, node<Name_Lookup>("q")));
         }
 
         std::vector<Statement::Ptr> outer_body;
