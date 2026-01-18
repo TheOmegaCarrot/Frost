@@ -4,6 +4,7 @@ add_library( frost-functions
     builtins/debug-helpers.cpp
     builtins/error-handling.cpp
     builtins/output.cpp
+    builtins/free-operators.cpp
     builtins/pack_call.cpp
     builtins/structure-ops.cpp
     builtins/type-conversions.cpp
@@ -55,3 +56,5 @@ functions_test(tests/closure.cpp)
 functions_test(tests/lambda.cpp)
 
 functions_test(tests/builtins/error-handling.cpp)
+
+functions_test(tests/builtins/free-operators.cpp)

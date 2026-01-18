@@ -10,7 +10,7 @@ def id = fn (x) -> { x }
 def funky = fn (a, _, c) -> { a + c }
 
 # last expression :: implicit return
-def plus = fn (x, y) -> { x + y }
+def also_plus = fn (x, y) -> { x + y } # `plus` is a predefined builtin
 
 # if expressions
 def fib = fn (n) -> {

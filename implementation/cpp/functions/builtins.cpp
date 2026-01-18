@@ -11,7 +11,8 @@ namespace frst
     X(pack_call)                                                               \
     X(debug_helpers)                                                           \
     X(error_handling)                                                          \
-    X(output)
+    X(output)                                                                  \
+    X(free_operators)
 
 #define X(F) void inject_##F(Symbol_Table&);
 
