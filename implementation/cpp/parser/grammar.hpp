@@ -505,9 +505,11 @@ struct expression : lexy::expression_production
 
     struct op_neg
     {
+        static constexpr ast::Unary_Op op = ast::Unary_Op::NEGATE;
     };
     struct op_not
     {
+        static constexpr ast::Unary_Op op = ast::Unary_Op::NOT;
     };
     struct op_index
     {
@@ -523,62 +525,50 @@ struct expression : lexy::expression_production
     };
     struct op_mul
     {
-        static constexpr std::string_view text = "*";
         static constexpr ast::Binary_Op op = ast::Binary_Op::TIMES;
     };
     struct op_div
     {
-        static constexpr std::string_view text = "/";
         static constexpr ast::Binary_Op op = ast::Binary_Op::DIVIDE;
     };
     struct op_add
     {
-        static constexpr std::string_view text = "+";
         static constexpr ast::Binary_Op op = ast::Binary_Op::PLUS;
     };
     struct op_sub
     {
-        static constexpr std::string_view text = "-";
         static constexpr ast::Binary_Op op = ast::Binary_Op::MINUS;
     };
     struct op_lt
     {
-        static constexpr std::string_view text = "<";
         static constexpr ast::Binary_Op op = ast::Binary_Op::LT;
     };
     struct op_le
     {
-        static constexpr std::string_view text = "<=";
         static constexpr ast::Binary_Op op = ast::Binary_Op::LE;
     };
     struct op_gt
     {
-        static constexpr std::string_view text = ">";
         static constexpr ast::Binary_Op op = ast::Binary_Op::GT;
     };
     struct op_ge
     {
-        static constexpr std::string_view text = ">=";
         static constexpr ast::Binary_Op op = ast::Binary_Op::GE;
     };
     struct op_eq
     {
-        static constexpr std::string_view text = "==";
         static constexpr ast::Binary_Op op = ast::Binary_Op::EQ;
     };
     struct op_ne
     {
-        static constexpr std::string_view text = "!=";
         static constexpr ast::Binary_Op op = ast::Binary_Op::NE;
     };
     struct op_and
     {
-        static constexpr std::string_view text = "and";
         static constexpr ast::Binary_Op op = ast::Binary_Op::AND;
     };
     struct op_or
     {
-        static constexpr std::string_view text = "or";
         static constexpr ast::Binary_Op op = ast::Binary_Op::OR;
     };
 
@@ -705,38 +695,41 @@ struct expression : lexy::expression_production
         [](ast::Expression::Ptr value) {
             return value;
         },
-        [](op_neg, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Unop>(std::move(rhs),
-                                               ast::Unary_Op::NEGATE);
-        },
-        [](op_not, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Unop>(std::move(rhs),
-                                               ast::Unary_Op::NOT);
-        },
-        [](ast::Expression::Ptr lhs, op_index,
-           ast::Expression::Ptr index_expr) {
-            return std::make_unique<ast::Index>(std::move(lhs),
-                                                std::move(index_expr));
-        },
-        [](ast::Expression::Ptr lhs, op_call,
-           std::vector<ast::Expression::Ptr> args) {
-            return std::make_unique<ast::Function_Call>(std::move(lhs),
-                                                        std::move(args));
-        },
-        [](ast::Expression::Ptr lhs, op_dot, std::string key) {
-            return std::make_unique<ast::Index>(
-                std::move(lhs), make_string_key_expr(std::move(key)));
-        },
-        [](ast::Expression::Ptr lhs, op_ufcs, ufcs_call::result rhs) {
-            auto args = std::move(rhs.args);
-            args.insert(args.begin(), std::move(lhs));
-            return std::make_unique<ast::Function_Call>(std::move(rhs.callee),
-                                                        std::move(args));
-        },
-        []<typename Op>(ast::Expression::Ptr lhs, Op, ast::Expression::Ptr rhs)
+        []<typename Op>(Op, ast::Expression::Ptr rhs)
             requires requires {
-                { Op::op } -> std::convertible_to<ast::Binary_Op>;
+                { Op::op } -> std::convertible_to<ast::Unary_Op>;
             }
+                     {
+                         return std::make_unique<ast::Unop>(std::move(rhs),
+                                                            Op::op);
+                     },
+                     [](ast::Expression::Ptr lhs, op_index,
+                        ast::Expression::Ptr index_expr) {
+                         return std::make_unique<ast::Index>(
+                             std::move(lhs), std::move(index_expr));
+                     },
+                     [](ast::Expression::Ptr lhs, op_call,
+                        std::vector<ast::Expression::Ptr> args) {
+                         return std::make_unique<ast::Function_Call>(
+                             std::move(lhs), std::move(args));
+                     },
+                     [](ast::Expression::Ptr lhs, op_dot, std::string key) {
+                         return std::make_unique<ast::Index>(
+                             std::move(lhs),
+                             make_string_key_expr(std::move(key)));
+                     },
+                     [](ast::Expression::Ptr lhs, op_ufcs,
+                        ufcs_call::result rhs) {
+                         auto args = std::move(rhs.args);
+                         args.insert(args.begin(), std::move(lhs));
+                         return std::make_unique<ast::Function_Call>(
+                             std::move(rhs.callee), std::move(args));
+                     },
+                     []<typename Op>(ast::Expression::Ptr lhs, Op,
+                                     ast::Expression::Ptr rhs)
+                         requires requires {
+                             { Op::op } -> std::convertible_to<ast::Binary_Op>;
+                         }
         {
             return std::make_unique<ast::Binop>(std::move(lhs), Op::op,
                                                 std::move(rhs));
