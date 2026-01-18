@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/symbol-table.hpp>
+#include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
 
 #include <lexy/action/parse.hpp>
@@ -17,8 +17,7 @@ struct Literal_Root
     static constexpr auto whitespace = frst::grammar::ws;
     static constexpr auto rule =
         lexy::dsl::p<frst::grammar::node::Literal> + lexy::dsl::eof;
-    static constexpr auto value =
-        lexy::forward<frst::ast::Expression::Ptr>;
+    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
 };
 } // namespace
 

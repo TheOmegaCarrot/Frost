@@ -194,12 +194,6 @@ struct Name_Lookup
 struct expression;
 struct statement_list;
 
-struct parenthesized_expression
-{
-    static constexpr auto rule = dsl::parenthesized(dsl::recurse<expression>);
-    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
-};
-
 template <typename T>
 constexpr auto list_or_empty()
 {
@@ -341,8 +335,8 @@ struct If
             auto kw_elif = LEXY_KEYWORD("elif", identifier::base);
             auto kw_else = LEXY_KEYWORD("else", identifier::base);
 
-            auto tail = dsl::opt(
-                dsl::peek(kw_elif | kw_else) >> dsl::recurse<Tail>);
+            auto tail =
+                dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::recurse<Tail>);
 
             auto elif_branch = kw_elif
                                >> (dsl::recurse<expression>
@@ -378,8 +372,7 @@ struct If
         auto kw_elif = LEXY_KEYWORD("elif", identifier::base);
         auto kw_else = LEXY_KEYWORD("else", identifier::base);
 
-        auto tail =
-            dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::p<Tail>);
+        auto tail = dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::p<Tail>);
         return kw_if
                >> (dsl::recurse<expression>
                    + dsl::lit_c<':'>
@@ -468,7 +461,8 @@ struct Map
 struct primary_expression
 {
     static constexpr auto rule =
-        (dsl::peek(dsl::lit_c<'('>) >> dsl::p<parenthesized_expression>)
+        (dsl::peek(dsl::lit_c<'('>)
+         >> dsl::parenthesized(dsl::recurse<expression>))
         | dsl::p<node::If>
         | dsl::p<node::Lambda>
         | dsl::p<node::Map_Expr>
