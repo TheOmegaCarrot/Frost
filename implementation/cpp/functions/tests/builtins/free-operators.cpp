@@ -30,9 +30,11 @@ TEST_CASE("Free Operators")
     SECTION("Injected")
     {
         const std::vector<std::string> names{
-            "plus",  "minus",          "times",       "divide",
-            "equal", "not_equal",      "less_than",   "less_than_or_equal",
-            "greater_than",            "greater_than_or_equal",
+            "plus",         "minus",
+            "times",        "divide",
+            "equal",        "not_equal",
+            "less_than",    "less_than_or_equal",
+            "greater_than", "greater_than_or_equal",
         };
 
         for (const auto& name : names)
@@ -47,8 +49,7 @@ TEST_CASE("Free Operators")
         auto plus = get_fn("plus");
         CHECK_THROWS_WITH(plus->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(plus->call({}),
-                          ContainsSubstring("Called with 0"));
+        CHECK_THROWS_WITH(plus->call({}), ContainsSubstring("Called with 0"));
         CHECK_THROWS_WITH(plus->call({}),
                           ContainsSubstring("requires at least 2"));
 

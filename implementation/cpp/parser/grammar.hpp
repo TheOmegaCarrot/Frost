@@ -24,6 +24,7 @@ constexpr auto line_comment =
 constexpr auto ws = dsl::whitespace(dsl::ascii::space | line_comment);
 constexpr auto statement_ws =
     dsl::while_(dsl::ascii::space | line_comment | dsl::lit_c<';'>);
+constexpr auto param_ws = dsl::while_(dsl::ascii::space | line_comment);
 constexpr auto expression_start = dsl::peek(statement_ws
                                             + (dsl::ascii::alpha_underscore
                                                | dsl::digit<>
@@ -208,24 +209,62 @@ constexpr auto list_or_empty()
     return sink >> cb;
 }
 
+struct lambda_param_pack
+{
+    std::vector<std::string> params;
+    std::optional<std::string> vararg;
+};
+
+struct lambda_param_list
+{
+    static constexpr auto rule = [] {
+        auto param_sep =
+            dsl::peek(dsl::lit_c<','> + param_ws + dsl::p<identifier>)
+            >> dsl::lit_c<','>;
+        return dsl::list(dsl::p<identifier>, dsl::sep(param_sep));
+    }();
+
+    static constexpr auto value = lexy::as_list<std::vector<std::string>>;
+};
+
 struct lambda_parameters
 {
-    static constexpr auto rule =
-        dsl::terminator(dsl::lit_c<')'>)
-            .opt_list(dsl::p<identifier>, dsl::sep(dsl::lit_c<','>));
-    static constexpr auto value = list_or_empty<std::string>();
+    static constexpr auto rule = [] {
+        auto vararg = LEXY_LIT("...") + dsl::p<identifier>;
+        auto params = dsl::p<lambda_param_list>;
+        auto params_then_vararg = params
+                                  + dsl::opt(dsl::peek(dsl::lit_c<','>)
+                                             >> (dsl::lit_c<','> + vararg));
+        auto vararg_only = dsl::peek(LEXY_LIT("...")) >> vararg;
+        auto params_only =
+            dsl::peek(dsl::ascii::alpha_underscore) >> params_then_vararg;
+        return dsl::parenthesized(dsl::opt(vararg_only | params_only));
+    }();
+
+    static constexpr auto value = lexy::callback<lambda_param_pack>(
+        [](lexy::nullopt) {
+            return lambda_param_pack{};
+        },
+        [](std::string vararg) {
+            return lambda_param_pack{{}, std::move(vararg)};
+        },
+        [](std::vector<std::string> params, lexy::nullopt) {
+            return lambda_param_pack{std::move(params), std::nullopt};
+        },
+        [](std::vector<std::string> params, std::string vararg) {
+            return lambda_param_pack{std::move(params), std::move(vararg)};
+        });
 };
 
 struct lambda_param_clause
 {
     static constexpr auto rule =
-        dsl::opt(dsl::peek(dsl::lit_c<'('>)
-                 >> (dsl::lit_c<'('> + dsl::p<lambda_parameters>));
-    static constexpr auto value = lexy::callback<std::vector<std::string>>(
+        dsl::opt(dsl::peek(dsl::lit_c<'('>) >> dsl::p<lambda_parameters>);
+    static constexpr auto value = lexy::callback<lambda_param_pack>(
         [](lexy::nullopt) {
-            return std::vector<std::string>{};
+            return lambda_param_pack{};
         },
-        [](std::vector<std::string> params) {
+        [](lambda_param_pack params) {
             return params;
         });
 };
@@ -320,10 +359,10 @@ struct Lambda
                    + dsl::p<lambda_body>);
     }();
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
-        [](std::vector<std::string> params,
-           std::vector<ast::Statement::Ptr> body) {
-            return std::make_unique<ast::Lambda>(std::move(params),
-                                                 std::move(body));
+        [](lambda_param_pack params, std::vector<ast::Statement::Ptr> body) {
+            return std::make_unique<ast::Lambda>(std::move(params.params),
+                                                 std::move(body),
+                                                 std::move(params.vararg));
         });
 };
 
