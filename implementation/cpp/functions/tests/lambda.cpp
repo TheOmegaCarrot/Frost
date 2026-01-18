@@ -144,7 +144,17 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> body;
 
         CHECK_THROWS_WITH((Lambda{{"x", "x"}, std::move(body)}),
-                          ContainsSubstring("duplicate"));
+                          "Closure has duplicate parameters");
+    }
+
+    SECTION("Variadic parameter cannot duplicate a fixed parameter")
+    {
+        // Frost:
+        // def f = fn (x, ...x) -> { }
+        std::vector<Statement::Ptr> body;
+
+        CHECK_THROWS_WITH((Lambda{{"x"}, std::move(body), "x"}),
+                          "Closure has duplicate parameters");
     }
 
     SECTION("Local definition cannot shadow a parameter")
@@ -157,6 +167,18 @@ TEST_CASE("Lambda")
         CHECK_THROWS_WITH((Lambda{{"x"}, std::move(body)}),
                           ContainsSubstring("parameter")
                               && ContainsSubstring("x"));
+    }
+
+    SECTION("Local definition cannot shadow a variadic parameter")
+    {
+        // Frost:
+        // def f = fn (...rest) -> { def rest = 2 }
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("rest", node<Literal>(Value::create(2_f))));
+
+        CHECK_THROWS_WITH((Lambda{{}, std::move(body), "rest"}),
+                          ContainsSubstring("parameter")
+                              && ContainsSubstring("rest"));
     }
 
     SECTION("Captures only free variables")
@@ -226,6 +248,82 @@ TEST_CASE("Lambda")
         CHECK(capture_names(*closure) == std::set<std::string>{"x"});
         CHECK(closure->debug_capture_table().lookup("x") == x_val);
         CHECK_FALSE(closure->debug_capture_table().has("p"));
+    }
+
+    SECTION("Variadic parameter is not captured from the environment")
+    {
+        // Frost:
+        // def rest = 99
+        // def f = fn (...rest) -> { rest }
+        Symbol_Table env;
+        env.define("rest", Value::create(99_f));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("rest"));
+
+        Lambda node{{}, std::move(body), "rest"};
+        auto closure = eval_to_closure(node, env);
+
+        CHECK(capture_names(*closure).empty());
+
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto result = closure->call({a, b});
+        REQUIRE(result->is<Array>());
+        auto arr = result->get<Array>();
+        REQUIRE(arr->size() == 2);
+        CHECK(arr->at(0) == a);
+        CHECK(arr->at(1) == b);
+    }
+
+    SECTION("Inner variadic parameter does not cause outer capture")
+    {
+        // Frost:
+        // def rest = 99
+        // def outer = fn () -> { fn (...rest) -> { rest } }
+        Symbol_Table env;
+        env.define("rest", Value::create(99_f));
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("rest"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(node<Lambda>(std::vector<std::string>{},
+                                          std::move(inner_body), "rest"));
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+
+        CHECK(capture_names(*outer_closure).empty());
+    }
+
+    SECTION("Inner lambda captures outer vararg array")
+    {
+        // Frost:
+        // def outer = fn (...rest) -> { fn () -> { rest } }
+        Symbol_Table env;
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("rest"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(
+            node<Lambda>(std::vector<std::string>{}, std::move(inner_body)));
+
+        Lambda outer{{}, std::move(outer_body), "rest"};
+        auto outer_closure = eval_to_closure(outer, env);
+
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto inner_val = outer_closure->call({a, b});
+        auto inner_closure = value_to_closure(inner_val);
+
+        auto out = inner_closure->call({});
+        REQUIRE(out->is<Array>());
+        auto arr = out->get<Array>();
+        REQUIRE(arr->size() == 2);
+        CHECK(arr->at(0) == a);
+        CHECK(arr->at(1) == b);
     }
 
     SECTION("Use before define captures from environment")

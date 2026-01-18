@@ -221,6 +221,191 @@ TEST_CASE("Call Closure")
         CHECK(arr[2]->is<Null>());
     }
 
+    SECTION("Variadic parameter receives empty array when no extra args")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("rest"));
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{"p"}, body_ptr, captures, "rest"};
+
+        auto result = closure.call({});
+        REQUIRE(result->is<Array>());
+        CHECK(result->get<Array>()->empty());
+    }
+
+    SECTION("Variadic parameter captures extra args in order")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("rest"));
+        auto body_ptr = make_body(std::move(body));
+
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+
+        Closure closure{{"p"}, body_ptr, captures, "rest"};
+
+        auto result = closure.call({a, b, c});
+        REQUIRE(result->is<Array>());
+        auto arr = result->get<Array>();
+        REQUIRE(arr->size() == 2);
+        CHECK(arr->at(0) == b);
+        CHECK(arr->at(1) == c);
+    }
+
+    SECTION("Variadic parameter coexists with missing fixed params")
+    {
+        Symbol_Table captures;
+        std::vector<Expression::Ptr> elems;
+        elems.push_back(node<Name_Lookup>("p"));
+        elems.push_back(node<Name_Lookup>("rest"));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Array_Constructor>(std::move(elems)));
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{"p"}, body_ptr, captures, "rest"};
+
+        auto result = closure.call({});
+        REQUIRE(result->is<Array>());
+        auto arr = result->get<Array>().value();
+        REQUIRE(arr.size() == 2);
+        CHECK(arr[0]->is<Null>());
+        REQUIRE(arr[1]->is<Array>());
+        CHECK(arr[1]->get<Array>()->empty());
+    }
+
+    SECTION("Fixed parameters bind before variadic extras")
+    {
+        Symbol_Table captures;
+        std::vector<Expression::Ptr> elems;
+        elems.push_back(node<Name_Lookup>("p"));
+        elems.push_back(node<Name_Lookup>("rest"));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Array_Constructor>(std::move(elems)));
+        auto body_ptr = make_body(std::move(body));
+
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+
+        Closure closure{{"p"}, body_ptr, captures, "rest"};
+
+        auto result = closure.call({a, b, c});
+        REQUIRE(result->is<Array>());
+        auto arr = result->get<Array>().value();
+        REQUIRE(arr.size() == 2);
+        CHECK(arr[0] == a);
+        REQUIRE(arr[1]->is<Array>());
+        auto rest = arr[1]->get<Array>();
+        REQUIRE(rest->size() == 2);
+        CHECK(rest->at(0) == b);
+        CHECK(rest->at(1) == c);
+    }
+
+    SECTION("Variadic-only closure receives empty array")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("rest"));
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{}, body_ptr, captures, "rest"};
+
+        auto result = closure.call({});
+        REQUIRE(result->is<Array>());
+        CHECK(result->get<Array>()->empty());
+    }
+
+    SECTION("Variadic-only closure captures all args")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("rest"));
+        auto body_ptr = make_body(std::move(body));
+
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+
+        Closure closure{{}, body_ptr, captures, "rest"};
+
+        auto result = closure.call({a, b, c});
+        REQUIRE(result->is<Array>());
+        auto arr = result->get<Array>();
+        REQUIRE(arr->size() == 3);
+        CHECK(arr->at(0) == a);
+        CHECK(arr->at(1) == b);
+        CHECK(arr->at(2) == c);
+    }
+
+    SECTION("Vararg does not appear in capture table")
+    {
+        Symbol_Table captures;
+        captures.define("x", Value::create(10_f));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("x"));
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{"p"}, body_ptr, captures, "rest"};
+
+        const auto names = capture_names(closure);
+        CHECK(names.contains("x"));
+        CHECK_FALSE(names.contains("rest"));
+    }
+
+    SECTION("Variadic closure accepts many arguments")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("p"));
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{"p"}, body_ptr, captures, "rest"};
+
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+
+        CHECK_NOTHROW(closure.call({a, b, c}));
+    }
+
+    SECTION("Debug dump unaffected by variadic parameter")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Literal>(Value::create(42_f)));
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{"p"}, body_ptr, captures, "rest"};
+
+        const auto dump = closure.debug_dump();
+        std::cout << dump;
+
+        CHECK(dump == R"(<Closure>
+Literal(42)
+)");
+    }
+
+    SECTION("Local definition cannot shadow variadic parameter")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("rest", node<Literal>(Value::create(1_f))));
+        body.push_back(node<Name_Lookup>("rest"));
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{}, body_ptr, captures, "rest"};
+
+        CHECK_THROWS_WITH(closure.call({}),
+                          "Cannot define rest as it is already defined");
+    }
+
     SECTION("Parameter values are passed by pointer")
     {
         Symbol_Table captures;

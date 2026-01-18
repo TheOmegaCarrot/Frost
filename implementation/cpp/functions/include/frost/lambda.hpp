@@ -39,16 +39,21 @@ class Lambda final : public Expression
         , body_{std::make_shared<std::vector<Statement::Ptr>>(std::move(body))}
         , vararg_param_{std::move(vararg_param)}
     {
-        const auto param_set = params_ | std::ranges::to<std::flat_set>();
-        if (params_.size() != param_set.size())
+        auto param_set =
+            params_ | std::ranges::to<std::flat_set<std::string>>();
+
+        if (vararg_param_)
+            param_set.insert(vararg_param_.value());
+
+        if (const auto expected_param_set_size =
+                params_.size() + (vararg_param_.has_value() ? 1 : 0);
+            expected_param_set_size != param_set.size())
         {
             throw Frost_Internal_Error{"Closure has duplicate parameters"};
         }
 
         std::flat_set<std::string> names_defined_so_far{std::from_range,
-                                                        params_};
-        if (vararg_param_)
-            names_defined_so_far.insert(vararg_param_.value());
+                                                        param_set};
 
         for (const Statement::Symbol_Action& name :
              *body_
@@ -111,6 +116,10 @@ class Lambda final : public Expression
         };
 
         std::flat_set<std::string> defns{std::from_range, params_};
+
+        if (vararg_param_)
+            defns.insert(vararg_param_.value());
+
         for (const Statement::Symbol_Action& action :
              *body_
                  | std::views::transform(&node_to_sym_seq)
@@ -127,7 +136,15 @@ class Lambda final : public Expression
   protected:
     std::string node_label() const final
     {
-        return fmt::format("Lambda({})", fmt::join(params_, ", "));
+        if (vararg_param_)
+        {
+            return fmt::format("Lambda({}, ...{})", fmt::join(params_, ", "),
+                               vararg_param_.value());
+        }
+        else
+        {
+            return fmt::format("Lambda({})", fmt::join(params_, ", "));
+        }
     }
 
     std::generator<Child_Info> children() const final

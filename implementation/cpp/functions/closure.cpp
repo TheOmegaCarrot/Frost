@@ -2,6 +2,9 @@
 #include <frost/closure.hpp>
 #include <frost/symbol-table.hpp>
 
+#include <fmt/format.h>
+
+#include <algorithm>
 #include <sstream>
 
 using namespace frst;
@@ -15,6 +18,9 @@ Closure::Closure(std::vector<std::string> parameters,
     , captures_{std::move(captures)}
     , vararg_parameter_{std::move(vararg_parameter)}
 {
+    // Assumed: all params in parameters_ and vararg_parameter_ (if present) are
+    // all unique. No duplicates exist.
+    // This must be checked by the Lambda AST node.
 }
 
 Value_Ptr eval_or_null(const ast::Statement::Ptr& node, Symbol_Table& syms)
