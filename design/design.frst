@@ -172,7 +172,7 @@ main() # main isn't special, but it's probably good practice in larger scripts
 
 def script_name = args[0] # predefined args array (basically argv)
 
-# function literal sugar (stretch)
+# function literal sugar for 0 parameters
 def sugary1 = fn -> {
             def a = 2
             def b = 4
@@ -181,21 +181,20 @@ def sugary1 = fn -> {
 # equivalent to:
 def desugary1 = fn () -> { def a = 2 ; def b = 4 ; a + b }
 
-# deferred from v1
+def bind_front = fn (fun, ...args1) -> {
+    fn (...args2) -> {
+        pack_call(fun, args1 + args2) # pack_call "unpacks" an array into an argument list
+        # first arg MUST be a function, second arg MUST be an array, normal arity rules apply
+    }
+}
 
-# variadics
-# def bind_front = fn (fun, ...args1) -> {
-#     fn (...args2) -> {
-#         pack_call(fun, args1 + args2) # pack_call "unpacks" an array into an argument list
-#         # first arg MUST be a function, second arg MUST be an array, normal arity rules apply
-#     }
-# }
-# 
-# def plus_3 = bind_front(plus, 3)
-# 
-# def reduce_rest = fn (f, ...beeps) -> {
-#     reduce beeps with f
-# }
-# 
-# def reduce_rest_res = reduce_rest(fn (a, b) -> {a + b}, 1, 2, 3, 4) # 10
+def plus_5 = bind_front(plus, 5)
 
+def reduce_rest = fn (f, ...beeps) -> {
+    reduce beeps with f
+}
+
+def reduce_rest_res = reduce_rest(fn (a, b) -> {a + b}, 1, 2, 3, 4) # 10
+
+# function parameter ()s can also just be omitted, as can {} for a single expression
+def times_2 = fn n -> n * 2
