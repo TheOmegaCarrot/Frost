@@ -271,10 +271,26 @@ struct lambda_param_clause
 
 struct lambda_body
 {
-    static constexpr auto rule = dsl::curly_bracketed(
-        dsl::opt(expression_start >> dsl::recurse<statement_list>)
-        + statement_ws);
-    static constexpr auto value = list_or_empty<ast::Statement::Ptr>();
+    static constexpr auto rule =
+        dsl::peek(dsl::lit_c<'{'>)
+        >> dsl::curly_bracketed(dsl::opt(expression_start
+                                         >> dsl::recurse<statement_list>)
+                                + statement_ws)
+        | dsl::else_
+        >> dsl::recurse<expression>;
+    static constexpr auto value =
+        lexy::callback<std::vector<ast::Statement::Ptr>>(
+            [](lexy::nullopt) {
+                return std::vector<ast::Statement::Ptr>{};
+            },
+            [](std::vector<ast::Statement::Ptr> stmts) {
+                return stmts;
+            },
+            [](ast::Expression::Ptr expr) {
+                std::vector<ast::Statement::Ptr> stmts;
+                stmts.emplace_back(ast::Statement::Ptr{std::move(expr)});
+                return stmts;
+            });
 };
 
 namespace node

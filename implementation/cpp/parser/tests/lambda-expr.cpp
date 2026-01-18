@@ -209,8 +209,8 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Variadic-only lambda works in program input")
     {
-        auto src = lexy::string_input(std::string_view{
-            "def f = fn(...rest) -> { rest }\n f()"});
+        auto src = lexy::string_input(
+            std::string_view{"def f = fn(...rest) -> { rest }\n f()"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -514,6 +514,160 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
 
+    SECTION("Single-expression body without braces is accepted")
+    {
+        auto result = parse("fn(x) -> x + 2");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {frst::Value::create(3_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 5_f);
+    }
+
+    SECTION("Elided body supports unary operators")
+    {
+        auto result = parse("fn() -> -1");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == -1_f);
+
+        auto result2 = parse("fn() -> not false");
+        REQUIRE(result2);
+        auto expr2 = require_expression(result2);
+        auto value2 = expr2->evaluate(table);
+        auto out2 = call_function(value2, {});
+        REQUIRE(out2->is<frst::Bool>());
+        CHECK(out2->get<frst::Bool>().value() == true);
+    }
+
+    SECTION("Elided body supports if expressions")
+    {
+        auto result = parse("fn() -> if true: 1 else: 2");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Elided body can return a lambda")
+    {
+        auto result = parse("fn() -> fn(x) -> x + 1");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto outer = expr->evaluate(table);
+        REQUIRE(outer->is<frst::Function>());
+        auto outer_out = call_function(outer, {});
+        REQUIRE(outer_out->is<frst::Function>());
+        auto inner_out =
+            call_function(outer_out, {frst::Value::create(5_f)});
+        REQUIRE(inner_out->is<frst::Int>());
+        CHECK(inner_out->get<frst::Int>().value() == 6_f);
+    }
+
+    SECTION("Elided body supports indexing and dot access")
+    {
+        auto result = parse("fn() -> [1, 2, 3][1]");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 2_f);
+
+        auto result2 = parse("fn() -> %{foo: 3}.foo");
+        REQUIRE(result2);
+        auto expr2 = require_expression(result2);
+        auto value2 = expr2->evaluate(table);
+        auto out2 = call_function(value2, {});
+        REQUIRE(out2->is<frst::Int>());
+        CHECK(out2->get<frst::Int>().value() == 3_f);
+    }
+
+    SECTION("Elided body supports calling a parameter")
+    {
+        auto result = parse("fn(f) -> f(3)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto callable = std::make_shared<IdentityCallable>();
+        auto fn_value = frst::Value::create(frst::Function{callable});
+        auto out = call_function(value, {fn_value});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 3_f);
+    }
+
+    SECTION("Elided body can be immediately called with parentheses")
+    {
+        auto result = parse("(fn(x) -> x + 2)(3)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 5_f);
+    }
+
+    SECTION("Elided body can appear in larger expressions with parentheses")
+    {
+        auto result = parse("1 + (fn(x) -> x + 2)(3)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 6_f);
+    }
+
+    SECTION("Elided body works in program input")
+    {
+        auto src = lexy::string_input(
+            std::string_view{"def f = fn(x) -> x + 2\n f(4)"});
+        auto program_result =
+            lexy::parse<frst::grammar::program>(src, lexy::noop);
+        REQUIRE(program_result);
+        auto program = std::move(program_result).value();
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        auto* expr =
+            dynamic_cast<const frst::ast::Expression*>(program[1].get());
+        REQUIRE(expr);
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 6_f);
+    }
+
+    SECTION("Elided body does not allow def statements")
+    {
+        CHECK_FALSE(parse("fn() -> def x = 1"));
+    }
+
+    SECTION("Elided body does not allow multiple expressions")
+    {
+        CHECK_FALSE(parse("fn() -> 1 2"));
+    }
+
     SECTION("Lambda body allows leading/trailing semicolons")
     {
         auto result = parse("fn() -> { ;; 1 ;; 2 ;; }");
@@ -732,7 +886,6 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Missing braces or parameter parentheses are rejected")
     {
-        CHECK_FALSE(parse("fn() -> 1"));
         CHECK_FALSE(parse("fn x -> {}"));
         CHECK_FALSE(parse("fn ...rest -> {}"));
     }
