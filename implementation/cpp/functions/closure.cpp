@@ -8,10 +8,12 @@ using namespace frst;
 
 Closure::Closure(std::vector<std::string> parameters,
                  std::shared_ptr<std::vector<ast::Statement::Ptr>> body,
-                 Symbol_Table captures)
+                 Symbol_Table captures,
+                 std::optional<std::string> vararg_parameter)
     : parameters_{std::move(parameters)}
     , body_{std::move(body)}
     , captures_{std::move(captures)}
+    , vararg_parameter_{std::move(vararg_parameter)}
 {
 }
 
@@ -26,7 +28,7 @@ Value_Ptr eval_or_null(const ast::Statement::Ptr& node, Symbol_Table& syms)
 
 Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
 {
-    if (args.size() > parameters_.size())
+    if (!vararg_parameter_ && args.size() > parameters_.size())
     {
         throw Frost_User_Error{
             fmt::format("Closure called with too many arguments. "
@@ -40,6 +42,14 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
              std::views::concat(args, std::views::repeat(Value::null()))))
     {
         exec_table.define(arg_name, arg_val);
+    }
+
+    if (vararg_parameter_)
+    {
+        exec_table.define(vararg_parameter_.value(),
+                          Value::create(args
+                                        | std::views::drop(parameters_.size())
+                                        | std::ranges::to<Array>()));
     }
 
     if (body_->size() == 0)

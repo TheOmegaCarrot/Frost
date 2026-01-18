@@ -33,9 +33,11 @@ class Lambda final : public Expression
     Lambda& operator=(Lambda&&) = delete;
     ~Lambda() final = default;
 
-    Lambda(std::vector<std::string> params, std::vector<Statement::Ptr> body)
+    Lambda(std::vector<std::string> params, std::vector<Statement::Ptr> body,
+           std::optional<std::string> vararg_param = {})
         : params_{std::move(params)}
         , body_{std::make_shared<std::vector<Statement::Ptr>>(std::move(body))}
+        , vararg_param_{std::move(vararg_param)}
     {
         const auto param_set = params_ | std::ranges::to<std::flat_set>();
         if (params_.size() != param_set.size())
@@ -45,6 +47,9 @@ class Lambda final : public Expression
 
         std::flat_set<std::string> names_defined_so_far{std::from_range,
                                                         params_};
+        if (vararg_param_)
+            names_defined_so_far.insert(vararg_param_.value());
+
         for (const Statement::Symbol_Action& name :
              *body_
                  | std::views::transform(&node_to_sym_seq)
@@ -88,8 +93,8 @@ class Lambda final : public Expression
             captures.define(name, syms.lookup(name));
         }
 
-        auto closure =
-            std::make_shared<Closure>(params_, body_, std::move(captures));
+        auto closure = std::make_shared<Closure>(
+            params_, body_, std::move(captures), vararg_param_);
 
         auto weak_closure = Value::create(
             Function{std::make_shared<Weak_Closure>(std::weak_ptr{closure})});
@@ -135,6 +140,7 @@ class Lambda final : public Expression
     std::vector<std::string> params_;
     std::flat_set<std::string> names_to_capture_;
     std::shared_ptr<std::vector<Statement::Ptr>> body_;
+    std::optional<std::string> vararg_param_;
 };
 } // namespace frst::ast
 
