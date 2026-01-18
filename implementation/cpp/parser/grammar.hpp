@@ -253,38 +253,36 @@ struct lambda_body
 
 namespace node
 {
+constexpr auto kw_with = LEXY_KEYWORD("with", identifier::base);
+
+template <typename Node>
+struct With_Operation
+{
+    static constexpr auto rule =
+        dsl::recurse<expression> + kw_with + dsl::recurse<expression>;
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
+            return std::make_unique<Node>(std::move(structure),
+                                          std::move(operation));
+        });
+};
+
 struct Map_Expr
 {
     static constexpr auto rule = [] {
         auto kw_map = LEXY_KEYWORD("map", identifier::base);
-        auto kw_with = LEXY_KEYWORD("with", identifier::base);
-        return kw_map
-               >> (dsl::recurse<expression>
-                   + kw_with
-                   + dsl::recurse<expression>);
+        return kw_map >> dsl::p<With_Operation<ast::Map>>;
     }();
-    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
-        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
-            return std::make_unique<ast::Map>(std::move(structure),
-                                              std::move(operation));
-        });
+    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
 };
 
 struct Filter
 {
     static constexpr auto rule = [] {
         auto kw_filter = LEXY_KEYWORD("filter", identifier::base);
-        auto kw_with = LEXY_KEYWORD("with", identifier::base);
-        return kw_filter
-               >> (dsl::recurse<expression>
-                   + kw_with
-                   + dsl::recurse<expression>);
+        return kw_filter >> dsl::p<With_Operation<ast::Filter>>;
     }();
-    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
-        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
-            return std::make_unique<ast::Filter>(std::move(structure),
-                                                 std::move(operation));
-        });
+    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
 };
 
 struct Reduce
@@ -320,17 +318,9 @@ struct Foreach
 {
     static constexpr auto rule = [] {
         auto kw_foreach = LEXY_KEYWORD("foreach", identifier::base);
-        auto kw_with = LEXY_KEYWORD("with", identifier::base);
-        return kw_foreach
-               >> (dsl::recurse<expression>
-                   + kw_with
-                   + dsl::recurse<expression>);
+        return kw_foreach >> dsl::p<With_Operation<ast::Foreach>>;
     }();
-    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
-        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
-            return std::make_unique<ast::Foreach>(std::move(structure),
-                                                  std::move(operation));
-        });
+    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
 };
 
 struct Lambda
