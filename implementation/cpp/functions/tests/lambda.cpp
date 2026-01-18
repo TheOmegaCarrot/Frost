@@ -43,9 +43,14 @@ std::unique_ptr<T> node(Args&&... args)
 
 std::set<std::string> capture_names(const Closure& closure)
 {
+    REQUIRE(closure.debug_capture_table().has("self"));
     std::set<std::string> names;
     for (const auto& entry : closure.debug_capture_table().debug_table())
+    {
+        if (entry.first == "self")
+            continue;
         names.insert(entry.first);
+    }
     return names;
 }
 
@@ -57,6 +62,7 @@ std::shared_ptr<Closure> eval_to_closure(const Lambda& node,
     auto fn = result->get<Function>().value();
     auto closure = std::dynamic_pointer_cast<Closure>(fn);
     REQUIRE(closure);
+    REQUIRE(closure->debug_capture_table().has("self"));
     return closure;
 }
 
@@ -66,6 +72,7 @@ std::shared_ptr<Closure> value_to_closure(const Value_Ptr& value)
     auto fn = value->get<Function>().value();
     auto closure = std::dynamic_pointer_cast<Closure>(fn);
     REQUIRE(closure);
+    REQUIRE(closure->debug_capture_table().has("self"));
     return closure;
 }
 } // namespace
