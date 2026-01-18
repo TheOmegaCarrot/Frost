@@ -6,6 +6,8 @@
 
 #include <fmt/format.h>
 
+#include <string_view>
+
 #include <frost/value.hpp>
 
 namespace frst::ast
@@ -17,29 +19,18 @@ enum class Unary_Op
     NOT,
 };
 
-struct Convert_Unary_Op
+constexpr std::string_view format_unary_op(Unary_Op op)
 {
     using enum Unary_Op;
-    static std::optional<Unary_Op> operator()(const std::string& op)
+    switch (op)
     {
-        if (op == "-")
-            return NEGATE;
-        if (op == "not")
-            return NOT;
-        return std::nullopt;
+    case NEGATE:
+        return "-";
+    case NOT:
+        return "not";
     }
-    static std::string_view operator()(Unary_Op op)
-    {
-        switch (op)
-        {
-        case NEGATE:
-            return "-";
-        case NOT:
-            return "not";
-        }
-        THROW_UNREACHABLE;
-    }
-} constexpr static convert_unary_op;
+    THROW_UNREACHABLE;
+}
 
 class Unop final : public Expression
 {
@@ -77,7 +68,7 @@ class Unop final : public Expression
   protected:
     std::string node_label() const final
     {
-        return fmt::format("Unary({})", convert_unary_op(op_));
+        return fmt::format("Unary({})", format_unary_op(op_));
     }
 
     std::generator<Child_Info> children() const final

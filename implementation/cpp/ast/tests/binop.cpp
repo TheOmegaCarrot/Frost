@@ -28,7 +28,7 @@ TEST_CASE("Numeric Binary ops")
     for (const auto op : {ast::Binary_Op::PLUS, ast::Binary_Op::MINUS,
                           ast::Binary_Op::TIMES, ast::Binary_Op::DIVIDE})
     {
-        DYNAMIC_SECTION("Operator " << ast::convert_binary_op(op))
+        DYNAMIC_SECTION("Operator " << ast::format_binary_op(op))
         {
             trompeloeil::sequence seq;
 
@@ -254,7 +254,7 @@ TEST_CASE("Comparison Binary ops")
 
         for (const auto& op : ops)
         {
-            DYNAMIC_SECTION("Numeric op " << ast::convert_binary_op(op))
+            DYNAMIC_SECTION("Numeric op " << ast::format_binary_op(op))
             {
                 auto lhs = Value::create(2_f);
                 auto rhs = Value::create(3.5);
@@ -272,7 +272,7 @@ TEST_CASE("Comparison Binary ops")
                     CHECK_FALSE(res->get<Bool>().value());
             }
 
-            DYNAMIC_SECTION("String op " << ast::convert_binary_op(op))
+            DYNAMIC_SECTION("String op " << ast::format_binary_op(op))
             {
                 auto lhs = Value::create("apple"s);
                 auto rhs = Value::create("banana"s);
@@ -290,7 +290,7 @@ TEST_CASE("Comparison Binary ops")
                     CHECK_FALSE(res->get<Bool>().value());
             }
 
-            DYNAMIC_SECTION("Type error " << ast::convert_binary_op(op))
+            DYNAMIC_SECTION("Type error " << ast::format_binary_op(op))
             {
                 auto lhs = Value::create(true);
                 auto rhs = Value::create(false);
@@ -305,7 +305,7 @@ TEST_CASE("Comparison Binary ops")
                     const std::string msg = err.what();
                     CHECK_THAT(msg, ContainsSubstring("Cannot compare"));
                     CHECK_THAT(msg, ContainsSubstring(std::string{
-                                        ast::convert_binary_op(op)}));
+                                        ast::format_binary_op(op)}));
                     CHECK_THAT(msg, ContainsSubstring("Bool"));
                 }
             }

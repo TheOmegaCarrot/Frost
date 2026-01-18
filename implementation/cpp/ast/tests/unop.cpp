@@ -23,7 +23,7 @@ TEST_CASE("Unop")
 
     for (const auto op : {ast::Unary_Op::NEGATE, ast::Unary_Op::NOT})
     {
-        DYNAMIC_SECTION("Operator " << ast::convert_unary_op(op))
+        DYNAMIC_SECTION("Operator " << ast::format_unary_op(op))
         {
             REQUIRE_CALL(*operand, evaluate(_))
                 .LR_WITH(&_1 == &syms)

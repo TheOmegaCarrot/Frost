@@ -6,6 +6,8 @@
 
 #include <fmt/format.h>
 
+#include <string_view>
+
 #include <frost/value.hpp>
 
 namespace frst::ast
@@ -27,70 +29,38 @@ enum class Binary_Op
     OR,
 };
 
-struct Convert_Binary_Op
+constexpr std::string_view format_binary_op(Binary_Op op)
 {
     using enum Binary_Op;
-    static std::optional<Binary_Op> operator()(const std::string& op)
+    switch (op)
     {
-        if (op == "+")
-            return PLUS;
-        if (op == "-")
-            return MINUS;
-        if (op == "*")
-            return TIMES;
-        if (op == "/")
-            return DIVIDE;
-        if (op == "==")
-            return EQ;
-        if (op == "!=")
-            return NE;
-        if (op == "<")
-            return LT;
-        if (op == "<=")
-            return LE;
-        if (op == ">")
-            return GT;
-        if (op == ">=")
-            return GE;
-        if (op == "and")
-            return AND;
-        if (op == "or")
-            return OR;
-
-        return std::nullopt;
+    case PLUS:
+        return "+";
+    case MINUS:
+        return "-";
+    case TIMES:
+        return "*";
+    case DIVIDE:
+        return "/";
+    case EQ:
+        return "==";
+    case NE:
+        return "!=";
+    case LT:
+        return "<";
+    case LE:
+        return "<=";
+    case GT:
+        return ">";
+    case GE:
+        return ">=";
+    case AND:
+        return "and";
+    case OR:
+        return "or";
     }
-    static std::string_view operator()(Binary_Op op)
-    {
-        switch (op)
-        {
-        case PLUS:
-            return "+";
-        case MINUS:
-            return "-";
-        case TIMES:
-            return "*";
-        case DIVIDE:
-            return "/";
-        case EQ:
-            return "==";
-        case NE:
-            return "!=";
-        case LT:
-            return "<";
-        case LE:
-            return "<=";
-        case GT:
-            return ">";
-        case GE:
-            return ">=";
-        case AND:
-            return "and";
-        case OR:
-            return "or";
-        }
-        THROW_UNREACHABLE;
-    }
-} constexpr static convert_binary_op;
+    THROW_UNREACHABLE;
+}
 
 class Binop final : public Expression
 {
@@ -153,7 +123,7 @@ class Binop final : public Expression
   protected:
     std::string node_label() const final
     {
-        return fmt::format("Binary({})", convert_binary_op(op_));
+        return fmt::format("Binary({})", format_binary_op(op_));
     }
 
     std::generator<Child_Info> children() const final
