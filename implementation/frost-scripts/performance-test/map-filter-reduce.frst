@@ -1,0 +1,11 @@
+# AI-generated performance test by Codex (GPT-5).
+# Signed: Codex (GPT-5).
+
+def n = 50000
+def input = range(n)
+
+def squares = map input with fn (x) -> { x * x }
+def filtered = filter squares with fn (x) -> { x < 1000000000 }
+def total = reduce filtered with fn (acc, x) -> { acc + x } init: 0
+
+print(total)

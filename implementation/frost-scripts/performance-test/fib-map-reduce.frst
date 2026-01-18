@@ -1,0 +1,13 @@
+# AI-generated performance test by Codex (GPT-5).
+# Signed: Codex (GPT-5).
+
+def fib = fn (n) -> {
+    if n < 2: n
+    else: self(n-1) + self(n-2)
+}
+
+def input = range(30)
+def fibs = map input with fib
+def total = reduce fibs with fn (acc, x) -> { acc + x } init: 0
+
+print(total)

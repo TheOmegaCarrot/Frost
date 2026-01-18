@@ -1,11 +1,7 @@
-# I wrote this before getting self-capturing lambdas working
-
-def fib_ = fn (me, n) -> {
+def fib = fn (n) -> {
     if n < 2: n
-    else: me(me, n-1) + me(me, n-2)
+    else: self(n-1) + self(n-2)
 }
-
-def fib = fn (n) -> { fib_(fib_, n) }
 
 def input = range(10)
 
