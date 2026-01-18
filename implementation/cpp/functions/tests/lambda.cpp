@@ -120,6 +120,22 @@ TEST_CASE("Lambda")
         CHECK(std::get<Statement::Usage>(actions[0]).name == "x");
     }
 
+    SECTION("Symbol sequence treats variadic parameter as defined")
+    {
+        // Frost:
+        // def f = fn (...rest) -> { rest }
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Name_Lookup>("rest"));
+
+        Lambda node{{}, std::move(body), "rest"};
+
+        std::vector<Statement::Symbol_Action> actions;
+        for (const auto& action : node.symbol_sequence())
+            actions.push_back(action);
+
+        CHECK(actions.empty());
+    }
+
     SECTION("Empty body with parameters is allowed")
     {
         // Frost:
@@ -134,6 +150,23 @@ TEST_CASE("Lambda")
         auto fn = result->get<Function>().value();
 
         auto out = fn->call({Value::create(1_f)});
+        CHECK(out->is<Null>());
+    }
+
+    SECTION("Empty body with variadic parameter is allowed")
+    {
+        // Frost:
+        // def f = fn (...rest) -> { }
+        Symbol_Table env;
+        std::vector<Statement::Ptr> body;
+
+        Lambda node{{}, std::move(body), "rest"};
+
+        auto result = node.evaluate(env);
+        REQUIRE(result->is<Function>());
+        auto fn = result->get<Function>().value();
+
+        auto out = fn->call({Value::create(1_f), Value::create(2_f)});
         CHECK(out->is<Null>());
     }
 
@@ -295,6 +328,52 @@ TEST_CASE("Lambda")
         auto outer_closure = eval_to_closure(outer, env);
 
         CHECK(capture_names(*outer_closure).empty());
+    }
+
+    SECTION("Inner parameter shadows outer variadic parameter")
+    {
+        // Frost:
+        // def outer = fn (...rest) -> { fn (rest) -> { rest } }
+        Symbol_Table env;
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("rest"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(node<Lambda>(std::vector<std::string>{"rest"},
+                                          std::move(inner_body)));
+
+        Lambda outer{{}, std::move(outer_body), "rest"};
+        auto outer_closure = eval_to_closure(outer, env);
+
+        CHECK(capture_names(*outer_closure).empty());
+
+        auto inner_val = outer_closure->call({Value::create(1_f)});
+        auto inner_closure = value_to_closure(inner_val);
+        CHECK(capture_names(*inner_closure).empty());
+    }
+
+    SECTION("Inner variadic parameter shadows outer variadic parameter")
+    {
+        // Frost:
+        // def outer = fn (...rest) -> { fn (...rest) -> { rest } }
+        Symbol_Table env;
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("rest"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(node<Lambda>(std::vector<std::string>{},
+                                          std::move(inner_body), "rest"));
+
+        Lambda outer{{}, std::move(outer_body), "rest"};
+        auto outer_closure = eval_to_closure(outer, env);
+
+        CHECK(capture_names(*outer_closure).empty());
+
+        auto inner_val = outer_closure->call({Value::create(1_f)});
+        auto inner_closure = value_to_closure(inner_val);
+        CHECK(capture_names(*inner_closure).empty());
     }
 
     SECTION("Inner lambda captures outer vararg array")

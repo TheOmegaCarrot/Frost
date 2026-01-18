@@ -136,10 +136,14 @@ class Lambda final : public Expression
   protected:
     std::string node_label() const final
     {
-        if (vararg_param_)
+        if (vararg_param_ && params_.size() != 0)
         {
             return fmt::format("Lambda({}, ...{})", fmt::join(params_, ", "),
                                vararg_param_.value());
+        }
+        else if (vararg_param_ && params_.size() == 0)
+        {
+            return fmt::format("Lambda(...{})", vararg_param_.value());
         }
         else
         {
