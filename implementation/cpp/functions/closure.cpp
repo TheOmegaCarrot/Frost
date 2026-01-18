@@ -7,7 +7,7 @@
 using namespace frst;
 
 Closure::Closure(std::vector<std::string> parameters,
-                 const std::vector<ast::Statement::Ptr>* body,
+                 std::shared_ptr<std::vector<ast::Statement::Ptr>> body,
                  Symbol_Table captures)
     : parameters_{std::move(parameters)}
     , body_{std::move(body)}

@@ -35,7 +35,7 @@ class Lambda final : public Expression
 
     Lambda(std::vector<std::string> params, std::vector<Statement::Ptr> body)
         : params_{std::move(params)}
-        , body_{std::move(body)}
+        , body_{std::make_shared<std::vector<Statement::Ptr>>(std::move(body))}
     {
         const auto param_set = params_ | std::ranges::to<std::flat_set>();
         if (params_.size() != param_set.size())
@@ -46,7 +46,9 @@ class Lambda final : public Expression
         std::flat_set<std::string> names_defined_so_far{std::from_range,
                                                         params_};
         for (const Statement::Symbol_Action& name :
-             body_ | std::views::transform(&node_to_sym_seq) | std::views::join)
+             *body_
+                 | std::views::transform(&node_to_sym_seq)
+                 | std::views::join)
         {
             name.visit(Overload{
                 [&](const Statement::Definition& defn) {
@@ -87,7 +89,7 @@ class Lambda final : public Expression
         }
 
         auto closure =
-            std::make_shared<Closure>(params_, &body_, std::move(captures));
+            std::make_shared<Closure>(params_, body_, std::move(captures));
 
         auto weak_closure = Value::create(
             Function{std::make_shared<Weak_Closure>(std::weak_ptr{closure})});
@@ -105,7 +107,9 @@ class Lambda final : public Expression
 
         std::flat_set<std::string> defns{std::from_range, params_};
         for (const Statement::Symbol_Action& action :
-             body_ | std::views::transform(&node_to_sym_seq) | std::views::join)
+             *body_
+                 | std::views::transform(&node_to_sym_seq)
+                 | std::views::join)
         {
             const auto name = action.visit(get_name);
             if (std::holds_alternative<Statement::Definition>(action))
@@ -123,14 +127,14 @@ class Lambda final : public Expression
 
     std::generator<Child_Info> children() const final
     {
-        for (const auto& statement : body_)
+        for (const auto& statement : *body_)
             co_yield make_child(statement);
     }
 
   private:
     std::vector<std::string> params_;
     std::flat_set<std::string> names_to_capture_;
-    std::vector<Statement::Ptr> body_;
+    std::shared_ptr<std::vector<Statement::Ptr>> body_;
 };
 } // namespace frst::ast
 

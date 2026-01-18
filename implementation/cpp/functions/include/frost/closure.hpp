@@ -18,7 +18,7 @@ class Closure : public Callable
     ~Closure() override = default;
 
     Closure(std::vector<std::string> parameters,
-            const std::vector<ast::Statement::Ptr>* body,
+            std::shared_ptr<std::vector<ast::Statement::Ptr>> body,
             Symbol_Table captures);
 
     Value_Ptr call(std::span<const Value_Ptr> args) const override;
@@ -35,7 +35,7 @@ class Closure : public Callable
 
   private:
     std::vector<std::string> parameters_;
-    const std::vector<ast::Statement::Ptr>* body_;
+    std::shared_ptr<std::vector<ast::Statement::Ptr>> body_;
     Symbol_Table captures_;
 };
 
