@@ -142,6 +142,18 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(arr[1]->get<frst::Int>().value() == 2_f);
     }
 
+    SECTION("Variadic-only parameter can be empty")
+    {
+        auto result = parse("fn(...rest) -> { rest }()");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Array>());
+        CHECK(out->raw_get<frst::Array>().empty());
+    }
+
     SECTION("Variadic parameter splits fixed args from rest")
     {
         auto result = parse("fn(a, ...rest) -> { a }(1, 2, 3)");
@@ -193,6 +205,26 @@ TEST_CASE("Parser Lambda Expressions")
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 1);
         CHECK(arr[0]->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Variadic-only lambda works in program input")
+    {
+        auto src = lexy::string_input(std::string_view{
+            "def f = fn(...rest) -> { rest }\n f()"});
+        auto program_result =
+            lexy::parse<frst::grammar::program>(src, lexy::noop);
+        REQUIRE(program_result);
+        auto program = std::move(program_result).value();
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        auto* expr =
+            dynamic_cast<const frst::ast::Expression*>(program[1].get());
+        REQUIRE(expr);
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Array>());
+        CHECK(out->raw_get<frst::Array>().empty());
     }
 
     SECTION("Lambda participates in larger expressions")
@@ -685,6 +717,8 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK_FALSE(parse("fn(a, ...rest, b) -> {}"));
         CHECK_FALSE(parse("fn(... ) -> {}"));
         CHECK_FALSE(parse("fn(a, ...rest,) -> {}"));
+        CHECK_FALSE(parse("fn(, ...rest) -> {}"));
+        CHECK_FALSE(parse("fn(...rest, ...more) -> {}"));
     }
 
     SECTION("Missing arrow or body is rejected")
@@ -708,5 +742,20 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK_FALSE(parse("fn(if) -> {}"));
         CHECK_FALSE(parse("fn(true) -> {}"));
         CHECK_FALSE(parse("fn(fn) -> {}"));
+        CHECK_FALSE(parse("fn(...if) -> {}"));
+    }
+
+    SECTION("Variadic parameter tolerates comments")
+    {
+        auto result = parse("fn(... # comment\n rest) -> { rest }(9)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Array>());
+        const auto& arr = out->raw_get<frst::Array>();
+        REQUIRE(arr.size() == 1);
+        CHECK(arr[0]->get<frst::Int>().value() == 9_f);
     }
 }

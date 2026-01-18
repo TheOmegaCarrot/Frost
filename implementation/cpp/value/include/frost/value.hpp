@@ -67,7 +67,6 @@ class Callable
   public:
     virtual ~Callable() = default;
 
-    // TODO: replace args with span (init list over span is so good)
     virtual Value_Ptr call(std::span<const Value_Ptr> args) const = 0;
     virtual std::string debug_dump() const = 0;
 };
