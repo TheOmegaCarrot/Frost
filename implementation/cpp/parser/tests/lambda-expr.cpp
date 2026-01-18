@@ -646,8 +646,7 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(outer->is<frst::Function>());
         auto outer_out = call_function(outer, {});
         REQUIRE(outer_out->is<frst::Function>());
-        auto inner_out =
-            call_function(outer_out, {frst::Value::create(5_f)});
+        auto inner_out = call_function(outer_out, {frst::Value::create(5_f)});
         REQUIRE(inner_out->is<frst::Int>());
         CHECK(inner_out->get<frst::Int>().value() == 6_f);
     }
