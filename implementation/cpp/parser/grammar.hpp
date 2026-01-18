@@ -168,7 +168,9 @@ struct string_literal
         });
 };
 
-struct literal
+namespace node
+{
+struct Literal
 {
     static constexpr auto rule =
         dsl::p<null_literal>
@@ -177,14 +179,6 @@ struct literal
         | (dsl::peek(dsl::token(dsl::digits<> + dsl::lit_c<'.'> + dsl::digit<>))
            >> dsl::p<float_literal>)
         | (dsl::peek(dsl::digit<>) >> dsl::p<integer_literal>);
-    static constexpr auto value = lexy::forward<Value_Ptr>;
-};
-
-namespace node
-{
-struct Literal
-{
-    static constexpr auto rule = dsl::p<literal>;
     static constexpr auto value =
         lexy::new_<ast::Literal, ast::Expression::Ptr>;
 };
