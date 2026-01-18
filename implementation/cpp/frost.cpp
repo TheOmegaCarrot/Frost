@@ -53,16 +53,11 @@ void repl(frst::Symbol_Table& symbols)
 
     Replxx rx;
 
-    while (true)
+    while (const char* raw_line = rx.input("~> "))
     {
-        char const* line = rx.input("~> ");
+        std::string line(raw_line);
 
-        if (!line)
-            break;
-
-        std::string s(line);
-
-        auto parse_result = frst::parse_program(s);
+        auto parse_result = frst::parse_program(line);
 
         if (not parse_result)
         {
@@ -70,7 +65,11 @@ void repl(frst::Symbol_Table& symbols)
             continue;
         }
 
+        if (parse_result.value().empty())
+            continue;
+
         repl_exec(parse_result.value(), symbols);
+        rx.history_add(line);
     }
 }
 
