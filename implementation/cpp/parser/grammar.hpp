@@ -407,6 +407,12 @@ struct If
 };
 } // namespace node
 
+inline ast::Expression::Ptr make_string_key_expr(std::string key)
+{
+    auto key_value = Value::create(std::move(key));
+    return std::make_unique<ast::Literal>(std::move(key_value));
+}
+
 struct array_elements
 {
     static constexpr auto rule = dsl::square_bracketed.opt_list(
@@ -431,9 +437,8 @@ struct map_entry
             return std::make_pair(std::move(key), std::move(value));
         },
         [](std::string key, ast::Expression::Ptr value) {
-            auto key_value = Value::create(std::move(key));
-            auto key_expr = std::make_unique<ast::Literal>(key_value);
-            return std::make_pair(std::move(key_expr), std::move(value));
+            return std::make_pair(make_string_key_expr(std::move(key)),
+                                  std::move(value));
         });
 };
 
@@ -588,10 +593,8 @@ struct expression : lexy::expression_production
                                                         std::move(index_expr));
                 },
                 [](ast::Expression::Ptr lhs, op_dot, std::string key) {
-                    auto key_value = Value::create(std::move(key));
-                    auto key_expr = std::make_unique<ast::Literal>(key_value);
-                    return std::make_unique<ast::Index>(std::move(lhs),
-                                                        std::move(key_expr));
+                    return std::make_unique<ast::Index>(
+                        std::move(lhs), make_string_key_expr(std::move(key)));
                 });
         };
 
@@ -695,10 +698,8 @@ struct expression : lexy::expression_production
                                                         std::move(args));
         },
         [](ast::Expression::Ptr lhs, op_dot, std::string key) {
-            auto key_value = Value::create(std::move(key));
-            auto key_expr = std::make_unique<ast::Literal>(key_value);
-            return std::make_unique<ast::Index>(std::move(lhs),
-                                                std::move(key_expr));
+            return std::make_unique<ast::Index>(
+                std::move(lhs), make_string_key_expr(std::move(key)));
         },
         [](ast::Expression::Ptr lhs, op_ufcs, ufcs_call::result rhs) {
             auto args = std::move(rhs.args);
