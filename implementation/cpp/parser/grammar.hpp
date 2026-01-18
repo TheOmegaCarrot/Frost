@@ -207,22 +207,26 @@ struct parenthesized_expression
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
 };
 
+template <typename T>
+constexpr auto list_or_empty()
+{
+    auto sink = lexy::as_list<std::vector<T>>;
+    auto cb = lexy::callback<std::vector<T>>(
+        [](lexy::nullopt) {
+            return std::vector<T>{};
+        },
+        [](std::vector<T> items) {
+            return items;
+        });
+    return sink >> cb;
+}
+
 struct lambda_parameters
 {
     static constexpr auto rule =
         dsl::terminator(dsl::lit_c<')'>)
             .opt_list(dsl::p<identifier>, dsl::sep(dsl::lit_c<','>));
-    static constexpr auto value = [] {
-        auto sink = lexy::as_list<std::vector<std::string>>;
-        auto cb = lexy::callback<std::vector<std::string>>(
-            [](lexy::nullopt) {
-                return std::vector<std::string>{};
-            },
-            [](std::vector<std::string> params) {
-                return params;
-            });
-        return sink >> cb;
-    }();
+    static constexpr auto value = list_or_empty<std::string>();
 };
 
 struct lambda_param_clause
@@ -244,14 +248,7 @@ struct lambda_body
     static constexpr auto rule = dsl::curly_bracketed(
         dsl::opt(expression_start >> dsl::recurse<statement_list>)
         + statement_ws);
-    static constexpr auto value =
-        lexy::callback<std::vector<ast::Statement::Ptr>>(
-            [](lexy::nullopt) {
-                return std::vector<ast::Statement::Ptr>{};
-            },
-            [](std::vector<ast::Statement::Ptr> body) {
-                return body;
-            });
+    static constexpr auto value = list_or_empty<ast::Statement::Ptr>();
 };
 
 namespace node
@@ -424,17 +421,7 @@ struct array_elements
 {
     static constexpr auto rule = dsl::square_bracketed.opt_list(
         dsl::recurse<expression>, dsl::trailing_sep(dsl::lit_c<','>));
-    static constexpr auto value = [] {
-        auto sink = lexy::as_list<std::vector<ast::Expression::Ptr>>;
-        auto cb = lexy::callback<std::vector<ast::Expression::Ptr>>(
-            [](lexy::nullopt) {
-                return std::vector<ast::Expression::Ptr>{};
-            },
-            [](std::vector<ast::Expression::Ptr> elems) {
-                return elems;
-            });
-        return sink >> cb;
-    }();
+    static constexpr auto value = list_or_empty<ast::Expression::Ptr>();
 };
 
 struct map_entry
@@ -466,17 +453,8 @@ struct map_entries
         LEXY_LIT("%{")
         >> dsl::terminator(dsl::lit_c<'}'>)
                .opt_list(dsl::p<map_entry>, dsl::trailing_sep(dsl::lit_c<','>));
-    static constexpr auto value = [] {
-        auto sink = lexy::as_list<std::vector<ast::Map_Constructor::KV_Pair>>;
-        auto cb = lexy::callback<std::vector<ast::Map_Constructor::KV_Pair>>(
-            [](lexy::nullopt) {
-                return std::vector<ast::Map_Constructor::KV_Pair>{};
-            },
-            [](std::vector<ast::Map_Constructor::KV_Pair> elems) {
-                return elems;
-            });
-        return sink >> cb;
-    }();
+    static constexpr auto value =
+        list_or_empty<ast::Map_Constructor::KV_Pair>();
 };
 
 namespace node
@@ -522,17 +500,7 @@ struct call_arguments
     static constexpr auto rule =
         dsl::terminator(dsl::lit_c<')'>)
             .opt_list(dsl::recurse<expression>, dsl::sep(dsl::lit_c<','>));
-    static constexpr auto value = [] {
-        auto sink = lexy::as_list<std::vector<ast::Expression::Ptr>>;
-        auto cb = lexy::callback<std::vector<ast::Expression::Ptr>>(
-            [](lexy::nullopt) {
-                return std::vector<ast::Expression::Ptr>{};
-            },
-            [](std::vector<ast::Expression::Ptr> args) {
-                return args;
-            });
-        return sink >> cb;
-    }();
+    static constexpr auto value = list_or_empty<ast::Expression::Ptr>();
 };
 
 struct expression : lexy::expression_production
