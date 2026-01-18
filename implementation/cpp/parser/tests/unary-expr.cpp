@@ -66,12 +66,8 @@ TEST_CASE("Parser Unary Expressions")
         };
 
         const Case cases[] = {
-            {"not true", false},
-            {"not false", true},
-            {"not null", true},
-            {"not not true", true},
-            {"not (false)", true},
-            {"not -1", false},
+            {"not true", false},    {"not false", true},   {"not null", true},
+            {"not not true", true}, {"not (false)", true}, {"not -1", false},
         };
 
         for (const auto& c : cases)

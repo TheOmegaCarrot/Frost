@@ -119,8 +119,7 @@ TEST_CASE("Parser If Expressions")
 
     SECTION("Longer elif chains evaluate correctly")
     {
-        auto result =
-            parse("if false: 1 elif false: 2 elif true: 3 else: 4");
+        auto result = parse("if false: 1 elif false: 2 elif true: 3 else: 4");
         REQUIRE(result);
         auto expr = require_expression(result);
 

@@ -56,8 +56,7 @@ TEST_CASE("Parser Filter Expressions")
 
     SECTION("Filter map with a predicate")
     {
-        auto result =
-            parse("filter %{a: 1, b: 2} with fn (k, v) -> { v > 1 }");
+        auto result = parse("filter %{a: 1, b: 2} with fn (k, v) -> { v > 1 }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -75,8 +74,7 @@ TEST_CASE("Parser Filter Expressions")
 
     SECTION("Filter expressions can be postfixed")
     {
-        auto result =
-            parse("(filter [1, 2, 3] with fn (x) -> { x > 1 })[0]");
+        auto result = parse("(filter [1, 2, 3] with fn (x) -> { x > 1 })[0]");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -88,8 +86,8 @@ TEST_CASE("Parser Filter Expressions")
 
     SECTION("Filter expressions can be used inside larger expressions")
     {
-        auto result = parse(
-            "(filter [1, 2, 3] with fn (x) -> { x > 1 })[0] + 5");
+        auto result =
+            parse("(filter [1, 2, 3] with fn (x) -> { x > 1 })[0] + 5");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -98,8 +96,8 @@ TEST_CASE("Parser Filter Expressions")
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 7_f);
 
-        auto result2 = parse(
-            "(filter [1, 2, 3] with fn (x) -> { x > 2 })[0] == 3");
+        auto result2 =
+            parse("(filter [1, 2, 3] with fn (x) -> { x > 2 })[0] == 3");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
@@ -135,8 +133,7 @@ TEST_CASE("Parser Filter Expressions")
         REQUIRE(outer[0]->is<frst::Array>());
         CHECK(outer[0]->raw_get<frst::Array>().size() == 1);
 
-        auto result2 =
-            parse("%{k: filter [1, 2] with fn (x) -> { x > 1 }}");
+        auto result2 = parse("%{k: filter [1, 2] with fn (x) -> { x > 1 }}");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
@@ -171,9 +168,8 @@ TEST_CASE("Parser Filter Expressions")
 
     SECTION("Filter expressions can nest other higher-order expressions")
     {
-        auto result =
-            parse("filter (map [1, 2, 3] with fn (x) -> { x }) "
-                  "with fn (x) -> { x > 1 }");
+        auto result = parse("filter (map [1, 2, 3] with fn (x) -> { x }) "
+                            "with fn (x) -> { x > 1 }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -185,9 +181,9 @@ TEST_CASE("Parser Filter Expressions")
         CHECK(arr[0]->get<frst::Int>().value() == 2_f);
         CHECK(arr[1]->get<frst::Int>().value() == 3_f);
 
-        auto result2 = parse(
-            "filter [1, 2, 3] with fn (x) -> { "
-            "(reduce [1, 2] with fn (acc, y) -> { acc + y }) > 2 }");
+        auto result2 =
+            parse("filter [1, 2, 3] with fn (x) -> { "
+                  "(reduce [1, 2] with fn (acc, y) -> { acc + y }) > 2 }");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
@@ -198,9 +194,8 @@ TEST_CASE("Parser Filter Expressions")
         CHECK(arr2[1]->get<frst::Int>().value() == 2_f);
         CHECK(arr2[2]->get<frst::Int>().value() == 3_f);
 
-        auto result3 = parse(
-            "filter [1, 2] with fn (x) -> { "
-            "foreach [1] with fn (y) -> { y }; true }");
+        auto result3 = parse("filter [1, 2] with fn (x) -> { "
+                             "foreach [1] with fn (y) -> { y }; true }");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
         auto out3 = expr3->evaluate(table);
@@ -215,7 +210,8 @@ TEST_CASE("Parser Filter Expressions")
     {
         struct IdentityCallable final : frst::Callable
         {
-            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
+            frst::Value_Ptr call(
+                std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                 {
@@ -230,8 +226,7 @@ TEST_CASE("Parser Filter Expressions")
             }
         };
 
-        auto result = parse(
-            "f(filter [1, 2, 3] with fn (x) -> { x > 1 })");
+        auto result = parse("f(filter [1, 2, 3] with fn (x) -> { x > 1 })");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -249,9 +244,8 @@ TEST_CASE("Parser Filter Expressions")
 
     SECTION("Filter predicates can embed nested map expressions")
     {
-        auto result = parse(
-            "filter [1, 2, 3] with fn (x) -> { "
-            "(map [x] with fn (y) -> { y + 1 })[0] > 2 }");
+        auto result = parse("filter [1, 2, 3] with fn (x) -> { "
+                            "(map [x] with fn (y) -> { y + 1 })[0] > 2 }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -267,12 +261,9 @@ TEST_CASE("Parser Filter Expressions")
     SECTION("Invalid filter expressions fail to parse")
     {
         const std::string_view cases[] = {
-            "filter with f",
-            "filter [1] f",
-            "filter [1] with",
-            "filter [1] with f init: 0",
-            "filter [1] with init",
-            "filter [1] with fn (map) -> { map }",
+            "filter with f",        "filter [1] f",
+            "filter [1] with",      "filter [1] with f init: 0",
+            "filter [1] with init", "filter [1] with fn (map) -> { map }",
         };
 
         for (const auto& input : cases)

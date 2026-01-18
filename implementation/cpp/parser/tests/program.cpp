@@ -72,7 +72,8 @@ struct CountingCallable final : frst::Callable
 {
     mutable std::vector<frst::Value_Ptr> args;
 
-    frst::Value_Ptr call(std::span<const frst::Value_Ptr> call_args) const override
+    frst::Value_Ptr call(
+        std::span<const frst::Value_Ptr> call_args) const override
     {
         if (!call_args.empty())
         {
@@ -309,7 +310,8 @@ TEST_CASE("Parser Program")
 
     SECTION("Lambda expressions and calls in a program")
     {
-        auto result = parse("fn () -> { 1 }(); fn (x) -> { x }(3); fn () -> { 5 }");
+        auto result =
+            parse("fn () -> { 1 }(); fn (x) -> { x }(3); fn () -> { 5 }");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 3);
@@ -341,12 +343,11 @@ TEST_CASE("Parser Program")
 
     SECTION("Definitions with complex right-hand sides")
     {
-        auto result = parse(
-            "def a = if cond: 10 else: 20\n"
-            "def b = [1, 2][0]\n"
-            "def c = %{k: 5}.k\n"
-            "def d = fn (x) -> { x + 1 }(4)\n"
-            "a b c d");
+        auto result = parse("def a = if cond: 10 else: 20\n"
+                            "def b = [1, 2][0]\n"
+                            "def c = %{k: 5}.k\n"
+                            "def d = fn (x) -> { x + 1 }(4)\n"
+                            "a b c d");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 8);
@@ -395,7 +396,8 @@ TEST_CASE("Parser Program")
 
     SECTION("If expressions can contain calls and indexing in branches")
     {
-        auto result = parse("if a: f(1) else: arr[0]\nif false: arr[1] else: f(2)");
+        auto result =
+            parse("if a: f(1) else: arr[0]\nif false: arr[1] else: f(2)");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -403,9 +405,9 @@ TEST_CASE("Parser Program")
         frst::Symbol_Table table;
         table.define("a", frst::Value::create(false));
         table.define("arr", frst::Value::create(frst::Array{
-                               frst::Value::create(5_f),
-                               frst::Value::create(6_f),
-                           }));
+                                frst::Value::create(5_f),
+                                frst::Value::create(6_f),
+                            }));
 
         auto f_callable = std::make_shared<Constant_Callable>();
         f_callable->result = frst::Value::create(9_f);
@@ -470,11 +472,10 @@ TEST_CASE("Parser Program")
 
     SECTION("Map, filter, reduce, and foreach expressions in a program")
     {
-        auto result = parse(
-            "map [1, 2, 3] with fn (x) -> { x + 1 };"
-            "filter [1, 2, 3] with fn (x) -> { x > 1 };"
-            "reduce [1, 2, 3] with fn (acc, x) -> { acc + x };"
-            "foreach [1, 2] with f");
+        auto result = parse("map [1, 2, 3] with fn (x) -> { x + 1 };"
+                            "filter [1, 2, 3] with fn (x) -> { x > 1 };"
+                            "reduce [1, 2, 3] with fn (acc, x) -> { acc + x };"
+                            "foreach [1, 2] with f");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 4);
@@ -512,13 +513,13 @@ TEST_CASE("Parser Program")
 
     SECTION("Map/filter/reduce/foreach compose with other operators")
     {
-        auto result = parse(
-            "not map [1] with fn (x) -> { x };"
-            "map [1] with fn (x) -> { x + 1 };"
-            "map [1] with f @ g();"
-            "(map [1] with fn (x) -> { x })[0] @ g();"
-            "(filter [1, 2, 3] with fn (x) -> { x > 1 })[0] + 10;"
-            "(reduce [1, 2, 3] with fn (acc, x) -> { acc + x }) * 3");
+        auto result =
+            parse("not map [1] with fn (x) -> { x };"
+                  "map [1] with fn (x) -> { x + 1 };"
+                  "map [1] with f @ g();"
+                  "(map [1] with fn (x) -> { x })[0] @ g();"
+                  "(filter [1, 2, 3] with fn (x) -> { x > 1 })[0] + 10;"
+                  "(reduce [1, 2, 3] with fn (acc, x) -> { acc + x }) * 3");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 6);
@@ -539,9 +540,11 @@ TEST_CASE("Parser Program")
         REQUIRE(v1->is<frst::Bool>());
         CHECK(v1->get<frst::Bool>().value() == false);
         REQUIRE(v2->is<frst::Array>());
-        CHECK(v2->raw_get<frst::Array>().at(0)->get<frst::Int>().value() == 2_f);
+        CHECK(v2->raw_get<frst::Array>().at(0)->get<frst::Int>().value()
+              == 2_f);
         REQUIRE(v3->is<frst::Array>());
-        CHECK(v3->raw_get<frst::Array>().at(0)->get<frst::Int>().value() == 1_f);
+        CHECK(v3->raw_get<frst::Array>().at(0)->get<frst::Int>().value()
+              == 1_f);
         REQUIRE(v4->is<frst::Int>());
         CHECK(v4->get<frst::Int>().value() == 1_f);
         REQUIRE(v5->is<frst::Int>());
@@ -554,7 +557,8 @@ TEST_CASE("Parser Program")
     {
         auto result = parse(
             "map (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
-            "with fn (x) -> { (reduce [1, 2] with fn (acc, y) -> { acc + y }) + x };"
+            "with fn (x) -> { (reduce [1, 2] with fn (acc, y) -> { acc + y }) "
+            "+ x };"
             "reduce (map [1, 2] with fn (x) -> { x }) "
             "with fn (acc, x) -> { acc + x } "
             "init: (reduce [1, 2] with fn (acc, x) -> { acc + x });"
@@ -585,13 +589,13 @@ TEST_CASE("Parser Program")
 
     SECTION("Deeply nested higher-order expressions in calls and UFCS")
     {
-        auto result = parse(
-            "def id = fn (x) -> { x };\n"
-            "def inc = fn (x) -> { x + 1 };\n"
-            "id(map [1, 2] with inc)[0];\n"
-            "(filter [1, 2, 3] with fn (x) -> { x > 1 }) @ id();\n"
-            "reduce (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
-            "with fn (acc, x) -> { acc + x } init: 0");
+        auto result =
+            parse("def id = fn (x) -> { x };\n"
+                  "def inc = fn (x) -> { x + 1 };\n"
+                  "id(map [1, 2] with inc)[0];\n"
+                  "(filter [1, 2, 3] with fn (x) -> { x > 1 }) @ id();\n"
+                  "reduce (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
+                  "with fn (acc, x) -> { acc + x } init: 0");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 5);
@@ -661,13 +665,13 @@ TEST_CASE("Parser Program")
 
     SECTION("Map/filter/reduce/foreach appear in defs and if expressions")
     {
-        auto result = parse(
-            "def x = map [1] with fn (v) -> { v };"
-            "def y = filter [1, 2] with fn (v) -> { v > 1 };"
-            "def z = reduce [1, 2] with fn (a, b) -> { a + b };"
-            "if true: map [1] with fn (v) -> { v } else: map [2] with fn (v) -> { v };"
-            "foreach [1] with fn (v) -> { v };"
-            "x[0] y[0] z");
+        auto result = parse("def x = map [1] with fn (v) -> { v };"
+                            "def y = filter [1, 2] with fn (v) -> { v > 1 };"
+                            "def z = reduce [1, 2] with fn (a, b) -> { a + b };"
+                            "if true: map [1] with fn (v) -> { v } else: map "
+                            "[2] with fn (v) -> { v };"
+                            "foreach [1] with fn (v) -> { v };"
+                            "x[0] y[0] z");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 8);
@@ -816,12 +820,13 @@ TEST_CASE("Parser Program")
         CHECK(v1->get<frst::Int>().value() == 5_f);
     }
 
-    SECTION("Definitions can use lambdas and if expressions on the right-hand side")
+    SECTION(
+        "Definitions can use lambdas and if expressions on the right-hand side")
     {
-        auto result = parse(
-            "def make = fn () -> { def y = 1; y }\n"
-            "def choose = if cond: fn () -> { 1 } else: fn () -> { 2 }\n"
-            "make() choose()");
+        auto result =
+            parse("def make = fn () -> { def y = 1; y }\n"
+                  "def choose = if cond: fn () -> { 1 } else: fn () -> { 2 }\n"
+                  "make() choose()");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 4);
@@ -841,15 +846,15 @@ TEST_CASE("Parser Program")
         CHECK(v2->get<frst::Int>().value() == 1_f);
     }
 
-    SECTION("Mixed program combines defs, if, arrays, maps, lambdas, calls, and indexing")
+    SECTION("Mixed program combines defs, if, arrays, maps, lambdas, calls, "
+            "and indexing")
     {
-        auto result = parse(
-            "def arr = [1, 2, 3];\n"
-            "def m = %{a: 10, b: 20};\n"
-            "def pick = fn (x) -> { x };\n"
-            "if true: m.a else: m.b;\n"
-            "pick(arr[1]);\n"
-            "m[\"b\"]");
+        auto result = parse("def arr = [1, 2, 3];\n"
+                            "def m = %{a: 10, b: 20};\n"
+                            "def pick = fn (x) -> { x };\n"
+                            "if true: m.a else: m.b;\n"
+                            "pick(arr[1]);\n"
+                            "m[\"b\"]");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 6);
@@ -949,12 +954,11 @@ TEST_CASE("Parser Program")
 
     SECTION("Whitespace and comments around new constructs")
     {
-        auto result = parse(
-            "def x = [1,\n# c\n2]\n"
-            "# mid\n"
-            "def y = %{a: 1,\n# c\nb: 2}\n"
-            "def z = fn () -> { ; ; 3 }\n"
-            "x y z()");
+        auto result = parse("def x = [1,\n# c\n2]\n"
+                            "# mid\n"
+                            "def y = %{a: 1,\n# c\nb: 2}\n"
+                            "def z = fn () -> { ; ; 3 }\n"
+                            "x y z()");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 6);
@@ -1039,8 +1043,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Mixed grammar in a single program")
     {
-        auto result =
-            parse("1+2*3; not false; (1<2)==true; false or true; -5");
+        auto result = parse("1+2*3; not false; (1<2)==true; false or true; -5");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 5);
@@ -1113,11 +1116,10 @@ TEST_CASE("Parser Program")
 
     SECTION("If expressions in a program")
     {
-        auto result = parse(
-            "if true: 1 else: 2;\n"
-            "if false: 1;\n"
-            "if false: 1 elif true: 3 else: 4;\n"
-            "if false: 1 elif false: 2;\n");
+        auto result = parse("if true: 1 else: 2;\n"
+                            "if false: 1;\n"
+                            "if false: 1 elif true: 3 else: 4;\n"
+                            "if false: 1 elif false: 2;\n");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 4);
@@ -1139,10 +1141,9 @@ TEST_CASE("Parser Program")
 
     SECTION("Definition statements in a program")
     {
-        auto result = parse(
-            "def x = 1;\n"
-            "def y = x + 2;\n"
-            "y\n");
+        auto result = parse("def x = 1;\n"
+                            "def y = x + 2;\n"
+                            "y\n");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 3);
@@ -1177,14 +1178,13 @@ TEST_CASE("Parser Program")
 
     SECTION("If expressions with comments and whitespace in a program")
     {
-        auto result = parse(
-            "if true : 1 else : 2\n"
-            "if true: # c\n"
-            "1 else: 2\n"
-            "if false:\n"
-            "1\n"
-            "else:\n"
-            "2\n");
+        auto result = parse("if true : 1 else : 2\n"
+                            "if true: # c\n"
+                            "1 else: 2\n"
+                            "if false:\n"
+                            "1\n"
+                            "else:\n"
+                            "2\n");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 3);
@@ -1225,7 +1225,8 @@ TEST_CASE("Parser Program")
             mutable int calls = 0;
             frst::Value_Ptr result;
 
-            frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
+            frst::Value_Ptr call(
+                std::span<const frst::Value_Ptr>) const override
             {
                 ++calls;
                 return result ? result : frst::Value::null();
@@ -1251,13 +1252,12 @@ TEST_CASE("Parser Program")
 
     SECTION("Pathological postfix whitespace and comments in a program")
     {
-        auto result = parse(
-            "arr[ # c\n 1 ]\n"
-            "obj .\n key\n"
-            "f( # c\n )\n"
-            "arr[\n -1\n]\n"
-            "obj.# c\nkey\n"
-            "obj .\n inner .\n value\n");
+        auto result = parse("arr[ # c\n 1 ]\n"
+                            "obj .\n key\n"
+                            "f( # c\n )\n"
+                            "arr[\n -1\n]\n"
+                            "obj.# c\nkey\n"
+                            "obj .\n inner .\n value\n");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 6);

@@ -102,11 +102,8 @@ TEST_CASE("Parser Numeric Literals")
         };
 
         const Case cases[] = {
-            {"0.0", 0.0},
-            {"1.0", 1.0},
-            {"3.14", 3.14},
-            {"10.01", 10.01},
-            {"001.250", 1.25},
+            {"0.0", 0.0},     {"1.0", 1.0},      {"3.14", 3.14},
+            {"10.01", 10.01}, {"001.250", 1.25},
         };
 
         for (const auto& c : cases)
@@ -122,17 +119,8 @@ TEST_CASE("Parser Numeric Literals")
     SECTION("Invalid floats")
     {
         const std::string_view cases[] = {
-            "",
-            "1",
-            "1.",
-            ".1",
-            "1.2.3",
-            "1e3",
-            "1.0e2",
-            "+1.0",
-            "-1.0",
-            "1_0.2",
-            "12 34",
+            "",      "1",    "1.",   ".1",    "1.2.3", "1e3",
+            "1.0e2", "+1.0", "-1.0", "1_0.2", "12 34",
         };
 
         for (const auto& input : cases)

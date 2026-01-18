@@ -42,8 +42,8 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Reduce array with init")
     {
-        auto result = parse(
-            "reduce [1, 2, 3] with fn (acc, x) -> { acc + x } init: 0");
+        auto result =
+            parse("reduce [1, 2, 3] with fn (acc, x) -> { acc + x } init: 0");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -55,8 +55,7 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Reduce array without init")
     {
-        auto result =
-            parse("reduce [1, 2, 3] with fn (acc, x) -> { acc + x }");
+        auto result = parse("reduce [1, 2, 3] with fn (acc, x) -> { acc + x }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -81,8 +80,7 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Reduce map without init is an evaluation error")
     {
-        auto result = parse(
-            "reduce %{a: 1} with fn (acc, k, v) -> { acc }");
+        auto result = parse("reduce %{a: 1} with fn (acc, k, v) -> { acc }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -93,8 +91,8 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Reduce expressions can participate in larger expressions")
     {
-        auto result = parse(
-            "(reduce [1, 2] with fn (acc, x) -> { acc + x }) + 1");
+        auto result =
+            parse("(reduce [1, 2] with fn (acc, x) -> { acc + x }) + 1");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -106,8 +104,8 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Reduce results can be chained in larger expressions")
     {
-        auto result = parse(
-            "(reduce [1, 2, 3] with fn (acc, x) -> { acc + x }) * 2");
+        auto result =
+            parse("(reduce [1, 2, 3] with fn (acc, x) -> { acc + x }) * 2");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -116,8 +114,8 @@ TEST_CASE("Parser Reduce Expressions")
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 12_f);
 
-        auto result2 = parse(
-            "(reduce [] with fn (acc, x) -> { acc + x } init: 4) - 1");
+        auto result2 =
+            parse("(reduce [] with fn (acc, x) -> { acc + x } init: 4) - 1");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
@@ -135,8 +133,8 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Whitespace and comments are allowed around reduce init")
     {
-        auto result = parse(
-            "reduce [1, 2] with fn (acc, x) -> { acc + x } init:\n0");
+        auto result =
+            parse("reduce [1, 2] with fn (acc, x) -> { acc + x } init:\n0");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -145,8 +143,8 @@ TEST_CASE("Parser Reduce Expressions")
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
 
-        auto result2 = parse(
-            "reduce [1, 2] with fn (acc, x) -> { acc + x } init : 0");
+        auto result2 =
+            parse("reduce [1, 2] with fn (acc, x) -> { acc + x } init : 0");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
@@ -156,8 +154,7 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Reduce expressions can appear inside other constructs")
     {
-        auto result =
-            parse("[reduce [1, 2] with fn (acc, x) -> { acc + x }]");
+        auto result = parse("[reduce [1, 2] with fn (acc, x) -> { acc + x }]");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -168,8 +165,8 @@ TEST_CASE("Parser Reduce Expressions")
         REQUIRE(arr.size() == 1);
         CHECK(arr[0]->get<frst::Int>().value() == 3_f);
 
-        auto result2 = parse(
-            "%{[reduce [1, 2] with fn (acc, x) -> { acc + x }]: 1}");
+        auto result2 =
+            parse("%{[reduce [1, 2] with fn (acc, x) -> { acc + x }]: 1}");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
@@ -189,8 +186,8 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Reduce binds across newlines in larger expressions")
     {
-        auto result = parse(
-            "(reduce [1, 2] with fn (acc, x) -> { acc + x })\n+ 1");
+        auto result =
+            parse("(reduce [1, 2] with fn (acc, x) -> { acc + x })\n+ 1");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -202,9 +199,8 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Reduce expressions can nest other higher-order expressions")
     {
-        auto result = parse(
-            "reduce (map [1, 2] with fn (x) -> { x }) "
-            "with fn (acc, x) -> { acc + x }");
+        auto result = parse("reduce (map [1, 2] with fn (x) -> { x }) "
+                            "with fn (acc, x) -> { acc + x }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -213,27 +209,25 @@ TEST_CASE("Parser Reduce Expressions")
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
 
-        auto result2 = parse(
-            "reduce [1, 2] with fn (acc, x) -> { "
-            "(map [x] with fn (y) -> { y })[0] + acc }");
+        auto result2 = parse("reduce [1, 2] with fn (acc, x) -> { "
+                             "(map [x] with fn (y) -> { y })[0] + acc }");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 3_f);
 
-        auto result3 = parse(
-            "reduce [1, 2] with fn (acc, x) -> { acc + x } "
-            "init: (map [3] with fn (x) -> { x })[0]");
+        auto result3 = parse("reduce [1, 2] with fn (acc, x) -> { acc + x } "
+                             "init: (map [3] with fn (x) -> { x })[0]");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
         auto out3 = expr3->evaluate(table);
         REQUIRE(out3->is<frst::Int>());
         CHECK(out3->get<frst::Int>().value() == 6_f);
 
-        auto result4 = parse(
-            "reduce %{a: 1} with fn (acc, k, v) -> { acc } "
-            "init: (reduce [1, 2] with fn (acc, x) -> { acc + x })");
+        auto result4 =
+            parse("reduce %{a: 1} with fn (acc, k, v) -> { acc } "
+                  "init: (reduce [1, 2] with fn (acc, x) -> { acc + x })");
         REQUIRE(result4);
         auto expr4 = require_expression(result4);
         auto out4 = expr4->evaluate(table);
@@ -245,7 +239,8 @@ TEST_CASE("Parser Reduce Expressions")
     {
         struct Identity_Callable final : frst::Callable
         {
-            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
+            frst::Value_Ptr call(
+                std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                     return frst::Value::null();
@@ -258,9 +253,8 @@ TEST_CASE("Parser Reduce Expressions")
             }
         };
 
-        auto result = parse(
-            "reduce [1] with fn (acc, x) -> { acc + x } "
-            "init: (map [1] with f @ g())[0]");
+        auto result = parse("reduce [1] with fn (acc, x) -> { acc + x } "
+                            "init: (map [1] with f @ g())[0]");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -279,7 +273,8 @@ TEST_CASE("Parser Reduce Expressions")
     {
         struct IdentityCallable final : frst::Callable
         {
-            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
+            frst::Value_Ptr call(
+                std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                 {
@@ -294,8 +289,8 @@ TEST_CASE("Parser Reduce Expressions")
             }
         };
 
-        auto result = parse(
-            "f(reduce [1, 2, 3] with fn (acc, x) -> { acc + x })");
+        auto result =
+            parse("f(reduce [1, 2, 3] with fn (acc, x) -> { acc + x })");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -312,7 +307,8 @@ TEST_CASE("Parser Reduce Expressions")
     {
         struct IdentityCallable final : frst::Callable
         {
-            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
+            frst::Value_Ptr call(
+                std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                 {
@@ -327,8 +323,8 @@ TEST_CASE("Parser Reduce Expressions")
             }
         };
 
-        auto result = parse(
-            "reduce [1, 2] with fn (acc, x) -> { acc + x } @ f()");
+        auto result =
+            parse("reduce [1, 2] with fn (acc, x) -> { acc + x } @ f()");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -343,10 +339,10 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Reduce can consume a filtered structure and map init")
     {
-        auto result = parse(
-            "reduce (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
-            "with fn (acc, x) -> { acc + x } "
-            "init: (map [1] with fn (x) -> { x })[0]");
+        auto result =
+            parse("reduce (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
+                  "with fn (acc, x) -> { acc + x } "
+                  "init: (map [1] with fn (x) -> { x })[0]");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -364,7 +360,8 @@ TEST_CASE("Parser Reduce Expressions")
 
         struct Return_Acc final : frst::Callable
         {
-            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
+            frst::Value_Ptr call(
+                std::span<const frst::Value_Ptr> args) const override
             {
                 return args.front();
             }
@@ -379,7 +376,8 @@ TEST_CASE("Parser Reduce Expressions")
         {
             mutable std::vector<std::vector<frst::Value_Ptr>> calls;
 
-            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
+            frst::Value_Ptr call(
+                std::span<const frst::Value_Ptr> args) const override
             {
                 calls.emplace_back(args.begin(), args.end());
                 return args.front();

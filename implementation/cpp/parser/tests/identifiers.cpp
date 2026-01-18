@@ -31,17 +31,8 @@ TEST_CASE("Parser Identifiers")
     SECTION("Valid identifiers")
     {
         const std::string_view cases[] = {
-            "a",
-            "A",
-            "_",
-            "_foo",
-            "foo_",
-            "foo_bar",
-            "foo123",
-            "a1_b2",
-            "if1",
-            "trueish",
-            "null_",
+            "a",      "A",     "_",   "_foo",    "foo_",  "foo_bar",
+            "foo123", "a1_b2", "if1", "trueish", "null_",
         };
 
         for (const auto& input : cases)
@@ -55,31 +46,10 @@ TEST_CASE("Parser Identifiers")
     SECTION("Invalid identifiers")
     {
         const std::string_view cases[] = {
-            "",
-            "1abc",
-            "9",
-            "-abc",
-            "a-b",
-            "a b",
-            "a.b",
-            "a@b",
-            "if",
-            "else",
-            "elif",
-            "def",
-            "fn",
-            "reduce",
-            "map",
-            "foreach",
-            "filter",
-            "with",
-            "init",
-            "true",
-            "false",
-            "and",
-            "or",
-            "not",
-            "null",
+            "",    "1abc",    "9",      "-abc", "a-b",  "a b",  "a.b",
+            "a@b", "if",      "else",   "elif", "def",  "fn",   "reduce",
+            "map", "foreach", "filter", "with", "init", "true", "false",
+            "and", "or",      "not",    "null",
         };
 
         for (const auto& input : cases)

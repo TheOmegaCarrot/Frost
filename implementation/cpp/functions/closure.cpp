@@ -61,12 +61,15 @@ std::string Closure::debug_dump() const
     std::ostringstream os;
     os << "<Closure>";
 
-    if (not captures_.debug_table().empty())
+    if (captures_.debug_table().size() > 1)
     {
         os
             << " (capturing: "
             << (captures_.debug_table()
                 | std::views::keys
+                | std::views::filter([](const auto& key) {
+                      return key != "self";
+                  })
                 | std::views::join_with(',')
                 | std::ranges::to<std::string>())
             << ")";

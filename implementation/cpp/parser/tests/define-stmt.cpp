@@ -145,12 +145,11 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Definitions accept a variety of RHS expressions")
     {
-        auto result = parse(
-            "def a = (1+2)\n"
-            "def b = f(3)\n"
-            "def c = arr[0]\n"
-            "def d = obj.key\n"
-            "d");
+        auto result = parse("def a = (1+2)\n"
+                            "def b = f(3)\n"
+                            "def c = arr[0]\n"
+                            "def d = obj.key\n"
+                            "d");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 5);

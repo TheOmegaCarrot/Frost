@@ -226,7 +226,8 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Value expressions can be complex")
     {
-        auto result = parse("%{a: if true: 1 else: 2, b: fn(x) -> { x }(3), c: [1,2]}");
+        auto result =
+            parse("%{a: if true: 1 else: 2, b: fn(x) -> { x }(3), c: [1,2]}");
         REQUIRE(result);
         auto expr = require_expression(result);
 

@@ -40,8 +40,7 @@ frst::Value_Ptr call_function(const frst::Value_Ptr& value,
 
 struct IdentityCallable final : frst::Callable
 {
-    frst::Value_Ptr call(
-        std::span<const frst::Value_Ptr> args) const override
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
     {
         if (args.empty())
         {
@@ -122,9 +121,8 @@ TEST_CASE("Parser Lambda Expressions")
 
         frst::Symbol_Table table;
         auto value = expr->evaluate(table);
-        auto out = call_function(value,
-                                 {frst::Value::create(1_f),
-                                  frst::Value::create(2_f)});
+        auto out = call_function(
+            value, {frst::Value::create(1_f), frst::Value::create(2_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
@@ -156,8 +154,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Multiple lambdas as top-level statements parse correctly")
     {
-        auto src =
-            lexy::string_input(std::string_view{"fn -> {} fn() -> {}"});
+        auto src = lexy::string_input(std::string_view{"fn -> {} fn() -> {}"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -167,8 +164,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Multiple lambdas with semicolons parse correctly")
     {
-        auto src =
-            lexy::string_input(std::string_view{"fn -> {}; fn() -> {}"});
+        auto src = lexy::string_input(std::string_view{"fn -> {}; fn() -> {}"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);

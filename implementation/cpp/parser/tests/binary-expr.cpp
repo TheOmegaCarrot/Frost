@@ -49,12 +49,8 @@ TEST_CASE("Parser Binary Expressions")
         };
 
         const Case cases[] = {
-            {"1+2*3", 7_f},
-            {"1*2+3", 5_f},
-            {"1+2*3+4", 11_f},
-            {"(1+2)*3", 9_f},
-            {"1*(2+3)", 5_f},
-            {"1+2*3*4", 25_f},
+            {"1+2*3", 7_f},   {"1*2+3", 5_f},   {"1+2*3+4", 11_f},
+            {"(1+2)*3", 9_f}, {"1*(2+3)", 5_f}, {"1+2*3*4", 25_f},
         };
 
         for (const auto& c : cases)
@@ -134,11 +130,8 @@ TEST_CASE("Parser Binary Expressions")
         };
 
         const Case cases[] = {
-            {"1<2==true", true},
-            {"1<2==false", false},
-            {"1+1<3", true},
-            {"1+1<2", false},
-            {"2*2>=3+1", true},
+            {"1<2==true", true}, {"1<2==false", false}, {"1+1<3", true},
+            {"1+1<2", false},    {"2*2>=3+1", true},
         };
 
         for (const auto& c : cases)
@@ -237,14 +230,8 @@ TEST_CASE("Parser Binary Expressions")
     SECTION("Chained comparisons and equality are syntax errors")
     {
         const std::string_view cases[] = {
-            "1<2<3",
-            "1<=2<=3",
-            "1>2>3",
-            "1==2==3",
-            "1!=2!=3",
-            "1<2>=3",
-            "1==2!=3",
-            "1<=2>3",
+            "1<2<3",   "1<=2<=3", "1>2>3",   "1==2==3",
+            "1!=2!=3", "1<2>=3",  "1==2!=3", "1<=2>3",
         };
 
         for (const auto& input : cases)

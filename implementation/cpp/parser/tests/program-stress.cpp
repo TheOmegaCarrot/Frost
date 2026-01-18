@@ -33,7 +33,8 @@ std::vector<frst::ast::Statement::Ptr> require_program(auto& result)
 frst::Value_Ptr run_statement(const frst::ast::Statement::Ptr& statement,
                               frst::Symbol_Table& table)
 {
-    if (auto* expr = dynamic_cast<const frst::ast::Expression*>(statement.get()))
+    if (auto* expr =
+            dynamic_cast<const frst::ast::Expression*>(statement.get()))
     {
         return expr->evaluate(table);
     }

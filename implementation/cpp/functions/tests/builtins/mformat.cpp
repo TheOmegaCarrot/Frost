@@ -385,28 +385,25 @@ TEST_CASE("Builtin mformat")
             SECTION("Multiple placeholders with trailing unterminated error")
             {
                 auto fmt = Value::create("${a}${a}${"s);
-                CHECK_THROWS_MATCHES(
-                    mformat->call({fmt, repl}), std::exception,
-                    MessageMatches(
-                        ContainsSubstring("Unterminated format placeholder")));
+                CHECK_THROWS_MATCHES(mformat->call({fmt, repl}), std::exception,
+                                     MessageMatches(ContainsSubstring(
+                                         "Unterminated format placeholder")));
             }
 
             SECTION("Multiple placeholder markers with one missing brace")
             {
                 auto fmt = Value::create("x${a}y${"s);
-                CHECK_THROWS_MATCHES(
-                    mformat->call({fmt, repl}), std::exception,
-                    MessageMatches(
-                        ContainsSubstring("Unterminated format placeholder")));
+                CHECK_THROWS_MATCHES(mformat->call({fmt, repl}), std::exception,
+                                     MessageMatches(ContainsSubstring(
+                                         "Unterminated format placeholder")));
             }
 
             SECTION("Just placeholder opener")
             {
                 auto fmt = Value::create("${"s);
-                CHECK_THROWS_MATCHES(
-                    mformat->call({fmt, repl}), std::exception,
-                    MessageMatches(
-                        ContainsSubstring("Unterminated format placeholder")));
+                CHECK_THROWS_MATCHES(mformat->call({fmt, repl}), std::exception,
+                                     MessageMatches(ContainsSubstring(
+                                         "Unterminated format placeholder")));
             }
 
             SECTION("Whitespace inside placeholder errors")

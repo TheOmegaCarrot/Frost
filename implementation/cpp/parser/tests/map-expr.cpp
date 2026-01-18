@@ -57,8 +57,8 @@ TEST_CASE("Parser Map Expressions")
 
     SECTION("Map map with a lambda operation")
     {
-        auto result = parse(
-            "map %{a: 1, b: 2} with fn (k, v) -> { %{[k]: v + 1} }");
+        auto result =
+            parse("map %{a: 1, b: 2} with fn (k, v) -> { %{[k]: v + 1} }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -92,8 +92,7 @@ TEST_CASE("Parser Map Expressions")
 
     SECTION("Map expressions can be used inside larger expressions")
     {
-        auto result = parse(
-            "(map [1, 2] with fn (x) -> { x + 1 })[1] * 2");
+        auto result = parse("(map [1, 2] with fn (x) -> { x + 1 })[1] * 2");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -102,8 +101,7 @@ TEST_CASE("Parser Map Expressions")
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 6_f);
 
-        auto result2 = parse(
-            "(map [1] with fn (x) -> { x })[0] == 1");
+        auto result2 = parse("(map [1] with fn (x) -> { x })[0] == 1");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
@@ -186,9 +184,8 @@ TEST_CASE("Parser Map Expressions")
         CHECK(arr[0]->get<frst::Int>().value() == 2_f);
         CHECK(arr[1]->get<frst::Int>().value() == 3_f);
 
-        auto result2 = parse(
-            "map (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
-            "with fn (x) -> { x * 2 }");
+        auto result2 = parse("map (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
+                             "with fn (x) -> { x * 2 }");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
@@ -198,9 +195,8 @@ TEST_CASE("Parser Map Expressions")
         CHECK(arr2[0]->get<frst::Int>().value() == 4_f);
         CHECK(arr2[1]->get<frst::Int>().value() == 6_f);
 
-        auto result3 = parse(
-            "map [1, 2] with fn (x) -> { (reduce [1, 2] with "
-            "fn (acc, y) -> { acc + y }) + x }");
+        auto result3 = parse("map [1, 2] with fn (x) -> { (reduce [1, 2] with "
+                             "fn (acc, y) -> { acc + y }) + x }");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
         auto out3 = expr3->evaluate(table);
@@ -225,7 +221,8 @@ TEST_CASE("Parser Map Expressions")
     {
         struct IdentityCallable final : frst::Callable
         {
-            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
+            frst::Value_Ptr call(
+                std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                 {
@@ -240,8 +237,7 @@ TEST_CASE("Parser Map Expressions")
             }
         };
 
-        auto result = parse(
-            "f(map [1, 2] with fn (x) -> { x + 1 })");
+        auto result = parse("f(map [1, 2] with fn (x) -> { x + 1 })");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -261,7 +257,8 @@ TEST_CASE("Parser Map Expressions")
     {
         struct WrapCallable final : frst::Callable
         {
-            frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
+            frst::Value_Ptr call(
+                std::span<const frst::Value_Ptr> args) const override
             {
                 if (args.empty())
                 {
@@ -276,8 +273,7 @@ TEST_CASE("Parser Map Expressions")
             }
         };
 
-        auto result = parse(
-            "map [1, 2] with fn (x) -> { (x @ f())[0] }");
+        auto result = parse("map [1, 2] with fn (x) -> { (x @ f())[0] }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -296,12 +292,9 @@ TEST_CASE("Parser Map Expressions")
     SECTION("Invalid map expressions fail to parse")
     {
         const std::string_view cases[] = {
-            "map with f",
-            "map [1] f",
-            "map [1] with",
-            "map [1] with f init: 0",
-            "map [1] with map",
-            "map [1] with fn (init) -> { init }",
+            "map with f",       "map [1] f",
+            "map [1] with",     "map [1] with f init: 0",
+            "map [1] with map", "map [1] with fn (init) -> { init }",
         };
 
         for (const auto& input : cases)

@@ -155,8 +155,9 @@ struct string_literal
                                             .map<'\\'>('\\')
                                             .map<'\''>('\'');
 
-        static constexpr auto rule = dsl::single_quoted.limit(dsl::ascii::newline)(
-            dsl::ascii::character, dsl::backslash_escape.symbol<escapes>());
+        static constexpr auto rule =
+            dsl::single_quoted.limit(dsl::ascii::newline)(
+                dsl::ascii::character, dsl::backslash_escape.symbol<escapes>());
         static constexpr auto value = lexy::as_string<std::string>;
     };
 
@@ -448,16 +449,15 @@ struct map_entry
                | (dsl::peek(dsl::ascii::alpha_underscore) >> ident_key);
     }();
 
-    static constexpr auto value =
-        lexy::callback<ast::Map_Constructor::KV_Pair>(
-            [](ast::Expression::Ptr key, ast::Expression::Ptr value) {
-                return std::make_pair(std::move(key), std::move(value));
-            },
-            [](std::string key, ast::Expression::Ptr value) {
-                auto key_value = Value::create(std::move(key));
-                auto key_expr = std::make_unique<ast::Literal>(key_value);
-                return std::make_pair(std::move(key_expr), std::move(value));
-            });
+    static constexpr auto value = lexy::callback<ast::Map_Constructor::KV_Pair>(
+        [](ast::Expression::Ptr key, ast::Expression::Ptr value) {
+            return std::make_pair(std::move(key), std::move(value));
+        },
+        [](std::string key, ast::Expression::Ptr value) {
+            auto key_value = Value::create(std::move(key));
+            auto key_expr = std::make_unique<ast::Literal>(key_value);
+            return std::make_pair(std::move(key_expr), std::move(value));
+        });
 };
 
 struct map_entries
@@ -465,8 +465,7 @@ struct map_entries
     static constexpr auto rule =
         LEXY_LIT("%{")
         >> dsl::terminator(dsl::lit_c<'}'>)
-               .opt_list(dsl::p<map_entry>,
-                         dsl::trailing_sep(dsl::lit_c<','>));
+               .opt_list(dsl::p<map_entry>, dsl::trailing_sep(dsl::lit_c<','>));
     static constexpr auto value = [] {
         auto sink = lexy::as_list<std::vector<ast::Map_Constructor::KV_Pair>>;
         auto cb = lexy::callback<std::vector<ast::Map_Constructor::KV_Pair>>(
@@ -621,20 +620,21 @@ struct expression : lexy::expression_production
 
             using operation = postfix;
 
-            static constexpr auto value =
-                lexy::callback<ast::Expression::Ptr>(
-                    [](ast::Expression::Ptr value) { return value; },
-                    [](ast::Expression::Ptr lhs, op_index,
-                       ast::Expression::Ptr index_expr) {
-                        return std::make_unique<ast::Index>(
-                            std::move(lhs), std::move(index_expr));
-                    },
-                    [](ast::Expression::Ptr lhs, op_dot, std::string key) {
-                        auto key_value = Value::create(std::move(key));
-                        auto key_expr = std::make_unique<ast::Literal>(key_value);
-                        return std::make_unique<ast::Index>(
-                            std::move(lhs), std::move(key_expr));
-                    });
+            static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+                [](ast::Expression::Ptr value) {
+                    return value;
+                },
+                [](ast::Expression::Ptr lhs, op_index,
+                   ast::Expression::Ptr index_expr) {
+                    return std::make_unique<ast::Index>(std::move(lhs),
+                                                        std::move(index_expr));
+                },
+                [](ast::Expression::Ptr lhs, op_dot, std::string key) {
+                    auto key_value = Value::create(std::move(key));
+                    auto key_expr = std::make_unique<ast::Literal>(key_value);
+                    return std::make_unique<ast::Index>(std::move(lhs),
+                                                        std::move(key_expr));
+                });
         };
 
         struct result
@@ -645,9 +645,9 @@ struct expression : lexy::expression_production
 
         static constexpr auto rule =
             dsl::p<callee> + dsl::lit_c<'('> + dsl::p<call_arguments>;
-        static constexpr auto value = lexy::callback<result>(
-            [](ast::Expression::Ptr callee,
-               std::vector<ast::Expression::Ptr> args) {
+        static constexpr auto value =
+            lexy::callback<result>([](ast::Expression::Ptr callee,
+                                      std::vector<ast::Expression::Ptr> args) {
                 return result{std::move(callee), std::move(args)};
             });
     };

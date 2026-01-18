@@ -94,15 +94,15 @@ TEST_CASE("Builtin try_call")
         CHECK_THROWS_WITH(try_call->call({}),
                           ContainsSubstring("requires at least 2"));
 
-        CHECK_THROWS_WITH(try_call->call({Value::null(), Value::null(),
-                                          Value::null()}),
-                          ContainsSubstring("too many arguments"));
-        CHECK_THROWS_WITH(try_call->call({Value::null(), Value::null(),
-                                          Value::null()}),
-                          ContainsSubstring("Called with 3"));
-        CHECK_THROWS_WITH(try_call->call({Value::null(), Value::null(),
-                                          Value::null()}),
-                          ContainsSubstring("no more than 2"));
+        CHECK_THROWS_WITH(
+            try_call->call({Value::null(), Value::null(), Value::null()}),
+            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(
+            try_call->call({Value::null(), Value::null(), Value::null()}),
+            ContainsSubstring("Called with 3"));
+        CHECK_THROWS_WITH(
+            try_call->call({Value::null(), Value::null(), Value::null()}),
+            ContainsSubstring("no more than 2"));
     }
 
     SECTION("Type checks")
@@ -121,8 +121,8 @@ TEST_CASE("Builtin try_call")
 
         SECTION("Second argument must be Array")
         {
-            auto fn = Value::create(
-                Function{std::make_shared<Recording_Callable>()});
+            auto fn =
+                Value::create(Function{std::make_shared<Recording_Callable>()});
             auto bad_args = Value::create("nope"s);
             CHECK_THROWS_WITH(try_call->call({fn, bad_args}),
                               ContainsSubstring("Function try_call requires"));

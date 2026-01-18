@@ -97,13 +97,15 @@ TEST_CASE("Parser Foreach Expressions")
         for (const auto& call : callable->calls)
         {
             if (call[0]->is<frst::String>()
-                && call[0]->get<frst::String>().value() == "a")
+                && call[0]->get<frst::String>().value()
+                == "a")
             {
                 saw_a = true;
                 CHECK(call[1]->get<frst::Int>().value() == 1_f);
             }
             if (call[0]->is<frst::String>()
-                && call[0]->get<frst::String>().value() == "b")
+                && call[0]->get<frst::String>().value()
+                == "b")
             {
                 saw_b = true;
                 CHECK(call[1]->get<frst::Int>().value() == 2_f);
@@ -116,8 +118,8 @@ TEST_CASE("Parser Foreach Expressions")
 
     SECTION("Foreach can iterate over a filtered array")
     {
-        auto result = parse(
-            "foreach (filter [1, 2, 3] with fn (x) -> { x > 1 }) with f");
+        auto result =
+            parse("foreach (filter [1, 2, 3] with fn (x) -> { x > 1 }) with f");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -155,13 +157,15 @@ TEST_CASE("Parser Foreach Expressions")
         {
             REQUIRE(call.size() == 2);
             if (call[0]->is<frst::String>()
-                && call[0]->get<frst::String>().value() == "a")
+                && call[0]->get<frst::String>().value()
+                == "a")
             {
                 saw_a = true;
                 CHECK(call[1]->get<frst::Int>().value() == 2_f);
             }
             if (call[0]->is<frst::String>()
-                && call[0]->get<frst::String>().value() == "b")
+                && call[0]->get<frst::String>().value()
+                == "b")
             {
                 saw_b = true;
                 CHECK(call[1]->get<frst::Int>().value() == 3_f);

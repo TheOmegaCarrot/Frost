@@ -436,8 +436,7 @@ TEST_CASE("Parser Postfix Expressions")
         CHECK(call_out == callable->result);
         CHECK(callable->received.empty());
 
-        auto call_split =
-            parse("f(\n 1 # comment\n ,\n 2\n)");
+        auto call_split = parse("f(\n 1 # comment\n ,\n 2\n)");
         REQUIRE(call_split);
         auto call_expr2 = require_expression(call_split);
         auto call_out2 = call_expr2->evaluate(table);

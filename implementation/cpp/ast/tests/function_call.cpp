@@ -29,9 +29,10 @@ struct RecordingCallable final : Callable
     {
         called = true;
         ++call_count;
-        args_match = args.size() == expected_args.size()
-                     && std::equal(args.begin(), args.end(),
-                                   expected_args.begin());
+        args_match =
+            args.size()
+            == expected_args.size()
+            && std::equal(args.begin(), args.end(), expected_args.begin());
         return result ? result : Value::null();
     }
 

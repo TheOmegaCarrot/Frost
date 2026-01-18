@@ -178,13 +178,7 @@ TEST_CASE("Parser Primary Expressions")
     SECTION("Invalid parenthesized expressions fail to parse")
     {
         const std::string_view cases[] = {
-            "()",
-            "(",
-            ")",
-            "(1",
-            "1)",
-            "((1)",
-            "(1))",
+            "()", "(", ")", "(1", "1)", "((1)", "(1))",
         };
 
         for (const auto& input : cases)
@@ -211,16 +205,8 @@ TEST_CASE("Parser Primary Expressions")
     SECTION("Reserved keywords fail as expressions")
     {
         const std::string_view cases[] = {
-            "def",
-            "if",
-            "else",
-            "elif",
-            "map",
-            "filter",
-            "reduce",
-            "foreach",
-            "with",
-            "init",
+            "def",    "if",     "else",    "elif", "map",
+            "filter", "reduce", "foreach", "with", "init",
         };
 
         for (const auto& input : cases)
