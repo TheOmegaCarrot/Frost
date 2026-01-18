@@ -523,39 +523,51 @@ struct expression : lexy::expression_production
     };
     struct op_mul
     {
+        static constexpr std::string_view text = "*";
     };
     struct op_div
     {
+        static constexpr std::string_view text = "/";
     };
     struct op_add
     {
+        static constexpr std::string_view text = "+";
     };
     struct op_sub
     {
+        static constexpr std::string_view text = "-";
     };
     struct op_lt
     {
+        static constexpr std::string_view text = "<";
     };
     struct op_le
     {
+        static constexpr std::string_view text = "<=";
     };
     struct op_gt
     {
+        static constexpr std::string_view text = ">";
     };
     struct op_ge
     {
+        static constexpr std::string_view text = ">=";
     };
     struct op_eq
     {
+        static constexpr std::string_view text = "==";
     };
     struct op_ne
     {
+        static constexpr std::string_view text = "!=";
     };
     struct op_and
     {
+        static constexpr std::string_view text = "and";
     };
     struct op_or
     {
+        static constexpr std::string_view text = "or";
     };
 
     struct ufcs_call
@@ -707,53 +719,13 @@ struct expression : lexy::expression_production
             return std::make_unique<ast::Function_Call>(std::move(rhs.callee),
                                                         std::move(args));
         },
-        [](ast::Expression::Ptr lhs, op_mul, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), "*",
-                                                std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_div, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), "/",
-                                                std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_add, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), "+",
-                                                std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_sub, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), "-",
-                                                std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_lt, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), "<",
-                                                std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_le, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs),
-                                                "<=", std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_gt, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), ">",
-                                                std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_ge, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs),
-                                                ">=", std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_eq, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs),
-                                                "==", std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_ne, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs),
-                                                "!=", std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_and, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), "and",
-                                                std::move(rhs));
-        },
-        [](ast::Expression::Ptr lhs, op_or, ast::Expression::Ptr rhs) {
-            return std::make_unique<ast::Binop>(std::move(lhs), "or",
-                                                std::move(rhs));
+        []<typename Op>(ast::Expression::Ptr lhs, Op, ast::Expression::Ptr rhs)
+            requires requires {
+                { Op::text } -> std::convertible_to<std::string_view>;
+            }
+        {
+            return std::make_unique<ast::Binop>(
+                std::move(lhs), std::string(Op::text), std::move(rhs));
         });
 };
 
