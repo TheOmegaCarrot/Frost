@@ -1,7 +1,9 @@
 #include <catch2/catch_all.hpp>
+#include <catch2/trompeloeil.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
+#include <frost/mock/mock-callable.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
@@ -12,58 +14,16 @@ using namespace frst;
 using namespace std::literals;
 
 using namespace Catch::Matchers;
+using trompeloeil::_;
 
 namespace
 {
-struct Recording_Callable final : Callable
+using Call_List = std::vector<std::vector<Value_Ptr>>;
+
+void record_call(Call_List& calls, std::span<const Value_Ptr> args)
 {
-    mutable std::vector<std::vector<Value_Ptr>> calls;
-    Value_Ptr result;
-
-    Value_Ptr call(std::span<const Value_Ptr> args) const override
-    {
-        calls.emplace_back(args.begin(), args.end());
-        return result ? result : Value::null();
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<recording>";
-    }
-};
-
-struct Throwing_User_Callable final : Callable
-{
-    explicit Throwing_User_Callable(std::string msg)
-        : msg{std::move(msg)}
-    {
-    }
-
-    Value_Ptr call(std::span<const Value_Ptr>) const override
-    {
-        throw Frost_User_Error{msg};
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<throw-user>";
-    }
-
-    std::string msg;
-};
-
-struct Throwing_Internal_Callable final : Callable
-{
-    Value_Ptr call(std::span<const Value_Ptr>) const override
-    {
-        throw Frost_Internal_Error{"internal boom"};
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<throw-internal>";
-    }
-};
+    calls.emplace_back(args.begin(), args.end());
+}
 } // namespace
 
 TEST_CASE("Builtin try_call")
@@ -121,8 +81,7 @@ TEST_CASE("Builtin try_call")
 
         SECTION("Second argument must be Array")
         {
-            auto fn =
-                Value::create(Function{std::make_shared<Recording_Callable>()});
+            auto fn = Value::create(Function{mock::Mock_Callable::make()});
             auto bad_args = Value::create("nope"s);
             CHECK_THROWS_WITH(try_call->call({fn, bad_args}),
                               ContainsSubstring("Function try_call requires"));
@@ -135,11 +94,15 @@ TEST_CASE("Builtin try_call")
 
     SECTION("Success returns ok=true and value")
     {
-        auto callable = std::make_shared<Recording_Callable>();
+        auto callable = mock::Mock_Callable::make();
         auto ret = Value::create(42_f);
-        callable->result = ret;
         auto fn = Value::create(Function{callable});
         auto args = Value::create(Array{});
+        Call_List calls;
+
+        REQUIRE_CALL(*callable, call(_))
+            .LR_SIDE_EFFECT(record_call(calls, _1))
+            .RETURN(ret);
 
         auto res = try_call->call({fn, args});
         REQUIRE(res->is<Map>());
@@ -151,16 +114,20 @@ TEST_CASE("Builtin try_call")
 
         CHECK(map.at(key_ok)->get<Bool>().value() == true);
         CHECK(map.at(key_value) == ret);
-        CHECK(callable->calls.size() == 1);
-        CHECK(callable->calls.at(0).empty());
+        CHECK(calls.size() == 1);
+        CHECK(calls.at(0).empty());
     }
 
     SECTION("Success preserves Null return as value")
     {
-        auto callable = std::make_shared<Recording_Callable>();
-        callable->result = Value::null();
+        auto callable = mock::Mock_Callable::make();
         auto fn = Value::create(Function{callable});
         auto args = Value::create(Array{});
+        Call_List calls;
+
+        REQUIRE_CALL(*callable, call(_))
+            .LR_SIDE_EFFECT(record_call(calls, _1))
+            .RETURN(Value::null());
 
         auto res = try_call->call({fn, args});
         REQUIRE(res->is<Map>());
@@ -174,11 +141,17 @@ TEST_CASE("Builtin try_call")
 
     SECTION("Calls function with array elements (pack_call semantics)")
     {
-        auto callable = std::make_shared<Recording_Callable>();
+        auto callable = mock::Mock_Callable::make();
         auto fn = Value::create(Function{callable});
         auto a = Value::create(1_f);
         auto b = Value::create("hi"s);
         auto args = Value::create(Array{a, b});
+        Call_List calls;
+
+        REQUIRE_CALL(*callable, call(_))
+            .LR_SIDE_EFFECT(record_call(calls, _1))
+            .LR_WITH(_1.size() == 2 && _1[0] == a && _1[1] == b)
+            .RETURN(Value::null());
 
         auto res = try_call->call({fn, args});
         REQUIRE(res->is<Map>());
@@ -186,17 +159,19 @@ TEST_CASE("Builtin try_call")
         CHECK(map.size() == 2);
         REQUIRE(map.contains(key_ok));
         REQUIRE(map.contains(key_value));
-        REQUIRE(callable->calls.size() == 1);
-        REQUIRE(callable->calls.at(0).size() == 2);
-        CHECK(callable->calls.at(0).at(0) == a);
-        CHECK(callable->calls.at(0).at(1) == b);
+        REQUIRE(calls.size() == 1);
+        REQUIRE(calls.at(0).size() == 2);
+        CHECK(calls.at(0).at(0) == a);
+        CHECK(calls.at(0).at(1) == b);
     }
 
     SECTION("User error returns ok=false and error message")
     {
-        auto callable = std::make_shared<Throwing_User_Callable>("boom"s);
+        auto callable = mock::Mock_Callable::make();
         auto fn = Value::create(Function{callable});
         auto args = Value::create(Array{});
+
+        REQUIRE_CALL(*callable, call(_)).THROW(Frost_User_Error{"boom"});
 
         auto res = try_call->call({fn, args});
         REQUIRE(res->is<Map>());
@@ -212,10 +187,12 @@ TEST_CASE("Builtin try_call")
 
     SECTION("Internal error propagates")
     {
-        auto callable = std::make_shared<Throwing_Internal_Callable>();
+        auto callable = mock::Mock_Callable::make();
         auto fn = Value::create(Function{callable});
         auto args = Value::create(Array{});
 
+        REQUIRE_CALL(*callable, call(_))
+            .THROW(Frost_Internal_Error{"internal boom"});
         CHECK_THROWS_WITH(try_call->call({fn, args}),
                           ContainsSubstring("internal boom"));
     }

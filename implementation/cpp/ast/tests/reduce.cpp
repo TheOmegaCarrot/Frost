@@ -343,8 +343,7 @@ TEST_CASE("Reduce Array")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
-            REQUIRE_CALL(*reducer, call(_))
-                .RETURN(result_val);
+            REQUIRE_CALL(*reducer, call(_)).RETURN(result_val);
 
             ast::Reduce node{
                 std::move(structure_expr), std::move(operation_expr),
@@ -454,8 +453,7 @@ TEST_CASE("Reduce Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*init_expr, evaluate(_));
-            REQUIRE_CALL(*reducer, call(_))
-                .THROW(Frost_User_Error{"kaboom"});
+            REQUIRE_CALL(*reducer, call(_)).THROW(Frost_User_Error{"kaboom"});
 
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
@@ -777,8 +775,7 @@ TEST_CASE("Reduce Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
-            REQUIRE_CALL(*reducer, call(_))
-                .RETURN(r1);
+            REQUIRE_CALL(*reducer, call(_)).RETURN(r1);
 
             ast::Reduce node{
                 std::move(structure_expr), std::move(operation_expr),
@@ -887,8 +884,7 @@ TEST_CASE("Reduce Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
-            REQUIRE_CALL(*reducer, call(_))
-                .THROW(Frost_User_Error{"kaboom"});
+            REQUIRE_CALL(*reducer, call(_)).THROW(Frost_User_Error{"kaboom"});
 
             ast::Reduce node{
                 std::move(structure_expr), std::move(operation_expr),

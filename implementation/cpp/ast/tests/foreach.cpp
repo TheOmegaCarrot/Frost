@@ -385,8 +385,10 @@ TEST_CASE("Foreach Map")
             bool matched = false;
             for (auto it = expected.begin(); it != expected.end(); ++it)
             {
-                if (it->first == calls.at(0).at(0)
-                    && it->second == calls.at(0).at(1))
+                if (it->first
+                    == calls.at(0).at(0)
+                    && it->second
+                    == calls.at(0).at(1))
                 {
                     matched = true;
                     break;

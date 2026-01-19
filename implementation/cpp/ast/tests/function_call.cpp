@@ -269,8 +269,7 @@ TEST_CASE("Function Call")
         REQUIRE_CALL(*arg_ptr, evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(1_f));
-        REQUIRE_CALL(*callable, call(_))
-            .THROW(Frost_User_Error{"boom"});
+        REQUIRE_CALL(*callable, call(_)).THROW(Frost_User_Error{"boom"});
 
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg));

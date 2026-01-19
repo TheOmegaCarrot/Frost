@@ -1,8 +1,10 @@
 #include <catch2/catch_all.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <catch2/trompeloeil.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
+#include <frost/mock/mock-callable.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
@@ -12,6 +14,7 @@ using namespace frst;
 
 using namespace std::literals;
 using Catch::Matchers::ContainsSubstring;
+using trompeloeil::_;
 
 TEST_CASE("Builtin pack_call")
 {
@@ -38,56 +41,6 @@ TEST_CASE("Builtin pack_call")
             ContainsSubstring("too many arguments"));
     }
 
-    struct RecordingCallable final : Callable
-    {
-        const Array* expected_args = nullptr;
-        mutable bool called = false;
-        mutable bool same_vector = false;
-        mutable bool same_elements = false;
-        Value_Ptr return_value;
-        mutable std::size_t observed_size = 0;
-
-        Value_Ptr call(builtin_args_t args) const override
-        {
-            called = true;
-            observed_size = args.size();
-            if (expected_args != nullptr)
-            {
-                same_vector = (args.data() == expected_args->data());
-                same_elements = (args.size() == expected_args->size());
-                if (same_elements)
-                {
-                    for (std::size_t i = 0; i < args.size(); ++i)
-                    {
-                        if (args[i] != expected_args->at(i))
-                        {
-                            same_elements = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            return return_value ? return_value : Value::null();
-        }
-
-        std::string debug_dump() const override
-        {
-            return "<recording>";
-        }
-    };
-
-    struct ThrowingCallable final : Callable
-    {
-        Value_Ptr call(builtin_args_t) const override
-        {
-            throw Frost_User_Error{"boom"};
-        }
-        std::string debug_dump() const override
-        {
-            return "<throwing>";
-        }
-    };
-
     SECTION("Type error: function argument")
     {
         auto arg_list = Value::create(frst::Array{Value::create(1_f)});
@@ -109,7 +62,7 @@ TEST_CASE("Builtin pack_call")
 
     SECTION("Type error: args argument")
     {
-        auto callable = std::make_shared<RecordingCallable>();
+        auto callable = mock::Mock_Callable::make();
         auto func_val = Value::create(Function{callable});
         try
         {
@@ -128,14 +81,23 @@ TEST_CASE("Builtin pack_call")
 
     SECTION("Empty array calls zero-arg function")
     {
-        auto callable = std::make_shared<RecordingCallable>();
+        auto callable = mock::Mock_Callable::make();
         auto func_val = Value::create(Function{callable});
         auto empty_args = Value::create(frst::Array{});
 
+        bool called = false;
+        std::size_t observed_size = 0;
+        REQUIRE_CALL(*callable, call(_))
+            .LR_SIDE_EFFECT({
+                called = true;
+                observed_size = _1.size();
+            })
+            .RETURN(Value::null());
+
         auto res = pack_call_fn->call({func_val, empty_args});
 
-        CHECK(callable->called);
-        CHECK(callable->observed_size == 0);
+        CHECK(called);
+        CHECK(observed_size == 0);
         CHECK(res->is<Null>());
     }
 
@@ -148,26 +110,49 @@ TEST_CASE("Builtin pack_call")
         });
         const auto* expected = &arr_val->raw_get<Array>();
 
-        auto callable = std::make_shared<RecordingCallable>();
-        callable->expected_args = expected;
+        auto callable = mock::Mock_Callable::make();
         auto expected_return = Value::create("ok"s);
-        callable->return_value = expected_return;
+        bool called = false;
+        bool same_vector = false;
+        bool same_elements = false;
+        std::size_t observed_size = 0;
 
         auto func_val = Value::create(Function{callable});
+        REQUIRE_CALL(*callable, call(_))
+            .LR_SIDE_EFFECT({
+                called = true;
+                observed_size = _1.size();
+                same_vector = (_1.data() == expected->data());
+                same_elements = (_1.size() == expected->size());
+                if (same_elements)
+                {
+                    for (std::size_t i = 0; i < _1.size(); ++i)
+                    {
+                        if (_1[i] != expected->at(i))
+                        {
+                            same_elements = false;
+                            break;
+                        }
+                    }
+                }
+            })
+            .RETURN(expected_return);
         auto res = pack_call_fn->call({func_val, arr_val});
 
-        CHECK(callable->called);
-        CHECK(callable->same_vector);
-        CHECK(callable->same_elements);
+        CHECK(called);
+        CHECK(observed_size == expected->size());
+        CHECK(same_vector);
+        CHECK(same_elements);
         CHECK(res == expected_return);
     }
 
     SECTION("Propagates errors from callee")
     {
-        auto callable = std::make_shared<ThrowingCallable>();
+        auto callable = mock::Mock_Callable::make();
         auto func_val = Value::create(Function{callable});
         auto args = Value::create(frst::Array{Value::create(1_f)});
 
+        REQUIRE_CALL(*callable, call(_)).THROW(Frost_User_Error{"boom"});
         CHECK_THROWS_WITH(pack_call_fn->call({func_val, args}),
                           ContainsSubstring("boom"));
     }

@@ -319,12 +319,10 @@ TEST_CASE("Map Map")
                 .RETURN(op_val);
             REQUIRE_CALL(*mapper, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
-                .RETURN(Value::create(
-                    Map{{out_k1, out_v1}, {out_k2, out_v2}}));
+                .RETURN(Value::create(Map{{out_k1, out_v1}, {out_k2, out_v2}}));
             REQUIRE_CALL(*mapper, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
-                .RETURN(Value::create(
-                    Map{{out_k3, out_v3}, {out_k4, out_v4}}));
+                .RETURN(Value::create(Map{{out_k3, out_v3}, {out_k4, out_v4}}));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 

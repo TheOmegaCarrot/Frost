@@ -11,7 +11,8 @@ namespace frst::mock
 class Mock_Callable : public Callable
 {
   public:
-    MAKE_CONST_MOCK(call, auto(std::span<const Value_Ptr>)->Value_Ptr, override);
+    MAKE_CONST_MOCK(call, auto(std::span<const Value_Ptr>)->Value_Ptr,
+                    override);
 
     MAKE_CONST_MOCK(debug_dump, auto()->std::string, override);
 
