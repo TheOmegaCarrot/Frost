@@ -38,7 +38,7 @@ namespace frst
 #define X(FN)                                                                  \
     Value_Ptr FN(builtin_args_t args)                                          \
     {                                                                          \
-        REQUIRE_ARGS(FN, TYPES(Int, Float));                                   \
+        REQUIRE_ARGS(#FN, TYPES(Int, Float));                                  \
                                                                                \
         return Value::create(std::FN(args.at(0)->as<Float>().value()));        \
     }
@@ -56,7 +56,7 @@ X_UNARY_MATH_FLOAT
 #define X(FN)                                                                  \
     Value_Ptr FN(builtin_args_t args)                                          \
     {                                                                          \
-        REQUIRE_ARGS(FN, TYPES(Int, Float), TYPES(Int, Float));                \
+        REQUIRE_ARGS(#FN, TYPES(Int, Float), TYPES(Int, Float));               \
         return Value::create(auto{std::FN(args.at(0)->as<Float>().value(),     \
                                           args.at(1)->as<Float>().value())});  \
     }
@@ -67,7 +67,7 @@ X_BINARY_MATH_FLOAT
 
 Value_Ptr abs(builtin_args_t args)
 {
-    REQUIRE_ARGS(abs, TYPES(Int, Float));
+    REQUIRE_ARGS("abs", TYPES(Int, Float));
 
     const auto& arg = args.at(0);
 
@@ -81,14 +81,14 @@ Value_Ptr abs(builtin_args_t args)
 
 Value_Ptr round(builtin_args_t args)
 {
-    REQUIRE_ARGS(round, TYPES(Int, Float));
+    REQUIRE_ARGS("round", TYPES(Int, Float));
 
     return Value::create(std::lround(args.at(0)->as<Float>().value()));
 }
 
 Value_Ptr hypot(builtin_args_t args)
 {
-    REQUIRE_ARGS(hypot, TYPES(Int, Float), TYPES(Int, Float),
+    REQUIRE_ARGS("hypot", TYPES(Int, Float), TYPES(Int, Float),
                  OPTIONAL(TYPES(Int, Float)));
 
     if (args.size() == 2)

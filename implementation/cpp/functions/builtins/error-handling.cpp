@@ -11,7 +11,7 @@ namespace frst
 Value_Ptr try_call(builtin_args_t args)
 {
     // clang-format off
-    REQUIRE_ARGS(try_call,
+    REQUIRE_ARGS("try_call",
             PARAM("function", TYPES(Function)),
             PARAM("args", TYPES(Array)));
     // clang-format on

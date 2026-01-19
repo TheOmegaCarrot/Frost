@@ -23,7 +23,7 @@ Value_Ptr debug_dump(builtin_args_t args)
 #endif
 Value_Ptr assert(builtin_args_t args)
 {
-    REQUIRE_ARGS(assert, PARAM("condition", ANY),
+    REQUIRE_ARGS("assert", PARAM("condition", ANY),
                  OPTIONAL(PARAM("message", TYPES(String))));
 
     if (not args.at(0)->as<Bool>().value())

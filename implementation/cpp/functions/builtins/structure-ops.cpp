@@ -14,7 +14,7 @@ namespace frst
 // basically `map a_map with fn (k, v) -> { k }`
 Value_Ptr keys(builtin_args_t args)
 {
-    REQUIRE_ARGS(keys, TYPES(Map));
+    REQUIRE_ARGS("keys", TYPES(Map));
 
     return Value::create(args.at(0)->raw_get<Map>()
                          | std::views::keys
@@ -25,7 +25,7 @@ Value_Ptr keys(builtin_args_t args)
 // basically `map a_map with fn (k, v) -> { b }`
 Value_Ptr values(builtin_args_t args)
 {
-    REQUIRE_ARGS(values, TYPES(Map));
+    REQUIRE_ARGS("values", TYPES(Map));
 
     return Value::create(args.at(0)->raw_get<Map>()
                          | std::views::values
@@ -34,7 +34,7 @@ Value_Ptr values(builtin_args_t args)
 
 Value_Ptr len(builtin_args_t args)
 {
-    REQUIRE_ARGS(len, TYPES(Map, Array, String));
+    REQUIRE_ARGS("len", TYPES(Map, Array, String));
 
     if (const auto& arg = args.at(0); arg->is<Map>())
     {
@@ -60,7 +60,7 @@ Value_Ptr range(builtin_args_t args)
     };
     if (args.size() == 1)
     {
-        REQUIRE_ARGS(range, PARAM("upper bound", TYPES(Int)));
+        REQUIRE_ARGS("range", PARAM("upper bound", TYPES(Int)));
 
         auto upper_bound = args.at(0)->raw_get<Int>();
 
@@ -72,7 +72,7 @@ Value_Ptr range(builtin_args_t args)
     }
     else
     {
-        REQUIRE_ARGS(range, PARAM("lower bound", TYPES(Int)),
+        REQUIRE_ARGS("range", PARAM("lower bound", TYPES(Int)),
                      PARAM("upper bound", TYPES(Int)));
 
         auto lower_bound = args.at(0)->raw_get<Int>();

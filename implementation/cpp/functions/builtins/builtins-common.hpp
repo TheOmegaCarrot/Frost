@@ -146,6 +146,6 @@ void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
     }
 
 #define REQUIRE_ARGS(NAME, ...)                                                \
-    frst::builtin_detail::require_args(#NAME, args __VA_OPT__(, ) __VA_ARGS__)
+    frst::builtin_detail::require_args(NAME, args __VA_OPT__(, ) __VA_ARGS__)
 
 #endif

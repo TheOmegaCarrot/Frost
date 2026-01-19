@@ -31,6 +31,7 @@ TEST_CASE("Builtin regex")
         {
             if (Value::equal(k, key)->get<Bool>().value())
             {
+                REQUIRE(v);
                 REQUIRE(v->is<Function>());
                 return v->get<Function>().value();
             }
@@ -61,25 +62,20 @@ TEST_CASE("Builtin regex")
             {
                 auto fn = get_re_fn(name);
 
+                const auto too_few_1 =
+                    ContainsSubstring("insufficient arguments");
+                const auto too_few_2 = ContainsSubstring("Called with 0");
+                const auto too_few_3 = ContainsSubstring("requires at least 2");
                 CHECK_THROWS_WITH(fn->call({}),
-                                  ContainsSubstring("insufficient arguments"));
-                CHECK_THROWS_WITH(fn->call({}),
-                                  ContainsSubstring("Called with 0"));
-                CHECK_THROWS_WITH(fn->call({}),
-                                  ContainsSubstring("requires at least 2"));
+                                  too_few_1 && too_few_2 && too_few_3);
 
-                CHECK_THROWS_WITH(fn->call({Value::create("a"s),
-                                            Value::create("b"s),
-                                            Value::create("c"s)}),
-                                  ContainsSubstring("too many arguments"));
-                CHECK_THROWS_WITH(fn->call({Value::create("a"s),
-                                            Value::create("b"s),
-                                            Value::create("c"s)}),
-                                  ContainsSubstring("Called with 3"));
-                CHECK_THROWS_WITH(fn->call({Value::create("a"s),
-                                            Value::create("b"s),
-                                            Value::create("c"s)}),
-                                  ContainsSubstring("no more than 2"));
+                const auto too_many_1 = ContainsSubstring("too many arguments");
+                const auto too_many_2 = ContainsSubstring("Called with 3");
+                const auto too_many_3 = ContainsSubstring("no more than 2");
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("b"s),
+                              Value::create("c"s)}),
+                    too_many_1 && too_many_2 && too_many_3);
             }
         }
     }
@@ -95,21 +91,21 @@ TEST_CASE("Builtin regex")
             DYNAMIC_SECTION(name << " type errors")
             {
                 auto fn = get_re_fn(name);
+                const auto first_fn =
+                    ContainsSubstring(std::string{"Function re."} + name);
+                const auto first_string = ContainsSubstring("String");
+                const auto first_type =
+                    EndsWith(std::string{bad_first->type_name()});
                 CHECK_THROWS_WITH(fn->call({bad_first, good}),
-                                  ContainsSubstring(std::string{"Function "}
-                                                    + name));
-                CHECK_THROWS_WITH(fn->call({bad_first, good}),
-                                  ContainsSubstring("String"));
-                CHECK_THROWS_WITH(fn->call({bad_first, good}),
-                                  EndsWith(std::string{bad_first->type_name()}));
+                                  first_fn && first_string && first_type);
 
+                const auto second_fn =
+                    ContainsSubstring(std::string{"Function re."} + name);
+                const auto second_string = ContainsSubstring("String");
+                const auto second_type =
+                    EndsWith(std::string{bad_second->type_name()});
                 CHECK_THROWS_WITH(fn->call({good, bad_second}),
-                                  ContainsSubstring(std::string{"Function "}
-                                                    + name));
-                CHECK_THROWS_WITH(fn->call({good, bad_second}),
-                                  ContainsSubstring("String"));
-                CHECK_THROWS_WITH(fn->call({good, bad_second}),
-                                  EndsWith(std::string{bad_second->type_name()}));
+                                  second_fn && second_string && second_type);
             }
         }
     }
@@ -142,7 +138,8 @@ TEST_CASE("Builtin regex")
             get_re_fn("contains")->call({target, empty})->get<Bool>().value());
 
         auto empty_target = Value::create(""s);
-        CHECK(get_re_fn("matches")->call({empty_target, empty})
+        CHECK(get_re_fn("matches")
+                  ->call({empty_target, empty})
                   ->get<Bool>()
                   .value());
     }
@@ -154,8 +151,10 @@ TEST_CASE("Builtin regex")
 
         CHECK_FALSE(
             get_re_fn("matches")->call({target, pattern})->get<Bool>().value());
-        CHECK(
-            get_re_fn("contains")->call({target, pattern})->get<Bool>().value());
+        CHECK(get_re_fn("contains")
+                  ->call({target, pattern})
+                  ->get<Bool>()
+                  .value());
 
         auto full = Value::create("foofoo"s);
         CHECK(get_re_fn("matches")->call({full, pattern})->get<Bool>().value());
@@ -168,8 +167,10 @@ TEST_CASE("Builtin regex")
 
         CHECK_FALSE(
             get_re_fn("matches")->call({target, pattern})->get<Bool>().value());
-        CHECK_FALSE(
-            get_re_fn("contains")->call({target, pattern})->get<Bool>().value());
+        CHECK_FALSE(get_re_fn("contains")
+                        ->call({target, pattern})
+                        ->get<Bool>()
+                        .value());
     }
 
     SECTION("UTF-8 literals")
@@ -178,7 +179,8 @@ TEST_CASE("Builtin regex")
         auto emoji = Value::create("😊"s);
         auto full = Value::create("hi 😊 frost 😊"s);
 
-        CHECK(get_re_fn("contains")->call({target, emoji})->get<Bool>().value());
+        CHECK(
+            get_re_fn("contains")->call({target, emoji})->get<Bool>().value());
         CHECK(get_re_fn("matches")->call({target, full})->get<Bool>().value());
     }
 }

@@ -5,7 +5,7 @@ namespace frst
 Value_Ptr pack_call(builtin_args_t args)
 {
     // clang-format off
-    REQUIRE_ARGS(pack_call,
+    REQUIRE_ARGS("pack_call",
             PARAM("function", TYPES(Function)),
             PARAM("args", TYPES(Array)));
     // clang-format on

@@ -10,7 +10,7 @@ namespace frst
 
 Value_Ptr split(builtin_args_t args)
 {
-    REQUIRE_ARGS(split, TYPES(String), TYPES(String));
+    REQUIRE_ARGS("split", TYPES(String), TYPES(String));
 
     const auto& target = args.at(0)->raw_get<String>();
     const auto& split_on = args.at(1)->raw_get<String>();
@@ -42,7 +42,7 @@ Value_Ptr split(builtin_args_t args)
 #define X(method)                                                              \
     Value_Ptr method(builtin_args_t args)                                      \
     {                                                                          \
-        REQUIRE_ARGS(method, TYPES(String), TYPES(String));                    \
+        REQUIRE_ARGS(#method, TYPES(String), TYPES(String));                   \
                                                                                \
         return Value::create(args.at(0)->raw_get<String>().method(             \
             args.at(1)->raw_get<String>()));                                   \

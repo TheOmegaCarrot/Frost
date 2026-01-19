@@ -105,7 +105,7 @@ std::string mformat_impl(const String& fmt_str, const Map& repl_map)
 
 Value_Ptr mformat(builtin_args_t args)
 {
-    REQUIRE_ARGS(mformat, PARAM("format string", TYPES(String)),
+    REQUIRE_ARGS("mformat", PARAM("format string", TYPES(String)),
                  PARAM("replacement map", TYPES(Map)));
 
     return Value::create(mformat_impl(args.at(0)->raw_get<String>(),
@@ -114,7 +114,7 @@ Value_Ptr mformat(builtin_args_t args)
 
 Value_Ptr mprint(builtin_args_t args)
 {
-    REQUIRE_ARGS(mformat, PARAM("format string", TYPES(String)),
+    REQUIRE_ARGS("mprint", PARAM("format string", TYPES(String)),
                  PARAM("replacement map", TYPES(Map)));
 
     std::puts(
