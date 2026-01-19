@@ -41,17 +41,19 @@ TEST_CASE("Builtin regex")
     };
 
     const std::vector<std::string> names{"matches", "contains"};
+    const std::string replace_name{"replace"};
 
     SECTION("Injected")
     {
         CHECK(re_val->is<Map>());
-        CHECK(re_map.size() == 2);
+        CHECK(re_map.size() == 3);
 
         for (const auto& name : names)
         {
             auto fn = get_re_fn(name);
             REQUIRE(fn);
         }
+        REQUIRE(get_re_fn(replace_name));
     }
 
     SECTION("Arity")
@@ -78,6 +80,26 @@ TEST_CASE("Builtin regex")
                     too_many_1 && too_many_2 && too_many_3);
             }
         }
+    }
+
+    SECTION("Replace arity")
+    {
+        auto fn = get_re_fn(replace_name);
+
+        const auto too_few_1 = ContainsSubstring("insufficient arguments");
+        const auto too_few_2 = ContainsSubstring("Called with 2");
+        const auto too_few_3 = ContainsSubstring("requires at least 3");
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create("b"s)}),
+            too_few_1 && too_few_2 && too_few_3);
+
+        const auto too_many_1 = ContainsSubstring("too many arguments");
+        const auto too_many_2 = ContainsSubstring("Called with 4");
+        const auto too_many_3 = ContainsSubstring("no more than 3");
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s),
+                                    Value::create("c"s),
+                                    Value::create("d"s)}),
+                          too_many_1 && too_many_2 && too_many_3);
     }
 
     SECTION("Type errors")
@@ -110,6 +132,31 @@ TEST_CASE("Builtin regex")
         }
     }
 
+    SECTION("Replace type errors")
+    {
+        auto bad_first = Value::create(1_f);
+        auto bad_second = Value::create(true);
+        auto bad_third = Value::create(Null{});
+        auto good = Value::create("a"s);
+        auto fn = get_re_fn(replace_name);
+
+        const auto fn_name =
+            ContainsSubstring(std::string{"Function re."} + replace_name);
+        const auto expected = ContainsSubstring("String");
+
+        CHECK_THROWS_WITH(fn->call({bad_first, good, good}),
+                          fn_name && expected
+                              && EndsWith(std::string{bad_first->type_name()}));
+        CHECK_THROWS_WITH(
+            fn->call({good, bad_second, good}),
+            fn_name && expected
+                && EndsWith(std::string{bad_second->type_name()}));
+        CHECK_THROWS_WITH(
+            fn->call({good, good, bad_third}),
+            fn_name && expected
+                && EndsWith(std::string{bad_third->type_name()}));
+    }
+
     SECTION("Regex syntax errors")
     {
         auto target = Value::create("abc"s);
@@ -124,6 +171,13 @@ TEST_CASE("Builtin regex")
                     fn->call({target, bad_re}), Frost_User_Error,
                     MessageMatches(StartsWith("Regex error: ")));
             }
+        }
+
+        {
+            auto fn = get_re_fn(replace_name);
+            CHECK_THROWS_MATCHES(
+                fn->call({target, bad_re, Value::create("x"s)}),
+                Frost_User_Error, MessageMatches(StartsWith("Regex error: ")));
         }
     }
 
@@ -142,6 +196,27 @@ TEST_CASE("Builtin regex")
                   ->call({empty_target, empty})
                   ->get<Bool>()
                   .value());
+    }
+
+    SECTION("Replace success")
+    {
+        auto target = Value::create("a1b2"s);
+        auto pattern = Value::create("[0-9]"s);
+        auto replacement = Value::create("X"s);
+
+        CHECK(get_re_fn("replace")
+                  ->call({target, pattern, replacement})
+                  ->raw_get<String>()
+              == "aXbX");
+
+        auto capture_target = Value::create("foo"s);
+        auto capture_pattern = Value::create("(foo)"s);
+        auto capture_repl = Value::create("<$1>"s);
+
+        CHECK(get_re_fn("replace")
+                  ->call({capture_target, capture_pattern, capture_repl})
+                  ->raw_get<String>()
+              == "<foo>");
     }
 
     SECTION("Matches vs contains")

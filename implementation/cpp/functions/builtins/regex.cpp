@@ -49,11 +49,24 @@ Value_Ptr contains(builtin_args_t args)
         boost::regex_search(args.at(0)->raw_get<String>(), re));
 }
 
+Value_Ptr replace(builtin_args_t args)
+{
+    REQUIRE_ARGS("re.replace", PARAM("string", TYPES(String)),
+                 PARAM("regex", TYPES(String)),
+                 PARAM("replacement", TYPES(String)));
+
+    auto re = regex(args.at(1));
+
+    return Value::create(boost::regex_replace(args.at(0)->raw_get<String>(), re,
+                                              args.at(2)->raw_get<String>()));
+}
+
 } // namespace re
 
 void inject_regex(Symbol_Table& table)
 {
     using namespace re;
-    INJECT_MAP(re, ENTRY(matches, 2, 2), ENTRY(contains, 2, 2), );
+    INJECT_MAP(re, ENTRY(matches, 2, 2), ENTRY(contains, 2, 2),
+               ENTRY(replace, 3, 3));
 }
 } // namespace frst
