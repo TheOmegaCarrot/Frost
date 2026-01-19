@@ -36,7 +36,7 @@ struct RecordingCallable final : frst::Callable
     frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
     {
         calls.emplace_back(args.begin(), args.end());
-        return frst::Value::null();
+        return frst::Value::create(true);
     }
 
     std::string debug_dump() const override

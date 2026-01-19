@@ -30,8 +30,6 @@
 
 # Conceptual
 
-- Partial iteration?
-    - Foreach return value truthiness == (continue?)
 - More range operations
     - Zip
 - Filesystem operations

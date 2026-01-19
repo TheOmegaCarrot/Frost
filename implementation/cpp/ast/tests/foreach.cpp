@@ -25,7 +25,7 @@ struct Recording_Foreach final : Callable
     Value_Ptr call(std::span<const Value_Ptr> args) const override
     {
         calls.emplace_back(args.begin(), args.end());
-        return Value::null();
+        return Value::create(true);
     }
 
     std::string debug_dump() const override
@@ -46,7 +46,7 @@ struct Throw_On_Call final : Callable
         calls.emplace_back(args.begin(), args.end());
         if (call_index++ == throw_on_index)
             throw Frost_User_Error{"kaboom"};
-        return Value::null();
+        return Value::create(true);
     }
 
     std::string debug_dump() const override
@@ -57,6 +57,24 @@ struct Throw_On_Call final : Callable
     std::size_t throw_on_index;
     mutable std::size_t call_index = 0;
     mutable std::vector<std::vector<Value_Ptr>> calls;
+};
+
+struct Stop_On_First final : Callable
+{
+    mutable std::vector<std::vector<Value_Ptr>> calls;
+
+    Value_Ptr call(std::span<const Value_Ptr> args) const override
+    {
+        calls.emplace_back(args.begin(), args.end());
+        if (calls.size() == 1)
+            return Value::create(false);
+        return Value::create(true);
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<stop-on-first>";
+    }
 };
 } // namespace
 
@@ -157,6 +175,36 @@ TEST_CASE("Foreach Array")
             REQUIRE(op->calls.at(1).size() == 1);
             CHECK(op->calls.at(0).at(0) == v1);
             CHECK(op->calls.at(1).at(0) == v2);
+        }
+
+        SECTION("Falsy op return stops iteration")
+        {
+            auto v1 = Value::create(1_f);
+            auto v2 = Value::create(2_f);
+            auto v3 = Value::create(3_f);
+            auto array_val = Value::create(Array{v1, v2, v3});
+
+            auto op = std::make_shared<Stop_On_First>();
+            auto op_val = Value::create(Function{op});
+
+            trompeloeil::sequence seq;
+            REQUIRE_CALL(*structure_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(array_val);
+            REQUIRE_CALL(*operation_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(op_val);
+
+            ast::Foreach node{std::move(structure_expr),
+                              std::move(operation_expr)};
+
+            auto res = node.evaluate(syms);
+            CHECK(res->is<Null>());
+            REQUIRE(op->calls.size() == 1);
+            REQUIRE(op->calls.at(0).size() == 1);
+            CHECK(op->calls.at(0).at(0) == v1);
         }
     }
 
@@ -312,6 +360,50 @@ TEST_CASE("Foreach Map")
             CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
             REQUIRE(op->calls.size() == 1);
             REQUIRE(op->calls.at(0).size() == 2);
+        }
+
+        SECTION("Falsy op return stops iteration")
+        {
+            auto k1 = Value::create("k1"s);
+            auto v1 = Value::create(1_f);
+            auto k2 = Value::create("k2"s);
+            auto v2 = Value::create(2_f);
+            auto map_val = Value::create(Map{{k1, v1}, {k2, v2}});
+
+            auto op = std::make_shared<Stop_On_First>();
+            auto op_val = Value::create(Function{op});
+
+            trompeloeil::sequence seq;
+            REQUIRE_CALL(*structure_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(map_val);
+            REQUIRE_CALL(*operation_expr, evaluate(_))
+                .LR_WITH(&_1 == &syms)
+                .IN_SEQUENCE(seq)
+                .RETURN(op_val);
+
+            ast::Foreach node{std::move(structure_expr),
+                              std::move(operation_expr)};
+
+            auto res = node.evaluate(syms);
+            CHECK(res->is<Null>());
+            REQUIRE(op->calls.size() == 1);
+            REQUIRE(op->calls.at(0).size() == 2);
+
+            std::vector<std::pair<Value_Ptr, Value_Ptr>> expected = {{k1, v1},
+                                                                     {k2, v2}};
+            bool matched = false;
+            for (auto it = expected.begin(); it != expected.end(); ++it)
+            {
+                if (it->first == op->calls.at(0).at(0)
+                    && it->second == op->calls.at(0).at(1))
+                {
+                    matched = true;
+                    break;
+                }
+            }
+            CHECK(matched);
         }
     }
 
