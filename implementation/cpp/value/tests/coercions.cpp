@@ -1,6 +1,22 @@
 #include <catch2/catch_test_macros.hpp>
+
 #include <frost/value.hpp>
 #include <memory>
+
+using namespace frst;
+
+struct Dummy : Callable
+{
+    Value_Ptr call(std::span<const Value_Ptr>) const override
+    {
+        return Value::null();
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<dummy>";
+    }
+};
 
 TEST_CASE("Coercions")
 {
@@ -24,99 +40,119 @@ TEST_CASE("Coercions")
             Value::create(100.42),
         },
     }};
+    Value function{Function{std::make_shared<Dummy>()}};
 
     SECTION("To null")
     {
         CHECK(null.as<frst::Null>().has_value());
-        CHECK(!integer.as<frst::Null>().has_value());
-        CHECK(!floating.as<frst::Null>().has_value());
-        CHECK(!boolean.as<frst::Null>().has_value());
-        CHECK(!string.as<frst::Null>().has_value());
-        CHECK(!array.as<frst::Null>().has_value());
-        CHECK(!map.as<frst::Null>().has_value());
+        CHECK_FALSE(integer.as<frst::Null>().has_value());
+        CHECK_FALSE(floating.as<frst::Null>().has_value());
+        CHECK_FALSE(boolean.as<frst::Null>().has_value());
+        CHECK_FALSE(string.as<frst::Null>().has_value());
+        CHECK_FALSE(array.as<frst::Null>().has_value());
+        CHECK_FALSE(map.as<frst::Null>().has_value());
+        CHECK_FALSE(function.as<frst::Null>().has_value());
     }
 
     SECTION("To integer")
     {
-        CHECK(!null.as<frst::Int>().has_value());
+        CHECK_FALSE(null.as<frst::Int>().has_value());
         CHECK(integer.as<frst::Int>() == 42);
         CHECK(floating.as<frst::Int>() == 3);
-        CHECK(!boolean.as<frst::Int>().has_value());
-        CHECK(!string.as<frst::Int>().has_value());
-        CHECK(!array.as<frst::Int>().has_value());
-        CHECK(!map.as<frst::Int>().has_value());
+        CHECK_FALSE(boolean.as<frst::Int>().has_value());
+        CHECK_FALSE(string.as<frst::Int>().has_value());
+        CHECK_FALSE(array.as<frst::Int>().has_value());
+        CHECK_FALSE(map.as<frst::Int>().has_value());
+        CHECK_FALSE(function.as<frst::Null>().has_value());
     }
 
     SECTION("To floating")
     {
-        CHECK(!null.as<frst::Float>().has_value());
+        CHECK_FALSE(null.as<frst::Float>().has_value());
         CHECK(integer.as<frst::Float>() == static_cast<frst::Float>(42));
         CHECK(floating.as<frst::Float>() == 3.14);
-        CHECK(!boolean.as<frst::Float>().has_value());
-        CHECK(!string.as<frst::Float>().has_value());
-        CHECK(!array.as<frst::Float>().has_value());
-        CHECK(!map.as<frst::Float>().has_value());
+        CHECK_FALSE(boolean.as<frst::Float>().has_value());
+        CHECK_FALSE(string.as<frst::Float>().has_value());
+        CHECK_FALSE(array.as<frst::Float>().has_value());
+        CHECK_FALSE(map.as<frst::Float>().has_value());
+        CHECK_FALSE(function.as<frst::Null>().has_value());
     }
 
     SECTION("To bool")
     {
-        CHECK(null.as<frst::Bool>() == false);
-        CHECK(integer.as<frst::Bool>() == true);
-        CHECK(floating.as<frst::Bool>() == true);
-        CHECK(boolean.as<frst::Bool>() == true);
-        CHECK(string.as<frst::Bool>() == true);
-        CHECK(array.as<frst::Bool>() == true);
-        CHECK(map.as<frst::Bool>() == true);
+        CHECK_FALSE(null.as<frst::Bool>().value());
+        CHECK(integer.as<frst::Bool>());
+        CHECK(floating.as<frst::Bool>());
+        CHECK(boolean.as<frst::Bool>());
+        CHECK(string.as<frst::Bool>());
+        CHECK(array.as<frst::Bool>());
+        CHECK(map.as<frst::Bool>());
 
         Value int_zero{0_f};
-        CHECK(int_zero.as<frst::Bool>() == true);
+        CHECK(int_zero.as<frst::Bool>());
 
         Value float_zero{0.};
-        CHECK(float_zero.as<frst::Bool>() == true);
+        CHECK(float_zero.as<frst::Bool>());
 
         Value empty_string{""s};
-        CHECK(empty_string.as<frst::Bool>() == true);
+        CHECK(empty_string.as<frst::Bool>());
 
         Value bool_false{false};
-        CHECK(bool_false.as<frst::Bool>() == false);
+        CHECK_FALSE(bool_false.as<frst::Bool>().value());
 
         Value empty_array{frst::Array{}};
-        CHECK(empty_array.as<frst::Bool>() == true);
+        CHECK(empty_array.as<frst::Bool>());
 
         Value empty_map{frst::Map{}};
-        CHECK(empty_map.as<frst::Bool>() == true);
+        CHECK(empty_map.as<frst::Bool>());
+        CHECK(function.as<frst::Bool>());
     }
 
     SECTION("To string")
     {
-        CHECK(!null.as<frst::String>().has_value());
-        CHECK(!integer.as<frst::String>().has_value());
-        CHECK(!floating.as<frst::String>().has_value());
-        CHECK(!boolean.as<frst::String>().has_value());
+        CHECK_FALSE(null.as<frst::String>().has_value());
+        CHECK_FALSE(integer.as<frst::String>().has_value());
+        CHECK_FALSE(floating.as<frst::String>().has_value());
+        CHECK_FALSE(boolean.as<frst::String>().has_value());
         CHECK(string.as<frst::String>() == "Hello!");
-        CHECK(!array.as<frst::String>().has_value());
-        CHECK(!map.as<frst::String>().has_value());
+        CHECK_FALSE(array.as<frst::String>().has_value());
+        CHECK_FALSE(map.as<frst::String>().has_value());
+        CHECK_FALSE(function.as<frst::String>().has_value());
     }
 
     SECTION("To array")
     {
-        CHECK(!null.as<frst::Array>().has_value());
-        CHECK(!integer.as<frst::Array>().has_value());
-        CHECK(!floating.as<frst::Array>().has_value());
-        CHECK(!boolean.as<frst::Array>().has_value());
-        CHECK(!string.as<frst::Array>().has_value());
-        CHECK(array.as<frst::Array>() == array.as<frst::Array>());
-        CHECK(!map.as<frst::Array>().has_value());
+        CHECK_FALSE(null.as<frst::Array>().has_value());
+        CHECK_FALSE(integer.as<frst::Array>().has_value());
+        CHECK_FALSE(floating.as<frst::Array>().has_value());
+        CHECK_FALSE(boolean.as<frst::Array>().has_value());
+        CHECK_FALSE(string.as<frst::Array>().has_value());
+        CHECK(array.as<frst::Array>() == array.get<frst::Array>());
+        CHECK_FALSE(map.as<frst::Array>().has_value());
+        CHECK_FALSE(function.as<frst::Array>().has_value());
     }
 
     SECTION("To map")
     {
-        CHECK(!null.as<frst::Map>().has_value());
-        CHECK(!integer.as<frst::Map>().has_value());
-        CHECK(!floating.as<frst::Map>().has_value());
-        CHECK(!boolean.as<frst::Map>().has_value());
-        CHECK(!string.as<frst::Map>().has_value());
-        CHECK(!array.as<frst::Map>().has_value());
-        CHECK(map.as<frst::Map>() == map.as<frst::Map>());
+        CHECK_FALSE(null.as<frst::Map>().has_value());
+        CHECK_FALSE(integer.as<frst::Map>().has_value());
+        CHECK_FALSE(floating.as<frst::Map>().has_value());
+        CHECK_FALSE(boolean.as<frst::Map>().has_value());
+        CHECK_FALSE(string.as<frst::Map>().has_value());
+        CHECK_FALSE(array.as<frst::Map>().has_value());
+        CHECK(map.as<frst::Map>() == map.get<frst::Map>());
+        CHECK_FALSE(function.as<frst::Map>().has_value());
+    }
+
+    SECTION("To function")
+    {
+        CHECK_FALSE(null.as<frst::Function>().has_value());
+        CHECK_FALSE(integer.as<frst::Function>().has_value());
+        CHECK_FALSE(floating.as<frst::Function>().has_value());
+        CHECK_FALSE(boolean.as<frst::Function>().has_value());
+        CHECK_FALSE(string.as<frst::Function>().has_value());
+        CHECK_FALSE(array.as<frst::Function>().has_value());
+        CHECK_FALSE(map.as<frst::Function>().has_value());
+        CHECK(function.as<frst::Function>() == function.get<frst::Function>());
     }
 }

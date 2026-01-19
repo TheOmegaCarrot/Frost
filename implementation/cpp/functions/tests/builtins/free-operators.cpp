@@ -46,22 +46,34 @@ TEST_CASE("Free Operators")
 
     SECTION("Arity")
     {
-        auto plus = get_fn("plus");
-        CHECK_THROWS_WITH(plus->call({}),
-                          ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(plus->call({}), ContainsSubstring("Called with 0"));
-        CHECK_THROWS_WITH(plus->call({}),
-                          ContainsSubstring("requires at least 2"));
-
         auto a = Value::create(1_f);
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);
-        CHECK_THROWS_WITH(plus->call({a, b, c}),
-                          ContainsSubstring("too many arguments"));
-        CHECK_THROWS_WITH(plus->call({a, b, c}),
-                          ContainsSubstring("Called with 3"));
-        CHECK_THROWS_WITH(plus->call({a, b, c}),
-                          ContainsSubstring("no more than 2"));
+
+        const std::vector<std::string> names{
+            "plus",         "minus",
+            "times",        "divide",
+            "equal",        "not_equal",
+            "less_than",    "less_than_or_equal",
+            "greater_than", "greater_than_or_equal",
+        };
+
+        for (const auto& name : names)
+        {
+            auto fn = get_fn(name);
+
+            CHECK_THROWS_MATCHES(
+                fn->call({}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("insufficient arguments")
+                               && ContainsSubstring("Called with 0")
+                               && ContainsSubstring("requires at least 2")));
+
+            CHECK_THROWS_MATCHES(
+                fn->call({a, b, c}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("too many arguments")
+                               && ContainsSubstring("Called with 3")
+                               && ContainsSubstring("no more than 2")));
+        }
     }
 
     SECTION("Numeric arithmetic")
