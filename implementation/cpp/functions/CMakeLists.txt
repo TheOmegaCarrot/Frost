@@ -7,6 +7,7 @@ add_library( frost-functions
     builtins/math.cpp
     builtins/output.cpp
     builtins/pack_call.cpp
+    builtins/string-ops.cpp
     builtins/structure-ops.cpp
     builtins/type-conversions.cpp
     builtins/type-tests.cpp

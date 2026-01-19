@@ -13,7 +13,8 @@ namespace frst
     X(error_handling)                                                          \
     X(output)                                                                  \
     X(free_operators)                                                          \
-    X(math)
+    X(math)                                                                    \
+    X(string_ops)
 
 #define X(F) void inject_##F(Symbol_Table&);
 

@@ -13,8 +13,6 @@
     - values are magic closures that manage a shared mutable cell
     - get explicitly copies out of the cell (clone)
 - More complete string operations
-    - `split`
-    - `join`
     - `containment`
     - `prefix`/`suffix`
 - Math operations
