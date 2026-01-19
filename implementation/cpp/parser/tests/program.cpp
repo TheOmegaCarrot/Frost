@@ -265,6 +265,41 @@ TEST_CASE("Parser Program")
         REQUIRE(v5->is<frst::Null>());
     }
 
+    SECTION("Raw string literals in a program")
+    {
+        auto result = parse("R\"(hello)\"; R'(world)'; \"ok\"");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 3);
+
+        frst::Symbol_Table table;
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+
+        REQUIRE(v1->is<frst::String>());
+        CHECK(v1->get<frst::String>().value() == "hello");
+        REQUIRE(v2->is<frst::String>());
+        CHECK(v2->get<frst::String>().value() == "world");
+        REQUIRE(v3->is<frst::String>());
+        CHECK(v3->get<frst::String>().value() == "ok");
+    }
+
+    SECTION("Identifier named R")
+    {
+        auto result = parse("def R = 7\nR");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        auto v1 = evaluate_statement(program[1], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 7_f);
+    }
+
     SECTION("Array literals in a program")
     {
         auto result = parse("[]; [1, 2]; [1, 2,]; [1, 2][0]");

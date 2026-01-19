@@ -69,6 +69,34 @@ TEST_CASE("Parser String Literals")
         }
     }
 
+    SECTION("Valid raw strings")
+    {
+        struct Case
+        {
+            std::string input;
+            std::string expected;
+        };
+
+        const Case cases[] = {
+            {"R\"()\"", ""},
+            {"R'()'", ""},
+            {"R\"(hello)\"", "hello"},
+            {"R'(hello)'", "hello"},
+            {"R\"(He said \"hi\")\"", "He said \"hi\""},
+            {"R'(it's ok)'", "it's ok"},
+            {"R\"(backslash \\\\ and \\n)\"", "backslash \\\\ and \\n"},
+        };
+
+        for (const auto& c : cases)
+        {
+            auto result = parse(c.input);
+            REQUIRE(result);
+            auto value = std::move(result).value();
+            REQUIRE(value->is<frst::String>());
+            CHECK(value->get<frst::String>().value() == c.expected);
+        }
+    }
+
     SECTION("Invalid strings")
     {
         struct Case
@@ -94,6 +122,22 @@ TEST_CASE("Parser String Literals")
         }
     }
 
+    SECTION("Invalid raw strings")
+    {
+        const std::string cases[] = {
+            "R\"(unterminated\"",
+            "R'(unterminated'",
+            "R\"(mismatch)'",
+            "R'(mismatch)\"",
+        };
+
+        for (const auto& input : cases)
+        {
+            auto result = parse(input);
+            CHECK_FALSE(result);
+        }
+    }
+
     SECTION("Newlines are not allowed in strings")
     {
         std::string double_input = "\"line1\nline2\"";
@@ -102,6 +146,17 @@ TEST_CASE("Parser String Literals")
 
         std::string single_input = "'line1\nline2'";
         auto result2 = parse(single_input);
+        CHECK_FALSE(result2);
+    }
+
+    SECTION("Newlines are not allowed in raw strings")
+    {
+        std::string raw_double = "R\"(line1\nline2)\"";
+        auto result = parse(raw_double);
+        CHECK_FALSE(result);
+
+        std::string raw_single = "R'(line1\nline2)'";
+        auto result2 = parse(raw_single);
         CHECK_FALSE(result2);
     }
 }

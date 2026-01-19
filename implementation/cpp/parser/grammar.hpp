@@ -133,6 +133,22 @@ struct null_literal
 
 struct string_literal
 {
+    struct raw_r_double
+    {
+        static constexpr auto rule =
+            dsl::delimited(LEXY_LIT("R\"("), LEXY_LIT(")\""))
+                .limit(dsl::ascii::newline)(dsl::ascii::character);
+        static constexpr auto value = lexy::as_string<std::string>;
+    };
+
+    struct raw_r_single
+    {
+        static constexpr auto rule =
+            dsl::delimited(LEXY_LIT("R'("), LEXY_LIT(")'"))
+                .limit(dsl::ascii::newline)(dsl::ascii::character);
+        static constexpr auto value = lexy::as_string<std::string>;
+    };
+
     struct raw_double
     {
         static constexpr auto escapes = lexy::symbol_table<char>
@@ -162,7 +178,10 @@ struct string_literal
         static constexpr auto value = lexy::as_string<std::string>;
     };
 
-    static constexpr auto rule = dsl::p<raw_double> | dsl::p<raw_single>;
+    static constexpr auto rule = dsl::p<raw_r_double>
+                                 | dsl::p<raw_r_single>
+                                 | dsl::p<raw_double>
+                                 | dsl::p<raw_single>;
     static constexpr auto value =
         lexy::callback<Value_Ptr>([](std::string str) {
             return Value::create(std::move(str));
