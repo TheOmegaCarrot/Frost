@@ -8,13 +8,20 @@
 #include <cstddef>
 #include <string_view>
 
+#define BUILTIN(NAME, MIN_ARITY, MAX_ARITY)                                    \
+    Value::create(Function{std::make_shared<Builtin>(                          \
+        NAME, #NAME, Builtin::Arity{.min = MIN_ARITY, .max = MAX_ARITY})})
+
 #define INJECT(NAME, MIN_ARITY, MAX_ARITY)                                     \
-    table.define(#NAME,                                                        \
-                 Value::create(Function{std::make_shared<Builtin>(             \
-                     NAME, #NAME,                                              \
-                     Builtin::Arity{.min = MIN_ARITY, .max = MAX_ARITY})}))
+    table.define(#NAME, BUILTIN(NAME, MIN_ARITY, MAX_ARITY))
 
 #define INJECT_V(NAME, MIN_ARITY) INJECT(NAME, MIN_ARITY, std::nullopt)
+
+#define ENTRY(NAME, MIN_ARITY, MAX_ARITY)                                      \
+    {Value::create(String{#NAME}), BUILTIN(NAME, MIN_ARITY, MAX_ARITY)}
+
+#define INJECT_MAP(NAME, ...)                                                  \
+    table.define(#NAME, Value::create(Map{__VA_ARGS__}));
 
 // Below is a GPT-generated boilerplate generation system for type-checking
 // arguments to builtins

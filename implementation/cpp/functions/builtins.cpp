@@ -14,7 +14,8 @@ namespace frst
     X(output)                                                                  \
     X(free_operators)                                                          \
     X(math)                                                                    \
-    X(string_ops)
+    X(string_ops)                                                              \
+    X(regex)
 
 #define X(F) void inject_##F(Symbol_Table&);
 
