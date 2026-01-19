@@ -174,3 +174,75 @@ TEST_CASE("Free Operators")
                           "Cannot compare incompatible types: Null < Int");
     }
 }
+
+TEST_CASE("Builtin deep_equal")
+{
+    // AI-generated test by Codex (GPT-5).
+    // Signed: Codex (GPT-5).
+    Symbol_Table table;
+    inject_builtins(table);
+
+    auto deep_equal_val = table.lookup("deep_equal");
+    REQUIRE(deep_equal_val->is<Function>());
+    auto deep_equal = deep_equal_val->get<Function>().value();
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_MATCHES(
+            deep_equal->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")
+                           && ContainsSubstring("Called with 0")
+                           && ContainsSubstring("requires at least 2")));
+
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+        CHECK_THROWS_MATCHES(
+            deep_equal->call({a, b, c}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("too many arguments")
+                           && ContainsSubstring("Called with 3")
+                           && ContainsSubstring("no more than 2")));
+    }
+
+    SECTION("Smoke")
+    {
+        auto i1 = Value::create(1_f);
+        auto i2 = Value::create(1_f);
+        auto i3 = Value::create(2_f);
+
+        auto res_eq = deep_equal->call({i1, i2});
+        REQUIRE(res_eq->is<Bool>());
+        CHECK(res_eq->get<Bool>().value());
+
+        auto res_ne = deep_equal->call({i1, i3});
+        REQUIRE(res_ne->is<Bool>());
+        CHECK_FALSE(res_ne->get<Bool>().value());
+
+        auto f1 = Value::create(1.0);
+        auto res_diff = deep_equal->call({i1, f1});
+        REQUIRE(res_diff->is<Bool>());
+        CHECK_FALSE(res_diff->get<Bool>().value());
+
+        auto arr1 = Value::create(Array{
+            Value::create(1_f),
+            Value::create(Array{Value::create(2_f)}),
+        });
+        auto arr2 = Value::create(Array{
+            Value::create(1_f),
+            Value::create(Array{Value::create(2_f)}),
+        });
+        auto arr_res = deep_equal->call({arr1, arr2});
+        REQUIRE(arr_res->is<Bool>());
+        CHECK(arr_res->get<Bool>().value());
+
+        auto map1 = Value::create(Map{
+            {Value::create("k"s), Value::create(1_f)},
+        });
+        auto map2 = Value::create(Map{
+            {Value::create("k"s), Value::create(1_f)},
+        });
+        auto map_res = deep_equal->call({map1, map2});
+        REQUIRE(map_res->is<Bool>());
+        CHECK(map_res->get<Bool>().value());
+    }
+}

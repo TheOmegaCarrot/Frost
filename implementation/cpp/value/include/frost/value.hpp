@@ -338,6 +338,17 @@ VALUE_COERCE(Map)
 NO_COERCE(Function)
 END_COERCIONS
 
+COERCIONS_TO(Function)
+NO_COERCE(Null)
+NO_COERCE(Int)
+NO_COERCE(Float)
+NO_COERCE(Bool)
+NO_COERCE(String)
+NO_COERCE(Array)
+NO_COERCE(Map)
+VALUE_COERCE(Function)
+END_COERCIONS
+
 #undef COERCIONS_TO
 #undef COERCE
 #undef VALUE_COERCE
@@ -485,6 +496,11 @@ class Value
     static Value_Ptr multiply(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static Value_Ptr divide(const Value_Ptr& lhs, const Value_Ptr& rhs);
 
+    static Value_Ptr deep_equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
+    {
+        return create(deep_equal_impl(lhs, rhs));
+    }
+
     static Value_Ptr equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
     {
         return create(equal_impl(lhs, rhs));
@@ -519,6 +535,8 @@ class Value
 
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map, Function> value_;
+
+    static bool deep_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
 
     static bool equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static bool not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);

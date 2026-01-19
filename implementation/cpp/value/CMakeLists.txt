@@ -6,6 +6,7 @@ add_library( frost-value
     operators/compare.cpp
     operators/negate.cpp
     explicit-conversions.cpp
+    deep-equal.cpp
 )
 
 target_include_directories( frost-value
@@ -54,3 +55,5 @@ value_test(tests/explicit-conversions.cpp)
 value_test(tests/negate.cpp)
 
 value_test(tests/logical-not.cpp)
+
+value_test(tests/deep-equal.cpp)
