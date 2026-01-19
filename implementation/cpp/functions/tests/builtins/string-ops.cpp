@@ -135,3 +135,142 @@ TEST_CASE("Builtin split")
         CHECK(arr.at(2)->get<String>().value() == "c");
     }
 }
+
+TEST_CASE("Builtin contains/starts_with/ends_with")
+{
+    // AI-generated test by Codex (GPT-5).
+    // Signed: Codex (GPT-5).
+    Symbol_Table table;
+    inject_builtins(table);
+
+    struct Builtin_Info
+    {
+        const char* name;
+    };
+
+    const std::vector<Builtin_Info> builtins{
+        {.name = "contains"},
+        {.name = "starts_with"},
+        {.name = "ends_with"},
+    };
+
+    auto get_fn = [&](std::string_view name) {
+        auto val = table.lookup(std::string{name});
+        REQUIRE(val->is<Function>());
+        return val->get<Function>().value();
+    };
+
+    SECTION("Injected")
+    {
+        for (const auto& info : builtins)
+        {
+            auto val = table.lookup(info.name);
+            REQUIRE(val->is<Function>());
+        }
+    }
+
+    SECTION("Arity")
+    {
+        for (const auto& info : builtins)
+        {
+            DYNAMIC_SECTION(info.name << " arity")
+            {
+                auto fn = get_fn(info.name);
+                CHECK_THROWS_WITH(fn->call({}),
+                                  ContainsSubstring("insufficient arguments"));
+                CHECK_THROWS_WITH(fn->call({}),
+                                  ContainsSubstring("Called with 0"));
+                CHECK_THROWS_WITH(fn->call({}),
+                                  ContainsSubstring("requires at least 2"));
+
+                CHECK_THROWS_WITH(fn->call({Value::create("a"s),
+                                            Value::create("b"s),
+                                            Value::create("c"s)}),
+                                  ContainsSubstring("too many arguments"));
+                CHECK_THROWS_WITH(fn->call({Value::create("a"s),
+                                            Value::create("b"s),
+                                            Value::create("c"s)}),
+                                  ContainsSubstring("Called with 3"));
+                CHECK_THROWS_WITH(fn->call({Value::create("a"s),
+                                            Value::create("b"s),
+                                            Value::create("c"s)}),
+                                  ContainsSubstring("no more than 2"));
+            }
+        }
+    }
+
+    SECTION("Type errors")
+    {
+        auto bad_first = Value::create(1_f);
+        auto bad_second = Value::create(true);
+        auto good = Value::create("a"s);
+
+        for (const auto& info : builtins)
+        {
+            DYNAMIC_SECTION(info.name << " type errors")
+            {
+                auto fn = get_fn(info.name);
+                CHECK_THROWS_WITH(fn->call({bad_first, good}),
+                                  ContainsSubstring(std::string{"Function "}
+                                                    + info.name));
+                CHECK_THROWS_WITH(fn->call({bad_first, good}),
+                                  ContainsSubstring("String"));
+                CHECK_THROWS_WITH(fn->call({bad_first, good}),
+                                  EndsWith(std::string{bad_first->type_name()}));
+
+                CHECK_THROWS_WITH(fn->call({good, bad_second}),
+                                  ContainsSubstring(std::string{"Function "}
+                                                    + info.name));
+                CHECK_THROWS_WITH(fn->call({good, bad_second}),
+                                  ContainsSubstring("String"));
+                CHECK_THROWS_WITH(fn->call({good, bad_second}),
+                                  EndsWith(std::string{bad_second->type_name()}));
+            }
+        }
+    }
+
+    SECTION("Empty substring returns true")
+    {
+        auto target = Value::create("abc"s);
+        auto empty = Value::create(""s);
+
+        CHECK(get_fn("contains")->call({target, empty})->get<Bool>().value());
+        CHECK(
+            get_fn("starts_with")->call({target, empty})->get<Bool>().value());
+        CHECK(get_fn("ends_with")->call({target, empty})->get<Bool>().value());
+    }
+
+    SECTION("Basic behavior")
+    {
+        auto target = Value::create("hello world"s);
+        auto sub = Value::create("lo wo"s);
+        auto prefix = Value::create("hello"s);
+        auto suffix = Value::create("world"s);
+        auto missing = Value::create("nope"s);
+
+        CHECK(get_fn("contains")->call({target, sub})->get<Bool>().value());
+        CHECK_FALSE(
+            get_fn("contains")->call({target, missing})->get<Bool>().value());
+
+        CHECK(get_fn("starts_with")->call({target, prefix})->get<Bool>().value());
+        CHECK_FALSE(
+            get_fn("starts_with")->call({target, sub})->get<Bool>().value());
+
+        CHECK(get_fn("ends_with")->call({target, suffix})->get<Bool>().value());
+        CHECK_FALSE(
+            get_fn("ends_with")->call({target, sub})->get<Bool>().value());
+    }
+
+    SECTION("UTF-8 behavior")
+    {
+        auto target = Value::create("hi 😊 frost 😊"s);
+        auto emoji = Value::create("😊"s);
+        auto prefix = Value::create("hi 😊"s);
+        auto suffix = Value::create("frost 😊"s);
+
+        CHECK(get_fn("contains")->call({target, emoji})->get<Bool>().value());
+        CHECK(
+            get_fn("starts_with")->call({target, prefix})->get<Bool>().value());
+        CHECK(get_fn("ends_with")->call({target, suffix})->get<Bool>().value());
+    }
+}

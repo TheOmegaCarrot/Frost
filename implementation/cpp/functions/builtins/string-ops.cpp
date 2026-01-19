@@ -34,9 +34,33 @@ Value_Ptr split(builtin_args_t args)
                          | to<Array>());
 }
 
+#define X_BINARY_PASSTHROUGH                                                   \
+    X(contains)                                                                \
+    X(starts_with)                                                             \
+    X(ends_with)
+
+#define X(method)                                                              \
+    Value_Ptr method(builtin_args_t args)                                      \
+    {                                                                          \
+        REQUIRE_ARGS(method, TYPES(String), TYPES(String));                    \
+                                                                               \
+        return Value::create(args.at(0)->raw_get<String>().method(             \
+            args.at(1)->raw_get<String>()));                                   \
+    }
+
+X_BINARY_PASSTHROUGH
+
+#undef X
+
 void inject_string_ops(Symbol_Table& table)
 {
     INJECT(split, 2, 2);
+
+#define X(fn) INJECT(fn, 2, 2);
+
+    X_BINARY_PASSTHROUGH
+
+#undef X
 }
 
 } // namespace frst
