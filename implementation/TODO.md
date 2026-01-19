@@ -19,10 +19,6 @@
     - `prefix`/`suffix`
 - Math operations
     - modulus (New % operator?)
-    - trig
-    - abs
-    - sqrt
-    - pow
 - JSON encode/decode
 
 
