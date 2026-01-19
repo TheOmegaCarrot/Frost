@@ -8,8 +8,6 @@
 
 ## Builtin
 
-- `deep_equal`
-    - basically necessary to test clone correctly
 - `mutable_cell`
     - return map with get and set keys
     - values are magic closures that manage a shared mutable cell
