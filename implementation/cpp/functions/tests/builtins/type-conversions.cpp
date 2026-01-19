@@ -9,6 +9,8 @@
 
 #include <frost/builtin.hpp>
 
+#include <memory>
+
 using namespace frst;
 
 using namespace std::literals;
@@ -35,6 +37,22 @@ TEST_CASE("Builtin to_string")
         {Value::create("key1"s), Value::create(42_f)},
         {Value::create(true), Value::create("value2"s)},
     });
+    // AI-generated test additions by Codex (GPT-5).
+    // Signed: Codex (GPT-5).
+    struct Dummy_Function final : frst::Callable
+    {
+        frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
+        {
+            return Value::null();
+        }
+
+        std::string debug_dump() const override
+        {
+            return "<dummy>";
+        }
+    };
+    auto Function_ =
+        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
 
     SECTION("Success")
     {
@@ -48,6 +66,8 @@ TEST_CASE("Builtin to_string")
               == "[ 42, \"hello\" ]");
         CHECK(to_string->call({Map_})->get<String>().value()
               == R"({ [true]: "value2", ["key1"]: 42 })");
+        CHECK(to_string->call({Function_})->get<String>().value()
+              == "<Function>");
     }
 }
 

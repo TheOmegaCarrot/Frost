@@ -63,6 +63,26 @@ TEST_CASE("to_string")
 // AI-generated test additions by Codex (GPT-5).
 // Signed: Codex (GPT-5).
 
+TEST_CASE("to_string Value_Ptr")
+{
+    auto Int = Value::create(42_f);
+    auto Bool = Value::create(true);
+    auto Function =
+        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
+
+    auto int_str = Int->to_string();
+    REQUIRE(int_str->is<frst::String>());
+    CHECK(int_str->get<frst::String>().value() == "42");
+
+    auto bool_str = Bool->to_string();
+    REQUIRE(bool_str->is<frst::String>());
+    CHECK(bool_str->get<frst::String>().value() == "true");
+
+    auto fn_str = Function->to_string();
+    REQUIRE(fn_str->is<frst::String>());
+    CHECK(fn_str->get<frst::String>().value() == "<Function>");
+}
+
 TEST_CASE("to_internal_int")
 {
     struct Dummy final : frst::Callable
