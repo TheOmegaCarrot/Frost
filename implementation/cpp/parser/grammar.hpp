@@ -794,9 +794,7 @@ struct Define
     static constexpr auto rule = [] {
         auto kw_def = LEXY_KEYWORD("def", identifier::base);
         return kw_def
-               >> (dsl::p<identifier>
-                   + dsl::lit_c<'='>
-                   + dsl::recurse<expression>);
+               >> (dsl::p<identifier> + dsl::lit_c<'='> + dsl::p<expression>);
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
         [](std::string name, ast::Expression::Ptr expr) {
