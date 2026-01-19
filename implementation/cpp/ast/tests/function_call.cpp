@@ -3,6 +3,7 @@
 #include <catch2/trompeloeil.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/mock/mock-callable.hpp>
 #include <frost/mock/mock-expression.hpp>
 #include <frost/mock/mock-symbol-table.hpp>
 #include <frost/value.hpp>
@@ -17,43 +18,12 @@ using trompeloeil::_;
 
 namespace
 {
-struct RecordingCallable final : Callable
+using Call_List = std::vector<std::vector<Value_Ptr>>;
+
+void record_call(Call_List& calls, std::span<const Value_Ptr> args)
 {
-    mutable bool called = false;
-    mutable bool args_match = false;
-    mutable int call_count = 0;
-    std::vector<Value_Ptr> expected_args;
-    Value_Ptr result;
-
-    Value_Ptr call(std::span<const Value_Ptr> args) const override
-    {
-        called = true;
-        ++call_count;
-        args_match =
-            args.size()
-            == expected_args.size()
-            && std::equal(args.begin(), args.end(), expected_args.begin());
-        return result ? result : Value::null();
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<recording>";
-    }
-};
-
-struct ThrowingCallable final : Callable
-{
-    Value_Ptr call(std::span<const Value_Ptr>) const override
-    {
-        throw Frost_User_Error{"boom"};
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<throwing>";
-    }
-};
+    calls.emplace_back(args.begin(), args.end());
+}
 } // namespace
 
 TEST_CASE("Function Call")
@@ -73,13 +43,12 @@ TEST_CASE("Function Call")
         auto* arg1_ptr = arg1.get();
         auto* arg2_ptr = arg2.get();
 
-        auto callable = std::make_shared<RecordingCallable>();
+        auto callable = mock::Mock_Callable::make();
         auto ret = Value::create(7_f);
-        callable->result = ret;
 
         auto v1 = Value::create(1_f);
         auto v2 = Value::create(2_f);
-        callable->expected_args = {v1, v2};
+        Call_List calls;
 
         auto fn_val = Value::create(Function{callable});
 
@@ -96,6 +65,10 @@ TEST_CASE("Function Call")
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(v2);
+        REQUIRE_CALL(*callable, call(_))
+            .LR_SIDE_EFFECT(record_call(calls, _1))
+            .LR_WITH(_1.size() == 2 && _1[0] == v1 && _1[1] == v2)
+            .RETURN(ret);
 
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg1));
@@ -105,8 +78,10 @@ TEST_CASE("Function Call")
         auto res = node.evaluate(syms);
 
         CHECK(res == ret);
-        CHECK(callable->called);
-        CHECK(callable->args_match);
+        REQUIRE(calls.size() == 1);
+        CHECK(calls.at(0).size() == 2);
+        CHECK(calls.at(0).at(0) == v1);
+        CHECK(calls.at(0).at(1) == v2);
     }
 
     SECTION("Empty argument list calls function")
@@ -114,19 +89,23 @@ TEST_CASE("Function Call")
         auto fn_expr = std::make_unique<mock::Mock_Expression>();
         auto* fn_ptr = fn_expr.get();
 
-        auto callable = std::make_shared<RecordingCallable>();
-        callable->expected_args = {};
+        auto callable = mock::Mock_Callable::make();
         auto fn_val = Value::create(Function{callable});
+        Call_List calls;
 
         REQUIRE_CALL(*fn_ptr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
+        REQUIRE_CALL(*callable, call(_))
+            .LR_SIDE_EFFECT(record_call(calls, _1))
+            .LR_WITH(_1.empty())
+            .RETURN(Value::null());
 
         std::vector<Expression::Ptr> args;
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
 
         auto res = node.evaluate(syms);
         CHECK(res->is<Null>());
-        CHECK(callable->called);
-        CHECK(callable->args_match);
+        REQUIRE(calls.size() == 1);
+        CHECK(calls.at(0).empty());
     }
 
     SECTION("Same node can be evaluated multiple times")
@@ -137,12 +116,11 @@ TEST_CASE("Function Call")
         auto* fn_ptr = fn_expr.get();
         auto* arg_ptr = arg.get();
 
-        auto callable = std::make_shared<RecordingCallable>();
+        auto callable = mock::Mock_Callable::make();
         auto ret = Value::create(9_f);
-        callable->result = ret;
 
         auto arg_val = Value::create(3_f);
-        callable->expected_args = {arg_val};
+        Call_List calls;
 
         auto fn_val = Value::create(Function{callable});
 
@@ -154,6 +132,11 @@ TEST_CASE("Function Call")
             .LR_WITH(&_1 == &syms)
             .TIMES(2)
             .RETURN(arg_val);
+        REQUIRE_CALL(*callable, call(_))
+            .LR_SIDE_EFFECT(record_call(calls, _1))
+            .LR_WITH(_1.size() == 1 && _1[0] == arg_val)
+            .RETURN(ret)
+            .TIMES(2);
 
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg));
@@ -162,8 +145,7 @@ TEST_CASE("Function Call")
 
         CHECK(node.evaluate(syms) == ret);
         CHECK(node.evaluate(syms) == ret);
-        CHECK(callable->call_count == 2);
-        CHECK(callable->args_match);
+        CHECK(calls.size() == 2);
     }
 
     SECTION("Large argument list preserves order")
@@ -171,9 +153,8 @@ TEST_CASE("Function Call")
         auto fn_expr = std::make_unique<mock::Mock_Expression>();
         auto* fn_ptr = fn_expr.get();
 
-        auto callable = std::make_shared<RecordingCallable>();
+        auto callable = mock::Mock_Callable::make();
         auto ret = Value::create(0_f);
-        callable->result = ret;
 
         std::vector<Expression::Ptr> args;
         std::vector<Value_Ptr> expected;
@@ -183,17 +164,22 @@ TEST_CASE("Function Call")
             expected.push_back(val);
             args.push_back(std::make_unique<Literal>(val));
         }
-        callable->expected_args = expected;
+        Call_List calls;
 
         auto fn_val = Value::create(Function{callable});
         REQUIRE_CALL(*fn_ptr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
+        REQUIRE_CALL(*callable, call(_))
+            .LR_SIDE_EFFECT(record_call(calls, _1))
+            .LR_WITH(std::equal(_1.begin(), _1.end(), expected.begin()))
+            .RETURN(ret);
 
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
         auto res = node.evaluate(syms);
 
         CHECK(res == ret);
-        CHECK(callable->called);
-        CHECK(callable->args_match);
+        REQUIRE(calls.size() == 1);
+        CHECK(std::equal(calls.at(0).begin(), calls.at(0).end(),
+                         expected.begin()));
     }
 
     SECTION("Non-function callee throws and args are not evaluated")
@@ -249,7 +235,7 @@ TEST_CASE("Function Call")
         auto* arg1_ptr = arg1.get();
         auto* arg2_ptr = arg2.get();
 
-        auto callable = std::make_shared<RecordingCallable>();
+        auto callable = mock::Mock_Callable::make();
         auto fn_val = Value::create(Function{callable});
 
         REQUIRE_CALL(*fn_ptr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
@@ -257,6 +243,7 @@ TEST_CASE("Function Call")
             .LR_WITH(&_1 == &syms)
             .THROW(Frost_User_Error{"arg boom"});
         FORBID_CALL(*arg2_ptr, evaluate(_));
+        FORBID_CALL(*callable, call(_));
 
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg1));
@@ -265,7 +252,6 @@ TEST_CASE("Function Call")
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
 
         CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("arg boom"));
-        CHECK_FALSE(callable->called);
     }
 
     SECTION("Callable error propagates")
@@ -276,13 +262,15 @@ TEST_CASE("Function Call")
         auto* fn_ptr = fn_expr.get();
         auto* arg_ptr = arg.get();
 
-        auto callable = std::make_shared<ThrowingCallable>();
+        auto callable = mock::Mock_Callable::make();
         auto fn_val = Value::create(Function{callable});
 
         REQUIRE_CALL(*fn_ptr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
         REQUIRE_CALL(*arg_ptr, evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(1_f));
+        REQUIRE_CALL(*callable, call(_))
+            .THROW(Frost_User_Error{"boom"});
 
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg));

@@ -2,6 +2,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <catch2/trompeloeil.hpp>
 
+#include <frost/mock/mock-callable.hpp>
 #include <frost/mock/mock-expression.hpp>
 #include <frost/mock/mock-symbol-table.hpp>
 
@@ -18,64 +19,12 @@ using trompeloeil::_;
 
 namespace
 {
-struct Recording_Foreach final : Callable
+using Call_List = std::vector<std::vector<Value_Ptr>>;
+
+void record_call(Call_List& calls, std::span<const Value_Ptr> args)
 {
-    mutable std::vector<std::vector<Value_Ptr>> calls;
-
-    Value_Ptr call(std::span<const Value_Ptr> args) const override
-    {
-        calls.emplace_back(args.begin(), args.end());
-        return Value::create(true);
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<recording>";
-    }
-};
-
-struct Throw_On_Call final : Callable
-{
-    explicit Throw_On_Call(std::size_t throw_on_index)
-        : throw_on_index{throw_on_index}
-    {
-    }
-
-    Value_Ptr call(std::span<const Value_Ptr> args) const override
-    {
-        calls.emplace_back(args.begin(), args.end());
-        if (call_index++ == throw_on_index)
-            throw Frost_User_Error{"kaboom"};
-        return Value::create(true);
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<throw-on-call>";
-    }
-
-    std::size_t throw_on_index;
-    mutable std::size_t call_index = 0;
-    mutable std::vector<std::vector<Value_Ptr>> calls;
-};
-
-struct Stop_On_First final : Callable
-{
-    mutable std::vector<std::vector<Value_Ptr>> calls;
-
-    Value_Ptr call(std::span<const Value_Ptr> args) const override
-    {
-        calls.emplace_back(args.begin(), args.end());
-        if (calls.size() == 1)
-            return Value::create(false);
-        return Value::create(true);
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<stop-on-first>";
-    }
-};
+    calls.emplace_back(args.begin(), args.end());
+}
 } // namespace
 
 TEST_CASE("Foreach Array")
@@ -91,7 +40,7 @@ TEST_CASE("Foreach Array")
         SECTION("Empty array returns null; op not called")
         {
             auto empty = Value::create(Array{});
-            auto op = std::make_shared<Recording_Foreach>();
+            auto op = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{op});
 
             trompeloeil::sequence seq;
@@ -103,13 +52,13 @@ TEST_CASE("Foreach Array")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            FORBID_CALL(*op, call(_));
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(syms);
             CHECK(res->is<Null>());
-            CHECK(op->calls.empty());
         }
 
         SECTION("Calls op for each element in order with pointer-equal args")
@@ -119,8 +68,9 @@ TEST_CASE("Foreach Array")
             auto v3 = Value::create(3_f);
             auto array_val = Value::create(Array{v1, v2, v3});
 
-            auto op = std::make_shared<Recording_Foreach>();
+            auto op = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{op});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -131,19 +81,23 @@ TEST_CASE("Foreach Array")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*op, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(true))
+                .TIMES(3);
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(syms);
             CHECK(res->is<Null>());
-            REQUIRE(op->calls.size() == 3);
-            REQUIRE(op->calls.at(0).size() == 1);
-            REQUIRE(op->calls.at(1).size() == 1);
-            REQUIRE(op->calls.at(2).size() == 1);
-            CHECK(op->calls.at(0).at(0) == v1);
-            CHECK(op->calls.at(1).at(0) == v2);
-            CHECK(op->calls.at(2).at(0) == v3);
+            REQUIRE(calls.size() == 3);
+            REQUIRE(calls.at(0).size() == 1);
+            REQUIRE(calls.at(1).size() == 1);
+            REQUIRE(calls.at(2).size() == 1);
+            CHECK(calls.at(0).at(0) == v1);
+            CHECK(calls.at(1).at(0) == v2);
+            CHECK(calls.at(2).at(0) == v3);
         }
 
         SECTION("Op error propagates and stops iteration")
@@ -153,8 +107,10 @@ TEST_CASE("Foreach Array")
             auto v3 = Value::create(3_f);
             auto array_val = Value::create(Array{v1, v2, v3});
 
-            auto op = std::make_shared<Throw_On_Call>(1);
+            auto op = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{op});
+            Call_List calls;
+            std::size_t call_index = 0;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -165,16 +121,24 @@ TEST_CASE("Foreach Array")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*op, call(_))
+                .LR_SIDE_EFFECT({
+                    record_call(calls, _1);
+                    if (call_index++ == 1)
+                        throw Frost_User_Error{"kaboom"};
+                })
+                .RETURN(Value::create(true))
+                .TIMES(2);
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
-            REQUIRE(op->calls.size() == 2);
-            REQUIRE(op->calls.at(0).size() == 1);
-            REQUIRE(op->calls.at(1).size() == 1);
-            CHECK(op->calls.at(0).at(0) == v1);
-            CHECK(op->calls.at(1).at(0) == v2);
+            REQUIRE(calls.size() == 2);
+            REQUIRE(calls.at(0).size() == 1);
+            REQUIRE(calls.at(1).size() == 1);
+            CHECK(calls.at(0).at(0) == v1);
+            CHECK(calls.at(1).at(0) == v2);
         }
 
         SECTION("Falsy op return stops iteration")
@@ -184,8 +148,9 @@ TEST_CASE("Foreach Array")
             auto v3 = Value::create(3_f);
             auto array_val = Value::create(Array{v1, v2, v3});
 
-            auto op = std::make_shared<Stop_On_First>();
+            auto op = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{op});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -196,15 +161,19 @@ TEST_CASE("Foreach Array")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*op, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(false))
+                .TIMES(1);
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(syms);
             CHECK(res->is<Null>());
-            REQUIRE(op->calls.size() == 1);
-            REQUIRE(op->calls.at(0).size() == 1);
-            CHECK(op->calls.at(0).at(0) == v1);
+            REQUIRE(calls.size() == 1);
+            REQUIRE(calls.at(0).size() == 1);
+            CHECK(calls.at(0).at(0) == v1);
         }
     }
 
@@ -261,7 +230,7 @@ TEST_CASE("Foreach Map")
         SECTION("Empty map returns null; op not called")
         {
             auto empty = Value::create(Map{});
-            auto op = std::make_shared<Recording_Foreach>();
+            auto op = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{op});
 
             trompeloeil::sequence seq;
@@ -273,13 +242,13 @@ TEST_CASE("Foreach Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            FORBID_CALL(*op, call(_));
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(syms);
             CHECK(res->is<Null>());
-            CHECK(op->calls.empty());
         }
 
         SECTION("Calls op for each entry with pointer-equal args")
@@ -290,8 +259,9 @@ TEST_CASE("Foreach Map")
             auto v2 = Value::create(2_f);
             auto map_val = Value::create(Map{{k1, v1}, {k2, v2}});
 
-            auto op = std::make_shared<Recording_Foreach>();
+            auto op = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{op});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -302,21 +272,25 @@ TEST_CASE("Foreach Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*op, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(true))
+                .TIMES(2);
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(syms);
             CHECK(res->is<Null>());
-            REQUIRE(op->calls.size() == 2);
-            for (const auto& call : op->calls)
+            REQUIRE(calls.size() == 2);
+            for (const auto& call : calls)
             {
                 REQUIRE(call.size() == 2);
             }
 
             std::vector<std::pair<Value_Ptr, Value_Ptr>> expected = {{k1, v1},
                                                                      {k2, v2}};
-            for (const auto& call : op->calls)
+            for (const auto& call : calls)
             {
                 bool matched = false;
                 for (auto it = expected.begin(); it != expected.end(); ++it)
@@ -341,8 +315,10 @@ TEST_CASE("Foreach Map")
             auto v2 = Value::create(2_f);
             auto map_val = Value::create(Map{{k1, v1}, {k2, v2}});
 
-            auto op = std::make_shared<Throw_On_Call>(0);
+            auto op = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{op});
+            Call_List calls;
+            std::size_t call_index = 0;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -353,13 +329,21 @@ TEST_CASE("Foreach Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*op, call(_))
+                .LR_SIDE_EFFECT({
+                    record_call(calls, _1);
+                    if (call_index++ == 0)
+                        throw Frost_User_Error{"kaboom"};
+                })
+                .RETURN(Value::create(true))
+                .TIMES(1);
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
-            REQUIRE(op->calls.size() == 1);
-            REQUIRE(op->calls.at(0).size() == 2);
+            REQUIRE(calls.size() == 1);
+            REQUIRE(calls.at(0).size() == 2);
         }
 
         SECTION("Falsy op return stops iteration")
@@ -370,8 +354,9 @@ TEST_CASE("Foreach Map")
             auto v2 = Value::create(2_f);
             auto map_val = Value::create(Map{{k1, v1}, {k2, v2}});
 
-            auto op = std::make_shared<Stop_On_First>();
+            auto op = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{op});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -382,22 +367,26 @@ TEST_CASE("Foreach Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*op, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(false))
+                .TIMES(1);
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(syms);
             CHECK(res->is<Null>());
-            REQUIRE(op->calls.size() == 1);
-            REQUIRE(op->calls.at(0).size() == 2);
+            REQUIRE(calls.size() == 1);
+            REQUIRE(calls.at(0).size() == 2);
 
             std::vector<std::pair<Value_Ptr, Value_Ptr>> expected = {{k1, v1},
                                                                      {k2, v2}};
             bool matched = false;
             for (auto it = expected.begin(); it != expected.end(); ++it)
             {
-                if (it->first == op->calls.at(0).at(0)
-                    && it->second == op->calls.at(0).at(1))
+                if (it->first == calls.at(0).at(0)
+                    && it->second == calls.at(0).at(1))
                 {
                     matched = true;
                     break;

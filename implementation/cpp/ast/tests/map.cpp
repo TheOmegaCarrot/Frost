@@ -2,6 +2,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <catch2/trompeloeil.hpp>
 
+#include <frost/mock/mock-callable.hpp>
 #include <frost/mock/mock-expression.hpp>
 #include <frost/mock/mock-symbol-table.hpp>
 
@@ -18,50 +19,12 @@ using trompeloeil::_;
 
 namespace
 {
-struct Recording_Mapper final : Callable
+using Call_List = std::vector<std::vector<Value_Ptr>>;
+
+void record_call(Call_List& calls, std::span<const Value_Ptr> args)
 {
-    mutable std::vector<std::vector<Value_Ptr>> calls;
-    mutable std::size_t call_index = 0;
-    std::vector<Value_Ptr> results;
-
-    Value_Ptr call(std::span<const Value_Ptr> args) const override
-    {
-        calls.emplace_back(args.begin(), args.end());
-        if (call_index < results.size())
-            return results.at(call_index++);
-        return Value::null();
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<recording>";
-    }
-};
-
-struct Throw_On_Index_Mapper final : Callable
-{
-    explicit Throw_On_Index_Mapper(std::size_t throw_on_index)
-        : throw_on_index{throw_on_index}
-    {
-    }
-
-    Value_Ptr call(std::span<const Value_Ptr> args) const override
-    {
-        calls.emplace_back(args.begin(), args.end());
-        if (call_index++ == throw_on_index)
-            throw Frost_User_Error{"kaboom"};
-        return Value::null();
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<throw-on-index>";
-    }
-
-    std::size_t throw_on_index;
-    mutable std::size_t call_index = 0;
-    mutable std::vector<std::vector<Value_Ptr>> calls;
-};
+    calls.emplace_back(args.begin(), args.end());
+}
 } // namespace
 
 TEST_CASE("Map Array")
@@ -77,7 +40,7 @@ TEST_CASE("Map Array")
         SECTION("Empty array returns empty array; op not called")
         {
             auto empty = Value::create(Array{});
-            auto mapper = std::make_shared<Recording_Mapper>();
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
 
             trompeloeil::sequence seq;
@@ -89,13 +52,13 @@ TEST_CASE("Map Array")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            FORBID_CALL(*mapper, call(_));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             auto res = node.evaluate(syms);
             auto out = res->get<Array>().value();
             CHECK(out.empty());
-            CHECK(mapper->calls.empty());
         }
 
         SECTION("Maps each element in order with pointer-equal arguments")
@@ -105,12 +68,12 @@ TEST_CASE("Map Array")
             auto v3 = Value::create(3_f);
             auto array_val = Value::create(Array{v1, v2, v3});
 
-            auto mapper = std::make_shared<Recording_Mapper>();
+            auto mapper = mock::Mock_Callable::make();
             auto r1 = Value::create("one"s);
             auto r2 = Value::create("two"s);
             auto r3 = Value::create("three"s);
-            mapper->results = {r1, r2, r3};
             auto op_val = Value::create(Function{mapper});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -121,6 +84,18 @@ TEST_CASE("Map Array")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .IN_SEQUENCE(seq)
+                .RETURN(r1);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .IN_SEQUENCE(seq)
+                .RETURN(r2);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .IN_SEQUENCE(seq)
+                .RETURN(r3);
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
@@ -131,10 +106,10 @@ TEST_CASE("Map Array")
             CHECK(out.at(1) == r2);
             CHECK(out.at(2) == r3);
 
-            REQUIRE(mapper->calls.size() == 3);
-            CHECK(mapper->calls.at(0).at(0) == v1);
-            CHECK(mapper->calls.at(1).at(0) == v2);
-            CHECK(mapper->calls.at(2).at(0) == v3);
+            REQUIRE(calls.size() == 3);
+            CHECK(calls.at(0).at(0) == v1);
+            CHECK(calls.at(1).at(0) == v2);
+            CHECK(calls.at(2).at(0) == v3);
         }
 
         SECTION("Propagates mapper error and stops")
@@ -144,8 +119,9 @@ TEST_CASE("Map Array")
             auto v3 = Value::create(3_f);
             auto array_val = Value::create(Array{v1, v2, v3});
 
-            auto mapper = std::make_shared<Throw_On_Index_Mapper>(1);
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -156,13 +132,21 @@ TEST_CASE("Map Array")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .IN_SEQUENCE(seq)
+                .RETURN(Value::null());
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .IN_SEQUENCE(seq)
+                .THROW(Frost_User_Error{"kaboom"});
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
-            REQUIRE(mapper->calls.size() == 2);
-            CHECK(mapper->calls.at(0).at(0) == v1);
-            CHECK(mapper->calls.at(1).at(0) == v2);
+            REQUIRE(calls.size() == 2);
+            CHECK(calls.at(0).at(0) == v1);
+            CHECK(calls.at(1).at(0) == v2);
         }
     }
 
@@ -218,7 +202,7 @@ TEST_CASE("Map Map")
         SECTION("Empty map returns empty map; op not called")
         {
             auto empty = Value::create(Map{});
-            auto mapper = std::make_shared<Recording_Mapper>();
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
 
             trompeloeil::sequence seq;
@@ -230,13 +214,13 @@ TEST_CASE("Map Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            FORBID_CALL(*mapper, call(_));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             auto res = node.evaluate(syms);
             auto out = res->get<Map>().value();
             CHECK(out.empty());
-            CHECK(mapper->calls.empty());
         }
 
         SECTION("Calls mapper with (key, value) and merges results")
@@ -253,12 +237,9 @@ TEST_CASE("Map Map")
             auto out_k2 = Value::create("b"s);
             auto out_v2 = Value::create(20_f);
 
-            auto mapper = std::make_shared<Recording_Mapper>();
-            mapper->results = {
-                Value::create(Map{{out_k1, out_v1}}),
-                Value::create(Map{{out_k2, out_v2}}),
-            };
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -269,6 +250,12 @@ TEST_CASE("Map Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(Map{{out_k1, out_v1}}));
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(Map{{out_k2, out_v2}}));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
@@ -278,10 +265,10 @@ TEST_CASE("Map Map")
             CHECK(out.at(out_k1) == out_v1);
             CHECK(out.at(out_k2) == out_v2);
 
-            REQUIRE(mapper->calls.size() == 2);
+            REQUIRE(calls.size() == 2);
             std::vector<std::pair<Value_Ptr, Value_Ptr>> expected = {{k1, v1},
                                                                      {k2, v2}};
-            for (const auto& call : mapper->calls)
+            for (const auto& call : calls)
             {
                 REQUIRE(call.size() == 2);
                 bool matched = false;
@@ -317,12 +304,9 @@ TEST_CASE("Map Map")
             auto out_k4 = Value::create("d"s);
             auto out_v4 = Value::create(40_f);
 
-            auto mapper = std::make_shared<Recording_Mapper>();
-            mapper->results = {
-                Value::create(Map{{out_k1, out_v1}, {out_k2, out_v2}}),
-                Value::create(Map{{out_k3, out_v3}, {out_k4, out_v4}}),
-            };
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -333,6 +317,14 @@ TEST_CASE("Map Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(
+                    Map{{out_k1, out_v1}, {out_k2, out_v2}}));
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(
+                    Map{{out_k3, out_v3}, {out_k4, out_v4}}));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
@@ -357,12 +349,9 @@ TEST_CASE("Map Map")
             auto out_k1 = Value::create("a"s);
             auto out_v1 = Value::create(10_f);
 
-            auto mapper = std::make_shared<Recording_Mapper>();
-            mapper->results = {
-                Value::create(Map{{out_k1, out_v1}}),
-                Value::create(Map{}),
-            };
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -373,6 +362,12 @@ TEST_CASE("Map Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(Map{{out_k1, out_v1}}));
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(Map{}));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
@@ -394,12 +389,9 @@ TEST_CASE("Map Map")
             auto input_map = Value::create(Map{{k1, v1}, {k2, v2}});
 
             auto dup_key = Value::create("dup"s);
-            auto mapper = std::make_shared<Recording_Mapper>();
-            mapper->results = {
-                Value::create(Map{{dup_key, Value::create(10_f)}}),
-                Value::create(Map{{dup_key, Value::create(20_f)}}),
-            };
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -410,12 +402,18 @@ TEST_CASE("Map Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(Map{{dup_key, Value::create(10_f)}}));
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(Map{{dup_key, Value::create(20_f)}}));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms),
                               ContainsSubstring("collision"));
-            REQUIRE(mapper->calls.size() == 2);
+            REQUIRE(calls.size() == 2);
         }
 
         SECTION("Collision on value-equal primitive keys with distinct ptrs")
@@ -429,12 +427,9 @@ TEST_CASE("Map Map")
             auto dup_key1 = Value::create(99_f);
             auto dup_key2 = Value::create(99_f);
 
-            auto mapper = std::make_shared<Recording_Mapper>();
-            mapper->results = {
-                Value::create(Map{{dup_key1, Value::create(10_f)}}),
-                Value::create(Map{{dup_key2, Value::create(20_f)}}),
-            };
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -445,12 +440,18 @@ TEST_CASE("Map Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(Map{{dup_key1, Value::create(10_f)}}));
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(Map{{dup_key2, Value::create(20_f)}}));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms),
                               ContainsSubstring("collision"));
-            REQUIRE(mapper->calls.size() == 2);
+            REQUIRE(calls.size() == 2);
         }
 
         SECTION("Collision on structured keys uses identity semantics")
@@ -464,12 +465,9 @@ TEST_CASE("Map Map")
             auto shared_key =
                 Value::create(Map{{Value::create(1_f), Value::create(2_f)}});
 
-            auto mapper = std::make_shared<Recording_Mapper>();
-            mapper->results = {
-                Value::create(Map{{shared_key, Value::create(10_f)}}),
-                Value::create(Map{{shared_key, Value::create(20_f)}}),
-            };
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -480,12 +478,18 @@ TEST_CASE("Map Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(Map{{shared_key, Value::create(10_f)}}));
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(Map{{shared_key, Value::create(20_f)}}));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms),
                               ContainsSubstring("collision"));
-            REQUIRE(mapper->calls.size() == 2);
+            REQUIRE(calls.size() == 2);
         }
 
         SECTION("Mapper return must be a map")
@@ -494,9 +498,9 @@ TEST_CASE("Map Map")
             auto v1 = Value::create(1_f);
             auto input_map = Value::create(Map{{k1, v1}});
 
-            auto mapper = std::make_shared<Recording_Mapper>();
-            mapper->results = {Value::create(123_f)};
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -507,11 +511,14 @@ TEST_CASE("Map Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .RETURN(Value::create(123_f));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("Int"));
-            CHECK(mapper->calls.size() == 1);
+            CHECK(calls.size() == 1);
         }
 
         SECTION("Mapper errors propagate")
@@ -522,8 +529,9 @@ TEST_CASE("Map Map")
             auto v2 = Value::create(2_f);
             auto input_map = Value::create(Map{{k1, v1}, {k2, v2}});
 
-            auto mapper = std::make_shared<Throw_On_Index_Mapper>(0);
+            auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
+            Call_List calls;
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, evaluate(_))
@@ -534,11 +542,14 @@ TEST_CASE("Map Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
+            REQUIRE_CALL(*mapper, call(_))
+                .LR_SIDE_EFFECT(record_call(calls, _1))
+                .THROW(Frost_User_Error{"kaboom"});
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
-            CHECK(mapper->calls.size() == 1);
+            CHECK(calls.size() == 1);
         }
     }
 }
