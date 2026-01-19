@@ -30,7 +30,7 @@ boost::regex regex(const Value_Ptr& re)
 
 Value_Ptr matches(builtin_args_t args)
 {
-    REQUIRE_ARGS(full_match, PARAM("string", TYPES(String)),
+    REQUIRE_ARGS(matches, PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
 
     auto re = regex(args.at(1));
@@ -40,7 +40,7 @@ Value_Ptr matches(builtin_args_t args)
 
 Value_Ptr contains(builtin_args_t args)
 {
-    REQUIRE_ARGS(full_match, PARAM("string", TYPES(String)),
+    REQUIRE_ARGS(contains, PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
 
     auto re = regex(args.at(1));

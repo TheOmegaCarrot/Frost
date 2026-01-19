@@ -66,3 +66,5 @@ functions_test(tests/builtins/free-operators.cpp)
 functions_test(tests/builtins/math.cpp)
 
 functions_test(tests/builtins/string-ops.cpp)
+
+functions_test(tests/builtins/regex.cpp)
