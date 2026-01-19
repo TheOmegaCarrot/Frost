@@ -1,22 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/value.hpp>
+#include <frost/testing/dummy-callable.hpp>
 #include <memory>
 
 using namespace frst;
 
-struct Dummy : Callable
-{
-    Value_Ptr call(std::span<const Value_Ptr>) const override
-    {
-        return Value::null();
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<dummy>";
-    }
-};
+using frst::testing::Dummy_Callable;
 
 TEST_CASE("Coercions")
 {
@@ -40,7 +30,7 @@ TEST_CASE("Coercions")
             Value::create(100.42),
         },
     }};
-    Value function{Function{std::make_shared<Dummy>()}};
+    Value function{Function{std::make_shared<Dummy_Callable>()}};
 
     SECTION("To null")
     {

@@ -1,6 +1,7 @@
 #include <catch2/catch_all.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
+#include <frost/testing/dummy-callable.hpp>
 
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
@@ -32,18 +33,6 @@ TEST_CASE("Type Tests")
         return res->get<Bool>().value_or(false);
     };
 
-    struct Dummy final : Callable
-    {
-        Value_Ptr call(builtin_args_t) const override
-        {
-            return Value::null();
-        }
-        std::string debug_dump() const override
-        {
-            return "<dummy>";
-        }
-    };
-
     auto v_null = Value::null();
     auto v_int = Value::create(42_f);
     auto v_float = Value::create(3.14);
@@ -52,7 +41,10 @@ TEST_CASE("Type Tests")
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
-    auto v_func = Value::create(Function{std::make_shared<Dummy>()});
+    // AI-generated test additions by Codex (GPT-5).
+    // Signed: Codex (GPT-5).
+    auto v_func = Value::create(
+        Function{std::make_shared<frst::testing::Dummy_Callable>()});
 
     SECTION("Injected")
     {

@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <frost/value.hpp>
+#include <frost/testing/dummy-callable.hpp>
 
 #include <memory>
 
@@ -10,18 +11,7 @@ namespace
 {
 // AI-generated test additions by Codex (GPT-5).
 // Signed: Codex (GPT-5).
-struct Dummy_Function final : frst::Callable
-{
-    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
-    {
-        return Value::null();
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<dummy>";
-    }
-};
+using frst::testing::Dummy_Callable;
 } // namespace
 
 TEST_CASE("Construction and .is*<T>")
@@ -101,7 +91,7 @@ TEST_CASE("Construction and .is*<T>")
 
     SECTION("Function")
     {
-        Value value{frst::Function{std::make_shared<Dummy_Function>()}};
+        Value value{frst::Function{std::make_shared<Dummy_Callable>()}};
         CHECK(value.is<frst::Function>());
         CHECK_FALSE(value.is_numeric());
         CHECK_FALSE(value.is_primitive());
@@ -119,7 +109,7 @@ TEST_CASE("Get")
     Value string{"Hello"s};
     Value array{frst::Array{Value::create(42_f)}};
     Value map{frst::Map{{Value::create(42_f), Value::create("Hello"s)}}};
-    Value function{frst::Function{std::make_shared<Dummy_Function>()}};
+    Value function{frst::Function{std::make_shared<Dummy_Callable>()}};
 
     SECTION("Null")
     {
@@ -221,7 +211,7 @@ TEST_CASE("Type Name")
     Value string{"Hello"s};
     Value array{frst::Array{Value::create(42_f)}};
     Value map{frst::Map{{Value::create(42_f), Value::create("Hello"s)}}};
-    Value function{frst::Function{std::make_shared<Dummy_Function>()}};
+    Value function{frst::Function{std::make_shared<Dummy_Callable>()}};
 
     CHECK(null.type_name() == "Null");
     CHECK(integer.type_name() == "Int");

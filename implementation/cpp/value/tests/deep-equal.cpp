@@ -4,6 +4,7 @@
 #include <memory_resource>
 
 #include <frost/testing/stringmaker-specializations.hpp>
+#include <frost/testing/dummy-callable.hpp>
 #include <frost/value.hpp>
 
 using namespace frst;
@@ -12,18 +13,7 @@ using namespace frst::literals;
 
 namespace
 {
-struct Dummy final : Callable
-{
-    Value_Ptr call(std::span<const Value_Ptr>) const override
-    {
-        return Value::null();
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<dummy>";
-    }
-};
+using frst::testing::Dummy_Callable;
 
 bool deep_eq(const Value_Ptr& lhs, const Value_Ptr& rhs)
 {
@@ -74,7 +64,7 @@ TEST_CASE("Deep Equal")
         auto b1 = Value::create(true);
         auto s1 = Value::create("1"s);
         auto n1 = Value::null();
-        auto fn1 = Value::create(Function{std::make_shared<Dummy>()});
+        auto fn1 = Value::create(Function{std::make_shared<Dummy_Callable>()});
 
         CHECK_FALSE(deep_eq(i1, f1));
         CHECK_FALSE(deep_eq(i1, b1));
@@ -88,10 +78,10 @@ TEST_CASE("Deep Equal")
 
     SECTION("Functions compare by identity only")
     {
-        auto fn_ptr = std::make_shared<Dummy>();
+        auto fn_ptr = std::make_shared<Dummy_Callable>();
         auto fn1 = Value::create(Function{fn_ptr});
         auto fn2 = Value::create(Function{fn_ptr});
-        auto fn3 = Value::create(Function{std::make_shared<Dummy>()});
+        auto fn3 = Value::create(Function{std::make_shared<Dummy_Callable>()});
 
         CHECK(deep_eq(fn1, fn2));
         CHECK_FALSE(deep_eq(fn1, fn3));

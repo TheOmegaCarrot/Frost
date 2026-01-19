@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <frost/testing/stringmaker-specializations.hpp>
+#include <frost/testing/dummy-callable.hpp>
 
 #include <frost/value.hpp>
 
@@ -14,18 +15,7 @@ using frst::Value, frst::Value_Ptr;
 
 namespace
 {
-struct Dummy_Function final : frst::Callable
-{
-    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
-    {
-        return Value::null();
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<dummy>";
-    }
-};
+using frst::testing::Dummy_Callable;
 
 struct Logical_Case
 {
@@ -46,7 +36,7 @@ std::vector<Logical_Case> logical_cases()
         {"empty_array", Value::create(frst::Array{}), true},
         {"empty_map", Value::create(frst::Map{}), true},
         {"function",
-         Value::create(frst::Function{std::make_shared<Dummy_Function>()}),
+         Value::create(frst::Function{std::make_shared<Dummy_Callable>()}),
          true},
     };
 }

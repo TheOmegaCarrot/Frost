@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <frost/testing/stringmaker-specializations.hpp>
+#include <frost/testing/dummy-callable.hpp>
 
 #include <frost/value.hpp>
 
@@ -16,18 +17,7 @@ namespace
 {
 // AI-generated test additions by Codex (GPT-5).
 // Signed: Codex (GPT-5).
-struct Dummy_Function final : frst::Callable
-{
-    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
-    {
-        return Value::null();
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<dummy>";
-    }
-};
+using frst::testing::Dummy_Callable;
 } // namespace
 
 TEST_CASE("Numeric Add")
@@ -343,7 +333,7 @@ TEST_CASE("Add All Permutations")
         },
     });
     auto Function =
-        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
+        Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
 #define OP_CHAR +
 #define OP_VERB add

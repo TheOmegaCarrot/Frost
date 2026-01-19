@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include <frost/value.hpp>
+#include <frost/testing/dummy-callable.hpp>
 
 using namespace std::literals;
 using namespace frst::literals;
@@ -12,17 +13,7 @@ namespace
 {
 // AI-generated test additions by Codex (GPT-5).
 // Signed: Codex (GPT-5).
-struct Dummy_Function final : frst::Callable
-{
-    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
-    {
-        return Value::null();
-    }
-    std::string debug_dump() const override
-    {
-        return "<dummy>";
-    }
-};
+using frst::testing::Dummy_Callable;
 } // namespace
 
 TEST_CASE("to_string")
@@ -41,7 +32,7 @@ TEST_CASE("to_string")
         {Value::create(true), Value::create("value2"s)},
     });
     auto Function =
-        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
+        Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
     CHECK(Null->to_internal_string() == "null");
     CHECK(Int->to_internal_string() == "42");
@@ -68,7 +59,7 @@ TEST_CASE("to_string Value_Ptr")
     auto Int = Value::create(42_f);
     auto Bool = Value::create(true);
     auto Function =
-        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
+        Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
     auto int_str = Int->to_string();
     REQUIRE(int_str->is<frst::String>());
@@ -85,18 +76,6 @@ TEST_CASE("to_string Value_Ptr")
 
 TEST_CASE("to_internal_int")
 {
-    struct Dummy final : frst::Callable
-    {
-        frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
-        {
-            return Value::null();
-        }
-        std::string debug_dump() const override
-        {
-            return "<dummy>";
-        }
-    };
-
     auto v_null = Value::null();
     auto v_int = Value::create(42_f);
     auto v_float = Value::create(3.9);
@@ -118,7 +97,7 @@ TEST_CASE("to_internal_int")
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
-    auto v_func = Value::create(frst::Function{std::make_shared<Dummy>()});
+    auto v_func = Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
     CHECK(v_int->to_internal_int() == 42);
     CHECK(v_float->to_internal_int() == 3);
@@ -146,18 +125,6 @@ TEST_CASE("to_internal_int")
 
 TEST_CASE("to_int")
 {
-    struct Dummy final : frst::Callable
-    {
-        frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
-        {
-            return Value::null();
-        }
-        std::string debug_dump() const override
-        {
-            return "<dummy>";
-        }
-    };
-
     auto v_int = Value::create(42_f);
     auto v_float = Value::create(3.9);
     auto v_string = Value::create("123"s);
@@ -173,7 +140,8 @@ TEST_CASE("to_int")
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
-    auto v_func = Value::create(frst::Function{std::make_shared<Dummy>()});
+    auto v_func =
+        Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
     auto res_int = v_int->to_int();
     REQUIRE(res_int->is<frst::Int>());
@@ -206,18 +174,6 @@ TEST_CASE("to_int")
 
 TEST_CASE("to_internal_float")
 {
-    struct Dummy final : frst::Callable
-    {
-        frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
-        {
-            return Value::null();
-        }
-        std::string debug_dump() const override
-        {
-            return "<dummy>";
-        }
-    };
-
     auto v_null = Value::null();
     auto v_int = Value::create(42_f);
     auto v_float = Value::create(3.14);
@@ -237,7 +193,8 @@ TEST_CASE("to_internal_float")
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
-    auto v_func = Value::create(frst::Function{std::make_shared<Dummy>()});
+    auto v_func =
+        Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
     CHECK(v_int->to_internal_float() == 42.0);
     CHECK(v_float->to_internal_float() == 3.14);
@@ -263,18 +220,6 @@ TEST_CASE("to_internal_float")
 
 TEST_CASE("to_float")
 {
-    struct Dummy final : frst::Callable
-    {
-        frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
-        {
-            return Value::null();
-        }
-        std::string debug_dump() const override
-        {
-            return "<dummy>";
-        }
-    };
-
     auto v_int = Value::create(42_f);
     auto v_float = Value::create(3.14);
     auto v_string = Value::create("3.14"s);
@@ -292,7 +237,8 @@ TEST_CASE("to_float")
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
-    auto v_func = Value::create(frst::Function{std::make_shared<Dummy>()});
+    auto v_func =
+        Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
     auto res_int = v_int->to_float();
     REQUIRE(res_int->is<frst::Float>());

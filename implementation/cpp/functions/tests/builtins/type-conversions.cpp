@@ -3,6 +3,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
+#include <frost/testing/dummy-callable.hpp>
 
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
@@ -39,20 +40,8 @@ TEST_CASE("Builtin to_string")
     });
     // AI-generated test additions by Codex (GPT-5).
     // Signed: Codex (GPT-5).
-    struct Dummy_Function final : frst::Callable
-    {
-        frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
-        {
-            return Value::null();
-        }
-
-        std::string debug_dump() const override
-        {
-            return "<dummy>";
-        }
-    };
     auto Function_ =
-        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
+        Value::create(frst::Function{std::make_shared<frst::testing::Dummy_Callable>()});
 
     SECTION("Success")
     {

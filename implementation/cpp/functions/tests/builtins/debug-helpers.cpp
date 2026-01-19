@@ -2,6 +2,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
+#include <frost/testing/dummy-callable.hpp>
 
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
@@ -76,19 +77,10 @@ TEST_CASE("Builtin debug_dump")
 
     SECTION("Custom callable debug_dump")
     {
-        struct Dummy final : Callable
-        {
-            Value_Ptr call(builtin_args_t) const override
-            {
-                return Value::null();
-            }
-            std::string debug_dump() const override
-            {
-                return "<dummy>";
-            }
-        };
-
-        auto func = Value::create(Function{std::make_shared<Dummy>()});
+        // AI-generated test additions by Codex (GPT-5).
+        // Signed: Codex (GPT-5).
+        auto func = Value::create(
+            Function{std::make_shared<frst::testing::Dummy_Callable>()});
 
         auto res = debug_dump->call({func});
         REQUIRE(res->is<frst::String>());

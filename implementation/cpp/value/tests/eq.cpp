@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <frost/testing/stringmaker-specializations.hpp>
+#include <frost/testing/dummy-callable.hpp>
 
 #include <frost/value.hpp>
 
@@ -16,18 +17,7 @@ namespace
 {
 // AI-generated test additions by Codex (GPT-5).
 // Signed: Codex (GPT-5).
-struct Dummy_Function final : frst::Callable
-{
-    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
-    {
-        return Value::null();
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<dummy>";
-    }
-};
+using frst::testing::Dummy_Callable;
 } // namespace
 
 TEST_CASE("Null Equality")
@@ -168,10 +158,11 @@ TEST_CASE("Map Equality")
 
 TEST_CASE("Function Equality")
 {
-    auto fn_ptr = std::make_shared<Dummy_Function>();
+    auto fn_ptr = std::make_shared<Dummy_Callable>();
     auto fn1 = Value::create(frst::Function{fn_ptr});
     auto fn2 = Value::create(frst::Function{fn_ptr});
-    auto fn3 = Value::create(frst::Function{std::make_shared<Dummy_Function>()});
+    auto fn3 =
+        Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
     CHECK(Value::equal(fn1, fn2)->get<frst::Bool>().value());
     CHECK_FALSE(Value::equal(fn1, fn3)->get<frst::Bool>().value());
@@ -197,7 +188,7 @@ TEST_CASE("Equals Compare All Permutations")
         },
     });
     auto Function =
-        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
+        Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
 #define OP_CHAR ==
 #define OP_VERB compare
