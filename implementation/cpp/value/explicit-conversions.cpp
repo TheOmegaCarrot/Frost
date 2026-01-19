@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 
 #include <charconv>
+#include <iomanip>
 #include <ranges>
 
 using namespace std::literals;
@@ -48,7 +49,7 @@ struct To_String_Impl
     std::string operator()(const String& value, bool in_structure = false) const
     {
         if (in_structure)
-            return fmt::format(R"("{}")", value);
+            return (std::ostringstream{} << std::quoted(value)).str();
         else
             return value;
     }

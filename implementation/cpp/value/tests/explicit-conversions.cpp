@@ -2,8 +2,8 @@
 
 #include <cmath>
 
-#include <frost/value.hpp>
 #include <frost/testing/dummy-callable.hpp>
+#include <frost/value.hpp>
 
 using namespace std::literals;
 using namespace frst::literals;
@@ -34,6 +34,8 @@ TEST_CASE("to_string")
     auto Function =
         Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
+    auto string_with_quotes = Value::create("hi \" there"s);
+
     CHECK(Null->to_internal_string() == "null");
     CHECK(Int->to_internal_string() == "42");
     CHECK(Float->to_internal_string().starts_with("3.14"));
@@ -49,6 +51,8 @@ TEST_CASE("to_string")
     });
 
     CHECK(Nested->to_internal_string() == R"([ 42, [ 42, "hello" ] ])");
+
+    CHECK(string_with_quotes->to_internal_string() == R"(hi " there)");
 }
 
 // AI-generated test additions by Codex (GPT-5).
@@ -97,7 +101,8 @@ TEST_CASE("to_internal_int")
     auto v_array = Value::create(frst::Array{Value::create(1_f)});
     auto v_map =
         Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
-    auto v_func = Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
+    auto v_func =
+        Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
     CHECK(v_int->to_internal_int() == 42);
     CHECK(v_float->to_internal_int() == 3);
