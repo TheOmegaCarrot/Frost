@@ -74,13 +74,16 @@ TEST_CASE("Deep Equal")
         auto b1 = Value::create(true);
         auto s1 = Value::create("1"s);
         auto n1 = Value::null();
+        auto fn1 = Value::create(Function{std::make_shared<Dummy>()});
 
         CHECK_FALSE(deep_eq(i1, f1));
         CHECK_FALSE(deep_eq(i1, b1));
         CHECK_FALSE(deep_eq(i1, s1));
         CHECK_FALSE(deep_eq(i1, n1));
+        CHECK_FALSE(deep_eq(i1, fn1));
         CHECK_FALSE(deep_eq(f1, s1));
         CHECK_FALSE(deep_eq(b1, n1));
+        CHECK_FALSE(deep_eq(fn1, n1));
     }
 
     SECTION("Functions compare by identity only")

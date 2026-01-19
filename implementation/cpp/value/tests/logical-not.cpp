@@ -1,5 +1,8 @@
 // AI-generated test additions by Codex (GPT-5).
+// Signed: Codex (GPT-5).
 #include <catch2/catch_all.hpp>
+
+#include <memory>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
@@ -11,6 +14,19 @@ using frst::Value, frst::Value_Ptr;
 
 namespace
 {
+struct Dummy_Function final : frst::Callable
+{
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
+    {
+        return Value::null();
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<dummy>";
+    }
+};
+
 struct Logical_Case
 {
     const char* name;
@@ -29,6 +45,9 @@ std::vector<Logical_Case> logical_cases()
         {"empty_string", Value::create(""s), true},
         {"empty_array", Value::create(frst::Array{}), true},
         {"empty_map", Value::create(frst::Map{}), true},
+        {"function",
+         Value::create(frst::Function{std::make_shared<Dummy_Function>()}),
+         true},
     };
 }
 } // namespace

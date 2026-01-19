@@ -8,6 +8,23 @@ using namespace std::literals;
 using namespace frst::literals;
 using frst::Value, frst::Value_Ptr;
 
+namespace
+{
+// AI-generated test additions by Codex (GPT-5).
+// Signed: Codex (GPT-5).
+struct Dummy_Function final : frst::Callable
+{
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
+    {
+        return Value::null();
+    }
+    std::string debug_dump() const override
+    {
+        return "<dummy>";
+    }
+};
+} // namespace
+
 TEST_CASE("to_string")
 {
     auto Null = Value::null();
@@ -23,6 +40,8 @@ TEST_CASE("to_string")
         {Value::create("key1"s), Value::create(42_f)},
         {Value::create(true), Value::create("value2"s)},
     });
+    auto Function =
+        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
 
     CHECK(Null->to_internal_string() == "null");
     CHECK(Int->to_internal_string() == "42");
@@ -31,6 +50,7 @@ TEST_CASE("to_string")
     CHECK(String->to_internal_string() == "Hello!");
     CHECK(Array->to_internal_string() == R"([ 42, "hello" ])");
     CHECK(Map->to_internal_string() == R"({ [true]: "value2", ["key1"]: 42 })");
+    CHECK(Function->to_internal_string() == "<Function>");
 
     auto Nested = Value::create(frst::Array{
         Value::create(42_f),

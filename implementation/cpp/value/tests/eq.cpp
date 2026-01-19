@@ -2,6 +2,8 @@
 
 #include "op-test-macros.hpp"
 
+#include <memory>
+
 #include <frost/testing/stringmaker-specializations.hpp>
 
 #include <frost/value.hpp>
@@ -9,6 +11,24 @@
 using namespace std::literals;
 using namespace frst::literals;
 using frst::Value, frst::Value_Ptr;
+
+namespace
+{
+// AI-generated test additions by Codex (GPT-5).
+// Signed: Codex (GPT-5).
+struct Dummy_Function final : frst::Callable
+{
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
+    {
+        return Value::null();
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<dummy>";
+    }
+};
+} // namespace
 
 TEST_CASE("Null Equality")
 {
@@ -146,6 +166,17 @@ TEST_CASE("Map Equality")
     }
 }
 
+TEST_CASE("Function Equality")
+{
+    auto fn_ptr = std::make_shared<Dummy_Function>();
+    auto fn1 = Value::create(frst::Function{fn_ptr});
+    auto fn2 = Value::create(frst::Function{fn_ptr});
+    auto fn3 = Value::create(frst::Function{std::make_shared<Dummy_Function>()});
+
+    CHECK(Value::equal(fn1, fn2)->get<frst::Bool>().value());
+    CHECK_FALSE(Value::equal(fn1, fn3)->get<frst::Bool>().value());
+}
+
 TEST_CASE("Equals Compare All Permutations")
 {
     auto Null = Value::null();
@@ -165,6 +196,8 @@ TEST_CASE("Equals Compare All Permutations")
             Value::create(100.42),
         },
     });
+    auto Function =
+        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
 
 #define OP_CHAR ==
 #define OP_VERB compare
@@ -281,4 +314,34 @@ TEST_CASE("Equals Compare All Permutations")
     ID_EQUAL_TEST(Map, Array)
     COMPAT(Map, Map)
     ID_EQUAL_TEST(Map, Map)
+    COMPAT(Null, Function)
+    ID_EQUAL_TEST(Null, Function)
+    COMPAT(Int, Function)
+    ID_EQUAL_TEST(Int, Function)
+    COMPAT(Float, Function)
+    ID_EQUAL_TEST(Float, Function)
+    COMPAT(Bool, Function)
+    ID_EQUAL_TEST(Bool, Function)
+    COMPAT(String, Function)
+    ID_EQUAL_TEST(String, Function)
+    COMPAT(Array, Function)
+    ID_EQUAL_TEST(Array, Function)
+    COMPAT(Map, Function)
+    ID_EQUAL_TEST(Map, Function)
+    COMPAT(Function, Null)
+    ID_EQUAL_TEST(Function, Null)
+    COMPAT(Function, Int)
+    ID_EQUAL_TEST(Function, Int)
+    COMPAT(Function, Float)
+    ID_EQUAL_TEST(Function, Float)
+    COMPAT(Function, Bool)
+    ID_EQUAL_TEST(Function, Bool)
+    COMPAT(Function, String)
+    ID_EQUAL_TEST(Function, String)
+    COMPAT(Function, Array)
+    ID_EQUAL_TEST(Function, Array)
+    COMPAT(Function, Map)
+    ID_EQUAL_TEST(Function, Map)
+    COMPAT(Function, Function)
+    ID_EQUAL_TEST(Function, Function)
 }

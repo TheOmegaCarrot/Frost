@@ -14,14 +14,15 @@ namespace frst
 
 struct Compare_Equal_Impl
 {
-    template <Frost_Primitive T>
+    template <Frost_Type T>
+        requires Frost_Primitive<T> || std::same_as<Function, T>
     static bool operator()(const T& lhs, const T& rhs)
     {
         return lhs == rhs;
     }
     static bool operator()(const auto&, const auto&)
     {
-        THROW_UNREACHABLE;
+        return false;
     }
 } constexpr static compare_equal_impl;
 
@@ -36,10 +37,7 @@ bool Value::equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
     if (lhs_var.index() != rhs_var.index())
         return false; // different types are always unequal
 
-    if (lhs->is_primitive()) // primitives use value comparison
-        return std::visit(compare_equal_impl, lhs_var, rhs_var);
-
-    return false;
+    return std::visit(compare_equal_impl, lhs_var, rhs_var);
 }
 
 bool Value::not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)

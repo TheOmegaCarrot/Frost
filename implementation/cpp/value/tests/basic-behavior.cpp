@@ -1,8 +1,28 @@
 #include <catch2/catch_test_macros.hpp>
 #include <frost/value.hpp>
 
+#include <memory>
+
 using namespace std::literals;
 using frst::Value;
+
+namespace
+{
+// AI-generated test additions by Codex (GPT-5).
+// Signed: Codex (GPT-5).
+struct Dummy_Function final : frst::Callable
+{
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
+    {
+        return Value::null();
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<dummy>";
+    }
+};
+} // namespace
 
 TEST_CASE("Construction and .is*<T>")
 {
@@ -78,6 +98,15 @@ TEST_CASE("Construction and .is*<T>")
         CHECK_FALSE(value.is_primitive());
         CHECK(value.is_structured());
     }
+
+    SECTION("Function")
+    {
+        Value value{frst::Function{std::make_shared<Dummy_Function>()}};
+        CHECK(value.is<frst::Function>());
+        CHECK_FALSE(value.is_numeric());
+        CHECK_FALSE(value.is_primitive());
+        CHECK_FALSE(value.is_structured());
+    }
 }
 
 TEST_CASE("Get")
@@ -90,6 +119,7 @@ TEST_CASE("Get")
     Value string{"Hello"s};
     Value array{frst::Array{Value::create(42_f)}};
     Value map{frst::Map{{Value::create(42_f), Value::create("Hello"s)}}};
+    Value function{frst::Function{std::make_shared<Dummy_Function>()}};
 
     SECTION("Null")
     {
@@ -167,6 +197,18 @@ TEST_CASE("Get")
         CHECK(!map.get<frst::Array>().has_value());
         CHECK(map.get<frst::Map>().has_value());
     }
+
+    SECTION("Function")
+    {
+        CHECK(!function.get<frst::Null>().has_value());
+        CHECK(!function.get<frst::Int>().has_value());
+        CHECK(!function.get<frst::Float>().has_value());
+        CHECK(!function.get<frst::String>().has_value());
+        CHECK(!function.get<frst::Bool>().has_value());
+        CHECK(!function.get<frst::Array>().has_value());
+        CHECK(!function.get<frst::Map>().has_value());
+        CHECK(function.get<frst::Function>().has_value());
+    }
 }
 
 TEST_CASE("Type Name")
@@ -179,6 +221,7 @@ TEST_CASE("Type Name")
     Value string{"Hello"s};
     Value array{frst::Array{Value::create(42_f)}};
     Value map{frst::Map{{Value::create(42_f), Value::create("Hello"s)}}};
+    Value function{frst::Function{std::make_shared<Dummy_Function>()}};
 
     CHECK(null.type_name() == "Null");
     CHECK(integer.type_name() == "Int");
@@ -187,4 +230,5 @@ TEST_CASE("Type Name")
     CHECK(string.type_name() == "String");
     CHECK(array.type_name() == "Array");
     CHECK(map.type_name() == "Map");
+    CHECK(function.type_name() == "Function");
 }

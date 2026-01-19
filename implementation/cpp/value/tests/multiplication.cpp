@@ -2,6 +2,8 @@
 
 #include "op-test-macros.hpp"
 
+#include <memory>
+
 #include <frost/testing/stringmaker-specializations.hpp>
 
 #include <frost/value.hpp>
@@ -9,6 +11,24 @@
 using namespace std::literals;
 using namespace frst::literals;
 using frst::Value, frst::Value_Ptr;
+
+namespace
+{
+// AI-generated test additions by Codex (GPT-5).
+// Signed: Codex (GPT-5).
+struct Dummy_Function final : frst::Callable
+{
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
+    {
+        return Value::null();
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<dummy>";
+    }
+};
+} // namespace
 
 TEST_CASE("Numeric Multiplication")
 {
@@ -65,6 +85,8 @@ TEST_CASE("Multiply All Permutations")
             Value::create(100.42),
         },
     });
+    auto Function =
+        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
 
 #define OP_CHAR *
 #define OP_VERB multiply
@@ -119,4 +141,19 @@ TEST_CASE("Multiply All Permutations")
     INCOMPAT(Map, String)
     INCOMPAT(Map, Array)
     INCOMPAT(Map, Map)
+    INCOMPAT(Null, Function)
+    INCOMPAT(Int, Function)
+    INCOMPAT(Float, Function)
+    INCOMPAT(Bool, Function)
+    INCOMPAT(String, Function)
+    INCOMPAT(Array, Function)
+    INCOMPAT(Map, Function)
+    INCOMPAT(Function, Null)
+    INCOMPAT(Function, Int)
+    INCOMPAT(Function, Float)
+    INCOMPAT(Function, Bool)
+    INCOMPAT(Function, String)
+    INCOMPAT(Function, Array)
+    INCOMPAT(Function, Map)
+    INCOMPAT(Function, Function)
 }

@@ -1,5 +1,7 @@
 #include <catch2/catch_all.hpp>
 
+#include <memory>
+
 #include <frost/testing/stringmaker-specializations.hpp>
 
 #include <frost/value.hpp>
@@ -7,6 +9,24 @@
 using namespace std::literals;
 using namespace frst::literals;
 using frst::Value, frst::Value_Ptr;
+
+namespace
+{
+// AI-generated test additions by Codex (GPT-5).
+// Signed: Codex (GPT-5).
+struct Dummy_Function final : frst::Callable
+{
+    frst::Value_Ptr call(std::span<const frst::Value_Ptr>) const override
+    {
+        return Value::null();
+    }
+
+    std::string debug_dump() const override
+    {
+        return "<dummy>";
+    }
+};
+} // namespace
 
 TEST_CASE("Unary Negation")
 {
@@ -27,6 +47,8 @@ TEST_CASE("Unary Negation")
             Value::create(100.42),
         },
     });
+    auto Function =
+        Value::create(frst::Function{std::make_shared<Dummy_Function>()});
 
     SECTION("Int")
     {
@@ -49,4 +71,5 @@ TEST_CASE("Unary Negation")
     INVALID(String)
     INVALID(Array)
     INVALID(Map)
+    INVALID(Function)
 }
