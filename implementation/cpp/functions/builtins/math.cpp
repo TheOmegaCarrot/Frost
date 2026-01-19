@@ -32,7 +32,8 @@ namespace frst
     X(floor)                                                                   \
     X(trunc)                                                                   \
     X(exp)                                                                     \
-    X(exp2)
+    X(exp2)                                                                    \
+    X(expm1)
 
 #define X(FN)                                                                  \
     Value_Ptr FN(builtin_args_t args)                                          \
@@ -49,7 +50,8 @@ X_UNARY_MATH_FLOAT
 #define X_BINARY_MATH_FLOAT                                                    \
     X(pow)                                                                     \
     X(min)                                                                     \
-    X(max)
+    X(max)                                                                     \
+    X(atan2)
 
 #define X(FN)                                                                  \
     Value_Ptr FN(builtin_args_t args)                                          \
@@ -84,6 +86,26 @@ Value_Ptr round(builtin_args_t args)
     return Value::create(std::lround(args.at(0)->as<Float>().value()));
 }
 
+Value_Ptr hypot(builtin_args_t args)
+{
+    REQUIRE_ARGS(hypot, TYPES(Int, Float), TYPES(Int, Float),
+                 OPTIONAL(TYPES(Int, Float)));
+
+    if (args.size() == 2)
+    {
+        return Value::create(std::hypot(args.at(0)->as<Float>().value(),
+                                        args.at(1)->as<Float>().value()));
+    }
+    else if (args.size() == 3)
+    {
+        return Value::create(std::hypot(args.at(0)->as<Float>().value(),
+                                        args.at(1)->as<Float>().value(),
+                                        args.at(2)->as<Float>().value()));
+    }
+
+    THROW_UNREACHABLE;
+}
+
 void inject_math(Symbol_Table& table)
 {
 
@@ -101,6 +123,7 @@ void inject_math(Symbol_Table& table)
 
     INJECT(abs, 1, 1);
     INJECT(round, 1, 1);
+    INJECT(hypot, 2, 3);
 }
 
 } // namespace frst

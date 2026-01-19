@@ -34,9 +34,10 @@ TEST_CASE("Builtin math")
         "sqrt", "cbrt",  "sin",  "cos",   "tan",   "asin",  "acos",
         "atan", "sinh",  "cosh", "tanh",  "asinh", "acosh", "atanh",
         "log",  "log1p", "log2", "log10", "ceil",  "floor", "trunc",
-        "exp",  "exp2",  "abs",  "round",
+        "exp",  "exp2",  "expm1", "abs",  "round",
     };
-    const std::vector<std::string> binary_names{"pow", "min", "max"};
+    const std::vector<std::string> binary_names{"pow", "min", "max", "atan2"};
+    const std::vector<std::string> variadic_names{"hypot"};
 
     SECTION("Injected")
     {
@@ -50,42 +51,111 @@ TEST_CASE("Builtin math")
             auto val = table.lookup(name);
             REQUIRE(val->is<Function>());
         }
+        for (const auto& name : variadic_names)
+        {
+            auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
     }
 
     SECTION("Arity")
     {
+        struct Arity_Case
+        {
+            std::string name;
+            std::size_t min;
+            std::size_t max;
+        };
+
+        const std::vector<Arity_Case> cases{
+            {.name = "sqrt", .min = 1, .max = 1},
+            {.name = "cbrt", .min = 1, .max = 1},
+            {.name = "sin", .min = 1, .max = 1},
+            {.name = "cos", .min = 1, .max = 1},
+            {.name = "tan", .min = 1, .max = 1},
+            {.name = "asin", .min = 1, .max = 1},
+            {.name = "acos", .min = 1, .max = 1},
+            {.name = "atan", .min = 1, .max = 1},
+            {.name = "sinh", .min = 1, .max = 1},
+            {.name = "cosh", .min = 1, .max = 1},
+            {.name = "tanh", .min = 1, .max = 1},
+            {.name = "asinh", .min = 1, .max = 1},
+            {.name = "acosh", .min = 1, .max = 1},
+            {.name = "atanh", .min = 1, .max = 1},
+            {.name = "log", .min = 1, .max = 1},
+            {.name = "log1p", .min = 1, .max = 1},
+            {.name = "log2", .min = 1, .max = 1},
+            {.name = "log10", .min = 1, .max = 1},
+            {.name = "ceil", .min = 1, .max = 1},
+            {.name = "floor", .min = 1, .max = 1},
+            {.name = "trunc", .min = 1, .max = 1},
+            {.name = "exp", .min = 1, .max = 1},
+            {.name = "exp2", .min = 1, .max = 1},
+            {.name = "expm1", .min = 1, .max = 1},
+            {.name = "abs", .min = 1, .max = 1},
+            {.name = "round", .min = 1, .max = 1},
+            {.name = "pow", .min = 2, .max = 2},
+            {.name = "min", .min = 2, .max = 2},
+            {.name = "max", .min = 2, .max = 2},
+            {.name = "atan2", .min = 2, .max = 2},
+            {.name = "hypot", .min = 2, .max = 3},
+        };
+
         auto a = Value::create(1_f);
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);
+        auto d = Value::create(4_f);
 
-        for (const auto& name : unary_names)
+        for (const auto& test : cases)
         {
-            auto fn = get_fn(name);
-            CHECK_THROWS_MATCHES(
-                fn->call({}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("insufficient arguments")
-                               && ContainsSubstring("Called with 0")
-                               && ContainsSubstring("requires at least 1")));
-            CHECK_THROWS_MATCHES(
-                fn->call({a, b}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("too many arguments")
-                               && ContainsSubstring("Called with 2")
-                               && ContainsSubstring("no more than 1")));
-        }
+            DYNAMIC_SECTION("Arity " << test.name)
+            {
+                auto fn = get_fn(test.name);
 
-        for (const auto& name : binary_names)
-        {
-            auto fn = get_fn(name);
-            CHECK_THROWS_MATCHES(
-                fn->call({a}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("insufficient arguments")
-                               && ContainsSubstring("Called with 1")
-                               && ContainsSubstring("requires at least 2")));
-            CHECK_THROWS_MATCHES(
-                fn->call({a, b, c}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("too many arguments")
-                               && ContainsSubstring("Called with 3")
-                               && ContainsSubstring("no more than 2")));
+                if (test.min == 1)
+                {
+                    CHECK_THROWS_MATCHES(
+                        fn->call({}), Frost_User_Error,
+                        MessageMatches(
+                            ContainsSubstring("insufficient arguments")
+                            && ContainsSubstring("Called with 0")
+                            && ContainsSubstring("requires at least 1")));
+                }
+                else if (test.min == 2)
+                {
+                    CHECK_THROWS_MATCHES(
+                        fn->call({a}), Frost_User_Error,
+                        MessageMatches(
+                            ContainsSubstring("insufficient arguments")
+                            && ContainsSubstring("Called with 1")
+                            && ContainsSubstring("requires at least 2")));
+                }
+
+                if (test.max == 1)
+                {
+                    CHECK_THROWS_MATCHES(
+                        fn->call({a, b}), Frost_User_Error,
+                        MessageMatches(ContainsSubstring("too many arguments")
+                                       && ContainsSubstring("Called with 2")
+                                       && ContainsSubstring("no more than 1")));
+                }
+                else if (test.max == 2)
+                {
+                    CHECK_THROWS_MATCHES(
+                        fn->call({a, b, c}), Frost_User_Error,
+                        MessageMatches(ContainsSubstring("too many arguments")
+                                       && ContainsSubstring("Called with 3")
+                                       && ContainsSubstring("no more than 2")));
+                }
+                else if (test.max == 3)
+                {
+                    CHECK_THROWS_MATCHES(
+                        fn->call({a, b, c, d}), Frost_User_Error,
+                        MessageMatches(ContainsSubstring("too many arguments")
+                                       && ContainsSubstring("Called with 4")
+                                       && ContainsSubstring("no more than 3")));
+                }
+            }
         }
     }
 
@@ -112,6 +182,23 @@ TEST_CASE("Builtin math")
                                && ContainsSubstring("got String")));
             CHECK_THROWS_MATCHES(
                 fn->call({good, bad}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Function " + name)
+                               && ContainsSubstring("got String")));
+        }
+
+        for (const auto& name : variadic_names)
+        {
+            auto fn = get_fn(name);
+            CHECK_THROWS_MATCHES(
+                fn->call({bad, good}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Function " + name)
+                               && ContainsSubstring("got String")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good, bad}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Function " + name)
+                               && ContainsSubstring("got String")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good, good, bad}), Frost_User_Error,
                 MessageMatches(ContainsSubstring("Function " + name)
                                && ContainsSubstring("got String")));
         }
@@ -267,6 +354,12 @@ TEST_CASE("Builtin math")
                 .int_in = 0,
                 .float_in = 3.0,
             },
+            {
+                .name = "expm1",
+                .fn = std::expm1,
+                .int_in = 0,
+                .float_in = 0.5,
+            },
         };
 
         for (const auto& test : cases)
@@ -329,6 +422,14 @@ TEST_CASE("Builtin math")
                 .a_float = 2.5,
                 .b_float = -1.0,
             },
+            {
+                .name = "atan2",
+                .fn = std::atan2,
+                .a_int = 1,
+                .b_int = 1,
+                .a_float = 1.5,
+                .b_float = -0.5,
+            },
         };
 
         for (const auto& test : cases)
@@ -383,5 +484,24 @@ TEST_CASE("Builtin math")
         auto neg = fn->call({Value::create(-2.5)});
         REQUIRE(neg->is<Int>());
         CHECK(neg->get<Int>() == -3_f);
+    }
+
+    SECTION("hypot")
+    {
+        auto fn = get_fn("hypot");
+
+        auto res_int = fn->call({Value::create(3_f), Value::create(4_f)});
+        REQUIRE(res_int->is<Float>());
+        CHECK(res_int->get<Float>().value() == Catch::Approx(5.0));
+
+        auto res_float = fn->call({Value::create(6.0), Value::create(8.0)});
+        REQUIRE(res_float->is<Float>());
+        CHECK(res_float->get<Float>().value() == Catch::Approx(10.0));
+
+        auto res_three =
+            fn->call({Value::create(1_f), Value::create(2_f), Value::create(2_f)});
+        REQUIRE(res_three->is<Float>());
+        CHECK(res_three->get<Float>().value()
+              == Catch::Approx(std::hypot(1.0, 2.0, 2.0)));
     }
 }
