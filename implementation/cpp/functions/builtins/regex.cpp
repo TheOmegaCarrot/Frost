@@ -67,11 +67,40 @@ Value_Ptr replace(builtin_args_t args)
                                               args.at(2)->raw_get<String>()));
 }
 
+namespace
+{
+
+std::optional<std::vector<std::string>> extract_group_names(
+    const std::string& regex)
+{
+    std::vector<std::string> group_names;
+    static const boost::regex re{R"(\(\?(<(?<aname>\w+)>|'(?<tname>\w+)'))",
+                                 boost::regex_constants::optimize
+                                     | boost::regex_constants::perl};
+    for (boost::regex_iterator<std::string::const_iterator>
+             it{regex.begin(), regex.end(), re},
+         end;
+         it != end; ++it)
+    {
+        const auto& match = *it;
+        if (match["aname"].matched)
+            group_names.push_back(match["aname"].str());
+        if (match["tname"].matched)
+            group_names.push_back(match["tname"].str());
+    }
+
+    if (not group_names.empty())
+        return group_names;
+    else
+        return std::nullopt;
+}
+
+} // namespace
+
 Value_Ptr decompose(builtin_args_t args)
 {
     REQUIRE_ARGS("re.decompose", PARAM("string", TYPES(String)),
-                 PARAM("regex", TYPES(String)),
-                 OPTIONAL(PARAM("capture names", TYPES(Array))));
+                 PARAM("regex", TYPES(String)));
 
     struct
     {
@@ -86,19 +115,11 @@ Value_Ptr decompose(builtin_args_t args)
         Value_Ptr matches = "matches"_s;
     } static const keys;
 
-    bool use_named_groups = args.size() == 3;
-    if (use_named_groups)
-        for (const auto& elem : args.at(2)->raw_get<Array>())
-        {
-            if (not elem->is<String>())
-                throw Frost_User_Error{
-                    fmt::format("Captures names must be String, but got {}",
-                                elem->type_name())};
-        }
-
     using itr = std::string::const_iterator;
     auto re = regex(args.at(1));
     const auto& input = args.at(0)->raw_get<String>();
+
+    auto group_names = extract_group_names(args.at(1)->raw_get<String>());
 
     Array iterations{};
     Map result{};
@@ -128,13 +149,12 @@ Value_Ptr decompose(builtin_args_t args)
             }));
         }
 
-        if (use_named_groups)
+        if (group_names)
         {
             Map named{};
-            for (const auto& elem : args.at(2)->raw_get<Array>())
+            for (const auto& group : group_names.value())
             {
-                const auto& group = elem->raw_get<String>();
-                named.insert_or_assign(elem, [&] {
+                named.insert_or_assign(Value::create(auto{group}), [&] {
                     if (matches[group].matched)
                         return Value::create(matches[group].str());
                     else
