@@ -548,6 +548,14 @@ class Value
                                            const Value_Ptr& rhs);
 };
 
+inline namespace literals
+{
+inline Value_Ptr operator""_s(const char* str, std::size_t)
+{
+    return Value::create(std::string{str});
+}
+} // namespace literals
+
 inline bool impl::Value_Ptr_Less::operator()(const Value_Ptr& lhs,
                                              const Value_Ptr& rhs)
 {
