@@ -89,16 +89,14 @@ TEST_CASE("Builtin regex")
         const auto too_few_1 = ContainsSubstring("insufficient arguments");
         const auto too_few_2 = ContainsSubstring("Called with 2");
         const auto too_few_3 = ContainsSubstring("requires at least 3");
-        CHECK_THROWS_WITH(
-            fn->call({Value::create("a"s), Value::create("b"s)}),
-            too_few_1 && too_few_2 && too_few_3);
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s)}),
+                          too_few_1 && too_few_2 && too_few_3);
 
         const auto too_many_1 = ContainsSubstring("too many arguments");
         const auto too_many_2 = ContainsSubstring("Called with 4");
         const auto too_many_3 = ContainsSubstring("no more than 3");
         CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s),
-                                    Value::create("c"s),
-                                    Value::create("d"s)}),
+                                    Value::create("c"s), Value::create("d"s)}),
                           too_many_1 && too_many_2 && too_many_3);
     }
 
@@ -145,16 +143,18 @@ TEST_CASE("Builtin regex")
         const auto expected = ContainsSubstring("String");
 
         CHECK_THROWS_WITH(fn->call({bad_first, good, good}),
-                          fn_name && expected
+                          fn_name
+                              && expected
                               && EndsWith(std::string{bad_first->type_name()}));
         CHECK_THROWS_WITH(
             fn->call({good, bad_second, good}),
-            fn_name && expected
+            fn_name
+                && expected
                 && EndsWith(std::string{bad_second->type_name()}));
-        CHECK_THROWS_WITH(
-            fn->call({good, good, bad_third}),
-            fn_name && expected
-                && EndsWith(std::string{bad_third->type_name()}));
+        CHECK_THROWS_WITH(fn->call({good, good, bad_third}),
+                          fn_name
+                              && expected
+                              && EndsWith(std::string{bad_third->type_name()}));
     }
 
     SECTION("Regex syntax errors")

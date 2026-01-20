@@ -3,8 +3,8 @@
 #include <array>
 #include <memory_resource>
 
-#include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/testing/dummy-callable.hpp>
+#include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
 
 using namespace frst;
@@ -167,19 +167,16 @@ TEST_CASE("Deep Equal")
             auto inner_map2 =
                 Value::create(Map{{Value::create("k"s), inner_arr2}});
 
-            auto nested1 =
-                Value::create(Array{Value::create(0_f), inner_map1});
-            auto nested2 =
-                Value::create(Array{Value::create(0_f), inner_map2});
-            auto nested3 =
-                Value::create(Array{Value::create(0_f),
-                                    Value::create(Map{
-                                        {Value::create("k"s),
-                                         Value::create(Array{
-                                             Value::create(1_f),
-                                             Value::create(3_f),
-                                         })},
-                                    })});
+            auto nested1 = Value::create(Array{Value::create(0_f), inner_map1});
+            auto nested2 = Value::create(Array{Value::create(0_f), inner_map2});
+            auto nested3 = Value::create(
+                Array{Value::create(0_f),
+                      Value::create(Map{
+                          {Value::create("k"s), Value::create(Array{
+                                                    Value::create(1_f),
+                                                    Value::create(3_f),
+                                                })},
+                      })});
 
             CHECK(deep_eq(nested1, nested2));
             CHECK_FALSE(deep_eq(nested1, nested3));
@@ -263,28 +260,22 @@ TEST_CASE("Deep Equal")
         SECTION("Structured key ordering should not affect equality")
         {
             std::array<std::byte, 1024> buf1{};
-            std::pmr::monotonic_buffer_resource res1{buf1.data(),
-                                                     buf1.size()};
+            std::pmr::monotonic_buffer_resource res1{buf1.data(), buf1.size()};
             std::pmr::polymorphic_allocator<Value> alloc1{&res1};
 
             std::array<std::byte, 1024> buf2{};
-            std::pmr::monotonic_buffer_resource res2{buf2.data(),
-                                                     buf2.size()};
+            std::pmr::monotonic_buffer_resource res2{buf2.data(), buf2.size()};
             std::pmr::polymorphic_allocator<Value> alloc2{&res2};
 
             auto key_a1 =
-                std::allocate_shared<Value>(alloc1,
-                                            Array{Value::create(1_f)});
+                std::allocate_shared<Value>(alloc1, Array{Value::create(1_f)});
             auto key_b1 =
-                std::allocate_shared<Value>(alloc1,
-                                            Array{Value::create(2_f)});
+                std::allocate_shared<Value>(alloc1, Array{Value::create(2_f)});
 
             auto key_b2 =
-                std::allocate_shared<Value>(alloc2,
-                                            Array{Value::create(2_f)});
+                std::allocate_shared<Value>(alloc2, Array{Value::create(2_f)});
             auto key_a2 =
-                std::allocate_shared<Value>(alloc2,
-                                            Array{Value::create(1_f)});
+                std::allocate_shared<Value>(alloc2, Array{Value::create(1_f)});
 
             REQUIRE(key_a1.get() < key_b1.get());
             REQUIRE(key_b2.get() < key_a2.get());

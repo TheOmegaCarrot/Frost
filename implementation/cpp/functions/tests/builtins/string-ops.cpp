@@ -183,18 +183,18 @@ TEST_CASE("Builtin contains/starts_with/ends_with")
                 CHECK_THROWS_WITH(fn->call({}),
                                   ContainsSubstring("requires at least 2"));
 
-                CHECK_THROWS_WITH(fn->call({Value::create("a"s),
-                                            Value::create("b"s),
-                                            Value::create("c"s)}),
-                                  ContainsSubstring("too many arguments"));
-                CHECK_THROWS_WITH(fn->call({Value::create("a"s),
-                                            Value::create("b"s),
-                                            Value::create("c"s)}),
-                                  ContainsSubstring("Called with 3"));
-                CHECK_THROWS_WITH(fn->call({Value::create("a"s),
-                                            Value::create("b"s),
-                                            Value::create("c"s)}),
-                                  ContainsSubstring("no more than 2"));
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("b"s),
+                              Value::create("c"s)}),
+                    ContainsSubstring("too many arguments"));
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("b"s),
+                              Value::create("c"s)}),
+                    ContainsSubstring("Called with 3"));
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("b"s),
+                              Value::create("c"s)}),
+                    ContainsSubstring("no more than 2"));
             }
         }
     }
@@ -210,21 +210,23 @@ TEST_CASE("Builtin contains/starts_with/ends_with")
             DYNAMIC_SECTION(info.name << " type errors")
             {
                 auto fn = get_fn(info.name);
-                CHECK_THROWS_WITH(fn->call({bad_first, good}),
-                                  ContainsSubstring(std::string{"Function "}
-                                                    + info.name));
+                CHECK_THROWS_WITH(
+                    fn->call({bad_first, good}),
+                    ContainsSubstring(std::string{"Function "} + info.name));
                 CHECK_THROWS_WITH(fn->call({bad_first, good}),
                                   ContainsSubstring("String"));
-                CHECK_THROWS_WITH(fn->call({bad_first, good}),
-                                  EndsWith(std::string{bad_first->type_name()}));
+                CHECK_THROWS_WITH(
+                    fn->call({bad_first, good}),
+                    EndsWith(std::string{bad_first->type_name()}));
 
-                CHECK_THROWS_WITH(fn->call({good, bad_second}),
-                                  ContainsSubstring(std::string{"Function "}
-                                                    + info.name));
+                CHECK_THROWS_WITH(
+                    fn->call({good, bad_second}),
+                    ContainsSubstring(std::string{"Function "} + info.name));
                 CHECK_THROWS_WITH(fn->call({good, bad_second}),
                                   ContainsSubstring("String"));
-                CHECK_THROWS_WITH(fn->call({good, bad_second}),
-                                  EndsWith(std::string{bad_second->type_name()}));
+                CHECK_THROWS_WITH(
+                    fn->call({good, bad_second}),
+                    EndsWith(std::string{bad_second->type_name()}));
             }
         }
     }
@@ -252,7 +254,8 @@ TEST_CASE("Builtin contains/starts_with/ends_with")
         CHECK_FALSE(
             get_fn("contains")->call({target, missing})->get<Bool>().value());
 
-        CHECK(get_fn("starts_with")->call({target, prefix})->get<Bool>().value());
+        CHECK(
+            get_fn("starts_with")->call({target, prefix})->get<Bool>().value());
         CHECK_FALSE(
             get_fn("starts_with")->call({target, sub})->get<Bool>().value());
 

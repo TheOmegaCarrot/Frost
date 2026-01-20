@@ -31,10 +31,10 @@ TEST_CASE("Builtin math")
     };
 
     const std::vector<std::string> unary_names{
-        "sqrt", "cbrt",  "sin",  "cos",   "tan",   "asin",  "acos",
-        "atan", "sinh",  "cosh", "tanh",  "asinh", "acosh", "atanh",
-        "log",  "log1p", "log2", "log10", "ceil",  "floor", "trunc",
-        "exp",  "exp2",  "expm1", "abs",  "round",
+        "sqrt", "cbrt",  "sin",   "cos",   "tan",   "asin",  "acos",
+        "atan", "sinh",  "cosh",  "tanh",  "asinh", "acosh", "atanh",
+        "log",  "log1p", "log2",  "log10", "ceil",  "floor", "trunc",
+        "exp",  "exp2",  "expm1", "abs",   "round",
     };
     const std::vector<std::string> binary_names{"pow", "min", "max", "atan2"};
     const std::vector<std::string> variadic_names{"hypot"};
@@ -498,8 +498,8 @@ TEST_CASE("Builtin math")
         REQUIRE(res_float->is<Float>());
         CHECK(res_float->get<Float>().value() == Catch::Approx(10.0));
 
-        auto res_three =
-            fn->call({Value::create(1_f), Value::create(2_f), Value::create(2_f)});
+        auto res_three = fn->call(
+            {Value::create(1_f), Value::create(2_f), Value::create(2_f)});
         REQUIRE(res_three->is<Float>());
         CHECK(res_three->get<Float>().value()
               == Catch::Approx(std::hypot(1.0, 2.0, 2.0)));

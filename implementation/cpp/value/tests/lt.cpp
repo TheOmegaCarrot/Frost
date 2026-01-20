@@ -5,8 +5,8 @@
 
 #include <memory>
 
-#include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/testing/dummy-callable.hpp>
+#include <frost/testing/stringmaker-specializations.hpp>
 
 #include <frost/value.hpp>
 
