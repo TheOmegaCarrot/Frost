@@ -6,6 +6,8 @@
 
 #include <boost/regex.hpp>
 
+#include <ranges>
+
 using namespace std::literals;
 using namespace frst::literals;
 
@@ -69,15 +71,28 @@ Value_Ptr decompose(builtin_args_t args)
 {
     REQUIRE_ARGS("re.decompose", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)),
-                 OPTIONAL(PARAM("groups", TYPES(Array))));
+                 OPTIONAL(PARAM("capture names", TYPES(Array))));
 
-    bool use_groups = args.size() == 3;
-    if (use_groups)
+    struct
+    {
+        Value_Ptr full = "full"_s;
+        Value_Ptr matched = "matched"_s;
+        Value_Ptr value = "value"_s;
+        Value_Ptr index = "index"_s;
+        Value_Ptr named = "named"_s;
+        Value_Ptr groups = "groups"_s;
+        Value_Ptr found = "found"_s;
+        Value_Ptr count = "count"_s;
+        Value_Ptr matches = "matches"_s;
+    } static const keys;
+
+    bool use_named_groups = args.size() == 3;
+    if (use_named_groups)
         for (const auto& elem : args.at(2)->raw_get<Array>())
         {
             if (not elem->is<String>())
                 throw Frost_User_Error{
-                    fmt::format("Group names must be String, but got {}",
+                    fmt::format("Captures names must be String, but got {}",
                                 elem->type_name())};
         }
 
@@ -92,48 +107,53 @@ Value_Ptr decompose(builtin_args_t args)
          it != end; ++it)
     {
         Map each_iteration{};
-        Array each_match{};
+        Array groups{};
         const auto& matches = *it;
-        for (const auto& match : matches)
+        groups.reserve(matches.size());
+        for (const auto& [idx, match] : std::views::enumerate(matches))
         {
-            each_match.push_back(Value::create(Map{
-                {"matched"_s, Value::create(auto{match.matched})},
-                {"value"_s,
-                 [&] {
-                     if (match.matched)
-                         return Value::create(match.str());
-                     else
-                         return Value::null();
-                 }()},
+            auto value = [&] {
+                if (match.matched)
+                    return Value::create(match.str());
+                else
+                    return Value::null();
+            }();
+            if (idx == 0)
+                each_iteration.insert_or_assign(keys.full, value);
+
+            groups.push_back(Value::create(Map{
+                {keys.matched, Value::create(auto{match.matched})},
+                {keys.value, value},
+                {keys.index, Value::create(auto{idx})},
             }));
         }
 
-        if (use_groups)
+        if (use_named_groups)
         {
-            Map named_groups{};
+            Map named{};
             for (const auto& elem : args.at(2)->raw_get<Array>())
             {
                 const auto& group = elem->raw_get<String>();
-                named_groups.insert_or_assign(elem, [&] {
+                named.insert_or_assign(elem, [&] {
                     if (matches[group].matched)
                         return Value::create(matches[group].str());
                     else
                         return Value::null();
                 }());
             }
-            each_iteration.insert_or_assign(
-                "named"_s, Value::create(std::move(named_groups)));
+            each_iteration.insert_or_assign(keys.named,
+                                            Value::create(std::move(named)));
         }
 
-        each_iteration.insert_or_assign("groups"_s,
-                                        (Value::create(std::move(each_match))));
+        each_iteration.insert_or_assign(keys.groups,
+                                        (Value::create(std::move(groups))));
         iterations.push_back(Value::create(std::move(each_iteration)));
     }
 
-    result.insert_or_assign("found"_s, Value::create(not iterations.empty()));
-    result.insert_or_assign("count"_s,
+    result.insert_or_assign(keys.found, Value::create(not iterations.empty()));
+    result.insert_or_assign(keys.count,
                             Value::create(static_cast<Int>(iterations.size())));
-    result.insert_or_assign("matches"_s, Value::create(std::move(iterations)));
+    result.insert_or_assign(keys.matches, Value::create(std::move(iterations)));
 
     return Value::create(std::move(result));
 }
