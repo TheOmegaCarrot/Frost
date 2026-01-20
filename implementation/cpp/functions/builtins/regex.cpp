@@ -154,12 +154,18 @@ Value_Ptr decompose(builtin_args_t args)
             Map named{};
             for (const auto& group : group_names.value())
             {
-                named.insert_or_assign(Value::create(auto{group}), [&] {
-                    if (matches[group].matched)
-                        return Value::create(matches[group].str());
-                    else
-                        return Value::null();
-                }());
+                named.insert_or_assign(
+                    Value::create(auto{group}),
+                    Value::create(
+                        Map{{keys.value,
+                             [&] {
+                                 if (matches[group].matched)
+                                     return Value::create(matches[group].str());
+                                 else
+                                     return Value::null();
+                             }()},
+                            {keys.matched,
+                             Value::create(auto{matches[group].matched})}}));
             }
             each_iteration.insert_or_assign(keys.named,
                                             Value::create(std::move(named)));
