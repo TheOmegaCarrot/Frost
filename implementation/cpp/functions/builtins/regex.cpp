@@ -190,6 +190,6 @@ void inject_regex(Symbol_Table& table)
 {
     using namespace re;
     INJECT_MAP(re, ENTRY(matches, 2, 2), ENTRY(contains, 2, 2),
-               ENTRY(replace, 3, 3), ENTRY(decompose, 2, 3));
+               ENTRY(replace, 3, 3), ENTRY(decompose, 2, 2));
 }
 } // namespace frst
