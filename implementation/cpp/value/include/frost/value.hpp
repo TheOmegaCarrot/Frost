@@ -185,7 +185,7 @@ struct Type_Str_Fn
     {
         return type_str<T>();
     }
-} constexpr inline type_str_niebloid;
+} constexpr inline type_str_fn;
 
 // ==========================================
 // Type coercion tables
@@ -467,8 +467,10 @@ class Value
 
     [[nodiscard]] std::string_view type_name() const
     {
-        return value_.visit(type_str_niebloid);
+        return value_.visit(type_str_fn);
     }
+
+    Value_Ptr clone() const;
 
     // Convert the value to a string as for user-facing output
     [[nodiscard]] std::string to_internal_string(
