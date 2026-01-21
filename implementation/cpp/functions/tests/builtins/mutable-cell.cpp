@@ -105,6 +105,26 @@ TEST_CASE("Builtin mutable_cell")
         CHECK(deep_eq(after, second));
     }
 
+    SECTION("Exchange returns raw structured values and stores the new pointer")
+    {
+        auto first = Value::create(Array{Value::create(1_f)});
+        auto second = Value::create(Array{Value::create(2_f)});
+        auto cell = cell_fn->call({first});
+        const auto& cell_map = cell->raw_get<Map>();
+        auto get_fn = lookup_fn(cell_map, "get"_s);
+        auto exchange_fn = lookup_fn(cell_map, "exchange"_s);
+
+        auto prev = exchange_fn->call({second});
+        CHECK(prev == first);
+
+        auto prev2 = exchange_fn->call({first});
+        CHECK(prev2 == second);
+
+        auto after = get_fn->call({});
+        CHECK(after != first);
+        CHECK(deep_eq(after, first));
+    }
+
     SECTION("Exchange arity errors")
     {
         auto cell = cell_fn->call({Value::create(1_f)});
@@ -138,5 +158,28 @@ TEST_CASE("Builtin mutable_cell")
         auto got = get_fn->call({});
         CHECK(got != fn_val);
         CHECK(got->raw_get<Function>() == fn_val->raw_get<Function>());
+    }
+
+    SECTION("Get clones maps deeply")
+    {
+        auto key = Value::create("k"s);
+        auto val = Value::create(Array{Value::create(1_f)});
+        auto map = Value::create(Map{{key, val}});
+        auto cell = cell_fn->call({map});
+        const auto& cell_map = cell->raw_get<Map>();
+        auto get_fn = lookup_fn(cell_map, "get"_s);
+
+        auto got = get_fn->call({});
+        CHECK(got != map);
+        CHECK(deep_eq(got, map));
+
+        const auto& got_map = got->raw_get<Map>();
+        REQUIRE(got_map.size() == 1);
+        const auto& [got_key, got_val] = *got_map.begin();
+
+        CHECK(got_key != key);
+        CHECK(got_val != val);
+        CHECK(deep_eq(got_key, key));
+        CHECK(deep_eq(got_val, val));
     }
 }
