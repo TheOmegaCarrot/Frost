@@ -5,6 +5,7 @@ add_library( frost-functions
     builtins/error-handling.cpp
     builtins/free-operators.cpp
     builtins/math.cpp
+    builtins/mutable-cell.cpp
     builtins/output.cpp
     builtins/pack_call.cpp
     builtins/regex.cpp
@@ -68,3 +69,5 @@ functions_test(tests/builtins/math.cpp)
 functions_test(tests/builtins/string-ops.cpp)
 
 functions_test(tests/builtins/regex.cpp)
+
+functions_test(tests/builtins/mutable-cell.cpp)
