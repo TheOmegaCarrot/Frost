@@ -56,6 +56,21 @@ struct expected_with_expression
     static constexpr auto name = "expression after 'with'";
 };
 
+struct expected_if_consequent
+{
+    static constexpr auto name = "expression after ':'";
+};
+
+struct expected_map_value
+{
+    static constexpr auto name = "map value";
+};
+
+struct expected_init_expression
+{
+    static constexpr auto name = "expression after 'init:'";
+};
+
 struct expected_call_arguments
 {
     static constexpr auto name = "call arguments";
@@ -469,7 +484,11 @@ struct Reduce
         auto kw_with = LEXY_KEYWORD("with", identifier::base);
         auto kw_init = LEXY_KEYWORD("init", identifier::base);
         auto init_clause =
-            dsl::opt(kw_init >> (dsl::lit_c<':'> + dsl::recurse<expression>));
+            dsl::opt(kw_init
+                     >> (dsl::lit_c<':'>
+                         + (dsl::must(expression_start)
+                            .error<expected_init_expression>
+                            >> dsl::recurse<expression>)));
         return kw_reduce
                >> (dsl::recurse<expression>
                    + kw_with
@@ -533,11 +552,17 @@ struct If
             auto elif_branch = kw_elif
                                >> (dsl::recurse<expression>
                                    + dsl::lit_c<':'>
-                                   + dsl::recurse<expression>
+                                   + (dsl::must(expression_start)
+                                      .error<expected_if_consequent>
+                                      >> dsl::recurse<expression>)
                                    + tail);
 
             auto else_branch =
-                kw_else >> (dsl::lit_c<':'> + dsl::recurse<expression>);
+                kw_else
+                >> (dsl::lit_c<':'>
+                    + (dsl::must(expression_start)
+                       .error<expected_if_consequent>
+                       >> dsl::recurse<expression>));
 
             return elif_branch | else_branch;
         }();
@@ -569,7 +594,9 @@ struct If
         return kw_if
                >> (dsl::recurse<expression>
                    + dsl::lit_c<':'>
-                   + dsl::recurse<expression>
+                   + (dsl::must(expression_start)
+                      .error<expected_if_consequent>
+                      >> dsl::recurse<expression>)
                    + tail);
     }();
 
@@ -610,7 +637,9 @@ struct map_entry
         auto ident_key = dsl::p<identifier_required>;
         auto key = dsl::peek(dsl::lit_c<'['>) >> bracket_key
                    | dsl::else_ >> ident_key;
-        return key + dsl::lit_c<':'> + dsl::recurse<expression>;
+        return key + dsl::lit_c<':'>
+               + (dsl::must(expression_start).error<expected_map_value>
+                  >> dsl::recurse<expression>);
     }();
 
     static constexpr auto value = lexy::callback<ast::Map_Constructor::KV_Pair>(
