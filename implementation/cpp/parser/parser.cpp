@@ -22,14 +22,25 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_program(
 
     std::string err;
 
-    auto result = lexy::parse<grammar::program>(
-        input, lexy_ext::report_error.opts({lexy::visualize_fancy})
-                   .to(std::back_inserter(err)));
+    try
+    {
+        auto result = lexy::parse<grammar::program>(
+            input, lexy_ext::report_error.opts({lexy::visualize_fancy})
+                       .to(std::back_inserter(err)));
 
-    if (!result)
-        return std::unexpected{err};
+        if (!result)
+            return std::unexpected{err};
 
-    return std::move(result).value();
+        return std::move(result).value();
+    }
+    catch (const Frost_User_Error& e)
+    {
+        return std::unexpected{e.what()};
+    }
+    catch (const Frost_Internal_Error& e)
+    {
+        return std::unexpected{fmt::format("Internal error: {}", e.what())};
+    }
 }
 
 std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_file(
