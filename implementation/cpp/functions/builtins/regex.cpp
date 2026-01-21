@@ -97,9 +97,9 @@ std::optional<std::vector<std::string>> extract_group_names(
 
 } // namespace
 
-Value_Ptr decompose(builtin_args_t args)
+Value_Ptr scan_matches(builtin_args_t args)
 {
-    REQUIRE_ARGS("re.decompose", PARAM("string", TYPES(String)),
+    REQUIRE_ARGS("re.scan_matches", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
 
     struct
@@ -140,7 +140,7 @@ Value_Ptr decompose(builtin_args_t args)
                     return Value::null();
             }();
             if (idx == 0)
-                each_iteration.insert_or_assign(keys.full, value);
+                each_iteration.try_emplace(keys.full, value);
 
             groups.push_back(Value::create(Map{
                 {keys.matched, Value::create(auto{match.matched})},
@@ -154,7 +154,7 @@ Value_Ptr decompose(builtin_args_t args)
             Map named{};
             for (const auto& group : group_names.value())
             {
-                named.insert_or_assign(
+                named.try_emplace(
                     Value::create(auto{group}),
                     Value::create(
                         Map{{keys.value,
@@ -167,19 +167,19 @@ Value_Ptr decompose(builtin_args_t args)
                             {keys.matched,
                              Value::create(auto{matches[group].matched})}}));
             }
-            each_iteration.insert_or_assign(keys.named,
-                                            Value::create(std::move(named)));
+            each_iteration.try_emplace(keys.named,
+                                       Value::create(std::move(named)));
         }
 
-        each_iteration.insert_or_assign(keys.groups,
-                                        (Value::create(std::move(groups))));
+        each_iteration.try_emplace(keys.groups,
+                                   (Value::create(std::move(groups))));
         iterations.push_back(Value::create(std::move(each_iteration)));
     }
 
-    result.insert_or_assign(keys.found, Value::create(not iterations.empty()));
-    result.insert_or_assign(keys.count,
-                            Value::create(static_cast<Int>(iterations.size())));
-    result.insert_or_assign(keys.matches, Value::create(std::move(iterations)));
+    result.try_emplace(keys.found, Value::create(not iterations.empty()));
+    result.try_emplace(keys.count,
+                       Value::create(static_cast<Int>(iterations.size())));
+    result.try_emplace(keys.matches, Value::create(std::move(iterations)));
 
     return Value::create(std::move(result));
 }
@@ -190,6 +190,6 @@ void inject_regex(Symbol_Table& table)
 {
     using namespace re;
     INJECT_MAP(re, ENTRY(matches, 2, 2), ENTRY(contains, 2, 2),
-               ENTRY(replace, 3, 3), ENTRY(decompose, 2, 2));
+               ENTRY(replace, 3, 3), ENTRY(scan_matches, 2, 2));
 }
 } // namespace frst

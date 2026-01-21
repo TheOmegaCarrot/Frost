@@ -42,7 +42,7 @@ TEST_CASE("Builtin regex")
 
     const std::vector<std::string> names{"matches", "contains"};
     const std::string replace_name{"replace"};
-    const std::string decompose_name{"decompose"};
+    const std::string scan_matches_name{"scan_matches"};
 
     SECTION("Injected")
     {
@@ -55,7 +55,7 @@ TEST_CASE("Builtin regex")
             REQUIRE(fn);
         }
         REQUIRE(get_re_fn(replace_name));
-        REQUIRE(get_re_fn(decompose_name));
+        REQUIRE(get_re_fn(scan_matches_name));
     }
 
     SECTION("Arity")
@@ -102,9 +102,9 @@ TEST_CASE("Builtin regex")
                           too_many_1 && too_many_2 && too_many_3);
     }
 
-    SECTION("Decompose arity")
+    SECTION("Scan matches arity")
     {
-        auto fn = get_re_fn(decompose_name);
+        auto fn = get_re_fn(scan_matches_name);
 
         const auto too_few_1 = ContainsSubstring("insufficient arguments");
         const auto too_few_2 = ContainsSubstring("Called with 1");
@@ -178,15 +178,15 @@ TEST_CASE("Builtin regex")
                               && EndsWith(std::string{bad_third->type_name()}));
     }
 
-    SECTION("Decompose type errors")
+    SECTION("Scan matches type errors")
     {
         auto bad_first = Value::create(1_f);
         auto bad_second = Value::create(true);
         auto good = Value::create("a"s);
-        auto fn = get_re_fn(decompose_name);
+        auto fn = get_re_fn(scan_matches_name);
 
-        const auto fn_name =
-            ContainsSubstring(std::string{"Function re."} + decompose_name);
+        const auto fn_name = ContainsSubstring(std::string{"Function re."}
+                                               + scan_matches_name);
         const auto expected = ContainsSubstring("String");
 
         CHECK_THROWS_WITH(fn->call({bad_first, good}),
@@ -224,7 +224,7 @@ TEST_CASE("Builtin regex")
         }
 
         {
-            auto fn = get_re_fn(decompose_name);
+            auto fn = get_re_fn(scan_matches_name);
             CHECK_THROWS_MATCHES(
                 fn->call({target, bad_re}), Frost_User_Error,
                 MessageMatches(StartsWith("Regex error: ")));
@@ -309,9 +309,9 @@ TEST_CASE("Builtin regex")
         CHECK(get_re_fn("matches")->call({target, full})->get<Bool>().value());
     }
 
-    SECTION("Decompose no matches")
+    SECTION("Scan matches no matches")
     {
-        auto fn = get_re_fn(decompose_name);
+        auto fn = get_re_fn(scan_matches_name);
         auto result =
             fn->call({Value::create("abc"s), Value::create("z+"s)});
         REQUIRE(result->is<Map>());
@@ -331,9 +331,9 @@ TEST_CASE("Builtin regex")
         CHECK(matches->raw_get<Array>().empty());
     }
 
-    SECTION("Decompose matches with groups")
+    SECTION("Scan matches with groups")
     {
-        auto fn = get_re_fn(decompose_name);
+        auto fn = get_re_fn(scan_matches_name);
         auto result = fn->call(
             {Value::create("foo=bar beep=boop"s),
              Value::create(R"((\w+)=(\w+))"s)});
@@ -396,9 +396,9 @@ TEST_CASE("Builtin regex")
         CHECK(match1_map.find(Value::create("named"s)) == match1_map.end());
     }
 
-    SECTION("Decompose named groups")
+    SECTION("Scan matches named groups")
     {
-        auto fn = get_re_fn(decompose_name);
+        auto fn = get_re_fn(scan_matches_name);
         auto result = fn->call(
             {Value::create("foo=bar beep=boop"s),
              Value::create(R"((?<k>\w+)=(?'v'\w+))"s)});
@@ -436,9 +436,9 @@ TEST_CASE("Builtin regex")
         CHECK(get_field(v_map, "value")->raw_get<String>() == "bar");
     }
 
-    SECTION("Decompose named groups with optional capture")
+    SECTION("Scan matches named groups with optional capture")
     {
-        auto fn = get_re_fn(decompose_name);
+        auto fn = get_re_fn(scan_matches_name);
         auto result =
             fn->call({Value::create("foo bar1"s),
                       Value::create(R"((?<k>[A-Za-z]+)(?<n>\d+)?)"s)});
