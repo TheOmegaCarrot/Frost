@@ -9,7 +9,7 @@ void Symbol_Table::define(const std::string& name, Value_Ptr value)
 {
     if (const auto [itr, ok] = table_.try_emplace(name, std::move(value));
         not ok)
-        throw Frost_User_Error{
+        throw Frost_Unrecoverable_Error{
             fmt::format("Cannot define {} as it is already defined", name)};
 }
 
@@ -25,7 +25,8 @@ frst::Value_Ptr Symbol_Table::lookup(const std::string& name) const
     }
     else
     {
-        throw Frost_User_Error{fmt::format("Symbol {} is not defined", name)};
+        throw Frost_Unrecoverable_Error{
+            fmt::format("Symbol {} is not defined", name)};
     }
 }
 

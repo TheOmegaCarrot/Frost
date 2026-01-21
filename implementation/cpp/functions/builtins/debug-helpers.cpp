@@ -29,9 +29,9 @@ Value_Ptr assert(builtin_args_t args)
     if (not args.at(0)->as<Bool>().value())
     {
         if (args.size() == 1)
-            throw Frost_User_Error{"Failed assertion"};
+            throw Frost_Recoverable_Error{"Failed assertion"};
         else
-            throw Frost_User_Error{fmt::format("Failed assertion: {}",
+            throw Frost_Recoverable_Error{fmt::format("Failed assertion: {}",
                                                args.at(1)->raw_get<String>())};
     }
     return args.at(0);

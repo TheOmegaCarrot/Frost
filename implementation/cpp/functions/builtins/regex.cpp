@@ -28,7 +28,7 @@ boost::regex regex(const Value_Ptr& re)
     }
     catch (const boost::regex_error& e)
     {
-        throw Frost_User_Error{fmt::format("Regex error: {}", e.what())};
+        throw Frost_Recoverable_Error{fmt::format("Regex error: {}", e.what())};
     }
 }
 

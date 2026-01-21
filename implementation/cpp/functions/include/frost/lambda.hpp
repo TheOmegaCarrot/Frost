@@ -48,7 +48,7 @@ class Lambda final : public Expression
                 params_.size() + (vararg_param_.has_value() ? 1 : 0);
             expected_param_set_size != param_set.size())
         {
-            throw Frost_Internal_Error{"Closure has duplicate parameters"};
+            throw Frost_Unrecoverable_Error{"Closure has duplicate parameters"};
         }
 
         std::flat_set<std::string> names_defined_so_far{std::from_range,
@@ -63,7 +63,7 @@ class Lambda final : public Expression
                 [&](const Statement::Definition& defn) {
                     if (param_set.contains(defn.name))
                     {
-                        throw Frost_Internal_Error{
+                        throw Frost_Unrecoverable_Error{
                             fmt::format("Closure local definition cannot "
                                         "shadow parameter: {}",
                                         defn.name)};
@@ -90,7 +90,7 @@ class Lambda final : public Expression
         {
             if (not syms.has(name))
             {
-                throw Frost_Internal_Error{fmt::format(
+                throw Frost_Unrecoverable_Error{fmt::format(
                     "No definition found for captured symbol: {}", name)};
             }
 

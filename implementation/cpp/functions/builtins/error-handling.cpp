@@ -23,7 +23,7 @@ Value_Ptr try_call(builtin_args_t args)
                                               args.at(1)->raw_get<Array>())},
                 {Value::create("ok"s), Value::create(true)}});
     }
-    catch (const Frost_User_Error& err)
+    catch (const Frost_Recoverable_Error& err)
     {
         return Value::create(
             Map{{Value::create("ok"s), Value::create(false)},

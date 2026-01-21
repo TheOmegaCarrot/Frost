@@ -102,6 +102,7 @@ struct Frost_Internal_Error : Frost_Error
 
 struct Frost_User_Error : Frost_Error
 {
+  protected:
     Frost_User_Error(const char* err)
         : Frost_Error{err}
     {
@@ -109,6 +110,32 @@ struct Frost_User_Error : Frost_Error
 
     Frost_User_Error(const std::string& err)
         : Frost_Error{err}
+    {
+    }
+};
+
+struct Frost_Recoverable_Error : Frost_User_Error
+{
+    Frost_Recoverable_Error(const char* err)
+        : Frost_User_Error{err}
+    {
+    }
+
+    Frost_Recoverable_Error(const std::string& err)
+        : Frost_User_Error{err}
+    {
+    }
+};
+
+struct Frost_Unrecoverable_Error : Frost_User_Error
+{
+    Frost_Unrecoverable_Error(const char* err)
+        : Frost_User_Error{err}
+    {
+    }
+
+    Frost_Unrecoverable_Error(const std::string& err)
+        : Frost_User_Error{err}
     {
     }
 };

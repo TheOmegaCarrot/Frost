@@ -20,7 +20,7 @@ struct Negate_Impl
 Value_Ptr Value::negate() const
 {
     if (!is_numeric())
-        throw Frost_User_Error{
+        throw Frost_Recoverable_Error{
             fmt::format("Invalid operand for unary - : {}", type_name())};
 
     return Value::create(value_.visit(negate_impl));

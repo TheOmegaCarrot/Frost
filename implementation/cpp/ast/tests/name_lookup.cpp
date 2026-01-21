@@ -27,7 +27,7 @@ TEST_CASE("Name Lookup")
 
     SECTION("Not found")
     {
-        REQUIRE_CALL(syms, lookup(name)).THROW(Frost_User_Error{"Uh oh"});
+        REQUIRE_CALL(syms, lookup(name)).THROW(Frost_Recoverable_Error{"Uh oh"});
 
         ast::Name_Lookup node{name};
 

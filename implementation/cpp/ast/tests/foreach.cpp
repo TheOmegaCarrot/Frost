@@ -125,7 +125,7 @@ TEST_CASE("Foreach Array")
                 .LR_SIDE_EFFECT({
                     record_call(calls, _1);
                     if (call_index++ == 1)
-                        throw Frost_User_Error{"kaboom"};
+                        throw Frost_Recoverable_Error{"kaboom"};
                 })
                 .RETURN(Value::create(true))
                 .TIMES(2);
@@ -333,7 +333,7 @@ TEST_CASE("Foreach Map")
                 .LR_SIDE_EFFECT({
                     record_call(calls, _1);
                     if (call_index++ == 0)
-                        throw Frost_User_Error{"kaboom"};
+                        throw Frost_Recoverable_Error{"kaboom"};
                 })
                 .RETURN(Value::create(true))
                 .TIMES(1);

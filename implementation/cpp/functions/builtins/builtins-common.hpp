@@ -93,7 +93,7 @@ void require_arg(std::string_view fn, builtin_args_t args, std::size_t idx,
         const auto label_part =
             label.empty() ? fmt::format("argument {}", idx + 1)
                           : fmt::format("argument {} ({})", idx + 1, label);
-        throw Frost_User_Error{
+        throw Frost_Recoverable_Error{
             fmt::format("Function {} requires {} as {}, got {}", fn,
                         expected_list<Ts...>(), label_part, arg->type_name())};
     }

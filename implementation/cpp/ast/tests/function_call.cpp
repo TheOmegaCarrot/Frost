@@ -214,7 +214,7 @@ TEST_CASE("Function Call")
 
         REQUIRE_CALL(*fn_ptr, evaluate(_))
             .LR_WITH(&_1 == &syms)
-            .THROW(Frost_User_Error{"fn boom"});
+            .THROW(Frost_Recoverable_Error{"fn boom"});
         FORBID_CALL(*arg_ptr, evaluate(_));
 
         std::vector<Expression::Ptr> args;
@@ -241,7 +241,7 @@ TEST_CASE("Function Call")
         REQUIRE_CALL(*fn_ptr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
         REQUIRE_CALL(*arg1_ptr, evaluate(_))
             .LR_WITH(&_1 == &syms)
-            .THROW(Frost_User_Error{"arg boom"});
+            .THROW(Frost_Recoverable_Error{"arg boom"});
         FORBID_CALL(*arg2_ptr, evaluate(_));
         FORBID_CALL(*callable, call(_));
 
@@ -269,7 +269,7 @@ TEST_CASE("Function Call")
         REQUIRE_CALL(*arg_ptr, evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(1_f));
-        REQUIRE_CALL(*callable, call(_)).THROW(Frost_User_Error{"boom"});
+        REQUIRE_CALL(*callable, call(_)).THROW(Frost_Recoverable_Error{"boom"});
 
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg));

@@ -171,7 +171,7 @@ TEST_CASE("Builtin try_call")
         auto fn = Value::create(Function{callable});
         auto args = Value::create(Array{});
 
-        REQUIRE_CALL(*callable, call(_)).THROW(Frost_User_Error{"boom"});
+        REQUIRE_CALL(*callable, call(_)).THROW(Frost_Recoverable_Error{"boom"});
 
         auto res = try_call->call({fn, args});
         REQUIRE(res->is<Map>());

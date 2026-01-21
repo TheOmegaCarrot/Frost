@@ -152,7 +152,7 @@ TEST_CASE("Builtin pack_call")
         auto func_val = Value::create(Function{callable});
         auto args = Value::create(frst::Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*callable, call(_)).THROW(Frost_User_Error{"boom"});
+        REQUIRE_CALL(*callable, call(_)).THROW(Frost_Recoverable_Error{"boom"});
         CHECK_THROWS_WITH(pack_call_fn->call({func_val, args}),
                           ContainsSubstring("boom"));
     }

@@ -139,7 +139,7 @@ TEST_CASE("Map Array")
             REQUIRE_CALL(*mapper, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .IN_SEQUENCE(seq)
-                .THROW(Frost_User_Error{"kaboom"});
+                .THROW(Frost_Recoverable_Error{"kaboom"});
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
@@ -542,7 +542,7 @@ TEST_CASE("Map Map")
                 .RETURN(op_val);
             REQUIRE_CALL(*mapper, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
-                .THROW(Frost_User_Error{"kaboom"});
+                .THROW(Frost_Recoverable_Error{"kaboom"});
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 

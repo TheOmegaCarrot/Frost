@@ -68,29 +68,29 @@ std::string mformat_impl(const String& fmt_str, const Map& repl_map)
         const auto end = fmt_str.find('}', start);
         if (end == String::npos)
         {
-            throw Frost_User_Error{"Unterminated format placeholder"};
+            throw Frost_Recoverable_Error{"Unterminated format placeholder"};
         }
         if (end == start)
         {
-            throw Frost_User_Error{"Empty format placeholder"};
+            throw Frost_Recoverable_Error{"Empty format placeholder"};
         }
 
         const auto key = fmt_str.substr(start, end - start);
         if (!is_identifier_like(key))
         {
-            throw Frost_User_Error{
+            throw Frost_Recoverable_Error{
                 fmt::format("Invalid format placeholder: {}", key)};
         }
         const auto key_val = Value::create(auto{key});
         const auto it = repl_map.find(key_val);
         if (it == repl_map.end())
         {
-            throw Frost_User_Error{
+            throw Frost_Recoverable_Error{
                 fmt::format("Missing replacement for key: {}", key)};
         }
         if (it->second->is<Null>())
         {
-            throw Frost_User_Error{
+            throw Frost_Recoverable_Error{
                 fmt::format("Replacement value for key {} is null", key)};
         }
 

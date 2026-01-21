@@ -30,7 +30,7 @@ class Foreach final : public Expression
         const auto& structure_val = structure_->evaluate(syms);
         if (not structure_val->is_structured())
         {
-            throw Frost_User_Error{
+            throw Frost_Recoverable_Error{
                 fmt::format("Cannot iterate value with type {}",
                             structure_val->type_name())};
         }
@@ -38,7 +38,7 @@ class Foreach final : public Expression
         const auto& op_val = operation_->evaluate(syms);
         if (not op_val->is<Function>())
         {
-            throw Frost_User_Error{
+            throw Frost_Recoverable_Error{
                 fmt::format("Foreach operation expected Function, got {}",
                             op_val->type_name())};
         }

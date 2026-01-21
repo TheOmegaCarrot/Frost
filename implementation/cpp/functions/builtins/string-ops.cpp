@@ -17,7 +17,7 @@ Value_Ptr split(builtin_args_t args)
 
     if (split_on.size() != 1)
     {
-        throw Frost_User_Error{
+        throw Frost_Recoverable_Error{
             fmt::format("Function split expected second argument to be length "
                         "1, but was length {}",
                         split_on.size())};

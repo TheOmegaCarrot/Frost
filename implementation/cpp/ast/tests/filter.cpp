@@ -206,7 +206,7 @@ TEST_CASE("Filter")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .LR_WITH(_1.size() == 1 && _1[0] == v2)
                 .IN_SEQUENCE(seq)
-                .THROW(Frost_User_Error{"kaboom"});
+                .THROW(Frost_Recoverable_Error{"kaboom"});
 
             ast::Filter node{std::move(structure_expr),
                              std::move(operation_expr)};
@@ -376,7 +376,7 @@ TEST_CASE("Filter")
                 .RETURN(pred_val);
             REQUIRE_CALL(*pred, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
-                .THROW(Frost_User_Error{"kaboom"});
+                .THROW(Frost_Recoverable_Error{"kaboom"});
 
             ast::Filter node{std::move(structure_expr),
                              std::move(operation_expr)};

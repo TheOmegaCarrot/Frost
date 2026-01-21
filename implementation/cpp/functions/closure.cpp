@@ -36,7 +36,7 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
 {
     if (!vararg_parameter_ && args.size() > parameters_.size())
     {
-        throw Frost_User_Error{
+        throw Frost_Recoverable_Error{
             fmt::format("Closure called with too many arguments. "
                         "Expected up to {}, but got {}.",
                         parameters_.size(), args.size())};

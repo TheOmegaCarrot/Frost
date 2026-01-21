@@ -17,7 +17,7 @@ struct Numeric_Divide_Impl
     static Value operator()(const LHS_T& lhs, const RHS_T& rhs)
     {
         if (rhs == 0)
-            throw Frost_User_Error{"Division by zero"};
+            throw Frost_Recoverable_Error{"Division by zero"};
 
         return lhs / rhs;
     }

@@ -35,7 +35,7 @@ Value_Ptr reduce_map(const Map& arr, const Function& op,
     };
 
     if (not init)
-        throw Frost_User_Error{"Map reduction requires init"};
+        throw Frost_Recoverable_Error{"Map reduction requires init"};
 
     return std::ranges::fold_left(arr, *init, reduction);
 }
@@ -46,14 +46,14 @@ Value_Ptr ast::Reduce::evaluate(const Symbol_Table& syms) const
     const auto& structure_val = structure_->evaluate(syms);
     if (not structure_val->is_structured())
     {
-        throw Frost_User_Error{fmt::format("Cannot reduce value with type {}",
+        throw Frost_Recoverable_Error{fmt::format("Cannot reduce value with type {}",
                                            structure_val->type_name())};
     }
 
     const auto& op_val = operation_->evaluate(syms);
     if (not op_val->is<Function>())
     {
-        throw Frost_User_Error{fmt::format(
+        throw Frost_Recoverable_Error{fmt::format(
             "Reduce operation expected Function, got {}", op_val->type_name())};
     }
 
