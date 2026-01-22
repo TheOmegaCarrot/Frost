@@ -285,7 +285,10 @@ void highlight_callback(const std::string& input,
 
 bool should_read_more(const std::string& input)
 {
-    return input.ends_with(':');
+    if (input.ends_with(':') || input.ends_with('\\'))
+        return true;
+
+    return false;
 }
 
 std::optional<std::string> read_input_segment(replxx::Replxx& rx)
@@ -294,12 +297,20 @@ std::optional<std::string> read_input_segment(replxx::Replxx& rx)
     const std::string subprompt = "\x1b[1;34m...>\x1b[0m ";
 
     std::string acc;
+
+    auto pop_escape = [&] {
+        if (acc.ends_with('\\'))
+            acc.pop_back();
+    };
+
     if (const char* line = rx.input(main_prompt))
         acc = line;
     else
         return std::nullopt;
 
     while (should_read_more(acc))
+    {
+        pop_escape();
         if (const char* line = rx.input(subprompt))
         {
             acc.push_back('\n');
@@ -307,6 +318,9 @@ std::optional<std::string> read_input_segment(replxx::Replxx& rx)
         }
         else
             break;
+    }
+
+    pop_escape();
 
     return acc;
 }
