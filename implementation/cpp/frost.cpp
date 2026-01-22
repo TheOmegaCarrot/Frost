@@ -327,10 +327,6 @@ struct Completion_Callback
 
         Replxx::completions_t out;
 
-        // maybe: look further back if `.` before current token,
-        // check if identifier before `.` is defined as a map,
-        // and use any string keys as completion candidates
-
         for (const auto& keyword : keywords)
         {
             if (keyword.starts_with(token))
