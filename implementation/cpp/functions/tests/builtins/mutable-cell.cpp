@@ -1,7 +1,6 @@
 #include <catch2/catch_all.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
-#include <frost/testing/dummy-callable.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 
 #include <frost/builtin.hpp>
@@ -15,13 +14,6 @@ using Catch::Matchers::ContainsSubstring;
 
 namespace
 {
-using frst::testing::Dummy_Callable;
-
-bool deep_eq(const Value_Ptr& lhs, const Value_Ptr& rhs)
-{
-    return Value::deep_equal(lhs, rhs)->get<Bool>().value();
-}
-
 Function lookup_fn(const Map& map, const Value_Ptr& key)
 {
     auto it = map.find(key);
@@ -66,26 +58,18 @@ TEST_CASE("Builtin mutable_cell")
                           ContainsSubstring("insufficient arguments"));
     }
 
-    SECTION("Get returns a clone of the stored value")
+    SECTION("Get returns the stored value")
     {
-        auto arr = Value::create(Array{Value::create(1_f)});
-        auto cell = cell_fn->call({arr});
+        auto first = Value::create(1_f);
+        auto cell = cell_fn->call({first});
         const auto& cell_map = cell->raw_get<Map>();
         auto get_fn = lookup_fn(cell_map, "get"_s);
 
         auto got1 = get_fn->call({});
         auto got2 = get_fn->call({});
 
-        CHECK(got1 != arr);
-        CHECK(got2 != arr);
-        CHECK(got1 != got2);
-        CHECK(deep_eq(arr, got1));
-
-        const auto& orig_arr = arr->raw_get<Array>();
-        const auto& cloned_arr = got1->raw_get<Array>();
-        REQUIRE(orig_arr.size() == 1);
-        REQUIRE(cloned_arr.size() == 1);
-        CHECK(cloned_arr[0] != orig_arr[0]);
+        CHECK(got1 == first);
+        CHECK(got2 == first);
     }
 
     SECTION("Exchange returns the previous value and updates the cell")
@@ -101,28 +85,24 @@ TEST_CASE("Builtin mutable_cell")
         CHECK(previous == first);
 
         auto after = get_fn->call({});
-        CHECK(after != second);
-        CHECK(deep_eq(after, second));
+        CHECK(after == second);
     }
 
-    SECTION("Exchange returns raw structured values and stores the new pointer")
+    SECTION("Rejects non-primitive initial values")
     {
-        auto first = Value::create(Array{Value::create(1_f)});
-        auto second = Value::create(Array{Value::create(2_f)});
-        auto cell = cell_fn->call({first});
-        const auto& cell_map = cell->raw_get<Map>();
-        auto get_fn = lookup_fn(cell_map, "get"_s);
-        auto exchange_fn = lookup_fn(cell_map, "exchange"_s);
+        auto arr = Value::create(Array{Value::create(1_f)});
+        auto map =
+            Value::create(Map{{Value::create("k"s), Value::create(1_f)}});
+        auto fn = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t) { return Value::null(); }, "dummy",
+            Builtin::Arity{.min = 0, .max = 0})});
 
-        auto prev = exchange_fn->call({second});
-        CHECK(prev == first);
-
-        auto prev2 = exchange_fn->call({first});
-        CHECK(prev2 == second);
-
-        auto after = get_fn->call({});
-        CHECK(after != first);
-        CHECK(deep_eq(after, first));
+        CHECK_THROWS_WITH(cell_fn->call({arr}),
+                          ContainsSubstring("Non-primitive values"));
+        CHECK_THROWS_WITH(cell_fn->call({map}),
+                          ContainsSubstring("Non-primitive values"));
+        CHECK_THROWS_WITH(cell_fn->call({fn}),
+                          ContainsSubstring("Non-primitive values"));
     }
 
     SECTION("Exchange arity errors")
@@ -147,39 +127,24 @@ TEST_CASE("Builtin mutable_cell")
                           ContainsSubstring("too many arguments"));
     }
 
-    SECTION("Function values preserve callable identity on get")
+    SECTION("Rejects non-primitive exchange values")
     {
-        auto fn_ptr = std::make_shared<Dummy_Callable>();
-        auto fn_val = Value::create(Function{fn_ptr});
-        auto cell = cell_fn->call({fn_val});
+        auto cell = cell_fn->call({Value::create(1_f)});
         const auto& cell_map = cell->raw_get<Map>();
-        auto get_fn = lookup_fn(cell_map, "get"_s);
+        auto exchange_fn = lookup_fn(cell_map, "exchange"_s);
 
-        auto got = get_fn->call({});
-        CHECK(got != fn_val);
-        CHECK(got->raw_get<Function>() == fn_val->raw_get<Function>());
-    }
+        auto arr = Value::create(Array{Value::create(1_f)});
+        auto map =
+            Value::create(Map{{Value::create("k"s), Value::create(1_f)}});
+        auto fn = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t) { return Value::null(); }, "dummy",
+            Builtin::Arity{.min = 0, .max = 0})});
 
-    SECTION("Get clones maps deeply")
-    {
-        auto key = Value::create("k"s);
-        auto val = Value::create(Array{Value::create(1_f)});
-        auto map = Value::create(Map{{key, val}});
-        auto cell = cell_fn->call({map});
-        const auto& cell_map = cell->raw_get<Map>();
-        auto get_fn = lookup_fn(cell_map, "get"_s);
-
-        auto got = get_fn->call({});
-        CHECK(got != map);
-        CHECK(deep_eq(got, map));
-
-        const auto& got_map = got->raw_get<Map>();
-        REQUIRE(got_map.size() == 1);
-        const auto& [got_key, got_val] = *got_map.begin();
-
-        CHECK(got_key != key);
-        CHECK(got_val != val);
-        CHECK(deep_eq(got_key, key));
-        CHECK(deep_eq(got_val, val));
+        CHECK_THROWS_WITH(exchange_fn->call({arr}),
+                          ContainsSubstring("Non-primitive values"));
+        CHECK_THROWS_WITH(exchange_fn->call({map}),
+                          ContainsSubstring("Non-primitive values"));
+        CHECK_THROWS_WITH(exchange_fn->call({fn}),
+                          ContainsSubstring("Non-primitive values"));
     }
 }

@@ -24,6 +24,14 @@ struct Mutable_Cell
     }
 };
 
+Value_Ptr forbid_cycle(Value_Ptr value)
+{
+    if (!value->is_primitive())
+        throw Frost_Recoverable_Error{
+            "Non-primitive values may not be stored in a mutable_cell"};
+    return value;
+}
+
 Value_Ptr mutable_cell(builtin_args_t args)
 {
     struct Wrapper
@@ -35,20 +43,22 @@ Value_Ptr mutable_cell(builtin_args_t args)
         if (args.empty())
             return Value::null();
         else
-            return args.front();
+        {
+            return forbid_cycle(args.at(0));
+        }
     }());
 
     return Value::create(Map{
         {"exchange"_s,
          Value::create(Function{std::make_shared<Builtin>(
              [cell](builtin_args_t args) mutable {
-                 return std::exchange(cell->value, args.at(0));
+                 return std::exchange(cell->value, forbid_cycle(args.at(0)));
              },
              "mutable cell exchange", Builtin::Arity{.min = 1, .max = 1})})},
         {"get"_s,
          Value::create(Function{std::make_shared<Builtin>(
              [cell](builtin_args_t) {
-                 return cell->value->clone();
+                 return cell->value;
              },
              "mutable cell getter", Builtin::Arity{.min = 0, .max = 0})})}});
 }
