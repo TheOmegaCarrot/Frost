@@ -17,69 +17,6 @@
 
 using namespace std::literals;
 
-void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
-               frst::Symbol_Table& symbols)
-{
-    try
-    {
-        for (const auto& statement : ast
-                                         | std::views::reverse
-                                         | std::views::drop(1)
-                                         | std::views::reverse)
-        {
-            statement->execute(symbols);
-        }
-
-        auto* last_statement = ast.back().get();
-        if (auto expr_ptr =
-                dynamic_cast<frst::ast::Expression*>(last_statement))
-            fmt::println("{}",
-                         expr_ptr->evaluate(symbols)->to_internal_string());
-        else
-            last_statement->execute(symbols);
-    }
-    catch (const frst::Frost_User_Error& e)
-    {
-        fmt::println(stderr, "Error: {}", e.what());
-    }
-    catch (const frst::Frost_Internal_Error& e)
-    {
-        fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
-    }
-}
-
-void highlight_callback(const std::string& input,
-                        replxx::Replxx::colors_t& colors);
-void repl(frst::Symbol_Table& symbols)
-{
-    using replxx::Replxx;
-
-    Replxx rx;
-
-    rx.set_unique_history(true);
-    rx.enable_bracketed_paste();
-    rx.set_highlighter_callback(&highlight_callback);
-
-    while (const char* raw_line = rx.input("\x1b[1;34m~>\x1b[0m "))
-    {
-        std::string line(raw_line);
-
-        auto parse_result = frst::parse_program(line);
-
-        if (not parse_result)
-        {
-            fmt::println(stderr, "{}", parse_result.error());
-            continue;
-        }
-
-        if (parse_result.value().empty())
-            continue;
-
-        repl_exec(parse_result.value(), symbols);
-        rx.history_add(line);
-    }
-}
-
 void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
                   frst::Symbol_Table& symbols, bool do_dump)
 {
@@ -99,6 +36,7 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
     }
 }
 
+void repl(frst::Symbol_Table& symbols);
 int main(int argc, const char** argv)
 {
     const std::span args{argv, argv + argc};
@@ -218,6 +156,37 @@ int main(int argc, const char** argv)
         repl(symbols);
 }
 
+void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
+               frst::Symbol_Table& symbols)
+{
+    try
+    {
+        for (const auto& statement : ast
+                                         | std::views::reverse
+                                         | std::views::drop(1)
+                                         | std::views::reverse)
+        {
+            statement->execute(symbols);
+        }
+
+        auto* last_statement = ast.back().get();
+        if (auto expr_ptr =
+                dynamic_cast<frst::ast::Expression*>(last_statement))
+            fmt::println("{}",
+                         expr_ptr->evaluate(symbols)->to_internal_string());
+        else
+            last_statement->execute(symbols);
+    }
+    catch (const frst::Frost_User_Error& e)
+    {
+        fmt::println(stderr, "Error: {}", e.what());
+    }
+    catch (const frst::Frost_Internal_Error& e)
+    {
+        fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
+    }
+}
+
 constexpr static std::initializer_list<std::string_view> keywords{
     "if",    "else",    "elif",   "def",  "fn",   "reduce",
     "map",   "foreach", "filter", "with", "init", "true",
@@ -311,5 +280,64 @@ void highlight_callback(const std::string& input,
                 for (auto brush = start; brush < end; ++brush)
                     colors[brush] = KWCOLOR;
         }
+    }
+}
+
+bool should_read_more(const std::string& input)
+{
+    return input.ends_with(':');
+}
+
+std::optional<std::string> read_input_segment(replxx::Replxx& rx)
+{
+    const std::string main_prompt = "\x1b[1;34m~>\x1b[0m ";
+    const std::string subprompt = "\x1b[1;34m...>\x1b[0m ";
+
+    std::string acc;
+    if (const char* line = rx.input(main_prompt))
+        acc = line;
+    else
+        return std::nullopt;
+
+    while (should_read_more(acc))
+        if (const char* line = rx.input(subprompt))
+        {
+            acc.push_back('\n');
+            acc += line;
+        }
+        else
+            break;
+
+    return acc;
+}
+
+void repl(frst::Symbol_Table& symbols)
+{
+    using replxx::Replxx;
+
+    Replxx rx;
+
+    rx.set_unique_history(true);
+    rx.enable_bracketed_paste();
+    rx.set_highlighter_callback(&highlight_callback);
+
+    while (auto line = read_input_segment(rx))
+    {
+        if (line->empty())
+            continue;
+
+        auto parse_result = frst::parse_program(*line);
+
+        if (not parse_result)
+        {
+            fmt::println(stderr, "{}", parse_result.error());
+            continue;
+        }
+
+        if (parse_result.value().empty())
+            continue;
+
+        repl_exec(parse_result.value(), symbols);
+        rx.history_add(*line);
     }
 }
