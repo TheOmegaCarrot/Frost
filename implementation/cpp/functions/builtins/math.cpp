@@ -106,6 +106,18 @@ Value_Ptr hypot(builtin_args_t args)
     THROW_UNREACHABLE;
 }
 
+Value_Ptr mod(builtin_args_t args)
+{
+    REQUIRE_ARGS("mod", TYPES(Int), TYPES(Int));
+
+    auto rhs = args.at(1)->raw_get<Int>();
+
+    if (rhs == 0)
+        throw Frost_Recoverable_Error{"Cannot modulus by 0"};
+
+    return Value::create(args.at(0)->raw_get<Int>() % rhs);
+}
+
 void inject_math(Symbol_Table& table)
 {
 
@@ -124,6 +136,7 @@ void inject_math(Symbol_Table& table)
     INJECT(abs, 1, 1);
     INJECT(round, 1, 1);
     INJECT(hypot, 2, 3);
+    INJECT(mod, 2, 2);
 }
 
 } // namespace frst

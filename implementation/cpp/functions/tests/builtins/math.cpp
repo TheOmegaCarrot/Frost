@@ -38,6 +38,7 @@ TEST_CASE("Builtin math")
     };
     const std::vector<std::string> binary_names{"pow", "min", "max", "atan2"};
     const std::vector<std::string> variadic_names{"hypot"};
+    const std::vector<std::string> int_binary_names{"mod"};
 
     SECTION("Injected")
     {
@@ -52,6 +53,11 @@ TEST_CASE("Builtin math")
             REQUIRE(val->is<Function>());
         }
         for (const auto& name : variadic_names)
+        {
+            auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
+        for (const auto& name : int_binary_names)
         {
             auto val = table.lookup(name);
             REQUIRE(val->is<Function>());
@@ -99,6 +105,7 @@ TEST_CASE("Builtin math")
             {.name = "max", .min = 2, .max = 2},
             {.name = "atan2", .min = 2, .max = 2},
             {.name = "hypot", .min = 2, .max = 3},
+            {.name = "mod", .min = 2, .max = 2},
         };
 
         auto a = Value::create(1_f);
@@ -202,6 +209,21 @@ TEST_CASE("Builtin math")
                 MessageMatches(ContainsSubstring("Function " + name)
                                && ContainsSubstring("got String")));
         }
+
+        auto mod_fn = get_fn("mod");
+        CHECK_THROWS_MATCHES(
+            mod_fn->call({bad, good}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("Function mod")
+                           && ContainsSubstring("got String")));
+        CHECK_THROWS_MATCHES(
+            mod_fn->call({good, bad}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("Function mod")
+                           && ContainsSubstring("got String")));
+        CHECK_THROWS_MATCHES(
+            mod_fn->call({Value::create(1.5), Value::create(2_f)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("Function mod")
+                           && ContainsSubstring("got Float")));
     }
 
     SECTION("Unary math functions")
@@ -503,5 +525,31 @@ TEST_CASE("Builtin math")
         REQUIRE(res_three->is<Float>());
         CHECK(res_three->get<Float>().value()
               == Catch::Approx(std::hypot(1.0, 2.0, 2.0)));
+    }
+
+    SECTION("mod")
+    {
+        auto fn = get_fn("mod");
+
+        auto pos = fn->call({Value::create(5_f), Value::create(2_f)});
+        REQUIRE(pos->is<Int>());
+        CHECK(pos->get<Int>() == 1_f);
+
+        auto neg_lhs = fn->call({Value::create(-5_f), Value::create(2_f)});
+        REQUIRE(neg_lhs->is<Int>());
+        CHECK(neg_lhs->get<Int>() == -1_f);
+
+        auto neg_rhs = fn->call({Value::create(5_f), Value::create(-2_f)});
+        REQUIRE(neg_rhs->is<Int>());
+        CHECK(neg_rhs->get<Int>() == 1_f);
+
+        auto neg_both = fn->call({Value::create(-5_f), Value::create(-2_f)});
+        REQUIRE(neg_both->is<Int>());
+        CHECK(neg_both->get<Int>() == -1_f);
+
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(1_f), Value::create(0_f)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("Cannot modulus by 0")));
     }
 }
