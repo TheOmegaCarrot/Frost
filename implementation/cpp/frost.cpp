@@ -10,6 +10,7 @@
 
 #include <replxx.hxx>
 
+#include <flat_set>
 #include <iostream>
 #include <optional>
 #include <ranges>
@@ -156,8 +157,10 @@ int main(int argc, const char** argv)
         repl(symbols);
 }
 
+using replxx::Replxx;
+
 void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
-               frst::Symbol_Table& symbols, replxx::Replxx& rx)
+               frst::Symbol_Table& symbols, Replxx& rx)
 {
     try
     {
@@ -187,7 +190,7 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
     }
 }
 
-constexpr static std::initializer_list<std::string_view> keywords{
+const static std::flat_set<std::string_view> keywords{
     "if",    "else",    "elif",   "def",  "fn",   "reduce",
     "map",   "foreach", "filter", "with", "init", "true",
     "false", "and",     "or",     "not",  "null",
@@ -220,10 +223,9 @@ std::optional<char> quote(std::optional<char> c)
     return std::nullopt;
 }
 
-void highlight_callback(const std::string& input,
-                        replxx::Replxx::colors_t& colors)
+void highlight_callback(const std::string& input, Replxx::colors_t& colors)
 {
-    using enum replxx::Replxx::Color;
+    using enum Replxx::Color;
     const auto NUMCOLOR = YELLOW;
     const auto STRINGCOLOR = GREEN;
     const auto KWCOLOR = BRIGHTCYAN;
@@ -289,12 +291,58 @@ void highlight_callback(const std::string& input,
             while (id_start(at(end)))
                 ++end;
             auto substr = std::string_view{input.data() + start, end - start};
-            if (std::ranges::contains(keywords, substr))
+            if (keywords.contains(substr))
                 for (auto brush = start; brush < end; ++brush)
                     colors[brush] = KWCOLOR;
         }
     }
 }
+
+struct Completion_Callback
+{
+    Replxx::completions_t operator()(const std::string& input, int& len)
+    {
+        auto at = [&](std::size_t i) -> std::optional<char> {
+            if (i < input.size())
+                return input[i];
+            return std::nullopt;
+        };
+
+        long i = input.size() - 1;
+        if (!id_cont(at(i)))
+            return {};
+
+        len = 0;
+        while (i >= 0 && id_cont(at(i)))
+        {
+            --i;
+            ++len;
+        }
+
+        if (i >= 0 && id_start(at(i)))
+            ++len;
+
+        std::string_view token{input.data() + i + 1,
+                               static_cast<std::size_t>(len)};
+
+        Replxx::completions_t out;
+
+        for (const auto& keyword : keywords)
+        {
+            if (keyword.starts_with(token))
+                out.emplace_back(std::string{keyword}, Replxx::Color::RED);
+        }
+
+        for (const auto& symbol : std::views::keys(symbols->debug_table()))
+        {
+            if (symbol.starts_with(token))
+                out.emplace_back(symbol, Replxx::Color::YELLOW);
+        }
+
+        return out;
+    }
+    frst::Symbol_Table* symbols;
+};
 
 bool should_read_more(std::string& input)
 {
@@ -322,7 +370,7 @@ bool should_read_more(std::string& input)
     return depth > 0;
 }
 
-std::optional<std::string> read_input_segment(replxx::Replxx& rx)
+std::optional<std::string> read_input_segment(Replxx& rx)
 {
     const std::string main_prompt = "\x1b[1;34m~>\x1b[0m ";
     const std::string subprompt = "\x1b[1;34m..> \x1b[0m ";
@@ -350,13 +398,15 @@ std::optional<std::string> read_input_segment(replxx::Replxx& rx)
 
 void repl(frst::Symbol_Table& symbols)
 {
-    using replxx::Replxx;
-
     Replxx rx;
 
     rx.set_unique_history(true);
     rx.enable_bracketed_paste();
+    rx.bind_key_internal(Replxx::KEY::control('P'), "history_previous");
+    rx.bind_key_internal(Replxx::KEY::control('N'), "history_next");
+
     rx.set_highlighter_callback(&highlight_callback);
+    rx.set_completion_callback(Completion_Callback{&symbols});
 
     while (auto line = read_input_segment(rx))
     {
