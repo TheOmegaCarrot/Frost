@@ -157,7 +157,7 @@ int main(int argc, const char** argv)
 }
 
 void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
-               frst::Symbol_Table& symbols)
+               frst::Symbol_Table& symbols, replxx::Replxx& rx)
 {
     try
     {
@@ -172,8 +172,8 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
         auto* last_statement = ast.back().get();
         if (auto expr_ptr =
                 dynamic_cast<frst::ast::Expression*>(last_statement))
-            fmt::println("{}",
-                         expr_ptr->evaluate(symbols)->to_internal_string());
+            rx.print("%s\n",
+                     expr_ptr->evaluate(symbols)->to_internal_string().c_str());
         else
             last_statement->execute(symbols);
     }
@@ -224,7 +224,7 @@ void highlight_callback(const std::string& input,
     using enum replxx::Replxx::Color;
     const auto NUMCOLOR = YELLOW;
     const auto STRINGCOLOR = GREEN;
-    const auto KWCOLOR = CYAN;
+    const auto KWCOLOR = BRIGHTCYAN;
 
     auto at = [&](std::size_t i) -> std::optional<char> {
         if (i < input.size())
@@ -288,13 +288,25 @@ bool should_read_more(const std::string& input)
     if (input.ends_with(':') || input.ends_with('\\'))
         return true;
 
-    return false;
+    // intentionally signed so it can go negative on illegal syntax
+    long depth = 0;
+    for (char c : input)
+    {
+        // If they are all mismatched and wrong,
+        // rejecting that is the parser's job
+        if (c == '(' || c == '{' || c == '[')
+            ++depth;
+        if (c == ')' || c == '}' || c == ']')
+            --depth;
+    }
+
+    return depth > 0;
 }
 
 std::optional<std::string> read_input_segment(replxx::Replxx& rx)
 {
     const std::string main_prompt = "\x1b[1;34m~>\x1b[0m ";
-    const std::string subprompt = "\x1b[1;34m...>\x1b[0m ";
+    const std::string subprompt = "\x1b[1;34m..> \x1b[0m ";
 
     std::string acc;
 
@@ -351,7 +363,7 @@ void repl(frst::Symbol_Table& symbols)
         if (parse_result.value().empty())
             continue;
 
-        repl_exec(parse_result.value(), symbols);
+        repl_exec(parse_result.value(), symbols, rx);
         rx.history_add(*line);
     }
 }
