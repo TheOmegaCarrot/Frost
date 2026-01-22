@@ -213,9 +213,11 @@ bool id_cont(std::optional<char> c)
     return c && (*c == '_' || alpha(c) || digit(c));
 };
 
-bool quote(std::optional<char> opt_c)
+std::optional<char> quote(std::optional<char> c)
 {
-    return opt_c == '\'' || opt_c == '"';
+    if (c == '\'' || c == '"')
+        return c;
+    return std::nullopt;
 }
 
 void highlight_callback(const std::string& input,
@@ -255,16 +257,16 @@ void highlight_callback(const std::string& input,
             colors[i] = NUMCOLOR;
 
         // strings
-        if (quote(at(i)))
+        if (auto q = quote(at(i)))
         {
             colors[i] = STRINGCOLOR;
             ++i;
-            while (at(i) && not quote(at(i)))
+            while (at(i) && at(i) != q)
             {
                 colors[i] = STRINGCOLOR;
                 ++i;
             }
-            if (quote(at(i))) // closing quote
+            if (at(i) == q) // closing quote
                 colors[i] = STRINGCOLOR;
         }
 
