@@ -115,10 +115,9 @@ TEST_CASE("Builtin regex")
         const auto too_many_1 = ContainsSubstring("too many arguments");
         const auto too_many_2 = ContainsSubstring("Called with 3");
         const auto too_many_3 = ContainsSubstring("no more than 2");
-        CHECK_THROWS_WITH(
-            fn->call({Value::create("a"s), Value::create("b"s),
-                      Value::create("c"s)}),
-            too_many_1 && too_many_2 && too_many_3);
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s),
+                                    Value::create("c"s)}),
+                          too_many_1 && too_many_2 && too_many_3);
     }
 
     SECTION("Type errors")
@@ -185,8 +184,8 @@ TEST_CASE("Builtin regex")
         auto good = Value::create("a"s);
         auto fn = get_re_fn(scan_matches_name);
 
-        const auto fn_name = ContainsSubstring(std::string{"Function re."}
-                                               + scan_matches_name);
+        const auto fn_name =
+            ContainsSubstring(std::string{"Function re."} + scan_matches_name);
         const auto expected = ContainsSubstring("String");
 
         CHECK_THROWS_WITH(fn->call({bad_first, good}),
@@ -225,9 +224,8 @@ TEST_CASE("Builtin regex")
 
         {
             auto fn = get_re_fn(scan_matches_name);
-            CHECK_THROWS_MATCHES(
-                fn->call({target, bad_re}), Frost_User_Error,
-                MessageMatches(StartsWith("Regex error: ")));
+            CHECK_THROWS_MATCHES(fn->call({target, bad_re}), Frost_User_Error,
+                                 MessageMatches(StartsWith("Regex error: ")));
         }
     }
 
@@ -312,8 +310,7 @@ TEST_CASE("Builtin regex")
     SECTION("Scan matches no matches")
     {
         auto fn = get_re_fn(scan_matches_name);
-        auto result =
-            fn->call({Value::create("abc"s), Value::create("z+"s)});
+        auto result = fn->call({Value::create("abc"s), Value::create("z+"s)});
         REQUIRE(result->is<Map>());
         const auto& result_map = result->raw_get<Map>();
 
@@ -334,9 +331,8 @@ TEST_CASE("Builtin regex")
     SECTION("Scan matches with groups")
     {
         auto fn = get_re_fn(scan_matches_name);
-        auto result = fn->call(
-            {Value::create("foo=bar beep=boop"s),
-             Value::create(R"((\w+)=(\w+))"s)});
+        auto result = fn->call({Value::create("foo=bar beep=boop"s),
+                                Value::create(R"((\w+)=(\w+))"s)});
         REQUIRE(result->is<Map>());
         const auto& result_map = result->raw_get<Map>();
 
@@ -399,9 +395,8 @@ TEST_CASE("Builtin regex")
     SECTION("Scan matches named groups")
     {
         auto fn = get_re_fn(scan_matches_name);
-        auto result = fn->call(
-            {Value::create("foo=bar beep=boop"s),
-             Value::create(R"((?<k>\w+)=(?'v'\w+))"s)});
+        auto result = fn->call({Value::create("foo=bar beep=boop"s),
+                                Value::create(R"((?<k>\w+)=(?'v'\w+))"s)});
         REQUIRE(result->is<Map>());
         const auto& result_map = result->raw_get<Map>();
 

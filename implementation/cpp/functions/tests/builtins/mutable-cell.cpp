@@ -94,8 +94,10 @@ TEST_CASE("Builtin mutable_cell")
         auto map =
             Value::create(Map{{Value::create("k"s), Value::create(1_f)}});
         auto fn = Value::create(Function{std::make_shared<Builtin>(
-            [](builtin_args_t) { return Value::null(); }, "dummy",
-            Builtin::Arity{.min = 0, .max = 0})});
+            [](builtin_args_t) {
+                return Value::null();
+            },
+            "dummy", Builtin::Arity{.min = 0, .max = 0})});
 
         CHECK_THROWS_WITH(cell_fn->call({arr}),
                           ContainsSubstring("Non-primitive values"));
@@ -137,8 +139,10 @@ TEST_CASE("Builtin mutable_cell")
         auto map =
             Value::create(Map{{Value::create("k"s), Value::create(1_f)}});
         auto fn = Value::create(Function{std::make_shared<Builtin>(
-            [](builtin_args_t) { return Value::null(); }, "dummy",
-            Builtin::Arity{.min = 0, .max = 0})});
+            [](builtin_args_t) {
+                return Value::null();
+            },
+            "dummy", Builtin::Arity{.min = 0, .max = 0})});
 
         CHECK_THROWS_WITH(exchange_fn->call({arr}),
                           ContainsSubstring("Non-primitive values"));

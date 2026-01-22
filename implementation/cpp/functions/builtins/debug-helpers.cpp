@@ -31,8 +31,8 @@ Value_Ptr assert(builtin_args_t args)
         if (args.size() == 1)
             throw Frost_Recoverable_Error{"Failed assertion"};
         else
-            throw Frost_Recoverable_Error{fmt::format("Failed assertion: {}",
-                                               args.at(1)->raw_get<String>())};
+            throw Frost_Recoverable_Error{fmt::format(
+                "Failed assertion: {}", args.at(1)->raw_get<String>())};
     }
     return args.at(0);
 }

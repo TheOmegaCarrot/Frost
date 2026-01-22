@@ -453,7 +453,8 @@ TEST_CASE("Reduce Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*init_expr, evaluate(_));
-            REQUIRE_CALL(*reducer, call(_)).THROW(Frost_Recoverable_Error{"kaboom"});
+            REQUIRE_CALL(*reducer, call(_))
+                .THROW(Frost_Recoverable_Error{"kaboom"});
 
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
@@ -884,7 +885,8 @@ TEST_CASE("Reduce Map")
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
-            REQUIRE_CALL(*reducer, call(_)).THROW(Frost_Recoverable_Error{"kaboom"});
+            REQUIRE_CALL(*reducer, call(_))
+                .THROW(Frost_Recoverable_Error{"kaboom"});
 
             ast::Reduce node{
                 std::move(structure_expr), std::move(operation_expr),

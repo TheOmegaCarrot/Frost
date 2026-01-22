@@ -46,8 +46,8 @@ Value_Ptr ast::Reduce::evaluate(const Symbol_Table& syms) const
     const auto& structure_val = structure_->evaluate(syms);
     if (not structure_val->is_structured())
     {
-        throw Frost_Recoverable_Error{fmt::format("Cannot reduce value with type {}",
-                                           structure_val->type_name())};
+        throw Frost_Recoverable_Error{fmt::format(
+            "Cannot reduce value with type {}", structure_val->type_name())};
     }
 
     const auto& op_val = operation_->evaluate(syms);
