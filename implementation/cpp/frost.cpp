@@ -261,13 +261,24 @@ void highlight_callback(const std::string& input,
         {
             colors[i] = STRINGCOLOR;
             ++i;
-            while (at(i) && at(i) != q)
+            while (at(i))
             {
                 colors[i] = STRINGCOLOR;
+                if (at(i) == q)
+                {
+                    // find out if this quote is actually escaped
+                    std::size_t k = i;
+                    std::size_t slashes = 0;
+                    while (k > 0 && at(k - 1) == '\\')
+                    {
+                        --k;
+                        ++slashes;
+                    }
+                    if (slashes % 2 == 0)
+                        break; // even == escaped so ignore
+                }
                 ++i;
             }
-            if (at(i) == q) // closing quote
-                colors[i] = STRINGCOLOR;
         }
 
         // keywords
@@ -285,10 +296,16 @@ void highlight_callback(const std::string& input,
     }
 }
 
-bool should_read_more(const std::string& input)
+bool should_read_more(std::string& input)
 {
-    if (input.ends_with(':') || input.ends_with('\\'))
+    if (input.ends_with(':'))
         return true;
+
+    if (input.ends_with('\\'))
+    {
+        input.pop_back();
+        return true;
+    }
 
     // intentionally signed so it can go negative on illegal syntax
     long depth = 0;
@@ -312,11 +329,6 @@ std::optional<std::string> read_input_segment(replxx::Replxx& rx)
 
     std::string acc;
 
-    auto pop_escape = [&] {
-        if (acc.ends_with('\\'))
-            acc.pop_back();
-    };
-
     if (const char* line = rx.input(main_prompt))
         acc = line;
     else
@@ -324,7 +336,6 @@ std::optional<std::string> read_input_segment(replxx::Replxx& rx)
 
     while (should_read_more(acc))
     {
-        pop_escape();
         if (const char* line = rx.input(subprompt))
         {
             acc.push_back('\n');
@@ -333,8 +344,6 @@ std::optional<std::string> read_input_segment(replxx::Replxx& rx)
         else
             break;
     }
-
-    pop_escape();
 
     return acc;
 }
