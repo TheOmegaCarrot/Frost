@@ -1,4 +1,5 @@
 #include "frost/value.hpp"
+#include <algorithm>
 #include <frost/ast.hpp>
 #include <frost/builtin.hpp>
 #include <frost/parser.hpp>
@@ -47,6 +48,8 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
     }
 }
 
+void highlight_callback(const std::string& input,
+                        replxx::Replxx::colors_t& colors);
 void repl(frst::Symbol_Table& symbols)
 {
     using replxx::Replxx;
@@ -55,6 +58,7 @@ void repl(frst::Symbol_Table& symbols)
 
     rx.set_unique_history(true);
     rx.enable_bracketed_paste();
+    rx.set_highlighter_callback(&highlight_callback);
 
     while (const char* raw_line = rx.input("\x1b[1;34m~>\x1b[0m "))
     {
@@ -212,4 +216,100 @@ int main(int argc, const char** argv)
 
     if (do_repl)
         repl(symbols);
+}
+
+constexpr static std::initializer_list<std::string_view> keywords{
+    "if",    "else",    "elif",   "def",  "fn",   "reduce",
+    "map",   "foreach", "filter", "with", "init", "true",
+    "false", "and",     "or",     "not",  "null",
+};
+
+bool alpha(std::optional<char> c)
+{
+    return c && std::isalpha(*c);
+}
+
+bool digit(std::optional<char> c)
+{
+    return c && std::isdigit(*c);
+}
+
+bool id_start(std::optional<char> c)
+{
+    return c && (*c == '_' || alpha(c));
+};
+
+bool id_cont(std::optional<char> c)
+{
+    return c && (*c == '_' || alpha(c) || digit(c));
+};
+
+bool quote(std::optional<char> opt_c)
+{
+    return opt_c == '\'' || opt_c == '"';
+}
+
+void highlight_callback(const std::string& input,
+                        replxx::Replxx::colors_t& colors)
+{
+    using enum replxx::Replxx::Color;
+    const auto NUMCOLOR = YELLOW;
+    const auto STRINGCOLOR = GREEN;
+    const auto KWCOLOR = CYAN;
+
+    auto at = [&](std::size_t i) -> std::optional<char> {
+        if (i < input.size())
+            return input[i];
+        return std::nullopt;
+    };
+
+    auto in_id = [&](std::size_t i) -> bool {
+        if (!id_cont(at(i)))
+            return false;
+
+        // Walk left while we are in identifier-continue chars.
+        std::size_t j = i;
+        while (j > 0 && id_cont(at(j - 1)))
+        {
+            --j;
+        }
+
+        return id_start(at(j));
+    };
+
+    colors.assign(input.size(), DEFAULT);
+
+    for (auto i = 0uz; i < input.size(); ++i)
+    {
+        // numbers
+        if (digit(at(i)) && not in_id(i))
+            colors[i] = NUMCOLOR;
+
+        // strings
+        if (quote(at(i)))
+        {
+            colors[i] = STRINGCOLOR;
+            ++i;
+            while (at(i) && not quote(at(i)))
+            {
+                colors[i] = STRINGCOLOR;
+                ++i;
+            }
+            if (quote(at(i))) // closing quote
+                colors[i] = STRINGCOLOR;
+        }
+
+        // keywords
+        if (id_start(at(i)))
+        {
+            auto start = i;
+            auto end = i + 1;
+            while (id_start(at(end)))
+                ++end;
+            auto substr = std::string_view{input.data() + start, end - start};
+            if (std::ranges::contains(keywords, substr))
+                for (auto brush = start; brush < end; ++brush)
+                    colors[brush] = KWCOLOR;
+        }
+    }
 }
