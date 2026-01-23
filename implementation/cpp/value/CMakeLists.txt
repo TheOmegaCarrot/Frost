@@ -8,6 +8,7 @@ add_library( frost-value
     explicit-conversions.cpp
     clone.cpp
     deep-equal.cpp
+    iterative-ops.cpp
 )
 
 target_include_directories( frost-value
@@ -60,3 +61,5 @@ value_test(tests/logical-not.cpp)
 value_test(tests/deep-equal.cpp)
 
 value_test(tests/clone.cpp)
+
+value_test(tests/iterative-ops.cpp)

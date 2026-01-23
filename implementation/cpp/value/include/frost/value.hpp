@@ -562,6 +562,14 @@ class Value
         return Value::create(not as<Bool>().value());
     }
 
+    // Shared implementation between AST nodes and some builtins
+    // Requires type-checking of structure before calling
+    static Value_Ptr do_map(Value_Ptr structure, const Function& fn,
+                            std::string_view parent_op_name);
+    static Value_Ptr do_filter(Value_Ptr structure, const Function& fn);
+    static Value_Ptr do_reduce(Value_Ptr structure, const Function& fn,
+                               std::optional<Value_Ptr> init);
+
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map, Function> value_;
 
