@@ -23,6 +23,14 @@
 #define INJECT_MAP(NAME, ...)                                                  \
     table.define(#NAME, Value::create(Map{__VA_ARGS__}));
 
+#define UNIFORM_VARIADIC(NAME, TYPE)                                           \
+    for (const auto& [i, arg] : std::views::enumerate(args))                   \
+        if (not arg->is<TYPE>())                                               \
+            throw Frost_Recoverable_Error{fmt::format(                         \
+                "Function " #NAME " requires " #TYPE " for all arguments, "    \
+                "got {} for argument {}",                                      \
+                arg->type_name(), i)};
+
 // Below is a GPT-generated boilerplate generation system for type-checking
 // arguments to builtins
 

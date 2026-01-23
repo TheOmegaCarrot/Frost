@@ -102,12 +102,7 @@ Value_Ptr reverse(builtin_args_t args)
 
 Value_Ptr zip(builtin_args_t args)
 {
-    for (const auto& [i, arg] : std::views::enumerate(args))
-        if (not arg->is<Array>())
-            throw Frost_Recoverable_Error{
-                fmt::format("Function zip requires Array for all arguments, "
-                            "got {} for argument {}",
-                            arg->type_name(), i)};
+    UNIFORM_VARIADIC(zip, Array);
 
     std::vector<const Array*> raw_args =
         args
@@ -136,6 +131,70 @@ Value_Ptr zip(builtin_args_t args)
     return Value::create(std::move(result));
 }
 
+Value_Ptr xprod(builtin_args_t args)
+{
+    UNIFORM_VARIADIC(xprod, Array);
+
+    std::vector<const Array*> raw_args =
+        args
+        | std::views::transform([](const Value_Ptr& arg) {
+              return &arg->raw_get<Array>();
+          })
+        | std::ranges::to<std::vector>();
+
+    for (const auto& arr : raw_args)
+        if (arr->empty())
+            return Value::create(Array{});
+
+    // like a mixed-radix odometer
+    struct Tracked_Index
+    {
+        std::size_t index = 0;
+        std::size_t size;
+    };
+    std::vector<Tracked_Index> tracked_indices;
+    tracked_indices.reserve(args.size());
+    for (const auto* arr : raw_args)
+        tracked_indices.push_back({.size = arr->size()});
+
+    Array result;
+
+    while (true)
+    {
+        Array elem;
+        elem.reserve(raw_args.size());
+
+        // push in a row according to tracked indices
+        for (const auto& [raw_arg, idx_tracker] :
+             std::views::zip(raw_args, tracked_indices))
+            elem.push_back(raw_arg->at(idx_tracker.index));
+
+        result.push_back(Value::create(std::move(elem)));
+
+        // bump up the tracked indices
+        bool are_carrying = true;
+        // walk backwards
+        for (auto& tidx : std::views::reverse(tracked_indices))
+        {
+            if (not are_carrying) // if we didn't hit a max, we're done
+                                  // incrementing
+                break;
+
+            if (++tidx.index < tidx.size) // increment, and if we hit the max...
+                are_carrying = false;     // ...time to "carry" on (hah)
+            else
+                tidx.index = 0; // oh yeah and reset this one
+        }
+
+        // if we "carried" to the end, the whole thing would "roll over"
+        // so we're done with this whole cartesian product operation
+        if (are_carrying)
+            break;
+    }
+
+    return Value::create(std::move(result));
+}
+
 void inject_ranges(Symbol_Table& table)
 {
     INJECT(stride, 2, 2);
@@ -145,5 +204,6 @@ void inject_ranges(Symbol_Table& table)
     INJECT(chunk, 2, 2);
     INJECT(reverse, 1, 1);
     INJECT_V(zip, 2);
+    INJECT_V(xprod, 2);
 }
 } // namespace frst

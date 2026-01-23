@@ -49,6 +49,10 @@ TEST_CASE("Builtin ranges")
     const std::vector<std::string> unary_names{
         "reverse",
     };
+    const std::vector<std::string> variadic_names{
+        "zip",
+        "xprod",
+    };
 
     SECTION("Injected")
     {
@@ -58,6 +62,11 @@ TEST_CASE("Builtin ranges")
             REQUIRE(val->is<Function>());
         }
         for (const auto& name : unary_names)
+        {
+            auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
+        for (const auto& name : variadic_names)
         {
             auto val = table.lookup(name);
             REQUIRE(val->is<Function>());
@@ -110,6 +119,24 @@ TEST_CASE("Builtin ranges")
                                    && ContainsSubstring("Called with 2")));
             }
         }
+
+        for (const auto& name : variadic_names)
+        {
+            DYNAMIC_SECTION("Arity " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 2")
+                                   && ContainsSubstring("Called with 0")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({arr}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 2")
+                                   && ContainsSubstring("Called with 1")));
+            }
+        }
     }
 
     SECTION("Type errors")
@@ -156,6 +183,32 @@ TEST_CASE("Builtin ranges")
                     MessageMatches(ContainsSubstring("Function " + name)
                                    && ContainsSubstring("Array")
                                    && ContainsSubstring("got Float")));
+            }
+        }
+
+        for (const auto& name : variadic_names)
+        {
+            DYNAMIC_SECTION("Type " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({bad, good_arr}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Array")
+                                   && ContainsSubstring("argument 0")
+                                   && ContainsSubstring("got String")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({good_arr, bad}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Array")
+                                   && ContainsSubstring("argument 1")
+                                   && ContainsSubstring("got String")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({good_arr, good_arr, bad}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Array")
+                                   && ContainsSubstring("argument 2")
+                                   && ContainsSubstring("got String")));
             }
         }
     }
@@ -391,35 +444,87 @@ TEST_CASE("Builtin ranges")
         CHECK(mixed_empty->raw_get<Array>().empty());
     }
 
-    SECTION("zip arity")
+    SECTION("xprod semantics")
     {
-        auto fn = lookup(table, "zip");
-        auto arr = Value::create(Array{Value::create(1_f)});
+        auto fn = lookup(table, "xprod");
+        auto a = Value::create(0_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto d = Value::create(3_f);
+        auto e = Value::create(4_f);
+        auto f = Value::create(5_f);
+        auto g = Value::create(6_f);
+        auto h = Value::create(7_f);
 
-        CHECK_THROWS_MATCHES(
-            fn->call({}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("insufficient arguments")
-                           && ContainsSubstring("requires at least 2")
-                           && ContainsSubstring("Called with 0")));
-        CHECK_THROWS_MATCHES(
-            fn->call({arr}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("insufficient arguments")
-                           && ContainsSubstring("requires at least 2")
-                           && ContainsSubstring("Called with 1")));
-    }
+        auto arr1 = Value::create(Array{a, b});
+        auto arr2 = Value::create(Array{c, d});
 
-    SECTION("zip type errors")
-    {
-        auto fn = lookup(table, "zip");
-        auto arr = Value::create(Array{Value::create(1_f)});
-        auto bad = Value::create("nope"s);
+        auto res = fn->call({arr1, arr2});
+        REQUIRE(res->is<Array>());
+        const auto& outer = res->raw_get<Array>();
+        REQUIRE(outer.size() == 4);
+        require_array_eq(outer.at(0), {a, c});
+        require_array_eq(outer.at(1), {a, d});
+        require_array_eq(outer.at(2), {b, c});
+        require_array_eq(outer.at(3), {b, d});
 
-        CHECK_THROWS_WITH(fn->call({bad, arr}),
-                          ContainsSubstring("argument 0"));
-        CHECK_THROWS_WITH(fn->call({arr, bad}),
-                          ContainsSubstring("argument 1"));
-        CHECK_THROWS_WITH(fn->call({arr, arr, bad}),
-                          ContainsSubstring("argument 2"));
+        auto arr3 = Value::create(Array{e, f});
+        auto res_three = fn->call({arr1, arr2, arr3});
+        REQUIRE(res_three->is<Array>());
+        const auto& outer_three = res_three->raw_get<Array>();
+        REQUIRE(outer_three.size() == 8);
+        require_array_eq(outer_three.at(0), {a, c, e});
+        require_array_eq(outer_three.at(1), {a, c, f});
+        require_array_eq(outer_three.at(2), {a, d, e});
+        require_array_eq(outer_three.at(3), {a, d, f});
+        require_array_eq(outer_three.at(4), {b, c, e});
+        require_array_eq(outer_three.at(5), {b, c, f});
+        require_array_eq(outer_three.at(6), {b, d, e});
+        require_array_eq(outer_three.at(7), {b, d, f});
+
+        auto arr4 = Value::create(Array{g, h});
+        auto res_four = fn->call({arr1, arr2, arr3, arr4});
+        REQUIRE(res_four->is<Array>());
+        const auto& outer_four = res_four->raw_get<Array>();
+        REQUIRE(outer_four.size() == 16);
+        require_array_eq(outer_four.at(0), {a, c, e, g});
+        require_array_eq(outer_four.at(1), {a, c, e, h});
+        require_array_eq(outer_four.at(2), {a, c, f, g});
+        require_array_eq(outer_four.at(3), {a, c, f, h});
+        require_array_eq(outer_four.at(4), {a, d, e, g});
+        require_array_eq(outer_four.at(5), {a, d, e, h});
+        require_array_eq(outer_four.at(6), {a, d, f, g});
+        require_array_eq(outer_four.at(7), {a, d, f, h});
+        require_array_eq(outer_four.at(8), {b, c, e, g});
+        require_array_eq(outer_four.at(9), {b, c, e, h});
+        require_array_eq(outer_four.at(10), {b, c, f, g});
+        require_array_eq(outer_four.at(11), {b, c, f, h});
+        require_array_eq(outer_four.at(12), {b, d, e, g});
+        require_array_eq(outer_four.at(13), {b, d, e, h});
+        require_array_eq(outer_four.at(14), {b, d, f, g});
+        require_array_eq(outer_four.at(15), {b, d, f, h});
+
+        auto single = Value::create(Array{a});
+        auto res_single_two = fn->call({single, arr2});
+        REQUIRE(res_single_two->is<Array>());
+        const auto& outer_single_two = res_single_two->raw_get<Array>();
+        REQUIRE(outer_single_two.size() == 2);
+        require_array_eq(outer_single_two.at(0), {a, c});
+        require_array_eq(outer_single_two.at(1), {a, d});
+
+        auto res_single_three = fn->call({single, arr2, arr3});
+        REQUIRE(res_single_three->is<Array>());
+        const auto& outer_single_three = res_single_three->raw_get<Array>();
+        REQUIRE(outer_single_three.size() == 4);
+        require_array_eq(outer_single_three.at(0), {a, c, e});
+        require_array_eq(outer_single_three.at(1), {a, c, f});
+        require_array_eq(outer_single_three.at(2), {a, d, e});
+        require_array_eq(outer_single_three.at(3), {a, d, f});
+
+        auto empty = Value::create(Array{});
+        auto res_empty = fn->call({arr1, empty});
+        REQUIRE(res_empty->is<Array>());
+        CHECK(res_empty->raw_get<Array>().empty());
     }
 
     SECTION("reverse semantics")
