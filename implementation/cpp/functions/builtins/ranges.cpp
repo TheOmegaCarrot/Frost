@@ -243,6 +243,37 @@ Value_Ptr xprod(builtin_args_t args)
     return Value::create(std::move(result));
 }
 
+Value_Ptr transform(builtin_args_t args)
+{
+    REQUIRE_ARGS("transform", PARAM("structure", TYPES(Array, Map)),
+                 TYPES(Function));
+
+    return Value::do_map(args.at(0), args.at(1)->raw_get<Function>(),
+                         "Builtin transform");
+}
+
+Value_Ptr select(builtin_args_t args)
+{
+    REQUIRE_ARGS("select", PARAM("structure", TYPES(Array, Map)),
+                 TYPES(Function));
+
+    return Value::do_filter(args.at(0), args.at(1)->raw_get<Function>());
+}
+
+Value_Ptr fold(builtin_args_t args)
+{
+    REQUIRE_ARGS("fold", PARAM("structure", TYPES(Array, Map)), TYPES(Function),
+                 OPTIONAL(PARAM("init", ANY)));
+
+    return Value::do_reduce(args.at(0), args.at(1)->raw_get<Function>(),
+                            [&] -> std::optional<Value_Ptr> {
+                                if (args.size() == 3)
+                                    return args.at(2);
+                                else
+                                    return std::nullopt;
+                            }());
+}
+
 void inject_ranges(Symbol_Table& table)
 {
     INJECT(stride, 2, 2);
@@ -256,5 +287,8 @@ void inject_ranges(Symbol_Table& table)
     INJECT(chunk_by, 2, 2);
     INJECT_V(zip, 2);
     INJECT_V(xprod, 2);
+    INJECT(transform, 2, 2);
+    INJECT(select, 2, 2);
+    INJECT(fold, 2, 3);
 }
 } // namespace frst

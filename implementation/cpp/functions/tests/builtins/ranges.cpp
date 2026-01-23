@@ -17,6 +17,12 @@ using Catch::Matchers::MessageMatches;
 
 namespace
 {
+template <typename Fn>
+Function make_builtin(Fn fn, std::string name, Builtin::Arity arity)
+{
+    return std::make_shared<Builtin>(std::move(fn), std::move(name), arity);
+}
+
 Function lookup(Symbol_Table& table, const std::string& name)
 {
     auto val = table.lookup(name);
@@ -58,6 +64,10 @@ TEST_CASE("Builtin ranges")
         "drop_while",
         "chunk_by",
     };
+    const std::vector<std::string> maplike_names{
+        "transform",
+        "select",
+    };
 
     SECTION("Injected")
     {
@@ -79,6 +89,15 @@ TEST_CASE("Builtin ranges")
         for (const auto& name : pred_names)
         {
             auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
+        for (const auto& name : maplike_names)
+        {
+            auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
+        {
+            auto val = table.lookup("fold");
             REQUIRE(val->is<Function>());
         }
     }
@@ -169,6 +188,48 @@ TEST_CASE("Builtin ranges")
                                    && ContainsSubstring("no more than 2")
                                    && ContainsSubstring("Called with 3")));
             }
+        }
+
+        for (const auto& name : maplike_names)
+        {
+            DYNAMIC_SECTION("Arity " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 2")
+                                   && ContainsSubstring("Called with 0")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({arr}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 2")
+                                   && ContainsSubstring("Called with 1")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({arr, n, extra}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("too many arguments")
+                                   && ContainsSubstring("no more than 2")
+                                   && ContainsSubstring("Called with 3")));
+            }
+        }
+
+        {
+            auto fn = lookup(table, "fold");
+            CHECK_THROWS_MATCHES(
+                fn->call({}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("insufficient arguments")
+                               && ContainsSubstring("requires at least 2")
+                               && ContainsSubstring("Called with 0")));
+            CHECK_THROWS_MATCHES(
+                fn->call({arr}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("insufficient arguments")
+                               && ContainsSubstring("requires at least 2")
+                               && ContainsSubstring("Called with 1")));
+            CHECK_THROWS_MATCHES(
+                fn->call({arr, n, extra, extra}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("too many arguments")
+                               && ContainsSubstring("no more than 3")
+                               && ContainsSubstring("Called with 4")));
         }
     }
 
@@ -263,6 +324,44 @@ TEST_CASE("Builtin ranges")
                                    && ContainsSubstring("argument 2")
                                    && ContainsSubstring("got String")));
             }
+        }
+
+        for (const auto& name : maplike_names)
+        {
+            DYNAMIC_SECTION("Type " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({bad, good_arr}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Array or Map")
+                                   && ContainsSubstring("argument 1")
+                                   && ContainsSubstring("structure")
+                                   && ContainsSubstring("got String")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({good_arr, bad}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Function")
+                                   && ContainsSubstring("argument 2")
+                                   && ContainsSubstring("got String")));
+            }
+        }
+
+        {
+            auto fn = lookup(table, "fold");
+            CHECK_THROWS_MATCHES(
+                fn->call({bad, good_arr}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Function fold")
+                               && ContainsSubstring("Array or Map")
+                               && ContainsSubstring("argument 1")
+                               && ContainsSubstring("structure")
+                               && ContainsSubstring("got String")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good_arr, bad}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Function fold")
+                               && ContainsSubstring("Function")
+                               && ContainsSubstring("argument 2")
+                               && ContainsSubstring("got String")));
         }
     }
 
@@ -806,6 +905,169 @@ TEST_CASE("Builtin ranges")
         auto res_empty = fn->call({empty, count_pred});
         require_array_eq(res_empty, {});
         CHECK(call_count == 0);
+    }
+
+    SECTION("transform semantics")
+    {
+        auto fn = lookup(table, "transform");
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto arr = Value::create(Array{a, b});
+
+        auto op = make_builtin(
+            [](builtin_args_t args) {
+                return Value::create(args.at(0)->raw_get<Int>() * 2_f);
+            },
+            "op", Builtin::Arity{.min = 1, .max = 1});
+
+        auto res = fn->call({arr, Value::create(Function{op})});
+        REQUIRE(res->is<Array>());
+        const auto& out = res->raw_get<Array>();
+        REQUIRE(out.size() == 2);
+        CHECK(out.at(0)->raw_get<Int>() == 2_f);
+        CHECK(out.at(1)->raw_get<Int>() == 4_f);
+
+        auto key_a = Value::create("a"s);
+        auto key_b = Value::create("b"s);
+        auto map = Value::create(Map{{key_a, a}, {key_b, b}});
+
+        auto map_op = make_builtin(
+            [](builtin_args_t args) {
+                return Value::create(
+                    Map{{args.at(0),
+                         Value::create(args.at(1)->raw_get<Int>() * 2_f)}});
+            },
+            "map_op", Builtin::Arity{.min = 2, .max = 2});
+
+        auto map_res =
+            fn->call({map, Value::create(Function{map_op})});
+        REQUIRE(map_res->is<Map>());
+        const auto& out_map = map_res->raw_get<Map>();
+        REQUIRE(out_map.size() == 2);
+        CHECK(out_map.at(key_a)->raw_get<Int>() == 2_f);
+        CHECK(out_map.at(key_b)->raw_get<Int>() == 4_f);
+    }
+
+    SECTION("transform map errors")
+    {
+        auto fn = lookup(table, "transform");
+        auto key = Value::create("k"s);
+        auto key2 = Value::create("j"s);
+        auto map =
+            Value::create(Map{{key, Value::create(1_f)}, {key2, Value::create(2_f)}});
+
+        auto bad_op = make_builtin(
+            [](builtin_args_t) { return Value::create(1_f); },
+            "bad", Builtin::Arity{.min = 2, .max = 2});
+
+        CHECK_THROWS_WITH(
+            fn->call({map, Value::create(Function{bad_op})}),
+            ContainsSubstring("Builtin transform"));
+
+        auto collision_key = Value::create("x"s);
+        auto collide_op = make_builtin(
+            [collision_key](builtin_args_t) {
+                return Value::create(Map{{collision_key, Value::create(1_f)}});
+            },
+            "collide", Builtin::Arity{.min = 2, .max = 2});
+
+        CHECK_THROWS_WITH(
+            fn->call({map, Value::create(Function{collide_op})}),
+            ContainsSubstring("key collision"));
+    }
+
+    SECTION("select semantics")
+    {
+        auto fn = lookup(table, "select");
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+        auto arr = Value::create(Array{a, b, c});
+
+        auto pred = make_builtin(
+            [](builtin_args_t args) {
+                return Value::create(args.at(0)->raw_get<Int>() > 1_f);
+            },
+            "pred", Builtin::Arity{.min = 1, .max = 1});
+
+        auto res = fn->call({arr, Value::create(Function{pred})});
+        require_array_eq(res, {b, c});
+
+        auto key_a = Value::create("a"s);
+        auto key_b = Value::create("b"s);
+        auto map = Value::create(Map{{key_a, a}, {key_b, b}});
+
+        auto map_pred = make_builtin(
+            [](builtin_args_t args) {
+                return Value::create(args.at(1)->raw_get<Int>() == 2_f);
+            },
+            "pred", Builtin::Arity{.min = 2, .max = 2});
+
+        auto map_res =
+            fn->call({map, Value::create(Function{map_pred})});
+        REQUIRE(map_res->is<Map>());
+        const auto& out = map_res->raw_get<Map>();
+        REQUIRE(out.size() == 1);
+        CHECK(out.begin()->first == key_b);
+        CHECK(out.begin()->second == b);
+    }
+
+    SECTION("fold semantics")
+    {
+        auto fn = lookup(table, "fold");
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+        auto arr = Value::create(Array{a, b, c});
+
+        auto op = make_builtin(
+            [](builtin_args_t args) {
+                return Value::create(args.at(0)->raw_get<Int>()
+                                     + args.at(1)->raw_get<Int>());
+            },
+            "op", Builtin::Arity{.min = 2, .max = 2});
+
+        auto res = fn->call({arr, Value::create(Function{op})});
+        CHECK(res->raw_get<Int>() == 6_f);
+
+        auto init = Value::create(10_f);
+        auto res_init =
+            fn->call({arr, Value::create(Function{op}), init});
+        CHECK(res_init->raw_get<Int>() == 16_f);
+
+        auto empty = Value::create(Array{});
+        auto res_empty = fn->call({empty, Value::create(Function{op})});
+        CHECK(res_empty == Value::null());
+        auto res_empty_init =
+            fn->call({empty, Value::create(Function{op}), init});
+        CHECK(res_empty_init == init);
+
+        auto key_a = Value::create("a"s);
+        auto key_b = Value::create("b"s);
+        auto map = Value::create(Map{{key_a, a}, {key_b, b}});
+
+        auto map_op = make_builtin(
+            [](builtin_args_t args) {
+                return Value::create(args.at(0)->raw_get<Int>()
+                                     + args.at(2)->raw_get<Int>());
+            },
+            "op", Builtin::Arity{.min = 3, .max = 3});
+
+        auto res_map =
+            fn->call({map, Value::create(Function{map_op}), init});
+        CHECK(res_map->raw_get<Int>() == 13_f);
+    }
+
+    SECTION("fold map requires init")
+    {
+        auto fn = lookup(table, "fold");
+        auto map = Value::create(Map{{Value::create("a"s), Value::create(1_f)}});
+        auto op = make_builtin(
+            [](builtin_args_t args) { return args.at(0); }, "op",
+            Builtin::Arity{.min = 3, .max = 3});
+
+        CHECK_THROWS_WITH(fn->call({map, Value::create(Function{op})}),
+                          ContainsSubstring("Map reduction requires init"));
     }
 
     SECTION("reverse semantics")
