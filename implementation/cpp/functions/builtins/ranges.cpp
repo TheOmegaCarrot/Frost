@@ -15,11 +15,15 @@ constexpr static auto array_array =
         return Value::create(Array{std::from_range, range});
     });
 
-#define ARR auto arr = args.at(0)->raw_get<Array>()
+#define ARR const auto& arr = args.at(0)->raw_get<Array>()
 
 #define ARR_NUM                                                                \
     ARR;                                                                       \
     auto num = args.at(1)->raw_get<Int>()
+
+#define ARR_FN                                                                 \
+    ARR;                                                                       \
+    const auto& fn = args.at(1)->raw_get<Function>()
 
 #define GT0_NUM(NAME)                                                          \
     if (num <= 0)                                                              \
@@ -98,6 +102,50 @@ Value_Ptr reverse(builtin_args_t args)
     ARR;
 
     DIRECT_NONE_IMPL(reverse);
+}
+
+#define PRED_IMPL(NAME)                                                        \
+    return Value::create(arr                                                   \
+                         | std::views::NAME([&](const Value_Ptr& val) {        \
+                               return fn->call({val})->as<Bool>().value();     \
+                           })                                                  \
+                         | std::ranges::to<Array>());
+
+// TODO: {take,drop}_while can evaluate the predicate multiple times
+//       per element
+Value_Ptr take_while(builtin_args_t args)
+{
+    REQUIRE_ARGS("take_while", TYPES(Array), TYPES(Function));
+
+    ARR_FN;
+
+    PRED_IMPL(take_while);
+}
+
+Value_Ptr drop_while(builtin_args_t args)
+{
+    REQUIRE_ARGS("drop_while", TYPES(Array), TYPES(Function));
+
+    ARR_FN;
+
+    PRED_IMPL(drop_while);
+}
+
+Value_Ptr chunk_by(builtin_args_t args)
+{
+    REQUIRE_ARGS("chunk_by", TYPES(Array), TYPES(Function));
+
+    ARR_FN;
+
+    return Value::create(
+        arr
+        | std::views::chunk_by(
+            [&](const Value_Ptr& first, const Value_Ptr& second) {
+                return fn->call({first, second})->as<Bool>().value();
+            })
+        | array_array
+        | std::ranges::to<Array>());
+    ;
 }
 
 Value_Ptr zip(builtin_args_t args)
@@ -203,6 +251,9 @@ void inject_ranges(Symbol_Table& table)
     INJECT(slide, 2, 2);
     INJECT(chunk, 2, 2);
     INJECT(reverse, 1, 1);
+    INJECT(take_while, 2, 2);
+    INJECT(drop_while, 2, 2);
+    INJECT(chunk_by, 2, 2);
     INJECT_V(zip, 2);
     INJECT_V(xprod, 2);
 }

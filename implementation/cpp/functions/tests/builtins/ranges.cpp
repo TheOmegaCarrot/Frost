@@ -53,6 +53,11 @@ TEST_CASE("Builtin ranges")
         "zip",
         "xprod",
     };
+    const std::vector<std::string> pred_names{
+        "take_while",
+        "drop_while",
+        "chunk_by",
+    };
 
     SECTION("Injected")
     {
@@ -67,6 +72,11 @@ TEST_CASE("Builtin ranges")
             REQUIRE(val->is<Function>());
         }
         for (const auto& name : variadic_names)
+        {
+            auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
+        for (const auto& name : pred_names)
         {
             auto val = table.lookup(name);
             REQUIRE(val->is<Function>());
@@ -135,6 +145,29 @@ TEST_CASE("Builtin ranges")
                     MessageMatches(ContainsSubstring("insufficient arguments")
                                    && ContainsSubstring("requires at least 2")
                                    && ContainsSubstring("Called with 1")));
+            }
+        }
+
+        for (const auto& name : pred_names)
+        {
+            DYNAMIC_SECTION("Arity " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 2")
+                                   && ContainsSubstring("Called with 0")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({arr}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 2")
+                                   && ContainsSubstring("Called with 1")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({arr, n, extra}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("too many arguments")
+                                   && ContainsSubstring("no more than 2")
+                                   && ContainsSubstring("Called with 3")));
             }
         }
     }
@@ -207,6 +240,26 @@ TEST_CASE("Builtin ranges")
                     fn->call({good_arr, good_arr, bad}), Frost_User_Error,
                     MessageMatches(ContainsSubstring("Function " + name)
                                    && ContainsSubstring("Array")
+                                   && ContainsSubstring("argument 2")
+                                   && ContainsSubstring("got String")));
+            }
+        }
+
+        for (const auto& name : pred_names)
+        {
+            DYNAMIC_SECTION("Type " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({bad, good_arr}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Array")
+                                   && ContainsSubstring("argument 1")
+                                   && ContainsSubstring("got String")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({good_arr, bad}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Function")
                                    && ContainsSubstring("argument 2")
                                    && ContainsSubstring("got String")));
             }
@@ -416,8 +469,8 @@ TEST_CASE("Builtin ranges")
         require_array_eq(outer_more.at(0), {a, c, d});
         require_array_eq(outer_more.at(1), {b, d, e});
 
-        auto res_equal =
-            fn->call({arr1, Value::create(Array{c, d}), Value::create(Array{e, f})});
+        auto res_equal = fn->call(
+            {arr1, Value::create(Array{c, d}), Value::create(Array{e, f})});
         REQUIRE(res_equal->is<Array>());
         const auto& outer_equal = res_equal->raw_get<Array>();
         REQUIRE(outer_equal.size() == 2);
@@ -525,6 +578,234 @@ TEST_CASE("Builtin ranges")
         auto res_empty = fn->call({arr1, empty});
         REQUIRE(res_empty->is<Array>());
         CHECK(res_empty->raw_get<Array>().empty());
+    }
+
+    SECTION("take_while semantics")
+    {
+        auto fn = lookup(table, "take_while");
+        auto a = Value::create(0_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto d = Value::create(3_f);
+        auto arr = Value::create(Array{a, b, c, d});
+
+        std::size_t call_count = 0;
+        std::vector<Value_Ptr> seen;
+        auto pred = Value::create(Function{std::make_shared<Builtin>(
+            [&](builtin_args_t args) {
+                ++call_count;
+                seen.push_back(args.at(0));
+                return Value::create(args.at(0)->raw_get<Int>() < 2_f);
+            },
+            "pred", Builtin::Arity{.min = 1, .max = 1})});
+
+        auto res = fn->call({arr, pred});
+        require_array_eq(res, {a, b});
+        CHECK(call_count >= 3);
+        REQUIRE(seen.size() >= 3);
+        CHECK(std::ranges::find(seen, a) != seen.end());
+        CHECK(std::ranges::find(seen, b) != seen.end());
+        CHECK(std::ranges::find(seen, c) != seen.end());
+        CHECK(std::ranges::find(seen, d) == seen.end());
+
+        call_count = 0;
+        seen.clear();
+        auto pred_all = Value::create(Function{std::make_shared<Builtin>(
+            [&](builtin_args_t args) {
+                ++call_count;
+                seen.push_back(args.at(0));
+                return Value::create(true);
+            },
+            "pred_all", Builtin::Arity{.min = 1, .max = 1})});
+
+        auto res_all = fn->call({arr, pred_all});
+        require_array_eq(res_all, {a, b, c, d});
+        CHECK(call_count >= 4);
+        CHECK(std::ranges::find(seen, a) != seen.end());
+        CHECK(std::ranges::find(seen, b) != seen.end());
+        CHECK(std::ranges::find(seen, c) != seen.end());
+        CHECK(std::ranges::find(seen, d) != seen.end());
+
+        call_count = 0;
+        seen.clear();
+        auto pred_none = Value::create(Function{std::make_shared<Builtin>(
+            [&](builtin_args_t args) {
+                ++call_count;
+                seen.push_back(args.at(0));
+                return Value::create(false);
+            },
+            "pred_none", Builtin::Arity{.min = 1, .max = 1})});
+
+        auto res_none = fn->call({arr, pred_none});
+        require_array_eq(res_none, {});
+        CHECK(call_count >= 1);
+        REQUIRE(!seen.empty());
+        CHECK(std::ranges::all_of(seen, [&](const Value_Ptr& v) {
+            return v == a;
+        }));
+
+        call_count = 0;
+        auto empty = Value::create(Array{});
+        auto res_empty = fn->call({empty, pred_all});
+        require_array_eq(res_empty, {});
+        CHECK(call_count == 0);
+    }
+
+    SECTION("drop_while semantics")
+    {
+        auto fn = lookup(table, "drop_while");
+        auto a = Value::create(0_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto d = Value::create(3_f);
+        auto arr = Value::create(Array{a, b, c, d});
+
+        std::size_t call_count = 0;
+        std::vector<Value_Ptr> seen;
+        auto pred = Value::create(Function{std::make_shared<Builtin>(
+            [&](builtin_args_t args) {
+                ++call_count;
+                seen.push_back(args.at(0));
+                return Value::create(args.at(0)->raw_get<Int>() < 2_f);
+            },
+            "pred", Builtin::Arity{.min = 1, .max = 1})});
+
+        auto res = fn->call({arr, pred});
+        require_array_eq(res, {c, d});
+        CHECK(call_count >= 3);
+        REQUIRE(seen.size() >= 3);
+        CHECK(std::ranges::find(seen, a) != seen.end());
+        CHECK(std::ranges::find(seen, b) != seen.end());
+        CHECK(std::ranges::find(seen, c) != seen.end());
+        CHECK(std::ranges::find(seen, d) == seen.end());
+
+        call_count = 0;
+        seen.clear();
+        auto pred_all = Value::create(Function{std::make_shared<Builtin>(
+            [&](builtin_args_t args) {
+                ++call_count;
+                seen.push_back(args.at(0));
+                return Value::create(true);
+            },
+            "pred_all", Builtin::Arity{.min = 1, .max = 1})});
+
+        auto res_all = fn->call({arr, pred_all});
+        require_array_eq(res_all, {});
+        CHECK(call_count >= 4);
+        CHECK(std::ranges::find(seen, a) != seen.end());
+        CHECK(std::ranges::find(seen, b) != seen.end());
+        CHECK(std::ranges::find(seen, c) != seen.end());
+        CHECK(std::ranges::find(seen, d) != seen.end());
+
+        call_count = 0;
+        seen.clear();
+        auto pred_none = Value::create(Function{std::make_shared<Builtin>(
+            [&](builtin_args_t args) {
+                ++call_count;
+                seen.push_back(args.at(0));
+                return Value::create(false);
+            },
+            "pred_none", Builtin::Arity{.min = 1, .max = 1})});
+
+        auto res_none = fn->call({arr, pred_none});
+        require_array_eq(res_none, {a, b, c, d});
+        CHECK(call_count >= 1);
+        REQUIRE(!seen.empty());
+        CHECK(std::ranges::all_of(seen, [&](const Value_Ptr& v) {
+            return v == a;
+        }));
+
+        call_count = 0;
+        auto empty = Value::create(Array{});
+        auto res_empty = fn->call({empty, pred_all});
+        require_array_eq(res_empty, {});
+        CHECK(call_count == 0);
+    }
+
+    SECTION("while predicate error propagates")
+    {
+        auto take_fn = lookup(table, "take_while");
+        auto drop_fn = lookup(table, "drop_while");
+        auto arr = Value::create(Array{Value::create(1_f)});
+        auto boom = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t) -> Value_Ptr {
+                throw Frost_Recoverable_Error{"kaboom"};
+            },
+            "boom", Builtin::Arity{.min = 1, .max = 1})});
+
+        CHECK_THROWS_WITH(take_fn->call({arr, boom}),
+                          ContainsSubstring("kaboom"));
+        CHECK_THROWS_WITH(drop_fn->call({arr, boom}),
+                          ContainsSubstring("kaboom"));
+    }
+
+    SECTION("chunk_by semantics")
+    {
+        auto fn = lookup(table, "chunk_by");
+        auto a = Value::create(1_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto d = Value::create(2_f);
+        auto e = Value::create(3_f);
+        auto f = Value::create(1_f);
+        auto g = Value::create(1_f);
+        auto arr = Value::create(Array{a, b, c, d, e, f, g});
+
+        auto eq_pred = Value::create(Function{std::make_shared<Builtin>(
+            [&](builtin_args_t args) {
+                return Value::create(args.at(0)->raw_get<Int>()
+                                     == args.at(1)->raw_get<Int>());
+            },
+            "eq", Builtin::Arity{.min = 2, .max = 2})});
+
+        auto res = fn->call({arr, eq_pred});
+        REQUIRE(res->is<Array>());
+        const auto& outer = res->raw_get<Array>();
+        REQUIRE(outer.size() == 4);
+        require_array_eq(outer.at(0), {a, b});
+        require_array_eq(outer.at(1), {c, d});
+        require_array_eq(outer.at(2), {e});
+        require_array_eq(outer.at(3), {f, g});
+
+        auto always_true = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t) {
+                return Value::create(true);
+            },
+            "true", Builtin::Arity{.min = 2, .max = 2})});
+        auto res_true = fn->call({arr, always_true});
+        REQUIRE(res_true->is<Array>());
+        const auto& outer_true = res_true->raw_get<Array>();
+        REQUIRE(outer_true.size() == 1);
+        require_array_eq(outer_true.at(0), {a, b, c, d, e, f, g});
+
+        auto always_false = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t) {
+                return Value::create(false);
+            },
+            "false", Builtin::Arity{.min = 2, .max = 2})});
+        auto res_false = fn->call({arr, always_false});
+        REQUIRE(res_false->is<Array>());
+        const auto& outer_false = res_false->raw_get<Array>();
+        REQUIRE(outer_false.size() == 7);
+        require_array_eq(outer_false.at(0), {a});
+        require_array_eq(outer_false.at(1), {b});
+        require_array_eq(outer_false.at(2), {c});
+        require_array_eq(outer_false.at(3), {d});
+        require_array_eq(outer_false.at(4), {e});
+        require_array_eq(outer_false.at(5), {f});
+        require_array_eq(outer_false.at(6), {g});
+
+        std::size_t call_count = 0;
+        auto empty = Value::create(Array{});
+        auto count_pred = Value::create(Function{std::make_shared<Builtin>(
+            [&](builtin_args_t) {
+                ++call_count;
+                return Value::create(true);
+            },
+            "count", Builtin::Arity{.min = 2, .max = 2})});
+        auto res_empty = fn->call({empty, count_pred});
+        require_array_eq(res_empty, {});
+        CHECK(call_count == 0);
     }
 
     SECTION("reverse semantics")
