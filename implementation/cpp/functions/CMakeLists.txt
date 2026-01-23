@@ -8,6 +8,7 @@ add_library( frost-functions
     builtins/mutable-cell.cpp
     builtins/output.cpp
     builtins/pack_call.cpp
+    builtins/ranges.cpp
     builtins/regex.cpp
     builtins/string-ops.cpp
     builtins/structure-ops.cpp
@@ -49,6 +50,8 @@ functions_test(tests/builtins/values.cpp)
 functions_test(tests/builtins/len.cpp)
 
 functions_test(tests/builtins/range.cpp)
+
+functions_test(tests/builtins/ranges.cpp)
 
 functions_test(tests/builtins/pack_call.cpp)
 

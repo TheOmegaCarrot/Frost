@@ -6,9 +6,6 @@ def id = fn (x) -> { x }
 
 # All name declarations must start with `def`
 
-# unused parameters
-def funky = fn (a, _, c) -> { a + c }
-
 # last expression :: implicit return
 def also_plus = fn (x, y) -> { x + y } # `plus` is a predefined builtin
 
