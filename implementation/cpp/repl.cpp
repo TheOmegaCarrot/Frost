@@ -139,7 +139,7 @@ void highlight_callback(const std::string& input, Replxx::colors_t& colors)
         }
 
         // keywords
-        if (id_start(at(i)))
+        if (id_start(at(i)) && !id_start(at(i - 1)))
         {
             auto start = i;
             auto end = i + 1;
