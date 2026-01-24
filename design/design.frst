@@ -195,3 +195,11 @@ def reduce_rest_res = reduce_rest(fn (a, b) -> {a + b}, 1, 2, 3, 4) # 10
 
 # function parameter ()s can also just be omitted, as can {} for a single expression
 def times_2 = fn n -> n * 2
+
+# array destructuring!
+def [a, b] = [1, 2]
+
+# also "rest" bindings
+def [a, b, ...more] = [1, 2, 3, 4, 5]
+
+# destructuring bindings have to match exactly
