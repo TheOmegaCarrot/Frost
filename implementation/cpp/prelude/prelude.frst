@@ -1,0 +1,3 @@
+def reject = fn structure, pred -> structure @ select( fn x -> not pred(x) )
+
+def inv = fn f -> fn ...args -> not f @ pack_call(args)
