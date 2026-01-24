@@ -18,6 +18,6 @@ None.
 
 ## Deferred todo items (ordered by importance)
 - Specify operator precedence and associativity.
-- Define full builtin set and `print`/`format` formatting rules.
+- Define full builtin set and formatting rules for `print`/`mformat`/`mprint` (and possibly `pformat`).
 - Define newline continuation / ambiguity rules.
 - Define error-recovery mechanism, if any.

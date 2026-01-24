@@ -3,9 +3,9 @@
 ## Syntax
 - Top-level uses the same statement rules as function bodies; expressions are allowed at top-level.
 - New bindings must use `def`; reassignment/mutation syntax is not supported.
-- Function literals require `fn` and use `fn (args) -> { body }`.
-- Zero-arg functions are `fn () -> { ... }`.
-- `fn { ... }` is a future stretch goal, not v1.
+- Function literals require `fn` and `->`. Parameter lists may be parenthesized or bare (comma-separated); bare form supports any number of parameters, including zero (e.g., `fn -> { ... }` and `fn a, b -> a + b`).
+- Expression-bodied lambdas are allowed: `fn (x) -> x + 1` (braces are optional for a single expression).
+- `fn { ... }` has been abandoned; `->` is always required.
 - There is no `return` statement; functions return the value of the last expression in their body (or `null` if none).
 - Newlines can act as ordinary whitespace or as statement separators; semicolons are optional.
 - Newlines are separators at top-level and inside `{ ... }` bodies, unless the parser can see the current expression is incomplete (e.g., after an infix operator); exact continuation rules are deferred to parser implementation.
@@ -13,7 +13,7 @@
 - `if` expressions may span arbitrary newlines between tokens (`if`/`elif/else`, condition, `:`, branch), and are parsed as a single expression despite newline separators.
 - Comments are `#` line comments only.
 - Identifiers are ASCII-only; `_` is a discard placeholder.
-- Keywords are fully reserved (`def`, `fn`, `if/elif/else`, `reduce/map/foreach/with/into/init`, `true/false/null`, `and/or/not`).
+- Keywords are fully reserved (`def`, `fn`, `if/elif/else`, `reduce/map/filter/foreach/with/into/init`, `true/false/null`, `and/or/not`).
 - `return` is not a keyword and may be used as an identifier.
 - Strings use double quotes; escape sequences are TBD (likely C-like). Multiline string literals are not supported with `"` (future syntaxes may add multiline strings).
 - String literal encoding rules depend on parser implementation; UTF-8 may be supported if it is easy, but it is not a priority.
@@ -28,11 +28,10 @@
 - Coercions: implicit numeric conversions allowed; `bool -> number` disallowed; `string -> number` disallowed; `any -> bool` allowed.
 - Use explicit conversion functions when numeric parsing is desired.
 - V1 error handling is immediate abort (no recovery). Error recovery (e.g., Lua-style `pcall`) is deferred.
-- `+` is overloaded for numeric addition, string concatenation, array concatenation, and map merge (right-hand value wins on key collision).
-- A stricter merge will be available via a builtin (e.g., `strict_merge`) that errors on key collisions.
+- `+` is overloaded for numeric addition, string concatenation, array concatenation, and map merge.
 - Array concatenation and map merge always produce new values (no in-place mutation).
 - Array concatenation requires both operands to be arrays; `array + non-array` is an error (use `arr + [value]` to append).
-- Map merge requires both operands to be maps; `map + non-map` is a runtime error.
+- Map merge requires both operands to be maps; `map + non-map` is a runtime error. Key collisions are errors.
 - String concatenation requires both operands to be strings; no implicit `tostring` coercion for `+` (string + non-string is a runtime error).
 - Numeric operators with string operands require explicit conversion.
 - Any other mixed-type use of `+` is a runtime error.
@@ -78,18 +77,23 @@
   - Map callbacks receive `(k, v)`.
   - Array -> array mapping is allowed.
   - Map -> map mapping is allowed; callback must evaluate to a map, which is merged into an accumulator.
-  - Map traversal order is unspecified; duplicate keys are last-wins and nondeterministic.
+  - Map traversal order is unspecified; any key collision during accumulation is an error.
   - Array -> map mapping via `map <array> into map ...` is deferred (not parsed in v1).
   - Map -> array mapping is disallowed.
+- `filter` (v1):
+  - Arrays: callback receives `(item)` and returns truthy to keep the item.
+  - Maps: callback receives `(k, v)` and returns truthy to keep the entry.
+  - Array -> array filtering and map -> map filtering are allowed.
 - `foreach` iterates with callbacks similar to `map`/`reduce` (arrays: `(item)`, maps: `(k, v)`).
 - `foreach` always returns `null`.
 
 ## Recursion and binding
 - Self-referential non-function definitions are errors (e.g., `def x = x + 1`).
-- Recursive function definitions are allowed; the function name is bound before its body is evaluated at call time, so self-recursion works without special syntax.
+- Recursive function definitions are allowed.
+- `self` is a special identifier inside a function body that refers to the current function (for recursion); at global scope it is a normal identifier.
 - Functions are first-class and capture their lexical environment by reference.
 - Bindings are immutable.
-- Forward references to later `def` in the same scope are errors (except for self-recursive function definitions), and are detected when the function is defined.
+- Forward references to later `def` in the same scope are errors, and are detected when the function is defined.
 
 ## Functions and blocks
 - Function bodies are sequences of statements separated by newlines or semicolons.
@@ -104,14 +108,15 @@
 - Top-level expression results are discarded; top-level expressions are for side-effects only.
 
 ## Builtins and examples
-- Builtin functions are deferred until late in v1 development; a minimal set will exist for early testing.
-- Minimal testing set: `print`, `mformat`, `pformat`, `tostring`, `assert`, `len`, `pack_call`, and type predicates.
+- Builtin functions are implemented beyond the original minimal testing set (see implementation for the current list).
+- At minimum: `print`, `mformat`, `mprint`, `tostring`, `assert`, `len`, `pack_call`, and type predicates. `pformat` may be added later.
 - `pack_call(fun, args)` applies a function to an array of arguments (no true multi-value semantics). `args` must be an array; normal arity rules apply.
 - `pack_call` with a non-array `args` is a runtime error.
 - Variadic calls are required (at least for `print` and formatting builtins).
 - User-defined functions support variadic arguments using `...rest` in the parameter list (rest must be last). Extra args are collected into an array parameter (no special varargs type).
 - Formatting behavior and the full builtin set are not finalized.
 - `mformat(fmt, map)` is intended for map-key interpolation (example: `mformat("${foo} ${bar}", %{foo: "hello", bar: "world"})`).
+- `mprint(fmt, map)` prints `mformat(fmt, map)`.
 - `pformat(fmt, ...)` is intended for a tiny printf-like format where substitutions require `%N` placeholders (1-based); `%N` out of range is an error; unused args are ignored; exact escaping rules and leading-zero rules are TBD.
 - The `init:` keyword-argument syntax is a special-case for `reduce`, not a general named-argument feature.
 - `type` is not a builtin; type checks use predicates: `is_null`, `is_int`, `is_float`, `is_bool`, `is_string`, `is_array`, `is_map`, `is_function`, `is_nonnull`, `is_numeric`, `is_primitive`, `is_structured`.
