@@ -49,14 +49,14 @@ Value_Ptr map_map(const Value_Ptr& map_val, const Function& op,
 
         for (const auto& [i_k, i_v] : intermediate)
         {
-            if (acc.contains(i_k))
+            auto [_, ok] = acc.insert({i_k, i_v});
+
+            if (not ok)
             {
                 throw Frost_Recoverable_Error(
                     fmt::format("{} operation key collision with key: {}",
                                 parent_op_name, i_k->to_internal_string()));
             }
-
-            acc.insert({i_k, i_v});
         }
     }
 
