@@ -143,7 +143,8 @@ struct Highlight_Callback
             return ret;
         };
 
-        auto do_matches = [&](const std::string& input_segment, std::size_t i) {
+        auto do_matches = [&](const std::string& input_segment,
+                              std::size_t i) -> std::optional<Replxx::Color> {
             auto at = [&](std::size_t i) -> std::optional<char> {
                 if (i < input_segment.size())
                     return input_segment[i];
@@ -166,7 +167,7 @@ struct Highlight_Callback
                     return ret;
                 }
             }
-            return DEFAULT;
+            return std::nullopt;
         };
 
         colors.assign(input.size(), DEFAULT);
@@ -183,7 +184,8 @@ struct Highlight_Callback
 
         for (auto i = 0uz; i < input.size(); ++i)
         {
-            colors[i] = do_matches(input, i);
+            if (auto bracket_color = do_matches(input, i))
+                colors[i] = *bracket_color;
 
             // numbers
             if (digit(at(i)) && not in_id(i))
