@@ -34,8 +34,7 @@ class Define final : public Statement
 
     std::generator<Symbol_Action> symbol_sequence() const final
     {
-        co_yield std::ranges::elements_of(
-            static_cast<Statement*>(expr_.get())->symbol_sequence());
+        co_yield std::ranges::elements_of(expr_->symbol_sequence());
         co_yield Definition{name_};
     }
 

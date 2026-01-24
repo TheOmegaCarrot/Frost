@@ -2,6 +2,7 @@
 #define FROST_AST_ALL_HPP
 
 #include "array-constructor.hpp"
+#include "array-destructure.hpp"
 #include "binop.hpp"
 #include "define.hpp"
 #include "expression.hpp"
