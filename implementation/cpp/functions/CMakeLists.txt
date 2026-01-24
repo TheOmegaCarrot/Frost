@@ -1,12 +1,13 @@
 add_library( frost-functions
     closure.cpp
     builtins.cpp
+    builtins/and_then.cpp
     builtins/debug-helpers.cpp
     builtins/error-handling.cpp
     builtins/free-operators.cpp
     builtins/math.cpp
-    builtins/and_then.cpp
     builtins/mutable-cell.cpp
+    builtins/os.cpp
     builtins/output.cpp
     builtins/pack_call.cpp
     builtins/ranges.cpp

@@ -18,7 +18,8 @@ namespace frst
     X(regex)                                                                   \
     X(mutable_cell)                                                            \
     X(ranges)                                                                  \
-    X(and_then)
+    X(and_then)                                                                \
+    X(os)
 
 #define X(F) void inject_##F(Symbol_Table&);
 
