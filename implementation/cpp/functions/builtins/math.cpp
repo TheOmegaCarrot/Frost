@@ -40,7 +40,7 @@ namespace frst
     {                                                                          \
         REQUIRE_ARGS(#FN, TYPES(Int, Float));                                  \
                                                                                \
-        return Value::create(std::FN(args.at(0)->as<Float>().value()));        \
+        return Value::create(std::FN(COERCE(0, Float)));                       \
     }
 
 X_UNARY_MATH_FLOAT
@@ -57,8 +57,8 @@ X_UNARY_MATH_FLOAT
     BUILTIN(FN)                                                                \
     {                                                                          \
         REQUIRE_ARGS(#FN, TYPES(Int, Float), TYPES(Int, Float));               \
-        return Value::create(auto{std::FN(args.at(0)->as<Float>().value(),     \
-                                          args.at(1)->as<Float>().value())});  \
+        return Value::create(                                                  \
+            auto{std::FN(COERCE(0, Float), COERCE(1, Float))});                \
     }
 
 X_BINARY_MATH_FLOAT
@@ -83,7 +83,7 @@ BUILTIN(round)
 {
     REQUIRE_ARGS("round", TYPES(Int, Float));
 
-    return Value::create(std::lround(args.at(0)->as<Float>().value()));
+    return Value::create(std::lround(COERCE(0, Float)));
 }
 
 BUILTIN(hypot)
@@ -93,14 +93,12 @@ BUILTIN(hypot)
 
     if (args.size() == 2)
     {
-        return Value::create(std::hypot(args.at(0)->as<Float>().value(),
-                                        args.at(1)->as<Float>().value()));
+        return Value::create(std::hypot(COERCE(0, Float), COERCE(1, Float)));
     }
     else if (args.size() == 3)
     {
-        return Value::create(std::hypot(args.at(0)->as<Float>().value(),
-                                        args.at(1)->as<Float>().value(),
-                                        args.at(2)->as<Float>().value()));
+        return Value::create(
+            std::hypot(COERCE(0, Float), COERCE(1, Float), COERCE(2, Float)));
     }
 
     THROW_UNREACHABLE;
@@ -110,12 +108,12 @@ BUILTIN(mod)
 {
     REQUIRE_ARGS("mod", TYPES(Int), TYPES(Int));
 
-    auto rhs = args.at(1)->raw_get<Int>();
+    auto rhs = GET(1, Int);
 
     if (rhs == 0)
         throw Frost_Recoverable_Error{"Cannot modulus by 0"};
 
-    return Value::create(args.at(0)->raw_get<Int>() % rhs);
+    return Value::create(GET(0, Int) % rhs);
 }
 
 void inject_math(Symbol_Table& table)

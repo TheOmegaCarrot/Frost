@@ -34,6 +34,10 @@
                 "got {} for argument {}",                                      \
                 arg->type_name(), i)};
 
+#define COERCE(IDX, TYPE) args.at(IDX)->as<TYPE>().value()
+
+#define GET(IDX, TYPE) args.at(IDX)->raw_get<TYPE>()
+
 namespace frst::builtin_detail
 {
 struct Any
