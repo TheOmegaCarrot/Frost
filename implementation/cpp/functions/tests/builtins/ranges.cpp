@@ -939,8 +939,7 @@ TEST_CASE("Builtin ranges")
             },
             "map_op", Builtin::Arity{.min = 2, .max = 2});
 
-        auto map_res =
-            fn->call({map, Value::create(Function{map_op})});
+        auto map_res = fn->call({map, Value::create(Function{map_op})});
         REQUIRE(map_res->is<Map>());
         const auto& out_map = map_res->raw_get<Map>();
         REQUIRE(out_map.size() == 2);
@@ -953,16 +952,17 @@ TEST_CASE("Builtin ranges")
         auto fn = lookup(table, "transform");
         auto key = Value::create("k"s);
         auto key2 = Value::create("j"s);
-        auto map =
-            Value::create(Map{{key, Value::create(1_f)}, {key2, Value::create(2_f)}});
+        auto map = Value::create(
+            Map{{key, Value::create(1_f)}, {key2, Value::create(2_f)}});
 
         auto bad_op = make_builtin(
-            [](builtin_args_t) { return Value::create(1_f); },
+            [](builtin_args_t) {
+                return Value::create(1_f);
+            },
             "bad", Builtin::Arity{.min = 2, .max = 2});
 
-        CHECK_THROWS_WITH(
-            fn->call({map, Value::create(Function{bad_op})}),
-            ContainsSubstring("Builtin transform"));
+        CHECK_THROWS_WITH(fn->call({map, Value::create(Function{bad_op})}),
+                          ContainsSubstring("Builtin transform"));
 
         auto collision_key = Value::create("x"s);
         auto collide_op = make_builtin(
@@ -971,9 +971,8 @@ TEST_CASE("Builtin ranges")
             },
             "collide", Builtin::Arity{.min = 2, .max = 2});
 
-        CHECK_THROWS_WITH(
-            fn->call({map, Value::create(Function{collide_op})}),
-            ContainsSubstring("key collision"));
+        CHECK_THROWS_WITH(fn->call({map, Value::create(Function{collide_op})}),
+                          ContainsSubstring("key collision"));
     }
 
     SECTION("select semantics")
@@ -1003,8 +1002,7 @@ TEST_CASE("Builtin ranges")
             },
             "pred", Builtin::Arity{.min = 2, .max = 2});
 
-        auto map_res =
-            fn->call({map, Value::create(Function{map_pred})});
+        auto map_res = fn->call({map, Value::create(Function{map_pred})});
         REQUIRE(map_res->is<Map>());
         const auto& out = map_res->raw_get<Map>();
         REQUIRE(out.size() == 1);
@@ -1031,8 +1029,7 @@ TEST_CASE("Builtin ranges")
         CHECK(res->raw_get<Int>() == 6_f);
 
         auto init = Value::create(10_f);
-        auto res_init =
-            fn->call({arr, Value::create(Function{op}), init});
+        auto res_init = fn->call({arr, Value::create(Function{op}), init});
         CHECK(res_init->raw_get<Int>() == 16_f);
 
         auto empty = Value::create(Array{});
@@ -1053,18 +1050,20 @@ TEST_CASE("Builtin ranges")
             },
             "op", Builtin::Arity{.min = 3, .max = 3});
 
-        auto res_map =
-            fn->call({map, Value::create(Function{map_op}), init});
+        auto res_map = fn->call({map, Value::create(Function{map_op}), init});
         CHECK(res_map->raw_get<Int>() == 13_f);
     }
 
     SECTION("fold map requires init")
     {
         auto fn = lookup(table, "fold");
-        auto map = Value::create(Map{{Value::create("a"s), Value::create(1_f)}});
+        auto map =
+            Value::create(Map{{Value::create("a"s), Value::create(1_f)}});
         auto op = make_builtin(
-            [](builtin_args_t args) { return args.at(0); }, "op",
-            Builtin::Arity{.min = 3, .max = 3});
+            [](builtin_args_t args) {
+                return args.at(0);
+            },
+            "op", Builtin::Arity{.min = 3, .max = 3});
 
         CHECK_THROWS_WITH(fn->call({map, Value::create(Function{op})}),
                           ContainsSubstring("Map reduction requires init"));

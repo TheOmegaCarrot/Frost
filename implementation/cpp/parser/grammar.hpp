@@ -101,6 +101,16 @@ struct expected_vararg_last
     static constexpr auto name = "variadic parameter must be last";
 };
 
+struct expected_destructure_binding
+{
+    static constexpr auto name = "destructure binding";
+};
+
+struct expected_destructure_rest
+{
+    static constexpr auto name = "rest binding after ','";
+};
+
 struct expected_identifier
 {
     static constexpr auto name = "identifier";
@@ -332,8 +342,7 @@ struct destructure_binding
     static constexpr auto value =
         lexy::callback<ast::Array_Destructure::Name>([](std::string name) {
             if (name == "_")
-                return ast::Array_Destructure::Name{
-                    ast::Discarded_Binding{}};
+                return ast::Array_Destructure::Name{ast::Discarded_Binding{}};
             return ast::Array_Destructure::Name{std::move(name)};
         });
     static constexpr auto name = "destructure binding";
@@ -343,8 +352,8 @@ struct destructure_binding_list
 {
     static constexpr auto rule = [] {
         auto elem_start = dsl::ascii::alpha_underscore;
-        auto sep =
-            dsl::peek(dsl::lit_c<','> + param_ws + elem_start) >> dsl::lit_c<','>;
+        auto sep = dsl::peek(dsl::lit_c<','> + param_ws + elem_start)
+                   >> dsl::lit_c<','>;
         return dsl::list(dsl::p<destructure_binding>, dsl::sep(sep));
     }();
     static constexpr auto value =
@@ -355,22 +364,25 @@ struct destructure_binding_list
 struct destructure_payload
 {
     static constexpr auto rule = [] {
-        auto rest =
-            (dsl::must(dsl::peek(LEXY_LIT("...")))
-                 .error<expected_vararg> >> (LEXY_LIT("...") + param_ws
-                                             + dsl::p<destructure_binding>));
+        auto leading_comma = dsl::peek(dsl::lit_c<','>)
+                             >> dsl::error<expected_destructure_binding>;
+        auto rest = (dsl::must(dsl::peek(LEXY_LIT("...")))
+                         .error<
+                             expected_destructure_rest
+                         > >> (LEXY_LIT("...")
+                               + param_ws
+                               + dsl::p<destructure_binding>));
         auto rest_checked = rest
                             + dsl::must(dsl::peek_not(dsl::lit_c<','>))
                                   .error<expected_vararg_last>;
         auto names = dsl::p<destructure_binding_list>;
-        auto names_then_rest =
-            names
-            + dsl::opt(dsl::peek(dsl::lit_c<','>)
-                       >> (dsl::lit_c<','> + rest_checked));
+        auto names_then_rest = names
+                               + dsl::opt(dsl::peek(dsl::lit_c<','>)
+                                          >> (dsl::lit_c<','> + rest_checked));
         auto rest_only = dsl::peek(LEXY_LIT("...")) >> rest_checked;
         auto names_only =
             dsl::peek(dsl::ascii::alpha_underscore) >> names_then_rest;
-        return dsl::opt(rest_only | names_only);
+        return dsl::opt(rest_only | names_only | leading_comma);
     }();
 
     static constexpr auto value = lexy::callback<destructure_pack>(
@@ -380,8 +392,7 @@ struct destructure_payload
         [](ast::Array_Destructure::Name rest) {
             return destructure_pack{{}, std::move(rest)};
         },
-        [](std::vector<ast::Array_Destructure::Name> names,
-           lexy::nullopt) {
+        [](std::vector<ast::Array_Destructure::Name> names, lexy::nullopt) {
             return destructure_pack{std::move(names), std::nullopt};
         },
         [](std::vector<ast::Array_Destructure::Name> names,
@@ -1057,8 +1068,7 @@ struct Define
         auto kw_def = LEXY_KEYWORD("def", identifier::base);
         auto lhs =
             dsl::p<identifier_required> | dsl::p<array_destructure_pattern>;
-        return kw_def
-               >> (lhs + dsl::lit_c<'='> + dsl::p<expression>);
+        return kw_def >> (lhs + dsl::lit_c<'='> + dsl::p<expression>);
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
         [](std::string name, ast::Expression::Ptr expr) {

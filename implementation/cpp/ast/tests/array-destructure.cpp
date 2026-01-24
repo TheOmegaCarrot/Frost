@@ -21,8 +21,8 @@
 using namespace frst;
 using namespace frst::ast;
 using namespace std::literals;
-using Catch::Matchers::MessageMatches;
 using Catch::Matchers::Equals;
+using Catch::Matchers::MessageMatches;
 
 using trompeloeil::_;
 
@@ -132,16 +132,14 @@ TEST_CASE("Array_Destructure")
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("head", a)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(syms, define("rest", _))
-            .IN_SEQUENCE(seq)
-            .LR_SIDE_EFFECT({
-                auto val = _2;
-                REQUIRE(val->template is<Array>());
-                const auto& out = val->template raw_get<Array>();
-                REQUIRE(out.size() == 2);
-                CHECK(out.at(0) == b);
-                CHECK(out.at(1) == c);
-            });
+        REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
+            auto val = _2;
+            REQUIRE(val->template is<Array>());
+            const auto& out = val->template raw_get<Array>();
+            REQUIRE(out.size() == 2);
+            CHECK(out.at(0) == b);
+            CHECK(out.at(1) == c);
+        });
 
         std::vector<Array_Destructure::Name> names{
             std::string{"head"},
@@ -168,13 +166,11 @@ TEST_CASE("Array_Destructure")
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("head", a)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(syms, define("rest", _))
-            .IN_SEQUENCE(seq)
-            .LR_SIDE_EFFECT({
-                auto val = _2;
-                REQUIRE(val->template is<Array>());
-                CHECK(val->template raw_get<Array>().empty());
-            });
+        REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
+            auto val = _2;
+            REQUIRE(val->template is<Array>());
+            CHECK(val->template raw_get<Array>().empty());
+        });
 
         std::vector<Array_Destructure::Name> names{
             std::string{"head"},
@@ -232,15 +228,13 @@ TEST_CASE("Array_Destructure")
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("a", v2)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(syms, define("rest", _))
-            .IN_SEQUENCE(seq)
-            .LR_SIDE_EFFECT({
-                auto val = _2;
-                REQUIRE(val->template is<Array>());
-                const auto& out = val->template raw_get<Array>();
-                REQUIRE(out.size() == 1);
-                CHECK(out.at(0) == v3);
-            });
+        REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
+            auto val = _2;
+            REQUIRE(val->template is<Array>());
+            const auto& out = val->template raw_get<Array>();
+            REQUIRE(out.size() == 1);
+            CHECK(out.at(0) == v3);
+        });
 
         std::vector<Array_Destructure::Name> names{
             Discarded_Binding{},
@@ -270,13 +264,11 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(syms, define("a", a)).IN_SEQUENCE(seq);
         REQUIRE_CALL(syms, define("b", b)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(syms, define("rest", _))
-            .IN_SEQUENCE(seq)
-            .LR_SIDE_EFFECT({
-                auto val = _2;
-                REQUIRE(val->template is<Array>());
-                CHECK(val->template raw_get<Array>().empty());
-            });
+        REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
+            auto val = _2;
+            REQUIRE(val->template is<Array>());
+            CHECK(val->template raw_get<Array>().empty());
+        });
 
         std::vector<Array_Destructure::Name> names{
             std::string{"a"},
@@ -296,9 +288,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_))
-            .LR_WITH(&_1 == &syms)
-            .RETURN(arr);
+        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -309,7 +299,8 @@ TEST_CASE("Array_Destructure")
 
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
-            MessageMatches(Equals("Insfficient array elements to destructure: required 2 but got 1")));
+            MessageMatches(Equals("Insfficient array elements to destructure: "
+                                  "required 2 but got 1")));
     }
 
     SECTION("Errors on insufficient elements even with rest")
@@ -319,9 +310,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_))
-            .LR_WITH(&_1 == &syms)
-            .RETURN(arr);
+        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -334,7 +323,8 @@ TEST_CASE("Array_Destructure")
 
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
-            MessageMatches(Equals("Insfficient array elements to destructure: required 2 but got 1")));
+            MessageMatches(Equals("Insfficient array elements to destructure: "
+                                  "required 2 but got 1")));
     }
 
     SECTION("Errors on insufficient elements with discarded rest")
@@ -344,9 +334,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_))
-            .LR_WITH(&_1 == &syms)
-            .RETURN(arr);
+        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -359,7 +347,8 @@ TEST_CASE("Array_Destructure")
 
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
-            MessageMatches(Equals("Insfficient array elements to destructure: required 2 but got 1")));
+            MessageMatches(Equals("Insfficient array elements to destructure: "
+                                  "required 2 but got 1")));
     }
 
     SECTION("Errors on too many elements without rest")
@@ -369,9 +358,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_))
-            .LR_WITH(&_1 == &syms)
-            .RETURN(arr);
+        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -381,7 +368,8 @@ TEST_CASE("Array_Destructure")
 
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
-            MessageMatches(Equals("Too many array elements to destructure: required 1 but got 2")));
+            MessageMatches(Equals("Too many array elements to destructure: "
+                                  "required 1 but got 2")));
     }
 
     SECTION("Empty pattern succeeds on empty array")
@@ -391,9 +379,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{});
 
-        REQUIRE_CALL(*expr, evaluate(_))
-            .LR_WITH(&_1 == &syms)
-            .RETURN(arr);
+        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
@@ -409,9 +395,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_))
-            .LR_WITH(&_1 == &syms)
-            .RETURN(arr);
+        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
@@ -419,7 +403,8 @@ TEST_CASE("Array_Destructure")
 
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
-            MessageMatches(Equals("Too many array elements to destructure: required 0 but got 1")));
+            MessageMatches(Equals("Too many array elements to destructure: "
+                                  "required 0 but got 1")));
     }
 
     SECTION("Rest-only binds all elements")
@@ -437,16 +422,14 @@ TEST_CASE("Array_Destructure")
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
 
-        REQUIRE_CALL(syms, define("rest", _))
-            .IN_SEQUENCE(seq)
-            .LR_SIDE_EFFECT({
-                auto val = _2;
-                REQUIRE(val->template is<Array>());
-                const auto& out = val->template raw_get<Array>();
-                REQUIRE(out.size() == 2);
-                CHECK(out.at(0) == a);
-                CHECK(out.at(1) == b);
-            });
+        REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
+            auto val = _2;
+            REQUIRE(val->template is<Array>());
+            const auto& out = val->template raw_get<Array>();
+            REQUIRE(out.size() == 2);
+            CHECK(out.at(0) == a);
+            CHECK(out.at(1) == b);
+        });
 
         std::vector<Array_Destructure::Name> names{};
         Array_Destructure node{std::move(names),
@@ -469,13 +452,11 @@ TEST_CASE("Array_Destructure")
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
 
-        REQUIRE_CALL(syms, define("rest", _))
-            .IN_SEQUENCE(seq)
-            .LR_SIDE_EFFECT({
-                auto val = _2;
-                REQUIRE(val->template is<Array>());
-                CHECK(val->template raw_get<Array>().empty());
-            });
+        REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
+            auto val = _2;
+            REQUIRE(val->template is<Array>());
+            CHECK(val->template raw_get<Array>().empty());
+        });
 
         std::vector<Array_Destructure::Name> names{};
         Array_Destructure node{std::move(names),
@@ -517,12 +498,9 @@ TEST_CASE("Array_Destructure")
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
 
-        auto arr =
-            Value::create(Array{Value::create(1_f), Value::create(2_f)});
+        auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_))
-            .LR_WITH(&_1 == &syms)
-            .RETURN(arr);
+        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
@@ -549,13 +527,11 @@ TEST_CASE("Array_Destructure")
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("a", v2)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(syms, define("rest", _))
-            .IN_SEQUENCE(seq)
-            .LR_SIDE_EFFECT({
-                auto val = _2;
-                REQUIRE(val->template is<Array>());
-                CHECK(val->template raw_get<Array>().empty());
-            });
+        REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
+            auto val = _2;
+            REQUIRE(val->template is<Array>());
+            CHECK(val->template raw_get<Array>().empty());
+        });
 
         std::vector<Array_Destructure::Name> names{
             Discarded_Binding{},
@@ -640,7 +616,8 @@ TEST_CASE("Array_Destructure")
             (Array_Destructure{std::move(names), std::nullopt,
                                std::make_unique<mock::Mock_Expression>()}),
             Frost_Unrecoverable_Error,
-            MessageMatches(Equals("Duplicate destructuring binding name: dup")));
+            MessageMatches(
+                Equals("Duplicate destructuring binding name: dup")));
     }
 
     SECTION("Duplicate name between rest and positional is rejected")
@@ -654,7 +631,8 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"dup"}},
                                std::make_unique<mock::Mock_Expression>()}),
             Frost_Unrecoverable_Error,
-            MessageMatches(Equals("Duplicate destructuring binding name: dup")));
+            MessageMatches(
+                Equals("Duplicate destructuring binding name: dup")));
     }
 
     SECTION("Duplicate positional names still error with discarded rest")
@@ -669,7 +647,8 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::make_unique<mock::Mock_Expression>()}),
             Frost_Unrecoverable_Error,
-            MessageMatches(Equals("Duplicate destructuring binding name: dup")));
+            MessageMatches(
+                Equals("Duplicate destructuring binding name: dup")));
     }
 
     SECTION("Duplicate discarded bindings are allowed")
@@ -679,9 +658,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_))
-            .LR_WITH(&_1 == &syms)
-            .RETURN(arr);
+        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -799,8 +776,7 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
-        CHECK(collect_sequence(node)
-              == std::vector<std::string>{"use:rhs"});
+        CHECK(collect_sequence(node) == std::vector<std::string>{"use:rhs"});
     }
 
     SECTION("Symbol sequence for empty pattern")
@@ -813,7 +789,6 @@ TEST_CASE("Array_Destructure")
         std::vector<Array_Destructure::Name> names{};
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr)};
 
-        CHECK(collect_sequence(node)
-              == std::vector<std::string>{"use:rhs"});
+        CHECK(collect_sequence(node) == std::vector<std::string>{"use:rhs"});
     }
 }

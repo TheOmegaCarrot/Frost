@@ -149,9 +149,9 @@ TEST_CASE("Value iterative ops")
 
         CHECK_THROWS_MATCHES(
             Value::do_map(map, op, "map"), Frost_Recoverable_Error,
-            MessageMatches(
-                ContainsSubstring("map with map input requires map intermediates")
-                && ContainsSubstring("got Int")));
+            MessageMatches(ContainsSubstring(
+                               "map with map input requires map intermediates")
+                           && ContainsSubstring("got Int")));
     }
 
     SECTION("do_map map rejects key collisions")
@@ -164,8 +164,8 @@ TEST_CASE("Value iterative ops")
         auto callable = Mock_Callable::make();
         Function op = callable;
         ALLOW_CALL(*callable, call(_))
-            .RETURN(Value::create(
-                Map{{Value::create("k"s), Value::create(1_f)}}));
+            .RETURN(
+                Value::create(Map{{Value::create("k"s), Value::create(1_f)}}));
 
         CHECK_THROWS_WITH(Value::do_map(map, op, "map"),
                           ContainsSubstring("key collision"));
@@ -381,7 +381,8 @@ TEST_CASE("Value iterative ops")
 
     SECTION("do_reduce map requires init")
     {
-        auto map = Value::create(Map{{Value::create("a"s), Value::create(1_f)}});
+        auto map =
+            Value::create(Map{{Value::create("a"s), Value::create(1_f)}});
         auto callable = Mock_Callable::make();
         Function op = callable;
 
