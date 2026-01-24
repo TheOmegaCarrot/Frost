@@ -10,7 +10,6 @@
 
 #include <replxx.hxx>
 
-#include <flat_map>
 #include <flat_set>
 #include <stack>
 
@@ -91,6 +90,8 @@ struct Highlight_Callback
     constexpr static std::array brace_colors{RED, YELLOW, GREEN, BLUE, MAGENTA};
     std::size_t color_idx = 0;
 
+    std::string* line = nullptr;
+
     struct Matched_Bracket
     {
         char open;
@@ -114,6 +115,7 @@ struct Highlight_Callback
 
     void operator()(const std::string& input, Replxx::colors_t& colors)
     {
+        reset();
 
         auto at = [&](std::size_t i) -> std::optional<char> {
             if (i < input.size())
@@ -141,29 +143,47 @@ struct Highlight_Callback
             return ret;
         };
 
-        colors.assign(input.size(), DEFAULT);
+        auto do_matches = [&](const std::string& input_segment, std::size_t i) {
+            auto at = [&](std::size_t i) -> std::optional<char> {
+                if (i < input_segment.size())
+                    return input_segment[i];
+                return std::nullopt;
+            };
 
-        color_idx = 0;
-
-        for (auto i = 0uz; i < input.size(); ++i)
-        {
             for (auto& [match, stack] : match_stacks)
             {
                 if (at(i) == match.open)
                 {
                     stack.push(next_color());
-                    colors[i] = stack.top();
-                    break;
+                    return stack.top();
                 }
                 else if (at(i) == match.close)
                 {
                     if (stack.empty())
                         break;
-                    colors[i] = stack.top();
+                    auto ret = stack.top();
                     stack.pop();
-                    break;
+                    return ret;
                 }
             }
+            return DEFAULT;
+        };
+
+        colors.assign(input.size(), DEFAULT);
+
+        color_idx = 0;
+
+        if (line)
+        {
+            for (auto i = 0uz; i < line->size(); ++i)
+            {
+                do_matches(*line, i);
+            }
+        }
+
+        for (auto i = 0uz; i < input.size(); ++i)
+        {
+            colors[i] = do_matches(input, i);
 
             // numbers
             if (digit(at(i)) && not in_id(i))
@@ -323,7 +343,8 @@ bool should_read_more(std::string& input)
     return depth > 0;
 }
 
-std::optional<std::string> read_input_segment(Replxx& rx)
+std::optional<std::string> read_input_segment(Replxx& rx,
+                                              Highlight_Callback& hl)
 {
     const std::string main_prompt = "\x1b[1;34m~>\x1b[0m ";
     const std::string subprompt = "\x1b[1;34m..> \x1b[0m ";
@@ -337,6 +358,7 @@ std::optional<std::string> read_input_segment(Replxx& rx)
 
     while (should_read_more(acc))
     {
+        hl.line = &acc;
         if (const char* line = rx.input(subprompt))
         {
             acc.push_back('\n');
@@ -360,13 +382,18 @@ void repl(frst::Symbol_Table& symbols)
 
     Highlight_Callback highlight_callback;
     highlight_callback.reset();
-    rx.set_highlighter_callback(highlight_callback);
+
+    // wrap it in a lambda because replxx copies the callback
+    rx.set_highlighter_callback(
+        [&](const std::string& input, Replxx::colors_t& colors) {
+            highlight_callback(input, colors);
+        });
 
     Completion_Callbacks completion_callbacks{&symbols};
     rx.set_completion_callback(completion_callbacks);
     rx.set_hint_callback(completion_callbacks);
 
-    while (auto line = read_input_segment(rx))
+    while (auto line = read_input_segment(rx, highlight_callback))
     {
         if (line->empty())
             continue;
