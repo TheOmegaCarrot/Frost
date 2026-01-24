@@ -10,7 +10,9 @@
 
 #include <replxx.hxx>
 
+#include <flat_map>
 #include <flat_set>
+#include <stack>
 
 using replxx::Replxx;
 
@@ -78,80 +80,136 @@ std::optional<char> quote(std::optional<char> c)
     return std::nullopt;
 }
 
-void highlight_callback(const std::string& input, Replxx::colors_t& colors)
+struct Highlight_Callback
 {
+
     using enum Replxx::Color;
-    const auto NUMCOLOR = YELLOW;
-    const auto STRINGCOLOR = GREEN;
-    const auto KWCOLOR = BRIGHTCYAN;
+    const static auto NUMCOLOR = YELLOW;
+    const static auto STRINGCOLOR = GREEN;
+    const static auto KWCOLOR = BRIGHTCYAN;
 
-    auto at = [&](std::size_t i) -> std::optional<char> {
-        if (i < input.size())
-            return input[i];
-        return std::nullopt;
-    };
+    constexpr static std::array brace_colors{RED, YELLOW, GREEN, BLUE, MAGENTA};
+    std::size_t color_idx = 0;
 
-    auto in_id = [&](std::size_t i) -> bool {
-        if (!id_cont(at(i)))
-            return false;
-
-        // Walk left while we are in identifier-continue chars.
-        std::size_t j = i;
-        while (j > 0 && id_cont(at(j - 1)))
-        {
-            --j;
-        }
-
-        return id_start(at(j));
-    };
-
-    colors.assign(input.size(), DEFAULT);
-
-    for (auto i = 0uz; i < input.size(); ++i)
+    struct Matched_Bracket
     {
-        // numbers
-        if (digit(at(i)) && not in_id(i))
-            colors[i] = NUMCOLOR;
+        char open;
+        char close;
+        std::strong_ordering operator<=>(const Matched_Bracket&) const =
+            default;
+    };
+    std::array<std::pair<Matched_Bracket, std::stack<Replxx::Color>>, 3>
+        match_stacks{{
+            {{.open = '(', .close = ')'}, {}},
+            {{.open = '{', .close = '}'}, {}},
+            {{.open = '[', .close = ']'}, {}},
+        }};
 
-        // strings
-        if (auto q = quote(at(i)))
+    void reset()
+    {
+        for (auto& [_, stack] : match_stacks)
+            stack = {};
+        color_idx = 0;
+    }
+
+    void operator()(const std::string& input, Replxx::colors_t& colors)
+    {
+
+        auto at = [&](std::size_t i) -> std::optional<char> {
+            if (i < input.size())
+                return input[i];
+            return std::nullopt;
+        };
+
+        auto in_id = [&](std::size_t i) -> bool {
+            if (!id_cont(at(i)))
+                return false;
+
+            // Walk left while we are in identifier-continue chars.
+            std::size_t j = i;
+            while (j > 0 && id_cont(at(j - 1)))
+            {
+                --j;
+            }
+
+            return id_start(at(j));
+        };
+
+        auto next_color = [&] {
+            auto ret = brace_colors.at(color_idx);
+            color_idx = (color_idx + 1) % brace_colors.size();
+            return ret;
+        };
+
+        colors.assign(input.size(), DEFAULT);
+
+        color_idx = 0;
+
+        for (auto i = 0uz; i < input.size(); ++i)
         {
-            colors[i] = STRINGCOLOR;
-            ++i;
-            while (at(i))
+            for (auto& [match, stack] : match_stacks)
+            {
+                if (at(i) == match.open)
+                {
+                    stack.push(next_color());
+                    colors[i] = stack.top();
+                    break;
+                }
+                else if (at(i) == match.close)
+                {
+                    if (stack.empty())
+                        break;
+                    colors[i] = stack.top();
+                    stack.pop();
+                    break;
+                }
+            }
+
+            // numbers
+            if (digit(at(i)) && not in_id(i))
+                colors[i] = NUMCOLOR;
+
+            // strings
+            if (auto q = quote(at(i)))
             {
                 colors[i] = STRINGCOLOR;
-                if (at(i) == q)
-                {
-                    // find out if this quote is actually escaped
-                    std::size_t k = i;
-                    std::size_t slashes = 0;
-                    while (k > 0 && at(k - 1) == '\\')
-                    {
-                        --k;
-                        ++slashes;
-                    }
-                    if (slashes % 2 == 0)
-                        break; // even == escaped so ignore
-                }
                 ++i;
+                while (at(i))
+                {
+                    colors[i] = STRINGCOLOR;
+                    if (at(i) == q)
+                    {
+                        // find out if this quote is actually escaped
+                        std::size_t k = i;
+                        std::size_t slashes = 0;
+                        while (k > 0 && at(k - 1) == '\\')
+                        {
+                            --k;
+                            ++slashes;
+                        }
+                        if (slashes % 2 == 0)
+                            break; // even == escaped so ignore
+                    }
+                    ++i;
+                }
+            }
+
+            // keywords
+            if (id_start(at(i)) && !id_start(at(i - 1)))
+            {
+                auto start = i;
+                auto end = i + 1;
+                while (id_start(at(end)))
+                    ++end;
+                auto substr =
+                    std::string_view{input.data() + start, end - start};
+                if (keywords.contains(substr))
+                    for (auto brush = start; brush < end; ++brush)
+                        colors[brush] = KWCOLOR;
             }
         }
-
-        // keywords
-        if (id_start(at(i)) && !id_start(at(i - 1)))
-        {
-            auto start = i;
-            auto end = i + 1;
-            while (id_start(at(end)))
-                ++end;
-            auto substr = std::string_view{input.data() + start, end - start};
-            if (keywords.contains(substr))
-                for (auto brush = start; brush < end; ++brush)
-                    colors[brush] = KWCOLOR;
-        }
     }
-}
+};
 
 struct Completion_Callbacks
 {
@@ -300,7 +358,9 @@ void repl(frst::Symbol_Table& symbols)
     rx.bind_key_internal(Replxx::KEY::control('P'), "history_previous");
     rx.bind_key_internal(Replxx::KEY::control('N'), "history_next");
 
-    rx.set_highlighter_callback(&highlight_callback);
+    Highlight_Callback highlight_callback;
+    highlight_callback.reset();
+    rx.set_highlighter_callback(highlight_callback);
 
     Completion_Callbacks completion_callbacks{&symbols};
     rx.set_completion_callback(completion_callbacks);
@@ -324,5 +384,6 @@ void repl(frst::Symbol_Table& symbols)
 
         repl_exec(parse_result.value(), symbols, rx);
         rx.history_add(*line);
+        highlight_callback.reset();
     }
 }
