@@ -26,13 +26,13 @@ BUILTIN(assert)
     REQUIRE_ARGS("assert", PARAM("condition", ANY),
                  OPTIONAL(PARAM("message", TYPES(String))));
 
-    if (not args.at(0)->as<Bool>().value())
+    if (not COERCE(0, Bool))
     {
         if (args.size() == 1)
             throw Frost_Recoverable_Error{"Failed assertion"};
         else
-            throw Frost_Recoverable_Error{fmt::format(
-                "Failed assertion: {}", args.at(1)->raw_get<String>())};
+            throw Frost_Recoverable_Error{
+                fmt::format("Failed assertion: {}", GET(1, String))};
     }
     return args.at(0);
 }

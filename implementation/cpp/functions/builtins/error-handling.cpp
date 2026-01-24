@@ -18,10 +18,9 @@ BUILTIN(try_call)
 
     try
     {
-        return Value::create(
-            Map{{Value::create("value"s), args.at(0)->raw_get<Function>()->call(
-                                              args.at(1)->raw_get<Array>())},
-                {Value::create("ok"s), Value::create(true)}});
+        return Value::create(Map{
+            {Value::create("value"s), GET(0, Function)->call(GET(1, Array))},
+            {Value::create("ok"s), Value::create(true)}});
     }
     catch (const Frost_Recoverable_Error& err)
     {

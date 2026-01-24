@@ -12,8 +12,8 @@ BUILTIN(split)
 {
     REQUIRE_ARGS("split", TYPES(String), TYPES(String));
 
-    const auto& target = args.at(0)->raw_get<String>();
-    const auto& split_on = args.at(1)->raw_get<String>();
+    const auto& target = GET(0, String);
+    const auto& split_on = GET(1, String);
 
     if (split_on.size() != 1)
     {
@@ -44,8 +44,7 @@ BUILTIN(split)
     {                                                                          \
         REQUIRE_ARGS(#method, TYPES(String), TYPES(String));                   \
                                                                                \
-        return Value::create(args.at(0)->raw_get<String>().method(             \
-            args.at(1)->raw_get<String>()));                                   \
+        return Value::create(GET(0, String).method(GET(1, String)));           \
     }
 
 X_BINARY_PASSTHROUGH

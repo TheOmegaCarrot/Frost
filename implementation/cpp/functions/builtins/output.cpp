@@ -108,8 +108,7 @@ BUILTIN(mformat)
     REQUIRE_ARGS("mformat", PARAM("format string", TYPES(String)),
                  PARAM("replacement map", TYPES(Map)));
 
-    return Value::create(mformat_impl(args.at(0)->raw_get<String>(),
-                                      args.at(1)->raw_get<Map>()));
+    return Value::create(mformat_impl(GET(0, String), GET(1, Map)));
 }
 
 BUILTIN(mprint)
@@ -117,9 +116,7 @@ BUILTIN(mprint)
     REQUIRE_ARGS("mprint", PARAM("format string", TYPES(String)),
                  PARAM("replacement map", TYPES(Map)));
 
-    std::puts(
-        mformat_impl(args.at(0)->raw_get<String>(), args.at(1)->raw_get<Map>())
-            .c_str());
+    std::puts(mformat_impl(GET(0, String), GET(1, Map)).c_str());
 
     return Value::null();
 }

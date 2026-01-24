@@ -10,7 +10,7 @@ BUILTIN(pack_call)
             PARAM("args", TYPES(Array)));
     // clang-format on
 
-    return args.at(0)->raw_get<Function>()->call(args.at(1)->raw_get<Array>());
+    return GET(0, Function)->call(GET(1, Array));
 }
 
 void inject_pack_call(Symbol_Table& table)

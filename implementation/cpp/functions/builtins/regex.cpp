@@ -20,11 +20,11 @@ namespace re
 namespace
 {
 
-boost::regex regex(const Value_Ptr& re)
+boost::regex regex(const String& re)
 {
     try
     {
-        return boost::regex{re->raw_get<String>()};
+        return boost::regex{re};
     }
     catch (const boost::regex_error& e)
     {
@@ -39,9 +39,9 @@ BUILTIN(matches)
     REQUIRE_ARGS("re.matches", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
 
-    auto re = regex(args.at(1));
+    auto re = regex(GET(1, String));
 
-    return Value::create(boost::regex_match(args.at(0)->raw_get<String>(), re));
+    return Value::create(boost::regex_match(GET(0, String), re));
 }
 
 BUILTIN(contains)
@@ -49,10 +49,9 @@ BUILTIN(contains)
     REQUIRE_ARGS("re.contains", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
 
-    auto re = regex(args.at(1));
+    auto re = regex(GET(1, String));
 
-    return Value::create(
-        boost::regex_search(args.at(0)->raw_get<String>(), re));
+    return Value::create(boost::regex_search(GET(0, String), re));
 }
 
 BUILTIN(replace)
@@ -61,10 +60,10 @@ BUILTIN(replace)
                  PARAM("regex", TYPES(String)),
                  PARAM("replacement", TYPES(String)));
 
-    auto re = regex(args.at(1));
+    auto re = regex(GET(1, String));
 
-    return Value::create(boost::regex_replace(args.at(0)->raw_get<String>(), re,
-                                              args.at(2)->raw_get<String>()));
+    return Value::create(
+        boost::regex_replace(GET(0, String), re, GET(2, String)));
 }
 
 namespace
@@ -116,10 +115,10 @@ BUILTIN(scan_matches)
     } static const keys;
 
     using itr = std::string::const_iterator;
-    auto re = regex(args.at(1));
-    const auto& input = args.at(0)->raw_get<String>();
+    auto re = regex(GET(1, String));
+    const auto& input = GET(0, String);
 
-    auto group_names = extract_group_names(args.at(1)->raw_get<String>());
+    auto group_names = extract_group_names(GET(1, String));
 
     Array iterations{};
     Map result{};

@@ -15,15 +15,15 @@ constexpr static auto array_array =
         return Value::create(Array{std::from_range, range});
     });
 
-#define ARR const auto& arr = args.at(0)->raw_get<Array>()
+#define ARR const auto& arr = GET(0, Array)
 
 #define ARR_NUM                                                                \
     ARR;                                                                       \
-    auto num = args.at(1)->raw_get<Int>()
+    auto num = GET(1, Int)
 
 #define ARR_FN                                                                 \
     ARR;                                                                       \
-    const auto& fn = args.at(1)->raw_get<Function>()
+    const auto& fn = GET(1, Function)
 
 #define GT0_NUM(NAME)                                                          \
     if (num <= 0)                                                              \
@@ -248,8 +248,7 @@ BUILTIN(transform)
     REQUIRE_ARGS("transform", PARAM("structure", TYPES(Array, Map)),
                  TYPES(Function));
 
-    return Value::do_map(args.at(0), args.at(1)->raw_get<Function>(),
-                         "Builtin transform");
+    return Value::do_map(args.at(0), GET(1, Function), "Builtin transform");
 }
 
 BUILTIN(select)
@@ -257,7 +256,7 @@ BUILTIN(select)
     REQUIRE_ARGS("select", PARAM("structure", TYPES(Array, Map)),
                  TYPES(Function));
 
-    return Value::do_filter(args.at(0), args.at(1)->raw_get<Function>());
+    return Value::do_filter(args.at(0), GET(1, Function));
 }
 
 BUILTIN(fold)
@@ -265,7 +264,7 @@ BUILTIN(fold)
     REQUIRE_ARGS("fold", PARAM("structure", TYPES(Array, Map)), TYPES(Function),
                  OPTIONAL(PARAM("init", ANY)));
 
-    return Value::do_reduce(args.at(0), args.at(1)->raw_get<Function>(),
+    return Value::do_reduce(args.at(0), GET(1, Function),
                             [&] -> std::optional<Value_Ptr> {
                                 if (args.size() == 3)
                                     return args.at(2);

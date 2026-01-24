@@ -16,9 +16,8 @@ BUILTIN(keys)
 {
     REQUIRE_ARGS("keys", TYPES(Map));
 
-    return Value::create(args.at(0)->raw_get<Map>()
-                         | std::views::keys
-                         | std::ranges::to<std::vector>());
+    return Value::create(
+        GET(0, Map) | std::views::keys | std::ranges::to<std::vector>());
 }
 
 // Map -> array of values
@@ -27,9 +26,8 @@ BUILTIN(values)
 {
     REQUIRE_ARGS("values", TYPES(Map));
 
-    return Value::create(args.at(0)->raw_get<Map>()
-                         | std::views::values
-                         | std::ranges::to<std::vector>());
+    return Value::create(
+        GET(0, Map) | std::views::values | std::ranges::to<std::vector>());
 }
 
 BUILTIN(len)
@@ -62,7 +60,7 @@ BUILTIN(range)
     {
         REQUIRE_ARGS("range", PARAM("upper bound", TYPES(Int)));
 
-        auto upper_bound = args.at(0)->raw_get<Int>();
+        auto upper_bound = GET(0, Int);
 
         if (upper_bound <= 0)
             return Value::create(Array{});
@@ -75,8 +73,8 @@ BUILTIN(range)
         REQUIRE_ARGS("range", PARAM("lower bound", TYPES(Int)),
                      PARAM("upper bound", TYPES(Int)));
 
-        auto lower_bound = args.at(0)->raw_get<Int>();
-        auto upper_bound = args.at(1)->raw_get<Int>();
+        auto lower_bound = GET(0, Int);
+        auto upper_bound = GET(1, Int);
 
         if (upper_bound <= lower_bound)
             return Value::create(Array{});
