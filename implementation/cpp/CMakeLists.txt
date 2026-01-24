@@ -7,6 +7,7 @@ add_subdirectory(prelude/)
 
 add_executable( frost
     frost.cpp
+    repl.cpp
 )
 
 target_link_libraries( frost
