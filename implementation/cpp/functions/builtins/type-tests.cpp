@@ -1,4 +1,5 @@
 #include "builtins-common.hpp"
+#include "frost/builtin.hpp"
 
 namespace frst
 {
@@ -6,7 +7,7 @@ namespace frst
 // arity is pre-checked by Builtin::call
 
 template <Frost_Type T>
-Value_Ptr is_impl(builtin_args_t args)
+BUILTIN(is_impl)
 {
     return Value::create(args.at(0)->is<T>());
 }
@@ -20,24 +21,29 @@ auto is_array = is_impl<Array>;
 auto is_map = is_impl<Map>;
 auto is_function = is_impl<Function>;
 
-Value_Ptr is_nonnull(builtin_args_t args)
+BUILTIN(is_nonnull)
 {
     return is_null(args)->logical_not();
 }
 
-Value_Ptr is_numeric(builtin_args_t args)
+BUILTIN(is_numeric)
 {
     return Value::create(args.at(0)->is_numeric());
 }
 
-Value_Ptr is_primitive(builtin_args_t args)
+BUILTIN(is_primitive)
 {
     return Value::create(args.at(0)->is_primitive());
 }
 
-Value_Ptr is_structured(builtin_args_t args)
+BUILTIN(is_structured)
 {
     return Value::create(args.at(0)->is_structured());
+}
+
+BUILTIN(type)
+{
+    return Value::create(String{args.at(0)->type_name()});
 }
 
 void inject_type_checks(Symbol_Table& table)
@@ -55,6 +61,7 @@ void inject_type_checks(Symbol_Table& table)
     INJECT(is_numeric, 1, 1);
     INJECT(is_primitive, 1, 1);
     INJECT(is_structured, 1, 1);
+    INJECT(type, 1, 1);
 }
 
 } // namespace frst

@@ -36,7 +36,7 @@ namespace frst
     X(expm1)
 
 #define X(FN)                                                                  \
-    Value_Ptr FN(builtin_args_t args)                                          \
+    BUILTIN(FN)                                                                \
     {                                                                          \
         REQUIRE_ARGS(#FN, TYPES(Int, Float));                                  \
                                                                                \
@@ -54,7 +54,7 @@ X_UNARY_MATH_FLOAT
     X(atan2)
 
 #define X(FN)                                                                  \
-    Value_Ptr FN(builtin_args_t args)                                          \
+    BUILTIN(FN)                                                                \
     {                                                                          \
         REQUIRE_ARGS(#FN, TYPES(Int, Float), TYPES(Int, Float));               \
         return Value::create(auto{std::FN(args.at(0)->as<Float>().value(),     \
@@ -65,7 +65,7 @@ X_BINARY_MATH_FLOAT
 
 #undef X
 
-Value_Ptr abs(builtin_args_t args)
+BUILTIN(abs)
 {
     REQUIRE_ARGS("abs", TYPES(Int, Float));
 
@@ -79,14 +79,14 @@ Value_Ptr abs(builtin_args_t args)
     THROW_UNREACHABLE;
 }
 
-Value_Ptr round(builtin_args_t args)
+BUILTIN(round)
 {
     REQUIRE_ARGS("round", TYPES(Int, Float));
 
     return Value::create(std::lround(args.at(0)->as<Float>().value()));
 }
 
-Value_Ptr hypot(builtin_args_t args)
+BUILTIN(hypot)
 {
     REQUIRE_ARGS("hypot", TYPES(Int, Float), TYPES(Int, Float),
                  OPTIONAL(TYPES(Int, Float)));
@@ -106,7 +106,7 @@ Value_Ptr hypot(builtin_args_t args)
     THROW_UNREACHABLE;
 }
 
-Value_Ptr mod(builtin_args_t args)
+BUILTIN(mod)
 {
     REQUIRE_ARGS("mod", TYPES(Int), TYPES(Int));
 

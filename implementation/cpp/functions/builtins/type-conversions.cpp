@@ -4,17 +4,17 @@
 
 namespace frst
 {
-Value_Ptr to_string(builtin_args_t args)
+BUILTIN(to_string)
 {
     return args.at(0)->to_string();
 }
 
-Value_Ptr to_int(builtin_args_t args)
+BUILTIN(to_int)
 {
     return args.at(0)->to_int();
 }
 
-Value_Ptr to_float(builtin_args_t args)
+BUILTIN(to_float)
 {
     return args.at(0)->to_float();
 }

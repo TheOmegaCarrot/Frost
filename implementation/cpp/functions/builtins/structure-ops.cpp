@@ -12,7 +12,7 @@ namespace frst
 
 // Map -> array of keys
 // basically `map a_map with fn (k, v) -> { k }`
-Value_Ptr keys(builtin_args_t args)
+BUILTIN(keys)
 {
     REQUIRE_ARGS("keys", TYPES(Map));
 
@@ -23,7 +23,7 @@ Value_Ptr keys(builtin_args_t args)
 
 // Map -> array of values
 // basically `map a_map with fn (k, v) -> { b }`
-Value_Ptr values(builtin_args_t args)
+BUILTIN(values)
 {
     REQUIRE_ARGS("values", TYPES(Map));
 
@@ -32,7 +32,7 @@ Value_Ptr values(builtin_args_t args)
                          | std::ranges::to<std::vector>());
 }
 
-Value_Ptr len(builtin_args_t args)
+BUILTIN(len)
 {
     REQUIRE_ARGS("len", TYPES(Map, Array, String));
 
@@ -52,7 +52,7 @@ Value_Ptr len(builtin_args_t args)
     THROW_UNREACHABLE;
 }
 
-Value_Ptr range(builtin_args_t args)
+BUILTIN(range)
 {
     using std::views::iota, std::views::transform, std::ranges::to;
     constexpr auto make = [](Int arg) {

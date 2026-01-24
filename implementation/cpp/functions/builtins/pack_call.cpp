@@ -2,7 +2,7 @@
 
 namespace frst
 {
-Value_Ptr pack_call(builtin_args_t args)
+BUILTIN(pack_call)
 {
     // clang-format off
     REQUIRE_ARGS("pack_call",

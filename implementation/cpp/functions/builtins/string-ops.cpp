@@ -8,7 +8,7 @@
 namespace frst
 {
 
-Value_Ptr split(builtin_args_t args)
+BUILTIN(split)
 {
     REQUIRE_ARGS("split", TYPES(String), TYPES(String));
 
@@ -40,7 +40,7 @@ Value_Ptr split(builtin_args_t args)
     X(ends_with)
 
 #define X(method)                                                              \
-    Value_Ptr method(builtin_args_t args)                                      \
+    BUILTIN(method)                                                            \
     {                                                                          \
         REQUIRE_ARGS(#method, TYPES(String), TYPES(String));                   \
                                                                                \

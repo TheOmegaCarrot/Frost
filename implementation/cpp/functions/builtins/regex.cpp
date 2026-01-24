@@ -34,7 +34,7 @@ boost::regex regex(const Value_Ptr& re)
 
 } // namespace
 
-Value_Ptr matches(builtin_args_t args)
+BUILTIN(matches)
 {
     REQUIRE_ARGS("re.matches", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
@@ -44,7 +44,7 @@ Value_Ptr matches(builtin_args_t args)
     return Value::create(boost::regex_match(args.at(0)->raw_get<String>(), re));
 }
 
-Value_Ptr contains(builtin_args_t args)
+BUILTIN(contains)
 {
     REQUIRE_ARGS("re.contains", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
@@ -55,7 +55,7 @@ Value_Ptr contains(builtin_args_t args)
         boost::regex_search(args.at(0)->raw_get<String>(), re));
 }
 
-Value_Ptr replace(builtin_args_t args)
+BUILTIN(replace)
 {
     REQUIRE_ARGS("re.replace", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)),
@@ -97,7 +97,7 @@ std::optional<std::vector<std::string>> extract_group_names(
 
 } // namespace
 
-Value_Ptr scan_matches(builtin_args_t args)
+BUILTIN(scan_matches)
 {
     REQUIRE_ARGS("re.scan_matches", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));

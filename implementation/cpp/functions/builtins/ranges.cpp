@@ -38,7 +38,7 @@ constexpr static auto array_array =
 #define DIRECT_NUM_IMPL(NAME)                                                  \
     return Value::create(arr | std::views::NAME(num) | std::ranges::to<Array>())
 
-Value_Ptr stride(builtin_args_t args)
+BUILTIN(stride)
 {
     REQUIRE_ARGS("stride", TYPES(Array), TYPES(Int));
 
@@ -48,7 +48,7 @@ Value_Ptr stride(builtin_args_t args)
     DIRECT_NUM_IMPL(stride);
 }
 
-Value_Ptr take(builtin_args_t args)
+BUILTIN(take)
 {
     REQUIRE_ARGS("take", TYPES(Array), TYPES(Int));
 
@@ -58,7 +58,7 @@ Value_Ptr take(builtin_args_t args)
     DIRECT_NUM_IMPL(take);
 }
 
-Value_Ptr drop(builtin_args_t args)
+BUILTIN(drop)
 {
     REQUIRE_ARGS("drop", TYPES(Array), TYPES(Int));
 
@@ -72,7 +72,7 @@ Value_Ptr drop(builtin_args_t args)
     return Value::create(                                                      \
         arr | std::views::NAME(num) | array_array | std::ranges::to<Array>());
 
-Value_Ptr slide(builtin_args_t args)
+BUILTIN(slide)
 {
     REQUIRE_ARGS("slide", TYPES(Array), TYPES(Int));
 
@@ -82,7 +82,7 @@ Value_Ptr slide(builtin_args_t args)
     REWRAP_IMPL(slide);
 }
 
-Value_Ptr chunk(builtin_args_t args)
+BUILTIN(chunk)
 {
     REQUIRE_ARGS("chunk", TYPES(Array), TYPES(Int));
 
@@ -95,7 +95,7 @@ Value_Ptr chunk(builtin_args_t args)
 #define DIRECT_NONE_IMPL(NAME)                                                 \
     return Value::create(arr | std::views::NAME | std::ranges::to<Array>());
 
-Value_Ptr reverse(builtin_args_t args)
+BUILTIN(reverse)
 {
     REQUIRE_ARGS("reverse", TYPES(Array));
 
@@ -113,7 +113,7 @@ Value_Ptr reverse(builtin_args_t args)
 
 // TODO: {take,drop}_while can evaluate the predicate multiple times
 //       per element
-Value_Ptr take_while(builtin_args_t args)
+BUILTIN(take_while)
 {
     REQUIRE_ARGS("take_while", TYPES(Array), TYPES(Function));
 
@@ -122,7 +122,7 @@ Value_Ptr take_while(builtin_args_t args)
     PRED_IMPL(take_while);
 }
 
-Value_Ptr drop_while(builtin_args_t args)
+BUILTIN(drop_while)
 {
     REQUIRE_ARGS("drop_while", TYPES(Array), TYPES(Function));
 
@@ -131,7 +131,7 @@ Value_Ptr drop_while(builtin_args_t args)
     PRED_IMPL(drop_while);
 }
 
-Value_Ptr chunk_by(builtin_args_t args)
+BUILTIN(chunk_by)
 {
     REQUIRE_ARGS("chunk_by", TYPES(Array), TYPES(Function));
 
@@ -148,7 +148,7 @@ Value_Ptr chunk_by(builtin_args_t args)
     ;
 }
 
-Value_Ptr zip(builtin_args_t args)
+BUILTIN(zip)
 {
     UNIFORM_VARIADIC(zip, Array);
 
@@ -179,7 +179,7 @@ Value_Ptr zip(builtin_args_t args)
     return Value::create(std::move(result));
 }
 
-Value_Ptr xprod(builtin_args_t args)
+BUILTIN(xprod)
 {
     UNIFORM_VARIADIC(xprod, Array);
 
@@ -243,7 +243,7 @@ Value_Ptr xprod(builtin_args_t args)
     return Value::create(std::move(result));
 }
 
-Value_Ptr transform(builtin_args_t args)
+BUILTIN(transform)
 {
     REQUIRE_ARGS("transform", PARAM("structure", TYPES(Array, Map)),
                  TYPES(Function));
@@ -252,7 +252,7 @@ Value_Ptr transform(builtin_args_t args)
                          "Builtin transform");
 }
 
-Value_Ptr select(builtin_args_t args)
+BUILTIN(select)
 {
     REQUIRE_ARGS("select", PARAM("structure", TYPES(Array, Map)),
                  TYPES(Function));
@@ -260,7 +260,7 @@ Value_Ptr select(builtin_args_t args)
     return Value::do_filter(args.at(0), args.at(1)->raw_get<Function>());
 }
 
-Value_Ptr fold(builtin_args_t args)
+BUILTIN(fold)
 {
     REQUIRE_ARGS("fold", PARAM("structure", TYPES(Array, Map)), TYPES(Function),
                  OPTIONAL(PARAM("init", ANY)));

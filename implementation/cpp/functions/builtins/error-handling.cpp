@@ -8,7 +8,7 @@ using namespace std::literals;
 namespace frst
 {
 
-Value_Ptr try_call(builtin_args_t args)
+BUILTIN(try_call)
 {
     // clang-format off
     REQUIRE_ARGS("try_call",

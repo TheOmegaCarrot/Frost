@@ -21,7 +21,7 @@ namespace frst
     X(greater_than_or_equal, greater_than_or_equal)
 
 #define X(frost_name, internal_name)                                           \
-    Value_Ptr frost_name(builtin_args_t args)                                  \
+    BUILTIN(frost_name)                                                        \
     {                                                                          \
         return Value::internal_name(args.at(0), args.at(1));                   \
     }
@@ -30,7 +30,7 @@ X_FREE_BINOP
 
 #undef X
 
-Value_Ptr deep_equal(builtin_args_t args)
+BUILTIN(deep_equal)
 {
     return Value::deep_equal(args.at(0), args.at(1));
 }

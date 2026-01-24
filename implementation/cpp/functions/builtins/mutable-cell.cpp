@@ -32,7 +32,7 @@ Value_Ptr forbid_cycle(Value_Ptr value)
     return value;
 }
 
-Value_Ptr mutable_cell(builtin_args_t args)
+BUILTIN(mutable_cell)
 {
     struct Wrapper
     {

@@ -6,19 +6,22 @@
 
 #include <array>
 #include <cstddef>
+#include <ranges>
 #include <string_view>
 
-#define BUILTIN(NAME, MIN_ARITY, MAX_ARITY)                                    \
+#define BUILTIN(NAME) Value_Ptr NAME(builtin_args_t args)
+
+#define MAKE_BUILTIN(NAME, MIN_ARITY, MAX_ARITY)                               \
     Value::create(Function{std::make_shared<Builtin>(                          \
         NAME, #NAME, Builtin::Arity{.min = MIN_ARITY, .max = MAX_ARITY})})
 
 #define INJECT(NAME, MIN_ARITY, MAX_ARITY)                                     \
-    table.define(#NAME, BUILTIN(NAME, MIN_ARITY, MAX_ARITY))
+    table.define(#NAME, MAKE_BUILTIN(NAME, MIN_ARITY, MAX_ARITY))
 
 #define INJECT_V(NAME, MIN_ARITY) INJECT(NAME, MIN_ARITY, std::nullopt)
 
 #define ENTRY(NAME, MIN_ARITY, MAX_ARITY)                                      \
-    {Value::create(String{#NAME}), BUILTIN(NAME, MIN_ARITY, MAX_ARITY)}
+    {Value::create(String{#NAME}), MAKE_BUILTIN(NAME, MIN_ARITY, MAX_ARITY)}
 
 #define INJECT_MAP(NAME, ...)                                                  \
     table.define(#NAME, Value::create(Map{__VA_ARGS__}));
@@ -30,9 +33,6 @@
                 "Function " #NAME " requires " #TYPE " for all arguments, "    \
                 "got {} for argument {}",                                      \
                 arg->type_name(), i)};
-
-// Below is a GPT-generated boilerplate generation system for type-checking
-// arguments to builtins
 
 namespace frst::builtin_detail
 {
@@ -80,14 +80,11 @@ std::string expected_list()
     else
     {
         std::array<std::string_view, sizeof...(Ts)> names{type_str<Ts>()...};
-        std::string out;
-        for (std::size_t i = 0; i < names.size(); ++i)
-        {
-            if (i > 0)
-                out += " or ";
-            out += names[i];
-        }
-        return out;
+
+        using namespace std::literals;
+        return names
+               | std::views::join_with(" or "sv)
+               | std::ranges::to<std::string>();
     }
 }
 

@@ -6,7 +6,7 @@
 namespace frst
 {
 
-Value_Ptr debug_dump(builtin_args_t args)
+BUILTIN(debug_dump)
 {
     if (const auto& arg = args.at(0); arg->is<Function>())
     {
@@ -21,7 +21,7 @@ Value_Ptr debug_dump(builtin_args_t args)
 #ifdef assert
 #undef assert
 #endif
-Value_Ptr assert(builtin_args_t args)
+BUILTIN(assert)
 {
     REQUIRE_ARGS("assert", PARAM("condition", ANY),
                  OPTIONAL(PARAM("message", TYPES(String))));

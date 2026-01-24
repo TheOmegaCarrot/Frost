@@ -103,7 +103,7 @@ std::string mformat_impl(const String& fmt_str, const Map& repl_map)
 
 } // namespace
 
-Value_Ptr mformat(builtin_args_t args)
+BUILTIN(mformat)
 {
     REQUIRE_ARGS("mformat", PARAM("format string", TYPES(String)),
                  PARAM("replacement map", TYPES(Map)));
@@ -112,7 +112,7 @@ Value_Ptr mformat(builtin_args_t args)
                                       args.at(1)->raw_get<Map>()));
 }
 
-Value_Ptr mprint(builtin_args_t args)
+BUILTIN(mprint)
 {
     REQUIRE_ARGS("mprint", PARAM("format string", TYPES(String)),
                  PARAM("replacement map", TYPES(Map)));
@@ -124,7 +124,7 @@ Value_Ptr mprint(builtin_args_t args)
     return Value::null();
 }
 
-Value_Ptr print(builtin_args_t args)
+BUILTIN(print)
 {
     std::puts(args.at(0)->to_internal_string().c_str());
 
