@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -214,6 +215,135 @@ TEST_CASE("Parser Define Statements")
         CHECK(y->get<frst::Int>().value() == 2_f);
     }
 
+    SECTION("Array destructure parses as a statement")
+    {
+        auto result = parse("def [a, b] = 1");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto* destructure =
+            dynamic_cast<frst::ast::Array_Destructure*>(program[0].get());
+        REQUIRE(destructure);
+    }
+
+    SECTION("Array destructure supports rest and discard")
+    {
+        auto result = parse("def [_, ...rest] = 1");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto* destructure =
+            dynamic_cast<frst::ast::Array_Destructure*>(program[0].get());
+        REQUIRE(destructure);
+    }
+
+    SECTION("Array destructure allows whitespace around rest")
+    {
+        auto result = parse("def [a, ...  rest] = 1");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto* destructure =
+            dynamic_cast<frst::ast::Array_Destructure*>(program[0].get());
+        REQUIRE(destructure);
+
+        auto result2 = parse("def [...   rest] = 1");
+        REQUIRE(result2);
+        auto program2 = require_program(result2);
+        REQUIRE(program2.size() == 1);
+
+        auto* destructure2 =
+            dynamic_cast<frst::ast::Array_Destructure*>(program2[0].get());
+        REQUIRE(destructure2);
+    }
+
+    SECTION("Array destructure allows whitespace around commas and brackets")
+    {
+        auto result = parse("def [ a , b ] = 1");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto* destructure =
+            dynamic_cast<frst::ast::Array_Destructure*>(program[0].get());
+        REQUIRE(destructure);
+    }
+
+    SECTION("Array destructure allows line breaks and comments")
+    {
+        auto result = parse("def [a,\n b] = 1");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto* destructure =
+            dynamic_cast<frst::ast::Array_Destructure*>(program[0].get());
+        REQUIRE(destructure);
+
+        auto result2 = parse("def [a, # c\n b] = 1");
+        REQUIRE(result2);
+        auto program2 = require_program(result2);
+        REQUIRE(program2.size() == 1);
+
+        auto* destructure2 =
+            dynamic_cast<frst::ast::Array_Destructure*>(program2[0].get());
+        REQUIRE(destructure2);
+    }
+
+    SECTION("Array destructure allows line breaks around rest")
+    {
+        auto result = parse("def [...\n rest] = 1");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto* destructure =
+            dynamic_cast<frst::ast::Array_Destructure*>(program[0].get());
+        REQUIRE(destructure);
+
+        auto result2 = parse("def [a, ... # c\n rest] = 1");
+        REQUIRE(result2);
+        auto program2 = require_program(result2);
+        REQUIRE(program2.size() == 1);
+
+        auto* destructure2 =
+            dynamic_cast<frst::ast::Array_Destructure*>(program2[0].get());
+        REQUIRE(destructure2);
+    }
+
+    SECTION("Array destructure allows rest-only discard")
+    {
+        auto result = parse("def [..._] = 1");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto* destructure =
+            dynamic_cast<frst::ast::Array_Destructure*>(program[0].get());
+        REQUIRE(destructure);
+    }
+
+    SECTION("Array destructure allows empty pattern")
+    {
+        auto result = parse("def [] = 1");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto* destructure =
+            dynamic_cast<frst::ast::Array_Destructure*>(program[0].get());
+        REQUIRE(destructure);
+    }
+
+    SECTION("Array destructure rejects keyword bindings")
+    {
+        CHECK_FALSE(parse("def [if] = 1"));
+        CHECK_FALSE(parse("def [...if] = 1"));
+    }
+
     SECTION("Definitions can use if expressions on the RHS")
     {
         auto result = parse("def x = if true: 1 else: 2 x");
@@ -267,11 +397,43 @@ TEST_CASE("Parser Define Statements")
             "if true: 1 else: def x = 2",
             "if true: def x = 1",
             "if true: 1 elif false: def x = 2 else: 3",
+            "def [a,] = 1",
+            "def [a, b,] = 1",
+            "def [...rest,] = 1",
+            "def [a ...rest] = 1",
+            "def [a, ...] = 1",
+            "def [a, ...rest, b] = 1",
+            "def [...rest, b] = 1",
+            "def [, ...rest] = 1",
+            "def [ , ] = 1",
         };
 
         for (const auto& input : cases)
         {
             CHECK_FALSE(parse(input));
         }
+    }
+
+    SECTION("Array destructure mixes with other statements")
+    {
+        auto result = parse("def [a, b] = [1, 2] def x = 3 x");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 3);
+
+        REQUIRE(dynamic_cast<frst::ast::Array_Destructure*>(program[0].get()));
+        REQUIRE(dynamic_cast<frst::ast::Define*>(program[1].get()));
+        REQUIRE(dynamic_cast<frst::ast::Expression*>(program[2].get()));
+    }
+
+    SECTION("Empty destructure with non-trivial RHS still parses")
+    {
+        auto result = parse("def [] = [1, 2] def x = 3");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        REQUIRE(dynamic_cast<frst::ast::Array_Destructure*>(program[0].get()));
+        REQUIRE(dynamic_cast<frst::ast::Define*>(program[1].get()));
     }
 }
