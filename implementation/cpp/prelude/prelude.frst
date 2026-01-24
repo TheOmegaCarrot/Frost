@@ -1,3 +1,5 @@
-def reject = fn structure, pred -> structure @ select( fn x -> not pred(x) )
-
 def inv = fn f -> fn ...args -> not f @ pack_call(args)
+
+def reject = fn structure, pred -> structure @ select( pred @ inv() )
+
+def curry = fn f, ...outer -> fn ...inner -> f @ pack_call(outer + inner)

@@ -5,6 +5,7 @@ add_library( frost-functions
     builtins/error-handling.cpp
     builtins/free-operators.cpp
     builtins/math.cpp
+    builtins/and_then.cpp
     builtins/mutable-cell.cpp
     builtins/output.cpp
     builtins/pack_call.cpp
