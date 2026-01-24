@@ -153,9 +153,9 @@ void highlight_callback(const std::string& input, Replxx::colors_t& colors)
     }
 }
 
-struct Completion_Callback
+struct Completion_Callbacks
 {
-    Replxx::completions_t operator()(const std::string& input, int& len)
+    std::string_view end_token(const std::string& input)
     {
         auto at = [&](std::size_t i) -> std::optional<char> {
             if (i < input.size())
@@ -167,7 +167,7 @@ struct Completion_Callback
         if (!id_cont(at(i)))
             return {};
 
-        len = 0;
+        int len = 0;
         while (i >= 0 && id_cont(at(i)))
         {
             --i;
@@ -177,8 +177,48 @@ struct Completion_Callback
         if (i >= 0 && id_start(at(i)))
             ++len;
 
-        std::string_view token{input.data() + i + 1,
-                               static_cast<std::size_t>(len)};
+        return std::string_view{input.data() + i + 1,
+                                static_cast<std::size_t>(len)};
+    }
+
+    Replxx::hints_t operator()(const std::string& input, int& len,
+                               Replxx::Color& color)
+    {
+        std::string_view token = end_token(input);
+
+        std::optional<std::string_view> completion;
+
+        for (const auto& candidates : std::views::concat(
+                 keywords, std::views::keys(symbols->debug_table())))
+        {
+            if (candidates.starts_with(token))
+            {
+                if (completion.has_value())
+                    return {};
+
+                completion.emplace(candidates);
+            }
+        }
+
+        if (not completion)
+            return {};
+
+        if (completion->size() == token.size())
+            return {};
+
+        std::string suffix{completion->substr(token.size())};
+
+        len = 0;
+        color = Replxx::Color::BROWN;
+
+        return {std::string{suffix}};
+    }
+
+    Replxx::completions_t operator()(const std::string& input, int& len)
+    {
+        std::string_view token = end_token(input);
+
+        len = token.length();
 
         Replxx::completions_t out;
 
@@ -261,7 +301,10 @@ void repl(frst::Symbol_Table& symbols)
     rx.bind_key_internal(Replxx::KEY::control('N'), "history_next");
 
     rx.set_highlighter_callback(&highlight_callback);
-    rx.set_completion_callback(Completion_Callback{&symbols});
+
+    Completion_Callbacks completion_callbacks{&symbols};
+    rx.set_completion_callback(completion_callbacks);
+    rx.set_hint_callback(completion_callbacks);
 
     while (auto line = read_input_segment(rx))
     {
