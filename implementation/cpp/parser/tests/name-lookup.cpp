@@ -49,7 +49,7 @@ TEST_CASE("Name Lookup")
 
         const Case cases[] = {
             {"foo", "foo"}, {"_bar", "_bar"}, {"a1_b2", "a1_b2"},
-            {"_", "_"},     {"if1", "if1"},
+            {"_a", "_a"},   {"if1", "if1"},
         };
 
         for (const auto& c : cases)

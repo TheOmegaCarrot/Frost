@@ -34,4 +34,9 @@ TEST_CASE("Name Lookup")
 
         CHECK_THROWS(node.evaluate(syms));
     }
+
+    SECTION("Reject _")
+    {
+        CHECK_THROWS(ast::Name_Lookup{"_"});
+    }
 }

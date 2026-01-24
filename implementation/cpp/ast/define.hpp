@@ -19,6 +19,8 @@ class Define final : public Statement
         : name_{std::move(name)}
         , expr_{std::move(expr)}
     {
+        if (name_ == "_")
+            throw Frost_Unrecoverable_Error{"\"_\" is not a valid identifier"};
     }
 
     Define(const Define&) = delete;

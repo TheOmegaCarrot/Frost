@@ -23,6 +23,8 @@ class Name_Lookup final : public Expression
     Name_Lookup(std::string name)
         : name_{std::move(name)}
     {
+        if (name_ == "_")
+            throw Frost_Unrecoverable_Error{"\"_\" is not a valid identifier"};
     }
 
   public:

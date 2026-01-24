@@ -63,4 +63,9 @@ TEST_CASE("Define")
         CHECK_NOTHROW(node.execute(syms));
         CHECK_THROWS(node.execute(syms));
     }
+
+    SECTION("Reject _")
+    {
+        CHECK_THROWS(ast::Define{"_", std::move(expr)});
+    }
 }
