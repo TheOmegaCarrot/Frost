@@ -1,0 +1,19 @@
+#!./frost
+
+def rcurry = fn f, ...outer ->
+                fn ...inner ->
+                    f @ pack_call( inner @ reverse() , outer @ reverse() )
+
+def zcurry2 = fn f, ...outer ->
+                fn ...inner ->
+                    map zip(outer, inner) with fn args -> pack_call(f, args)
+
+;
+
+# I like this rough idea but this only works for two layers
+# chaining zcurry2 results in nonsense
+zcurry2(
+    fn a, b -> [a, b],
+    1, 2, 3, 4
+)('a', 'b', 'c', 'd')
+    @ print()
