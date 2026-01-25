@@ -1,5 +1,3 @@
-#!./frost
-
 def rcurry = fn f, ...outer ->
                 fn ...inner ->
                     f @ pack_call( inner @ reverse() , outer @ reverse() )

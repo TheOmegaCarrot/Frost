@@ -85,11 +85,29 @@ BUILTIN(range)
     }
 }
 
+BUILTIN(nulls)
+{
+    REQUIRE_ARGS("nulls", TYPES(Int));
+
+    const auto count = GET(0, Int);
+
+    if (count < 0)
+    {
+        throw Frost_Recoverable_Error{fmt::format(
+            "Function nulls requires positive argument, got {}", count)};
+    }
+
+    return Value::create(std::views::repeat(Value::null())
+                         | std::views::take(count)
+                         | std::ranges::to<Array>());
+}
+
 void inject_structure_ops(Symbol_Table& table)
 {
     INJECT(keys, 1, 1);
     INJECT(values, 1, 1);
     INJECT(len, 1, 1);
     INJECT(range, 1, 2);
+    INJECT(nulls, 1, 1);
 }
 } // namespace frst
