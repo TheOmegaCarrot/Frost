@@ -1,6 +1,6 @@
 def rcurry = fn f, ...outer ->
                 fn ...inner ->
-                    f @ pack_call( inner @ reverse() , outer @ reverse() )
+                    f @ pack_call( inner @ reverse() + outer @ reverse() )
 
 def zcurry2 = fn f, ...outer ->
                 fn ...inner ->
