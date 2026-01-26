@@ -1,0 +1,13 @@
+if(BUILD_TESTS)
+    set(INTEGRATION_TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    set(INTEGRATION_SCRIPTS
+        smoke.frst
+    )
+    foreach(script ${INTEGRATION_SCRIPTS})
+        get_filename_component(name ${script} NAME_WE)
+        add_test(
+            NAME Frost_Integration_${name}
+            COMMAND $<TARGET_FILE:frost> "${INTEGRATION_TEST_DIR}/${script}"
+        )
+    endforeach()
+endif()

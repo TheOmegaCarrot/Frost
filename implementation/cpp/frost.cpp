@@ -31,7 +31,8 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
     }
     catch (const frst::Frost_Error& err)
     {
-        std::puts(err.what());
+        std::fputs(err.what(), stderr);
+        std::exit(1);
     }
 }
 

@@ -52,3 +52,4 @@ target_link_libraries( frost-common
 )
 
 add_subdirectory(cpp/)
+add_subdirectory(integration-tests/)
