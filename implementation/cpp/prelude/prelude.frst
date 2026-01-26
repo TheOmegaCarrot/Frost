@@ -5,3 +5,5 @@ def reject = fn structure, pred -> structure @ select( pred @ inv() )
 def curry = fn f, ...outer -> fn ...inner -> f @ pack_call(outer + inner)
 
 def collect = fn ...e -> e
+
+def call = fn f, ...args -> pack_call(f, args)

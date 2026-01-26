@@ -705,12 +705,14 @@ struct If
             auto kw_else = LEXY_KEYWORD("else", identifier::base);
 
             auto tail =
-                dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::recurse<Tail>);
+                dsl::opt(dsl::peek(param_ws_nl + (kw_elif | kw_else))
+                         >> param_ws_nl >> dsl::recurse<Tail>);
 
             auto elif_branch =
                 kw_elif
                 >> (dsl::recurse<expression>
                     + dsl::lit_c<':'>
+                    + param_ws_nl
                     + (dsl::must(expression_start_no_nl)
                            .error<expected_if_consequent> >> dsl::
                            recurse<expression>)+tail);
@@ -718,6 +720,7 @@ struct If
             auto else_branch =
                 kw_else
                 >> (dsl::lit_c<':'>
+                    + param_ws_nl
                     + (dsl::must(expression_start_no_nl)
                            .error<expected_if_consequent> >> dsl::
                            recurse<expression>));
@@ -748,10 +751,12 @@ struct If
         auto kw_elif = LEXY_KEYWORD("elif", identifier::base);
         auto kw_else = LEXY_KEYWORD("else", identifier::base);
 
-        auto tail = dsl::opt(dsl::peek(kw_elif | kw_else) >> dsl::p<Tail>);
+        auto tail = dsl::opt(dsl::peek(param_ws_nl + (kw_elif | kw_else))
+                             >> param_ws_nl >> dsl::p<Tail>);
         return kw_if
                >> (dsl::recurse<expression>
                    + dsl::lit_c<':'>
+                   + param_ws_nl
                    + (dsl::must(expression_start_no_nl)
                           .error<expected_if_consequent> >> dsl::
                           recurse<expression>)+tail);

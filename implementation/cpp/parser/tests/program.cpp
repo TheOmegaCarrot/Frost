@@ -1148,6 +1148,41 @@ TEST_CASE("Parser Program")
         REQUIRE(v4->is<frst::Null>());
     }
 
+    SECTION("Multiline if expressions in a program")
+    {
+        auto result = parse("if true:\n"
+                            "1\n"
+                            "else:\n"
+                            "2\n"
+                            "3\n"
+                            "if false:\n"
+                            "1\n"
+                            "elif true:\n"
+                            "2\n"
+                            "else:\n"
+                            "3\n"
+                            "4");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 4);
+
+        frst::Symbol_Table table;
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        auto v3 = evaluate_statement(program[2], table);
+        auto v4 = evaluate_statement(program[3], table);
+
+        REQUIRE(v1->is<frst::Int>());
+        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 3_f);
+        REQUIRE(v3->is<frst::Int>());
+        CHECK(v3->get<frst::Int>().value() == 2_f);
+        REQUIRE(v4->is<frst::Int>());
+        CHECK(v4->get<frst::Int>().value() == 4_f);
+    }
+
     SECTION("Definition statements in a program")
     {
         auto result = parse("def x = 1;\n"
