@@ -187,9 +187,9 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(arr[0]->get<frst::Int>().value() == 9_f);
     }
 
-    SECTION("Elided parameter list tolerates whitespace and comments")
+    SECTION("Elided parameter list tolerates whitespace")
     {
-        auto result = parse("fn a,\n # comment\n b -> a + b");
+        auto result = parse("fn  a ,   b -> a + b");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -328,7 +328,8 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Multiple lambdas as top-level statements parse correctly")
     {
-        auto src = lexy::string_input(std::string_view{"fn -> {} fn() -> {}"});
+        auto src = lexy::string_input(
+            std::string_view{"fn -> {}\nfn() -> {}"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -468,7 +469,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Whitespace between tokens around arrow and body is allowed")
     {
-        auto result = parse("fn()  ->\n { 1 }()");
+        auto result = parse("fn()  -> { 1 }()");
         REQUIRE(result);
         auto expr = require_expression(result);
         frst::Symbol_Table table;
@@ -488,7 +489,7 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 1_f);
     }
 
-    SECTION("Postfix with newline after lambda body is parsed")
+    SECTION("Postfix with newline after lambda body is rejected")
     {
         frst::Symbol_Table table;
         auto arr_val = frst::Value::create(frst::Array{
@@ -497,7 +498,7 @@ TEST_CASE("Parser Lambda Expressions")
         table.define("arr", arr_val);
 
         auto result = parse("fn() -> { arr }\n[0]");
-        REQUIRE(result);
+        REQUIRE_FALSE(result);
     }
 
     SECTION("Lambda can be followed by indexing and dot access after call")
@@ -754,9 +755,9 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 2_f);
     }
 
-    SECTION("Lambda body allows def and expression without semicolons")
+    SECTION("Lambda body allows def and expression separated by semicolons")
     {
-        auto result = parse("fn() -> { def x = 1 x }");
+        auto result = parse("fn() -> { def x = 1; x }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -782,7 +783,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda body allows if expression followed by another statement")
     {
-        auto result = parse("fn() -> { if true: 1 else: 2 3 }");
+        auto result = parse("fn() -> { if true: 1 else: 2; 3 }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -793,9 +794,9 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
 
-    SECTION("Lambda body accepts multiple statements without semicolons")
+    SECTION("Lambda body accepts multiple statements separated by newlines")
     {
-        auto result = parse("fn() -> { 1 2 }");
+        auto result = parse("fn() -> { 1\n2 }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -818,9 +819,10 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 6_f);
     }
 
-    SECTION("Lambda body can contain multiple lambda calls without semicolons")
+    SECTION("Lambda body can contain multiple lambda calls separated by semicolons")
     {
-        auto result = parse("fn() -> { fn() -> { 1 }() fn() -> { 2 }() }");
+        auto result =
+            parse("fn() -> { fn() -> { 1 }(); fn() -> { 2 }() }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -831,9 +833,9 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 2_f);
     }
 
-    SECTION("Lambda body supports multiple defs without semicolons")
+    SECTION("Lambda body supports multiple defs separated by semicolons")
     {
-        auto result = parse("fn() -> { def x = 1 def y = 2 y }");
+        auto result = parse("fn() -> { def x = 1; def y = 2; y }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -894,7 +896,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Whitespace and comments around lambda tokens are allowed")
     {
-        auto result = parse("fn # comment\n ( a )\n ->\n { a }\n (7)");
+        auto result = parse("fn(\n # comment\n a ) -> { a } (7)");
         REQUIRE(result);
         auto expr = require_expression(result);
 

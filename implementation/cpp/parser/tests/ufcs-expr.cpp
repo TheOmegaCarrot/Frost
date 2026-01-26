@@ -264,7 +264,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(out2->get<frst::Bool>().value() == false);
     }
 
-    SECTION("UFCS allows whitespace and newlines around '@'")
+    SECTION("UFCS allows whitespace around '@' but not newlines")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(3_f);
@@ -273,16 +273,18 @@ TEST_CASE("Parser UFCS Expressions")
         auto callable = std::make_shared<RecordingCallable>();
         table.define("f", frst::Value::create(frst::Function{callable}));
 
-        auto result = parse("a\n @  f( )");
+        auto result = parse("a  @  f( )");
         REQUIRE(result);
         auto expr = require_expression(result);
         (void)expr->evaluate(table);
 
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
+
+        CHECK_FALSE(parse("a\n @  f( )"));
     }
 
-    SECTION("UFCS supports whitespace inside callee chains")
+    SECTION("UFCS supports whitespace inside callee chains (no newlines)")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(8_f);
@@ -294,13 +296,15 @@ TEST_CASE("Parser UFCS Expressions")
                     frst::Value::create(frst::Function{callable}));
         table.define("obj", frst::Value::create(std::move(obj)));
 
-        auto result = parse("a @ obj .\n m ( )");
+        auto result = parse("a @ obj . m ( )");
         REQUIRE(result);
         auto expr = require_expression(result);
         (void)expr->evaluate(table);
 
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
+
+        CHECK_FALSE(parse("a @ obj .\n m ( )"));
     }
 
     SECTION("UFCS requires a call expression on the right-hand side")

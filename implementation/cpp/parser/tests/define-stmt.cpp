@@ -86,14 +86,7 @@ TEST_CASE("Parser Define Statements")
         CHECK(value2->get<frst::Int>().value() == 1_f);
 
         auto result3 = parse("def\nx = 2");
-        REQUIRE(result3);
-        auto program3 = require_program(result3);
-        REQUIRE(program3.size() == 1);
-        frst::Symbol_Table table3;
-        program3[0]->execute(table3);
-        auto value3 = table3.lookup("x");
-        REQUIRE(value3->is<frst::Int>());
-        CHECK(value3->get<frst::Int>().value() == 2_f);
+        REQUIRE_FALSE(result3);
     }
 
     SECTION("Identifier variants are accepted")
@@ -115,7 +108,7 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Definitions can be followed by expressions")
     {
-        auto result = parse("def x = 1 x");
+        auto result = parse("def x = 1; x");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -198,7 +191,7 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Multiple definitions parse as separate statements")
     {
-        auto result = parse("def x = 1 def y = 2");
+        auto result = parse("def x = 1; def y = 2");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -346,7 +339,7 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Definitions can use if expressions on the RHS")
     {
-        auto result = parse("def x = if true: 1 else: 2 x");
+        auto result = parse("def x = if true: 1 else: 2; x");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -361,7 +354,7 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Definition followed by if is a separate statement")
     {
-        auto result = parse("def x = 1 if true: 2 else: 3");
+        auto result = parse("def x = 1; if true: 2 else: 3");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -416,7 +409,7 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Array destructure mixes with other statements")
     {
-        auto result = parse("def [a, b] = [1, 2] def x = 3 x");
+        auto result = parse("def [a, b] = [1, 2]; def x = 3; x");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 3);
@@ -428,7 +421,7 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Empty destructure with non-trivial RHS still parses")
     {
-        auto result = parse("def [] = [1, 2] def x = 3");
+        auto result = parse("def [] = [1, 2]; def x = 3");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);

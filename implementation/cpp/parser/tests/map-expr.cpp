@@ -157,16 +157,10 @@ TEST_CASE("Parser Map Expressions")
         CHECK(out3->get<frst::Int>().value() == 1_f);
     }
 
-    SECTION("Postfix can bind across newlines after map expressions")
+    SECTION("Postfix does not bind across newlines after map expressions")
     {
         auto result = parse("(map [1] with fn (x) -> { x })\n[0]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
-
-        frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
-        REQUIRE(out->is<frst::Int>());
-        CHECK(out->get<frst::Int>().value() == 1_f);
+        REQUIRE_FALSE(result);
     }
 
     SECTION("Map expressions can nest other higher-order expressions")

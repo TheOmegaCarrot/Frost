@@ -201,24 +201,9 @@ TEST_CASE("Parser Program")
         CHECK(value->get<frst::Int>().value() == 1_f);
     }
 
-    SECTION("Statements can be adjacent without semicolons")
+    SECTION("Statements require separators")
     {
-        auto result = parse("1 2 3");
-        REQUIRE(result);
-        auto program = require_program(result);
-        REQUIRE(program.size() == 3);
-
-        frst::Symbol_Table table;
-        auto v1 = evaluate_statement(program[0], table);
-        auto v2 = evaluate_statement(program[1], table);
-        auto v3 = evaluate_statement(program[2], table);
-
-        REQUIRE(v1->is<frst::Int>());
-        REQUIRE(v2->is<frst::Int>());
-        REQUIRE(v3->is<frst::Int>());
-        CHECK(v1->get<frst::Int>().value() == 1_f);
-        CHECK(v2->get<frst::Int>().value() == 2_f);
-        CHECK(v3->get<frst::Int>().value() == 3_f);
+        CHECK_FALSE(parse("1 2 3"));
     }
 
     SECTION("Newlines separate statements")
@@ -363,17 +348,9 @@ TEST_CASE("Parser Program")
         REQUIRE(v3->is<frst::Function>());
     }
 
-    SECTION("Statements can follow lambda expressions without separators")
+    SECTION("Statements after lambdas require separators")
     {
-        auto result = parse("fn () -> { 1 } 2");
-        REQUIRE(result);
-        auto program = require_program(result);
-        REQUIRE(program.size() == 2);
-
-        frst::Symbol_Table table;
-        auto v2 = evaluate_statement(program[1], table);
-        REQUIRE(v2->is<frst::Int>());
-        CHECK(v2->get<frst::Int>().value() == 2_f);
+        CHECK_FALSE(parse("fn () -> { 1 } 2"));
     }
 
     SECTION("Definitions with complex right-hand sides")
@@ -382,7 +359,7 @@ TEST_CASE("Parser Program")
                             "def b = [1, 2][0]\n"
                             "def c = %{k: 5}.k\n"
                             "def d = fn (x) -> { x + 1 }(4)\n"
-                            "a b c d");
+                            "a; b; c; d");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 8);
@@ -410,9 +387,9 @@ TEST_CASE("Parser Program")
         CHECK(v4->get<frst::Int>().value() == 5_f);
     }
 
-    SECTION("Definitions without semicolons are separated by keywords")
+    SECTION("Definitions require separators")
     {
-        auto result = parse("def x = 1 def y = 2 x y");
+        auto result = parse("def x = 1; def y = 2; x; y");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 4);
@@ -659,7 +636,7 @@ TEST_CASE("Parser Program")
     SECTION("Statement boundaries with map/filter/reduce")
     {
         {
-            auto result = parse("map [1] with f def x = 1");
+            auto result = parse("map [1] with f; def x = 1");
             REQUIRE(result);
             auto program = require_program(result);
             REQUIRE(program.size() == 2);
@@ -678,7 +655,7 @@ TEST_CASE("Parser Program")
         }
 
         {
-            auto result = parse("def y = map [1] with f z");
+            auto result = parse("def y = map [1] with f; z");
             REQUIRE(result);
             auto program = require_program(result);
             REQUIRE(program.size() == 2);
@@ -706,7 +683,7 @@ TEST_CASE("Parser Program")
                             "if true: map [1] with fn (v) -> { v } else: map "
                             "[2] with fn (v) -> { v };"
                             "foreach [1] with fn (v) -> { v };"
-                            "x[0] y[0] z");
+                            "x[0]; y[0]; z");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 8);
@@ -732,12 +709,12 @@ TEST_CASE("Parser Program")
         CHECK(v3->get<frst::Int>().value() == 3_f);
     }
 
-    SECTION("UFCS allows postfix after newlines")
+    SECTION("UFCS does not allow postfix after newlines")
     {
         auto result = parse("a @ f()\n[0]");
         REQUIRE(result);
         auto program = require_program(result);
-        REQUIRE(program.size() == 1);
+        REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(11_f);
@@ -750,12 +727,14 @@ TEST_CASE("Parser Program")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto v1 = evaluate_statement(program[0], table);
-        CHECK(v1 == a_val);
+        auto v2 = evaluate_statement(program[1], table);
+        REQUIRE(v1->is<frst::Array>());
+        REQUIRE(v2->is<frst::Array>());
     }
 
-    SECTION("If expressions can be followed by definitions without separators")
+    SECTION("If expressions can be followed by definitions with separators")
     {
-        auto result = parse("if a: b else: c def x = 1");
+        auto result = parse("if a: b else: c; def x = 1");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -777,9 +756,9 @@ TEST_CASE("Parser Program")
         CHECK(x_val->get<frst::Int>().value() == 1_f);
     }
 
-    SECTION("Definitions can follow expressions without separators")
+    SECTION("Definitions can follow expressions with separators")
     {
-        auto result = parse("1 def x = 2 x");
+        auto result = parse("1; def x = 2; x");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 3);
@@ -795,25 +774,20 @@ TEST_CASE("Parser Program")
         CHECK(v3->get<frst::Int>().value() == 2_f);
     }
 
-    SECTION("Postfix can cross newlines after lambda expressions")
+    SECTION("Postfix does not cross newlines after lambda expressions")
     {
         auto result = parse("fn () -> { 1 }\n[0]");
         REQUIRE(result);
         auto program = require_program(result);
-        REQUIRE(program.size() == 1);
+        REQUIRE(program.size() == 2);
     }
 
-    SECTION("Postfix can cross newlines after map literals")
+    SECTION("Postfix does not cross newlines after map literals")
     {
         auto result = parse("%{a: 1}\n[\"a\"]");
         REQUIRE(result);
         auto program = require_program(result);
-        REQUIRE(program.size() == 1);
-
-        frst::Symbol_Table table;
-        auto v1 = evaluate_statement(program[0], table);
-        REQUIRE(v1->is<frst::Int>());
-        CHECK(v1->get<frst::Int>().value() == 1_f);
+        REQUIRE(program.size() == 2);
     }
 
     SECTION("Lambda calls can be postfixed by indexing")
@@ -861,7 +835,7 @@ TEST_CASE("Parser Program")
         auto result =
             parse("def make = fn () -> { def y = 1; y }\n"
                   "def choose = if cond: fn () -> { 1 } else: fn () -> { 2 }\n"
-                  "make() choose()");
+                  "make(); choose()");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 4);
@@ -968,7 +942,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Bracketed literals do not swallow following statements")
     {
-        auto result = parse("[1] b\n%{a: 1} b");
+        auto result = parse("[1]; b\n%{a: 1}; b");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 4);
@@ -993,7 +967,7 @@ TEST_CASE("Parser Program")
                             "# mid\n"
                             "def y = %{a: 1,\n# c\nb: 2}\n"
                             "def z = fn () -> { ; ; 3 }\n"
-                            "x y z()");
+                            "x; y; z()");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 6);
@@ -1015,7 +989,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Adjacent map literals are separate statements")
     {
-        auto result = parse("%{a: 1} %{b: 2}");
+        auto result = parse("%{a: 1}\n%{b: 2}");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -1040,7 +1014,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Array literals as adjacent statements")
     {
-        auto result = parse("[1][0] 2");
+        auto result = parse("[1][0]; 2");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -1060,7 +1034,7 @@ TEST_CASE("Parser Program")
         auto result = parse("[]\n[1]");
         REQUIRE(result);
         auto program = require_program(result);
-        REQUIRE(program.size() == 1);
+        REQUIRE(program.size() == 2);
     }
 
     SECTION("Parenthesized expressions are valid statements")
@@ -1214,12 +1188,8 @@ TEST_CASE("Parser Program")
     SECTION("If expressions with comments and whitespace in a program")
     {
         auto result = parse("if true : 1 else : 2\n"
-                            "if true: # c\n"
-                            "1 else: 2\n"
-                            "if false:\n"
-                            "1\n"
-                            "else:\n"
-                            "2\n");
+                            "if true: 1 else: 2\n"
+                            "if false: 1 else: 2\n");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 3);
@@ -1240,7 +1210,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Statements after an if expression are separate statements")
     {
-        auto result = parse("if a: b\nelse: c\nfun()");
+        auto result = parse("if a: b else: c\nfun()");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -1288,14 +1258,13 @@ TEST_CASE("Parser Program")
     SECTION("Pathological postfix whitespace and comments in a program")
     {
         auto result = parse("arr[ # c\n 1 ]\n"
-                            "obj .\n key\n"
+                            "obj.key\n"
                             "f( # c\n )\n"
                             "arr[\n -1\n]\n"
-                            "obj.# c\nkey\n"
-                            "obj .\n inner .\n value\n");
+                            "obj.inner.value\n");
         REQUIRE(result);
         auto program = require_program(result);
-        REQUIRE(program.size() == 6);
+        REQUIRE(program.size() == 5);
 
         frst::Symbol_Table table;
 
@@ -1326,7 +1295,6 @@ TEST_CASE("Parser Program")
         auto v3 = evaluate_statement(program[2], table);
         auto v4 = evaluate_statement(program[3], table);
         auto v5 = evaluate_statement(program[4], table);
-        auto v6 = evaluate_statement(program[5], table);
 
         REQUIRE(v1->is<frst::Int>());
         CHECK(v1->get<frst::Int>().value() == 2_f);
@@ -1337,9 +1305,7 @@ TEST_CASE("Parser Program")
         REQUIRE(v4->is<frst::Int>());
         CHECK(v4->get<frst::Int>().value() == 3_f);
         REQUIRE(v5->is<frst::Int>());
-        CHECK(v5->get<frst::Int>().value() == 7_f);
-        REQUIRE(v6->is<frst::Int>());
-        CHECK(v6->get<frst::Int>().value() == 9_f);
+        CHECK(v5->get<frst::Int>().value() == 9_f);
     }
 
     SECTION("Whitespace and comments are ignored between statements")

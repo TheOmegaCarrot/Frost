@@ -183,16 +183,10 @@ TEST_CASE("Parser Map Literals")
         CHECK(out->get<frst::Int>().value() == 1_f);
     }
 
-    SECTION("Map literals can be followed by postfix across newlines")
+    SECTION("Map literals cannot be followed by postfix across newlines")
     {
         auto result = parse("%{a: 1}\n[\"a\"]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
-
-        frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
-        REQUIRE(out->is<frst::Int>());
-        CHECK(out->get<frst::Int>().value() == 1_f);
+        REQUIRE_FALSE(result);
     }
 
     SECTION("Bracketed identifier keys use the expression value")

@@ -114,9 +114,9 @@ id(map arr with inc)[0];
 (map arr with inc)[0];
 not fn () -> { };
 
-1 2 3;
-def x = 1 def y = 2;
-x y;
+1; 2; 3;
+def x = 1; def y = 2;
+x; y;
 )FROST");
         REQUIRE(result);
         auto program = require_program(result);

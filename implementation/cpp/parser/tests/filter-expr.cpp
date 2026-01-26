@@ -154,16 +154,10 @@ TEST_CASE("Parser Filter Expressions")
         CHECK(out3->get<frst::Int>().value() == 1_f);
     }
 
-    SECTION("Postfix can bind across newlines after filter expressions")
+    SECTION("Postfix does not bind across newlines after filter expressions")
     {
         auto result = parse("(filter [1, 2, 3] with fn (x) -> { x > 1 })\n[0]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
-
-        frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
-        REQUIRE(out->is<frst::Int>());
-        CHECK(out->get<frst::Int>().value() == 2_f);
+        REQUIRE_FALSE(result);
     }
 
     SECTION("Filter expressions can nest other higher-order expressions")

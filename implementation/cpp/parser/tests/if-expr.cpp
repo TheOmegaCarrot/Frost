@@ -263,11 +263,7 @@ TEST_CASE("Parser If Expressions")
         CHECK(value2->get<frst::Int>().value() == 1_f);
 
         auto result3 = parse("if false:\n1\nelse:\n2");
-        REQUIRE(result3);
-        auto expr3 = require_expression(result3);
-        auto value3 = expr3->evaluate(table);
-        REQUIRE(value3->is<frst::Int>());
-        CHECK(value3->get<frst::Int>().value() == 2_f);
+        REQUIRE_FALSE(result3);
     }
 
     SECTION("Keyword prefixes in branches are treated as identifiers")

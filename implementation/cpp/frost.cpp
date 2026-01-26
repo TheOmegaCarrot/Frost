@@ -121,7 +121,7 @@ int main(int argc, const char** argv)
 
     frst::Symbol_Table symbols;
     frst::inject_builtins(symbols);
-    frst::inject_prelude(symbols);
+    // frst::inject_prelude(symbols);
 
     symbols.define("args", frst::Value::create(
                                args_for_frost

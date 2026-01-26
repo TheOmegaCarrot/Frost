@@ -101,7 +101,7 @@ TEST_CASE("Parser Array Literals")
 
     SECTION("Trailing commas are accepted")
     {
-        auto result = parse("[1, 2,]\n");
+        auto result = parse("[1, 2,]");
         REQUIRE(result);
         auto expr = require_expression(result);
 

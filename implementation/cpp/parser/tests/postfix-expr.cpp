@@ -409,11 +409,7 @@ TEST_CASE("Parser Postfix Expressions")
         CHECK(index_out2->get<frst::Int>().value() == 3_f);
 
         auto dot_newlines = parse("obj.\nkey");
-        REQUIRE(dot_newlines);
-        auto dot_expr = require_expression(dot_newlines);
-        auto dot_out = dot_expr->evaluate(table);
-        REQUIRE(dot_out->is<frst::Int>());
-        CHECK(dot_out->get<frst::Int>().value() == 7_f);
+        REQUIRE_FALSE(dot_newlines);
 
         auto dot_comment = parse("obj.# comment\nkey");
         REQUIRE(dot_comment);
@@ -423,11 +419,7 @@ TEST_CASE("Parser Postfix Expressions")
         CHECK(dot_out2->get<frst::Int>().value() == 7_f);
 
         auto chain_spaced = parse("obj .\n inner \n.\n value");
-        REQUIRE(chain_spaced);
-        auto chain_expr = require_expression(chain_spaced);
-        auto chain_out = chain_expr->evaluate(table);
-        REQUIRE(chain_out->is<frst::Int>());
-        CHECK(chain_out->get<frst::Int>().value() == 10_f);
+        REQUIRE_FALSE(chain_spaced);
 
         auto call_empty = parse("f( # comment\n )");
         REQUIRE(call_empty);

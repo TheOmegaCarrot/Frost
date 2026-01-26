@@ -184,17 +184,11 @@ TEST_CASE("Parser Reduce Expressions")
         CHECK(out3->get<frst::Int>().value() == 1_f);
     }
 
-    SECTION("Reduce binds across newlines in larger expressions")
+    SECTION("Reduce does not bind across newlines in larger expressions")
     {
         auto result =
             parse("(reduce [1, 2] with fn (acc, x) -> { acc + x })\n+ 1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
-
-        frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
-        REQUIRE(out->is<frst::Int>());
-        CHECK(out->get<frst::Int>().value() == 4_f);
+        REQUIRE_FALSE(result);
     }
 
     SECTION("Reduce expressions can nest other higher-order expressions")
