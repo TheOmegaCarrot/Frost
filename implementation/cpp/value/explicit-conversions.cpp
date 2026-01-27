@@ -53,7 +53,7 @@ struct To_String_Impl
                            To_Internal_String_Params params = {}) const
     {
         if (params.in_structure)
-            return (std::ostringstream{} << std::quoted(str)).str();
+            return fmt::format("{:?}", str);
         else
             return str;
     }
