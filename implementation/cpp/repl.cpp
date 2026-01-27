@@ -31,8 +31,9 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
         auto* last_statement = ast.back().get();
         if (auto expr_ptr =
                 dynamic_cast<frst::ast::Expression*>(last_statement))
-            rx.print("%s\n",
-                     expr_ptr->evaluate(symbols)->to_internal_string().c_str());
+            rx.print("%s\n", expr_ptr->evaluate(symbols)
+                                 ->to_internal_string({.pretty = true})
+                                 .c_str());
         else
             last_statement->execute(symbols);
     }

@@ -69,6 +69,9 @@ struct To_String_Impl
         const Array& arr,
         [[maybe_unused]] To_Internal_String_Params params = {}) const
     {
+        if (arr.empty())
+            return "[]";
+
         params.in_structure = true;
         ++params.depth;
 
@@ -98,6 +101,9 @@ struct To_String_Impl
         const Map& map,
         [[maybe_unused]] To_Internal_String_Params params = {}) const
     {
+        if (map.empty())
+            return "{}";
+
         params.in_structure = true;
         ++params.depth;
 
