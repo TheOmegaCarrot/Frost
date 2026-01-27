@@ -1,0 +1,11 @@
+def a = 1
+
+def b = (
+    a
+        @plus(2)
+        @plus(3)
+        @plus(4)
+        @plus(5)
+)
+
+assert(b == 15)
