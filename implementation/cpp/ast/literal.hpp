@@ -41,7 +41,8 @@ class Literal final : public Expression
   protected:
     std::string node_label() const final
     {
-        return fmt::format("Literal({})", value_->to_internal_string(true));
+        return fmt::format("Literal({})",
+                           value_->to_internal_string({.in_structure = true}));
     }
 
   private:

@@ -382,6 +382,13 @@ END_COERCIONS
 #undef NO_COERCE
 #undef END_COERCIONS
 
+struct To_Internal_String_Params
+{
+    bool in_structure = false;
+    bool pretty = false;
+    std::size_t depth = 0;
+};
+
 // ==========================================
 // The actual Value class
 // ==========================================
@@ -501,12 +508,18 @@ class Value
 
     // Convert the value to a string as for user-facing output
     [[nodiscard]] std::string to_internal_string(
-        bool in_structure = false) const;
+        To_Internal_String_Params params = {}) const;
 
     // The user-facing to_string function
     [[nodiscard]] Value_Ptr to_string() const
     {
         return create(to_internal_string());
+    }
+
+    // The user-facing to_string function
+    [[nodiscard]] Value_Ptr to_pretty_string() const
+    {
+        return create(to_internal_string({.pretty = true}));
     }
 
     [[nodiscard]] std::optional<Int> to_internal_int() const;

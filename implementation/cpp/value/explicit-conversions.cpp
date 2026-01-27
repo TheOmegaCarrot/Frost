@@ -13,18 +13,20 @@ namespace frst
 
 struct To_String_Impl
 {
-    std::string operator()(const Null&,
-                           [[maybe_unused]] bool in_structure = false) const
+    std::string operator()(
+        const Null&,
+        [[maybe_unused]] To_Internal_String_Params params = {}) const
     {
         return "null";
     }
 
-    std::string operator()(const Int& value,
-                           [[maybe_unused]] bool in_structure = false) const
+    std::string operator()(
+        const Int& integer,
+        [[maybe_unused]] To_Internal_String_Params params = {}) const
     {
         char buf[24]{};
         auto [ptr, err] = std::to_chars(std::ranges::begin(buf),
-                                        std::ranges::end(buf), value);
+                                        std::ranges::end(buf), integer);
         if (err != std::errc{})
             throw Frost_Internal_Error{fmt::format(
                 "Int->String error: {}", std::make_error_code(err).message())};
@@ -32,12 +34,13 @@ struct To_String_Impl
         return buf;
     }
 
-    std::string operator()(const Float& value,
-                           [[maybe_unused]] bool in_structure = false) const
+    std::string operator()(
+        const Float& flt,
+        [[maybe_unused]] To_Internal_String_Params params = {}) const
     {
         char buf[24]{};
-        auto [ptr, err] = std::to_chars(std::ranges::begin(buf),
-                                        std::ranges::end(buf), value);
+        auto [ptr, err] =
+            std::to_chars(std::ranges::begin(buf), std::ranges::end(buf), flt);
         if (err != std::errc{})
             throw Frost_Internal_Error{
                 fmt::format("Float->String error: {}",
@@ -46,61 +49,93 @@ struct To_String_Impl
         return buf;
     }
 
-    std::string operator()(const String& value, bool in_structure = false) const
+    std::string operator()(const String& str,
+                           To_Internal_String_Params params = {}) const
     {
-        if (in_structure)
-            return (std::ostringstream{} << std::quoted(value)).str();
+        if (params.in_structure)
+            return (std::ostringstream{} << std::quoted(str)).str();
         else
-            return value;
+            return str;
     }
 
-    std::string operator()(const Bool& value,
-                           [[maybe_unused]] bool in_structure = false) const
+    std::string operator()(
+        const Bool& b,
+        [[maybe_unused]] To_Internal_String_Params params = {}) const
     {
-        return value ? "true" : "false";
+        return b ? "true" : "false";
     }
 
-    std::string operator()(const Array& value,
-                           [[maybe_unused]] bool in_structure = false) const
+    std::string operator()(
+        const Array& arr,
+        [[maybe_unused]] To_Internal_String_Params params = {}) const
     {
-        auto array_insides = value
-                             | std::views::transform([&](const auto& value) {
-                                   return value->to_internal_string(true);
-                               })
-                             | std::views::join_with(", "sv)
-                             | std::ranges::to<std::string>();
+        params.in_structure = true;
+        ++params.depth;
 
-        return fmt::format("[ {} ]", array_insides);
-    }
+        std::string_view joiner = params.pretty ? ",\n"sv : ", ";
 
-    std::string operator()(const Map& value,
-                           [[maybe_unused]] bool in_structure = false) const
-    {
-        auto map_insides =
-            value
-            | std::views::transform([&](const auto& kv) {
-                  const auto& [k, v] = kv;
-                  return fmt::format(R"([{}]: {})", k->to_internal_string(true),
-                                     v->to_internal_string(true));
+        auto array_insides =
+            arr
+            | std::views::transform([&](const auto& value) {
+                  if (params.pretty)
+                  {
+                      return fmt::format("{: >{}}{}", "", params.depth * 4,
+                                         value->to_internal_string(params));
+                  }
+                  return value->to_internal_string(params);
               })
-            | std::views::join_with(", "sv)
+            | std::views::join_with(joiner)
             | std::ranges::to<std::string>();
 
-        return fmt::format("{{ {} }}", map_insides);
+        if (params.pretty)
+            return fmt::format("[\n{}\n{: >{}}]", array_insides, "",
+                               (params.depth - 1) * 4);
+        else
+            return fmt::format("[ {} ]", array_insides);
     }
 
-    std::string operator()(const Function&,
-                           [[maybe_unused]] bool in_structure = false) const
+    std::string operator()(
+        const Map& map,
+        [[maybe_unused]] To_Internal_String_Params params = {}) const
+    {
+        params.in_structure = true;
+        ++params.depth;
+
+        std::string_view joiner = params.pretty ? ",\n"sv : ", ";
+
+        auto map_insides =
+            map
+            | std::views::transform([&](const auto& kv) {
+                  const auto& [k, v] = kv;
+                  std::size_t indent = params.pretty ? params.depth * 4 : 0;
+
+                  return fmt::format(R"({: >{}}[{}]: {})", "", indent,
+                                     k->to_internal_string(params),
+                                     v->to_internal_string(params));
+              })
+            | std::views::join_with(joiner)
+            | std::ranges::to<std::string>();
+
+        if (params.pretty)
+            return fmt::format("{{\n{}\n{: >{}}}}", map_insides, "",
+                               (params.depth - 1) * 4);
+        else
+            return fmt::format("{{ {} }}", map_insides);
+    }
+
+    std::string operator()(
+        const Function&,
+        [[maybe_unused]] To_Internal_String_Params params = {}) const
     {
         return "<Function>";
     }
 
 } constexpr static to_string_impl;
 
-std::string Value::to_internal_string(bool in_structure) const
+std::string Value::to_internal_string(To_Internal_String_Params params) const
 {
     return value_.visit([&](const auto& value) {
-        return to_string_impl(value, in_structure);
+        return to_string_impl(value, params);
     });
 }
 
