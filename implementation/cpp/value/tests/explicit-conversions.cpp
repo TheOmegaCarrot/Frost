@@ -108,6 +108,17 @@ TEST_CASE("to_pretty_string")
         {Value::create("b"s),
          Value::create(frst::Array{Value::create(2_f), Value::create(3_f)})},
     });
+    auto Map_Escaped = Value::create(frst::Map{
+        {Value::create("k\n"s), Escaped},
+    });
+    auto Array_Empty_Structs = Value::create(frst::Array{
+        Value::create(frst::Array{}),
+        Value::create(frst::Map{}),
+    });
+    auto Map_Empty_Structs = Value::create(frst::Map{
+        {Value::create("arr"s), Value::create(frst::Array{})},
+        {Value::create("map"s), Value::create(frst::Map{})},
+    });
 
     CHECK(Empty_Array->to_internal_string({.pretty = true}) == "[]");
     CHECK(Empty_Map->to_internal_string({.pretty = true}) == "{}");
@@ -124,6 +135,20 @@ TEST_CASE("to_pretty_string")
         2,
         3
     ]
+})");
+    CHECK(Map_Escaped->to_internal_string({.pretty = true})
+          == R"({
+    ["k\n"]: "line1\nline2\t\"x\""
+})");
+    CHECK(Array_Empty_Structs->to_internal_string({.pretty = true})
+          == R"([
+    [],
+    {}
+])");
+    CHECK(Map_Empty_Structs->to_internal_string({.pretty = true})
+          == R"({
+    ["arr"]: [],
+    ["map"]: {}
 })");
 
     auto pretty_array = Array->to_pretty_string();
