@@ -644,15 +644,15 @@ struct Reduce
             dsl::opt(dsl::peek(param_ws_nl + kw_init)
                      >> (param_ws_nl + kw_init
                          + param_ws_nl + dsl::lit_c<':'> + param_ws_nl
-                         + (dsl::must(expression_start_nl)
+                         + (dsl::must(expression_start_no_nl)
                                 .error<expected_init_expression> >> dsl::
-                                recurse<expression_nl>)));
+                                recurse<expression>)));
         return kw_reduce
-               >> (param_ws_nl + dsl::recurse<expression_nl> + param_ws_nl
+               >> (param_ws_nl + dsl::recurse<expression> + param_ws_nl
                    + kw_with + param_ws_nl
-                   + (dsl::must(expression_start_nl)
+                   + (dsl::must(expression_start_no_nl)
                           .error<expected_with_expression> >> dsl::
-                          recurse<expression_nl>)+init_clause);
+                          recurse<expression>)+init_clause);
     }();
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr structure, ast::Expression::Ptr operation,
