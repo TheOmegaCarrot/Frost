@@ -4,6 +4,7 @@
 #include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
+#include <memory>
 
 namespace frst
 {
@@ -62,6 +63,14 @@ class Weak_Closure final : public Callable
         if (!closure)
             throw Frost_Internal_Error{"Closure self-reference expired"};
         return closure->call(args);
+    }
+
+    Function promote() const
+    {
+        if (auto closure = closure_.lock())
+            return std::static_pointer_cast<Callable>(closure);
+
+        throw Frost_Internal_Error{"Failed to promote closure self-reference"};
     }
 
     std::string debug_dump() const override

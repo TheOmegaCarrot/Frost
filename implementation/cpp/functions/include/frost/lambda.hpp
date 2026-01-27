@@ -14,11 +14,22 @@ namespace frst::ast
 {
 namespace
 {
+
 std::generator<Statement::Symbol_Action> node_to_sym_seq(
     const frst::ast::Statement::Ptr& node)
 {
     return node->symbol_sequence();
 }
+
+Value_Ptr promote_if_weak(const Value_Ptr& fn)
+{
+    if (auto weak_closure =
+            std::dynamic_pointer_cast<Weak_Closure>(fn->raw_get<Function>()))
+        return Value::create(weak_closure->promote());
+    else
+        return fn;
+}
+
 } // namespace
 
 class Lambda final : public Expression
@@ -94,7 +105,18 @@ class Lambda final : public Expression
                     "No definition found for captured symbol: {}", name)};
             }
 
-            captures.define(name, syms.lookup(name));
+            const auto& value = syms.lookup(name);
+
+            if (value->is<Function>())
+            {
+                // special handling to promote any closure self-reference to a
+                // strong reference
+                captures.define(name, promote_if_weak(value));
+            }
+            else
+            {
+                captures.define(name, value);
+            }
         }
 
         auto closure = std::make_shared<Closure>(

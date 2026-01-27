@@ -1,0 +1,17 @@
+def maker = fn -> {
+    def outer = fn arg -> {
+        def me = self
+        def inner = fn inner_arg -> {
+            me(inner_arg)  
+        }
+
+        if arg:
+            arg
+        else:
+            inner
+    }
+
+    outer
+}
+
+print( maker()()(42) )
