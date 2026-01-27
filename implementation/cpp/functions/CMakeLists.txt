@@ -43,6 +43,8 @@ functions_test(tests/builtin.cpp)
 
 functions_test(tests/builtins/keys.cpp)
 
+functions_test(tests/builtins/and-then.cpp)
+
 functions_test(tests/builtins/type-tests.cpp)
 
 functions_test(tests/builtins/type-conversions.cpp)
@@ -53,6 +55,8 @@ functions_test(tests/builtins/len.cpp)
 
 functions_test(tests/builtins/range.cpp)
 
+functions_test(tests/builtins/nulls.cpp)
+
 functions_test(tests/builtins/ranges.cpp)
 
 functions_test(tests/builtins/pack_call.cpp)
@@ -60,6 +64,8 @@ functions_test(tests/builtins/pack_call.cpp)
 functions_test(tests/builtins/debug-helpers.cpp)
 
 functions_test(tests/builtins/mformat.cpp)
+
+functions_test(tests/builtins/hard-to-test.cpp)
 
 functions_test(tests/closure.cpp)
 

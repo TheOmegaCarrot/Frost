@@ -1,4 +1,5 @@
 #include <catch2/catch_all.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/testing/dummy-callable.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
@@ -52,6 +53,7 @@ TEST_CASE("Type Tests")
             "is_null",    "is_int",     "is_float",     "is_bool",
             "is_string",  "is_array",   "is_map",       "is_function",
             "is_nonnull", "is_numeric", "is_primitive", "is_structured",
+            "type",
         };
 
         for (const auto& name : names)
@@ -155,5 +157,40 @@ TEST_CASE("Type Tests")
         CHECK_FALSE(call_bool("is_structured", v_bool));
         CHECK_FALSE(call_bool("is_structured", v_string));
         CHECK_FALSE(call_bool("is_structured", v_func));
+    }
+
+    SECTION("type")
+    {
+        // AI-generated test additions by Codex (GPT-5).
+        // Signed: Codex (GPT-5).
+        auto type_fn = get_fn("type");
+
+        auto check_type = [&](const Value_Ptr& v, std::string_view expected) {
+            auto res = type_fn->call({v});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == expected);
+        };
+
+        check_type(v_null, "Null");
+        check_type(v_int, "Int");
+        check_type(v_float, "Float");
+        check_type(v_bool, "Bool");
+        check_type(v_string, "String");
+        check_type(v_array, "Array");
+        check_type(v_map, "Map");
+        check_type(v_func, "Function");
+    }
+
+    SECTION("type arity")
+    {
+        // AI-generated test additions by Codex (GPT-5).
+        // Signed: Codex (GPT-5).
+        auto type_fn = get_fn("type");
+        CHECK_THROWS_WITH(type_fn->call({}),
+                          Catch::Matchers::ContainsSubstring(
+                              "insufficient arguments"));
+        CHECK_THROWS_WITH(type_fn->call({Value::null(), Value::null()}),
+                          Catch::Matchers::ContainsSubstring(
+                              "too many arguments"));
     }
 }
