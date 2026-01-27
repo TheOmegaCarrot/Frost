@@ -30,6 +30,8 @@ TEST_CASE("Builtin to_string")
     auto Float_ = Value::create(3.14);
     auto Bool_ = Value::create(true);
     auto String_ = Value::create("Hello!"s);
+    auto Empty_Array_ = Value::create(frst::Array{});
+    auto Empty_Map_ = Value::create(frst::Map{});
     auto Array_ = Value::create(frst::Array{
         Value::create(42_f),
         Value::create("hello"s),
@@ -37,6 +39,11 @@ TEST_CASE("Builtin to_string")
     auto Map_ = Value::create(frst::Map{
         {Value::create("key1"s), Value::create(42_f)},
         {Value::create(true), Value::create("value2"s)},
+    });
+    auto Escaped_String_ = Value::create("line1\nline2\t\"x\""s);
+    auto Array_Escapes_ = Value::create(frst::Array{Escaped_String_});
+    auto Map_Escapes_ = Value::create(frst::Map{
+        {Value::create("k\n"s), Escaped_String_},
     });
     // AI-generated test additions by Codex (GPT-5).
     // Signed: Codex (GPT-5).
@@ -51,12 +58,50 @@ TEST_CASE("Builtin to_string")
             "3.14"));
         CHECK(to_string->call({Bool_})->get<String>().value() == "true");
         CHECK(to_string->call({String_})->get<String>().value() == "Hello!");
+        CHECK(to_string->call({Empty_Array_})->get<String>().value() == "[]");
+        CHECK(to_string->call({Empty_Map_})->get<String>().value() == "{}");
         CHECK(to_string->call({Array_})->get<String>().value()
               == "[ 42, \"hello\" ]");
         CHECK(to_string->call({Map_})->get<String>().value()
               == R"({ [true]: "value2", ["key1"]: 42 })");
         CHECK(to_string->call({Function_})->get<String>().value()
               == "<Function>");
+        CHECK(to_string->call({Array_Escapes_})->get<String>().value()
+              == R"([ "line1\nline2\t\"x\"" ])");
+        CHECK(to_string->call({Map_Escapes_})->get<String>().value()
+              == R"({ ["k\n"]: "line1\nline2\t\"x\"" })");
+    }
+}
+
+// AI-generated test additions by Codex (GPT-5).
+// Signed: Codex (GPT-5).
+TEST_CASE("Builtin pretty")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto pretty_val = table.lookup("pretty");
+    REQUIRE(pretty_val->is<Function>());
+    auto pretty = pretty_val->get<Function>().value();
+
+    SECTION("Injected")
+    {
+        CHECK(pretty_val->is<Function>());
+    }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_WITH(pretty->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(pretty->call({Value::null(), Value::null()}),
+                          ContainsSubstring("too many arguments"));
+    }
+
+    SECTION("Sanity")
+    {
+        auto array = Value::create(frst::Array{Value::create(1_f)});
+        auto res = pretty->call({array});
+        REQUIRE(res->is<String>());
+        CHECK(res->get<String>().value() == "[\n    1\n]");
     }
 }
 

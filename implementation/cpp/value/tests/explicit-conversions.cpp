@@ -23,6 +23,8 @@ TEST_CASE("to_string")
     auto Float = Value::create(3.14);
     auto Bool = Value::create(true);
     auto String = Value::create("Hello!"s);
+    auto Empty_Array = Value::create(frst::Array{});
+    auto Empty_Map = Value::create(frst::Map{});
     auto Array = Value::create(frst::Array{
         Value::create(42_f),
         Value::create("hello"s),
@@ -35,12 +37,19 @@ TEST_CASE("to_string")
         Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
     auto string_with_quotes = Value::create("hi \" there"s);
+    auto string_with_escapes = Value::create("line1\nline2\t\"x\""s);
+    auto array_with_escapes = Value::create(frst::Array{string_with_escapes});
+    auto map_with_escapes = Value::create(frst::Map{
+        {Value::create("k\n"s), string_with_escapes},
+    });
 
     CHECK(Null->to_internal_string() == "null");
     CHECK(Int->to_internal_string() == "42");
     CHECK(Float->to_internal_string().starts_with("3.14"));
     CHECK(Bool->to_internal_string() == "true");
     CHECK(String->to_internal_string() == "Hello!");
+    CHECK(Empty_Array->to_internal_string() == "[]");
+    CHECK(Empty_Map->to_internal_string() == "{}");
     CHECK(Array->to_internal_string() == R"([ 42, "hello" ])");
     CHECK(Map->to_internal_string() == R"({ [true]: "value2", ["key1"]: 42 })");
     CHECK(Function->to_internal_string() == "<Function>");
@@ -53,6 +62,10 @@ TEST_CASE("to_string")
     CHECK(Nested->to_internal_string() == R"([ 42, [ 42, "hello" ] ])");
 
     CHECK(string_with_quotes->to_internal_string() == R"(hi " there)");
+    CHECK(array_with_escapes->to_internal_string()
+          == R"([ "line1\nline2\t\"x\"" ])");
+    CHECK(map_with_escapes->to_internal_string()
+          == R"({ ["k\n"]: "line1\nline2\t\"x\"" })");
 }
 
 // AI-generated test additions by Codex (GPT-5).
@@ -76,6 +89,47 @@ TEST_CASE("to_string Value_Ptr")
     auto fn_str = Function->to_string();
     REQUIRE(fn_str->is<frst::String>());
     CHECK(fn_str->get<frst::String>().value() == "<Function>");
+}
+
+// AI-generated test additions by Codex (GPT-5).
+// Signed: Codex (GPT-5).
+TEST_CASE("to_pretty_string")
+{
+    auto Empty_Array = Value::create(frst::Array{});
+    auto Empty_Map = Value::create(frst::Map{});
+    auto Array = Value::create(frst::Array{
+        Value::create(1_f),
+        Value::create("hi"s),
+    });
+    auto Escaped = Value::create("line1\nline2\t\"x\""s);
+    auto Array_Escaped = Value::create(frst::Array{Escaped});
+    auto Map = Value::create(frst::Map{
+        {Value::create("a"s), Value::create(1_f)},
+        {Value::create("b"s),
+         Value::create(frst::Array{Value::create(2_f), Value::create(3_f)})},
+    });
+
+    CHECK(Empty_Array->to_internal_string({.pretty = true}) == "[]");
+    CHECK(Empty_Map->to_internal_string({.pretty = true}) == "{}");
+    CHECK(Array->to_internal_string({.pretty = true})
+          == "[\n    1,\n    \"hi\"\n]");
+    CHECK(Array_Escaped->to_internal_string({.pretty = true})
+          == R"([
+    "line1\nline2\t\"x\""
+])");
+    CHECK(Map->to_internal_string({.pretty = true})
+          == R"({
+    ["a"]: 1,
+    ["b"]: [
+        2,
+        3
+    ]
+})");
+
+    auto pretty_array = Array->to_pretty_string();
+    REQUIRE(pretty_array->is<frst::String>());
+    CHECK(pretty_array->get<frst::String>().value()
+          == "[\n    1,\n    \"hi\"\n]");
 }
 
 TEST_CASE("to_internal_int")
