@@ -3,6 +3,11 @@ if(BUILD_TESTS)
     set(INTEGRATION_SCRIPTS
         smoke.frst
         ufcs-chain.frst
+        prelude-inv.frst
+        prelude-reject.frst
+        prelude-curry.frst
+        prelude-collect.frst
+        prelude-call.frst
     )
     foreach(script ${INTEGRATION_SCRIPTS})
         get_filename_component(name ${script} NAME_WE)

@@ -1,0 +1,8 @@
+def even = fn n -> mod(n, 2) == 0
+
+def odd = inv(even)
+
+assert(even(42))
+assert(not odd(42))
+assert(not even(43))
+assert(odd(43))

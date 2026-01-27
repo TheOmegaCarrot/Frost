@@ -1,0 +1,5 @@
+assert( plus @ call(1, 4) == 5 )
+
+def vsum = fn ...args -> reduce args with plus
+
+assert( vsum @ call(1, 2, 3, 4) == 10 )
