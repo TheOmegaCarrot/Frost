@@ -420,48 +420,68 @@ struct array_destructure_pattern
     static constexpr auto name = "array destructure";
 };
 
-struct lambda_param_list
+template <bool AllowNl>
+struct lambda_param_list_impl
 {
     static constexpr auto rule = [] {
-        auto param_sep =
-            dsl::peek(dsl::lit_c<','> + param_ws + dsl::p<identifier>)
-            >> dsl::lit_c<','>;
-        return dsl::list(dsl::p<identifier_required>, dsl::sep(param_sep));
+        if constexpr (AllowNl)
+        {
+            auto param_sep =
+                dsl::peek(param_ws_nl + dsl::lit_c<','> + param_ws_nl
+                          + dsl::p<identifier>)
+                >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
+            return dsl::list(dsl::p<identifier_required>, dsl::sep(param_sep));
+        }
+        else
+        {
+            auto param_sep =
+                dsl::peek(dsl::lit_c<','> + param_ws + dsl::p<identifier>)
+                >> dsl::lit_c<','>;
+            return dsl::list(dsl::p<identifier_required>, dsl::sep(param_sep));
+        }
     }();
 
     static constexpr auto value = lexy::as_list<std::vector<std::string>>;
     static constexpr auto name = "lambda parameters";
 };
 
-struct lambda_param_list_nl
+using lambda_param_list = lambda_param_list_impl<false>;
+using lambda_param_list_nl = lambda_param_list_impl<true>;
+
+template <bool AllowNl>
+struct lambda_param_payload_impl
 {
     static constexpr auto rule = [] {
-        auto param_sep =
-            dsl::peek(param_ws_nl + dsl::lit_c<','> + param_ws_nl
-                      + dsl::p<identifier>)
-            >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
-        return dsl::list(dsl::p<identifier_required>, dsl::sep(param_sep));
-    }();
-
-    static constexpr auto value = lexy::as_list<std::vector<std::string>>;
-    static constexpr auto name = "lambda parameters";
-};
-
-struct lambda_param_payload
-{
-    static constexpr auto rule = [] {
+        auto vararg_name = [] {
+            if constexpr (AllowNl)
+                return LEXY_LIT("...") + param_ws_nl
+                       + dsl::p<identifier_required>;
+            else
+                return LEXY_LIT("...") + dsl::p<identifier_required>;
+        }();
         auto vararg =
             (dsl::must(dsl::peek(LEXY_LIT("...")))
-                 .error<expected_vararg> >> (LEXY_LIT("...")
-                                             + dsl::p<identifier_required>));
+                 .template error<expected_vararg> >> vararg_name);
         auto vararg_checked = vararg
                               + dsl::must(dsl::peek_not(dsl::lit_c<','>))
-                                    .error<expected_vararg_last>;
-        auto params = dsl::p<lambda_param_list>;
-        auto params_then_vararg =
-            params
-            + dsl::opt(dsl::peek(dsl::lit_c<','>)
-                       >> (dsl::lit_c<','> + vararg_checked));
+                                    .template error<expected_vararg_last>;
+        auto params = dsl::p<lambda_param_list_impl<AllowNl>>;
+        auto params_then_vararg = [&] {
+            if constexpr (AllowNl)
+            {
+                return params
+                       + dsl::opt(
+                           dsl::peek(param_ws_nl + dsl::lit_c<','>)
+                           >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl
+                               + vararg_checked));
+            }
+            else
+            {
+                return params
+                       + dsl::opt(dsl::peek(dsl::lit_c<','>)
+                                  >> (dsl::lit_c<','> + vararg_checked));
+            }
+        }();
         auto vararg_only = dsl::peek(LEXY_LIT("...")) >> vararg_checked;
         auto params_only =
             dsl::peek(dsl::ascii::alpha_underscore) >> params_then_vararg;
@@ -484,44 +504,8 @@ struct lambda_param_payload
     static constexpr auto name = "lambda parameters";
 };
 
-struct lambda_param_payload_nl
-{
-    static constexpr auto rule = [] {
-        auto vararg =
-            (dsl::must(dsl::peek(LEXY_LIT("...")))
-                 .error<expected_vararg> >> (LEXY_LIT("...")
-                                             + param_ws_nl
-                                             + dsl::p<identifier_required>));
-        auto vararg_checked = vararg
-                              + dsl::must(dsl::peek_not(dsl::lit_c<','>))
-                                    .error<expected_vararg_last>;
-        auto params = dsl::p<lambda_param_list_nl>;
-        auto params_then_vararg =
-            params
-            + dsl::opt(dsl::peek(param_ws_nl + dsl::lit_c<','>)
-                       >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl
-                           + vararg_checked));
-        auto vararg_only = dsl::peek(LEXY_LIT("...")) >> vararg_checked;
-        auto params_only =
-            dsl::peek(dsl::ascii::alpha_underscore) >> params_then_vararg;
-        return dsl::opt(vararg_only | params_only);
-    }();
-
-    static constexpr auto value = lexy::callback<lambda_param_pack>(
-        [](lexy::nullopt) {
-            return lambda_param_pack{};
-        },
-        [](std::string vararg) {
-            return lambda_param_pack{{}, std::move(vararg)};
-        },
-        [](std::vector<std::string> params, lexy::nullopt) {
-            return lambda_param_pack{std::move(params), std::nullopt};
-        },
-        [](std::vector<std::string> params, std::string vararg) {
-            return lambda_param_pack{std::move(params), std::move(vararg)};
-        });
-    static constexpr auto name = "lambda parameters";
-};
+using lambda_param_payload = lambda_param_payload_impl<false>;
+using lambda_param_payload_nl = lambda_param_payload_impl<true>;
 
 struct lambda_parameters_paren
 {
