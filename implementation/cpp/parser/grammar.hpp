@@ -50,14 +50,20 @@ constexpr auto comma_sep_nl_after(After after)
     return dsl::peek(param_ws_nl + dsl::lit_c<','> + param_ws_nl + after)
            >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
 }
-constexpr auto expression_start_no_nl = dsl::peek(
-    param_ws + (dsl::ascii::alpha_underscore | dsl::digit<>
-                | dsl::lit_c<'('> | dsl::lit_c<'['> | dsl::lit_c<'{'>
-                | dsl::lit_c<'"'> | dsl::lit_c<'\''> | dsl::lit_c<'-'>));
-constexpr auto expression_start_nl = dsl::peek(
-    param_ws_nl + (dsl::ascii::alpha_underscore | dsl::digit<>
+template <bool AllowNl>
+constexpr auto expression_start_impl()
+{
+    auto starter = dsl::ascii::alpha_underscore | dsl::digit<>
                    | dsl::lit_c<'('> | dsl::lit_c<'['> | dsl::lit_c<'{'>
-                   | dsl::lit_c<'"'> | dsl::lit_c<'\''> | dsl::lit_c<'-'>));
+                   | dsl::lit_c<'"'> | dsl::lit_c<'\''> | dsl::lit_c<'-'>;
+    if constexpr (AllowNl)
+        return dsl::peek(param_ws_nl + starter);
+    else
+        return dsl::peek(param_ws + starter);
+}
+
+constexpr auto expression_start_no_nl = expression_start_impl<false>();
+constexpr auto expression_start_nl = expression_start_impl<true>();
 constexpr auto expression_start = expression_start_no_nl;
 
 struct expected_expression
