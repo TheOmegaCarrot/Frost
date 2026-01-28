@@ -49,18 +49,20 @@ BUILTIN(mutable_cell)
     }());
 
     return Value::create(Map{
-        {"exchange"_s,
-         Value::create(Function{std::make_shared<Builtin>(
-             [cell](builtin_args_t args) mutable {
-                 return std::exchange(cell->value, forbid_cycle(args.at(0)));
-             },
-             "mutable cell exchange", Builtin::Arity{.min = 1, .max = 1})})},
-        {"get"_s,
-         Value::create(Function{std::make_shared<Builtin>(
-             [cell](builtin_args_t) {
-                 return cell->value;
-             },
-             "mutable cell getter", Builtin::Arity{.min = 0, .max = 0})})}});
+        {"exchange"_s, system_closure(1, 1,
+                                      [cell](builtin_args_t args) mutable {
+                                          return std::exchange(
+                                              cell->value,
+                                              forbid_cycle(args.at(0)));
+                                      })},
+        {
+            "get"_s,
+            system_closure(0, 0,
+                           [cell](builtin_args_t) {
+                               return cell->value;
+                           }),
+        },
+    });
 }
 
 void inject_mutable_cell(Symbol_Table& table)
