@@ -41,7 +41,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Empty map literal is valid")
     {
-        auto result = parse("%{}");
+        auto result = parse("{}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -53,7 +53,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Identifier key sugar produces string keys")
     {
-        auto result = parse("%{foo: 1, bar: 2}");
+        auto result = parse("{foo: 1, bar: 2}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -75,7 +75,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Bracketed key expressions are supported")
     {
-        auto result = parse("%{[1]: 2, [1+1]: 3}");
+        auto result = parse("{[1]: 2, [1+1]: 3}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -97,7 +97,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Mixed key forms are allowed")
     {
-        auto result = parse("%{foo: 1, [42]: 2, bar: 3}");
+        auto result = parse("{foo: 1, [42]: 2, bar: 3}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -110,7 +110,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Trailing commas are allowed")
     {
-        auto result = parse("%{foo: 1, [2]: 3,}");
+        auto result = parse("{foo: 1, [2]: 3,}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -122,13 +122,13 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Commas are required between entries")
     {
-        CHECK_FALSE(parse("%{foo: 1 bar: 2}"));
-        CHECK_FALSE(parse("%{a: 1\nb:2}"));
+        CHECK_FALSE(parse("{foo: 1 bar: 2}"));
+        CHECK_FALSE(parse("{a: 1\nb:2}"));
     }
 
     SECTION("Newlines between entries are allowed with commas")
     {
-        auto result = parse("%{foo: 1,\nbar: 2}");
+        auto result = parse("{foo: 1,\nbar: 2}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -140,7 +140,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Map literals can appear inside arrays")
     {
-        auto result = parse("[%{a: 1}, %{b: 2}]");
+        auto result = parse("[{a: 1}, {b: 2}]");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -161,19 +161,19 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Identifier key cannot be a keyword")
     {
-        CHECK_FALSE(parse("%{if: 1}"));
-        CHECK_FALSE(parse("%{true: 1}"));
+        CHECK_FALSE(parse("{if: 1}"));
+        CHECK_FALSE(parse("{true: 1}"));
     }
 
     SECTION("Missing brackets for non-identifier keys is invalid")
     {
-        CHECK_FALSE(parse("%{1: 2}"));
-        CHECK_FALSE(parse("%{(a): 1}"));
+        CHECK_FALSE(parse("{1: 2}"));
+        CHECK_FALSE(parse("{(a): 1}"));
     }
 
     SECTION("Map literals can be used as atoms")
     {
-        auto result = parse("%{foo: 1}[\"foo\"]");
+        auto result = parse("{foo: 1}[\"foo\"]");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -185,13 +185,13 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Map literals cannot be followed by postfix across newlines")
     {
-        auto result = parse("%{a: 1}\n[\"a\"]");
+        auto result = parse("{a: 1}\n[\"a\"]");
         REQUIRE_FALSE(result);
     }
 
     SECTION("Bracketed identifier keys use the expression value")
     {
-        auto result = parse("%{[foo]: 1}");
+        auto result = parse("{[foo]: 1}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -206,7 +206,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Key expressions can be complex")
     {
-        auto result = parse("%{[if true: 1 else: 2]: 3}");
+        auto result = parse("{[if true: 1 else: 2]: 3}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -221,7 +221,7 @@ TEST_CASE("Parser Map Literals")
     SECTION("Value expressions can be complex")
     {
         auto result =
-            parse("%{a: if true: 1 else: 2, b: fn(x) -> { x }(3), c: [1,2]}");
+            parse("{a: if true: 1 else: 2, b: fn(x) -> { x }(3), c: [1,2]}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -239,7 +239,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Complex bracketed key expressions are allowed")
     {
-        auto result = parse("%{[fn() -> { 1 }()]: 2, [[1,2]]: 3}");
+        auto result = parse("{[fn() -> { 1 }()]: 2, [[1,2]]: 3}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -250,7 +250,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Nested map literals are allowed")
     {
-        auto result = parse("%{a: %{b: 1}}");
+        auto result = parse("{a: {b: 1}}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -266,7 +266,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Map literals are valid in postfix and call contexts")
     {
-        auto result = parse("%{a: 1}[\"a\"]");
+        auto result = parse("{a: 1}[\"a\"]");
         REQUIRE(result);
         auto expr = require_expression(result);
         frst::Symbol_Table table;
@@ -274,7 +274,7 @@ TEST_CASE("Parser Map Literals")
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
 
-        auto result2 = parse("(%{a: 1}).a");
+        auto result2 = parse("({a: 1}).a");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
@@ -302,7 +302,7 @@ TEST_CASE("Parser Map Literals")
         auto callable = std::make_shared<IdentityCallable>();
         table.define("id", frst::Value::create(frst::Function{callable}));
 
-        auto result3 = parse("id(%{a: 1})");
+        auto result3 = parse("id({a: 1})");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
         auto out3 = expr3->evaluate(table);
@@ -311,7 +311,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Trailing comma with comments is accepted")
     {
-        auto result = parse("%{a: 1, # c\n}");
+        auto result = parse("{a: 1, # c\n}");
         REQUIRE(result);
         auto expr = require_expression(result);
         frst::Symbol_Table table;
@@ -322,7 +322,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Whitespace inside empty map is allowed")
     {
-        auto result = parse("%{ }");
+        auto result = parse("{ }");
         REQUIRE(result);
         auto expr = require_expression(result);
         frst::Symbol_Table table;
@@ -333,17 +333,17 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Malformed maps are rejected")
     {
-        CHECK_FALSE(parse("%{"));
-        CHECK_FALSE(parse("%{foo: 1"));
-        CHECK_FALSE(parse("%{,}"));
-        CHECK_FALSE(parse("%{foo:1,,bar:2}"));
-        CHECK_FALSE(parse("%{[1: 2]}"));
-        CHECK_FALSE(parse("%{[1]:}"));
+        CHECK_FALSE(parse("{"));
+        CHECK_FALSE(parse("{foo: 1"));
+        CHECK_FALSE(parse("{,}"));
+        CHECK_FALSE(parse("{foo:1,,bar:2}"));
+        CHECK_FALSE(parse("{[1: 2]}"));
+        CHECK_FALSE(parse("{[1]:}"));
         CHECK_FALSE(parse("%"));
         CHECK_FALSE(parse("%[]"));
-        CHECK_FALSE(parse("%{a: 1; b: 2}"));
-        CHECK_FALSE(parse("%{[1]: 2; [3]: 4}"));
-        CHECK_FALSE(parse("%{a: 1; }"));
-        CHECK_FALSE(parse("%{;a: 1}"));
+        CHECK_FALSE(parse("{a: 1; b: 2}"));
+        CHECK_FALSE(parse("{[1]: 2; [3]: 4}"));
+        CHECK_FALSE(parse("{a: 1; }"));
+        CHECK_FALSE(parse("{;a: 1}"));
     }
 }

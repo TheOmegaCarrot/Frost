@@ -80,7 +80,7 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Reduce map without init is an evaluation error")
     {
-        auto result = parse("reduce %{a: 1} with fn (acc, k, v) -> { acc }");
+        auto result = parse("reduce {a: 1} with fn (acc, k, v) -> { acc }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -123,7 +123,7 @@ TEST_CASE("Parser Reduce Expressions")
         CHECK(out2->get<frst::Int>().value() == 3_f);
 
         auto result3 = parse(
-            "(reduce %{a: 1} with fn (acc, k, v) -> { acc } init: 5) + 1");
+            "(reduce {a: 1} with fn (acc, k, v) -> { acc } init: 5) + 1");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
         auto out3 = expr3->evaluate(table);
@@ -166,7 +166,7 @@ TEST_CASE("Parser Reduce Expressions")
         CHECK(arr[0]->get<frst::Int>().value() == 3_f);
 
         auto result2 =
-            parse("%{[reduce [1, 2] with fn (acc, x) -> { acc + x }]: 1}");
+            parse("{[reduce [1, 2] with fn (acc, x) -> { acc + x }]: 1}");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);
@@ -220,7 +220,7 @@ TEST_CASE("Parser Reduce Expressions")
         CHECK(out3->get<frst::Int>().value() == 6_f);
 
         auto result4 =
-            parse("reduce %{a: 1} with fn (acc, k, v) -> { acc } "
+            parse("reduce {a: 1} with fn (acc, k, v) -> { acc } "
                   "init: (reduce [1, 2] with fn (acc, x) -> { acc + x })");
         REQUIRE(result4);
         auto expr4 = require_expression(result4);

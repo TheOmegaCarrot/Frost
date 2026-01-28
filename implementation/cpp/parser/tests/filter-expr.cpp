@@ -56,7 +56,7 @@ TEST_CASE("Parser Filter Expressions")
 
     SECTION("Filter map with a predicate")
     {
-        auto result = parse("filter %{a: 1, b: 2} with fn (k, v) -> { v > 1 }");
+        auto result = parse("filter {a: 1, b: 2} with fn (k, v) -> { v > 1 }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -133,7 +133,7 @@ TEST_CASE("Parser Filter Expressions")
         REQUIRE(outer[0]->is<frst::Array>());
         CHECK(outer[0]->raw_get<frst::Array>().size() == 1);
 
-        auto result2 = parse("%{k: filter [1, 2] with fn (x) -> { x > 1 }}");
+        auto result2 = parse("{k: filter [1, 2] with fn (x) -> { x > 1 }}");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);

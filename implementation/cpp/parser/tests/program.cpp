@@ -313,7 +313,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Map literals in a program")
     {
-        auto result = parse("%{a: 1}; %{[2]: 3}; %{a: 1, [2]: 3,}");
+        auto result = parse("{a: 1}; {[2]: 3}; {a: 1, [2]: 3,}");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 3);
@@ -357,7 +357,7 @@ TEST_CASE("Parser Program")
     {
         auto result = parse("def a = if cond: 10 else: 20\n"
                             "def b = [1, 2][0]\n"
-                            "def c = %{k: 5}.k\n"
+                            "def c = {k: 5}.k\n"
                             "def d = fn (x) -> { x + 1 }(4)\n"
                             "a; b; c; d");
         REQUIRE(result);
@@ -436,7 +436,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Map literals can be postfixed in programs")
     {
-        auto result = parse("%{a: 1}[\"a\"]; (%{b: 2}).b");
+        auto result = parse("{a: 1}[\"a\"]; ({b: 2}).b");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -784,7 +784,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Postfix does not cross newlines after map literals")
     {
-        auto result = parse("%{a: 1}\n[\"a\"]");
+        auto result = parse("{a: 1}\n[\"a\"]");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -805,7 +805,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Dot access can return a function which is then called")
     {
-        auto result = parse("(%{a: fn () -> { 1 }}).a()");
+        auto result = parse("({a: fn () -> { 1 }}).a()");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
@@ -859,7 +859,7 @@ TEST_CASE("Parser Program")
             "and indexing")
     {
         auto result = parse("def arr = [1, 2, 3];\n"
-                            "def m = %{a: 10, b: 20};\n"
+                            "def m = {a: 10, b: 20};\n"
                             "def pick = fn (x) -> { x };\n"
                             "if true: m.a else: m.b;\n"
                             "pick(arr[1]);\n"
@@ -925,7 +925,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Arrays and maps can appear inside larger expressions")
     {
-        auto result = parse("([1, 2])[0] + 3; %{a: 1}[\"a\"] == 1");
+        auto result = parse("([1, 2])[0] + 3; {a: 1}[\"a\"] == 1");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -942,7 +942,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Bracketed literals do not swallow following statements")
     {
-        auto result = parse("[1]; b\n%{a: 1}; b");
+        auto result = parse("[1]; b\n{a: 1}; b");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 4);
@@ -965,7 +965,7 @@ TEST_CASE("Parser Program")
     {
         auto result = parse("def x = [1,\n# c\n2]\n"
                             "# mid\n"
-                            "def y = %{a: 1,\n# c\nb: 2}\n"
+                            "def y = {a: 1,\n# c\nb: 2}\n"
                             "def z = fn () -> { ; ; 3 }\n"
                             "x; y; z()");
         REQUIRE(result);
@@ -989,7 +989,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Adjacent map literals are separate statements")
     {
-        auto result = parse("%{a: 1}\n%{b: 2}");
+        auto result = parse("{a: 1}\n{b: 2}");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -1379,11 +1379,11 @@ TEST_CASE("Parser Program")
             "(",
             ";; )",
             "[1;2]",
-            "%{a: 1; b: 2}",
-            "%{a: 1\nb: 2}",
+            "{a: 1; b: 2}",
+            "{a: 1\nb: 2}",
             "if true: def x = 1 else: 2",
             "def x = [1;2]",
-            "def x = %{a: 1; b: 2}",
+            "def x = {a: 1; b: 2}",
             "fn (x, ) -> {}",
             "obj.if",
             "def if = 1",

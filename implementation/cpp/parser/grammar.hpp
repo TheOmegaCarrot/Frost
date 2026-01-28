@@ -34,11 +34,11 @@ constexpr auto param_ws = dsl::while_(no_nl_chars | line_comment);
 constexpr auto param_ws_nl = dsl::while_(dsl::ascii::space | line_comment);
 constexpr auto expression_start_no_nl = dsl::peek(
     param_ws + (dsl::ascii::alpha_underscore | dsl::digit<>
-                | dsl::lit_c<'('> | dsl::lit_c<'['> | dsl::lit_c<'%'>
+                | dsl::lit_c<'('> | dsl::lit_c<'['> | dsl::lit_c<'{'>
                 | dsl::lit_c<'"'> | dsl::lit_c<'\''> | dsl::lit_c<'-'>));
 constexpr auto expression_start_nl = dsl::peek(
     param_ws_nl + (dsl::ascii::alpha_underscore | dsl::digit<>
-                   | dsl::lit_c<'('> | dsl::lit_c<'['> | dsl::lit_c<'%'>
+                   | dsl::lit_c<'('> | dsl::lit_c<'['> | dsl::lit_c<'{'>
                    | dsl::lit_c<'"'> | dsl::lit_c<'\''> | dsl::lit_c<'-'>));
 constexpr auto expression_start = expression_start_no_nl;
 
@@ -836,7 +836,7 @@ struct map_entries
             dsl::peek(dsl::lit_c<'['> | dsl::ascii::alpha_underscore);
         auto item = entry_start >> dsl::p<map_entry>;
         auto list = dsl::list(item, dsl::trailing_sep(comma));
-        return LEXY_LIT("%{") + param_ws_nl
+        return LEXY_LIT("{") + param_ws_nl
                + dsl::opt(entry_start >> list)
                + param_ws_nl + dsl::lit_c<'}'>;
     }();
@@ -887,7 +887,7 @@ struct primary_expression
         | dsl::peek(LEXY_KEYWORD("foreach", identifier::base))
         >> dsl::p<node::Foreach>
         | dsl::peek(dsl::lit_c<'['>) >> dsl::p<node::Array>
-        | dsl::peek(LEXY_LIT("%{")) >> dsl::p<node::Map>
+        | dsl::peek(dsl::lit_c<'{'>) >> dsl::p<node::Map>
         | dsl::p<node::Literal>
         | dsl::peek(LEXY_KEYWORD("elif", identifier::base))
         >> dsl::error<unexpected_elif>

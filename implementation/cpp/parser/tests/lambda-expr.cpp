@@ -328,8 +328,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Multiple lambdas as top-level statements parse correctly")
     {
-        auto src = lexy::string_input(
-            std::string_view{"fn -> {}\nfn() -> {}"});
+        auto src = lexy::string_input(std::string_view{"fn -> {}\nfn() -> {}"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -664,7 +663,7 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 2_f);
 
-        auto result2 = parse("fn() -> %{foo: 3}.foo");
+        auto result2 = parse("fn() -> ({foo: 3}).foo");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto value2 = expr2->evaluate(table);
@@ -819,10 +818,10 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 6_f);
     }
 
-    SECTION("Lambda body can contain multiple lambda calls separated by semicolons")
+    SECTION(
+        "Lambda body can contain multiple lambda calls separated by semicolons")
     {
-        auto result =
-            parse("fn() -> { fn() -> { 1 }(); fn() -> { 2 }() }");
+        auto result = parse("fn() -> { fn() -> { 1 }(); fn() -> { 2 }() }");
         REQUIRE(result);
         auto expr = require_expression(result);
 

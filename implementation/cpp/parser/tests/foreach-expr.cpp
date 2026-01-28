@@ -75,7 +75,7 @@ TEST_CASE("Parser Foreach Expressions")
 
     SECTION("Foreach over maps calls the operation with key and value")
     {
-        auto result = parse("foreach %{a: 1, b: 2} with f");
+        auto result = parse("foreach {a: 1, b: 2} with f");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -137,7 +137,7 @@ TEST_CASE("Parser Foreach Expressions")
     SECTION("Foreach can iterate over a mapped map expression")
     {
         auto result = parse(
-            "foreach (map %{a: 1, b: 2} with fn (k, v) -> { %{[k]: v + 1} }) "
+            "foreach (map {a: 1, b: 2} with fn (k, v) -> { {[k]: v + 1} }) "
             "with f");
         REQUIRE(result);
         auto expr = require_expression(result);

@@ -58,7 +58,7 @@ TEST_CASE("Parser Map Expressions")
     SECTION("Map map with a lambda operation")
     {
         auto result =
-            parse("map %{a: 1, b: 2} with fn (k, v) -> { %{[k]: v + 1} }");
+            parse("map {a: 1, b: 2} with fn (k, v) -> { {[k]: v + 1} }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -137,7 +137,7 @@ TEST_CASE("Parser Map Expressions")
         REQUIRE(outer[0]->is<frst::Array>());
         CHECK(outer[0]->raw_get<frst::Array>().size() == 1);
 
-        auto result2 = parse("%{k: map [1] with fn (x) -> { x + 1 }}");
+        auto result2 = parse("{k: map [1] with fn (x) -> { x + 1 }}");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(table);

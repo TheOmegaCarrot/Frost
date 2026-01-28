@@ -85,8 +85,8 @@ def dec = fn (x) -> { x - 1 };
 def id = fn (x) -> { x };
 def arr = [1, 2, 3, 4,];
 def nested = [[1], [2, 3],];
-def m = %{a: 1, b: 2, [3]: 4,};
-def m2 = %{foo: %{bar: 1}, [0]: [1, 2],};
+def m = {a: 1, b: 2, [3]: 4,};
+def m2 = {foo: {bar: 1}, [0]: [1, 2],};
 def f = fn () -> { 1 };
 def g = fn (x) -> { [x] };
 
@@ -99,7 +99,7 @@ reduce arr with fn (acc, x) -> { acc + x };
 reduce arr with fn (acc, x) -> { acc + x } init: 0;
 foreach arr with fn (x) -> { x };
 
-map m with fn (k, v) -> { %{[k]: v} };
+map m with fn (k, v) -> { {[k]: v} };
 filter m with fn (k, v) -> { v };
 reduce m with fn (acc, k, v) -> { acc } init: 0;
 
@@ -134,8 +134,8 @@ def arr = [1, 2, 3, 4];
 def mapped = map arr with inc;
 def filtered = filter mapped with fn (x) -> { x > 2 };
 def reduced = reduce filtered with fn (acc, x) -> { acc + x } init: 0;
-def m = %{a: 1, b: 2};
-def m2 = map m with fn (k, v) -> { %{[k]: v + 1} };
+def m = {a: 1, b: 2};
+def m2 = map m with fn (k, v) -> { {[k]: v + 1} };
 def m3 = filter m2 with fn (k, v) -> { v > 2 };
 foreach m3 with fn (k, v) -> { v };
 def uf = 1 @ wrap();
@@ -179,7 +179,7 @@ res
             R"FROST(
 def inc = fn (x) -> { x + 1 };
 def arr = [1, 2, 3];
-def m = %{a: 1, b: 2};
+def m = {a: 1, b: 2};
 map arr with inc;
 filter arr with fn (x) -> { x > 1 };
 reduce arr with fn (acc, x) -> { acc + x } init: 0;
@@ -190,7 +190,7 @@ id(map arr with inc)[0];
             R"FROST(
 def inc = fn (x) -> { ((x) + (1)) };
 def arr = ( [ (1), (2), (3), ] );
-def m = ( %{a: (1), b: (2),} );
+def m = ( {a: (1), b: (2),} );
 (map (arr) with (inc));
 (filter (arr) with fn (x) -> { ((x) > (1)) });
 (reduce (arr) with fn (acc, x) -> { (acc) + (x) } init: (0));
@@ -203,7 +203,7 @@ id((map (arr) with (inc)))[0];
     SECTION("Parentheses around primary expressions do not change AST dumps")
     {
         require_equivalent_programs(
-            "fn () -> { 1 }(); [1, 2][0]; %{a: 1}.a; not false",
-            "(fn () -> { 1 })(); ([1, 2])[0]; (%{a: 1}).a; not (false)");
+            "fn () -> { 1 }(); [1, 2][0]; {a: 1}.a; not false",
+            "(fn () -> { 1 })(); ([1, 2])[0]; ({a: 1}).a; not (false)");
     }
 }
