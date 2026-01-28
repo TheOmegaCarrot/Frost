@@ -13,6 +13,7 @@ add_library( frost-functions
     builtins/pack_call.cpp
     builtins/ranges.cpp
     builtins/regex.cpp
+    builtins/streams.cpp
     builtins/string-ops.cpp
     builtins/structure-ops.cpp
     builtins/type-conversions.cpp

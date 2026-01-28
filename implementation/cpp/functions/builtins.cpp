@@ -19,7 +19,8 @@ namespace frst
     X(mutable_cell)                                                            \
     X(ranges)                                                                  \
     X(and_then)                                                                \
-    X(os)
+    X(os)                                                                      \
+    X(streams)
 
 #define X(F) void inject_##F(Symbol_Table&);
 

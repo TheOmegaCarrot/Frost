@@ -9,7 +9,7 @@
 #include <ranges>
 #include <string_view>
 
-#define BUILTIN(NAME) Value_Ptr NAME(builtin_args_t args)
+#define BUILTIN(NAME) Value_Ptr NAME([[maybe_unused]] builtin_args_t args)
 
 #define MAKE_BUILTIN(NAME, MIN_ARITY, MAX_ARITY)                               \
     Value::create(Function{std::make_shared<Builtin>(                          \
