@@ -221,6 +221,41 @@ TEST_CASE("Parser Postfix Expressions")
         CHECK(callable->received.empty());
     }
 
+    SECTION("Call arguments allow newlines inside parentheses")
+    {
+        frst::Symbol_Table table;
+
+        auto callable = std::make_shared<RecordingCallable>();
+        callable->result = frst::Value::create(7_f);
+        table.define("f", frst::Value::create(frst::Function{callable}));
+
+        auto call_result = parse("f(\n1,\n2\n)");
+        REQUIRE(call_result);
+        auto call_expr = require_expression(call_result);
+        auto out = call_expr->evaluate(table);
+
+        CHECK(out == callable->result);
+        REQUIRE(callable->received.size() == 2);
+        CHECK(callable->received[0]->get<frst::Int>().value() == 1_f);
+        CHECK(callable->received[1]->get<frst::Int>().value() == 2_f);
+
+        callable->received.clear();
+        auto empty_result = parse("f(\n)");
+        REQUIRE(empty_result);
+        auto empty_expr = require_expression(empty_result);
+        auto out2 = empty_expr->evaluate(table);
+
+        CHECK(out2 == callable->result);
+        CHECK(callable->received.empty());
+    }
+
+    SECTION("Call arguments reject trailing commas and empty slots")
+    {
+        CHECK_FALSE(parse("f(1,2,)"));
+        CHECK_FALSE(parse("f(,)"));
+        CHECK_FALSE(parse("f(,1)"));
+    }
+
     SECTION("Whitespace around postfix tokens is allowed")
     {
         frst::Symbol_Table table;

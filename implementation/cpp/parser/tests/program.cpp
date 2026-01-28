@@ -790,6 +790,41 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 2);
     }
 
+    SECTION("Newlines before call and index split statements")
+    {
+        auto result = parse("a\n(b)");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        auto a_val = frst::Value::create(1_f);
+        auto b_val = frst::Value::create(2_f);
+        table.define("a", a_val);
+        table.define("b", b_val);
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+        CHECK(v1 == a_val);
+        CHECK(v2 == b_val);
+
+        auto result2 = parse("a\n[b]");
+        REQUIRE(result2);
+        auto program2 = require_program(result2);
+        REQUIRE(program2.size() == 2);
+
+        frst::Symbol_Table table2;
+        table2.define("a", a_val);
+        table2.define("b", b_val);
+        auto v3 = evaluate_statement(program2[0], table2);
+        auto v4 = evaluate_statement(program2[1], table2);
+        CHECK(v3 == a_val);
+        REQUIRE(v4->is<frst::Array>());
+        const auto& arr = v4->raw_get<frst::Array>();
+        REQUIRE(arr.size() == 1);
+        CHECK(arr[0] == b_val);
+    }
+
     SECTION("Lambda calls can be postfixed by indexing")
     {
         auto result = parse("fn (x) -> { [x] }(3)[0]");
