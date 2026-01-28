@@ -1,34 +1,29 @@
 #ifndef OP_TEST_MACROS_HPP
 #define OP_TEST_MACROS_HPP
 
-#define OP_TEST_STRINGIZE_IMPL(X) #X
-#define OP_TEST_STRINGIZE(X) OP_TEST_STRINGIZE_IMPL(X)
+#include <boost/preprocessor/stringize.hpp>
+
 #define INCOMPAT(T1, T2)                                                       \
     SECTION("Incompatible: "s                                                  \
-            + OP_TEST_STRINGIZE(T1)                                            \
-            + " "                                                              \
-            + OP_TEST_STRINGIZE(OP_CHAR)                                       \
-            + " "                                                              \
-            + OP_TEST_STRINGIZE(T2))                                           \
+            + BOOST_PP_STRINGIZE(T1)                                               \
+                + " "                                                          \
+                + BOOST_PP_STRINGIZE(OP_CHAR) + " " + BOOST_PP_STRINGIZE(T2))  \
     {                                                                          \
-        CHECK_THROWS_WITH(Value::OP_METHOD(T1, T2),                            \
-                          "Cannot "s                                           \
-                              + OP_TEST_STRINGIZE(OP_VERB)                     \
-                              + " incompatible types: "                        \
-                              + OP_TEST_STRINGIZE(T1)                          \
-                              + " "                                            \
-                              + OP_TEST_STRINGIZE(OP_CHAR)                     \
-                              + " "                                            \
-                              + OP_TEST_STRINGIZE(T2));                        \
+        CHECK_THROWS_WITH(                                                     \
+            Value::OP_METHOD(T1, T2),                                          \
+            "Cannot "s                                                         \
+                + BOOST_PP_STRINGIZE(OP_VERB)                                           \
+                    + " incompatible types: "                                  \
+                    + BOOST_PP_STRINGIZE(T1)                                       \
+                        + " "                                                  \
+                        + BOOST_PP_STRINGIZE(OP_CHAR) + " " + BOOST_PP_STRINGIZE(T2));          \
     }
 
 #define COMPAT(T1, T2)                                                         \
     SECTION("Compatible: "s                                                    \
-            + OP_TEST_STRINGIZE(T1)                                            \
-            + " "                                                              \
-            + OP_TEST_STRINGIZE(OP_CHAR)                                       \
-            + " "                                                              \
-            + OP_TEST_STRINGIZE(T2))                                           \
+            + BOOST_PP_STRINGIZE(T1)                                               \
+                + " "                                                          \
+                + BOOST_PP_STRINGIZE(OP_CHAR) + " " + BOOST_PP_STRINGIZE(T2))  \
     {                                                                          \
         CHECK_NOTHROW(Value::OP_METHOD(T1, T2));                               \
     }

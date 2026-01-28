@@ -14,6 +14,8 @@
 
 #include <fmt/format.h>
 
+#include <boost/preprocessor/stringize.hpp>
+
 namespace frst
 {
 
@@ -140,14 +142,11 @@ struct Frost_Unrecoverable_Error : Frost_User_Error
     }
 };
 
-#define VALUE_STRINGIZE_IMPL(X) #X
-#define VALUE_STRINGIZE(X) VALUE_STRINGIZE_IMPL(X)
-
 #define THROW_UNREACHABLE                                                      \
     throw Frost_Internal_Error                                                 \
     {                                                                          \
         "Hit point which should be unreachable at: " __FILE__                  \
-        ":" VALUE_STRINGIZE(__LINE__)                                          \
+        ":" BOOST_PP_STRINGIZE(__LINE__)                                                 \
     }
 
 inline namespace literals
@@ -191,7 +190,7 @@ std::string_view type_str() = delete;
     template <>                                                                \
     inline std::string_view type_str<T>()                                      \
     {                                                                          \
-        return VALUE_STRINGIZE(T);                                             \
+        return BOOST_PP_STRINGIZE(T);                                          \
     }
 
 TYPE_STR_SPEC(Null)
