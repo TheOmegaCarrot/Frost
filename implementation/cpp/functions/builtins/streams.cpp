@@ -24,6 +24,7 @@ struct Keys
     KEY(seek);
     KEY(eof);
     KEY(write);
+    KEY(writeln);
     KEY(get);
 #undef KEY
 } static const keys;
@@ -100,7 +101,7 @@ auto tell(const std::shared_ptr<std::istream>& stream)
 
 auto seek(const std::shared_ptr<std::istream>& stream)
 {
-    return system_closure(0, 1, [=](builtin_args_t args) {
+    return system_closure(1, 1, [=](builtin_args_t args) {
         REQUIRE_ARGS("<system closure: seek>", TYPES(Int));
         stream->seekg(GET(0, Int));
         return Value::null();
@@ -116,7 +117,7 @@ auto tell(const std::shared_ptr<std::ostream>& stream)
 
 auto seek(const std::shared_ptr<std::ostream>& stream)
 {
-    return system_closure(0, 1, [=](builtin_args_t args) {
+    return system_closure(1, 1, [=](builtin_args_t args) {
         REQUIRE_ARGS("<system closure: seek>", TYPES(Int));
         stream->seekp(GET(0, Int));
         return Value::null();
@@ -125,10 +126,21 @@ auto seek(const std::shared_ptr<std::ostream>& stream)
 
 auto write(const std::shared_ptr<std::ostream>& stream)
 {
-    return system_closure(0, 1, [=](builtin_args_t args) {
+    return system_closure(1, 1, [=](builtin_args_t args) {
         REQUIRE_ARGS("<system_closure: write>", TYPES(String));
         const auto& str = GET(0, String);
         stream->write(str.c_str(), str.length());
+        return Value::null();
+    });
+}
+
+auto writeln(const std::shared_ptr<std::ostream>& stream)
+{
+    return system_closure(1, 1, [=](builtin_args_t args) {
+        REQUIRE_ARGS("<system_closure: writeln>", TYPES(String));
+        const auto& str = GET(0, String);
+        stream->write(str.c_str(), str.length());
+        stream->put('\n');
         return Value::null();
     });
 }
@@ -156,17 +168,39 @@ BUILTIN(open_read)
     });
 }
 
-BUILTIN(open_write)
+BUILTIN(open_trunc)
 {
-    REQUIRE_ARGS("open_write", TYPES(String));
+    REQUIRE_ARGS("open_trunc", TYPES(String));
 
-    auto stream = std::make_shared<std::ofstream>(GET(0, String));
+    auto stream =
+        std::make_shared<std::ofstream>(GET(0, String), std::ios::trunc);
 
     if (not stream->is_open())
         return Value::null();
 
     return Value::create(Map{
         {keys.write, write(stream)},
+        {keys.writeln, writeln(stream)},
+        {keys.tell, tell(stream)},
+        {keys.seek, seek(stream)},
+        {keys.close, close(stream)},
+        {keys.is_open, is_open(stream)},
+    });
+}
+
+BUILTIN(open_append)
+{
+    REQUIRE_ARGS("open_append", TYPES(String));
+
+    auto stream =
+        std::make_shared<std::ofstream>(GET(0, String), std::ios::app);
+
+    if (not stream->is_open())
+        return Value::null();
+
+    return Value::create(Map{
+        {keys.write, write(stream)},
+        {keys.writeln, writeln(stream)},
         {keys.tell, tell(stream)},
         {keys.seek, seek(stream)},
         {keys.close, close(stream)},
@@ -196,6 +230,7 @@ BUILTIN(stringwriter)
 
     return Value::create(
         Map{{keys.write, write(stream)},
+            {keys.writeln, writeln(stream)},
             {keys.tell, tell(stream)},
             {keys.seek, seek(stream)},
             {keys.get, system_closure(0, 0, [=](builtin_args_t) {
@@ -219,7 +254,8 @@ Value_Ptr make_stdin()
 void inject_streams(Symbol_Table& table)
 {
     INJECT(open_read, 1, 1);
-    INJECT(open_write, 1, 1);
+    INJECT(open_trunc, 1, 1);
+    INJECT(open_append, 1, 1);
     INJECT(stringreader, 1, 1);
     INJECT(stringwriter, 0, 0);
 
