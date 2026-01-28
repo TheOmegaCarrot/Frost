@@ -124,29 +124,24 @@ TEST_CASE("to_pretty_string")
     CHECK(Empty_Map->to_internal_string({.pretty = true}) == "{}");
     CHECK(Array->to_internal_string({.pretty = true})
           == "[\n    1,\n    \"hi\"\n]");
-    CHECK(Array_Escaped->to_internal_string({.pretty = true})
-          == R"([
+    CHECK(Array_Escaped->to_internal_string({.pretty = true}) == R"([
     "line1\nline2\t\"x\""
 ])");
-    CHECK(Map->to_internal_string({.pretty = true})
-          == R"({
+    CHECK(Map->to_internal_string({.pretty = true}) == R"({
     ["a"]: 1,
     ["b"]: [
         2,
         3
     ]
 })");
-    CHECK(Map_Escaped->to_internal_string({.pretty = true})
-          == R"({
+    CHECK(Map_Escaped->to_internal_string({.pretty = true}) == R"({
     ["k\n"]: "line1\nline2\t\"x\""
 })");
-    CHECK(Array_Empty_Structs->to_internal_string({.pretty = true})
-          == R"([
+    CHECK(Array_Empty_Structs->to_internal_string({.pretty = true}) == R"([
     [],
     {}
 ])");
-    CHECK(Map_Empty_Structs->to_internal_string({.pretty = true})
-          == R"({
+    CHECK(Map_Empty_Structs->to_internal_string({.pretty = true}) == R"({
     ["arr"]: [],
     ["map"]: {}
 })");

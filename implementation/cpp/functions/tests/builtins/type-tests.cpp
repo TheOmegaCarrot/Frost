@@ -186,11 +186,10 @@ TEST_CASE("Type Tests")
         // AI-generated test additions by Codex (GPT-5).
         // Signed: Codex (GPT-5).
         auto type_fn = get_fn("type");
-        CHECK_THROWS_WITH(type_fn->call({}),
-                          Catch::Matchers::ContainsSubstring(
-                              "insufficient arguments"));
-        CHECK_THROWS_WITH(type_fn->call({Value::null(), Value::null()}),
-                          Catch::Matchers::ContainsSubstring(
-                              "too many arguments"));
+        CHECK_THROWS_WITH(type_fn->call({}), Catch::Matchers::ContainsSubstring(
+                                                 "insufficient arguments"));
+        CHECK_THROWS_WITH(
+            type_fn->call({Value::null(), Value::null()}),
+            Catch::Matchers::ContainsSubstring("too many arguments"));
     }
 }

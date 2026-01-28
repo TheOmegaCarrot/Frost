@@ -122,8 +122,8 @@ TEST_CASE("Parser Reduce Expressions")
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 3_f);
 
-        auto result3 = parse(
-            "(reduce {a: 1} with fn (acc, k, v) -> { acc } init: 5) + 1");
+        auto result3 =
+            parse("(reduce {a: 1} with fn (acc, k, v) -> { acc } init: 5) + 1");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
         auto out3 = expr3->evaluate(table);

@@ -22,21 +22,18 @@ namespace dsl = lexy::dsl;
 
 constexpr auto line_comment =
     dsl::token(dsl::lit_c<'#'> >> dsl::until(dsl::newline).or_eof());
-constexpr auto no_nl_chars = dsl::ascii::blank | dsl::lit_c<'\r'>
-                             | dsl::lit_c<'\f'> | dsl::lit_c<'\v'>;
+constexpr auto no_nl_chars =
+    dsl::ascii::blank | dsl::lit_c<'\r'> | dsl::lit_c<'\f'> | dsl::lit_c<'\v'>;
 constexpr auto ws_no_nl = dsl::whitespace(no_nl_chars | line_comment);
 constexpr auto ws_nl = dsl::whitespace(dsl::ascii::space | line_comment);
 constexpr auto ws = ws_nl;
-constexpr auto statement_ws =
-    dsl::while_(no_nl_chars | line_comment | dsl::lit_c<';'>
-                | dsl::lit_c<'\n'>);
+constexpr auto statement_ws = dsl::while_(
+    no_nl_chars | line_comment | dsl::lit_c<';'> | dsl::lit_c<'\n'>);
 constexpr auto param_ws = dsl::while_(no_nl_chars | line_comment);
 constexpr auto param_ws_nl = dsl::while_(dsl::ascii::space | line_comment);
-constexpr auto comma_sep_nl =
-    dsl::peek(param_ws_nl + dsl::lit_c<','>)
-    >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
-constexpr auto comma_sep =
-    dsl::peek(dsl::lit_c<','>) >> dsl::lit_c<','>;
+constexpr auto comma_sep_nl = dsl::peek(param_ws_nl + dsl::lit_c<','>)
+                              >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
+constexpr auto comma_sep = dsl::peek(dsl::lit_c<','>) >> dsl::lit_c<','>;
 
 template <typename After>
 constexpr auto comma_sep_after(After after)
@@ -53,9 +50,14 @@ constexpr auto comma_sep_nl_after(After after)
 template <bool AllowNl>
 constexpr auto expression_start_impl()
 {
-    auto starter = dsl::ascii::alpha_underscore | dsl::digit<>
-                   | dsl::lit_c<'('> | dsl::lit_c<'['> | dsl::lit_c<'{'>
-                   | dsl::lit_c<'"'> | dsl::lit_c<'\''> | dsl::lit_c<'-'>;
+    auto starter = dsl::ascii::alpha_underscore
+                   | dsl::digit<>
+                   | dsl::lit_c<'('>
+                   | dsl::lit_c<'['>
+                   | dsl::lit_c<'{'>
+                   | dsl::lit_c<'"'>
+                   | dsl::lit_c<'\''>
+                   | dsl::lit_c<'-'>;
     if constexpr (AllowNl)
         return dsl::peek(param_ws_nl + starter);
     else
@@ -406,10 +408,10 @@ struct destructure_payload
                             + dsl::must(dsl::peek_not(dsl::lit_c<','>))
                                   .error<expected_vararg_last>;
         auto names = dsl::p<destructure_binding_list>;
-        auto names_then_rest = names
-                               + dsl::opt(dsl::peek(dsl::lit_c<','>)
-                                          >> (dsl::lit_c<','> + param_ws_nl
-                                              + rest_checked));
+        auto names_then_rest =
+            names
+            + dsl::opt(dsl::peek(dsl::lit_c<','>)
+                       >> (dsl::lit_c<','> + param_ws_nl + rest_checked));
         auto rest_only = dsl::peek(LEXY_LIT("...")) >> rest_checked;
         auto names_only =
             dsl::peek(dsl::ascii::alpha_underscore) >> names_then_rest;
@@ -435,9 +437,11 @@ struct destructure_payload
 
 struct array_destructure_pattern
 {
-    static constexpr auto rule =
-        dsl::lit_c<'['> + param_ws_nl + dsl::p<destructure_payload>
-        + param_ws_nl + dsl::lit_c<']'>;
+    static constexpr auto rule = dsl::lit_c<'['>
+                                 + param_ws_nl
+                                 + dsl::p<destructure_payload>
+                                 + param_ws_nl
+                                 + dsl::lit_c<']'>;
     static constexpr auto value = lexy::forward<destructure_pack>;
     static constexpr auto name = "array destructure";
 };
@@ -471,14 +475,14 @@ struct lambda_param_payload_impl
     static constexpr auto rule = [] {
         auto vararg_name = [] {
             if constexpr (AllowNl)
-                return LEXY_LIT("...") + param_ws_nl
+                return LEXY_LIT("...")
+                       + param_ws_nl
                        + dsl::p<identifier_required>;
             else
                 return LEXY_LIT("...") + dsl::p<identifier_required>;
         }();
-        auto vararg =
-            (dsl::must(dsl::peek(LEXY_LIT("...")))
-                 .template error<expected_vararg> >> vararg_name);
+        auto vararg = (dsl::must(dsl::peek(LEXY_LIT("...")))
+                           .template error<expected_vararg> >> vararg_name);
         auto vararg_checked = vararg
                               + dsl::must(dsl::peek_not(dsl::lit_c<','>))
                                     .template error<expected_vararg_last>;
@@ -487,10 +491,11 @@ struct lambda_param_payload_impl
             if constexpr (AllowNl)
             {
                 return params
-                       + dsl::opt(
-                           dsl::peek(param_ws_nl + dsl::lit_c<','>)
-                           >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl
-                               + vararg_checked));
+                       + dsl::opt(dsl::peek(param_ws_nl + dsl::lit_c<','>)
+                                  >> (param_ws_nl
+                                      + dsl::lit_c<','>
+                                      + param_ws_nl
+                                      + vararg_checked));
             }
             else
             {
@@ -526,9 +531,11 @@ using lambda_param_payload_nl = lambda_param_payload_impl<true>;
 
 struct lambda_parameters_paren
 {
-    static constexpr auto rule =
-        dsl::lit_c<'('> + param_ws_nl + dsl::p<lambda_param_payload_nl>
-        + param_ws_nl + dsl::lit_c<')'>;
+    static constexpr auto rule = dsl::lit_c<'('>
+                                 + param_ws_nl
+                                 + dsl::p<lambda_param_payload_nl>
+                                 + param_ws_nl
+                                 + dsl::lit_c<')'>;
     static constexpr auto value = lexy::forward<lambda_param_pack>;
     static constexpr auto name = "lambda parameters";
 };
@@ -558,11 +565,10 @@ struct lambda_body
 {
     static constexpr auto rule =
         dsl::peek(dsl::lit_c<'{'>)
-        >> dsl::curly_bracketed(
-            statement_ws
-            + dsl::opt(dsl::peek(expression_start_no_nl)
-                       >> dsl::recurse<statement_list>)
-            + statement_ws)
+        >> dsl::curly_bracketed(statement_ws
+                                + dsl::opt(dsl::peek(expression_start_no_nl)
+                                           >> dsl::recurse<statement_list>)
+                                + statement_ws)
         | dsl::else_
         >> (dsl::must(expression_start_no_nl)
                 .error<expected_lambda_body> >> dsl::recurse<expression>);
@@ -603,10 +609,11 @@ struct With_Operation
 {
     static constexpr auto rule =
         dsl::recurse<expression_nl>
-        + param_ws_nl + kw_with + param_ws_nl
+        + param_ws_nl
+        + kw_with
+        + param_ws_nl
         + (dsl::must(expression_start_nl)
-               .error<expected_with_expression>
-           >> dsl::recurse<expression_nl>);
+               .error<expected_with_expression> >> dsl::recurse<expression_nl>);
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
             return std::make_unique<Node>(std::move(structure),
@@ -643,14 +650,20 @@ struct Reduce
         auto kw_init = LEXY_KEYWORD("init", identifier::base);
         auto init_clause =
             dsl::opt(dsl::peek(param_ws_nl + kw_init)
-                     >> (param_ws_nl + kw_init
-                         + param_ws_nl + dsl::lit_c<':'> + param_ws_nl
+                     >> (param_ws_nl
+                         + kw_init
+                         + param_ws_nl
+                         + dsl::lit_c<':'>
+                         + param_ws_nl
                          + (dsl::must(expression_start_no_nl)
                                 .error<expected_init_expression> >> dsl::
                                 recurse<expression>)));
         return kw_reduce
-               >> (param_ws_nl + dsl::recurse<expression> + param_ws_nl
-                   + kw_with + param_ws_nl
+               >> (param_ws_nl
+                   + dsl::recurse<expression>
+                   + param_ws_nl
+                   + kw_with
+                   + param_ws_nl
                    + (dsl::must(expression_start_no_nl)
                           .error<expected_with_expression> >> dsl::
                           recurse<expression>)+init_clause);
@@ -675,8 +688,7 @@ struct Foreach
 {
     static constexpr auto rule = [] {
         auto kw_foreach = LEXY_KEYWORD("foreach", identifier::base);
-        return kw_foreach + param_ws_nl
-               + dsl::p<With_Operation<ast::Foreach>>;
+        return kw_foreach + param_ws_nl + dsl::p<With_Operation<ast::Foreach>>;
     }();
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
     static constexpr auto name = "foreach expression";
@@ -705,9 +717,9 @@ struct If
             auto kw_elif = LEXY_KEYWORD("elif", identifier::base);
             auto kw_else = LEXY_KEYWORD("else", identifier::base);
 
-            auto tail =
-                dsl::opt(dsl::peek(param_ws_nl + (kw_elif | kw_else))
-                         >> param_ws_nl >> dsl::recurse<Tail>);
+            auto tail = dsl::opt(dsl::peek(param_ws_nl + (kw_elif | kw_else))
+                                 >> param_ws_nl
+                                 >> dsl::recurse<Tail>);
 
             auto elif_branch =
                 kw_elif
@@ -753,7 +765,8 @@ struct If
         auto kw_else = LEXY_KEYWORD("else", identifier::base);
 
         auto tail = dsl::opt(dsl::peek(param_ws_nl + (kw_elif | kw_else))
-                             >> param_ws_nl >> dsl::p<Tail>);
+                             >> param_ws_nl
+                             >> dsl::p<Tail>);
         return kw_if
                >> (dsl::recurse<expression>
                    + dsl::lit_c<':'>
@@ -791,9 +804,11 @@ struct array_elements
         auto item =
             dsl::peek(expression_start_nl) >> dsl::recurse<expression_nl>;
         auto list = dsl::list(item, dsl::trailing_sep(comma_sep_nl));
-        return dsl::lit_c<'['> + param_ws_nl
+        return dsl::lit_c<'['>
+               + param_ws_nl
                + dsl::opt(dsl::peek(expression_start_nl) >> list)
-               + param_ws_nl + dsl::lit_c<']'>;
+               + param_ws_nl
+               + dsl::lit_c<']'>;
     }();
     static constexpr auto value = list_or_empty<ast::Expression::Ptr>();
     static constexpr auto name = "array literal";
@@ -802,15 +817,21 @@ struct array_elements
 struct map_entry
 {
     static constexpr auto rule = [] {
-        auto bracket_key =
-            dsl::lit_c<'['> + param_ws_nl + dsl::recurse<expression_nl>
-            + param_ws_nl + dsl::lit_c<']'>;
+        auto bracket_key = dsl::lit_c<'['>
+                           + param_ws_nl
+                           + dsl::recurse<expression_nl>
+                           + param_ws_nl
+                           + dsl::lit_c<']'>;
         auto ident_key = dsl::p<identifier_required>;
         auto key =
             dsl::peek(dsl::lit_c<'['>) >> bracket_key | dsl::else_ >> ident_key;
-        return key + param_ws_nl + dsl::lit_c<':'> + param_ws_nl
-               + (dsl::must(expression_start_nl).error<expected_map_value>
-                  >> dsl::recurse<expression_nl>);
+        return key
+               + param_ws_nl
+               + dsl::lit_c<':'>
+               + param_ws_nl
+               + (dsl::must(expression_start_nl)
+                      .error<expected_map_value> >> dsl::
+                      recurse<expression_nl>);
     }();
 
     static constexpr auto value = lexy::callback<ast::Map_Constructor::KV_Pair>(
@@ -831,9 +852,11 @@ struct map_entries
             dsl::peek(dsl::lit_c<'['> | dsl::ascii::alpha_underscore);
         auto item = entry_start >> dsl::p<map_entry>;
         auto list = dsl::list(item, dsl::trailing_sep(comma_sep_nl));
-        return LEXY_LIT("{") + param_ws_nl
+        return LEXY_LIT("{")
+               + param_ws_nl
                + dsl::opt(entry_start >> list)
-               + param_ws_nl + dsl::lit_c<'}'>;
+               + param_ws_nl
+               + dsl::lit_c<'}'>;
     }();
     static constexpr auto value =
         list_or_empty<ast::Map_Constructor::KV_Pair>();
@@ -867,8 +890,11 @@ struct primary_expression
 {
     static constexpr auto rule =
         (dsl::peek(dsl::lit_c<'('>)
-         >> (dsl::lit_c<'('> + param_ws_nl
-             + dsl::recurse<expression_nl> + param_ws_nl + dsl::lit_c<')'>))
+         >> (dsl::lit_c<'('>
+             + param_ws_nl
+             + dsl::recurse<expression_nl>
+             + param_ws_nl
+             + dsl::lit_c<')'>))
         | dsl::peek(LEXY_KEYWORD("if", identifier::base))
         >> dsl::p<node::If>
         | dsl::peek(LEXY_KEYWORD("fn", identifier::base))
@@ -881,8 +907,10 @@ struct primary_expression
         >> dsl::p<node::Reduce>
         | dsl::peek(LEXY_KEYWORD("foreach", identifier::base))
         >> dsl::p<node::Foreach>
-        | dsl::peek(dsl::lit_c<'['>) >> dsl::p<node::Array>
-        | dsl::peek(dsl::lit_c<'{'>) >> dsl::p<node::Map>
+        | dsl::peek(dsl::lit_c<'['>)
+        >> dsl::p<node::Array>
+        | dsl::peek(dsl::lit_c<'{'>)
+        >> dsl::p<node::Map>
         | dsl::p<node::Literal>
         | dsl::peek(LEXY_KEYWORD("elif", identifier::base))
         >> dsl::error<unexpected_elif>
@@ -901,7 +929,8 @@ struct call_arguments
             dsl::list(dsl::recurse<expression_nl>, dsl::sep(comma_sep_nl));
         return param_ws_nl
                + dsl::opt(dsl::peek(expression_start_nl) >> list)
-               + param_ws_nl + dsl::lit_c<')'>;
+               + param_ws_nl
+               + dsl::lit_c<')'>;
     }();
     static constexpr auto value = list_or_empty<ast::Expression::Ptr>();
     static constexpr auto name = "call arguments";
@@ -1011,12 +1040,14 @@ struct expression_impl : lexy::expression_production
             {
                 static constexpr auto op =
                     dsl::op<op_index>(
-                        dsl::lit_c<'['>
-                        >> (param_ws_nl
-                            + ((dsl::must(expression_start_nl)
-                                    .error<expected_index_expression> >> dsl::
-                                    recurse<expression_nl>))
-                            + param_ws_nl + dsl::lit_c<']'>))
+                        dsl::lit_c<
+                            '['
+                        > >> (param_ws_nl
+                              + ((dsl::must(expression_start_nl)
+                                      .error<expected_index_expression> >> dsl::
+                                      recurse<expression_nl>))
+                              + param_ws_nl
+                              + dsl::lit_c<']'>))
                     / dsl::op<op_dot>(
                         dsl::lit_c<'.'> >> dsl::p<identifier_required>);
                 using operand = dsl::atom;
@@ -1059,18 +1090,19 @@ struct expression_impl : lexy::expression_production
     {
         static constexpr auto op =
             dsl::op<op_index>(
-                dsl::lit_c<'['>
-                >> (param_ws_nl
-                    + ((dsl::must(expression_start_nl)
-                            .error<expected_index_expression> >> dsl::
-                            recurse<expression_nl>))
-                    + param_ws_nl + dsl::lit_c<']'>))
+                dsl::lit_c<'['> >> (param_ws_nl
+                                    + ((dsl::must(expression_start_nl)
+                                            .error<
+                                                expected_index_expression
+                                            > >> dsl::recurse<expression_nl>))
+                                    + param_ws_nl
+                                    + dsl::lit_c<']'>))
             / dsl::op<op_call>(
-                dsl::lit_c<'('>
-                >> (dsl::must(dsl::peek(param_ws_nl + dsl::lit_c<')'>)
-                              | expression_start_nl)
-                        .error<expected_call_arguments>
-                    >> dsl::p<call_arguments>))
+                dsl::lit_c<'('> >> (dsl::must(
+                                        dsl::peek(param_ws_nl + dsl::lit_c<')'>)
+                                        | expression_start_nl)
+                                        .error<expected_call_arguments> >> dsl::
+                                        p<call_arguments>))
             / dsl::op<op_dot>(dsl::lit_c<'.'> >> dsl::p<identifier_required>)
             / dsl::op<op_ufcs>(dsl::lit_c<'@'> >> dsl::p<ufcs_call>);
         using operand = dsl::atom;
@@ -1191,7 +1223,8 @@ struct Define
         auto kw_def = LEXY_KEYWORD("def", identifier::base);
         auto lhs = dsl::peek(dsl::lit_c<'['>)
                    >> dsl::p<array_destructure_pattern>
-                   | dsl::else_ >> dsl::p<identifier_required>;
+                   | dsl::else_
+                   >> dsl::p<identifier_required>;
         return kw_def >> (lhs + dsl::lit_c<'='> + dsl::p<expression>);
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
@@ -1209,8 +1242,7 @@ struct Define
 
 struct expression_statement
 {
-    static constexpr auto rule =
-        expression_start_no_nl >> dsl::p<expression>;
+    static constexpr auto rule = expression_start_no_nl >> dsl::p<expression>;
     static constexpr auto value =
         lexy::callback<ast::Statement::Ptr>([](ast::Expression::Ptr expr) {
             return ast::Statement::Ptr{std::move(expr)};
@@ -1229,12 +1261,10 @@ struct statement
 struct statement_list
 {
     static constexpr auto rule = [] {
-        auto sep =
-            dsl::peek(dsl::while_(no_nl_chars | line_comment)
-                      + (dsl::lit_c<';'> | dsl::lit_c<'\n'>))
-            >> statement_ws;
-        auto item =
-            dsl::peek(expression_start_no_nl) >> dsl::p<statement>;
+        auto sep = dsl::peek(dsl::while_(no_nl_chars | line_comment)
+                             + (dsl::lit_c<';'> | dsl::lit_c<'\n'>))
+                   >> statement_ws;
+        auto item = dsl::peek(expression_start_no_nl) >> dsl::p<statement>;
         return dsl::peek(expression_start_no_nl)
                >> dsl::list(item, dsl::trailing_sep(sep));
     }();
@@ -1246,9 +1276,10 @@ struct statement_list
 struct program
 {
     static constexpr auto whitespace = ws_no_nl;
-    static constexpr auto rule =
-        statement_ws + dsl::opt(dsl::p<statement_list>) + statement_ws
-        + dsl::eof;
+    static constexpr auto rule = statement_ws
+                                 + dsl::opt(dsl::p<statement_list>)
+                                 + statement_ws
+                                 + dsl::eof;
     static constexpr auto value =
         lexy::callback<std::vector<ast::Statement::Ptr>>(
             [](lexy::nullopt) {
