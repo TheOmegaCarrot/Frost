@@ -551,11 +551,11 @@ struct lambda_param_clause
 {
     static constexpr auto rule = [] {
         auto kw_arrow = LEXY_LIT("->");
-        auto params = dsl::peek(dsl::lit_c<'('>)
-                      >> dsl::p<lambda_parameters_paren>
-                      | dsl::else_
-                      >> dsl::p<lambda_parameters_elided>;
-        return params + kw_arrow;
+        auto params =
+            dsl::peek(param_ws_nl + dsl::lit_c<'('>)
+            >> (param_ws_nl + dsl::p<lambda_parameters_paren>)
+            | dsl::else_ >> (param_ws_nl + dsl::p<lambda_parameters_elided>);
+        return params + param_ws_nl + kw_arrow;
     }();
     static constexpr auto value = lexy::forward<lambda_param_pack>;
     static constexpr auto name = "lambda parameters";

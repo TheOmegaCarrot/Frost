@@ -588,6 +588,20 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
 
+    SECTION("Lambda body supports defs and map literals with nested lambdas")
+    {
+        auto src = lexy::string_input(std::string_view{
+            "def f = fn a -> {\n"
+            "    def b = 2 + a\n"
+            "    { c: b, d: fn p -> p * a }\n"
+            "}\n"});
+        auto program_result =
+            lexy::parse<frst::grammar::program>(src, lexy::noop);
+        REQUIRE(program_result);
+        auto program = std::move(program_result).value();
+        REQUIRE(program.size() == 1);
+    }
+
     SECTION("Single-expression body without braces is accepted")
     {
         auto result = parse("fn(x) -> x + 2");
