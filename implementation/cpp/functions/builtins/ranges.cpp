@@ -273,6 +273,33 @@ BUILTIN(fold)
                             }());
 }
 
+BUILTIN(sorted)
+{
+    REQUIRE_ARGS("sorted", TYPES(Array), OPTIONAL(TYPES(Function)));
+
+    Function sorter = [&] {
+        if (HAS(1))
+        {
+            return GET(1, Function);
+        }
+        else
+        {
+            return system_function(2, 2, [](builtin_args_t args) {
+                return Value::less_than(args.at(0), args.at(1));
+            });
+        }
+    }();
+
+    const auto& in = GET(0, Array);
+    Array out{std::from_range, in};
+
+    std::ranges::sort(out, [&](const Value_Ptr& l, const Value_Ptr& r) {
+        return sorter->call({l, r})->as<Bool>().value();
+    });
+
+    return Value::create(std::move(out));
+}
+
 void inject_ranges(Symbol_Table& table)
 {
     INJECT(stride, 2, 2);
@@ -289,5 +316,6 @@ void inject_ranges(Symbol_Table& table)
     INJECT(transform, 2, 2);
     INJECT(select, 2, 2);
     INJECT(fold, 2, 3);
+    INJECT(sorted, 1, 2);
 }
 } // namespace frst

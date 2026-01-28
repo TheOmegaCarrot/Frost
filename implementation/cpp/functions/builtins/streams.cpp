@@ -32,14 +32,6 @@ struct Keys
 namespace
 {
 
-template <typename T>
-auto system_closure(std::size_t min_args, std::size_t max_args, T&& fn)
-{
-    return Value::create(Function{std::make_shared<Builtin>(
-        std::forward<T>(fn), "<system closure>",
-        Builtin::Arity{.min = min_args, .max = max_args})});
-}
-
 template <typename fstream_t>
 auto close(const std::shared_ptr<fstream_t>& stream)
 {

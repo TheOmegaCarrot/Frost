@@ -3,6 +3,7 @@
 
 #include <frost/builtin.hpp>
 #include <frost/symbol-table.hpp>
+#include <frost/value.hpp>
 
 #include <array>
 #include <cstddef>
@@ -34,9 +35,28 @@
                 "got {} for argument {}",                                      \
                 arg->type_name(), i)};
 
-#define COERCE(IDX, TYPE) args.at(IDX)->as<TYPE>().value()
+#define COERCE(IDX, TYPE) (args.at(IDX)->as<TYPE>().value())
 
-#define GET(IDX, TYPE) args.at(IDX)->raw_get<TYPE>()
+#define GET(IDX, TYPE) (args.at(IDX)->raw_get<TYPE>())
+
+#define HAS(IDX) (IDX < args.size())
+
+namespace frst
+{
+template <typename F>
+auto system_function(std::size_t min_args, std::size_t max_args, F&& fn)
+{
+    return Function{std::make_shared<Builtin>(
+        std::forward<F>(fn), "<system closure>",
+        Builtin::Arity{.min = min_args, .max = max_args})};
+}
+template <typename F>
+auto system_closure(std::size_t min_args, std::size_t max_args, F&& fn)
+{
+    return Value::create(
+        system_function(min_args, max_args, std::forward<F>(fn)));
+}
+} // namespace frst
 
 namespace frst::builtin_detail
 {
