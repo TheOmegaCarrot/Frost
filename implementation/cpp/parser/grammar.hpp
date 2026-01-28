@@ -32,6 +32,24 @@ constexpr auto statement_ws =
                 | dsl::lit_c<'\n'>);
 constexpr auto param_ws = dsl::while_(no_nl_chars | line_comment);
 constexpr auto param_ws_nl = dsl::while_(dsl::ascii::space | line_comment);
+constexpr auto comma_sep_nl =
+    dsl::peek(param_ws_nl + dsl::lit_c<','>)
+    >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
+constexpr auto comma_sep =
+    dsl::peek(dsl::lit_c<','>) >> dsl::lit_c<','>;
+
+template <typename After>
+constexpr auto comma_sep_after(After after)
+{
+    return dsl::peek(dsl::lit_c<','> + param_ws + after) >> dsl::lit_c<','>;
+}
+
+template <typename After>
+constexpr auto comma_sep_nl_after(After after)
+{
+    return dsl::peek(param_ws_nl + dsl::lit_c<','> + param_ws_nl + after)
+           >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
+}
 constexpr auto expression_start_no_nl = dsl::peek(
     param_ws + (dsl::ascii::alpha_underscore | dsl::digit<>
                 | dsl::lit_c<'('> | dsl::lit_c<'['> | dsl::lit_c<'{'>
@@ -359,9 +377,7 @@ struct destructure_binding_list
 {
     static constexpr auto rule = [] {
         auto elem_start = dsl::ascii::alpha_underscore;
-        auto sep =
-            dsl::peek(param_ws_nl + dsl::lit_c<','> + param_ws_nl + elem_start)
-            >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
+        auto sep = comma_sep_nl_after(elem_start);
         return dsl::list(dsl::p<destructure_binding>, dsl::sep(sep));
     }();
     static constexpr auto value =
@@ -426,17 +442,12 @@ struct lambda_param_list_impl
     static constexpr auto rule = [] {
         if constexpr (AllowNl)
         {
-            auto param_sep =
-                dsl::peek(param_ws_nl + dsl::lit_c<','> + param_ws_nl
-                          + dsl::p<identifier>)
-                >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
+            auto param_sep = comma_sep_nl_after(dsl::p<identifier>);
             return dsl::list(dsl::p<identifier_required>, dsl::sep(param_sep));
         }
         else
         {
-            auto param_sep =
-                dsl::peek(dsl::lit_c<','> + param_ws + dsl::p<identifier>)
-                >> dsl::lit_c<','>;
+            auto param_sep = comma_sep_after(dsl::p<identifier>);
             return dsl::list(dsl::p<identifier_required>, dsl::sep(param_sep));
         }
     }();
@@ -771,12 +782,9 @@ inline ast::Expression::Ptr make_string_key_expr(std::string key)
 struct array_elements
 {
     static constexpr auto rule = [] {
-        auto comma =
-            dsl::peek(param_ws_nl + dsl::lit_c<','>)
-            >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
         auto item =
             dsl::peek(expression_start_nl) >> dsl::recurse<expression_nl>;
-        auto list = dsl::list(item, dsl::trailing_sep(comma));
+        auto list = dsl::list(item, dsl::trailing_sep(comma_sep_nl));
         return dsl::lit_c<'['> + param_ws_nl
                + dsl::opt(dsl::peek(expression_start_nl) >> list)
                + param_ws_nl + dsl::lit_c<']'>;
@@ -813,13 +821,10 @@ struct map_entry
 struct map_entries
 {
     static constexpr auto rule = [] {
-        auto comma =
-            dsl::peek(param_ws_nl + dsl::lit_c<','>)
-            >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
         auto entry_start =
             dsl::peek(dsl::lit_c<'['> | dsl::ascii::alpha_underscore);
         auto item = entry_start >> dsl::p<map_entry>;
-        auto list = dsl::list(item, dsl::trailing_sep(comma));
+        auto list = dsl::list(item, dsl::trailing_sep(comma_sep_nl));
         return LEXY_LIT("{") + param_ws_nl
                + dsl::opt(entry_start >> list)
                + param_ws_nl + dsl::lit_c<'}'>;
@@ -886,11 +891,8 @@ struct primary_expression
 struct call_arguments
 {
     static constexpr auto rule = [] {
-        auto comma =
-            dsl::peek(param_ws_nl + dsl::lit_c<','>)
-            >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
         auto list =
-            dsl::list(dsl::recurse<expression_nl>, dsl::sep(comma));
+            dsl::list(dsl::recurse<expression_nl>, dsl::sep(comma_sep_nl));
         return param_ws_nl
                + dsl::opt(dsl::peek(expression_start_nl) >> list)
                + param_ws_nl + dsl::lit_c<')'>;
