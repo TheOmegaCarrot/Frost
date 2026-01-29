@@ -122,6 +122,43 @@ TEST_CASE("Builtin mformat")
             CHECK(res->get<String>().value() == "$$ and $x and price: $5");
         }
 
+        SECTION("Backslash escapes placeholder")
+        {
+            auto fmt = Value::create("\\${k}"s);
+            auto repl = Value::create(Map{
+                {Value::create("k"s), Value::create("v"s)},
+            });
+
+            auto res = mformat->call({fmt, repl});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == "${k}");
+        }
+
+        SECTION(
+            "Double backslash yields a literal backslash before a placeholder")
+        {
+            auto fmt = Value::create("\\\\${k}"s);
+            auto repl = Value::create(Map{
+                {Value::create("k"s), Value::create("v"s)},
+            });
+
+            auto res = mformat->call({fmt, repl});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == "\\v");
+        }
+
+        SECTION("Dollar does not escape placeholders")
+        {
+            auto fmt = Value::create("$${a}"s);
+            auto repl = Value::create(Map{
+                {Value::create("a"s), Value::create("x"s)},
+            });
+
+            auto res = mformat->call({fmt, repl});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == "$x");
+        }
+
         SECTION("Adjacent placeholders are concatenated")
         {
             auto fmt = Value::create("${a}${b}"s);
@@ -191,6 +228,18 @@ TEST_CASE("Builtin mformat")
             REQUIRE(res->is<String>());
             CHECK(res->get<String>().value() == "yes");
         }
+
+        SECTION("Null replacement values are formatted")
+        {
+            auto fmt = Value::create("${k1}"s);
+            auto repl = Value::create(Map{
+                {Value::create("k1"s), Value::null()},
+            });
+
+            auto res = mformat->call({fmt, repl});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<String>().value() == "null");
+        }
     }
 
     SECTION("Errors")
@@ -215,9 +264,8 @@ TEST_CASE("Builtin mformat")
                 {Value::create("k1"s), Value::create("x"s)},
             });
 
-            CHECK_THROWS_WITH(
-                mformat->call({fmt, repl}),
-                ContainsSubstring("Unterminated format placeholder"));
+            CHECK_THROWS_WITH(mformat->call({fmt, repl}),
+                              "Unterminated format placeholder: ${k1");
         }
 
         SECTION("Empty placeholder errors")

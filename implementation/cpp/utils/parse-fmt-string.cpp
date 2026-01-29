@@ -43,73 +43,75 @@ bool is_identifier_like(const std::string& key)
 }
 } // namespace
 
-std::expected<std::vector<Replacement_Section>, std::string> parse_fmt_string(
+std::expected<std::vector<Fmt_Segment>, std::string> parse_fmt_string(
     const std::string& str)
 {
-    std::vector<Replacement_Section> sections;
+    std::vector<Fmt_Segment> sections;
     const auto len = str.size();
     std::size_t i = 0;
+    std::string literal;
+
+    auto flush_literal = [&]() {
+        if (!literal.empty())
+        {
+            sections.push_back(Fmt_Literal{std::move(literal)});
+            literal.clear();
+        }
+    };
 
     while (i < len)
     {
-        if (str.at(i) != '$')
+        const char c = str.at(i);
+
+        if (c == '\\')
         {
+            if (i + 1 < len)
+            {
+                const char next = str.at(i + 1);
+                if (next == '$' || next == '\\')
+                {
+                    literal.push_back(next);
+                    i += 2;
+                    continue;
+                }
+            }
+
+            literal.push_back('\\');
             ++i;
             continue;
         }
 
-        if (i > 0)
+        if (c == '$' && i + 1 < len && str.at(i + 1) == '{')
         {
-            std::size_t backslashes = 0;
-            for (std::size_t j = i; j > 0 && str.at(j - 1) == '\\'; --j)
+            const auto end = str.find('}', i + 2);
+            if (end == std::string::npos)
             {
-                ++backslashes;
+                return std::unexpected{fmt::format(
+                    "Unterminated format placeholder: {}", str.substr(i))};
             }
-            if ((backslashes % 2) == 1)
-            {
-                ++i;
-                continue;
-            }
-        }
 
-        if (i + 1 >= len)
-        {
-            ++i;
+            const auto content = str.substr(i + 2, end - (i + 2));
+            if (!is_identifier_like(content))
+            {
+                if (content.empty())
+                {
+                    return std::unexpected{"Invalid format placeholder: ${}"};
+                }
+                return std::unexpected{fmt::format(
+                    "Invalid format placeholder: ${{{}}}", content)};
+            }
+
+            flush_literal();
+            sections.push_back(Fmt_Placeholder{content});
+            i = end + 1;
             continue;
         }
 
-        if (str.at(i + 1) != '{')
-        {
-            ++i;
-            continue;
-        }
-
-        const auto end = str.find('}', i + 2);
-        if (end == std::string::npos)
-        {
-            return std::unexpected{fmt::format(
-                "Unterminated format placeholder: {}", str.substr(i))};
-        }
-
-        const auto content = str.substr(i + 2, end - (i + 2));
-        if (!is_identifier_like(content))
-        {
-            if (content.empty())
-            {
-                return std::unexpected{"Invalid format placeholder: ${}"};
-            }
-            return std::unexpected{
-                fmt::format("Invalid format placeholder: ${{{}}}", content)};
-        }
-
-        sections.push_back(Replacement_Section{
-            .start = i,
-            .len = end - i + 1,
-            .content = content,
-        });
-        i = end + 1;
+        literal.push_back(c);
+        ++i;
     }
 
+    flush_literal();
     return sections;
 }
 

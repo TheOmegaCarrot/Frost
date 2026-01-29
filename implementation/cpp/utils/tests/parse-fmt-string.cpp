@@ -6,21 +6,24 @@ using namespace frst::utils;
 
 TEST_CASE("utils::parse_fmt_string")
 {
-    SECTION("No placeholders yields an empty list")
+    SECTION("No placeholders yields a single literal")
     {
         auto result = parse_fmt_string("plain text");
         REQUIRE(result);
-        CHECK(result->empty());
+        REQUIRE(result->size() == 1);
+        CHECK(std::holds_alternative<Fmt_Literal>(result->at(0)));
+        CHECK(std::get<Fmt_Literal>(result->at(0)).text == "plain text");
     }
 
-    SECTION("Single placeholder yields one section")
+    SECTION("Single placeholder yields a literal and a placeholder")
     {
         auto result = parse_fmt_string("hi ${name}");
         REQUIRE(result);
-        REQUIRE(result->size() == 1);
-        CHECK(result->at(0).start == 3);
-        CHECK(result->at(0).len == 7);
-        CHECK(result->at(0).content == "name");
+        REQUIRE(result->size() == 2);
+        CHECK(std::holds_alternative<Fmt_Literal>(result->at(0)));
+        CHECK(std::get<Fmt_Literal>(result->at(0)).text == "hi ");
+        CHECK(std::holds_alternative<Fmt_Placeholder>(result->at(1)));
+        CHECK(std::get<Fmt_Placeholder>(result->at(1)).text == "name");
     }
 
     SECTION("Multiple and adjacent placeholders are reported in order")
@@ -28,68 +31,79 @@ TEST_CASE("utils::parse_fmt_string")
         auto result = parse_fmt_string("${a}${b}");
         REQUIRE(result);
         REQUIRE(result->size() == 2);
-        CHECK(result->at(0).start == 0);
-        CHECK(result->at(0).len == 4);
-        CHECK(result->at(0).content == "a");
-        CHECK(result->at(1).start == 4);
-        CHECK(result->at(1).len == 4);
-        CHECK(result->at(1).content == "b");
+        CHECK(std::holds_alternative<Fmt_Placeholder>(result->at(0)));
+        CHECK(std::get<Fmt_Placeholder>(result->at(0)).text == "a");
+        CHECK(std::holds_alternative<Fmt_Placeholder>(result->at(1)));
+        CHECK(std::get<Fmt_Placeholder>(result->at(1)).text == "b");
 
         auto result2 = parse_fmt_string("x${a}y${b}");
         REQUIRE(result2);
-        REQUIRE(result2->size() == 2);
-        CHECK(result2->at(0).start == 1);
-        CHECK(result2->at(0).len == 4);
-        CHECK(result2->at(0).content == "a");
-        CHECK(result2->at(1).start == 6);
-        CHECK(result2->at(1).len == 4);
-        CHECK(result2->at(1).content == "b");
+        REQUIRE(result2->size() == 4);
+        CHECK(std::holds_alternative<Fmt_Literal>(result2->at(0)));
+        CHECK(std::get<Fmt_Literal>(result2->at(0)).text == "x");
+        CHECK(std::holds_alternative<Fmt_Placeholder>(result2->at(1)));
+        CHECK(std::get<Fmt_Placeholder>(result2->at(1)).text == "a");
+        CHECK(std::holds_alternative<Fmt_Literal>(result2->at(2)));
+        CHECK(std::get<Fmt_Literal>(result2->at(2)).text == "y");
+        CHECK(std::holds_alternative<Fmt_Placeholder>(result2->at(3)));
+        CHECK(std::get<Fmt_Placeholder>(result2->at(3)).text == "b");
     }
 
     SECTION("Escaped placeholders are not reported")
     {
         auto result = parse_fmt_string("\\${name}");
         REQUIRE(result);
-        CHECK(result->empty());
+        REQUIRE(result->size() == 1);
+        CHECK(std::holds_alternative<Fmt_Literal>(result->at(0)));
+        CHECK(std::get<Fmt_Literal>(result->at(0)).text == "${name}");
 
         auto result2 = parse_fmt_string("x\\${a}y${b}");
         REQUIRE(result2);
-        REQUIRE(result2->size() == 1);
-        CHECK(result2->at(0).start == 7);
-        CHECK(result2->at(0).len == 4);
-        CHECK(result2->at(0).content == "b");
+        REQUIRE(result2->size() == 2);
+        CHECK(std::holds_alternative<Fmt_Literal>(result2->at(0)));
+        CHECK(std::get<Fmt_Literal>(result2->at(0)).text == "x${a}y");
+        CHECK(std::holds_alternative<Fmt_Placeholder>(result2->at(1)));
+        CHECK(std::get<Fmt_Placeholder>(result2->at(1)).text == "b");
 
         auto result3 = parse_fmt_string("\\\\${a}");
         REQUIRE(result3);
-        REQUIRE(result3->size() == 1);
-        CHECK(result3->at(0).start == 2);
-        CHECK(result3->at(0).len == 4);
-        CHECK(result3->at(0).content == "a");
+        REQUIRE(result3->size() == 2);
+        CHECK(std::holds_alternative<Fmt_Literal>(result3->at(0)));
+        CHECK(std::get<Fmt_Literal>(result3->at(0)).text == "\\");
+        CHECK(std::holds_alternative<Fmt_Placeholder>(result3->at(1)));
+        CHECK(std::get<Fmt_Placeholder>(result3->at(1)).text == "a");
     }
 
     SECTION("Dollar signs without placeholders are literal")
     {
         auto result = parse_fmt_string("$");
         REQUIRE(result);
-        CHECK(result->empty());
+        REQUIRE(result->size() == 1);
+        CHECK(std::holds_alternative<Fmt_Literal>(result->at(0)));
+        CHECK(std::get<Fmt_Literal>(result->at(0)).text == "$");
 
         auto result2 = parse_fmt_string("$$x");
         REQUIRE(result2);
-        CHECK(result2->empty());
+        REQUIRE(result2->size() == 1);
+        CHECK(std::holds_alternative<Fmt_Literal>(result2->at(0)));
+        CHECK(std::get<Fmt_Literal>(result2->at(0)).text == "$$x");
 
         auto result3 = parse_fmt_string("$x");
         REQUIRE(result3);
-        CHECK(result3->empty());
+        REQUIRE(result3->size() == 1);
+        CHECK(std::holds_alternative<Fmt_Literal>(result3->at(0)));
+        CHECK(std::get<Fmt_Literal>(result3->at(0)).text == "$x");
     }
 
     SECTION("Dollar before placeholder does not escape it")
     {
         auto result = parse_fmt_string("$${a}");
         REQUIRE(result);
-        REQUIRE(result->size() == 1);
-        CHECK(result->at(0).start == 1);
-        CHECK(result->at(0).len == 4);
-        CHECK(result->at(0).content == "a");
+        REQUIRE(result->size() == 2);
+        CHECK(std::holds_alternative<Fmt_Literal>(result->at(0)));
+        CHECK(std::get<Fmt_Literal>(result->at(0)).text == "$");
+        CHECK(std::holds_alternative<Fmt_Placeholder>(result->at(1)));
+        CHECK(std::get<Fmt_Placeholder>(result->at(1)).text == "a");
     }
 
     SECTION("Unterminated placeholders return an error")

@@ -4,18 +4,24 @@
 #include <cstddef>
 #include <expected>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace frst::utils
 {
-struct Replacement_Section
+struct Fmt_Literal
 {
-    std::size_t start;
-    std::size_t len;
-    std::string content;
+    std::string text;
 };
 
-std::expected<std::vector<Replacement_Section>, std::string> parse_fmt_string(
+struct Fmt_Placeholder
+{
+    std::string text;
+};
+
+using Fmt_Segment = std::variant<Fmt_Literal, Fmt_Placeholder>;
+
+std::expected<std::vector<Fmt_Segment>, std::string> parse_fmt_string(
     const std::string& str);
 } // namespace frst::utils
 
