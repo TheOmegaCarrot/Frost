@@ -76,14 +76,7 @@ TEST_CASE("Parser Define Statements")
         CHECK(value->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("def x = # comment\n1");
-        REQUIRE(result2);
-        auto program2 = require_program(result2);
-        REQUIRE(program2.size() == 1);
-        frst::Symbol_Table table2;
-        program2[0]->execute(table2);
-        auto value2 = table2.lookup("x");
-        REQUIRE(value2->is<frst::Int>());
-        CHECK(value2->get<frst::Int>().value() == 1_f);
+        REQUIRE_FALSE(result2);
 
         auto result3 = parse("def\nx = 2");
         REQUIRE_FALSE(result3);

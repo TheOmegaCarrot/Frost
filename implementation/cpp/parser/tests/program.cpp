@@ -1022,6 +1022,30 @@ TEST_CASE("Parser Program")
         CHECK(v3->get<frst::Int>().value() == 3_f);
     }
 
+    SECTION("Inline comments terminate statements")
+    {
+        auto result = parse("def f = fn -> {\n"
+                            "    def a = 2\n"
+                            "    def b = 4\n"
+                            "    a + b\n"
+                            "} # wow\n"
+                            "# huh?\n"
+                            "def c = 2");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        program[1]->execute(table);
+
+        auto f_val = table.lookup("f");
+        auto c_val = table.lookup("c");
+        REQUIRE(f_val->is<frst::Function>());
+        REQUIRE(c_val->is<frst::Int>());
+        CHECK(c_val->get<frst::Int>().value() == 2_f);
+    }
+
     SECTION("Adjacent map literals are separate statements")
     {
         auto result = parse("{a: 1}\n{b: 2}");

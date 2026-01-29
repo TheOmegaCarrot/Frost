@@ -28,13 +28,9 @@ def more_if = fn (n) -> {
 # this has the same meaning as the `more_if` function,
 # but the formatting is ugly (but equivalent)
 def also_allowed_for_if = fn (n) -> {
-    if
-        n == 1
-        :
+    if  n == 1 :
         2
-        elif
-    n == 2
-        :
+        elif n == 2 :
     10
     else:
 n - 1
@@ -174,7 +170,7 @@ def sugary1 = fn -> {
             def a = 2
             def b = 4
             a + b
-        } # sugary1 == 6
+        } # sugary1() == 6
 # equivalent to:
 def desugary1 = fn () -> { def a = 2 ; def b = 4 ; a + b }
 

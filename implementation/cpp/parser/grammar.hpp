@@ -20,8 +20,9 @@ namespace frst::grammar
 {
 namespace dsl = lexy::dsl;
 
-constexpr auto line_comment =
-    dsl::token(dsl::lit_c<'#'> >> dsl::until(dsl::newline).or_eof());
+constexpr auto line_comment = dsl::token(
+    dsl::lit_c<'#'>
+    >> dsl::while_(dsl::ascii::character - dsl::lit_c<'\n'>));
 constexpr auto no_nl_chars =
     dsl::ascii::blank | dsl::lit_c<'\r'> | dsl::lit_c<'\f'> | dsl::lit_c<'\v'>;
 constexpr auto ws_no_nl = dsl::whitespace(no_nl_chars | line_comment);
@@ -1225,14 +1226,27 @@ struct Define
                    >> dsl::p<array_destructure_pattern>
                    | dsl::else_
                    >> dsl::p<identifier_required>;
-        return kw_def >> (lhs + dsl::lit_c<'='> + dsl::p<expression>);
+        auto rhs_ws =
+            param_ws
+            + dsl::opt(dsl::peek(line_comment)
+                       >> (line_comment + dsl::lit_c<'\n'> + param_ws));
+        return kw_def >> (lhs + dsl::lit_c<'='> + rhs_ws
+                          + dsl::p<expression>);
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
         [](std::string name, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Define>(std::move(name),
                                                  std::move(expr));
         },
+        [](std::string name, lexy::nullopt, ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Define>(std::move(name),
+                                                 std::move(expr));
+        },
         [](destructure_pack pack, ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Array_Destructure>(
+                std::move(pack.names), std::move(pack.rest), std::move(expr));
+        },
+        [](destructure_pack pack, lexy::nullopt, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Array_Destructure>(
                 std::move(pack.names), std::move(pack.rest), std::move(expr));
         });
@@ -1261,8 +1275,9 @@ struct statement
 struct statement_list
 {
     static constexpr auto rule = [] {
-        auto sep = dsl::peek(dsl::while_(no_nl_chars | line_comment)
-                             + (dsl::lit_c<';'> | dsl::lit_c<'\n'>))
+        auto sep = dsl::peek(dsl::while_(no_nl_chars)
+                             + (dsl::lit_c<';'> | dsl::lit_c<'\n'>
+                                | dsl::lit_c<'#'>))
                    >> statement_ws;
         auto item = dsl::peek(expression_start_no_nl) >> dsl::p<statement>;
         return dsl::peek(expression_start_no_nl)

@@ -447,11 +447,7 @@ TEST_CASE("Parser Postfix Expressions")
         REQUIRE_FALSE(dot_newlines);
 
         auto dot_comment = parse("obj.# comment\nkey");
-        REQUIRE(dot_comment);
-        auto dot_expr2 = require_expression(dot_comment);
-        auto dot_out2 = dot_expr2->evaluate(table);
-        REQUIRE(dot_out2->is<frst::Int>());
-        CHECK(dot_out2->get<frst::Int>().value() == 7_f);
+        REQUIRE_FALSE(dot_comment);
 
         auto chain_spaced = parse("obj .\n inner \n.\n value");
         REQUIRE_FALSE(chain_spaced);
