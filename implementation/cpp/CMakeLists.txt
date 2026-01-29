@@ -1,3 +1,4 @@
+add_subdirectory(utils/)
 add_subdirectory(value/)
 add_subdirectory(symbol-table/)
 add_subdirectory(ast/)
