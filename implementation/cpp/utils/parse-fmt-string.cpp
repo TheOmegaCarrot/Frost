@@ -58,15 +58,23 @@ std::expected<std::vector<Replacement_Section>, std::string> parse_fmt_string(
             continue;
         }
 
+        if (i > 0)
+        {
+            std::size_t backslashes = 0;
+            for (std::size_t j = i; j > 0 && str.at(j - 1) == '\\'; --j)
+            {
+                ++backslashes;
+            }
+            if ((backslashes % 2) == 1)
+            {
+                ++i;
+                continue;
+            }
+        }
+
         if (i + 1 >= len)
         {
             ++i;
-            continue;
-        }
-
-        if (str.at(i + 1) == '$')
-        {
-            i += 2;
             continue;
         }
 
@@ -79,8 +87,8 @@ std::expected<std::vector<Replacement_Section>, std::string> parse_fmt_string(
         const auto end = str.find('}', i + 2);
         if (end == std::string::npos)
         {
-            return std::unexpected{
-                "Unterminated format placeholder: missing '}'"};
+            return std::unexpected{fmt::format(
+                "Unterminated format placeholder: {}", str.substr(i))};
         }
 
         const auto content = str.substr(i + 2, end - (i + 2));

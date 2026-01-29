@@ -48,18 +48,18 @@ TEST_CASE("utils::parse_fmt_string")
 
     SECTION("Escaped placeholders are not reported")
     {
-        auto result = parse_fmt_string("$${name}");
+        auto result = parse_fmt_string("\\${name}");
         REQUIRE(result);
         CHECK(result->empty());
 
-        auto result2 = parse_fmt_string("x$${a}y${b}");
+        auto result2 = parse_fmt_string("x\\${a}y${b}");
         REQUIRE(result2);
         REQUIRE(result2->size() == 1);
         CHECK(result2->at(0).start == 7);
         CHECK(result2->at(0).len == 4);
         CHECK(result2->at(0).content == "b");
 
-        auto result3 = parse_fmt_string("$$${a}");
+        auto result3 = parse_fmt_string("\\\\${a}");
         REQUIRE(result3);
         REQUIRE(result3->size() == 1);
         CHECK(result3->at(0).start == 2);
@@ -82,12 +82,21 @@ TEST_CASE("utils::parse_fmt_string")
         CHECK(result3->empty());
     }
 
+    SECTION("Dollar before placeholder does not escape it")
+    {
+        auto result = parse_fmt_string("$${a}");
+        REQUIRE(result);
+        REQUIRE(result->size() == 1);
+        CHECK(result->at(0).start == 1);
+        CHECK(result->at(0).len == 4);
+        CHECK(result->at(0).content == "a");
+    }
+
     SECTION("Unterminated placeholders return an error")
     {
         auto result = parse_fmt_string("hi ${name");
         REQUIRE_FALSE(result);
-        CHECK(result.error() ==
-              "Unterminated format placeholder: missing '}'");
+        CHECK(result.error() == "Unterminated format placeholder: ${name");
     }
 
     SECTION("Empty placeholders return an error")

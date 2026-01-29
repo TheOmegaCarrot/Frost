@@ -3,8 +3,13 @@
 
 #include <fmt/core.h>
 
+#include <boost/regex.hpp>
+
 #include <frost/symbol-table.hpp>
+#include <frost/utils.hpp>
 #include <frost/value.hpp>
+
+#include <ranges>
 
 namespace frst
 {
@@ -12,90 +17,28 @@ namespace frst
 namespace
 {
 
-bool is_identifier_like(const String& key)
-{
-    if (key.empty())
-    {
-        return false;
-    }
-
-    auto is_alpha = [](char c) {
-        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
-    };
-    auto is_digit = [](char c) {
-        return c >= '0' && c <= '9';
-    };
-    auto is_start = [&](char c) {
-        return is_alpha(c) || c == '_';
-    };
-    auto is_continue = [&](char c) {
-        return is_start(c) || is_digit(c);
-    };
-
-    if (!is_start(key.front()))
-    {
-        return false;
-    }
-    for (std::size_t i = 1; i < key.size(); ++i)
-    {
-        if (!is_continue(key.at(i)))
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-// ChatGPT wrote this because I really didn't want to
 std::string mformat_impl(const String& fmt_str, const Map& repl_map)
 {
-    std::string out;
-    out.reserve(fmt_str.size());
+    auto replacements_e = utils::parse_fmt_string(fmt_str);
 
-    for (std::size_t i = 0; i < fmt_str.size();)
+    if (not replacements_e.has_value())
+        throw Frost_Recoverable_Error{replacements_e.error()};
+
+    auto& replacements = replacements_e.value();
+
+    static const auto re = boost::regex(R"(\\)");
+    std::string out = boost::regex_replace(fmt_str, re, "\\");
+    for (auto& replacement : std::views::reverse(replacements))
     {
-        const auto next = fmt_str.find("${", i);
-        if (next == String::npos)
-        {
-            out.append(fmt_str, i, String::npos);
-            break;
-        }
+        auto key = Value::create(std::move(replacement.content));
+        auto map_itr = repl_map.find(key);
+        if (map_itr == repl_map.end())
+            throw Frost_Recoverable_Error{fmt::format(
+                "Missing replacement for key: {}", key->raw_get<String>())};
 
-        out.append(fmt_str, i, next - i);
+        auto formatted_replacment = map_itr->second->to_internal_string();
 
-        const auto start = next + 2;
-        const auto end = fmt_str.find('}', start);
-        if (end == String::npos)
-        {
-            throw Frost_Recoverable_Error{"Unterminated format placeholder"};
-        }
-        if (end == start)
-        {
-            throw Frost_Recoverable_Error{"Empty format placeholder"};
-        }
-
-        const auto key = fmt_str.substr(start, end - start);
-        if (!is_identifier_like(key))
-        {
-            throw Frost_Recoverable_Error{
-                fmt::format("Invalid format placeholder: {}", key)};
-        }
-        const auto key_val = Value::create(auto{key});
-        const auto it = repl_map.find(key_val);
-        if (it == repl_map.end())
-        {
-            throw Frost_Recoverable_Error{
-                fmt::format("Missing replacement for key: {}", key)};
-        }
-        if (it->second->is<Null>())
-        {
-            throw Frost_Recoverable_Error{
-                fmt::format("Replacement value for key {} is null", key)};
-        }
-
-        out += it->second->to_internal_string();
-        i = end + 1;
+        out.replace(replacement.start, replacement.len, formatted_replacment);
     }
 
     return out;

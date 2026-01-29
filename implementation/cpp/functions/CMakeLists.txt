@@ -28,6 +28,7 @@ target_include_directories( frost-functions
 target_link_libraries( frost-functions
     PUBLIC
     frost-common
+    frost-utils
     frost-ast
     frost-value
     frost-symbol-table
