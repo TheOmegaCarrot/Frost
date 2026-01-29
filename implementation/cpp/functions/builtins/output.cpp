@@ -7,8 +7,6 @@
 #include <frost/utils.hpp>
 #include <frost/value.hpp>
 
-#include <ranges>
-
 namespace frst
 {
 
@@ -29,20 +27,20 @@ std::string mformat_impl(const String& fmt_str, const Map& repl_map)
 
     for (const auto& segment : segments)
     {
-        if (const auto* literal = std::get_if<utils::Fmt_Literal>(&segment))
-        {
-            out.append(literal->text);
-            continue;
-        }
+        segment.visit(
+            Overload{[&](const utils::Fmt_Literal& lit) {
+                         out.append(lit.text);
+                     },
+                     [&](const utils::Fmt_Placeholder& placeholder) {
+                         auto key = Value::create(String{placeholder.text});
+                         auto map_itr = repl_map.find(key);
+                         if (map_itr == repl_map.end())
+                             throw Frost_Recoverable_Error{
+                                 fmt::format("Missing replacement for key: {}",
+                                             key->raw_get<String>())};
 
-        const auto& placeholder = std::get<utils::Fmt_Placeholder>(segment);
-        auto key = Value::create(String{placeholder.text});
-        auto map_itr = repl_map.find(key);
-        if (map_itr == repl_map.end())
-            throw Frost_Recoverable_Error{fmt::format(
-                "Missing replacement for key: {}", key->raw_get<String>())};
-
-        out.append(map_itr->second->to_internal_string());
+                         out.append(map_itr->second->to_internal_string());
+                     }});
     }
 
     return out;

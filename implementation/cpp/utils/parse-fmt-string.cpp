@@ -47,9 +47,13 @@ std::expected<std::vector<Fmt_Segment>, std::string> parse_fmt_string(
     const std::string& str)
 {
     std::vector<Fmt_Segment> sections;
-    const auto len = str.size();
+    const std::size_t len = str.size();
     std::size_t i = 0;
     std::string literal;
+
+    auto is_special = [](char c) {
+        return c == '\\' || c == '$';
+    };
 
     auto flush_literal = [&]() {
         if (!literal.empty())
@@ -59,55 +63,91 @@ std::expected<std::vector<Fmt_Segment>, std::string> parse_fmt_string(
         }
     };
 
+    auto try_consume_escape = [&]() -> bool {
+        if (str.at(i) != '\\')
+        {
+            return false;
+        }
+
+        if (i + 1 < len)
+        {
+            const char next = str.at(i + 1);
+            if (next == '$' || next == '\\')
+            {
+                literal.push_back(next);
+                i += 2;
+                return true;
+            }
+        }
+
+        literal.push_back('\\');
+        ++i;
+        return true;
+    };
+
+    auto try_consume_placeholder = [&]() -> std::expected<bool, std::string> {
+        if (str.at(i) != '$' || i + 1 >= len || str.at(i + 1) != '{')
+        {
+            return false;
+        }
+
+        const auto end = str.find('}', i + 2);
+        if (end == std::string::npos)
+        {
+            return std::unexpected{fmt::format(
+                "Unterminated format placeholder: {}", str.substr(i))};
+        }
+
+        std::string content = str.substr(i + 2, end - (i + 2));
+        if (!is_identifier_like(content))
+        {
+            if (content.empty())
+            {
+                return std::unexpected{"Invalid format placeholder: ${}"};
+            }
+            return std::unexpected{
+                fmt::format("Invalid format placeholder: ${{{}}}", content)};
+        }
+
+        flush_literal();
+        sections.push_back(Fmt_Placeholder{std::move(content)});
+        i = end + 1;
+        return true;
+    };
+
     while (i < len)
     {
-        const char c = str.at(i);
-
-        if (c == '\\')
+        if (!is_special(str.at(i)))
         {
-            if (i + 1 < len)
+            const auto next = str.find_first_of("\\$", i);
+            if (next == std::string::npos)
             {
-                const char next = str.at(i + 1);
-                if (next == '$' || next == '\\')
-                {
-                    literal.push_back(next);
-                    i += 2;
-                    continue;
-                }
+                literal.append(str, i, len - i);
+                i = len;
+                break;
             }
 
-            literal.push_back('\\');
-            ++i;
+            literal.append(str, i, next - i);
+            i = next;
             continue;
         }
 
-        if (c == '$' && i + 1 < len && str.at(i + 1) == '{')
+        if (try_consume_escape())
         {
-            const auto end = str.find('}', i + 2);
-            if (end == std::string::npos)
-            {
-                return std::unexpected{fmt::format(
-                    "Unterminated format placeholder: {}", str.substr(i))};
-            }
-
-            const auto content = str.substr(i + 2, end - (i + 2));
-            if (!is_identifier_like(content))
-            {
-                if (content.empty())
-                {
-                    return std::unexpected{"Invalid format placeholder: ${}"};
-                }
-                return std::unexpected{fmt::format(
-                    "Invalid format placeholder: ${{{}}}", content)};
-            }
-
-            flush_literal();
-            sections.push_back(Fmt_Placeholder{content});
-            i = end + 1;
             continue;
         }
 
-        literal.push_back(c);
+        auto placeholder = try_consume_placeholder();
+        if (!placeholder.has_value())
+        {
+            return std::unexpected{std::move(placeholder.error())};
+        }
+        if (placeholder.value())
+        {
+            continue;
+        }
+
+        literal.push_back(str.at(i));
         ++i;
     }
 
