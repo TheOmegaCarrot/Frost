@@ -8,6 +8,7 @@
 #include "expression.hpp"
 #include "filter.hpp"
 #include "foreach.hpp"
+#include "format-string.hpp"
 #include "function_call.hpp"
 #include "if.hpp"
 #include "index.hpp"

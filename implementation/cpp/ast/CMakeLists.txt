@@ -14,6 +14,7 @@ target_include_directories( frost-ast
 target_link_libraries( frost-ast
     PUBLIC
     frost-common
+    frost-utils
     frost-symbol-table
     frost-value
 )
@@ -56,3 +57,5 @@ make_ast_test(tests/map.cpp)
 make_ast_test(tests/foreach.cpp)
 
 make_ast_test(tests/filter.cpp)
+
+make_ast_test(tests/format-string.cpp)
