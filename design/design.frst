@@ -69,7 +69,7 @@ def only_string_keys = fn (dict) -> {
     filter dict with fn (k, v) -> { is_string(k) }
 }
 
-def map_filter_example = only_string_keys( %{ foo: 42, [10]: "hi" } ) # %{ foo: 42 }
+def map_filter_example = only_string_keys( { foo: 42, [10]: "hi" } ) # { foo: 42 }
 
 # types:
 
@@ -89,7 +89,7 @@ def an_array = [1, 2.3, false] # dynamic typing
 
 def array_access = an_array[1] # 2.3
 
-def a_map = %{ k1: 42, k2: ["foo", "bar"], [4]: 4, [a_string]: 18 } # key-value pairs
+def a_map = { k1: 42, k2: ["foo", "bar"], [4]: 4, [a_string]: 18 } # key-value pairs
 
 def map_access = a_map["k1"]
 
@@ -101,7 +101,7 @@ def map_reduce = fn (dict) -> {
     reduce dict with fn (acc, k, v) -> { acc + v } init: 0
 }
 
-def map_reduce_res = map_reduce( %{ k1: 3, k2: 5 } ) # 8
+def map_reduce_res = map_reduce( { k1: 3, k2: 5 } ) # 8
 
 # map mapping
 def map_map = fn (dict) -> {
@@ -109,10 +109,10 @@ def map_map = fn (dict) -> {
     #
     # map traversal order is unspecified, so key collisions result in
     # *something* getting overwritten. Which? Depends. Don't do that.
-    map dict with fn (k, v) -> { %{ [k]: v + 1, [k + k]: v + 2 } }
+    map dict with fn (k, v) -> { { [k]: v + 1, [k + k]: v + 2 } }
 }
 
-def map_map_res = map_map( %{ k1: 1, k2: 4 } ) # %{ k1: 2, k2: 5, k1k1: 3, k2k2: 6 }
+def map_map_res = map_map( { k1: 1, k2: 4 } ) # { k1: 2, k2: 5, k1k1: 3, k2k2: 6 }
 
 # array iteration
 def iterate_array = fn (arr) -> {
@@ -121,7 +121,7 @@ def iterate_array = fn (arr) -> {
 
 # map iteration
 def iterate_map = fn (dict) -> {
-    foreach dict with fn (k, v) -> { mprint("${k}: ${v}", %{[k]: v}) }
+    foreach dict with fn (k, v) -> { mprint("${k}: ${v}", {[k]: v}) }
 }
 
 print("hi") # any values returned by top-level expressions are discarded (even the last one)
@@ -133,8 +133,8 @@ def arr_concat = [1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
 
 def str_concat = "foo" + " " + "bar" # "foo bar"
 
-# %{ foo: "bloop", baz: "beep", beep: "boop" }
-def map_combine = %{ foo: "bar", baz: "beep" } + %{ beep: "boop", foo: "bloop" }
+# { foo: "bloop", baz: "beep", beep: "boop" }
+def map_combine = { foo: "bar", baz: "beep" } + { beep: "boop", foo: "bloop" }
 
 def logical_operations = ( true and true ) or not false
 
@@ -142,9 +142,9 @@ def or_1 = "everything except false or null is truthy" or false # equals the str
 
 def or_2 = false or 42 # 42
 
-def map1 = %{ foo: "bar" }
+def map1 = { foo: "bar" }
 
-def map2 = %{ foo: "bar" }
+def map2 = { foo: "bar" }
 
 def maps_eq = map1 == map2 # maps and arrays use identity equality (maps_eq is false)
 
