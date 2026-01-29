@@ -225,6 +225,26 @@ TEST_CASE("Parser Program")
         CHECK(v2->get<frst::Int>().value() == 42_f);
     }
 
+    SECTION("Format strings can appear as program statements")
+    {
+        auto result = parse(R"($"hi ${x}"
+42)");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        table.define("x", frst::Value::create(3_f));
+
+        auto v1 = evaluate_statement(program[0], table);
+        auto v2 = evaluate_statement(program[1], table);
+
+        REQUIRE(v1->is<frst::String>());
+        CHECK(v1->get<frst::String>().value() == "hi 3");
+        REQUIRE(v2->is<frst::Int>());
+        CHECK(v2->get<frst::Int>().value() == 42_f);
+    }
+
     SECTION("Mixed literal types in a single program")
     {
         auto result = parse("1; \"s\"; 't'; true; null");

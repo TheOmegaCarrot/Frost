@@ -58,6 +58,7 @@ constexpr auto expression_start_impl()
                    | dsl::lit_c<'{'>
                    | dsl::lit_c<'"'>
                    | dsl::lit_c<'\''>
+                   | dsl::lit_c<'$'>
                    | dsl::lit_c<'-'>;
     if constexpr (AllowNl)
         return dsl::peek(param_ws_nl + starter);
@@ -315,6 +316,14 @@ struct string_literal
     static constexpr auto name = "string literal";
 };
 
+struct format_string_literal
+{
+    static constexpr auto rule =
+        dsl::p<string_literal::raw_double> | dsl::p<string_literal::raw_single>;
+    static constexpr auto value = lexy::forward<std::string>;
+    static constexpr auto name = "format string literal";
+};
+
 namespace node
 {
 struct Literal
@@ -329,6 +338,17 @@ struct Literal
     static constexpr auto value =
         lexy::new_<ast::Literal, ast::Expression::Ptr>;
     static constexpr auto name = "literal";
+};
+
+struct Format_String
+{
+    static constexpr auto rule = dsl::no_whitespace(
+        dsl::lit_c<'$'> >> dsl::p<format_string_literal>);
+    static constexpr auto value =
+        lexy::callback<ast::Expression::Ptr>([](std::string format) {
+            return std::make_unique<ast::Format_String>(std::move(format));
+        });
+    static constexpr auto name = "format string";
 };
 
 struct Name_Lookup
@@ -912,6 +932,8 @@ struct primary_expression
         >> dsl::p<node::Array>
         | dsl::peek(dsl::lit_c<'{'>)
         >> dsl::p<node::Map>
+        | dsl::peek(dsl::lit_c<'$'>)
+        >> dsl::p<node::Format_String>
         | dsl::p<node::Literal>
         | dsl::peek(LEXY_KEYWORD("elif", identifier::base))
         >> dsl::error<unexpected_elif>
