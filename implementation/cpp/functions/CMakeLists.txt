@@ -89,3 +89,5 @@ functions_test(tests/builtins/regex.cpp)
 functions_test(tests/builtins/mutable-cell.cpp)
 
 functions_test(tests/builtins/streams.cpp)
+
+functions_test(tests/builtins/json.cpp)
