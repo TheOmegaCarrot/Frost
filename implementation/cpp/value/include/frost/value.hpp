@@ -582,6 +582,12 @@ class Value
     static Value_Ptr do_reduce(Value_Ptr structure, const Function& fn,
                                std::optional<Value_Ptr> init);
 
+    decltype(auto) visit(this auto&& self, auto&& visitor)
+    {
+        return std::forward<decltype(self)>(self).value_.visit(
+            std::forward<decltype(visitor)>(visitor));
+    }
+
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map, Function> value_;
 

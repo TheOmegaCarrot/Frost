@@ -6,6 +6,7 @@ add_library( frost-functions
     builtins/debug-helpers.cpp
     builtins/error-handling.cpp
     builtins/free-operators.cpp
+    builtins/json.cpp
     builtins/math.cpp
     builtins/mutable-cell.cpp
     builtins/os.cpp
@@ -33,6 +34,7 @@ target_link_libraries( frost-functions
     frost-value
     frost-symbol-table
     Boost::regex
+    Boost::json
 )
 
 macro(functions_test file)

@@ -20,7 +20,8 @@ namespace frst
     X(ranges)                                                                  \
     X(and_then)                                                                \
     X(os)                                                                      \
-    X(streams)
+    X(streams)                                                                 \
+    X(json)
 
 #define X(F) void inject_##F(Symbol_Table&);
 

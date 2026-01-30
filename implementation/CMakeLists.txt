@@ -26,7 +26,7 @@ include(get-replxx)
 
 include(get-test-libs)
 
-find_package(Boost REQUIRED COMPONENTS regex headers)
+find_package(Boost REQUIRED COMPONENTS regex json headers)
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
     set(CMAKE_INTERPROCEDUAL_OPTIMIZATION YES)
