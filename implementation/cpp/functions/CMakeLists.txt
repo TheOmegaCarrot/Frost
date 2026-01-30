@@ -85,3 +85,5 @@ functions_test(tests/builtins/string-ops.cpp)
 functions_test(tests/builtins/regex.cpp)
 
 functions_test(tests/builtins/mutable-cell.cpp)
+
+functions_test(tests/builtins/streams.cpp)
