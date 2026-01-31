@@ -1,0 +1,4 @@
+# AI-generated
+def m = import('export-null')
+assert(is_null(m.n))
+assert(len(m) == 1)

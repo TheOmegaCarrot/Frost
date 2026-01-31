@@ -1,0 +1,3 @@
+# AI-generated
+def m = import('cwdmod')
+assert(m.v == 7)

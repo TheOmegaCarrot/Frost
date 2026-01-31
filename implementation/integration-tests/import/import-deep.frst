@@ -1,0 +1,3 @@
+# AI-generated
+def m = import('deep.a.b.c')
+assert(m.v == 5)

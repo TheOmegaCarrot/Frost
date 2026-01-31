@@ -1,0 +1,7 @@
+# AI-generated
+def m = import('export-destructure')
+assert(m.a == 1)
+assert(m.b == 2)
+assert(len(m.rest) == 1)
+assert(m.rest[0] == 3)
+assert(len(m) == 3)

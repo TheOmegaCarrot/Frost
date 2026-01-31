@@ -1,0 +1,2 @@
+# AI-generated
+export def [a, b, ...rest] = [1, 2, 3]

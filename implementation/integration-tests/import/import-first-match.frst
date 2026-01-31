@@ -1,0 +1,3 @@
+# AI-generated
+def m = import('dupe')
+assert(m.v == 1)

@@ -6,6 +6,13 @@ set(IMPORT_SCRIPTS
     import-nested.frst
     import-env.frst
     import-errors.frst
+    import-first-match.frst
+    import-null-export.frst
+    import-parse-error.frst
+    import-cwd.frst
+    import-parent-cwd.frst
+    import-destructure.frst
+    import-deep.frst
 )
 foreach(script ${IMPORT_SCRIPTS})
     get_filename_component(name ${script} NAME_WE)
@@ -18,4 +25,19 @@ endforeach()
 set_tests_properties(
     Frost_Integration_Import_import-env
     PROPERTIES ENVIRONMENT "FROST_MODULE_PATH=${IMPORT_TEST_DIR}/envmods"
+)
+
+set_tests_properties(
+    Frost_Integration_Import_import-first-match
+    PROPERTIES ENVIRONMENT "FROST_MODULE_PATH=${IMPORT_TEST_DIR}/envmods"
+)
+
+set_tests_properties(
+    Frost_Integration_Import_import-cwd
+    PROPERTIES WORKING_DIRECTORY "${IMPORT_TEST_DIR}/cwdroot"
+)
+
+set_tests_properties(
+    Frost_Integration_Import_import-parent-cwd
+    PROPERTIES WORKING_DIRECTORY "${IMPORT_TEST_DIR}/cwdroot"
 )

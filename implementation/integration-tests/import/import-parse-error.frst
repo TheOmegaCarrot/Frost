@@ -1,0 +1,4 @@
+# AI-generated
+def bad = try_call(import, ["bad.parse"])
+assert(bad.ok == false)
+assert(len(bad.error) > 0)
