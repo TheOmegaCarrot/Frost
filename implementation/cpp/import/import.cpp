@@ -73,9 +73,8 @@ struct Importer
         inject_prelude(isolated_table);
 
         std::vector<std::filesystem::path> child_search_path{
-            module_file.parent_path()};
-        child_search_path.reserve(parent_search_path.size() + 1);
-        child_search_path.append_range(parent_search_path);
+            module_file.parent_path(), "."};
+        child_search_path.append_range(env_module_path());
 
         inject_import(isolated_table, child_search_path);
 
