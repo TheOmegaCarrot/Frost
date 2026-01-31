@@ -1,5 +1,6 @@
 #include <frost/ast.hpp>
 #include <frost/builtin.hpp>
+#include <frost/import.hpp>
 #include <frost/parser.hpp>
 #include <frost/prelude.hpp>
 #include <frost/symbol-table.hpp>
@@ -123,6 +124,7 @@ int main(int argc, const char** argv)
     frst::Symbol_Table symbols;
     frst::inject_builtins(symbols);
     frst::inject_prelude(symbols);
+    frst::inject_import(symbols, {"."});
 
     symbols.define("args", frst::Value::create(
                                args_for_frost

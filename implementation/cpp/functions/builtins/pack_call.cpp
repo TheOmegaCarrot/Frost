@@ -1,4 +1,4 @@
-#include "builtins-common.hpp"
+#include <frost/builtins-common.hpp>
 
 namespace frst
 {
