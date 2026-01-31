@@ -66,6 +66,25 @@ TEST_CASE("Parser Binary Expressions")
         }
     }
 
+    SECTION("Newlines and comments inside parentheses are allowed")
+    {
+        auto result = parse("(1 +\n 2)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        REQUIRE(value->is<frst::Int>());
+        CHECK(value->get<frst::Int>().value() == 3_f);
+
+        auto result2 = parse("(1 + # comment\n 2)");
+        REQUIRE(result2);
+        auto expr2 = require_expression(result2);
+        auto value2 = expr2->evaluate(table);
+        REQUIRE(value2->is<frst::Int>());
+        CHECK(value2->get<frst::Int>().value() == 3_f);
+    }
+
     SECTION("Arithmetic associativity")
     {
         struct Case

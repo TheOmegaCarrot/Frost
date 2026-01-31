@@ -171,6 +171,31 @@ TEST_CASE("Parser Array Literals")
         CHECK(arr[2]->get<frst::Bool>().value() == true);
     }
 
+    SECTION("Array element expressions can span newlines")
+    {
+        auto result = parse("[1 +\n 2]");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Array>());
+        const auto& arr = out->raw_get<frst::Array>();
+        REQUIRE(arr.size() == 1);
+        REQUIRE(arr[0]->is<frst::Int>());
+        CHECK(arr[0]->get<frst::Int>().value() == 3_f);
+
+        auto result2 = parse("[1 + # comment\n 2]");
+        REQUIRE(result2);
+        auto expr2 = require_expression(result2);
+        auto out2 = expr2->evaluate(table);
+        REQUIRE(out2->is<frst::Array>());
+        const auto& arr2 = out2->raw_get<frst::Array>();
+        REQUIRE(arr2.size() == 1);
+        REQUIRE(arr2[0]->is<frst::Int>());
+        CHECK(arr2[0]->get<frst::Int>().value() == 3_f);
+    }
+
     SECTION("Array literals can be passed as function arguments")
     {
         frst::Symbol_Table table;

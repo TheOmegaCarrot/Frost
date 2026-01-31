@@ -33,12 +33,7 @@ constexpr auto statement_ws = dsl::while_(
 constexpr auto param_ws = dsl::while_(no_nl_chars | line_comment);
 constexpr auto param_ws_no_comment = dsl::while_(no_nl_chars);
 constexpr auto param_ws_nl = dsl::while_(dsl::ascii::space | line_comment);
-constexpr auto nl_before_postfix =
-    dsl::peek(dsl::lit_c<'\n'> + param_ws
-              + (dsl::lit_c<'.'> | dsl::lit_c<'@'>))
-    >> dsl::lit_c<'\n'>;
-constexpr auto ws_expr_nl =
-    dsl::whitespace(no_nl_chars | line_comment | nl_before_postfix);
+constexpr auto ws_expr_nl = ws_nl;
 template <typename Ws>
 constexpr auto comma_sep_ws(Ws ws)
 {
@@ -92,11 +87,6 @@ struct expected_expression
 struct expected_lambda_body
 {
     static constexpr auto name = "lambda body";
-};
-
-struct expected_map_entry
-{
-    static constexpr auto name = "map entry";
 };
 
 struct expected_with_expression
@@ -658,12 +648,12 @@ template <typename Node>
 struct With_Operation
 {
     static constexpr auto rule =
-        dsl::recurse<expression_nl>
+        dsl::recurse<expression>
         + param_ws_nl
         + kw_with
         + param_ws_nl
         + (require_expr_start_nl<expected_with_expression>()
-           >> dsl::recurse<expression_nl>);
+           >> dsl::recurse<expression>);
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
             return std::make_unique<Node>(std::move(structure),
@@ -1267,11 +1257,7 @@ constexpr auto define_payload = [] {
                >> dsl::p<array_destructure_pattern>
                | dsl::else_
                >> dsl::p<identifier_required>;
-    auto rhs_ws =
-        param_ws
-        + dsl::opt(dsl::peek(line_comment)
-                   >> (line_comment + dsl::lit_c<'\n'> + param_ws));
-    return lhs + dsl::lit_c<'='> + rhs_ws + dsl::p<expression>;
+    return lhs + dsl::lit_c<'='> + param_ws + dsl::p<expression>;
 }();
 
 struct Define

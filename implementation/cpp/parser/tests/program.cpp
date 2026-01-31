@@ -695,6 +695,63 @@ TEST_CASE("Parser Program")
         }
     }
 
+    SECTION("Statement boundaries with map/filter/foreach across newlines")
+    {
+        {
+            auto result = parse("map [1] with fn (x) -> { x }\n2");
+            REQUIRE(result);
+            auto program = require_program(result);
+            REQUIRE(program.size() == 2);
+
+            frst::Symbol_Table table;
+            auto v1 = evaluate_statement(program[0], table);
+            auto v2 = evaluate_statement(program[1], table);
+
+            REQUIRE(v1->is<frst::Array>());
+            const auto& arr = v1->raw_get<frst::Array>();
+            REQUIRE(arr.size() == 1);
+            CHECK(arr[0]->get<frst::Int>().value() == 1_f);
+
+            REQUIRE(v2->is<frst::Int>());
+            CHECK(v2->get<frst::Int>().value() == 2_f);
+        }
+
+        {
+            auto result = parse(
+                "filter [1, 2] with fn (x) -> { x > 1 }\n3");
+            REQUIRE(result);
+            auto program = require_program(result);
+            REQUIRE(program.size() == 2);
+
+            frst::Symbol_Table table;
+            auto v1 = evaluate_statement(program[0], table);
+            auto v2 = evaluate_statement(program[1], table);
+
+            REQUIRE(v1->is<frst::Array>());
+            const auto& arr = v1->raw_get<frst::Array>();
+            REQUIRE(arr.size() == 1);
+            CHECK(arr[0]->get<frst::Int>().value() == 2_f);
+
+            REQUIRE(v2->is<frst::Int>());
+            CHECK(v2->get<frst::Int>().value() == 3_f);
+        }
+
+        {
+            auto result = parse("foreach [1] with fn (x) -> { x }\n4");
+            REQUIRE(result);
+            auto program = require_program(result);
+            REQUIRE(program.size() == 2);
+
+            frst::Symbol_Table table;
+            auto v1 = evaluate_statement(program[0], table);
+            auto v2 = evaluate_statement(program[1], table);
+
+            REQUIRE(v1->is<frst::Null>());
+            REQUIRE(v2->is<frst::Int>());
+            CHECK(v2->get<frst::Int>().value() == 4_f);
+        }
+    }
+
     SECTION("Map/filter/reduce/foreach appear in defs and if expressions")
     {
         auto result = parse("def x = map [1] with fn (v) -> { v };"

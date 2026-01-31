@@ -138,6 +138,23 @@ TEST_CASE("Parser Map Literals")
         CHECK(out->raw_get<frst::Map>().size() == 2);
     }
 
+    SECTION("Map value expressions can span newlines")
+    {
+        auto result = parse("{foo: 1 +\n 2}");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Map>());
+        const auto& map = out->raw_get<frst::Map>();
+        auto foo_key = frst::Value::create(std::string{"foo"});
+        auto it = map.find(foo_key);
+        REQUIRE(it != map.end());
+        REQUIRE(it->second->is<frst::Int>());
+        CHECK(it->second->get<frst::Int>().value() == 3_f);
+    }
+
     SECTION("Map literals can appear inside arrays")
     {
         auto result = parse("[{a: 1}, {b: 2}]");
