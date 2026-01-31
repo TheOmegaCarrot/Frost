@@ -31,10 +31,11 @@ class Array_Destructure final : public Statement
     ~Array_Destructure() final = default;
 
     Array_Destructure(std::vector<Name> names, std::optional<Name> rest_name,
-                      Expression::Ptr expr)
+                      Expression::Ptr expr, bool export_defs = false)
         : names_{std::move(names)}
         , rest_name_{std::move(rest_name)}
         , expr_{std::move(expr)}
+        , export_defs_{export_defs}
     {
         std::flat_set<std::string_view> binding_names;
 
@@ -59,9 +60,11 @@ class Array_Destructure final : public Statement
             rest_name_->visit(duplicate_check);
     }
 
-    void execute(Symbol_Table& table) const final
+    std::optional<Map> execute(Symbol_Table& table) const final
     {
         Value_Ptr expr_result = expr_->evaluate(table);
+
+        Map exports;
 
         if (not expr_result->is<Array>())
         {
@@ -93,6 +96,11 @@ class Array_Destructure final : public Statement
                                 },
                                 [&](const std::string& name) {
                                     table.define(name, val);
+                                    if (export_defs_)
+                                    {
+                                        exports.emplace(
+                                            Value::create(auto{name}), val);
+                                    }
                                 }});
         }
 
@@ -100,15 +108,23 @@ class Array_Destructure final : public Statement
         {
             rest_name_->visit(Overload{
                 [](const Discarded_Binding&) {
-
                 },
                 [&](const std::string& name) {
-                    table.define(name,
-                                 Value::create(arr
-                                               | std::views::drop(names_.size())
-                                               | std::ranges::to<Array>()));
+                    auto val = Value::create(arr
+                                             | std::views::drop(names_.size())
+                                             | std::ranges::to<Array>());
+
+                    table.define(name, val);
+
+                    if (export_defs_)
+                        exports.emplace(Value::create(auto{name}), val);
                 }});
         }
+
+        if (export_defs_)
+            return exports;
+        else
+            return std::nullopt;
     }
 
     std::generator<Symbol_Action> symbol_sequence() const final
@@ -154,6 +170,7 @@ class Array_Destructure final : public Statement
     std::vector<Name> names_;
     std::optional<Name> rest_name_;
     Expression::Ptr expr_;
+    bool export_defs_;
 };
 
 } // namespace frst::ast

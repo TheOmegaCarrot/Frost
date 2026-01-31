@@ -15,9 +15,10 @@ class Define final : public Statement
     using Ptr = std::unique_ptr<Define>;
 
     Define() = delete;
-    Define(std::string name, Expression::Ptr expr)
+    Define(std::string name, Expression::Ptr expr, bool export_def = false)
         : name_{std::move(name)}
         , expr_{std::move(expr)}
+        , export_def_{export_def}
     {
         if (name_ == "_")
             throw Frost_Unrecoverable_Error{"\"_\" is not a valid identifier"};
@@ -29,9 +30,15 @@ class Define final : public Statement
     Define& operator=(Define&&) = delete;
     ~Define() final = default;
 
-    void execute(Symbol_Table& table) const
+    std::optional<Map> execute(Symbol_Table& table) const
     {
-        table.define(name_, expr_->evaluate(table));
+        auto value = expr_->evaluate(table);
+        table.define(name_, value);
+
+        if (export_def_)
+            return Map{{Value::create(auto{name_}), value}};
+        else
+            return std::nullopt;
     }
 
     std::generator<Symbol_Action> symbol_sequence() const final
@@ -54,6 +61,7 @@ class Define final : public Statement
   private:
     std::string name_;
     Expression::Ptr expr_;
+    bool export_def_;
 };
 
 } // namespace frst::ast

@@ -28,7 +28,7 @@ class Statement
     //! @brief Execute this statement
     //! @param table Symbol table to use for lookup, and in which to define new
     //!                 names
-    virtual void execute(Symbol_Table& table) const = 0;
+    virtual std::optional<Map> execute(Symbol_Table& table) const = 0;
 
     //! @brief Print AST of this node and all descendents
     void debug_dump_ast(std::ostream& out) const;

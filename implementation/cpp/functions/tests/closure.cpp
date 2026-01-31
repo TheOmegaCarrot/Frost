@@ -39,9 +39,11 @@ struct Flag_Statement final : Statement
     {
     }
 
-    void execute(Symbol_Table&) const override
+    std::optional<frst::Map>
+        execute([[maybe_unused]] Symbol_Table&) const override
     {
         ++(*count_);
+        return std::nullopt;
     }
 
   protected:

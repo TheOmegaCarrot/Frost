@@ -34,7 +34,8 @@ TEST_CASE("Define")
 
         ast::Define node{"foo", std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        auto result = node.execute(syms);
+        CHECK_FALSE(result.has_value());
     }
 
     SECTION("Redefine")
@@ -60,8 +61,53 @@ TEST_CASE("Define")
 
         ast::Define node{"foo", std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        auto result = node.execute(syms);
+        CHECK_FALSE(result.has_value());
         CHECK_THROWS(node.execute(syms));
+    }
+
+    SECTION("Exports defined value when enabled")
+    {
+        auto value = Value::create(123_f);
+
+        REQUIRE_CALL(*expr, evaluate(_))
+            .IN_SEQUENCE(seq)
+            .LR_WITH(&_1 == &syms)
+            .RETURN(value);
+
+        REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
+
+        ast::Define node{"foo", std::move(expr), true};
+
+        auto result = node.execute(syms);
+        REQUIRE(result.has_value());
+        CHECK(result->size() == 1);
+
+        auto it = result->find(Value::create("foo"s));
+        REQUIRE(it != result->end());
+        CHECK(it->second == value);
+    }
+
+    SECTION("Exports null values when enabled")
+    {
+        auto value = Value::null();
+
+        REQUIRE_CALL(*expr, evaluate(_))
+            .IN_SEQUENCE(seq)
+            .LR_WITH(&_1 == &syms)
+            .RETURN(value);
+
+        REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
+
+        ast::Define node{"foo", std::move(expr), true};
+
+        auto result = node.execute(syms);
+        REQUIRE(result.has_value());
+        CHECK(result->size() == 1);
+
+        auto it = result->find(Value::create("foo"s));
+        REQUIRE(it != result->end());
+        CHECK(it->second == value);
     }
 
     SECTION("Reject _")

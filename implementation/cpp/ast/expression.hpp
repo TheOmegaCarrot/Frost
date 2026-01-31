@@ -25,9 +25,10 @@ class Expression : public Statement
         const Symbol_Table& table) const = 0;
 
     //! Executing an expression is simply to evaluate it and discard the result
-    void execute(Symbol_Table& table) const final
+    std::optional<Map> execute(Symbol_Table& table) const final
     {
         (void)evaluate(table);
+        return std::nullopt;
     }
 };
 } // namespace frst::ast

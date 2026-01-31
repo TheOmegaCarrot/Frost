@@ -112,7 +112,95 @@ TEST_CASE("Array_Destructure")
 
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        auto result = node.execute(syms);
+        CHECK_FALSE(result.has_value());
+    }
+
+    SECTION("Exports only bound names when enabled")
+    {
+        auto expr = std::make_unique<mock::Mock_Expression>();
+        mock::Mock_Symbol_Table syms;
+        trompeloeil::sequence seq;
+
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+        auto arr = Value::create(Array{a, b, c});
+
+        REQUIRE_CALL(*expr, evaluate(_))
+            .IN_SEQUENCE(seq)
+            .LR_WITH(&_1 == &syms)
+            .RETURN(arr);
+
+        REQUIRE_CALL(syms, define("x", a)).IN_SEQUENCE(seq);
+        REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
+            auto val = _2;
+            REQUIRE(val->template is<Array>());
+            const auto& out = val->template raw_get<Array>();
+            REQUIRE(out.size() == 1);
+            CHECK(out.at(0) == c);
+        });
+
+        std::vector<Array_Destructure::Name> names{
+            std::string{"x"},
+            Discarded_Binding{},
+        };
+
+        Array_Destructure node{
+            std::move(names),
+            Array_Destructure::Name{std::string{"rest"}},
+            std::move(expr),
+            true,
+        };
+
+        auto result = node.execute(syms);
+        REQUIRE(result.has_value());
+        CHECK(result->size() == 2);
+
+        CHECK(result->find(Value::create("_"s)) == result->end());
+
+        auto it_x = result->find(Value::create("x"s));
+        REQUIRE(it_x != result->end());
+        CHECK(it_x->second == a);
+
+        auto it_rest = result->find(Value::create("rest"s));
+        REQUIRE(it_rest != result->end());
+        REQUIRE(it_rest->second->template is<Array>());
+        const auto& rest_out = it_rest->second->template raw_get<Array>();
+        REQUIRE(rest_out.size() == 1);
+        CHECK(rest_out.at(0) == c);
+    }
+
+    SECTION("Exports null values when enabled")
+    {
+        auto expr = std::make_unique<mock::Mock_Expression>();
+        mock::Mock_Symbol_Table syms;
+        trompeloeil::sequence seq;
+
+        auto a = Value::null();
+        auto arr = Value::create(Array{a});
+
+        REQUIRE_CALL(*expr, evaluate(_))
+            .IN_SEQUENCE(seq)
+            .LR_WITH(&_1 == &syms)
+            .RETURN(arr);
+
+        REQUIRE_CALL(syms, define("x", a)).IN_SEQUENCE(seq);
+
+        std::vector<Array_Destructure::Name> names{
+            std::string{"x"},
+        };
+
+        Array_Destructure node{std::move(names), std::nullopt, std::move(expr),
+                               true};
+
+        auto result = node.execute(syms);
+        REQUIRE(result.has_value());
+        CHECK(result->size() == 1);
+
+        auto it = result->find(Value::create("x"s));
+        REQUIRE(it != result->end());
+        CHECK(it->second == a);
     }
 
     SECTION("Rest binds remaining elements")
@@ -148,7 +236,8 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        auto result = node.execute(syms);
+        CHECK_FALSE(result.has_value());
     }
 
     SECTION("Rest binds empty array when no extra elements")
@@ -179,7 +268,8 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        auto result = node.execute(syms);
+        CHECK_FALSE(result.has_value());
     }
 
     SECTION("Discarded rest ignores extra elements")
@@ -208,7 +298,8 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        auto result = node.execute(syms);
+        CHECK_FALSE(result.has_value());
     }
 
     SECTION("Rest with discarded positional")
@@ -244,7 +335,8 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        auto result = node.execute(syms);
+        CHECK_FALSE(result.has_value());
     }
 
     SECTION("Rest binds empty array when exact size")
