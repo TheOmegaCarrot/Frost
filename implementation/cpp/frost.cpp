@@ -124,7 +124,15 @@ int main(int argc, const char** argv)
     frst::Symbol_Table symbols;
     frst::inject_builtins(symbols);
     frst::inject_prelude(symbols);
-    frst::inject_import(symbols, {"."});
+
+    std::vector<std::filesystem::path> module_search_path;
+    if (file_to_evaluate)
+        module_search_path.push_back(file_to_evaluate.value().parent_path());
+    module_search_path.push_back(".");
+
+    module_search_path.append_range(frst::env_module_path());
+
+    frst::inject_import(symbols, module_search_path);
 
     symbols.define("args", frst::Value::create(
                                args_for_frost

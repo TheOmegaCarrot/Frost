@@ -12,6 +12,19 @@
 namespace frst
 {
 
+std::vector<std::filesystem::path> env_module_path()
+{
+    if (const char* extra_path = std::getenv("FROST_MODULE_PATH"))
+    {
+        return std::string{extra_path}
+               | std::views::split(':')
+               | std::ranges::to<std::vector<std::string>>()
+               | std::ranges::to<std::vector<std::filesystem::path>>();
+    }
+
+    return {};
+}
+
 namespace
 {
 
@@ -59,8 +72,12 @@ struct Importer
         inject_builtins(isolated_table);
         inject_prelude(isolated_table);
 
-        (void)parent_search_path;
-        // TODO: tweak search path and re-inject modified importer
+        std::vector<std::filesystem::path> child_search_path{
+            module_file.parent_path()};
+        child_search_path.reserve(parent_search_path.size() + 1);
+        child_search_path.append_range(parent_search_path);
+
+        inject_import(isolated_table, child_search_path);
 
         Map imported;
         for (const auto& statement : parse_result.value())
