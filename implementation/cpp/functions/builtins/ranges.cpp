@@ -300,6 +300,34 @@ BUILTIN(sorted)
     return Value::create(std::move(out));
 }
 
+#define X_QUANTIFIERS                                                          \
+    X(any)                                                                     \
+    X(all)                                                                     \
+    X(none)
+
+#define X(quant)                                                               \
+    BUILTIN(quant)                                                             \
+    {                                                                          \
+        REQUIRE_ARGS(#quant, TYPES(Array), OPTIONAL(TYPES(Function)));         \
+                                                                               \
+        auto pred = system_closure(1, 1, [](builtin_args_t args) {             \
+            return args.at(0);                                                 \
+        });                                                                    \
+        if (HAS(1))                                                            \
+            pred = args.at(1);                                                 \
+                                                                               \
+        auto pred_fn = pred->raw_get<Function>();                              \
+                                                                               \
+        return Value::create(std::ranges::quant##_of(                          \
+            GET(0, Array), [&](const Value_Ptr& elem) {                        \
+                return pred_fn->call({elem})->as<Bool>().value();              \
+            }));                                                               \
+    }
+
+X_QUANTIFIERS
+
+#undef X
+
 void inject_ranges(Symbol_Table& table)
 {
     INJECT(stride, 2, 2);
@@ -317,5 +345,8 @@ void inject_ranges(Symbol_Table& table)
     INJECT(select, 2, 2);
     INJECT(fold, 2, 3);
     INJECT(sorted, 1, 2);
+    INJECT(any, 1, 2);
+    INJECT(all, 1, 2);
+    INJECT(none, 1, 2);
 }
 } // namespace frst

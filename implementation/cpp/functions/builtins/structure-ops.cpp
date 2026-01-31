@@ -1,8 +1,9 @@
-#include <frost/builtins-common.hpp>
 #include "frost/value.hpp"
+#include <frost/builtins-common.hpp>
 
 #include <frost/builtin.hpp>
 
+#include <algorithm>
 #include <ranges>
 
 namespace frst
@@ -102,6 +103,11 @@ BUILTIN(nulls)
                          | std::ranges::to<Array>());
 }
 
+BUILTIN(id)
+{
+    return args.at(0);
+}
+
 void inject_structure_ops(Symbol_Table& table)
 {
     INJECT(keys, 1, 1);
@@ -109,5 +115,6 @@ void inject_structure_ops(Symbol_Table& table)
     INJECT(len, 1, 1);
     INJECT(range, 1, 2);
     INJECT(nulls, 1, 1);
+    INJECT(id, 1, 1);
 }
 } // namespace frst
