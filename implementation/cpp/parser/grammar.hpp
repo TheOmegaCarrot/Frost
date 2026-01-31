@@ -33,14 +33,21 @@ constexpr auto statement_ws = dsl::while_(
 constexpr auto param_ws = dsl::while_(no_nl_chars | line_comment);
 constexpr auto param_ws_no_comment = dsl::while_(no_nl_chars);
 constexpr auto param_ws_nl = dsl::while_(dsl::ascii::space | line_comment);
-constexpr auto comma_sep_nl = dsl::peek(param_ws_nl + dsl::lit_c<','>)
-                              >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
-constexpr auto comma_sep = dsl::peek(dsl::lit_c<','>) >> dsl::lit_c<','>;
+template <typename Ws>
+constexpr auto comma_sep_ws(Ws ws)
+{
+    return dsl::peek(ws + dsl::lit_c<','>)
+           >> (ws + dsl::lit_c<','> + ws);
+}
+
+constexpr auto comma_sep_nl = comma_sep_ws(param_ws_nl);
+constexpr auto comma_sep = comma_sep_ws(param_ws);
 
 template <typename After>
 constexpr auto comma_sep_after(After after)
 {
-    return dsl::peek(dsl::lit_c<','> + param_ws + after) >> dsl::lit_c<','>;
+    return dsl::peek(param_ws + dsl::lit_c<','> + param_ws + after)
+           >> (param_ws + dsl::lit_c<','> + param_ws);
 }
 
 template <typename After>
