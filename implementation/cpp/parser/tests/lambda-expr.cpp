@@ -477,6 +477,32 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 1_f);
     }
 
+    SECTION("Block body can start on a new line")
+    {
+        auto result = parse("fn (x) ->\n{\n    def y = x + 1\n    y\n}");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {frst::Value::create(2_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 3_f);
+    }
+
+    SECTION("Expression body can start on a new line")
+    {
+        auto result = parse("fn (x) ->\n # comment\n x");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {frst::Value::create(7_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 7_f);
+    }
+
     SECTION("Postfix can follow a lambda with intervening whitespace")
     {
         auto result = parse("fn() -> { 1 } ( )");

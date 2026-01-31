@@ -604,13 +604,15 @@ struct lambda_param_clause
 struct lambda_body
 {
     static constexpr auto rule =
-        dsl::peek(dsl::lit_c<'{'>)
+        dsl::peek(param_ws_nl + dsl::lit_c<'{'>)
+        >> param_ws_nl
         >> dsl::curly_bracketed(statement_ws
                                 + dsl::opt(dsl::peek(expression_start_no_nl)
                                            >> dsl::recurse<statement_list>)
                                 + statement_ws)
         | dsl::else_
-        >> (require_expr_start_no_nl<expected_lambda_body>()
+        >> (require_expr_start_nl<expected_lambda_body>()
+            >> param_ws_nl
             >> dsl::recurse<expression>);
     static constexpr auto value =
         lexy::callback<std::vector<ast::Statement::Ptr>>(
