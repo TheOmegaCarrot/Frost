@@ -1328,22 +1328,6 @@ struct statement
     static constexpr auto name = "statement";
 };
 
-struct statement_list
-{
-    static constexpr auto rule = [] {
-        auto sep = dsl::peek(dsl::while_(no_nl_chars)
-                             + (dsl::lit_c<';'> | dsl::lit_c<'\n'>
-                                | dsl::lit_c<'#'>))
-                   >> statement_ws;
-        auto item = dsl::peek(expression_start_no_nl) >> dsl::p<statement>;
-        return dsl::peek(expression_start_no_nl)
-               >> dsl::list(item, dsl::trailing_sep(sep));
-    }();
-    static constexpr auto value =
-        lexy::as_list<std::vector<ast::Statement::Ptr>>;
-    static constexpr auto name = "statement list";
-};
-
 struct top_level_statement
 {
     static constexpr auto rule = [] {
@@ -1356,21 +1340,29 @@ struct top_level_statement
     static constexpr auto name = "statement";
 };
 
-struct top_level_statement_list
+template <typename Stmt>
+struct statement_list_impl
 {
     static constexpr auto rule = [] {
         auto sep = dsl::peek(dsl::while_(no_nl_chars)
                              + (dsl::lit_c<';'> | dsl::lit_c<'\n'>
                                 | dsl::lit_c<'#'>))
                    >> statement_ws;
-        auto item =
-            dsl::peek(expression_start_no_nl) >> dsl::p<top_level_statement>;
+        auto item = dsl::peek(expression_start_no_nl) >> dsl::p<Stmt>;
         return dsl::peek(expression_start_no_nl)
                >> dsl::list(item, dsl::trailing_sep(sep));
     }();
     static constexpr auto value =
         lexy::as_list<std::vector<ast::Statement::Ptr>>;
     static constexpr auto name = "statement list";
+};
+
+struct statement_list : statement_list_impl<statement>
+{
+};
+
+struct top_level_statement_list : statement_list_impl<top_level_statement>
+{
 };
 
 struct program
