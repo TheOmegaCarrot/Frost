@@ -68,6 +68,14 @@ TEST_CASE("Builtin ranges")
         "transform",
         "select",
     };
+    const std::vector<std::string> quantifier_names{
+        "any",
+        "all",
+        "none",
+    };
+    const std::vector<std::string> optional_pred_names{
+        "sorted",
+    };
 
     SECTION("Injected")
     {
@@ -92,6 +100,16 @@ TEST_CASE("Builtin ranges")
             REQUIRE(val->is<Function>());
         }
         for (const auto& name : maplike_names)
+        {
+            auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
+        for (const auto& name : quantifier_names)
+        {
+            auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
+        for (const auto& name : optional_pred_names)
         {
             auto val = table.lookup(name);
             REQUIRE(val->is<Function>());
@@ -205,6 +223,42 @@ TEST_CASE("Builtin ranges")
                     MessageMatches(ContainsSubstring("insufficient arguments")
                                    && ContainsSubstring("requires at least 2")
                                    && ContainsSubstring("Called with 1")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({arr, n, extra}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("too many arguments")
+                                   && ContainsSubstring("no more than 2")
+                                   && ContainsSubstring("Called with 3")));
+            }
+        }
+
+        for (const auto& name : quantifier_names)
+        {
+            DYNAMIC_SECTION("Arity " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 1")
+                                   && ContainsSubstring("Called with 0")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({arr, n, extra}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("too many arguments")
+                                   && ContainsSubstring("no more than 2")
+                                   && ContainsSubstring("Called with 3")));
+            }
+        }
+
+        for (const auto& name : optional_pred_names)
+        {
+            DYNAMIC_SECTION("Arity " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 1")
+                                   && ContainsSubstring("Called with 0")));
                 CHECK_THROWS_MATCHES(
                     fn->call({arr, n, extra}), Frost_User_Error,
                     MessageMatches(ContainsSubstring("too many arguments")
@@ -337,6 +391,46 @@ TEST_CASE("Builtin ranges")
                                    && ContainsSubstring("Array or Map")
                                    && ContainsSubstring("argument 1")
                                    && ContainsSubstring("structure")
+                                   && ContainsSubstring("got String")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({good_arr, bad}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Function")
+                                   && ContainsSubstring("argument 2")
+                                   && ContainsSubstring("got String")));
+            }
+        }
+
+        for (const auto& name : quantifier_names)
+        {
+            DYNAMIC_SECTION("Type " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({bad}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Array")
+                                   && ContainsSubstring("argument 1")
+                                   && ContainsSubstring("got String")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({good_arr, bad}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Function")
+                                   && ContainsSubstring("argument 2")
+                                   && ContainsSubstring("got String")));
+            }
+        }
+
+        for (const auto& name : optional_pred_names)
+        {
+            DYNAMIC_SECTION("Type " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({bad}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Array")
+                                   && ContainsSubstring("argument 1")
                                    && ContainsSubstring("got String")));
                 CHECK_THROWS_MATCHES(
                     fn->call({good_arr, bad}), Frost_User_Error,
@@ -1067,6 +1161,348 @@ TEST_CASE("Builtin ranges")
 
         CHECK_THROWS_WITH(fn->call({map, Value::create(Function{op})}),
                           ContainsSubstring("Map reduction requires init"));
+    }
+
+    SECTION("any/all/none default predicate semantics")
+    {
+        auto any_fn = lookup(table, "any");
+        auto all_fn = lookup(table, "all");
+        auto none_fn = lookup(table, "none");
+
+        auto v_null = Value::null();
+        auto v_zero = Value::create(0_f);
+        auto v_one = Value::create(1_f);
+        auto arr = Value::create(Array{v_null, v_zero, v_one});
+
+        CHECK(any_fn->call({arr})->get<Bool>().value() == true);
+        CHECK(all_fn->call({arr})->get<Bool>().value() == false);
+        CHECK(none_fn->call({arr})->get<Bool>().value() == false);
+
+        auto empty = Value::create(Array{});
+        CHECK(any_fn->call({empty})->get<Bool>().value() == false);
+        CHECK(all_fn->call({empty})->get<Bool>().value() == true);
+        CHECK(none_fn->call({empty})->get<Bool>().value() == true);
+
+        auto all_falsy = Value::create(Array{Value::null(), Value::create(false)});
+        CHECK(any_fn->call({all_falsy})->get<Bool>().value() == false);
+        CHECK(all_fn->call({all_falsy})->get<Bool>().value() == false);
+        CHECK(none_fn->call({all_falsy})->get<Bool>().value() == true);
+    }
+
+    SECTION("any/all/none predicate semantics")
+    {
+        auto any_fn = lookup(table, "any");
+        auto all_fn = lookup(table, "all");
+        auto none_fn = lookup(table, "none");
+
+        auto a = Value::create(0_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto arr = Value::create(Array{a, b, c});
+
+        auto pred_lt_two = make_builtin(
+            [](builtin_args_t args) {
+                return Value::create(args.at(0)->raw_get<Int>() < 2_f);
+            },
+            "pred_lt_two", Builtin::Arity{.min = 1, .max = 1});
+
+        CHECK(any_fn->call({arr, Value::create(Function{pred_lt_two})})
+                  ->get<Bool>()
+                  .value()
+              == true);
+        CHECK(all_fn->call({arr, Value::create(Function{pred_lt_two})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+        CHECK(none_fn->call({arr, Value::create(Function{pred_lt_two})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+
+        std::size_t call_count = 0;
+        auto empty = Value::create(Array{});
+        auto count_pred = make_builtin(
+            [&](builtin_args_t) {
+                ++call_count;
+                return Value::create(true);
+            },
+            "count", Builtin::Arity{.min = 1, .max = 1});
+
+        CHECK(any_fn->call({empty, Value::create(Function{count_pred})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+        CHECK(all_fn->call({empty, Value::create(Function{count_pred})})
+                  ->get<Bool>()
+                  .value()
+              == true);
+        CHECK(none_fn->call({empty, Value::create(Function{count_pred})})
+                  ->get<Bool>()
+                  .value()
+              == true);
+        CHECK(call_count == 0);
+    }
+
+    SECTION("any/all/none predicate all-true and all-false")
+    {
+        auto any_fn = lookup(table, "any");
+        auto all_fn = lookup(table, "all");
+        auto none_fn = lookup(table, "none");
+
+        auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
+
+        auto pred_true = make_builtin(
+            [](builtin_args_t) { return Value::create(true); }, "pred_true",
+            Builtin::Arity{.min = 1, .max = 1});
+        auto pred_false = make_builtin(
+            [](builtin_args_t) { return Value::create(false); }, "pred_false",
+            Builtin::Arity{.min = 1, .max = 1});
+
+        CHECK(any_fn->call({arr, Value::create(Function{pred_true})})
+                  ->get<Bool>()
+                  .value()
+              == true);
+        CHECK(all_fn->call({arr, Value::create(Function{pred_true})})
+                  ->get<Bool>()
+                  .value()
+              == true);
+        CHECK(none_fn->call({arr, Value::create(Function{pred_true})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+
+        CHECK(any_fn->call({arr, Value::create(Function{pred_false})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+        CHECK(all_fn->call({arr, Value::create(Function{pred_false})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+        CHECK(none_fn->call({arr, Value::create(Function{pred_false})})
+                  ->get<Bool>()
+                  .value()
+              == true);
+    }
+
+    SECTION("any/all/none predicate non-bool results")
+    {
+        auto any_fn = lookup(table, "any");
+        auto all_fn = lookup(table, "all");
+        auto none_fn = lookup(table, "none");
+
+        auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
+
+        auto pred_null = make_builtin(
+            [](builtin_args_t) { return Value::null(); }, "pred_null",
+            Builtin::Arity{.min = 1, .max = 1});
+        auto pred_int = make_builtin(
+            [](builtin_args_t) { return Value::create(0_f); }, "pred_int",
+            Builtin::Arity{.min = 1, .max = 1});
+
+        CHECK(any_fn->call({arr, Value::create(Function{pred_null})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+        CHECK(all_fn->call({arr, Value::create(Function{pred_null})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+        CHECK(none_fn->call({arr, Value::create(Function{pred_null})})
+                  ->get<Bool>()
+                  .value()
+              == true);
+
+        CHECK(any_fn->call({arr, Value::create(Function{pred_int})})
+                  ->get<Bool>()
+                  .value()
+              == true);
+        CHECK(all_fn->call({arr, Value::create(Function{pred_int})})
+                  ->get<Bool>()
+                  .value()
+              == true);
+        CHECK(none_fn->call({arr, Value::create(Function{pred_int})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+    }
+
+    SECTION("any/all/none short-circuit")
+    {
+        auto any_fn = lookup(table, "any");
+        auto all_fn = lookup(table, "all");
+        auto none_fn = lookup(table, "none");
+
+        auto a = Value::create(0_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto arr = Value::create(Array{a, b, c});
+
+        std::size_t call_count = 0;
+        std::vector<Value_Ptr> seen;
+        auto pred_any = make_builtin(
+            [&](builtin_args_t args) {
+                ++call_count;
+                seen.push_back(args.at(0));
+                return Value::create(args.at(0)->raw_get<Int>() > 0_f);
+            },
+            "pred_any", Builtin::Arity{.min = 1, .max = 1});
+
+        CHECK(any_fn->call({arr, Value::create(Function{pred_any})})
+                  ->get<Bool>()
+                  .value()
+              == true);
+        CHECK(call_count == 2);
+        REQUIRE(seen.size() == 2);
+        CHECK(seen.at(0) == a);
+        CHECK(seen.at(1) == b);
+
+        call_count = 0;
+        seen.clear();
+        auto pred_all = make_builtin(
+            [&](builtin_args_t args) {
+                ++call_count;
+                seen.push_back(args.at(0));
+                return Value::create(args.at(0)->raw_get<Int>() == 0_f);
+            },
+            "pred_all", Builtin::Arity{.min = 1, .max = 1});
+
+        CHECK(all_fn->call({arr, Value::create(Function{pred_all})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+        CHECK(call_count == 2);
+        REQUIRE(seen.size() == 2);
+        CHECK(seen.at(0) == a);
+        CHECK(seen.at(1) == b);
+
+        call_count = 0;
+        seen.clear();
+        auto pred_none = make_builtin(
+            [&](builtin_args_t args) {
+                ++call_count;
+                seen.push_back(args.at(0));
+                return Value::create(args.at(0)->raw_get<Int>() == 1_f);
+            },
+            "pred_none", Builtin::Arity{.min = 1, .max = 1});
+
+        CHECK(none_fn->call({arr, Value::create(Function{pred_none})})
+                  ->get<Bool>()
+                  .value()
+              == false);
+        CHECK(call_count == 2);
+        REQUIRE(seen.size() == 2);
+        CHECK(seen.at(0) == a);
+        CHECK(seen.at(1) == b);
+    }
+
+    SECTION("any/all/none predicate error propagates")
+    {
+        auto any_fn = lookup(table, "any");
+        auto all_fn = lookup(table, "all");
+        auto none_fn = lookup(table, "none");
+
+        auto arr = Value::create(Array{Value::create(1_f)});
+        auto boom = make_builtin(
+            [](builtin_args_t) -> Value_Ptr {
+                throw Frost_Recoverable_Error{"kaboom"};
+            },
+            "boom", Builtin::Arity{.min = 1, .max = 1});
+
+        CHECK_THROWS_WITH(
+            any_fn->call({arr, Value::create(Function{boom})}),
+            ContainsSubstring("kaboom"));
+        CHECK_THROWS_WITH(
+            all_fn->call({arr, Value::create(Function{boom})}),
+            ContainsSubstring("kaboom"));
+        CHECK_THROWS_WITH(
+            none_fn->call({arr, Value::create(Function{boom})}),
+            ContainsSubstring("kaboom"));
+    }
+
+    SECTION("sorted semantics")
+    {
+        auto fn = lookup(table, "sorted");
+        auto a = Value::create(3_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto arr = Value::create(Array{a, b, c});
+
+        require_array_eq(fn->call({arr}), {b, c, a});
+
+        const auto& orig = arr->raw_get<Array>();
+        REQUIRE(orig.size() == 3);
+        CHECK(orig.at(0) == a);
+        CHECK(orig.at(1) == b);
+        CHECK(orig.at(2) == c);
+
+        auto desc = make_builtin(
+            [](builtin_args_t args) {
+                return Value::greater_than(args.at(0), args.at(1));
+            },
+            "desc", Builtin::Arity{.min = 2, .max = 2});
+
+        require_array_eq(
+            fn->call({arr, Value::create(Function{desc})}), {a, c, b});
+
+        auto empty = Value::create(Array{});
+        require_array_eq(fn->call({empty}), {});
+
+        auto single = Value::create(Array{a});
+        require_array_eq(fn->call({single}), {a});
+
+        auto dup_arr = Value::create(Array{Value::create(2_f), Value::create(1_f),
+                                           Value::create(1_f), Value::create(3_f)});
+        auto dup_sorted = fn->call({dup_arr});
+        REQUIRE(dup_sorted->is<Array>());
+        const auto& dup_out = dup_sorted->raw_get<Array>();
+        REQUIRE(dup_out.size() == 4);
+        CHECK(dup_out.at(0)->raw_get<Int>() == 1_f);
+        CHECK(dup_out.at(1)->raw_get<Int>() == 1_f);
+        CHECK(dup_out.at(2)->raw_get<Int>() == 2_f);
+        CHECK(dup_out.at(3)->raw_get<Int>() == 3_f);
+
+        auto s1 = Value::create("b"s);
+        auto s2 = Value::create("a"s);
+        auto s3 = Value::create("c"s);
+        auto str_arr = Value::create(Array{s1, s2, s3});
+        require_array_eq(fn->call({str_arr}), {s2, s1, s3});
+
+        auto truthy_int_cmp = make_builtin(
+            [](builtin_args_t args) {
+                if (args.at(0)->raw_get<Int>() < args.at(1)->raw_get<Int>())
+                    return Value::create(1_f);
+                return Value::null();
+            },
+            "truthy_int_cmp", Builtin::Arity{.min = 2, .max = 2});
+
+        require_array_eq(
+            fn->call({arr, Value::create(Function{truthy_int_cmp})}), {b, c, a});
+    }
+
+    SECTION("sorted predicate error propagates")
+    {
+        auto fn = lookup(table, "sorted");
+        auto arr =
+            Value::create(Array{Value::create(1_f), Value::create(0_f)});
+        auto boom = make_builtin(
+            [](builtin_args_t) -> Value_Ptr {
+                throw Frost_Recoverable_Error{"kaboom"};
+            },
+            "boom", Builtin::Arity{.min = 2, .max = 2});
+
+        CHECK_THROWS_WITH(
+            fn->call({arr, Value::create(Function{boom})}),
+            ContainsSubstring("kaboom"));
+    }
+
+    SECTION("sorted rejects non-comparable elements")
+    {
+        auto fn = lookup(table, "sorted");
+        auto mixed = Value::create(Array{Value::create(1_f), Value::create("a"s)});
+
+        CHECK_THROWS_WITH(fn->call({mixed}),
+                          ContainsSubstring("compare incompatible types"));
     }
 
     SECTION("reverse semantics")
