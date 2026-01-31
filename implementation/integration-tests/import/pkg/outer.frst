@@ -1,0 +1,3 @@
+# AI-generated
+def m = import('inner')
+export def x = m.x

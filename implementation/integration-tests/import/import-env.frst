@@ -1,0 +1,3 @@
+# AI-generated
+def m = import('envmod')
+assert(m.v == 9)

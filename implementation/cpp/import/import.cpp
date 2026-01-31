@@ -45,8 +45,7 @@ struct Importer
             auto prospective_module_file = search_dir / module_path;
             if (std::filesystem::is_regular_file(prospective_module_file))
             {
-                return do_import(module_spec, search_path,
-                                 prospective_module_file);
+                return do_import(module_spec, prospective_module_file);
             }
         }
 
@@ -54,10 +53,8 @@ struct Importer
             fmt::format("Could not resolve import {}", module_spec)};
     }
 
-    Value_Ptr do_import(
-        const std::string& module_spec,
-        const std::vector<std::filesystem::path>& parent_search_path,
-        const std::filesystem::path& module_file)
+    Value_Ptr do_import(const std::string& module_spec,
+                        const std::filesystem::path& module_file)
     {
         auto parse_result = parse_file(module_file);
 

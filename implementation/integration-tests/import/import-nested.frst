@@ -1,0 +1,6 @@
+# AI-generated
+def m = import('pkg.outer')
+assert(m.x == 2)
+
+def m2 = import('pkg..inner')
+assert(m2.x == 2)

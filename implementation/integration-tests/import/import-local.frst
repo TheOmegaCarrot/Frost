@@ -1,0 +1,8 @@
+# AI-generated
+def m = import('localmod')
+assert(m.a == 1)
+assert(m.b == 2)
+assert(is_null(m.c))
+
+def empty = import('noexports')
+assert(len(empty) == 0)

@@ -1,0 +1,8 @@
+# AI-generated
+def missing = try_call(import, ["missing.mod"])
+assert(missing.ok == false)
+assert(contains(missing.error, "missing.mod"))
+
+def bad = try_call(import, ["runtime-error"])
+assert(bad.ok == false)
+assert(contains(bad.error, "boom"))

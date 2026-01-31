@@ -16,3 +16,5 @@ foreach(script ${INTEGRATION_SCRIPTS})
         COMMAND "${INTEGRATION_TEST_DIR}/runner.lua" $<TARGET_FILE:frost> "${INTEGRATION_TEST_DIR}/${script}"
     )
 endforeach()
+
+add_subdirectory(import)
