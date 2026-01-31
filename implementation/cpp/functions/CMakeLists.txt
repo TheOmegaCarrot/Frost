@@ -55,6 +55,8 @@ functions_test(tests/builtins/type-conversions.cpp)
 
 functions_test(tests/builtins/values.cpp)
 
+functions_test(tests/builtins/id.cpp)
+
 functions_test(tests/builtins/len.cpp)
 
 functions_test(tests/builtins/range.cpp)
