@@ -588,6 +588,13 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
 
+    SECTION("Export def is rejected inside lambda bodies")
+    {
+        auto result = parse("fn() -> { export def x = 1 }");
+        CHECK_FALSE(result);
+        CHECK(result.error_count() >= 1);
+    }
+
     SECTION("Lambda body supports defs and map literals with nested lambdas")
     {
         auto src = lexy::string_input(std::string_view{

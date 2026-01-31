@@ -13,6 +13,7 @@
 #include "../grammar.hpp"
 
 using namespace frst::literals;
+using namespace std::literals;
 
 namespace
 {
@@ -60,6 +61,52 @@ TEST_CASE("Parser Define Statements")
         auto value = table.lookup("x");
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 42_f);
+    }
+
+    SECTION("Exported definition returns a map")
+    {
+        auto result = parse("export def x = 42");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        frst::Symbol_Table table;
+        auto exports = program[0]->execute(table);
+        REQUIRE(exports.has_value());
+        CHECK(exports->size() == 1);
+
+        auto it = exports->find(frst::Value::create("x"s));
+        REQUIRE(it != exports->end());
+        REQUIRE(it->second->is<frst::Int>());
+        CHECK(it->second->get<frst::Int>().value() == 42_f);
+    }
+
+    SECTION("Exported array destructure returns a map")
+    {
+        auto result = parse("export def [a, ...rest] = [1, 2, 3]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        frst::Symbol_Table table;
+        auto exports = program[0]->execute(table);
+        REQUIRE(exports.has_value());
+        CHECK(exports->size() == 2);
+
+        auto it_a = exports->find(frst::Value::create("a"s));
+        REQUIRE(it_a != exports->end());
+        REQUIRE(it_a->second->is<frst::Int>());
+        CHECK(it_a->second->get<frst::Int>().value() == 1_f);
+
+        auto it_rest = exports->find(frst::Value::create("rest"s));
+        REQUIRE(it_rest != exports->end());
+        REQUIRE(it_rest->second->is<frst::Array>());
+        auto rest_vals = it_rest->second->get<frst::Array>().value();
+        REQUIRE(rest_vals.size() == 2);
+        REQUIRE(rest_vals[0]->is<frst::Int>());
+        REQUIRE(rest_vals[1]->is<frst::Int>());
+        CHECK(rest_vals[0]->get<frst::Int>().value() == 2_f);
+        CHECK(rest_vals[1]->get<frst::Int>().value() == 3_f);
     }
 
     SECTION("Whitespace and comments around def components are allowed")
@@ -362,6 +409,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Invalid def syntax fails to parse")
     {
         const std::string_view cases[] = {
+            "export # comment\n def x = 1",
+            "export foo",
             "def if = 1",
             "def x 1",
             "def x =",

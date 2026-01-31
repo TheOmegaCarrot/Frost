@@ -48,8 +48,8 @@ TEST_CASE("Parser Identifiers")
         const std::string_view cases[] = {
             "",    "1abc",    "9",      "-abc", "a-b",  "a b",  "a.b",
             "a@b", "if",      "else",   "elif", "def",  "fn",   "reduce",
-            "map", "foreach", "filter", "with", "init", "true", "false",
-            "and", "or",      "not",    "null",
+            "export", "map",     "foreach", "filter", "with", "init", "true",
+            "false",  "and",     "or",      "not",    "null",
         };
 
         for (const auto& input : cases)

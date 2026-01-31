@@ -31,6 +31,7 @@ constexpr auto ws = ws_nl;
 constexpr auto statement_ws = dsl::while_(
     no_nl_chars | line_comment | dsl::lit_c<';'> | dsl::lit_c<'\n'>);
 constexpr auto param_ws = dsl::while_(no_nl_chars | line_comment);
+constexpr auto param_ws_no_comment = dsl::while_(no_nl_chars);
 constexpr auto param_ws_nl = dsl::while_(dsl::ascii::space | line_comment);
 constexpr auto comma_sep_nl = dsl::peek(param_ws_nl + dsl::lit_c<','>)
                               >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
@@ -158,6 +159,7 @@ struct identifier
     static constexpr auto rule =
         base.reserve(LEXY_KEYWORD("if", base), LEXY_KEYWORD("else", base),
                      LEXY_KEYWORD("elif", base), LEXY_KEYWORD("def", base),
+                     LEXY_KEYWORD("export", base),
                      LEXY_KEYWORD("fn", base), LEXY_KEYWORD("reduce", base),
                      LEXY_KEYWORD("map", base), LEXY_KEYWORD("foreach", base),
                      LEXY_KEYWORD("filter", base), LEXY_KEYWORD("with", base),
@@ -1240,20 +1242,23 @@ struct expression_nl : expression_impl<true>
 
 namespace node
 {
+constexpr auto define_payload = [] {
+    auto lhs = dsl::peek(dsl::lit_c<'['>)
+               >> dsl::p<array_destructure_pattern>
+               | dsl::else_
+               >> dsl::p<identifier_required>;
+    auto rhs_ws =
+        param_ws
+        + dsl::opt(dsl::peek(line_comment)
+                   >> (line_comment + dsl::lit_c<'\n'> + param_ws));
+    return lhs + dsl::lit_c<'='> + rhs_ws + dsl::p<expression>;
+}();
+
 struct Define
 {
     static constexpr auto rule = [] {
         auto kw_def = LEXY_KEYWORD("def", identifier::base);
-        auto lhs = dsl::peek(dsl::lit_c<'['>)
-                   >> dsl::p<array_destructure_pattern>
-                   | dsl::else_
-                   >> dsl::p<identifier_required>;
-        auto rhs_ws =
-            param_ws
-            + dsl::opt(dsl::peek(line_comment)
-                       >> (line_comment + dsl::lit_c<'\n'> + param_ws));
-        return kw_def >> (lhs + dsl::lit_c<'='> + rhs_ws
-                          + dsl::p<expression>);
+        return kw_def >> define_payload;
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
         [](std::string name, ast::Expression::Ptr expr) {
@@ -1273,6 +1278,35 @@ struct Define
                 std::move(pack.names), std::move(pack.rest), std::move(expr));
         });
     static constexpr auto name = "def statement";
+};
+
+struct Export_Def
+{
+    static constexpr auto rule = [] {
+        auto kw_export = LEXY_KEYWORD("export", identifier::base);
+        auto kw_def = LEXY_KEYWORD("def", identifier::base);
+        return kw_export + param_ws_no_comment + kw_def + define_payload;
+    }();
+    static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
+        [](std::string name, ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Define>(std::move(name),
+                                                 std::move(expr), true);
+        },
+        [](std::string name, lexy::nullopt, ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Define>(std::move(name),
+                                                 std::move(expr), true);
+        },
+        [](destructure_pack pack, ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Array_Destructure>(
+                std::move(pack.names), std::move(pack.rest), std::move(expr),
+                true);
+        },
+        [](destructure_pack pack, lexy::nullopt, ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Array_Destructure>(
+                std::move(pack.names), std::move(pack.rest), std::move(expr),
+                true);
+        });
+    static constexpr auto name = "export def statement";
 };
 } // namespace node
 
@@ -1310,11 +1344,40 @@ struct statement_list
     static constexpr auto name = "statement list";
 };
 
+struct top_level_statement
+{
+    static constexpr auto rule = [] {
+        auto kw_export = LEXY_KEYWORD("export", identifier::base);
+        return param_ws
+               + ((dsl::peek(kw_export) >> dsl::p<node::Export_Def>)
+                  | dsl::p<node::Define> | dsl::p<expression_statement>);
+    }();
+    static constexpr auto value = lexy::forward<ast::Statement::Ptr>;
+    static constexpr auto name = "statement";
+};
+
+struct top_level_statement_list
+{
+    static constexpr auto rule = [] {
+        auto sep = dsl::peek(dsl::while_(no_nl_chars)
+                             + (dsl::lit_c<';'> | dsl::lit_c<'\n'>
+                                | dsl::lit_c<'#'>))
+                   >> statement_ws;
+        auto item =
+            dsl::peek(expression_start_no_nl) >> dsl::p<top_level_statement>;
+        return dsl::peek(expression_start_no_nl)
+               >> dsl::list(item, dsl::trailing_sep(sep));
+    }();
+    static constexpr auto value =
+        lexy::as_list<std::vector<ast::Statement::Ptr>>;
+    static constexpr auto name = "statement list";
+};
+
 struct program
 {
     static constexpr auto whitespace = ws_no_nl;
     static constexpr auto rule = statement_ws
-                                 + dsl::opt(dsl::p<statement_list>)
+                                 + dsl::opt(dsl::p<top_level_statement_list>)
                                  + statement_ws
                                  + dsl::eof;
     static constexpr auto value =

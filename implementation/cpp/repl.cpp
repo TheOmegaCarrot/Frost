@@ -48,9 +48,9 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
 }
 
 const static std::flat_set<std::string_view> keywords{
-    "if",    "else",    "elif",   "def",  "fn",   "reduce",
-    "map",   "foreach", "filter", "with", "init", "true",
-    "false", "and",     "or",     "not",  "null",
+    "if",     "else",  "elif",    "export", "def",  "fn",
+    "reduce", "map",   "foreach", "filter", "with", "init",
+    "true",   "false", "and",     "or",     "not",  "null",
 };
 
 bool alpha(std::optional<char> c)
