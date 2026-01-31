@@ -8,6 +8,7 @@ set(INTEGRATION_SCRIPTS
     prelude-call.frst
     ufcs-chain.frst
     capture-enclosing-closure.frst
+    map-newline-1.frst
 )
 foreach(script ${INTEGRATION_SCRIPTS})
     get_filename_component(name ${script} NAME_WE)

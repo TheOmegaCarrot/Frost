@@ -33,6 +33,12 @@ constexpr auto statement_ws = dsl::while_(
 constexpr auto param_ws = dsl::while_(no_nl_chars | line_comment);
 constexpr auto param_ws_no_comment = dsl::while_(no_nl_chars);
 constexpr auto param_ws_nl = dsl::while_(dsl::ascii::space | line_comment);
+constexpr auto nl_before_postfix =
+    dsl::peek(dsl::lit_c<'\n'> + param_ws
+              + (dsl::lit_c<'.'> | dsl::lit_c<'@'>))
+    >> dsl::lit_c<'\n'>;
+constexpr auto ws_expr_nl =
+    dsl::whitespace(no_nl_chars | line_comment | nl_before_postfix);
 template <typename Ws>
 constexpr auto comma_sep_ws(Ws ws)
 {
@@ -981,7 +987,7 @@ struct expression_impl : lexy::expression_production
 {
     static constexpr auto whitespace = [] {
         if constexpr (AllowNl)
-            return ws_nl;
+            return ws_expr_nl;
         else
             return ws_no_nl;
     }();
