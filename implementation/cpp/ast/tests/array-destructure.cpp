@@ -391,7 +391,7 @@ TEST_CASE("Array_Destructure")
 
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
-            MessageMatches(Equals("Insfficient array elements to destructure: "
+            MessageMatches(Equals("Insufficient array elements to destructure: "
                                   "required 2 but got 1")));
     }
 
@@ -415,7 +415,7 @@ TEST_CASE("Array_Destructure")
 
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
-            MessageMatches(Equals("Insfficient array elements to destructure: "
+            MessageMatches(Equals("Insufficient array elements to destructure: "
                                   "required 2 but got 1")));
     }
 
@@ -439,7 +439,7 @@ TEST_CASE("Array_Destructure")
 
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
-            MessageMatches(Equals("Insfficient array elements to destructure: "
+            MessageMatches(Equals("Insufficient array elements to destructure: "
                                   "required 2 but got 1")));
     }
 
