@@ -39,7 +39,7 @@ class Reduce final : public Expression
 
     std::string node_label() const final
     {
-        return "Reduce";
+        return "Reduce_Expr";
     }
 
   private:

@@ -79,7 +79,7 @@ class Foreach final : public Expression
 
     std::string node_label() const final
     {
-        return "Foreach";
+        return "Foreach_Expr";
     }
 
   private:

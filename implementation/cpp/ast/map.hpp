@@ -36,7 +36,7 @@ class Map final : public Expression
 
     std::string node_label() const final
     {
-        return "Map";
+        return "Map_Expr";
     }
 
   private:

@@ -36,7 +36,7 @@ class Filter final : public Expression
 
     std::string node_label() const final
     {
-        return "Filter";
+        return "Filter_Expr";
     }
 
   private:
