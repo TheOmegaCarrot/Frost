@@ -1,3 +1,4 @@
+#include <flat_map>
 #include <frost/builtins-common.hpp>
 
 #include <frost/builtin.hpp>
@@ -327,6 +328,38 @@ X_QUANTIFIERS
 
 #undef X
 
+BUILTIN(group_by)
+{
+    REQUIRE_ARGS("group_by", TYPES(Array), TYPES(Function));
+
+    std::flat_map<Value_Ptr, Array, impl::Value_Ptr_Less> groups;
+
+    auto arr = GET(0, Array);
+    auto fn = GET(1, Function);
+
+    for (const auto& elem : arr)
+    {
+        auto key = fn->call({elem});
+        auto itr = groups.find(key);
+        if (itr == groups.end())
+        {
+            groups.emplace(key, Array{elem});
+        }
+        else
+        {
+            itr->second.push_back(elem);
+        }
+    }
+
+    return Value::create(
+        std::move(groups)
+        | std::views::transform([](decltype(groups)::value_type&& kv) {
+              return std::pair<const Value_Ptr, Value_Ptr>{
+                  std::move(kv.first), Value::create(std::move(kv.second))};
+          })
+        | std::ranges::to<Map>());
+}
+
 void inject_ranges(Symbol_Table& table)
 {
     INJECT(stride, 2, 2);
@@ -347,5 +380,6 @@ void inject_ranges(Symbol_Table& table)
     INJECT(any, 1, 2);
     INJECT(all, 1, 2);
     INJECT(none, 1, 2);
+    INJECT(group_by, 2, 2);
 }
 } // namespace frst
