@@ -68,6 +68,7 @@ TEST_CASE("Builtin ranges")
         "drop_while",
         "chunk_by",
         "group_by",
+        "count_by",
     };
     const std::vector<std::string> maplike_names{
         "transform",
@@ -1271,6 +1272,126 @@ TEST_CASE("Builtin ranges")
     SECTION("group_by propagates key errors")
     {
         auto fn = lookup(table, "group_by");
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+        auto arr = Value::create(Array{a, b, c});
+
+        auto callable = mock::Mock_Callable::make();
+        auto fn_val = Value::create(Function{callable});
+
+        trompeloeil::sequence seq;
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == a)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(0_f));
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == b)
+            .IN_SEQUENCE(seq)
+            .THROW(Frost_Recoverable_Error{"boom"});
+
+        CHECK_THROWS_WITH(fn->call({arr, fn_val}), ContainsSubstring("boom"));
+    }
+
+    SECTION("count_by semantics")
+    {
+        auto fn = lookup(table, "count_by");
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+        auto d = Value::create(4_f);
+        auto e = Value::create(5_f);
+        auto arr = Value::create(Array{a, b, c, d, e});
+
+        auto callable = mock::Mock_Callable::make();
+        auto fn_val = Value::create(Function{callable});
+
+        trompeloeil::sequence seq;
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == a)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(1_f));
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == b)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(0_f));
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == c)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(1_f));
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == d)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(0_f));
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == e)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(1_f));
+
+        auto res = fn->call({arr, fn_val});
+        REQUIRE(res->is<Map>());
+        const auto& out = res->raw_get<Map>();
+        REQUIRE(out.size() == 2);
+
+        auto odd_key = Value::create(1_f);
+        auto even_key = Value::create(0_f);
+
+        auto odd_it = out.find(odd_key);
+        REQUIRE(odd_it != out.end());
+        REQUIRE(odd_it->second->is<Int>());
+        CHECK(odd_it->second->raw_get<Int>() == 3_f);
+
+        auto even_it = out.find(even_key);
+        REQUIRE(even_it != out.end());
+        REQUIRE(even_it->second->is<Int>());
+        CHECK(even_it->second->raw_get<Int>() == 2_f);
+    }
+
+    SECTION("count_by empty array returns empty map")
+    {
+        auto fn = lookup(table, "count_by");
+        auto empty = Value::create(Array{});
+        auto callable = mock::Mock_Callable::make();
+        auto fn_val = Value::create(Function{callable});
+
+        FORBID_CALL(*callable, call(_));
+
+        auto res = fn->call({empty, fn_val});
+        REQUIRE(res->is<Map>());
+        CHECK(res->raw_get<Map>().empty());
+    }
+
+    SECTION("count_by rejects non-primitive keys")
+    {
+        auto fn = lookup(table, "count_by");
+        auto arr = Value::create(Array{Value::create(1_f)});
+
+        {
+            auto callable = mock::Mock_Callable::make();
+            auto fn_val = Value::create(Function{callable});
+            REQUIRE_CALL(*callable, call(_))
+                .RETURN(Value::create(Array{Value::create(1_f)}));
+
+            CHECK_THROWS_MATCHES(
+                fn->call({arr, fn_val}), Frost_Recoverable_Error,
+                MessageMatches(ContainsSubstring("Array")));
+        }
+
+        {
+            auto callable = mock::Mock_Callable::make();
+            auto fn_val = Value::create(Function{callable});
+            REQUIRE_CALL(*callable, call(_))
+                .RETURN(Value::create(Map{}));
+
+            CHECK_THROWS_MATCHES(
+                fn->call({arr, fn_val}), Frost_Recoverable_Error,
+                MessageMatches(ContainsSubstring("Map")));
+        }
+    }
+
+    SECTION("count_by propagates key errors")
+    {
+        auto fn = lookup(table, "count_by");
         auto a = Value::create(1_f);
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);

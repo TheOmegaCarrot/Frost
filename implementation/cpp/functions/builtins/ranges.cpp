@@ -328,6 +328,29 @@ X_QUANTIFIERS
 
 #undef X
 
+namespace
+{
+template <typename T>
+auto make_map_generalizer_for(const T&)
+{
+    return [](T::value_type&& kv) {
+        return std::pair<const Value_Ptr, Value_Ptr>{
+            std::move(kv.first), Value::create(std::move(kv.second))};
+    };
+}
+
+template <typename T>
+Value_Ptr generalize_map(T&& map)
+{
+    static_assert(not std::is_lvalue_reference_v<T>);
+    static_assert(std::is_rvalue_reference_v<decltype(map)>);
+
+    return Value::create(std::move(map)
+                         | std::views::transform(make_map_generalizer_for(map))
+                         | std::ranges::to<Map>());
+}
+} // namespace
+
 BUILTIN(group_by)
 {
     REQUIRE_ARGS("group_by", TYPES(Array), TYPES(Function));
@@ -359,13 +382,33 @@ BUILTIN(group_by)
         }
     }
 
-    return Value::create(
-        std::move(groups)
-        | std::views::transform([](decltype(groups)::value_type&& kv) {
-              return std::pair<const Value_Ptr, Value_Ptr>{
-                  std::move(kv.first), Value::create(std::move(kv.second))};
-          })
-        | std::ranges::to<Map>());
+    return generalize_map(std::move(groups));
+}
+
+BUILTIN(count_by)
+{
+    REQUIRE_ARGS("count_by", TYPES(Array), TYPES(Function));
+
+    std::flat_map<Value_Ptr, Int, impl::Value_Ptr_Less> counts;
+
+    auto arr = GET(0, Array);
+    auto fn = GET(1, Function);
+
+    for (const auto& elem : arr)
+    {
+        auto key = fn->call({elem});
+
+        if (not key->is_primitive())
+        {
+            throw Frost_Recoverable_Error{
+                fmt::format("Value of type {} may not be a key in count_by",
+                            key->type_name())};
+        }
+
+        ++counts[key]; // leverage operator[] default-constructing
+    }
+
+    return generalize_map(std::move(counts));
 }
 
 void inject_ranges(Symbol_Table& table)
@@ -389,5 +432,6 @@ void inject_ranges(Symbol_Table& table)
     INJECT(all, 1, 2);
     INJECT(none, 1, 2);
     INJECT(group_by, 2, 2);
+    INJECT(count_by, 2, 2);
 }
 } // namespace frst
