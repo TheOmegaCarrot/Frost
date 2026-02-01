@@ -430,6 +430,32 @@ class Value
     {
     }
 
+    Value(Bool val)
+        : value_{val}
+    {
+    }
+
+    Value(int val)
+        : value_{val}
+    {
+    }
+
+    Value(Int val)
+        : value_{val}
+    {
+    }
+
+    Value(Float val)
+        : value_{val}
+    {
+        if (std::isnan(val))
+            throw Frost_Recoverable_Error{
+                "Floating-point computation produced NaN"};
+        if (std::isinf(val))
+            throw Frost_Recoverable_Error{
+                "Floating-point computation produced infinity"};
+    }
+
     template <typename... Args>
     [[nodiscard]] static Ptr create(Args&&... args)
     {

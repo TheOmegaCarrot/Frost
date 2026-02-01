@@ -91,7 +91,20 @@ BUILTIN(round)
 {
     REQUIRE_ARGS("round", TYPES(Int, Float));
 
-    return Value::create(std::lround(COERCE(0, Float)));
+    const auto& arg = args.at(0);
+    if (arg->is<Int>())
+        return arg;
+
+    const auto value = arg->raw_get<Float>();
+    const auto rounded = std::round(static_cast<long double>(value));
+    if (rounded < static_cast<long double>(std::numeric_limits<Int>::min())
+        || rounded > static_cast<long double>(std::numeric_limits<Int>::max()))
+    {
+        throw Frost_Recoverable_Error{
+            fmt::format("Value {} is out of range of Int", value)};
+    }
+
+    return Value::create(static_cast<Int>(std::llround(rounded)));
 }
 
 BUILTIN(hypot)

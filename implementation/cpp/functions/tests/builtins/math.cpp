@@ -513,6 +513,11 @@ TEST_CASE("Builtin math")
         auto neg = fn->call({Value::create(-2.5)});
         REQUIRE(neg->is<Int>());
         CHECK(neg->get<Int>() == -3_f);
+
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(std::numeric_limits<Float>::max())}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("out of range of Int")));
     }
 
     SECTION("hypot")

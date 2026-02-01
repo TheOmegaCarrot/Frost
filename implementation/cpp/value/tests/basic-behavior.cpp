@@ -2,6 +2,7 @@
 #include <frost/testing/dummy-callable.hpp>
 #include <frost/value.hpp>
 
+#include <cmath>
 #include <memory>
 
 using namespace std::literals;
@@ -51,6 +52,19 @@ TEST_CASE("Construction and .is*<T>")
         CHECK(value.is_numeric());
         CHECK(value.is_primitive());
         CHECK_FALSE(value.is_structured());
+    }
+
+    SECTION("Float rejects NaN")
+    {
+        const auto nan = std::numeric_limits<frst::Float>::quiet_NaN();
+        CHECK_THROWS(Value{frst::Float{nan}});
+    }
+
+    SECTION("Float rejects Infinity")
+    {
+        const auto inf = std::numeric_limits<frst::Float>::infinity();
+        CHECK_THROWS(Value{frst::Float{inf}});
+        CHECK_THROWS(Value{frst::Float{-inf}});
     }
 
     SECTION("Bool")
