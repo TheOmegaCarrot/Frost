@@ -340,6 +340,14 @@ BUILTIN(group_by)
     for (const auto& elem : arr)
     {
         auto key = fn->call({elem});
+
+        if (not key->is_primitive())
+        {
+            throw Frost_Recoverable_Error{
+                fmt::format("Value of type {} may not be a key in group_by",
+                            key->type_name())};
+        }
+
         auto itr = groups.find(key);
         if (itr == groups.end())
         {
