@@ -411,6 +411,31 @@ BUILTIN(count_by)
     return generalize_map(std::move(counts));
 }
 
+BUILTIN(scan)
+{
+    REQUIRE_ARGS("scan", TYPES(Array), TYPES(Function));
+
+    auto arr = GET(0, Array);
+
+    if (arr.empty())
+        return Value::create(Array{});
+
+    auto fn = GET(1, Function);
+
+    Value_Ptr acc = arr.at(0);
+
+    Array result{acc};
+    result.reserve(arr.size() + 1);
+
+    for (const auto& elem : std::views::drop(arr, 1))
+    {
+        acc = fn->call({acc, elem});
+        result.push_back(acc);
+    }
+
+    return Value::create(std::move(result));
+}
+
 void inject_ranges(Symbol_Table& table)
 {
     INJECT(stride, 2, 2);
@@ -433,5 +458,6 @@ void inject_ranges(Symbol_Table& table)
     INJECT(none, 1, 2);
     INJECT(group_by, 2, 2);
     INJECT(count_by, 2, 2);
+    INJECT(scan, 2, 2);
 }
 } // namespace frst

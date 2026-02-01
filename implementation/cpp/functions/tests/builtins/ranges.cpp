@@ -43,6 +43,12 @@ void require_array_eq(const Value_Ptr& value,
     for (std::size_t i = 0; i < expected.size(); ++i)
         CHECK(arr.at(i) == expected.at(i));
 }
+
+Int require_int(const Value_Ptr& value)
+{
+    REQUIRE(value->is<Int>());
+    return value->raw_get<Int>();
+}
 } // namespace
 
 TEST_CASE("Builtin ranges")
@@ -69,6 +75,7 @@ TEST_CASE("Builtin ranges")
         "chunk_by",
         "group_by",
         "count_by",
+        "scan",
     };
     const std::vector<std::string> maplike_names{
         "transform",
@@ -1407,6 +1414,88 @@ TEST_CASE("Builtin ranges")
             .RETURN(Value::create(0_f));
         REQUIRE_CALL(*callable, call(_))
             .LR_WITH(_1.size() == 1 && _1[0] == b)
+            .IN_SEQUENCE(seq)
+            .THROW(Frost_Recoverable_Error{"boom"});
+
+        CHECK_THROWS_WITH(fn->call({arr, fn_val}), ContainsSubstring("boom"));
+    }
+
+    SECTION("scan semantics")
+    {
+        auto fn = lookup(table, "scan");
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+        auto arr = Value::create(Array{a, b, c});
+
+        auto callable = mock::Mock_Callable::make();
+        auto fn_val = Value::create(Function{callable});
+
+        trompeloeil::sequence seq;
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 2 && _1[0] == a && _1[1] == b)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(3_f));
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 2 && require_int(_1[0]) == 3_f
+                     && _1[1] == c)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(6_f));
+
+        auto res = fn->call({arr, fn_val});
+        REQUIRE(res->is<Array>());
+        const auto& out = res->raw_get<Array>();
+        REQUIRE(out.size() == 3);
+        CHECK(out.at(0) == a);
+        CHECK(out.at(1)->raw_get<Int>() == 3_f);
+        CHECK(out.at(2)->raw_get<Int>() == 6_f);
+    }
+
+    SECTION("scan empty array returns empty array")
+    {
+        auto fn = lookup(table, "scan");
+        auto empty = Value::create(Array{});
+        auto callable = mock::Mock_Callable::make();
+        auto fn_val = Value::create(Function{callable});
+
+        FORBID_CALL(*callable, call(_));
+
+        auto res = fn->call({empty, fn_val});
+        REQUIRE(res->is<Array>());
+        CHECK(res->raw_get<Array>().empty());
+    }
+
+    SECTION("scan single element returns same element")
+    {
+        auto fn = lookup(table, "scan");
+        auto a = Value::create(1_f);
+        auto arr = Value::create(Array{a});
+        auto callable = mock::Mock_Callable::make();
+        auto fn_val = Value::create(Function{callable});
+
+        FORBID_CALL(*callable, call(_));
+
+        auto res = fn->call({arr, fn_val});
+        REQUIRE(res->is<Array>());
+        const auto& out = res->raw_get<Array>();
+        REQUIRE(out.size() == 1);
+        CHECK(out.at(0) == a);
+    }
+
+    SECTION("scan propagates reducer errors")
+    {
+        auto fn = lookup(table, "scan");
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+        auto arr = Value::create(Array{a, b, c});
+
+        auto callable = mock::Mock_Callable::make();
+        auto fn_val = Value::create(Function{callable});
+
+        trompeloeil::sequence seq;
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 2 && _1[0] == a && _1[1] == b)
             .IN_SEQUENCE(seq)
             .THROW(Frost_Recoverable_Error{"boom"});
 
