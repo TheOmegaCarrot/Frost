@@ -48,15 +48,17 @@ BUILTIN(mutable_cell)
         }
     }());
 
+    KEYS(exchange, get);
+
     return Value::create(Map{
-        {"exchange"_s, system_closure(1, 1,
-                                      [cell](builtin_args_t args) mutable {
-                                          return std::exchange(
-                                              cell->value,
-                                              forbid_cycle(args.at(0)));
-                                      })},
+        {keys.exchange, system_closure(1, 1,
+                                       [cell](builtin_args_t args) mutable {
+                                           return std::exchange(
+                                               cell->value,
+                                               forbid_cycle(args.at(0)));
+                                       })},
         {
-            "get"_s,
+            keys.get,
             system_closure(0, 0,
                            [cell](builtin_args_t) {
                                return cell->value;

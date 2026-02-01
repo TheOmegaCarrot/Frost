@@ -16,17 +16,19 @@ BUILTIN(try_call)
             PARAM("args", TYPES(Array)));
     // clang-format on
 
+    KEYS(ok, value, error);
+
     try
     {
-        return Value::create(Map{
-            {Value::create("value"s), GET(0, Function)->call(GET(1, Array))},
-            {Value::create("ok"s), Value::create(true)}});
+        return Value::create(
+            Map{{keys.value, GET(0, Function)->call(GET(1, Array))},
+                {keys.ok, Value::create(true)}});
     }
     catch (const Frost_Recoverable_Error& err)
     {
         return Value::create(
-            Map{{Value::create("ok"s), Value::create(false)},
-                {Value::create("error"s), Value::create(String{err.what()})}});
+            Map{{keys.ok, Value::create(false)},
+                {keys.error, Value::create(String{err.what()})}});
     }
 }
 

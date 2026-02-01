@@ -11,23 +11,8 @@
 namespace frst
 {
 
-struct Keys
-{
-#define KEY(X) static inline const auto X = #X##_s
-    KEY(close);
-    KEY(is_open);
-    KEY(read_line);
-    KEY(read_one);
-    KEY(read_rest);
-    KEY(read);
-    KEY(tell);
-    KEY(seek);
-    KEY(eof);
-    KEY(write);
-    KEY(writeln);
-    KEY(get);
-#undef KEY
-} static const keys;
+KEYS(close, is_open, read_line, read_one, read_rest, read, tell, seek, eof,
+     write, writeln, get);
 
 namespace
 {

@@ -5,6 +5,8 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
+#include <boost/preprocessor.hpp>
+
 #include <array>
 #include <cstddef>
 #include <ranges>
@@ -46,6 +48,14 @@
 #define GET(IDX, TYPE) (args.at(IDX)->raw_get<TYPE>())
 
 #define HAS(IDX) (IDX < args.size())
+
+#define ONE_KEY(r, d, K) Value_Ptr K = BOOST_PP_CAT(BOOST_PP_STRINGIZE(K), _s);
+#define KEYS(...)                                                              \
+    struct                                                                     \
+    {                                                                          \
+        BOOST_PP_SEQ_FOR_EACH(ONE_KEY, _,                                      \
+                              BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))           \
+    } const static keys
 
 namespace frst
 {

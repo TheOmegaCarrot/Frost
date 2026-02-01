@@ -446,11 +446,7 @@ BUILTIN(partition)
     Array pass;
     Array fail;
 
-    struct
-    {
-        const Value_Ptr pass = "pass"_s;
-        const Value_Ptr fail = "fail"_s;
-    } static const keys;
+    KEYS(pass, fail);
 
     for (const auto& elem : arr)
     {

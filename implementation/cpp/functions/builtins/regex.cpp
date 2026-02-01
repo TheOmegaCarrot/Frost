@@ -101,18 +101,7 @@ BUILTIN(scan_matches)
     REQUIRE_ARGS("re.scan_matches", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
 
-    struct
-    {
-        Value_Ptr full = "full"_s;
-        Value_Ptr matched = "matched"_s;
-        Value_Ptr value = "value"_s;
-        Value_Ptr index = "index"_s;
-        Value_Ptr named = "named"_s;
-        Value_Ptr groups = "groups"_s;
-        Value_Ptr found = "found"_s;
-        Value_Ptr count = "count"_s;
-        Value_Ptr matches = "matches"_s;
-    } static const keys;
+    KEYS(full, matched, value, index, named, groups, found, count, matches);
 
     using itr = std::string::const_iterator;
     auto re = regex(GET(1, String));
