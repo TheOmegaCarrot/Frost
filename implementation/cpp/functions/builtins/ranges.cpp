@@ -293,7 +293,7 @@ BUILTIN(sorted)
     const auto& in = GET(0, Array);
     Array out{std::from_range, in};
 
-    std::ranges::sort(out, [&](const Value_Ptr& l, const Value_Ptr& r) {
+    std::ranges::stable_sort(out, [&](const Value_Ptr& l, const Value_Ptr& r) {
         return sorter->call({l, r})->truthy();
     });
 
@@ -436,6 +436,33 @@ BUILTIN(scan)
     return Value::create(std::move(result));
 }
 
+BUILTIN(partition)
+{
+    REQUIRE_ARGS("partition", TYPES(Array), TYPES(Function));
+
+    auto arr = GET(0, Array);
+    auto fn = GET(1, Function);
+
+    Array pass;
+    Array fail;
+
+    struct
+    {
+        const Value_Ptr pass = "pass"_s;
+        const Value_Ptr fail = "fail"_s;
+    } static const keys;
+
+    for (const auto& elem : arr)
+    {
+        (fn->call({elem})->truthy() ? pass : fail).push_back(elem);
+    }
+
+    return Value::create(Map{
+        {keys.pass, Value::create(std::move(pass))},
+        {keys.fail, Value::create(std::move(fail))},
+    });
+}
+
 void inject_ranges(Symbol_Table& table)
 {
     INJECT(stride, 2, 2);
@@ -459,5 +486,6 @@ void inject_ranges(Symbol_Table& table)
     INJECT(group_by, 2, 2);
     INJECT(count_by, 2, 2);
     INJECT(scan, 2, 2);
+    INJECT(partition, 2, 2);
 }
 } // namespace frst

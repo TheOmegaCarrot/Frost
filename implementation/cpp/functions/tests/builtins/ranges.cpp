@@ -76,6 +76,7 @@ TEST_CASE("Builtin ranges")
         "group_by",
         "count_by",
         "scan",
+        "partition",
     };
     const std::vector<std::string> maplike_names{
         "transform",
@@ -1496,6 +1497,102 @@ TEST_CASE("Builtin ranges")
         trompeloeil::sequence seq;
         REQUIRE_CALL(*callable, call(_))
             .LR_WITH(_1.size() == 2 && _1[0] == a && _1[1] == b)
+            .IN_SEQUENCE(seq)
+            .THROW(Frost_Recoverable_Error{"boom"});
+
+        CHECK_THROWS_WITH(fn->call({arr, fn_val}), ContainsSubstring("boom"));
+    }
+
+    SECTION("partition semantics")
+    {
+        auto fn = lookup(table, "partition");
+        auto a = Value::create(0_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto d = Value::create(3_f);
+        auto arr = Value::create(Array{a, b, c, d});
+
+        auto callable = mock::Mock_Callable::make();
+        auto fn_val = Value::create(Function{callable});
+
+        trompeloeil::sequence seq;
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == a)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(true));
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == b)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(false));
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == c)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(true));
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == d)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(false));
+
+        auto res = fn->call({arr, fn_val});
+        REQUIRE(res->is<Map>());
+        const auto& out = res->raw_get<Map>();
+        REQUIRE(out.size() == 2);
+
+        auto pass_key = Value::create("pass"s);
+        auto fail_key = Value::create("fail"s);
+
+        auto pass_it = out.find(pass_key);
+        REQUIRE(pass_it != out.end());
+        require_array_eq(pass_it->second, {a, c});
+
+        auto fail_it = out.find(fail_key);
+        REQUIRE(fail_it != out.end());
+        require_array_eq(fail_it->second, {b, d});
+    }
+
+    SECTION("partition empty array returns empty buckets")
+    {
+        auto fn = lookup(table, "partition");
+        auto empty = Value::create(Array{});
+        auto callable = mock::Mock_Callable::make();
+        auto fn_val = Value::create(Function{callable});
+
+        FORBID_CALL(*callable, call(_));
+
+        auto res = fn->call({empty, fn_val});
+        REQUIRE(res->is<Map>());
+        const auto& out = res->raw_get<Map>();
+        REQUIRE(out.size() == 2);
+
+        auto pass_key = Value::create("pass"s);
+        auto fail_key = Value::create("fail"s);
+
+        auto pass_it = out.find(pass_key);
+        REQUIRE(pass_it != out.end());
+        require_array_eq(pass_it->second, {});
+
+        auto fail_it = out.find(fail_key);
+        REQUIRE(fail_it != out.end());
+        require_array_eq(fail_it->second, {});
+    }
+
+    SECTION("partition propagates predicate errors")
+    {
+        auto fn = lookup(table, "partition");
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto arr = Value::create(Array{a, b});
+
+        auto callable = mock::Mock_Callable::make();
+        auto fn_val = Value::create(Function{callable});
+
+        trompeloeil::sequence seq;
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == a)
+            .IN_SEQUENCE(seq)
+            .RETURN(Value::create(true));
+        REQUIRE_CALL(*callable, call(_))
+            .LR_WITH(_1.size() == 1 && _1[0] == b)
             .IN_SEQUENCE(seq)
             .THROW(Frost_Recoverable_Error{"boom"});
 
