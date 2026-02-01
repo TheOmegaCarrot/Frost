@@ -507,6 +507,11 @@ class Value
         return value_.visit(coerce_to<T>{});
     }
 
+    [[nodiscard]] bool truthy() const
+    {
+        return as<Bool>().value();
+    }
+
     [[nodiscard]] std::string_view type_name() const
     {
         return value_.visit(type_str_fn);
@@ -580,7 +585,7 @@ class Value
 
     [[nodiscard]] Value_Ptr logical_not() const
     {
-        return Value::create(not as<Bool>().value());
+        return Value::create(not truthy());
     }
 
     // Shared implementation between AST nodes and some builtins

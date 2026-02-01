@@ -50,7 +50,7 @@ class Foreach final : public Expression
             const auto& arr = structure_val->raw_get<Array>();
             for (const auto& elem : arr)
             {
-                if (not op->call({elem})->as<Bool>().value())
+                if (not op->call({elem})->truthy())
                     break;
             }
             return Value::null();
@@ -61,7 +61,7 @@ class Foreach final : public Expression
             const auto& map = structure_val->raw_get<Map>();
             for (const auto& [k, v] : map)
             {
-                if (not op->call({k, v})->as<Bool>().value())
+                if (not op->call({k, v})->truthy())
                     break;
             }
             return Value::null();

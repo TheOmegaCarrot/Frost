@@ -69,7 +69,7 @@ Value_Ptr filter_map(const Map& map, const Function& pred)
 
     for (const auto& [k, v] : map)
     {
-        if (pred->call({k, v})->as<Bool>().value())
+        if (pred->call({k, v})->truthy())
             acc.insert({k, v});
     }
 
@@ -82,7 +82,7 @@ Value_Ptr filter_array(const Array& arr, const Function& pred)
 
     for (const auto& elem : arr)
     {
-        if (pred->call({elem})->as<Bool>().value())
+        if (pred->call({elem})->truthy())
             acc.push_back(elem);
     }
 

@@ -27,7 +27,7 @@ class If final : public Expression
 
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
     {
-        if (condition_->evaluate(syms)->as<Bool>().value())
+        if (condition_->evaluate(syms)->truthy())
             return consequent_->evaluate(syms);
         else if (alternate_.has_value())
             return (*alternate_)->evaluate(syms);

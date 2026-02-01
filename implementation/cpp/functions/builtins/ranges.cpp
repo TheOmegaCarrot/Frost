@@ -107,7 +107,7 @@ BUILTIN(reverse)
 #define PRED_IMPL(NAME)                                                        \
     return Value::create(arr                                                   \
                          | std::views::NAME([&](const Value_Ptr& val) {        \
-                               return fn->call({val})->as<Bool>().value();     \
+                               return fn->call({val})->truthy();               \
                            })                                                  \
                          | std::ranges::to<Array>());
 
@@ -137,14 +137,13 @@ BUILTIN(chunk_by)
 
     ARR_FN;
 
-    return Value::create(
-        arr
-        | std::views::chunk_by(
-            [&](const Value_Ptr& first, const Value_Ptr& second) {
-                return fn->call({first, second})->as<Bool>().value();
-            })
-        | array_array
-        | std::ranges::to<Array>());
+    return Value::create(arr
+                         | std::views::chunk_by([&](const Value_Ptr& first,
+                                                    const Value_Ptr& second) {
+                               return fn->call({first, second})->truthy();
+                           })
+                         | array_array
+                         | std::ranges::to<Array>());
     ;
 }
 
@@ -294,7 +293,7 @@ BUILTIN(sorted)
     Array out{std::from_range, in};
 
     std::ranges::sort(out, [&](const Value_Ptr& l, const Value_Ptr& r) {
-        return sorter->call({l, r})->as<Bool>().value();
+        return sorter->call({l, r})->truthy();
     });
 
     return Value::create(std::move(out));
@@ -320,7 +319,7 @@ BUILTIN(sorted)
                                                                                \
         return Value::create(std::ranges::quant##_of(                          \
             GET(0, Array), [&](const Value_Ptr& elem) {                        \
-                return pred_fn->call({elem})->as<Bool>().value();              \
+                return pred_fn->call({elem})->truthy();                        \
             }));                                                               \
     }
 

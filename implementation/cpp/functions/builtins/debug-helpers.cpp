@@ -26,7 +26,7 @@ BUILTIN(assert)
     REQUIRE_ARGS("assert", PARAM("condition", ANY),
                  OPTIONAL(PARAM("message", TYPES(String))));
 
-    if (not COERCE(0, Bool))
+    if (not args.at(0)->truthy())
     {
         if (args.size() == 1)
             throw Frost_Recoverable_Error{"Failed assertion"};

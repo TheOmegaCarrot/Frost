@@ -103,7 +103,7 @@ class Binop final : public Expression
 
         if (op_ == AND)
         {
-            if (lhs_val->as<Bool>().value())
+            if (lhs_val->truthy())
                 return rhs_->evaluate(syms);
             else
                 return lhs_val;
@@ -111,7 +111,7 @@ class Binop final : public Expression
 
         if (op_ == OR)
         {
-            if (lhs_val->as<Bool>().value())
+            if (lhs_val->truthy())
                 return lhs_val;
             else
                 return rhs_->evaluate(syms);
