@@ -77,7 +77,7 @@ class Array_Destructure final : public Statement
         if (arr.size() < names_.size())
         {
             throw Frost_Recoverable_Error{
-                fmt::format("Insfficient array elements to destructure: "
+                fmt::format("Insufficient array elements to destructure: "
                             "required {} but got {}",
                             names_.size(), arr.size())};
         }

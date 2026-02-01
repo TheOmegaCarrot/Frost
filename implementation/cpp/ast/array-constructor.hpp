@@ -36,7 +36,7 @@ class Array_Constructor final : public Expression
   protected:
     std::string node_label() const final
     {
-        return "Array";
+        return "Array_Constructor";
     }
 
     std::generator<Child_Info> children() const final

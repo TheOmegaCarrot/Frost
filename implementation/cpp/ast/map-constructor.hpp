@@ -42,7 +42,7 @@ class Map_Constructor final : public Expression
   protected:
     std::string node_label() const final
     {
-        return "Map";
+        return "Map_Constructor";
     }
 
     std::generator<Child_Info> children() const final
