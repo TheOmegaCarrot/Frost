@@ -223,11 +223,11 @@ struct Highlight_Callback
             }
 
             // keywords
-            if (id_start(at(i)) && !id_start(at(i - 1)))
+            if (id_start(at(i)) && !id_cont(at(i - 1)))
             {
                 auto start = i;
                 auto end = i + 1;
-                while (id_start(at(end)))
+                while (id_cont(at(end)))
                     ++end;
                 auto substr =
                     std::string_view{input.data() + start, end - start};
