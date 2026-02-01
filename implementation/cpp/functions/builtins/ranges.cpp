@@ -63,7 +63,7 @@ BUILTIN(drop)
     REQUIRE_ARGS("drop", TYPES(Array), TYPES(Int));
 
     ARR_NUM;
-    GE0_NUM(take);
+    GE0_NUM(drop);
 
     DIRECT_NUM_IMPL(drop);
 }

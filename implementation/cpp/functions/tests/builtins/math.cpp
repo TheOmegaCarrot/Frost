@@ -3,6 +3,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <cmath>
+#include <limits>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
@@ -490,6 +491,12 @@ TEST_CASE("Builtin math")
         auto f = fn->call({Value::create(-2.5)});
         REQUIRE(f->is<Float>());
         CHECK(f->get<Float>().value() == Catch::Approx(2.5));
+
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(std::numeric_limits<Int>::min())}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("Function abs")
+                           && ContainsSubstring("minimum Int")));
     }
 
     SECTION("round")
@@ -551,5 +558,12 @@ TEST_CASE("Builtin math")
             fn->call({Value::create(1_f), Value::create(0_f)}),
             Frost_User_Error,
             MessageMatches(ContainsSubstring("Cannot modulus by 0")));
+
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(std::numeric_limits<Int>::min()),
+                      Value::create(-1_f)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("Function mod")
+                           && ContainsSubstring("minimum Int")));
     }
 }

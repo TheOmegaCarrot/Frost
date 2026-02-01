@@ -5,6 +5,7 @@
 #include <frost/symbol-table.hpp>
 
 #include <cmath>
+#include <limits>
 
 namespace frst
 {
@@ -72,7 +73,14 @@ BUILTIN(abs)
     const auto& arg = args.at(0);
 
     if (auto iarg = arg->get<Int>())
+    {
+        if (iarg.value() == std::numeric_limits<Int>::min())
+        {
+            throw Frost_Recoverable_Error{
+                "Function abs cannot take abs of minimum Int"};
+        }
         return Value::create(std::abs(iarg.value()));
+    }
     else if (auto farg = arg->get<Float>())
         return Value::create(std::abs(farg.value()));
 
@@ -108,12 +116,19 @@ BUILTIN(mod)
 {
     REQUIRE_ARGS("mod", TYPES(Int), TYPES(Int));
 
+    auto lhs = GET(0, Int);
     auto rhs = GET(1, Int);
 
     if (rhs == 0)
         throw Frost_Recoverable_Error{"Cannot modulus by 0"};
 
-    return Value::create(GET(0, Int) % rhs);
+    if (rhs == -1 && lhs == std::numeric_limits<Int>::min())
+    {
+        throw Frost_Recoverable_Error{
+            "Function mod cannot modulus minimum Int by -1"};
+    }
+
+    return Value::create(lhs % rhs);
 }
 
 void inject_math(Symbol_Table& table)
