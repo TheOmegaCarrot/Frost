@@ -40,8 +40,6 @@ bool Value::deep_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
                          if (lhs.size() != rhs.size())
                              return false;
 
-                         std::vector<bool> matched(rhs.size(), false);
-
                          auto entries_match = [&](const auto& lhs_kv,
                                                   const auto& rhs_kv) {
                              const auto& [lhs_key, lhs_value] = lhs_kv;
@@ -52,29 +50,19 @@ bool Value::deep_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
                                                   rhs_value->value_);
                          };
 
-                         auto rhs_indexed = std::views::enumerate(rhs);
-                         auto find_match = [&](const auto& lhs_kv)
-                             -> std::optional<std::size_t> {
-                             auto it = std::ranges::find_if(
-                                 rhs_indexed, [&](const auto& indexed) {
-                                     const auto& [idx, rhs_kv] = indexed;
-                                     auto i = static_cast<std::size_t>(idx);
-                                     return !matched[i]
-                                            && entries_match(lhs_kv, rhs_kv);
-                                 });
-                             if (it == std::ranges::end(rhs_indexed))
-                                 return std::nullopt;
-                             return static_cast<std::size_t>(std::get<0>(*it));
-                         };
+                         std::vector<std::pair<Value_Ptr, Value_Ptr>>
+                             rhs_entries{std::from_range, rhs};
 
                          return std::ranges::all_of(
                              lhs, [&](const auto& lhs_kv) {
-                                 if (auto idx = find_match(lhs_kv))
-                                 {
-                                     matched[*idx] = true;
-                                     return true;
-                                 }
-                                 return false;
+                                 auto it = std::ranges::find_if(
+                                     rhs_entries, [&](const auto& rhs_kv) {
+                                         return entries_match(lhs_kv, rhs_kv);
+                                     });
+                                 if (it == rhs_entries.end())
+                                     return false;
+                                 rhs_entries.erase(it);
+                                 return true;
                              });
                      },
                      []<Frost_Type T, Frost_Type U>
