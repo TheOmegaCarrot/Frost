@@ -1,6 +1,7 @@
 #include <frost/value.hpp>
 
 #include <ranges>
+#include <vector>
 
 namespace frst
 {
@@ -38,18 +39,40 @@ bool Value::deep_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
                          if (lhs.size() != rhs.size())
                              return false;
 
-                         std::size_t equal_elements_seen{};
-                         for (const auto& [lhp, rhp] :
-                              std::views::cartesian_product(lhs, rhs))
+                         std::vector<Map::const_iterator> rhs_entries;
+                         rhs_entries.reserve(rhs.size());
+                         for (auto it = rhs.begin(); it != rhs.end(); ++it)
+                             rhs_entries.push_back(it);
+
+                         std::vector<bool> matched(rhs_entries.size(), false);
+
+                         for (const auto& [lhs_key, lhs_value] : lhs)
                          {
-                             if (std::visit(recurse, lhp.first->value_,
-                                            rhp.first->value_)
-                                 && std::visit(recurse, lhp.second->value_,
-                                               rhp.second->value_))
-                                 ++equal_elements_seen;
+                             bool found_match = false;
+                             for (std::size_t i = 0; i < rhs_entries.size();
+                                  ++i)
+                             {
+                                 if (matched.at(i))
+                                     continue;
+
+                                 const auto& [rhs_key, rhs_value] =
+                                     *rhs_entries.at(i);
+                                 if (std::visit(recurse, lhs_key->value_,
+                                                rhs_key->value_)
+                                     && std::visit(recurse, lhs_value->value_,
+                                                   rhs_value->value_))
+                                 {
+                                     matched.at(i) = true;
+                                     found_match = true;
+                                     break;
+                                 }
+                             }
+
+                             if (!found_match)
+                                 return false;
                          }
 
-                         return equal_elements_seen == lhs.size();
+                         return true;
                      },
                      []<Frost_Type T, Frost_Type U>
                          requires(not std::same_as<T, U>)

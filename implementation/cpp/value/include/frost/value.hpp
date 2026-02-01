@@ -4,6 +4,7 @@
 #include <cassert>
 #include <concepts>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -271,7 +272,15 @@ END_COERCIONS
 COERCIONS_TO(Int)
 NO_COERCE(Null)
 VALUE_COERCE(Int)
-VALUE_COERCE(Float)
+static std::optional<target_t> operator()([[maybe_unused]] const Float& value)
+{
+    if ((value < std::numeric_limits<Int>::lowest())
+        || (value > static_cast<Float>(std::numeric_limits<Int>::max())))
+        throw Frost_Recoverable_Error{
+            fmt::format("Value {} is out of range of Int", value)};
+
+    return value;
+}
 NO_COERCE(Bool)
 NO_COERCE(String)
 NO_COERCE(Array)

@@ -213,7 +213,7 @@ TEST_CASE("Symbol Sequence")
             "x",
             std::make_unique<Binop>(name("a"), Binary_Op::PLUS, name("b"))));
         program.push_back(
-            std::make_unique<Binop>(name("x"), Binary_Op::TIMES, name("c")));
+            std::make_unique<Binop>(name("x"), Binary_Op::MULTIPLY, name("c")));
         program.push_back(std::make_unique<Define>(
             "y",
             std::make_unique<If>(name("cond"), name("x"),

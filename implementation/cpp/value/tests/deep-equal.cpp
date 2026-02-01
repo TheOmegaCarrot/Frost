@@ -153,6 +153,48 @@ TEST_CASE("Deep Equal")
         CHECK(deep_eq(map7, map8));
     }
 
+    SECTION("Maps with duplicate deep-equal keys still compare values")
+    {
+        auto key1 = Value::create(Array{Value::create(1_f)});
+        auto key2 = Value::create(Array{Value::create(1_f)});
+        auto key3 = Value::create(Array{Value::create(1_f)});
+        auto key4 = Value::create(Array{Value::create(1_f)});
+
+        auto map1 = Value::create(Map{
+            {key1, Value::create(1_f)},
+            {key2, Value::create(2_f)},
+        });
+        auto map2 = Value::create(Map{
+            {key3, Value::create(1_f)},
+            {key4, Value::create(1_f)},
+        });
+
+        CHECK_FALSE(deep_eq(map1, map2));
+    }
+
+    SECTION("Maps with duplicate deep-equal keys require matching multiplicity")
+    {
+        auto key1 = Value::create(Array{Value::create(1_f)});
+        auto key2 = Value::create(Array{Value::create(1_f)});
+        auto key3 = Value::create(Array{Value::create(1_f)});
+        auto key4 = Value::create(Array{Value::create(1_f)});
+        auto key5 = Value::create(Array{Value::create(1_f)});
+        auto key6 = Value::create(Array{Value::create(1_f)});
+
+        auto map1 = Value::create(Map{
+            {key1, Value::create(1_f)},
+            {key2, Value::create(1_f)},
+            {key3, Value::create(2_f)},
+        });
+        auto map2 = Value::create(Map{
+            {key4, Value::create(1_f)},
+            {key5, Value::create(2_f)},
+            {key6, Value::create(2_f)},
+        });
+
+        CHECK_FALSE(deep_eq(map1, map2));
+    }
+
     SECTION("Recursive structures")
     {
         SECTION("Arrays containing maps and arrays compare deeply")

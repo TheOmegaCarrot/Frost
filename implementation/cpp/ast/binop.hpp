@@ -17,7 +17,7 @@ enum class Binary_Op
 {
     PLUS,
     MINUS,
-    TIMES,
+    MULTIPLY,
     DIVIDE,
     EQ,
     NE,
@@ -38,7 +38,7 @@ constexpr std::string_view format_binary_op(Binary_Op op)
         return "+";
     case MINUS:
         return "-";
-    case TIMES:
+    case MULTIPLY:
         return "*";
     case DIVIDE:
         return "/";
@@ -86,11 +86,11 @@ class Binop final : public Expression
     {
         using enum Binary_Op;
         static const std::map<Binary_Op, decltype(&Value::add)> fn_map{
-            {PLUS, &Value::add},        {MINUS, &Value::subtract},
-            {TIMES, &Value::multiply},  {DIVIDE, &Value::divide},
-            {EQ, &Value::equal},        {NE, &Value::not_equal},
-            {LT, &Value::less_than},    {LE, &Value::less_than_or_equal},
-            {GT, &Value::greater_than}, {GE, &Value::greater_than_or_equal},
+            {PLUS, &Value::add},          {MINUS, &Value::subtract},
+            {MULTIPLY, &Value::multiply}, {DIVIDE, &Value::divide},
+            {EQ, &Value::equal},          {NE, &Value::not_equal},
+            {LT, &Value::less_than},      {LE, &Value::less_than_or_equal},
+            {GT, &Value::greater_than},   {GE, &Value::greater_than_or_equal},
         };
 
         auto lhs_val = lhs_->evaluate(syms);

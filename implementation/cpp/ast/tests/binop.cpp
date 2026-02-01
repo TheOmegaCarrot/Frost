@@ -26,7 +26,7 @@ TEST_CASE("Numeric Binary ops")
     auto rhs_val = Value::create(10_f);
 
     for (const auto op : {ast::Binary_Op::PLUS, ast::Binary_Op::MINUS,
-                          ast::Binary_Op::TIMES, ast::Binary_Op::DIVIDE})
+                          ast::Binary_Op::MULTIPLY, ast::Binary_Op::DIVIDE})
     {
         DYNAMIC_SECTION("Operator " << ast::format_binary_op(op))
         {
@@ -50,7 +50,7 @@ TEST_CASE("Numeric Binary ops")
                 CHECK(res->get<Int>() == 42_f + 10_f);
             if (op == ast::Binary_Op::MINUS)
                 CHECK(res->get<Int>() == 42_f - 10_f);
-            if (op == ast::Binary_Op::TIMES)
+            if (op == ast::Binary_Op::MULTIPLY)
                 CHECK(res->get<Int>() == 42_f * 10_f);
             if (op == ast::Binary_Op::DIVIDE)
                 CHECK(res->get<Int>() == 42_f / 10_f);
