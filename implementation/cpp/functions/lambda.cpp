@@ -29,6 +29,7 @@ Value_Ptr promote_if_weak(const Value_Ptr& fn)
 }
 
 } // namespace
+
 Lambda::Lambda(std::vector<std::string> params,
                std::vector<Statement::Ptr> body,
                std::optional<std::string> vararg_param)
@@ -40,6 +41,12 @@ Lambda::Lambda(std::vector<std::string> params,
 
     if (vararg_param_)
         param_set.insert(vararg_param_.value());
+
+    if (param_set.contains("self"))
+    {
+        throw Frost_Unrecoverable_Error{
+            "Closure parameter cannot be named self"};
+    }
 
     if (const auto expected_param_set_size =
             params_.size() + (vararg_param_.has_value() ? 1 : 0);
@@ -55,6 +62,11 @@ Lambda::Lambda(std::vector<std::string> params,
     {
         name.visit(Overload{
             [&](const Statement::Definition& defn) {
+                if (defn.name == "self")
+                {
+                    throw Frost_Unrecoverable_Error{
+                        "Closure local definition cannot shadow self"};
+                }
                 if (param_set.contains(defn.name))
                 {
                     throw Frost_Unrecoverable_Error{
@@ -121,6 +133,7 @@ std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
     };
 
     std::flat_set<std::string> defns{std::from_range, params_};
+    defns.insert("self");
 
     if (vararg_param_)
         defns.insert(vararg_param_.value());

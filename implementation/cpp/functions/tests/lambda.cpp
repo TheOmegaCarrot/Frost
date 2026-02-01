@@ -202,6 +202,27 @@ TEST_CASE("Lambda")
                               && ContainsSubstring("x"));
     }
 
+    SECTION("Parameter cannot be named self")
+    {
+        // Frost:
+        // def f = fn (self) -> { }
+        std::vector<Statement::Ptr> body;
+
+        CHECK_THROWS_WITH((Lambda{{"self"}, std::move(body)}),
+                          ContainsSubstring("self"));
+    }
+
+    SECTION("Local definition cannot redefine self")
+    {
+        // Frost:
+        // def f = fn () -> { def self = 1 }
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("self", node<Literal>(Value::create(1_f))));
+
+        CHECK_THROWS_WITH((Lambda{{}, std::move(body)}),
+                          ContainsSubstring("self"));
+    }
+
     SECTION("Local definition cannot shadow a variadic parameter")
     {
         // Frost:
