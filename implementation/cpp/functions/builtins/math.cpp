@@ -1,6 +1,6 @@
-#include <frost/builtins-common.hpp>
 #include "frost/builtin.hpp"
 #include "frost/value.hpp"
+#include <frost/builtins-common.hpp>
 
 #include <frost/symbol-table.hpp>
 
@@ -97,8 +97,10 @@ BUILTIN(round)
 
     const auto value = arg->raw_get<Float>();
     const auto rounded = std::round(static_cast<long double>(value));
-    if (rounded < static_cast<long double>(std::numeric_limits<Int>::min())
-        || rounded > static_cast<long double>(std::numeric_limits<Int>::max()))
+    if (rounded
+        < static_cast<long double>(std::numeric_limits<Int>::min())
+        || rounded
+        > static_cast<long double>(std::numeric_limits<Int>::max()))
     {
         throw Frost_Recoverable_Error{
             fmt::format("Value {} is out of range of Int", value)};
@@ -144,6 +146,15 @@ BUILTIN(mod)
     return Value::create(lhs % rhs);
 }
 
+BUILTIN(lerp)
+{
+    REQUIRE_ARGS("lerp", TYPES(Int, Float), TYPES(Int, Float),
+                 TYPES(Int, Float));
+
+    return Value::create(
+        std::lerp(COERCE(0, Float), COERCE(1, Float), COERCE(2, Float)));
+}
+
 void inject_math(Symbol_Table& table)
 {
 
@@ -163,6 +174,7 @@ void inject_math(Symbol_Table& table)
     INJECT(round, 1, 1);
     INJECT(hypot, 2, 3);
     INJECT(mod, 2, 2);
+    INJECT(lerp, 3, 3);
 }
 
 } // namespace frst

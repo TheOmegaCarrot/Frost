@@ -38,6 +38,7 @@ TEST_CASE("Builtin math")
         "exp",  "exp2",  "expm1", "abs",   "round",
     };
     const std::vector<std::string> binary_names{"pow", "min", "max", "atan2"};
+    const std::vector<std::string> ternary_names{"lerp"};
     const std::vector<std::string> variadic_names{"hypot"};
     const std::vector<std::string> int_binary_names{"mod"};
 
@@ -49,6 +50,11 @@ TEST_CASE("Builtin math")
             REQUIRE(val->is<Function>());
         }
         for (const auto& name : binary_names)
+        {
+            auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
+        for (const auto& name : ternary_names)
         {
             auto val = table.lookup(name);
             REQUIRE(val->is<Function>());
@@ -105,6 +111,7 @@ TEST_CASE("Builtin math")
             {.name = "min", .min = 2, .max = 2},
             {.name = "max", .min = 2, .max = 2},
             {.name = "atan2", .min = 2, .max = 2},
+            {.name = "lerp", .min = 3, .max = 3},
             {.name = "hypot", .min = 2, .max = 3},
             {.name = "mod", .min = 2, .max = 2},
         };
@@ -203,6 +210,23 @@ TEST_CASE("Builtin math")
                                && ContainsSubstring("got String")));
             CHECK_THROWS_MATCHES(
                 fn->call({good, bad}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Function " + name)
+                               && ContainsSubstring("got String")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good, good, bad}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Function " + name)
+                               && ContainsSubstring("got String")));
+        }
+
+        for (const auto& name : ternary_names)
+        {
+            auto fn = get_fn(name);
+            CHECK_THROWS_MATCHES(
+                fn->call({bad, good, good}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("Function " + name)
+                               && ContainsSubstring("got String")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good, bad, good}), Frost_User_Error,
                 MessageMatches(ContainsSubstring("Function " + name)
                                && ContainsSubstring("got String")));
             CHECK_THROWS_MATCHES(
@@ -537,6 +561,35 @@ TEST_CASE("Builtin math")
         REQUIRE(res_three->is<Float>());
         CHECK(res_three->get<Float>().value()
               == Catch::Approx(std::hypot(1.0, 2.0, 2.0)));
+    }
+
+    SECTION("lerp")
+    {
+        auto fn = get_fn("lerp");
+
+        auto res_int = fn->call(
+            {Value::create(0_f), Value::create(10_f), Value::create(0_f)});
+        REQUIRE(res_int->is<Float>());
+        CHECK(res_int->get<Float>().value()
+              == Catch::Approx(std::lerp(0.0, 10.0, 0.0)));
+
+        auto res_int_t = fn->call(
+            {Value::create(0_f), Value::create(10_f), Value::create(1_f)});
+        REQUIRE(res_int_t->is<Float>());
+        CHECK(res_int_t->get<Float>().value()
+              == Catch::Approx(std::lerp(0.0, 10.0, 1.0)));
+
+        auto res_float = fn->call({Value::create(1.5), Value::create(3.5),
+                                   Value::create(0.25)});
+        REQUIRE(res_float->is<Float>());
+        CHECK(res_float->get<Float>().value()
+              == Catch::Approx(std::lerp(1.5, 3.5, 0.25)));
+
+        auto res_mix = fn->call({Value::create(2_f), Value::create(6.0),
+                                 Value::create(-1.0)});
+        REQUIRE(res_mix->is<Float>());
+        CHECK(res_mix->get<Float>().value()
+              == Catch::Approx(std::lerp(2.0, 6.0, -1.0)));
     }
 
     SECTION("mod")
