@@ -35,7 +35,13 @@
                 "got {} for argument {}",                                      \
                 arg->type_name(), i)};
 
-#define COERCE(IDX, TYPE) (args.at(IDX)->as<TYPE>().value())
+#define COERCE(IDX, TYPE)                                                      \
+    (args.at(IDX)                                                              \
+         ->as<TYPE>()                                                          \
+         .or_else([] -> std::optional<TYPE> {                                  \
+             THROW_UNREACHABLE;                                                \
+         })                                                                    \
+         .value())
 
 #define GET(IDX, TYPE) (args.at(IDX)->raw_get<TYPE>())
 
