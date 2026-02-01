@@ -503,6 +503,27 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 7_f);
     }
 
+    SECTION("Expression body must wrap map literals in parentheses")
+    {
+        CHECK_FALSE(parse("fn -> {a: 1}"));
+
+        auto ok = parse("fn -> ({a: 1})");
+        REQUIRE(ok);
+        auto expr = require_expression(ok);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Map>());
+        const auto& map = out->raw_get<frst::Map>();
+        REQUIRE(map.size() == 1);
+        auto key = frst::Value::create(std::string{"a"});
+        auto it = map.find(key);
+        REQUIRE(it != map.end());
+        REQUIRE(it->second->is<frst::Int>());
+        CHECK(it->second->get<frst::Int>().value() == 1_f);
+    }
+
     SECTION("Postfix can follow a lambda with intervening whitespace")
     {
         auto result = parse("fn() -> { 1 } ( )");
