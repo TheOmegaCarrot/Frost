@@ -6,6 +6,7 @@ set(INTEGRATION_SCRIPTS
     prelude-curry.frst
     prelude-collect.frst
     prelude-call.frst
+    prelude-rev-args.frst
     ufcs-chain.frst
     capture-enclosing-closure.frst
     map-newline-1.frst

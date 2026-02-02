@@ -1,0 +1,13 @@
+
+def rev_divide = rev_args(divide)(3, 6)
+
+assert(rev_divide == 2, $'${rev_divide} == 2')
+
+
+def rev_collect = rev_args(collect)(5, 4, 3, 2, 1)
+def expected = [1, 2, 3, 4, 5]
+
+assert(
+    deep_equal( rev_collect, expected ),
+    $'${rev_collect} == ${expected}'
+)

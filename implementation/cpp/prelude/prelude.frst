@@ -7,3 +7,5 @@ def curry = fn f, ...outer -> fn ...inner -> f @ pack_call(outer + inner)
 def collect = fn ...e -> e
 
 def call = fn f, ...args -> pack_call(f, args)
+
+def rev_args = fn f -> fn ...args -> pack_call(f, reverse(args))
