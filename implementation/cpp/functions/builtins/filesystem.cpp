@@ -18,7 +18,7 @@ namespace
 {
 void throw_if_error(std::error_code ec)
 {
-    if (ec != std::error_code{})
+    if (ec)
         throw Frost_Recoverable_Error{ec.message()};
 }
 } // namespace
@@ -98,39 +98,52 @@ BUILTIN(list)
     REQUIRE_ARGS("fs.list", TYPES(String));
 
     std::error_code ec;
-    auto itr = std::filesystem::directory_iterator(GET(0, String), ec);
+    auto itr = std::filesystem::directory_iterator(
+        GET(0, String),
+        std::filesystem::directory_options::skip_permission_denied, ec);
     throw_if_error(ec);
     auto end = std::filesystem::directory_iterator{};
 
     Array result;
-    for (; itr != end; ++itr)
+    for (; itr != end; itr.increment(ec))
     {
-        result.push_back(Value::create(auto{itr->path().native()}));
+        if (ec)
+        {
+            ec.clear();
+            continue;
+        }
+        result.push_back(Value::create(auto{itr->path().string()}));
     }
     return Value::create(std::move(result));
 }
 
 BUILTIN(list_recursively)
 {
-    REQUIRE_ARGS("fs.list", TYPES(String));
+    REQUIRE_ARGS("fs.list_recursively", TYPES(String));
 
     std::error_code ec;
-    auto itr =
-        std::filesystem::recursive_directory_iterator(GET(0, String), ec);
+    auto itr = std::filesystem::recursive_directory_iterator(
+        GET(0, String),
+        std::filesystem::directory_options::skip_permission_denied, ec);
     throw_if_error(ec);
     auto end = std::filesystem::recursive_directory_iterator{};
 
     Array result;
-    for (; itr != end; ++itr)
+    for (; itr != end; itr.increment(ec))
     {
-        result.push_back(Value::create(auto{itr->path().native()}));
+        if (ec)
+        {
+            ec.clear();
+            continue;
+        }
+        result.push_back(Value::create(auto{itr->path().string()}));
     }
     return Value::create(std::move(result));
 }
 
 BUILTIN(stat)
 {
-    REQUIRE_ARGS("fs.perms", TYPES(String));
+    REQUIRE_ARGS("fs.stat", TYPES(String));
 
     STRINGS(type, none, not_found, regular, directory, symlink, block,
             character, fifo, socket, unknown, perms, owner, group, others, read,
@@ -145,9 +158,9 @@ BUILTIN(stat)
     X(not_found)                                                               \
     X(regular)                                                                 \
     X(directory) X(symlink) X(block) X(character) X(fifo) X(socket) X(unknown)
-#define X(type)                                                                \
-    case type:                                                                 \
-        return strings.type;
+#define X(TYPE)                                                                \
+    case TYPE:                                                                 \
+        return strings.TYPE;
             X_TYPES
 #undef X
         default:
@@ -215,11 +228,11 @@ BUILTIN(stat)
 
 BUILTIN(concat)
 {
-    REQUIRE_ARGS("concat", TYPES(String), TYPES(String));
+    REQUIRE_ARGS("fs.concat", TYPES(String), TYPES(String));
 
     return Value::create(String{(std::filesystem::path{GET(0, String)}
                                  / std::filesystem::path{GET(1, String)})
-                                    .native()});
+                                    .string()});
 }
 
 } // namespace fs
