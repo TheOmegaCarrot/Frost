@@ -13,3 +13,15 @@ def rev_args = fn f -> fn ...args -> pack_call(f, reverse(args))
 def tap = fn a, f -> { f(a) ; a }
 
 def const = fn v -> fn ..._ -> v
+
+def compose = fn f, g, ...rest -> {
+
+    assert(not is_null(f), "Cannot compose null")
+    assert(not is_null(g), "Cannot compose null")
+
+    def compose2 = fn f1, f2 -> fn ...args -> f2(pack_call(f1, args))
+
+    if len(rest) == 0: compose2(f, g)
+    else: pack_call(self, [ compose2(f, g) ] + rest )
+
+}

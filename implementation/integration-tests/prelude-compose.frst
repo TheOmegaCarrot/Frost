@@ -1,0 +1,33 @@
+def f = fn x -> x + 1
+def g = fn x -> x * 2
+def h = fn x -> x - 3
+
+def composed = compose(f, g, h)
+assert(composed(5) == 9)
+assert(composed(1) == 1)
+
+def composed2 = compose(f, g)
+assert(composed2(10) == 22)
+
+
+def sum = fn ...args -> reduce args with plus
+
+def sum_then_add1 = compose(sum, f)
+assert(sum_then_add1(1, 2, 3) == 7)
+
+
+def missing0 = try_call(compose, [])
+assert(missing0.ok == false)
+assert(contains(missing0.error, "Cannot compose null"))
+
+def ident = fn x -> x
+
+def missing1 = try_call(compose, [ident])
+assert(missing1.ok == false)
+assert(contains(missing1.error, "Cannot compose null"))
+
+
+def bad = compose(1, 2)
+
+def bad_res = try_call(bad, [3])
+assert(bad_res.ok == false)
