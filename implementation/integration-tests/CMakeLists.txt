@@ -7,6 +7,8 @@ set(INTEGRATION_SCRIPTS
     prelude-collect.frst
     prelude-call.frst
     prelude-rev-args.frst
+    prelude-tap.frst
+    prelude-const.frst
     ufcs-chain.frst
     capture-enclosing-closure.frst
     map-newline-1.frst

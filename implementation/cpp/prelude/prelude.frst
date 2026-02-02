@@ -9,3 +9,7 @@ def collect = fn ...e -> e
 def call = fn f, ...args -> pack_call(f, args)
 
 def rev_args = fn f -> fn ...args -> pack_call(f, reverse(args))
+
+def tap = fn a, f -> { f(a) ; a }
+
+def const = fn v -> fn ..._ -> v

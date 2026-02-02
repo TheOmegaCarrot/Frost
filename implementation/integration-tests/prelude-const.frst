@@ -1,0 +1,10 @@
+def c = const(42)
+
+assert(c() == 42)
+assert(c(1) == 42)
+assert(c(1, 2, 3) == 42)
+
+
+def d = const("hi")
+
+assert(d(1, 2) == "hi")

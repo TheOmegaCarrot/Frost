@@ -1,0 +1,12 @@
+def cell = mutable_cell(0)
+
+def out1 = tap(42, fn x -> cell.exchange(x))
+assert(out1 == 42)
+assert(cell.get() == 42)
+
+def out2 = 7 @ tap(fn x -> cell.exchange(x))
+assert(out2 == 7)
+assert(cell.get() == 7)
+
+def out3 = tap(5, fn x -> 99)
+assert(out3 == 5)
