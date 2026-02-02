@@ -1,15 +1,15 @@
 set(INTEGRATION_TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(INTEGRATION_SCRIPTS
     smoke.frst
-    prelude-inv.frst
-    prelude-reject.frst
-    prelude-curry.frst
-    prelude-collect.frst
-    prelude-call.frst
-    prelude-rev-args.frst
-    prelude-tap.frst
-    prelude-const.frst
-    prelude-compose.frst
+    prelude/inv.frst
+    prelude/reject.frst
+    prelude/curry.frst
+    prelude/collect.frst
+    prelude/call.frst
+    prelude/rev-args.frst
+    prelude/tap.frst
+    prelude/const.frst
+    prelude/compose.frst
     ufcs-chain.frst
     capture-enclosing-closure.frst
     map-newline-1.frst
