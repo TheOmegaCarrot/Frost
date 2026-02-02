@@ -93,3 +93,5 @@ functions_test(tests/builtins/mutable-cell.cpp)
 functions_test(tests/builtins/streams.cpp)
 
 functions_test(tests/builtins/json.cpp)
+
+functions_test(tests/builtins/filesystem.cpp)
