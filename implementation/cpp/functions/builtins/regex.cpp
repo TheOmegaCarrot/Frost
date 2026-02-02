@@ -101,7 +101,7 @@ BUILTIN(scan_matches)
     REQUIRE_ARGS("re.scan_matches", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
 
-    KEYS(full, matched, value, index, named, groups, found, count, matches);
+    STRINGS(full, matched, value, index, named, groups, found, count, matches);
 
     using itr = std::string::const_iterator;
     auto re = regex(GET(1, String));
@@ -128,12 +128,12 @@ BUILTIN(scan_matches)
                     return Value::null();
             }();
             if (idx == 0)
-                each_iteration.try_emplace(keys.full, value);
+                each_iteration.try_emplace(strings.full, value);
 
             groups.push_back(Value::create(Map{
-                {keys.matched, Value::create(auto{match.matched})},
-                {keys.value, value},
-                {keys.index, Value::create(auto{idx})},
+                {strings.matched, Value::create(auto{match.matched})},
+                {strings.value, value},
+                {strings.index, Value::create(auto{idx})},
             }));
         }
 
@@ -145,29 +145,29 @@ BUILTIN(scan_matches)
                 named.try_emplace(
                     Value::create(auto{group}),
                     Value::create(
-                        Map{{keys.value,
+                        Map{{strings.value,
                              [&] {
                                  if (matches[group].matched)
                                      return Value::create(matches[group].str());
                                  else
                                      return Value::null();
                              }()},
-                            {keys.matched,
+                            {strings.matched,
                              Value::create(auto{matches[group].matched})}}));
             }
-            each_iteration.try_emplace(keys.named,
+            each_iteration.try_emplace(strings.named,
                                        Value::create(std::move(named)));
         }
 
-        each_iteration.try_emplace(keys.groups,
+        each_iteration.try_emplace(strings.groups,
                                    (Value::create(std::move(groups))));
         iterations.push_back(Value::create(std::move(each_iteration)));
     }
 
-    result.try_emplace(keys.found, Value::create(not iterations.empty()));
-    result.try_emplace(keys.count,
+    result.try_emplace(strings.found, Value::create(not iterations.empty()));
+    result.try_emplace(strings.count,
                        Value::create(static_cast<Int>(iterations.size())));
-    result.try_emplace(keys.matches, Value::create(std::move(iterations)));
+    result.try_emplace(strings.matches, Value::create(std::move(iterations)));
 
     return Value::create(std::move(result));
 }

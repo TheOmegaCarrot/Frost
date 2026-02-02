@@ -446,7 +446,7 @@ BUILTIN(partition)
     Array pass;
     Array fail;
 
-    KEYS(pass, fail);
+    STRINGS(pass, fail);
 
     for (const auto& elem : arr)
     {
@@ -454,8 +454,8 @@ BUILTIN(partition)
     }
 
     return Value::create(Map{
-        {keys.pass, Value::create(std::move(pass))},
-        {keys.fail, Value::create(std::move(fail))},
+        {strings.pass, Value::create(std::move(pass))},
+        {strings.fail, Value::create(std::move(fail))},
     });
 }
 

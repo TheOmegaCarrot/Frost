@@ -4,6 +4,7 @@ add_library( frost-functions
     builtins/and_then.cpp
     builtins/debug-helpers.cpp
     builtins/error-handling.cpp
+    builtins/filesystem.cpp
     builtins/free-operators.cpp
     builtins/json.cpp
     builtins/math.cpp

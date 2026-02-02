@@ -11,8 +11,8 @@
 namespace frst
 {
 
-KEYS(close, is_open, read_line, read_one, read_rest, read, tell, seek, eof,
-     write, writeln, get);
+STRINGS(close, is_open, read_line, read_one, read_rest, read, tell, seek, eof,
+        write, writeln, get);
 
 namespace
 {
@@ -134,14 +134,14 @@ BUILTIN(open_read)
         return Value::null();
 
     return Value::create(Map{
-        {keys.read_line, read_line(stream)},
-        {keys.read_one, read_one(stream)},
-        {keys.read_rest, read_rest(stream)},
-        {keys.close, close(stream)},
-        {keys.is_open, is_open(stream)},
-        {keys.eof, eof(stream)},
-        {keys.tell, tell(stream)},
-        {keys.seek, seek(stream)},
+        {strings.read_line, read_line(stream)},
+        {strings.read_one, read_one(stream)},
+        {strings.read_rest, read_rest(stream)},
+        {strings.close, close(stream)},
+        {strings.is_open, is_open(stream)},
+        {strings.eof, eof(stream)},
+        {strings.tell, tell(stream)},
+        {strings.seek, seek(stream)},
     });
 }
 
@@ -156,12 +156,12 @@ BUILTIN(open_trunc)
         return Value::null();
 
     return Value::create(Map{
-        {keys.write, write(stream)},
-        {keys.writeln, writeln(stream)},
-        {keys.tell, tell(stream)},
-        {keys.seek, seek(stream)},
-        {keys.close, close(stream)},
-        {keys.is_open, is_open(stream)},
+        {strings.write, write(stream)},
+        {strings.writeln, writeln(stream)},
+        {strings.tell, tell(stream)},
+        {strings.seek, seek(stream)},
+        {strings.close, close(stream)},
+        {strings.is_open, is_open(stream)},
     });
 }
 
@@ -176,12 +176,12 @@ BUILTIN(open_append)
         return Value::null();
 
     return Value::create(Map{
-        {keys.write, write(stream)},
-        {keys.writeln, writeln(stream)},
-        {keys.tell, tell(stream)},
-        {keys.seek, seek(stream)},
-        {keys.close, close(stream)},
-        {keys.is_open, is_open(stream)},
+        {strings.write, write(stream)},
+        {strings.writeln, writeln(stream)},
+        {strings.tell, tell(stream)},
+        {strings.seek, seek(stream)},
+        {strings.close, close(stream)},
+        {strings.is_open, is_open(stream)},
     });
 }
 
@@ -192,12 +192,12 @@ BUILTIN(stringreader)
     auto stream = std::make_shared<std::istringstream>(GET(0, String));
 
     return Value::create(Map{
-        {keys.read_line, read_line(stream)},
-        {keys.read_one, read_one(stream)},
-        {keys.read_rest, read_rest(stream)},
-        {keys.eof, eof(stream)},
-        {keys.tell, tell(stream)},
-        {keys.seek, seek(stream)},
+        {strings.read_line, read_line(stream)},
+        {strings.read_one, read_one(stream)},
+        {strings.read_rest, read_rest(stream)},
+        {strings.eof, eof(stream)},
+        {strings.tell, tell(stream)},
+        {strings.seek, seek(stream)},
     });
 }
 
@@ -206,11 +206,11 @@ BUILTIN(stringwriter)
     auto stream = std::make_shared<std::ostringstream>();
 
     return Value::create(
-        Map{{keys.write, write(stream)},
-            {keys.writeln, writeln(stream)},
-            {keys.tell, tell(stream)},
-            {keys.seek, seek(stream)},
-            {keys.get, system_closure(0, 0, [=](builtin_args_t) {
+        Map{{strings.write, write(stream)},
+            {strings.writeln, writeln(stream)},
+            {strings.tell, tell(stream)},
+            {strings.seek, seek(stream)},
+            {strings.get, system_closure(0, 0, [=](builtin_args_t) {
                  return Value::create(stream->str());
              })}});
 }
@@ -222,9 +222,9 @@ Value_Ptr make_stdin()
     std::shared_ptr<std::istream> hacky_stream_ptr(&std::cin, [](auto&&...) {
     });
     return Value::create(Map{
-        {keys.read_line, read_line(hacky_stream_ptr)},
-        {keys.read_one, read_one(hacky_stream_ptr)},
-        {keys.read, read_rest(hacky_stream_ptr)},
+        {strings.read_line, read_line(hacky_stream_ptr)},
+        {strings.read_one, read_one(hacky_stream_ptr)},
+        {strings.read, read_rest(hacky_stream_ptr)},
     });
 }
 

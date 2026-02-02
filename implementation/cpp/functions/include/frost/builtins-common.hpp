@@ -49,13 +49,14 @@
 
 #define HAS(IDX) (IDX < args.size())
 
-#define ONE_KEY(r, d, K) Value_Ptr K = BOOST_PP_CAT(BOOST_PP_STRINGIZE(K), _s);
-#define KEYS(...)                                                              \
+#define ONE_STRING(r, d, S)                                                    \
+    Value_Ptr S = BOOST_PP_CAT(BOOST_PP_STRINGIZE(S), _s);
+#define STRINGS(...)                                                           \
     struct                                                                     \
     {                                                                          \
-        BOOST_PP_SEQ_FOR_EACH(ONE_KEY, _,                                      \
+        BOOST_PP_SEQ_FOR_EACH(ONE_STRING, _,                                   \
                               BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))           \
-    } const static keys
+    } const static strings
 
 namespace frst
 {
