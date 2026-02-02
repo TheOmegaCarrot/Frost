@@ -2,6 +2,8 @@
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
+#include <limits>
+
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
@@ -30,11 +32,17 @@ TEST_CASE("Free Operators")
     SECTION("Injected")
     {
         const std::vector<std::string> names{
-            "plus",         "minus",
-            "times",        "divide",
-            "equal",        "not_equal",
-            "less_than",    "less_than_or_equal",
-            "greater_than", "greater_than_or_equal",
+            "plus",
+            "minus",
+            "times",
+            "divide",
+            "mod",
+            "equal",
+            "not_equal",
+            "less_than",
+            "less_than_or_equal",
+            "greater_than",
+            "greater_than_or_equal",
         };
 
         for (const auto& name : names)
@@ -51,11 +59,17 @@ TEST_CASE("Free Operators")
         auto c = Value::create(3_f);
 
         const std::vector<std::string> names{
-            "plus",         "minus",
-            "times",        "divide",
-            "equal",        "not_equal",
-            "less_than",    "less_than_or_equal",
-            "greater_than", "greater_than_or_equal",
+            "plus",
+            "minus",
+            "times",
+            "divide",
+            "mod",
+            "equal",
+            "not_equal",
+            "less_than",
+            "less_than_or_equal",
+            "greater_than",
+            "greater_than_or_equal",
         };
 
         for (const auto& name : names)
@@ -82,6 +96,7 @@ TEST_CASE("Free Operators")
         auto minus = get_fn("minus");
         auto times = get_fn("times");
         auto divide = get_fn("divide");
+        auto mod = get_fn("mod");
 
         auto int1 = Value::create(42_f);
         auto int2 = Value::create(3_f);
@@ -102,6 +117,10 @@ TEST_CASE("Free Operators")
         auto quot = divide->call({int1, int2});
         REQUIRE(quot->is<Int>());
         CHECK(quot->get<Int>().value() == 14_f);
+
+        auto rem = mod->call({int1, int2});
+        REQUIRE(rem->is<Int>());
+        CHECK(rem->get<Int>().value() == 0_f);
 
         auto mixed = plus->call({int2, flt1});
         REQUIRE(mixed->is<Float>());
@@ -177,6 +196,7 @@ TEST_CASE("Free Operators")
     {
         auto plus = get_fn("plus");
         auto lt = get_fn("less_than");
+        auto mod = get_fn("mod");
         auto Null = Value::null();
         auto Int = Value::create(1_f);
 
@@ -184,6 +204,41 @@ TEST_CASE("Free Operators")
                           "Cannot add incompatible types: Null + Int");
         CHECK_THROWS_WITH(lt->call({Null, Int}),
                           "Cannot compare incompatible types: Null < Int");
+        CHECK_THROWS_WITH(mod->call({Null, Int}),
+                          "Cannot modulus incompatible types: Null % Int");
+        CHECK_THROWS_WITH(mod->call({Value::create(1.5), Value::create(2_f)}),
+                          "Cannot modulus incompatible types: Float % Int");
+    }
+
+    SECTION("mod")
+    {
+        auto fn = get_fn("mod");
+
+        auto pos = fn->call({Value::create(5_f), Value::create(2_f)});
+        REQUIRE(pos->is<Int>());
+        CHECK(pos->get<Int>() == 1_f);
+
+        auto neg_lhs = fn->call({Value::create(-5_f), Value::create(2_f)});
+        REQUIRE(neg_lhs->is<Int>());
+        CHECK(neg_lhs->get<Int>() == -1_f);
+
+        auto neg_rhs = fn->call({Value::create(5_f), Value::create(-2_f)});
+        REQUIRE(neg_rhs->is<Int>());
+        CHECK(neg_rhs->get<Int>() == 1_f);
+
+        auto neg_both = fn->call({Value::create(-5_f), Value::create(-2_f)});
+        REQUIRE(neg_both->is<Int>());
+        CHECK(neg_both->get<Int>() == -1_f);
+
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(1_f), Value::create(0_f)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("Modulus by zero")));
+
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(std::numeric_limits<Int>::min()),
+                      Value::create(-1_f)}),
+            Frost_User_Error, MessageMatches(ContainsSubstring("invalid")));
     }
 }
 

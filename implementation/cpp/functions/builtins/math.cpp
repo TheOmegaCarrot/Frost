@@ -127,25 +127,6 @@ BUILTIN(hypot)
     THROW_UNREACHABLE;
 }
 
-BUILTIN(mod)
-{
-    REQUIRE_ARGS("mod", TYPES(Int), TYPES(Int));
-
-    auto lhs = GET(0, Int);
-    auto rhs = GET(1, Int);
-
-    if (rhs == 0)
-        throw Frost_Recoverable_Error{"Cannot modulus by 0"};
-
-    if (rhs == -1 && lhs == std::numeric_limits<Int>::min())
-    {
-        throw Frost_Recoverable_Error{
-            "Function mod cannot modulus minimum Int by -1"};
-    }
-
-    return Value::create(lhs % rhs);
-}
-
 BUILTIN(lerp)
 {
     REQUIRE_ARGS("lerp", TYPES(Int, Float), TYPES(Int, Float),
@@ -173,7 +154,6 @@ void inject_math(Symbol_Table& table)
     INJECT(abs, 1, 1);
     INJECT(round, 1, 1);
     INJECT(hypot, 2, 3);
-    INJECT(mod, 2, 2);
     INJECT(lerp, 3, 3);
 }
 

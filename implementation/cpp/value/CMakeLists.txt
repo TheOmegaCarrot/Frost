@@ -5,6 +5,7 @@ add_library( frost-value
     operators/divide.cpp
     operators/compare.cpp
     operators/negate.cpp
+    operators/modulus.cpp
     explicit-conversions.cpp
     clone.cpp
     deep-equal.cpp
@@ -39,6 +40,8 @@ value_test(tests/subtraction.cpp)
 value_test(tests/multiplication.cpp)
 
 value_test(tests/division.cpp)
+
+value_test(tests/modulus.cpp)
 
 value_test(tests/eq.cpp)
 
