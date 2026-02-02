@@ -1003,6 +1003,10 @@ struct expression_impl : lexy::expression_production
     struct op_ufcs
     {
     };
+    struct op_mod
+    {
+        static constexpr ast::Binary_Op op = ast::Binary_Op::MODULUS;
+    };
     struct op_mul
     {
         static constexpr ast::Binary_Op op = ast::Binary_Op::MULTIPLY;
@@ -1152,8 +1156,9 @@ struct expression_impl : lexy::expression_production
 
     struct product : dsl::infix_op_left
     {
-        static constexpr auto op =
-            dsl::op<op_mul>(dsl::lit_c<'*'>) / dsl::op<op_div>(dsl::lit_c<'/'>);
+        static constexpr auto op = dsl::op<op_mod>(dsl::lit_c<'%'>)
+                                   / dsl::op<op_mul>(dsl::lit_c<'*'>)
+                                   / dsl::op<op_div>(dsl::lit_c<'/'>);
         using operand = prefix;
     };
 

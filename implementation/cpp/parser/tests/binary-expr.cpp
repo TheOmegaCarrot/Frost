@@ -49,8 +49,15 @@ TEST_CASE("Parser Binary Expressions")
         };
 
         const Case cases[] = {
-            {"1+2*3", 7_f},   {"1*2+3", 5_f},   {"1+2*3+4", 11_f},
-            {"(1+2)*3", 9_f}, {"1*(2+3)", 5_f}, {"1+2*3*4", 25_f},
+            {"1+2*3", 7_f},
+            {"1*2+3", 5_f},
+            {"1+2*3+4", 11_f},
+            {"(1+2)*3", 9_f},
+            {"1*(2+3)", 5_f},
+            {"1+2*3*4", 25_f},
+            {"1+20%6*4", 9_f},
+            {"20*6%8+1", 1_f},
+            {"20%6+4*3", 14_f},
         };
 
         for (const auto& c : cases)
@@ -97,6 +104,9 @@ TEST_CASE("Parser Binary Expressions")
             {"10-3-2", 5_f},
             {"8/2/2", 2_f},
             {"20-5-5-5", 5_f},
+            {"20%6%4", 2_f},
+            {"20%6/2", 1_f},
+            {"20/6%4", 3_f},
         };
 
         for (const auto& c : cases)
@@ -138,6 +148,25 @@ TEST_CASE("Parser Binary Expressions")
             REQUIRE(value->is<frst::Int>());
             CHECK(value->get<frst::Int>().value() == c.expected);
         }
+    }
+
+    SECTION("Modulus parses in other expression contexts")
+    {
+        auto result = parse("if true: 5 % 2 else: 0");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        REQUIRE(value->is<frst::Int>());
+        CHECK(value->get<frst::Int>().value() == 1_f);
+
+        auto result2 = parse("(fn(x) -> x % 3)(10)");
+        REQUIRE(result2);
+        auto expr2 = require_expression(result2);
+        auto value2 = expr2->evaluate(table);
+        REQUIRE(value2->is<frst::Int>());
+        CHECK(value2->get<frst::Int>().value() == 1_f);
     }
 
     SECTION("Comparison and equality precedence")
