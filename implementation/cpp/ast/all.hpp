@@ -14,6 +14,7 @@
 #include "index.hpp"
 #include "literal.hpp"
 #include "map-constructor.hpp"
+#include "map-destructure.hpp"
 #include "map.hpp"
 #include "name_lookup.hpp"
 #include "reduce.hpp"
