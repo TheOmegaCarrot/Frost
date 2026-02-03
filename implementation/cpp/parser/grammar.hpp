@@ -848,7 +848,7 @@ struct array_elements
     static constexpr auto name = "array literal";
 };
 
-struct map_entry
+struct map_key
 {
     static constexpr auto rule = [] {
         auto bracket_key = dsl::lit_c<'['>
@@ -859,7 +859,23 @@ struct map_entry
         auto ident_key = dsl::p<identifier_required>;
         auto key =
             dsl::peek(dsl::lit_c<'['>) >> bracket_key | dsl::else_ >> ident_key;
-        return key
+        return key;
+    }();
+
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](ast::Expression::Ptr key) {
+            return key;
+        },
+        [](std::string key) {
+            return make_string_key_expr(std::move(key));
+        });
+    static constexpr auto name = "map key";
+};
+
+struct map_entry
+{
+    static constexpr auto rule = [] {
+        return dsl::p<map_key>
                + param_ws_nl
                + dsl::lit_c<':'>
                + param_ws_nl
@@ -870,10 +886,6 @@ struct map_entry
     static constexpr auto value = lexy::callback<ast::Map_Constructor::KV_Pair>(
         [](ast::Expression::Ptr key, ast::Expression::Ptr value) {
             return std::make_pair(std::move(key), std::move(value));
-        },
-        [](std::string key, ast::Expression::Ptr value) {
-            return std::make_pair(make_string_key_expr(std::move(key)),
-                                  std::move(value));
         });
     static constexpr auto name = "map entry";
 };
@@ -881,15 +893,7 @@ struct map_entry
 struct map_destructure_entry
 {
     static constexpr auto rule = [] {
-        auto bracket_key = dsl::lit_c<'['>
-                           + param_ws_nl
-                           + dsl::recurse<expression_nl>
-                           + param_ws_nl
-                           + dsl::lit_c<']'>;
-        auto ident_key = dsl::p<identifier_required>;
-        auto key =
-            dsl::peek(dsl::lit_c<'['>) >> bracket_key | dsl::else_ >> ident_key;
-        return key
+        return dsl::p<map_key>
                + param_ws_nl
                + dsl::lit_c<':'>
                + param_ws_nl
@@ -901,10 +905,6 @@ struct map_destructure_entry
             [](ast::Expression::Ptr key, std::string name) {
                 return ast::Map_Destructure::Element{std::move(key),
                                                      std::move(name)};
-            },
-            [](std::string key, std::string name) {
-                return ast::Map_Destructure::Element{
-                    make_string_key_expr(std::move(key)), std::move(name)};
             });
     static constexpr auto name = "map destructure entry";
 };
