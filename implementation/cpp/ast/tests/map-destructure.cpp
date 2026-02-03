@@ -162,6 +162,55 @@ TEST_CASE("Map_Destructure")
         CHECK(it->second == value);
     }
 
+    SECTION("Exports multiple bound names when enabled")
+    {
+        auto rhs_expr = mock::Mock_Expression::make();
+        auto key_expr1 = mock::Mock_Expression::make();
+        auto key_expr2 = mock::Mock_Expression::make();
+        mock::Mock_Symbol_Table syms;
+        trompeloeil::sequence seq;
+
+        auto v1 = Value::create(1_f);
+        auto v2 = Value::create(2_f);
+        auto rhs_map = Value::create(
+            frst::Map{{Value::create("k1"s), v1},
+                      {Value::create("k2"s), v2}});
+
+        REQUIRE_CALL(*rhs_expr, evaluate(_))
+            .IN_SEQUENCE(seq)
+            .LR_WITH(&_1 == &syms)
+            .RETURN(rhs_map);
+        REQUIRE_CALL(*key_expr1, evaluate(_))
+            .IN_SEQUENCE(seq)
+            .LR_WITH(&_1 == &syms)
+            .RETURN(Value::create("k1"s));
+        REQUIRE_CALL(syms, define("a", v1)).IN_SEQUENCE(seq);
+        REQUIRE_CALL(*key_expr2, evaluate(_))
+            .IN_SEQUENCE(seq)
+            .LR_WITH(&_1 == &syms)
+            .RETURN(Value::create("k2"s));
+        REQUIRE_CALL(syms, define("b", v2)).IN_SEQUENCE(seq);
+
+        std::vector<Map_Destructure::Element> elems;
+        elems.emplace_back(
+            Map_Destructure::Element{std::move(key_expr1), "a"});
+        elems.emplace_back(
+            Map_Destructure::Element{std::move(key_expr2), "b"});
+        Map_Destructure node{std::move(elems), std::move(rhs_expr), true};
+
+        auto result = node.execute(syms);
+        REQUIRE(result.has_value());
+        CHECK(result->size() == 2);
+
+        auto it_a = result->find(Value::create("a"s));
+        REQUIRE(it_a != result->end());
+        CHECK(it_a->second == v1);
+
+        auto it_b = result->find(Value::create("b"s));
+        REQUIRE(it_b != result->end());
+        CHECK(it_b->second == v2);
+    }
+
     SECTION("Exports null for missing keys when enabled")
     {
         auto rhs_expr = mock::Mock_Expression::make();
