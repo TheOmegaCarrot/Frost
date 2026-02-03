@@ -14,24 +14,33 @@
 
 namespace frst
 {
+namespace
+{
+template <typename Input, typename Reporter>
+std::expected<std::vector<ast::Statement::Ptr>, std::string>
+parse_impl(const Input& input, Reporter reporter)
+{
+    std::string err;
+
+    auto result = lexy::parse<grammar::program>(
+        input, reporter.to(std::back_inserter(err)));
+
+    if (!result)
+        return std::unexpected{err};
+
+    return std::move(result).value();
+}
+} // namespace
 
 std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_program(
     const std::string& program_text)
 {
     auto input = lexy::string_input(program_text);
 
-    std::string err;
-
     try
     {
-        auto result = lexy::parse<grammar::program>(
-            input, lexy_ext::report_error.opts({lexy::visualize_fancy})
-                       .to(std::back_inserter(err)));
-
-        if (!result)
-            return std::unexpected{err};
-
-        return std::move(result).value();
+        return parse_impl(
+            input, lexy_ext::report_error.opts({lexy::visualize_fancy}));
     }
     catch (const Frost_User_Error& e)
     {
@@ -54,17 +63,10 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_file(
             fmt::format("Failed to read file '{}'", path_str)};
     }
 
-    std::string err;
-
-    auto result = lexy::parse<grammar::program>(
-        file.buffer(), lexy_ext::report_error.path(path_str.c_str())
-                           .opts({lexy::visualize_fancy})
-                           .to(std::back_inserter(err)));
-
-    if (!result)
-        return std::unexpected{err};
-
-    return std::move(result).value();
+    return parse_impl(
+        file.buffer(),
+        lexy_ext::report_error.path(path_str.c_str())
+            .opts({lexy::visualize_fancy}));
 }
 
 } // namespace frst
