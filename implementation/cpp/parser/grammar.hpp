@@ -882,15 +882,23 @@ struct map_key
     static constexpr auto name = "map key";
 };
 
+template <typename ValueRule>
+constexpr auto map_entry_rule(ValueRule value_rule)
+{
+    return dsl::p<map_key>
+           + param_ws_nl
+           + dsl::lit_c<':'>
+           + param_ws_nl
+           + value_rule;
+}
+
 struct map_entry
 {
     static constexpr auto rule = [] {
-        return dsl::p<map_key>
-               + param_ws_nl
-               + dsl::lit_c<':'>
-               + param_ws_nl
-               + (require_expr_start_nl<expected_map_value>()
-                  >> dsl::recurse<expression_nl>);
+        auto value =
+            require_expr_start_nl<expected_map_value>()
+            >> dsl::recurse<expression_nl>;
+        return map_entry_rule(value);
     }();
 
     static constexpr auto value = lexy::callback<ast::Map_Constructor::KV_Pair>(
@@ -903,11 +911,7 @@ struct map_entry
 struct map_destructure_entry
 {
     static constexpr auto rule = [] {
-        return dsl::p<map_key>
-               + param_ws_nl
-               + dsl::lit_c<':'>
-               + param_ws_nl
-               + dsl::p<identifier_required>;
+        return map_entry_rule(dsl::p<identifier_required>);
     }();
 
     static constexpr auto value =
@@ -1306,14 +1310,14 @@ struct expression_nl : expression_impl<true>
 
 namespace node
 {
+constexpr auto define_lhs = [] {
+    return dsl::peek(dsl::lit_c<'['>) >> dsl::p<array_destructure_pattern>
+           | dsl::peek(dsl::lit_c<'{'>) >> dsl::p<map_destructure_entries>
+           | dsl::else_ >> dsl::p<identifier_required>;
+}();
+
 constexpr auto define_payload = [] {
-    auto lhs = dsl::peek(dsl::lit_c<'['>)
-               >> dsl::p<array_destructure_pattern>
-               | dsl::peek(dsl::lit_c<'{'>)
-               >> dsl::p<map_destructure_entries>
-               | dsl::else_
-               >> dsl::p<identifier_required>;
-    return lhs + dsl::lit_c<'='> + param_ws + dsl::p<expression>;
+    return define_lhs + dsl::lit_c<'='> + param_ws + dsl::p<expression>;
 }();
 
 template <bool Export>
