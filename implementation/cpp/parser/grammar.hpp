@@ -878,6 +878,37 @@ struct map_entry
     static constexpr auto name = "map entry";
 };
 
+struct map_destructure_entry
+{
+    static constexpr auto rule = [] {
+        auto bracket_key = dsl::lit_c<'['>
+                           + param_ws_nl
+                           + dsl::recurse<expression_nl>
+                           + param_ws_nl
+                           + dsl::lit_c<']'>;
+        auto ident_key = dsl::p<identifier_required>;
+        auto key =
+            dsl::peek(dsl::lit_c<'['>) >> bracket_key | dsl::else_ >> ident_key;
+        return key
+               + param_ws_nl
+               + dsl::lit_c<':'>
+               + param_ws_nl
+               + dsl::p<identifier_required>;
+    }();
+
+    static constexpr auto value =
+        lexy::callback<ast::Map_Destructure::Element>(
+            [](ast::Expression::Ptr key, std::string name) {
+                return ast::Map_Destructure::Element{std::move(key),
+                                                     std::move(name)};
+            },
+            [](std::string key, std::string name) {
+                return ast::Map_Destructure::Element{
+                    make_string_key_expr(std::move(key)), std::move(name)};
+            });
+    static constexpr auto name = "map destructure entry";
+};
+
 struct map_entries
 {
     static constexpr auto rule = [] {
@@ -894,6 +925,24 @@ struct map_entries
     static constexpr auto value =
         list_or_empty<ast::Map_Constructor::KV_Pair>();
     static constexpr auto name = "map literal";
+};
+
+struct map_destructure_entries
+{
+    static constexpr auto rule = [] {
+        auto entry_start = dsl::lit_c<'['> | dsl::ascii::alpha_underscore;
+        auto item = dsl::peek(entry_start) >> dsl::p<map_destructure_entry>;
+        auto sep = comma_sep_nl_after(entry_start);
+        auto list = dsl::list(item, dsl::sep(sep));
+        return LEXY_LIT("{")
+               + param_ws_nl
+               + dsl::opt(dsl::peek(entry_start) >> list)
+               + param_ws_nl
+               + dsl::lit_c<'}'>;
+    }();
+    static constexpr auto value =
+        list_or_empty<ast::Map_Destructure::Element>();
+    static constexpr auto name = "map destructure";
 };
 
 namespace node
@@ -1259,6 +1308,8 @@ namespace node
 constexpr auto define_payload = [] {
     auto lhs = dsl::peek(dsl::lit_c<'['>)
                >> dsl::p<array_destructure_pattern>
+               | dsl::peek(dsl::lit_c<'{'>)
+               >> dsl::p<map_destructure_entries>
                | dsl::else_
                >> dsl::p<identifier_required>;
     return lhs + dsl::lit_c<'='> + param_ws + dsl::p<expression>;
@@ -1283,9 +1334,19 @@ struct Define
             return std::make_unique<ast::Array_Destructure>(
                 std::move(pack.names), std::move(pack.rest), std::move(expr));
         },
+        [](std::vector<ast::Map_Destructure::Element> elems,
+           ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Map_Destructure>(std::move(elems),
+                                                          std::move(expr));
+        },
         [](destructure_pack pack, lexy::nullopt, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Array_Destructure>(
                 std::move(pack.names), std::move(pack.rest), std::move(expr));
+        },
+        [](std::vector<ast::Map_Destructure::Element> elems, lexy::nullopt,
+           ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Map_Destructure>(std::move(elems),
+                                                          std::move(expr));
         });
     static constexpr auto name = "def statement";
 };
@@ -1311,10 +1372,22 @@ struct Export_Def
                 std::move(pack.names), std::move(pack.rest), std::move(expr),
                 true);
         },
+        [](std::vector<ast::Map_Destructure::Element> elems,
+           ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Map_Destructure>(std::move(elems),
+                                                          std::move(expr),
+                                                          true);
+        },
         [](destructure_pack pack, lexy::nullopt, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Array_Destructure>(
                 std::move(pack.names), std::move(pack.rest), std::move(expr),
                 true);
+        },
+        [](std::vector<ast::Map_Destructure::Element> elems, lexy::nullopt,
+           ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Map_Destructure>(std::move(elems),
+                                                          std::move(expr),
+                                                          true);
         });
     static constexpr auto name = "export def statement";
 };

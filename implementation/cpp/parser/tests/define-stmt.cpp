@@ -109,6 +109,150 @@ TEST_CASE("Parser Define Statements")
         CHECK(rest_vals[1]->get<frst::Int>().value() == 3_f);
     }
 
+    SECTION("Map destructure binds names and missing keys to null")
+    {
+        auto result = parse(
+            "def {foo: bar, [40+2]: answer, missing: none} = "
+            "{foo: 'beep', [42]: 'life'}; [bar, answer, none]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        auto value = evaluate_expression(program[1], table);
+
+        REQUIRE(value->is<frst::Array>());
+        auto arr = value->get<frst::Array>().value();
+        REQUIRE(arr.size() == 3);
+
+        REQUIRE(arr[0]->is<frst::String>());
+        CHECK(arr[0]->get<frst::String>().value() == "beep");
+        REQUIRE(arr[1]->is<frst::String>());
+        CHECK(arr[1]->get<frst::String>().value() == "life");
+        CHECK(arr[2]->is<frst::Null>());
+    }
+
+    SECTION("Exported map destructure returns a map")
+    {
+        auto result =
+            parse("export def {foo: bar, [40+2]: answer} = "
+                  "{foo: 1, [42]: 2}");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        frst::Symbol_Table table;
+        auto exports = program[0]->execute(table);
+        REQUIRE(exports.has_value());
+        CHECK(exports->size() == 2);
+
+        auto it_bar = exports->find(frst::Value::create("bar"s));
+        REQUIRE(it_bar != exports->end());
+        REQUIRE(it_bar->second->is<frst::Int>());
+        CHECK(it_bar->second->get<frst::Int>().value() == 1_f);
+
+        auto it_answer = exports->find(frst::Value::create("answer"s));
+        REQUIRE(it_answer != exports->end());
+        REQUIRE(it_answer->second->is<frst::Int>());
+        CHECK(it_answer->second->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("Map destructure allows line breaks and comments")
+    {
+        auto result = parse(
+            "def { foo: bar, # comment\n"
+            "      [1+1]: baz } = { foo: 1, [2]: 3 }; baz");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        auto value = evaluate_expression(program[1], table);
+        REQUIRE(value->is<frst::Int>());
+        CHECK(value->get<frst::Int>().value() == 3_f);
+    }
+
+    SECTION("Map destructure rejects trailing comma")
+    {
+        auto result = parse("def {foo: bar,} = {foo: 1}");
+        REQUIRE_FALSE(result);
+    }
+
+    SECTION("Map destructure allows empty pattern")
+    {
+        auto result = parse("def { } = {foo: 1}");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+
+        auto result2 = parse("export def { } = {foo: 1}");
+        REQUIRE(result2);
+        auto program2 = require_program(result2);
+        REQUIRE(program2.size() == 1);
+
+        auto exports = program2[0]->execute(table);
+        REQUIRE(exports.has_value());
+        CHECK(exports->empty());
+    }
+
+    SECTION("Map destructure allows whitespace around colon and key expr")
+    {
+        auto result = parse(
+            "def { [1\n+2] : name } = { [3]: 7 }; name");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        auto value = evaluate_expression(program[1], table);
+        REQUIRE(value->is<frst::Int>());
+        CHECK(value->get<frst::Int>().value() == 7_f);
+    }
+
+    SECTION("Map destructure rejects unbracketed expression keys")
+    {
+        auto result = parse("def {(1+2): x} = { [3]: 1 }");
+        REQUIRE_FALSE(result);
+    }
+
+    SECTION("Map destructure rejects missing key or binding")
+    {
+        auto result = parse("def {foo} = {foo: 1}");
+        REQUIRE_FALSE(result);
+
+        auto result2 = parse("def {foo:} = {foo: 1}");
+        REQUIRE_FALSE(result2);
+
+        auto result3 = parse("def {: x} = {foo: 1}");
+        REQUIRE_FALSE(result3);
+    }
+
+    SECTION("Map destructure accepts underscore binding")
+    {
+        auto result = parse("def {foo: _} = {foo: 1}");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+        auto* destructure =
+            dynamic_cast<frst::ast::Map_Destructure*>(program[0].get());
+        REQUIRE(destructure);
+    }
+
+    SECTION("Map destructure rejects keyword keys and bindings")
+    {
+        auto result = parse("def {if: x} = {if: 1}");
+        REQUIRE_FALSE(result);
+
+        auto result2 = parse("def {foo: if} = {foo: 1}");
+        REQUIRE_FALSE(result2);
+    }
+
     SECTION("Whitespace and comments around def components are allowed")
     {
         auto result = parse("def   x=1");
