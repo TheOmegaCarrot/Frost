@@ -141,6 +141,8 @@ int main(int argc, const char** argv)
                                  })
                                | std::ranges::to<frst::Array>()));
 
+    symbols.define("imported", frst::Value::create(false));
+
     for (const auto& cli_program : strings_to_evaluate)
     {
         auto results = frst::parse_program(cli_program);

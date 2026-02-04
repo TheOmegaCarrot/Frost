@@ -81,6 +81,7 @@ struct Importer
         Symbol_Table isolated_table;
         inject_builtins(isolated_table);
         inject_prelude(isolated_table);
+        isolated_table.define("imported", Value::create(true));
 
         std::vector<std::filesystem::path> child_search_path{
             module_file.parent_path(),
