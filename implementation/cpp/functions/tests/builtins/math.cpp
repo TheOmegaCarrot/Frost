@@ -227,7 +227,6 @@ TEST_CASE("Builtin math")
                 MessageMatches(ContainsSubstring("Function " + name)
                                && ContainsSubstring("got String")));
         }
-
     }
 
     SECTION("Unary math functions")
@@ -558,17 +557,16 @@ TEST_CASE("Builtin math")
         CHECK(res_int_t->get<Float>().value()
               == Catch::Approx(std::lerp(0.0, 10.0, 1.0)));
 
-        auto res_float = fn->call({Value::create(1.5), Value::create(3.5),
-                                   Value::create(0.25)});
+        auto res_float = fn->call(
+            {Value::create(1.5), Value::create(3.5), Value::create(0.25)});
         REQUIRE(res_float->is<Float>());
         CHECK(res_float->get<Float>().value()
               == Catch::Approx(std::lerp(1.5, 3.5, 0.25)));
 
-        auto res_mix = fn->call({Value::create(2_f), Value::create(6.0),
-                                 Value::create(-1.0)});
+        auto res_mix = fn->call(
+            {Value::create(2_f), Value::create(6.0), Value::create(-1.0)});
         REQUIRE(res_mix->is<Float>());
         CHECK(res_mix->get<Float>().value()
               == Catch::Approx(std::lerp(2.0, 6.0, -1.0)));
     }
-
 }

@@ -207,8 +207,7 @@ TEST_CASE("to_int")
 {
     auto v_int = Value::create(42_f);
     auto v_float = Value::create(3.9);
-    auto v_float_over =
-        Value::create(std::numeric_limits<frst::Float>::max());
+    auto v_float_over = Value::create(std::numeric_limits<frst::Float>::max());
     auto v_string = Value::create("123"s);
     auto v_string_plus = Value::create("+17"s);
     auto v_string_neg = Value::create("-5"s);

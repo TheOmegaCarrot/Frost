@@ -46,10 +46,10 @@ TEST_CASE("Parser Identifiers")
     SECTION("Invalid identifiers")
     {
         const std::string_view cases[] = {
-            "",    "1abc",    "9",      "-abc", "a-b",  "a b",  "a.b",
-            "a@b", "if",      "else",   "elif", "def",  "fn",   "reduce",
-            "export", "map",     "foreach", "filter", "with", "init", "true",
-            "false",  "and",     "or",      "not",    "null",
+            "",       "1abc", "9",       "-abc",   "a-b",  "a b",  "a.b",
+            "a@b",    "if",   "else",    "elif",   "def",  "fn",   "reduce",
+            "export", "map",  "foreach", "filter", "with", "init", "true",
+            "false",  "and",  "or",      "not",    "null",
         };
 
         for (const auto& input : cases)

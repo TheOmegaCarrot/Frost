@@ -191,8 +191,7 @@ TEST_CASE("Format_String")
         Symbol_Table syms;
         Format_String node{"${missing}"};
 
-        CHECK_THROWS_MATCHES(node.evaluate(syms),
-                             Frost_Unrecoverable_Error,
+        CHECK_THROWS_MATCHES(node.evaluate(syms), Frost_Unrecoverable_Error,
                              MessageMatches(ContainsSubstring("missing")));
     }
 

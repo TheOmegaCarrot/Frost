@@ -62,9 +62,16 @@ std::filesystem::path make_temp_dir(std::string_view test_name)
     static thread_local std::mt19937_64 rng{std::random_device{}()};
     const auto nonce = rng();
 
-    auto dir = std::filesystem::current_path() / "tmp" / "frost_fs_tests"
-               / (safe + "_" + std::to_string(stamp) + "_"
-                  + std::to_string(id) + "_" + std::to_string(nonce));
+    auto dir = std::filesystem::current_path()
+               / "tmp"
+               / "frost_fs_tests"
+               / (safe
+                  + "_"
+                  + std::to_string(stamp)
+                  + "_"
+                  + std::to_string(id)
+                  + "_"
+                  + std::to_string(nonce));
     std::filesystem::create_directories(dir);
     return dir;
 }
@@ -98,21 +105,9 @@ TEST_CASE("Builtin filesystem injection")
     const auto& fs_map = fs_val->raw_get<Map>();
 
     const std::vector<std::string> names{
-        "move",
-        "symlink",
-        "copy",
-        "absolute",
-        "canonical",
-        "cd",
-        "cwd",
-        "exists",
-        "remove",
-        "remove_recursively",
-        "mkdir",
-        "size",
-        "stat",
-        "list",
-        "list_recursively",
+        "move",   "symlink", "copy",   "absolute", "canonical",
+        "cd",     "cwd",     "exists", "remove",   "remove_recursively",
+        "mkdir",  "size",    "stat",   "list",     "list_recursively",
         "concat",
     };
 
@@ -168,10 +163,9 @@ TEST_CASE("Builtin filesystem injection")
                 {
                     CHECK_THROWS_MATCHES(
                         fn->call({a}), Frost_User_Error,
-                        MessageMatches(
-                            ContainsSubstring("too many arguments")
-                            && ContainsSubstring("Called with 1")
-                            && ContainsSubstring("no more than 0")));
+                        MessageMatches(ContainsSubstring("too many arguments")
+                                       && ContainsSubstring("Called with 1")
+                                       && ContainsSubstring("no more than 0")));
                 }
                 else if (test.min == 1)
                 {
@@ -196,19 +190,17 @@ TEST_CASE("Builtin filesystem injection")
                 {
                     CHECK_THROWS_MATCHES(
                         fn->call({a, b}), Frost_User_Error,
-                        MessageMatches(
-                            ContainsSubstring("too many arguments")
-                            && ContainsSubstring("Called with 2")
-                            && ContainsSubstring("no more than 1")));
+                        MessageMatches(ContainsSubstring("too many arguments")
+                                       && ContainsSubstring("Called with 2")
+                                       && ContainsSubstring("no more than 1")));
                 }
                 else if (test.max == 2)
                 {
                     CHECK_THROWS_MATCHES(
                         fn->call({a, b, c}), Frost_User_Error,
-                        MessageMatches(
-                            ContainsSubstring("too many arguments")
-                            && ContainsSubstring("Called with 3")
-                            && ContainsSubstring("no more than 2")));
+                        MessageMatches(ContainsSubstring("too many arguments")
+                                       && ContainsSubstring("Called with 3")
+                                       && ContainsSubstring("no more than 2")));
                 }
             }
         }
@@ -299,8 +291,7 @@ TEST_CASE("Builtin filesystem operations")
         CHECK(std::filesystem::path{new_cwd->raw_get<String>()} == dir);
 
         CHECK_THROWS_AS(
-            cd_fn->call(
-                {Value::create((dir / "missing").string())}),
+            cd_fn->call({Value::create((dir / "missing").string())}),
             Frost_Recoverable_Error);
     }
 
@@ -364,8 +355,8 @@ TEST_CASE("Builtin filesystem operations")
         CHECK(removed_all->get<Int>().value() > 0_f);
         CHECK_FALSE(std::filesystem::exists(tree));
 
-        auto removed_missing =
-            remove_all_fn->call({Value::create((dir / "missing_tree").string())});
+        auto removed_missing = remove_all_fn->call(
+            {Value::create((dir / "missing_tree").string())});
         REQUIRE(removed_missing->is<Int>());
         CHECK(removed_missing->get<Int>().value() == 0_f);
     }
@@ -396,8 +387,7 @@ TEST_CASE("Builtin filesystem operations")
 
         auto empty_file = dir / "empty.txt";
         std::ofstream{empty_file};
-        auto empty_size =
-            size_fn->call({Value::create(empty_file.string())});
+        auto empty_size = size_fn->call({Value::create(empty_file.string())});
         REQUIRE(empty_size->is<Int>());
         CHECK(empty_size->get<Int>().value() == 0_f);
 
@@ -422,20 +412,17 @@ TEST_CASE("Builtin filesystem operations")
             canon_fn->call({Value::create((dir / "missing").string())}),
             Frost_Recoverable_Error);
 
-        auto concat_val =
-            concat_fn->call({Value::create(dir.string()),
-                             Value::create("child"s)});
+        auto concat_val = concat_fn->call(
+            {Value::create(dir.string()), Value::create("child"s)});
         REQUIRE(concat_val->is<String>());
         CHECK(std::filesystem::path{concat_val->raw_get<String>()}
               == (dir / "child"));
 
         auto abs_rhs = std::filesystem::absolute(dir / "abs.txt");
-        auto concat_abs =
-            concat_fn->call({Value::create(dir.string()),
-                             Value::create(abs_rhs.string())});
+        auto concat_abs = concat_fn->call(
+            {Value::create(dir.string()), Value::create(abs_rhs.string())});
         REQUIRE(concat_abs->is<String>());
-        CHECK(std::filesystem::path{concat_abs->raw_get<String>()}
-              == abs_rhs);
+        CHECK(std::filesystem::path{concat_abs->raw_get<String>()} == abs_rhs);
     }
 
     SECTION("move and copy")
@@ -457,16 +444,15 @@ TEST_CASE("Builtin filesystem operations")
         }
         auto dest = dir / "dest.txt";
 
-        auto move_res = move_fn->call({Value::create(src.string()),
-                                       Value::create(dest.string())});
+        auto move_res = move_fn->call(
+            {Value::create(src.string()), Value::create(dest.string())});
         REQUIRE(move_res->is<Null>());
         CHECK_FALSE(std::filesystem::exists(src));
         CHECK(std::filesystem::exists(dest));
 
         CHECK_THROWS_AS(
-            move_fn->call(
-                {Value::create((dir / "missing").string()),
-                 Value::create((dir / "missing_dest").string())}),
+            move_fn->call({Value::create((dir / "missing").string()),
+                           Value::create((dir / "missing_dest").string())}),
             Frost_Recoverable_Error);
 
         auto src_dir = dir / "src_dir";
@@ -481,30 +467,25 @@ TEST_CASE("Builtin filesystem operations")
         CHECK(std::filesystem::exists(dest_dir / "nested" / "file.txt"));
 
         CHECK_THROWS_AS(
-            copy_fn->call(
-                {Value::create((dir / "missing_src").string()),
-                 Value::create((dir / "missing_dest").string())}),
+            copy_fn->call({Value::create((dir / "missing_src").string()),
+                           Value::create((dir / "missing_dest").string())}),
             Frost_Recoverable_Error);
 
         auto file_src = dir / "file_src.txt";
         auto file_dest_dir = dir / "dest_dir_exists";
         std::ofstream(file_src) << "file";
         std::filesystem::create_directories(file_dest_dir);
-        CHECK_THROWS_AS(
-            move_fn->call(
-                {Value::create(file_src.string()),
-                 Value::create(file_dest_dir.string())}),
-            Frost_Recoverable_Error);
+        CHECK_THROWS_AS(move_fn->call({Value::create(file_src.string()),
+                                       Value::create(file_dest_dir.string())}),
+                        Frost_Recoverable_Error);
 
         auto copy_src = dir / "copy_src.txt";
         auto copy_dest = dir / "copy_dest.txt";
         std::ofstream(copy_src) << "copy";
         std::ofstream(copy_dest) << "dest";
-        CHECK_THROWS_AS(
-            copy_fn->call(
-                {Value::create(copy_src.string()),
-                 Value::create(copy_dest.string())}),
-            Frost_Recoverable_Error);
+        CHECK_THROWS_AS(copy_fn->call({Value::create(copy_src.string()),
+                                       Value::create(copy_dest.string())}),
+                        Frost_Recoverable_Error);
     }
 
     SECTION("list and list_recursively")
@@ -649,9 +630,8 @@ TEST_CASE("Builtin filesystem operations")
 
         try
         {
-            auto symlink_res =
-                symlink_fn->call({Value::create(target.string()),
-                                  Value::create(link.string())});
+            auto symlink_res = symlink_fn->call(
+                {Value::create(target.string()), Value::create(link.string())});
             REQUIRE(symlink_res->is<Null>());
             CHECK(std::filesystem::exists(link));
         }
@@ -661,9 +641,8 @@ TEST_CASE("Builtin filesystem operations")
         }
 
         CHECK_THROWS_AS(
-            symlink_fn->call(
-                {Value::create((dir / "missing" / "t").string()),
-                 Value::create((dir / "missing" / "l").string())}),
+            symlink_fn->call({Value::create((dir / "missing" / "t").string()),
+                              Value::create((dir / "missing" / "l").string())}),
             Frost_Recoverable_Error);
     }
 

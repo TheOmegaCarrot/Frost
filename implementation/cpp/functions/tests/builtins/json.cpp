@@ -43,11 +43,11 @@ TEST_CASE("Builtin parse_json")
             parse_json->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")
                            && ContainsSubstring("requires at least 1")));
-        CHECK_THROWS_MATCHES(
-            parse_json->call({Value::create(1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("parse_json")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("Int")));
+        CHECK_THROWS_MATCHES(parse_json->call({Value::create(1_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("parse_json")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("Int")));
     }
 
     SECTION("Parses top-level values")
@@ -147,8 +147,7 @@ TEST_CASE("Builtin to_json")
 
     SECTION("Serializes arrays compactly")
     {
-        auto arr = Value::create(Array{Value::create(1_f),
-                                       Value::create(2_f)});
+        auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
         auto json = to_json->call({arr});
         REQUIRE(json->is<String>());
         CHECK(json->get<String>() == "[1,2]");
@@ -156,8 +155,7 @@ TEST_CASE("Builtin to_json")
 
     SECTION("Non-string map keys are rejected")
     {
-        auto map = Value::create(
-            Map{{Value::create(1_f), Value::create(2_f)}});
+        auto map = Value::create(Map{{Value::create(1_f), Value::create(2_f)}});
         CHECK_THROWS_MATCHES(
             to_json->call({map}), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring("Map with non-string key")
@@ -167,10 +165,9 @@ TEST_CASE("Builtin to_json")
     SECTION("Functions are rejected")
     {
         auto fn = table.lookup("len");
-        CHECK_THROWS_MATCHES(
-            to_json->call({fn}), Frost_Recoverable_Error,
-            MessageMatches(
-                ContainsSubstring("Cannot serialize function to JSON")));
+        CHECK_THROWS_MATCHES(to_json->call({fn}), Frost_Recoverable_Error,
+                             MessageMatches(ContainsSubstring(
+                                 "Cannot serialize function to JSON")));
     }
 
     SECTION("Structures containing functions are rejected")

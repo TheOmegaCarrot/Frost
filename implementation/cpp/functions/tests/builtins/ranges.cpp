@@ -70,13 +70,8 @@ TEST_CASE("Builtin ranges")
         "xprod",
     };
     const std::vector<std::string> pred_names{
-        "take_while",
-        "drop_while",
-        "chunk_by",
-        "group_by",
-        "count_by",
-        "scan",
-        "partition",
+        "take_while", "drop_while", "chunk_by",  "group_by",
+        "count_by",   "scan",       "partition",
     };
     const std::vector<std::string> maplike_names{
         "transform",
@@ -1260,20 +1255,19 @@ TEST_CASE("Builtin ranges")
             REQUIRE_CALL(*callable, call(_))
                 .RETURN(Value::create(Array{Value::create(1_f)}));
 
-            CHECK_THROWS_MATCHES(
-                fn->call({arr, fn_val}), Frost_Recoverable_Error,
-                MessageMatches(ContainsSubstring("Array")));
+            CHECK_THROWS_MATCHES(fn->call({arr, fn_val}),
+                                 Frost_Recoverable_Error,
+                                 MessageMatches(ContainsSubstring("Array")));
         }
 
         {
             auto callable = mock::Mock_Callable::make();
             auto fn_val = Value::create(Function{callable});
-            REQUIRE_CALL(*callable, call(_))
-                .RETURN(Value::create(Map{}));
+            REQUIRE_CALL(*callable, call(_)).RETURN(Value::create(Map{}));
 
-            CHECK_THROWS_MATCHES(
-                fn->call({arr, fn_val}), Frost_Recoverable_Error,
-                MessageMatches(ContainsSubstring("Map")));
+            CHECK_THROWS_MATCHES(fn->call({arr, fn_val}),
+                                 Frost_Recoverable_Error,
+                                 MessageMatches(ContainsSubstring("Map")));
         }
     }
 
@@ -1380,20 +1374,19 @@ TEST_CASE("Builtin ranges")
             REQUIRE_CALL(*callable, call(_))
                 .RETURN(Value::create(Array{Value::create(1_f)}));
 
-            CHECK_THROWS_MATCHES(
-                fn->call({arr, fn_val}), Frost_Recoverable_Error,
-                MessageMatches(ContainsSubstring("Array")));
+            CHECK_THROWS_MATCHES(fn->call({arr, fn_val}),
+                                 Frost_Recoverable_Error,
+                                 MessageMatches(ContainsSubstring("Array")));
         }
 
         {
             auto callable = mock::Mock_Callable::make();
             auto fn_val = Value::create(Function{callable});
-            REQUIRE_CALL(*callable, call(_))
-                .RETURN(Value::create(Map{}));
+            REQUIRE_CALL(*callable, call(_)).RETURN(Value::create(Map{}));
 
-            CHECK_THROWS_MATCHES(
-                fn->call({arr, fn_val}), Frost_Recoverable_Error,
-                MessageMatches(ContainsSubstring("Map")));
+            CHECK_THROWS_MATCHES(fn->call({arr, fn_val}),
+                                 Frost_Recoverable_Error,
+                                 MessageMatches(ContainsSubstring("Map")));
         }
     }
 
@@ -1438,8 +1431,7 @@ TEST_CASE("Builtin ranges")
             .IN_SEQUENCE(seq)
             .RETURN(Value::create(3_f));
         REQUIRE_CALL(*callable, call(_))
-            .LR_WITH(_1.size() == 2 && require_int(_1[0]) == 3_f
-                     && _1[1] == c)
+            .LR_WITH(_1.size() == 2 && require_int(_1[0]) == 3_f && _1[1] == c)
             .IN_SEQUENCE(seq)
             .RETURN(Value::create(6_f));
 
@@ -1619,7 +1611,8 @@ TEST_CASE("Builtin ranges")
         CHECK(all_fn->call({empty})->get<Bool>().value() == true);
         CHECK(none_fn->call({empty})->get<Bool>().value() == true);
 
-        auto all_falsy = Value::create(Array{Value::null(), Value::create(false)});
+        auto all_falsy =
+            Value::create(Array{Value::null(), Value::create(false)});
         CHECK(any_fn->call({all_falsy})->get<Bool>().value() == false);
         CHECK(all_fn->call({all_falsy})->get<Bool>().value() == false);
         CHECK(none_fn->call({all_falsy})->get<Bool>().value() == true);
@@ -1688,11 +1681,15 @@ TEST_CASE("Builtin ranges")
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
         auto pred_true = make_builtin(
-            [](builtin_args_t) { return Value::create(true); }, "pred_true",
-            Builtin::Arity{.min = 1, .max = 1});
+            [](builtin_args_t) {
+                return Value::create(true);
+            },
+            "pred_true", Builtin::Arity{.min = 1, .max = 1});
         auto pred_false = make_builtin(
-            [](builtin_args_t) { return Value::create(false); }, "pred_false",
-            Builtin::Arity{.min = 1, .max = 1});
+            [](builtin_args_t) {
+                return Value::create(false);
+            },
+            "pred_false", Builtin::Arity{.min = 1, .max = 1});
 
         CHECK(any_fn->call({arr, Value::create(Function{pred_true})})
                   ->get<Bool>()
@@ -1730,11 +1727,15 @@ TEST_CASE("Builtin ranges")
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
         auto pred_null = make_builtin(
-            [](builtin_args_t) { return Value::null(); }, "pred_null",
-            Builtin::Arity{.min = 1, .max = 1});
+            [](builtin_args_t) {
+                return Value::null();
+            },
+            "pred_null", Builtin::Arity{.min = 1, .max = 1});
         auto pred_int = make_builtin(
-            [](builtin_args_t) { return Value::create(0_f); }, "pred_int",
-            Builtin::Arity{.min = 1, .max = 1});
+            [](builtin_args_t) {
+                return Value::create(0_f);
+            },
+            "pred_int", Builtin::Arity{.min = 1, .max = 1});
 
         CHECK(any_fn->call({arr, Value::create(Function{pred_null})})
                   ->get<Bool>()
@@ -1845,15 +1846,12 @@ TEST_CASE("Builtin ranges")
             },
             "boom", Builtin::Arity{.min = 1, .max = 1});
 
-        CHECK_THROWS_WITH(
-            any_fn->call({arr, Value::create(Function{boom})}),
-            ContainsSubstring("kaboom"));
-        CHECK_THROWS_WITH(
-            all_fn->call({arr, Value::create(Function{boom})}),
-            ContainsSubstring("kaboom"));
-        CHECK_THROWS_WITH(
-            none_fn->call({arr, Value::create(Function{boom})}),
-            ContainsSubstring("kaboom"));
+        CHECK_THROWS_WITH(any_fn->call({arr, Value::create(Function{boom})}),
+                          ContainsSubstring("kaboom"));
+        CHECK_THROWS_WITH(all_fn->call({arr, Value::create(Function{boom})}),
+                          ContainsSubstring("kaboom"));
+        CHECK_THROWS_WITH(none_fn->call({arr, Value::create(Function{boom})}),
+                          ContainsSubstring("kaboom"));
     }
 
     SECTION("sorted semantics")
@@ -1878,8 +1876,8 @@ TEST_CASE("Builtin ranges")
             },
             "desc", Builtin::Arity{.min = 2, .max = 2});
 
-        require_array_eq(
-            fn->call({arr, Value::create(Function{desc})}), {a, c, b});
+        require_array_eq(fn->call({arr, Value::create(Function{desc})}),
+                         {a, c, b});
 
         auto empty = Value::create(Array{});
         require_array_eq(fn->call({empty}), {});
@@ -1887,8 +1885,9 @@ TEST_CASE("Builtin ranges")
         auto single = Value::create(Array{a});
         require_array_eq(fn->call({single}), {a});
 
-        auto dup_arr = Value::create(Array{Value::create(2_f), Value::create(1_f),
-                                           Value::create(1_f), Value::create(3_f)});
+        auto dup_arr =
+            Value::create(Array{Value::create(2_f), Value::create(1_f),
+                                Value::create(1_f), Value::create(3_f)});
         auto dup_sorted = fn->call({dup_arr});
         REQUIRE(dup_sorted->is<Array>());
         const auto& dup_out = dup_sorted->raw_get<Array>();
@@ -1913,29 +1912,29 @@ TEST_CASE("Builtin ranges")
             "truthy_int_cmp", Builtin::Arity{.min = 2, .max = 2});
 
         require_array_eq(
-            fn->call({arr, Value::create(Function{truthy_int_cmp})}), {b, c, a});
+            fn->call({arr, Value::create(Function{truthy_int_cmp})}),
+            {b, c, a});
     }
 
     SECTION("sorted predicate error propagates")
     {
         auto fn = lookup(table, "sorted");
-        auto arr =
-            Value::create(Array{Value::create(1_f), Value::create(0_f)});
+        auto arr = Value::create(Array{Value::create(1_f), Value::create(0_f)});
         auto boom = make_builtin(
             [](builtin_args_t) -> Value_Ptr {
                 throw Frost_Recoverable_Error{"kaboom"};
             },
             "boom", Builtin::Arity{.min = 2, .max = 2});
 
-        CHECK_THROWS_WITH(
-            fn->call({arr, Value::create(Function{boom})}),
-            ContainsSubstring("kaboom"));
+        CHECK_THROWS_WITH(fn->call({arr, Value::create(Function{boom})}),
+                          ContainsSubstring("kaboom"));
     }
 
     SECTION("sorted rejects non-comparable elements")
     {
         auto fn = lookup(table, "sorted");
-        auto mixed = Value::create(Array{Value::create(1_f), Value::create("a"s)});
+        auto mixed =
+            Value::create(Array{Value::create(1_f), Value::create("a"s)});
 
         CHECK_THROWS_WITH(fn->call({mixed}),
                           ContainsSubstring("compare incompatible types"));

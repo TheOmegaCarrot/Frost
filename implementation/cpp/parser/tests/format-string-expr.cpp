@@ -151,11 +151,8 @@ TEST_CASE("Parser Format Strings")
     SECTION("Format string in composite expressions parses")
     {
         const std::string_view cases[] = {
-            R"([$"hi"])",
-            R"({ key: $"hi" })",
-            R"($"a" == $"b")",
-            R"($"x"(1))",
-            R"($"x"[0])",
+            R"([$"hi"])", R"({ key: $"hi" })", R"($"a" == $"b")",
+            R"($"x"(1))", R"($"x"[0])",
         };
 
         for (const auto& input : cases)

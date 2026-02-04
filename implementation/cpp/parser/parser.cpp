@@ -17,8 +17,8 @@ namespace frst
 namespace
 {
 template <typename Input, typename Reporter>
-std::expected<std::vector<ast::Statement::Ptr>, std::string>
-parse_impl(const Input& input, Reporter reporter)
+std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_impl(
+    const Input& input, Reporter reporter)
 {
     std::string err;
 
@@ -39,8 +39,8 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_program(
 
     try
     {
-        return parse_impl(
-            input, lexy_ext::report_error.opts({lexy::visualize_fancy}));
+        return parse_impl(input,
+                          lexy_ext::report_error.opts({lexy::visualize_fancy}));
     }
     catch (const Frost_User_Error& e)
     {
@@ -63,10 +63,9 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_file(
             fmt::format("Failed to read file '{}'", path_str)};
     }
 
-    return parse_impl(
-        file.buffer(),
-        lexy_ext::report_error.path(path_str.c_str())
-            .opts({lexy::visualize_fancy}));
+    return parse_impl(file.buffer(),
+                      lexy_ext::report_error.path(path_str.c_str())
+                          .opts({lexy::visualize_fancy}));
 }
 
 } // namespace frst

@@ -17,8 +17,8 @@ class String_Node : public frst::ast::Statement
     {
     }
 
-    std::optional<frst::Map>
-        execute([[maybe_unused]] frst::Symbol_Table&) const override
+    std::optional<frst::Map> execute(
+        [[maybe_unused]] frst::Symbol_Table&) const override
     {
         return std::nullopt;
     }
@@ -48,8 +48,8 @@ class Multi_String_Node : public frst::ast::Statement
                 std::make_unique<String_Node>(fmt::format("Child_{}", i)));
     }
 
-    std::optional<frst::Map>
-        execute([[maybe_unused]] frst::Symbol_Table&) const override
+    std::optional<frst::Map> execute(
+        [[maybe_unused]] frst::Symbol_Table&) const override
     {
         return std::nullopt;
     }
@@ -82,8 +82,8 @@ class Three_Children : public frst::ast::Statement
     {
     }
 
-    std::optional<frst::Map>
-        execute([[maybe_unused]] frst::Symbol_Table&) const override
+    std::optional<frst::Map> execute(
+        [[maybe_unused]] frst::Symbol_Table&) const override
     {
         return std::nullopt;
     }
@@ -121,8 +121,8 @@ class Tree_Node : public frst::ast::Statement
     {
     }
 
-    std::optional<frst::Map>
-        execute([[maybe_unused]] frst::Symbol_Table&) const override
+    std::optional<frst::Map> execute(
+        [[maybe_unused]] frst::Symbol_Table&) const override
     {
         return std::nullopt;
     }

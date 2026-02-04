@@ -717,8 +717,7 @@ TEST_CASE("Parser Program")
         }
 
         {
-            auto result = parse(
-                "filter [1, 2] with fn (x) -> { x > 1 }\n3");
+            auto result = parse("filter [1, 2] with fn (x) -> { x > 1 }\n3");
             REQUIRE(result);
             auto program = require_program(result);
             REQUIRE(program.size() == 2);

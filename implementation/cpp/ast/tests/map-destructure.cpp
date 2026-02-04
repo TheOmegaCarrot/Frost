@@ -93,8 +93,7 @@ TEST_CASE("Map_Destructure")
         trompeloeil::sequence seq;
 
         auto value = Value::create("beep"s);
-        auto rhs_map = Value::create(
-            frst::Map{{Value::create("foo"s), value}});
+        auto rhs_map = Value::create(frst::Map{{Value::create("foo"s), value}});
         auto key_val = Value::create("foo"s);
         auto missing_key_val = Value::create("missing"s);
 
@@ -118,8 +117,8 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr), "bar"});
-        elems.emplace_back(Map_Destructure::Element{
-            std::move(missing_key_expr), "answer"});
+        elems.emplace_back(
+            Map_Destructure::Element{std::move(missing_key_expr), "answer"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
         auto result = node.execute(syms);
@@ -134,8 +133,7 @@ TEST_CASE("Map_Destructure")
         trompeloeil::sequence seq;
 
         auto value = Value::create(42_f);
-        auto rhs_map = Value::create(
-            frst::Map{{Value::create("foo"s), value}});
+        auto rhs_map = Value::create(frst::Map{{Value::create("foo"s), value}});
         auto key_val = Value::create("foo"s);
 
         REQUIRE_CALL(*rhs_expr, evaluate(_))
@@ -173,8 +171,7 @@ TEST_CASE("Map_Destructure")
         auto v1 = Value::create(1_f);
         auto v2 = Value::create(2_f);
         auto rhs_map = Value::create(
-            frst::Map{{Value::create("k1"s), v1},
-                      {Value::create("k2"s), v2}});
+            frst::Map{{Value::create("k1"s), v1}, {Value::create("k2"s), v2}});
 
         REQUIRE_CALL(*rhs_expr, evaluate(_))
             .IN_SEQUENCE(seq)
@@ -192,10 +189,8 @@ TEST_CASE("Map_Destructure")
         REQUIRE_CALL(syms, define("b", v2)).IN_SEQUENCE(seq);
 
         std::vector<Map_Destructure::Element> elems;
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_expr1), "a"});
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_expr2), "b"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr), true};
 
         auto result = node.execute(syms);
@@ -250,14 +245,13 @@ TEST_CASE("Map_Destructure")
     SECTION("Duplicate binding names are rejected")
     {
         std::vector<Map_Destructure::Element> elems;
-        elems.emplace_back(Map_Destructure::Element{
-            mock::Mock_Expression::make(), "dup"});
-        elems.emplace_back(Map_Destructure::Element{
-            mock::Mock_Expression::make(), "dup"});
+        elems.emplace_back(
+            Map_Destructure::Element{mock::Mock_Expression::make(), "dup"});
+        elems.emplace_back(
+            Map_Destructure::Element{mock::Mock_Expression::make(), "dup"});
 
         CHECK_THROWS_MATCHES(
-            (Map_Destructure{std::move(elems),
-                             mock::Mock_Expression::make()}),
+            (Map_Destructure{std::move(elems), mock::Mock_Expression::make()}),
             Frost_Unrecoverable_Error,
             MessageMatches(
                 Equals("Duplicate destructuring binding name: dup")));
@@ -328,10 +322,8 @@ TEST_CASE("Map_Destructure")
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Map_Destructure::Element> elems;
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_expr1), "a"});
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_expr2), "b"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(node.execute(syms), Frost_Recoverable_Error,
@@ -348,8 +340,7 @@ TEST_CASE("Map_Destructure")
         trompeloeil::sequence seq;
 
         auto value = Value::create(1_f);
-        auto rhs_map = Value::create(
-            frst::Map{{Value::create("ok"s), value}});
+        auto rhs_map = Value::create(frst::Map{{Value::create("ok"s), value}});
 
         REQUIRE_CALL(*rhs_expr, evaluate(_))
             .IN_SEQUENCE(seq)
@@ -422,12 +413,9 @@ TEST_CASE("Map_Destructure")
         REQUIRE_CALL(syms, define("f", v_float)).IN_SEQUENCE(seq);
 
         std::vector<Map_Destructure::Element> elems;
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_null), "n"});
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_bool), "b"});
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_float), "f"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_null), "n"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_bool), "b"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_float), "f"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
         auto result = node.execute(syms);
@@ -443,8 +431,7 @@ TEST_CASE("Map_Destructure")
         trompeloeil::sequence seq;
 
         auto value = Value::create(99_f);
-        auto rhs_map = Value::create(
-            frst::Map{{Value::create("dup"s), value}});
+        auto rhs_map = Value::create(frst::Map{{Value::create("dup"s), value}});
         auto key_val1 = Value::create("dup"s);
         auto key_val2 = Value::create("dup"s);
 
@@ -464,10 +451,8 @@ TEST_CASE("Map_Destructure")
         REQUIRE_CALL(syms, define("b", value)).IN_SEQUENCE(seq);
 
         std::vector<Map_Destructure::Element> elems;
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_expr1), "a"});
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_expr2), "b"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
         auto result = node.execute(syms);
@@ -502,10 +487,8 @@ TEST_CASE("Map_Destructure")
             .LR_WITH(_2->template is<Null>());
 
         std::vector<Map_Destructure::Element> elems;
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_expr1), "a"});
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_expr2), "b"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
         auto result = node.execute(syms);
@@ -529,20 +512,13 @@ TEST_CASE("Map_Destructure")
             });
 
         std::vector<Map_Destructure::Element> elems;
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_expr1), "a"});
-        elems.emplace_back(
-            Map_Destructure::Element{std::move(key_expr2), "b"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
         auto seq = collect_sequence(node);
         std::vector<std::string> expected{
-            "use:rhs",
-            "use:k1",
-            "def:a",
-            "use:k2",
-            "use:k2b",
-            "def:b",
+            "use:rhs", "use:k1", "def:a", "use:k2", "use:k2b", "def:b",
         };
         CHECK(seq == expected);
     }

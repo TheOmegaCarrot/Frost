@@ -644,11 +644,11 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda body supports defs and map literals with nested lambdas")
     {
-        auto src = lexy::string_input(std::string_view{
-            "def f = fn a -> {\n"
-            "    def b = 2 + a\n"
-            "    { c: b, d: fn p -> p * a }\n"
-            "}\n"});
+        auto src = lexy::string_input(
+            std::string_view{"def f = fn a -> {\n"
+                             "    def b = 2 + a\n"
+                             "    { c: b, d: fn p -> p * a }\n"
+                             "}\n"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);

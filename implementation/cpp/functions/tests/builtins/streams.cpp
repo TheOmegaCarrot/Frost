@@ -68,7 +68,8 @@ std::filesystem::path unique_path(std::filesystem::path base,
                                   std::string_view name)
 {
     static std::size_t counter = 0;
-    return base / (std::string{name} + "_" + std::to_string(counter++) + ".txt");
+    return base
+           / (std::string{name} + "_" + std::to_string(counter++) + ".txt");
 }
 } // namespace
 
@@ -90,17 +91,16 @@ TEST_CASE("Builtin stringreader")
             reader_fn->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")
                            && ContainsSubstring("requires at least 1")));
-        CHECK_THROWS_MATCHES(
-            reader_fn->call({Value::create(1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("stringreader")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("Int")));
+        CHECK_THROWS_MATCHES(reader_fn->call({Value::create(1_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("stringreader")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("Int")));
     }
 
     SECTION("Read behaviors")
     {
-        auto reader_map =
-            reader_fn->call({Value::create("a\nb"s)});
+        auto reader_map = reader_fn->call({Value::create("a\nb"s)});
         auto read_line = get_map_fn(reader_map, "read_line");
         auto read_one = get_map_fn(reader_map, "read_one");
         auto read_rest = get_map_fn(reader_map, "read_rest");
@@ -202,11 +202,11 @@ TEST_CASE("Builtin open_trunc")
             open_trunc_fn->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")
                            && ContainsSubstring("requires at least 1")));
-        CHECK_THROWS_MATCHES(
-            open_trunc_fn->call({Value::create(1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("open_trunc")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("Int")));
+        CHECK_THROWS_MATCHES(open_trunc_fn->call({Value::create(1_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("open_trunc")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("Int")));
     }
 
     SECTION("Open failure returns null")
@@ -221,8 +221,7 @@ TEST_CASE("Builtin open_trunc")
         auto dir = make_test_dir("Builtin_open_trunc");
         auto path = unique_path(dir, "trunc");
 
-        auto writer_map = open_trunc_fn->call(
-            {Value::create(path.string())});
+        auto writer_map = open_trunc_fn->call({Value::create(path.string())});
         REQUIRE(writer_map->is<Map>());
 
         auto write = get_map_fn(writer_map, "write");
@@ -251,8 +250,7 @@ TEST_CASE("Builtin open_trunc")
         REQUIRE(closed_val->is<Bool>());
         CHECK(closed_val->get<Bool>().value() == false);
 
-        auto reader_map = open_read_fn->call(
-            {Value::create(path.string())});
+        auto reader_map = open_read_fn->call({Value::create(path.string())});
         auto read_rest = get_map_fn(reader_map, "read_rest");
         auto read_value = read_rest->call({});
         REQUIRE(read_value->is<String>());
@@ -280,11 +278,11 @@ TEST_CASE("Builtin open_append")
             open_append_fn->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")
                            && ContainsSubstring("requires at least 1")));
-        CHECK_THROWS_MATCHES(
-            open_append_fn->call({Value::create(1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("open_append")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("Int")));
+        CHECK_THROWS_MATCHES(open_append_fn->call({Value::create(1_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("open_append")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("Int")));
     }
 
     SECTION("Append writes after existing content")
@@ -292,24 +290,21 @@ TEST_CASE("Builtin open_append")
         auto dir = make_test_dir("Builtin_open_append");
         auto path = unique_path(dir, "append");
 
-        auto writer_map = open_trunc_fn->call(
-            {Value::create(path.string())});
+        auto writer_map = open_trunc_fn->call({Value::create(path.string())});
         auto write = get_map_fn(writer_map, "write");
         auto close = get_map_fn(writer_map, "close");
 
         write->call({Value::create("a"s)});
         close->call({});
 
-        auto append_map = open_append_fn->call(
-            {Value::create(path.string())});
+        auto append_map = open_append_fn->call({Value::create(path.string())});
         auto write_append = get_map_fn(append_map, "write");
         auto close_append = get_map_fn(append_map, "close");
 
         write_append->call({Value::create("b"s)});
         close_append->call({});
 
-        auto reader_map = open_read_fn->call(
-            {Value::create(path.string())});
+        auto reader_map = open_read_fn->call({Value::create(path.string())});
         auto read_rest = get_map_fn(reader_map, "read_rest");
         auto result = read_rest->call({});
         REQUIRE(result->is<String>());
@@ -336,11 +331,11 @@ TEST_CASE("Builtin open_read")
             open_read_fn->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")
                            && ContainsSubstring("requires at least 1")));
-        CHECK_THROWS_MATCHES(
-            open_read_fn->call({Value::create(1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("open_read")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("Int")));
+        CHECK_THROWS_MATCHES(open_read_fn->call({Value::create(1_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("open_read")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("Int")));
     }
 
     SECTION("Open failure returns null")
@@ -354,16 +349,14 @@ TEST_CASE("Builtin open_read")
         auto dir = make_test_dir("Builtin_open_read");
         auto path = unique_path(dir, "read");
 
-        auto writer_map = open_trunc_fn->call(
-            {Value::create(path.string())});
+        auto writer_map = open_trunc_fn->call({Value::create(path.string())});
         auto write = get_map_fn(writer_map, "write");
         auto close_writer = get_map_fn(writer_map, "close");
 
         write->call({Value::create("line1\nline2"s)});
         close_writer->call({});
 
-        auto reader_map = open_read_fn->call(
-            {Value::create(path.string())});
+        auto reader_map = open_read_fn->call({Value::create(path.string())});
         auto read_line = get_map_fn(reader_map, "read_line");
         auto read_rest = get_map_fn(reader_map, "read_rest");
         auto eof = get_map_fn(reader_map, "eof");

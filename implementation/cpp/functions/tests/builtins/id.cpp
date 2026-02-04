@@ -45,10 +45,10 @@ TEST_CASE("Builtin id")
         auto v_bool = Value::create(true);
         auto v_str = Value::create("hello"s);
         auto v_arr = Value::create(Array{Value::create(1_f)});
-        auto v_map = Value::create(Map{{Value::create("k"s),
-                                        Value::create(2_f)}});
-        auto v_fn = Value::create(Function{
-            std::make_shared<frst::testing::Dummy_Callable>()});
+        auto v_map =
+            Value::create(Map{{Value::create("k"s), Value::create(2_f)}});
+        auto v_fn = Value::create(
+            Function{std::make_shared<frst::testing::Dummy_Callable>()});
 
         CHECK(id->call({v_null}) == v_null);
         CHECK(id->call({v_int}) == v_int);

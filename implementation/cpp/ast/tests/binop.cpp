@@ -25,9 +25,9 @@ TEST_CASE("Numeric Binary ops")
     auto lhs_val = Value::create(42_f);
     auto rhs_val = Value::create(10_f);
 
-    for (const auto op : {ast::Binary_Op::PLUS, ast::Binary_Op::MINUS,
-                          ast::Binary_Op::MULTIPLY, ast::Binary_Op::DIVIDE,
-                          ast::Binary_Op::MODULUS})
+    for (const auto op :
+         {ast::Binary_Op::PLUS, ast::Binary_Op::MINUS, ast::Binary_Op::MULTIPLY,
+          ast::Binary_Op::DIVIDE, ast::Binary_Op::MODULUS})
     {
         DYNAMIC_SECTION("Operator " << ast::format_binary_op(op))
         {

@@ -111,9 +111,8 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Map destructure binds names and missing keys to null")
     {
-        auto result = parse(
-            "def {foo: bar, [40+2]: answer, missing: none} = "
-            "{foo: 'beep', [42]: 'life'}; [bar, answer, none]");
+        auto result = parse("def {foo: bar, [40+2]: answer, missing: none} = "
+                            "{foo: 'beep', [42]: 'life'}; [bar, answer, none]");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -135,9 +134,8 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Exported map destructure returns a map")
     {
-        auto result =
-            parse("export def {foo: bar, [40+2]: answer} = "
-                  "{foo: 1, [42]: 2}");
+        auto result = parse("export def {foo: bar, [40+2]: answer} = "
+                            "{foo: 1, [42]: 2}");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
@@ -160,9 +158,8 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Map destructure allows line breaks and comments")
     {
-        auto result = parse(
-            "def { foo: bar, # comment\n"
-            "      [1+1]: baz } = { foo: 1, [2]: 3 }; baz");
+        auto result = parse("def { foo: bar, # comment\n"
+                            "      [1+1]: baz } = { foo: 1, [2]: 3 }; baz");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -202,8 +199,7 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Map destructure allows whitespace around colon and key expr")
     {
-        auto result = parse(
-            "def { [1\n+2] : name } = { [3]: 7 }; name");
+        auto result = parse("def { [1\n+2] : name } = { [3]: 7 }; name");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
