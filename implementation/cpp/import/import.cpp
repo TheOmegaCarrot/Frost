@@ -5,6 +5,7 @@
 #include <frost/symbol-table.hpp>
 
 #include <filesystem>
+#include <flat_map>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <fmt/format.h>
@@ -18,7 +19,10 @@ std::vector<std::filesystem::path> env_module_path()
     {
         return std::string{extra_path}
                | std::views::split(':')
-               | std::ranges::to<std::vector<std::string>>()
+               | std::views::transform([]<typename T>(T&& component) {
+                     return std::filesystem::path{std::string{
+                         std::from_range, std::forward<T>(component)}};
+                 })
                | std::ranges::to<std::vector<std::filesystem::path>>();
     }
 
@@ -32,11 +36,20 @@ struct Importer
 {
     std::vector<std::filesystem::path> search_path;
 
+    std::flat_map<std::string, Value_Ptr> import_cache;
+
     Value_Ptr operator()(builtin_args_t args)
     {
         REQUIRE_ARGS("import", PARAM("module", TYPES(String)));
 
         auto module_spec = GET(0, String);
+
+        if (auto cache_hit = import_cache.find(module_spec);
+            cache_hit != import_cache.end())
+        {
+            return cache_hit->second;
+        }
+
         std::filesystem::path module_path =
             boost::replace_all_copy(module_spec, ".", "/") + ".frst";
 
@@ -70,7 +83,9 @@ struct Importer
         inject_prelude(isolated_table);
 
         std::vector<std::filesystem::path> child_search_path{
-            module_file.parent_path(), "."};
+            module_file.parent_path(),
+        };
+
         child_search_path.append_range(env_module_path());
 
         inject_import(isolated_table, child_search_path);
@@ -82,7 +97,9 @@ struct Importer
                 imported.insert_range(exported.value());
         }
 
-        return Value::create(std::move(imported));
+        auto import_result = Value::create(std::move(imported));
+        import_cache.emplace(module_spec, import_result);
+        return import_result;
     }
 };
 
@@ -92,7 +109,7 @@ void inject_import(Symbol_Table& table,
                    const std::vector<std::filesystem::path>& search_path)
 {
     table.define("import", Value::create(Function{std::make_shared<Builtin>(
-                               Importer{std::move(search_path)}, "import",
+                               Importer{std::move(search_path), {}}, "import",
                                Builtin::Arity{.min = 1, .max = 1})}));
 }
 } // namespace frst

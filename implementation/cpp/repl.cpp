@@ -327,7 +327,7 @@ struct Completion_Callbacks
 
 bool should_read_more(std::string& input)
 {
-    if (input.ends_with(':'))
+    if (input.ends_with(':') || input.ends_with("->"))
         return true;
 
     if (input.ends_with('\\'))
