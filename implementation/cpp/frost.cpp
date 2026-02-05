@@ -7,10 +7,8 @@
 #include <frost/value.hpp>
 
 #include <fmt/format.h>
-#include <fmt/ranges.h>
 #include <lyra/lyra.hpp>
 
-#include <algorithm>
 #include <iostream>
 #include <optional>
 #include <ranges>
@@ -86,14 +84,11 @@ int main(int argc, const char** argv)
                | lyra::arg(extra_args,
                            "args")("Arguments passed to the Frost program.");
 
-    std::vector<std::string> parse_args{args.front()};
-    parse_args.reserve(pre_args.size() + 1);
-    parse_args.append_range(pre_args);
-
     std::vector<const char*> parse_argv;
-    parse_argv.reserve(parse_args.size());
+    parse_argv.reserve(pre_args.size() + 1);
+    parse_argv.push_back(args.front());
     parse_argv.append_range(
-        std::views::transform(parse_args, &std::string::c_str));
+        std::views::transform(pre_args, &std::string::c_str));
 
     auto result =
         cli.parse({static_cast<int>(parse_argv.size()), parse_argv.data()});
