@@ -121,7 +121,7 @@ int main(int argc, const char** argv)
 
     if (do_dump && do_repl)
     {
-        std::fputs("Refusing to dump repl", stderr);
+        std::fputs("Refusing to dump repl\n", stderr);
         return 1;
     }
 
