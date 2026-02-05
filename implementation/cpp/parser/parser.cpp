@@ -20,27 +20,17 @@ template <typename Input, typename Reporter>
 std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_impl(
     const Input& input, Reporter reporter)
 {
-    std::string err;
-
-    auto result = lexy::parse<grammar::program>(
-        input, reporter.to(std::back_inserter(err)));
-
-    if (!result)
-        return std::unexpected{err};
-
-    return std::move(result).value();
-}
-} // namespace
-
-std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_program(
-    const std::string& program_text)
-{
-    auto input = lexy::string_input(program_text);
-
     try
     {
-        return parse_impl(input,
-                          lexy_ext::report_error.opts({lexy::visualize_fancy}));
+        std::string err;
+
+        auto result = lexy::parse<grammar::program>(
+            input, reporter.to(std::back_inserter(err)));
+
+        if (!result)
+            return std::unexpected{err};
+
+        return std::move(result).value();
     }
     catch (const Frost_User_Error& e)
     {
@@ -50,6 +40,16 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_program(
     {
         return std::unexpected{fmt::format("Internal error: {}", e.what())};
     }
+}
+} // namespace
+
+std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_program(
+    const std::string& program_text)
+{
+    auto input = lexy::string_input(program_text);
+
+    return parse_impl(input,
+                      lexy_ext::report_error.opts({lexy::visualize_fancy}));
 }
 
 std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_file(
