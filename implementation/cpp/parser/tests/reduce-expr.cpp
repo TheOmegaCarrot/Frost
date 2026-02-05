@@ -229,7 +229,7 @@ TEST_CASE("Parser Reduce Expressions")
         CHECK(out4->get<frst::Int>().value() == 3_f);
     }
 
-    SECTION("Init expressions can include nested map and UFCS")
+    SECTION("Init expressions can include nested map and threaded calls")
     {
         struct Identity_Callable final : frst::Callable
         {
@@ -297,7 +297,7 @@ TEST_CASE("Parser Reduce Expressions")
         CHECK(out->get<frst::Int>().value() == 6_f);
     }
 
-    SECTION("UFCS can apply to reduce expressions")
+    SECTION("Threaded call can apply to reduce expressions")
     {
         struct IdentityCallable final : frst::Callable
         {

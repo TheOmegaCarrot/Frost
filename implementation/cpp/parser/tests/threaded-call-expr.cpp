@@ -84,7 +84,7 @@ struct ArgsArrayCallable final : frst::Callable
 };
 } // namespace
 
-TEST_CASE("Parser UFCS Expressions")
+TEST_CASE("Parser threaded call expressions")
 {
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
@@ -93,7 +93,7 @@ TEST_CASE("Parser UFCS Expressions")
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 
-    SECTION("UFCS inserts the left-hand side as the first argument")
+    SECTION("Threaded call inserts the left-hand side as the first argument")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(10_f);
@@ -114,7 +114,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(callable->received[2]->get<frst::Int>().value() == 2_f);
     }
 
-    SECTION("UFCS supports empty argument lists")
+    SECTION("Threaded call supports empty argument lists")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(5_f);
@@ -132,7 +132,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(callable->received[0] == a_val);
     }
 
-    SECTION("UFCS works with dot and index callees")
+    SECTION("Threaded call works with dot and index callees")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(7_f);
@@ -165,7 +165,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(callable_index->received[0] == a_val);
     }
 
-    SECTION("UFCS binds more tightly than unary and binary operators")
+    SECTION("Threaded call binds more tightly than unary and binary operators")
     {
         frst::Symbol_Table table;
         auto callable = std::make_shared<IdentityCallable>();
@@ -186,7 +186,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(out2->get<frst::Bool>().value() == true);
     }
 
-    SECTION("UFCS accepts complex left-hand sides")
+    SECTION("Threaded call accepts complex left-hand sides")
     {
         frst::Symbol_Table table;
         frst::Map obj;
@@ -215,7 +215,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(out2->get<frst::Int>().value() == 7_f);
     }
 
-    SECTION("UFCS is left-associative")
+    SECTION("Threaded call is left-associative")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(1_f);
@@ -240,7 +240,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(callable_g->received[0]->get<frst::Int>().value() == 7_f);
     }
 
-    SECTION("UFCS applies before unary operators on nontrivial expressions")
+    SECTION("Threaded call applies before unary operators on nontrivial expressions")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(5_f);
@@ -264,7 +264,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(out2->get<frst::Bool>().value() == false);
     }
 
-    SECTION("UFCS allows whitespace around '@' but not newlines")
+    SECTION("Threaded call allows whitespace around '@' but not newlines")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(3_f);
@@ -284,7 +284,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK_FALSE(parse("a\n @  f( )"));
     }
 
-    SECTION("UFCS supports whitespace inside callee chains (no newlines)")
+    SECTION("Threaded call supports whitespace inside callee chains (no newlines)")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(8_f);
@@ -307,7 +307,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK_FALSE(parse("a @ obj .\n m ( )"));
     }
 
-    SECTION("UFCS requires a call expression on the right-hand side")
+    SECTION("Threaded call requires a call expression on the right-hand side")
     {
         CHECK_FALSE(parse("a @ f"));
         CHECK_FALSE(parse("a @ obj.key"));
@@ -315,7 +315,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK_FALSE(parse("a @ map [1] with f"));
     }
 
-    SECTION("UFCS rejects malformed call arguments")
+    SECTION("Threaded call rejects malformed call arguments")
     {
         CHECK_FALSE(parse("a @ f("));
         CHECK_FALSE(parse("a @ f(,)"));
@@ -323,7 +323,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK_FALSE(parse("a @ f(1 2)"));
     }
 
-    SECTION("UFCS stops at the call and allows postfix on the result")
+    SECTION("Threaded call stops at the call and allows postfix on the result")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(9_f);
@@ -339,7 +339,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(out == a_val);
     }
 
-    SECTION("UFCS binds tighter than a subsequent call")
+    SECTION("Threaded call binds tighter than a subsequent call")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(1_f);
@@ -363,7 +363,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(g_callable->received[0] == b_val);
     }
 
-    SECTION("UFCS with dot call followed by indexing")
+    SECTION("Threaded call with dot call followed by indexing")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(2_f);
@@ -382,7 +382,7 @@ TEST_CASE("Parser UFCS Expressions")
         CHECK(out == a_val);
     }
 
-    SECTION("UFCS accepts parenthesized lambda calls on the right-hand side")
+    SECTION("Threaded call accepts parenthesized lambda calls on the right-hand side")
     {
         auto result = parse("a @ (fn (x) -> { x })(1)");
         REQUIRE(result);

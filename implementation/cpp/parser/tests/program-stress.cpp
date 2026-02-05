@@ -158,12 +158,12 @@ res
         CHECK(last->get<frst::Int>().value() == 13_f);
     }
 
-    SECTION("UFCS matches function call in debug dumps")
+    SECTION("Threaded call matches function call in debug dumps")
     {
         require_equivalent_programs("a @ b()", "b(a)");
     }
 
-    SECTION("Chained UFCS matches nested call structure in debug dumps")
+    SECTION("Chained threaded calls match nested call structure in debug dumps")
     {
         require_equivalent_programs("a @ b() @ c()", "c(b(a))");
     }

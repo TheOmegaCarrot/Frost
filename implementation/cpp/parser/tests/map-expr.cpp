@@ -247,7 +247,7 @@ TEST_CASE("Parser Map Expressions")
         CHECK(arr[1]->get<frst::Int>().value() == 3_f);
     }
 
-    SECTION("Map lambdas can use UFCS within their bodies")
+    SECTION("Map lambdas can use threaded calls within their bodies")
     {
         struct WrapCallable final : frst::Callable
         {

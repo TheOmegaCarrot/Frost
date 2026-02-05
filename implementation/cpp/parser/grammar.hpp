@@ -1074,7 +1074,7 @@ struct expression_impl : lexy::expression_production
     struct op_dot
     {
     };
-    struct op_ufcs
+    struct op_threaded_call
     {
     };
     struct op_mod
@@ -1130,7 +1130,7 @@ struct expression_impl : lexy::expression_production
         static constexpr ast::Binary_Op op = ast::Binary_Op::OR;
     };
 
-    struct ufcs_call
+    struct threaded_call
     {
         struct callee : lexy::expression_production
         {
@@ -1179,7 +1179,7 @@ struct expression_impl : lexy::expression_production
                                       std::vector<ast::Expression::Ptr> args) {
                 return result{std::move(callee), std::move(args)};
             });
-        static constexpr auto name = "UFCS call";
+        static constexpr auto name = "threaded call";
     };
 
     struct postfix : dsl::postfix_op
@@ -1193,7 +1193,7 @@ struct expression_impl : lexy::expression_production
                                         .error<expected_call_arguments> >> dsl::
                                         p<call_arguments>))
             / dot_postfix_op<op_dot>()
-            / dsl::op<op_ufcs>(dsl::lit_c<'@'> >> dsl::p<ufcs_call>);
+            / dsl::op<op_threaded_call>(dsl::lit_c<'@'> >> dsl::p<threaded_call>);
         using operand = dsl::atom;
     };
 
@@ -1279,8 +1279,8 @@ struct expression_impl : lexy::expression_production
                              std::move(lhs),
                              make_string_key_expr(std::move(key)));
                      },
-                     [](ast::Expression::Ptr lhs, op_ufcs,
-                        ufcs_call::result rhs) {
+                     [](ast::Expression::Ptr lhs, op_threaded_call,
+                        threaded_call::result rhs) {
                          auto args = std::move(rhs.args);
                          args.insert(args.begin(), std::move(lhs));
                          return std::make_unique<ast::Function_Call>(

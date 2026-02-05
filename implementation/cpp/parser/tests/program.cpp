@@ -471,7 +471,7 @@ TEST_CASE("Parser Program")
         CHECK(v2->get<frst::Int>().value() == 2_f);
     }
 
-    SECTION("UFCS expressions can appear in programs")
+    SECTION("Threaded call expressions can appear in programs")
     {
         auto result = parse("a @ f(1); 2 @ f(); b @ obj.m()");
         REQUIRE(result);
@@ -619,7 +619,7 @@ TEST_CASE("Parser Program")
         CHECK(arr2[0]->get<frst::Int>().value() == 1_f);
     }
 
-    SECTION("Deeply nested higher-order expressions in calls and UFCS")
+    SECTION("Deeply nested higher-order expressions in calls and threaded calls")
     {
         auto result =
             parse("def id = fn (x) -> { x };\n"
@@ -785,7 +785,7 @@ TEST_CASE("Parser Program")
         CHECK(v3->get<frst::Int>().value() == 3_f);
     }
 
-    SECTION("UFCS does not allow postfix after newlines")
+    SECTION("Threaded call does not allow postfix after newlines")
     {
         auto result = parse("a @ f()\n[0]");
         REQUIRE(result);

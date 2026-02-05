@@ -10,7 +10,7 @@ set(INTEGRATION_SCRIPTS
     prelude/tap.frst
     prelude/const.frst
     prelude/compose.frst
-    ufcs-chain.frst
+    threaded-call-chain.frst
     capture-enclosing-closure.frst
     map-newline-1.frst
 )
