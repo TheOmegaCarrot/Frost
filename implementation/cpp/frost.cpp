@@ -8,6 +8,7 @@
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <lyra/lyra.hpp>
 
 #include <algorithm>
 #include <iostream>
@@ -46,80 +47,88 @@ int main(int argc, const char** argv)
     std::vector<std::string> args_for_frost;
     bool do_repl = false;
     bool do_dump = false;
+    bool show_help = false;
+    bool show_version = false;
 
     if (argc == 1)
         do_repl = true;
 
-    // The Frost driver's arguments are so simple I'll just handle them by hand
+    std::vector<std::string> pre_args;
+    std::vector<std::string> post_args;
+    bool after_double_dash = false;
 
-    bool collect_rest = false;
-    bool skip = false;
-    for (const auto& [current, next] :
-         std::views::concat(args, std::views::single(""))
-             | std::views::drop(1)
-             | std::views::adjacent<2>)
+    for (const auto& arg : args | std::views::drop(1))
     {
-        if (skip)
+        if (!after_double_dash && arg == "--"sv)
         {
-            skip = false;
+            after_double_dash = true;
             continue;
         }
 
-        if (collect_rest)
-        {
-            args_for_frost.emplace_back(current);
-            continue;
-        }
-
-        if (current == "--"sv)
-        {
-            collect_rest = true;
-            continue;
-        }
-
-        if (current == "-e"sv)
-        {
-            skip = true;
-            strings_to_evaluate.emplace_back(next);
-            continue;
-        }
-
-        if (current == "-d"sv)
-        {
-            do_dump = true;
-            continue;
-        }
-
-        if (current == "-i"sv)
-        {
-            do_repl = true;
-            continue;
-        }
-
-        if (not file_to_evaluate)
-        {
-            file_to_evaluate.emplace(current);
-            args_for_frost.emplace_back(current);
-            continue;
-        }
-
-        if (current != ""sv)
-            args_for_frost.emplace_back(current);
+        if (after_double_dash)
+            post_args.emplace_back(arg);
+        else
+            pre_args.emplace_back(arg);
     }
+
+    std::string file_arg;
+    std::vector<std::string> extra_args;
+
+    auto cli = lyra::cli()
+               | lyra::help(show_help)
+               | lyra::opt(show_version)["--version"]("Show version and exit.")
+               | lyra::opt(do_dump)["-d"]["--dump"](
+                   "Dump the AST instead of executing.")
+               | lyra::opt(do_repl)["-i"]["--interactive"]("Start the REPL.")
+               | lyra::opt(strings_to_evaluate, "code")["-e"]["--eval"](
+                   "Evaluate a snippet of Frost code.")
+               | lyra::arg(file_arg, "file")("File to execute.").optional()
+               | lyra::arg(extra_args,
+                           "args")("Arguments passed to the Frost program.");
+
+    std::vector<std::string> parse_args{args.front()};
+    parse_args.reserve(pre_args.size() + 1);
+    parse_args.append_range(pre_args);
+
+    std::vector<const char*> parse_argv;
+    parse_argv.reserve(parse_args.size());
+    parse_argv.append_range(
+        std::views::transform(parse_args, &std::string::c_str));
+
+    auto result =
+        cli.parse({static_cast<int>(parse_argv.size()), parse_argv.data()});
+    if (!result)
+    {
+        fmt::println(stderr, "{}", result.message());
+        return 1;
+    }
+
+    if (show_help)
+    {
+        std::cerr << cli;
+        return 0;
+    }
+
+    if (show_version)
+    {
+        fmt::println("frost {}", FROST_VERSION);
+        return 0;
+    }
+
+    if (!file_arg.empty())
+    {
+        file_to_evaluate.emplace(file_arg);
+        args_for_frost.emplace_back(std::move(file_arg));
+    }
+
+    args_for_frost.append_range(extra_args);
+    args_for_frost.append_range(post_args);
 
     if (do_dump && do_repl)
     {
         std::fputs("Refusing to dump repl", stderr);
         return 1;
     }
-
-    // fmt::println(R"(strings to eval: {}
-    // file to eval: {}
-    // args for frost: {}
-    // )",
-    //              strings_to_evaluate,
-    //              file_to_evaluate.value_or("{none}").native(),
-    //              args_for_frost);
 
     frst::Symbol_Table symbols;
     frst::inject_builtins(symbols);

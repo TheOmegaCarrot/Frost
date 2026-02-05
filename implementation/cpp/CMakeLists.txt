@@ -22,7 +22,13 @@ target_link_libraries( frost
     frost-prelude
     frost-import
     frost-common
+    lyra
     replxx::replxx
+)
+
+target_compile_definitions( frost
+    PRIVATE
+    FROST_VERSION="${PROJECT_VERSION}"
 )
 
 set_target_properties( frost PROPERTIES

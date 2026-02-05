@@ -23,6 +23,7 @@ include(FetchContent)
 include(get-lexy)
 include(get-fmt)
 include(get-replxx)
+include(get-lyra)
 
 include(get-test-libs)
 
