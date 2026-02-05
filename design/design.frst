@@ -2,18 +2,21 @@
 # In a complete implementation, this file should run without error
 
 # function definition
-def id = fn (x) -> { x }
+def identity = fn (x) -> { x }
+assert(identity(10) == 10)
 
 # All name declarations must start with `def`
 
 # last expression :: implicit return
 def also_plus = fn (x, y) -> { x + y } # `plus` is a predefined builtin
+assert(also_plus(30, 12) == 42)
 
 # if expressions
 def fib = fn (n) -> {
     if n <= 1: n
     else: self(n-1) + self(n-2) # recursion is available
 }
+assert(fib(1) == 1) ; assert(fib(7) == 13)
 
 def make_counter = fn (start) -> {
     # fn () -> { start = start + 1 ; start } # mutation is not allowed (immutable everything)
@@ -35,6 +38,7 @@ def also_allowed_for_if = fn (n) -> {
     else:
 n - 1
 }
+assert(also_allowed_for_if(2) == 10)
 
 # sane array syntax
 def arr = [ 1, 2, 3 ]
@@ -47,25 +51,25 @@ def sum_arr = fn (arr) -> {
     # optional init (reduction over empty without init returns null)
 }
 
-def arr_sum = sum_arr(arr) # 6
+assert(sum_arr(arr) == 6)
 
 def double_arr = fn (arr) -> {
     map arr with fn (x) -> { 2 * x }
 }
 
-def mapped_arr = double_arr(arr) # [2, 4, 6]
+assert(deep_equal( double_arr(arr), [2, 4, 6] ))
 
 def remove_nulls = fn (arr) -> {
     filter arr with is_nonnull # positive filter
 }
 
-def filter_example = remove_nulls( [ 42, null, "hello" ] ) # [ 42, "hello" ]
+assert(deep_equal( remove_nulls( [ 42, null, "hello" ] ) , [ 42, "hello" ] ))
 
 def only_string_keys = fn (dict) -> {
     filter dict with fn (k, v) -> { is_string(k) }
 }
 
-def map_filter_example = only_string_keys( { foo: 42, [10]: "hi" } ) # { foo: 42 }
+assert(deep_equal( only_string_keys( {foo: 42, [10]: 'hi'} ), {foo: 42} ))
 
 # types:
 
@@ -97,7 +101,7 @@ def map_reduce = fn (dict) -> {
     reduce dict with fn (acc, k, v) -> { acc + v } init: 0
 }
 
-def map_reduce_res = map_reduce( { k1: 3, k2: 5 } ) # 8
+assert(map_reduce( { k1: 3, k2: 5 } ) == 8)
 
 # map mapping
 def map_map = fn (dict) -> {
@@ -108,7 +112,7 @@ def map_map = fn (dict) -> {
     map dict with fn (k, v) -> { { [k]: v + 1, [k + k]: v + 2 } }
 }
 
-def map_map_res = map_map( { k1: 1, k2: 4 } ) # { k1: 2, k2: 5, k1k1: 3, k2k2: 6 }
+assert(deep_equal( map_map( { k1: 1, k2: 4 } ) , { k1: 2, k2: 5, k1k1: 3, k2k2: 6 } ))
 
 # array iteration
 def iterate_array = fn (arr) -> {
@@ -122,31 +126,36 @@ def iterate_map = fn (dict) -> {
 
 print("hi") # any values returned by top-level expressions are discarded (even the last one)
 
-# loose ends
-def arr_concat = [1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
+# array concat
+assert(deep_equal( [1, 2, 3] + [4, 5, 6] , [1, 2, 3, 4, 5, 6] ))
 
 # functions can only return one value (which can be an array or map)
 
-def str_concat = "foo" + " " + "bar" # "foo bar"
+# string concat
+assert( 'foo' + ' ' + 'bar' == "foo bar" )
 
-# { foo: "bloop", baz: "beep", beep: "boop" }
-def map_combine = { foo: "bar", baz: "beep" } + { beep: "boop", foo: "bloop" }
+# map union
+assert(deep_equal( {foo: "bar", baz: "beep" } + { beep: "boop", foo: "bloop" } , { foo: "bloop", baz: "beep", beep: "boop" } ))
 
 def logical_operations = ( true and true ) or not false
+assert(logical_operations == true)
 
-def or_1 = "everything except false or null is truthy" or false # equals the string
+def or_1 = "everything except false or null is truthy" or false
+assert(or_1 == "everything except false or null is truthy")
 
 def or_2 = false or 42 # 42
+assert(or_2 == 42)
 
 def map1 = { foo: "bar" }
 
 def map2 = { foo: "bar" }
 
-def maps_eq = map1 == map2 # maps and arrays use identity equality (maps_eq is false)
+def maps_eq = map1 == map2 # maps and arrays use identity equality
+assert(not maps_eq)
 
 def plus_3 = fn (x) -> { 3 + x }
 
-assert(plus_3 == plus_3) # true (functions use identity equality)
+assert(plus_3 == plus_3) # (functions use identity equality)
 
 def seven = plus_3(4)
 
@@ -174,6 +183,8 @@ def sugary1 = fn -> {
 # equivalent to:
 def desugary1 = fn () -> { def a = 2 ; def b = 4 ; a + b }
 
+assert(sugary1() == desugary1())
+
 def bind_front = fn (fun, ...args1) -> {
     fn (...args2) -> {
         pack_call(fun, args1 + args2) # pack_call "unpacks" an array into an argument list
@@ -183,26 +194,32 @@ def bind_front = fn (fun, ...args1) -> {
 
 def plus_5 = bind_front(plus, 5)
 
+assert(plus_5(10) == 15)
+
 def reduce_rest = fn (f, ...beeps) -> {
     reduce beeps with f
 }
 
-def reduce_rest_res = reduce_rest(fn (a, b) -> {a + b}, 1, 2, 3, 4) # 10
+def reduce_rest_res = reduce_rest(fn (a, b) -> {a + b}, 1, 2, 3, 4)
+assert(reduce_rest_res == 10)
 
 # function parameter ()s can also just be omitted, as can {} for a single expression
 def times_2 = fn n -> n * 2
 
 # array destructuring!
 def [a, b] = [1, 2]
+assert(a == 1 and b == 2)
 
 # also "rest" bindings
-def [a, b, ...more] = [1, 2, 3, 4, 5]
+def [c, d, ...more] = [1, 2, 3, 4, 5]
+assert(c == 1 and d == 2 and deep_equal(more, [3, 4, 5]))
 
 # array destructuring bindings have to match exactly
 
 # format strings!
 def fmt_string = $'a = ${a}, b = ${b}'
+assert(fmt_string == 'a = 1, b = 2')
 
 # map destructuring! (does not need to be exhaustive)
 def { foo: foo, bar: the, nope: nada } = { foo: 'something', bar: 42, wow: 'cool' }
-# foo == 'something', the == 42, nope == null
+assert(foo == 'something' and the == 42 and nada == null)
