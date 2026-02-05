@@ -6,6 +6,7 @@ add_library( frost-functions
     builtins/error-handling.cpp
     builtins/filesystem.cpp
     builtins/free-operators.cpp
+    builtins/http.cpp
     builtins/json.cpp
     builtins/math.cpp
     builtins/mutable-cell.cpp

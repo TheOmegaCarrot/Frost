@@ -93,7 +93,8 @@ class Builtin final : public Callable
     X(os)                                                                      \
     X(streams)                                                                 \
     X(json)                                                                    \
-    X(filesystem)
+    X(filesystem)                                                              \
+    X(http)
 
 #define X(F) void inject_##F(Symbol_Table&);
 
