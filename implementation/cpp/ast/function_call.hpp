@@ -51,7 +51,7 @@ class Function_Call final : public Expression
   protected:
     std::string node_label() const final
     {
-        return "Function Call";
+        return "Function_Call";
     }
 
     std::generator<Child_Info> children() const final

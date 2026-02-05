@@ -33,7 +33,7 @@ class Index final : public Expression
   protected:
     std::string node_label() const final
     {
-        return "Index Expression";
+        return "Index_Expression";
     }
 
     std::generator<Child_Info> children() const final
