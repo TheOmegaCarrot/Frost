@@ -1,0 +1,5 @@
+def word = fn l -> $'(?<${l}>\\w+)'
+
+export def labeled_kv_regex = '(?:' + word('label') + ':)?' + word('key') + '=' + word('value')
+
+export def result = 'the:foo=bar this:beep=boop wow=cool' @re.scan_matches(labeled_kv_regex)

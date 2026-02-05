@@ -43,12 +43,11 @@ struct Parse_Json_Impl
 
     Value_Ptr operator()(this const auto self, const boost::json::array& arr)
     {
-        Array result;
-        for (const auto& elem : arr)
-        {
-            result.push_back(boost::json::visit(self, elem));
-        }
-        return Value::create(std::move(result));
+        return Value::create(arr
+                             | std::views::transform([&](const auto& elem) {
+                                   return boost::json::visit(self, elem);
+                               })
+                             | std::ranges::to<Array>());
     }
 
     Value_Ptr operator()(this const auto self, const boost::json::object& obj)
@@ -101,14 +100,11 @@ struct To_Json_Impl
 
     boost::json::value operator()(this const auto self, const Array& arr)
     {
-        boost::json::array result;
-
-        for (const Value_Ptr& elem : arr)
-        {
-            result.push_back(elem->visit(self));
-        }
-
-        return result;
+        return arr
+               | std::views::transform([&](const Value_Ptr& elem) {
+                     return elem->visit(self);
+                 })
+               | std::ranges::to<boost::json::array>();
     }
 
     boost::json::value operator()(this const auto self, const Map& map)
@@ -125,7 +121,7 @@ struct To_Json_Impl
                                 k->to_internal_string())};
             }
 
-            result[k->raw_get<String>()] = v->visit(self);
+            result.emplace(k->raw_get<String>(), v->visit(self));
         }
 
         return result;
