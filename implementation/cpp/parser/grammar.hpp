@@ -33,8 +33,8 @@ constexpr auto param_ws = dsl::while_(no_nl_chars | line_comment);
 constexpr auto param_ws_no_comment = dsl::while_(no_nl_chars);
 constexpr auto param_ws_nl = dsl::while_(dsl::ascii::space | line_comment);
 constexpr auto ws_expr_nl = ws_nl;
-template <typename Ws>
-constexpr auto comma_sep_ws(Ws ws)
+template <typename ws_t>
+constexpr auto comma_sep_ws(ws_t ws)
 {
     return dsl::peek(ws + dsl::lit_c<','>) >> (ws + dsl::lit_c<','> + ws);
 }
@@ -42,20 +42,20 @@ constexpr auto comma_sep_ws(Ws ws)
 constexpr auto comma_sep_nl = comma_sep_ws(param_ws_nl);
 constexpr auto comma_sep = comma_sep_ws(param_ws);
 
-template <typename After>
-constexpr auto comma_sep_after(After after)
+template <typename after_t>
+constexpr auto comma_sep_after(after_t after)
 {
     return dsl::peek(param_ws + dsl::lit_c<','> + param_ws + after)
            >> (param_ws + dsl::lit_c<','> + param_ws);
 }
 
-template <typename After>
-constexpr auto comma_sep_nl_after(After after)
+template <typename after_t>
+constexpr auto comma_sep_nl_after(after_t after)
 {
     return dsl::peek(param_ws_nl + dsl::lit_c<','> + param_ws_nl + after)
            >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
 }
-template <bool AllowNl>
+template <bool allow_nl>
 constexpr auto expression_start_impl()
 {
     auto starter = dsl::ascii::alpha_underscore
@@ -67,7 +67,7 @@ constexpr auto expression_start_impl()
                    | dsl::lit_c<'\''>
                    | dsl::lit_c<'$'>
                    | dsl::lit_c<'-'>;
-    if constexpr (AllowNl)
+    if constexpr (allow_nl)
         return dsl::peek(param_ws_nl + starter);
     else
         return dsl::peek(param_ws + starter);
@@ -112,16 +112,16 @@ struct expected_call_arguments
     static constexpr auto name = "call arguments";
 };
 
-template <typename Expected>
+template <typename expected_t>
 constexpr auto require_expr_start_no_nl()
 {
-    return dsl::must(expression_start_no_nl).template error<Expected>;
+    return dsl::must(expression_start_no_nl).template error<expected_t>;
 }
 
-template <typename Expected>
+template <typename expected_t>
 constexpr auto require_expr_start_nl()
 {
-    return dsl::must(expression_start_nl).template error<Expected>;
+    return dsl::must(expression_start_nl).template error<expected_t>;
 }
 
 struct expected_index_expression
@@ -211,9 +211,9 @@ struct float_literal : lexy::scan_production<Value_Ptr>
         static constexpr auto name = "float literal out of range";
     };
 
-    template <typename Context, typename Reader>
+    template <typename context_t, typename reader_t>
     static constexpr scan_result scan(
-        lexy::rule_scanner<Context, Reader>& scanner)
+        lexy::rule_scanner<context_t, reader_t>& scanner)
     {
         auto lexeme = scanner.capture(
             dsl::token(dsl::digits<> + dsl::lit_c<'.'> + dsl::digits<>));
@@ -380,23 +380,23 @@ struct expression;
 struct expression_nl;
 struct statement_list;
 
-template <typename T>
+template <typename item_t>
 constexpr auto list_or_empty()
 {
-    auto sink = lexy::as_list<std::vector<T>>;
-    auto cb = lexy::callback<std::vector<T>>(
+    auto sink = lexy::as_list<std::vector<item_t>>;
+    auto cb = lexy::callback<std::vector<item_t>>(
         [](lexy::nullopt) {
-            return std::vector<T>{};
+            return std::vector<item_t>{};
         },
-        [](std::vector<T> items) {
+        [](std::vector<item_t> items) {
             return items;
         });
     return sink >> cb;
 }
 
-template <typename EntryStart, typename List, typename Close>
-constexpr auto delimited_list_tail(EntryStart entry_start, List list,
-                                   Close close)
+template <typename entry_start_t, typename list_t, typename close_t>
+constexpr auto delimited_list_tail(entry_start_t entry_start, list_t list,
+                                   close_t close)
 {
     return param_ws_nl
            + dsl::opt(dsl::peek(entry_start) >> list)
@@ -404,23 +404,24 @@ constexpr auto delimited_list_tail(EntryStart entry_start, List list,
            + close;
 }
 
-template <typename Open, typename EntryStart, typename List, typename Close>
-constexpr auto delimited_list(Open open, EntryStart entry_start, List list,
-                              Close close)
+template <typename open_t, typename entry_start_t, typename list_t,
+          typename close_t>
+constexpr auto delimited_list(open_t open, entry_start_t entry_start,
+                              list_t list, close_t close)
 {
     return open + delimited_list_tail(entry_start, list, close);
 }
 
-template <typename EntryStart, typename List>
-constexpr auto braced_list(EntryStart entry_start, List list)
+template <typename entry_start_t, typename list_t>
+constexpr auto braced_list(entry_start_t entry_start, list_t list)
 {
     return delimited_list(LEXY_LIT("{"), entry_start, list, dsl::lit_c<'}'>);
 }
 
-template <typename OpIndex>
+template <typename op_index_t>
 constexpr auto index_postfix_op()
 {
-    return dsl::op<OpIndex>(
+    return dsl::op<op_index_t>(
         dsl::
             lit_c<'['> >> (param_ws_nl
                            + (require_expr_start_nl<expected_index_expression>()
@@ -428,10 +429,10 @@ constexpr auto index_postfix_op()
                            + dsl::lit_c<']'>));
 }
 
-template <typename OpDot>
+template <typename op_dot_t>
 constexpr auto dot_postfix_op()
 {
-    return dsl::op<OpDot>(dsl::lit_c<'.'> >> dsl::p<identifier_required>);
+    return dsl::op<op_dot_t>(dsl::lit_c<'.'> >> dsl::p<identifier_required>);
 }
 
 struct lambda_param_pack
@@ -523,11 +524,11 @@ struct array_destructure_pattern
     static constexpr auto name = "array destructure";
 };
 
-template <bool AllowNl>
+template <bool allow_nl>
 struct lambda_param_list_impl
 {
     static constexpr auto rule = [] {
-        if constexpr (AllowNl)
+        if constexpr (allow_nl)
         {
             auto param_sep = comma_sep_nl_after(dsl::p<identifier>);
             return dsl::list(dsl::p<identifier_required>, dsl::sep(param_sep));
@@ -546,12 +547,12 @@ struct lambda_param_list_impl
 using lambda_param_list = lambda_param_list_impl<false>;
 using lambda_param_list_nl = lambda_param_list_impl<true>;
 
-template <bool AllowNl>
+template <bool allow_nl>
 struct lambda_param_payload_impl
 {
     static constexpr auto rule = [] {
         auto vararg_name = [] {
-            if constexpr (AllowNl)
+            if constexpr (allow_nl)
                 return LEXY_LIT("...")
                        + param_ws_nl
                        + dsl::p<identifier_required>;
@@ -563,9 +564,9 @@ struct lambda_param_payload_impl
         auto vararg_checked = vararg
                               + dsl::must(dsl::peek_not(dsl::lit_c<','>))
                                     .template error<expected_vararg_last>;
-        auto params = dsl::p<lambda_param_list_impl<AllowNl>>;
+        auto params = dsl::p<lambda_param_list_impl<allow_nl>>;
         auto params_then_vararg = [&] {
-            if constexpr (AllowNl)
+            if constexpr (allow_nl)
             {
                 return params
                        + dsl::opt(dsl::peek(param_ws_nl + dsl::lit_c<','>)
@@ -671,30 +672,30 @@ namespace node
 {
 constexpr auto kw_with = LEXY_KEYWORD("with", identifier::base);
 
-template <typename Node>
+template <typename node_t>
 constexpr const char* with_operation_name()
 {
-    if constexpr (std::is_same_v<Node, ast::Map>)
+    if constexpr (std::is_same_v<node_t, ast::Map>)
         return "map expression";
-    if constexpr (std::is_same_v<Node, ast::Filter>)
+    if constexpr (std::is_same_v<node_t, ast::Filter>)
         return "filter expression";
-    if constexpr (std::is_same_v<Node, ast::Foreach>)
+    if constexpr (std::is_same_v<node_t, ast::Foreach>)
         return "foreach expression";
     return "with expression";
 }
 
-template <typename Node>
+template <typename node_t>
 constexpr auto with_operation_keyword()
 {
-    if constexpr (std::is_same_v<Node, ast::Map>)
+    if constexpr (std::is_same_v<node_t, ast::Map>)
         return LEXY_KEYWORD("map", identifier::base);
-    if constexpr (std::is_same_v<Node, ast::Filter>)
+    if constexpr (std::is_same_v<node_t, ast::Filter>)
         return LEXY_KEYWORD("filter", identifier::base);
-    if constexpr (std::is_same_v<Node, ast::Foreach>)
+    if constexpr (std::is_same_v<node_t, ast::Foreach>)
         return LEXY_KEYWORD("foreach", identifier::base);
 }
 
-template <typename Node>
+template <typename node_t>
 struct With_Operation
 {
     static constexpr auto rule =
@@ -706,21 +707,21 @@ struct With_Operation
            >> dsl::recurse<expression>);
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
-            return std::make_unique<Node>(std::move(structure),
-                                          std::move(operation));
+            return std::make_unique<node_t>(std::move(structure),
+                                            std::move(operation));
         });
-    static constexpr auto name = with_operation_name<Node>();
+    static constexpr auto name = with_operation_name<node_t>();
 };
 
-template <typename Node>
+template <typename node_t>
 struct With_Keyword_Expr
 {
     static constexpr auto rule = [] {
-        auto kw = with_operation_keyword<Node>();
-        return kw + param_ws_nl + dsl::p<With_Operation<Node>>;
+        auto kw = with_operation_keyword<node_t>();
+        return kw + param_ws_nl + dsl::p<With_Operation<node_t>>;
     }();
     static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
-    static constexpr auto name = with_operation_name<Node>();
+    static constexpr auto name = with_operation_name<node_t>();
 };
 
 using Map_Expr = With_Keyword_Expr<ast::Map>;
@@ -907,8 +908,8 @@ struct map_key
     static constexpr auto name = "map key";
 };
 
-template <typename ValueRule>
-constexpr auto map_entry_rule(ValueRule value_rule)
+template <typename value_rule_t>
+constexpr auto map_entry_rule(value_rule_t value_rule)
 {
     return dsl::p<map_key>
            + param_ws_nl
@@ -1045,11 +1046,11 @@ struct call_arguments
     static constexpr auto name = "call arguments";
 };
 
-template <bool AllowNl>
+template <bool allow_nl>
 struct expression_impl : lexy::expression_production
 {
     static constexpr auto whitespace = [] {
-        if constexpr (AllowNl)
+        if constexpr (allow_nl)
             return ws_expr_nl;
         else
             return ws_no_nl;
@@ -1135,7 +1136,7 @@ struct expression_impl : lexy::expression_production
         struct callee : lexy::expression_production
         {
             static constexpr auto whitespace = [] {
-                if constexpr (AllowNl)
+                if constexpr (allow_nl)
                     return ws_nl;
                 else
                     return ws_no_nl;
@@ -1257,13 +1258,13 @@ struct expression_impl : lexy::expression_production
         [](ast::Expression::Ptr value) {
             return value;
         },
-        []<typename Op>(Op, ast::Expression::Ptr rhs)
+        []<typename op_t>(op_t, ast::Expression::Ptr rhs)
             requires requires {
-                { Op::op } -> std::convertible_to<ast::Unary_Op>;
+                { op_t::op } -> std::convertible_to<ast::Unary_Op>;
             }
                      {
                          return std::make_unique<ast::Unop>(std::move(rhs),
-                                                            Op::op);
+                                                           op_t::op);
                      },
                      [](ast::Expression::Ptr lhs, op_index,
                         ast::Expression::Ptr index_expr) {
@@ -1287,13 +1288,13 @@ struct expression_impl : lexy::expression_production
                          return std::make_unique<ast::Function_Call>(
                              std::move(rhs.callee), std::move(args));
                      },
-                     []<typename Op>(ast::Expression::Ptr lhs, Op,
+                     []<typename op_t>(ast::Expression::Ptr lhs, op_t,
                                      ast::Expression::Ptr rhs)
                          requires requires {
-                             { Op::op } -> std::convertible_to<ast::Binary_Op>;
+                             { op_t::op } -> std::convertible_to<ast::Binary_Op>;
                          }
         {
-            return std::make_unique<ast::Binop>(std::move(lhs), Op::op,
+            return std::make_unique<ast::Binop>(std::move(lhs), op_t::op,
                                                 std::move(rhs));
         });
 };
@@ -1321,37 +1322,37 @@ constexpr auto define_payload = [] {
     return define_lhs + dsl::lit_c<'='> + param_ws + dsl::p<expression>;
 }();
 
-template <bool Export>
+template <bool export_flag>
 constexpr auto define_callback()
 {
     return lexy::callback<ast::Statement::Ptr>(
         [](std::string name, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Define>(std::move(name),
-                                                 std::move(expr), Export);
+                                                 std::move(expr), export_flag);
         },
         [](std::string name, lexy::nullopt, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Define>(std::move(name),
-                                                 std::move(expr), Export);
+                                                 std::move(expr), export_flag);
         },
         [](destructure_pack pack, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Array_Destructure>(
                 std::move(pack.names), std::move(pack.rest), std::move(expr),
-                Export);
+                export_flag);
         },
         [](std::vector<ast::Map_Destructure::Element> elems,
            ast::Expression::Ptr expr) {
             return std::make_unique<ast::Map_Destructure>(
-                std::move(elems), std::move(expr), Export);
+                std::move(elems), std::move(expr), export_flag);
         },
         [](destructure_pack pack, lexy::nullopt, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Array_Destructure>(
                 std::move(pack.names), std::move(pack.rest), std::move(expr),
-                Export);
+                export_flag);
         },
         [](std::vector<ast::Map_Destructure::Element> elems, lexy::nullopt,
            ast::Expression::Ptr expr) {
             return std::make_unique<ast::Map_Destructure>(
-                std::move(elems), std::move(expr), Export);
+                std::move(elems), std::move(expr), export_flag);
         });
 }
 
@@ -1387,11 +1388,11 @@ struct expression_statement
     static constexpr auto name = "expression statement";
 };
 
-template <bool AllowExport>
+template <bool allow_export>
 struct statement_impl
 {
     static constexpr auto rule = [] {
-        if constexpr (AllowExport)
+        if constexpr (allow_export)
         {
             auto kw_export = LEXY_KEYWORD("export", identifier::base);
             return param_ws
@@ -1412,7 +1413,7 @@ struct statement_impl
 using statement = statement_impl<false>;
 using top_level_statement = statement_impl<true>;
 
-template <typename Stmt>
+template <typename stmt_t>
 struct statement_list_impl
 {
     static constexpr auto rule = [] {
@@ -1420,7 +1421,7 @@ struct statement_list_impl
             dsl::peek(dsl::while_(no_nl_chars)
                       + (dsl::lit_c<';'> | dsl::lit_c<'\n'> | dsl::lit_c<'#'>))
             >> statement_ws;
-        auto item = dsl::peek(expression_start_no_nl) >> dsl::p<Stmt>;
+        auto item = dsl::peek(expression_start_no_nl) >> dsl::p<stmt_t>;
         return dsl::peek(expression_start_no_nl)
                >> dsl::list(item, dsl::trailing_sep(sep));
     }();
