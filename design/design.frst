@@ -150,7 +150,7 @@ assert(plus_3 == plus_3) # true (functions use identity equality)
 
 def seven = plus_3(4)
 
-def ufcs_seven = 4@plus_3()
+def threaded_seven = 4@plus_3()
 
 def main = fn () -> {
     print("Hello World!")
@@ -198,4 +198,11 @@ def [a, b] = [1, 2]
 # also "rest" bindings
 def [a, b, ...more] = [1, 2, 3, 4, 5]
 
-# destructuring bindings have to match exactly
+# array destructuring bindings have to match exactly
+
+# format strings!
+def fmt_string = $'a = ${a}, b = ${b}'
+
+# map destructuring! (does not need to be exhaustive)
+def { foo: foo, bar: the, nope: nada } = { foo: 'something', bar: 42, wow: 'cool' }
+# foo == 'something', the == 42, nope == null
