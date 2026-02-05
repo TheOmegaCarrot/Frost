@@ -1,0 +1,7 @@
+.git
+.cache
+build
+build-directory
+**/CMakeFiles
+**/CMakeCache.txt
+**/cmake_install.cmake
