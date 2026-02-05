@@ -619,7 +619,8 @@ TEST_CASE("Parser Program")
         CHECK(arr2[0]->get<frst::Int>().value() == 1_f);
     }
 
-    SECTION("Deeply nested higher-order expressions in calls and threaded calls")
+    SECTION(
+        "Deeply nested higher-order expressions in calls and threaded calls")
     {
         auto result =
             parse("def id = fn (x) -> { x };\n"

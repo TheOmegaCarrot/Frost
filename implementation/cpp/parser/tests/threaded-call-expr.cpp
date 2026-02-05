@@ -240,7 +240,8 @@ TEST_CASE("Parser threaded call expressions")
         CHECK(callable_g->received[0]->get<frst::Int>().value() == 7_f);
     }
 
-    SECTION("Threaded call applies before unary operators on nontrivial expressions")
+    SECTION("Threaded call applies before unary operators on nontrivial "
+            "expressions")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(5_f);
@@ -284,7 +285,8 @@ TEST_CASE("Parser threaded call expressions")
         CHECK_FALSE(parse("a\n @  f( )"));
     }
 
-    SECTION("Threaded call supports whitespace inside callee chains (no newlines)")
+    SECTION(
+        "Threaded call supports whitespace inside callee chains (no newlines)")
     {
         frst::Symbol_Table table;
         auto a_val = frst::Value::create(8_f);
@@ -382,7 +384,8 @@ TEST_CASE("Parser threaded call expressions")
         CHECK(out == a_val);
     }
 
-    SECTION("Threaded call accepts parenthesized lambda calls on the right-hand side")
+    SECTION("Threaded call accepts parenthesized lambda calls on the "
+            "right-hand side")
     {
         auto result = parse("a @ (fn (x) -> { x })(1)");
         REQUIRE(result);

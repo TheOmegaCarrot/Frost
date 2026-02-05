@@ -1193,7 +1193,8 @@ struct expression_impl : lexy::expression_production
                                         .error<expected_call_arguments> >> dsl::
                                         p<call_arguments>))
             / dot_postfix_op<op_dot>()
-            / dsl::op<op_threaded_call>(dsl::lit_c<'@'> >> dsl::p<threaded_call>);
+            / dsl::op<op_threaded_call>(
+                dsl::lit_c<'@'> >> dsl::p<threaded_call>);
         using operand = dsl::atom;
     };
 
