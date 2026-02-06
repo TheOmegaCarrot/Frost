@@ -20,6 +20,7 @@ add_library( frost-functions
     builtins/structure-ops.cpp
     builtins/type-conversions.cpp
     builtins/type-tests.cpp
+    builtins/http-impl/request.cpp
 )
 
 target_include_directories( frost-functions
