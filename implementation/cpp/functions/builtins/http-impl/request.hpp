@@ -14,7 +14,7 @@ namespace frst::http
 struct Header
 {
     std::string key;
-    std::variant<std::string, std::vector<std::string>> value;
+    std::string value;
 };
 
 struct Outgoing_Request
@@ -29,8 +29,10 @@ struct Outgoing_Request
         struct Query_Parameter
         {
             std::string key;
-            std::optional<std::variant<std::string, std::vector<std::string>>>
-                value;
+            std::optional<std::string> value;
+
+            std::strong_ordering operator<=>(const Query_Parameter&) const =
+                default;
         };
 
         std::vector<Query_Parameter> query_parameters;
