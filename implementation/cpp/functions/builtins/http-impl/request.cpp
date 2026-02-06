@@ -1,8 +1,10 @@
 #include "request.hpp"
 
+#include <frost/builtins-common.hpp>
 #include <frost/value.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/hof/lift.hpp>
 
 #include <algorithm>
 #include <limits>
@@ -10,9 +12,14 @@
 namespace frst::http
 {
 
+std::shared_ptr<Request_Task> async_do_http_request(
+    const Outgoing_Request& request)
+{
+    // just spawn coro and build task
+}
+
 namespace
 {
-
 // lil helper for optional::or_else :)
 template <typename T = std::string>
 auto thrower(const std::string& err)
@@ -21,6 +28,83 @@ auto thrower(const std::string& err)
         throw Frost_Recoverable_Error{err};
     };
 }
+
+} // namespace
+
+Value_Ptr request_result_to_value(Request_Result&& request_result)
+{
+    STRINGS(ok, error, category, message, phase, response, code, headers, body);
+
+    Map top{{strings.ok, Value::create(request_result.result.has_value())}};
+
+    if (request_result.result)
+    {
+        auto& resp = request_result.result.value();
+        Map response_map{
+            {strings.code, Value::create(resp.code)},
+            {strings.body, Value::create(std::move(resp.body))},
+        };
+
+        for (auto& [key, _] : resp.headers)
+            boost::algorithm::to_lower(key); // normalize
+
+        std::ranges::stable_sort(resp.headers, {}, &Header::key);
+
+        Map headers_out;
+
+        for (auto group :
+             resp.headers
+                 | std::views::chunk_by([](const auto& a, const auto& b) {
+                       return a.key == b.key;
+                   }))
+        {
+            auto values = group
+                          | std::views::transform(&Header::value)
+                          | std::views::as_rvalue
+                          | std::views::transform(BOOST_HOF_LIFT(Value::create))
+                          | std::ranges::to<std::vector<Value_Ptr>>();
+
+            Value_Ptr header_map_value;
+            if (values.size() == 1)
+                header_map_value = values.at(0);
+            else
+                header_map_value = Value::create(std::move(values));
+
+            headers_out.emplace(Value::create(std::move(group.front().key)),
+                                std::move(header_map_value));
+        }
+
+        response_map.emplace(strings.headers,
+                             Value::create(std::move(headers_out)));
+
+        top.emplace(strings.response, Value::create(std::move(response_map)));
+    }
+    else
+    {
+        auto& err = request_result.result.error();
+        top.emplace(
+            strings.error,
+            Value::create(Map{
+                {strings.category, Value::create(std::move(err.category))},
+                {strings.phase, Value::create(std::move(err.phase))},
+                {strings.message, Value::create(std::move(err.message))},
+            }));
+    }
+
+    return Value::create(std::move(top));
+}
+
+Value_Ptr Request_Task::get()
+{
+    Request_Result result = future.get();
+    std::call_once(cache_once, [&] {
+        cache = request_result_to_value(std::move(result));
+    });
+    return cache;
+}
+
+namespace
+{
 
 std::vector<Outgoing_Request::Endpoint::Query_Parameter> parse_query_parameters(
     const Value_Ptr& query_spec_val)
@@ -331,6 +415,8 @@ Outgoing_Request parse_request(const Map& request_spec)
 Value_Ptr do_http_request(const Map& request_spec)
 {
     auto request = parse_request(request_spec);
+
+    std::shared_ptr<Request_Task> task = async_do_http_request(request);
 }
 
 } // namespace frst::http

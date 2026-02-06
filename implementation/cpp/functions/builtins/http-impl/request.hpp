@@ -8,6 +8,9 @@
 #include <expected>
 #include <optional>
 
+#include <boost/asio.hpp>
+#include <boost/cobalt.hpp>
+
 namespace frst::http
 {
 
@@ -45,11 +48,11 @@ struct Outgoing_Request
     std::optional<std::string> ca_path;
 };
 
-struct Incoming_Response
+struct Request_Result
 {
     struct Error
     {
-        std::string category; // maybe leave out? overlaps with phase
+        std::string category;
         std::string message;
         std::string phase;
     };
@@ -63,6 +66,24 @@ struct Incoming_Response
 
     // result.has_value() == ok at top-level of Frost result map
     std::expected<Reply, Error> result;
+};
+
+struct Request_Task
+{
+    boost::asio::io_context ioc;
+    std::future<Request_Result> future;
+    std::jthread worker;
+
+    std::once_flag cache_once;
+    Value_Ptr cache;
+
+    bool is_ready() const
+    {
+        return future.wait_for(std::chrono::seconds{0})
+               == std::future_status::ready;
+    }
+
+    Value_Ptr get();
 };
 
 Value_Ptr do_http_request(const Map& request_spec);
