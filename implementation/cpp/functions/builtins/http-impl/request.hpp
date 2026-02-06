@@ -22,9 +22,9 @@ struct Outgoing_Request
     struct Endpoint
     {
         std::string uri;
-        std::string path;
-        bool tls;
-        std::uint16_t port;
+        std::string path = "/";
+        bool tls = true;
+        std::uint16_t port = 0;
 
         struct Query_Parameter
         {
@@ -38,17 +38,12 @@ struct Outgoing_Request
     } endpoint;
 
     std::vector<Header> headers;
-    std::string method;
+    std::string method = "GET";
     std::optional<std::string> body;
-    std::chrono::milliseconds timeout;
-    bool verify_tls;
-
-    struct CA_Info
-    {
-        std::string file;
-        std::string path;
-    };
-    std::optional<CA_Info> ca_info;
+    std::chrono::milliseconds timeout = std::chrono::seconds{10};
+    bool verify_tls = true;
+    std::optional<std::string> ca_file;
+    std::optional<std::string> ca_path;
 };
 
 struct Incoming_Response
