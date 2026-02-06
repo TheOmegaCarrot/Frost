@@ -30,9 +30,6 @@ struct Outgoing_Request
         {
             std::string key;
             std::optional<std::string> value;
-
-            std::strong_ordering operator<=>(const Query_Parameter&) const =
-                default;
         };
 
         std::vector<Query_Parameter> query_parameters;

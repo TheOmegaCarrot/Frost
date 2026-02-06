@@ -71,7 +71,7 @@ std::vector<Outgoing_Request::Endpoint::Query_Parameter> parse_query_parameters(
             throw Frost_Recoverable_Error{
                 fmt::format("http.request: endpoint.query values must be "
                             "String, Array, or Null, got: {}",
-                            key)};
+                            v_val->type_name())};
         }
     }
 
@@ -176,8 +176,7 @@ Outgoing_Request::Endpoint parse_endpoint(const Value_Ptr& endpoint_spec_val)
 std::vector<Header> parse_headers(const Value_Ptr& headers_spec)
 {
     if (not headers_spec->is<Map>())
-        throw Frost_Recoverable_Error{
-            "http.request: endpoint.headers must be a Map"};
+        throw Frost_Recoverable_Error{"http.request: headers must be a Map"};
 
     const auto& headers = headers_spec->raw_get<Map>();
 
@@ -188,7 +187,7 @@ std::vector<Header> parse_headers(const Value_Ptr& headers_spec)
         if (not k_val->is<String>())
         {
             throw Frost_Recoverable_Error{
-                fmt::format("http.request: endpoint.headers Map values must be "
+                fmt::format("http.request: headers Map keys must be "
                             "Strings, got {}",
                             k_val->type_name())};
         }
@@ -207,7 +206,7 @@ std::vector<Header> parse_headers(const Value_Ptr& headers_spec)
                 result.emplace_back(
                     key, val->get<String>()
                              .or_else(thrower(fmt::format(
-                                 "http.request: endpoint.headers Array values "
+                                 "http.request: headers Array values "
                                  "must be Strings, got {}",
                                  val->type_name())))
                              .value());
@@ -215,9 +214,9 @@ std::vector<Header> parse_headers(const Value_Ptr& headers_spec)
         }
         else
         {
-            throw Frost_Recoverable_Error{fmt::format(
-                "http.request: endpoint.headers got unexpected value: {}",
-                v_val->to_internal_string())};
+            throw Frost_Recoverable_Error{
+                fmt::format("http.request: headers got unexpected value: {}",
+                            v_val->to_internal_string())};
         }
     }
 
@@ -283,6 +282,12 @@ Outgoing_Request parse_request(const Map& request_spec)
                 v_val->get<Int>()
                     .or_else(
                         thrower<Int>("http.request: timeout must be an Int"))
+                    .transform([](Int timeout) {
+                        if (timeout <= 0)
+                            throw Frost_Recoverable_Error{
+                                "http.request: timeout must be positive"};
+                        return timeout;
+                    })
                     .value()};
         }
         else if (key == "verify_tls")
