@@ -1,10 +1,17 @@
 #include "request.hpp"
 
+#include <boost/asio/use_awaitable.hpp>
 #include <frost/builtins-common.hpp>
 #include <frost/value.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/asio.hpp>
+#include <boost/beast.hpp>
 #include <boost/hof/lift.hpp>
+
+#include <boost/asio/experimental/parallel_group.hpp>
+
+#include <fmt/chrono.h>
 
 #include <algorithm>
 #include <limits>
@@ -12,10 +19,155 @@
 namespace frst::http
 {
 
-std::shared_ptr<Request_Task> async_do_http_request(
-    const Outgoing_Request& request)
+namespace asio = boost::asio;
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace system = boost::system;
+
+asio::awaitable<std::expected<asio::ip::tcp::resolver::results_type,
+                              Request_Result::Error>>
+resolve_host(asio::any_io_executor& executor, std::string host,
+             std::uint16_t port)
 {
-    // just spawn coro and build task
+    auto resolver = asio::ip::tcp::resolver{executor};
+
+    auto [err, result] = co_await resolver.async_resolve(
+        host, std::to_string(port), asio::as_tuple(asio::use_awaitable));
+
+    if (err)
+        co_return std::unexpected{Request_Result::Error{
+            .category = "DNS",
+            .message = err.message(),
+            .phase = "DNS",
+        }};
+    else
+        co_return result;
+}
+
+asio::awaitable<Request_Result> run_plain_http_request(Outgoing_Request req)
+{
+    using R = Request_Result;
+    using Error = R::Error;
+
+    auto executor = co_await asio::this_coro::executor;
+    auto stream = beast::tcp_stream{executor};
+
+    const auto resolve_result =
+        co_await resolve_host(executor, req.endpoint.uri, req.endpoint.port);
+
+    if (not resolve_result)
+        co_return std::unexpected(std::move(resolve_result.error()));
+
+    stream.expires_never(); // top-level timeout will handle any timeout
+
+    auto [connect_err, _] = co_await stream.async_connect(
+        resolve_result.value(), asio::as_tuple(asio::use_awaitable));
+
+    if (connect_err)
+        co_return std::unexpected{Error{
+            .category = "connect",
+            .message = connect_err.message(),
+            .phase = "connect",
+        }};
+
+    beast::http::request<beast::http::string_body> request{
+        req.method, req.endpoint.path, 11};
+    request.set(beast::http::field::host, req.endpoint.uri);
+    request.set(beast::http::field::user_agent,
+                "Frost HTTP Client " FROST_VERSION);
+
+    auto [send_err, _] = co_await beast::http::async_write(
+        stream, request, asio::as_tuple(asio::use_awaitable));
+
+    if (send_err)
+        co_return std::unexpected{Error{
+            .category = "IO",
+            .message = send_err.message(),
+            .phase = "http send",
+        }};
+
+    beast::flat_buffer resp_buf;
+
+    beast::http::response<beast::http::dynamic_body> resp;
+
+    auto [recv_err, _] = co_await http::async_read(
+        stream, resp_buf, resp, asio::as_tuple(asio::use_awaitable));
+
+    if (recv_err)
+        co_return std::unexpected{Error{
+            .category = "IO",
+            .message = recv_err.message(),
+            .phase = "http recieve",
+        }};
+
+    beast::error_code close_err;
+    auto _ = stream.socket().shutdown(asio::ip::tcp::socket::shutdown_both,
+                                      close_err);
+
+    // ignore a graceless close; I got my result, so everything is _fine_.
+
+    // Dummy return to silence warnings while this is incomplete
+    co_return R{{}};
+}
+
+asio::awaitable<Request_Result> run_request(Outgoing_Request req)
+{
+    using R = Request_Result;
+    using Error = R::Error;
+    using asio::experimental::make_parallel_group;
+    using asio::experimental::wait_for_one;
+
+    // TODO: https
+
+    auto ex = co_await asio::this_coro::executor;
+
+    asio::steady_timer timeout_timer{ex};
+    timeout_timer.expires_after(req.timeout);
+
+    auto [order, _, except, result] =
+        co_await make_parallel_group(
+            asio::co_spawn(ex, timeout_timer.async_wait(asio::use_awaitable),
+                           asio::deferred),
+            asio::co_spawn(ex, run_plain_http_request(std::move(req)),
+                           asio::deferred))
+            .async_wait(wait_for_one(), asio::deferred);
+
+    if (order.at(0) == 0)
+    {
+        co_return std::unexpected{Error{
+            .category = "timeout",
+            .message = "Request timed out",
+            .phase = "TODO: timeout phase reporting",
+        }};
+    }
+    else if (except)
+    {
+        // TODO: improve error message (though this shouldn't
+        // happen)
+        co_return std::unexpected{Error{
+            .category = "unknown",
+            .message = "an unknown error occurred",
+            .phase = "unknown",
+        }};
+    }
+    else
+    {
+        co_return std::move(result);
+    }
+}
+
+std::shared_ptr<Request_Task> async_do_http_request(Outgoing_Request&& request)
+{
+    auto task = std::make_shared<Request_Task>();
+
+    task->future = asio::co_spawn(task->ioc, run_request(std::move(request)),
+                                  asio::use_future);
+
+    task->worker = std::jthread([task] {
+        task->ioc.run();
+    });
+
+    return task;
 }
 
 namespace
@@ -96,8 +248,8 @@ Value_Ptr request_result_to_value(Request_Result&& request_result)
 
 Value_Ptr Request_Task::get()
 {
-    Request_Result result = future.get();
     std::call_once(cache_once, [&] {
+        Request_Result result = future.get();
         cache = request_result_to_value(std::move(result));
     });
     return cache;
@@ -307,7 +459,7 @@ std::vector<Header> parse_headers(const Value_Ptr& headers_spec)
     return result;
 }
 
-std::string parse_method(const Value_Ptr& method_spec)
+beast::http::verb parse_method(const Value_Ptr& method_spec)
 {
     std::string method =
         method_spec->get<String>()
@@ -318,7 +470,13 @@ std::string parse_method(const Value_Ptr& method_spec)
 
     boost::algorithm::to_upper(method);
 
-    return method;
+    auto verb = beast::http::string_to_verb(method);
+
+    if (verb == beast::http::verb::unknown)
+        throw Frost_Recoverable_Error{
+            fmt::format("Bad HTTP method: {}", method)};
+
+    return verb;
 }
 
 Outgoing_Request parse_request(const Map& request_spec)
@@ -416,7 +574,16 @@ Value_Ptr do_http_request(const Map& request_spec)
 {
     auto request = parse_request(request_spec);
 
-    std::shared_ptr<Request_Task> task = async_do_http_request(request);
+    std::shared_ptr<Request_Task> task =
+        async_do_http_request(std::move(request));
+
+    STRINGS(get);
+
+    auto get = system_closure(0, 0, [task](builtin_args_t) {
+        return task->get();
+    });
+
+    return Value::create(Map{{strings.get, std::move(get)}});
 }
 
 } // namespace frst::http

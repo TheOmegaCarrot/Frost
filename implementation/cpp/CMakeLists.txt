@@ -26,11 +26,6 @@ target_link_libraries( frost
     replxx::replxx
 )
 
-target_compile_definitions( frost
-    PRIVATE
-    FROST_VERSION="${PROJECT_VERSION}"
-)
-
 set_target_properties( frost PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )

@@ -52,5 +52,10 @@ target_link_libraries( frost-common
     fmt::fmt
 )
 
+target_compile_definitions( frost-common
+    INTERFACE
+    FROST_VERSION="${PROJECT_VERSION}"
+)
+
 add_subdirectory(cpp/)
 add_subdirectory(integration-tests/)

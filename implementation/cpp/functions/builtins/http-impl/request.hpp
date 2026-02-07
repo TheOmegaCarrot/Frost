@@ -6,10 +6,12 @@
 
 #include <chrono>
 #include <expected>
+#include <future>
 #include <optional>
+#include <thread>
 
-#include <boost/asio.hpp>
-#include <boost/cobalt.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/beast/http/verb.hpp>
 
 namespace frst::http
 {
@@ -40,7 +42,7 @@ struct Outgoing_Request
     } endpoint;
 
     std::vector<Header> headers;
-    std::string method = "GET";
+    boost::beast::http::verb method = boost::beast::http::verb::get;
     std::optional<std::string> body;
     std::chrono::milliseconds timeout = std::chrono::seconds{10};
     bool verify_tls = true;
@@ -76,12 +78,6 @@ struct Request_Task
 
     std::once_flag cache_once;
     Value_Ptr cache;
-
-    bool is_ready() const
-    {
-        return future.wait_for(std::chrono::seconds{0})
-               == std::future_status::ready;
-    }
 
     Value_Ptr get();
 };
