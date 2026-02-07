@@ -37,6 +37,7 @@ target_link_libraries( frost-functions
     frost-symbol-table
     Boost::regex
     Boost::json
+    cppcodec::cppcodec
 )
 
 macro(functions_test file)
