@@ -61,7 +61,7 @@ struct Request_Result
 
     struct Reply
     {
-        std::uint16_t code;
+        std::uint32_t code;
         std::vector<Header> headers;
         std::string body;
     };

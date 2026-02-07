@@ -111,8 +111,15 @@ asio::awaitable<Request_Result> run_plain_http_request(Outgoing_Request req)
 
     // ignore a graceless close; I got my result, so everything is _fine_.
 
-    // Dummy return to silence warnings while this is incomplete
-    co_return R{{}};
+    R::Reply reply;
+    reply.code = resp.result_int();
+    for (const auto& field : resp.base())
+    {
+        reply.headers.emplace_back(field.name_string(), field.value());
+    }
+    reply.body = beast::buffers_to_string(resp.body().data());
+
+    co_return reply;
 }
 
 asio::awaitable<Request_Result> run_request(Outgoing_Request req)
@@ -168,8 +175,8 @@ std::shared_ptr<Request_Task> async_do_http_request(Outgoing_Request&& request)
     task->future = asio::co_spawn(task->ioc, run_request(std::move(request)),
                                   asio::use_future);
 
-    task->worker = std::jthread([task] {
-        task->ioc.run();
+    task->worker = std::jthread([&ioc = task->ioc] {
+        ioc.run();
     });
 
     return task;
@@ -198,7 +205,7 @@ Value_Ptr request_result_to_value(Request_Result&& request_result)
     {
         auto& resp = request_result.result.value();
         Map response_map{
-            {strings.code, Value::create(resp.code)},
+            {strings.code, Value::create(Int{resp.code})},
             {strings.body, Value::create(std::move(resp.body))},
         };
 

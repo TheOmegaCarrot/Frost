@@ -23,6 +23,6 @@ BUILTIN(request)
 void inject_http(Symbol_Table& table)
 {
     using namespace http;
-    INJECT_MAP("http", ENTRY(request, 1, 1));
+    INJECT_MAP(http, ENTRY(request, 1, 1));
 }
 } // namespace frst
