@@ -48,6 +48,7 @@ struct Outgoing_Request
     bool verify_tls = true;
     std::optional<std::string> ca_file;
     std::optional<std::string> ca_path;
+    bool use_system_ca = true;
 };
 
 struct Request_Result

@@ -38,6 +38,8 @@ target_link_libraries( frost-functions
     Boost::regex
     Boost::json
     cppcodec::cppcodec
+    OpenSSL::SSL
+    OpenSSL::Crypto
 )
 
 macro(functions_test file)

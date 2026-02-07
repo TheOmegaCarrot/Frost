@@ -1,11 +1,14 @@
 #include "request.hpp"
 
+#include <boost/asio/ssl/host_name_verification.hpp>
 #include <boost/asio/use_awaitable.hpp>
+#include <boost/beast/core/stream_traits.hpp>
 #include <frost/builtins-common.hpp>
 #include <frost/value.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
 #include <boost/hof/lift.hpp>
 
@@ -30,6 +33,24 @@ void shutdown_socket(asio::ip::tcp::socket& s, boost::system::error_code& ec)
     system::error_code _ = s.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
 }
 
+asio::awaitable<std::expected<void, Request_Result::Error>> do_ssl_handshake(
+    asio::ssl::stream<beast::tcp_stream>& stream, std::string& phase)
+{
+    using Error = Request_Result::Error;
+    phase = "SSL";
+    auto [ec] = co_await stream.async_handshake(
+        asio::ssl::stream_base::client, asio::as_tuple(asio::use_awaitable));
+
+    if (ec)
+        co_return std::unexpected{Error{
+            .category = "TLS",
+            .message = ec.message(),
+            .phase = phase,
+        }};
+
+    co_return std::expected<void, Error>{};
+}
+
 template <bool use_ssl>
 asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
                                                  std::string& phase)
@@ -37,9 +58,54 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
     using R = Request_Result;
     using Error = R::Error;
 
-    auto executor = co_await asio::this_coro::executor;
-    auto resolver = asio::ip::tcp::resolver{executor};
-    auto stream = beast::tcp_stream{executor};
+    auto ex = co_await asio::this_coro::executor;
+    auto resolver = asio::ip::tcp::resolver{ex};
+
+    auto ssl_ctx = [&] -> std::optional<asio::ssl::context> {
+        if constexpr (not use_ssl)
+            return std::nullopt;
+        else
+        {
+            auto ctx = asio::ssl::context{asio::ssl::context::tls_client};
+
+            if (req.use_system_ca)
+                ctx.set_default_verify_paths();
+
+            if (req.ca_file)
+                ctx.load_verify_file(req.ca_file.value());
+
+            if (req.ca_path)
+                ctx.add_verify_path(req.ca_path.value());
+
+            if (req.verify_tls)
+            {
+                ctx.set_verify_mode(asio::ssl::verify_peer);
+            }
+            else
+                ctx.set_verify_mode(asio::ssl::verify_none);
+
+            return ctx;
+        }
+    }();
+
+    if (use_ssl && !ssl_ctx)
+        THROW_UNREACHABLE;
+
+    auto stream = [&] {
+        if constexpr (not use_ssl)
+            return beast::tcp_stream{ex};
+        else
+        {
+            auto stream =
+                asio::ssl::stream<beast::tcp_stream>{ex, ssl_ctx.value()};
+
+            if (req.verify_tls)
+                stream.set_verify_callback(
+                    asio::ssl::host_name_verification(req.endpoint.host));
+
+            return stream;
+        }
+    }();
 
     try
     {
@@ -55,11 +121,25 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
                 .phase = phase,
             }};
 
-        stream.expires_never(); // top-level timeout will handle any timeout
+        if constexpr (use_ssl)
+        {
+            phase = "SNI";
+            if (!SSL_set_tlsext_host_name(stream.native_handle(),
+                                          req.endpoint.host.c_str()))
+                // TODO: Properly get the error message from openssl
+                co_return std::unexpected{Error{
+                    .category = "Server Name Identification",
+                    .message = "failed to set SNI",
+                    .phase = phase,
+                }};
+        }
+
+        beast::get_lowest_layer(stream).expires_never();
 
         phase = "connect";
-        auto [connect_err, _] = co_await stream.async_connect(
-            resolve_result, asio::as_tuple(asio::use_awaitable));
+        auto [connect_err, _] =
+            co_await beast::get_lowest_layer(stream).async_connect(
+                resolve_result, asio::as_tuple(asio::use_awaitable));
 
         if (connect_err)
             co_return std::unexpected{Error{
@@ -68,7 +148,23 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
                 .phase = phase,
             }};
 
-        phase = "send request request";
+        auto maybe_ssl_result = co_await [&] {
+            if constexpr (use_ssl)
+            {
+                return do_ssl_handshake(stream, phase);
+            }
+            else
+            {
+                return [] -> asio::awaitable<std::expected<void, Error>> {
+                    co_return std::expected<void, Error>{};
+                }();
+            }
+        }();
+
+        if (not maybe_ssl_result.has_value())
+            co_return std::unexpected{maybe_ssl_result.error()};
+
+        phase = "send HTTP request";
         beast::http::request<beast::http::string_body> request{
             req.method, req.endpoint.path, 11};
         request.set(beast::http::field::host, req.endpoint.host);
@@ -85,7 +181,7 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
                 .phase = phase,
             }};
 
-        phase = "receive request response";
+        phase = "receive HTTP response";
         beast::flat_buffer resp_buf;
 
         beast::http::response<beast::http::dynamic_body> resp;
@@ -100,9 +196,18 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
                 .phase = phase,
             }};
 
+        if constexpr (use_ssl)
+        {
+            phase = "SSL shutdown";
+            auto [_] = co_await stream.async_shutdown(
+                asio::as_tuple(asio::use_awaitable));
+            // ignore a failure here;
+            // I got my result, so everything is _fine_ here too.
+        }
+
         phase = "close";
         system::error_code close_err;
-        shutdown_socket(stream.socket(), close_err);
+        shutdown_socket(beast::get_lowest_layer(stream).socket(), close_err);
 
         // ignore a graceless close; I got my result, so everything is _fine_.
 
@@ -133,21 +238,33 @@ asio::awaitable<Request_Result> run_request(Outgoing_Request req)
     using asio::experimental::make_parallel_group;
     using asio::experimental::wait_for_one;
 
-    // TODO: https
-
     auto ex = co_await asio::this_coro::executor;
 
     asio::steady_timer timeout_timer{ex};
     timeout_timer.expires_after(req.timeout);
 
     std::string phase = "begin";
-    auto [order, _, except, result] =
-        co_await make_parallel_group(
-            asio::co_spawn(ex, timeout_timer.async_wait(asio::use_awaitable),
+
+    auto [order, _, except, result] = co_await [&] {
+        if (req.endpoint.tls)
+            return make_parallel_group(
+                       asio::co_spawn(
+                           ex, timeout_timer.async_wait(asio::use_awaitable),
                            asio::deferred),
-            asio::co_spawn(ex, run_http_request<false>(std::move(req), phase),
+                       asio::co_spawn(
+                           ex, run_http_request<true>(std::move(req), phase),
                            asio::deferred))
-            .async_wait(wait_for_one(), asio::deferred);
+                .async_wait(wait_for_one(), asio::deferred);
+        else
+            return make_parallel_group(
+                       asio::co_spawn(
+                           ex, timeout_timer.async_wait(asio::use_awaitable),
+                           asio::deferred),
+                       asio::co_spawn(
+                           ex, run_http_request<false>(std::move(req), phase),
+                           asio::deferred))
+                .async_wait(wait_for_one(), asio::deferred);
+    }();
 
     if (order.at(0) == 0)
     {
@@ -567,6 +684,14 @@ Outgoing_Request parse_request(const Map& request_spec)
             request.ca_path =
                 v_val->get<String>()
                     .or_else(thrower("http.request: ca_path must be a String"))
+                    .value();
+        }
+        else if (key == "use_system_ca")
+        {
+            request.use_system_ca =
+                v_val->get<Bool>()
+                    .or_else(thrower<Bool>(
+                        "http.request: use_system_ca must be a Bool"))
                     .value();
         }
         else
