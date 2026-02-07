@@ -97,4 +97,6 @@ functions_test(tests/builtins/streams.cpp)
 
 functions_test(tests/builtins/json.cpp)
 
+functions_test(tests/builtins/base64.cpp)
+
 functions_test(tests/builtins/filesystem.cpp)

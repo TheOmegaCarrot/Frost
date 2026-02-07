@@ -26,30 +26,58 @@ BUILTIN(b64_encode)
 {
     REQUIRE_ARGS("http.b64_encode", TYPES(String));
 
-    return Value::create(cppcodec::base64_rfc4648::encode(GET(0, String)));
+    try
+    {
+        return Value::create(cppcodec::base64_rfc4648::encode(GET(0, String)));
+    }
+    catch (const std::exception& e)
+    {
+        throw Frost_Recoverable_Error{String{e.what()}};
+    }
 }
 
 BUILTIN(b64_decode)
 {
     REQUIRE_ARGS("http.b64_decode", TYPES(String));
 
-    return Value::create(String(
-        std::from_range, cppcodec::base64_rfc4648::decode(GET(0, String))));
+    try
+    {
+        return Value::create(String(
+            std::from_range, cppcodec::base64_rfc4648::decode(GET(0, String))));
+    }
+    catch (const std::exception& e)
+    {
+        throw Frost_Recoverable_Error{String{e.what()}};
+    }
 }
 
 BUILTIN(b64_urlencode)
 {
     REQUIRE_ARGS("http.b64_encode", TYPES(String));
 
-    return Value::create(cppcodec::base64_url::encode(GET(0, String)));
+    try
+    {
+        return Value::create(cppcodec::base64_url::encode(GET(0, String)));
+    }
+    catch (const std::exception& e)
+    {
+        throw Frost_Recoverable_Error{String{e.what()}};
+    }
 }
 
 BUILTIN(b64_urldecode)
 {
     REQUIRE_ARGS("http.b64_decode", TYPES(String));
 
-    return Value::create(
-        String(std::from_range, cppcodec::base64_url::decode(GET(0, String))));
+    try
+    {
+        return Value::create(String(
+            std::from_range, cppcodec::base64_url::decode(GET(0, String))));
+    }
+    catch (const std::exception& e)
+    {
+        throw Frost_Recoverable_Error{String{e.what()}};
+    }
 }
 
 } // namespace http
