@@ -35,8 +35,9 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
             auto val = expr_ptr->evaluate(symbols);
             if (not val->is<frst::Null>())
             {
-                rx.print("%s\n",
-                         val->to_internal_string({.pretty = true}).c_str());
+                auto out = val->to_internal_string({.pretty = true});
+                rx.write(out.data(), static_cast<int>(out.size()));
+                rx.write("\n", 1);
             }
         }
         else

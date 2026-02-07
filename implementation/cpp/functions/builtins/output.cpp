@@ -61,14 +61,14 @@ BUILTIN(mprint)
     REQUIRE_ARGS("mprint", PARAM("format string", TYPES(String)),
                  PARAM("replacement map", TYPES(Map)));
 
-    std::puts(mformat_impl(GET(0, String), GET(1, Map)).c_str());
+    fmt::println("{}", mformat_impl(GET(0, String), GET(1, Map)));
 
     return Value::null();
 }
 
 BUILTIN(print)
 {
-    std::puts(args.at(0)->to_internal_string().c_str());
+    fmt::println("{}", args.at(0)->to_internal_string());
 
     return Value::null();
 }

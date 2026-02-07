@@ -30,6 +30,16 @@ set_tests_properties(Frost_Integration_httpbin_query_params PROPERTIES
 )
 
 add_test(
+    NAME Frost_Integration_httpbin_headers
+    COMMAND "${HTTP_TEST_DIR}/httpbin-runner.sh"
+            $<TARGET_FILE:frost>
+            "${HTTP_TEST_DIR}/httpbin-headers.frst"
+)
+set_tests_properties(Frost_Integration_httpbin_headers PROPERTIES
+    FIXTURES_REQUIRED httpbin
+)
+
+add_test(
     NAME Frost_Integration_httpbin_post
     COMMAND "${HTTP_TEST_DIR}/httpbin-runner.sh"
             $<TARGET_FILE:frost>

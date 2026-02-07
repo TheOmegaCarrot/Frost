@@ -299,7 +299,8 @@ struct string_literal
                                             .map<'t'>('\t')
                                             .map<'r'>('\r')
                                             .map<'\\'>('\\')
-                                            .map<'"'>('"');
+                                            .map<'"'>('"')
+                                            .map<'0'>('\0');
 
         static constexpr auto rule = dsl::quoted.limit(dsl::ascii::newline)(
             dsl::ascii::character, dsl::backslash_escape.symbol<escapes>());
@@ -313,7 +314,8 @@ struct string_literal
                                             .map<'t'>('\t')
                                             .map<'r'>('\r')
                                             .map<'\\'>('\\')
-                                            .map<'\''>('\'');
+                                            .map<'\''>('\'')
+                                            .map<'0'>('\0');
 
         static constexpr auto rule =
             dsl::single_quoted.limit(dsl::ascii::newline)(
@@ -1264,7 +1266,7 @@ struct expression_impl : lexy::expression_production
             }
                      {
                          return std::make_unique<ast::Unop>(std::move(rhs),
-                                                           op_t::op);
+                                                            op_t::op);
                      },
                      [](ast::Expression::Ptr lhs, op_index,
                         ast::Expression::Ptr index_expr) {
@@ -1289,9 +1291,11 @@ struct expression_impl : lexy::expression_production
                              std::move(rhs.callee), std::move(args));
                      },
                      []<typename op_t>(ast::Expression::Ptr lhs, op_t,
-                                     ast::Expression::Ptr rhs)
+                                       ast::Expression::Ptr rhs)
                          requires requires {
-                             { op_t::op } -> std::convertible_to<ast::Binary_Op>;
+                             {
+                                 op_t::op
+                             } -> std::convertible_to<ast::Binary_Op>;
                          }
         {
             return std::make_unique<ast::Binop>(std::move(lhs), op_t::op,
