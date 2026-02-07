@@ -3,6 +3,8 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
+#include <boost/algorithm/string/case_conv.hpp>
+
 #include <ranges>
 
 namespace frst
@@ -34,6 +36,23 @@ BUILTIN(split)
                          | to<Array>());
 }
 
+#define X_UPPER_LOWER                                                          \
+    X(upper)                                                                   \
+    X(lower)
+
+#define X(case)                                                                \
+    BUILTIN(to_##case)                                                         \
+    {                                                                          \
+        REQUIRE_ARGS("to_" #case, TYPES(String));                              \
+                                                                               \
+        return Value::create(                                                  \
+            boost::algorithm::to_##case##_copy(GET(0, String)));               \
+    }
+
+X_UPPER_LOWER
+
+#undef X
+
 #define X_BINARY_PASSTHROUGH                                                   \
     X(contains)                                                                \
     X(starts_with)                                                             \
@@ -58,6 +77,12 @@ void inject_string_ops(Symbol_Table& table)
 #define X(fn) INJECT(fn, 2, 2);
 
     X_BINARY_PASSTHROUGH
+
+#undef X
+
+#define X(case) INJECT(to_##case, 1, 1);
+
+    X_UPPER_LOWER
 
 #undef X
 }
