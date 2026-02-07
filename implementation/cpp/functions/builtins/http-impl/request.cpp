@@ -179,6 +179,12 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
         request.set(beast::http::field::user_agent,
                     "Frost HTTP Client " FROST_VERSION);
 
+        if (req.body)
+        {
+            request.body() = std::move(req.body).value();
+            request.prepare_payload();
+        }
+
         std::string host_header = req.endpoint.host;
         if (not is_default_port(use_ssl, req.endpoint.port))
             host_header = fmt::format("{}:{}", host_header, req.endpoint.port);
@@ -186,13 +192,7 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
         request.set(beast::http::field::host, host_header);
 
         for (const auto& header : req.headers)
-            request.set(header.key, header.value);
-
-        if (req.body)
-        {
-            request.body() = std::move(req.body).value();
-            request.prepare_payload();
-        }
+            request.insert(header.key, header.value);
 
         auto [send_err, _] = co_await beast::http::async_write(
             stream, request, asio::as_tuple(asio::use_awaitable));
