@@ -277,3 +277,107 @@ TEST_CASE("Builtin contains/starts_with/ends_with")
         CHECK(get_fn("ends_with")->call({target, suffix})->get<Bool>().value());
     }
 }
+
+TEST_CASE("Builtin to_upper/to_lower")
+{
+    // AI-generated test by Codex (GPT-5).
+    // Signed: Codex (GPT-5).
+    Symbol_Table table;
+    inject_builtins(table);
+
+    struct Builtin_Info
+    {
+        const char* name;
+    };
+
+    const std::vector<Builtin_Info> builtins{
+        {.name = "to_upper"},
+        {.name = "to_lower"},
+    };
+
+    auto get_fn = [&](std::string_view name) {
+        auto val = table.lookup(std::string{name});
+        REQUIRE(val->is<Function>());
+        return val->get<Function>().value();
+    };
+
+    SECTION("Injected")
+    {
+        for (const auto& info : builtins)
+        {
+            auto val = table.lookup(info.name);
+            REQUIRE(val->is<Function>());
+        }
+    }
+
+    SECTION("Arity")
+    {
+        for (const auto& info : builtins)
+        {
+            DYNAMIC_SECTION(info.name << " arity")
+            {
+                auto fn = get_fn(info.name);
+                CHECK_THROWS_WITH(fn->call({}),
+                                  ContainsSubstring("insufficient arguments"));
+                CHECK_THROWS_WITH(fn->call({}),
+                                  ContainsSubstring("Called with 0"));
+                CHECK_THROWS_WITH(fn->call({}),
+                                  ContainsSubstring("requires at least 1"));
+
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("extra"s)}),
+                    ContainsSubstring("too many arguments"));
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("extra"s)}),
+                    ContainsSubstring("Called with 2"));
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("extra"s)}),
+                    ContainsSubstring("no more than 1"));
+            }
+        }
+    }
+
+    SECTION("Type errors")
+    {
+        auto bad = Value::create(1_f);
+        auto good = Value::create("a"s);
+
+        for (const auto& info : builtins)
+        {
+            DYNAMIC_SECTION(info.name << " type errors")
+            {
+                auto fn = get_fn(info.name);
+                CHECK_THROWS_WITH(
+                    fn->call({bad}),
+                    ContainsSubstring(std::string{"Function "} + info.name));
+                CHECK_THROWS_WITH(fn->call({bad}),
+                                  ContainsSubstring("String"));
+                CHECK_THROWS_WITH(fn->call({bad}),
+                                  EndsWith(std::string{bad->type_name()}));
+
+                // Ensure good input still works after a type error.
+                CHECK_NOTHROW(fn->call({good}));
+            }
+        }
+    }
+
+    SECTION("Basic behavior")
+    {
+        auto input = Value::create("AbC123_!zZ"s);
+
+        auto upper =
+            get_fn("to_upper")->call({input})->get<String>().value();
+        auto lower =
+            get_fn("to_lower")->call({input})->get<String>().value();
+
+        CHECK(upper == "ABC123_!ZZ");
+        CHECK(lower == "abc123_!zz");
+    }
+
+    SECTION("Empty string")
+    {
+        auto empty = Value::create(""s);
+        CHECK(get_fn("to_upper")->call({empty})->get<String>().value().empty());
+        CHECK(get_fn("to_lower")->call({empty})->get<String>().value().empty());
+    }
+}
