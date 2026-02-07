@@ -44,6 +44,12 @@ resolve_host(asio::any_io_executor& executor, std::string host,
         co_return result;
 }
 
+// pull this out to a little helper to dodge an ICE
+void shutdown_socket(asio::ip::tcp::socket& s, boost::system::error_code& ec)
+{
+    system::error_code _ = s.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+}
+
 asio::awaitable<Request_Result> run_plain_http_request(Outgoing_Request req)
 {
     using R = Request_Result;
@@ -100,9 +106,8 @@ asio::awaitable<Request_Result> run_plain_http_request(Outgoing_Request req)
             .phase = "http recieve",
         }};
 
-    beast::error_code close_err;
-    auto _ = stream.socket().shutdown(asio::ip::tcp::socket::shutdown_both,
-                                      close_err);
+    system::error_code close_err;
+    shutdown_socket(stream.socket(), close_err);
 
     // ignore a graceless close; I got my result, so everything is _fine_.
 
@@ -523,11 +528,11 @@ Outgoing_Request parse_request(const Map& request_spec)
             request.timeout = std::chrono::milliseconds{
                 v_val->get<Int>()
                     .or_else(
-                        thrower<Int>("http.request: timeout must be an Int"))
+                        thrower<Int>("http.request: timeout_ms must be an Int"))
                     .transform([](Int timeout) {
                         if (timeout <= 0)
                             throw Frost_Recoverable_Error{
-                                "http.request: timeout must be positive"};
+                                "http.request: timeout_ms must be positive"};
                         return timeout;
                     })
                     .value()};
