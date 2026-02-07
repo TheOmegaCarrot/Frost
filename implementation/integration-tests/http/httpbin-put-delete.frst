@@ -1,0 +1,41 @@
+def host_env = getenv('HTTPBIN_HOST')
+def host = if is_null(host_env): '127.0.0.1' else: host_env
+
+def port_env = getenv('HTTPBIN_PORT')
+def port_str = if is_null(port_env): '8080' else: port_env
+
+def port = to_int(port_str)
+
+def put_resp = http.request({
+  endpoint: {
+    host: host,
+    tls: false,
+    port: port,
+    path: '/anything'
+  },
+  method: 'PUT',
+  body: 'put-body'
+}).get()
+
+assert(put_resp.ok, 'put ok')
+assert(put_resp.response.code == 200, 'put status')
+
+def put_json = parse_json(put_resp.response.body)
+assert(put_json.method == 'PUT', 'put method')
+assert(put_json.data == 'put-body', 'put body')
+
+def delete_resp = http.request({
+  endpoint: {
+    host: host,
+    tls: false,
+    port: port,
+    path: '/anything'
+  },
+  method: 'DELETE'
+}).get()
+
+assert(delete_resp.ok, 'delete ok')
+assert(delete_resp.response.code == 200, 'delete status')
+
+def delete_json = parse_json(delete_resp.response.body)
+assert(delete_json.method == 'DELETE', 'delete method')
