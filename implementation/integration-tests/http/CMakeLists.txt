@@ -50,6 +50,16 @@ set_tests_properties(Frost_Integration_httpbin_post PROPERTIES
 )
 
 add_test(
+    NAME Frost_Integration_httpbin_post_binary
+    COMMAND "${HTTP_TEST_DIR}/httpbin-runner.sh"
+            $<TARGET_FILE:frost>
+            "${HTTP_TEST_DIR}/httpbin-post-binary.frst"
+)
+set_tests_properties(Frost_Integration_httpbin_post_binary PROPERTIES
+    FIXTURES_REQUIRED httpbin
+)
+
+add_test(
     NAME Frost_Integration_httpbin_cleanup
     COMMAND "${HTTP_TEST_DIR}/httpbin-cleanup.sh"
 )
