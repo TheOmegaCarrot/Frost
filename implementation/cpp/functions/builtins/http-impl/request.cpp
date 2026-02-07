@@ -11,6 +11,7 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
 #include <boost/hof/lift.hpp>
+#include <boost/url.hpp>
 
 #include <boost/asio/experimental/parallel_group.hpp>
 
@@ -26,6 +27,7 @@ namespace asio = boost::asio;
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace system = boost::system;
+namespace urls = boost::urls;
 
 // pull this out to a little helper to dodge an ICE
 void shutdown_socket(asio::ip::tcp::socket& s, boost::system::error_code& ec)
@@ -173,8 +175,18 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
             co_return std::unexpected{maybe_ssl_result.error()};
 
         phase = "send HTTP request";
+
+        urls::url url;
+        url.set_path(req.endpoint.path);
+        auto params = url.params();
+        for (const auto& qparam : req.endpoint.query_parameters)
+            if (qparam.value)
+                params.append(qparam.key, qparam.value.value());
+            else
+                params.append({qparam.key, urls::no_value});
+
         beast::http::request<beast::http::string_body> request{
-            req.method, req.endpoint.path, 11};
+            req.method, url.encoded_target(), 11};
 
         request.set(beast::http::field::user_agent,
                     "Frost HTTP Client " FROST_VERSION);
