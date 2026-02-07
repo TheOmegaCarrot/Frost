@@ -33,6 +33,14 @@ void shutdown_socket(asio::ip::tcp::socket& s, boost::system::error_code& ec)
     system::error_code _ = s.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
 }
 
+bool is_default_port(bool with_tls, std::uint16_t port)
+{
+    if (with_tls)
+        return port == 443;
+    else
+        return port == 80;
+}
+
 asio::awaitable<std::expected<void, Request_Result::Error>> do_ssl_handshake(
     asio::ssl::stream<beast::tcp_stream>& stream, std::string& phase)
 {
@@ -167,9 +175,24 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
         phase = "send HTTP request";
         beast::http::request<beast::http::string_body> request{
             req.method, req.endpoint.path, 11};
-        request.set(beast::http::field::host, req.endpoint.host);
+
         request.set(beast::http::field::user_agent,
                     "Frost HTTP Client " FROST_VERSION);
+
+        std::string host_header = req.endpoint.host;
+        if (not is_default_port(use_ssl, req.endpoint.port))
+            host_header = fmt::format("{}:{}", host_header, req.endpoint.port);
+
+        request.set(beast::http::field::host, host_header);
+
+        for (const auto& header : req.headers)
+            request.set(header.key, header.value);
+
+        if (req.body)
+        {
+            request.body() = std::move(req.body).value();
+            request.prepare_payload();
+        }
 
         auto [send_err, _] = co_await beast::http::async_write(
             stream, request, asio::as_tuple(asio::use_awaitable));
