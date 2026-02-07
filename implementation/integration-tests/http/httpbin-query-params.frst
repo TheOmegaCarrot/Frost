@@ -1,0 +1,31 @@
+def host_env = getenv('HTTPBIN_HOST')
+def host = if is_null(host_env): '127.0.0.1' else: host_env
+
+def port_env = getenv('HTTPBIN_PORT')
+def port_str = if is_null(port_env): '8080' else: port_env
+
+def port = to_int(port_str)
+
+def resp = http.request({
+  endpoint: {
+    host: host,
+    tls: false,
+    port: port,
+    path: '/get',
+    query: {
+      alpha: 'one',
+      beta: 'two words',
+      bare: null
+    }
+  },
+  method: 'GET',
+  headers: { accept: 'application/json' }
+}).get()
+
+assert(resp.ok, 'http request ok')
+assert(resp.response.code == 200, 'status code')
+
+def json = parse_json(resp.response.body)
+assert(json.args.alpha == 'one', 'alpha query')
+assert(json.args.beta == 'two words', 'beta query')
+assert(json.args.bare == '', 'bare query')
