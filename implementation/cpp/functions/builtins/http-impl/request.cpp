@@ -24,102 +24,106 @@ namespace beast = boost::beast;
 namespace http = beast::http;
 namespace system = boost::system;
 
-asio::awaitable<std::expected<asio::ip::tcp::resolver::results_type,
-                              Request_Result::Error>>
-resolve_host(asio::any_io_executor& executor, std::string host,
-             std::uint16_t port)
-{
-    auto resolver = asio::ip::tcp::resolver{executor};
-
-    auto [err, result] = co_await resolver.async_resolve(
-        host, std::to_string(port), asio::as_tuple(asio::use_awaitable));
-
-    if (err)
-        co_return std::unexpected{Request_Result::Error{
-            .category = "DNS",
-            .message = err.message(),
-            .phase = "DNS",
-        }};
-    else
-        co_return result;
-}
-
 // pull this out to a little helper to dodge an ICE
 void shutdown_socket(asio::ip::tcp::socket& s, boost::system::error_code& ec)
 {
     system::error_code _ = s.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
 }
 
-asio::awaitable<Request_Result> run_plain_http_request(Outgoing_Request req)
+template <bool use_ssl>
+asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
+                                                 std::string& phase)
 {
     using R = Request_Result;
     using Error = R::Error;
 
     auto executor = co_await asio::this_coro::executor;
+    auto resolver = asio::ip::tcp::resolver{executor};
     auto stream = beast::tcp_stream{executor};
 
-    const auto resolve_result =
-        co_await resolve_host(executor, req.endpoint.uri, req.endpoint.port);
-
-    if (not resolve_result)
-        co_return std::unexpected(std::move(resolve_result.error()));
-
-    stream.expires_never(); // top-level timeout will handle any timeout
-
-    auto [connect_err, _] = co_await stream.async_connect(
-        resolve_result.value(), asio::as_tuple(asio::use_awaitable));
-
-    if (connect_err)
-        co_return std::unexpected{Error{
-            .category = "connect",
-            .message = connect_err.message(),
-            .phase = "connect",
-        }};
-
-    beast::http::request<beast::http::string_body> request{
-        req.method, req.endpoint.path, 11};
-    request.set(beast::http::field::host, req.endpoint.uri);
-    request.set(beast::http::field::user_agent,
-                "Frost HTTP Client " FROST_VERSION);
-
-    auto [send_err, _] = co_await beast::http::async_write(
-        stream, request, asio::as_tuple(asio::use_awaitable));
-
-    if (send_err)
-        co_return std::unexpected{Error{
-            .category = "IO",
-            .message = send_err.message(),
-            .phase = "http send",
-        }};
-
-    beast::flat_buffer resp_buf;
-
-    beast::http::response<beast::http::dynamic_body> resp;
-
-    auto [recv_err, _] = co_await http::async_read(
-        stream, resp_buf, resp, asio::as_tuple(asio::use_awaitable));
-
-    if (recv_err)
-        co_return std::unexpected{Error{
-            .category = "IO",
-            .message = recv_err.message(),
-            .phase = "http recieve",
-        }};
-
-    system::error_code close_err;
-    shutdown_socket(stream.socket(), close_err);
-
-    // ignore a graceless close; I got my result, so everything is _fine_.
-
-    R::Reply reply;
-    reply.code = resp.result_int();
-    for (const auto& field : resp.base())
+    try
     {
-        reply.headers.emplace_back(field.name_string(), field.value());
-    }
-    reply.body = beast::buffers_to_string(resp.body().data());
+        phase = "DNS";
+        auto [err, resolve_result] = co_await resolver.async_resolve(
+            req.endpoint.host, std::to_string(req.endpoint.port),
+            asio::as_tuple(asio::use_awaitable));
 
-    co_return reply;
+        if (err)
+            co_return std::unexpected{Request_Result::Error{
+                .category = "DNS lookup",
+                .message = err.message(),
+                .phase = phase,
+            }};
+
+        stream.expires_never(); // top-level timeout will handle any timeout
+
+        phase = "connect";
+        auto [connect_err, _] = co_await stream.async_connect(
+            resolve_result, asio::as_tuple(asio::use_awaitable));
+
+        if (connect_err)
+            co_return std::unexpected{Error{
+                .category = "connect",
+                .message = connect_err.message(),
+                .phase = phase,
+            }};
+
+        phase = "send request request";
+        beast::http::request<beast::http::string_body> request{
+            req.method, req.endpoint.path, 11};
+        request.set(beast::http::field::host, req.endpoint.host);
+        request.set(beast::http::field::user_agent,
+                    "Frost HTTP Client " FROST_VERSION);
+
+        auto [send_err, _] = co_await beast::http::async_write(
+            stream, request, asio::as_tuple(asio::use_awaitable));
+
+        if (send_err)
+            co_return std::unexpected{Error{
+                .category = "IO",
+                .message = send_err.message(),
+                .phase = phase,
+            }};
+
+        phase = "receive request response";
+        beast::flat_buffer resp_buf;
+
+        beast::http::response<beast::http::dynamic_body> resp;
+
+        auto [recv_err, _] = co_await http::async_read(
+            stream, resp_buf, resp, asio::as_tuple(asio::use_awaitable));
+
+        if (recv_err)
+            co_return std::unexpected{Error{
+                .category = "IO",
+                .message = recv_err.message(),
+                .phase = phase,
+            }};
+
+        phase = "close";
+        system::error_code close_err;
+        shutdown_socket(stream.socket(), close_err);
+
+        // ignore a graceless close; I got my result, so everything is _fine_.
+
+        R::Reply reply;
+        reply.code = resp.result_int();
+        for (const auto& field : resp.base())
+        {
+            reply.headers.emplace_back(field.name_string(), field.value());
+        }
+        reply.body = beast::buffers_to_string(resp.body().data());
+
+        co_return reply;
+    }
+    catch (const std::exception& e)
+    {
+        co_return std::unexpected{Error{
+            .category = "unexpected error",
+            .message = e.what(),
+            .phase = phase,
+        }};
+    }
 }
 
 asio::awaitable<Request_Result> run_request(Outgoing_Request req)
@@ -136,11 +140,12 @@ asio::awaitable<Request_Result> run_request(Outgoing_Request req)
     asio::steady_timer timeout_timer{ex};
     timeout_timer.expires_after(req.timeout);
 
+    std::string phase = "begin";
     auto [order, _, except, result] =
         co_await make_parallel_group(
             asio::co_spawn(ex, timeout_timer.async_wait(asio::use_awaitable),
                            asio::deferred),
-            asio::co_spawn(ex, run_plain_http_request(std::move(req)),
+            asio::co_spawn(ex, run_http_request<false>(std::move(req), phase),
                            asio::deferred))
             .async_wait(wait_for_one(), asio::deferred);
 
@@ -149,17 +154,15 @@ asio::awaitable<Request_Result> run_request(Outgoing_Request req)
         co_return std::unexpected{Error{
             .category = "timeout",
             .message = "Request timed out",
-            .phase = "TODO: timeout phase reporting",
+            .phase = phase,
         }};
     }
     else if (except)
     {
-        // TODO: improve error message (though this shouldn't
-        // happen)
         co_return std::unexpected{Error{
             .category = "unknown",
             .message = "an unknown error occurred",
-            .phase = "unknown",
+            .phase = phase,
         }};
     }
     else
@@ -336,7 +339,7 @@ Outgoing_Request::Endpoint parse_endpoint(const Value_Ptr& endpoint_spec_val)
     const auto& endpoint_spec = endpoint_spec_val->raw_get<Map>();
 
     // required fields checklist
-    bool uri_read = false;
+    bool host_read = false;
 
     for (const auto& [k_val, v_val] : endpoint_spec)
     {
@@ -349,14 +352,14 @@ Outgoing_Request::Endpoint parse_endpoint(const Value_Ptr& endpoint_spec_val)
 
         const auto& key = k_val->raw_get<String>();
 
-        if (key == "uri")
+        if (key == "host")
         {
-            // if uri is invalid, it will be handled later
-            uri_read = true;
-            endpoint.uri =
+            // if host is invalid, it will be handled later
+            host_read = true;
+            endpoint.host =
                 v_val->get<String>()
                     .or_else(
-                        thrower("http.request: endpoint.uri must be a String"))
+                        thrower("http.request: endpoint.host must be a String"))
                     .value();
         }
         else if (key == "path")
@@ -409,10 +412,10 @@ Outgoing_Request::Endpoint parse_endpoint(const Value_Ptr& endpoint_spec_val)
         }
     }
 
-    if (not uri_read)
+    if (not host_read)
     {
         throw Frost_Recoverable_Error{
-            "http.request: missing required field: endpoint.uri"};
+            "http.request: missing required field: endpoint.host"};
     }
 
     if (endpoint.port == 0)

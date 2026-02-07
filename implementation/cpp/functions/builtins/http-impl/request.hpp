@@ -26,7 +26,7 @@ struct Outgoing_Request
 {
     struct Endpoint
     {
-        std::string uri;
+        std::string host;
         std::string path = "/";
         bool tls = true;
         std::uint16_t port = 0;
