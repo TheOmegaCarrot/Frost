@@ -28,7 +28,7 @@ include(cppcodec)
 
 include(get-test-libs)
 
-find_package(Boost REQUIRED COMPONENTS regex json headers)
+find_package(Boost REQUIRED COMPONENTS regex json headers url)
 find_package(OpenSSL REQUIRED)
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Release")

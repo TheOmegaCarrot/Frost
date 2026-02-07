@@ -180,10 +180,12 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
         url.set_path(req.endpoint.path);
         auto params = url.params();
         for (const auto& qparam : req.endpoint.query_parameters)
+        {
             if (qparam.value)
-                params.append(qparam.key, qparam.value.value());
+                params.append({qparam.key, qparam.value.value()});
             else
                 params.append({qparam.key, urls::no_value});
+        }
 
         beast::http::request<beast::http::string_body> request{
             req.method, url.encoded_target(), 11};

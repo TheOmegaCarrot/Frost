@@ -37,6 +37,7 @@ target_link_libraries( frost-functions
     frost-symbol-table
     Boost::regex
     Boost::json
+    Boost::url
     cppcodec::cppcodec
     OpenSSL::SSL
     OpenSSL::Crypto
