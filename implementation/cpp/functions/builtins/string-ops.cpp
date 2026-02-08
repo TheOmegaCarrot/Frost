@@ -4,6 +4,8 @@
 #include <frost/value.hpp>
 
 #include <boost/algorithm/string/case_conv.hpp>
+#include <cppcodec/base64_rfc4648.hpp>
+#include <cppcodec/base64_url.hpp>
 
 #include <ranges>
 
@@ -34,6 +36,65 @@ BUILTIN(split)
                                return Value::create(std::move(str));
                            })
                          | to<Array>());
+}
+
+BUILTIN(b64_encode)
+{
+    REQUIRE_ARGS("b64_encode", TYPES(String));
+
+    try
+    {
+        return Value::create(cppcodec::base64_rfc4648::encode(GET(0, String)));
+    }
+    catch (const std::exception& e)
+    {
+        throw Frost_Recoverable_Error{String{e.what()}};
+    }
+}
+
+BUILTIN(b64_decode)
+{
+    REQUIRE_ARGS("b64_decode", TYPES(String));
+
+    try
+    {
+        return Value::create(String(
+            std::from_range, cppcodec::base64_rfc4648::decode(GET(0, String))));
+    }
+    catch (const std::exception& e)
+    {
+        throw Frost_Recoverable_Error{String{e.what()}};
+    }
+}
+
+BUILTIN(b64_urlencode)
+{
+    REQUIRE_ARGS("b64_urlencode", TYPES(String));
+
+    try
+    {
+        return Value::create(cppcodec::base64_url::encode(GET(0, String)));
+    }
+    catch (const std::exception& e)
+    {
+        throw Frost_Recoverable_Error{String{e.what()}};
+    }
+}
+
+BUILTIN(b64_urldecode)
+{
+    REQUIRE_ARGS("b64_urldecode", TYPES(String));
+
+    try
+    {
+        return Value::create(
+            String(std::from_range,
+                   cppcodec::base64_url::decode(GET(0, String))));
+    }
+    catch (const std::exception& e)
+    {
+        throw Frost_Recoverable_Error{String{e.what()}};
+    }
 }
 
 #define X_UPPER_LOWER                                                          \
@@ -73,6 +134,10 @@ X_BINARY_PASSTHROUGH
 void inject_string_ops(Symbol_Table& table)
 {
     INJECT(split, 2, 2);
+    INJECT(b64_encode, 1, 1);
+    INJECT(b64_decode, 1, 1);
+    INJECT(b64_urlencode, 1, 1);
+    INJECT(b64_urldecode, 1, 1);
 
 #define X(fn) INJECT(fn, 2, 2);
 

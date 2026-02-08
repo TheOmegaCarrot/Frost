@@ -11,28 +11,23 @@ using namespace std::literals;
 
 namespace
 {
-Function lookup_http_fn(Symbol_Table& table, const std::string& name)
+Function lookup_fn(Symbol_Table& table, const std::string& name)
 {
-    auto http_val = table.lookup("http");
-    REQUIRE(http_val->is<Map>());
-
-    const auto& http_map = http_val->raw_get<Map>();
-    auto it = http_map.find(Value::create(String{name}));
-    REQUIRE(it != http_map.end());
-    REQUIRE(it->second->is<Function>());
-    return it->second->get<Function>().value();
+    auto val = table.lookup(name);
+    REQUIRE(val->is<Function>());
+    return val->get<Function>().value();
 }
 }
 
-TEST_CASE("Builtin http base64")
+TEST_CASE("Builtin base64")
 {
     Symbol_Table table;
     inject_builtins(table);
 
-    auto b64_encode = lookup_http_fn(table, "b64_encode");
-    auto b64_decode = lookup_http_fn(table, "b64_decode");
-    auto b64_urlencode = lookup_http_fn(table, "b64_urlencode");
-    auto b64_urldecode = lookup_http_fn(table, "b64_urldecode");
+    auto b64_encode = lookup_fn(table, "b64_encode");
+    auto b64_decode = lookup_fn(table, "b64_decode");
+    auto b64_urlencode = lookup_fn(table, "b64_urlencode");
+    auto b64_urldecode = lookup_fn(table, "b64_urldecode");
 
     SECTION("RFC 4648 base64 known vectors")
     {
