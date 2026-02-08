@@ -75,6 +75,12 @@ class Builtin final : public Callable
     Arity arity_;
 };
 
+#ifdef FROST_ENABLE_HTTP
+#define OPT_HTTP X(http)
+#else
+#define OPT_HTTP
+#endif
+
 #define X_INJECT                                                               \
     X(structure_ops)                                                           \
     X(type_checks)                                                             \
@@ -94,7 +100,7 @@ class Builtin final : public Callable
     X(streams)                                                                 \
     X(json)                                                                    \
     X(filesystem)                                                              \
-    X(http)
+    OPT_HTTP
 
 #define X(F) void inject_##F(Symbol_Table&);
 

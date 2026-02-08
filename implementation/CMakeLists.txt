@@ -15,6 +15,7 @@ endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 option(BUILD_TESTS "Build tests" YES)
+option(WITH_HTTP "Enable HTTP support" YES)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -58,6 +59,14 @@ target_compile_definitions( frost-common
     INTERFACE
     FROST_VERSION="${PROJECT_VERSION}"
 )
+
+if(WITH_HTTP)
+    message("Enabling HTTP")
+    target_compile_definitions( frost-common
+    INTERFACE
+    FROST_ENABLE_HTTP
+    )
+endif()
 
 add_subdirectory(cpp/)
 add_subdirectory(integration-tests/)

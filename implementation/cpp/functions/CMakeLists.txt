@@ -6,7 +6,6 @@ add_library( frost-functions
     builtins/error-handling.cpp
     builtins/filesystem.cpp
     builtins/free-operators.cpp
-    builtins/http.cpp
     builtins/json.cpp
     builtins/math.cpp
     builtins/mutable-cell.cpp
@@ -22,6 +21,13 @@ add_library( frost-functions
     builtins/type-tests.cpp
     builtins/http-impl/request.cpp
 )
+
+if(WITH_HTTP)
+    target_sources( frost-functions
+    PRIVATE
+    builtins/http.cpp
+    )
+endif()
 
 target_include_directories( frost-functions
     PUBLIC
