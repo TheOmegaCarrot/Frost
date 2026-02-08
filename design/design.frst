@@ -1,5 +1,4 @@
 # this is a comment
-# In a complete implementation, this file should run without error
 
 # function definition
 def identity = fn (x) -> { x }
