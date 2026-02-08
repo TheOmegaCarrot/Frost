@@ -40,6 +40,26 @@ set_tests_properties(Frost_Integration_httpbin_headers PROPERTIES
 )
 
 add_test(
+    NAME Frost_Integration_httpbin_response_headers
+    COMMAND "${HTTP_TEST_DIR}/httpbin-runner.sh"
+            $<TARGET_FILE:frost>
+            "${HTTP_TEST_DIR}/httpbin-response-headers.frst"
+)
+set_tests_properties(Frost_Integration_httpbin_response_headers PROPERTIES
+    FIXTURES_REQUIRED httpbin
+)
+
+add_test(
+    NAME Frost_Integration_httpbin_head
+    COMMAND "${HTTP_TEST_DIR}/httpbin-runner.sh"
+            $<TARGET_FILE:frost>
+            "${HTTP_TEST_DIR}/httpbin-head.frst"
+)
+set_tests_properties(Frost_Integration_httpbin_head PROPERTIES
+    FIXTURES_REQUIRED httpbin
+)
+
+add_test(
     NAME Frost_Integration_httpbin_post
     COMMAND "${HTTP_TEST_DIR}/httpbin-runner.sh"
             $<TARGET_FILE:frost>

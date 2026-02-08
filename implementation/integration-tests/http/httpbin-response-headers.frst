@@ -1,0 +1,35 @@
+def host_env = getenv('HTTPBIN_HOST')
+def host = if is_null(host_env): '127.0.0.1' else: host_env
+
+def port_env = getenv('HTTPBIN_PORT')
+def port_str = if is_null(port_env): '8080' else: port_env
+
+def port = to_int(port_str)
+
+def resp = http.request({
+  endpoint: {
+    host: host,
+    tls: false,
+    port: port,
+    path: '/response-headers',
+    query: {
+      ['X-Dupe']: ['first', 'second'],
+      ['X-Single']: 'solo'
+    }
+  },
+  method: 'GET'
+}).get()
+
+assert(resp.ok, 'http request ok')
+assert(resp.response.code == 200, 'status code')
+
+def headers = resp.response.headers
+
+assert(headers['x-single'] == 'solo', 'single header remains string')
+
+def dupe = headers['x-dupe']
+assert(is_array(dupe), 'duplicate header is array')
+assert(len(dupe) == 2, 'duplicate header count')
+assert((dupe[0] == 'first' and dupe[1] == 'second')
+       or (dupe[0] == 'second' and dupe[1] == 'first'),
+       'duplicate header values')

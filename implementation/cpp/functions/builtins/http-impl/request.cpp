@@ -221,10 +221,11 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
         phase = "receive HTTP response";
         beast::flat_buffer resp_buf;
 
-        beast::http::response<beast::http::dynamic_body> resp;
+        beast::http::response_parser<beast::http::dynamic_body> parser;
+        parser.skip(req.method == beast::http::verb::head);
 
         auto [recv_err, _] = co_await http::async_read(
-            stream, resp_buf, resp, asio::as_tuple(asio::use_awaitable));
+            stream, resp_buf, parser, asio::as_tuple(asio::use_awaitable));
 
         if (recv_err)
             co_return std::unexpected{Error{
@@ -232,6 +233,8 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
                 .message = recv_err.message(),
                 .phase = phase,
             }};
+
+        auto resp = parser.release();
 
         if constexpr (use_ssl)
         {
