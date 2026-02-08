@@ -100,6 +100,21 @@ set_tests_properties(Frost_Integration_httpbin_timeout PROPERTIES
 )
 
 add_test(
+    NAME Frost_Integration_httpbin_https_get
+    COMMAND "${HTTP_TEST_DIR}/httpbin-https-runner.sh"
+            $<TARGET_FILE:frost>
+            "${HTTP_TEST_DIR}/httpbin-https-get.frst"
+)
+set_tests_properties(Frost_Integration_httpbin_https_get PROPERTIES
+    SKIP_RETURN_CODE 77
+)
+
+add_test(
+    NAME Frost_Integration_http_invalid_input
+    COMMAND $<TARGET_FILE:frost> "${HTTP_TEST_DIR}/http-invalid-input.frst"
+)
+
+add_test(
     NAME Frost_Integration_httpbin_cleanup
     COMMAND "${HTTP_TEST_DIR}/httpbin-cleanup.sh"
 )

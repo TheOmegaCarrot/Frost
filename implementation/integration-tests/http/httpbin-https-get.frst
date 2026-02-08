@@ -1,0 +1,57 @@
+def host_env = getenv('HTTPBIN_TLS_HOST')
+def host = if is_null(host_env): 'httpbin.org' else: host_env
+
+def port_env = getenv('HTTPBIN_TLS_PORT')
+def port_str = if is_null(port_env): '443' else: port_env
+
+def port = to_int(port_str)
+
+def resp_default = http.request({
+  endpoint: {
+    host: host,
+    tls: true,
+    port: port,
+    path: '/get'
+  },
+  method: 'GET'
+}).get()
+
+assert(resp_default.ok, 'https request ok (default verify)')
+assert(resp_default.response.code == 200, 'status code (default verify)')
+
+def json_default = parse_json(resp_default.response.body)
+assert(contains(json_default.url, host), 'response url contains host (default verify)')
+
+def resp_verify_true = http.request({
+  endpoint: {
+    host: host,
+    tls: true,
+    port: port,
+    path: '/get'
+  },
+  verify_tls: true,
+  method: 'GET'
+}).get()
+
+assert(resp_verify_true.ok, 'https request ok (verify true)')
+assert(resp_verify_true.response.code == 200, 'status code (verify true)')
+
+def json_verify_true = parse_json(resp_verify_true.response.body)
+assert(contains(json_verify_true.url, host), 'response url contains host (verify true)')
+
+def resp_verify_false = http.request({
+  endpoint: {
+    host: host,
+    tls: true,
+    port: port,
+    path: '/get'
+  },
+  verify_tls: false,
+  method: 'GET'
+}).get()
+
+assert(resp_verify_false.ok, 'https request ok (verify false)')
+assert(resp_verify_false.response.code == 200, 'status code (verify false)')
+
+def json_verify_false = parse_json(resp_verify_false.response.body)
+assert(contains(json_verify_false.url, host), 'response url contains host (verify false)')
