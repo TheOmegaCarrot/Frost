@@ -158,6 +158,12 @@ assert(plus_3 == plus_3) # (functions use identity equality)
 
 def seven = plus_3(4)
 
+# a @ f(b) is exactly identical to f(a, b)
+# a @ f() is valid and is identical to f(a)
+# a @ f() @ g() is a threaded chain, and is identical to g(f(a))
+# a @ f(b) @ g(c) is identical to g(f(a, b), c)
+# It's just an alternate function call syntax, but it _looks like_
+# a left-associative operator
 def threaded_seven = 4@plus_3()
 
 def main = fn () -> {
