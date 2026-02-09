@@ -4,6 +4,13 @@ set -eu
 FROST_BIN=$1
 SCRIPT=$2
 
+case "$(printf '%s' "${FROST_SKIP_HTTP_TESTS:-}" | tr '[:lower:]' '[:upper:]')" in
+  1|ON|TRUE|YES)
+    echo "FROST_SKIP_HTTP_TESTS set; skipping"
+    exit 77
+    ;;
+esac
+
 HOST=${HTTPS_CA_TEST_HOST:-httpbin.org}
 PORT=${HTTPS_CA_TEST_PORT:-443}
 

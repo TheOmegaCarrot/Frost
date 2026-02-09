@@ -1,16 +1,14 @@
 #!/usr/bin/env sh
 set -eu
 
+FROST_BIN=$1
+SCRIPT=$2
+
 case "$(printf '%s' "${FROST_SKIP_HTTP_TESTS:-}" | tr '[:lower:]' '[:upper:]')" in
   1|ON|TRUE|YES)
-    exit 0
+    echo "FROST_SKIP_HTTP_TESTS set; skipping"
+    exit 77
     ;;
 esac
 
-if ! command -v docker >/dev/null 2>&1; then
-  exit 0
-fi
-
-NAME="frost-httpbin"
-
-docker rm -f "$NAME" >/dev/null 2>&1 || true
+"$FROST_BIN" "$SCRIPT"

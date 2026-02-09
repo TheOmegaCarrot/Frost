@@ -1,6 +1,13 @@
 #!/usr/bin/env sh
 set -eu
 
+case "$(printf '%s' "${FROST_SKIP_HTTP_TESTS:-}" | tr '[:lower:]' '[:upper:]')" in
+  1|ON|TRUE|YES)
+    echo "FROST_SKIP_HTTP_TESTS set; skipping"
+    exit 77
+    ;;
+esac
+
 if ! command -v docker >/dev/null 2>&1; then
   echo "docker not available; skipping"
   exit 77

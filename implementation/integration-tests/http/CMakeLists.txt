@@ -211,17 +211,23 @@ set_tests_properties(Frost_Integration_https_ca_controls PROPERTIES
 
 add_test(
     NAME Frost_Integration_http_invalid_input
-    COMMAND $<TARGET_FILE:frost> "${HTTP_TEST_DIR}/http-invalid-input.frst"
+    COMMAND "${HTTP_TEST_DIR}/http-direct-runner.sh"
+            $<TARGET_FILE:frost>
+            "${HTTP_TEST_DIR}/http-invalid-input.frst"
 )
 
 add_test(
     NAME Frost_Integration_http_invalid_parse_matrix
-    COMMAND $<TARGET_FILE:frost> "${HTTP_TEST_DIR}/http-invalid-parse-matrix.frst"
+    COMMAND "${HTTP_TEST_DIR}/http-direct-runner.sh"
+            $<TARGET_FILE:frost>
+            "${HTTP_TEST_DIR}/http-invalid-parse-matrix.frst"
 )
 
 add_test(
     NAME Frost_Integration_http_invalid_parse_guards_extra
-    COMMAND $<TARGET_FILE:frost> "${HTTP_TEST_DIR}/http-invalid-parse-guards-extra.frst"
+    COMMAND "${HTTP_TEST_DIR}/http-direct-runner.sh"
+            $<TARGET_FILE:frost>
+            "${HTTP_TEST_DIR}/http-invalid-parse-guards-extra.frst"
 )
 
 add_test(
@@ -240,4 +246,9 @@ add_test(
 )
 set_tests_properties(Frost_Integration_httpbin_cleanup PROPERTIES
     FIXTURES_CLEANUP httpbin
+)
+
+get_property(_http_tests DIRECTORY PROPERTY TESTS)
+set_tests_properties(${_http_tests} PROPERTIES
+    SKIP_RETURN_CODE 77
 )
