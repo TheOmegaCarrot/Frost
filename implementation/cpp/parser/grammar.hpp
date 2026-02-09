@@ -385,15 +385,14 @@ struct statement_list;
 template <typename item_t>
 constexpr auto list_or_empty()
 {
-    auto sink = lexy::as_list<std::vector<item_t>>;
-    auto cb = lexy::callback<std::vector<item_t>>(
+    return lexy::as_list<std::vector<item_t>>
+           >> lexy::callback<std::vector<item_t>>(
         [](lexy::nullopt) {
             return std::vector<item_t>{};
         },
         [](std::vector<item_t> items) {
             return items;
         });
-    return sink >> cb;
 }
 
 template <typename entry_start_t, typename list_t, typename close_t>
@@ -673,17 +672,25 @@ struct lambda_body
 namespace node
 {
 constexpr auto kw_with = LEXY_KEYWORD("with", identifier::base);
+template <typename node_t>
+inline constexpr bool unsupported_with_operation_node = false;
 
 template <typename node_t>
 constexpr const char* with_operation_name()
 {
     if constexpr (std::is_same_v<node_t, ast::Map>)
         return "map expression";
-    if constexpr (std::is_same_v<node_t, ast::Filter>)
+    else if constexpr (std::is_same_v<node_t, ast::Filter>)
         return "filter expression";
-    if constexpr (std::is_same_v<node_t, ast::Foreach>)
+    else if constexpr (std::is_same_v<node_t, ast::Foreach>)
         return "foreach expression";
-    return "with expression";
+    else
+    {
+        static_assert(
+            unsupported_with_operation_node<node_t>,
+            "Unsupported with-operation node type for parser keyword dispatch");
+        return "";
+    }
 }
 
 template <typename node_t>
@@ -691,10 +698,17 @@ constexpr auto with_operation_keyword()
 {
     if constexpr (std::is_same_v<node_t, ast::Map>)
         return LEXY_KEYWORD("map", identifier::base);
-    if constexpr (std::is_same_v<node_t, ast::Filter>)
+    else if constexpr (std::is_same_v<node_t, ast::Filter>)
         return LEXY_KEYWORD("filter", identifier::base);
-    if constexpr (std::is_same_v<node_t, ast::Foreach>)
+    else if constexpr (std::is_same_v<node_t, ast::Foreach>)
         return LEXY_KEYWORD("foreach", identifier::base);
+    else
+    {
+        static_assert(
+            unsupported_with_operation_node<node_t>,
+            "Unsupported with-operation node type for parser keyword dispatch");
+        return LEXY_KEYWORD("with", identifier::base);
+    }
 }
 
 template <typename node_t>
@@ -1334,26 +1348,12 @@ constexpr auto define_callback()
             return std::make_unique<ast::Define>(std::move(name),
                                                  std::move(expr), export_flag);
         },
-        [](std::string name, lexy::nullopt, ast::Expression::Ptr expr) {
-            return std::make_unique<ast::Define>(std::move(name),
-                                                 std::move(expr), export_flag);
-        },
         [](destructure_pack pack, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Array_Destructure>(
                 std::move(pack.names), std::move(pack.rest), std::move(expr),
                 export_flag);
         },
         [](std::vector<ast::Map_Destructure::Element> elems,
-           ast::Expression::Ptr expr) {
-            return std::make_unique<ast::Map_Destructure>(
-                std::move(elems), std::move(expr), export_flag);
-        },
-        [](destructure_pack pack, lexy::nullopt, ast::Expression::Ptr expr) {
-            return std::make_unique<ast::Array_Destructure>(
-                std::move(pack.names), std::move(pack.rest), std::move(expr),
-                export_flag);
-        },
-        [](std::vector<ast::Map_Destructure::Element> elems, lexy::nullopt,
            ast::Expression::Ptr expr) {
             return std::make_unique<ast::Map_Destructure>(
                 std::move(elems), std::move(expr), export_flag);
@@ -1426,8 +1426,7 @@ struct statement_list_impl
                       + (dsl::lit_c<';'> | dsl::lit_c<'\n'> | dsl::lit_c<'#'>))
             >> statement_ws;
         auto item = dsl::peek(expression_start_no_nl) >> dsl::p<stmt_t>;
-        return dsl::peek(expression_start_no_nl)
-               >> dsl::list(item, dsl::trailing_sep(sep));
+        return dsl::list(item, dsl::trailing_sep(sep));
     }();
     static constexpr auto value =
         lexy::as_list<std::vector<ast::Statement::Ptr>>;
