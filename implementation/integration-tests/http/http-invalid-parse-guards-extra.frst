@@ -49,6 +49,42 @@ assert(not bad_header_key_type.ok, 'header key type must fail')
 assert(contains(bad_header_key_type.error, 'headers Map keys must be Strings'),
        'header key type error text')
 
+def forbidden_header_host = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test'
+  },
+  headers: {
+    host: 'evil.example'
+  }
+}])
+assert(not forbidden_header_host.ok, 'host header override must fail')
+assert(contains(forbidden_header_host.error, "header 'host' is managed by the HTTP client"),
+       'host header override error text')
+
+def forbidden_header_content_length = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test'
+  },
+  headers: {
+    ['Content-Length']: '123'
+  }
+}])
+assert(not forbidden_header_content_length.ok, 'content-length override must fail')
+assert(contains(forbidden_header_content_length.error, "managed by the HTTP client"),
+       'content-length override error text')
+
+def forbidden_header_transfer_encoding = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test'
+  },
+  headers: {
+    ['TRANSFER-ENCODING']: 'chunked'
+  }
+}])
+assert(not forbidden_header_transfer_encoding.ok, 'transfer-encoding override must fail')
+assert(contains(forbidden_header_transfer_encoding.error, "managed by the HTTP client"),
+       'transfer-encoding override error text')
+
 def bad_query_key_type = try_call(http.request, [{
   endpoint: {
     host: 'definitely.invalid.test',

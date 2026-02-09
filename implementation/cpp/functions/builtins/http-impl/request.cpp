@@ -18,6 +18,7 @@
 #include <fmt/chrono.h>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 
 namespace frst::http
@@ -588,6 +589,9 @@ std::vector<Header> parse_headers(const Value_Ptr& headers_spec)
 
     const auto& headers = headers_spec->raw_get<Map>();
 
+    constexpr std::array<std::string_view, 3> forbidden_headers{
+        "host", "content-length", "transfer-encoding"};
+
     std::vector<Header> result;
 
     for (const auto& [k_val, v_val] : headers)
@@ -601,6 +605,16 @@ std::vector<Header> parse_headers(const Value_Ptr& headers_spec)
         }
 
         const auto& key = k_val->raw_get<String>();
+        if (std::ranges::any_of(
+                forbidden_headers,
+                [&](const std::string_view forbidden) {
+                    return boost::iequals(key, forbidden);
+                }))
+        {
+            throw Frost_Recoverable_Error{fmt::format(
+                "http.request: header '{}' is managed by the HTTP client",
+                key)};
+        }
 
         if (v_val->is<String>())
         {
