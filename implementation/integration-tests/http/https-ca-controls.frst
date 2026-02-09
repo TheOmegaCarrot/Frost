@@ -1,0 +1,98 @@
+def host_env = getenv('HTTPS_CA_TEST_HOST')
+def host = if is_null(host_env): 'httpbin.org' else: host_env
+
+def port_env = getenv('HTTPS_CA_TEST_PORT')
+def port_str = if is_null(port_env): '443' else: port_env
+def port = to_int(port_str)
+
+def ca_file_env = getenv('HTTPS_CA_TEST_FILE')
+def ca_path_env = getenv('HTTPS_CA_TEST_PATH')
+
+assert(not is_null(ca_file_env), 'ca file env present')
+assert(not is_null(ca_path_env), 'ca path env present')
+
+def skip_on_timeout = fn resp -> {
+  if not resp.ok and resp.error.category == 'timeout':
+    exit(77)
+}
+
+def no_custom = http.request({
+  endpoint: {
+    host: host,
+    tls: true,
+    port: port,
+    path: '/get'
+  },
+  method: 'GET',
+  verify_tls: true,
+  use_system_ca: false,
+  timeout_ms: 30000
+}).get()
+skip_on_timeout(no_custom)
+assert(not no_custom.ok, 'no trust roots should fail verification')
+
+def ca_file_only = http.request({
+  endpoint: {
+    host: host,
+    tls: true,
+    port: port,
+    path: '/get'
+  },
+  method: 'GET',
+  verify_tls: true,
+  use_system_ca: false,
+  ca_file: ca_file_env,
+  timeout_ms: 30000
+}).get()
+skip_on_timeout(ca_file_only)
+assert(ca_file_only.ok, 'ca_file only should verify')
+assert(ca_file_only.response.code == 200, 'ca_file only status')
+
+def ca_path_only = http.request({
+  endpoint: {
+    host: host,
+    tls: true,
+    port: port,
+    path: '/get'
+  },
+  method: 'GET',
+  verify_tls: true,
+  use_system_ca: false,
+  ca_path: ca_path_env,
+  timeout_ms: 30000
+}).get()
+skip_on_timeout(ca_path_only)
+assert(ca_path_only.ok, 'ca_path only should verify')
+assert(ca_path_only.response.code == 200, 'ca_path only status')
+
+def bad_ca_file = http.request({
+  endpoint: {
+    host: host,
+    tls: true,
+    port: port,
+    path: '/get'
+  },
+  method: 'GET',
+  verify_tls: true,
+  use_system_ca: false,
+  ca_file: '/definitely/not/real/frost-test-ca-file.pem',
+  timeout_ms: 30000
+}).get()
+skip_on_timeout(bad_ca_file)
+assert(not bad_ca_file.ok, 'invalid ca_file should fail')
+
+def bad_ca_path = http.request({
+  endpoint: {
+    host: host,
+    tls: true,
+    port: port,
+    path: '/get'
+  },
+  method: 'GET',
+  verify_tls: true,
+  use_system_ca: false,
+  ca_path: '/definitely/not/real/frost-test-ca-dir',
+  timeout_ms: 30000
+}).get()
+skip_on_timeout(bad_ca_path)
+assert(not bad_ca_path.ok, 'invalid ca_path should fail')

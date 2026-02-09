@@ -1,0 +1,23 @@
+def host_env = getenv('HTTPBIN_HOST')
+def host = if is_null(host_env): '127.0.0.1' else: host_env
+
+def port_env = getenv('HTTPBIN_PORT')
+def port_str = if is_null(port_env): '8080' else: port_env
+def port = to_int(port_str)
+
+def resp = http.request({
+  endpoint: {
+    host: host,
+    tls: false,
+    port: port,
+    path: '/get'
+  },
+  method: 'GET',
+  verify_tls: false,
+  use_system_ca: false,
+  ca_file: '/definitely/not/real/frost-test-ca-file.pem',
+  ca_path: '/definitely/not/real/frost-test-ca-dir'
+}).get()
+
+assert(resp.ok, 'plain http should ignore TLS knobs')
+assert(resp.response.code == 200, 'status code')

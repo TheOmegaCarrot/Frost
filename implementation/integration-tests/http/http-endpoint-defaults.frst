@@ -1,0 +1,20 @@
+def host_env = getenv('HTTPBIN_TLS_HOST')
+def host = if is_null(host_env): 'httpbin.org' else: host_env
+
+def skip_on_timeout = fn resp -> {
+  if not resp.ok and resp.error.category == 'timeout':
+    exit(77)
+}
+
+def resp = http.request({
+  endpoint: {
+    host: host,
+    tls: true
+  },
+  timeout_ms: 30000
+}).get()
+
+skip_on_timeout(resp)
+
+assert(resp.ok, 'default endpoint/method request should succeed')
+assert(resp.response.code == 200, 'status code')

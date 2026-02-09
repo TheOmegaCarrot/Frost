@@ -1,0 +1,42 @@
+def host_env = getenv('HTTPBIN_HOST')
+def host = if is_null(host_env): '127.0.0.1' else: host_env
+
+def port_env = getenv('HTTPBIN_PORT')
+def port_str = if is_null(port_env): '8080' else: port_env
+
+def port = to_int(port_str)
+
+def resp = http.request({
+  endpoint: {
+    host: host,
+    tls: false,
+    port: port,
+    path: '/get',
+    query: {
+      multi: ['one', 'two'],
+      single: 'solo'
+    }
+  },
+  method: 'GET',
+  headers: {
+    ['x-one']: 'one',
+    ['x-multi']: ['first', 'second']
+  }
+}).get()
+
+assert(resp.ok, 'http request ok')
+assert(resp.response.code == 200, 'status code')
+
+def json = parse_json(resp.response.body)
+
+assert(json.args.single == 'solo', 'single query')
+assert(is_array(json.args.multi), 'repeated query should be an array')
+assert(len(json.args.multi) == 2, 'repeated query length')
+assert(json.args.multi[0] == 'one', 'first repeated query value')
+assert(json.args.multi[1] == 'two', 'second repeated query value')
+
+def headers_lower = map json.headers with fn (k, v) -> { { [to_lower(k)]: v } }
+
+assert(headers_lower['x-one'] == 'one', 'single header')
+assert(contains(headers_lower['x-multi'], 'first'), 'multi header first value')
+assert(contains(headers_lower['x-multi'], 'second'), 'multi header second value')

@@ -1,0 +1,103 @@
+def bad_method_type = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test'
+  },
+  method: 42
+}])
+assert(not bad_method_type.ok, 'method type must fail')
+assert(contains(bad_method_type.error, 'method must be a String'),
+       'method type error text')
+
+def bad_method_name = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test'
+  },
+  method: 'NOPE'
+}])
+assert(not bad_method_name.ok, 'unknown method must fail')
+assert(contains(bad_method_name.error, 'Bad HTTP method'),
+       'unknown method error text')
+
+def bad_timeout_type = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test'
+  },
+  timeout_ms: 'fast'
+}])
+assert(not bad_timeout_type.ok, 'timeout type must fail')
+assert(contains(bad_timeout_type.error, 'timeout_ms must be an Int'),
+       'timeout type error text')
+
+def bad_timeout_value = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test'
+  },
+  timeout_ms: 0
+}])
+assert(not bad_timeout_value.ok, 'timeout value must fail')
+assert(contains(bad_timeout_value.error, 'timeout_ms must be positive'),
+       'timeout value error text')
+
+def bad_tls_type = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test',
+    tls: 'yes'
+  }
+}])
+assert(not bad_tls_type.ok, 'endpoint.tls type must fail')
+assert(contains(bad_tls_type.error, 'endpoint.tls must be a Bool'),
+       'endpoint.tls type error text')
+
+def bad_port_range = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test',
+    port: 70000
+  }
+}])
+assert(not bad_port_range.ok, 'endpoint.port range must fail')
+assert(contains(bad_port_range.error, 'endpoint.port value 70000 is out of range'),
+       'endpoint.port range error text')
+
+def bad_headers_shape = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test'
+  },
+  headers: ['not-a-map']
+}])
+assert(not bad_headers_shape.ok, 'headers shape must fail')
+assert(contains(bad_headers_shape.error, 'headers must be a Map'),
+       'headers shape error text')
+
+def bad_header_value = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test'
+  },
+  headers: {
+    foo: 1
+  }
+}])
+assert(not bad_header_value.ok, 'header value type must fail')
+assert(contains(bad_header_value.error, 'headers got unexpected value'),
+       'header value type error text')
+
+def bad_query_shape = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test',
+    query: ['bad']
+  }
+}])
+assert(not bad_query_shape.ok, 'query shape must fail')
+assert(contains(bad_query_shape.error, 'endpoint.query must be a Map'),
+       'query shape error text')
+
+def bad_query_array_item = try_call(http.request, [{
+  endpoint: {
+    host: 'definitely.invalid.test',
+    query: {
+      foo: ['ok', 1]
+    }
+  }
+}])
+assert(not bad_query_array_item.ok, 'query array item type must fail')
+assert(contains(bad_query_array_item.error, 'endpoint.query array values must be Strings'),
+       'query array item type error text')
