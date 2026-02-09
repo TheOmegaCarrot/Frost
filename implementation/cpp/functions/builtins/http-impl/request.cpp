@@ -286,26 +286,18 @@ asio::awaitable<Request_Result> run_request(Outgoing_Request req)
 
     std::string phase = "begin";
 
-    auto [order, _, except, result] = co_await [&] {
+    auto do_request = [&] -> asio::awaitable<Request_Result> {
         if (req.endpoint.tls)
-            return make_parallel_group(
-                       asio::co_spawn(
-                           ex, timeout_timer.async_wait(asio::use_awaitable),
+            co_return co_await run_http_request<true>(std::move(req), phase);
+        co_return co_await run_http_request<false>(std::move(req), phase);
+    };
+
+    auto [order, _, except, result] =
+        co_await make_parallel_group(
+            asio::co_spawn(ex, timeout_timer.async_wait(asio::use_awaitable),
                            asio::deferred),
-                       asio::co_spawn(
-                           ex, run_http_request<true>(std::move(req), phase),
-                           asio::deferred))
-                .async_wait(wait_for_one(), asio::deferred);
-        else
-            return make_parallel_group(
-                       asio::co_spawn(
-                           ex, timeout_timer.async_wait(asio::use_awaitable),
-                           asio::deferred),
-                       asio::co_spawn(
-                           ex, run_http_request<false>(std::move(req), phase),
-                           asio::deferred))
-                .async_wait(wait_for_one(), asio::deferred);
-    }();
+            asio::co_spawn(ex, do_request(), asio::deferred))
+            .async_wait(wait_for_one(), asio::deferred);
 
     if (order.at(0) == 0)
     {
@@ -605,11 +597,10 @@ std::vector<Header> parse_headers(const Value_Ptr& headers_spec)
         }
 
         const auto& key = k_val->raw_get<String>();
-        if (std::ranges::any_of(
-                forbidden_headers,
-                [&](const std::string_view forbidden) {
-                    return boost::iequals(key, forbidden);
-                }))
+        if (std::ranges::any_of(forbidden_headers,
+                                [&](const std::string_view forbidden) {
+                                    return boost::iequals(key, forbidden);
+                                }))
         {
             throw Frost_Recoverable_Error{fmt::format(
                 "http.request: header '{}' is managed by the HTTP client",
