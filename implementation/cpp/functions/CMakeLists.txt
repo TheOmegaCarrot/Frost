@@ -19,13 +19,13 @@ add_library( frost-functions
     builtins/structure-ops.cpp
     builtins/type-conversions.cpp
     builtins/type-tests.cpp
-    builtins/http-impl/request.cpp
 )
 
 if(WITH_HTTP)
     target_sources( frost-functions
     PRIVATE
     builtins/http.cpp
+    builtins/http-impl/request.cpp
     )
 endif()
 
@@ -43,11 +43,17 @@ target_link_libraries( frost-functions
     frost-symbol-table
     Boost::regex
     Boost::json
-    Boost::url
     cppcodec::cppcodec
-    OpenSSL::SSL
-    OpenSSL::Crypto
 )
+
+if(WITH_HTTP)
+    target_link_libraries( frost-functions
+        PUBLIC
+        Boost::url
+        OpenSSL::SSL
+        OpenSSL::Crypto
+    )
+endif()
 
 macro(functions_test file)
     make_test( ${file}

@@ -29,8 +29,12 @@ include(cppcodec)
 
 include(get-test-libs)
 
-find_package(Boost REQUIRED COMPONENTS regex json headers url)
-find_package(OpenSSL REQUIRED)
+if(WITH_HTTP)
+    find_package(Boost REQUIRED COMPONENTS regex json headers url)
+    find_package(OpenSSL REQUIRED)
+else()
+    find_package(Boost REQUIRED COMPONENTS regex json headers)
+endif()
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION YES)

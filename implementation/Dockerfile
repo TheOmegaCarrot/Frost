@@ -10,7 +10,7 @@ RUN apt-get update \
 WORKDIR /app
 COPY . /app
 
-RUN cmake -S . -B build-directory -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=No \
+RUN cmake -S . -B build-directory -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=No -DWITH_HTTP=No \
     && cmake --build build-directory -j8
 
 WORKDIR /work
