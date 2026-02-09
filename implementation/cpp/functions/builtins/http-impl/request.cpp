@@ -276,8 +276,6 @@ asio::awaitable<Request_Result> run_request(Outgoing_Request req)
 {
     using R = Request_Result;
     using Error = R::Error;
-    using asio::experimental::make_parallel_group;
-    using asio::experimental::wait_for_one;
 
     auto ex = co_await asio::this_coro::executor;
 
@@ -293,11 +291,11 @@ asio::awaitable<Request_Result> run_request(Outgoing_Request req)
     };
 
     auto [order, _, except, result] =
-        co_await make_parallel_group(
+        co_await asio::experimental::make_parallel_group(
             asio::co_spawn(ex, timeout_timer.async_wait(asio::use_awaitable),
                            asio::deferred),
             asio::co_spawn(ex, do_request(), asio::deferred))
-            .async_wait(wait_for_one(), asio::deferred);
+            .async_wait(asio::experimental::wait_for_one(), asio::deferred);
 
     if (order.at(0) == 0)
     {
