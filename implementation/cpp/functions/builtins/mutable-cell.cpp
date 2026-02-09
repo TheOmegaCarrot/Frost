@@ -15,7 +15,7 @@ struct Mutable_Cell
 
     Value_Ptr get() const
     {
-        return value->clone();
+        return value;
     }
 
     void set(Value_Ptr new_value)
