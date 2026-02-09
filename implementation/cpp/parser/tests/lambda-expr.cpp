@@ -61,7 +61,7 @@ TEST_CASE("Parser Lambda Expressions")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input(input);
+        auto src = lexy::string_input<lexy::utf8_encoding>(input);
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 
@@ -283,7 +283,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Variadic-only lambda works in program input")
     {
-        auto src = lexy::string_input(
+        auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"def f = fn(...rest) -> { rest }\n f()"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
@@ -315,7 +315,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda as a top-level statement parses in program input")
     {
-        auto src = lexy::string_input(std::string_view{"fn -> {}"});
+        auto src = lexy::string_input<lexy::utf8_encoding>(std::string_view{"fn -> {}"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -328,7 +328,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Multiple lambdas as top-level statements parse correctly")
     {
-        auto src = lexy::string_input(std::string_view{"fn -> {}\nfn() -> {}"});
+        auto src = lexy::string_input<lexy::utf8_encoding>(std::string_view{"fn -> {}\nfn() -> {}"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -338,7 +338,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Multiple lambdas with semicolons parse correctly")
     {
-        auto src = lexy::string_input(std::string_view{"fn -> {}; fn() -> {}"});
+        auto src = lexy::string_input<lexy::utf8_encoding>(std::string_view{"fn -> {}; fn() -> {}"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -348,7 +348,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda can appear on the RHS of def")
     {
-        auto src = lexy::string_input(
+        auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"def f = fn(x) -> { x }\n f(3)"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
@@ -644,7 +644,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda body supports defs and map literals with nested lambdas")
     {
-        auto src = lexy::string_input(
+        auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"def f = fn a -> {\n"
                              "    def b = 2 + a\n"
                              "    { c: b, d: fn p -> p * a }\n"
@@ -781,7 +781,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Elided body works in program input")
     {
-        auto src = lexy::string_input(
+        auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"def f = fn(x) -> x + 2\n f(4)"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);

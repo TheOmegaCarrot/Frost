@@ -46,7 +46,7 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_impl(
 std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_program(
     const std::string& program_text)
 {
-    auto input = lexy::string_input(program_text);
+    auto input = lexy::string_input<lexy::utf8_encoding>(program_text);
 
     return parse_impl(input,
                       lexy_ext::report_error.opts({lexy::visualize_fancy}));

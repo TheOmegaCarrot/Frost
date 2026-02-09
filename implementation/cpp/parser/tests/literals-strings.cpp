@@ -25,7 +25,7 @@ TEST_CASE("Parser String Literals")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input(input);
+        auto src = lexy::string_input<lexy::utf8_encoding>(input);
         return lexy::parse<String_Root>(src, lexy::noop);
     };
 
@@ -95,6 +95,22 @@ TEST_CASE("Parser String Literals")
             REQUIRE(value->is<frst::String>());
             CHECK(value->get<frst::String>().value() == c.expected);
         }
+    }
+
+    SECTION("UTF-8 literals are allowed in string literals")
+    {
+        const std::string emoji = "😀";
+        const auto expect_roundtrip = [&](const std::string& input) {
+            auto result = parse(input);
+            REQUIRE(result);
+            auto value = std::move(result).value();
+            REQUIRE(value->is<frst::String>());
+            CHECK(value->get<frst::String>().value() == emoji);
+        };
+
+        expect_roundtrip("\"" + emoji + "\"");
+        expect_roundtrip("'" + emoji + "'");
+        expect_roundtrip("R\"(" + emoji + ")\"");
     }
 
     SECTION("Invalid strings")

@@ -13,6 +13,7 @@
 #include <lexy/dsl.hpp>
 #include <lexy/dsl/ascii.hpp>
 #include <lexy/dsl/until.hpp>
+#include <lexy/dsl/unicode.hpp>
 #include <lexy/lexeme.hpp>
 #include <lexy/token.hpp>
 
@@ -280,7 +281,7 @@ struct string_literal
     {
         static constexpr auto rule =
             dsl::delimited(LEXY_LIT("R\"("), LEXY_LIT(")\""))
-                .limit(dsl::ascii::newline)(dsl::ascii::character);
+                .limit(dsl::ascii::newline)(dsl::unicode::character);
         static constexpr auto value = lexy::as_string<std::string>;
     };
 
@@ -288,7 +289,7 @@ struct string_literal
     {
         static constexpr auto rule =
             dsl::delimited(LEXY_LIT("R'("), LEXY_LIT(")'"))
-                .limit(dsl::ascii::newline)(dsl::ascii::character);
+                .limit(dsl::ascii::newline)(dsl::unicode::character);
         static constexpr auto value = lexy::as_string<std::string>;
     };
 
@@ -303,7 +304,7 @@ struct string_literal
                                             .map<'0'>('\0');
 
         static constexpr auto rule = dsl::quoted.limit(dsl::ascii::newline)(
-            dsl::ascii::character, dsl::backslash_escape.symbol<escapes>());
+            dsl::unicode::character, dsl::backslash_escape.symbol<escapes>());
         static constexpr auto value = lexy::as_string<std::string>;
     };
 
@@ -319,7 +320,7 @@ struct string_literal
 
         static constexpr auto rule =
             dsl::single_quoted.limit(dsl::ascii::newline)(
-                dsl::ascii::character, dsl::backslash_escape.symbol<escapes>());
+                dsl::unicode::character, dsl::backslash_escape.symbol<escapes>());
         static constexpr auto value = lexy::as_string<std::string>;
     };
 
