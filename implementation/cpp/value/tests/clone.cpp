@@ -43,15 +43,28 @@ TEST_CASE("Value clone")
         CHECK(deep_eq(f1, f2));
         CHECK(f1 != f2);
 
-        auto b1 = Value::create(true);
-        auto b2 = b1->clone();
-        CHECK(deep_eq(b1, b2));
-        CHECK(b1 != b2);
-
         auto s1 = Value::create("hello"s);
         auto s2 = s1->clone();
         CHECK(deep_eq(s1, s2));
         CHECK(s1 != s2);
+    }
+
+    SECTION("Null and Bools keep singletons")
+    {
+        auto n1 = Value::create();
+        auto n2 = n1->clone();
+        CHECK(deep_eq(n1, n2));
+        CHECK(n1 == n2);
+
+        auto b1 = Value::create(true);
+        auto b2 = b1->clone();
+        CHECK(deep_eq(b1, b2));
+        CHECK(b1 == b2);
+
+        auto b3 = Value::create(false);
+        auto b4 = b3->clone();
+        CHECK(deep_eq(b3, b4));
+        CHECK(b3 == b4);
     }
 
     SECTION("Function clones preserve callable identity")

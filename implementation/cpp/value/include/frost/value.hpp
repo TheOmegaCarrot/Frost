@@ -403,20 +403,16 @@ struct To_Internal_String_Params
 
 class Value
 {
+    // Special tag for constructing deduplication singletons
+    struct Singleton_Tag
+    {
+    };
+
   public:
     using Ptr = Value_Ptr;
     friend impl::Value_Ptr_Less;
 
-    Value()
-        : value_{Null{}}
-    {
-    }
-
-    static Value_Ptr null()
-    { // TODO? replicate this for bools?
-        static Value_Ptr null_singleton = Value::create();
-        return null_singleton;
-    }
+    Value() = delete;
 
     Value(const Value&) = delete;
     Value(Value&&) = default;
@@ -430,10 +426,8 @@ class Value
     {
     }
 
-    Value(Bool val)
-        : value_{val}
-    {
-    }
+    Value(Null) = delete;
+    Value(Bool) = delete;
 
     Value(int val)
         : value_{val}
@@ -456,10 +450,43 @@ class Value
                 "Floating-point computation produced infinity"};
     }
 
+    Value(Singleton_Tag, Null)
+        : value_{Null{}}
+    {
+    }
+
+    Value(Singleton_Tag, Bool b)
+        : value_{b}
+    {
+    }
+
+    static Value_Ptr null()
+    {
+        return null_singleton_;
+    }
+
     template <typename... Args>
-    [[nodiscard]] static Ptr create(Args&&... args)
+    [[nodiscard]] static Value_Ptr create(Args&&... args)
     {
         return std::make_shared<Value>(std::forward<Args>(args)...);
+    }
+
+    [[nodiscard]] static Value_Ptr create()
+    {
+        return null_singleton_;
+    }
+
+    [[nodiscard]] static Value_Ptr create(Null)
+    {
+        return null_singleton_;
+    }
+
+    [[nodiscard]] static Value_Ptr create(Bool b)
+    {
+        if (b)
+            return true_singleton_;
+        else
+            return false_singleton_;
     }
 
     //! @brief Check if a Value is a particular type
@@ -642,6 +669,13 @@ class Value
     static bool greater_than_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static bool greater_than_or_equal_impl(const Value_Ptr& lhs,
                                            const Value_Ptr& rhs);
+
+    static inline Value_Ptr null_singleton_ =
+        std::make_shared<Value>(Singleton_Tag{}, Null{});
+    static inline Value_Ptr true_singleton_ =
+        std::make_shared<Value>(Singleton_Tag{}, true);
+    static inline Value_Ptr false_singleton_ =
+        std::make_shared<Value>(Singleton_Tag{}, false);
 };
 
 inline namespace literals
