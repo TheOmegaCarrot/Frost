@@ -241,3 +241,34 @@ TEST_CASE("Type Name")
     CHECK(map->type_name() == "Map");
     CHECK(function->type_name() == "Function");
 }
+
+TEST_CASE("Singleton identity")
+{
+    SECTION("Null singleton")
+    {
+        const auto null_a = Value::null();
+        const auto null_b = Value::null();
+        const auto null_c = Value::create(frst::Null{});
+
+        CHECK(null_a == null_b);
+        CHECK(null_c == null_a);
+        CHECK(null_a->get<frst::Null>().has_value());
+    }
+
+    SECTION("Bool singletons")
+    {
+        const auto true_a = Value::create(true);
+        const auto true_b = Value::create(true);
+        const auto false_a = Value::create(false);
+        const auto false_b = Value::create(false);
+
+        CHECK(true_a == true_b);
+        CHECK(false_a == false_b);
+        CHECK(true_a != false_a);
+
+        CHECK(true_a->get<frst::Bool>().has_value());
+        CHECK(false_a->get<frst::Bool>().has_value());
+        CHECK(true_a->get<frst::Bool>().value());
+        CHECK_FALSE(false_a->get<frst::Bool>().value());
+    }
+}
