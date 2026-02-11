@@ -12,7 +12,7 @@ namespace frst
 {
 
 STRINGS(close, is_open, read_line, read_one, read_rest, read, tell, seek, eof,
-        write, writeln, get);
+        write, writeln, get, flush);
 
 namespace
 {
@@ -122,6 +122,14 @@ auto writeln(const std::shared_ptr<std::ostream>& stream)
     });
 }
 
+auto flush(const std::shared_ptr<std::ostream>& stream)
+{
+    return system_closure(0, 0, [=](builtin_args_t) {
+        stream->flush();
+        return Value::null();
+    });
+}
+
 } // namespace
 
 BUILTIN(open_read)
@@ -162,6 +170,7 @@ BUILTIN(open_trunc)
         {strings.seek, seek(stream)},
         {strings.close, close(stream)},
         {strings.is_open, is_open(stream)},
+        {strings.flush, flush(stream)},
     });
 }
 
@@ -182,6 +191,7 @@ BUILTIN(open_append)
         {strings.seek, seek(stream)},
         {strings.close, close(stream)},
         {strings.is_open, is_open(stream)},
+        {strings.flush, flush(stream)},
     });
 }
 
@@ -228,6 +238,29 @@ Value_Ptr make_stdin()
     });
 }
 
+Value_Ptr make_stderr()
+{
+    return Value::create(Map{
+        {strings.write,
+         system_closure(1, 1,
+                        [](builtin_args_t args) {
+                            REQUIRE_ARGS("stderr.write", TYPES(String));
+                            const auto& str = GET(0, String);
+                            std::fwrite(str.c_str(), 1, str.size(), stderr);
+                            return Value::null();
+                        })},
+        {strings.writeln,
+         system_closure(1, 1,
+                        [](builtin_args_t args) {
+                            REQUIRE_ARGS("stderr.writeln", TYPES(String));
+                            const auto& str = GET(0, String);
+                            std::fwrite(str.c_str(), 1, str.size(), stderr);
+                            std::fwrite("\n", 1, 1, stderr);
+                            return Value::null();
+                        })},
+    });
+}
+
 void inject_streams(Symbol_Table& table)
 {
     INJECT(open_read, 1, 1);
@@ -237,5 +270,6 @@ void inject_streams(Symbol_Table& table)
     INJECT(stringwriter, 0, 0);
 
     table.define("stdin", make_stdin());
+    table.define("stderr", make_stderr());
 }
 } // namespace frst
