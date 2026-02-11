@@ -17,8 +17,8 @@ def fib = fn (n) -> {
 }
 assert(fib(1) == 1) ; assert(fib(7) == 13)
 
-def make_counter = fn (start) -> {
-    # fn () -> { start = start + 1 ; start } # mutation is not allowed (immutable everything)
+def mutate = fn n -> {
+    # n = 5 Nope, everything is immutable
 }
 
 def more_if = fn (n) -> {
