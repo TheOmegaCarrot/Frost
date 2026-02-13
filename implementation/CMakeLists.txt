@@ -36,11 +36,16 @@ else()
     find_package(Boost REQUIRED COMPONENTS regex json headers)
 endif()
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION YES)
-endif()
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE YES)
 
 add_library(frost-common INTERFACE)
+
+if(NOT MSVC)
+    target_link_options( frost-common
+        INTERFACE
+        -fuse-ld=mold
+    )
+endif()
 
 target_compile_features( frost-common
     INTERFACE

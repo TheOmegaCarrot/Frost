@@ -1,5 +1,8 @@
 #include <catch2/catch_all.hpp>
 
+#include <charconv>
+#include <limits>
+
 #include <frost/mock/mock-callable.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
@@ -379,5 +382,233 @@ TEST_CASE("Builtin to_upper/to_lower")
         auto empty = Value::create(""s);
         CHECK(get_fn("to_upper")->call({empty})->get<String>().value().empty());
         CHECK(get_fn("to_lower")->call({empty})->get<String>().value().empty());
+    }
+}
+
+TEST_CASE("Builtin fmt_int")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto fmt_int_val = table.lookup("fmt_int");
+    REQUIRE(fmt_int_val->is<Function>());
+    auto fmt_int = fmt_int_val->get<Function>().value();
+
+    auto expected_fmt = [](Int value, Int base) {
+        char buf[66]{};
+        const auto [ptr, ec] =
+            std::to_chars(std::begin(buf), std::end(buf), value, int(base));
+        REQUIRE(ec == std::errc{});
+        return String{std::begin(buf), ptr};
+    };
+
+    SECTION("Injected")
+    {
+        CHECK(fmt_int_val->is<Function>());
+    }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_WITH(fmt_int->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(fmt_int->call({}),
+                          ContainsSubstring("Called with 0"));
+        CHECK_THROWS_WITH(fmt_int->call({}),
+                          ContainsSubstring("requires at least 2"));
+
+        CHECK_THROWS_WITH(
+            fmt_int->call(
+                {Value::create(1), Value::create(10), Value::create(2)}),
+            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(
+            fmt_int->call(
+                {Value::create(1), Value::create(10), Value::create(2)}),
+            ContainsSubstring("Called with 3"));
+        CHECK_THROWS_WITH(
+            fmt_int->call(
+                {Value::create(1), Value::create(10), Value::create(2)}),
+            ContainsSubstring("no more than 2"));
+    }
+
+    SECTION("Type errors")
+    {
+        auto bad_number = Value::create("123"s);
+        auto bad_base = Value::create("10"s);
+
+        CHECK_THROWS_WITH(fmt_int->call({bad_number, Value::create(10)}),
+                          ContainsSubstring("Int"));
+        CHECK_THROWS_WITH(fmt_int->call({bad_number, Value::create(10)}),
+                          EndsWith(std::string{bad_number->type_name()}));
+
+        CHECK_THROWS_WITH(fmt_int->call({Value::create(123), bad_base}),
+                          ContainsSubstring("Int"));
+        CHECK_THROWS_WITH(fmt_int->call({Value::create(123), bad_base}),
+                          EndsWith(std::string{bad_base->type_name()}));
+    }
+
+    SECTION("Base range checks")
+    {
+        CHECK_THROWS_WITH(fmt_int->call({Value::create(123), Value::create(1)}),
+                          ContainsSubstring("base must be in range [2, 36]"));
+        CHECK_THROWS_WITH(
+            fmt_int->call({Value::create(123), Value::create(37)}),
+            ContainsSubstring("base must be in range [2, 36]"));
+    }
+
+    SECTION("Basic formatting")
+    {
+        auto dec = fmt_int->call({Value::create(123), Value::create(10)});
+        auto neg = fmt_int->call({Value::create(-123), Value::create(10)});
+        auto hex = fmt_int->call({Value::create(255), Value::create(16)});
+        auto bin = fmt_int->call({Value::create(10), Value::create(2)});
+
+        REQUIRE(dec->is<String>());
+        REQUIRE(neg->is<String>());
+        REQUIRE(hex->is<String>());
+        REQUIRE(bin->is<String>());
+
+        CHECK(dec->get<String>().value() == "123");
+        CHECK(neg->get<String>().value() == "-123");
+        CHECK(hex->get<String>().value() == "ff");
+        CHECK(bin->get<String>().value() == "1010");
+    }
+
+    SECTION("Int64 extrema")
+    {
+        constexpr Int min_i = std::numeric_limits<Int>::min();
+        constexpr Int max_i = std::numeric_limits<Int>::max();
+
+        auto max_dec = fmt_int->call({Value::create(max_i), Value::create(10)});
+        auto min_dec = fmt_int->call({Value::create(min_i), Value::create(10)});
+        auto max_bin = fmt_int->call({Value::create(max_i), Value::create(2)});
+        auto min_bin = fmt_int->call({Value::create(min_i), Value::create(2)});
+
+        REQUIRE(max_dec->is<String>());
+        REQUIRE(min_dec->is<String>());
+        REQUIRE(max_bin->is<String>());
+        REQUIRE(min_bin->is<String>());
+
+        CHECK(max_dec->get<String>().value() == expected_fmt(max_i, 10));
+        CHECK(min_dec->get<String>().value() == expected_fmt(min_i, 10));
+        CHECK(max_bin->get<String>().value() == expected_fmt(max_i, 2));
+        CHECK(min_bin->get<String>().value() == expected_fmt(min_i, 2));
+    }
+}
+
+TEST_CASE("Builtin parse_int")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto parse_int_val = table.lookup("parse_int");
+    REQUIRE(parse_int_val->is<Function>());
+    auto parse_int = parse_int_val->get<Function>().value();
+
+    SECTION("Injected")
+    {
+        CHECK(parse_int_val->is<Function>());
+    }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_WITH(parse_int->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(parse_int->call({}),
+                          ContainsSubstring("Called with 0"));
+        CHECK_THROWS_WITH(parse_int->call({}),
+                          ContainsSubstring("requires at least 2"));
+
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("1"s), Value::create(10),
+                             Value::create(2)}),
+            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("1"s), Value::create(10),
+                             Value::create(2)}),
+            ContainsSubstring("Called with 3"));
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("1"s), Value::create(10),
+                             Value::create(2)}),
+            ContainsSubstring("no more than 2"));
+    }
+
+    SECTION("Type errors")
+    {
+        auto bad_number = Value::create(123);
+        auto bad_base = Value::create("10"s);
+
+        CHECK_THROWS_WITH(parse_int->call({bad_number, Value::create(10)}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(parse_int->call({bad_number, Value::create(10)}),
+                          EndsWith(std::string{bad_number->type_name()}));
+
+        CHECK_THROWS_WITH(parse_int->call({Value::create("123"s), bad_base}),
+                          ContainsSubstring("Int"));
+        CHECK_THROWS_WITH(parse_int->call({Value::create("123"s), bad_base}),
+                          EndsWith(std::string{bad_base->type_name()}));
+    }
+
+    SECTION("Base range checks")
+    {
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("123"s), Value::create(1)}),
+            ContainsSubstring("base must be in range [2, 36]"));
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("123"s), Value::create(37)}),
+            ContainsSubstring("base must be in range [2, 36]"));
+    }
+
+    SECTION("Basic parsing")
+    {
+        auto dec = parse_int->call({Value::create("123"s), Value::create(10)});
+        auto neg = parse_int->call({Value::create("-123"s), Value::create(10)});
+        auto hex_lower =
+            parse_int->call({Value::create("ff"s), Value::create(16)});
+        auto hex_upper =
+            parse_int->call({Value::create("FF"s), Value::create(16)});
+
+        REQUIRE(dec->is<Int>());
+        REQUIRE(neg->is<Int>());
+        REQUIRE(hex_lower->is<Int>());
+        REQUIRE(hex_upper->is<Int>());
+
+        CHECK(dec->get<Int>().value() == 123);
+        CHECK(neg->get<Int>().value() == -123);
+        CHECK(hex_lower->get<Int>().value() == 255);
+        CHECK(hex_upper->get<Int>().value() == 255);
+    }
+
+    SECTION("Strict parse guards")
+    {
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("+123"s), Value::create(10)}),
+            ContainsSubstring("expected numeric string in base 10"));
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("123abc"s), Value::create(10)}),
+            ContainsSubstring("expected numeric string in base 10"));
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create(" 123"s), Value::create(10)}),
+            ContainsSubstring("expected numeric string in base 10"));
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("123 "s), Value::create(10)}),
+            ContainsSubstring("expected numeric string in base 10"));
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create(""s), Value::create(10)}),
+            ContainsSubstring("expected numeric string in base 10"));
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("0x10"s), Value::create(16)}),
+            ContainsSubstring("expected numeric string in base 16"));
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("0b10"s), Value::create(2)}),
+            ContainsSubstring("expected numeric string in base 2"));
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("2"s), Value::create(2)}),
+            ContainsSubstring("expected numeric string in base 2"));
+    }
+
+    SECTION("Out of range")
+    {
+        CHECK_THROWS_WITH(
+            parse_int->call({Value::create("999999999999999999999999999999999999"s),
+                             Value::create(10)}),
+            ContainsSubstring("out of range"));
     }
 }

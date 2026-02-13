@@ -87,14 +87,76 @@ BUILTIN(b64_urldecode)
 
     try
     {
-        return Value::create(
-            String(std::from_range,
-                   cppcodec::base64_url::decode(GET(0, String))));
+        return Value::create(String(
+            std::from_range, cppcodec::base64_url::decode(GET(0, String))));
     }
     catch (const std::exception& e)
     {
         throw Frost_Recoverable_Error{String{e.what()}};
     }
+}
+
+BUILTIN(fmt_int)
+{
+    REQUIRE_ARGS("fmt_num", PARAM("number", TYPES(Int)),
+                 PARAM("base", TYPES(Int)));
+
+    const Int input = GET(0, Int);
+    const Int base = GET(1, Int);
+
+    if (base < 2 || base > 36)
+    {
+        throw Frost_Recoverable_Error{fmt::format(
+            "fmt_int given base of {}, but base must be in range [2, 36]",
+            base)};
+    }
+
+    char buf[66]{};
+
+    const auto [ptr, ec] =
+        std::to_chars(std::begin(buf), std::end(buf), input, base);
+
+    // This really shouldn't happen, the buffer is big enough for any input
+    if (ec != std::errc{})
+        THROW_UNREACHABLE;
+
+    return Value::create(String{std::begin(buf), ptr});
+}
+
+BUILTIN(parse_int)
+{
+    REQUIRE_ARGS("parse_int", PARAM("number", TYPES(String)),
+                 PARAM("base", TYPES(Int)));
+
+    const String& input = GET(0, String);
+    const Int base = GET(1, Int);
+
+    if (base < 2 || base > 36)
+    {
+        throw Frost_Recoverable_Error{fmt::format(
+            "parse_int given base of {}, but base must be in range [2, 36]",
+            base)};
+    }
+
+    Int result{};
+    const auto [ptr, ec] = std::from_chars(
+        input.data(), input.data() + input.size(), result, base);
+
+    if ((ec == std::errc::invalid_argument)
+        || (ptr != input.data() + input.size()))
+    {
+        throw Frost_Recoverable_Error{fmt::format(
+            "parse_int expected numeric string in base {}, but got \"{}\"",
+            base, input)};
+    }
+
+    if (ec == std::errc::result_out_of_range)
+    {
+        throw Frost_Recoverable_Error{fmt::format(
+            "parse_int cannot parse \"{}\", which is out of range", input)};
+    }
+
+    return Value::create(result);
 }
 
 #define X_UPPER_LOWER                                                          \
@@ -150,6 +212,9 @@ void inject_string_ops(Symbol_Table& table)
     X_UPPER_LOWER
 
 #undef X
+
+    INJECT(fmt_int, 2, 2);
+    INJECT(parse_int, 2, 2);
 }
 
 } // namespace frst
