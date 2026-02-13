@@ -1,0 +1,11 @@
+export def do_req = fn -> {
+    http.request({
+        endpoint: {
+            host: 'httpbin.org',
+            path: 'delay/10',
+            tls: true,
+        },
+        timeout_ms: 100000,
+        verify_tls: true,
+    })
+}

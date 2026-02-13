@@ -3,6 +3,8 @@
 #include <boost/asio/ssl/host_name_verification.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/beast/core/stream_traits.hpp>
+#include <boost/scope_exit.hpp>
+
 #include <frost/builtins-common.hpp>
 #include <frost/value.hpp>
 
@@ -272,10 +274,19 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
     }
 }
 
-asio::awaitable<Request_Result> run_request(Outgoing_Request req)
+asio::awaitable<Request_Result> run_request(Outgoing_Request req,
+                                            std::atomic<bool>& ready)
 {
     using R = Request_Result;
     using Error = R::Error;
+
+    BOOST_SCOPE_EXIT_ALL(&)
+    {
+        // Either success or fail is considered "result ready"
+        // at the Frost user level
+        // *Even a timeout* is "result ready"
+        ready = true;
+    };
 
     auto ex = co_await asio::this_coro::executor;
 
@@ -323,8 +334,9 @@ std::shared_ptr<Request_Task> async_do_http_request(Outgoing_Request&& request)
 {
     auto task = std::make_shared<Request_Task>();
 
-    task->future = asio::co_spawn(task->ioc, run_request(std::move(request)),
-                                  asio::use_future);
+    task->future = asio::co_spawn(
+        task->ioc, run_request(std::move(request), task->complete),
+        asio::use_future);
 
     task->worker = std::jthread([&ioc = task->ioc] {
         ioc.run();
@@ -414,6 +426,7 @@ Value_Ptr Request_Task::get()
     std::call_once(cache_once, [&] {
         Request_Result result = future.get();
         cache = request_result_to_value(std::move(result));
+        complete = true;
     });
     return cache;
 }
@@ -760,13 +773,20 @@ Value_Ptr do_http_request(const Map& request_spec)
     std::shared_ptr<Request_Task> task =
         async_do_http_request(std::move(request));
 
-    STRINGS(get);
+    STRINGS(get, is_ready);
 
     auto get = system_closure(0, 0, [task](builtin_args_t) {
         return task->get();
     });
 
-    return Value::create(Map{{strings.get, std::move(get)}});
+    auto is_ready = system_closure(0, 0, [task](builtin_args_t) {
+        return task->is_ready();
+    });
+
+    return Value::create(Map{
+        {strings.get, std::move(get)},
+        {strings.is_ready, std::move(is_ready)},
+    });
 }
 
 } // namespace frst::http

@@ -77,10 +77,15 @@ struct Request_Task
     std::future<Request_Result> future;
     std::jthread worker;
 
+    std::atomic<bool> complete = false;
     std::once_flag cache_once;
     Value_Ptr cache;
 
     Value_Ptr get();
+    Value_Ptr is_ready()
+    {
+        return Value::create(complete.load());
+    }
 };
 
 Value_Ptr do_http_request(const Map& request_spec);
