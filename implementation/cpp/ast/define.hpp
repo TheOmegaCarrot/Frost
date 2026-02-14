@@ -50,7 +50,7 @@ class Define final : public Statement
   protected:
     std::string node_label() const final
     {
-        return fmt::format("Define({})", name_);
+        return fmt::format("{}Define({})", export_def_ ? "Export_" : "", name_);
     }
 
     std::generator<Child_Info> children() const final

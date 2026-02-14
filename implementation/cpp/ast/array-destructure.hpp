@@ -146,7 +146,7 @@ class Array_Destructure final : public Statement
     std::string node_label() const
     {
         return fmt::format(
-            "Array_Destructure({})",
+            "{}Array_Destructure({})", export_defs_ ? "Export_" : "",
             names_
                 | std::views::transform([](const auto& name) {
                       return name.visit(Overload{

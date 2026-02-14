@@ -97,7 +97,7 @@ class Map_Destructure final : public Statement
   protected:
     std::string node_label() const
     {
-        return "Map_Destructure";
+        return fmt::format("{}Map_Destructure", export_defs_ ? "Export_" : "");
     }
 
     std::generator<Child_Info> children() const
