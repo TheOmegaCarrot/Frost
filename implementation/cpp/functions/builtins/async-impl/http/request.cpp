@@ -330,34 +330,6 @@ asio::awaitable<Request_Result> run_request(Outgoing_Request req,
     }
 }
 
-std::shared_ptr<Request_Task> async_do_http_request(Outgoing_Request&& request)
-{
-    auto task = std::make_shared<Request_Task>();
-
-    task->future = asio::co_spawn(
-        task->ioc, run_request(std::move(request), task->complete),
-        asio::use_future);
-
-    task->worker = std::jthread([&ioc = task->ioc] {
-        ioc.run();
-    });
-
-    return task;
-}
-
-namespace
-{
-// lil helper for optional::or_else :)
-template <typename T = std::string>
-auto thrower(const std::string& err)
-{
-    return [&] -> std::optional<T> {
-        throw Frost_Recoverable_Error{err};
-    };
-}
-
-} // namespace
-
 Value_Ptr request_result_to_value(Request_Result&& request_result)
 {
     STRINGS(ok, error, category, message, phase, response, code, headers, body);
@@ -421,15 +393,35 @@ Value_Ptr request_result_to_value(Request_Result&& request_result)
     return Value::create(std::move(top));
 }
 
-Value_Ptr Request_Task::get()
+using Request_Task = async::Task<Request_Result, request_result_to_value>;
+
+std::shared_ptr<Request_Task> async_do_http_request(Outgoing_Request&& request)
 {
-    std::call_once(cache_once, [&] {
-        Request_Result result = future.get();
-        cache = request_result_to_value(std::move(result));
-        complete = true;
+    auto task = std::make_shared<Request_Task>();
+
+    task->future = asio::co_spawn(
+        task->ioc, run_request(std::move(request), task->complete),
+        asio::use_future);
+
+    task->worker = std::jthread([&ioc = task->ioc] {
+        ioc.run();
     });
-    return cache;
+
+    return task;
 }
+
+namespace
+{
+// lil helper for optional::or_else :)
+template <typename T = std::string>
+auto thrower(const std::string& err)
+{
+    return [&] -> std::optional<T> {
+        throw Frost_Recoverable_Error{err};
+    };
+}
+
+} // namespace
 
 namespace
 {
