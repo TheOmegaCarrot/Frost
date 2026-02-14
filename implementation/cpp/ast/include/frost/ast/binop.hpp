@@ -2,12 +2,13 @@
 #define FROST_AST_BINOP_HPP
 
 #include "expression.hpp"
-#include "frost/symbol-table.hpp"
 
 #include <fmt/format.h>
 
+#include <flat_map>
 #include <string_view>
 
+#include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
 namespace frst::ast
@@ -88,7 +89,7 @@ class Binop final : public Expression
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
     {
         using enum Binary_Op;
-        static const std::map<Binary_Op, decltype(&Value::add)> fn_map{
+        static const std::flat_map<Binary_Op, decltype(&Value::add)> fn_map{
             {PLUS, &Value::add},
             {MINUS, &Value::subtract},
             {MULTIPLY, &Value::multiply},

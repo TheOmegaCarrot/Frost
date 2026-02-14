@@ -2,133 +2,29 @@
 #define FROST_VALUE_HPP
 
 #include <cassert>
-#include <concepts>
-#include <cstdint>
 #include <limits>
-#include <map>
 #include <memory>
 #include <optional>
-#include <span>
 #include <string>
 #include <variant>
-#include <vector>
 
 #include <fmt/format.h>
 
-#include "exceptions.hpp"
-#include "value-fwd.hpp"
-
 #include <boost/preprocessor/stringize.hpp>
+
+#include "exceptions.hpp"
+#include "type-strings.hpp"
+#include "types.hpp"
+#include "value-fwd.hpp"
 
 namespace frst
 {
-
-// ==========================================
-// Basic type definitions
-// ==========================================
-
-struct Null
-{
-    friend bool operator==(Null, Null)
-    {
-        return true;
-    }
-
-    friend bool operator<(Null, Null)
-    {
-        return false;
-    }
-};
-
-using Int = std::int64_t;
-
-using Float = double;
-
-using Bool = bool;
-
-using String = std::string;
-
-// Idea: replace structured types with classes which allow for computed values
-// e.g. `1..10` -> "An array" without actually creating the Values
-
-using Array = std::vector<Value_Ptr>;
-
-using Map = std::map<Value_Ptr, Value_Ptr, impl::Value_Ptr_Less>;
-
-class Callable
-{
-  public:
-    virtual ~Callable() = default;
-
-    virtual Value_Ptr call(std::span<const Value_Ptr> args) const = 0;
-    virtual std::string debug_dump() const = 0;
-};
-
-using Function = std::shared_ptr<Callable>;
-
-inline namespace literals
-{
-consteval frst::Int operator""_f(unsigned long long val)
-{
-    return val;
-}
-} // namespace literals
-
-template <typename T>
-concept Frost_Numeric = std::same_as<Int, T> || std::same_as<Float, T>;
-
-template <typename T>
-concept Frost_Primitive = Frost_Numeric<T>
-                          || std::same_as<Null, T>
-                          || std::same_as<Bool, T>
-                          || std::same_as<String, T>;
-
-template <typename T>
-concept Frost_Structured = std::same_as<Array, T> || std::same_as<Map, T>;
-
-template <typename T>
-concept Frost_Type =
-    Frost_Primitive<T> || Frost_Structured<T> || std::same_as<Function, T>;
 
 template <typename... Ls>
 struct Overload : Ls...
 {
     using Ls::operator()...;
 };
-
-// ==========================================
-// Type name table
-// ==========================================
-
-template <Frost_Type T>
-std::string_view type_str() = delete;
-
-#define TYPE_STR_SPEC(T)                                                       \
-    template <>                                                                \
-    inline std::string_view type_str<T>()                                      \
-    {                                                                          \
-        return BOOST_PP_STRINGIZE(T);                                          \
-    }
-
-TYPE_STR_SPEC(Null)
-TYPE_STR_SPEC(Int)
-TYPE_STR_SPEC(Float)
-TYPE_STR_SPEC(String)
-TYPE_STR_SPEC(Bool)
-TYPE_STR_SPEC(Array)
-TYPE_STR_SPEC(Map)
-TYPE_STR_SPEC(Function)
-
-#undef TYPE_STR_SPEC
-
-struct Type_Str_Fn
-{
-    template <Frost_Type T>
-    static std::string_view operator()(const T&)
-    {
-        return type_str<T>();
-    }
-} constexpr inline type_str_fn;
 
 // ==========================================
 // Type coercion tables
