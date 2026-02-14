@@ -6,6 +6,7 @@ ARG WITH_HTTP=No
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         cmake \
+        mold \
         libboost-json-dev \
         libboost-regex-dev \
     && if [ "${WITH_HTTP}" = "Yes" ]; then \
