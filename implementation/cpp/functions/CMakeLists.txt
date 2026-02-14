@@ -25,7 +25,7 @@ if(WITH_HTTP)
     target_sources( frost-functions
     PRIVATE
     builtins/http.cpp
-    builtins/http-impl/request.cpp
+    builtins/async-impl/http/request.cpp
     )
 endif()
 

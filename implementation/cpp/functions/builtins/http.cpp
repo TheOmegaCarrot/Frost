@@ -4,7 +4,7 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
-#include "http-impl/request.hpp"
+#include "async-impl/http/request.hpp"
 
 namespace frst
 {
