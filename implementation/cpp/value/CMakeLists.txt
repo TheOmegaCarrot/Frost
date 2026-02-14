@@ -1,4 +1,9 @@
 add_library( frost-value
+    clone.cpp
+    deep-equal.cpp
+    explicit-conversions.cpp
+    internal-map-compare.cpp
+    iterative-ops.cpp
     operators/add.cpp
     operators/subtract.cpp
     operators/multiply.cpp
@@ -6,10 +11,6 @@ add_library( frost-value
     operators/compare.cpp
     operators/negate.cpp
     operators/modulus.cpp
-    explicit-conversions.cpp
-    clone.cpp
-    deep-equal.cpp
-    iterative-ops.cpp
 )
 
 target_include_directories( frost-value

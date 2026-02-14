@@ -16,6 +16,7 @@
 #include <fmt/format.h>
 
 #include "exceptions.hpp"
+#include "value-fwd.hpp"
 
 #include <boost/preprocessor/stringize.hpp>
 
@@ -25,18 +26,6 @@ namespace frst
 // ==========================================
 // Basic type definitions
 // ==========================================
-
-class Value;
-using Value_Ptr = std::shared_ptr<const Value>;
-
-namespace impl
-{
-//! An implementation of less-than ONLY for comparing keys in a map
-struct Value_Ptr_Less
-{
-    static bool operator()(const Value_Ptr& lhs, const Value_Ptr& rhs);
-};
-} // namespace impl
 
 struct Null
 {
@@ -613,31 +602,6 @@ inline Value_Ptr operator""_s(const char* str, std::size_t)
     return Value::create(std::string{str});
 }
 } // namespace literals
-
-inline bool impl::Value_Ptr_Less::operator()(const Value_Ptr& lhs,
-                                             const Value_Ptr& rhs)
-{
-    const auto lhs_index = lhs->value_.index();
-    const auto rhs_index = rhs->value_.index();
-
-    if (lhs_index != rhs_index)
-        return lhs_index < rhs_index;
-
-    if (lhs->is_primitive())
-    {
-        return std::visit(Overload{
-                              []<Frost_Primitive T>(const T& a, const T& b) {
-                                  return a < b;
-                              },
-                              [](const auto&, const auto&) -> bool {
-                                  THROW_UNREACHABLE;
-                              },
-                          },
-                          lhs->value_, rhs->value_);
-    }
-
-    return lhs.get() < rhs.get();
-}
 
 } // namespace frst
 
