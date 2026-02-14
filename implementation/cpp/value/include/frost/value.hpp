@@ -55,7 +55,6 @@ using Array = std::vector<Value_Ptr>;
 
 using Map = std::map<Value_Ptr, Value_Ptr, impl::Value_Ptr_Less>;
 
-class Symbol_Table;
 class Callable
 {
   public:

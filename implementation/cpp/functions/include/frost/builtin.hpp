@@ -1,6 +1,7 @@
 #ifndef FROST_BUILTIN_HPP
 #define FROST_BUILTIN_HPP
 
+#include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
 #include <fmt/format.h>
