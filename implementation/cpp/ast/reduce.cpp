@@ -1,4 +1,4 @@
-#include "reduce.hpp"
+#include <frost/ast/reduce.hpp>
 
 #include <frost/value.hpp>
 

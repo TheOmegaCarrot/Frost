@@ -1,6 +1,6 @@
 #include <frost/ast.hpp>
+#include <frost/ast/lambda.hpp>
 #include <frost/closure.hpp>
-#include <frost/lambda.hpp>
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>

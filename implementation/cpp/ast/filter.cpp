@@ -1,5 +1,4 @@
-#include "filter.hpp"
-#include "frost/symbol-table.hpp"
+#include <frost/ast/filter.hpp>
 
 #include <frost/value.hpp>
 

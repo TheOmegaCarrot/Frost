@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include <frost/ast/index.hpp>
 
 #include <frost/value.hpp>
 

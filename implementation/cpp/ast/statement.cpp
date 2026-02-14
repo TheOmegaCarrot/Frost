@@ -1,4 +1,4 @@
-#include "statement.hpp"
+#include <frost/ast/statement.hpp>
 
 using frst::ast::Statement;
 

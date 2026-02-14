@@ -7,13 +7,13 @@
 #include <vector>
 
 #include <frost/ast.hpp>
-#include <frost/lambda.hpp>
+#include <frost/ast/lambda.hpp>
 
 #include <lexy/callback.hpp>
 #include <lexy/dsl.hpp>
 #include <lexy/dsl/ascii.hpp>
-#include <lexy/dsl/until.hpp>
 #include <lexy/dsl/unicode.hpp>
+#include <lexy/dsl/until.hpp>
 #include <lexy/lexeme.hpp>
 #include <lexy/token.hpp>
 
@@ -318,9 +318,9 @@ struct string_literal
                                             .map<'\''>('\'')
                                             .map<'0'>('\0');
 
-        static constexpr auto rule =
-            dsl::single_quoted.limit(dsl::ascii::newline)(
-                dsl::unicode::character, dsl::backslash_escape.symbol<escapes>());
+        static constexpr auto rule = dsl::single_quoted.limit(
+            dsl::ascii::newline)(dsl::unicode::character,
+                                 dsl::backslash_escape.symbol<escapes>());
         static constexpr auto value = lexy::as_string<std::string>;
     };
 
@@ -386,14 +386,14 @@ struct statement_list;
 template <typename item_t>
 constexpr auto list_or_empty()
 {
-    return lexy::as_list<std::vector<item_t>>
-           >> lexy::callback<std::vector<item_t>>(
-        [](lexy::nullopt) {
-            return std::vector<item_t>{};
-        },
-        [](std::vector<item_t> items) {
-            return items;
-        });
+    return lexy::as_list<std::vector<item_t>> >> lexy::
+               callback<std::vector<item_t>>(
+                   [](lexy::nullopt) {
+                       return std::vector<item_t>{};
+                   },
+                   [](std::vector<item_t> items) {
+                       return items;
+                   });
 }
 
 template <typename entry_start_t, typename list_t, typename close_t>

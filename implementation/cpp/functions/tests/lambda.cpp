@@ -2,8 +2,8 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <catch2/trompeloeil.hpp>
 
+#include <frost/ast/lambda.hpp>
 #include <frost/closure.hpp>
-#include <frost/lambda.hpp>
 #include <frost/mock/mock-expression.hpp>
 #include <frost/symbol-table.hpp>
 

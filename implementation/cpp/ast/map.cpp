@@ -3,7 +3,7 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
-#include "map.hpp"
+#include <frost/ast/map.hpp>
 
 using namespace frst;
 
