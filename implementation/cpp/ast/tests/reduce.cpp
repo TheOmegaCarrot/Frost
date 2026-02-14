@@ -585,7 +585,7 @@ TEST_CASE("Reduce Map")
         // Frost: reduce { [1]: "a" } with fn (acc, k, v) -> { acc } init: 0
         SECTION("Single element map calls reducer once")
         {
-            auto k1 = Value::create(1_f);
+            const auto k1 = Value::create(1_f);
             auto v1 = Value::create("a"s);
             Map map;
             map.insert_or_assign(k1, v1);
@@ -630,8 +630,8 @@ TEST_CASE("Reduce Map")
         // init: 0
         SECTION("Reducer called once per entry with (acc, k, v) in any order")
         {
-            auto k1 = Value::create(1_f);
-            auto k2 = Value::create(2_f);
+            const auto k1 = Value::create(1_f);
+            const auto k2 = Value::create(2_f);
             auto v1 = Value::create("a"s);
             auto v2 = Value::create("b"s);
 
@@ -708,7 +708,7 @@ TEST_CASE("Reduce Map")
         // Frost: reduce { [1]: "a" } with fn (acc, k, v) -> { acc } init: null
         SECTION("Null init is allowed")
         {
-            auto k1 = Value::create(1_f);
+            const auto k1 = Value::create(1_f);
             auto v1 = Value::create("a"s);
             Map map;
             map.insert_or_assign(k1, v1);
@@ -752,7 +752,7 @@ TEST_CASE("Reduce Map")
         // Frost: reduce m with fn (acc, k, v) -> { acc } init: init_expr
         SECTION("Evaluation order: structure then operation then init")
         {
-            auto k1 = Value::create(1_f);
+            const auto k1 = Value::create(1_f);
             auto v1 = Value::create("a"s);
             Map map;
             map.insert_or_assign(k1, v1);
@@ -834,7 +834,7 @@ TEST_CASE("Reduce Map")
         // Frost: reduce { [1]: "a" } with 123 init: 0
         SECTION("Non-function operation errors")
         {
-            auto k1 = Value::create(1_f);
+            const auto k1 = Value::create(1_f);
             auto v1 = Value::create("a"s);
             Map map;
             map.insert_or_assign(k1, v1);
@@ -863,7 +863,7 @@ TEST_CASE("Reduce Map")
         // Frost: reduce { [1]: "a" } with fn_that_goes_kaboom init: 0
         SECTION("Reducer error propagates")
         {
-            auto k1 = Value::create(1_f);
+            const auto k1 = Value::create(1_f);
             auto v1 = Value::create("a"s);
             Map map;
             map.insert_or_assign(k1, v1);
@@ -898,7 +898,7 @@ TEST_CASE("Reduce Map")
         // Frost: reduce m with fn (acc, k, v) -> { acc } init: init_expr
         SECTION("Init expression error propagates")
         {
-            auto k1 = Value::create(1_f);
+            const auto k1 = Value::create(1_f);
             auto v1 = Value::create("a"s);
             Map map;
             map.insert_or_assign(k1, v1);
@@ -934,7 +934,7 @@ TEST_CASE("Reduce Map")
         // Frost: reduce m with op_expr init: 0
         SECTION("Operation expression error propagates")
         {
-            auto k1 = Value::create(1_f);
+            const auto k1 = Value::create(1_f);
             auto v1 = Value::create("a"s);
             Map map;
             map.insert_or_assign(k1, v1);

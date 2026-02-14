@@ -5,7 +5,7 @@
 
 #include <concepts>
 #include <cstdint>
-#include <map>
+#include <flat_map>
 #include <span>
 #include <vector>
 
@@ -39,7 +39,7 @@ using String = std::string;
 
 using Array = std::vector<Value_Ptr>;
 
-using Map = std::map<Value_Ptr, Value_Ptr, impl::Value_Ptr_Less>;
+using Map = std::flat_map<Value_Ptr, Value_Ptr, impl::Value_Ptr_Less>;
 
 class Callable
 {
