@@ -1,0 +1,8 @@
+def n = 200000
+def x = 7
+def y = 11
+def z = 13
+
+def result = reduce range(n) with fn (acc, i) -> { acc + x + y + z } init: 0
+assert(result == 6200000, 'symbol lookup accumulation')
+print(result)

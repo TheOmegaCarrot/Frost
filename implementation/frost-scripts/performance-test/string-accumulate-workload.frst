@@ -1,0 +1,7 @@
+def n = 6000
+
+def text = reduce range(n) with fn (acc, i) -> { acc + 'a' } init: ''
+def result = len(text)
+
+assert(result == 6000, 'string accumulation length')
+print(result)

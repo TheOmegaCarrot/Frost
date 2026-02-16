@@ -1,0 +1,6 @@
+def n = 120000
+def inc = fn (x) -> { x + 1 }
+
+def result = reduce range(n) with fn (acc, i) -> { acc + inc(i) } init: 0
+assert(result == 7200060000, 'closure call accumulation')
+print(result)

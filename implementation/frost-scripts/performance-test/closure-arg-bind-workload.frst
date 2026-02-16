@@ -1,0 +1,6 @@
+def n = 80000
+def combine = fn (a, b, c, d, e) -> { a + b + c + d + e }
+
+def result = reduce range(n) with fn (acc, i) -> { acc + combine(i, 1, 2, 3, 4) } init: 0
+assert(result == 3200760000, 'closure arg bind accumulation')
+print(result)

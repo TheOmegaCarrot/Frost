@@ -1,0 +1,8 @@
+def n = 2500
+def rows = map range(n) with fn (i) -> { { [i]: i, ['shared']: i } }
+
+def merged = reduce rows with fn (acc, m) -> { acc + m } init: {}
+def result = len(keys(merged))
+
+assert(result == 2501, 'map union size')
+print(result)
