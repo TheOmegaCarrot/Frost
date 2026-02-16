@@ -48,6 +48,8 @@ make_ast_test(tests/map-constructor.cpp)
 
 make_ast_test(tests/index.cpp)
 
+make_ast_test(tests/name_lookup.cpp)
+
 make_ast_test(tests/symbol_sequence.cpp)
 
 make_ast_test(tests/function_call.cpp)
