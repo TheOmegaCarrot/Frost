@@ -12,27 +12,8 @@ ast::Binop::Binop(Expression::Ptr lhs, Binary_Op op, Expression::Ptr rhs)
 Value_Ptr ast::Binop::evaluate(const Symbol_Table& syms) const
 {
     using enum Binary_Op;
-    static const std::flat_map<Binary_Op, decltype(&Value::add)> fn_map{
-        {PLUS, &Value::add},
-        {MINUS, &Value::subtract},
-        {MULTIPLY, &Value::multiply},
-        {DIVIDE, &Value::divide},
-        {MODULUS, &Value::modulus},
-        {EQ, &Value::equal},
-        {NE, &Value::not_equal},
-        {LT, &Value::less_than},
-        {LE, &Value::less_than_or_equal},
-        {GT, &Value::greater_than},
-        {GE, &Value::greater_than_or_equal},
-    };
 
     auto lhs_val = lhs_->evaluate(syms);
-
-    if (auto itr = fn_map.find(op_); itr != fn_map.end())
-    {
-        auto rhs_val = rhs_->evaluate(syms);
-        return itr->second(lhs_val, rhs_val);
-    }
 
     if (op_ == AND)
     {
@@ -48,6 +29,37 @@ Value_Ptr ast::Binop::evaluate(const Symbol_Table& syms) const
             return lhs_val;
         else
             return rhs_->evaluate(syms);
+    }
+
+    auto rhs_val = rhs_->evaluate(syms);
+
+#define X_BINOP_MAP                                                            \
+    X(PLUS, Value::add)                                                        \
+    X(MINUS, Value::subtract)                                                  \
+    X(MULTIPLY, Value::multiply)                                               \
+    X(DIVIDE, Value::divide)                                                   \
+    X(MODULUS, Value::modulus)                                                 \
+    X(EQ, Value::equal)                                                        \
+    X(NE, Value::not_equal)                                                    \
+    X(LT, Value::less_than)                                                    \
+    X(LE, Value::less_than_or_equal)                                           \
+    X(GT, Value::greater_than)                                                 \
+    X(GE, Value::greater_than_or_equal)
+
+    switch (op_)
+    {
+
+#define X(OP, FN)                                                              \
+    case OP:                                                                   \
+        return FN(lhs_val, rhs_val);
+
+        X_BINOP_MAP
+
+#undef X
+    case AND:
+        [[fallthrough]];
+    case OR:
+        THROW_UNREACHABLE;
     }
 
     THROW_UNREACHABLE;
