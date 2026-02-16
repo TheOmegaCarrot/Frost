@@ -55,63 +55,49 @@ if(WITH_HTTP)
     )
 endif()
 
-macro(functions_test file)
-    make_test( ${file}
+set(FUNCTIONS_TEST_FILES
+    builtin
+    closure
+    lambda
+)
+
+set(FUNCTIONS_BUILTINS_TEST_FILES
+    keys
+    and-then
+    type-tests
+    type-conversions
+    values
+    id
+    len
+    range
+    nulls
+    ranges
+    pack_call
+    debug-helpers
+    mformat
+    hard-to-test
+    error-handling
+    free-operators
+    math
+    string-ops
+    regex
+    mutable-cell
+    streams
+    json
+    base64
+    filesystem
+)
+
+foreach(test_file IN LISTS FUNCTIONS_TEST_FILES)
+    make_test( tests/${test_file}.cpp
         LIBS
         frost-functions
     )
-endmacro()
+endforeach()
 
-functions_test(tests/builtin.cpp)
-
-functions_test(tests/builtins/keys.cpp)
-
-functions_test(tests/builtins/and-then.cpp)
-
-functions_test(tests/builtins/type-tests.cpp)
-
-functions_test(tests/builtins/type-conversions.cpp)
-
-functions_test(tests/builtins/values.cpp)
-
-functions_test(tests/builtins/id.cpp)
-
-functions_test(tests/builtins/len.cpp)
-
-functions_test(tests/builtins/range.cpp)
-
-functions_test(tests/builtins/nulls.cpp)
-
-functions_test(tests/builtins/ranges.cpp)
-
-functions_test(tests/builtins/pack_call.cpp)
-
-functions_test(tests/builtins/debug-helpers.cpp)
-
-functions_test(tests/builtins/mformat.cpp)
-
-functions_test(tests/builtins/hard-to-test.cpp)
-
-functions_test(tests/closure.cpp)
-
-functions_test(tests/lambda.cpp)
-
-functions_test(tests/builtins/error-handling.cpp)
-
-functions_test(tests/builtins/free-operators.cpp)
-
-functions_test(tests/builtins/math.cpp)
-
-functions_test(tests/builtins/string-ops.cpp)
-
-functions_test(tests/builtins/regex.cpp)
-
-functions_test(tests/builtins/mutable-cell.cpp)
-
-functions_test(tests/builtins/streams.cpp)
-
-functions_test(tests/builtins/json.cpp)
-
-functions_test(tests/builtins/base64.cpp)
-
-functions_test(tests/builtins/filesystem.cpp)
+foreach(test_file IN LISTS FUNCTIONS_BUILTINS_TEST_FILES)
+    make_test( tests/builtins/${test_file}.cpp
+        LIBS
+        frost-functions
+    )
+endforeach()

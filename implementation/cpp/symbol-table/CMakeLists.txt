@@ -13,11 +13,13 @@ target_link_libraries( frost-symbol-table
     frost-value
 )
 
-macro(symbol_table_test file)
-    make_test( ${file}
+set(SYMBOL_TABLE_TEST_FILES
+    symbol-table
+)
+
+foreach(test_file IN LISTS SYMBOL_TABLE_TEST_FILES)
+    make_test( tests/${test_file}.cpp
         LIBS
         frost-symbol-table
     )
-endmacro()
-
-symbol_table_test(tests/symbol-table.cpp)
+endforeach()

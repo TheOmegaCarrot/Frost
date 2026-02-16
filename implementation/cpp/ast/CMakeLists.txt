@@ -19,47 +19,31 @@ target_link_libraries( frost-ast
     frost-value
 )
 
-macro(make_ast_test file)
-    make_test( ${file}
+set(AST_TEST_FILES
+    basic-ast-dump
+    literal
+    define
+    array-destructure
+    map-destructure
+    if
+    binop
+    unop
+    array-constructor
+    map-constructor
+    index
+    name_lookup
+    symbol_sequence
+    function_call
+    reduce
+    map
+    foreach
+    filter
+    format-string
+)
+
+foreach(test_file IN LISTS AST_TEST_FILES)
+    make_test( tests/${test_file}.cpp
         LIBS
         frost-ast
     )
-endmacro()
-
-make_ast_test(tests/basic-ast-dump.cpp)
-
-make_ast_test(tests/literal.cpp)
-
-make_ast_test(tests/define.cpp)
-
-make_ast_test(tests/array-destructure.cpp)
-
-make_ast_test(tests/map-destructure.cpp)
-
-make_ast_test(tests/if.cpp)
-
-make_ast_test(tests/binop.cpp)
-
-make_ast_test(tests/unop.cpp)
-
-make_ast_test(tests/array-constructor.cpp)
-
-make_ast_test(tests/map-constructor.cpp)
-
-make_ast_test(tests/index.cpp)
-
-make_ast_test(tests/name_lookup.cpp)
-
-make_ast_test(tests/symbol_sequence.cpp)
-
-make_ast_test(tests/function_call.cpp)
-
-make_ast_test(tests/reduce.cpp)
-
-make_ast_test(tests/map.cpp)
-
-make_ast_test(tests/foreach.cpp)
-
-make_ast_test(tests/filter.cpp)
-
-make_ast_test(tests/format-string.cpp)
+endforeach()

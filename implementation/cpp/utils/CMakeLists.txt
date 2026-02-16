@@ -12,11 +12,13 @@ target_link_libraries( frost-utils
     frost-common
 )
 
-macro(utils_test file)
-    make_test( ${file}
+set(UTILS_TEST_FILES
+    parse-fmt-string
+)
+
+foreach(test_file IN LISTS UTILS_TEST_FILES)
+    make_test( tests/${test_file}.cpp
         LIBS
         frost-utils
     )
-endmacro()
-
-utils_test(tests/parse-fmt-string.cpp)
+endforeach()

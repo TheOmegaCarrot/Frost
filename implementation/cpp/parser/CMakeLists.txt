@@ -15,32 +15,34 @@ target_link_libraries( frost-parser
     foonathan::lexy
 )
 
-macro(parser_test file)
-    make_test( ${file}
+set(PARSER_TEST_FILES
+    name-lookup
+    identifiers
+    literals-numbers
+    literals-strings
+    literals-keywords
+    map-expr
+    filter-expr
+    reduce-expr
+    foreach-expr
+    array-literals
+    map-literals
+    format-string-expr
+    primary-expr
+    if-expr
+    define-stmt
+    program
+    program-stress
+    postfix-expr
+    unary-expr
+    binary-expr
+    lambda-expr
+    threaded-call-expr
+)
+
+foreach(test_file IN LISTS PARSER_TEST_FILES)
+    make_test( tests/${test_file}.cpp
         LIBS
         frost-parser
     )
-endmacro()
-
-parser_test(tests/name-lookup.cpp)
-parser_test(tests/identifiers.cpp)
-parser_test(tests/literals-numbers.cpp)
-parser_test(tests/literals-strings.cpp)
-parser_test(tests/literals-keywords.cpp)
-parser_test(tests/map-expr.cpp)
-parser_test(tests/filter-expr.cpp)
-parser_test(tests/reduce-expr.cpp)
-parser_test(tests/foreach-expr.cpp)
-parser_test(tests/array-literals.cpp)
-parser_test(tests/map-literals.cpp)
-parser_test(tests/format-string-expr.cpp)
-parser_test(tests/primary-expr.cpp)
-parser_test(tests/if-expr.cpp)
-parser_test(tests/define-stmt.cpp)
-parser_test(tests/program.cpp)
-parser_test(tests/program-stress.cpp)
-parser_test(tests/postfix-expr.cpp)
-parser_test(tests/unary-expr.cpp)
-parser_test(tests/binary-expr.cpp)
-parser_test(tests/lambda-expr.cpp)
-parser_test(tests/threaded-call-expr.cpp)
+endforeach()
