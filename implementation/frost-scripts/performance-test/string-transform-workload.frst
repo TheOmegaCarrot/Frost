@@ -1,0 +1,13 @@
+def n = 4000
+def words = map range(n) with fn (i) -> { 'AbCdEfGhIj' }
+def lowered = map words with to_lower
+def uppered = map lowered with to_upper
+
+assert(uppered[0] == 'ABCDEFGHIJ', 'first transformed word')
+
+def result = reduce uppered with fn (acc, s) -> {
+    acc + if s == 'ABCDEFGHIJ': 1 else: 0
+} init: 0
+
+assert(result == n, 'all transformed words')
+print(result)

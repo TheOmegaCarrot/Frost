@@ -1,0 +1,7 @@
+def n = 2000
+def adders = map range(n) with fn (i) -> { fn (x) -> { x + i } }
+def applied = map adders with fn (f) -> { f(1) }
+
+def result = reduce applied with fn (acc, x) -> { acc + x } init: 0
+assert(result == 2001000, 'closure capture sum')
+print(result)

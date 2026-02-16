@@ -1,0 +1,7 @@
+def n = 2000
+def chunks = map range(n) with fn (i) -> { [i, i + 1] }
+def merged = reduce chunks with fn (acc, chunk) -> { acc + chunk } init: []
+
+def result = reduce merged with fn (acc, x) -> { acc + x } init: 0
+assert(result == 4000000, 'concat and reduce sum')
+print(result)

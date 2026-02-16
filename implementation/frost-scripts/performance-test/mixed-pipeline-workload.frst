@@ -1,0 +1,9 @@
+def input = range(30000)
+
+def stage1 = map input with fn (x) -> { x * 3 + 1 }
+def stage2 = filter stage1 with fn (x) -> { x % 5 == 0 }
+def stage3 = map stage2 with fn (x) -> { x + 7 }
+def result = reduce stage3 with fn (acc, x) -> { acc + x } init: 0
+
+assert(result == 270057000, 'mixed pipeline sum')
+print(result)

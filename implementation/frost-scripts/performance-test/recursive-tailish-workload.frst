@@ -1,0 +1,10 @@
+def n = 2500
+
+def sum_down = fn (k, acc) -> {
+    if k == 0: acc
+    else: self(k - 1, acc + k)
+}
+
+def result = sum_down(n, 0)
+assert(result == 3126250, 'tailish recursion sum')
+print(result)
