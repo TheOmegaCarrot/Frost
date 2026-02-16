@@ -19,31 +19,14 @@ class Array_Constructor final : public Expression
     Array_Constructor& operator=(Array_Constructor&&) = delete;
     ~Array_Constructor() final = default;
 
-    Array_Constructor(std::vector<Expression::Ptr> elems)
-        : elems_{std::move(elems)}
-    {
-    }
+    Array_Constructor(std::vector<Expression::Ptr> elems);
 
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
-    {
-        return Value::create(elems_
-                             | std::views::transform([&](const auto& each) {
-                                   return each->evaluate(syms);
-                               })
-                             | std::ranges::to<std::vector>());
-    }
+    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
   protected:
-    std::string node_label() const final
-    {
-        return "Array_Constructor";
-    }
+    std::string node_label() const final;
 
-    std::generator<Child_Info> children() const final
-    {
-        for (const auto& elem : elems_)
-            co_yield make_child(elem);
-    }
+    std::generator<Child_Info> children() const final;
 
   private:
     std::vector<Expression::Ptr> elems_;

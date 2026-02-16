@@ -15,14 +15,7 @@ class Define final : public Statement
     using Ptr = std::unique_ptr<Define>;
 
     Define() = delete;
-    Define(std::string name, Expression::Ptr expr, bool export_def = false)
-        : name_{std::move(name)}
-        , expr_{std::move(expr)}
-        , export_def_{export_def}
-    {
-        if (name_ == "_")
-            throw Frost_Unrecoverable_Error{"\"_\" is not a valid identifier"};
-    }
+    Define(std::string name, Expression::Ptr expr, bool export_def = false);
 
     Define(const Define&) = delete;
     Define(Define&&) = delete;
@@ -30,33 +23,14 @@ class Define final : public Statement
     Define& operator=(Define&&) = delete;
     ~Define() final = default;
 
-    std::optional<Map> execute(Symbol_Table& table) const
-    {
-        auto value = expr_->evaluate(table);
-        table.define(name_, value);
+    std::optional<Map> execute(Symbol_Table& table) const;
 
-        if (export_def_)
-            return Map{{Value::create(auto{name_}), value}};
-        else
-            return std::nullopt;
-    }
-
-    std::generator<Symbol_Action> symbol_sequence() const final
-    {
-        co_yield std::ranges::elements_of(expr_->symbol_sequence());
-        co_yield Definition{name_};
-    }
+    std::generator<Symbol_Action> symbol_sequence() const final;
 
   protected:
-    std::string node_label() const final
-    {
-        return fmt::format("{}Define({})", export_def_ ? "Export_" : "", name_);
-    }
+    std::string node_label() const final;
 
-    std::generator<Child_Info> children() const final
-    {
-        co_yield make_child(expr_);
-    }
+    std::generator<Child_Info> children() const final;
 
   private:
     std::string name_;

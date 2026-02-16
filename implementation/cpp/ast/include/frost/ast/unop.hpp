@@ -38,11 +38,7 @@ class Unop final : public Expression
   public:
     using Ptr = std::unique_ptr<Unop>;
 
-    Unop(Expression::Ptr operand, Unary_Op op)
-        : operand_{std::move(operand)}
-        , op_{op}
-    {
-    }
+    Unop(Expression::Ptr operand, Unary_Op op);
 
     Unop() = delete;
     Unop(const Unop&) = delete;
@@ -51,30 +47,12 @@ class Unop final : public Expression
     Unop& operator=(Unop&&) = delete;
     ~Unop() override = default;
 
-    Value_Ptr evaluate(const Symbol_Table& syms) const final
-    {
-        auto operand_value = operand_->evaluate(syms);
-        switch (op_)
-        {
-            using enum Unary_Op;
-        case NEGATE:
-            return operand_value->negate();
-        case NOT:
-            return operand_value->logical_not();
-        }
-        THROW_UNREACHABLE;
-    }
+    Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
   protected:
-    std::string node_label() const final
-    {
-        return fmt::format("Unary({})", format_unary_op(op_));
-    }
+    std::string node_label() const final;
 
-    std::generator<Child_Info> children() const final
-    {
-        co_yield make_child(operand_);
-    }
+    std::generator<Child_Info> children() const final;
 
   private:
     Expression::Ptr operand_;

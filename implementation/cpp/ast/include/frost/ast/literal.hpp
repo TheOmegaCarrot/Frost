@@ -15,16 +15,7 @@ class Literal final : public Expression
   public:
     using Ptr = std::unique_ptr<Literal>;
 
-    Literal(Value_Ptr value)
-        : value_{std::move(value)}
-    {
-        if (!value_->is_primitive())
-        {
-            throw Frost_Internal_Error{fmt::format(
-                "Literal AST node created with non-primitive type: {}",
-                value_->type_name())};
-        }
-    }
+    Literal(Value_Ptr value);
 
     Literal() = delete;
     Literal(const Literal&) = delete;
@@ -33,17 +24,10 @@ class Literal final : public Expression
     Literal& operator=(Literal&&) = delete;
     ~Literal() final = default;
 
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table&) const final
-    {
-        return value_;
-    }
+    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table&) const final;
 
   protected:
-    std::string node_label() const final
-    {
-        return fmt::format("Literal({})",
-                           value_->to_internal_string({.in_structure = true}));
-    }
+    std::string node_label() const final;
 
   private:
     Value_Ptr value_;

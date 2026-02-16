@@ -20,39 +20,14 @@ class Map_Constructor final : public Expression
     Map_Constructor& operator=(Map_Constructor&&) = delete;
     ~Map_Constructor() final = default;
 
-    Map_Constructor(std::vector<KV_Pair> pairs)
-        : pairs_{std::move(pairs)}
-    {
-    }
+    Map_Constructor(std::vector<KV_Pair> pairs);
 
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
-    {
-        Map acc;
-
-        for (const auto& [key_expr, value_expr] : pairs_)
-        {
-            auto key = key_expr->evaluate(syms);
-            auto value = value_expr->evaluate(syms);
-            acc.insert_or_assign(key, value);
-        }
-
-        return Value::create(std::move(acc));
-    }
+    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
   protected:
-    std::string node_label() const final
-    {
-        return "Map_Constructor";
-    }
+    std::string node_label() const final;
 
-    std::generator<Child_Info> children() const final
-    {
-        for (const auto& [k, v] : pairs_)
-        {
-            co_yield make_child(k, "Key");
-            co_yield make_child(v, "Value");
-        }
-    }
+    std::generator<Child_Info> children() const final;
 
   private:
     std::vector<KV_Pair> pairs_;

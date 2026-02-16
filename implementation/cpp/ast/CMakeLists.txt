@@ -1,9 +1,20 @@
 add_library( frost-ast
+    array-constructor.cpp
+    binop.cpp
+    define.cpp
     filter.cpp
+    foreach.cpp
+    format-string.cpp
+    function_call.cpp
+    if.cpp
     index.cpp
+    literal.cpp
     map.cpp
+    map-constructor.cpp
+    name_lookup.cpp
     reduce.cpp
     statement.cpp
+    unop.cpp
 )
 
 target_include_directories( frost-ast

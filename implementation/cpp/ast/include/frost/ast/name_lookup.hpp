@@ -20,29 +20,15 @@ class Name_Lookup final : public Expression
     Name_Lookup& operator=(Name_Lookup&&) = delete;
     ~Name_Lookup() final = default;
 
-    Name_Lookup(std::string name)
-        : name_{std::move(name)}
-    {
-        if (name_ == "_")
-            throw Frost_Unrecoverable_Error{"\"_\" is not a valid identifier"};
-    }
+    Name_Lookup(std::string name);
 
   public:
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
-    {
-        return syms.lookup(name_);
-    }
+    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
-    std::generator<Symbol_Action> symbol_sequence() const final
-    {
-        co_yield Usage{name_};
-    }
+    std::generator<Symbol_Action> symbol_sequence() const final;
 
   protected:
-    std::string node_label() const final
-    {
-        return fmt::format("Name_Lookup({})", name_);
-    }
+    std::string node_label() const final;
 
   private:
     std::string name_;

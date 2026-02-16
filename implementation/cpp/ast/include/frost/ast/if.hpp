@@ -11,12 +11,7 @@ class If final : public Expression
     using Ptr = std::unique_ptr<If>;
 
     If(Expression::Ptr condition, Expression::Ptr consequent,
-       std::optional<Expression::Ptr> alternate = std::nullopt)
-        : condition_{std::move(condition)}
-        , consequent_{std::move(consequent)}
-        , alternate_{std::move(alternate)}
-    {
-    }
+       std::optional<Expression::Ptr> alternate = std::nullopt);
 
     If() = delete;
     If(const If&) = delete;
@@ -25,31 +20,12 @@ class If final : public Expression
     If& operator=(If&&) = delete;
     ~If() final = default;
 
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
-    {
-        if (condition_->evaluate(syms)->truthy())
-            return consequent_->evaluate(syms);
-        else if (alternate_.has_value())
-            return (*alternate_)->evaluate(syms);
-
-        // If an if-expression has no alternate branch,
-        // and the condition is false, then evaluate to null
-        return Value::null();
-    }
+    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
   protected:
-    std::string node_label() const final
-    {
-        return "If";
-    }
+    std::string node_label() const final;
 
-    std::generator<Child_Info> children() const final
-    {
-        co_yield make_child(condition_, "Condition");
-        co_yield make_child(consequent_, "Consequent");
-        if (alternate_)
-            co_yield make_child(*alternate_, "Alternate");
-    }
+    std::generator<Child_Info> children() const final;
 
   private:
     Expression::Ptr condition_;
