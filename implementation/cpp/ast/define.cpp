@@ -22,7 +22,7 @@ std::optional<Map> ast::Define::execute(Symbol_Table& table) const
         return std::nullopt;
 }
 
-auto ast::Define::symbol_sequence() const -> std::generator<Symbol_Action>
+std::generator<ast::Statement::Symbol_Action> ast::Define::symbol_sequence() const
 {
     co_yield std::ranges::elements_of(expr_->symbol_sequence());
     co_yield Definition{name_};
@@ -33,7 +33,7 @@ std::string ast::Define::node_label() const
     return fmt::format("{}Define({})", export_def_ ? "Export_" : "", name_);
 }
 
-auto ast::Define::children() const -> std::generator<Child_Info>
+std::generator<ast::Statement::Child_Info> ast::Define::children() const
 {
     co_yield make_child(expr_);
 }

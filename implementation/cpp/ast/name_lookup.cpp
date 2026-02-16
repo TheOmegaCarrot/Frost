@@ -14,7 +14,7 @@ Value_Ptr ast::Name_Lookup::evaluate(const Symbol_Table& syms) const
     return syms.lookup(name_);
 }
 
-auto ast::Name_Lookup::symbol_sequence() const -> std::generator<Symbol_Action>
+std::generator<ast::Statement::Symbol_Action> ast::Name_Lookup::symbol_sequence() const
 {
     co_yield Usage{name_};
 }

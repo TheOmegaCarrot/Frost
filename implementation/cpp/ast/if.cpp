@@ -27,7 +27,7 @@ std::string ast::If::node_label() const
     return "If";
 }
 
-auto ast::If::children() const -> std::generator<Child_Info>
+std::generator<ast::Statement::Child_Info> ast::If::children() const
 {
     co_yield make_child(condition_, "Condition");
     co_yield make_child(consequent_, "Consequent");

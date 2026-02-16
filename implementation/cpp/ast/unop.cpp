@@ -27,7 +27,7 @@ std::string ast::Unop::node_label() const
     return fmt::format("Unary({})", format_unary_op(op_));
 }
 
-auto ast::Unop::children() const -> std::generator<Child_Info>
+std::generator<ast::Statement::Child_Info> ast::Unop::children() const
 {
     co_yield make_child(operand_);
 }

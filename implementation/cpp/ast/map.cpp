@@ -32,7 +32,7 @@ Value_Ptr ast::Map::evaluate(const Symbol_Table& syms) const
     return Value::do_map(structure_val, op_val->raw_get<Function>(), "Map");
 }
 
-auto ast::Map::children() const -> std::generator<Child_Info>
+std::generator<ast::Statement::Child_Info> ast::Map::children() const
 {
     co_yield make_child(structure_, "Structure");
     co_yield make_child(operation_, "Operation");

@@ -166,7 +166,7 @@ std::string Lambda::node_label() const
     }
 }
 
-auto Lambda::children() const -> std::generator<Child_Info>
+std::generator<Statement::Child_Info> Lambda::children() const
 {
     for (const auto& statement : *body_)
         co_yield make_child(statement);

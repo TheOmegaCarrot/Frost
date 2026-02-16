@@ -1,5 +1,6 @@
 add_library( frost-ast
     array-constructor.cpp
+    array-destructure.cpp
     binop.cpp
     define.cpp
     filter.cpp
@@ -11,6 +12,7 @@ add_library( frost-ast
     literal.cpp
     map.cpp
     map-constructor.cpp
+    map-destructure.cpp
     name_lookup.cpp
     reduce.cpp
     statement.cpp

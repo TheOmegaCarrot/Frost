@@ -30,7 +30,7 @@ Value_Ptr ast::Filter::evaluate(const Symbol_Table& syms) const
     return Value::do_filter(structure_val, op_val->raw_get<Function>());
 }
 
-auto ast::Filter::children() const -> std::generator<Child_Info>
+std::generator<ast::Statement::Child_Info> ast::Filter::children() const
 {
     co_yield make_child(structure_, "Structure");
     co_yield make_child(operation_, "Operation");

@@ -58,7 +58,7 @@ std::string ast::Binop::node_label() const
     return fmt::format("Binary({})", format_binary_op(op_));
 }
 
-auto ast::Binop::children() const -> std::generator<Child_Info>
+std::generator<ast::Statement::Child_Info> ast::Binop::children() const
 {
     co_yield make_child(lhs_, "LHS");
     co_yield make_child(rhs_, "RHS");

@@ -21,7 +21,7 @@ std::string ast::Array_Constructor::node_label() const
     return "Array_Constructor";
 }
 
-auto ast::Array_Constructor::children() const -> std::generator<Child_Info>
+std::generator<ast::Statement::Child_Info> ast::Array_Constructor::children() const
 {
     for (const auto& elem : elems_)
         co_yield make_child(elem);

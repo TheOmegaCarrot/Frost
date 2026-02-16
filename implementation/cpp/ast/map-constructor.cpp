@@ -26,7 +26,7 @@ std::string ast::Map_Constructor::node_label() const
     return "Map_Constructor";
 }
 
-auto ast::Map_Constructor::children() const -> std::generator<Child_Info>
+std::generator<ast::Statement::Child_Info> ast::Map_Constructor::children() const
 {
     for (const auto& [k, v] : pairs_)
     {

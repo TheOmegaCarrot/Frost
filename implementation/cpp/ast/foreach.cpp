@@ -53,7 +53,7 @@ Value_Ptr ast::Foreach::evaluate(const Symbol_Table& syms) const
     THROW_UNREACHABLE;
 }
 
-auto ast::Foreach::children() const -> std::generator<Child_Info>
+std::generator<ast::Statement::Child_Info> ast::Foreach::children() const
 {
     co_yield make_child(structure_, "Structure");
     co_yield make_child(operation_, "Operation");
