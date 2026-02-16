@@ -27,7 +27,7 @@ bool impl::Value_Ptr_Less::operator()(const Value_Ptr& lhs,
                           lhs->value_, rhs->value_);
     }
 
-    return lhs.get() < rhs.get();
+    return lhs.owner_before(rhs);
 }
 
 } // namespace frst::impl
