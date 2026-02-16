@@ -58,6 +58,7 @@ target_compile_options( frost-common
     -Wall
     -Wextra
     -Wpedantic
+    "$<$<CONFIG:RelWithDebInfo>:-O3;-g;-fno-omit-frame-pointer>"
 )
 
 target_link_libraries( frost-common
@@ -79,4 +80,7 @@ if(WITH_HTTP)
 endif()
 
 add_subdirectory(cpp/)
+if(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    add_subdirectory(frost-scripts/performance-test/)
+endif()
 add_subdirectory(integration-tests/)
