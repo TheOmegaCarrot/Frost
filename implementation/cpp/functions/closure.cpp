@@ -23,6 +23,16 @@ Closure::Closure(std::vector<std::string> parameters,
     // This must be checked by the Lambda AST node.
 }
 
+const Symbol_Table& Closure::debug_capture_table() const
+{
+    return captures_;
+}
+
+void Closure::inject_capture(const std::string& name, Value_Ptr value)
+{
+    captures_.define(name, value);
+}
+
 Value_Ptr eval_or_null(const ast::Statement::Ptr& node, Symbol_Table& syms)
 {
     if (auto expr_ptr = dynamic_cast<ast::Expression*>(node.get()))
@@ -99,4 +109,30 @@ std::string Closure::debug_dump() const
     }
 
     return std::move(os).str();
+}
+
+Weak_Closure::Weak_Closure(std::weak_ptr<Closure> closure)
+    : closure_{closure}
+{
+}
+
+Value_Ptr Weak_Closure::call(std::span<const Value_Ptr> args) const
+{
+    auto closure = closure_.lock();
+    if (!closure)
+        throw Frost_Internal_Error{"Closure self-reference expired"};
+    return closure->call(args);
+}
+
+Function Weak_Closure::promote() const
+{
+    if (auto closure = closure_.lock())
+        return std::static_pointer_cast<Callable>(closure);
+
+    throw Frost_Internal_Error{"Failed to promote closure self-reference"};
+}
+
+std::string Weak_Closure::debug_dump() const
+{
+    return "<closure self-reference>";
 }

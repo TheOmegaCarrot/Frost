@@ -5,6 +5,12 @@
 using namespace frst;
 using namespace frst::ast;
 
+Index::Index(Expression::Ptr structure, Expression::Ptr index)
+    : structure_{std::move(structure)}
+    , index_{std::move(index)}
+{
+}
+
 static Value_Ptr index_array(const Array& array, const Value_Ptr& index_val)
 {
     /*   -3 -2 -1
@@ -54,4 +60,15 @@ Value_Ptr Index::evaluate(const Symbol_Table& syms) const
         return index_map(struct_val->raw_get<Map>(), index_val);
 
     THROW_UNREACHABLE;
+}
+
+std::string Index::node_label() const
+{
+    return "Index_Expression";
+}
+
+auto Index::children() const -> std::generator<Child_Info>
+{
+    co_yield make_child(structure_, "Structure");
+    co_yield make_child(index_, "Index");
 }

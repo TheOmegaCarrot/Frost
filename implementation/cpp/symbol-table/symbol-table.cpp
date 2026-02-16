@@ -5,6 +5,11 @@
 
 using frst::Symbol_Table;
 
+Symbol_Table::Symbol_Table(const Symbol_Table* failover_table)
+    : failover_table_{failover_table}
+{
+}
+
 void Symbol_Table::define(const std::string& name, Value_Ptr value)
 {
     if (const auto [itr, ok] = table_.try_emplace(name, std::move(value));
@@ -37,4 +42,15 @@ bool Symbol_Table::has(const std::string& name) const
             return failover_table_->has(name);
         return false;
     }();
+}
+
+const std::unordered_map<std::string, frst::Value_Ptr>&
+Symbol_Table::debug_table() const
+{
+    return table_;
+}
+
+const Symbol_Table* Symbol_Table::debug_failover() const
+{
+    return failover_table_;
 }

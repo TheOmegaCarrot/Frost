@@ -4,6 +4,12 @@
 
 using namespace frst;
 
+ast::Filter::Filter(Expression::Ptr structure, Expression::Ptr operation)
+    : structure_{std::move(structure)}
+    , operation_{std::move(operation)}
+{
+}
+
 Value_Ptr ast::Filter::evaluate(const Symbol_Table& syms) const
 {
 
@@ -22,4 +28,15 @@ Value_Ptr ast::Filter::evaluate(const Symbol_Table& syms) const
     }
 
     return Value::do_filter(structure_val, op_val->raw_get<Function>());
+}
+
+auto ast::Filter::children() const -> std::generator<Child_Info>
+{
+    co_yield make_child(structure_, "Structure");
+    co_yield make_child(operation_, "Operation");
+}
+
+std::string ast::Filter::node_label() const
+{
+    return "Filter_Expr";
 }

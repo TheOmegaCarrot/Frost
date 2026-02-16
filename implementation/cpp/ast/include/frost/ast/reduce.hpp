@@ -19,28 +19,14 @@ class Reduce final : public Expression
     ~Reduce() final = default;
 
     Reduce(Expression::Ptr structure, Expression::Ptr operation,
-           std::optional<Expression::Ptr> init)
-        : structure_{std::move(structure)}
-        , operation_{std::move(operation)}
-        , init_{std::move(init)}
-    {
-    }
+           std::optional<Expression::Ptr> init);
 
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
   protected:
-    std::generator<Child_Info> children() const final
-    {
-        co_yield make_child(structure_, "Structure");
-        co_yield make_child(operation_, "Operation");
-        if (init_)
-            co_yield make_child(*init_, "Init");
-    }
+    std::generator<Child_Info> children() const final;
 
-    std::string node_label() const final
-    {
-        return "Reduce_Expr";
-    }
+    std::string node_label() const final;
 
   private:
     Expression::Ptr structure_;

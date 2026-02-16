@@ -19,25 +19,14 @@ class Map final : public Expression
     Map& operator=(Map&&) = delete;
     ~Map() final = default;
 
-    Map(Expression::Ptr structure, Expression::Ptr operation)
-        : structure_{std::move(structure)}
-        , operation_{std::move(operation)}
-    {
-    }
+    Map(Expression::Ptr structure, Expression::Ptr operation);
 
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
   protected:
-    std::generator<Child_Info> children() const final
-    {
-        co_yield make_child(structure_, "Structure");
-        co_yield make_child(operation_, "Operation");
-    }
+    std::generator<Child_Info> children() const final;
 
-    std::string node_label() const final
-    {
-        return "Map_Expr";
-    }
+    std::string node_label() const final;
 
   private:
     Expression::Ptr structure_;

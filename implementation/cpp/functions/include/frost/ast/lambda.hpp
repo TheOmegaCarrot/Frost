@@ -35,11 +35,7 @@ class Lambda final : public Expression
   protected:
     std::string node_label() const final;
 
-    std::generator<Child_Info> children() const final
-    {
-        for (const auto& statement : *body_)
-            co_yield make_child(statement);
-    }
+    std::generator<Child_Info> children() const final;
 
   private:
     std::vector<std::string> params_;

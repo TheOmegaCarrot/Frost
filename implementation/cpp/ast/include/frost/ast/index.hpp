@@ -15,11 +15,7 @@ class Index final : public Expression
   public:
     using Ptr = std::unique_ptr<Index>;
 
-    Index(Expression::Ptr structure, Expression::Ptr index)
-        : structure_{std::move(structure)}
-        , index_{std::move(index)}
-    {
-    }
+    Index(Expression::Ptr structure, Expression::Ptr index);
 
     Index() = delete;
     Index(const Index&) = delete;
@@ -31,16 +27,9 @@ class Index final : public Expression
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
   protected:
-    std::string node_label() const final
-    {
-        return "Index_Expression";
-    }
+    std::string node_label() const final;
 
-    std::generator<Child_Info> children() const final
-    {
-        co_yield make_child(structure_, "Structure");
-        co_yield make_child(index_, "Index");
-    }
+    std::generator<Child_Info> children() const final;
 
   private:
     Expression::Ptr structure_;

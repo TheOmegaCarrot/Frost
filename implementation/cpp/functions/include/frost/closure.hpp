@@ -25,15 +25,9 @@ class Closure : public Callable
 
     Value_Ptr call(std::span<const Value_Ptr> args) const override;
     std::string debug_dump() const override;
-    const Symbol_Table& debug_capture_table() const
-    {
-        return captures_;
-    }
+    const Symbol_Table& debug_capture_table() const;
 
-    void inject_capture(const std::string& name, Value_Ptr value)
-    {
-        captures_.define(name, value);
-    }
+    void inject_capture(const std::string& name, Value_Ptr value);
 
   private:
     std::vector<std::string> parameters_;
@@ -52,31 +46,13 @@ class Weak_Closure final : public Callable
     Weak_Closure& operator=(Weak_Closure&&) = delete;
     ~Weak_Closure() override = default;
 
-    Weak_Closure(std::weak_ptr<Closure> closure)
-        : closure_{closure}
-    {
-    }
+    Weak_Closure(std::weak_ptr<Closure> closure);
 
-    Value_Ptr call(std::span<const Value_Ptr> args) const final
-    {
-        auto closure = closure_.lock();
-        if (!closure)
-            throw Frost_Internal_Error{"Closure self-reference expired"};
-        return closure->call(args);
-    }
+    Value_Ptr call(std::span<const Value_Ptr> args) const final;
 
-    Function promote() const
-    {
-        if (auto closure = closure_.lock())
-            return std::static_pointer_cast<Callable>(closure);
+    Function promote() const;
 
-        throw Frost_Internal_Error{"Failed to promote closure self-reference"};
-    }
-
-    std::string debug_dump() const override
-    {
-        return "<closure self-reference>";
-    }
+    std::string debug_dump() const override;
 
   private:
     std::weak_ptr<Closure> closure_;

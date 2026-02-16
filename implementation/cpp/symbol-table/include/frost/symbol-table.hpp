@@ -13,10 +13,7 @@ class Symbol_Table
 {
   public:
     Symbol_Table() = default;
-    Symbol_Table(const Symbol_Table* failover_table)
-        : failover_table_{failover_table}
-    {
-    }
+    Symbol_Table(const Symbol_Table* failover_table);
     Symbol_Table(const Symbol_Table&) = default;
     Symbol_Table(Symbol_Table&&) = default;
     Symbol_Table& operator=(const Symbol_Table&) = default;
@@ -36,15 +33,9 @@ class Symbol_Table
     // Check if a name is defined within the symbol table
     virtual bool has(const std::string& name) const;
 
-    const auto& debug_table() const
-    {
-        return table_;
-    }
+    const std::unordered_map<std::string, Value_Ptr>& debug_table() const;
 
-    const auto* debug_failover() const
-    {
-        return failover_table_;
-    }
+    const Symbol_Table* debug_failover() const;
 
   private:
     std::unordered_map<std::string, Value_Ptr> table_;
