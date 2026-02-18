@@ -301,8 +301,8 @@ TEST_CASE("Map_Destructure")
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring(
-                "Non-primitive key expressions are not permitted in Map "
-                "destructuring:")));
+                "Map destructure key expressions must be valid map keys, "
+                "got:")));
     }
 
     SECTION("Key expression errors propagate and stop evaluation")
@@ -370,8 +370,8 @@ TEST_CASE("Map_Destructure")
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring(
-                "Non-primitive key expressions are not permitted in Map "
-                "destructuring:")));
+                "Map destructure key expressions must be valid map keys, "
+                "got:")));
     }
 
     SECTION("Primitive keys bind correctly")

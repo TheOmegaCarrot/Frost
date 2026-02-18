@@ -50,6 +50,13 @@ std::optional<Map> Map_Destructure::execute(Symbol_Table& table) const
     for (const auto& [key_expr, name] : destructure_elems_)
     {
         auto key = key_expr->evaluate(table);
+        if (not key->is_primitive() || key->is<Null>())
+        {
+            throw Frost_Recoverable_Error(
+                fmt::format("Map destructure key expressions must be valid map "
+                            "keys, got: {}",
+                            key->to_internal_string()));
+        }
         auto itr = map.find(key);
         if (itr == map.end())
             define(name, Value::null());
