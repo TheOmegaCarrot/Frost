@@ -86,6 +86,21 @@ class Value
                 "Floating-point computation produced infinity"};
     }
 
+    Value(Map&& map)
+    {
+        for (const auto& [key, _] : map)
+        {
+            if ((not key->is_primitive()) || key->is<Null>())
+            {
+                throw Frost_Recoverable_Error{
+                    fmt::format("Map keys may only be primitive values, got {}",
+                                key->type_name())};
+            }
+        }
+
+        value_.emplace<Map>(std::move(map));
+    }
+
     Value(Singleton_Tag, Null)
         : value_{Null{}}
     {

@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <frost/testing/dummy-callable.hpp>
 #include <frost/value.hpp>
 
@@ -101,6 +102,41 @@ TEST_CASE("Construction and .is*<T>")
         CHECK_FALSE(value->is_numeric());
         CHECK_FALSE(value->is_primitive());
         CHECK(value->is_structured());
+    }
+
+    SECTION("Map key restrictions")
+    {
+        CHECK_NOTHROW(Value::create(
+            frst::Map{{Value::create(frst::Int{42}), Value::create("int"s)}}));
+        CHECK_NOTHROW(Value::create(
+            frst::Map{{Value::create(3.5), Value::create("float"s)}}));
+        CHECK_NOTHROW(Value::create(
+            frst::Map{{Value::create(true), Value::create("bool"s)}}));
+        CHECK_NOTHROW(Value::create(
+            frst::Map{{Value::create("k"s), Value::create("string"s)}}));
+
+        auto fn_key = Value::create(
+            frst::Function{std::make_shared<Dummy_Callable>()});
+
+        CHECK_THROWS_WITH(
+            Value::create(
+                frst::Map{{Value::null(), Value::create(frst::Int{1})}}),
+            Catch::Matchers::ContainsSubstring(
+                "Map keys may only be primitive values"));
+        CHECK_THROWS_WITH(
+            Value::create(frst::Map{{Value::create(frst::Array{}),
+                                     Value::create(frst::Int{1})}}),
+            Catch::Matchers::ContainsSubstring(
+                "Map keys may only be primitive values"));
+        CHECK_THROWS_WITH(
+            Value::create(frst::Map{
+                {Value::create(frst::Map{}), Value::create(frst::Int{1})}}),
+            Catch::Matchers::ContainsSubstring(
+                "Map keys may only be primitive values"));
+        CHECK_THROWS_WITH(
+            Value::create(frst::Map{{fn_key, Value::create(frst::Int{1})}}),
+            Catch::Matchers::ContainsSubstring(
+                "Map keys may only be primitive values"));
     }
 
     SECTION("Function")

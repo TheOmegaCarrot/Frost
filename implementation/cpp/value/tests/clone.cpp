@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <vector>
 
@@ -146,9 +147,9 @@ TEST_CASE("Value clone")
         CHECK(empty_map != empty_map_clone);
     }
 
-    SECTION("Structured map keys are cloned")
+    SECTION("Primitive map keys are cloned")
     {
-        auto key = Value::create(Array{Value::create(1_f)});
+        auto key = Value::create("k"s);
         auto value = Value::create(2_f);
         auto map = Value::create(Map{{key, value}});
 
@@ -162,6 +163,27 @@ TEST_CASE("Value clone")
         CHECK(deep_eq(cloned_key, key));
         CHECK(deep_eq(cloned_value, value));
         CHECK(deep_eq(map, clone));
+    }
+
+    SECTION("Map construction rejects forbidden key types")
+    {
+        auto fn_key = Value::create(Function{std::make_shared<Dummy_Callable>()});
+
+        CHECK_THROWS_WITH(
+            Value::create(Map{{Value::null(), Value::create(1_f)}}),
+            Catch::Matchers::ContainsSubstring(
+                "Map keys may only be primitive values"));
+        CHECK_THROWS_WITH(
+            Value::create(Map{{Value::create(Array{}), Value::create(1_f)}}),
+            Catch::Matchers::ContainsSubstring(
+                "Map keys may only be primitive values"));
+        CHECK_THROWS_WITH(
+            Value::create(Map{{Value::create(Map{}), Value::create(1_f)}}),
+            Catch::Matchers::ContainsSubstring(
+                "Map keys may only be primitive values"));
+        CHECK_THROWS_WITH(Value::create(Map{{fn_key, Value::create(1_f)}}),
+                          Catch::Matchers::ContainsSubstring(
+                              "Map keys may only be primitive values"));
     }
 
     SECTION("Functions and nulls inside structures")

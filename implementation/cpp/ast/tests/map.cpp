@@ -452,16 +452,13 @@ TEST_CASE("Map Map")
             REQUIRE(calls.size() == 2);
         }
 
-        SECTION("Collision on structured keys uses identity semantics")
+        SECTION("Mapper map with forbidden key type errors")
         {
             auto k1 = Value::create("k1"s);
             auto v1 = Value::create(1_f);
             auto k2 = Value::create("k2"s);
             auto v2 = Value::create(2_f);
             auto input_map = Value::create(Map{{k1, v1}, {k2, v2}});
-
-            auto shared_key =
-                Value::create(Map{{Value::create(1_f), Value::create(2_f)}});
 
             auto mapper = mock::Mock_Callable::make();
             auto op_val = Value::create(Function{mapper});
@@ -478,16 +475,15 @@ TEST_CASE("Map Map")
                 .RETURN(op_val);
             REQUIRE_CALL(*mapper, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
-                .RETURN(Value::create(Map{{shared_key, Value::create(10_f)}}));
-            REQUIRE_CALL(*mapper, call(_))
-                .LR_SIDE_EFFECT(record_call(calls, _1))
-                .RETURN(Value::create(Map{{shared_key, Value::create(20_f)}}));
+                .THROW(Frost_Recoverable_Error{
+                    "Map keys may only be primitive values, got Array"});
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(syms),
-                              ContainsSubstring("collision"));
-            REQUIRE(calls.size() == 2);
+                              ContainsSubstring(
+                                  "Map keys may only be primitive values"));
+            REQUIRE(calls.size() == 1);
         }
 
         SECTION("Mapper return must be a map")

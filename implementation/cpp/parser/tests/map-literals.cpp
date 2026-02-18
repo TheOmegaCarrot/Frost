@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
@@ -254,15 +255,17 @@ TEST_CASE("Parser Map Literals")
         REQUIRE(map.find(c_key) != map.end());
     }
 
-    SECTION("Complex bracketed key expressions are allowed")
+    SECTION("Complex bracketed keys parse but enforce key type at eval")
     {
         auto result = parse("{[fn() -> { 1 }()]: 2, [[1,2]]: 3}");
         REQUIRE(result);
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
-        REQUIRE(out->is<frst::Map>());
+        CHECK_THROWS_WITH(
+            expr->evaluate(table),
+            Catch::Matchers::ContainsSubstring(
+                "Map keys may only be primitive values"));
     }
 
     SECTION("Nested map literals are allowed")

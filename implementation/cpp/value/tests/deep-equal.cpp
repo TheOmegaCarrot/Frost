@@ -1,8 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <array>
-#include <memory_resource>
-
 #include <frost/testing/dummy-callable.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -140,59 +137,11 @@ TEST_CASE("Deep Equal")
         auto map4 = Value::create(Map{{Value::create(2_f), v1b}});
         CHECK_FALSE(deep_eq(map1, map4));
 
-        auto array_key1 = Value::create(Array{Value::create(1_f)});
-        auto array_key2 = Value::create(Array{Value::create(1_f)});
-        auto map5 = Value::create(Map{{array_key1, Value::create(9_f)}});
-        auto map6 = Value::create(Map{{array_key2, Value::create(9_f)}});
-        CHECK(deep_eq(map5, map6));
-
         auto nested_val1 = Value::create(Array{Value::create(1_f)});
         auto nested_val2 = Value::create(Array{Value::create(1_f)});
-        auto map7 = Value::create(Map{{Value::create("k"s), nested_val1}});
-        auto map8 = Value::create(Map{{Value::create("k"s), nested_val2}});
-        CHECK(deep_eq(map7, map8));
-    }
-
-    SECTION("Maps with duplicate deep-equal keys still compare values")
-    {
-        auto key1 = Value::create(Array{Value::create(1_f)});
-        auto key2 = Value::create(Array{Value::create(1_f)});
-        auto key3 = Value::create(Array{Value::create(1_f)});
-        auto key4 = Value::create(Array{Value::create(1_f)});
-
-        auto map1 = Value::create(Map{
-            {key1, Value::create(1_f)},
-            {key2, Value::create(2_f)},
-        });
-        auto map2 = Value::create(Map{
-            {key3, Value::create(1_f)},
-            {key4, Value::create(1_f)},
-        });
-
-        CHECK_FALSE(deep_eq(map1, map2));
-    }
-
-    SECTION("Maps with duplicate deep-equal keys require matching multiplicity")
-    {
-        auto key1 = Value::create(Array{Value::create(1_f)});
-        auto key2 = Value::create(Array{Value::create(1_f)});
-        auto key3 = Value::create(Array{Value::create(1_f)});
-        auto key4 = Value::create(Array{Value::create(1_f)});
-        auto key5 = Value::create(Array{Value::create(1_f)});
-        auto key6 = Value::create(Array{Value::create(1_f)});
-
-        auto map1 = Value::create(Map{
-            {key1, Value::create(1_f)},
-            {key2, Value::create(1_f)},
-            {key3, Value::create(2_f)},
-        });
-        auto map2 = Value::create(Map{
-            {key4, Value::create(1_f)},
-            {key5, Value::create(2_f)},
-            {key6, Value::create(2_f)},
-        });
-
-        CHECK_FALSE(deep_eq(map1, map2));
+        auto map5 = Value::create(Map{{Value::create("k"s), nested_val1}});
+        auto map6 = Value::create(Map{{Value::create("k"s), nested_val2}});
+        CHECK(deep_eq(map5, map6));
     }
 
     SECTION("Recursive structures")
@@ -269,68 +218,25 @@ TEST_CASE("Deep Equal")
             CHECK_FALSE(deep_eq(map1, map3));
         }
 
-        SECTION("Structured keys are compared deeply")
+        SECTION("Primitive key ordering does not affect equality")
         {
-            auto key1 = Value::create(Array{
-                Value::create(1_f),
-                Value::create(Array{Value::create(2_f)}),
-            });
-            auto key2 = Value::create(Array{
-                Value::create(1_f),
-                Value::create(Array{Value::create(2_f)}),
+            auto map1 = Value::create(Map{
+                {Value::create(1_f), Value::create("one"s)},
+                {Value::create(2_f), Value::create("two"s)},
             });
 
-            auto val1 = Value::create(Map{
-                {Value::create("k"s), Value::create(3_f)},
-            });
-            auto val2 = Value::create(Map{
-                {Value::create("k"s), Value::create(3_f)},
+            auto map2 = Value::create(Map{
+                {Value::create(2_f), Value::create("two"s)},
+                {Value::create(1_f), Value::create("one"s)},
             });
 
-            auto map1 = Value::create(Map{{key1, val1}});
-            auto map2 = Value::create(Map{{key2, val2}});
             auto map3 = Value::create(Map{
-                {Value::create(Array{Value::create(1_f),
-                                     Value::create(Array{Value::create(9_f)})}),
-                 val2},
+                {Value::create(2_f), Value::create("two"s)},
+                {Value::create(1_f), Value::create("ONE"s)},
             });
 
             CHECK(deep_eq(map1, map2));
             CHECK_FALSE(deep_eq(map1, map3));
-        }
-
-        SECTION("Structured key ordering should not affect equality")
-        {
-            std::array<std::byte, 1024> buf1{};
-            std::pmr::monotonic_buffer_resource res1{buf1.data(), buf1.size()};
-            std::pmr::polymorphic_allocator<Value> alloc1{&res1};
-
-            std::array<std::byte, 1024> buf2{};
-            std::pmr::monotonic_buffer_resource res2{buf2.data(), buf2.size()};
-            std::pmr::polymorphic_allocator<Value> alloc2{&res2};
-
-            auto key_a1 =
-                std::allocate_shared<Value>(alloc1, Array{Value::create(1_f)});
-            auto key_b1 =
-                std::allocate_shared<Value>(alloc1, Array{Value::create(2_f)});
-
-            auto key_b2 =
-                std::allocate_shared<Value>(alloc2, Array{Value::create(2_f)});
-            auto key_a2 =
-                std::allocate_shared<Value>(alloc2, Array{Value::create(1_f)});
-
-            REQUIRE(key_a1.get() < key_b1.get());
-            REQUIRE(key_b2.get() < key_a2.get());
-
-            auto va1 = Value::create(10_f);
-            auto va2 = Value::create(10_f);
-            auto vb1 = Value::create(20_f);
-            auto vb2 = Value::create(20_f);
-
-            auto map1 = Value::create(Map{{key_a1, va1}, {key_b1, vb1}});
-            auto map2 = Value::create(Map{{key_a2, va2}, {key_b2, vb2}});
-
-            CHECK(deep_eq(map1, map2));
         }
     }
 }

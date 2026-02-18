@@ -374,20 +374,20 @@ TEST_CASE("Map_Destructure")
                 "destructuring:")));
     }
 
-    SECTION("Primitive edge keys bind correctly")
+    SECTION("Primitive keys bind correctly")
     {
         auto rhs_expr = mock::Mock_Expression::make();
-        auto key_null = mock::Mock_Expression::make();
+        auto key_int = mock::Mock_Expression::make();
         auto key_bool = mock::Mock_Expression::make();
         auto key_float = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
         trompeloeil::sequence seq;
 
-        auto v_null = Value::create("n"s);
+        auto v_int = Value::create("i"s);
         auto v_bool = Value::create("b"s);
         auto v_float = Value::create("f"s);
         auto rhs_map = Value::create(frst::Map{
-            {Value::null(), v_null},
+            {Value::create(7_f), v_int},
             {Value::create(true), v_bool},
             {Value::create(3.5), v_float},
         });
@@ -396,11 +396,11 @@ TEST_CASE("Map_Destructure")
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(rhs_map);
-        REQUIRE_CALL(*key_null, evaluate(_))
+        REQUIRE_CALL(*key_int, evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
-            .RETURN(Value::null());
-        REQUIRE_CALL(syms, define("n", v_null)).IN_SEQUENCE(seq);
+            .RETURN(Value::create(7_f));
+        REQUIRE_CALL(syms, define("i", v_int)).IN_SEQUENCE(seq);
         REQUIRE_CALL(*key_bool, evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
@@ -413,13 +413,22 @@ TEST_CASE("Map_Destructure")
         REQUIRE_CALL(syms, define("f", v_float)).IN_SEQUENCE(seq);
 
         std::vector<Map_Destructure::Element> elems;
-        elems.emplace_back(Map_Destructure::Element{std::move(key_null), "n"});
+        elems.emplace_back(Map_Destructure::Element{std::move(key_int), "i"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_bool), "b"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_float), "f"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
         auto result = node.execute(syms);
         CHECK_FALSE(result.has_value());
+    }
+
+    SECTION("Map values with forbidden key types are rejected")
+    {
+        CHECK_THROWS_MATCHES(
+            Value::create(frst::Map{{Value::null(), Value::create(1_f)}}),
+            Frost_Recoverable_Error,
+            MessageMatches(ContainsSubstring(
+                "Map keys may only be primitive values")));
     }
 
     SECTION("Duplicate key expressions are accepted")

@@ -876,37 +876,35 @@ TEST_CASE("Lambda")
         CHECK(out == x_val);
     }
 
-    SECTION("Nested lambda captures structured values for map keys")
+    SECTION("Nested lambda captures structured values for map values")
     {
         // Frost:
         // def outer = fn () -> {
         //     def a = [1]
         //     def b = [1]
         //     fn () -> {
-        //         def m = { a: "A", b: "B" }
-        //         [ m[a], m[b] ]
+        //         def m = { "a": a, "b": b }
+        //         [ m["a"], m["b"] ]
         //     }
         // }
         Symbol_Table env;
 
         auto one = Value::create(1_f);
-        auto a_str = Value::create(String{"A"});
-        auto b_str = Value::create(String{"B"});
+        auto a_key = Value::create(String{"a"});
+        auto b_key = Value::create(String{"b"});
 
         std::vector<Statement::Ptr> inner_body;
         {
             std::vector<Map_Constructor::KV_Pair> pairs;
-            pairs.emplace_back(node<Name_Lookup>("a"), node<Literal>(a_str));
-            pairs.emplace_back(node<Name_Lookup>("b"), node<Literal>(b_str));
+            pairs.emplace_back(node<Literal>(a_key), node<Name_Lookup>("a"));
+            pairs.emplace_back(node<Literal>(b_key), node<Name_Lookup>("b"));
 
             inner_body.push_back(
                 node<Define>("m", node<Map_Constructor>(std::move(pairs))));
 
             std::vector<Expression::Ptr> elems;
-            elems.push_back(
-                node<Index>(node<Name_Lookup>("m"), node<Name_Lookup>("a")));
-            elems.push_back(
-                node<Index>(node<Name_Lookup>("m"), node<Name_Lookup>("b")));
+            elems.push_back(node<Index>(node<Name_Lookup>("m"), node<Literal>(a_key)));
+            elems.push_back(node<Index>(node<Name_Lookup>("m"), node<Literal>(b_key)));
 
             inner_body.push_back(node<Array_Constructor>(std::move(elems)));
         }
@@ -935,8 +933,12 @@ TEST_CASE("Lambda")
         auto out = inner_closure->call({});
         auto arr = out->get<Array>().value();
         REQUIRE(arr.size() == 2);
-        CHECK(arr[0]->get<String>().value() == "A");
-        CHECK(arr[1]->get<String>().value() == "B");
+        REQUIRE(arr[0]->is<Array>());
+        REQUIRE(arr[1]->is<Array>());
+        CHECK(arr[0]->raw_get<Array>().size() == 1);
+        CHECK(arr[1]->raw_get<Array>().size() == 1);
+        CHECK(arr[0]->raw_get<Array>().front()->get<Int>().value() == 1_f);
+        CHECK(arr[1]->raw_get<Array>().front()->get<Int>().value() == 1_f);
     }
 
     SECTION("Nested lambda parameter shadows outer name")
