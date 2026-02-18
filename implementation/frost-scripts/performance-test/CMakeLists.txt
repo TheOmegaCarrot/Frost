@@ -161,7 +161,7 @@ foreach(script_path IN LISTS PROFILING_TEST_SCRIPTS)
 endforeach()
 
 if(PERF_TARGETS)
-    add_custom_target(perf-all ALL DEPENDS ${PERF_TARGETS})
+    add_custom_target(perf-all DEPENDS ${PERF_TARGETS})
 endif()
 
 if(PERF_STAT_TARGETS)
@@ -169,5 +169,32 @@ if(PERF_STAT_TARGETS)
 endif()
 
 if(CALLGRIND_TARGETS)
-    add_custom_target(callgrind-all ALL DEPENDS ${CALLGRIND_TARGETS})
+    add_custom_target(callgrind-all DEPENDS ${CALLGRIND_TARGETS})
+endif()
+
+set(PROFILE_TARGETS
+    ${PERF_TARGETS}
+    ${PERF_STAT_TARGETS}
+    ${CALLGRIND_TARGETS}
+)
+
+if(PROFILE_TARGETS)
+    # Serialize profiling runs while keeping normal builds parallelizable.
+    add_custom_target(profile)
+
+    set(previous_profile_step "")
+    set(profile_step_index 0)
+    foreach(profiling_target IN LISTS PROFILE_TARGETS)
+        math(EXPR profile_step_index "${profile_step_index} + 1")
+        set(profile_step_target "profile-step-${profile_step_index}")
+        add_custom_target("${profile_step_target}" DEPENDS "${profiling_target}")
+
+        if(previous_profile_step)
+            add_dependencies("${profile_step_target}" "${previous_profile_step}")
+        endif()
+
+        set(previous_profile_step "${profile_step_target}")
+    endforeach()
+
+    add_dependencies(profile "${previous_profile_step}")
 endif()
