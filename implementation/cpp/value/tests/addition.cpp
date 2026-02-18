@@ -311,6 +311,211 @@ TEST_CASE("Map Union")
 
         all_unchanged();
     }
+
+    SECTION("MAP + MAP (Interleaved collisions and tails)")
+    {
+        auto lhs = Value::create(frst::Map{
+            {Value::create("a"s), Value::create(1_f)},
+            {Value::create("c"s), Value::create(3_f)},
+            {Value::create("e"s), Value::create(5_f)},
+        });
+        auto rhs = Value::create(frst::Map{
+            {Value::create("a"s), Value::create(10_f)},
+            {Value::create("d"s), Value::create(40_f)},
+            {Value::create("e"s), Value::create(50_f)},
+            {Value::create("z"s), Value::create(260_f)},
+        });
+
+        auto res = Value::add(lhs, rhs);
+        const auto merged_opt = res->get<frst::Map>();
+        REQUIRE(merged_opt.has_value());
+        const auto& merged = merged_opt.value();
+
+        CHECK(merged.size() == 5);
+
+        const auto a = merged.find(Value::create("a"s));
+        const auto c = merged.find(Value::create("c"s));
+        const auto d = merged.find(Value::create("d"s));
+        const auto e = merged.find(Value::create("e"s));
+        const auto z = merged.find(Value::create("z"s));
+
+        REQUIRE(a != merged.end());
+        REQUIRE(c != merged.end());
+        REQUIRE(d != merged.end());
+        REQUIRE(e != merged.end());
+        REQUIRE(z != merged.end());
+
+        CHECK(a->second->as<frst::Int>() == 10_f);
+        CHECK(c->second->as<frst::Int>() == 3_f);
+        CHECK(d->second->as<frst::Int>() == 40_f);
+        CHECK(e->second->as<frst::Int>() == 50_f);
+        CHECK(z->second->as<frst::Int>() == 260_f);
+    }
+
+    SECTION("MAP + MAP (All keys collide)")
+    {
+        auto lhs = Value::create(frst::Map{
+            {Value::create("x"s), Value::create(1_f)},
+            {Value::create("y"s), Value::create(2_f)},
+            {Value::create("z"s), Value::create(3_f)},
+        });
+        auto rhs = Value::create(frst::Map{
+            {Value::create("x"s), Value::create(100_f)},
+            {Value::create("y"s), Value::create(200_f)},
+            {Value::create("z"s), Value::create(300_f)},
+        });
+
+        auto res = Value::add(lhs, rhs);
+        const auto merged_opt = res->get<frst::Map>();
+        REQUIRE(merged_opt.has_value());
+        const auto& merged = merged_opt.value();
+
+        CHECK(merged.size() == 3);
+
+        const auto x = merged.find(Value::create("x"s));
+        const auto y = merged.find(Value::create("y"s));
+        const auto z = merged.find(Value::create("z"s));
+
+        REQUIRE(x != merged.end());
+        REQUIRE(y != merged.end());
+        REQUIRE(z != merged.end());
+
+        CHECK(x->second->as<frst::Int>() == 100_f);
+        CHECK(y->second->as<frst::Int>() == 200_f);
+        CHECK(z->second->as<frst::Int>() == 300_f);
+    }
+
+    SECTION("MAP + MAP (LHS shorter, RHS tail append)")
+    {
+        auto lhs = Value::create(frst::Map{
+            {Value::create("a"s), Value::create(1_f)},
+            {Value::create("b"s), Value::create(2_f)},
+        });
+        auto rhs = Value::create(frst::Map{
+            {Value::create("c"s), Value::create(3_f)},
+            {Value::create("d"s), Value::create(4_f)},
+            {Value::create("e"s), Value::create(5_f)},
+            {Value::create("f"s), Value::create(6_f)},
+            {Value::create("g"s), Value::create(7_f)},
+            {Value::create("h"s), Value::create(8_f)},
+            {Value::create("i"s), Value::create(9_f)},
+        });
+
+        auto res = Value::add(lhs, rhs);
+        const auto merged_opt = res->get<frst::Map>();
+        REQUIRE(merged_opt.has_value());
+        const auto& merged = merged_opt.value();
+
+        CHECK(merged.size() == 9);
+        CHECK(merged.at(Value::create("a"s))->as<frst::Int>() == 1_f);
+        CHECK(merged.at(Value::create("b"s))->as<frst::Int>() == 2_f);
+        CHECK(merged.at(Value::create("c"s))->as<frst::Int>() == 3_f);
+        CHECK(merged.at(Value::create("d"s))->as<frst::Int>() == 4_f);
+        CHECK(merged.at(Value::create("e"s))->as<frst::Int>() == 5_f);
+        CHECK(merged.at(Value::create("f"s))->as<frst::Int>() == 6_f);
+        CHECK(merged.at(Value::create("g"s))->as<frst::Int>() == 7_f);
+        CHECK(merged.at(Value::create("h"s))->as<frst::Int>() == 8_f);
+        CHECK(merged.at(Value::create("i"s))->as<frst::Int>() == 9_f);
+    }
+
+    SECTION("MAP + MAP (RHS shorter, LHS tail append)")
+    {
+        auto lhs = Value::create(frst::Map{
+            {Value::create("m"s), Value::create(10_f)},
+            {Value::create("n"s), Value::create(11_f)},
+            {Value::create("o"s), Value::create(12_f)},
+            {Value::create("p"s), Value::create(13_f)},
+        });
+        auto rhs = Value::create(frst::Map{
+            {Value::create("a"s), Value::create(1_f)},
+            {Value::create("b"s), Value::create(2_f)},
+        });
+
+        auto res = Value::add(lhs, rhs);
+        const auto merged_opt = res->get<frst::Map>();
+        REQUIRE(merged_opt.has_value());
+        const auto& merged = merged_opt.value();
+
+        CHECK(merged.size() == 6);
+        CHECK(merged.at(Value::create("a"s))->as<frst::Int>() == 1_f);
+        CHECK(merged.at(Value::create("b"s))->as<frst::Int>() == 2_f);
+        CHECK(merged.at(Value::create("m"s))->as<frst::Int>() == 10_f);
+        CHECK(merged.at(Value::create("n"s))->as<frst::Int>() == 11_f);
+        CHECK(merged.at(Value::create("o"s))->as<frst::Int>() == 12_f);
+        CHECK(merged.at(Value::create("p"s))->as<frst::Int>() == 13_f);
+    }
+
+    SECTION("MAP + MAP (Large maps, few collisions)")
+    {
+        frst::Map lhs_map;
+        frst::Map rhs_map;
+
+        // 50 keys on lhs: k000..k049
+        for (frst::Int i = 0; i < 50; ++i)
+        {
+            const auto key =
+                Value::create("k"
+                              + (i < 10 ? "00"s : (i < 100 ? "0"s : ""s))
+                              + std::to_string(i));
+            lhs_map.emplace(key, Value::create(i));
+        }
+
+        // 50 keys on rhs: k040..k089 (10 collisions with lhs: k040..k049)
+        for (frst::Int i = 40; i < 90; ++i)
+        {
+            const auto key =
+                Value::create("k"
+                              + (i < 10 ? "00"s : (i < 100 ? "0"s : ""s))
+                              + std::to_string(i));
+            rhs_map.emplace(key, Value::create(1000_f + i));
+        }
+
+        auto lhs = Value::create(std::move(lhs_map));
+        auto rhs = Value::create(std::move(rhs_map));
+
+        auto res = Value::add(lhs, rhs);
+        const auto merged_opt = res->get<frst::Map>();
+        REQUIRE(merged_opt.has_value());
+        const auto& merged = merged_opt.value();
+
+        CHECK(merged.size() == 90);
+
+        // From lhs-only range.
+        CHECK(merged.at(Value::create("k000"s))->as<frst::Int>() == 0_f);
+        CHECK(merged.at(Value::create("k039"s))->as<frst::Int>() == 39_f);
+
+        // Collisions should use rhs values.
+        CHECK(merged.at(Value::create("k040"s))->as<frst::Int>() == 1040_f);
+        CHECK(merged.at(Value::create("k049"s))->as<frst::Int>() == 1049_f);
+
+        // From rhs-only tail.
+        CHECK(merged.at(Value::create("k050"s))->as<frst::Int>() == 1050_f);
+        CHECK(merged.at(Value::create("k089"s))->as<frst::Int>() == 1089_f);
+    }
+
+    SECTION("MAP + MAP (Equivalent float keys: +0.0 and -0.0)")
+    {
+        auto lhs = Value::create(frst::Map{
+            {Value::create(0.0), Value::create(1_f)},
+        });
+        auto rhs = Value::create(frst::Map{
+            {Value::create(-0.0), Value::create(2_f)},
+        });
+
+        auto res = Value::add(lhs, rhs);
+        const auto merged_opt = res->get<frst::Map>();
+        REQUIRE(merged_opt.has_value());
+        const auto& merged = merged_opt.value();
+
+        CHECK(merged.size() == 1);
+
+        const auto by_pos_zero = merged.find(Value::create(0.0));
+        const auto by_neg_zero = merged.find(Value::create(-0.0));
+        REQUIRE(by_pos_zero != merged.end());
+        REQUIRE(by_neg_zero != merged.end());
+        CHECK(by_pos_zero->second->as<frst::Int>() == 2_f);
+        CHECK(by_neg_zero->second->as<frst::Int>() == 2_f);
+    }
 }
 
 TEST_CASE("Add All Permutations")
