@@ -26,6 +26,7 @@ include(get-fmt)
 include(get-replxx)
 include(lyra)
 include(cppcodec)
+include(clang-tidy-targets)
 
 include(get-test-libs)
 
@@ -80,6 +81,36 @@ if(WITH_HTTP)
 endif()
 
 add_subdirectory(cpp/)
+
+set(FROST_INTERPRETER_TARGETS
+    frost
+    frost-ast
+    frost-functions
+    frost-import
+    frost-parser
+    frost-prelude
+    frost-symbol-table
+    frost-utils
+    frost-value
+)
+frost_collect_target_sources(
+    FROST_INTERPRETER_SOURCES
+    TARGETS ${FROST_INTERPRETER_TARGETS}
+    EXCLUDE_TESTS
+)
+frost_create_clang_tidy_target(
+    check
+    GROUP_LABEL interpreter
+    SOURCES ${FROST_INTERPRETER_SOURCES}
+)
+
+get_property(FROST_UNIT_TEST_SOURCES GLOBAL PROPERTY FROST_UNIT_TEST_SOURCES)
+frost_create_clang_tidy_target(
+    check-tests
+    GROUP_LABEL tests
+    SOURCES ${FROST_UNIT_TEST_SOURCES}
+)
+
 if(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     add_subdirectory(frost-scripts/performance-test/)
 endif()

@@ -1,0 +1,4 @@
+Checks: '-*,clang-analyzer-core.*,clang-analyzer-cplusplus.*,clang-analyzer-deadcode.*'
+WarningsAsErrors: ''
+HeaderFilterRegex: '(^|.*/)cpp/'
+FormatStyle: none

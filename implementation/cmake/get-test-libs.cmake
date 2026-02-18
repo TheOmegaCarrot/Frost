@@ -26,6 +26,13 @@ macro(make_test file)
         set(multi_value_args LIBS)
         cmake_parse_arguments(MAKE_TEST "" "" "${multi_value_args}" ${ARGN})
 
+        if(IS_ABSOLUTE "${file}")
+            set(test_source "${file}")
+        else()
+            set(test_source "${CMAKE_CURRENT_SOURCE_DIR}/${file}")
+        endif()
+        set_property(GLOBAL APPEND PROPERTY FROST_UNIT_TEST_SOURCES "${test_source}")
+
         get_filename_component(target ${file} NAME_WE)
         add_executable(${target} ${file})
 
