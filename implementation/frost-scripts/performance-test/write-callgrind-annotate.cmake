@@ -10,9 +10,18 @@ if(NOT DEFINED CALLGRIND_OUTPUT)
     message(FATAL_ERROR "CALLGRIND_OUTPUT is required")
 endif()
 
+if(NOT DEFINED CALLGRIND_INCLUSIVE)
+    set(CALLGRIND_INCLUSIVE OFF)
+endif()
+
+set(callgrind_inclusive_flag "--inclusive=no")
+if(CALLGRIND_INCLUSIVE)
+    set(callgrind_inclusive_flag "--inclusive=yes")
+endif()
+
 execute_process(
     COMMAND "${CALLGRIND_ANNOTATE_EXECUTABLE}"
-            --inclusive=yes
+            ${callgrind_inclusive_flag}
             --auto=no
             --show=Ir
             --sort=Ir
