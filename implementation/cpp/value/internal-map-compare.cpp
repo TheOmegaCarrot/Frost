@@ -14,20 +14,15 @@ bool impl::Value_Ptr_Less::operator()(const Value_Ptr& lhs,
     if (lhs_index != rhs_index)
         return lhs_index < rhs_index;
 
-    if (lhs->is_primitive())
-    {
-        return std::visit(Overload{
-                              []<Frost_Primitive T>(const T& a, const T& b) {
-                                  return a < b;
-                              },
-                              [](const auto&, const auto&) -> bool {
-                                  THROW_UNREACHABLE;
-                              },
+    return std::visit(Overload{
+                          []<Frost_Primitive T>(const T& a, const T& b) {
+                              return a < b;
                           },
-                          lhs->value_, rhs->value_);
-    }
-
-    return lhs.owner_before(rhs);
+                          [](const auto&, const auto&) -> bool {
+                              THROW_UNREACHABLE;
+                          },
+                      },
+                      lhs->value_, rhs->value_);
 }
 
 } // namespace frst::impl
