@@ -41,9 +41,8 @@ std::optional<Map> Map_Destructure::execute(Symbol_Table& table) const
 
     if (not expr_result->is<Map>())
     {
-        throw Frost_Recoverable_Error{
-            fmt::format("Cannot destructure {} to Map",
-                        expr_result->type_name())};
+        throw Frost_Recoverable_Error{fmt::format(
+            "Cannot destructure {} to Map", expr_result->type_name())};
     }
 
     const auto& map = expr_result->raw_get<Map>();
@@ -51,13 +50,6 @@ std::optional<Map> Map_Destructure::execute(Symbol_Table& table) const
     for (const auto& [key_expr, name] : destructure_elems_)
     {
         auto key = key_expr->evaluate(table);
-        if (!key->is_primitive())
-        {
-            throw Frost_Recoverable_Error{fmt::format(
-                "Non-primitive key expressions are not permitted in Map "
-                "destructuring: {}",
-                key->to_internal_string())};
-        }
         auto itr = map.find(key);
         if (itr == map.end())
             define(name, Value::null());
@@ -83,7 +75,8 @@ std::generator<Statement::Child_Info> Map_Destructure::children() const
     co_yield make_child(expr_, "RHS");
 }
 
-std::generator<Statement::Symbol_Action> Map_Destructure::symbol_sequence() const
+std::generator<Statement::Symbol_Action> Map_Destructure::symbol_sequence()
+    const
 {
     co_yield std::ranges::elements_of(expr_->symbol_sequence());
 
