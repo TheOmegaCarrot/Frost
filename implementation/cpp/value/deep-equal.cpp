@@ -1,8 +1,6 @@
 #include <frost/value.hpp>
 
-#include <algorithm>
 #include <ranges>
-#include <vector>
 
 namespace frst
 {
@@ -40,30 +38,20 @@ bool Value::deep_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
                          if (lhs.size() != rhs.size())
                              return false;
 
-                         auto entries_match = [&](const auto& lhs_kv,
-                                                  const auto& rhs_kv) {
-                             const auto& [lhs_key, lhs_value] = lhs_kv;
-                             const auto& [rhs_key, rhs_value] = rhs_kv;
-                             return std::visit(recurse, lhs_key->value_,
-                                               rhs_key->value_)
-                                    && std::visit(recurse, lhs_value->value_,
-                                                  rhs_value->value_);
-                         };
+                         for (const auto& [lhs_kv, rhs_kv] :
+                              std::views::zip(lhs, rhs))
+                         {
+                             const auto& [lhs_k, lhs_v] = lhs_kv;
+                             const auto& [rhs_k, rhs_v] = rhs_kv;
 
-                         std::vector<std::pair<Value_Ptr, Value_Ptr>>
-                             rhs_entries{std::from_range, rhs};
+                             if (not std::visit(recurse, lhs_k->value_,
+                                                rhs_k->value_)
+                                 || not std::visit(recurse, lhs_v->value_,
+                                                   rhs_v->value_))
+                                 return false;
+                         }
 
-                         return std::ranges::all_of(
-                             lhs, [&](const auto& lhs_kv) {
-                                 auto it = std::ranges::find_if(
-                                     rhs_entries, [&](const auto& rhs_kv) {
-                                         return entries_match(lhs_kv, rhs_kv);
-                                     });
-                                 if (it == rhs_entries.end())
-                                     return false;
-                                 rhs_entries.erase(it);
-                                 return true;
-                             });
+                         return true;
                      },
                      []<Frost_Type T, Frost_Type U>
                          requires(not std::same_as<T, U>)

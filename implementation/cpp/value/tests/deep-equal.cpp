@@ -52,6 +52,12 @@ TEST_CASE("Deep Equal")
         auto s3 = Value::create("world"s);
         CHECK(deep_eq(s1, s2));
         CHECK_FALSE(deep_eq(s1, s3));
+
+        auto nul1 = Value::create(std::string{"a\0b", 3});
+        auto nul2 = Value::create(std::string{"a\0b", 3});
+        auto nul3 = Value::create(std::string{"a\0c", 3});
+        CHECK(deep_eq(nul1, nul2));
+        CHECK_FALSE(deep_eq(nul1, nul3));
     }
 
     SECTION("Different types are always unequal")
@@ -122,6 +128,10 @@ TEST_CASE("Deep Equal")
         auto empty2 = Value::create(Map{});
         CHECK(deep_eq(empty1, empty2));
 
+        auto one_entry = Value::create(
+            Map{{Value::create("k"s), Value::create(1_f)}});
+        CHECK_FALSE(deep_eq(empty1, one_entry));
+
         auto k1a = Value::create(1_f);
         auto v1a = Value::create(2_f);
         auto k1b = Value::create(1_f);
@@ -142,6 +152,60 @@ TEST_CASE("Deep Equal")
         auto map5 = Value::create(Map{{Value::create("k"s), nested_val1}});
         auto map6 = Value::create(Map{{Value::create("k"s), nested_val2}});
         CHECK(deep_eq(map5, map6));
+    }
+
+    SECTION("Map primitive key types remain strict")
+    {
+        auto mixed1 = Value::create(Map{
+            {Value::create(1_f), Value::create("int"s)},
+            {Value::create(1.0), Value::create("float"s)},
+            {Value::create(true), Value::create("bool"s)},
+            {Value::create("1"s), Value::create("string"s)},
+        });
+
+        auto mixed2 = Value::create(Map{
+            {Value::create("1"s), Value::create("string"s)},
+            {Value::create(true), Value::create("bool"s)},
+            {Value::create(1.0), Value::create("float"s)},
+            {Value::create(1_f), Value::create("int"s)},
+        });
+
+        auto int_key = Value::create(Map{
+            {Value::create(1_f), Value::create("same value text"s)},
+        });
+        auto float_key = Value::create(Map{
+            {Value::create(1.0), Value::create("same value text"s)},
+        });
+
+        CHECK(deep_eq(mixed1, mixed2));
+        CHECK_FALSE(deep_eq(int_key, float_key));
+    }
+
+    SECTION("Function identity is preserved inside nested structures")
+    {
+        auto fn_ptr = std::make_shared<Dummy_Callable>();
+
+        auto arr1 = Value::create(Array{Value::create(Function{fn_ptr})});
+        auto arr2 = Value::create(Array{Value::create(Function{fn_ptr})});
+        auto arr3 = Value::create(Array{
+            Value::create(Function{std::make_shared<Dummy_Callable>()}),
+        });
+
+        auto map1 = Value::create(Map{
+            {Value::create("fn"s), Value::create(Function{fn_ptr})},
+        });
+        auto map2 = Value::create(Map{
+            {Value::create("fn"s), Value::create(Function{fn_ptr})},
+        });
+        auto map3 = Value::create(Map{
+            {Value::create("fn"s),
+             Value::create(Function{std::make_shared<Dummy_Callable>()})},
+        });
+
+        CHECK(deep_eq(arr1, arr2));
+        CHECK_FALSE(deep_eq(arr1, arr3));
+        CHECK(deep_eq(map1, map2));
+        CHECK_FALSE(deep_eq(map1, map3));
     }
 
     SECTION("Recursive structures")
