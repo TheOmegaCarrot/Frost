@@ -50,21 +50,23 @@ BUILTIN(mutable_cell)
 
     STRINGS(exchange, get);
 
-    return Value::create(Map{
-        {strings.exchange, system_closure(1, 1,
-                                          [cell](builtin_args_t args) mutable {
-                                              return std::exchange(
-                                                  cell->value,
-                                                  forbid_cycle(args.at(0)));
-                                          })},
-        {
-            strings.get,
-            system_closure(0, 0,
-                           [cell](builtin_args_t) {
-                               return cell->value;
-                           }),
-        },
-    });
+    return Value::create(
+        Value::trusted,
+        Map{
+            {strings.exchange,
+             system_closure(1, 1,
+                            [cell](builtin_args_t args) mutable {
+                                return std::exchange(cell->value,
+                                                     forbid_cycle(args.at(0)));
+                            })},
+            {
+                strings.get,
+                system_closure(0, 0,
+                               [cell](builtin_args_t) {
+                                   return cell->value;
+                               }),
+            },
+        });
 }
 
 void inject_mutable_cell(Symbol_Table& table)

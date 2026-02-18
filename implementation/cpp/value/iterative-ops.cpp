@@ -60,7 +60,7 @@ Value_Ptr map_map(const Value_Ptr& map_val, const Function& op,
         }
     }
 
-    return Value::create(std::move(acc));
+    return Value::create(Value::trusted, std::move(acc));
 }
 
 Value_Ptr filter_map(const Map& map, const Function& pred)
@@ -73,7 +73,7 @@ Value_Ptr filter_map(const Map& map, const Function& pred)
             acc.insert({k, v});
     }
 
-    return Value::create(std::move(acc));
+    return Value::create(Value::trusted, std::move(acc));
 }
 
 Value_Ptr filter_array(const Array& arr, const Function& pred)

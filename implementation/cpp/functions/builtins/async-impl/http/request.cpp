@@ -373,24 +373,28 @@ Value_Ptr request_result_to_value(Request_Result&& request_result)
                                 std::move(header_map_value));
         }
 
-        response_map.emplace(strings.headers,
-                             Value::create(std::move(headers_out)));
+        response_map.emplace(
+            strings.headers,
+            Value::create(Value::trusted, std::move(headers_out)));
 
-        top.emplace(strings.response, Value::create(std::move(response_map)));
+        top.emplace(strings.response,
+                    Value::create(Value::trusted, std::move(response_map)));
     }
     else
     {
         auto& err = request_result.result.error();
         top.emplace(
             strings.error,
-            Value::create(Map{
-                {strings.category, Value::create(std::move(err.category))},
-                {strings.phase, Value::create(std::move(err.phase))},
-                {strings.message, Value::create(std::move(err.message))},
-            }));
+            Value::create(
+                Value::trusted,
+                Map{
+                    {strings.category, Value::create(std::move(err.category))},
+                    {strings.phase, Value::create(std::move(err.phase))},
+                    {strings.message, Value::create(std::move(err.message))},
+                }));
     }
 
-    return Value::create(std::move(top));
+    return Value::create(Value::trusted, std::move(top));
 }
 
 using Request_Task = async::Task<Request_Result, request_result_to_value>;
@@ -775,10 +779,11 @@ Value_Ptr do_http_request(const Map& request_spec)
         return task->is_ready();
     });
 
-    return Value::create(Map{
-        {strings.get, std::move(get)},
-        {strings.is_ready, std::move(is_ready)},
-    });
+    return Value::create(Value::trusted,
+                         Map{
+                             {strings.get, std::move(get)},
+                             {strings.is_ready, std::move(is_ready)},
+                         });
 }
 
 } // namespace frst::http

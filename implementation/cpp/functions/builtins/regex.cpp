@@ -145,6 +145,7 @@ BUILTIN(scan_matches)
                 named.try_emplace(
                     Value::create(auto{group}),
                     Value::create(
+                        Value::trusted,
                         Map{{strings.value,
                              [&] {
                                  if (matches[group].matched)
@@ -155,13 +156,14 @@ BUILTIN(scan_matches)
                             {strings.matched,
                              Value::create(auto{matches[group].matched})}}));
             }
-            each_iteration.try_emplace(strings.named,
-                                       Value::create(std::move(named)));
+            each_iteration.try_emplace(
+                strings.named, Value::create(Value::trusted, std::move(named)));
         }
 
         each_iteration.try_emplace(strings.groups,
                                    (Value::create(std::move(groups))));
-        iterations.push_back(Value::create(std::move(each_iteration)));
+        iterations.push_back(
+            Value::create(Value::trusted, std::move(each_iteration)));
     }
 
     result.try_emplace(strings.found, Value::create(not iterations.empty()));
@@ -169,7 +171,7 @@ BUILTIN(scan_matches)
                        Value::create(static_cast<Int>(iterations.size())));
     result.try_emplace(strings.matches, Value::create(std::move(iterations)));
 
-    return Value::create(std::move(result));
+    return Value::create(Value::trusted, std::move(result));
 }
 
 } // namespace re

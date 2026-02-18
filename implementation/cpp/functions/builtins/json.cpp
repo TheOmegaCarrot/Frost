@@ -58,7 +58,7 @@ struct Parse_Json_Impl
             result.try_emplace(Value::create(String{k}),
                                boost::json::visit(self, v));
         }
-        return Value::create(std::move(result));
+        return Value::create(Value::trusted, std::move(result));
     }
 
 } constexpr static parse_json_impl;

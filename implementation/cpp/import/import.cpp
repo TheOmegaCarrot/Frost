@@ -98,7 +98,7 @@ struct Importer
                 imported.insert_range(exported.value());
         }
 
-        auto import_result = Value::create(std::move(imported));
+        auto import_result = Value::create(Value::trusted, std::move(imported));
         import_cache.emplace(module_spec, import_result);
         return import_result;
     }

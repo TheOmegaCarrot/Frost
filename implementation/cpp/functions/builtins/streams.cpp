@@ -141,16 +141,17 @@ BUILTIN(open_read)
     if (not stream->is_open())
         return Value::null();
 
-    return Value::create(Map{
-        {strings.read_line, read_line(stream)},
-        {strings.read_one, read_one(stream)},
-        {strings.read_rest, read_rest(stream)},
-        {strings.close, close(stream)},
-        {strings.is_open, is_open(stream)},
-        {strings.eof, eof(stream)},
-        {strings.tell, tell(stream)},
-        {strings.seek, seek(stream)},
-    });
+    return Value::create(Value::trusted,
+                         Map{
+                             {strings.read_line, read_line(stream)},
+                             {strings.read_one, read_one(stream)},
+                             {strings.read_rest, read_rest(stream)},
+                             {strings.close, close(stream)},
+                             {strings.is_open, is_open(stream)},
+                             {strings.eof, eof(stream)},
+                             {strings.tell, tell(stream)},
+                             {strings.seek, seek(stream)},
+                         });
 }
 
 BUILTIN(open_trunc)
@@ -163,15 +164,15 @@ BUILTIN(open_trunc)
     if (not stream->is_open())
         return Value::null();
 
-    return Value::create(Map{
-        {strings.write, write(stream)},
-        {strings.writeln, writeln(stream)},
-        {strings.tell, tell(stream)},
-        {strings.seek, seek(stream)},
-        {strings.close, close(stream)},
-        {strings.is_open, is_open(stream)},
-        {strings.flush, flush(stream)},
-    });
+    return Value::create(Value::trusted, Map{
+                                             {strings.write, write(stream)},
+                                             {strings.writeln, writeln(stream)},
+                                             {strings.tell, tell(stream)},
+                                             {strings.seek, seek(stream)},
+                                             {strings.close, close(stream)},
+                                             {strings.is_open, is_open(stream)},
+                                             {strings.flush, flush(stream)},
+                                         });
 }
 
 BUILTIN(open_append)
@@ -184,15 +185,15 @@ BUILTIN(open_append)
     if (not stream->is_open())
         return Value::null();
 
-    return Value::create(Map{
-        {strings.write, write(stream)},
-        {strings.writeln, writeln(stream)},
-        {strings.tell, tell(stream)},
-        {strings.seek, seek(stream)},
-        {strings.close, close(stream)},
-        {strings.is_open, is_open(stream)},
-        {strings.flush, flush(stream)},
-    });
+    return Value::create(Value::trusted, Map{
+                                             {strings.write, write(stream)},
+                                             {strings.writeln, writeln(stream)},
+                                             {strings.tell, tell(stream)},
+                                             {strings.seek, seek(stream)},
+                                             {strings.close, close(stream)},
+                                             {strings.is_open, is_open(stream)},
+                                             {strings.flush, flush(stream)},
+                                         });
 }
 
 BUILTIN(stringreader)
@@ -201,14 +202,15 @@ BUILTIN(stringreader)
 
     auto stream = std::make_shared<std::istringstream>(GET(0, String));
 
-    return Value::create(Map{
-        {strings.read_line, read_line(stream)},
-        {strings.read_one, read_one(stream)},
-        {strings.read_rest, read_rest(stream)},
-        {strings.eof, eof(stream)},
-        {strings.tell, tell(stream)},
-        {strings.seek, seek(stream)},
-    });
+    return Value::create(Value::trusted,
+                         Map{
+                             {strings.read_line, read_line(stream)},
+                             {strings.read_one, read_one(stream)},
+                             {strings.read_rest, read_rest(stream)},
+                             {strings.eof, eof(stream)},
+                             {strings.tell, tell(stream)},
+                             {strings.seek, seek(stream)},
+                         });
 }
 
 BUILTIN(stringwriter)
@@ -216,6 +218,7 @@ BUILTIN(stringwriter)
     auto stream = std::make_shared<std::ostringstream>();
 
     return Value::create(
+        Value::trusted,
         Map{{strings.write, write(stream)},
             {strings.writeln, writeln(stream)},
             {strings.tell, tell(stream)},
@@ -231,34 +234,37 @@ Value_Ptr make_stdin()
     // I'm not proud of this...
     std::shared_ptr<std::istream> hacky_stream_ptr(&std::cin, [](auto&&...) {
     });
-    return Value::create(Map{
-        {strings.read_line, read_line(hacky_stream_ptr)},
-        {strings.read_one, read_one(hacky_stream_ptr)},
-        {strings.read, read_rest(hacky_stream_ptr)},
-    });
+    return Value::create(Value::trusted,
+                         Map{
+                             {strings.read_line, read_line(hacky_stream_ptr)},
+                             {strings.read_one, read_one(hacky_stream_ptr)},
+                             {strings.read, read_rest(hacky_stream_ptr)},
+                         });
 }
 
 Value_Ptr make_stderr()
 {
-    return Value::create(Map{
-        {strings.write,
-         system_closure(1, 1,
-                        [](builtin_args_t args) {
-                            REQUIRE_ARGS("stderr.write", TYPES(String));
-                            const auto& str = GET(0, String);
-                            std::fwrite(str.c_str(), 1, str.size(), stderr);
-                            return Value::null();
-                        })},
-        {strings.writeln,
-         system_closure(1, 1,
-                        [](builtin_args_t args) {
-                            REQUIRE_ARGS("stderr.writeln", TYPES(String));
-                            const auto& str = GET(0, String);
-                            std::fwrite(str.c_str(), 1, str.size(), stderr);
-                            std::fwrite("\n", 1, 1, stderr);
-                            return Value::null();
-                        })},
-    });
+    return Value::create(
+        Value::trusted,
+        Map{
+            {strings.write,
+             system_closure(1, 1,
+                            [](builtin_args_t args) {
+                                REQUIRE_ARGS("stderr.write", TYPES(String));
+                                const auto& str = GET(0, String);
+                                std::fwrite(str.c_str(), 1, str.size(), stderr);
+                                return Value::null();
+                            })},
+            {strings.writeln,
+             system_closure(1, 1,
+                            [](builtin_args_t args) {
+                                REQUIRE_ARGS("stderr.writeln", TYPES(String));
+                                const auto& str = GET(0, String);
+                                std::fwrite(str.c_str(), 1, str.size(), stderr);
+                                std::fwrite("\n", 1, 1, stderr);
+                                return Value::null();
+                            })},
+        });
 }
 
 void inject_streams(Symbol_Table& table)

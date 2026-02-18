@@ -101,6 +101,17 @@ class Value
         value_.emplace<Map>(std::move(map));
     }
 
+    // Constructor tag for _trusted_ map input (keys are int, bool float, or
+    // string)
+    struct Trusted
+    {
+    } constexpr static inline trusted{};
+
+    Value(Trusted, Map&& map)
+        : value_{std::move(map)}
+    {
+    }
+
     Value(Singleton_Tag, Null)
         : value_{Null{}}
     {

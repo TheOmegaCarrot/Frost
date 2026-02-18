@@ -178,59 +178,70 @@ BUILTIN(stat)
         {strings.type, type_to_str(status.type())},
         {
             strings.perms,
-            Value::create(Map{
-                {strings.owner,
-                 Value::create(Map{
-                     {strings.read,
-                      Value::create(
-                          Bool{(perms & owner_read)
-                               != static_cast<std::filesystem::perms>(0)})},
-                     {strings.write,
-                      Value::create(
-                          Bool{(perms & owner_write)
-                               != static_cast<std::filesystem::perms>(0)})},
-                     {strings.exec,
-                      Value::create(
-                          Bool{(perms & owner_exec)
-                               != static_cast<std::filesystem::perms>(0)})},
-                 })},
-                {strings.group,
-                 Value::create(Map{
-                     {strings.read,
-                      Value::create(
-                          Bool{(perms & group_read)
-                               != static_cast<std::filesystem::perms>(0)})},
-                     {strings.write,
-                      Value::create(
-                          Bool{(perms & group_write)
-                               != static_cast<std::filesystem::perms>(0)})},
-                     {strings.exec,
-                      Value::create(
-                          Bool{(perms & group_exec)
-                               != static_cast<std::filesystem::perms>(0)})},
-                 })},
-                {
-                    strings.others,
-                    Value::create(Map{
-                        {strings.read,
-                         Value::create(
-                             Bool{(perms & others_read)
+            Value::create(
+                Value::trusted,
+                Map{
+                    {strings.owner,
+                     Value::create(
+                         Value::trusted,
+                         Map{
+                             {strings.read,
+                              Value::create(Bool{
+                                  (perms & owner_read)
                                   != static_cast<std::filesystem::perms>(0)})},
-                        {strings.write,
-                         Value::create(
-                             Bool{(perms & others_write)
+                             {strings.write,
+                              Value::create(Bool{
+                                  (perms & owner_write)
                                   != static_cast<std::filesystem::perms>(0)})},
-                        {strings.exec,
-                         Value::create(
-                             Bool{(perms & others_exec)
+                             {strings.exec,
+                              Value::create(Bool{
+                                  (perms & owner_exec)
                                   != static_cast<std::filesystem::perms>(0)})},
-                    }),
-                },
-            }),
+                         })},
+                    {strings.group,
+                     Value::create(
+                         Value::trusted,
+                         Map{
+                             {strings.read,
+                              Value::create(Bool{
+                                  (perms & group_read)
+                                  != static_cast<std::filesystem::perms>(0)})},
+                             {strings.write,
+                              Value::create(Bool{
+                                  (perms & group_write)
+                                  != static_cast<std::filesystem::perms>(0)})},
+                             {strings.exec,
+                              Value::create(Bool{
+                                  (perms & group_exec)
+                                  != static_cast<std::filesystem::perms>(0)})},
+                         })},
+                    {
+                        strings.others,
+                        Value::create(
+                            Value::trusted,
+                            Map{
+                                {strings.read,
+                                 Value::create(Bool{
+                                     (perms & others_read)
+                                     != static_cast<std::filesystem::perms>(
+                                         0)})},
+                                {strings.write,
+                                 Value::create(Bool{
+                                     (perms & others_write)
+                                     != static_cast<std::filesystem::perms>(
+                                         0)})},
+                                {strings.exec,
+                                 Value::create(Bool{
+                                     (perms & others_exec)
+                                     != static_cast<std::filesystem::perms>(
+                                         0)})},
+                            }),
+                    },
+                }),
         },
     };
 
-    return Value::create(std::move(result));
+    return Value::create(Value::trusted, std::move(result));
 }
 
 BUILTIN(concat)

@@ -439,10 +439,11 @@ BUILTIN(partition)
         (fn->call({elem})->truthy() ? pass : fail).push_back(elem);
     }
 
-    return Value::create(Map{
-        {strings.pass, Value::create(std::move(pass))},
-        {strings.fail, Value::create(std::move(fail))},
-    });
+    return Value::create(Value::trusted,
+                         Map{
+                             {strings.pass, Value::create(std::move(pass))},
+                             {strings.fail, Value::create(std::move(fail))},
+                         });
 }
 
 void inject_ranges(Symbol_Table& table)

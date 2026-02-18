@@ -27,7 +27,7 @@
     {Value::create(String{#NAME}), MAKE_BUILTIN(NAME, MIN_ARITY, MAX_ARITY)}
 
 #define INJECT_MAP(NAME, ...)                                                  \
-    table.define(#NAME, Value::create(Map{__VA_ARGS__}));
+    table.define(#NAME, Value::create(Value::trusted, Map{__VA_ARGS__}));
 
 #define UNIFORM_VARIADIC(NAME, TYPE)                                           \
     for (const auto& [i, arg] : std::views::enumerate(args))                   \

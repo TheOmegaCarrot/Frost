@@ -21,12 +21,14 @@ BUILTIN(try_call)
     try
     {
         return Value::create(
+            Value::trusted,
             Map{{strings.value, GET(0, Function)->call(GET(1, Array))},
                 {strings.ok, Value::create(true)}});
     }
     catch (const Frost_Recoverable_Error& err)
     {
         return Value::create(
+            Value::trusted,
             Map{{strings.ok, Value::create(false)},
                 {strings.error, Value::create(String{err.what()})}});
     }

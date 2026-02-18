@@ -35,7 +35,7 @@ struct Add_Impl
             acc.insert_or_assign(k, v);
         }
 
-        return acc;
+        return {Value::trusted, std::move(acc)};
     }
     template <typename T, typename U>
     static Value operator()(const T&, const U&)

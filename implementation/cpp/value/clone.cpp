@@ -30,6 +30,6 @@ Value_Ptr Value::clone() const
                      {
                          acc.emplace(k->clone(), v->clone());
                      }
-                     return Value::create(std::move(acc));
+                     return Value::create(Value::trusted, std::move(acc));
                  }});
 }
