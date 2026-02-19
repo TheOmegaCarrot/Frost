@@ -1,4 +1,4 @@
-Checks: '-*,clang-analyzer-core.*,clang-analyzer-cplusplus.*,clang-analyzer-deadcode.*'
+Checks: '-*,clang-analyzer-*,-clang-analyzer-optin.core.EnumCastOutOfRange'
 WarningsAsErrors: ''
 HeaderFilterRegex: '(^|.*/)cpp/'
 FormatStyle: none
