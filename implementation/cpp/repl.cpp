@@ -385,7 +385,6 @@ void repl(frst::Symbol_Table& symbols)
     rx.bind_key_internal(Replxx::KEY::control('N'), "history_next");
 
     Highlight_Callback highlight_callback;
-    highlight_callback.reset();
 
     // wrap it in a lambda because replxx copies the callback
     rx.set_highlighter_callback(
@@ -402,6 +401,8 @@ void repl(frst::Symbol_Table& symbols)
         if (line->empty())
             continue;
 
+        rx.history_add(*line);
+
         auto parse_result = frst::parse_program(*line);
 
         if (not parse_result)
@@ -414,7 +415,6 @@ void repl(frst::Symbol_Table& symbols)
             continue;
 
         repl_exec(parse_result.value(), symbols, rx);
-        rx.history_add(*line);
         highlight_callback.reset();
     }
 }
