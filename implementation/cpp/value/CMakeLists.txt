@@ -21,6 +21,7 @@ target_include_directories( frost-value
 target_link_libraries( frost-value
     PUBLIC
     frost-common
+    frost-utils
 )
 
 set(VALUE_TEST_FILES

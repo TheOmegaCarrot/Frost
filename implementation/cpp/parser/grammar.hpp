@@ -3,11 +3,13 @@
 
 #include <charconv>
 #include <optional>
+#include <tuple>
 #include <type_traits>
 #include <vector>
 
 #include <frost/ast.hpp>
 #include <frost/ast/lambda.hpp>
+#include <frost/utils.hpp>
 
 #include <lexy/callback.hpp>
 #include <lexy/dsl.hpp>
@@ -170,16 +172,17 @@ struct identifier
     static constexpr auto base =
         dsl::identifier(dsl::ascii::alpha_underscore, dsl::ascii::word);
 
-    static constexpr auto reserved = base.reserve(
-        LEXY_KEYWORD("if", base), LEXY_KEYWORD("else", base),
-        LEXY_KEYWORD("elif", base), LEXY_KEYWORD("def", base),
-        LEXY_KEYWORD("export", base), LEXY_KEYWORD("fn", base),
-        LEXY_KEYWORD("reduce", base), LEXY_KEYWORD("map", base),
-        LEXY_KEYWORD("foreach", base), LEXY_KEYWORD("filter", base),
-        LEXY_KEYWORD("with", base), LEXY_KEYWORD("init", base),
-        LEXY_KEYWORD("true", base), LEXY_KEYWORD("false", base),
-        LEXY_KEYWORD("and", base), LEXY_KEYWORD("or", base),
-        LEXY_KEYWORD("not", base), LEXY_KEYWORD("null", base));
+    static constexpr auto reserved = [] {
+#define X(keyword) LEXY_KEYWORD(keyword, base),
+        constexpr auto keyword_list = std::tuple{FROST_X_KEYWORDS};
+#undef X
+
+        return std::apply(
+            [](const auto&... keywords) {
+                return base.reserve(keywords...);
+            },
+            keyword_list);
+    }();
 
     static constexpr auto rule = reserved;
 

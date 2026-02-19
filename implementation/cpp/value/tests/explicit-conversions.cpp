@@ -112,6 +112,13 @@ TEST_CASE("to_pretty_string")
     auto Map_Escaped = Value::create(frst::Map{
         {Value::create("k\n"s), Escaped},
     });
+    auto Map_Keyword_Key = Value::create(frst::Map{
+        {Value::create("if"s), Value::create(1_f)},
+        {Value::create("okay"s), Value::create(2_f)},
+    });
+    auto Map_Non_Identifier_Key = Value::create(frst::Map{
+        {Value::create("not-valid"s), Value::create(3_f)},
+    });
     auto Array_Empty_Structs = Value::create(frst::Array{
         Value::create(frst::Array{}),
         Value::create(frst::Map{}),
@@ -129,8 +136,8 @@ TEST_CASE("to_pretty_string")
     "line1\nline2\t\"x\""
 ])");
     CHECK(Map->to_internal_string({.pretty = true}) == R"({
-    ["a"]: 1,
-    ["b"]: [
+    a: 1,
+    b: [
         2,
         3
     ]
@@ -138,12 +145,19 @@ TEST_CASE("to_pretty_string")
     CHECK(Map_Escaped->to_internal_string({.pretty = true}) == R"({
     ["k\n"]: "line1\nline2\t\"x\""
 })");
+    CHECK(Map_Keyword_Key->to_internal_string({.pretty = true}) == R"({
+    ["if"]: 1,
+    okay: 2
+})");
+    CHECK(Map_Non_Identifier_Key->to_internal_string({.pretty = true}) == R"({
+    ["not-valid"]: 3
+})");
     CHECK(Array_Empty_Structs->to_internal_string({.pretty = true}) == R"([
     [],
     {}
 ])");
     CHECK(Map_Empty_Structs->to_internal_string({.pretty = true}) == R"({
-    ["arr"]: [],
+    arr: [],
     ["map"]: {}
 })");
 

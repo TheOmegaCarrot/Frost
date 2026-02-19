@@ -5,8 +5,6 @@
 namespace frst::utils
 {
 
-namespace
-{
 bool is_identifier_like(const std::string& key)
 {
     if (key.empty())
@@ -41,7 +39,6 @@ bool is_identifier_like(const std::string& key)
 
     return true;
 }
-} // namespace
 
 std::expected<std::vector<Fmt_Segment>, std::string> parse_fmt_string(
     const std::string& str)

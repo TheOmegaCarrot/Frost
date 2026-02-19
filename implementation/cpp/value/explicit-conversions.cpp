@@ -1,9 +1,9 @@
+#include <frost/utils.hpp>
 #include <frost/value.hpp>
 
 #include <fmt/format.h>
 
 #include <charconv>
-#include <iomanip>
 #include <ranges>
 
 using namespace std::literals;
@@ -115,9 +115,25 @@ struct To_String_Impl
                   const auto& [k, v] = kv;
                   std::size_t indent = params.pretty ? params.depth * 4 : 0;
 
-                  return fmt::format(R"({: >{}}[{}]: {})", "", indent,
-                                     k->to_internal_string(params),
-                                     v->to_internal_string(params));
+                  if (params.pretty
+                      && k->template as<String>()
+                             .transform([](const String& key) {
+                                 return utils::is_identifier_like(key)
+                                        && not utils::is_reserved_keyword(key);
+                             })
+                             .value_or(false))
+                  {
+                      return fmt::format(R"({: >{}}{}: {})", "", indent,
+                                         k->to_internal_string(),
+                                         v->to_internal_string(params));
+                  }
+                  else
+                  {
+
+                      return fmt::format(R"({: >{}}[{}]: {})", "", indent,
+                                         k->to_internal_string(params),
+                                         v->to_internal_string(params));
+                  }
               })
             | std::views::join_with(joiner)
             | std::ranges::to<std::string>();

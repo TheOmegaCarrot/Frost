@@ -3,6 +3,7 @@
 #include <frost/parser.hpp>
 #include <frost/prelude.hpp>
 #include <frost/symbol-table.hpp>
+#include <frost/utils.hpp>
 #include <frost/value.hpp>
 
 #include <fmt/format.h>
@@ -10,7 +11,6 @@
 
 #include <replxx.hxx>
 
-#include <flat_set>
 #include <stack>
 
 using replxx::Replxx;
@@ -52,12 +52,6 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
         fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
     }
 }
-
-const static std::flat_set<std::string_view> keywords{
-    "if",     "else",  "elif",    "export", "def",  "fn",
-    "reduce", "map",   "foreach", "filter", "with", "init",
-    "true",   "false", "and",     "or",     "not",  "null",
-};
 
 bool alpha(std::optional<char> c)
 {
@@ -232,7 +226,7 @@ struct Highlight_Callback
                     ++end;
                 auto substr =
                     std::string_view{input.data() + start, end - start};
-                if (keywords.contains(substr))
+                if (frst::utils::is_reserved_keyword(substr))
                     for (auto brush = start; brush < end; ++brush)
                         colors[brush] = KWCOLOR;
             }
@@ -275,8 +269,9 @@ struct Completion_Callbacks
 
         std::optional<std::string_view> completion;
 
-        for (const auto& candidates : std::views::concat(
-                 keywords, std::views::keys(symbols->debug_table())))
+        for (const auto& candidates :
+             std::views::concat(frst::utils::reserved_keywords,
+                                std::views::keys(symbols->debug_table())))
         {
             if (candidates.starts_with(token))
             {
@@ -309,7 +304,7 @@ struct Completion_Callbacks
 
         Replxx::completions_t out;
 
-        for (const auto& keyword : keywords)
+        for (const auto& keyword : frst::utils::reserved_keywords)
         {
             if (keyword.starts_with(token))
                 out.emplace_back(std::string{keyword}, Replxx::Color::RED);
