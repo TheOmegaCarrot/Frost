@@ -87,11 +87,14 @@ Lambda::Lambda(std::vector<std::string> params,
             },
         });
     }
+
+    closure_define_count_ = names_defined_so_far.size();
 }
 
 [[nodiscard]] Value_Ptr Lambda::evaluate(const Symbol_Table& syms) const
 {
     Symbol_Table captures;
+    captures.reserve(names_to_capture_.size());
     for (const std::string& name : names_to_capture_)
     {
         if (not syms.has(name))
@@ -114,8 +117,9 @@ Lambda::Lambda(std::vector<std::string> params,
         }
     }
 
-    auto closure = std::make_shared<Closure>(
-        params_, body_, std::move(captures), vararg_param_);
+    auto closure =
+        std::make_shared<Closure>(params_, body_, std::move(captures),
+                                  closure_define_count_, vararg_param_);
 
     auto weak_closure = Value::create(
         Function{std::make_shared<Weak_Closure>(std::weak_ptr{closure})});

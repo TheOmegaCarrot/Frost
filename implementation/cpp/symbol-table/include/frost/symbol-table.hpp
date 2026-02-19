@@ -33,6 +33,8 @@ class Symbol_Table
     // Check if a name is defined within the symbol table
     virtual bool has(const std::string& name) const;
 
+    virtual void reserve(std::size_t size);
+
     const std::unordered_map<std::string, Value_Ptr>& debug_table() const;
 
     const Symbol_Table* debug_failover() const;

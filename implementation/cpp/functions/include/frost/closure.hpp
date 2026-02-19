@@ -20,7 +20,7 @@ class Closure : public Callable
 
     Closure(std::vector<std::string> parameters,
             std::shared_ptr<std::vector<ast::Statement::Ptr>> body,
-            Symbol_Table captures,
+            Symbol_Table captures, std::size_t define_count,
             std::optional<std::string> vararg_parameter = {});
 
     Value_Ptr call(std::span<const Value_Ptr> args) const override;
@@ -34,6 +34,7 @@ class Closure : public Callable
     std::shared_ptr<std::vector<ast::Statement::Ptr>> body_;
     Symbol_Table captures_;
     std::optional<std::string> vararg_parameter_;
+    std::size_t define_count_;
 };
 
 class Weak_Closure final : public Callable

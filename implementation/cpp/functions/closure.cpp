@@ -11,12 +11,13 @@ using namespace frst;
 
 Closure::Closure(std::vector<std::string> parameters,
                  std::shared_ptr<std::vector<ast::Statement::Ptr>> body,
-                 Symbol_Table captures,
+                 Symbol_Table captures, std::size_t define_count,
                  std::optional<std::string> vararg_parameter)
     : parameters_{std::move(parameters)}
     , body_{std::move(body)}
     , captures_{std::move(captures)}
     , vararg_parameter_{std::move(vararg_parameter)}
+    , define_count_{define_count}
 {
     // Assumed: all params in parameters_ and vararg_parameter_ (if present) are
     // all unique. No duplicates exist.
@@ -53,6 +54,7 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
     }
 
     Symbol_Table exec_table(&captures_);
+    exec_table.reserve(define_count_);
     for (const auto& [arg_name, arg_val] : std::views::zip(
              parameters_,
              std::views::concat(args, std::views::repeat(Value::null()))))

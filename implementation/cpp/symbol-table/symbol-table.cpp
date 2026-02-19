@@ -44,8 +44,13 @@ bool Symbol_Table::has(const std::string& name) const
     }();
 }
 
-const std::unordered_map<std::string, frst::Value_Ptr>&
-Symbol_Table::debug_table() const
+void Symbol_Table::reserve(std::size_t size)
+{
+    table_.reserve(size);
+}
+
+const std::unordered_map<std::string, frst::Value_Ptr>& Symbol_Table::
+    debug_table() const
 {
     return table_;
 }
