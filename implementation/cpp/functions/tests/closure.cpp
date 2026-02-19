@@ -150,7 +150,7 @@ TEST_CASE("Construct Closure")
         body.push_back(node<Name_Lookup>("missing"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, captures};
+        Closure closure{{"p"}, body_ptr, captures, 0};
 
         CHECK(capture_names(closure) == std::set<std::string>{"x", "y"});
         CHECK(closure.debug_capture_table().lookup("x") == x_val);
@@ -170,7 +170,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         auto result = closure.call({});
         CHECK(result->is<Null>());
@@ -182,7 +182,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p", "q"}, body_ptr, captures};
+        Closure closure{{"p", "q"}, body_ptr, captures, 0};
 
         auto result = closure.call({Value::create(1_f)});
         CHECK(result->is<Null>());
@@ -195,7 +195,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Name_Lookup>("q"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p", "q"}, body_ptr, captures};
+        Closure closure{{"p", "q"}, body_ptr, captures, 0};
 
         auto result = closure.call({Value::create(1_f)});
         CHECK(result->is<Null>());
@@ -213,7 +213,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Array_Constructor>(std::move(elems)));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"a", "b", "c"}, body_ptr, captures};
+        Closure closure{{"a", "b", "c"}, body_ptr, captures, 0};
 
         auto result = closure.call({});
         auto arr = result->get<Array>().value();
@@ -230,7 +230,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Name_Lookup>("rest"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, captures, "rest"};
+        Closure closure{{"p"}, body_ptr, captures, 0, "rest"};
 
         auto result = closure.call({});
         REQUIRE(result->is<Array>());
@@ -248,7 +248,7 @@ TEST_CASE("Call Closure")
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);
 
-        Closure closure{{"p"}, body_ptr, captures, "rest"};
+        Closure closure{{"p"}, body_ptr, captures, 0, "rest"};
 
         auto result = closure.call({a, b, c});
         REQUIRE(result->is<Array>());
@@ -269,7 +269,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Array_Constructor>(std::move(elems)));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, captures, "rest"};
+        Closure closure{{"p"}, body_ptr, captures, 0, "rest"};
 
         auto result = closure.call({});
         REQUIRE(result->is<Array>());
@@ -295,7 +295,7 @@ TEST_CASE("Call Closure")
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);
 
-        Closure closure{{"p"}, body_ptr, captures, "rest"};
+        Closure closure{{"p"}, body_ptr, captures, 0, "rest"};
 
         auto result = closure.call({a, b, c});
         REQUIRE(result->is<Array>());
@@ -316,7 +316,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Name_Lookup>("rest"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures, "rest"};
+        Closure closure{{}, body_ptr, captures, 0, "rest"};
 
         auto result = closure.call({});
         REQUIRE(result->is<Array>());
@@ -334,7 +334,7 @@ TEST_CASE("Call Closure")
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);
 
-        Closure closure{{}, body_ptr, captures, "rest"};
+        Closure closure{{}, body_ptr, captures, 0, "rest"};
 
         auto result = closure.call({a, b, c});
         REQUIRE(result->is<Array>());
@@ -354,7 +354,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Name_Lookup>("x"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, captures, "rest"};
+        Closure closure{{"p"}, body_ptr, captures, 0, "rest"};
 
         const auto names = capture_names(closure);
         CHECK(names.contains("x"));
@@ -368,7 +368,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Name_Lookup>("p"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, captures, "rest"};
+        Closure closure{{"p"}, body_ptr, captures, 0, "rest"};
 
         auto a = Value::create(1_f);
         auto b = Value::create(2_f);
@@ -384,7 +384,7 @@ TEST_CASE("Call Closure")
         body.push_back(node<Literal>(Value::create(42_f)));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, captures, "rest"};
+        Closure closure{{"p"}, body_ptr, captures, 0, "rest"};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;
@@ -402,7 +402,7 @@ Literal(42)
         body.push_back(node<Name_Lookup>("rest"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures, "rest"};
+        Closure closure{{}, body_ptr, captures, 0, "rest"};
 
         CHECK_THROWS_WITH(closure.call({}),
                           "Cannot define rest as it is already defined");
@@ -416,7 +416,7 @@ Literal(42)
         auto body_ptr = make_body(std::move(body));
 
         auto p_val = Value::create(99_f);
-        Closure closure{{"p"}, body_ptr, captures};
+        Closure closure{{"p"}, body_ptr, captures, 0};
 
         auto result = closure.call({p_val});
         CHECK(result == p_val);
@@ -431,7 +431,7 @@ Literal(42)
         body.push_back(node<Literal>(lit_val));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         auto result = closure.call({});
         CHECK(result == lit_val);
@@ -444,7 +444,7 @@ Literal(42)
         body.push_back(node<Name_Lookup>("p"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, captures};
+        Closure closure{{"p"}, body_ptr, captures, 0};
 
         auto first = Value::create(1_f);
         auto second = Value::create(2_f);
@@ -486,7 +486,7 @@ Literal(42)
         body.push_back(std::move(third));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         auto result = closure.call({});
         CHECK(result == third_val);
@@ -501,7 +501,7 @@ Literal(42)
         body.push_back(node<Name_Lookup>("x"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         auto first = closure.call({});
         auto second = closure.call({});
@@ -519,7 +519,7 @@ Literal(42)
         body.push_back(node<Name_Lookup>("x"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, captures};
+        Closure closure{{"p"}, body_ptr, captures, 0};
 
         auto first = Value::create(10_f);
         auto second = Value::create(20_f);
@@ -540,7 +540,7 @@ Literal(42)
                                    node<Name_Lookup>("y")));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         auto result = closure.call({});
         CHECK(result->get<Int>() == 6_f);
@@ -556,7 +556,7 @@ Literal(42)
         body.push_back(node<Name_Lookup>("x"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         auto result = closure.call({});
         CHECK(result == x_val);
@@ -575,7 +575,7 @@ Literal(42)
         body.push_back(node<Name_Lookup>("x"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         auto result = closure.call({});
         CHECK(result == local_val);
@@ -589,7 +589,7 @@ Literal(42)
         body.push_back(node<Define>("x", node<Literal>(Value::create(1_f))));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         auto result = closure.call({});
         CHECK(result->is<Null>());
@@ -605,7 +605,7 @@ Literal(42)
         body.push_back(node<Flag_Statement>(&executed));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         auto result = closure.call({});
         CHECK(result->is<Null>());
@@ -624,7 +624,7 @@ Literal(42)
         body.push_back(std::move(expr));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, captures};
+        Closure closure{{"p"}, body_ptr, captures, 0};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f), Value::create(2_f)}),
@@ -638,7 +638,7 @@ Literal(42)
         body.push_back(node<Literal>(Value::create(1_f)));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, captures};
+        Closure closure{{"p"}, body_ptr, captures, 0};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f), Value::create(2_f)}),
@@ -654,7 +654,7 @@ Literal(42)
                                    node<Literal>(Value::create(true))));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         CHECK_THROWS_WITH(closure.call({}),
                           ContainsSubstring("Cannot add incompatible types"));
@@ -667,7 +667,7 @@ Literal(42)
         body.push_back(node<Uncaptured_Lookup>("missing"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         CHECK_THROWS_WITH(closure.call({}),
                           ContainsSubstring("Symbol")
@@ -689,7 +689,7 @@ TEST_CASE("Debug Dump Closure")
         body.push_back(node<Literal>(Value::create(42_f)));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;
@@ -705,7 +705,7 @@ Literal(42)
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;
@@ -727,7 +727,7 @@ Literal(42)
             std::optional<Expression::Ptr>{node<Literal>(Value::create(0_f))}));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, captures};
+        Closure closure{{}, body_ptr, captures, 0};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;

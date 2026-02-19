@@ -15,7 +15,7 @@ class Mock_Symbol_Table : public Symbol_Table
 
     MAKE_CONST_MOCK(has, auto(const std::string&)->bool, override);
 
-    MAKE_CONST_MOCK(reserve, auto(std::size_t)->void, override);
+    MAKE_MOCK(reserve, auto(std::size_t)->void, override);
 };
 } // namespace frst::mock
 
