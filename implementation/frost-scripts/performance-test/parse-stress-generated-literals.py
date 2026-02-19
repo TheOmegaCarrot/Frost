@@ -13,8 +13,7 @@ data = [
     [91, 92, 93, 94, 95, 96, 97, 98, 99, 100],
 ]
 
-row_totals = list(map(sum, data))
-result = sum(row_totals)
+result = sum(sum(row) for row in data)
 
 assert result == 5050
 print(result)

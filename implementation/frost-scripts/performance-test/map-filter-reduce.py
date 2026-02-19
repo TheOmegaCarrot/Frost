@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 
 n = 50_000
-values = range(n)
-
-squares = map(lambda x: x * x, values)
-filtered = filter(lambda x: x < 1_000_000_000, squares)
-total = sum(filtered)
+total = sum(square for square in (x * x for x in range(n)) if square < 1_000_000_000)
 
 print(total)

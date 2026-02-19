@@ -7,6 +7,5 @@ def fib(n: int) -> int:
     return fib(n - 1) + fib(n - 2)
 
 
-values = list(map(fib, range(30)))
-total = sum(values)
+total = sum(fib(i) for i in range(30))
 print(total)

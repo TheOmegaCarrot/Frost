@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 
-from functools import reduce
-
 n = 2000
-chunks = list(map(lambda i: [i, i + 1], range(n)))
-merged = reduce(lambda acc, chunk: acc + chunk, chunks, [])
-
-result = reduce(lambda acc, x: acc + x, merged, 0)
+chunks = [[i, i + 1] for i in range(n)]
+merged = [value for chunk in chunks for value in chunk]
+result = sum(merged)
 assert result == 4_000_000
 print(result)
