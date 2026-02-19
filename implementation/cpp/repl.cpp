@@ -80,6 +80,33 @@ std::optional<char> quote(std::optional<char> c)
     return std::nullopt;
 }
 
+bool in_unterminated_string(std::string_view input)
+{
+    std::optional<char> current_quote;
+
+    for (std::size_t i = 0; i < input.size(); ++i)
+    {
+        if (!current_quote.has_value())
+        {
+            if (auto q = quote(input[i]))
+                current_quote = *q;
+            continue;
+        }
+
+        if (input[i] != current_quote.value())
+            continue;
+
+        std::size_t slash_count = 0;
+        for (std::size_t k = i; k > 0 && input[k - 1] == '\\'; --k)
+            ++slash_count;
+
+        if (slash_count % 2 == 0)
+            current_quote.reset();
+    }
+
+    return current_quote.has_value();
+}
+
 struct Highlight_Callback
 {
 
@@ -265,6 +292,12 @@ struct Completion_Callbacks
     Replxx::hints_t operator()(const std::string& input, int& len,
                                Replxx::Color& color)
     {
+        if (in_unterminated_string(input))
+        {
+            len = 0;
+            return {};
+        }
+
         std::string_view token = end_token(input);
 
         std::optional<std::string_view> completion;
@@ -298,6 +331,12 @@ struct Completion_Callbacks
 
     Replxx::completions_t operator()(const std::string& input, int& len)
     {
+        if (in_unterminated_string(input))
+        {
+            len = 0;
+            return {};
+        }
+
         std::string_view token = end_token(input);
 
         len = token.length();
