@@ -69,6 +69,33 @@ BUILTIN(drop)
     DIRECT_NUM_IMPL(drop);
 }
 
+#define REV_REV_IMPL(NAME)                                                     \
+    return Value::create(arr                                                   \
+                         | std::views::reverse                                 \
+                         | std::views::NAME(num)                               \
+                         | std::views::reverse                                 \
+                         | std::ranges::to<Array>())
+
+BUILTIN(tail)
+{
+    REQUIRE_ARGS("tail", TYPES(Array), TYPES(Int));
+
+    ARR_NUM;
+    GE0_NUM(tail);
+
+    REV_REV_IMPL(take);
+}
+
+BUILTIN(drop_tail)
+{
+    REQUIRE_ARGS("drop_tail", TYPES(Array), TYPES(Int));
+
+    ARR_NUM;
+    GE0_NUM(drop_tail);
+
+    REV_REV_IMPL(drop);
+}
+
 #define REWRAP_IMPL(NAME)                                                      \
     return Value::create(                                                      \
         arr | std::views::NAME(num) | array_array | std::ranges::to<Array>());
@@ -451,6 +478,8 @@ void inject_ranges(Symbol_Table& table)
     INJECT(stride, 2, 2);
     INJECT(take, 2, 2);
     INJECT(drop, 2, 2);
+    INJECT(tail, 2, 2);
+    INJECT(drop_tail, 2, 2);
     INJECT(slide, 2, 2);
     INJECT(chunk, 2, 2);
     INJECT(reverse, 1, 1);

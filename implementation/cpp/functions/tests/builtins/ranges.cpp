@@ -60,7 +60,7 @@ TEST_CASE("Builtin ranges")
     inject_builtins(table);
 
     const std::vector<std::string> names{
-        "stride", "take", "drop", "slide", "chunk",
+        "stride", "take", "drop", "tail", "drop_tail", "slide", "chunk",
     };
     const std::vector<std::string> unary_names{
         "reverse",
@@ -532,6 +532,56 @@ TEST_CASE("Builtin ranges")
         require_array_eq(fn->call({empty_arr, Value::create(2_f)}), {});
 
         CHECK_THROWS_AS(fn->call({arr, Value::create(-1_f)}), Frost_User_Error);
+    }
+
+    SECTION("tail semantics")
+    {
+        auto fn = lookup(table, "tail");
+        auto a = Value::create(0_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto d = Value::create(3_f);
+        auto e = Value::create(4_f);
+        auto arr = Value::create(Array{a, b, c, d, e});
+
+        require_array_eq(fn->call({arr, Value::create(0_f)}), {});
+        require_array_eq(fn->call({arr, Value::create(2_f)}), {d, e});
+        require_array_eq(fn->call({arr, Value::create(10_f)}), {a, b, c, d, e});
+        require_array_eq(fn->call({arr, Value::create(5_f)}), {a, b, c, d, e});
+        require_array_eq(fn->call({arr, Value::create(4_f)}), {b, c, d, e});
+
+        auto empty_arr = Value::create(Array{});
+        require_array_eq(fn->call({empty_arr, Value::create(2_f)}), {});
+
+        CHECK_THROWS_MATCHES(
+            fn->call({arr, Value::create(-1_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("Function tail")
+                           && ContainsSubstring(">=0")));
+    }
+
+    SECTION("drop_tail semantics")
+    {
+        auto fn = lookup(table, "drop_tail");
+        auto a = Value::create(0_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto d = Value::create(3_f);
+        auto e = Value::create(4_f);
+        auto arr = Value::create(Array{a, b, c, d, e});
+
+        require_array_eq(fn->call({arr, Value::create(0_f)}), {a, b, c, d, e});
+        require_array_eq(fn->call({arr, Value::create(2_f)}), {a, b, c});
+        require_array_eq(fn->call({arr, Value::create(10_f)}), {});
+        require_array_eq(fn->call({arr, Value::create(5_f)}), {});
+        require_array_eq(fn->call({arr, Value::create(4_f)}), {a});
+
+        auto empty_arr = Value::create(Array{});
+        require_array_eq(fn->call({empty_arr, Value::create(2_f)}), {});
+
+        CHECK_THROWS_MATCHES(
+            fn->call({arr, Value::create(-1_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("Function drop_tail")
+                           && ContainsSubstring(">=0")));
     }
 
     SECTION("slide semantics")
