@@ -31,12 +31,18 @@ frst::ast::Expression::Ptr require_expression(auto& result)
 
 struct RecordingCallable final : frst::Callable
 {
+    explicit RecordingCallable(bool return_value = false)
+        : return_value{return_value}
+    {
+    }
+
     mutable std::vector<std::vector<frst::Value_Ptr>> calls;
+    bool return_value;
 
     frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
     {
         calls.emplace_back(args.begin(), args.end());
-        return frst::Value::create(true);
+        return frst::Value::create(return_value);
     }
 
     std::string debug_dump() const override
@@ -174,6 +180,39 @@ TEST_CASE("Parser Foreach Expressions")
 
         CHECK(saw_a);
         CHECK(saw_b);
+    }
+
+    SECTION("Foreach over arrays stops when operation returns truthy")
+    {
+        auto result = parse("foreach [1, 2, 3] with f");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto callable = std::make_shared<RecordingCallable>(true);
+        table.define("f", frst::Value::create(frst::Function{callable}));
+
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Null>());
+        REQUIRE(callable->calls.size() == 1);
+        REQUIRE(callable->calls[0].size() == 1);
+        CHECK(callable->calls[0][0]->get<frst::Int>().value() == 1_f);
+    }
+
+    SECTION("Foreach over maps stops when operation returns truthy")
+    {
+        auto result = parse("foreach {a: 1, b: 2} with f");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto callable = std::make_shared<RecordingCallable>(true);
+        table.define("f", frst::Value::create(frst::Function{callable}));
+
+        auto out = expr->evaluate(table);
+        REQUIRE(out->is<frst::Null>());
+        REQUIRE(callable->calls.size() == 1);
+        REQUIRE(callable->calls[0].size() == 2);
     }
 
     SECTION("Invalid foreach expressions fail to parse")

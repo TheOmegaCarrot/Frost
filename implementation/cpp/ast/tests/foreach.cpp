@@ -83,7 +83,7 @@ TEST_CASE("Foreach Array")
                 .RETURN(op_val);
             REQUIRE_CALL(*op, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
-                .RETURN(Value::create(true))
+                .RETURN(Value::create(false))
                 .TIMES(3);
 
             ast::Foreach node{std::move(structure_expr),
@@ -127,7 +127,7 @@ TEST_CASE("Foreach Array")
                     if (call_index++ == 1)
                         throw Frost_Recoverable_Error{"kaboom"};
                 })
-                .RETURN(Value::create(true))
+                .RETURN(Value::create(false))
                 .TIMES(2);
 
             ast::Foreach node{std::move(structure_expr),
@@ -141,7 +141,7 @@ TEST_CASE("Foreach Array")
             CHECK(calls.at(1).at(0) == v2);
         }
 
-        SECTION("Falsy op return stops iteration")
+        SECTION("Truthy op return stops iteration")
         {
             auto v1 = Value::create(1_f);
             auto v2 = Value::create(2_f);
@@ -163,7 +163,7 @@ TEST_CASE("Foreach Array")
                 .RETURN(op_val);
             REQUIRE_CALL(*op, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
-                .RETURN(Value::create(false))
+                .RETURN(Value::create(true))
                 .TIMES(1);
 
             ast::Foreach node{std::move(structure_expr),
@@ -274,7 +274,7 @@ TEST_CASE("Foreach Map")
                 .RETURN(op_val);
             REQUIRE_CALL(*op, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
-                .RETURN(Value::create(true))
+                .RETURN(Value::create(false))
                 .TIMES(2);
 
             ast::Foreach node{std::move(structure_expr),
@@ -346,7 +346,7 @@ TEST_CASE("Foreach Map")
             REQUIRE(calls.at(0).size() == 2);
         }
 
-        SECTION("Falsy op return stops iteration")
+        SECTION("Truthy op return stops iteration")
         {
             auto k1 = Value::create("k1"s);
             auto v1 = Value::create(1_f);
@@ -369,7 +369,7 @@ TEST_CASE("Foreach Map")
                 .RETURN(op_val);
             REQUIRE_CALL(*op, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
-                .RETURN(Value::create(false))
+                .RETURN(Value::create(true))
                 .TIMES(1);
 
             ast::Foreach node{std::move(structure_expr),

@@ -13,9 +13,8 @@ Value_Ptr ast::Foreach::evaluate(const Symbol_Table& syms) const
     const auto& structure_val = structure_->evaluate(syms);
     if (not structure_val->is_structured())
     {
-        throw Frost_Recoverable_Error{
-            fmt::format("Cannot iterate value with type {}",
-                        structure_val->type_name())};
+        throw Frost_Recoverable_Error{fmt::format(
+            "Cannot iterate value with type {}", structure_val->type_name())};
     }
 
     const auto& op_val = operation_->evaluate(syms);
@@ -33,7 +32,7 @@ Value_Ptr ast::Foreach::evaluate(const Symbol_Table& syms) const
         const auto& arr = structure_val->raw_get<Array>();
         for (const auto& elem : arr)
         {
-            if (not op->call({elem})->truthy())
+            if (op->call({elem})->truthy())
                 break;
         }
         return Value::null();
@@ -44,7 +43,7 @@ Value_Ptr ast::Foreach::evaluate(const Symbol_Table& syms) const
         const auto& map = structure_val->raw_get<Map>();
         for (const auto& [k, v] : map)
         {
-            if (not op->call({k, v})->truthy())
+            if (op->call({k, v})->truthy())
                 break;
         }
         return Value::null();

@@ -79,7 +79,7 @@ struct CountingCallable final : frst::Callable
         {
             args.push_back(call_args.front());
         }
-        return frst::Value::create(true);
+        return frst::Value::create(false);
     }
 
     std::string debug_dump() const override
