@@ -116,7 +116,7 @@ struct To_Json_Impl
             if (not k->is<String>())
             {
                 throw Frost_Recoverable_Error{
-                    fmt::format("Map with non-string key: \"{}\" cannot be "
+                    fmt::format("Map with non-String key: \"{}\" cannot be "
                                 "serialized to JSON",
                                 k->to_internal_string())};
             }
@@ -129,7 +129,7 @@ struct To_Json_Impl
 
     boost::json::value operator()(this const auto, const Function&)
     {
-        throw Frost_Recoverable_Error{"Cannot serialize function to JSON"};
+        throw Frost_Recoverable_Error{"Cannot serialize Function to JSON"};
     }
 
 } constexpr static to_json_impl;

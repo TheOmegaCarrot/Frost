@@ -17,18 +17,17 @@ Array_Destructure::Array_Destructure(std::vector<Name> names,
 {
     std::flat_set<std::string_view> binding_names;
 
-    auto duplicate_check = Overload{
-        [](const Discarded_Binding&) {
-        },
-        [&](const std::string& name) {
-            if (binding_names.contains(name))
-            {
-                throw Frost_Unrecoverable_Error{
-                    fmt::format("Duplicate destructuring binding name: {}",
-                                name)};
-            }
-            binding_names.insert(name);
-        }};
+    auto duplicate_check =
+        Overload{[](const Discarded_Binding&) {
+                 },
+                 [&](const std::string& name) {
+                     if (binding_names.contains(name))
+                     {
+                         throw Frost_Unrecoverable_Error{fmt::format(
+                             "Duplicate destructuring binding name: {}", name)};
+                     }
+                     binding_names.insert(name);
+                 }};
 
     for (const auto& name : names_)
     {
@@ -47,9 +46,8 @@ std::optional<Map> Array_Destructure::execute(Symbol_Table& table) const
 
     if (not expr_result->is<Array>())
     {
-        throw Frost_Recoverable_Error{
-            fmt::format("Cannot destructure {} to Array",
-                        expr_result->type_name())};
+        throw Frost_Recoverable_Error{fmt::format(
+            "Cannot destructure {} to Array", expr_result->type_name())};
     }
 
     const auto& arr = expr_result->raw_get<Array>();
@@ -57,7 +55,7 @@ std::optional<Map> Array_Destructure::execute(Symbol_Table& table) const
     if (arr.size() < names_.size())
     {
         throw Frost_Recoverable_Error{
-            fmt::format("Insufficient array elements to destructure: "
+            fmt::format("Insufficient Array elements to destructure: "
                         "required {} but got {}",
                         names_.size(), arr.size())};
     }
@@ -65,7 +63,7 @@ std::optional<Map> Array_Destructure::execute(Symbol_Table& table) const
     if (not rest_name_ && arr.size() > names_.size())
     {
         throw Frost_Recoverable_Error{
-            fmt::format("Too many array elements to destructure: required "
+            fmt::format("Too many Array elements to destructure: required "
                         "{} but got {}",
                         names_.size(), arr.size())};
     }
@@ -90,9 +88,9 @@ std::optional<Map> Array_Destructure::execute(Symbol_Table& table) const
             [](const Discarded_Binding&) {
             },
             [&](const std::string& name) {
-                auto val = Value::create(
-                    arr | std::views::drop(names_.size())
-                    | std::ranges::to<Array>());
+                auto val = Value::create(arr
+                                         | std::views::drop(names_.size())
+                                         | std::ranges::to<Array>());
 
                 table.define(name, val);
 
@@ -107,7 +105,8 @@ std::optional<Map> Array_Destructure::execute(Symbol_Table& table) const
         return std::nullopt;
 }
 
-std::generator<Statement::Symbol_Action> Array_Destructure::symbol_sequence() const
+std::generator<Statement::Symbol_Action> Array_Destructure::symbol_sequence()
+    const
 {
     co_yield std::ranges::elements_of(expr_->symbol_sequence());
 

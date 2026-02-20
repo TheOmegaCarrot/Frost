@@ -468,7 +468,7 @@ std::vector<Outgoing_Request::Endpoint::Query_Parameter> parse_query_parameters(
                 result.emplace_back(key, value->get<String>()
                                              .or_else(thrower(fmt::format(
                                                  "http.request: "
-                                                 "endpoint.query array values "
+                                                 "endpoint.query Array values "
                                                  "must be Strings, got {}",
                                                  value->type_name())))
                                              .value());

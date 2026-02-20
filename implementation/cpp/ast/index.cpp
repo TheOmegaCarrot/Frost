@@ -34,8 +34,8 @@ Value_Ptr Index::evaluate(const Symbol_Table& syms) const
     if (struct_val->is<Array>())
     {
         if (not index_val->is<Int>())
-            throw Frost_Recoverable_Error{
-                "Cannot index array with non-integer"};
+            throw Frost_Recoverable_Error{fmt::format(
+                "Array index requires Int, got: ", index_val->type_name())};
 
         return Value::index_array(struct_val->raw_get<Array>(),
                                   index_val->raw_get<Int>())

@@ -153,12 +153,12 @@ TEST_CASE("Builtin to_json")
         CHECK(json->get<String>() == "[1,2]");
     }
 
-    SECTION("Non-string map keys are rejected")
+    SECTION("Non-String Map keys are rejected")
     {
         auto map = Value::create(Map{{Value::create(1_f), Value::create(2_f)}});
         CHECK_THROWS_MATCHES(
             to_json->call({map}), Frost_Recoverable_Error,
-            MessageMatches(ContainsSubstring("Map with non-string key")
+            MessageMatches(ContainsSubstring("Map with non-String key")
                            && ContainsSubstring("1")));
     }
 
@@ -167,7 +167,7 @@ TEST_CASE("Builtin to_json")
         auto fn = table.lookup("len");
         CHECK_THROWS_MATCHES(to_json->call({fn}), Frost_Recoverable_Error,
                              MessageMatches(ContainsSubstring(
-                                 "Cannot serialize function to JSON")));
+                                 "Cannot serialize Function to JSON")));
     }
 
     SECTION("Structures containing functions are rejected")

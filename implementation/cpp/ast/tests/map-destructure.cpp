@@ -301,7 +301,7 @@ TEST_CASE("Map_Destructure")
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring(
-                "Map destructure key expressions must be valid map keys, "
+                "Map destructure key expressions must be valid Map keys, "
                 "got:")));
     }
 
@@ -370,7 +370,7 @@ TEST_CASE("Map_Destructure")
         CHECK_THROWS_MATCHES(
             node.execute(syms), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring(
-                "Map destructure key expressions must be valid map keys, "
+                "Map destructure key expressions must be valid Map keys, "
                 "got:")));
     }
 

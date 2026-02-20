@@ -53,7 +53,7 @@ std::optional<Map> Map_Destructure::execute(Symbol_Table& table) const
         if (not key->is_primitive() || key->is<Null>())
         {
             throw Frost_Recoverable_Error(
-                fmt::format("Map destructure key expressions must be valid map "
+                fmt::format("Map destructure key expressions must be valid Map "
                             "keys, got: {}",
                             key->to_internal_string()));
         }

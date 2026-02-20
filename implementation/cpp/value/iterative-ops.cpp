@@ -41,7 +41,7 @@ Value_Ptr map_map(const Value_Ptr& map_val, const Function& op,
         if (not intermediate_val->is<Map>())
         {
             throw Frost_Recoverable_Error{fmt::format(
-                "{} with map input requires map intermediates, got {}",
+                "{} with Map input requires Map intermediates, got {}",
                 parent_op_name, intermediate_val->type_name())};
         }
 

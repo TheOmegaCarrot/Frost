@@ -150,7 +150,7 @@ TEST_CASE("Value iterative ops")
         CHECK_THROWS_MATCHES(
             Value::do_map(map, op, "map"), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring(
-                               "map with map input requires map intermediates")
+                               "map with Map input requires Map intermediates")
                            && ContainsSubstring("got Int")));
     }
 

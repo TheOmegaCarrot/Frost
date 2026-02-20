@@ -99,5 +99,5 @@ def bad_query_array_item = try_call(http.request, [{
   }
 }])
 assert(not bad_query_array_item.ok, 'query array item type must fail')
-assert(contains(bad_query_array_item.error, 'endpoint.query array values must be Strings'),
+assert(contains(bad_query_array_item.error, 'endpoint.query Array values must be Strings'),
        'query array item type error text')

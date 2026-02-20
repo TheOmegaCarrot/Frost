@@ -16,8 +16,8 @@ def const = fn v -> fn ..._ -> v
 
 def compose = fn f, g, ...rest -> {
 
-    assert(not is_null(f), "Cannot compose null")
-    assert(not is_null(g), "Cannot compose null")
+    assert(not is_null(f), "Cannot compose Null")
+    assert(not is_null(g), "Cannot compose Null")
 
     def compose2 = fn f1, f2 -> fn ...args -> f2(pack_call(f1, args))
 
