@@ -12,7 +12,7 @@ def skip_on_timeout = fn resp -> {
 }
 
 def verify_true_resp = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true,
     port: port,
@@ -29,7 +29,7 @@ assert(not verify_true_resp.ok, 'verify_tls true should fail on bad cert')
 assert(verify_true_resp.error.category == 'TLS', 'verify_tls true should fail in TLS phase')
 
 def verify_false_resp = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true,
     port: port,

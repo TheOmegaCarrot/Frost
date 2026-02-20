@@ -9,7 +9,7 @@ def port = to_int(port_str)
 def body = "hello\0world"
 
 def resp = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: false,
     port: port,

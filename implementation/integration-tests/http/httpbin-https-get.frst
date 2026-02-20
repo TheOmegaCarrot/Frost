@@ -12,7 +12,7 @@ def skip_on_timeout = fn resp -> {
 }
 
 def resp_default = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true,
     port: port,
@@ -31,7 +31,7 @@ def json_default = parse_json(resp_default.response.body)
 assert(contains(json_default.url, host), 'response url contains host (default verify)')
 
 def resp_verify_true = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true,
     port: port,
@@ -51,7 +51,7 @@ def json_verify_true = parse_json(resp_verify_true.response.body)
 assert(contains(json_verify_true.url, host), 'response url contains host (verify true)')
 
 def resp_verify_false = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true,
     port: port,

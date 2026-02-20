@@ -1,44 +1,44 @@
 def bad_host_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 42
   }
 }])
 assert(not bad_host_type.ok, 'host type must fail')
-assert(contains(bad_host_type.error, 'endpoint.host must be a String'),
+assert(contains(bad_host_type.error, 'uri.host must be a String'),
        'host type error text')
 
 def bad_path_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test',
     path: 42
   }
 }])
 assert(not bad_path_type.ok, 'path type must fail')
-assert(contains(bad_path_type.error, 'endpoint.path must be a String'),
+assert(contains(bad_path_type.error, 'uri.path must be a String'),
        'path type error text')
 
 def bad_port_zero = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test',
     port: 0
   }
 }])
 assert(not bad_port_zero.ok, 'port zero must fail')
-assert(contains(bad_port_zero.error, 'endpoint.port value 0 is out of range'),
+assert(contains(bad_port_zero.error, 'uri.port value 0 is out of range'),
        'port zero error text')
 
 def bad_port_negative = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test',
     port: -1
   }
 }])
 assert(not bad_port_negative.ok, 'negative port must fail')
-assert(contains(bad_port_negative.error, 'endpoint.port value -1 is out of range'),
+assert(contains(bad_port_negative.error, 'uri.port value -1 is out of range'),
        'negative port error text')
 
 def bad_header_key_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   headers: {
@@ -50,7 +50,7 @@ assert(contains(bad_header_key_type.error, 'headers Map keys must be Strings'),
        'header key type error text')
 
 def forbidden_header_host = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   headers: {
@@ -62,7 +62,7 @@ assert(contains(forbidden_header_host.error, "header 'host' is managed by the HT
        'host header override error text')
 
 def forbidden_header_content_length = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   headers: {
@@ -74,7 +74,7 @@ assert(contains(forbidden_header_content_length.error, "managed by the HTTP clie
        'content-length override error text')
 
 def forbidden_header_transfer_encoding = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   headers: {
@@ -86,7 +86,7 @@ assert(contains(forbidden_header_transfer_encoding.error, "managed by the HTTP c
        'transfer-encoding override error text')
 
 def bad_query_key_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test',
     query: {
       [1]: 'x'
@@ -94,11 +94,11 @@ def bad_query_key_type = try_call(http.request, [{
   }
 }])
 assert(not bad_query_key_type.ok, 'query key type must fail')
-assert(contains(bad_query_key_type.error, 'unexpected key in endpoint.query'),
+assert(contains(bad_query_key_type.error, 'unexpected key in uri.query'),
        'query key type error text')
 
 def bad_verify_tls_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   verify_tls: 'yes'
@@ -108,7 +108,7 @@ assert(contains(bad_verify_tls_type.error, 'verify_tls must be a Bool'),
        'verify_tls type error text')
 
 def bad_use_system_ca_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   use_system_ca: 'yes'
@@ -118,7 +118,7 @@ assert(contains(bad_use_system_ca_type.error, 'use_system_ca must be a Bool'),
        'use_system_ca type error text')
 
 def bad_ca_file_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   ca_file: 42
@@ -128,7 +128,7 @@ assert(contains(bad_ca_file_type.error, 'ca_file must be a String'),
        'ca_file type error text')
 
 def bad_ca_path_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   ca_path: 42

@@ -17,7 +17,7 @@ def skip_on_timeout = fn resp -> {
 }
 
 def no_custom = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true,
     port: port,
@@ -32,7 +32,7 @@ skip_on_timeout(no_custom)
 assert(not no_custom.ok, 'no trust roots should fail verification')
 
 def ca_file_only = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true,
     port: port,
@@ -49,7 +49,7 @@ assert(ca_file_only.ok, 'ca_file only should verify')
 assert(ca_file_only.response.code == 200, 'ca_file only status')
 
 def ca_path_only = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true,
     port: port,
@@ -66,7 +66,7 @@ assert(ca_path_only.ok, 'ca_path only should verify')
 assert(ca_path_only.response.code == 200, 'ca_path only status')
 
 def bad_ca_file = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true,
     port: port,
@@ -82,7 +82,7 @@ skip_on_timeout(bad_ca_file)
 assert(not bad_ca_file.ok, 'invalid ca_file should fail')
 
 def bad_ca_path = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true,
     port: port,

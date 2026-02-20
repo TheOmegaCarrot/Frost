@@ -7,7 +7,7 @@ def skip_on_timeout = fn resp -> {
 }
 
 def resp = http.request({
-  endpoint: {
+  uri: {
     host: host,
     tls: true
   },
@@ -16,5 +16,5 @@ def resp = http.request({
 
 skip_on_timeout(resp)
 
-assert(resp.ok, 'default endpoint/method request should succeed')
+assert(resp.ok, 'default uri/method request should succeed')
 assert(resp.response.code == 200, 'status code')

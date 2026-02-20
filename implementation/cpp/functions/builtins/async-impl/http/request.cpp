@@ -114,7 +114,7 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
 
             if (req.verify_tls)
                 stream.set_verify_callback(
-                    asio::ssl::host_name_verification(req.endpoint.host));
+                    asio::ssl::host_name_verification(req.uri.host));
 
             return stream;
         }
@@ -124,7 +124,7 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
     {
         phase = "DNS";
         auto [err, resolve_result] = co_await resolver.async_resolve(
-            req.endpoint.host, std::to_string(req.endpoint.port),
+            req.uri.host, std::to_string(req.uri.port),
             asio::as_tuple(asio::use_awaitable));
 
         if (err)
@@ -138,7 +138,7 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
         {
             phase = "SNI";
             if (!SSL_set_tlsext_host_name(stream.native_handle(),
-                                          req.endpoint.host.c_str()))
+                                          req.uri.host.c_str()))
                 // TODO: Properly get the error message from openssl
                 co_return std::unexpected{Error{
                     .category = "Server Name Identification",
@@ -180,9 +180,9 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
         phase = "send HTTP request";
 
         urls::url url;
-        url.set_path(req.endpoint.path);
+        url.set_path(req.uri.path);
         auto params = url.params();
-        for (const auto& qparam : req.endpoint.query_parameters)
+        for (const auto& qparam : req.uri.query_parameters)
         {
             if (qparam.value)
                 params.append({qparam.key, qparam.value.value()});
@@ -202,9 +202,9 @@ asio::awaitable<Request_Result> run_http_request(Outgoing_Request req,
             request.prepare_payload();
         }
 
-        std::string host_header = req.endpoint.host;
-        if (not is_default_port(use_ssl, req.endpoint.port))
-            host_header = fmt::format("{}:{}", host_header, req.endpoint.port);
+        std::string host_header = req.uri.host;
+        if (not is_default_port(use_ssl, req.uri.port))
+            host_header = fmt::format("{}:{}", host_header, req.uri.port);
 
         request.set(beast::http::field::host, host_header);
 
@@ -296,7 +296,7 @@ asio::awaitable<Request_Result> run_request(Outgoing_Request req,
     std::string phase = "begin";
 
     auto do_request = [&] -> asio::awaitable<Request_Result> {
-        if (req.endpoint.tls)
+        if (req.uri.tls)
             co_return co_await run_http_request<true>(std::move(req), phase);
         co_return co_await run_http_request<false>(std::move(req), phase);
     };
@@ -430,24 +430,23 @@ auto thrower(const std::string& err)
 namespace
 {
 
-std::vector<Outgoing_Request::Endpoint::Query_Parameter> parse_query_parameters(
+std::vector<Outgoing_Request::URI::Query_Parameter> parse_query_parameters(
     const Value_Ptr& query_spec_val)
 {
     if (not query_spec_val->is<Map>())
-        throw Frost_Recoverable_Error{
-            "http.request: endpoint.query must be a Map"};
+        throw Frost_Recoverable_Error{"http.request: uri.query must be a Map"};
 
     const auto& query_spec = query_spec_val->raw_get<Map>();
 
-    std::vector<Outgoing_Request::Endpoint::Query_Parameter> result;
+    std::vector<Outgoing_Request::URI::Query_Parameter> result;
 
     for (const auto& [k_val, v_val] : query_spec)
     {
         if (not k_val->is<String>())
         {
-            throw Frost_Recoverable_Error{fmt::format(
-                "http.request: unexpected key in endpoint.query: {}",
-                k_val->to_internal_string({.in_structure = true}))};
+            throw Frost_Recoverable_Error{
+                fmt::format("http.request: unexpected key in uri.query: {}",
+                            k_val->to_internal_string({.in_structure = true}))};
         }
 
         const auto& key = k_val->raw_get<String>();
@@ -465,19 +464,20 @@ std::vector<Outgoing_Request::Endpoint::Query_Parameter> parse_query_parameters(
 
             for (const auto& value : values)
             {
-                result.emplace_back(key, value->get<String>()
-                                             .or_else(thrower(fmt::format(
-                                                 "http.request: "
-                                                 "endpoint.query Array values "
-                                                 "must be Strings, got {}",
-                                                 value->type_name())))
-                                             .value());
+                result.emplace_back(
+                    key,
+                    value->get<String>()
+                        .or_else(thrower(fmt::format("http.request: "
+                                                     "uri.query Array values "
+                                                     "must be Strings, got {}",
+                                                     value->type_name())))
+                        .value());
             }
         }
         else
         {
             throw Frost_Recoverable_Error{
-                fmt::format("http.request: endpoint.query values must be "
+                fmt::format("http.request: uri.query values must be "
                             "String, Array, or Null, got: {}",
                             v_val->type_name())};
         }
@@ -486,24 +486,24 @@ std::vector<Outgoing_Request::Endpoint::Query_Parameter> parse_query_parameters(
     return result;
 }
 
-Outgoing_Request::Endpoint parse_endpoint(const Value_Ptr& endpoint_spec_val)
+Outgoing_Request::URI parse_uri(const Value_Ptr& uri_spec_val)
 {
-    Outgoing_Request::Endpoint endpoint;
+    Outgoing_Request::URI uri;
 
-    if (not endpoint_spec_val->is<Map>())
-        throw Frost_Recoverable_Error{"http.request: endpoint must be a Map"};
+    if (not uri_spec_val->is<Map>())
+        throw Frost_Recoverable_Error{"http.request: uri must be a Map"};
 
-    const auto& endpoint_spec = endpoint_spec_val->raw_get<Map>();
+    const auto& uri_spec = uri_spec_val->raw_get<Map>();
 
     // required fields checklist
     bool host_read = false;
 
-    for (const auto& [k_val, v_val] : endpoint_spec)
+    for (const auto& [k_val, v_val] : uri_spec)
     {
         if (not k_val->is<String>())
         {
             throw Frost_Recoverable_Error{
-                fmt::format("http.request: unexpected key in endpoint: {}",
+                fmt::format("http.request: unexpected key in uri: {}",
                             k_val->to_internal_string({.in_structure = true}))};
         }
 
@@ -513,43 +513,41 @@ Outgoing_Request::Endpoint parse_endpoint(const Value_Ptr& endpoint_spec_val)
         {
             // if host is invalid, it will be handled later
             host_read = true;
-            endpoint.host =
+            uri.host =
                 v_val->get<String>()
-                    .or_else(
-                        thrower("http.request: endpoint.host must be a String"))
+                    .or_else(thrower("http.request: uri.host must be a String"))
                     .value();
         }
         else if (key == "path")
         {
             // if path is invalid, it will be handled later
-            endpoint.path =
+            uri.path =
                 v_val->get<String>()
-                    .or_else(
-                        thrower("http.request: endpoint.path must be a String"))
+                    .or_else(thrower("http.request: uri.path must be a String"))
                     .value();
 
-            if (not endpoint.path.starts_with("/"))
-                endpoint.path = '/' + endpoint.path;
+            if (not uri.path.starts_with("/"))
+                uri.path = '/' + uri.path;
         }
         else if (key == "tls")
         {
-            endpoint.tls = v_val->get<Bool>()
-                               .or_else(thrower<Bool>(
-                                   "http.request: endpoint.tls must be a Bool"))
-                               .value();
+            uri.tls = v_val->get<Bool>()
+                          .or_else(thrower<Bool>(
+                              "http.request: uri.tls must be a Bool"))
+                          .value();
         }
         else if (key == "port")
         {
-            endpoint.port =
+            uri.port =
                 v_val->get<Int>()
-                    .or_else(thrower<Int>(
-                        "http.request: endpoint.port must be an Int"))
+                    .or_else(
+                        thrower<Int>("http.request: uri.port must be an Int"))
                     .transform([](Int port) {
                         if ((port > std::numeric_limits<std::uint16_t>::max())
                             || (port <= 0))
                         {
                             throw Frost_Recoverable_Error{
-                                fmt::format("http.request: endpoint.port value "
+                                fmt::format("http.request: uri.port value "
                                             "{} is out of range",
                                             port)};
                         }
@@ -560,25 +558,25 @@ Outgoing_Request::Endpoint parse_endpoint(const Value_Ptr& endpoint_spec_val)
         }
         else if (key == "query")
         {
-            endpoint.query_parameters = parse_query_parameters(v_val);
+            uri.query_parameters = parse_query_parameters(v_val);
         }
         else
         {
             throw Frost_Recoverable_Error{fmt::format(
-                "http.request: got unexpected key in endpoint: {}", key)};
+                "http.request: got unexpected key in uri: {}", key)};
         }
     }
 
     if (not host_read)
     {
         throw Frost_Recoverable_Error{
-            "http.request: missing required field: endpoint.host"};
+            "http.request: missing required field: uri.host"};
     }
 
-    if (endpoint.port == 0)
-        endpoint.port = endpoint.tls ? 443 : 80;
+    if (uri.port == 0)
+        uri.port = uri.tls ? 443 : 80;
 
-    return endpoint;
+    return uri;
 }
 
 std::vector<Header> parse_headers(const Value_Ptr& headers_spec)
@@ -669,7 +667,7 @@ Outgoing_Request parse_request(const Map& request_spec)
     Outgoing_Request request;
 
     // required fields checklist
-    bool endpoint_read = false;
+    bool uri_read = false;
 
     for (const auto& [k_val, v_val] : request_spec)
     {
@@ -682,10 +680,10 @@ Outgoing_Request parse_request(const Map& request_spec)
 
         const auto& key = k_val->raw_get<String>();
 
-        if (key == "endpoint")
+        if (key == "uri")
         {
-            endpoint_read = true;
-            request.endpoint = parse_endpoint(v_val);
+            uri_read = true;
+            request.uri = parse_uri(v_val);
         }
         else if (key == "headers")
         {
@@ -753,9 +751,9 @@ Outgoing_Request parse_request(const Map& request_spec)
         }
     }
 
-    if (not endpoint_read)
+    if (not uri_read)
         throw Frost_Recoverable_Error{
-            "http.request: missing required field: endpoint"};
+            "http.request: missing required field: uri"};
 
     return request;
 }

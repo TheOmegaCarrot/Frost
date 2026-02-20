@@ -1,12 +1,12 @@
-def missing_endpoint = try_call(http.request, [{
+def missing_uri = try_call(http.request, [{
   method: 'GET'
 }])
-assert(not missing_endpoint.ok, 'missing endpoint fails')
-assert(contains(missing_endpoint.error, 'missing required field: endpoint'),
-       'missing endpoint error')
+assert(not missing_uri.ok, 'missing uri fails')
+assert(contains(missing_uri.error, 'missing required field: uri'),
+       'missing uri error')
 
 def bad_body_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test',
     tls: false,
     path: '/get'
@@ -18,14 +18,14 @@ assert(not bad_body_type.ok, 'non-string body fails')
 assert(contains(bad_body_type.error, 'body must be a String'),
        'non-string body error')
 
-def bad_endpoint_key = try_call(http.request, [{
-  endpoint: {
+def bad_uri_key = try_call(http.request, [{
+  uri: {
     host: 'definitely.invalid.test',
     tls: false,
     nope: true
   },
   method: 'GET'
 }])
-assert(not bad_endpoint_key.ok, 'unexpected endpoint key fails')
-assert(contains(bad_endpoint_key.error, 'unexpected key in endpoint'),
-       'unexpected endpoint key error')
+assert(not bad_uri_key.ok, 'unexpected uri key fails')
+assert(contains(bad_uri_key.error, 'unexpected key in uri'),
+       'unexpected uri key error')

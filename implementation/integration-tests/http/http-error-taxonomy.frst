@@ -3,7 +3,7 @@ def plain_port_str = if is_null(port_env): '8080' else: port_env
 def plain_port = to_int(plain_port_str)
 
 def dns_failure = http.request({
-  endpoint: {
+  uri: {
     host: 'definitely-does-not-exist.invalid',
     tls: false,
     port: 80,
@@ -18,7 +18,7 @@ assert(dns_failure.error.category == 'DNS lookup', 'dns category')
 assert(dns_failure.error.phase == 'DNS', 'dns phase')
 
 def connect_failure = http.request({
-  endpoint: {
+  uri: {
     host: '127.0.0.1',
     tls: false,
     port: 6553,
@@ -33,7 +33,7 @@ assert(connect_failure.error.category == 'connect', 'connect category')
 assert(connect_failure.error.phase == 'connect', 'connect phase')
 
 def tls_failure = http.request({
-  endpoint: {
+  uri: {
     host: '127.0.0.1',
     tls: true,
     port: plain_port,

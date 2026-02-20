@@ -1,5 +1,5 @@
 def bad_method_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   method: 42
@@ -9,7 +9,7 @@ assert(contains(bad_method_type.error, 'method must be a String'),
        'method type error text')
 
 def bad_method_name = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   method: 'NOPE'
@@ -19,7 +19,7 @@ assert(contains(bad_method_name.error, 'Bad HTTP method'),
        'unknown method error text')
 
 def bad_timeout_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   timeout_ms: 'fast'
@@ -29,7 +29,7 @@ assert(contains(bad_timeout_type.error, 'timeout_ms must be an Int'),
        'timeout type error text')
 
 def bad_timeout_value = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   timeout_ms: 0
@@ -39,27 +39,27 @@ assert(contains(bad_timeout_value.error, 'timeout_ms must be positive'),
        'timeout value error text')
 
 def bad_tls_type = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test',
     tls: 'yes'
   }
 }])
-assert(not bad_tls_type.ok, 'endpoint.tls type must fail')
-assert(contains(bad_tls_type.error, 'endpoint.tls must be a Bool'),
-       'endpoint.tls type error text')
+assert(not bad_tls_type.ok, 'uri.tls type must fail')
+assert(contains(bad_tls_type.error, 'uri.tls must be a Bool'),
+       'uri.tls type error text')
 
 def bad_port_range = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test',
     port: 70000
   }
 }])
-assert(not bad_port_range.ok, 'endpoint.port range must fail')
-assert(contains(bad_port_range.error, 'endpoint.port value 70000 is out of range'),
-       'endpoint.port range error text')
+assert(not bad_port_range.ok, 'uri.port range must fail')
+assert(contains(bad_port_range.error, 'uri.port value 70000 is out of range'),
+       'uri.port range error text')
 
 def bad_headers_shape = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   headers: ['not-a-map']
@@ -69,7 +69,7 @@ assert(contains(bad_headers_shape.error, 'headers must be a Map'),
        'headers shape error text')
 
 def bad_header_value = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test'
   },
   headers: {
@@ -81,17 +81,17 @@ assert(contains(bad_header_value.error, 'headers got unexpected value'),
        'header value type error text')
 
 def bad_query_shape = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test',
     query: ['bad']
   }
 }])
 assert(not bad_query_shape.ok, 'query shape must fail')
-assert(contains(bad_query_shape.error, 'endpoint.query must be a Map'),
+assert(contains(bad_query_shape.error, 'uri.query must be a Map'),
        'query shape error text')
 
 def bad_query_array_item = try_call(http.request, [{
-  endpoint: {
+  uri: {
     host: 'definitely.invalid.test',
     query: {
       foo: ['ok', 1]
@@ -99,5 +99,5 @@ def bad_query_array_item = try_call(http.request, [{
   }
 }])
 assert(not bad_query_array_item.ok, 'query array item type must fail')
-assert(contains(bad_query_array_item.error, 'endpoint.query Array values must be Strings'),
+assert(contains(bad_query_array_item.error, 'uri.query Array values must be Strings'),
        'query array item type error text')

@@ -26,7 +26,7 @@ struct Header
 
 struct Outgoing_Request
 {
-    struct Endpoint
+    struct URI
     {
         std::string host;
         std::string path = "/";
@@ -41,7 +41,7 @@ struct Outgoing_Request
 
         std::vector<Query_Parameter> query_parameters;
 
-    } endpoint;
+    } uri;
 
     std::vector<Header> headers;
     boost::beast::http::verb method = boost::beast::http::verb::get;
