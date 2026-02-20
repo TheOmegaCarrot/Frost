@@ -49,6 +49,8 @@
 
 #define HAS(IDX) (IDX < args.size())
 
+#define IS(IDX, TYPE) (args.at(IDX)->is<TYPE>())
+
 #define ONE_STRING(r, d, S)                                                    \
     Value_Ptr S = BOOST_PP_CAT(BOOST_PP_STRINGIZE(S), _s);
 #define STRINGS(...)                                                           \

@@ -108,6 +108,30 @@ BUILTIN(id)
     return args.at(0);
 }
 
+BUILTIN(has)
+{
+    REQUIRE_ARGS("has", PARAM("structure", TYPES(Array, Map)),
+                 PARAM("index", TYPES(String, Int, Float, Bool)));
+
+    if (IS(0, Map))
+    {
+        const auto& map = GET(0, Map);
+        return Value::create(map.find(args.at(1)) != map.end());
+    }
+    else
+    {
+        if (not IS(1, Int))
+            throw Frost_Recoverable_Error{fmt::format(
+                "Function has with Array requires Int as argument 2, got: {}",
+                args.at(1)->type_name())};
+
+        const auto& array = GET(0, Array);
+
+        return Value::create(
+            Value::index_array(array, GET(1, Int)).has_value());
+    }
+}
+
 void inject_structure_ops(Symbol_Table& table)
 {
     INJECT(keys, 1, 1);
@@ -116,5 +140,6 @@ void inject_structure_ops(Symbol_Table& table)
     INJECT(range, 1, 2);
     INJECT(nulls, 1, 1);
     INJECT(id, 1, 1);
+    INJECT(has, 2, 2);
 }
 } // namespace frst

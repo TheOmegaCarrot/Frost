@@ -312,6 +312,8 @@ class Value
     static Value_Ptr do_reduce(Value_Ptr structure, const Function& fn,
                                std::optional<Value_Ptr> init);
 
+    static std::optional<Value_Ptr> index_array(const Array& array, Int index);
+
     decltype(auto) visit(this auto&& self, auto&& visitor)
     {
         return std::forward<decltype(self)>(self).value_.visit(
