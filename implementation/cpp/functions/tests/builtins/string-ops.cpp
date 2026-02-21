@@ -70,25 +70,6 @@ TEST_CASE("Builtin split")
                           EndsWith(std::string{bad_second->type_name()}));
     }
 
-    SECTION("Delimiter length errors")
-    {
-        auto target = Value::create("a,b"s);
-
-        CHECK_THROWS_WITH(
-            split->call({target, Value::create(""s)}),
-            ContainsSubstring(
-                "Function split expected second argument to be length 1"));
-        CHECK_THROWS_WITH(split->call({target, Value::create(""s)}),
-                          ContainsSubstring("length 0"));
-
-        CHECK_THROWS_WITH(
-            split->call({target, Value::create("ab"s)}),
-            ContainsSubstring(
-                "Function split expected second argument to be length 1"));
-        CHECK_THROWS_WITH(split->call({target, Value::create("ab"s)}),
-                          ContainsSubstring("length 2"));
-    }
-
     SECTION("Empty string returns empty array")
     {
         auto res = split->call({Value::create(""s), Value::create(","s)});
@@ -130,6 +111,18 @@ TEST_CASE("Builtin split")
     SECTION("Basic split")
     {
         auto res = split->call({Value::create("a,b,c"s), Value::create(","s)});
+        REQUIRE(res->is<Array>());
+        auto arr = res->get<Array>().value();
+        REQUIRE(arr.size() == 3);
+        CHECK(arr.at(0)->get<String>().value() == "a");
+        CHECK(arr.at(1)->get<String>().value() == "b");
+        CHECK(arr.at(2)->get<String>().value() == "c");
+    }
+
+    SECTION("Multichar split")
+    {
+        auto res =
+            split->call({Value::create("a,*b,*c"s), Value::create(",*"s)});
         REQUIRE(res->is<Array>());
         auto arr = res->get<Array>().value();
         REQUIRE(arr.size() == 3);
@@ -353,8 +346,7 @@ TEST_CASE("Builtin to_upper/to_lower")
                 CHECK_THROWS_WITH(
                     fn->call({bad}),
                     ContainsSubstring(std::string{"Function "} + info.name));
-                CHECK_THROWS_WITH(fn->call({bad}),
-                                  ContainsSubstring("String"));
+                CHECK_THROWS_WITH(fn->call({bad}), ContainsSubstring("String"));
                 CHECK_THROWS_WITH(fn->call({bad}),
                                   EndsWith(std::string{bad->type_name()}));
 
@@ -368,10 +360,8 @@ TEST_CASE("Builtin to_upper/to_lower")
     {
         auto input = Value::create("AbC123_!zZ"s);
 
-        auto upper =
-            get_fn("to_upper")->call({input})->get<String>().value();
-        auto lower =
-            get_fn("to_lower")->call({input})->get<String>().value();
+        auto upper = get_fn("to_upper")->call({input})->get<String>().value();
+        auto lower = get_fn("to_lower")->call({input})->get<String>().value();
 
         CHECK(upper == "ABC123_!ZZ");
         CHECK(lower == "abc123_!zz");
@@ -415,18 +405,15 @@ TEST_CASE("Builtin fmt_int")
         CHECK_THROWS_WITH(fmt_int->call({}),
                           ContainsSubstring("requires at least 2"));
 
-        CHECK_THROWS_WITH(
-            fmt_int->call(
-                {Value::create(1), Value::create(10), Value::create(2)}),
-            ContainsSubstring("too many arguments"));
-        CHECK_THROWS_WITH(
-            fmt_int->call(
-                {Value::create(1), Value::create(10), Value::create(2)}),
-            ContainsSubstring("Called with 3"));
-        CHECK_THROWS_WITH(
-            fmt_int->call(
-                {Value::create(1), Value::create(10), Value::create(2)}),
-            ContainsSubstring("no more than 2"));
+        CHECK_THROWS_WITH(fmt_int->call({Value::create(1), Value::create(10),
+                                         Value::create(2)}),
+                          ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(fmt_int->call({Value::create(1), Value::create(10),
+                                         Value::create(2)}),
+                          ContainsSubstring("Called with 3"));
+        CHECK_THROWS_WITH(fmt_int->call({Value::create(1), Value::create(10),
+                                         Value::create(2)}),
+                          ContainsSubstring("no more than 2"));
     }
 
     SECTION("Type errors")
@@ -517,16 +504,16 @@ TEST_CASE("Builtin parse_int")
                           ContainsSubstring("requires at least 2"));
 
         CHECK_THROWS_WITH(
-            parse_int->call({Value::create("1"s), Value::create(10),
-                             Value::create(2)}),
+            parse_int->call(
+                {Value::create("1"s), Value::create(10), Value::create(2)}),
             ContainsSubstring("too many arguments"));
         CHECK_THROWS_WITH(
-            parse_int->call({Value::create("1"s), Value::create(10),
-                             Value::create(2)}),
+            parse_int->call(
+                {Value::create("1"s), Value::create(10), Value::create(2)}),
             ContainsSubstring("Called with 3"));
         CHECK_THROWS_WITH(
-            parse_int->call({Value::create("1"s), Value::create(10),
-                             Value::create(2)}),
+            parse_int->call(
+                {Value::create("1"s), Value::create(10), Value::create(2)}),
             ContainsSubstring("no more than 2"));
     }
 
@@ -607,8 +594,9 @@ TEST_CASE("Builtin parse_int")
     SECTION("Out of range")
     {
         CHECK_THROWS_WITH(
-            parse_int->call({Value::create("999999999999999999999999999999999999"s),
-                             Value::create(10)}),
+            parse_int->call(
+                {Value::create("999999999999999999999999999999999999"s),
+                 Value::create(10)}),
             ContainsSubstring("out of range"));
     }
 }

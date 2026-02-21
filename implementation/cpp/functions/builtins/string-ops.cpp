@@ -19,18 +19,10 @@ BUILTIN(split)
     const auto& target = GET(0, String);
     const auto& split_on = GET(1, String);
 
-    if (split_on.size() != 1)
-    {
-        throw Frost_Recoverable_Error{
-            fmt::format("Function split expected second argument to be length "
-                        "1, but was length {}",
-                        split_on.size())};
-    }
-
     using std::views::transform, std::ranges::to;
 
     return Value::create(target
-                         | std::views::split(split_on.front())
+                         | std::views::split(split_on)
                          | transform(to<String>())
                          | transform([](String&& str) {
                                return Value::create(std::move(str));
