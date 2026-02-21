@@ -107,10 +107,10 @@ Weak_Closure::Weak_Closure(std::weak_ptr<Closure> closure)
 
 Value_Ptr Weak_Closure::call(std::span<const Value_Ptr> args) const
 {
-    auto closure = closure_.lock();
-    if (!closure)
-        throw Frost_Internal_Error{"Closure self-reference expired"};
-    return closure->call(args);
+    if (auto closure = closure_.lock())
+        return closure->call(args);
+
+    throw Frost_Internal_Error{"Closure self-reference expired"};
 }
 
 Function Weak_Closure::promote() const
