@@ -1,7 +1,8 @@
 #ifndef FROST_CLOSURE_HPP
 #define FROST_CLOSURE_HPP
 
-#include <frost/ast.hpp>
+#include <frost/ast/expression.hpp>
+#include <frost/ast/statement.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 #include <memory>

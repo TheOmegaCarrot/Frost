@@ -1,7 +1,8 @@
 #ifndef FROST_AST_LAMBDA_HPP
 #define FROST_AST_LAMBDA_HPP
 
-#include <frost/ast.hpp>
+#include <frost/ast/expression.hpp>
+#include <frost/ast/statement.hpp>
 #include <frost/closure.hpp>
 
 #include <fmt/format.h>
