@@ -46,7 +46,6 @@ TEST_CASE("Builtin debug_dump")
             Value::create(42_f),
             Value::create(3.14),
             Value::create(true),
-            Value::create("hello"s),
             Value::create(frst::Array{Value::create(1_f)}),
             Value::create(frst::Map{
                 {Value::create("k"s), Value::create(1_f)},
@@ -59,6 +58,14 @@ TEST_CASE("Builtin debug_dump")
             REQUIRE(res->is<frst::String>());
             CHECK(res->get<frst::String>().value()
                   == val->to_internal_string());
+        }
+
+        SECTION("But strings are debug-printed")
+        {
+            auto value = Value::create("hello\0there"s);
+            auto res = debug_dump->call({value});
+            REQUIRE(res->is<String>());
+            CHECK(res->get<frst::String>().value() == "\"hello\\x00there\"");
         }
     }
 

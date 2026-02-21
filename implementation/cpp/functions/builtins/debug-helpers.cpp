@@ -14,7 +14,7 @@ BUILTIN(debug_dump)
     }
     else
     {
-        return arg->to_string();
+        return Value::create(arg->to_internal_string({.in_structure = true}));
     }
 }
 
