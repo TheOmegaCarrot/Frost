@@ -104,12 +104,54 @@ TEST_CASE("Lambda")
     SECTION("Symbol sequence yields free usages")
     {
         // Frost:
-        // def f = fn (p) -> { x ; def y = 1 }
+        // def f = fn (p) -> { x ; def y = 1 ; null }
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("x"));
         body.push_back(node<Define>("y", node<Literal>(Value::create(1_f))));
+        body.push_back(node<Literal>(Value::null()));
 
         Lambda node{{"p"}, std::move(body)};
+
+        std::vector<Statement::Symbol_Action> actions;
+        for (const auto& action : node.symbol_sequence())
+            actions.push_back(action);
+
+        REQUIRE(actions.size() == 1);
+        CHECK(std::holds_alternative<Statement::Usage>(actions[0]));
+        CHECK(std::get<Statement::Usage>(actions[0]).name == "x");
+    }
+
+    SECTION("Non-expression-final lambda body is rejected")
+    {
+        // Frost:
+        // def f = fn () -> { def x = 1 }
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("x", node<Literal>(Value::create(1_f))));
+
+        CHECK_THROWS_WITH((Lambda{{}, std::move(body)}),
+                          "A lambda must end in an expression");
+    }
+
+    SECTION("Non-expression-final validation runs before shadowing checks")
+    {
+        // Frost:
+        // def f = fn (x) -> { def x = 1 }
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("x", node<Literal>(Value::create(1_f))));
+
+        CHECK_THROWS_WITH((Lambda{{"x"}, std::move(body)}),
+                          "A lambda must end in an expression");
+    }
+
+    SECTION("Symbol sequence includes usages in the return expression")
+    {
+        // Frost:
+        // def f = fn () -> { null ; x }
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Literal>(Value::null()));
+        body.push_back(node<Name_Lookup>("x"));
+
+        Lambda node{{}, std::move(body)};
 
         std::vector<Statement::Symbol_Action> actions;
         for (const auto& action : node.symbol_sequence())
@@ -193,9 +235,10 @@ TEST_CASE("Lambda")
     SECTION("Local definition cannot shadow a parameter")
     {
         // Frost:
-        // def f = fn (x) -> { def x = 2 }
+        // def f = fn (x) -> { def x = 2 ; null }
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("x", node<Literal>(Value::create(2_f))));
+        body.push_back(node<Literal>(Value::null()));
 
         CHECK_THROWS_WITH((Lambda{{"x"}, std::move(body)}),
                           ContainsSubstring("parameter")
@@ -215,9 +258,10 @@ TEST_CASE("Lambda")
     SECTION("Local definition cannot redefine self")
     {
         // Frost:
-        // def f = fn () -> { def self = 1 }
+        // def f = fn () -> { def self = 1 ; null }
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("self", node<Literal>(Value::create(1_f))));
+        body.push_back(node<Literal>(Value::null()));
 
         CHECK_THROWS_WITH((Lambda{{}, std::move(body)}),
                           ContainsSubstring("self"));
@@ -226,9 +270,10 @@ TEST_CASE("Lambda")
     SECTION("Local definition cannot shadow a variadic parameter")
     {
         // Frost:
-        // def f = fn (...rest) -> { def rest = 2 }
+        // def f = fn (...rest) -> { def rest = 2 ; null }
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("rest", node<Literal>(Value::create(2_f))));
+        body.push_back(node<Literal>(Value::null()));
 
         CHECK_THROWS_WITH((Lambda{{}, std::move(body), "rest"}),
                           ContainsSubstring("parameter")
@@ -429,8 +474,8 @@ TEST_CASE("Lambda")
     SECTION("Use before define captures from environment")
     {
         // Frost:
-        // def x = 5
-        // def f = fn () -> { x + 1 ; def x = 2 }
+        // def x = 5;
+        // def f = fn () -> { x + 1 ; def x = 2 ; null }
         Symbol_Table env;
         auto x_val = Value::create(5_f);
         env.define("x", x_val);
@@ -439,6 +484,7 @@ TEST_CASE("Lambda")
         body.push_back(node<Binop>(node<Name_Lookup>("x"), Binary_Op::PLUS,
                                    node<Literal>(Value::create(1_f))));
         body.push_back(node<Define>("x", node<Literal>(Value::create(2_f))));
+        body.push_back(node<Literal>(Value::null()));
 
         Lambda node{{}, std::move(body)};
         auto closure = eval_to_closure(node, env);
@@ -501,13 +547,14 @@ TEST_CASE("Lambda")
     {
         // Frost:
         // def x = 5
-        // def f = fn () -> { def x = 7 }
+        // def f = fn () -> { def x = 7 ; null }
         Symbol_Table env;
         auto x_val = Value::create(5_f);
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("x", node<Literal>(Value::create(7_f))));
+        body.push_back(node<Literal>(Value::null()));
 
         Lambda node{{}, std::move(body)};
         auto closure = eval_to_closure(node, env);
@@ -520,7 +567,7 @@ TEST_CASE("Lambda")
     {
         // Frost:
         // def x = 10
-        // def f = fn () -> { def x = 1 + x }
+        // def f = fn () -> { def x = 1 + x ; null }
         Symbol_Table env;
         auto x_val = Value::create(10_f);
         env.define("x", x_val);
@@ -529,6 +576,7 @@ TEST_CASE("Lambda")
         body.push_back(node<Define>(
             "x", node<Binop>(node<Literal>(Value::create(1_f)), Binary_Op::PLUS,
                              node<Name_Lookup>("x"))));
+        body.push_back(node<Literal>(Value::null()));
 
         Lambda node{{}, std::move(body)};
         auto closure = eval_to_closure(node, env);
@@ -541,7 +589,7 @@ TEST_CASE("Lambda")
     {
         // Frost:
         // def p = 3
-        // def f = fn (p) -> { def x = p + 1 }
+        // def f = fn (p) -> { def x = p + 1 ; null }
         Symbol_Table env;
         auto p_val = Value::create(3_f);
         env.define("p", p_val);
@@ -550,6 +598,7 @@ TEST_CASE("Lambda")
         body.push_back(node<Define>(
             "x", node<Binop>(node<Name_Lookup>("p"), Binary_Op::PLUS,
                              node<Literal>(Value::create(1_f)))));
+        body.push_back(node<Literal>(Value::null()));
 
         Lambda node{{"p"}, std::move(body)};
         auto closure = eval_to_closure(node, env);
@@ -817,6 +866,7 @@ TEST_CASE("Lambda")
         // def outer = fn () -> {
         //     fn () -> { z }
         //     def z = 42
+        //     null
         // }
         Symbol_Table env;
 
@@ -828,6 +878,7 @@ TEST_CASE("Lambda")
             node<Lambda>(std::vector<std::string>{}, std::move(inner_body)));
         outer_body.push_back(
             node<Define>("z", node<Literal>(Value::create(42_f))));
+        outer_body.push_back(node<Literal>(Value::null()));
 
         Lambda outer{{}, std::move(outer_body)};
 

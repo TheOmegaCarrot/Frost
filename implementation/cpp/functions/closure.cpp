@@ -11,10 +11,12 @@ using namespace frst;
 
 Closure::Closure(std::vector<std::string> parameters,
                  std::shared_ptr<std::vector<ast::Statement::Ptr>> body,
+                 std::shared_ptr<ast::Expression> return_expr,
                  Symbol_Table captures, std::size_t define_count,
                  std::optional<std::string> vararg_parameter)
     : parameters_{std::move(parameters)}
     , body_{std::move(body)}
+    , return_expr_{std::move(return_expr)}
     , captures_{std::move(captures)}
     , vararg_parameter_{std::move(vararg_parameter)}
     , define_count_{define_count}
@@ -32,15 +34,6 @@ const Symbol_Table& Closure::debug_capture_table() const
 void Closure::inject_capture(const std::string& name, Value_Ptr value)
 {
     captures_.define(name, value);
-}
-
-Value_Ptr eval_or_null(const ast::Statement::Ptr& node, Symbol_Table& syms)
-{
-    if (auto expr_ptr = dynamic_cast<ast::Expression*>(node.get()))
-        return expr_ptr->evaluate(syms);
-
-    node->execute(syms);
-    return Value::null();
 }
 
 Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
@@ -70,18 +63,12 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
                                         | std::ranges::to<Array>()));
     }
 
-    if (body_->size() == 0)
-        return Value::null();
-
-    for (const ast::Statement::Ptr& node : *body_
-                                               | std::views::reverse
-                                               | std::views::drop(1)
-                                               | std::views::reverse)
+    for (const ast::Statement::Ptr& node : *body_)
     {
         node->execute(exec_table);
     }
 
-    return eval_or_null(body_->back(), exec_table);
+    return return_expr_->evaluate(exec_table);
 }
 
 std::string Closure::debug_dump() const

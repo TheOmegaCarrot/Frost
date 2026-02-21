@@ -1,5 +1,5 @@
-#include <frost/ast.hpp>
 #include <frost/ast/lambda.hpp>
+#include <frost/ast/literal.hpp>
 #include <frost/closure.hpp>
 
 #include <fmt/format.h>
@@ -13,11 +13,20 @@ namespace frst::ast
 namespace
 {
 
-std::generator<Statement::Symbol_Action> node_to_sym_seq(
-    const frst::ast::Statement::Ptr& node)
+struct
 {
-    return node->symbol_sequence();
-}
+    static std::generator<Statement::Symbol_Action> operator()(
+        const frst::ast::Statement::Ptr& node)
+    {
+        return node->symbol_sequence();
+    }
+
+    static std::generator<Statement::Symbol_Action> operator()(
+        const std::shared_ptr<frst::ast::Expression>& node)
+    {
+        return node->symbol_sequence();
+    }
+} constexpr static node_to_sym_seq;
 
 Value_Ptr promote_if_weak(const Value_Ptr& fn)
 {
@@ -55,10 +64,31 @@ Lambda::Lambda(std::vector<std::string> params,
         throw Frost_Unrecoverable_Error{"Closure has duplicate parameters"};
     }
 
+    if (body_->size() == 0)
+    {
+        return_expr_ = std::make_shared<ast::Literal>(Value::null());
+    }
+    else
+    {
+        std::shared_ptr<ast::Statement> last_statement{
+            std::move(body_->back())};
+        body_->pop_back();
+
+        std::shared_ptr<ast::Expression> return_expr =
+            std::dynamic_pointer_cast<ast::Expression>(last_statement);
+        if (not return_expr)
+        {
+            throw Frost_Unrecoverable_Error{
+                "A lambda must end in an expression"};
+        }
+        return_expr_ = std::move(return_expr);
+    }
+
     std::flat_set<std::string> names_defined_so_far{std::from_range, param_set};
 
-    for (const Statement::Symbol_Action& name :
-         *body_ | std::views::transform(&node_to_sym_seq) | std::views::join)
+    for (const Statement::Symbol_Action& name : std::views::concat(
+             *body_ | std::views::transform(node_to_sym_seq) | std::views::join,
+             node_to_sym_seq(return_expr_)))
     {
         name.visit(Overload{
             [&](const Statement::Definition& defn) {
@@ -117,9 +147,9 @@ Lambda::Lambda(std::vector<std::string> params,
         }
     }
 
-    auto closure =
-        std::make_shared<Closure>(params_, body_, std::move(captures),
-                                  closure_define_count_, vararg_param_);
+    auto closure = std::make_shared<Closure>(
+        params_, body_, return_expr_, std::move(captures),
+        closure_define_count_, vararg_param_);
 
     auto weak_closure = Value::create(
         Function{std::make_shared<Weak_Closure>(std::weak_ptr{closure})});
@@ -142,8 +172,9 @@ std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
     if (vararg_param_)
         defns.insert(vararg_param_.value());
 
-    for (const Statement::Symbol_Action& action :
-         *body_ | std::views::transform(&node_to_sym_seq) | std::views::join)
+    for (const Statement::Symbol_Action& action : std::views::concat(
+             *body_ | std::views::transform(node_to_sym_seq) | std::views::join,
+             node_to_sym_seq(return_expr_)))
     {
         const auto name = action.visit(get_name);
         if (std::holds_alternative<Statement::Definition>(action))
@@ -174,6 +205,7 @@ std::generator<Statement::Child_Info> Lambda::children() const
 {
     for (const auto& statement : *body_)
         co_yield make_child(statement);
+    co_yield make_child(return_expr_);
 }
 
 } // namespace frst::ast

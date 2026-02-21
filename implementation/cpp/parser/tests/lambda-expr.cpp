@@ -913,16 +913,11 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 2_f);
     }
 
-    SECTION("Lambda body can end with a definition and return Null")
+    SECTION("Lambda body ending in a definition is rejected")
     {
-        auto result = parse("fn() -> { def x = 1 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
-
-        frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
-        auto out = call_function(value, {});
-        REQUIRE(out->is<frst::Null>());
+        CHECK_THROWS_WITH(parse("fn() -> { def x = 1 }"),
+                          Catch::Matchers::ContainsSubstring(
+                              "A lambda must end in an expression"));
     }
 
     SECTION("Lambda body allows if expressions")
