@@ -600,3 +600,161 @@ TEST_CASE("Builtin parse_int")
             ContainsSubstring("out of range"));
     }
 }
+
+TEST_CASE("Builtin to_byte_array/from_byte_array")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+
+    auto to_val = table.lookup("to_byte_array");
+    auto from_val = table.lookup("from_byte_array");
+    REQUIRE(to_val->is<Function>());
+    REQUIRE(from_val->is<Function>());
+
+    auto to_byte_array = to_val->get<Function>().value();
+    auto from_byte_array = from_val->get<Function>().value();
+
+    SECTION("Injected")
+    {
+        CHECK(to_val->is<Function>());
+        CHECK(from_val->is<Function>());
+    }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_WITH(to_byte_array->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(to_byte_array->call({}),
+                          ContainsSubstring("requires at least 1"));
+        CHECK_THROWS_WITH(
+            to_byte_array->call({Value::create("a"s), Value::create("b"s)}),
+            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(
+            to_byte_array->call({Value::create("a"s), Value::create("b"s)}),
+            ContainsSubstring("no more than 1"));
+
+        CHECK_THROWS_WITH(from_byte_array->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(from_byte_array->call({}),
+                          ContainsSubstring("requires at least 1"));
+        CHECK_THROWS_WITH(from_byte_array->call(
+                              {Value::create(Array{}), Value::create(Array{})}),
+                          ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(from_byte_array->call(
+                              {Value::create(Array{}), Value::create(Array{})}),
+                          ContainsSubstring("no more than 1"));
+    }
+
+    SECTION("Type errors")
+    {
+        auto bad_string_arg = Value::create(123_f);
+        CHECK_THROWS_WITH(to_byte_array->call({bad_string_arg}),
+                          ContainsSubstring("Function to_byte_array"));
+        CHECK_THROWS_WITH(to_byte_array->call({bad_string_arg}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(to_byte_array->call({bad_string_arg}),
+                          EndsWith(std::string{bad_string_arg->type_name()}));
+
+        auto bad_array_arg = Value::create("abc"s);
+        CHECK_THROWS_WITH(from_byte_array->call({bad_array_arg}),
+                          ContainsSubstring("Function from_byte_array"));
+        CHECK_THROWS_WITH(from_byte_array->call({bad_array_arg}),
+                          ContainsSubstring("Array"));
+        CHECK_THROWS_WITH(from_byte_array->call({bad_array_arg}),
+                          EndsWith(std::string{bad_array_arg->type_name()}));
+    }
+
+    SECTION("to_byte_array returns unsigned byte values")
+    {
+        String input;
+        input.push_back('\0');
+        input.push_back('\x01');
+        input.push_back('\x7f');
+        input.push_back(static_cast<char>(0x80));
+        input.push_back(static_cast<char>(0xff));
+
+        auto out = to_byte_array->call({Value::create(std::move(input))});
+        REQUIRE(out->is<Array>());
+        const auto& arr = out->raw_get<Array>();
+
+        REQUIRE(arr.size() == 5);
+        CHECK(arr[0]->get<Int>().value() == 0);
+        CHECK(arr[1]->get<Int>().value() == 1);
+        CHECK(arr[2]->get<Int>().value() == 127);
+        CHECK(arr[3]->get<Int>().value() == 128);
+        CHECK(arr[4]->get<Int>().value() == 255);
+    }
+
+    SECTION("from_byte_array accepts [0, 255] and preserves bytes")
+    {
+        Array input{
+            Value::create(Int{0}),
+            Value::create(Int{1}),
+            Value::create(Int{127}),
+            Value::create(Int{128}),
+            Value::create(Int{255}),
+        };
+
+        auto out = from_byte_array->call({Value::create(std::move(input))});
+        REQUIRE(out->is<String>());
+        const auto& str = out->raw_get<String>();
+
+        REQUIRE(str.size() == 5);
+        CHECK(static_cast<unsigned char>(str[0]) == 0);
+        CHECK(static_cast<unsigned char>(str[1]) == 1);
+        CHECK(static_cast<unsigned char>(str[2]) == 127);
+        CHECK(static_cast<unsigned char>(str[3]) == 128);
+        CHECK(static_cast<unsigned char>(str[4]) == 255);
+    }
+
+    SECTION("Round-trip preserves embedded NUL and high bytes")
+    {
+        String input;
+        input.push_back('x');
+        input.push_back('\0');
+        input.push_back('y');
+        input.push_back(static_cast<char>(0x80));
+        input.push_back(static_cast<char>(0xff));
+
+        auto bytes = to_byte_array->call({Value::create(String{input})});
+        auto round_trip = from_byte_array->call({bytes});
+
+        REQUIRE(round_trip->is<String>());
+        CHECK(round_trip->raw_get<String>() == input);
+    }
+
+    SECTION("from_byte_array rejects non-Int elements")
+    {
+        CHECK_THROWS_WITH(
+            from_byte_array->call(
+                {Value::create(Array{Value::create(1.5), Value::create(2)})}),
+            ContainsSubstring("expected Array of Int"));
+        CHECK_THROWS_WITH(
+            from_byte_array->call(
+                {Value::create(Array{Value::create(true), Value::create(2)})}),
+            ContainsSubstring("expected Array of Int"));
+    }
+
+    SECTION("from_byte_array rejects out-of-range Int elements")
+    {
+        CHECK_THROWS_WITH(
+            from_byte_array->call(
+                {Value::create(Array{Value::create(Int{-1})})}),
+            ContainsSubstring("range [0, 255]"));
+        CHECK_THROWS_WITH(
+            from_byte_array->call(
+                {Value::create(Array{Value::create(Int{256})})}),
+            ContainsSubstring("range [0, 255]"));
+    }
+
+    SECTION("Empty input")
+    {
+        auto bytes = to_byte_array->call({Value::create(""s)});
+        REQUIRE(bytes->is<Array>());
+        CHECK(bytes->raw_get<Array>().empty());
+
+        auto str = from_byte_array->call({Value::create(Array{})});
+        REQUIRE(str->is<String>());
+        CHECK(str->raw_get<String>().empty());
+    }
+}

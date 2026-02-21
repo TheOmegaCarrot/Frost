@@ -151,6 +151,53 @@ BUILTIN(parse_int)
     return Value::create(result);
 }
 
+BUILTIN(to_byte_array)
+{
+    REQUIRE_ARGS("to_byte_array", TYPES(String));
+
+    const String& input = GET(0, String);
+
+    Array exploded =
+        input
+        | std::views::transform([](char c) {
+              return Value::create(Int{static_cast<unsigned char>(c)});
+          })
+        | std::ranges::to<Array>();
+
+    return Value::create(std::move(exploded));
+}
+
+BUILTIN(from_byte_array)
+{
+    REQUIRE_ARGS("from_byte_array", TYPES(Array));
+
+    const Array& input = GET(0, Array);
+
+    String acc;
+    acc.reserve(input.size());
+    for (const auto& elem : input)
+    {
+        acc.push_back(elem->get<Int>()
+                          .or_else([&] -> std::optional<Int> {
+                              throw Frost_Recoverable_Error{fmt::format(
+                                  "Function from_byte_array expected Array of "
+                                  "Int, but found: {}",
+                                  elem->type_name())};
+                          })
+                          .transform([&](Int i) {
+                              if (i <= 255 && i >= 0)
+                                  return static_cast<char>(i);
+                              throw Frost_Recoverable_Error{fmt::format(
+                                  "Function from_byte_array expected Array of "
+                                  "Int in range [0, 255], but got: {}",
+                                  i)};
+                          })
+                          .value());
+    }
+
+    return Value::create(std::move(acc));
+}
+
 #define X_UPPER_LOWER                                                          \
     X(upper)                                                                   \
     X(lower)
@@ -207,6 +254,8 @@ void inject_string_ops(Symbol_Table& table)
 
     INJECT(fmt_int, 2, 2);
     INJECT(parse_int, 2, 2);
+    INJECT(to_byte_array, 1, 1);
+    INJECT(from_byte_array, 1, 1);
 }
 
 } // namespace frst
