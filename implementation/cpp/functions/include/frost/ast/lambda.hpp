@@ -41,7 +41,7 @@ class Lambda final : public Expression
   private:
     std::vector<std::string> params_;
     std::flat_set<std::string> names_to_capture_;
-    std::shared_ptr<std::vector<Statement::Ptr>> body_;
+    std::shared_ptr<std::vector<Statement::Ptr>> body_prefix_;
     std::shared_ptr<ast::Expression> return_expr_;
     std::optional<std::string> vararg_param_;
     std::size_t closure_define_count_;

@@ -28,11 +28,11 @@ struct
     }
 } constexpr static node_to_sym_seq;
 
-auto body_symbol_sequence(const std::vector<Statement::Ptr>& body,
+auto body_symbol_sequence(const std::vector<Statement::Ptr>& body_prefix,
                           const std::shared_ptr<Expression>& return_expr)
 {
     return std::views::concat(
-        body | std::views::transform(node_to_sym_seq) | std::views::join,
+        body_prefix | std::views::transform(node_to_sym_seq) | std::views::join,
         node_to_sym_seq(return_expr));
 }
 
@@ -48,10 +48,11 @@ Value_Ptr promote_if_weak(const Value_Ptr& fn)
 } // namespace
 
 Lambda::Lambda(std::vector<std::string> params,
-               std::vector<Statement::Ptr> body,
+               std::vector<Statement::Ptr> body_prefix,
                std::optional<std::string> vararg_param)
     : params_{std::move(params)}
-    , body_{std::make_shared<std::vector<Statement::Ptr>>(std::move(body))}
+    , body_prefix_{std::make_shared<std::vector<Statement::Ptr>>(
+          std::move(body_prefix))}
     , vararg_param_{std::move(vararg_param)}
 {
     std::flat_set<std::string> param_set{std::from_range, params_};
@@ -72,15 +73,15 @@ Lambda::Lambda(std::vector<std::string> params,
         throw Frost_Unrecoverable_Error{"Closure has duplicate parameters"};
     }
 
-    if (body_->size() == 0)
+    if (body_prefix_->size() == 0)
     {
         return_expr_ = std::make_shared<ast::Literal>(Value::null());
     }
     else
     {
         std::shared_ptr<ast::Statement> last_statement{
-            std::move(body_->back())};
-        body_->pop_back();
+            std::move(body_prefix_->back())};
+        body_prefix_->pop_back();
 
         std::shared_ptr<ast::Expression> return_expr =
             std::dynamic_pointer_cast<ast::Expression>(last_statement);
@@ -95,7 +96,7 @@ Lambda::Lambda(std::vector<std::string> params,
     std::flat_set<std::string> names_defined_so_far{std::from_range, param_set};
 
     for (const Statement::Symbol_Action& name :
-         body_symbol_sequence(*body_, return_expr_))
+         body_symbol_sequence(*body_prefix_, return_expr_))
     {
         name.visit(Overload{
             [&](const Statement::Definition& defn) {
@@ -155,7 +156,7 @@ Lambda::Lambda(std::vector<std::string> params,
     }
 
     auto closure = std::make_shared<Closure>(
-        params_, body_, return_expr_, std::move(captures),
+        params_, body_prefix_, return_expr_, std::move(captures),
         closure_define_count_, vararg_param_);
 
     auto weak_closure = Value::create(
@@ -180,7 +181,7 @@ std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
         defns.insert(vararg_param_.value());
 
     for (const Statement::Symbol_Action& action :
-         body_symbol_sequence(*body_, return_expr_))
+         body_symbol_sequence(*body_prefix_, return_expr_))
     {
         const auto name = action.visit(get_name);
         if (std::holds_alternative<Statement::Definition>(action))
@@ -209,7 +210,7 @@ std::string Lambda::node_label() const
 
 std::generator<Statement::Child_Info> Lambda::children() const
 {
-    for (const auto& statement : *body_)
+    for (const auto& statement : *body_prefix_)
         co_yield make_child(statement);
     co_yield make_child(return_expr_);
 }

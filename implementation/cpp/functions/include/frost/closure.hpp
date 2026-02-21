@@ -33,7 +33,7 @@ class Closure : public Callable
 
   private:
     std::vector<std::string> parameters_;
-    std::shared_ptr<std::vector<ast::Statement::Ptr>> body_;
+    std::shared_ptr<std::vector<ast::Statement::Ptr>> body_prefix_;
     std::shared_ptr<ast::Expression> return_expr_;
     Symbol_Table captures_;
     std::optional<std::string> vararg_parameter_;

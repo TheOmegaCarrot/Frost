@@ -10,12 +10,12 @@
 using namespace frst;
 
 Closure::Closure(std::vector<std::string> parameters,
-                 std::shared_ptr<std::vector<ast::Statement::Ptr>> body,
+                 std::shared_ptr<std::vector<ast::Statement::Ptr>> body_prefix,
                  std::shared_ptr<ast::Expression> return_expr,
                  Symbol_Table captures, std::size_t define_count,
                  std::optional<std::string> vararg_parameter)
     : parameters_{std::move(parameters)}
-    , body_{std::move(body)}
+    , body_prefix_{std::move(body_prefix)}
     , return_expr_{std::move(return_expr)}
     , captures_{std::move(captures)}
     , vararg_parameter_{std::move(vararg_parameter)}
@@ -63,7 +63,7 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
                                         | std::ranges::to<Array>()));
     }
 
-    for (const ast::Statement::Ptr& node : *body_)
+    for (const ast::Statement::Ptr& node : *body_prefix_)
     {
         node->execute(exec_table);
     }
@@ -92,7 +92,7 @@ std::string Closure::debug_dump() const
 
     os << '\n';
 
-    for (const auto& statement : *body_)
+    for (const auto& statement : *body_prefix_)
     {
         statement->debug_dump_ast(os);
     }
