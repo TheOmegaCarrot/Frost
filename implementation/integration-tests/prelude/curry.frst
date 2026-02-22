@@ -3,3 +3,11 @@ def vsum = fn ...args -> reduce args with plus
 def vsum5 = vsum @ curry(3) @ curry(2)
 
 assert( vsum5(5) == 10 )
+
+def ten_over = divide @curry(10)
+
+def half = divide @bcurry(2)
+
+assert( ten_over(5) == 2 )
+
+assert( half(10) == 5 )
