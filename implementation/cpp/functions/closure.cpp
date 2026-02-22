@@ -97,6 +97,8 @@ std::string Closure::debug_dump() const
         statement->debug_dump_ast(os);
     }
 
+    return_expr_->debug_dump_ast(os);
+
     return std::move(os).str();
 }
 
