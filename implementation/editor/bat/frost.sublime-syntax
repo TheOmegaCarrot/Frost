@@ -1,0 +1,188 @@
+%YAML 1.2
+---
+name: Frost
+file_extensions:
+  - frst
+scope: source.frost
+version: 2
+
+variables:
+  ident: '[A-Za-z_][A-Za-z0-9_]*'
+  keyword: '(?:if|else|elif|def|export|fn|reduce|map|foreach|filter|with|init|and|or|not)'
+  constant: '(?:true|false|null)'
+
+contexts:
+  main:
+    - include: comments
+    - include: format-strings
+    - include: raw-strings
+    - include: strings
+    - include: numbers
+    - include: keywords
+    - include: constants
+    - include: map-keys
+    - include: function-calls
+    - include: member-access
+    - include: operators
+    - include: punctuation
+    - include: identifiers
+
+  comments:
+    - match: '#.*$'
+      scope: comment.line.number-sign.frost
+
+  keywords:
+    - match: '\b{{keyword}}\b'
+      scope: keyword.control.frost
+
+  constants:
+    - match: '\b{{constant}}\b'
+      scope: constant.language.frost
+
+  map-keys:
+    - match: '\b({{ident}})\b(?=\s*:)'
+      captures:
+        1: variable.other.member.frost
+
+  function-calls:
+    - match: '\b({{ident}})\b(?=\s*\()'
+      captures:
+        1: entity.name.function.frost
+
+  member-access:
+    - match: '(\.)(\s*)({{ident}})\b'
+      captures:
+        1: punctuation.accessor.dot.frost
+        3: variable.other.member.frost
+
+  identifiers:
+    - match: '\b{{ident}}\b'
+      scope: variable.other.frost
+
+  numbers:
+    - match: '\b\d+\.\d+\b'
+      scope: constant.numeric.float.frost
+    - match: '\b\d+\b'
+      scope: constant.numeric.integer.frost
+
+  operators:
+    - match: '\.\.\.'
+      scope: keyword.operator.variadic.frost
+    - match: '->'
+      scope: storage.type.function.arrow.frost
+    - match: '@'
+      scope: keyword.operator.threaded-call.frost
+    - match: '==|!=|<=|>=|<|>'
+      scope: keyword.operator.comparison.frost
+    - match: '[+\-*/%]'
+      scope: keyword.operator.arithmetic.frost
+    - match: '='
+      scope: keyword.operator.assignment.frost
+
+  punctuation:
+    - match: '[\[\]\{\}\(\),:;]'
+      scope: punctuation.separator.frost
+
+  raw-strings:
+    - match: 'R"\('
+      scope: punctuation.definition.string.begin.frost
+      push: raw-string-double
+    - match: "R'\\("
+      scope: punctuation.definition.string.begin.frost
+      push: raw-string-single
+
+  raw-string-double:
+    - meta_scope: string.quoted.other.raw.frost
+    - match: '\)"'
+      scope: punctuation.definition.string.end.frost
+      pop: true
+    - match: '\n'
+      scope: invalid.illegal.newline.frost
+      pop: true
+
+  raw-string-single:
+    - meta_scope: string.quoted.other.raw.frost
+    - match: "\\)'"
+      scope: punctuation.definition.string.end.frost
+      pop: true
+    - match: '\n'
+      scope: invalid.illegal.newline.frost
+      pop: true
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.frost
+      push: string-double
+    - match: "'"
+      scope: punctuation.definition.string.begin.frost
+      push: string-single
+
+  string-double:
+    - meta_scope: string.quoted.double.frost
+    - match: '"'
+      scope: punctuation.definition.string.end.frost
+      pop: true
+    - match: '\\[ntr"\\0]'
+      scope: constant.character.escape.frost
+    - match: '\\.'
+      scope: invalid.illegal.escape.frost
+    - match: '\n'
+      scope: invalid.illegal.newline.frost
+      pop: true
+
+  string-single:
+    - meta_scope: string.quoted.single.frost
+    - match: "'"
+      scope: punctuation.definition.string.end.frost
+      pop: true
+    - match: "\\\\[ntr'\\\\0]"
+      scope: constant.character.escape.frost
+    - match: '\\.'
+      scope: invalid.illegal.escape.frost
+    - match: '\n'
+      scope: invalid.illegal.newline.frost
+      pop: true
+
+  format-strings:
+    - match: '\$"'
+      scope: punctuation.definition.string.begin.frost
+      push: format-string-double
+    - match: "\\$'"
+      scope: punctuation.definition.string.begin.frost
+      push: format-string-single
+
+  format-placeholders:
+    - match: '(?<!\\)\$\{({{ident}})\}'
+      captures:
+        0: meta.interpolation.frost
+        1: variable.parameter.interpolation.frost
+    - match: '(?<!\\)\$\{[^}]*\}'
+      scope: invalid.illegal.interpolation.frost
+
+  format-string-double:
+    - meta_scope: string.quoted.double.interpolated.frost
+    - include: format-placeholders
+    - match: '"'
+      scope: punctuation.definition.string.end.frost
+      pop: true
+    - match: '\\[ntr"\\0$]'
+      scope: constant.character.escape.frost
+    - match: '\\.'
+      scope: invalid.illegal.escape.frost
+    - match: '\n'
+      scope: invalid.illegal.newline.frost
+      pop: true
+
+  format-string-single:
+    - meta_scope: string.quoted.single.interpolated.frost
+    - include: format-placeholders
+    - match: "'"
+      scope: punctuation.definition.string.end.frost
+      pop: true
+    - match: "\\\\[ntr'\\\\0$]"
+      scope: constant.character.escape.frost
+    - match: '\\.'
+      scope: invalid.illegal.escape.frost
+    - match: '\n'
+      scope: invalid.illegal.newline.frost
+      pop: true
