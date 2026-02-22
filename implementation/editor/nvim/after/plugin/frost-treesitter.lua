@@ -42,6 +42,21 @@ local function register_frost()
   return true
 end
 
+if type(_G.frost_ts_indent) ~= "function" then
+  _G.frost_ts_indent = function()
+    local ok, ts_indent = pcall(require, "nvim-treesitter.indent")
+    if not ok then
+      return -1
+    end
+    return ts_indent.get_indent(vim.v.lnum)
+  end
+end
+
+local function apply_frost_indent(bufnr)
+  vim.bo[bufnr].autoindent = true
+  vim.bo[bufnr].indentexpr = "v:lua.frost_ts_indent()"
+end
+
 local group = vim.api.nvim_create_augroup("FrostTreesitterRegister", { clear = true })
 vim.api.nvim_create_autocmd("User", {
   group = group,
@@ -54,4 +69,15 @@ vim.api.nvim_create_autocmd("User", {
   end,
 })
 
+vim.api.nvim_create_autocmd("FileType", {
+  group = group,
+  pattern = "frost",
+  callback = function(ev)
+    apply_frost_indent(ev.buf)
+  end,
+})
+
 register_frost()
+if vim.bo.filetype == "frost" then
+  apply_frost_indent(vim.api.nvim_get_current_buf())
+end

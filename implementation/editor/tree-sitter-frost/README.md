@@ -32,5 +32,7 @@ It also provides local Tree-sitter integration files:
 
 - `editor/nvim/after/plugin/frost-treesitter.lua`
 - `editor/nvim/queries/frost/highlights.scm`
+- `editor/nvim/queries/frost/indents.scm`
+- `editor/nvim/queries/frost/folds.scm`
 
 The parser config points Neovim at `editor/tree-sitter-frost/src/parser.c`.
