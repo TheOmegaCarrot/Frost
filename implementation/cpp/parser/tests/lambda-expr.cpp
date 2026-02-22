@@ -65,16 +65,22 @@ TEST_CASE("Parser Lambda Expressions")
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 
-    SECTION("Empty body yields Null when called")
+    SECTION("Empty body is rejected")
     {
-        auto result = parse("fn() -> {}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        CHECK_THROWS_WITH(parse("fn() -> {}"),
+                          Catch::Matchers::ContainsSubstring("empty body"));
+    }
 
-        frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
-        auto out = call_function(value, {});
-        REQUIRE(out->is<frst::Null>());
+    SECTION("Empty body is rejected with elided parameters")
+    {
+        CHECK_THROWS_WITH(parse("fn -> {}"),
+                          Catch::Matchers::ContainsSubstring("empty body"));
+    }
+
+    SECTION("Empty body is rejected with named parameters")
+    {
+        CHECK_THROWS_WITH(parse("fn(x) -> {}"),
+                          Catch::Matchers::ContainsSubstring("empty body"));
     }
 
     SECTION("Empty parameter list can be elided")
@@ -101,16 +107,10 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
 
-    SECTION("Empty body tolerates whitespace, comments, and semicolons")
+    SECTION("Semicolon-only lambda body is rejected")
     {
-        auto result = parse("fn (\n ) -> { ; # comment\n ; ; }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
-
-        frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
-        auto out = call_function(value, {});
-        REQUIRE(out->is<frst::Null>());
+        CHECK_THROWS_WITH(parse("fn (\n ) -> { ; # comment\n ; ; }"),
+                          Catch::Matchers::ContainsSubstring("empty body"));
     }
 
     SECTION("Lambda parameters bind and compute correctly")
@@ -315,7 +315,8 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda as a top-level statement parses in program input")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(std::string_view{"fn -> {}"});
+        auto src = lexy::string_input<lexy::utf8_encoding>(
+            std::string_view{"fn -> { null }"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -326,9 +327,18 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(expr);
     }
 
+    SECTION("Top-level empty-body lambda statement is rejected")
+    {
+        auto src =
+            lexy::string_input<lexy::utf8_encoding>(std::string_view{"fn -> {}"});
+        CHECK_THROWS_WITH((lexy::parse<frst::grammar::program>(src, lexy::noop)),
+                          Catch::Matchers::ContainsSubstring("empty body"));
+    }
+
     SECTION("Multiple lambdas as top-level statements parse correctly")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(std::string_view{"fn -> {}\nfn() -> {}"});
+        auto src = lexy::string_input<lexy::utf8_encoding>(
+            std::string_view{"fn -> { null }\nfn() -> { null }"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -338,7 +348,8 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Multiple lambdas with semicolons parse correctly")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(std::string_view{"fn -> {}; fn() -> {}"});
+        auto src = lexy::string_input<lexy::utf8_encoding>(
+            std::string_view{"fn -> { null }; fn() -> { null }"});
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -935,18 +946,18 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Non-identifier parameters are rejected")
     {
-        CHECK_FALSE(parse("fn(1) -> {}"));
-        CHECK_FALSE(parse("fn(\"x\") -> {}"));
+        CHECK_FALSE(parse("fn(1) -> { 1 }"));
+        CHECK_FALSE(parse("fn(\"x\") -> { 1 }"));
     }
 
     SECTION("Arrow token must be contiguous")
     {
-        CHECK_FALSE(parse("fn() - > {}"));
+        CHECK_FALSE(parse("fn() - > { 1 }"));
     }
 
     SECTION("Prefix not before lambda without call is allowed")
     {
-        auto result = parse("not fn () -> {}");
+        auto result = parse("not fn () -> { null }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -994,27 +1005,27 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Malformed trailing tokens are rejected")
     {
-        CHECK_FALSE(parse("fn() -> {} )"));
+        CHECK_FALSE(parse("fn() -> { 1 } )"));
         CHECK_FALSE(parse("fn() -> { 1 } }"));
         CHECK_FALSE(parse("fn() -> { 1 } extra"));
     }
 
     SECTION("Parameter list syntax errors are rejected")
     {
-        CHECK_FALSE(parse("fn(a,) -> {}"));
-        CHECK_FALSE(parse("fn(,a) -> {}"));
-        CHECK_FALSE(parse("fn(a b) -> {}"));
-        CHECK_FALSE(parse("fn(,) -> {}"));
-        CHECK_FALSE(parse("fn(a, ...rest, b) -> {}"));
-        CHECK_FALSE(parse("fn(... ) -> {}"));
-        CHECK_FALSE(parse("fn(a, ...rest,) -> {}"));
-        CHECK_FALSE(parse("fn(, ...rest) -> {}"));
-        CHECK_FALSE(parse("fn(...rest, ...more) -> {}"));
-        CHECK_FALSE(parse("fn a b -> {}"));
-        CHECK_FALSE(parse("fn a, -> {}"));
-        CHECK_FALSE(parse("fn ... -> {}"));
-        CHECK_FALSE(parse("fn a, ...rest, b -> {}"));
-        CHECK_FALSE(parse("fn a, ...rest, -> {}"));
+        CHECK_FALSE(parse("fn(a,) -> { 1 }"));
+        CHECK_FALSE(parse("fn(,a) -> { 1 }"));
+        CHECK_FALSE(parse("fn(a b) -> { 1 }"));
+        CHECK_FALSE(parse("fn(,) -> { 1 }"));
+        CHECK_FALSE(parse("fn(a, ...rest, b) -> { 1 }"));
+        CHECK_FALSE(parse("fn(... ) -> { 1 }"));
+        CHECK_FALSE(parse("fn(a, ...rest,) -> { 1 }"));
+        CHECK_FALSE(parse("fn(, ...rest) -> { 1 }"));
+        CHECK_FALSE(parse("fn(...rest, ...more) -> { 1 }"));
+        CHECK_FALSE(parse("fn a b -> { 1 }"));
+        CHECK_FALSE(parse("fn a, -> { 1 }"));
+        CHECK_FALSE(parse("fn ... -> { 1 }"));
+        CHECK_FALSE(parse("fn a, ...rest, b -> { 1 }"));
+        CHECK_FALSE(parse("fn a, ...rest, -> { 1 }"));
     }
 
     SECTION("Missing arrow or body is rejected")
@@ -1028,10 +1039,10 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Keyword parameters are rejected")
     {
-        CHECK_FALSE(parse("fn(if) -> {}"));
-        CHECK_FALSE(parse("fn(true) -> {}"));
-        CHECK_FALSE(parse("fn(fn) -> {}"));
-        CHECK_FALSE(parse("fn(...if) -> {}"));
+        CHECK_FALSE(parse("fn(if) -> { 1 }"));
+        CHECK_FALSE(parse("fn(true) -> { 1 }"));
+        CHECK_FALSE(parse("fn(fn) -> { 1 }"));
+        CHECK_FALSE(parse("fn(...if) -> { 1 }"));
     }
 
     SECTION("Variadic parameter tolerates comments")

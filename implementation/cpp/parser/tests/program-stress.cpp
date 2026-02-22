@@ -112,7 +112,7 @@ m["b"];
 (1 @ g())[0];
 id(map arr with inc)[0];
 (map arr with inc)[0];
-not fn () -> { };
+not fn () -> { null };
 
 1; 2; 3;
 def x = 1; def y = 2;

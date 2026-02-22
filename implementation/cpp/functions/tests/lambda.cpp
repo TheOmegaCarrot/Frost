@@ -178,38 +178,24 @@ TEST_CASE("Lambda")
         CHECK(actions.empty());
     }
 
-    SECTION("Empty body with parameters is allowed")
+    SECTION("Empty body with parameters is rejected")
     {
         // Frost:
         // def f = fn (p, q) -> { }
-        Symbol_Table env;
         std::vector<Statement::Ptr> body;
 
-        Lambda node{{"p", "q"}, std::move(body)};
-
-        auto result = node.evaluate(env);
-        REQUIRE(result->is<Function>());
-        auto fn = result->get<Function>().value();
-
-        auto out = fn->call({Value::create(1_f)});
-        CHECK(out->is<Null>());
+        CHECK_THROWS_WITH((Lambda{{"p", "q"}, std::move(body)}),
+                          ContainsSubstring("empty body"));
     }
 
-    SECTION("Empty body with variadic parameter is allowed")
+    SECTION("Empty body with variadic parameter is rejected")
     {
         // Frost:
         // def f = fn (...rest) -> { }
-        Symbol_Table env;
         std::vector<Statement::Ptr> body;
 
-        Lambda node{{}, std::move(body), "rest"};
-
-        auto result = node.evaluate(env);
-        REQUIRE(result->is<Function>());
-        auto fn = result->get<Function>().value();
-
-        auto out = fn->call({Value::create(1_f), Value::create(2_f)});
-        CHECK(out->is<Null>());
+        CHECK_THROWS_WITH((Lambda{{}, std::move(body), "rest"}),
+                          ContainsSubstring("empty body"));
     }
 
     SECTION("Duplicate parameters are rejected at construction")

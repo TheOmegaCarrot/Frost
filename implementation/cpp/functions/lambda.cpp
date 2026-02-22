@@ -74,24 +74,19 @@ Lambda::Lambda(std::vector<std::string> params,
     }
 
     if (body_prefix_->size() == 0)
-    {
-        return_expr_ = std::make_shared<ast::Literal>(Value::null());
-    }
-    else
-    {
-        std::shared_ptr<ast::Statement> last_statement{
-            std::move(body_prefix_->back())};
-        body_prefix_->pop_back();
+        throw Frost_Unrecoverable_Error("Closure may not have an empty body");
 
-        std::shared_ptr<ast::Expression> return_expr =
-            std::dynamic_pointer_cast<ast::Expression>(last_statement);
-        if (not return_expr)
-        {
-            throw Frost_Unrecoverable_Error{
-                "A lambda must end in an expression"};
-        }
-        return_expr_ = std::move(return_expr);
+    std::shared_ptr<ast::Statement> last_statement{
+        std::move(body_prefix_->back())};
+    body_prefix_->pop_back();
+
+    std::shared_ptr<ast::Expression> return_expr =
+        std::dynamic_pointer_cast<ast::Expression>(last_statement);
+    if (not return_expr)
+    {
+        throw Frost_Unrecoverable_Error{"A lambda must end in an expression"};
     }
+    return_expr_ = std::move(return_expr);
 
     std::flat_set<std::string> names_defined_so_far{std::from_range, param_set};
 
