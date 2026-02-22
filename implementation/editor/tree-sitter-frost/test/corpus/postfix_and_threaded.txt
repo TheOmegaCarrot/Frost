@@ -1,0 +1,155 @@
+==================
+postfix chain
+==================
+
+obj.f(1)[0].key
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (postfix_expression
+                      (postfix_expression
+                        (postfix_expression
+                          (postfix_expression
+                            (primary_expression
+                              (identifier)))
+                          (no_nl_dot)
+                          (identifier))
+                        (no_nl_arguments
+                          (no_nl_call_open)
+                          (argument_list
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (integer)))))))))))))
+                      (no_nl_index_open)
+                      (or_expression
+                        (and_expression
+                          (equality_expression
+                            (comparison_expression
+                              (sum_expression
+                                (product_expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (integer)))))))))))
+                    (no_nl_dot)
+                    (identifier)))))))))))
+
+==================
+threaded call
+==================
+
+a @ f(1, 2)
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (postfix_expression
+                      (primary_expression
+                        (identifier)))
+                    (threaded_call_target
+                      (threaded_callee
+                        (threaded_callee_primary
+                          (identifier)))
+                      (no_nl_arguments
+                        (no_nl_call_open)
+                        (argument_list
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer)))))))))))))))))))))))
+
+==================
+threaded callee with dot and index
+==================
+
+value @ obj.fns[0](x)
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (postfix_expression
+                      (primary_expression
+                        (identifier)))
+                    (threaded_call_target
+                      (threaded_callee
+                        (threaded_callee
+                          (threaded_callee
+                            (threaded_callee_primary
+                              (identifier)))
+                          (no_nl_dot)
+                          (identifier))
+                        (no_nl_index_open)
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (integer)))))))))))
+                      (no_nl_arguments
+                        (no_nl_call_open)
+                        (argument_list
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (identifier)))))))))))))))))))))))

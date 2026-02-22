@@ -1,0 +1,116 @@
+==================
+array destructure
+==================
+
+def [a, b, ...rest] = arr
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (array_destructure_pattern
+      (array_destructure_elements
+        (destructure_name
+          (identifier))
+        (destructure_name
+          (identifier))
+        (rest_pattern
+          (destructure_name
+            (identifier)))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
+map destructure
+==================
+
+def {foo: bar, [1 + 1]: baz} = m
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (map_destructure_pattern
+      (map_destructure_entry_list
+        (map_destructure_entry
+          (identifier)
+          (destructure_name
+            (identifier)))
+        (map_destructure_entry
+          (map_key_expression
+            (or_expression
+              (and_expression
+                (equality_expression
+                  (comparison_expression
+                    (sum_expression
+                      (sum_expression
+                        (product_expression
+                          (unary_expression
+                            (postfix_expression
+                              (primary_expression
+                                (integer))))))
+                      (product_expression
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (integer)))))))))))
+          (destructure_name
+            (identifier)))))
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
+export definitions
+==================
+
+export def out = {ok: true}
+
+---
+
+(source_file
+  (export_definition
+    (kw_export)
+    (kw_def)
+    (identifier)
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (map_literal
+                        (map_entries
+                          (map_entry
+                            (identifier)
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (boolean
+                                                (kw_true)))))))))))))))))))))))))

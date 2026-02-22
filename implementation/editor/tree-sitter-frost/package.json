@@ -1,0 +1,21 @@
+{
+  "name": "tree-sitter-frost",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for the Frost language",
+  "private": true,
+  "license": "UNLICENSED",
+  "keywords": [
+    "tree-sitter",
+    "frost",
+    "grammar"
+  ],
+  "scripts": {
+    "generate": "tree-sitter generate",
+    "test": "tree-sitter test",
+    "parse": "tree-sitter parse",
+    "highlight": "tree-sitter highlight"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.26.5"
+  }
+}

@@ -1,0 +1,95 @@
+==================
+incomplete call recovers
+==================
+
+f(
+
+---
+
+(ERROR
+  (postfix_expression
+    (primary_expression
+      (identifier)))
+  (no_nl_call_open))
+
+==================
+map missing comma recovers
+==================
+
+{a: 1 b: 2}
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (map_literal
+                        (ERROR
+                          (map_entry
+                            (identifier)
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (integer))))))))))))
+                        (map_entries
+                          (map_entry
+                            (identifier)
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (integer))))))))))))))))))))))))
+
+==================
+dangling lambda arrow recovers
+==================
+
+fn (x) ->
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (lambda_expression
+                        (kw_fn)
+                        (lambda_parameters_parenthesized
+                          (lambda_parameter_payload
+                            (identifier)))
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (MISSING identifier))))))))))))))))))))))

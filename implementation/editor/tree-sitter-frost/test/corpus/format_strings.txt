@@ -1,0 +1,67 @@
+==================
+valid format strings
+==================
+
+def msg = $"hello ${name}"
+def msg2 = $'value=${x}'
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (identifier)
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (format_string_double
+                        (format_content_double)
+                        (format_placeholder
+                          (identifier)))))))))))))
+  (definition
+    (kw_def)
+    (identifier)
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (format_string_single
+                        (format_content_single)
+                        (format_placeholder
+                          (identifier))))))))))))))
+
+==================
+malformed format placeholder recovers
+==================
+
+def bad = $"${1}"
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (identifier)
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (format_string_double
+                        (format_invalid_placeholder
+                          (format_placeholder_content))))))))))))))

@@ -1,0 +1,131 @@
+==================
+lambda with block
+==================
+
+fn (x, ...rest) -> { def y = x + 1; y }
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (lambda_expression
+                        (kw_fn)
+                        (lambda_parameters_parenthesized
+                          (lambda_parameter_payload
+                            (identifier)
+                            (lambda_rest_parameter
+                              (identifier))))
+                        (block
+                          (definition
+                            (kw_def)
+                            (identifier)
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (sum_expression
+                                        (product_expression
+                                          (unary_expression
+                                            (postfix_expression
+                                              (primary_expression
+                                                (identifier))))))
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (integer)))))))))))
+                          (expression_statement
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (identifier))))))))))))))))))))))))
+
+==================
+lambda with elided params
+==================
+
+fn x, y -> x + y
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (lambda_expression
+                        (kw_fn)
+                        (lambda_parameters_elided
+                          (lambda_parameter_payload
+                            (identifier)
+                            (identifier)))
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (identifier))))))
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (identifier))))))))))))))))))))))
+
+==================
+lambda with elided empty params
+==================
+
+fn -> 42
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (lambda_expression
+                        (kw_fn)
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (integer))))))))))))))))))))))

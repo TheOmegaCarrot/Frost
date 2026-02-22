@@ -1,0 +1,230 @@
+==================
+definitions and precedence
+==================
+
+def x = 1 + 2 * 3
+x
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (identifier)
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (sum_expression
+                (product_expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer))))))
+              (product_expression
+                (product_expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (integer)))))))))))
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (identifier))))))))))))
+
+==================
+if expression
+==================
+
+if a: b elif c: d else: e
+
+---
+
+(source_file
+  (expression_statement
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (if_expression
+                        (kw_if)
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (identifier))))))))))
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (identifier))))))))))
+                        (elif_clause
+                          (kw_elif)
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (identifier))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (identifier)))))))))))
+                        (else_clause
+                          (kw_else)
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (identifier)))))))))))))))))))))))
+
+==================
+arrays and maps
+==================
+
+def m = {foo: 1, [2 + 3]: 9,}
+def a = [1, 2, 3,]
+
+---
+
+(source_file
+  (definition
+    (kw_def)
+    (identifier)
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (map_literal
+                        (map_entries
+                          (map_entry
+                            (identifier)
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (integer)))))))))))
+                          (map_entry
+                            (map_key_expression
+                              (or_expression
+                                (and_expression
+                                  (equality_expression
+                                    (comparison_expression
+                                      (sum_expression
+                                        (sum_expression
+                                          (product_expression
+                                            (unary_expression
+                                              (postfix_expression
+                                                (primary_expression
+                                                  (integer))))))
+                                        (product_expression
+                                          (unary_expression
+                                            (postfix_expression
+                                              (primary_expression
+                                                (integer)))))))))))
+                            (or_expression
+                              (and_expression
+                                (equality_expression
+                                  (comparison_expression
+                                    (sum_expression
+                                      (product_expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (integer)))))))))))))))))))))))
+  (definition
+    (kw_def)
+    (identifier)
+    (or_expression
+      (and_expression
+        (equality_expression
+          (comparison_expression
+            (sum_expression
+              (product_expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (array_literal
+                        (array_elements
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer))))))))))
+                          (or_expression
+                            (and_expression
+                              (equality_expression
+                                (comparison_expression
+                                  (sum_expression
+                                    (product_expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer)))))))))))))))))))))))
