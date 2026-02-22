@@ -40,9 +40,46 @@ contexts:
       scope: constant.language.frost
 
   map-keys:
-    - match: '\b({{ident}})\b(?=\s*:)'
+    # Inline entries: { foo: 1, [k]: 2 }
+    - match: '(?<=[{,])\s*(\[(?=.*\]\s*:))'
       captures:
-        1: variable.other.member.frost
+        1: punctuation.section.brackets.begin.frost
+      push: map-key-bracket
+    - match: '(?<=[{,])\s*\b({{ident}})\b(?=\s*:)'
+      captures:
+        1: support.type.property-name.frost
+    # Multiline entries:
+    # {
+    #   foo: 1,
+    #   [bar]: 2
+    # }
+    - match: '^(\s*)(\[(?=.*\]\s*:))'
+      captures:
+        2: punctuation.section.brackets.begin.frost
+      push: map-key-bracket
+    - match: '^\s*\b({{ident}})\b(?=\s*:)'
+      captures:
+        1: support.type.property-name.frost
+
+  map-key-bracket:
+    - meta_scope: meta.mapping.key.frost
+    - include: comments
+    - include: format-strings
+    - include: raw-strings
+    - include: strings
+    - include: numbers
+    - include: keywords
+    - include: constants
+    - include: operators
+    - include: function-calls
+    - include: member-access
+    - include: identifiers
+    - match: '\['
+      scope: punctuation.section.brackets.begin.frost
+      push: map-key-bracket
+    - match: '\]'
+      scope: punctuation.section.brackets.end.frost
+      pop: true
 
   function-calls:
     - match: '\b({{ident}})\b(?=\s*\()'
@@ -80,8 +117,24 @@ contexts:
       scope: keyword.operator.assignment.frost
 
   punctuation:
-    - match: '[\[\]\{\}\(\),:;]'
-      scope: punctuation.separator.frost
+    - match: '\{'
+      scope: punctuation.section.braces.begin.frost
+    - match: '\}'
+      scope: punctuation.section.braces.end.frost
+    - match: '\('
+      scope: punctuation.section.parens.begin.frost
+    - match: '\)'
+      scope: punctuation.section.parens.end.frost
+    - match: '\['
+      scope: punctuation.section.brackets.begin.frost
+    - match: '\]'
+      scope: punctuation.section.brackets.end.frost
+    - match: ':'
+      scope: punctuation.separator.key-value.frost
+    - match: ','
+      scope: punctuation.separator.sequence.frost
+    - match: ';'
+      scope: punctuation.terminator.statement.frost
 
   raw-strings:
     - match: 'R"\('
