@@ -42,7 +42,7 @@ class Value
     // Special tag for constructing deduplication singletons
     struct Singleton_Tag
     {
-    };
+    } constexpr static singleton_tag{};
 
   public:
     using Ptr = Value_Ptr;
@@ -335,11 +335,11 @@ class Value
                                            const Value_Ptr& rhs);
 
     static inline Value_Ptr null_singleton_ =
-        std::make_shared<Value>(Singleton_Tag{}, Null{});
+        std::make_shared<Value>(singleton_tag, Null{});
     static inline Value_Ptr true_singleton_ =
-        std::make_shared<Value>(Singleton_Tag{}, true);
+        std::make_shared<Value>(singleton_tag, true);
     static inline Value_Ptr false_singleton_ =
-        std::make_shared<Value>(Singleton_Tag{}, false);
+        std::make_shared<Value>(singleton_tag, false);
 };
 
 inline namespace literals
