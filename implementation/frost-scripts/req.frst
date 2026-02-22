@@ -1,6 +1,6 @@
 export def do_req = fn -> {
     http.request({
-        endpoint: {
+        uri: {
             host: 'httpbin.org',
             path: 'delay/10',
             tls: true,
