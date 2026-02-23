@@ -34,5 +34,6 @@ It also provides local Tree-sitter integration files:
 - `editor/nvim/queries/frost/highlights.scm`
 - `editor/nvim/queries/frost/indents.scm`
 - `editor/nvim/queries/frost/folds.scm`
+- `editor/nvim/queries/frost/rainbow-delimiters.scm`
 
 The parser config points Neovim at `editor/tree-sitter-frost/src/parser.c`.
