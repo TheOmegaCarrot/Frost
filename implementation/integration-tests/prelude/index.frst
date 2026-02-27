@@ -1,0 +1,10 @@
+def m = {
+    foo: 42,
+    bar: 100,
+}
+
+def a = [0, 10, 20, 30]
+
+assert( index('foo')(m) == 42 )
+
+assert( index(2)(a) == 20 )

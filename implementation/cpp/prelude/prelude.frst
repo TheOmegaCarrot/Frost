@@ -16,6 +16,12 @@ def tap = fn a, f -> { f(a) ; a }
 
 def const = fn v -> fn ..._ -> v
 
+def index = fn k -> fn s -> s[k]
+
+def map_keys = fn m, f -> map m with fn k, v -> ({ [f(k)]: v })
+ 
+def map_values = fn m, f -> map m with fn k, v -> ({ [k]: f(v) })
+
 def compose = fn f, g, ...rest -> {
 
     assert(not is_null(f), "Cannot compose Null")

@@ -11,6 +11,10 @@ constexpr static const char prelude_text[]{
 void inject_prelude(Symbol_Table& table)
 {
     auto ast = parse_program(prelude_text);
+
+    if (!ast)
+        throw Frost_Internal_Error{ast.error()};
+
     for (const auto& statement : ast.value())
         statement->execute(table);
 }

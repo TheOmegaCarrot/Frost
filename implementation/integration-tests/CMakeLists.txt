@@ -10,6 +10,8 @@ set(INTEGRATION_SCRIPTS
     prelude/tap.frst
     prelude/const.frst
     prelude/compose.frst
+    prelude/index.frst
+    prelude/map_keys_values.frst
     threaded-call-chain.frst
     capture-enclosing-closure.frst
     map-newline-1.frst
