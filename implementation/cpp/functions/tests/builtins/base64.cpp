@@ -17,7 +17,7 @@ Function lookup_fn(Symbol_Table& table, const std::string& name)
     REQUIRE(val->is<Function>());
     return val->get<Function>().value();
 }
-}
+} // namespace
 
 TEST_CASE("Builtin base64")
 {
@@ -38,11 +38,8 @@ TEST_CASE("Builtin base64")
         };
 
         const std::vector<Case> cases{
-            {""s, ""s},
-            {"f"s, "Zg=="s},
-            {"fo"s, "Zm8="s},
-            {"foo"s, "Zm9v"s},
-            {"hello"s, "aGVsbG8="s},
+            {""s, ""s},        {"f"s, "Zg=="s},         {"fo"s, "Zm8="s},
+            {"foo"s, "Zm9v"s}, {"hello"s, "aGVsbG8="s},
         };
 
         for (const auto& c : cases)

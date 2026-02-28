@@ -128,8 +128,8 @@ TEST_CASE("Deep Equal")
         auto empty2 = Value::create(Map{});
         CHECK(deep_eq(empty1, empty2));
 
-        auto one_entry = Value::create(
-            Map{{Value::create("k"s), Value::create(1_f)}});
+        auto one_entry =
+            Value::create(Map{{Value::create("k"s), Value::create(1_f)}});
         CHECK_FALSE(deep_eq(empty1, one_entry));
 
         auto k1a = Value::create(1_f);

@@ -940,8 +940,10 @@ TEST_CASE("Lambda")
                 node<Define>("m", node<Map_Constructor>(std::move(pairs))));
 
             std::vector<Expression::Ptr> elems;
-            elems.push_back(node<Index>(node<Name_Lookup>("m"), node<Literal>(a_key)));
-            elems.push_back(node<Index>(node<Name_Lookup>("m"), node<Literal>(b_key)));
+            elems.push_back(
+                node<Index>(node<Name_Lookup>("m"), node<Literal>(a_key)));
+            elems.push_back(
+                node<Index>(node<Name_Lookup>("m"), node<Literal>(b_key)));
 
             inner_body.push_back(node<Array_Constructor>(std::move(elems)));
         }

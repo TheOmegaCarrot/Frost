@@ -145,6 +145,7 @@ TEST_CASE("Coercions")
         CHECK_FALSE(string->as<frst::Function>().has_value());
         CHECK_FALSE(array->as<frst::Function>().has_value());
         CHECK_FALSE(map->as<frst::Function>().has_value());
-        CHECK(function->as<frst::Function>() == function->get<frst::Function>());
+        CHECK(function->as<frst::Function>()
+              == function->get<frst::Function>());
     }
 }

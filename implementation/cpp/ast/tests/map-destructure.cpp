@@ -427,8 +427,8 @@ TEST_CASE("Map_Destructure")
         CHECK_THROWS_MATCHES(
             Value::create(frst::Map{{Value::null(), Value::create(1_f)}}),
             Frost_Recoverable_Error,
-            MessageMatches(ContainsSubstring(
-                "Map keys may only be primitive values")));
+            MessageMatches(
+                ContainsSubstring("Map keys may only be primitive values")));
     }
 
     SECTION("Duplicate key expressions are accepted")

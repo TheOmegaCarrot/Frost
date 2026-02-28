@@ -553,10 +553,10 @@ TEST_CASE("Builtin ranges")
         auto empty_arr = Value::create(Array{});
         require_array_eq(fn->call({empty_arr, Value::create(2_f)}), {});
 
-        CHECK_THROWS_MATCHES(
-            fn->call({arr, Value::create(-1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("Function tail")
-                           && ContainsSubstring(">=0")));
+        CHECK_THROWS_MATCHES(fn->call({arr, Value::create(-1_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("Function tail")
+                                            && ContainsSubstring(">=0")));
     }
 
     SECTION("drop_tail semantics")

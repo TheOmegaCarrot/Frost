@@ -262,10 +262,9 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        CHECK_THROWS_WITH(
-            expr->evaluate(table),
-            Catch::Matchers::ContainsSubstring(
-                "Map keys may only be primitive values"));
+        CHECK_THROWS_WITH(expr->evaluate(table),
+                          Catch::Matchers::ContainsSubstring(
+                              "Map keys may only be primitive values"));
     }
 
     SECTION("Nested map literals are allowed")

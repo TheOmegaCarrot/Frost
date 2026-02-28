@@ -177,8 +177,8 @@ TEST_CASE("Builtin mutable_cell")
         auto key_nested = Value::create("nested"s);
         auto key_other = Value::create("other"s);
         auto other = Value::create(9_f);
-        auto nested_map = Value::create(
-            Map{{key_nested, nested_arr}, {key_other, other}});
+        auto nested_map =
+            Value::create(Map{{key_nested, nested_arr}, {key_other, other}});
 
         auto cell = cell_fn->call({nested_map});
         const auto& cell_map = cell->raw_get<Map>();
@@ -193,7 +193,8 @@ TEST_CASE("Builtin mutable_cell")
         bool saw_other_key_identity = false;
         for (const auto& [k, _] : got_map)
         {
-            saw_nested_key_identity = saw_nested_key_identity || (k == key_nested);
+            saw_nested_key_identity =
+                saw_nested_key_identity || (k == key_nested);
             saw_other_key_identity = saw_other_key_identity || (k == key_other);
         }
         CHECK(saw_nested_key_identity);
@@ -248,9 +249,9 @@ TEST_CASE("Builtin mutable_cell")
         auto fn = dummy_function();
 
         auto array_with_fn = Value::create(Array{Value::create(1_f), fn});
-        auto map_with_fn = Value::create(
-            Map{{Value::create("k"s), Value::create(1_f)},
-                {Value::create("cb"s), fn}});
+        auto map_with_fn =
+            Value::create(Map{{Value::create("k"s), Value::create(1_f)},
+                              {Value::create("cb"s), fn}});
         auto deeply_nested_with_fn = Value::create(Map{
             {Value::create("a"s),
              Value::create(Array{Value::create(Map{
@@ -306,8 +307,7 @@ TEST_CASE("Builtin mutable_cell")
     SECTION("Function-valued map keys are rejected recursively")
     {
         auto bad_key_map = Value::create(
-            Value::trusted,
-            Map{{dummy_function(), Value::create("payload"s)}});
+            Value::trusted, Map{{dummy_function(), Value::create("payload"s)}});
 
         CHECK_THROWS_WITH(
             cell_fn->call({bad_key_map}),
@@ -361,14 +361,13 @@ TEST_CASE("Builtin mutable_cell")
 
         auto fn = dummy_function();
         auto arr_with_fn = Value::create(Array{Value::create(1_f), fn});
-        auto map_with_fn = Value::create(
-            Map{{Value::create("k"s), Value::create(1_f)},
-                {Value::create("fn"s), fn}});
+        auto map_with_fn =
+            Value::create(Map{{Value::create("k"s), Value::create(1_f)},
+                              {Value::create("fn"s), fn}});
         auto nested_with_fn = Value::create(Map{
-            {Value::create("outer"s),
-             Value::create(Array{Value::create(Map{
-                 {Value::create("inner"s), fn},
-             })})},
+            {Value::create("outer"s), Value::create(Array{Value::create(Map{
+                                          {Value::create("inner"s), fn},
+                                      })})},
         });
 
         CHECK_THROWS_WITH(

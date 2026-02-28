@@ -329,10 +329,11 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Top-level empty-body lambda statement is rejected")
     {
-        auto src =
-            lexy::string_input<lexy::utf8_encoding>(std::string_view{"fn -> {}"});
-        CHECK_THROWS_WITH((lexy::parse<frst::grammar::program>(src, lexy::noop)),
-                          Catch::Matchers::ContainsSubstring("empty body"));
+        auto src = lexy::string_input<lexy::utf8_encoding>(
+            std::string_view{"fn -> {}"});
+        CHECK_THROWS_WITH(
+            (lexy::parse<frst::grammar::program>(src, lexy::noop)),
+            Catch::Matchers::ContainsSubstring("empty body"));
     }
 
     SECTION("Multiple lambdas as top-level statements parse correctly")

@@ -22,7 +22,8 @@ std::optional<Map> ast::Define::execute(Symbol_Table& table) const
         return std::nullopt;
 }
 
-std::generator<ast::Statement::Symbol_Action> ast::Define::symbol_sequence() const
+std::generator<ast::Statement::Symbol_Action> ast::Define::symbol_sequence()
+    const
 {
     co_yield std::ranges::elements_of(expr_->symbol_sequence());
     co_yield Definition{name_};

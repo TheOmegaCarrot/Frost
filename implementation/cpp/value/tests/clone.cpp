@@ -167,7 +167,8 @@ TEST_CASE("Value clone")
 
     SECTION("Map construction rejects forbidden key types")
     {
-        auto fn_key = Value::create(Function{std::make_shared<Dummy_Callable>()});
+        auto fn_key =
+            Value::create(Function{std::make_shared<Dummy_Callable>()});
 
         CHECK_THROWS_WITH(
             Value::create(Map{{Value::null(), Value::create(1_f)}}),

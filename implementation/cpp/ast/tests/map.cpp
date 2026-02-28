@@ -480,9 +480,9 @@ TEST_CASE("Map Map")
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
-                              ContainsSubstring(
-                                  "Map keys may only be primitive values"));
+            CHECK_THROWS_WITH(
+                node.evaluate(syms),
+                ContainsSubstring("Map keys may only be primitive values"));
             REQUIRE(calls.size() == 1);
         }
 

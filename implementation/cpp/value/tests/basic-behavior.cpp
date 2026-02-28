@@ -115,17 +115,16 @@ TEST_CASE("Construction and .is*<T>")
         CHECK_NOTHROW(Value::create(
             frst::Map{{Value::create("k"s), Value::create("string"s)}}));
 
-        auto fn_key = Value::create(
-            frst::Function{std::make_shared<Dummy_Callable>()});
+        auto fn_key =
+            Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
+        CHECK_THROWS_WITH(Value::create(frst::Map{
+                              {Value::null(), Value::create(frst::Int{1})}}),
+                          Catch::Matchers::ContainsSubstring(
+                              "Map keys may only be primitive values"));
         CHECK_THROWS_WITH(
-            Value::create(
-                frst::Map{{Value::null(), Value::create(frst::Int{1})}}),
-            Catch::Matchers::ContainsSubstring(
-                "Map keys may only be primitive values"));
-        CHECK_THROWS_WITH(
-            Value::create(frst::Map{{Value::create(frst::Array{}),
-                                     Value::create(frst::Int{1})}}),
+            Value::create(frst::Map{
+                {Value::create(frst::Array{}), Value::create(frst::Int{1})}}),
             Catch::Matchers::ContainsSubstring(
                 "Map keys may only be primitive values"));
         CHECK_THROWS_WITH(
@@ -159,8 +158,8 @@ TEST_CASE("Get")
     const auto boolean = Value::create(true);
     const auto string = Value::create("Hello"s);
     const auto array = Value::create(frst::Array{Value::create(42_f)});
-    const auto map =
-        Value::create(frst::Map{{Value::create(42_f), Value::create("Hello"s)}});
+    const auto map = Value::create(
+        frst::Map{{Value::create(42_f), Value::create("Hello"s)}});
     const auto function =
         Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 
@@ -263,8 +262,8 @@ TEST_CASE("Type Name")
     const auto boolean = Value::create(true);
     const auto string = Value::create("Hello"s);
     const auto array = Value::create(frst::Array{Value::create(42_f)});
-    const auto map =
-        Value::create(frst::Map{{Value::create(42_f), Value::create("Hello"s)}});
+    const auto map = Value::create(
+        frst::Map{{Value::create(42_f), Value::create("Hello"s)}});
     const auto function =
         Value::create(frst::Function{std::make_shared<Dummy_Callable>()});
 

@@ -253,7 +253,8 @@ TEST_CASE("Parser Array Literals")
 
     SECTION("Arrays can start statements in programs")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(std::string_view{"[]\n42"});
+        auto src =
+            lexy::string_input<lexy::utf8_encoding>(std::string_view{"[]\n42"});
         auto program_result = lexy::parse<Program_Root>(src, lexy::noop);
         REQUIRE(program_result);
         auto program = std::move(program_result).value();

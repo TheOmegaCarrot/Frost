@@ -34,10 +34,9 @@ TEST_CASE("Builtin has")
                           ContainsSubstring("insufficient arguments"));
         CHECK_THROWS_WITH(has->call({Value::create(Array{})}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(
-            has->call(
-                {Value::create(Array{}), Value::create(0_f), Value::null()}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(has->call({Value::create(Array{}), Value::create(0_f),
+                                     Value::null()}),
+                          ContainsSubstring("too many arguments"));
     }
 
     SECTION("First argument must be Array or Map")
@@ -45,25 +44,18 @@ TEST_CASE("Builtin has")
         auto fn = Value::create(
             Function{std::make_shared<frst::testing::Dummy_Callable>()});
         std::vector<Value_Ptr> bad_structures{
-            Value::null(),
-            Value::create(1_f),
-            Value::create(3.14),
-            Value::create(true),
-            Value::create("hello"s),
-            fn,
+            Value::null(),       Value::create(1_f),      Value::create(3.14),
+            Value::create(true), Value::create("hello"s), fn,
         };
 
         for (const auto& bad_structure : bad_structures)
         {
-            CHECK_THROWS_WITH(
-                has->call({bad_structure, Value::create(0_f)}),
-                ContainsSubstring("Function has requires"));
-            CHECK_THROWS_WITH(
-                has->call({bad_structure, Value::create(0_f)}),
-                ContainsSubstring("Array or Map"));
-            CHECK_THROWS_WITH(
-                has->call({bad_structure, Value::create(0_f)}),
-                ContainsSubstring("structure"));
+            CHECK_THROWS_WITH(has->call({bad_structure, Value::create(0_f)}),
+                              ContainsSubstring("Function has requires"));
+            CHECK_THROWS_WITH(has->call({bad_structure, Value::create(0_f)}),
+                              ContainsSubstring("Array or Map"));
+            CHECK_THROWS_WITH(has->call({bad_structure, Value::create(0_f)}),
+                              ContainsSubstring("structure"));
             CHECK_THROWS_WITH(
                 has->call({bad_structure, Value::create(0_f)}),
                 ContainsSubstring(std::string{bad_structure->type_name()}));
@@ -108,12 +100,10 @@ TEST_CASE("Builtin has")
 
         SECTION("Null key is rejected")
         {
-            CHECK_THROWS_WITH(
-                has->call({map, Value::null()}),
-                ContainsSubstring("Function has requires"));
-            CHECK_THROWS_WITH(
-                has->call({map, Value::null()}),
-                ContainsSubstring("argument 2"));
+            CHECK_THROWS_WITH(has->call({map, Value::null()}),
+                              ContainsSubstring("Function has requires"));
+            CHECK_THROWS_WITH(has->call({map, Value::null()}),
+                              ContainsSubstring("argument 2"));
             CHECK_THROWS_WITH(has->call({map, Value::null()}),
                               ContainsSubstring("Null"));
         }

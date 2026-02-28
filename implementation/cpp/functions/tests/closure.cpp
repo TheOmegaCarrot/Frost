@@ -797,17 +797,16 @@ Literal(null)
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{},
-                        body_ptr,
-                        expr<If>(
-                            node<Name_Lookup>("x"),
-                            node<Binop>(node<Literal>(Value::create(1_f)),
-                                        Binary_Op::PLUS,
-                                        node<Name_Lookup>("y")),
-                            std::optional<Expression::Ptr>{
-                                node<Literal>(Value::create(0_f))}),
-                        captures,
-                        0};
+        Closure closure{
+            {},
+            body_ptr,
+            expr<If>(node<Name_Lookup>("x"),
+                     node<Binop>(node<Literal>(Value::create(1_f)),
+                                 Binary_Op::PLUS, node<Name_Lookup>("y")),
+                     std::optional<Expression::Ptr>{
+                         node<Literal>(Value::create(0_f))}),
+            captures,
+            0};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;

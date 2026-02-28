@@ -688,10 +688,8 @@ TEST_CASE("Builtin to_byte_array/from_byte_array")
     SECTION("from_byte_array accepts [0, 255] and preserves bytes")
     {
         Array input{
-            Value::create(Int{0}),
-            Value::create(Int{1}),
-            Value::create(Int{127}),
-            Value::create(Int{128}),
+            Value::create(Int{0}),   Value::create(Int{1}),
+            Value::create(Int{127}), Value::create(Int{128}),
             Value::create(Int{255}),
         };
 
@@ -725,26 +723,22 @@ TEST_CASE("Builtin to_byte_array/from_byte_array")
 
     SECTION("from_byte_array rejects non-Int elements")
     {
-        CHECK_THROWS_WITH(
-            from_byte_array->call(
-                {Value::create(Array{Value::create(1.5), Value::create(2)})}),
-            ContainsSubstring("expected Array of Int"));
-        CHECK_THROWS_WITH(
-            from_byte_array->call(
-                {Value::create(Array{Value::create(true), Value::create(2)})}),
-            ContainsSubstring("expected Array of Int"));
+        CHECK_THROWS_WITH(from_byte_array->call({Value::create(
+                              Array{Value::create(1.5), Value::create(2)})}),
+                          ContainsSubstring("expected Array of Int"));
+        CHECK_THROWS_WITH(from_byte_array->call({Value::create(
+                              Array{Value::create(true), Value::create(2)})}),
+                          ContainsSubstring("expected Array of Int"));
     }
 
     SECTION("from_byte_array rejects out-of-range Int elements")
     {
-        CHECK_THROWS_WITH(
-            from_byte_array->call(
-                {Value::create(Array{Value::create(Int{-1})})}),
-            ContainsSubstring("range [0, 255]"));
-        CHECK_THROWS_WITH(
-            from_byte_array->call(
-                {Value::create(Array{Value::create(Int{256})})}),
-            ContainsSubstring("range [0, 255]"));
+        CHECK_THROWS_WITH(from_byte_array->call(
+                              {Value::create(Array{Value::create(Int{-1})})}),
+                          ContainsSubstring("range [0, 255]"));
+        CHECK_THROWS_WITH(from_byte_array->call(
+                              {Value::create(Array{Value::create(Int{256})})}),
+                          ContainsSubstring("range [0, 255]"));
     }
 
     SECTION("Empty input")
