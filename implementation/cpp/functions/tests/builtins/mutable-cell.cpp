@@ -130,6 +130,45 @@ TEST_CASE("Builtin mutable_cell")
         CHECK(after == second);
     }
 
+    SECTION("Exchange preserves pointer identity across allowed types")
+    {
+        auto arr_elem1 = Value::create(7_f);
+        auto arr_elem2 = Value::create("x"s);
+        auto arr = Value::create(Array{arr_elem1, arr_elem2});
+
+        auto map_key = Value::create("k"s);
+        auto map_val = Value::create(11_f);
+        auto map = Value::create(Map{{map_key, map_val}});
+
+        std::vector<Value_Ptr> values{
+            Value::null(),
+            Value::create(true),
+            Value::create(1_f),
+            Value::create(2.5),
+            Value::create("abc"s),
+            arr,
+            map,
+        };
+
+        for (const auto& initial : values)
+        {
+            auto cell = cell_fn->call({initial});
+            const auto& cell_map = cell->raw_get<Map>();
+            auto get_fn = lookup_fn(cell_map, "get"_s);
+            auto exchange_fn = lookup_fn(cell_map, "exchange"_s);
+
+            auto current = initial;
+            for (const auto& next : values)
+            {
+                auto previous = exchange_fn->call({next});
+                CHECK(previous == current);
+                CHECK(get_fn->call({}) == next);
+                CHECK(get_fn->call({}) == next);
+                current = next;
+            }
+        }
+    }
+
     SECTION("Structured values are returned without deep cloning")
     {
         auto leaf1 = Value::create(3_f);
@@ -189,6 +228,21 @@ TEST_CASE("Builtin mutable_cell")
         CHECK(got == nested);
     }
 
+    SECTION("Rejects storing another mutable_cell handle")
+    {
+        auto inner_cell = cell_fn->call({Value::create(1_f)});
+        CHECK_THROWS_WITH(
+            cell_fn->call({inner_cell}),
+            ContainsSubstring("Function values may not be stored"));
+
+        auto outer_cell = cell_fn->call({Value::create(2_f)});
+        const auto& outer_map = outer_cell->raw_get<Map>();
+        auto exchange_fn = lookup_fn(outer_map, "exchange"_s);
+        CHECK_THROWS_WITH(
+            exchange_fn->call({inner_cell}),
+            ContainsSubstring("Function values may not be stored"));
+    }
+
     SECTION("Rejects initial values containing a function recursively")
     {
         auto fn = dummy_function();
@@ -216,6 +270,47 @@ TEST_CASE("Builtin mutable_cell")
             ContainsSubstring("Function values may not be stored"));
         CHECK_THROWS_WITH(
             cell_fn->call({deeply_nested_with_fn}),
+            ContainsSubstring("Function values may not be stored"));
+    }
+
+    SECTION("Deeply nested structures are checked recursively")
+    {
+        Value_Ptr valid = Value::create(0_f);
+        for (int i = 0; i < 128; ++i)
+        {
+            if ((i % 2) == 0)
+                valid = Value::create(Array{valid});
+            else
+                valid = Value::create(Map{{Value::create(Int{i}), valid}});
+        }
+
+        auto ok_cell = cell_fn->call({valid});
+        const auto& ok_map = ok_cell->raw_get<Map>();
+        auto ok_get_fn = lookup_fn(ok_map, "get"_s);
+        CHECK(ok_get_fn->call({}) == valid);
+
+        Value_Ptr invalid = dummy_function();
+        for (int i = 0; i < 128; ++i)
+        {
+            if ((i % 2) == 0)
+                invalid = Value::create(Array{invalid});
+            else
+                invalid = Value::create(Map{{Value::create(Int{i}), invalid}});
+        }
+
+        CHECK_THROWS_WITH(
+            cell_fn->call({invalid}),
+            ContainsSubstring("Function values may not be stored"));
+    }
+
+    SECTION("Function-valued map keys are rejected recursively")
+    {
+        auto bad_key_map = Value::create(
+            Value::trusted,
+            Map{{dummy_function(), Value::create("payload"s)}});
+
+        CHECK_THROWS_WITH(
+            cell_fn->call({bad_key_map}),
             ContainsSubstring("Function values may not be stored"));
     }
 
@@ -317,5 +412,36 @@ TEST_CASE("Builtin mutable_cell")
         auto it = got_map.find(key);
         REQUIRE(it != got_map.end());
         CHECK(it->second == stored_leaf);
+    }
+
+    SECTION("Different mutable cells remain isolated")
+    {
+        auto a0 = Value::create(1_f);
+        auto b0 = Value::create(2_f);
+        auto a1 = Value::create(3_f);
+        auto b1 = Value::create(Map{
+            {Value::create("k"s), Value::create("v"s)},
+        });
+
+        auto cell_a = cell_fn->call({a0});
+        auto cell_b = cell_fn->call({b0});
+
+        const auto& map_a = cell_a->raw_get<Map>();
+        const auto& map_b = cell_b->raw_get<Map>();
+        auto get_a = lookup_fn(map_a, "get"_s);
+        auto ex_a = lookup_fn(map_a, "exchange"_s);
+        auto get_b = lookup_fn(map_b, "get"_s);
+        auto ex_b = lookup_fn(map_b, "exchange"_s);
+
+        CHECK(get_a->call({}) == a0);
+        CHECK(get_b->call({}) == b0);
+
+        CHECK(ex_a->call({a1}) == a0);
+        CHECK(get_a->call({}) == a1);
+        CHECK(get_b->call({}) == b0);
+
+        CHECK(ex_b->call({b1}) == b0);
+        CHECK(get_b->call({}) == b1);
+        CHECK(get_a->call({}) == a1);
     }
 }
