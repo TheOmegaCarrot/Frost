@@ -1,3 +1,4 @@
+#include "frost/types.hpp"
 #include <frost/builtins-common.hpp>
 
 #include <frost/builtin.hpp>
@@ -24,11 +25,40 @@ struct Mutable_Cell
     }
 };
 
+struct
+{
+
+    void operator()(this const auto, const Frost_Primitive auto&)
+    {
+    }
+
+    void operator()(this const auto recurse, const Array& arr)
+    {
+        for (const auto& elem : arr)
+            elem->visit(recurse);
+    }
+
+    void operator()(this const auto recurse, const Map& map)
+    {
+        for (const auto& [k, v] : map)
+        {
+            k->visit(recurse);
+            v->visit(recurse);
+        }
+    }
+
+    void operator()(this const auto, const Function&)
+    {
+        throw Frost_Recoverable_Error{
+            "Function values may not be stored in a mutable_cell. "
+            "This includes functions nested inside of structures."};
+    }
+
+} constexpr static forbid_cycle_fn;
+
 Value_Ptr forbid_cycle(Value_Ptr value)
 {
-    if (!value->is_primitive())
-        throw Frost_Recoverable_Error{
-            "Non-primitive values may not be stored in a mutable_cell"};
+    value->visit(forbid_cycle_fn);
     return value;
 }
 
