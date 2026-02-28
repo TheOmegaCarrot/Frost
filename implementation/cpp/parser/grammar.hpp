@@ -240,7 +240,7 @@ struct float_literal : lexy::scan_production<Value_Ptr>
         }
         if (ec != std::errc() || ptr != str.data() + str.size())
         {
-            throw Frost_Internal_Error{"Failed to parse float literal"};
+            throw Frost_Interpreter_Error{"Failed to parse float literal"};
         }
 
         return Value::create(auto{value});

@@ -7,7 +7,7 @@ ast::Literal::Literal(Value_Ptr value)
 {
     if (!value_->is_primitive())
     {
-        throw Frost_Internal_Error{
+        throw Frost_Interpreter_Error{
             fmt::format("Literal AST node created with non-primitive type: {}",
                         value_->type_name())};
     }

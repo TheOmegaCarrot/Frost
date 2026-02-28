@@ -21,19 +21,21 @@ struct Frost_Error : std::runtime_error
     }
 };
 
-struct Frost_Internal_Error : Frost_Error
+//! Something has gone wrong inside the interpreter (a bug)
+struct Frost_Interpreter_Error : Frost_Error
 {
-    Frost_Internal_Error(const char* err)
+    Frost_Interpreter_Error(const char* err)
         : Frost_Error{err}
     {
     }
 
-    Frost_Internal_Error(const std::string& err)
+    Frost_Interpreter_Error(const std::string& err)
         : Frost_Error{err}
     {
     }
 };
 
+//! User code has encountered an error (it's the user's fault)
 struct Frost_User_Error : Frost_Error
 {
   protected:
@@ -48,6 +50,7 @@ struct Frost_User_Error : Frost_Error
     }
 };
 
+//! User code can recover from this error (with try_call)
 struct Frost_Recoverable_Error : Frost_User_Error
 {
     Frost_Recoverable_Error(const char* err)
@@ -61,6 +64,7 @@ struct Frost_Recoverable_Error : Frost_User_Error
     }
 };
 
+//! User code cannot recover from this error (fatal error due to user error)
 struct Frost_Unrecoverable_Error : Frost_User_Error
 {
     Frost_Unrecoverable_Error(const char* err)
@@ -75,7 +79,7 @@ struct Frost_Unrecoverable_Error : Frost_User_Error
 };
 
 #define THROW_UNREACHABLE                                                      \
-    throw Frost_Internal_Error                                                 \
+    throw Frost_Interpreter_Error                                              \
     {                                                                          \
         "Hit point which should be unreachable at: " __FILE__                  \
         ":" BOOST_PP_STRINGIZE(__LINE__)                                                 \

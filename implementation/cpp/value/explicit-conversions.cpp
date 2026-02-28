@@ -28,7 +28,7 @@ struct To_String_Impl
         auto [ptr, err] = std::to_chars(std::ranges::begin(buf),
                                         std::ranges::end(buf), integer);
         if (err != std::errc{})
-            throw Frost_Internal_Error{fmt::format(
+            throw Frost_Interpreter_Error{fmt::format(
                 "Int->String error: {}", std::make_error_code(err).message())};
 
         return buf;
@@ -42,7 +42,7 @@ struct To_String_Impl
         auto [ptr, err] =
             std::to_chars(std::ranges::begin(buf), std::ranges::end(buf), flt);
         if (err != std::errc{})
-            throw Frost_Internal_Error{
+            throw Frost_Interpreter_Error{
                 fmt::format("Float->String error: {}",
                             std::make_error_code(err).message())};
 

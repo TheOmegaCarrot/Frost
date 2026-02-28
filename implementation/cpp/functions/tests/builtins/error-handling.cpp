@@ -192,7 +192,7 @@ TEST_CASE("Builtin try_call")
         auto args = Value::create(Array{});
 
         REQUIRE_CALL(*callable, call(_))
-            .THROW(Frost_Internal_Error{"internal boom"});
+            .THROW(Frost_Interpreter_Error{"internal boom"});
         CHECK_THROWS_WITH(try_call->call({fn, args}),
                           ContainsSubstring("internal boom"));
     }

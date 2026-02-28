@@ -47,7 +47,7 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
     {
         fmt::println(stderr, "Error: {}", e.what());
     }
-    catch (const frst::Frost_Internal_Error& e)
+    catch (const frst::Frost_Interpreter_Error& e)
     {
         fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
     }

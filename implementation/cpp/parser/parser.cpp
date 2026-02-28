@@ -36,7 +36,7 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_impl(
     {
         return std::unexpected{e.what()};
     }
-    catch (const Frost_Internal_Error& e)
+    catch (const Frost_Interpreter_Error& e)
     {
         return std::unexpected{fmt::format("Internal error: {}", e.what())};
     }

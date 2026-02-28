@@ -400,9 +400,9 @@ TEST_CASE("Value iterative ops")
 
         FORBID_CALL(*callable, call(_));
 
-        CHECK_THROWS_AS(Value::do_map(non, op, "map"), Frost_Internal_Error);
-        CHECK_THROWS_AS(Value::do_filter(non, op), Frost_Internal_Error);
+        CHECK_THROWS_AS(Value::do_map(non, op, "map"), Frost_Interpreter_Error);
+        CHECK_THROWS_AS(Value::do_filter(non, op), Frost_Interpreter_Error);
         CHECK_THROWS_AS(Value::do_reduce(non, op, std::nullopt),
-                        Frost_Internal_Error);
+                        Frost_Interpreter_Error);
     }
 }
