@@ -1,0 +1,11 @@
+# Hey, there's almost an idea here!
+export def object = fn obj -> map obj with 
+        fn k, v -> if is_function(v): { [k]: fn ...args -> pack_call(v, [obj] + args) }
+                    else: { [k]: v }
+
+export def obj = object({
+    square: fn this, x ->  this.mul(this, x, x),
+    mul: fn this, a, b -> a * b,
+    val: 42,
+    add_val: fn this, x -> this.val + x,
+})
