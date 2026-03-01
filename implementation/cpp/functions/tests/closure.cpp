@@ -121,6 +121,15 @@ std::shared_ptr<std::vector<Statement::Ptr>> make_body(
     return std::make_shared<std::vector<Statement::Ptr>>(std::move(body));
 }
 
+std::shared_ptr<Closure> make_literal_closure(Value_Ptr value)
+{
+    Symbol_Table captures;
+    std::vector<Statement::Ptr> body;
+    auto body_ptr = make_body(std::move(body));
+    return std::make_shared<Closure>(
+        std::vector<std::string>{}, body_ptr, expr<Literal>(value), captures, 0);
+}
+
 std::pair<std::string, std::string> split_header_body(const std::string& dump)
 {
     const auto pos = dump.find('\n');
@@ -178,6 +187,34 @@ TEST_CASE("Construct Closure")
         CHECK(closure.debug_capture_table().lookup("y") == y_val);
         CHECK_FALSE(closure.debug_capture_table().has("p"));
     }
+
+    SECTION("inject_capture adds a new capture")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+        auto body_ptr = make_body(std::move(body));
+        Closure closure{{}, body_ptr, null_expr(), captures, 0};
+
+        auto x_val = Value::create(10_f);
+        closure.inject_capture("x", x_val);
+
+        CHECK(closure.debug_capture_table().has("x"));
+        CHECK(closure.debug_capture_table().lookup("x") == x_val);
+    }
+
+    SECTION("inject_capture rejects duplicate capture names")
+    {
+        Symbol_Table captures;
+        auto x_val = Value::create(10_f);
+        captures.define("x", x_val);
+
+        std::vector<Statement::Ptr> body;
+        auto body_ptr = make_body(std::move(body));
+        Closure closure{{}, body_ptr, null_expr(), captures, 0};
+
+        CHECK_THROWS_WITH(closure.inject_capture("x", Value::create(11_f)),
+                          ContainsSubstring("already defined"));
+    }
 }
 
 TEST_CASE("Call Closure")
@@ -197,7 +234,7 @@ TEST_CASE("Call Closure")
         CHECK(result->is<Null>());
     }
 
-    SECTION("Empty body with parameters returns null")
+    SECTION("Empty body with parameters enforces exact arity")
     {
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
@@ -205,8 +242,9 @@ TEST_CASE("Call Closure")
 
         Closure closure{{"p", "q"}, body_ptr, null_expr(), captures, 0};
 
-        auto result = closure.call({Value::create(1_f)});
-        CHECK(result->is<Null>());
+        CHECK_THROWS_WITH(closure.call({Value::create(1_f)}),
+                          ContainsSubstring("wrong number of arguments")
+                              && ContainsSubstring("Expected 2, but got 1."));
     }
 
     SECTION("Empty body still evaluates a non-null return expression")
@@ -223,7 +261,7 @@ TEST_CASE("Call Closure")
         CHECK(result == out_val);
     }
 
-    SECTION("Missing parameters are bound to null")
+    SECTION("Missing fixed parameters are an arity error")
     {
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
@@ -232,11 +270,12 @@ TEST_CASE("Call Closure")
         Closure closure{
             {"p", "q"}, body_ptr, expr<Name_Lookup>("q"), captures, 0};
 
-        auto result = closure.call({Value::create(1_f)});
-        CHECK(result->is<Null>());
+        CHECK_THROWS_WITH(closure.call({Value::create(1_f)}),
+                          ContainsSubstring("wrong number of arguments")
+                              && ContainsSubstring("Expected 2, but got 1."));
     }
 
-    SECTION("Multiple missing parameters are bound to null")
+    SECTION("Multiple missing fixed parameters are an arity error")
     {
         Symbol_Table captures;
         std::vector<Expression::Ptr> elems;
@@ -253,15 +292,12 @@ TEST_CASE("Call Closure")
                         captures,
                         0};
 
-        auto result = closure.call({});
-        auto arr = result->get<Array>().value();
-        CHECK(arr.size() == 3);
-        CHECK(arr[0]->is<Null>());
-        CHECK(arr[1]->is<Null>());
-        CHECK(arr[2]->is<Null>());
+        CHECK_THROWS_WITH(closure.call({}),
+                          ContainsSubstring("wrong number of arguments")
+                              && ContainsSubstring("Expected 3, but got 0."));
     }
 
-    SECTION("Variadic parameter receives empty array when no extra args")
+    SECTION("Variadic parameter receives empty array with fixed args only")
     {
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
@@ -270,7 +306,7 @@ TEST_CASE("Call Closure")
         Closure closure{{"p"},    body_ptr, expr<Name_Lookup>("rest"),
                         captures, 0,        "rest"};
 
-        auto result = closure.call({});
+        auto result = closure.call({Value::create(1_f)});
         REQUIRE(result->is<Array>());
         CHECK(result->get<Array>()->empty());
     }
@@ -296,7 +332,7 @@ TEST_CASE("Call Closure")
         CHECK(arr->at(1) == c);
     }
 
-    SECTION("Variadic parameter coexists with missing fixed params")
+    SECTION("Variadic parameter still requires all fixed params")
     {
         Symbol_Table captures;
         std::vector<Expression::Ptr> elems;
@@ -309,13 +345,10 @@ TEST_CASE("Call Closure")
         Closure closure{{"p"},    body_ptr, lookup_array_expr({"p", "rest"}),
                         captures, 0,        "rest"};
 
-        auto result = closure.call({});
-        REQUIRE(result->is<Array>());
-        auto arr = result->get<Array>().value();
-        REQUIRE(arr.size() == 2);
-        CHECK(arr[0]->is<Null>());
-        REQUIRE(arr[1]->is<Array>());
-        CHECK(arr[1]->get<Array>()->empty());
+        CHECK_THROWS_WITH(closure.call({}),
+                          ContainsSubstring("wrong number of arguments")
+                              && ContainsSubstring(
+                                  "Expected at least 1, but got 0."));
     }
 
     SECTION("Fixed parameters bind before variadic extras")
@@ -345,6 +378,44 @@ TEST_CASE("Call Closure")
         REQUIRE(rest->size() == 2);
         CHECK(rest->at(0) == b);
         CHECK(rest->at(1) == c);
+    }
+
+    SECTION("Variadic with multiple fixed params accepts fixed-only calls")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+        auto body_ptr = make_body(std::move(body));
+
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+
+        Closure closure{
+            {"a", "b"}, body_ptr, lookup_array_expr({"a", "b", "rest"}),
+            captures, 0, "rest"};
+
+        auto result = closure.call({a, b});
+        REQUIRE(result->is<Array>());
+        auto arr = result->get<Array>().value();
+        REQUIRE(arr.size() == 3);
+        CHECK(arr[0] == a);
+        CHECK(arr[1] == b);
+        REQUIRE(arr[2]->is<Array>());
+        CHECK(arr[2]->get<Array>()->empty());
+    }
+
+    SECTION("Variadic with multiple fixed params rejects too-few args")
+    {
+        Symbol_Table captures;
+        std::vector<Statement::Ptr> body;
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{
+            {"a", "b"}, body_ptr, expr<Name_Lookup>("rest"), captures, 0, "rest"};
+
+        CHECK_THROWS_WITH(closure.call({Value::create(1_f)}),
+                          ContainsSubstring("wrong number of arguments")
+                              && ContainsSubstring(
+                                  "Expected at least 2, but got 1."));
     }
 
     SECTION("Variadic-only closure receives empty array")
@@ -679,7 +750,8 @@ Literal(42)
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f), Value::create(2_f)}),
-            ContainsSubstring("too many arguments"));
+            ContainsSubstring("wrong number of arguments")
+                && ContainsSubstring("Expected 1, but got 2."));
     }
 
     SECTION("Argument error prevents return expression evaluation")
@@ -697,7 +769,47 @@ Literal(42)
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f), Value::create(2_f)}),
-            ContainsSubstring("too many arguments"));
+            ContainsSubstring("wrong number of arguments")
+                && ContainsSubstring("Expected 1, but got 2."));
+    }
+
+    SECTION("Variadic underflow prevents body execution")
+    {
+        Symbol_Table captures;
+
+        auto expr = std::make_unique<mock::Mock_Expression>();
+        auto* expr_ptr = expr.get();
+        FORBID_CALL(*expr_ptr, evaluate(_));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(std::move(expr));
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{"p", "q"}, body_ptr, null_expr(), captures, 0, "rest"};
+
+        CHECK_THROWS_WITH(closure.call({Value::create(1_f)}),
+                          ContainsSubstring("wrong number of arguments")
+                              && ContainsSubstring(
+                                  "Expected at least 2, but got 1."));
+    }
+
+    SECTION("Variadic underflow prevents return expression evaluation")
+    {
+        Symbol_Table captures;
+
+        auto return_expr = std::make_shared<mock::Mock_Expression>();
+        auto* return_expr_ptr = return_expr.get();
+        FORBID_CALL(*return_expr_ptr, evaluate(_));
+
+        std::vector<Statement::Ptr> body;
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{"p", "q"}, body_ptr, return_expr, captures, 0, "rest"};
+
+        CHECK_THROWS_WITH(closure.call({Value::create(1_f)}),
+                          ContainsSubstring("wrong number of arguments")
+                              && ContainsSubstring(
+                                  "Expected at least 2, but got 1."));
     }
 
     SECTION("Too many arguments is an error")
@@ -711,7 +823,8 @@ Literal(42)
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f), Value::create(2_f)}),
-            ContainsSubstring("too many arguments"));
+            ContainsSubstring("wrong number of arguments")
+                && ContainsSubstring("Expected 1, but got 2."));
     }
 
     SECTION("Evaluation errors propagate")
@@ -788,6 +901,54 @@ Literal(null)
 )");
     }
 
+    SECTION("Self capture is omitted from capture list")
+    {
+        Symbol_Table captures;
+        captures.define("self", Value::create(123_f));
+        captures.define("x", Value::create(1_f));
+
+        std::vector<Statement::Ptr> body;
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{},
+                        body_ptr,
+                        expr<Literal>(Value::create(42_f)),
+                        captures,
+                        0};
+
+        const auto dump = closure.debug_dump();
+        std::cout << dump;
+
+        const auto [header, body_dump] = split_header_body(dump);
+        const auto capture_names_list = parse_capture_list(header);
+        REQUIRE(capture_names_list.size() == 1);
+        CHECK(capture_names_list[0] == "x");
+        CHECK(header.find("self") == std::string::npos);
+        CHECK(body_dump == "Literal(42)\n");
+    }
+
+    SECTION("Only self capture does not produce a capture list")
+    {
+        Symbol_Table captures;
+        captures.define("self", Value::create(123_f));
+
+        std::vector<Statement::Ptr> body;
+        auto body_ptr = make_body(std::move(body));
+
+        Closure closure{{},
+                        body_ptr,
+                        expr<Literal>(Value::create(42_f)),
+                        captures,
+                        0};
+
+        const auto dump = closure.debug_dump();
+        std::cout << dump;
+
+        CHECK(dump == R"(<Closure>
+Literal(42)
+)");
+    }
+
     SECTION("Captures and structured AST body")
     {
         Symbol_Table captures;
@@ -839,5 +1000,65 @@ Literal(null)
 └── Alternate
     └── Literal(0)
 )");
+    }
+}
+
+TEST_CASE("Weak Closure")
+{
+    SECTION("call forwards when closure is alive")
+    {
+        auto expected = Value::create(42_f);
+        auto closure = make_literal_closure(expected);
+        Weak_Closure weak{closure};
+
+        auto result = weak.call({});
+        CHECK(result == expected);
+    }
+
+    SECTION("call throws when closure has expired")
+    {
+        std::weak_ptr<Closure> storage;
+        {
+            auto closure = make_literal_closure(Value::create(42_f));
+            storage = closure;
+        }
+        Weak_Closure weak{storage};
+
+        CHECK_THROWS_WITH(weak.call({}),
+                          ContainsSubstring("Closure self-reference expired"));
+    }
+
+    SECTION("promote returns the same callable while alive")
+    {
+        auto expected = Value::create(99_f);
+        auto closure = make_literal_closure(expected);
+        Weak_Closure weak{closure};
+
+        auto promoted = weak.promote();
+        REQUIRE(promoted);
+        CHECK(promoted == std::static_pointer_cast<Callable>(closure));
+        CHECK(promoted->call({}) == expected);
+    }
+
+    SECTION("promote throws when closure has expired")
+    {
+        std::weak_ptr<Closure> storage;
+        {
+            auto closure = make_literal_closure(Value::create(42_f));
+            storage = closure;
+        }
+        Weak_Closure weak{storage};
+
+        CHECK_THROWS_WITH(
+            weak.promote(),
+            ContainsSubstring("Failed to promote closure self-reference"));
+    }
+
+    SECTION("debug_dump is stable")
+    {
+        auto closure = make_literal_closure(Value::create(42_f));
+        Weak_Closure weak{closure};
+
+        CHECK(weak.debug_dump() == "<closure self-reference>");
     }
 }

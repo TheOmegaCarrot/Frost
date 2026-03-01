@@ -24,8 +24,12 @@ def map_values = fn m, f -> map m with fn k, v -> ({ [k]: f(v) })
 
 def compose = fn f, g, ...rest -> {
 
-    assert(not is_null(f), "Cannot compose Null")
-    assert(not is_null(g), "Cannot compose Null")
+    def require_fn = fn f -> {
+        assert(is_function(f),
+            mformat('Compose requires functions, got ${type}', {type: type(f)}))
+    }
+
+    foreach [f, g] + rest with require_fn
 
     def compose2 = fn f1, f2 -> fn ...args -> f2(pack_call(f1, args))
 

@@ -38,19 +38,25 @@ void Closure::inject_capture(const std::string& name, Value_Ptr value)
 
 Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
 {
-    if (!vararg_parameter_ && args.size() > parameters_.size())
+    if (!vararg_parameter_ && args.size() != parameters_.size())
     {
         throw Frost_Recoverable_Error{
-            fmt::format("Closure called with too many arguments. "
-                        "Expected up to {}, but got {}.",
+            fmt::format("Closure called with wrong number of arguments. "
+                        "Expected {}, but got {}.",
+                        parameters_.size(), args.size())};
+    }
+
+    if (vararg_parameter_ && args.size() < parameters_.size())
+    {
+        throw Frost_Recoverable_Error{
+            fmt::format("Closure called with wrong number of arguments. "
+                        "Expected at least {}, but got {}.",
                         parameters_.size(), args.size())};
     }
 
     Symbol_Table exec_table(&captures_);
     exec_table.reserve(define_count_);
-    for (const auto& [arg_name, arg_val] : std::views::zip(
-             parameters_,
-             std::views::concat(args, std::views::repeat(Value::null()))))
+    for (const auto& [arg_name, arg_val] : std::views::zip(parameters_, args))
     {
         exec_table.define(arg_name, arg_val);
     }

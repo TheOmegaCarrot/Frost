@@ -14,4 +14,4 @@ def maker = fn -> {
     outer
 }
 
-print( maker()()(42) )
+print( maker()(false)(42) )
