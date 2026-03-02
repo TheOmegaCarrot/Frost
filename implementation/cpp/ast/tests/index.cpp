@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <catch2/trompeloeil.hpp>
 
@@ -12,6 +13,8 @@
 using namespace frst;
 using namespace std::literals;
 
+using Catch::Matchers::ContainsSubstring;
+using Catch::Matchers::Equals;
 using trompeloeil::_;
 
 TEST_CASE("Array Index")
@@ -67,6 +70,30 @@ TEST_CASE("Array Index")
             else
                 CHECK(res == expect);
         }
+}
+
+TEST_CASE("Array Index Type Error")
+{
+    auto arr = Value::create(Array{Value::create(10_f)});
+    auto struct_expr = mock::Mock_Expression::make();
+    auto idx_expr = mock::Mock_Expression::make();
+    auto syms = mock::Mock_Symbol_Table{};
+    trompeloeil::sequence seq;
+
+    REQUIRE_CALL(*struct_expr, evaluate(_))
+        .LR_WITH(&_1 == &syms)
+        .IN_SEQUENCE(seq)
+        .RETURN(arr);
+
+    REQUIRE_CALL(*idx_expr, evaluate(_))
+        .LR_WITH(&_1 == &syms)
+        .IN_SEQUENCE(seq)
+        .RETURN(Value::create("oops"s));
+
+    ast::Index node{std::move(struct_expr), std::move(idx_expr)};
+
+    CHECK_THROWS_WITH(node.evaluate(syms),
+                      Equals("Array index requires Int, got: String"));
 }
 
 TEST_CASE("Map Index Primitive Key")

@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <catch2/trompeloeil.hpp>
 
@@ -12,6 +13,8 @@
 using namespace frst;
 using namespace std::literals;
 
+using Catch::Matchers::ContainsSubstring;
+using Catch::Matchers::Equals;
 using trompeloeil::_;
 
 TEST_CASE("Unop")
@@ -39,4 +42,19 @@ TEST_CASE("Unop")
                 CHECK(res->get<Bool>() == false);
         }
     }
+}
+
+TEST_CASE("Unop Negate Type Error")
+{
+    auto operand = mock::Mock_Expression::make();
+    mock::Mock_Symbol_Table syms;
+
+    REQUIRE_CALL(*operand, evaluate(_))
+        .LR_WITH(&_1 == &syms)
+        .RETURN(Value::create("oops"s));
+
+    ast::Unop node(std::move(operand), ast::Unary_Op::NEGATE);
+
+    CHECK_THROWS_WITH(node.evaluate(syms),
+                      Equals("Invalid operand for unary - : String"));
 }
