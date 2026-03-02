@@ -1,6 +1,7 @@
 set(INTEGRATION_TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(INTEGRATION_SCRIPTS
     smoke.frst
+    smoke-2.frst
     prelude/inv.frst
     prelude/reject.frst
     prelude/curry.frst
