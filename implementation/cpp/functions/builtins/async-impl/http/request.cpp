@@ -425,11 +425,6 @@ auto thrower(const std::string& err)
     };
 }
 
-} // namespace
-
-namespace
-{
-
 std::vector<Outgoing_Request::URI::Query_Parameter> parse_query_parameters(
     const Value_Ptr& query_spec_val)
 {
