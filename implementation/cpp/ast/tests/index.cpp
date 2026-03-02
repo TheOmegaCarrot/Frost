@@ -3,6 +3,7 @@
 
 #include <catch2/trompeloeil.hpp>
 
+#include <frost/mock/mock-callable.hpp>
 #include <frost/mock/mock-expression.hpp>
 #include <frost/mock/mock-symbol-table.hpp>
 
@@ -124,7 +125,6 @@ TEST_CASE("Map Index Primitive Key")
     };
 
     std::vector<Case> cases = {
-        {"null", Value::null(), Value::null()},
         {"int", Value::create(1_f), val_int},
         {"float", Value::create(1.0), val_float},
         {"bool", Value::create(true), val_bool},
@@ -165,22 +165,32 @@ TEST_CASE("Map Index Primitive Key")
     }
 }
 
-TEST_CASE("Map Index Non-Primitive Query")
+TEST_CASE("Map Index Non-Primitive Key Type Error")
 {
     auto map = Value::create(Map{
         {Value::create("a"s), Value::create(1_f)},
-        {Value::create("b"s), Value::create(2_f)},
     });
 
-    std::vector<std::pair<const char*, Value_Ptr>> cases = {
-        {"array", Value::create(Array{Value::create(1_f)})},
-        {"map", Value::create(Map{{Value::create("k"s), Value::create(1_f)}})},
-        {"null", Value::null()},
+    struct Case
+    {
+        const char* name;
+        Value_Ptr key;
+        std::string expected_error;
     };
 
-    for (const auto& [name, query] : cases)
+    std::vector<Case> cases = {
+        {"null", Value::null(), "Invalid type for Map index: Null"},
+        {"array", Value::create(Array{Value::create(1_f)}),
+         "Invalid type for Map index: Array"},
+        {"map", Value::create(Map{{Value::create("k"s), Value::create(1_f)}}),
+         "Invalid type for Map index: Map"},
+        {"function", Value::create(Function{mock::Mock_Callable::make()}),
+         "Invalid type for Map index: Function"},
+    };
+
+    for (const auto& test : cases)
     {
-        DYNAMIC_SECTION("Query key: " << name)
+        DYNAMIC_SECTION("Key type: " << test.name)
         {
             auto struct_expr = mock::Mock_Expression::make();
             auto idx_expr = mock::Mock_Expression::make();
@@ -195,10 +205,12 @@ TEST_CASE("Map Index Non-Primitive Query")
             REQUIRE_CALL(*idx_expr, evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
-                .RETURN(query);
+                .RETURN(test.key);
 
             ast::Index node{std::move(struct_expr), std::move(idx_expr)};
-            CHECK(node.evaluate(syms)->is<Null>());
+
+            CHECK_THROWS_WITH(node.evaluate(syms), Equals(test.expected_error));
         }
     }
 }
+

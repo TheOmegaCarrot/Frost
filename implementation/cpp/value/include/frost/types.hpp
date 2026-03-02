@@ -76,6 +76,9 @@ template <typename T>
 concept Frost_Type =
     Frost_Primitive<T> || Frost_Structured<T> || std::same_as<Function, T>;
 
+template <typename T>
+concept Frost_Map_Key = Frost_Primitive<T> && not std::same_as<Null, T>;
+
 } // namespace frst
 
 #endif

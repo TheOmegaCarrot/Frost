@@ -11,8 +11,21 @@ Index::Index(Expression::Ptr structure, Expression::Ptr index)
 {
 }
 
+template <typename T>
+void throw_map_index_type_error()
+{
+    throw Frost_Recoverable_Error{
+        fmt::format("Invalid type for Map index: {}", type_str<T>())};
+}
+
 static Value_Ptr index_map(const Map& map, const Value_Ptr& key_val)
 {
+    key_val->visit(Overload{[]<Frost_Type T>(const T&) {
+                                throw_map_index_type_error<T>();
+                            },
+                            [](const Frost_Map_Key auto&) {
+                            }});
+
     if (auto itr = map.find(key_val); itr != map.end())
         return itr->second;
 
