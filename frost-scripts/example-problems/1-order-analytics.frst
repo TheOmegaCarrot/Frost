@@ -52,31 +52,19 @@ def orders = [
 ]
 
 def order_total = fn (order) -> {
-    reduce order.items with fn acc, item -> acc + item.price * item.qty init: 0
+    null
 }
 
 def gross_revenue = fn (all_orders) -> {
-    reduce
-        map all_orders with order_total
-    with
-        plus
+    null
 }
 
-def index = fn k -> fn s -> s[k]
-
 def high_value_order_ids = fn (all_orders, threshold) -> {
-    map
-        filter all_orders with fn order -> order@order_total() >= threshold
-    with
-        index('id')
+    null
 }
 
 def customer_totals = fn (all_orders) -> {
-    def grouped_orders = all_orders @ group_by(index('customer'))
-
-    # idea: map_keys and map_values builtins
-    # could just be `grouped_orders @ map_values(gross_revenue)`
-    map grouped_orders with fn customer, orders -> ({ [customer]: gross_revenue(orders) })
+    null
 }
 
 assert(order_total(orders[0]) == 59, 'order_total for order 1 should be 59')

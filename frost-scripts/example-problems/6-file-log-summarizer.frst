@@ -1,0 +1,61 @@
+# Challenge 07: File Log Summarizer
+#
+# Goal:
+# Parse log lines, aggregate counts, and persist summary as JSON.
+#
+# Implement:
+# - summarize_log_file(input_path, output_path): Map
+#
+# Requirements:
+# - Read all lines from input_path.
+# - Count log level prefixes at start of each line:
+#   - INFO
+#   - WARN
+#   - ERROR
+# - Return a map exactly shaped like:
+#   - { INFO: Int, WARN: Int, ERROR: Int }
+# - Write that summary to output_path as JSON text.
+# - Written JSON must parse back to an equivalent Frost map.
+#
+# Completion criteria:
+# - All assertions in this file pass unchanged.
+
+def input_path = 'tmp-log-summarizer-input.txt'
+def output_path = 'tmp-log-summarizer-output.json'
+
+def seed = open_trunc(input_path)
+assert(not is_null(seed), 'failed to create input log file')
+
+seed.writeln('INFO startup')
+seed.writeln('WARN low-disk')
+seed.writeln('ERROR crash')
+seed.writeln('INFO retry')
+seed.writeln('ERROR crash-again')
+seed.close()
+
+def summarize_log_file = fn (in_path, out_path) -> {
+    null
+}
+
+def summary = summarize_log_file(input_path, output_path)
+def expected = { INFO: 2, WARN: 1, ERROR: 2 }
+
+assert(
+    deep_equal(summary, expected),
+    'summary should match expected counts'
+)
+
+def out_reader = open_read(output_path)
+assert(not is_null(out_reader), 'output summary file should exist')
+
+def out_text = out_reader.read_rest()
+out_reader.close()
+
+def parsed = parse_json(out_text)
+assert(
+    deep_equal(parsed, expected),
+    'parsed JSON summary should match expected counts'
+)
+
+fs.remove(input_path)
+fs.remove(output_path)

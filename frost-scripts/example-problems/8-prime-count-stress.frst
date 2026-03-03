@@ -1,0 +1,35 @@
+# Challenge 09: Prime Count Stress Test
+#
+# Goal:
+# Implement primality logic and validate it on both small and stress inputs.
+#
+# Implement:
+# - is_prime(n): Bool
+# - count_primes_below(upper): Int
+#
+# Requirements:
+# - is_prime rules:
+#   - n < 2 => false
+#   - n >= 2 => true only if divisible by no integer in [2, n)
+# - count_primes_below(upper):
+#   - count primes p where 0 <= p < upper
+# - Keep logic deterministic and suitable for larger ranges.
+#
+# Completion criteria:
+# - All assertions in this file pass unchanged.
+
+def is_prime = fn (n) -> {
+    null
+}
+
+def count_primes_below = fn (upper) -> {
+    len(select(range(upper), is_prime))
+}
+
+assert(is_prime(2), '2 should be prime')
+assert(is_prime(3), '3 should be prime')
+assert(not is_prime(1), '1 is not prime')
+assert(not is_prime(9), '9 is not prime')
+
+assert(count_primes_below(20) == 8, 'there are 8 primes < 20')
+assert(count_primes_below(5000) == 669, 'there are 669 primes < 5000')
