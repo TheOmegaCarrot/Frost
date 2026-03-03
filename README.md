@@ -62,6 +62,8 @@ frost -e "print(1 + 2)"  # evaluate an expression
 
 ## Documentation
 
+NOTE: Documentation is heavily work-in-progress!
+
 - [Introduction to Frost](docs/introduction.md) — language philosophy and a guided tour
 - [Language Reference](docs/language.md) — complete syntax reference
 - [Standard Library](docs/stdlib/) — all built-in functions and utilities
