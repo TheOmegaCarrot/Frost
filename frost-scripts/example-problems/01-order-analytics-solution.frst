@@ -1,0 +1,94 @@
+# Challenge 01: Order Analytics Pipeline
+#
+# Goal:
+# Build a small analytics layer over the `orders` dataset.
+#
+# Data shape:
+# - orders: Array of order maps
+# - each order: { id: Int, customer: String, items: Array }
+# - each item: { sku: String, qty: Int, price: Int }
+#
+# Implement these functions:
+# - order_total(order): Int
+#   Sum of qty * price for all items in one order.
+# - gross_revenue(orders): Int
+#   Sum of order_total for all orders.
+# - high_value_order_ids(orders, threshold): Array[Int]
+#   Return order IDs whose total is >= threshold, preserving input order.
+# - customer_totals(orders): Map[String -> Int]
+#   Aggregate totals by customer across all of their orders.
+#
+# Completion criteria:
+# - All assertions in this file pass unchanged.
+
+def orders = [
+    {
+        id: 1,
+        customer: 'alice',
+        items: [
+            { sku: 'notebook', qty: 3, price: 9 },
+            { sku: 'pen', qty: 8, price: 4 },
+        ],
+    },
+    {
+        id: 2,
+        customer: 'bob',
+        items: [
+            { sku: 'pencil', qty: 6, price: 4 },
+        ],
+    },
+    {
+        id: 3,
+        customer: 'alice',
+        items: [],
+    },
+    {
+        id: 4,
+        customer: 'cara',
+        items: [
+            { sku: 'marker', qty: 10, price: 5 },
+        ],
+    },
+]
+
+def order_total = fn (order) -> {
+    reduce order.items with fn acc, item -> acc + item.price * item.qty init: 0
+}
+
+def gross_revenue = fn (all_orders) -> {
+    reduce
+        map all_orders with order_total
+    with
+        plus
+}
+
+def index = fn k -> fn s -> s[k]
+
+def high_value_order_ids = fn (all_orders, threshold) -> {
+    map
+        filter all_orders with fn order -> order@order_total() >= threshold
+    with
+        index('id')
+}
+
+def customer_totals = fn (all_orders) -> {
+    def grouped_orders = all_orders @ group_by(index('customer'))
+
+    # idea: map_keys and map_values builtins
+    # could just be `grouped_orders @ map_values(gross_revenue)`
+    map grouped_orders with fn customer, orders -> ({ [customer]: gross_revenue(orders) })
+}
+
+assert(order_total(orders[0]) == 59, 'order_total for order 1 should be 59')
+assert(order_total(orders[2]) == 0, 'order_total for order 3 should be 0')
+assert(gross_revenue(orders) == 133, 'gross revenue should be 133')
+
+assert(
+    deep_equal(high_value_order_ids(orders, 50), [1, 4]),
+    'high-value ids should be [1, 4] for threshold 50'
+)
+
+assert(
+    deep_equal(customer_totals(orders), { alice: 59, bob: 24, cara: 50 }),
+    'customer totals should be {alice:59, bob:24, cara:50}'
+)

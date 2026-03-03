@@ -1,0 +1,54 @@
+# Challenge 08: Regex ETL with Named Groups
+#
+# Goal:
+# Extract structured key/value data from free text using named regex groups.
+#
+# Implement:
+# - extract_triples(source, pattern): Array[Map]
+#
+# Requirements:
+# - Use `re.scan_matches` with the supplied pattern.
+# - Output must be an Array of maps in match order.
+# - Each output map must have keys:
+#   - label (String or null)
+#   - key (String)
+#   - value (String)
+# - When label is not present in source text, set `label` to null.
+#
+# Completion criteria:
+# - All assertions in this file pass unchanged.
+
+def source = 'team:alpha=x foo=bar env:prod=baz'
+def pattern = '(?:(?<label>\\w+):)?(?<key>\\w+)=(?<value>\\w+)'
+
+def raw = re.scan_matches(source, pattern)
+assert(raw.count == 3, 'scan_matches should find exactly 3 matches')
+
+def extract_triples = fn (text, re_pat) -> {
+    def matches = re.scan_matches(text, re_pat)
+
+    def get_label = fn match, name -> match.named[name].value
+
+    map matches.matches with fn match -> ({
+        label: match @ get_label('label'),
+        key: match @ get_label('key'),
+        value: match @ get_label('value'),
+    })
+}
+
+def triples = extract_triples(source, pattern)
+assert(is_array(triples), 'extract_triples should return an Array')
+
+assert(len(triples) == 3, 'triples length should be 3')
+
+assert(triples[0].label == 'team', 'match 0 label should be team')
+assert(triples[0].key == 'alpha', 'match 0 key should be alpha')
+assert(triples[0].value == 'x', 'match 0 value should be x')
+
+assert(triples[1].label == null, 'match 1 label should be null')
+assert(triples[1].key == 'foo', 'match 1 key should be foo')
+assert(triples[1].value == 'bar', 'match 1 value should be bar')
+
+assert(triples[2].label == 'env', 'match 2 label should be env')
+assert(triples[2].key == 'prod', 'match 2 key should be prod')
+assert(triples[2].value == 'baz', 'match 2 value should be baz')

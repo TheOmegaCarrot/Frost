@@ -1,0 +1,60 @@
+# Challenge 04: Deep Config Merge
+#
+# Goal:
+# Implement recursive configuration merge semantics.
+#
+# Implement:
+# - deep_merge(lhs, rhs)
+#
+# Requirements:
+# - If lhs and rhs are both Map:
+#   - result contains union of keys
+#   - shared keys are merged recursively
+# - For any non-Map pairing (including scalar vs scalar, scalar vs Map, etc):
+#   - rhs wins
+# - Do not mutate input values in place.
+#
+# Completion criteria:
+# - All assertions in this file pass unchanged.
+
+def deep_merge = fn (lhs, rhs) -> {
+    def merge = self
+    if not (is_map(lhs) and is_map(rhs)):
+        rhs
+    else:
+        reduce keys(rhs) with fn acc, k -> {
+            def rv = rhs[k]
+            if acc @ has(k):
+                acc + { [k]: merge(acc[k], rv) }
+            else:
+                acc + { [k]: rv }
+        } init: lhs
+}
+
+def config_a = {
+    db: { host: 'localhost', port: 5432 },
+    retries: 1,
+    flags: { safe: true, verbose: false },
+}
+
+def config_b = {
+    db: { port: 5433 },
+    retries: 2,
+    flags: { verbose: true },
+}
+
+def expected = {
+    db: { host: 'localhost', port: 5433 },
+    retries: 2,
+    flags: { safe: true, verbose: true },
+}
+
+assert(
+    deep_equal(deep_merge(config_a, config_b), expected),
+    'deep merge output should match expected nested map'
+)
+
+assert(
+    deep_merge(1, 2) == 2,
+    'non-map merge should return rhs'
+)

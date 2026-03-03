@@ -1,0 +1,79 @@
+# Challenge 10: CLI Args Router
+#
+# Goal:
+# Convert command-line style tokens into validated command execution results.
+#
+# Implement:
+# - route(argv): Map
+#
+# Input contract:
+# - argv is Array[String]
+# - argv[0] is command name
+# - remaining elements are numeric argument strings
+#
+# Requirements:
+# - Command `sum`: add all numeric operands.
+# - Command `mul`: multiply all numeric operands.
+# - Numeric parsing must use `to_int`; invalid numbers produce an error result.
+# - Unknown command produces an error result.
+# - Return shape:
+#   - success => { ok: true, value: Int }
+#   - failure => { ok: false, error: String }
+#
+# Completion criteria:
+# - In-file assertions pass.
+# - Optional CLI mode at bottom prints value or error text.
+
+def ops = {
+    sum: plus,
+    mul: times,
+}
+
+def route = fn (argv) -> {
+    def [cmd, ...args] = argv
+    def op = ops[cmd]
+    if not op:
+        { ok: false, error: 'useful error' }
+    else:
+        { ok: true, value: args @transform(to_int) @fold(op) }
+}
+
+def t_sum = route(['sum', '1', '2', '3'])
+assert(is_map(t_sum), 'route should return a Map')
+if is_map(t_sum):
+    assert(t_sum.ok and t_sum.value == 6, 'sum route should produce 6')
+else:
+    null
+
+def t_mul = route(['mul', '2', '3', '4'])
+assert(is_map(t_mul), 'route should return a Map')
+if is_map(t_mul):
+    assert(t_mul.ok and t_mul.value == 24, 'mul route should produce 24')
+else:
+    null
+
+def t_bad = route(['wat', '1'])
+assert(is_map(t_bad), 'route should return a Map for unknown command')
+if is_map(t_bad):
+    assert(
+        (not t_bad.ok) and has(t_bad, 'error'),
+        'unknown command should return ok=false and include an error field'
+    )
+else:
+    null
+
+# Optional CLI mode:
+# ./build/frost frost-scripts/test-challenges/10-cli-args-router.frst -- sum 1 2 3
+def cli_args = drop(args, 1)
+if len(cli_args) > 0:
+    (fn -> {
+        def cli_res = route(cli_args)
+        if is_map(cli_res) and has(cli_res, 'ok') and cli_res.ok:
+            print(cli_res.value)
+        else:
+            if is_map(cli_res) and has(cli_res, 'error'):
+                print(cli_res.error)
+            else:
+                print('route() returned an unexpected value')
+    })()
+else: null

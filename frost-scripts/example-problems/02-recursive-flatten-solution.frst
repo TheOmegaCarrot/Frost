@@ -1,0 +1,39 @@
+# Challenge 02: Recursive Flatten
+#
+# Goal:
+# Implement recursive structural flattening for nested arrays.
+#
+# Implement:
+# - flatten(x): Array
+#
+# Requirements:
+# - If x is an Array, recursively flatten each element and concatenate results.
+# - If x is NOT an Array, return [x].
+# - Preserve left-to-right order.
+# - Support arbitrary nesting depth.
+#
+# Completion criteria:
+# - All assertions in this file pass unchanged.
+
+def flatten = fn (x) -> {
+    def flatten = self
+    if is_array(x):
+        reduce x with fn acc, elem -> acc + flatten(elem) init: []
+    else:
+        [x]
+}
+
+assert(
+    deep_equal(flatten([1, [2, [3, []], 4], 5]), [1, 2, 3, 4, 5]),
+    'nested arrays should flatten in order'
+)
+
+assert(
+    deep_equal(flatten(7), [7]),
+    'non-array input should produce a singleton array'
+)
+
+assert(
+    deep_equal(flatten([]), []),
+    'empty arrays should stay empty'
+)

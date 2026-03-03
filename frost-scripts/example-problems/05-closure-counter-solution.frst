@@ -1,0 +1,32 @@
+# Challenge 05: Closure Counter Factory
+#
+# Goal:
+# Demonstrate closure state and encapsulated mutation.
+#
+# Implement:
+# - make_counter(start): Function
+#
+# Requirements:
+# - make_counter returns a closure that accepts one argument: delta.
+# - Each call adds delta to internal state and returns the updated state.
+# - Internal state must persist across calls.
+# - Separate counters must keep independent state.
+# - Use `mutable_cell` to store counter state.
+#
+# Completion criteria:
+# - All assertions in this file pass unchanged.
+
+def make_counter = fn (start) -> {
+    def cell = mutable_cell(start)
+    fn (delta) -> {
+        cell.exchange( cell.get() + delta )
+        cell.get()
+    }
+}
+
+def c1 = make_counter(0)
+def c2 = make_counter(10)
+
+assert(c1(2) == 2, 'c1 first increment should produce 2')
+assert(c1(3) == 5, 'c1 second increment should produce 5')
+assert(c2(1) == 11, 'c2 should keep independent state')
