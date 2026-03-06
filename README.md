@@ -44,12 +44,6 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=NO
 cmake --build build -j$(nproc)
 ```
 
-To build without HTTP support:
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DWITH_HTTP=NO
-```
-
 The interpreter is output to `build/frost`.
 
 ## Usage
