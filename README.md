@@ -51,7 +51,7 @@ The interpreter is output to `build/frost`.
 ```bash
 frost script.frst         # run a script
 frost                     # start the REPL
-frost -e "print(1 + 2)"  # evaluate an expression
+frost -e "print(1 + 2)"   # evaluate an expression
 ```
 
 ## Documentation
