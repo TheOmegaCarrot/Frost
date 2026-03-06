@@ -3,7 +3,7 @@
 Frost is a small, expression-oriented, functional scripting language.
 There are no classes or mutable variables, instead focusing on data flow and functions.
 
-Let's go through some examples.
+## Basics
 
 ```frost
 def words = split('the quick brown fox jumps over the lazy dog', ' ')
@@ -30,6 +30,7 @@ You can also optionally add an `init` clause:
 reduce [1, 2, 3] with plus init: 10
 # 16
 ```
+## Functions
 
 The earlier example could also be written another way.
 
@@ -72,6 +73,9 @@ def factorial = fn n ->
 
 `self` always refers to the current lambda.
 
+
+## Logic
+
 In Frost, `if` is an expression, and it evaluates to a value; it's not just for control flow.
 (Think C's ternary `?:` operator. It's basically the same idea)
 Unlike C's ternary, Frost also supports `elif`: `if foo: bar elif baz: beep else: boop`.
@@ -92,7 +96,9 @@ def max_retries = config["max_retries"] or 3
 def should_log = config["verbose"] and not config["quiet"]
 ```
 
-This also demonstrates maps.
+## Maps
+
+The previous example also demonstrated maps.
 Maps are key-value pairs; arrays, maps, functions, and null may _not_ be map keys, but any value may be a map value.
 Accessing a missing key in a map gives you `null`.
 There is also a shorter syntax for map keys which are strings following variable naming rules:
@@ -128,6 +134,8 @@ def { name: n, age: a, favorite_color: c } = person
 
 You do not need to provide a binding for every key, and any missing keys will be bound to `null`.
 
+## Arrays
+
 We kinda already saw arrays in the first example: a lot of the intermediate values were arrays, but array syntax itself is pretty straightforward:
 
 ```frost
@@ -154,6 +162,8 @@ def [a, b, c, ...rest] = primes
 ```
 
 Arrays must destructure into exactly the right number of elements, but you can also collect the rest of the elements into an array of remaining elements.
+
+## Higher-order Functions
 
 Functions can also be variadic.
 
@@ -191,6 +201,8 @@ try_call(plus, [10, 'oops'])
 try_call(plus, [3, 5])
 # { ok: true, value: 8 }
 ```
+
+## Modules
 
 Frost also provides a mechanism for splitting up code between files.
 
