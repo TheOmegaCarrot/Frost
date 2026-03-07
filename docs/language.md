@@ -217,7 +217,7 @@ a_map.foo # 42
 a_map.missing # null
 ```
 
-## Functions
+### Functions
 
 All function definitions are lambda expressions.
 To bind a function to a name, simply use the same `def` syntax with a lambda on the right-hand side of the `=`.
@@ -313,3 +313,74 @@ def recursively_double = fn arr -> {
         else: item * 2
 }
 ```
+
+## Expressions
+
+### Operators
+
+Frost provides the typical set of arithmetic, comparison, logical, and postfix operators.
+The table below lists all operators from lowest precedence (loosest binding) to highest (tightest binding).
+
+| Precedence | Operators                  | Associativity  |
+|------------|----------------------------|----------------|
+| 1 (lowest) | `or`                       | left           |
+| 2          | `and`                      | left           |
+| 3          | `==` `!=`                  | non-chainable  |
+| 4          | `<` `<=` `>` `>=`          | non-chainable  |
+| 5          | `+` `-`                    | left           |
+| 6          | `*` `/` `%`                | left           |
+| 7          | `-` (unary) `not`          | prefix         |
+| 8 (highest)| `()` `[]` `.` `@`          | postfix (left) |
+
+Equality and comparison operators are _non-chainable_; expressions like `1 < 2 < 3` or `a == b == c` are syntax errors.
+
+```frost
+# These are all true:
+1 + 2 * 3 == 1 + (2 * 3)
+not true or false == (not true) or false
+true and false or true == (true and false) or true
+-2 + 3 == (-2) + 3
+
+# Left-associative operators group left to right:
+10 - 3 - 2 == (10 - 3) - 2
+12 / 6 / 2 == (12 / 6) / 2
+
+# Prefix operators apply to the innermost operand:
+not not true == not (not true)
+
+# Postfix operators bind tighter than prefix:
+-[1, 2, 3][0] == -(([1, 2, 3])[0])
+
+# Postfix operators chain left to right:
+def f = fn -> fn x -> x * 2
+f()(3) == (f())(3)
+```
+
+#### Call Threading
+
+One notable operator which would be unfamiliar is the _threading operator_ (`@`).
+Some languages with a similar feature may call this a _pipeline operator_.
+This is similar to `->` in Fennel or `|>` in Elixir.
+
+In Frost, `a @ f(b)` is exactly equivalent to `f(a, b)`. (This even results in the same AST!)
+This also allows for postfix chaining, such that `a @ f(b) @ g(c)` is identical to `g(f(a, b), c)`.
+
+#### Logical Operators
+
+The behavior of `and`, `or` and `not` should be familiar to users of Python, Lua, or many other languages.
+`or` will return its first "truthy" argument, or the final argument if all are "falsy".
+`and` will return its first "falsy" argument, or the final argument if all are "truthy".
+`not` will always return a boolean which is the inverse of the "truthiness" of its operand.
+
+Evaluation of `and` and `or` short-circuit.
+
+```frost
+42 or assert(false) # 42, and assert is not evaluated
+false and assert(false) # false, and assert is not evaluated
+```
+
+All values are truthy, except for an actual Boolean `false` and `null`.
+
+#### Logical Comparisons
+
+
