@@ -600,6 +600,8 @@ In other words, the first argument to the function is an _accumulator_, and each
 reduce [1, 2, 3, 4] with fn a, b -> a + b # 10 (the function is called 3 times)
 ```
 
+Reducing an empty array without an `init:` clause will return `null`.
+
 In the second form, the value after `init:` is used as the initial accumulator value.
 
 ```frost
