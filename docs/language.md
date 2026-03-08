@@ -1,48 +1,44 @@
-
-
-<!-- toc -->
-
-- [Language Reference](#language-reference)
-  * [Lexical Elements](#lexical-elements)
-    + [Comments](#comments)
-    + [Whitespace](#whitespace)
-    + [Identifiers](#identifiers)
-  * [Types and Literals](#types-and-literals)
-    + [Null](#null)
-    + [Int](#int)
-    + [Float](#float)
-    + [Bool](#bool)
-    + [String](#string)
-    + [Array](#array)
-    + [Map](#map)
-    + [Functions](#functions)
-  * [Expressions](#expressions)
-    + [Operators](#operators)
-      - [Call Threading](#call-threading)
-      - [Logical Operators](#logical-operators)
-      - [Logical Comparisons](#logical-comparisons)
-      - [Arithmetic Operators](#arithmetic-operators)
-    + [If Expressions](#if-expressions)
-    + [Iterative Expressions](#iterative-expressions)
-      - [Map](#map-1)
-      - [Filter](#filter)
-      - [Reduce](#reduce)
-      - [Foreach](#foreach)
-  * [Statements](#statements)
-    + [Definitions](#definitions)
-      - [Array Destructuring](#array-destructuring)
-      - [Map Destructuring](#map-destructuring)
-  * [Modules](#modules)
-    + [Export](#export)
-    + [Import](#import)
-
-<!-- tocstop -->
-
 # Language Reference
 
 This document is a full explanation of the core Frost language, starting from the basics and building up to the more complex elements.
 For most readers, this is not the place to start learning the language; for that, see the [introduction](./introduction.md).
 
+<!-- toc -->
+
+- [Lexical Elements](#lexical-elements)
+  * [Comments](#comments)
+  * [Whitespace](#whitespace)
+  * [Identifiers](#identifiers)
+- [Types and Literals](#types-and-literals)
+  * [Null](#null)
+  * [Int](#int)
+  * [Float](#float)
+  * [Bool](#bool)
+  * [String](#string)
+  * [Array](#array)
+  * [Map](#map)
+  * [Functions](#functions)
+- [Expressions](#expressions)
+  * [Operators](#operators)
+    + [Call Threading](#call-threading)
+    + [Logical Operators](#logical-operators)
+    + [Logical Comparisons](#logical-comparisons)
+    + [Arithmetic Operators](#arithmetic-operators)
+  * [If Expressions](#if-expressions)
+  * [Iterative Expressions](#iterative-expressions)
+    + [Map](#map-1)
+    + [Filter](#filter)
+    + [Reduce](#reduce)
+    + [Foreach](#foreach)
+- [Statements](#statements)
+  * [Definitions](#definitions)
+    + [Array Destructuring](#array-destructuring)
+    + [Map Destructuring](#map-destructuring)
+- [Modules](#modules)
+  * [Export](#export)
+  * [Import](#import)
+
+<!-- tocstop -->
 
 ## Lexical Elements
 
