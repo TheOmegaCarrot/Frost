@@ -1,3 +1,43 @@
+
+
+<!-- toc -->
+
+- [Language Reference](#language-reference)
+  * [Lexical Elements](#lexical-elements)
+    + [Comments](#comments)
+    + [Whitespace](#whitespace)
+    + [Identifiers](#identifiers)
+  * [Types and Literals](#types-and-literals)
+    + [Null](#null)
+    + [Int](#int)
+    + [Float](#float)
+    + [Bool](#bool)
+    + [String](#string)
+    + [Array](#array)
+    + [Map](#map)
+    + [Functions](#functions)
+  * [Expressions](#expressions)
+    + [Operators](#operators)
+      - [Call Threading](#call-threading)
+      - [Logical Operators](#logical-operators)
+      - [Logical Comparisons](#logical-comparisons)
+      - [Arithmetic Operators](#arithmetic-operators)
+    + [If Expressions](#if-expressions)
+    + [Iterative Expressions](#iterative-expressions)
+      - [Map](#map-1)
+      - [Filter](#filter)
+      - [Reduce](#reduce)
+      - [Foreach](#foreach)
+  * [Statements](#statements)
+    + [Definitions](#definitions)
+      - [Array Destructuring](#array-destructuring)
+      - [Map Destructuring](#map-destructuring)
+  * [Modules](#modules)
+    + [Export](#export)
+    + [Import](#import)
+
+<!-- tocstop -->
+
 # Language Reference
 
 This document is a full explanation of the core Frost language, starting from the basics and building up to the more complex elements.
@@ -14,8 +54,15 @@ There are no multi-line comments.
 ### Whitespace
 
 Space characters are not significant in Frost; indentation is also not significant.
-Line breaks are used to separate statements/expressions, similarly to semicolons, which are also supported.
-Inside paired delimiters ( `()`, `[]`, and `{}` ) line breaks are ignored.
+Line breaks are used to separate statements and expressions.
+
+Semicolons may be used in place of line breaks to separate statements on the same line.
+
+```frost
+def a = 1; def b = 2; print(a + b)
+```
+
+Inside paired delimiters (`()`, `[]`, and `{}`), line breaks are ignored, since the closing delimiter is unambiguous.
 Function calls, indexing, dot map accesses, and the threading operator must begin on the same line as the left operand, unless enclosed in `()`.
 
 ```frost
@@ -110,7 +157,7 @@ def no  = false
 There is no semantic difference between the two forms.
 All strings are binary-safe, and represent arbitrary sequences of bytes.
 String literals may also be raw string literals, which do not process escape sequences.
-Raw strings may _not_ be multi-line.
+Multi-line strings are not supported, this includes raw string literals.
 Raw string literals begin with `R'(` or `R"(` and end with `')` or `")`. The opening and closing quotes must match.
 
 ```frost
@@ -171,7 +218,7 @@ an_array[5000] # null
 ### Map
 
 A `Map` is a key-value structure.
-`Null`, `Array`s, `Map`s, and `Function`s may not be map keys, but any value may be a map value.
+`Null`, `Array`, `Map`, and `Function` may not be map keys, but any value may be a map value.
 Maps may be empty.
 A `Map` literal consists of `,`-separated key-value pairs enclosed in `{}` braces.
 Trailing commas are permitted, and newlines may appear within the map literal.
@@ -224,7 +271,7 @@ a_map.missing # null
 All function definitions are lambda expressions.
 To bind a function to a name, simply use the same `def` syntax with a lambda on the right-hand side of the `=`.
 
-A function definition consists of the keyword `fn`, followed by a list of arguments, followed by `->`, followed by a body.
+A function definition consists of the keyword `fn`, followed by an optional list of arguments, followed by `->`, followed by a body.
 The list of arguments may optionally be enclosed in parentheses.
 The body is enclosed in `{}` braces, and may consist of multiple statements.
 If the body consists of only a single expression, then the enclosing `{}` may be omitted.
@@ -245,7 +292,7 @@ f4(2, 4) # 10
 ```
 
 Note that when writing a function which returns a map, there is a limitation in the parser.
-The following tries to parse a multi-statement function.
+The parser will interpret the `{` as starting a block, not a `Map` literal, and thus produce an error.
 
 ```frost
 def bad = fn -> { foo: 42 } # syntax error
@@ -386,14 +433,14 @@ The behavior of `and`, `or` and `not` should be familiar to users of Python, Lua
 `and` will return its first "falsy" argument, or the final argument if all are "truthy".
 `not` will always return a boolean which is the inverse of the "truthiness" of its operand.
 
-Evaluation of `and` and `or` short-circuit.
+Evaluation of `and` and `or` short-circuits.
 
 ```frost
 42 or assert(false) # 42, and assert is not evaluated
 false and assert(false) # false, and assert is not evaluated
 ```
 
-All values are truthy, except for an actual Boolean `false` and `null`.
+All values are truthy, except for an actual `false` and `null`.
 
 #### Logical Comparisons
 
@@ -430,12 +477,13 @@ When mixing `Int` and `Float`, operands are implicitly converted to `Float`.
 `%` only supports `Int` operands.
 `/` will perform truncating integer division when both operands are `Int`.
 
-`+` has some additional functionality when used with `Array` or `Map` operands.
-`+` will perform array concatenation or map merge operations.
-Note that this map merge is _not_ recursive.
+`+` has some additional functionality when used with `String`, `Array`, and `Map` operands.
+`+` will perform `String` concatenation, `Array` concatenation, and `Map` merge operations.
+Note that the `Map` merge is _not_ recursive.
 
 ```frost
 [1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
+'foo' + 'bar' # 'foobar'
 { foo: 42, bar: 10 } + { bar: 1024, baz: true } # { foo: 42, bar: 1024, baz: true }
 { foo: { bar: 42, baz: 10 } } + { foo: { bar: 1024 } } # { foo: { bar: 1024 } }
 ```
@@ -592,7 +640,7 @@ A foreach expression always returns `null`.
 ## Statements
 
 Most of Frost consists of expressions, but there are a couple examples of proper statements.
-The distinction being that an expression evaluates to a value, whereas a statement does not.
+The distinction is that an expression evaluates to a value, whereas a statement does not.
 
 ### Definitions
 
@@ -656,7 +704,7 @@ def { foo: bar, beep: boop, no: nada } = { foo: 42, beep: 10, dropped: 128 }
 # bar == 42 and boop == 10 and nada == null
 ```
 
-Every key in the left is looked up in the map on the right.
+Every key on the left is looked up in the map on the right.
 The "value position" on the left contains a name to be bound to the value at that key.
 Keys which are not found in the map are bound to `null`.
 This matching does not need to be exhaustive (it is not an error that the value at key `dropped` was not bound to a name).
@@ -706,7 +754,7 @@ For example: `'foo.bar.baz'` specifies a relative path `foo/bar/baz.frst`.
 The module specification `'foo'` specifies a relative path `foo.frst`.
 
 `import` will first check relative to the importing file.
-If no file can be found relative to the importing file, then the interpreter will then look relative to the current working directory.
+If no file can be found relative to the importing file, the interpreter will then look relative to the current working directory.
 
 It is an error if a module import cannot be resolved.
 
