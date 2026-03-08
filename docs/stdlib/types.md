@@ -43,7 +43,8 @@ Returns `true` if `value` is a `Function`.
 ## `is_nonnull`
 `is_nonnull(value)`
 
-Returns `true` if `value` is not `null`. Equivalent to `not is_null(value)`.
+Returns `true` if `value` is not `null`.
+Equivalent to `not is_null(value)`.
 
 ## `is_numeric`
 `is_numeric(value)`
@@ -63,15 +64,15 @@ Returns `true` if `value` is an `Array` or `Map`.
 ## `type`
 `type(value)`
 
-Returns the type of `value` as a `String`. Possible values: `"Null"`, `"Int"`,
-`"Float"`, `"Bool"`, `"String"`, `"Array"`, `"Map"`, `"Function"`.
+Returns the type of `value` as a `String`.
+Possible values: `"Null"`, `"Int"`, `"Float"`, `"Bool"`, `"String"`, `"Array"`, `"Map"`, `"Function"`.
 
 ## `to_string`
 `to_string(value)`
 
-Converts `value` to its display string — the same representation that `print`
-would output. For strings, returns the string itself (unquoted). For arrays and
-maps, returns a compact single-line representation.
+Converts `value` to its display string — the same representation that `print` would output.
+For strings, returns the string itself (unquoted).
+For arrays and maps, returns a compact single-line representation.
 
 ## `pretty`
 `pretty(value)`
@@ -82,14 +83,15 @@ Map keys that are valid identifiers are rendered without quotes.
 ## `to_int`
 `to_int(value)`
 
-Converts `value` to an `Int`, or returns `null` if the conversion is not
-supported. `Int` is returned unchanged. `Float` is truncated toward zero;
-produces an error if the value is out of `Int` range. Strings are parsed as
-base-10 integers.
+Converts `value` to an `Int`, or returns `null` if the conversion is not supported.
+`Int` is returned unchanged.
+`Float` is truncated toward zero; produces an error if the value is out of `Int` range.
+Strings are parsed as base-10 integers.
 
 ## `to_float`
 `to_float(value)`
 
-Converts `value` to a `Float`, or returns `null` if the conversion is not
-supported. `Float` is returned unchanged. `Int` is converted losslessly.
+Converts `value` to a `Float`, or returns `null` if the conversion is not supported.
+`Float` is returned unchanged.
+`Int` is converted losslessly.
 Strings are parsed as base-10 floating-point numbers.

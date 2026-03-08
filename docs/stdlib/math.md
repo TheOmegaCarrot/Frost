@@ -1,21 +1,21 @@
 # Math
 
-All math functions accept `Int` or `Float` unless noted otherwise. Functions that
-delegate to C floating-point operations always return `Float`.
+All math functions accept `Int` or `Float` unless noted otherwise.
+Functions that delegate to C floating-point operations always return `Float`.
 
 ## `abs`
 `abs(n)`
 
-Returns the absolute value of `n`. Returns `Int` for `Int` input and `Float` for
-`Float` input. Produces an error if `n` is the minimum `Int` value (which has
-no positive representation).
+Returns the absolute value of `n`.
+Returns `Int` for `Int` input and `Float` for `Float` input.
+Produces an error if `n` is the minimum `Int` value (which has no positive representation).
 
 ## `round`
 `round(n)`
 
-Rounds `n` to the nearest integer and returns an `Int`. If `n` is already an
-`Int`, returns it unchanged. Produces an error if the rounded value is out of
-`Int` range.
+Rounds `n` to the nearest integer and returns an `Int`.
+If `n` is already an `Int`, returns it unchanged.
+Produces an error if the rounded value is out of `Int` range.
 
 ## `ceil`
 `ceil(n)`
@@ -60,8 +60,8 @@ Returns 2 raised to the power `n`.
 ## `expm1`
 `expm1(n)`
 
-Returns e raised to the power `n`, minus 1. More numerically accurate than
-`exp(n) - 1` for small values of `n`.
+Returns e raised to the power `n`, minus 1.
+More numerically accurate than `exp(n) - 1` for small values of `n`.
 
 ## `log`
 `log(n)`
@@ -71,8 +71,8 @@ Returns the natural logarithm of `n`.
 ## `log1p`
 `log1p(n)`
 
-Returns the natural logarithm of `1 + n`. More numerically accurate than
-`log(1 + n)` for small values of `n`.
+Returns the natural logarithm of `1 + n`.
+More numerically accurate than `log(1 + n)` for small values of `n`.
 
 ## `log2`
 `log2(n)`
@@ -169,6 +169,6 @@ Returns the Euclidean norm: `sqrt(a² + b²)` or `sqrt(a² + b² + c²)`.
 ## `lerp`
 `lerp(a, b, t)`
 
-Linearly interpolates between `a` and `b` by `t`. Returns `a` when `t` is `0`
-and `b` when `t` is `1`. `t` is not clamped; values outside `[0, 1]` extrapolate
-beyond the `[a, b]` range.
+Linearly interpolates between `a` and `b` by `t`.
+Returns `a` when `t` is `0` and `b` when `t` is `1`.
+`t` is not clamped; values outside `[0, 1]` extrapolate beyond the `[a, b]` range.

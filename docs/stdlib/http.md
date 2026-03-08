@@ -6,8 +6,8 @@ This is enabled by default.
 ## `http.request`
 `http.request(config)`
 
-Performs an asynchronous HTTP request. Returns immediately with a handle map;
-use `.is_ready()` to poll and `.get()` to retrieve the result when ready.
+Performs an asynchronous HTTP request.
+Returns immediately with a handle map; use `.is_ready()` to poll and `.get()` to retrieve the result when ready.
 
 **`config` fields:**
 
@@ -42,12 +42,12 @@ use `.is_ready()` to poll and `.get()` to retrieve the result when ready.
 }
 ```
 
-`.get()` blocks until the request either completes or errors, then returns. The result is cached
-internally; subsequent calls to `.get()` return the same value immediately.
+`.get()` blocks until the request either completes or errors, then returns.
+The result is cached internally; subsequent calls to `.get()` return the same value immediately.
 
-`ok` reflects network-level success — whether a response was received — not the
-HTTP status code. A server returning a 500 yields `ok: true`. Check
-`response.code` to determine application-level success.
+`ok` reflects network-level success — whether a response was received — not the HTTP status code.
+A server returning a 500 yields `ok: true`.
+Check `response.code` to determine application-level success.
 
 ```
 # On network success (any HTTP status code):

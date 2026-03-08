@@ -3,7 +3,7 @@
 ## Reader
 
 Not all reader streams support every method below.
-Each function's entry specifies its supported subset.
+Each stream's entry below specifies its supported subset.
 
 ### `.read_line`
 `.read_line()`
@@ -14,7 +14,8 @@ Returns `null` at EOF.
 ### `.read_one`
 `.read_one()`
 
-Reads and returns a single character as a `String`. Returns `null` at EOF.
+Reads and returns a single character as a `String`.
+Returns `null` at EOF.
 
 ### `.read_rest`
 `.read_rest()`
@@ -52,7 +53,7 @@ Streams are automatically closed once there is no reference to them.
 ## Writer
 
 Not all writer streams support every method below.
-Each function's entry specifies its supported subset.
+Each stream's entry below specifies its supported subset.
 
 ### `.write`
 `.write(s)`
@@ -95,33 +96,37 @@ Streams are automatically closed once there is no reference to them.
 ## `open_read`
 `open_read(path)`
 
-Opens the file at `path` for reading. Returns `null` if the file cannot be
-opened. Returns a [Reader](#reader) with full support for all reader methods.
+Opens the file at `path` for reading.
+Returns `null` if the file cannot be opened.
+Returns a [Reader](#reader) with full support for all reader methods.
 
 ## `open_trunc`
 `open_trunc(path)`
 
-Opens the file at `path` for writing, truncating it if it exists and creating
-it if it does not. Returns `null` if the file cannot be opened. Returns a
-[Writer](#writer) with full support for all writer methods.
+Opens the file at `path` for writing, truncating it if it exists and creating it if it does not.
+Returns `null` if the file cannot be opened.
+Returns a [Writer](#writer) with full support for all writer methods.
 
 ## `open_append`
 `open_append(path)`
 
-Opens the file at `path` for appending. New writes are added after existing
-content. Returns `null` if the file cannot be opened. Returns a
-[Writer](#writer) with full support for all writer methods.
+Opens the file at `path` for appending.
+New writes are added after existing content.
+Returns `null` if the file cannot be opened.
+Returns a [Writer](#writer) with full support for all writer methods.
 
 ## `stringreader`
 `stringreader(s)`
 
-Creates a reader backed by the string `s`. Returns a [Reader](#reader).
+Creates a reader backed by the string `s`.
+Returns a [Reader](#reader).
 Supports `.read_line`, `.read_one`, `.read_rest`, `.eof`, `.tell`, `.seek`.
 
 ## `stringwriter`
 `stringwriter()`
 
-Creates an in-memory writer. Returns a [Writer](#writer).
+Creates an in-memory writer.
+Returns a [Writer](#writer).
 Supports `.write`, `.writeln`, `.tell`, `.seek`, plus `.get`.
 
 ### `.get`
@@ -131,8 +136,8 @@ Returns the accumulated content as a `String`.
 
 ## `stdin`
 
-A pre-defined reader backed by standard input. Supports `.read_line`,
-`.read_one`, `.read`.
+A pre-defined reader backed by standard input.
+Supports `.read_line`, `.read_one`, `.read`.
 
 ### `.read`
 `.read()`
@@ -141,4 +146,5 @@ Reads all remaining input from stdin as a `String`.
 
 ## `stderr`
 
-A pre-defined writer backed by standard error. Supports `.write`, `.writeln`.
+A pre-defined writer backed by standard error.
+Supports `.write`, `.writeln`.
