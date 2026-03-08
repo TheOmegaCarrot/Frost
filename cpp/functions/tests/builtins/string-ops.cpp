@@ -67,6 +67,8 @@ TEST_CASE("Builtin split")
         CHECK_THROWS_WITH(split->call({good, bad_second}),
                           ContainsSubstring("String"));
         CHECK_THROWS_WITH(split->call({good, bad_second}),
+                          ContainsSubstring("delimiter"));
+        CHECK_THROWS_WITH(split->call({good, bad_second}),
                           EndsWith(std::string{bad_second->type_name()}));
     }
 
@@ -422,12 +424,18 @@ TEST_CASE("Builtin fmt_int")
         auto bad_base = Value::create("10"s);
 
         CHECK_THROWS_WITH(fmt_int->call({bad_number, Value::create(10)}),
+                          ContainsSubstring("fmt_int"));
+        CHECK_THROWS_WITH(fmt_int->call({bad_number, Value::create(10)}),
                           ContainsSubstring("Int"));
+        CHECK_THROWS_WITH(fmt_int->call({bad_number, Value::create(10)}),
+                          ContainsSubstring("number"));
         CHECK_THROWS_WITH(fmt_int->call({bad_number, Value::create(10)}),
                           EndsWith(std::string{bad_number->type_name()}));
 
         CHECK_THROWS_WITH(fmt_int->call({Value::create(123), bad_base}),
                           ContainsSubstring("Int"));
+        CHECK_THROWS_WITH(fmt_int->call({Value::create(123), bad_base}),
+                          ContainsSubstring("base"));
         CHECK_THROWS_WITH(fmt_int->call({Value::create(123), bad_base}),
                           EndsWith(std::string{bad_base->type_name()}));
     }

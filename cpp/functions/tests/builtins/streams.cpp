@@ -138,6 +138,17 @@ TEST_CASE("Builtin stringreader")
         REQUIRE(at_eof->is<Bool>());
     }
 
+    SECTION("Seek type error")
+    {
+        auto reader_map = reader_fn->call({Value::create("abc"s)});
+        auto seek = get_map_fn(reader_map, "seek");
+        CHECK_THROWS_MATCHES(
+            seek->call({Value::create("not_an_int"s)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("<system closure:seek>")
+                           && ContainsSubstring("pos")
+                           && ContainsSubstring("String")));
+    }
+
     SECTION("Read one returns null at EOF")
     {
         auto reader_map = reader_fn->call({Value::create(""s)});
@@ -165,6 +176,21 @@ TEST_CASE("Builtin stringwriter")
             writer_fn->call({Value::create(1_f)}), Frost_User_Error,
             MessageMatches(ContainsSubstring("too many arguments")
                            && ContainsSubstring("no more than 0")));
+    }
+
+    SECTION("Write and writeln type errors")
+    {
+        auto writer_map = writer_fn->call({});
+        auto write = get_map_fn(writer_map, "write");
+        auto writeln = get_map_fn(writer_map, "writeln");
+        CHECK_THROWS_MATCHES(
+            write->call({Value::create(1_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("<system closure:write>")
+                           && ContainsSubstring("String")));
+        CHECK_THROWS_MATCHES(
+            writeln->call({Value::create(1_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("<system closure:writeln>")
+                           && ContainsSubstring("String")));
     }
 
     SECTION("Write and get")
@@ -206,7 +232,8 @@ TEST_CASE("Builtin open_trunc")
                              Frost_User_Error,
                              MessageMatches(ContainsSubstring("open_trunc")
                                             && ContainsSubstring("String")
-                                            && ContainsSubstring("Int")));
+                                            && ContainsSubstring("Int")
+                                            && ContainsSubstring("path")));
     }
 
     SECTION("Open failure returns null")
@@ -282,7 +309,8 @@ TEST_CASE("Builtin open_append")
                              Frost_User_Error,
                              MessageMatches(ContainsSubstring("open_append")
                                             && ContainsSubstring("String")
-                                            && ContainsSubstring("Int")));
+                                            && ContainsSubstring("Int")
+                                            && ContainsSubstring("path")));
     }
 
     SECTION("Append writes after existing content")
@@ -335,7 +363,8 @@ TEST_CASE("Builtin open_read")
                              Frost_User_Error,
                              MessageMatches(ContainsSubstring("open_read")
                                             && ContainsSubstring("String")
-                                            && ContainsSubstring("Int")));
+                                            && ContainsSubstring("Int")
+                                            && ContainsSubstring("path")));
     }
 
     SECTION("Open failure returns null")

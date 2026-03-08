@@ -250,6 +250,39 @@ TEST_CASE("Builtin filesystem injection")
             }
         }
     }
+    SECTION("Param labels")
+    {
+        auto bad = Value::create(1_f);
+        auto good = Value::create("x"s);
+
+        const std::vector<std::string> unary_path_fns{
+            "absolute", "canonical", "cd",     "exists",
+            "remove",   "remove_recursively", "mkdir",  "size",
+            "stat",     "list",      "list_recursively",
+        };
+
+        for (const auto& name : unary_path_fns)
+        {
+            DYNAMIC_SECTION("path label: " << name)
+            {
+                auto fn = get_fs_fn(fs_val, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({bad}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("path")));
+            }
+        }
+
+        SECTION("concat labels base and path")
+        {
+            auto fn = get_fs_fn(fs_val, "concat");
+            CHECK_THROWS_MATCHES(
+                fn->call({bad, good}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("base")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good, bad}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("path")));
+        }
+    }
 }
 
 TEST_CASE("Builtin filesystem operations")

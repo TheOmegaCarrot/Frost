@@ -229,6 +229,45 @@ TEST_CASE("Builtin math")
         }
     }
 
+    SECTION("Named parameter labels")
+    {
+        auto bad = Value::create("nope"s);
+        auto good = Value::create(1_f);
+
+        SECTION("atan2 labels y and x")
+        {
+            auto fn = get_fn("atan2");
+            CHECK_THROWS_MATCHES(
+                fn->call({bad, good}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("argument 1 (y)")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good, bad}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("argument 2 (x)")));
+        }
+
+        SECTION("pow labels base and exponent")
+        {
+            auto fn = get_fn("pow");
+            CHECK_THROWS_MATCHES(
+                fn->call({bad, good}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("argument 1 (base)")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good, bad}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("argument 2 (exponent)")));
+        }
+
+        SECTION("hypot labels a and b")
+        {
+            auto fn = get_fn("hypot");
+            CHECK_THROWS_MATCHES(
+                fn->call({bad, good}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("argument 1 (a)")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good, bad}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("argument 2 (b)")));
+        }
+    }
+
     SECTION("Unary math functions")
     {
         using Unary_Fn = double (*)(double);
