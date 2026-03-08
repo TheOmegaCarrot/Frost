@@ -408,33 +408,9 @@ module.exports = grammar({
     boolean: $ => choice($.kw_true, $.kw_false),
     null: $ => $.kw_null,
 
-    double_string: $ => seq(
-      '"',
-      repeat(choice(
-        $.escape_sequence,
-        $.invalid_escape_sequence,
-        $.string_content_double,
-      )),
-      token.immediate('"'),
-    ),
-
-    single_string: $ => seq(
-      "'",
-      repeat(choice(
-        $.single_escape_sequence,
-        $.single_invalid_escape_sequence,
-        $.string_content_single,
-      )),
-      token.immediate("'"),
-    ),
-
-    string_content_double: _ => token.immediate(/[^"\\\n]+/),
-    string_content_single: _ => token.immediate(/[^'\\\n]+/),
-
-    escape_sequence: _ => token.immediate(/\\[ntr"\\0]/),
-    invalid_escape_sequence: _ => token.immediate(/\\./),
-    single_escape_sequence: _ => token.immediate(/\\[ntr'\\0]/),
-    single_invalid_escape_sequence: _ => token.immediate(/\\./),
+    // Atomic tokens: no extras (including comments) can be injected inside.
+    double_string: _ => token(seq('"', /[^"\\\n]*(?:\\.[^"\\\n]*)*/, '"')),
+    single_string: _ => token(seq("'", /[^'\\\n]*(?:\\.[^'\\\n]*)*/u, "'")),
 
     raw_string_double: _ => token(/R"\([^\n]*\)"/),
     raw_string_single: _ => token(/R'\([^\n]*\)'/),

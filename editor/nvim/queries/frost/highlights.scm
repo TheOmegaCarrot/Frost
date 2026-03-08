@@ -41,15 +41,11 @@
 )
 
 [
-  (escape_sequence)
-  (single_escape_sequence)
   (format_escape_sequence)
   (format_single_escape_sequence)
 ] @string.escape
 
 [
-  (invalid_escape_sequence)
-  (single_invalid_escape_sequence)
   (format_invalid_escape_sequence)
   (format_single_invalid_escape_sequence)
   (format_invalid_placeholder)
