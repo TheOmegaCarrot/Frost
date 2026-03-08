@@ -82,10 +82,14 @@ Map keys that are valid identifiers are rendered without quotes.
 ## `to_int`
 `to_int(value)`
 
-Converts `value` to an `Int`. Strings are parsed as base-10 integers.
+Converts `value` to an `Int`, or returns `null` if the conversion is not
+supported. `Int` is returned unchanged. `Float` is truncated toward zero;
+produces an error if the value is out of `Int` range. Strings are parsed as
+base-10 integers.
 
 ## `to_float`
 `to_float(value)`
 
-Converts `value` to a `Float`. Strings are parsed as base-10 floating-point
-numbers.
+Converts `value` to a `Float`, or returns `null` if the conversion is not
+supported. `Float` is returned unchanged. `Int` is converted losslessly.
+Strings are parsed as base-10 floating-point numbers.

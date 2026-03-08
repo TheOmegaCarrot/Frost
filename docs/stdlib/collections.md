@@ -141,7 +141,9 @@ xprod([1, 2], ["a", "b"])  # => [[1, "a"], [1, "b"], [2, "a"], [2, "b"]]
 `transform(structure, f)`
 
 Functional form of the `map` expression. Applies `f` to each element of an
-`Array`, or to each key-value pair `(k, v)` of a `Map`.
+`Array`, or to each key-value pair `(k, v)` of a `Map`. For `Map` input, `f`
+must return a `Map`; its entries are merged into the result, allowing keys to
+be remapped or entries to be expanded.
 
 ## `select`
 `select(structure, f)`
