@@ -5,6 +5,8 @@ and prelude functions (implemented in Frost, loaded at startup).
 
 Some builtins are namespaced (`re`, `fs`, `http`) and accessed via dot syntax.
 
+An [alphabetical index of all functions](./index.md) is available.
+
 ## Parameter Name Conventions
 
 Many functions in the standard library are sufficiently generic that parameter names beyond the type carry little additional meaning.

@@ -125,7 +125,7 @@ BUILTIN(hypot)
 {
     REQUIRE_ARGS("hypot", PARAM("a", TYPES(Int, Float)),
                  PARAM("b", TYPES(Int, Float)),
-                 OPTIONAL(TYPES(Int, Float)));
+                 OPTIONAL(PARAM("c", TYPES(Int, Float))));
 
     if (args.size() == 2)
     {
