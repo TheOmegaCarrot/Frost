@@ -60,7 +60,9 @@ Below is a list of reserved words.
 ## Types and Literals
 
 There are only 8 types: `Null`, `Int`, `Float`, `Bool`, `String`, `Array`, `Map`, and `Function`.
-
+The types can be grouped into type categories: `Numeric` types are `Int` and `Float`.
+`Primitive` types are `Numeric`, `Null`, `Bool`, and `String`.
+`Structured` types are `Array` and `Map`.
 
 ### Null
 
@@ -183,7 +185,7 @@ def a_map = {
 }
 ```
 
-Alternately, if a key is a string which conforms to identifier rules, the `['']` may be omitted.
+Alternately, if a key is a string which conforms to identifier rules, the brackets and quotes may be omitted.
 The following example is identical to the previous:
 
 ```frost
@@ -232,11 +234,23 @@ _All_ functions return exactly one value. It is typical for side-effect function
 All of the following function definitions are identical in meaning:
 ```frost
 def f1 = fn ( a, b ) -> { a + ( b * 2 ) }
+
 def f2 = fn (a, b) -> a + ( b * 2 )
+
 def f3 = fn a, b -> { a + ( b * 2 ) }
+
 def f4 = fn a, b -> a + ( b * 2 )
 
 f4(2, 4) # 10
+```
+
+Note that when writing a function which returns a map, there is a limitation in the parser.
+The following tries to parse a multi-statement function.
+
+```frost
+def bad = fn -> { foo: 42 } # syntax error
+def good1 = fn -> {{ foo: 42 }} # ok
+def good2 = fn -> ({foo: 42})
 ```
 
 A function may contain local `def` statements, but a `def` statement may not end a function.
@@ -383,4 +397,234 @@ All values are truthy, except for an actual Boolean `false` and `null`.
 
 #### Logical Comparisons
 
+Logical comparisons work as one would expect.
+The ordering operators (`<`, `>`, etc) are only defined for numeric types, and can be mixed.
+(`3 < 3.14` is well-defined.)
+Equality comparisons (`==` or `!=`) will _never_ cause a type error.
 
+Primitive types are compared by value, but structured types and functions are compared by identity.
+
+```frost
+def a = 42
+def b = 42
+a == b # true
+
+def arr1 = [1, 2, 3]
+def arr2 = [1, 2, 3]
+def arr3 = arr1
+arr1 == arr2 # false
+arr1 == arr3 # true
+```
+
+For a recursive notion of equality for structured types, the built-in `deep_equal` function can be used.
+This works as expected for both arrays and maps.
+
+```frost
+arr1 @ deep_equal(arr2) # true
+```
+
+#### Arithmetic Operators
+
+`+`, `-`, `*`, `/`, and `%` all work as one would expect.
+When mixing `Int` and `Float`, operands are implicitly converted to `Float`.
+`%` only supports `Int` operands.
+`/` will perform truncating integer division when both operands are `Int`.
+
+`+` has some additional functionality when used with `Array` or `Map` operands.
+`+` will perform array concatenation or map merge operations.
+Note that this map merge is _not_ recursive.
+
+```frost
+[1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
+{ foo: 42, bar: 10 } + { bar: 1024, baz: true } # { foo: 42, bar: 1024, baz: true }
+{ foo: { bar: 42, baz: 10 } } + { foo: { bar: 1024 } } # { foo: { bar: 1024 } }
+```
+
+### If Expressions
+
+`if` is an expression, and evaluates to a value.
+This is similar to the ternary operator (`? :`) in C or C++.
+
+For example:
+
+```frost
+def x = if condition(): 42
+        elif something_else(): 81
+        else: 10
+```
+
+Note that the line breaks and indentation are not necessary.
+It would be syntactically equivalent to write it all on one line (though it looks pretty cluttered), or with different indentation.
+
+```frost
+# equivalent to x
+def x2 = if condition(): 42 elif something_else(): 81 else: 10
+
+# also equivalent
+def x3 = if condition(): 42
+            elif something_else(): 81
+    else: 10
+```
+
+As one would expect from an `if`, the branch not taken is not evaluated.
+
+```frost
+if false: assert(false) # assert is not evaluated
+```
+
+If an `if` does not have an `else` clause, it implicitly has an `else: null`.
+
+Each branch of an `if` must be a single expression.
+Each branch must be a single expression.
+
+```frost
+if foo: { # syntax error
+    # multiple statements
+}
+```
+
+One will sometimes see an immediately-invoked function used to work around this:
+
+```frost
+if foo: fn -> {
+    # ...
+}()
+else: 42
+```
+
+### Iterative Expressions
+
+There are 4 iterative expressions built into the language itself: `map`, `filter`, `reduce` and `foreach`.
+Each is defined for `Array` and `Map` inputs.
+
+#### Map
+
+A map expression takes the form:
+
+```frost
+map an_array with unary_operation
+map a_map with binary_operation
+```
+
+The `Array` form of a map expression calls a function with each element, in order, and creates a new array with the results of those function calls.
+
+```frost
+map [1, 2, 3] with fn x -> x * 2 # [2, 4, 6]
+```
+
+The `Map` form of a map expression calls a function with each key-value pair, in an unspecified order, and merges the resulting maps.
+The function passed to the `Map` form of a map expression must return a map.
+
+```frost
+map {foo: 42, bar: 10} with fn k, v -> ({ [k]: v, [k + k]: v + v })
+# { foo: 42, bar: 10, foofoo: 84, barbar: 20 }
+```
+
+#### Filter
+
+A filter expression takes the form:
+
+```frost
+filter an_array with unary_predicate
+filter a_map with binary_predicate
+```
+
+In both forms, the function is called with each element or key-value pair.
+If the function returns a truthy value, then that element or key-value pair will be preserved in the result.
+As with `map`, the iteration order over a `Map` is unspecified.
+
+```frost
+filter [1, 2, 3, 4] with fn n -> n % 2 == 0 # [2, 4]
+filter {foo: 42, bar: 11} with fn k, v -> v % 2 == 0 # { foo: 42 }
+```
+
+#### Reduce
+
+A reduce expression takes one of the following forms:
+
+```frost
+reduce an_array with binary_operation
+reduce an_array with binary_operation init: value
+reduce a_map with ternary_operation init: value
+```
+
+In the first form, the function is first called with the first two elements.
+The result of this is used as the first argument to the next call, whose second argument is the third element.
+
+In other words, the first argument to the function is an _accumulator_, and each call to the function returns a _new accumulator_ value.
+
+```frost
+reduce [1, 2, 3, 4] with fn a, b -> a + b # 10 (the function is called 3 times)
+```
+
+In the second form, the value after `init:` is used as the initial accumulator value.
+
+```frost
+reduce [1, 2, 3, 4] with fn a, b -> { a + b } init: 0 # 10 (the function is called 4 times)
+```
+
+Note: in the above example, the `{}` braces in the function body are not mandatory, but the author found it to be clearer for the sake of the example.
+
+In the third form, a `Map` is being iterated over.
+In this form, the function is called with the accumulator, a map key, and the corresponding map value.
+The `init:` clause is required for the `Map` form.
+Once again, the iteration order over a `Map` is unspecified.
+
+```frost
+reduce {foo: 42, bar: 10} with fn acc, k, v -> { acc + v } init: 0 # 52
+```
+
+#### Foreach
+
+A foreach expression takes the form:
+
+```frost
+foreach an_array with unary_function
+foreach a_map with binary_function
+```
+
+In the `Array` form, the function is called with each array element in order.
+In the `Map` form, the function is called with each key-value pair in an unspecified order.
+
+In both forms, if the function returns a truthy value, iteration stops, and the function is not called again.
+
+A foreach expression always returns `null`.
+
+## Statements
+
+Most of Frost consists of expressions, but there are a couple examples of proper statements.
+The distinction being that an expression evaluates to a value, whereas a statement does not.
+
+### Definitions
+
+A value may be bound to a name using a `def` statement.
+
+```frost
+def a_name = any_expression
+```
+
+A name may not be redefined within the same scope:
+
+```frost
+def x = 42
+def x = 10 # error
+```
+
+A function introduces a new scope:
+
+```frost
+def x = 42
+def f = fn a -> {
+    def x = 10
+    x + a
+}
+f(5) # 15
+```
+
+#### Array Destructuring
+
+#### Map Destructuring
+
+## Modules
+
+### Import
