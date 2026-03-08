@@ -475,7 +475,6 @@ if false: assert(false) # assert is not evaluated
 If an `if` does not have an `else` clause, it implicitly has an `else: null`.
 
 Each branch of an `if` must be a single expression.
-Each branch must be a single expression.
 
 ```frost
 if foo: { # syntax error
@@ -563,7 +562,7 @@ In the second form, the value after `init:` is used as the initial accumulator v
 reduce [1, 2, 3, 4] with fn a, b -> { a + b } init: 0 # 10 (the function is called 4 times)
 ```
 
-Note: in the above example, the `{}` braces in the function body are not mandatory, but the author found it to be clearer for the sake of the example.
+Note: in the above example, the `{}` braces in the function body are not mandatory, but they are included here for clarity.
 
 In the third form, a `Map` is being iterated over.
 In this form, the function is called with the accumulator, a map key, and the corresponding map value.
@@ -623,8 +622,148 @@ f(5) # 15
 
 #### Array Destructuring
 
+A `def` statement can destructure an `Array`.
+The right-hand side may be any expression which evaluates to an `Array`, but these examples only use literals for clarity.
+
+```frost
+def [a, b, c] = [1, 2, 3]
+# a == 1 and b == 2 and c == 3
+```
+
+The number of names on the left must exactly equal the number of elements in the array on the right.
+
+Array destructuring can also bind an unknown number of elements to an array:
+
+```frost
+def [a, b, ...rest] = [1, 2, 3, 4]
+# a == 1 and b == 2 and deep_equal(rest, [3, 4])
+```
+
+In this form, all of the names before the `...` must match an element, and the `...` name may bind an empty array.
+
+```frost
+def [a, b, ...rest] = [1, 2]
+# a == 1 and b == 2 and len(rest) == 0
+```
+
 #### Map Destructuring
+
+A `def` statement can destructure a `Map`.
+The right-hand side may be any expression which evaluates to a `Map`, but these examples only use literals for clarity.
+
+```frost
+def { foo: bar, beep: boop, no: nada } = { foo: 42, beep: 10, dropped: 128 }
+# bar == 42 and boop == 10 and nada == null
+```
+
+Every key in the left is looked up in the map on the right.
+The "value position" on the left contains a name to be bound to the value at that key.
+Keys which are not found in the map are bound to `null`.
+This matching does not need to be exhaustive (it is not an error that the value at key `dropped` was not bound to a name).
+
+The keys on the left do not necessarily need to be string keys, though in practice they often are.
+The following is also valid:
+
+```frost
+def { [42]: foo, [false]: bar } = { [42]: 'wow', [false]: 'neat' }
+# foo == 'wow' and bar == 'neat'
+```
 
 ## Modules
 
+Frost provides a mechanism for using code across separate files.
+One file may use the `import` function to import what is `export`-ed by another file.
+
+### Export
+
+Any `def` statement at file scope may be prepended with the `export` keyword.
+Any definition marked as `export` will be made available when a script is imported.
+This does not change the meaning within that script file, and the name(s) can be used normally.
+The rules for an exported definition are the same as described in previous sections.
+
+```frost
+export def foo = 42
+# foo == 42
+# if this file is imported, then foo will be exported
+```
+
+It is an error for an `export def` to appear within a function:
+
+```frost
+def f = fn -> {
+    export def foo = 10 # error
+    foo
+}
+```
+
 ### Import
+
+The function `import` takes a module specification, and returns a map with keys being the exported names, and values being the values bound to those names.
+
+A module specification is a `String` which serves as a relative path using `.` as a path separator.
+The `.frst` file extension is added automatically.
+For example: `'foo.bar.baz'` specifies a relative path `foo/bar/baz.frst`.
+The module specification `'foo'` specifies a relative path `foo.frst`.
+
+`import` will first check relative to the importing file.
+If no file can be found relative to the importing file, then the interpreter will then look relative to the current working directory.
+
+It is an error if a module import cannot be resolved.
+
+If no file is found, then a list of paths will be looked up in the environment variable `FROST_MODULE_PATH`.
+This environment variable consists of a colon-separated list of paths (relative or absolute).
+Each path in the list is tried as a base directory for the module specification.
+
+Below are some examples demonstrating how module paths are resolved.
+Note that useful exports have been omitted for brevity in some cases.
+
+
+```
+project/
+├── main.frst
+└── utils.frst
+```
+
+```frost
+# utils.frst
+export def greet = fn name -> $'hello, ${name}'
+
+# main.frst
+def utils = import('utils')
+utils.greet('world') # "hello, world"
+```
+
+Dots in the module specification correspond to directory separators:
+
+```
+project/
+├── main.frst
+└── lib/
+    └── math/
+        └── vectors.frst
+```
+
+```frost
+# main.frst
+def vec = import('lib.math.vectors')
+```
+
+Because `import` resolves relative to the importing file, not the current working directory, two files can import different modules with the same specification:
+
+```
+project/
+├── main.frst
+├── helpers.frst
+└── lib/
+    ├── core.frst
+    └── helpers.frst
+```
+
+```frost
+# lib/core.frst
+def h = import('helpers') # resolves to lib/helpers.frst, not project/helpers.frst
+
+# main.frst
+def h = import('helpers')     # resolves to project/helpers.frst
+def core = import('lib.core') # resolves to project/lib/core.frst
+```
