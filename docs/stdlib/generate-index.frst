@@ -38,7 +38,7 @@ def fn_link_map = (
     )
 
 # Format each entry into a complete markdown anchor, using the function name as display text (sorted)
-def fn_links = sorted(reduce fn_link_map with fn acc, k, v -> acc + [ $'[${k}](${v})' ] init: [])
+def fn_links = reduce fn_link_map with fn acc, k, v -> acc + [ $'- [${k}](${v})' ] init: []
 
 def index_md = open_trunc(fs.concat(me_dir, 'index.md'))
 
@@ -51,10 +51,5 @@ index_md.writeln(R'(Alphabetical index of all built-in functions and values.)')
 index_md.writeln(R'(Each entry links to its full documentation.)')
 index_md.writeln(R'()')
 
-def write_index_entry = fn entry -> {
-    index_md.writeln(entry)
-    index_md.writeln('')
-}
-
 # Write out all the links
-foreach fn_links with write_index_entry
+foreach fn_links with index_md.writeln
