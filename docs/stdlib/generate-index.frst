@@ -51,5 +51,10 @@ index_md.writeln(R'(Alphabetical index of all built-in functions and values.)')
 index_md.writeln(R'(Each entry links to its full documentation.)')
 index_md.writeln(R'()')
 
+def write_index_entry = fn entry -> {
+    index_md.writeln(entry)
+    index_md.writeln('')
+}
+
 # Write out all the links
-foreach fn_links with index_md.writeln
+foreach fn_links with write_index_entry
