@@ -18,8 +18,25 @@ The order is unspecified, but consistent with `keys(m)`: index `i` in `values(m)
 Returns the number of elements in an `Array`, the number of entries in a `Map`, or the byte length of a `String`.
 
 ## `range`
-`range(upper bound)`
-`range(lower bound, upper bound)`
+`range(stop)`
+`range(start, stop)`
+`range(start, stop, step)`
+
+Returns an `Array` of `Int` values.
+`step` defaults to `1` and must not be `0`.
+
+When `step > 0`, yields `start, start + step, ...` while the value is `< stop`.
+When `step < 0`, yields `start, start + step, ...` while the value is `> stop`.
+Returns an empty array if the range is already exhausted at `start`.
+
+```
+range(5)           # => [0, 1, 2, 3, 4]
+range(2, 5)        # => [2, 3, 4]
+range(0, 10, 2)    # => [0, 2, 4, 6, 8]
+range(5, 0, -1)    # => [5, 4, 3, 2, 1]
+range(5, 5)        # => []
+range(0, 5, -1)    # => []
+```
 
 ## `nulls`
 `nulls(n)`

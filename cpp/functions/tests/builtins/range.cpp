@@ -36,15 +36,10 @@ TEST_CASE("Builtin range")
         CHECK_THROWS_WITH(range->call({}),
                           ContainsSubstring("requires at least 1"));
 
-        CHECK_THROWS_WITH(range->call({Value::create(1_f), Value::create(2_f),
-                                       Value::create(3_f)}),
-                          ContainsSubstring("too many arguments"));
-        CHECK_THROWS_WITH(range->call({Value::create(1_f), Value::create(2_f),
-                                       Value::create(3_f)}),
-                          ContainsSubstring("Called with 3"));
-        CHECK_THROWS_WITH(range->call({Value::create(1_f), Value::create(2_f),
-                                       Value::create(3_f)}),
-                          ContainsSubstring("no more than 2"));
+        CHECK_THROWS_WITH(
+            range->call({Value::create(1_f), Value::create(2_f),
+                         Value::create(3_f), Value::create(4_f)}),
+            ContainsSubstring("too many arguments"));
     }
 
     SECTION("Type checks")
@@ -87,6 +82,18 @@ TEST_CASE("Builtin range")
                               ContainsSubstring("upper bound"));
             CHECK_THROWS_WITH(range->call({good_lower, bad_upper}),
                               EndsWith(std::string{bad_upper->type_name()}));
+        }
+
+        SECTION("Three-arg: start, stop, step must all be Int")
+        {
+            auto i = Value::create(1_f);
+            auto f = Value::create(3.14);
+            CHECK_THROWS_WITH(range->call({f, i, i}),
+                              ContainsSubstring("start") && ContainsSubstring("Int"));
+            CHECK_THROWS_WITH(range->call({i, f, i}),
+                              ContainsSubstring("stop") && ContainsSubstring("Int"));
+            CHECK_THROWS_WITH(range->call({i, i, f}),
+                              ContainsSubstring("step") && ContainsSubstring("Int"));
         }
     }
 
@@ -190,6 +197,81 @@ TEST_CASE("Builtin range")
             auto arr = res->get<Array>().value();
             REQUIRE(arr.size() == 1);
             CHECK(arr.at(0)->get<Int>().value() == 0);
+        }
+    }
+
+    SECTION("Three-arg semantics")
+    {
+        auto call3 = [&](Int a, Int b, Int c) {
+            return range->call(
+                {Value::create(a), Value::create(b), Value::create(c)});
+        };
+        auto ints = [](const Value_Ptr& v) {
+            REQUIRE(v->is<Array>());
+            std::vector<Int> out;
+            for (const auto& e : v->get<Array>().value())
+                out.push_back(e->get<Int>().value());
+            return out;
+        };
+        auto empty_arr = [](const Value_Ptr& v) -> bool {
+            REQUIRE(v->is<Array>());
+            return v->get<Array>().value().empty();
+        };
+
+        SECTION("step == 0 produces an error")
+        {
+            CHECK_THROWS_MATCHES(call3(0, 10, 0), Frost_User_Error,
+                                 MessageMatches(ContainsSubstring("step != 0")));
+        }
+
+        SECTION("step=1 matches two-arg form")
+        {
+            CHECK(ints(call3(2, 5, 1)) == std::vector<Int>{2, 3, 4});
+            CHECK(ints(call3(-2, 2, 1)) == std::vector<Int>{-2, -1, 0, 1});
+        }
+
+        SECTION("positive step skips elements")
+        {
+            CHECK(ints(call3(0, 10, 2)) == std::vector<Int>{0, 2, 4, 6, 8});
+            CHECK(ints(call3(0, 10, 3)) == std::vector<Int>{0, 3, 6, 9});
+        }
+
+        SECTION("positive step larger than span yields one element")
+        {
+            CHECK(ints(call3(0, 3, 100)) == std::vector<Int>{0});
+            CHECK(ints(call3(7, 8, 100)) == std::vector<Int>{7});
+        }
+
+        SECTION("positive step with start >= stop returns empty")
+        {
+            CHECK(empty_arr(call3(5, 5, 1)));
+            CHECK(empty_arr(call3(6, 5, 1)));
+        }
+
+        SECTION("negative step counts down")
+        {
+            CHECK(ints(call3(10, 0, -1))
+                  == std::vector<Int>{10, 9, 8, 7, 6, 5, 4, 3, 2, 1});
+            CHECK(ints(call3(10, 0, -2)) == std::vector<Int>{10, 8, 6, 4, 2});
+            CHECK(ints(call3(5, -1, -2)) == std::vector<Int>{5, 3, 1});
+        }
+
+        SECTION("negative step on all-negative inputs")
+        {
+            CHECK(ints(call3(-1, -5, -1)) == std::vector<Int>{-1, -2, -3, -4});
+            CHECK(ints(call3(-2, -8, -2)) == std::vector<Int>{-2, -4, -6});
+        }
+
+        SECTION("negative step yields single element")
+        {
+            CHECK(ints(call3(5, 4, -1)) == std::vector<Int>{5});
+            CHECK(ints(call3(-3, -4, -1)) == std::vector<Int>{-3});
+        }
+
+        SECTION("negative step with start <= stop returns empty")
+        {
+            CHECK(empty_arr(call3(0, 5, -1)));
+            CHECK(empty_arr(call3(5, 5, -1)));
         }
     }
 }

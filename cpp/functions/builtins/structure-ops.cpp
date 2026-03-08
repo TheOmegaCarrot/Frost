@@ -53,7 +53,8 @@ BUILTIN(len)
 
 BUILTIN(range)
 {
-    using std::views::iota, std::views::transform, std::ranges::to;
+    using std::views::iota, std::views::transform, std::views::stride,
+        std::views::reverse, std::ranges::to;
     constexpr auto make = [](Int arg) {
         return Value::create(auto{arg});
     };
@@ -61,28 +62,59 @@ BUILTIN(range)
     {
         REQUIRE_ARGS("range", PARAM("upper bound", TYPES(Int)));
 
-        auto upper_bound = GET(0, Int);
+        auto stop = GET(0, Int);
 
-        if (upper_bound <= 0)
+        if (stop <= 0)
             return Value::create(Array{});
 
         return Value::create(
-            iota(0, upper_bound) | transform(make) | to<std::vector>());
+            iota(0, stop) | transform(make) | to<std::vector>());
     }
-    else
+    else if (args.size() == 2)
     {
         REQUIRE_ARGS("range", PARAM("lower bound", TYPES(Int)),
                      PARAM("upper bound", TYPES(Int)));
 
-        auto lower_bound = GET(0, Int);
-        auto upper_bound = GET(1, Int);
+        auto start = GET(0, Int);
+        auto stop = GET(1, Int);
 
-        if (upper_bound <= lower_bound)
+        if (stop <= start)
             return Value::create(Array{});
 
-        return Value::create(iota(lower_bound, upper_bound)
-                             | transform(make)
-                             | to<std::vector>());
+        return Value::create(
+            iota(start, stop) | transform(make) | to<std::vector>());
+    }
+    else
+    {
+        REQUIRE_ARGS("range", PARAM("start", TYPES(Int)),
+                     PARAM("stop", TYPES(Int)), PARAM("step", TYPES(Int)));
+
+        auto start = GET(0, Int);
+        auto stop = GET(1, Int);
+        auto step = GET(2, Int);
+
+        if (step == 0)
+            throw Frost_Recoverable_Error{"Function range requires step != 0"};
+
+        if (step > 0)
+        {
+            if (start >= stop)
+                return Value::create(Array{});
+            return Value::create(iota(start, stop)
+                                 | stride(step)
+                                 | transform(make)
+                                 | to<std::vector>());
+        }
+        else
+        {
+            if (start <= stop)
+                return Value::create(Array{});
+            return Value::create(iota(stop + 1, start + 1)
+                                 | reverse
+                                 | stride(-step)
+                                 | transform(make)
+                                 | to<std::vector>());
+        }
     }
 }
 
@@ -137,7 +169,7 @@ void inject_structure_ops(Symbol_Table& table)
     INJECT(keys, 1, 1);
     INJECT(values, 1, 1);
     INJECT(len, 1, 1);
-    INJECT(range, 1, 2);
+    INJECT(range, 1, 3);
     INJECT(nulls, 1, 1);
     INJECT(id, 1, 1);
     INJECT(has, 2, 2);
