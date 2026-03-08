@@ -108,7 +108,7 @@ TEST_CASE("Builtin filesystem injection")
         "move",   "symlink", "copy",   "absolute", "canonical",
         "cd",     "cwd",     "exists", "remove",   "remove_recursively",
         "mkdir",  "size",    "stat",   "list",     "list_recursively",
-        "concat",
+        "concat", "stem",    "extension", "filename", "parent",
     };
 
     SECTION("Injected")
@@ -147,6 +147,10 @@ TEST_CASE("Builtin filesystem injection")
             {"list", 1, 1},
             {"list_recursively", 1, 1},
             {"concat", 2, 2},
+            {"stem", 1, 1},
+            {"extension", 1, 1},
+            {"filename", 1, 1},
+            {"parent", 1, 1},
         };
 
         auto a = Value::create("a"s);
@@ -230,6 +234,10 @@ TEST_CASE("Builtin filesystem injection")
             {"list", 1},
             {"list_recursively", 1},
             {"concat", 2},
+            {"stem", 1},
+            {"extension", 1},
+            {"filename", 1},
+            {"parent", 1},
         };
 
         auto bad = Value::create(1_f);
@@ -259,6 +267,7 @@ TEST_CASE("Builtin filesystem injection")
             "absolute", "canonical", "cd",     "exists",
             "remove",   "remove_recursively", "mkdir",  "size",
             "stat",     "list",      "list_recursively",
+            "stem",     "extension", "filename", "parent",
         };
 
         for (const auto& name : unary_path_fns)
@@ -716,5 +725,163 @@ TEST_CASE("Builtin filesystem operations")
         REQUIRE(rec_val->is<Array>());
         const auto& rec_arr = rec_val->raw_get<Array>();
         CHECK(contains_path(rec_arr, visible));
+    }
+}
+
+TEST_CASE("Builtin fs.stem")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto fs_val = table.lookup("fs");
+    auto fn = get_fs_fn(fs_val, "stem");
+
+    SECTION("Injected") { CHECK(fn); }
+
+    SECTION("Arity and type errors")
+    {
+        CHECK_THROWS_MATCHES(
+            fn->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(1_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("fs.stem")
+                           && ContainsSubstring("String")
+                           && ContainsSubstring("path")));
+    }
+
+    SECTION("Strips the last extension")
+    {
+        auto r = fn->call({Value::create("/path/to/file.txt"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->get<String>() == "file");
+    }
+
+    SECTION("No extension returns full name")
+    {
+        auto r = fn->call({Value::create("/path/to/file"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->get<String>() == "file");
+    }
+
+    SECTION("Only the last extension is stripped")
+    {
+        auto r = fn->call({Value::create("archive.tar.gz"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->get<String>() == "archive.tar");
+    }
+}
+
+TEST_CASE("Builtin fs.extension")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto fs_val = table.lookup("fs");
+    auto fn = get_fs_fn(fs_val, "extension");
+
+    SECTION("Injected") { CHECK(fn); }
+
+    SECTION("Arity and type errors")
+    {
+        CHECK_THROWS_MATCHES(
+            fn->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(1_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("fs.extension")
+                           && ContainsSubstring("String")
+                           && ContainsSubstring("path")));
+    }
+
+    SECTION("Returns extension including dot")
+    {
+        auto r = fn->call({Value::create("/path/to/file.txt"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->get<String>() == ".txt");
+    }
+
+    SECTION("No extension returns empty string")
+    {
+        auto r = fn->call({Value::create("/path/to/file"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->get<String>() == "");
+    }
+
+    SECTION("Only the last extension is returned")
+    {
+        auto r = fn->call({Value::create("archive.tar.gz"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->get<String>() == ".gz");
+    }
+}
+
+TEST_CASE("Builtin fs.filename")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto fs_val = table.lookup("fs");
+    auto fn = get_fs_fn(fs_val, "filename");
+
+    SECTION("Injected") { CHECK(fn); }
+
+    SECTION("Arity and type errors")
+    {
+        CHECK_THROWS_MATCHES(
+            fn->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(1_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("fs.filename")
+                           && ContainsSubstring("String")
+                           && ContainsSubstring("path")));
+    }
+
+    SECTION("Returns final component of absolute path")
+    {
+        auto r = fn->call({Value::create("/path/to/file.txt"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->get<String>() == "file.txt");
+    }
+
+    SECTION("Returns bare name when no directory")
+    {
+        auto r = fn->call({Value::create("file.txt"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->get<String>() == "file.txt");
+    }
+}
+
+TEST_CASE("Builtin fs.parent")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto fs_val = table.lookup("fs");
+    auto fn = get_fs_fn(fs_val, "parent");
+
+    SECTION("Injected") { CHECK(fn); }
+
+    SECTION("Arity and type errors")
+    {
+        CHECK_THROWS_MATCHES(
+            fn->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(1_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("fs.parent")
+                           && ContainsSubstring("String")
+                           && ContainsSubstring("path")));
+    }
+
+    SECTION("Returns directory containing the path")
+    {
+        auto r = fn->call({Value::create("/path/to/file.txt"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->get<String>() == "/path/to");
+    }
+
+    SECTION("Strips final directory component")
+    {
+        auto r = fn->call({Value::create("/path/to"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->get<String>() == "/path");
     }
 }

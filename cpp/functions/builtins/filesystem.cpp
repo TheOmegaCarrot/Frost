@@ -93,6 +93,20 @@ UNARY_FS_VOID(cd, current_path)
 
 NULLARY_FS(cwd, current_path)
 
+#define PATH_NULLARY_METHOD(frost_name, cpp_name)                              \
+    BUILTIN(frost_name)                                                        \
+    {                                                                          \
+        REQUIRE_ARGS("fs." #frost_name, PARAM("path", TYPES(String)));         \
+        std::filesystem::path input = GET(0, String);                          \
+        std::error_code ec;                                                    \
+        return Value::create(String{input.cpp_name()});                        \
+    }
+
+PATH_NULLARY_METHOD(parent, parent_path)
+PATH_NULLARY_METHOD(stem, stem)
+PATH_NULLARY_METHOD(filename, filename)
+PATH_NULLARY_METHOD(extension, extension)
+
 BUILTIN(list)
 {
     REQUIRE_ARGS("fs.list", PARAM("path", TYPES(String)));
@@ -157,7 +171,13 @@ BUILTIN(stat)
     X(none)                                                                    \
     X(not_found)                                                               \
     X(regular)                                                                 \
-    X(directory) X(symlink) X(block) X(character) X(fifo) X(socket) X(unknown)
+    X(directory)                                                               \
+    X(symlink)                                                                 \
+    X(block)                                                                   \
+    X(character)                                                               \
+    X(fifo)                                                                    \
+    X(socket)                                                                  \
+    X(unknown)
 #define X(TYPE)                                                                \
     case TYPE:                                                                 \
         return strings.TYPE;
@@ -264,6 +284,8 @@ void inject_filesystem(Symbol_Table& table)
                ENTRY(cwd, 0, 0), ENTRY(exists, 1, 1), ENTRY(remove, 1, 1),
                ENTRY(remove_recursively, 1, 1), ENTRY(mkdir, 1, 1),
                ENTRY(size, 1, 1), ENTRY(stat, 1, 1), ENTRY(list, 1, 1),
-               ENTRY(list_recursively, 1, 1), ENTRY(concat, 2, 2));
+               ENTRY(list_recursively, 1, 1), ENTRY(concat, 2, 2),
+               ENTRY(stem, 1, 1), ENTRY(parent, 1, 1), ENTRY(filename, 1, 1),
+               ENTRY(extension, 1, 1));
 }
 } // namespace frst
