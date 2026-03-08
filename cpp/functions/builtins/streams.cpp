@@ -79,7 +79,7 @@ auto tell(const std::shared_ptr<std::istream>& stream)
 auto seek(const std::shared_ptr<std::istream>& stream)
 {
     return system_closure(1, 1, [=](builtin_args_t args) {
-        REQUIRE_ARGS("<system closure: seek>", TYPES(Int));
+        REQUIRE_ARGS("<system closure:seek>", PARAM("pos", TYPES(Int)));
         stream->seekg(GET(0, Int));
         return Value::null();
     });
@@ -95,7 +95,7 @@ auto tell(const std::shared_ptr<std::ostream>& stream)
 auto seek(const std::shared_ptr<std::ostream>& stream)
 {
     return system_closure(1, 1, [=](builtin_args_t args) {
-        REQUIRE_ARGS("<system closure: seek>", TYPES(Int));
+        REQUIRE_ARGS("<system closure:seek>", PARAM("pos", TYPES(Int)));
         stream->seekp(GET(0, Int));
         return Value::null();
     });
@@ -104,7 +104,7 @@ auto seek(const std::shared_ptr<std::ostream>& stream)
 auto write(const std::shared_ptr<std::ostream>& stream)
 {
     return system_closure(1, 1, [=](builtin_args_t args) {
-        REQUIRE_ARGS("<system_closure: write>", TYPES(String));
+        REQUIRE_ARGS("<system closure:write>", TYPES(String));
         const auto& str = GET(0, String);
         stream->write(str.c_str(), str.length());
         return Value::null();
@@ -114,7 +114,7 @@ auto write(const std::shared_ptr<std::ostream>& stream)
 auto writeln(const std::shared_ptr<std::ostream>& stream)
 {
     return system_closure(1, 1, [=](builtin_args_t args) {
-        REQUIRE_ARGS("<system_closure: writeln>", TYPES(String));
+        REQUIRE_ARGS("<system closure:writeln>", TYPES(String));
         const auto& str = GET(0, String);
         stream->write(str.c_str(), str.length());
         stream->put('\n');
@@ -134,7 +134,7 @@ auto flush(const std::shared_ptr<std::ostream>& stream)
 
 BUILTIN(open_read)
 {
-    REQUIRE_ARGS("open_read", TYPES(String));
+    REQUIRE_ARGS("open_read", PARAM("path", TYPES(String)));
 
     auto stream = std::make_shared<std::ifstream>(GET(0, String));
 
@@ -156,7 +156,7 @@ BUILTIN(open_read)
 
 BUILTIN(open_trunc)
 {
-    REQUIRE_ARGS("open_trunc", TYPES(String));
+    REQUIRE_ARGS("open_trunc", PARAM("path", TYPES(String)));
 
     auto stream =
         std::make_shared<std::ofstream>(GET(0, String), std::ios::trunc);
@@ -177,7 +177,7 @@ BUILTIN(open_trunc)
 
 BUILTIN(open_append)
 {
-    REQUIRE_ARGS("open_append", TYPES(String));
+    REQUIRE_ARGS("open_append", PARAM("path", TYPES(String)));
 
     auto stream =
         std::make_shared<std::ofstream>(GET(0, String), std::ios::app);

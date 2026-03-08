@@ -49,10 +49,8 @@ X_UNARY_MATH_FLOAT
 #undef X
 
 #define X_BINARY_MATH_FLOAT                                                    \
-    X(pow)                                                                     \
     X(min)                                                                     \
-    X(max)                                                                     \
-    X(atan2)
+    X(max)
 
 #define X(FN)                                                                  \
     BUILTIN(FN)                                                                \
@@ -65,6 +63,20 @@ X_UNARY_MATH_FLOAT
 X_BINARY_MATH_FLOAT
 
 #undef X
+
+BUILTIN(pow)
+{
+    REQUIRE_ARGS("pow", PARAM("base", TYPES(Int, Float)),
+                 PARAM("exponent", TYPES(Int, Float)));
+    return Value::create(std::pow(COERCE(0, Float), COERCE(1, Float)));
+}
+
+BUILTIN(atan2)
+{
+    REQUIRE_ARGS("atan2", PARAM("y", TYPES(Int, Float)),
+                 PARAM("x", TYPES(Int, Float)));
+    return Value::create(std::atan2(COERCE(0, Float), COERCE(1, Float)));
+}
 
 BUILTIN(abs)
 {
@@ -111,7 +123,8 @@ BUILTIN(round)
 
 BUILTIN(hypot)
 {
-    REQUIRE_ARGS("hypot", TYPES(Int, Float), TYPES(Int, Float),
+    REQUIRE_ARGS("hypot", PARAM("a", TYPES(Int, Float)),
+                 PARAM("b", TYPES(Int, Float)),
                  OPTIONAL(TYPES(Int, Float)));
 
     if (args.size() == 2)
@@ -151,6 +164,8 @@ void inject_math(Symbol_Table& table)
 
 #undef X
 
+    INJECT(pow, 2, 2);
+    INJECT(atan2, 2, 2);
     INJECT(abs, 1, 1);
     INJECT(round, 1, 1);
     INJECT(hypot, 2, 3);

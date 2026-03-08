@@ -53,7 +53,7 @@ BUILTIN(copy)
 #define UNARY_FS(frost_name, cpp_name, R)                                      \
     BUILTIN(frost_name)                                                        \
     {                                                                          \
-        REQUIRE_ARGS("fs." #frost_name, TYPES(String));                        \
+        REQUIRE_ARGS("fs." #frost_name, PARAM("path", TYPES(String)));         \
                                                                                \
         std::error_code ec;                                                    \
         R res = std::filesystem::cpp_name(GET(0, String), ec);                 \
@@ -72,7 +72,7 @@ UNARY_FS(size, file_size, Int)
 #define UNARY_FS_VOID(frost_name, cpp_name)                                    \
     BUILTIN(frost_name)                                                        \
     {                                                                          \
-        REQUIRE_ARGS("fs." #frost_name, TYPES(String));                        \
+        REQUIRE_ARGS("fs." #frost_name, PARAM("path", TYPES(String)));         \
                                                                                \
         std::error_code ec;                                                    \
         std::filesystem::cpp_name(GET(0, String), ec);                         \
@@ -95,7 +95,7 @@ NULLARY_FS(cwd, current_path)
 
 BUILTIN(list)
 {
-    REQUIRE_ARGS("fs.list", TYPES(String));
+    REQUIRE_ARGS("fs.list", PARAM("path", TYPES(String)));
 
     std::error_code ec;
     auto itr = std::filesystem::directory_iterator(
@@ -119,7 +119,7 @@ BUILTIN(list)
 
 BUILTIN(list_recursively)
 {
-    REQUIRE_ARGS("fs.list_recursively", TYPES(String));
+    REQUIRE_ARGS("fs.list_recursively", PARAM("path", TYPES(String)));
 
     std::error_code ec;
     auto itr = std::filesystem::recursive_directory_iterator(
@@ -143,7 +143,7 @@ BUILTIN(list_recursively)
 
 BUILTIN(stat)
 {
-    REQUIRE_ARGS("fs.stat", TYPES(String));
+    REQUIRE_ARGS("fs.stat", PARAM("path", TYPES(String)));
 
     STRINGS(type, none, not_found, regular, directory, symlink, block,
             character, fifo, socket, unknown, perms, owner, group, others, read,
@@ -246,7 +246,8 @@ BUILTIN(stat)
 
 BUILTIN(concat)
 {
-    REQUIRE_ARGS("fs.concat", TYPES(String), TYPES(String));
+    REQUIRE_ARGS("fs.concat", PARAM("base", TYPES(String)),
+                 PARAM("path", TYPES(String)));
 
     return Value::create(String{(std::filesystem::path{GET(0, String)}
                                  / std::filesystem::path{GET(1, String)})

@@ -17,9 +17,9 @@ def fib = fn (n) -> {
 }
 assert(fib(1) == 1) ; assert(fib(7) == 13)
 
-def mutate = fn n -> {
-    # n = 5 Nope, everything is immutable
-}
+# def mutate = fn n -> {
+#   n = 5 # Nope, everything is immutable
+# }
 
 def more_if = fn (n) -> {
     if n == 1: 2

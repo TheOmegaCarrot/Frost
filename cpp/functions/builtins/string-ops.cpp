@@ -14,7 +14,7 @@ namespace frst
 
 BUILTIN(split)
 {
-    REQUIRE_ARGS("split", TYPES(String), TYPES(String));
+    REQUIRE_ARGS("split", TYPES(String), PARAM("delimiter", TYPES(String)));
 
     const auto& target = GET(0, String);
     const auto& split_on = GET(1, String);
@@ -90,7 +90,7 @@ BUILTIN(b64_urldecode)
 
 BUILTIN(fmt_int)
 {
-    REQUIRE_ARGS("fmt_num", PARAM("number", TYPES(Int)),
+    REQUIRE_ARGS("fmt_int", PARAM("number", TYPES(Int)),
                  PARAM("base", TYPES(Int)));
 
     const Int input = GET(0, Int);
