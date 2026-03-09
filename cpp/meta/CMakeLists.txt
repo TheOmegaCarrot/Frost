@@ -1,13 +1,13 @@
-add_library( frost-import
+add_library( frost-meta
     import.cpp
 )
 
-target_include_directories( frost-import
+target_include_directories( frost-meta
     PUBLIC
     include/
 )
 
-target_link_libraries( frost-import
+target_link_libraries( frost-meta
     PUBLIC
     frost-common
     frost-parser
@@ -17,10 +17,10 @@ target_link_libraries( frost-import
     frost-prelude
 )
 
-macro(import_test file)
+macro(meta_test file)
     make_test( ${file}
         LIBS
-        frost-import
+        frost-meta
     )
 endmacro()
 

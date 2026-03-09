@@ -87,7 +87,7 @@ set(FROST_INTERPRETER_TARGETS
     frost
     frost-ast
     frost-functions
-    frost-import
+    frost-meta
     frost-parser
     frost-prelude
     frost-symbol-table
