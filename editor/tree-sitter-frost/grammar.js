@@ -114,10 +114,18 @@ module.exports = grammar({
 
     map_destructure_entry_list: $ => commaSep1NoTrailing($.map_destructure_entry),
 
-    map_destructure_entry: $ => seq(
-      field('key', choice($.identifier, $.map_key_expression)),
-      ':',
-      field('name', $.destructure_name),
+    map_destructure_entry: $ => choice(
+      // Computed key: binding always required.
+      seq(
+        field('key', $.map_key_expression),
+        ':',
+        field('name', $.destructure_name),
+      ),
+      // Identifier key: explicit binding, or shorthand (key name used as binding).
+      seq(
+        field('key', $.identifier),
+        optional(seq(':', field('name', $.destructure_name))),
+      ),
     ),
 
     map_key_expression: $ => seq('[', field('expression', $.expression), ']'),

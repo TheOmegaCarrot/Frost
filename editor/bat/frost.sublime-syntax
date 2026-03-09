@@ -48,6 +48,10 @@ contexts:
     - match: '(?<=[{,])\s*\b({{ident}})\b(?=\s*:)'
       captures:
         1: support.type.property-name.frost
+    # Inline shorthand entries: { foo } or { foo, bar }
+    - match: '(?<=[{,])\s*\b({{ident}})\b(?=\s*[,}])'
+      captures:
+        1: support.type.property-name.frost
     # Multiline entries:
     # {
     #   foo: 1,
@@ -58,6 +62,10 @@ contexts:
         2: punctuation.section.brackets.begin.frost
       push: map-key-bracket
     - match: '^\s*\b({{ident}})\b(?=\s*:)'
+      captures:
+        1: support.type.property-name.frost
+    # Multiline shorthand entries
+    - match: '^\s*\b({{ident}})\b(?=\s*[,}])'
       captures:
         1: support.type.property-name.frost
 
