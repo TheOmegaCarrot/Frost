@@ -5,6 +5,7 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
+#include <mutex>
 #include <utility>
 
 namespace frst
@@ -66,7 +67,9 @@ BUILTIN(mutable_cell)
 {
     struct Wrapper
     {
+        explicit Wrapper(Value_Ptr v) : value(std::move(v)) {}
         Value_Ptr value;
+        std::mutex mutex;
     };
 
     auto cell = std::make_shared<Wrapper>([&] {
@@ -85,14 +88,17 @@ BUILTIN(mutable_cell)
         Map{
             {strings.exchange,
              system_closure(1, 1,
-                            [cell](builtin_args_t args) mutable {
+                            [cell](builtin_args_t args) {
+                                auto new_val = forbid_cycle(args.at(0));
+                                std::lock_guard lock{cell->mutex};
                                 return std::exchange(cell->value,
-                                                     forbid_cycle(args.at(0)));
+                                                     std::move(new_val));
                             })},
             {
                 strings.get,
                 system_closure(0, 0,
                                [cell](builtin_args_t) {
+                                   std::lock_guard lock{cell->mutex};
                                    return cell->value;
                                }),
             },
