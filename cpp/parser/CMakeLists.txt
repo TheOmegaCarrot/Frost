@@ -38,6 +38,7 @@ set(PARSER_TEST_FILES
     binary-expr
     lambda-expr
     threaded-call-expr
+    error-messages
 )
 
 foreach(test_file IN LISTS PARSER_TEST_FILES)

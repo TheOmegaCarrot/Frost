@@ -102,7 +102,7 @@ struct expected_if_consequent
 
 struct expected_map_value
 {
-    static constexpr auto name = "map value";
+    static constexpr auto name = "map entry value";
 };
 
 struct expected_init_expression
@@ -112,7 +112,7 @@ struct expected_init_expression
 
 struct expected_call_arguments
 {
-    static constexpr auto name = "call arguments";
+    static constexpr auto name = "closing ')'";
 };
 
 template <typename expected_t>
@@ -129,7 +129,27 @@ constexpr auto require_expr_start_nl()
 
 struct expected_index_expression
 {
-    static constexpr auto name = "index expression";
+    static constexpr auto name = "closing ']'";
+};
+
+struct use_elif_not_else_if
+{
+    static constexpr auto name = "use 'elif' instead of 'else if'";
+};
+
+struct use_and_not_double_ampersand
+{
+    static constexpr auto name = "use 'and' instead of '&&'";
+};
+
+struct use_or_not_double_pipe
+{
+    static constexpr auto name = "use 'or' instead of '||'";
+};
+
+struct use_def_for_assignment
+{
+    static constexpr auto name = "use 'def name = value' to define a variable";
 };
 
 struct unexpected_elif
@@ -286,6 +306,7 @@ struct string_literal
             dsl::delimited(LEXY_LIT("R\"("), LEXY_LIT(")\""))
                 .limit(dsl::ascii::newline)(dsl::unicode::character);
         static constexpr auto value = lexy::as_string<std::string>;
+        static constexpr auto name  = "string literal";
     };
 
     struct raw_r_single
@@ -294,6 +315,7 @@ struct string_literal
             dsl::delimited(LEXY_LIT("R'("), LEXY_LIT(")'"))
                 .limit(dsl::ascii::newline)(dsl::unicode::character);
         static constexpr auto value = lexy::as_string<std::string>;
+        static constexpr auto name  = "string literal";
     };
 
     struct raw_double
@@ -309,6 +331,7 @@ struct string_literal
         static constexpr auto rule = dsl::quoted.limit(dsl::ascii::newline)(
             dsl::unicode::character, dsl::backslash_escape.symbol<escapes>());
         static constexpr auto value = lexy::as_string<std::string>;
+        static constexpr auto name  = "string literal";
     };
 
     struct raw_single
@@ -325,6 +348,7 @@ struct string_literal
             dsl::ascii::newline)(dsl::unicode::character,
                                  dsl::backslash_escape.symbol<escapes>());
         static constexpr auto value = lexy::as_string<std::string>;
+        static constexpr auto name  = "string literal";
     };
 
     static constexpr auto rule = dsl::p<raw_r_double>
@@ -823,6 +847,7 @@ struct If
     struct Tail
     {
         static constexpr auto rule = [] {
+            auto kw_if   = LEXY_KEYWORD("if",   identifier::base);
             auto kw_elif = LEXY_KEYWORD("elif", identifier::base);
             auto kw_else = LEXY_KEYWORD("else", identifier::base);
 
@@ -840,10 +865,13 @@ struct If
 
             auto else_branch =
                 kw_else
-                >> (dsl::lit_c<':'>
-                    + param_ws_nl
-                    + (require_expr_start_no_nl<expected_if_consequent>()
-                       >> dsl::recurse<expression>));
+                >> (dsl::peek(param_ws_nl + kw_if)
+                    >> dsl::error<use_elif_not_else_if>
+                    | dsl::else_
+                      >> (dsl::lit_c<':'>
+                          + param_ws_nl
+                          + (require_expr_start_no_nl<expected_if_consequent>()
+                             >> dsl::recurse<expression>)));
 
             return elif_branch | else_branch;
         }();
@@ -1466,7 +1494,13 @@ struct program
     static constexpr auto rule = statement_ws
                                  + dsl::opt(dsl::p<top_level_statement_list>)
                                  + statement_ws
-                                 + dsl::eof;
+                                 + (dsl::peek(LEXY_LIT("&&"))
+                                    >> dsl::error<use_and_not_double_ampersand>
+                                    | dsl::peek(LEXY_LIT("||"))
+                                      >> dsl::error<use_or_not_double_pipe>
+                                    | dsl::peek(dsl::lit_c<'='>)
+                                      >> dsl::error<use_def_for_assignment>
+                                    | dsl::eof);
     static constexpr auto value =
         lexy::callback<std::vector<ast::Statement::Ptr>>(
             [](lexy::nullopt) {
