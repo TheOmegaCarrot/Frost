@@ -125,7 +125,7 @@ Groups consecutive elements into chunks.
 A new chunk begins whenever `f(previous, current)` returns falsy.
 
 ```
-chunk_by([1, 1, 2, 2, 1], fn(a, b) -> a == b)  # => [[1, 1], [2, 2], [1]]
+chunk_by([1, 1, 2, 2, 1], fn (a, b) -> a == b)  # => [[1, 1], [2, 2], [1]]
 ```
 
 ## `zip`
@@ -204,7 +204,7 @@ Returns `true` if no element of `arr` is truthy, or if `f` returns falsy for eve
 Returns a map where each key is a value returned by `f`, and each value is an array of all elements in `arr` that produced that key.
 
 ```
-group_by([1, 2, 3, 4, 5], fn(x) -> x % 2)
+group_by([1, 2, 3, 4, 5], fn (x) -> x % 2)
 # => { [0]: [2, 4], [1]: [1, 3, 5] }
 ```
 
@@ -237,6 +237,6 @@ Splits `arr` into two arrays based on predicate `f`.
 Returns `{ pass: [...], fail: [...] }` where `pass` contains elements for which `f` returned truthy and `fail` contains the rest.
 
 ```
-partition([1, 2, 3, 4, 5], fn(x) -> x % 2 == 1)
+partition([1, 2, 3, 4, 5], fn (x) -> x % 2 == 1)
 # => { pass: [1, 3, 5], fail: [2, 4] }
 ```
