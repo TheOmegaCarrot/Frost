@@ -217,16 +217,65 @@ TEST_CASE("Parser Define Statements")
         REQUIRE_FALSE(result);
     }
 
-    SECTION("Map destructure rejects missing key or binding")
+    SECTION("Map destructure shorthand binds key name as binding name")
     {
-        auto result = parse("def {foo} = {foo: 1}");
+        auto result = parse("def {foo} = {foo: 42}; foo");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        auto value = evaluate_expression(program[1], table);
+        REQUIRE(value->is<frst::Int>());
+        CHECK(value->get<frst::Int>().value() == 42_f);
+    }
+
+    SECTION("Map destructure shorthand and explicit forms may be mixed")
+    {
+        auto result = parse("def {foo, bar: baz} = {foo: 1, bar: 2}; [foo, baz]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        auto value = evaluate_expression(program[1], table);
+        REQUIRE(value->is<frst::Array>());
+        auto arr = value->get<frst::Array>().value();
+        REQUIRE(arr.size() == 2);
+        REQUIRE(arr[0]->is<frst::Int>());
+        CHECK(arr[0]->get<frst::Int>().value() == 1_f);
+        REQUIRE(arr[1]->is<frst::Int>());
+        CHECK(arr[1]->get<frst::Int>().value() == 2_f);
+    }
+
+    SECTION("Map destructure shorthand may be mixed with computed keys")
+    {
+        auto result = parse("def {foo, [1+1]: bar} = {foo: 7, [2]: 9}; [foo, bar]");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        frst::Symbol_Table table;
+        program[0]->execute(table);
+        auto value = evaluate_expression(program[1], table);
+        REQUIRE(value->is<frst::Array>());
+        auto arr = value->get<frst::Array>().value();
+        REQUIRE(arr.size() == 2);
+        REQUIRE(arr[0]->is<frst::Int>());
+        CHECK(arr[0]->get<frst::Int>().value() == 7_f);
+        REQUIRE(arr[1]->is<frst::Int>());
+        CHECK(arr[1]->get<frst::Int>().value() == 9_f);
+    }
+
+    SECTION("Map destructure rejects missing binding after colon")
+    {
+        auto result = parse("def {foo:} = {foo: 1}");
         REQUIRE_FALSE(result);
 
-        auto result2 = parse("def {foo:} = {foo: 1}");
+        auto result2 = parse("def {: x} = {foo: 1}");
         REQUIRE_FALSE(result2);
-
-        auto result3 = parse("def {: x} = {foo: 1}");
-        REQUIRE_FALSE(result3);
     }
 
     SECTION("Map destructure accepts underscore binding")

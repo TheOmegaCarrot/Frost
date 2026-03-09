@@ -1511,18 +1511,53 @@ struct map_entry
     static constexpr auto name = "map entry";
 };
 
-// A map destructure entry: `key: binding_name`. The value position is an
-// identifier (the binding name), not an expression.
+// A map destructure entry. Three forms:
+//   [expr]: binding_name  — computed key, explicit binding required
+//   identifier: binding_name — named key, explicit binding
+//   identifier            — shorthand: key name used as binding name
+//
+// Cannot reuse `map_key` here because the shorthand path needs the identifier
+// string directly (before conversion to a Literal node) to use as the binding.
 struct map_destructure_entry
 {
     static constexpr auto rule = [] {
-        return map_entry_rule(dsl::p<identifier_required>);
+        // Computed key [expr]: binding_name — shorthand not applicable.
+        auto bracket_key_expr = dsl::lit_c<'['>
+                                 + param_ws_nl
+                                 + dsl::recurse<expression_nl>
+                                 + param_ws_nl
+                                 + dsl::lit_c<']'>;
+        auto computed = dsl::peek(dsl::lit_c<'['>)
+                        >> (bracket_key_expr
+                            + param_ws_nl
+                            + dsl::lit_c<':'>
+                            + param_ws_nl
+                            + dsl::p<identifier_required>);
+
+        // Named key: peek for `:` to distinguish explicit binding from shorthand.
+        auto explicit_binding =
+            dsl::opt(dsl::peek(param_ws_nl + dsl::lit_c<':'>)
+                     >> (param_ws_nl + dsl::lit_c<':'>
+                         + param_ws_nl + dsl::p<identifier_required>));
+        auto named = dsl::else_
+                     >> (dsl::p<identifier_required> + explicit_binding);
+
+        return computed | named;
     }();
 
     static constexpr auto value = lexy::callback<ast::Map_Destructure::Element>(
+        // Computed key with explicit binding.
         [](ast::Expression::Ptr key, std::string name) {
-            return ast::Map_Destructure::Element{std::move(key),
+            return ast::Map_Destructure::Element{std::move(key), std::move(name)};
+        },
+        // Named key with explicit binding.
+        [](std::string key, std::string name) {
+            return ast::Map_Destructure::Element{make_string_key_expr(key),
                                                  std::move(name)};
+        },
+        // Shorthand: binding name equals key name.
+        [](std::string key, lexy::nullopt) {
+            return ast::Map_Destructure::Element{make_string_key_expr(key), key};
         });
     static constexpr auto name = "map destructure entry";
 };
