@@ -61,5 +61,5 @@ Equivalent to `a >= b`.
 ## `deep_equal`
 `deep_equal(a, b)`
 
-Returns `true` if `a` and `b` are recursively structurally equal — arrays and
+Returns `true` if `a` and `b` are recursively structurally equal: arrays and
 maps are compared element by element rather than by identity.

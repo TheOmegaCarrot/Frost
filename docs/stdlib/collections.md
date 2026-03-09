@@ -177,7 +177,7 @@ For maps, `f` receives `(accumulator, key, value)`.
 
 Returns a sorted copy of `arr`.
 Without `f`, uses the default `<` ordering.
-With `f`, uses `f(a, b)` as the comparator — `f` should return truthy if `a` should come before `b`.
+With `f`, uses `f(a, b)` as the comparator, where `f` should return truthy if `a` should come before `b`.
 Uses a stable sort.
 
 ## `any`

@@ -45,7 +45,7 @@ Returns immediately with a handle map; use `.is_ready()` to poll and `.get()` to
 `.get()` blocks until the request either completes or errors, then returns.
 The result is cached internally; subsequent calls to `.get()` return the same value immediately.
 
-`ok` reflects network-level success — whether a response was received — not the HTTP status code.
+`ok` reflects network-level success (whether a response was received), not the HTTP status code.
 A server returning a 500 yields `ok: true`.
 Check `response.code` to determine application-level success.
 
