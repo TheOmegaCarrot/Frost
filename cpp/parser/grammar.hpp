@@ -19,9 +19,169 @@
 #include <lexy/lexeme.hpp>
 #include <lexy/token.hpp>
 
+// =============================================================================
+// HOW LEXY WORKS — read this first
+// =============================================================================
+//
+// Lexy is a compile-time parser combinator library. Parse rules are C++
+// constexpr expressions, not runtime objects. The grammar is a set of structs
+// each with a `rule`, `value`, and `name` field. Lexy drives parsing by
+// recursively evaluating these structs.
+//
+// CORE COMBINATORS:
+//
+//   a + b           Sequence: parse a, then b (like concatenation in EBNF).
+//
+//   a | b           Ordered choice: try a's *branch condition*; if it fails,
+//                   try b. This is NOT backtracking — Lexy does not re-try a
+//                   full parse. It only checks the branch condition (see
+//                   dsl::peek below), then commits.
+//
+//   dsl::peek(x)    Lookahead: check whether x matches at the current position
+//                   without consuming any input. Returns a *branch condition*
+//                   suitable for use with `>>` or `|`.
+//
+//   cond >> action  Branch: if `cond` succeeds (e.g. a peek), run `action`.
+//                   Once the condition passes, Lexy commits — if `action`
+//                   fails, the parse fails (no backtracking to try other `|`
+//                   alternatives). This is the fundamental safety mechanism:
+//                   peek first to determine which branch to take, then act.
+//
+//   dsl::else_      A branch condition that always succeeds. Used as the final
+//                   alternative in a `|` chain as a fallthrough / default case.
+//
+//   dsl::opt(rule)  Optional: parse `rule` if present, producing the rule's
+//                   value; otherwise produce lexy::nullopt. The condition for
+//                   "present" must be a branch condition (usually a peek).
+//
+//   dsl::list(item, sep)
+//                   Parse a non-empty list of `item` with separator `sep`.
+//                   `dsl::sep(s)` requires s between items.
+//                   `dsl::trailing_sep(s)` also allows a trailing separator.
+//
+//   dsl::recurse<T> Recursive reference to production T. Required anywhere a
+//                   rule refers back to itself or a mutually-recursive rule,
+//                   because direct use of `dsl::p<T>` inside T's own rule
+//                   would cause infinite template instantiation at compile
+//                   time.
+//
+//   dsl::p<T>       Invoke sub-production T (non-recursive call).
+//
+//   dsl::token(...) Make a rule atomic: whitespace skipping is disabled inside
+//                   the token. Used when internal spaces must not be allowed
+//                   (e.g. a float like `3.14` must not accept `3 . 14`).
+//
+//   dsl::whitespace(ws)
+//                   Declare automatic whitespace for a production (or globally
+//                   for an expression_production). Lexy skips `ws` between
+//                   every token in rules that use this whitespace setting.
+//
+//   dsl::while_(x)  Consume zero or more characters matching character class x.
+//                   Unlike dsl::whitespace, this is explicit and manual.
+//
+//   dsl::must(cond).error<E>
+//                   Assert that the branch condition `cond` holds right now;
+//                   if it does not, emit a custom error tagged with E. Unlike
+//                   peek+>>, this is not about branching — it is a hard
+//                   requirement with a descriptive error message.
+//
+//   dsl::error<E>   Unconditionally emit error E and fail. Often used after a
+//                   dsl::peek branch to provide a helpful message for a
+//                   detected-but-unsupported construct (e.g. `&&` instead of
+//                   `and`).
+//
+//   LEXY_KEYWORD(str, base)
+//                   Match a keyword string AND assert an identifier boundary
+//                   follows (i.e. the next char is not alphanumeric/_). This
+//                   prevents `true_value` from matching the keyword `true`.
+//
+//   LEXY_LIT(str)   Match a literal string with no boundary check. Used for
+//                   operators (`<=`, `==`) and punctuation.
+//
+// VALUE CALLBACKS:
+//
+//   lexy::callback<T>(overloads...)
+//                   Construct a value of type T from the sub-values produced
+//                   by the matched rule. Multiple lambda overloads handle
+//                   different match shapes (e.g. with vs without optional).
+//
+//   lexy::forward<T>
+//                   Pass-through: the production's value is whatever the
+//                   sub-rule produced (used when a production is just a named
+//                   alias for another rule).
+//
+//   lexy::as_list<V>
+//                   Collect items from dsl::list into a std::vector<V>.
+//
+//   lexy::as_string<S>
+//                   Collect a lexeme's characters into a std::string.
+//
+//   lexy::new_<AST_T, Ptr_T>
+//                   Construct an AST node via make_unique<AST_T>. The result
+//                   type is Ptr_T (usually ast::Expression::Ptr).
+//
+//   lexy::nullopt   The type produced by dsl::opt when no match occurs.
+//                   Overloads in lexy::callback use it as a discriminant to
+//                   handle the "absent" case.
+//
+// ERROR TAGS:
+//
+//   Error tags are empty structs with a `static constexpr auto name = "..."`.
+//   Lexy extracts the `name` field for its error messages. They are passed as
+//   template arguments to dsl::error<E>, dsl::must(...).error<E>, etc.
+//
+// EXPRESSION PRODUCTIONS:
+//
+//   lexy::expression_production is a mixin that implements the operator
+//   precedence tower. Subclasses declare:
+//     - `atom`: the lowest-level (non-operator) expression.
+//     - `whitespace`: automatic whitespace between tokens.
+//     - Operator structs (each inheriting from dsl::prefix_op,
+//       dsl::postfix_op, dsl::infix_op_left, or dsl::infix_op_single) with:
+//       - `op`: the operator token(s), defined with dsl::op<tag>(rule).
+//       - `using operand = X`: the next-lower precedence level.
+//     - `using operation = X`: the top-level precedence level.
+//   The `/` operator on operator lists means "alternative operator token",
+//   analogous to `|` for productions.
+//
+// WHITESPACE / NEWLINES:
+//
+//   Frost uses newlines as statement terminators. The grammar therefore has two
+//   modes: "allow newlines" (inside delimiters where newlines are harmless) and
+//   "no newlines" (between tokens at statement level). Many rules come in
+//   `_impl<allow_nl>` template pairs, instantiated as separate aliases.
+//   `ws_no_nl` and `ws_nl` are the two whitespace definitions; `param_ws` and
+//   `param_ws_nl` are the manual equivalents for contexts that use dsl::while_.
+//
+// =============================================================================
+
 namespace frst::grammar
 {
 namespace dsl = lexy::dsl;
+
+// =============================================================================
+// Whitespace definitions
+// =============================================================================
+//
+// Frost has two whitespace contexts:
+//
+//   ws_no_nl  — horizontal whitespace only (spaces, tabs, CR, FF, VT) plus
+//               line comments. Used at statement level where a newline
+//               terminates a statement.
+//
+//   ws_nl     — all ASCII whitespace including newlines, plus line comments.
+//               Used inside delimiters (arrays, maps, call arg lists, etc.)
+//               where newlines are just formatting.
+//
+// `dsl::whitespace(x)` registers x as automatic whitespace for an expression
+// production: Lexy silently skips it between every token in that production.
+//
+// `param_ws` / `param_ws_nl` are the manual equivalents using `dsl::while_`.
+// They are used in places where we need explicit control (e.g. inside
+// separators and list delimiters) rather than relying on automatic skipping.
+//
+// `statement_ws` also consumes semicolons and newlines — it is the separator
+// between statements in a block.
 
 constexpr auto line_comment = dsl::token(
     dsl::lit_c<'#'> >> dsl::while_(dsl::ascii::character - dsl::lit_c<'\n'>));
@@ -36,6 +196,22 @@ constexpr auto param_ws = dsl::while_(no_nl_chars | line_comment);
 constexpr auto param_ws_no_comment = dsl::while_(no_nl_chars);
 constexpr auto param_ws_nl = dsl::while_(dsl::ascii::space | line_comment);
 constexpr auto ws_expr_nl = ws_nl;
+
+// =============================================================================
+// Comma separators
+// =============================================================================
+//
+// Commas in Frost are surrounded by optional whitespace. These helpers
+// produce branch conditions (using dsl::peek) so they can be used as
+// `dsl::sep(...)` or `dsl::trailing_sep(...)` arguments: Lexy checks the
+// peek before committing to consuming the comma.
+//
+// `comma_sep_after` and `comma_sep_nl_after` are "context-aware" variants that
+// also peek at what *follows* the comma. This is used in separator contexts
+// where the next item has a known start token — it prevents the parser from
+// consuming a comma that was meant to be followed by something else (e.g., the
+// closing delimiter).
+
 template <typename ws_t>
 constexpr auto comma_sep_ws(ws_t ws)
 {
@@ -58,6 +234,31 @@ constexpr auto comma_sep_nl_after(after_t after)
     return dsl::peek(param_ws_nl + dsl::lit_c<','> + param_ws_nl + after)
            >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl);
 }
+
+// =============================================================================
+// Expression start detection
+// =============================================================================
+//
+// Many rules need to know whether an expression follows, without consuming
+// anything. `expression_start_impl<allow_nl>()` returns a peek condition that
+// checks whether the next non-whitespace character is a valid expression
+// starter.
+//
+// This is used in two ways:
+//
+//   1. As a branch condition (with `>>`): enter an expression-parsing branch
+//      only if we know one is coming, so that a missing expression produces a
+//      helpful error rather than silently producing an empty list or the like.
+//
+//   2. In dsl::must(...).error<E> (via require_expr_start_*): assert that an
+//      expression is required here, and produce a named error if it is absent.
+//
+// The `no_nl` variant skips only horizontal whitespace before checking, so a
+// leading newline does NOT count as an expression start. The `nl` variant
+// skips all whitespace including newlines. This distinction is what prevents
+// a newline after a statement from being misread as the start of a
+// continuation.
+
 template <bool allow_nl>
 constexpr auto expression_start_impl()
 {
@@ -79,6 +280,20 @@ constexpr auto expression_start_impl()
 constexpr auto expression_start_no_nl = expression_start_impl<false>();
 constexpr auto expression_start_nl = expression_start_impl<true>();
 constexpr auto expression_start = expression_start_no_nl;
+
+// =============================================================================
+// Error tag structs
+// =============================================================================
+//
+// These empty structs serve as error type tags. Lexy reads the `name` field
+// to produce the user-facing error text. They are passed as template arguments
+// to dsl::error<E> (unconditional error emission) or dsl::must(...).error<E>
+// (conditional error assertion).
+//
+// The naming convention is:
+//   expected_*   — "I expected to see X here but it was missing"
+//   use_*        — "this construct is wrong; use Y instead"
+//   unexpected_* — "this token appeared without its required context"
 
 struct expected_expression
 {
@@ -115,6 +330,12 @@ struct expected_call_arguments
     static constexpr auto name = "closing ')'";
 };
 
+// Helpers that combine dsl::must with a specific expected_expression error.
+// `require_expr_start_no_nl()` asserts that an expression starts here
+// (no newline allowed before it); `require_expr_start_nl()` allows newlines.
+// These are used after a keyword or colon where an expression is mandatory,
+// so that "missing expression" produces a clear error rather than a confusing
+// one about the next unrelated token.
 template <typename expected_t>
 constexpr auto require_expr_start_no_nl()
 {
@@ -132,6 +353,8 @@ struct expected_index_expression
     static constexpr auto name = "closing ']'";
 };
 
+// "Helpful mistake" errors: the parser detects a common error pattern and
+// emits a message that tells the user exactly what to do instead.
 struct use_elif_not_else_if
 {
     static constexpr auto name = "use 'elif' instead of 'else if'";
@@ -187,6 +410,26 @@ struct expected_identifier
     static constexpr auto name = "identifier";
 };
 
+// =============================================================================
+// Identifiers
+// =============================================================================
+//
+// `identifier` matches any valid Frost identifier that is NOT a reserved
+// keyword. The reserved keyword check is done by
+// `identifier::base.reserve(...)`, which takes the keyword list from the
+// FROST_X_KEYWORDS macro. If the matched text is a keyword, the identifier rule
+// fails (and the keyword rule will succeed instead).
+//
+// LEXY_KEYWORD(str, base) requires that after the literal `str`, the next
+// character is NOT an identifier continuation character (letter/digit/_). This
+// prevents `null_value` from matching `null` as a keyword. The `base`
+// argument tells Lexy what character set defines "identifier boundary".
+//
+// `identifier_required` wraps `identifier` with a `dsl::must` guard that fires
+// `expected_identifier` if the current character is not even an identifier
+// start. This is used in positions where an identifier is grammatically
+// required (map keys, parameter names, etc.).
+
 struct identifier
 {
     static constexpr auto base =
@@ -219,6 +462,12 @@ struct identifier_required
     static constexpr auto name = "identifier";
 };
 
+// =============================================================================
+// Literals
+// =============================================================================
+
+// Integer: Lexy's built-in dsl::integer<T> handles decimal digits and
+// produces a value of type T.
 struct integer_literal
 {
     static constexpr auto rule = dsl::integer<Int>;
@@ -228,6 +477,12 @@ struct integer_literal
     static constexpr auto name = "integer literal";
 };
 
+// Float: uses lexy::scan_production because dsl::integer only covers whole
+// numbers and there is no standard Lexy combinator for `digits.digits`. The
+// `scan` method manually captures the `NNN.NNN` lexeme as a string, then
+// uses std::from_chars for locale-independent parsing. dsl::token() makes
+// the capture atomic so that whitespace cannot appear between the digits and
+// the dot (i.e. `3 . 14` is not a float literal).
 struct float_literal : lexy::scan_production<Value_Ptr>
 {
     struct out_of_range
@@ -268,6 +523,10 @@ struct float_literal : lexy::scan_production<Value_Ptr>
     static constexpr auto name = "float literal";
 };
 
+// Boolean literals: LEXY_KEYWORD is essential here — without it, an identifier
+// like `true_value` would match `true` as a prefix, leaving `_value` as a
+// confusing leftover. The keyword macro checks that the keyword is not followed
+// by an identifier character.
 struct true_literal
 {
     static constexpr auto rule = LEXY_KEYWORD("true", identifier::base);
@@ -298,6 +557,21 @@ struct null_literal
     });
 };
 
+// String literals: four inner sub-types tried in order.
+//
+// raw_r_double / raw_r_single: R"(...)" and R'(...)' raw strings. The limit
+//   on dsl::ascii::newline means raw strings cannot span multiple lines.
+//   No escape sequences — the content is taken verbatim.
+//
+// raw_double / raw_single: regular "..." and '...' strings. Also single-line
+//   (limit on newline). Support backslash escapes defined in the symbol table.
+//   The limit is what makes the token atomic in the newline sense — if a
+//   newline is encountered before the closing delimiter, the rule fails rather
+//   than consuming the newline as content.
+//
+// The ordering matters: raw_r_double and raw_r_single are tried first because
+// they start with `R"` / `R'`, which are longer prefixes that must be checked
+// before the plain `"` / `'` alternatives.
 struct string_literal
 {
     struct raw_r_double
@@ -306,7 +580,7 @@ struct string_literal
             dsl::delimited(LEXY_LIT("R\"("), LEXY_LIT(")\""))
                 .limit(dsl::ascii::newline)(dsl::unicode::character);
         static constexpr auto value = lexy::as_string<std::string>;
-        static constexpr auto name  = "string literal";
+        static constexpr auto name = "string literal";
     };
 
     struct raw_r_single
@@ -315,7 +589,7 @@ struct string_literal
             dsl::delimited(LEXY_LIT("R'("), LEXY_LIT(")'"))
                 .limit(dsl::ascii::newline)(dsl::unicode::character);
         static constexpr auto value = lexy::as_string<std::string>;
-        static constexpr auto name  = "string literal";
+        static constexpr auto name = "string literal";
     };
 
     struct raw_double
@@ -331,7 +605,7 @@ struct string_literal
         static constexpr auto rule = dsl::quoted.limit(dsl::ascii::newline)(
             dsl::unicode::character, dsl::backslash_escape.symbol<escapes>());
         static constexpr auto value = lexy::as_string<std::string>;
-        static constexpr auto name  = "string literal";
+        static constexpr auto name = "string literal";
     };
 
     struct raw_single
@@ -348,7 +622,7 @@ struct string_literal
             dsl::ascii::newline)(dsl::unicode::character,
                                  dsl::backslash_escape.symbol<escapes>());
         static constexpr auto value = lexy::as_string<std::string>;
-        static constexpr auto name  = "string literal";
+        static constexpr auto name = "string literal";
     };
 
     static constexpr auto rule = dsl::p<raw_r_double>
@@ -362,6 +636,9 @@ struct string_literal
     static constexpr auto name = "string literal";
 };
 
+// Format strings reuse the `raw_double`/`raw_single` string rules but not the
+// raw R"(...)" variants. dsl::no_whitespace (in node::Format_String) ensures
+// the `$` sigil and opening quote are adjacent.
 struct format_string_literal
 {
     static constexpr auto rule =
@@ -370,8 +647,22 @@ struct format_string_literal
     static constexpr auto name = "format string literal";
 };
 
+// =============================================================================
+// AST-wrapping nodes (namespace node::)
+// =============================================================================
+//
+// The `node::` namespace contains thin wrappers that take the raw values
+// produced by the grammar rules above and construct AST nodes from them.
+// This separation keeps the grammar logic (how to parse) distinct from the
+// AST construction logic (what to build).
+
 namespace node
 {
+// Literal: tries null, bool, string, float, then integer. The float/integer
+// ordering is important: float is tried first via a peek at the pattern
+// `digits<> + '.' + digit<>` (singular digit<> after the dot — requires at
+// least one digit, not zero), so `3.14` is a float and `3` is an integer.
+// Both peeks prevent committing to a parse that will fail.
 struct Literal
 {
     static constexpr auto rule =
@@ -386,6 +677,9 @@ struct Literal
     static constexpr auto name = "literal";
 };
 
+// Format string: `$"..."`. dsl::no_whitespace disables automatic whitespace
+// skipping so that `$ "foo"` (with a space) is rejected — the `$` and the
+// opening quote must be adjacent.
 struct Format_String
 {
     static constexpr auto rule =
@@ -397,6 +691,9 @@ struct Format_String
     static constexpr auto name = "format string";
 };
 
+// Name lookup: a bare identifier used as an expression. The `identifier` rule
+// already rejects keywords, so this will never accidentally match `if`, `def`,
+// etc.
 struct Name_Lookup
 {
     static constexpr auto rule = dsl::p<identifier>;
@@ -406,10 +703,30 @@ struct Name_Lookup
 };
 } // namespace node
 
+// =============================================================================
+// Forward declarations (required by recursive rules)
+// =============================================================================
+//
+// `expression` and `expression_nl` appear in many sub-rules. Since C++
+// requires declarations before use and the grammar is mutually recursive,
+// we forward-declare them here. The actual definitions appear later.
+// `statement_list` is forward-declared for the same reason (lambda bodies
+// reference it).
+
 struct expression;
 struct expression_nl;
 struct statement_list;
 
+// =============================================================================
+// List helpers
+// =============================================================================
+//
+// These templates factor out common patterns for parsing delimited lists.
+
+// `list_or_empty<T>`: combines lexy::as_list (which collects items into a
+// vector) with a nullopt handler. When dsl::opt produces lexy::nullopt (the
+// list was absent), we return an empty vector. This simplifies callers that
+// use dsl::opt(... >> list).
 template <typename item_t>
 constexpr auto list_or_empty()
 {
@@ -423,6 +740,9 @@ constexpr auto list_or_empty()
                    });
 }
 
+// `delimited_list_tail`: parse the contents and closing delimiter of an
+// already-opened delimited list. The `entry_start` peek guards the list so
+// an empty delimited region produces an empty vector rather than an error.
 template <typename entry_start_t, typename list_t, typename close_t>
 constexpr auto delimited_list_tail(entry_start_t entry_start, list_t list,
                                    close_t close)
@@ -433,6 +753,7 @@ constexpr auto delimited_list_tail(entry_start_t entry_start, list_t list,
            + close;
 }
 
+// `delimited_list`: add the opening delimiter before `delimited_list_tail`.
 template <typename open_t, typename entry_start_t, typename list_t,
           typename close_t>
 constexpr auto delimited_list(open_t open, entry_start_t entry_start,
@@ -441,12 +762,23 @@ constexpr auto delimited_list(open_t open, entry_start_t entry_start,
     return open + delimited_list_tail(entry_start, list, close);
 }
 
+// `braced_list`: specialization of `delimited_list` for `{...}`.
 template <typename entry_start_t, typename list_t>
 constexpr auto braced_list(entry_start_t entry_start, list_t list)
 {
     return delimited_list(LEXY_LIT("{"), entry_start, list, dsl::lit_c<'}'>);
 }
 
+// =============================================================================
+// Postfix operator helpers
+// =============================================================================
+//
+// Factored out so both the main expression production and the inner `callee`
+// sub-production of threaded calls can share the same index/dot postfix logic.
+
+// Index: `expr[index]`. After `[`, we require an expression start (with a
+// named error); if that passes, we recurse into expression_nl (allowing
+// newlines inside `[...]`) and then expect `]`.
 template <typename op_index_t>
 constexpr auto index_postfix_op()
 {
@@ -458,12 +790,21 @@ constexpr auto index_postfix_op()
                            + dsl::lit_c<']'>));
 }
 
+// Dot: `expr.field`. After `.`, an identifier is required. The identifier
+// is converted to a string-key index at AST construction time.
 template <typename op_dot_t>
 constexpr auto dot_postfix_op()
 {
     return dsl::op<op_dot_t>(dsl::lit_c<'.'> >> dsl::p<identifier_required>);
 }
 
+// =============================================================================
+// Lambda / destructure parameter structures
+// =============================================================================
+
+// Plain parameter list (no varargs). The comma separator peeks ahead to ensure
+// that the next item after the comma is an identifier start — this avoids
+// consuming a comma that is followed by `)` or `...`.
 struct lambda_param_pack
 {
     std::vector<std::string> params;
@@ -476,6 +817,8 @@ struct destructure_pack
     std::optional<ast::Array_Destructure::Name> rest;
 };
 
+// A single destructure binding name. `_` is special: it produces a
+// Discarded_Binding variant (the value is bound but not named).
 struct destructure_binding
 {
     static constexpr auto rule = dsl::p<identifier_required>;
@@ -500,6 +843,18 @@ struct destructure_binding_list
     static constexpr auto name = "destructure bindings";
 };
 
+// `destructure_payload`: the contents of a `[...]` destructure pattern,
+// i.e. the names and optional rest binding inside the brackets.
+//
+// Valid forms:
+//   []             — empty: binds nothing
+//   [a, b]         — named bindings only
+//   [...rest]      — rest binding only
+//   [a, b, ...rest] — named bindings followed by a rest binding
+//
+// The `rest_checked` rule parses the `...name` rest binding and then
+// asserts (via dsl::must) that no comma follows — the rest binding must
+// be last. The `leading_comma` branch catches `[,` and gives a clear error.
 struct destructure_payload
 {
     static constexpr auto rule = [] {
@@ -552,6 +907,26 @@ struct array_destructure_pattern
     static constexpr auto value = lexy::forward<destructure_pack>;
     static constexpr auto name = "array destructure";
 };
+
+// =============================================================================
+// Lambda parameter lists
+// =============================================================================
+//
+// Lambda parameters exist in two syntactic positions:
+//
+//   Parenthesized: `fn (a, b, ...rest) -> body`
+//   Elided parens: `fn a, b -> body` or `fn x -> body`
+//
+// The `allow_nl` template parameter controls whether newlines are permitted
+// between parameters (allowed inside explicit `(...)`, not allowed in the
+// elided form where a newline would end the statement).
+//
+// `lambda_param_list_impl` parses the parameter names separated by commas.
+// `lambda_param_payload_impl` wraps it to also handle the optional `...name`
+// vararg at the end, plus the edge cases of vararg-only or empty param lists.
+//
+// The vararg must come last; `expected_vararg_last` fires if a comma follows
+// the `...name`. This is checked via dsl::must(dsl::peek_not(',')).
 
 template <bool allow_nl>
 struct lambda_param_list_impl
@@ -636,6 +1011,8 @@ struct lambda_param_payload_impl
 using lambda_param_payload = lambda_param_payload_impl<false>;
 using lambda_param_payload_nl = lambda_param_payload_impl<true>;
 
+// `lambda_parameters_paren`: `(a, b, ...rest)` — parenthesized form.
+// Newlines are allowed inside the parens.
 struct lambda_parameters_paren
 {
     static constexpr auto rule = dsl::lit_c<'('>
@@ -647,6 +1024,9 @@ struct lambda_parameters_paren
     static constexpr auto name = "lambda parameters";
 };
 
+// `lambda_parameters_elided`: `a, b` or `a` — no parentheses.
+// Newlines are NOT allowed here, because `fn x\n+ 1` would otherwise
+// parse as `fn x -> (+ 1)` rather than `(fn x -> ...) + 1`.
 struct lambda_parameters_elided
 {
     static constexpr auto rule = dsl::p<lambda_param_payload>;
@@ -654,6 +1034,9 @@ struct lambda_parameters_elided
     static constexpr auto name = "lambda parameters";
 };
 
+// `lambda_param_clause`: the parameter clause before `->`.
+// If a `(` follows (after optional whitespace), use the parenthesized form;
+// otherwise use the elided form. Both cases are followed by `->`.
 struct lambda_param_clause
 {
     static constexpr auto rule = [] {
@@ -668,6 +1051,31 @@ struct lambda_param_clause
     static constexpr auto name = "lambda parameters";
 };
 
+// =============================================================================
+// Lambda body
+// =============================================================================
+//
+// The lambda body follows `->` and is either an expression or a block:
+//
+//   fn x -> x + 1          — expression body
+//   fn x -> { def y = x    — block body (curly braces, one or more statements)
+//              y + 1 }
+//
+// The ambiguity: `{` can start either a map literal (expression body) or a
+// block (statement body). The parser must distinguish them with bounded
+// lookahead because Lexy is non-backtracking.
+//
+// Strategy:
+//   1. `empty_map_peek`: if `{` is immediately followed by `}`, it is an
+//      empty map literal `{}`, not a block. Route to the expression parser.
+//   2. `ident_map_peek`: if `{` is followed by `identifier:`, it is a map
+//      literal with identifier keys (e.g. `{foo: 42}`). Route to expression.
+//   3. `{` alone (no further peek): treat it as a block.
+//   4. `dsl::else_`: any other expression start (non-`{`). Route to expression.
+//
+// Computed-key maps `{[expr]: value}` CANNOT be distinguished from a block
+// containing an array `{[x]}` within bounded lookahead, so they require
+// explicit parentheses when used as a lambda body: `fn -> ({[k]: v})`.
 struct lambda_body
 {
     static constexpr auto rule = [] {
@@ -678,24 +1086,37 @@ struct lambda_body
         // through to the block parser.
         auto empty_map_peek = dsl::peek(
             param_ws_nl + dsl::lit_c<'{'> + param_ws_nl + dsl::lit_c<'}'>);
-        auto ident_map_peek = dsl::peek(
-            param_ws_nl + dsl::lit_c<'{'> + param_ws_nl
-            + dsl::ascii::alpha_underscore + dsl::while_(dsl::ascii::word)
-            + param_ws_nl + dsl::lit_c<':'>);
+        auto ident_map_peek = dsl::peek(param_ws_nl
+                                        + dsl::lit_c<'{'>
+                                        + param_ws_nl
+                                        + dsl::ascii::alpha_underscore
+                                        + dsl::while_(dsl::ascii::word)
+                                        + param_ws_nl
+                                        + dsl::lit_c<':'>);
         auto expr_body = param_ws_nl + dsl::recurse<expression>;
-        return empty_map_peek >> expr_body
-               | ident_map_peek >> expr_body
+        return empty_map_peek
+               >> expr_body
+               | ident_map_peek
+               >> expr_body
                | dsl::peek(param_ws_nl + dsl::lit_c<'{'>)
-                 >> param_ws_nl
-                 >> dsl::curly_bracketed(statement_ws
-                                         + dsl::opt(dsl::peek(expression_start_no_nl)
-                                                    >> dsl::recurse<statement_list>)
-                                         + statement_ws)
+               >> param_ws_nl
+               >> dsl::curly_bracketed(
+                   statement_ws
+                   + dsl::opt(dsl::peek(expression_start_no_nl)
+                              >> dsl::recurse<statement_list>)
+                   + statement_ws)
                | dsl::else_
-                 >> (require_expr_start_nl<expected_lambda_body>()
-                     >> param_ws_nl
-                     >> dsl::recurse<expression>);
+               >> (require_expr_start_nl<expected_lambda_body>()
+                   >> param_ws_nl
+                   >> dsl::recurse<expression>);
     }();
+
+    // The value callback has three overloads:
+    //   - lexy::nullopt: block body was empty, return empty vector
+    //   - vector<Statement::Ptr>: block body with statements
+    //   - Expression::Ptr: expression body, wrap in a single-element vector
+    // This unifies the representation so the Lambda AST node always holds
+    // a statement list regardless of which syntax was used.
     static constexpr auto value =
         lexy::callback<std::vector<ast::Statement::Ptr>>(
             [](lexy::nullopt) {
@@ -711,6 +1132,26 @@ struct lambda_body
             });
     static constexpr auto name = "lambda body";
 };
+
+// =============================================================================
+// With-expression operations (map / filter / foreach / reduce)
+// =============================================================================
+//
+// `map`, `filter`, and `foreach` share the same syntactic shape:
+//
+//   map expr with operation_fn
+//   filter expr with predicate_fn
+//   foreach expr with action_fn
+//
+// `With_Operation<node_t>` parses the `expr with operation` part (the keyword
+// has already been consumed by the caller). `With_Keyword_Expr<node_t>`
+// consumes the keyword itself and then delegates to `With_Operation`.
+//
+// The template machinery (`with_operation_keyword`, `with_operation_name`)
+// avoids code duplication: one template handles all three operations by
+// selecting the right keyword and AST node type at compile time. A
+// static_assert with a dependent false ensures a clear error if someone
+// instantiates the template with an unsupported node type.
 
 namespace node
 {
@@ -754,6 +1195,10 @@ constexpr auto with_operation_keyword()
     }
 }
 
+// Parses `structure with operation`. The `structure` expression is parsed
+// with dsl::recurse<expression> (not expression_nl) because these expressions
+// live at statement level where newlines are not whitespace; the `with`
+// keyword acts as the continuation marker.
 template <typename node_t>
 struct With_Operation
 {
@@ -772,6 +1217,8 @@ struct With_Operation
     static constexpr auto name = with_operation_name<node_t>();
 };
 
+// Parses the full `map|filter|foreach expr with fn` form, including the
+// leading keyword.
 template <typename node_t>
 struct With_Keyword_Expr
 {
@@ -787,6 +1234,13 @@ using Map_Expr = With_Keyword_Expr<ast::Map>;
 using Filter = With_Keyword_Expr<ast::Filter>;
 using Foreach = With_Keyword_Expr<ast::Foreach>;
 
+// `reduce` is similar to map/filter/foreach but has an optional `init:` clause:
+//
+//   reduce expr with fn
+//   reduce expr with fn init: initial_value
+//
+// The `init_clause` is optional. When absent, lexy::nullopt is produced and
+// the value callback passes std::nullopt to the AST constructor.
 struct Reduce
 {
     static constexpr auto rule = [] {
@@ -827,6 +1281,8 @@ struct Reduce
     static constexpr auto name = "reduce expression";
 };
 
+// Lambda: `fn params -> body`. param_clause and body are separate productions;
+// the `fn` keyword commits entry, then both sub-productions must succeed.
 struct Lambda
 {
     static constexpr auto rule = [] {
@@ -842,15 +1298,44 @@ struct Lambda
     static constexpr auto name = "lambda expression";
 };
 
+// =============================================================================
+// If expression
+// =============================================================================
+//
+// Syntax:
+//   if cond: consequent
+//   if cond: consequent elif cond2: consequent2
+//   if cond: consequent else: alternate
+//   if cond: consequent elif cond2: consequent2 else: alternate
+//
+// The `elif` / `else` tail is recursive: each `elif` or `else` is parsed by
+// the `Tail` inner struct, which itself optionally recurses into another Tail.
+// This models the chain as a right-recursive structure.
+//
+// The `else if` detection (use_elif_not_else_if error) is implemented by
+// peeking inside `else_branch` for the `if` keyword immediately following
+// `else`. Since Lexy is non-backtracking, we must peek BEFORE deciding to
+// emit the error — the peek confirms "else" was followed by "if", which is
+// the erroneous pattern.
+//
+// `tail` uses dsl::opt with a peek at `elif|else`: if neither follows, the
+// if expression has no alternative and produces lexy::nullopt (mapped to
+// an If node with no alternate). The peek is necessary because the `elif`/
+// `else` keywords could be on the same line or the next line — param_ws_nl
+// skips both horizontal whitespace and newlines in the peek.
+
 struct If
 {
+    // `Tail` parses the elif/else continuation recursively. It is a separate
+    // struct (not an inner lambda) so it can be referenced via dsl::recurse<>.
     struct Tail
     {
         static constexpr auto rule = [] {
-            auto kw_if   = LEXY_KEYWORD("if",   identifier::base);
+            auto kw_if = LEXY_KEYWORD("if", identifier::base);
             auto kw_elif = LEXY_KEYWORD("elif", identifier::base);
             auto kw_else = LEXY_KEYWORD("else", identifier::base);
 
+            // The tail of the tail: another elif/else may optionally follow.
             auto tail = dsl::opt(dsl::peek(param_ws_nl + (kw_elif | kw_else))
                                  >> param_ws_nl
                                  >> dsl::recurse<Tail>);
@@ -863,19 +1348,29 @@ struct If
                     + (require_expr_start_no_nl<expected_if_consequent>()
                        >> dsl::recurse<expression>)+tail);
 
+            // Inside `else_branch`: peek for `if` to detect `else if` and emit
+            // a friendly error pointing the user to `elif`. The else_/else path
+            // parses `: alternate`.
             auto else_branch =
                 kw_else
                 >> (dsl::peek(param_ws_nl + kw_if)
                     >> dsl::error<use_elif_not_else_if>
                     | dsl::else_
-                      >> (dsl::lit_c<':'>
-                          + param_ws_nl
-                          + (require_expr_start_no_nl<expected_if_consequent>()
-                             >> dsl::recurse<expression>)));
+                    >> (dsl::lit_c<':'>
+                        + param_ws_nl
+                        + (require_expr_start_no_nl<expected_if_consequent>()
+                           >> dsl::recurse<expression>)));
 
             return elif_branch | else_branch;
         }();
 
+        // The value callback has three overloads:
+        //   - elif: (condition, consequent, lexy::nullopt) → If node with no
+        //   alternate
+        //   - elif: (condition, consequent, alternate) → If node with alternate
+        //   - else: (alternate) → the alternate expression directly
+        // The third overload "unwraps" the else branch: its single expression
+        // becomes the alternate of the enclosing If node.
         static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
             [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
                lexy::nullopt) {
@@ -926,12 +1421,22 @@ struct If
 };
 } // namespace node
 
+// Helper: create a Literal AST node wrapping a string key. Used when an
+// identifier-form map key (`foo:`) is desugared to `["foo"]:` at parse time.
+// Both forms produce identical AST nodes — the short form is pure syntax sugar.
 inline ast::Expression::Ptr make_string_key_expr(std::string key)
 {
     auto key_value = Value::create(std::move(key));
     return std::make_unique<ast::Literal>(std::move(key_value));
 }
 
+// =============================================================================
+// Array and map literals
+// =============================================================================
+
+// Array elements: `[expr, expr, ...]` (trailing comma allowed).
+// `delimited_list` handles the `[`, optional whitespace, list, optional
+// trailing comma, `]` structure.
 struct array_elements
 {
     static constexpr auto rule = [] {
@@ -945,8 +1450,14 @@ struct array_elements
     static constexpr auto name = "array literal";
 };
 
+// A map entry key can be either an identifier (`foo:`) or a bracketed
+// expression (`[expr]:`). `map_entry_start` is the character-level peek used
+// to detect the start of any map entry.
 constexpr auto map_entry_start = dsl::lit_c<'['> | dsl::ascii::alpha_underscore;
 
+// `map_key`: parses either `[expr]` (bracket_key) or `identifier` (ident_key).
+// Identifier keys are immediately converted to string-Literal expressions via
+// `make_string_key_expr`, so the AST is uniform regardless of key syntax.
 struct map_key
 {
     static constexpr auto rule = [] {
@@ -971,6 +1482,9 @@ struct map_key
     static constexpr auto name = "map key";
 };
 
+// `map_entry_rule`: factored helper for `key : value`, shared between the
+// regular map_entry and the map_destructure_entry (which has a different value
+// type but the same key syntax).
 template <typename value_rule_t>
 constexpr auto map_entry_rule(value_rule_t value_rule)
 {
@@ -981,6 +1495,7 @@ constexpr auto map_entry_rule(value_rule_t value_rule)
            + value_rule;
 }
 
+// A regular map entry: `key: value_expr`.
 struct map_entry
 {
     static constexpr auto rule = [] {
@@ -996,6 +1511,8 @@ struct map_entry
     static constexpr auto name = "map entry";
 };
 
+// A map destructure entry: `key: binding_name`. The value position is an
+// identifier (the binding name), not an expression.
 struct map_destructure_entry
 {
     static constexpr auto rule = [] {
@@ -1010,6 +1527,8 @@ struct map_destructure_entry
     static constexpr auto name = "map destructure entry";
 };
 
+// `map_entries`: the full `{key: value, ...}` literal.
+// `map_entry_start` gates the list so an empty `{}` produces an empty vector.
 struct map_entries
 {
     static constexpr auto rule = [] {
@@ -1023,6 +1542,9 @@ struct map_entries
     static constexpr auto name = "map literal";
 };
 
+// `map_destructure_entries`: `{key: binding, ...}` in a def destructure.
+// Uses dsl::sep (no trailing comma allowed) since trailing commas in
+// destructure patterns are less natural and could mask typos.
 struct map_destructure_entries
 {
     static constexpr auto rule = [] {
@@ -1037,6 +1559,8 @@ struct map_destructure_entries
     static constexpr auto name = "map destructure";
 };
 
+// Thin node:: wrappers for array and map literals (consistent with other
+// primary expression nodes that live in the node:: namespace).
 namespace node
 {
 struct Array
@@ -1059,6 +1583,32 @@ struct Map
     static constexpr auto name = "map literal";
 };
 } // namespace node
+
+// =============================================================================
+// Primary expression (the dispatch table)
+// =============================================================================
+//
+// `primary_expression` is the "atom" at the base of the expression precedence
+// tower. It dispatches to the appropriate sub-expression based on the next
+// token, using a series of `dsl::peek(...) >> sub_rule` branches.
+//
+// The ordering is significant in a few cases:
+//
+//   - `elif` and `else` are checked BEFORE `Name_Lookup` and trigger custom
+//     errors. Without these branches they would fall through to `Name_Lookup`,
+//     which rejects reserved words, then to `expected_expression` — giving no
+//     indication of what the user meant.
+//
+//   - `Name_Lookup` comes near the end: it is the fallback for any bare word
+//     not claimed by a keyword peek.
+//
+//   - The final `dsl::error<expected_expression>` catches anything not matched
+//     by the earlier branches.
+//
+// Note: there is no `dsl::else_` before the error — the Literal production
+// handles many token types internally, and Name_Lookup handles the identifier
+// fallback. The final dsl::error is an unconditional failure for unrecognized
+// input (e.g. an operator where an expression was expected).
 
 struct primary_expression
 {
@@ -1098,6 +1648,10 @@ struct primary_expression
     static constexpr auto name = "expression";
 };
 
+// Call argument list: the contents of `(args...)` after a function call `f(`.
+// The opening `(` has already been consumed by the call operator. The rule
+// handles both empty `()` (zero args) and non-empty arg lists with comma
+// separators, allowing newlines inside the argument list.
 struct call_arguments
 {
     static constexpr auto rule = [] {
@@ -1108,6 +1662,56 @@ struct call_arguments
     static constexpr auto value = list_or_empty<ast::Expression::Ptr>();
     static constexpr auto name = "call arguments";
 };
+
+// =============================================================================
+// Expression production (operator precedence tower)
+// =============================================================================
+//
+// `expression_impl<allow_nl>` inherits from lexy::expression_production, which
+// implements a Pratt-style operator-precedence parser. The grammar is expressed
+// as a tower of nested structs, each representing one precedence level:
+//
+//   postfix  — highest: index (`[`), call (`(`), dot (`.`), threaded call (`@`)
+//   prefix   — unary: negation (`-`), logical not (`not`)
+//   product  — *, /, %
+//   sum      — +, -
+//   compare  — <, <=, >, >= (non-associative: `a < b < c` is an error)
+//   equal    — ==, != (non-associative)
+//   logical_and — `and`
+//   logical_or  — `or`  ← this is `using operation = ...`
+//
+// Each level's struct specifies:
+//   `op`:      the operator token(s), each tagged with a type (op_add, etc.)
+//   `operand`: the next-lower precedence level (or `dsl::atom` for postfix)
+//
+// The `value` callback of expression_impl receives the operator tag struct as
+// a type argument and dispatches to the correct AST node via `requires`
+// constraints:
+//   - Tags with `static constexpr ast::Unary_Op op` → ast::Unop
+//   - Tags with `static constexpr ast::Binary_Op op` → ast::Binop
+//   - Special tags (op_index, op_call, op_dot, op_threaded_call) → their own
+//     AST nodes with custom constructor logic.
+//
+// THREADED CALL (`@`):
+//   Parsed as a postfix operator that consumes `callee(args)` on the right,
+//   then inserts the left-hand side as the first argument in the value
+//   callback.
+//
+//   The `threaded_call::callee` sub-production is a mini expression parser
+//   that supports only index and dot postfix (no calls). This restricts the
+//   right-hand side of `@` to a callable path expression, preventing
+//   `x @ f(a)(b)` from parsing as `(x @ f(a))(b)`.
+//
+// COMPARISON OPERATORS:
+//   `compare` uses dsl::infix_op_single instead of dsl::infix_op_left. This
+//   makes comparisons non-associative: `a < b < c` is a parse error rather
+//   than silently parsing as `(a < b) < c` (which would be meaningless for
+//   most types). The user must parenthesize if chaining is intentional.
+//
+// WHITESPACE:
+//   The `allow_nl` template parameter controls whether newlines are skipped.
+//   Inside delimiters (arrays, call args, etc.) newlines are harmless;
+//   at statement level they terminate the statement.
 
 template <bool allow_nl>
 struct expression_impl : lexy::expression_production
@@ -1121,6 +1725,11 @@ struct expression_impl : lexy::expression_production
     static constexpr auto atom = dsl::p<primary_expression>;
     static constexpr auto name = "expression";
 
+    // Operator tag types. Each is an empty struct; their `op` member (where
+    // present) is the ast::Unary_Op or ast::Binary_Op enum value that will be
+    // stored in the AST node. The expression_impl value callback uses the tag
+    // type itself (via template argument deduction) to select the right AST
+    // constructor.
     struct op_neg
     {
         static constexpr ast::Unary_Op op = ast::Unary_Op::NEGATE;
@@ -1129,6 +1738,8 @@ struct expression_impl : lexy::expression_production
     {
         static constexpr ast::Unary_Op op = ast::Unary_Op::NOT;
     };
+    // These three postfix operators produce compound results (index expression,
+    // call, dot access), not a simple Binary_Op, so they have no `op` member.
     struct op_index
     {
     };
@@ -1194,6 +1805,11 @@ struct expression_impl : lexy::expression_production
         static constexpr ast::Binary_Op op = ast::Binary_Op::OR;
     };
 
+    // `threaded_call`: the right-hand side of `@`.
+    // Parsed as: callee_expr `(` args `)`.
+    // `callee` is a mini expression that supports only index and dot postfix —
+    // this restricts what can appear as the right-hand callee of `@` and avoids
+    // ambiguities with nested calls.
     struct threaded_call
     {
         struct callee : lexy::expression_production
@@ -1246,6 +1862,15 @@ struct expression_impl : lexy::expression_production
         static constexpr auto name = "threaded call";
     };
 
+    // POSTFIX operators (highest precedence):
+    //   op_index:         `expr[index]`
+    //   op_call:          `expr(args...)`
+    //   op_dot:           `expr.field`
+    //   op_threaded_call: `expr@callee(args...)`
+    //
+    // For op_call, the opening `(` commits entry; a dsl::must then checks
+    // for either `)` (empty args) or an expression start. This ensures
+    // `f(garbage` produces a "closing ')'" error rather than confusing output.
     struct postfix : dsl::postfix_op
     {
         static constexpr auto op =
@@ -1262,6 +1887,7 @@ struct expression_impl : lexy::expression_production
         using operand = dsl::atom;
     };
 
+    // PREFIX operators: unary `-` and `not`.
     struct prefix : dsl::prefix_op
     {
         static constexpr auto op =
@@ -1270,6 +1896,7 @@ struct expression_impl : lexy::expression_production
         using operand = postfix;
     };
 
+    // MULTIPLICATIVE: *, /, %. Left-associative.
     struct product : dsl::infix_op_left
     {
         static constexpr auto op = dsl::op<op_mod>(dsl::lit_c<'%'>)
@@ -1278,6 +1905,7 @@ struct expression_impl : lexy::expression_production
         using operand = prefix;
     };
 
+    // ADDITIVE: +, -. Left-associative.
     struct sum : dsl::infix_op_left
     {
         static constexpr auto op =
@@ -1285,6 +1913,11 @@ struct expression_impl : lexy::expression_production
         using operand = product;
     };
 
+    // RELATIONAL: <, <=, >, >=. Non-associative (infix_op_single).
+    // LEXY_LIT not LEXY_KEYWORD: these are operator tokens, not keywords.
+    // `<=` and `>=` must be listed before `<` and `>` so that Lexy does not
+    // match the shorter prefix first (operator alternatives are tried in
+    // order).
     struct compare : dsl::infix_op_single
     {
         static constexpr auto op = dsl::op<op_le>(LEXY_LIT("<="))
@@ -1294,6 +1927,7 @@ struct expression_impl : lexy::expression_production
         using operand = sum;
     };
 
+    // EQUALITY: ==, !=. Non-associative.
     struct equal : dsl::infix_op_single
     {
         static constexpr auto op =
@@ -1301,6 +1935,8 @@ struct expression_impl : lexy::expression_production
         using operand = compare;
     };
 
+    // LOGICAL AND: `and`. Left-associative. LEXY_KEYWORD (not LEXY_LIT)
+    // prevents `android` from matching `and` as an operator.
     struct logical_and : dsl::infix_op_left
     {
         static constexpr auto op =
@@ -1308,6 +1944,7 @@ struct expression_impl : lexy::expression_production
         using operand = equal;
     };
 
+    // LOGICAL OR: `or`. Left-associative. Top of the tower.
     struct logical_or : dsl::infix_op_left
     {
         static constexpr auto op =
@@ -1317,6 +1954,18 @@ struct expression_impl : lexy::expression_production
 
     using operation = logical_or;
 
+    // The value callback is a multi-overload lexy::callback that handles every
+    // combination of operator tag and operand types that the expression tower
+    // can produce. C++20 requires-constraints select the right overload:
+    //
+    //   - (value) alone: atom with no operator — pass-through
+    //   - (op_t, rhs) with op_t::op ~ Unary_Op: unary operation
+    //   - (lhs, op_index, index_expr): index expression
+    //   - (lhs, op_call, args): function call
+    //   - (lhs, op_dot, key_string): dot access (desugared to index)
+    //   - (lhs, op_threaded_call, threaded_call::result): threaded call
+    //     (inserts lhs as first argument)
+    //   - (lhs, op_t, rhs) with op_t::op ~ Binary_Op: binary operation
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr value) {
             return value;
@@ -1364,6 +2013,9 @@ struct expression_impl : lexy::expression_production
         });
 };
 
+// The two instantiations of the expression template. `expression` is used at
+// statement level (newlines not skipped). `expression_nl` is used inside
+// delimiters and multi-line contexts (newlines skipped as whitespace).
 struct expression : expression_impl<false>
 {
 };
@@ -1372,8 +2024,19 @@ struct expression_nl : expression_impl<true>
 {
 };
 
+// =============================================================================
+// Definition statements (def / export def)
+// =============================================================================
+
 namespace node
 {
+// `define_lhs`: the left-hand side of a `def` statement.
+// Three forms:
+//   def name = expr               — simple binding
+//   def [a, b, ...rest] = expr   — array destructure
+//   def {key: name} = expr        — map destructure
+// The branching uses peek on the first character: `[` for array destructure,
+// `{` for map destructure, otherwise an identifier.
 constexpr auto define_lhs = [] {
     return dsl::peek(dsl::lit_c<'['>)
            >> dsl::p<array_destructure_pattern>
@@ -1383,10 +2046,17 @@ constexpr auto define_lhs = [] {
            >> dsl::p<identifier_required>;
 }();
 
+// `define_payload`: the `lhs = expr` part (after the `def` keyword).
+// Uses `param_ws` (horizontal whitespace only) because the `=` and the
+// expression must be on the same line as the `def` keyword.
 constexpr auto define_payload = [] {
     return define_lhs + dsl::lit_c<'='> + param_ws + dsl::p<expression>;
 }();
 
+// `define_callback<export_flag>`: factory for the value callback used by both
+// `Define` and `Export_Def`. The export_flag template argument is baked into
+// the AST node at construction time. Three overloads handle the three LHS
+// forms.
 template <bool export_flag>
 constexpr auto define_callback()
 {
@@ -1407,6 +2077,8 @@ constexpr auto define_callback()
         });
 }
 
+// `def name = expr`. The `def` keyword commits; then `define_payload` must
+// succeed. Produces a non-exported binding.
 struct Define
 {
     static constexpr auto rule = [] {
@@ -1417,6 +2089,10 @@ struct Define
     static constexpr auto name = "def statement";
 };
 
+// `export def name = expr`. Both keywords must appear with only horizontal
+// whitespace between them (`param_ws_no_comment` — no comments, because
+// `export # comment\n def` is a surprising place to hide a comment).
+// Produces an exported binding.
 struct Export_Def
 {
     static constexpr auto rule = [] {
@@ -1429,6 +2105,12 @@ struct Export_Def
 };
 } // namespace node
 
+// =============================================================================
+// Statements
+// =============================================================================
+
+// An expression used as a statement. The expression is wrapped in a
+// Statement::Ptr via implicit conversion from Expression::Ptr.
 struct expression_statement
 {
     static constexpr auto rule = expression_start_no_nl >> dsl::p<expression>;
@@ -1439,6 +2121,13 @@ struct expression_statement
     static constexpr auto name = "expression statement";
 };
 
+// `statement_impl<allow_export>`: a single statement. The template parameter
+// bakes the `export def` allowance in at compile time with zero runtime
+// overhead.
+//
+// The ordering: `export def` is tried first (peeked), then `def`, then
+// expression statement. The peek on `export` is needed to commit to the
+// Export_Def branch before Lexy tries the other alternatives.
 template <bool allow_export>
 struct statement_impl
 {
@@ -1464,10 +2153,28 @@ struct statement_impl
 using statement = statement_impl<false>;
 using top_level_statement = statement_impl<true>;
 
+// =============================================================================
+// Statement lists
+// =============================================================================
+//
+// A statement list is a sequence of statements separated by newlines or
+// semicolons. The separator rule peeks ahead to confirm a newline or semicolon
+// follows (after optional horizontal whitespace) before consuming it; this
+// avoids treating the end of a block `}` as a separator and accidentally
+// consuming it.
+//
+// The `item` branch peeks at `expression_start_no_nl` before parsing a
+// statement, so an empty or trailing-separator list terminates cleanly rather
+// than trying to parse a statement from the closing `}` or EOF.
+
 template <typename stmt_t>
 struct statement_list_impl
 {
     static constexpr auto rule = [] {
+        // The separator matches any horizontal whitespace followed by `;`,
+        // `\n`, or `#` (start of a comment that spans to `\n`). The peek
+        // ensures we only consume statement_ws if a genuine separator follows,
+        // not if we are at the end of the input or at a closing brace.
         auto sep =
             dsl::peek(dsl::while_(no_nl_chars)
                       + (dsl::lit_c<';'> | dsl::lit_c<'\n'> | dsl::lit_c<'#'>))
@@ -1488,6 +2195,29 @@ struct top_level_statement_list : statement_list_impl<top_level_statement>
 {
 };
 
+// =============================================================================
+// Top-level program rule
+// =============================================================================
+//
+// A Frost program is an optional list of top-level statements surrounded by
+// `statement_ws` (which skips blank lines, comments, semicolons).
+//
+// After the statement list, before dsl::eof, we insert "helpful mistake" peeks:
+//   - `&&` → "use 'and'"
+//   - `||` → "use 'or'"
+//   - `=`  → "use 'def'"
+//
+// These are checked AFTER the statement list so that they fire only when the
+// statement list has consumed as much as it can and these tokens appear next.
+// If they appeared inside expressions, the expression parser would have already
+// handled or rejected them. Catching them here provides actionable errors for
+// the most common mistakes at statement boundary (e.g. writing `x = 5`
+// instead of `def x = 5`).
+//
+// `ws_no_nl` is the automatic whitespace for this production; it prevents
+// the top-level parser from silently consuming newlines between the `eof`
+// check and the end of input.
+
 struct program
 {
     static constexpr auto whitespace = ws_no_nl;
@@ -1497,9 +2227,9 @@ struct program
                                  + (dsl::peek(LEXY_LIT("&&"))
                                     >> dsl::error<use_and_not_double_ampersand>
                                     | dsl::peek(LEXY_LIT("||"))
-                                      >> dsl::error<use_or_not_double_pipe>
+                                    >> dsl::error<use_or_not_double_pipe>
                                     | dsl::peek(dsl::lit_c<'='>)
-                                      >> dsl::error<use_def_for_assignment>
+                                    >> dsl::error<use_def_for_assignment>
                                     | dsl::eof);
     static constexpr auto value =
         lexy::callback<std::vector<ast::Statement::Ptr>>(
