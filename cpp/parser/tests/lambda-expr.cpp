@@ -65,22 +65,22 @@ TEST_CASE("Parser Lambda Expressions")
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 
-    SECTION("Empty body is rejected")
+    SECTION("Empty braces parse as an empty-map-returning lambda")
     {
-        CHECK_THROWS_WITH(parse("fn() -> {}"),
-                          Catch::Matchers::ContainsSubstring("empty body"));
-    }
-
-    SECTION("Empty body is rejected with elided parameters")
-    {
-        CHECK_THROWS_WITH(parse("fn -> {}"),
-                          Catch::Matchers::ContainsSubstring("empty body"));
-    }
-
-    SECTION("Empty body is rejected with named parameters")
-    {
-        CHECK_THROWS_WITH(parse("fn(x) -> {}"),
-                          Catch::Matchers::ContainsSubstring("empty body"));
+        auto returns_empty_map = [&](std::string_view src,
+                                     std::vector<frst::Value_Ptr> args = {}) {
+            auto result = parse(src);
+            REQUIRE(result);
+            auto expr = require_expression(result);
+            frst::Symbol_Table table;
+            auto value = expr->evaluate(table);
+            auto out = call_function(value, std::move(args));
+            REQUIRE(out->is<frst::Map>());
+            CHECK(out->raw_get<frst::Map>().empty());
+        };
+        returns_empty_map("fn() -> {}");
+        returns_empty_map("fn -> {}");
+        returns_empty_map("fn(x) -> {}", {frst::Value::null()});
     }
 
     SECTION("Empty parameter list can be elided")
@@ -327,13 +327,18 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(expr);
     }
 
-    SECTION("Top-level empty-body lambda statement is rejected")
+    SECTION(
+        "Top-level empty-braces lambda parses as empty-map-returning lambda")
     {
         auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"fn -> {}"});
-        CHECK_THROWS_WITH(
-            (lexy::parse<frst::grammar::program>(src, lexy::noop)),
-            Catch::Matchers::ContainsSubstring("empty body"));
+        auto result = lexy::parse<frst::grammar::program>(src, lexy::noop);
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+        auto* expr =
+            dynamic_cast<const frst::ast::Expression*>(program.front().get());
+        REQUIRE(expr);
     }
 
     SECTION("Multiple lambdas as top-level statements parse correctly")
@@ -515,25 +520,28 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 7_f);
     }
 
-    SECTION("Expression body must wrap map literals in parentheses")
+    SECTION("Identifier-key map literal as lambda body")
     {
-        CHECK_FALSE(parse("fn -> {a: 1}"));
-
-        auto ok = parse("fn -> ({a: 1})");
-        REQUIRE(ok);
-        auto expr = require_expression(ok);
-
-        frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
-        auto out = call_function(value, {});
-        REQUIRE(out->is<frst::Map>());
-        const auto& map = out->raw_get<frst::Map>();
-        REQUIRE(map.size() == 1);
-        auto key = frst::Value::create(std::string{"a"});
-        auto it = map.find(key);
-        REQUIRE(it != map.end());
-        REQUIRE(it->second->is<frst::Int>());
-        CHECK(it->second->get<frst::Int>().value() == 1_f);
+        auto check_map_a1 = [&](std::string_view src) {
+            auto result = parse(src);
+            REQUIRE(result);
+            auto expr = require_expression(result);
+            frst::Symbol_Table table;
+            auto value = expr->evaluate(table);
+            auto out = call_function(value, {});
+            REQUIRE(out->is<frst::Map>());
+            const auto& map = out->raw_get<frst::Map>();
+            REQUIRE(map.size() == 1);
+            auto key = frst::Value::create(std::string{"a"});
+            auto it = map.find(key);
+            REQUIRE(it != map.end());
+            REQUIRE(it->second->is<frst::Int>());
+            CHECK(it->second->get<frst::Int>().value() == 1_f);
+        };
+        // Bare map literal — now accepted without parentheses
+        check_map_a1("fn -> {a: 1}");
+        // Parenthesized form still works
+        check_map_a1("fn -> ({a: 1})");
     }
 
     SECTION("Postfix can follow a lambda with intervening whitespace")

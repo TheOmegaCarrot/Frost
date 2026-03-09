@@ -646,17 +646,32 @@ struct lambda_param_clause
 
 struct lambda_body
 {
-    static constexpr auto rule =
-        dsl::peek(param_ws_nl + dsl::lit_c<'{'>)
-        >> param_ws_nl
-        >> dsl::curly_bracketed(statement_ws
-                                + dsl::opt(dsl::peek(expression_start_no_nl)
-                                           >> dsl::recurse<statement_list>)
-                                + statement_ws)
-        | dsl::else_
-        >> (require_expr_start_nl<expected_lambda_body>()
-            >> param_ws_nl
-            >> dsl::recurse<expression>);
+    static constexpr auto rule = [] {
+        // Detect `{}` (empty map) and `{identifier:` (identifier-key map)
+        // before the generic `{` → block branch, so they parse as expressions.
+        // Note: `{[expr]:` (computed-key map) cannot be distinguished from
+        // `{[expr]}` (block with array) via bounded lookahead, so it falls
+        // through to the block parser.
+        auto empty_map_peek = dsl::peek(
+            param_ws_nl + dsl::lit_c<'{'> + param_ws_nl + dsl::lit_c<'}'>);
+        auto ident_map_peek = dsl::peek(
+            param_ws_nl + dsl::lit_c<'{'> + param_ws_nl
+            + dsl::ascii::alpha_underscore + dsl::while_(dsl::ascii::word)
+            + param_ws_nl + dsl::lit_c<':'>);
+        auto expr_body = param_ws_nl + dsl::recurse<expression>;
+        return empty_map_peek >> expr_body
+               | ident_map_peek >> expr_body
+               | dsl::peek(param_ws_nl + dsl::lit_c<'{'>)
+                 >> param_ws_nl
+                 >> dsl::curly_bracketed(statement_ws
+                                         + dsl::opt(dsl::peek(expression_start_no_nl)
+                                                    >> dsl::recurse<statement_list>)
+                                         + statement_ws)
+               | dsl::else_
+                 >> (require_expr_start_nl<expected_lambda_body>()
+                     >> param_ws_nl
+                     >> dsl::recurse<expression>);
+    }();
     static constexpr auto value =
         lexy::callback<std::vector<ast::Statement::Ptr>>(
             [](lexy::nullopt) {
