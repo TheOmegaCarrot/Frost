@@ -715,6 +715,20 @@ def { [42]: foo, [false]: bar } = { [42]: 'wow', [false]: 'neat' }
 # foo == 'wow' and bar == 'neat'
 ```
 
+Oftentimes, a pattern such as the following is desireable:
+
+```frost
+def { foo: foo, bar: bar } = # something
+```
+
+In this case, a shortened form can be used:
+
+```frost
+def { foo, bar } = # something
+```
+
+The above two examples are identical in meaning.
+
 ## Modules
 
 Frost provides a mechanism for using code across separate files.
