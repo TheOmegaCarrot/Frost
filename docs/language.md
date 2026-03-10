@@ -827,3 +827,16 @@ def h = import('helpers') # resolves to lib/helpers.frst, not project/helpers.fr
 def h = import('helpers')     # resolves to project/helpers.frst
 def core = import('lib.core') # resolves to project/lib/core.frst
 ```
+
+### The `imported` variable
+
+Every Frost file has access to a predefined `Bool` named `imported`.
+It is `false` when the file is run directly, and `true` when it is loaded via `import`.
+
+This allows a file to act as both a reusable module and a runnable script:
+
+```frost
+export def greet = fn name -> $'hello, ${name}'
+
+if not imported: print(greet('world'))
+```
