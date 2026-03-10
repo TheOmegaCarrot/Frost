@@ -1298,6 +1298,31 @@ struct Lambda
     static constexpr auto name = "lambda expression";
 };
 
+// Do block: `do { statements }`. The braces are mandatory (unlike lambda which
+// has multiple body forms). The body follows the same block rules as lambda's
+// block body: optional statement list inside curly braces.
+struct Do_Block_Expr
+{
+    static constexpr auto rule = [] {
+        auto kw_do = LEXY_KEYWORD("do", identifier::base);
+        return kw_do
+               >> dsl::curly_bracketed(
+                   statement_ws
+                   + dsl::opt(dsl::peek(expression_start_no_nl)
+                              >> dsl::recurse<statement_list>)
+                   + statement_ws);
+    }();
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](lexy::nullopt) -> ast::Expression::Ptr {
+            return std::make_unique<ast::Do_Block>(
+                std::vector<ast::Statement::Ptr>{});
+        },
+        [](std::vector<ast::Statement::Ptr> stmts) -> ast::Expression::Ptr {
+            return std::make_unique<ast::Do_Block>(std::move(stmts));
+        });
+    static constexpr auto name = "do block";
+};
+
 // =============================================================================
 // If expression
 // =============================================================================
@@ -1663,6 +1688,8 @@ struct primary_expression
         >> dsl::p<node::If>
         | dsl::peek(LEXY_KEYWORD("fn", identifier::base))
         >> dsl::p<node::Lambda>
+        | dsl::peek(LEXY_KEYWORD("do", identifier::base))
+        >> dsl::p<node::Do_Block_Expr>
         | dsl::peek(LEXY_KEYWORD("map", identifier::base))
         >> dsl::p<node::Map_Expr>
         | dsl::peek(LEXY_KEYWORD("filter", identifier::base))
