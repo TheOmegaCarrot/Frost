@@ -2,6 +2,11 @@
 .cache
 build
 build-directory
+rel
+profile
+docs
+editor
+frost-scripts
 **/CMakeFiles
 **/CMakeCache.txt
 **/cmake_install.cmake

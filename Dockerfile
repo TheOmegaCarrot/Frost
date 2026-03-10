@@ -1,7 +1,7 @@
 FROM gcc:15 AS builder
 
 ARG BUILD_TYPE=Release
-ARG WITH_HTTP=No
+ARG WITH_HTTP=Yes
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -20,12 +20,12 @@ WORKDIR /src
 COPY . /src
 
 RUN cmake -S . -B /build -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_TESTS=No -DWITH_HTTP=${WITH_HTTP} \
-    && cmake --build /build -j8 \
+    && cmake --build /build -j$(nproc) \
     && if [ "${BUILD_TYPE}" = "Release" ]; then strip /build/frost; fi
 
 FROM debian:trixie-slim AS runtime
 
-ARG WITH_HTTP=No
+ARG WITH_HTTP=Yes
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -35,8 +35,6 @@ RUN apt-get update \
         libboost-regex1.83.0 \
         libgcc-s1 \
         libstdc++6 \
-        libzstd1 \
-        zlib1g \
     && if [ "${WITH_HTTP}" = "Yes" ]; then \
         apt-get install -y --no-install-recommends \
             libboost-url1.83.0 \
