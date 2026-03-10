@@ -31,3 +31,8 @@ std::generator<ast::Statement::Child_Info> ast::Unop::children() const
 {
     co_yield make_child(operand_);
 }
+
+bool ast::Unop::data_safe() const
+{
+    return true;
+}

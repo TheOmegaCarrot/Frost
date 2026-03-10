@@ -51,6 +51,8 @@ class Unop final : public Expression
 
     std::string node_label() const final;
 
+    bool data_safe() const final;
+
   protected:
     std::generator<Child_Info> children() const final;
 

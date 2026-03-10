@@ -69,7 +69,7 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_file(
                           .opts({lexy::visualize_fancy}));
 }
 
-std::expected<ast::Statement::Ptr, std::string> parse_data(
+std::expected<ast::Expression::Ptr, std::string> parse_data(
     const std::string& text)
 {
     try

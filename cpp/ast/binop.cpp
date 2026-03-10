@@ -75,3 +75,8 @@ std::generator<ast::Statement::Child_Info> ast::Binop::children() const
     co_yield make_child(lhs_, "LHS");
     co_yield make_child(rhs_, "RHS");
 }
+
+bool ast::Binop::data_safe() const
+{
+    return true;
+}

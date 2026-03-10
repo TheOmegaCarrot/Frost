@@ -5,7 +5,7 @@
 namespace frst
 {
 
-BUILTIN(read_data)
+BUILTIN(read_value)
 {
     REQUIRE_ARGS("read_value", PARAM("data", TYPES(String)));
 
@@ -15,17 +15,10 @@ BUILTIN(read_data)
     if (not parse_result)
     {
         throw Frost_Recoverable_Error{fmt::format(
-            "Invalid Frost Data:\n{}\nError: {}", data, parse_result.error())};
+            "Invalid Frost Data:\nError: {}", parse_result.error())};
     }
 
-    const auto& ast = parse_result.value();
-
-    const auto* expr = dynamic_cast<ast::Expression*>(ast.get());
-
-    if (not expr)
-        throw Frost_Recoverable_Error{fmt::format(
-            "Frost Data must be a static expression, got \"{}\" at top-level",
-            ast->node_label())};
+    const auto& expr = parse_result.value();
 
     for (const auto* node : expr->walk())
     {
@@ -34,11 +27,13 @@ BUILTIN(read_data)
                 "Invalid node in Frost Data: {}", node->node_label())};
     }
 
+    // no data safe node accesses the symbol table,
+    // so it's fine for it to be empty
     return expr->evaluate({});
 }
 
 void inject_meta(Symbol_Table& table)
 {
-    INJECT(read_data, 1, 1);
+    INJECT(read_value, 1, 1);
 }
 } // namespace frst
