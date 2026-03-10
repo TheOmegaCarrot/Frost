@@ -3,6 +3,7 @@ add_library( frost-ast
     array-destructure.cpp
     binop.cpp
     define.cpp
+    do.cpp
     filter.cpp
     foreach.cpp
     format-string.cpp
@@ -36,6 +37,7 @@ set(AST_TEST_FILES
     basic-ast-dump
     literal
     define
+    do
     array-destructure
     map-destructure
     if

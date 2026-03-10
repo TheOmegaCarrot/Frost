@@ -1,5 +1,6 @@
 #include <frost/ast/lambda.hpp>
 #include <frost/ast/literal.hpp>
+#include <frost/ast/utils/block-utils.hpp>
 #include <frost/closure.hpp>
 
 #include <fmt/format.h>
@@ -12,29 +13,6 @@ namespace frst::ast
 {
 namespace
 {
-
-struct
-{
-    static std::generator<Statement::Symbol_Action> operator()(
-        const Statement::Ptr& node)
-    {
-        return node->symbol_sequence();
-    }
-
-    static std::generator<Statement::Symbol_Action> operator()(
-        const std::shared_ptr<Expression>& node)
-    {
-        return node->symbol_sequence();
-    }
-} constexpr static node_to_sym_seq;
-
-auto body_symbol_sequence(const std::vector<Statement::Ptr>& body_prefix,
-                          const std::shared_ptr<Expression>& return_expr)
-{
-    return std::views::concat(
-        body_prefix | std::views::transform(node_to_sym_seq) | std::views::join,
-        node_to_sym_seq(return_expr));
-}
 
 Value_Ptr promote_if_weak(const Value_Ptr& fn)
 {
@@ -91,7 +69,7 @@ Lambda::Lambda(std::vector<std::string> params,
     std::flat_set<std::string> names_defined_so_far{std::from_range, param_set};
 
     for (const Statement::Symbol_Action& name :
-         body_symbol_sequence(*body_prefix_, return_expr_))
+         utils::body_symbol_sequence(*body_prefix_, return_expr_))
     {
         name.visit(Overload{
             [&](const Statement::Definition& defn) {
@@ -165,7 +143,7 @@ Lambda::Lambda(std::vector<std::string> params,
 std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
 {
 
-    const auto get_name = [](const auto& action) {
+    const auto get_name = [](const auto& action) -> const auto& {
         return action.name;
     };
 
@@ -176,9 +154,9 @@ std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
         defns.insert(vararg_param_.value());
 
     for (const Statement::Symbol_Action& action :
-         body_symbol_sequence(*body_prefix_, return_expr_))
+         utils::body_symbol_sequence(*body_prefix_, return_expr_))
     {
-        const auto name = action.visit(get_name);
+        const auto& name = action.visit(get_name);
         if (std::holds_alternative<Statement::Definition>(action))
             defns.insert(name);
         else if (not defns.contains(name))

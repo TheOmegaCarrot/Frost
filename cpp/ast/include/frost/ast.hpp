@@ -7,6 +7,7 @@
 #include <frost/ast/array-destructure.hpp>
 #include <frost/ast/binop.hpp>
 #include <frost/ast/define.hpp>
+#include <frost/ast/do.hpp>
 #include <frost/ast/expression.hpp>
 #include <frost/ast/filter.hpp>
 #include <frost/ast/foreach.hpp>
