@@ -85,6 +85,89 @@ The primary duties of the agent are writing/updating unit tests and read-only de
 When modifying unit tests, always build and run all tests to ensure correctness.
 If a valid test fails, the agent should simply inform the user. 
 
+## Frost Syntax Cheat Sheet
+
+This cheat sheet is not exhaustive, but serves as a guard against common mistakes.
+`./docs` is available for more complete information.
+
+### `if` / `elif` / `else`
+
+Uses colon, not braces or `then`. Each branch is a single expression.
+
+```frost
+if x: 1
+elif y: 2
+else: 3
+
+if condition: print("yes")   # else: null implicitly
+```
+
+Braces are NOT valid branch syntax. Use an immediately-invoked function for multi-statement branches:
+
+```frost
+if condition: fn -> {
+    def x = 1
+    x + 2
+}()
+else: 0
+```
+
+### `@` threading operator
+
+`a @ f` means `f(a)`. `a @ f(x)` means `f(a, x)` — the left-hand value is threaded in as the **first** argument.
+
+```frost
+[1, 2, 3] @ transform(fn x -> x * 2)   # transform([1, 2, 3], fn x -> x * 2)
+value @ tap(print)                       # tap(value, print)
+```
+
+There is no `|` pipe operator.
+`|` is not a valid token.
+
+### Format strings
+
+`${}` interpolation accepts **identifiers only** — no expressions.
+
+```frost
+def name = "world"
+$'hello, ${name}'    # ok
+$'hello, ${"world"}' # syntax error — string literal is not an identifier
+$'result: ${x + 1}'  # syntax error — expressions not allowed
+```
+
+### Functions
+
+```frost
+fn x -> x + 1                    # single-expression lambda
+fn (x, y) -> x + y               # multiple parameters
+fn -> { def x = 1; x + 2 }       # block body (statements separated by newlines or ;)
+fn x -> fn y -> x + y            # curried
+```
+
+### Truthiness
+
+Only `null` and `false` are falsy. `0`, `""`, `[]`, `{}` are all truthy.
+
+### `and` / `or`
+
+Short-circuit and return the actual value, not a coerced `Bool`.
+
+```frost
+null or "default"    # => "default"
+42 and "yes"         # => "yes"
+false or 0           # => 0
+```
+
+### Map / filter / reduce expressions
+
+```frost
+map [1, 2, 3] with fn x -> x * 2          # map expression (NOT a function call)
+filter [1, 2, 3] with fn x -> x > 1       # filter expression
+reduce [1, 2, 3] with fn (acc, x) -> acc + x
+```
+
+The functional equivalents (usable in pipelines with `@`) are `transform`, `select`, `fold`.
+
 ## Running the Interpreter
 
 ```bash
