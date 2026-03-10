@@ -23,3 +23,8 @@ std::string ast::Literal::node_label() const
     return fmt::format("Literal({})",
                        value_->to_internal_string({.in_structure = true}));
 }
+
+bool ast::Literal::data_safe() const
+{
+    return true;
+}

@@ -26,8 +26,9 @@ class Literal final : public Expression
 
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table&) const final;
 
-  protected:
     std::string node_label() const final;
+
+    bool data_safe() const final;
 
   private:
     Value_Ptr value_;

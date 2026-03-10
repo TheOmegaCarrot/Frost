@@ -34,9 +34,9 @@ class Map_Destructure final : public Statement
 
     std::optional<Map> execute(Symbol_Table& table) const final;
 
-  protected:
     std::string node_label() const;
 
+  protected:
     std::generator<Child_Info> children() const;
 
     std::generator<Symbol_Action> symbol_sequence() const final;

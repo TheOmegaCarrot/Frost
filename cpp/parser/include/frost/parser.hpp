@@ -14,6 +14,9 @@ parse_program(const std::string& program_text);
 
 [[nodiscard]] std::expected<std::vector<ast::Statement::Ptr>, std::string>
 parse_file(const std::filesystem::path& filename);
+
+[[nodiscard]] std::expected<ast::Statement::Ptr, std::string> parse_data(
+    const std::string& text);
 } // namespace frst
 
 #endif

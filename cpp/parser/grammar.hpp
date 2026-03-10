@@ -1523,10 +1523,10 @@ struct map_destructure_entry
     static constexpr auto rule = [] {
         // Computed key [expr]: binding_name — shorthand not applicable.
         auto bracket_key_expr = dsl::lit_c<'['>
-                                 + param_ws_nl
-                                 + dsl::recurse<expression_nl>
-                                 + param_ws_nl
-                                 + dsl::lit_c<']'>;
+                                + param_ws_nl
+                                + dsl::recurse<expression_nl>
+                                + param_ws_nl
+                                + dsl::lit_c<']'>;
         auto computed = dsl::peek(dsl::lit_c<'['>)
                         >> (bracket_key_expr
                             + param_ws_nl
@@ -1534,13 +1534,16 @@ struct map_destructure_entry
                             + param_ws_nl
                             + dsl::p<identifier_required>);
 
-        // Named key: peek for `:` to distinguish explicit binding from shorthand.
+        // Named key: peek for `:` to distinguish explicit binding from
+        // shorthand.
         auto explicit_binding =
             dsl::opt(dsl::peek(param_ws_nl + dsl::lit_c<':'>)
-                     >> (param_ws_nl + dsl::lit_c<':'>
-                         + param_ws_nl + dsl::p<identifier_required>));
-        auto named = dsl::else_
-                     >> (dsl::p<identifier_required> + explicit_binding);
+                     >> (param_ws_nl
+                         + dsl::lit_c<':'>
+                         + param_ws_nl
+                         + dsl::p<identifier_required>));
+        auto named =
+            dsl::else_ >> (dsl::p<identifier_required> + explicit_binding);
 
         return computed | named;
     }();
@@ -1548,7 +1551,8 @@ struct map_destructure_entry
     static constexpr auto value = lexy::callback<ast::Map_Destructure::Element>(
         // Computed key with explicit binding.
         [](ast::Expression::Ptr key, std::string name) {
-            return ast::Map_Destructure::Element{std::move(key), std::move(name)};
+            return ast::Map_Destructure::Element{std::move(key),
+                                                 std::move(name)};
         },
         // Named key with explicit binding.
         [](std::string key, std::string name) {
@@ -1557,7 +1561,8 @@ struct map_destructure_entry
         },
         // Shorthand: binding name equals key name.
         [](std::string key, lexy::nullopt) {
-            return ast::Map_Destructure::Element{make_string_key_expr(key), key};
+            return ast::Map_Destructure::Element{make_string_key_expr(key),
+                                                 key};
         });
     static constexpr auto name = "map destructure entry";
 };
@@ -2275,6 +2280,21 @@ struct program
                 return stmts;
             });
     static constexpr auto name = "program";
+};
+
+// =============================================================================
+// Data Expression rule
+// =============================================================================
+//
+// A restricted form which parses exactly one expression,
+// for Frost Data deserialization.
+//
+// Further AST validation is done on the full AST.
+
+struct data_expression
+{
+    static constexpr auto rule = dsl::p<expression_nl> + dsl::eof;
+    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
 };
 
 } // namespace frst::grammar

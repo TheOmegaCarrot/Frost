@@ -1,5 +1,6 @@
 add_library( frost-meta
     import.cpp
+    meta.cpp
 )
 
 target_include_directories( frost-meta

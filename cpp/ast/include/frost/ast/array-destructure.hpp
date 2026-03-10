@@ -35,9 +35,9 @@ class Array_Destructure final : public Statement
 
     std::generator<Symbol_Action> symbol_sequence() const final;
 
-  protected:
     std::string node_label() const;
 
+  protected:
     std::generator<Child_Info> children() const;
 
   private:

@@ -25,10 +25,9 @@ class Format_String final : public Expression
 
   public:
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
-
-  protected:
     std::string node_label() const final;
 
+  protected:
     std::generator<Symbol_Action> symbol_sequence() const final;
 
   private:

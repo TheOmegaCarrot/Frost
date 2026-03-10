@@ -26,8 +26,6 @@ class Name_Lookup final : public Expression
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
     std::generator<Symbol_Action> symbol_sequence() const final;
-
-  protected:
     std::string node_label() const final;
 
   private:

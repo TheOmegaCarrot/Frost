@@ -49,6 +49,21 @@ class Statement
             co_yield std::ranges::elements_of(child.node->symbol_sequence());
     }
 
+    virtual std::string node_label() const = 0;
+
+    // True if a node is safe to deserialize from Frost Data
+    virtual bool data_safe() const
+    {
+        return false;
+    }
+
+    std::generator<const Statement*> walk() const
+    {
+        co_yield this;
+        for (const Child_Info& child : children())
+            co_yield std::ranges::elements_of(child.node->walk());
+    }
+
   protected:
     struct Child_Info
     {
@@ -60,8 +75,6 @@ class Statement
     {
         return Child_Info{child.get(), std::move(label)};
     }
-
-    virtual std::string node_label() const = 0;
 
     //! @brief Iterate over children (possibly empty)
     virtual std::generator<Child_Info> children() const

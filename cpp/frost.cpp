@@ -1,6 +1,7 @@
 #include <frost/ast.hpp>
 #include <frost/builtin.hpp>
 #include <frost/import.hpp>
+#include <frost/meta.hpp>
 #include <frost/parser.hpp>
 #include <frost/prelude.hpp>
 #include <frost/symbol-table.hpp>
@@ -127,6 +128,7 @@ int main(int argc, const char** argv)
 
     frst::Symbol_Table symbols;
     frst::inject_builtins(symbols);
+    frst::inject_meta(symbols);
     frst::inject_prelude(symbols);
 
     std::vector<std::filesystem::path> module_search_path;

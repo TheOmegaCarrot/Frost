@@ -60,7 +60,7 @@ Integration tests run `.frst` scripts from `integration-tests/` and are discover
 | `symbol-table/` | Lexically-scoped variable bindings (`Symbol_Table` with failover chaining) |
 | `functions/` | Closures, lambdas, builtins (26 builtin modules) |
 | `prelude/prelude.frst` | Standard library written in Frost (loaded at startup) |
-| `import/` | Module import system |
+| `meta/` | Special functions which depend on the parser, such as `import` |
 
 ### Value type (`cpp/value/include/frost/value.hpp`)
 

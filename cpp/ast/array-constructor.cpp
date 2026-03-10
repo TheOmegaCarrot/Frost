@@ -27,3 +27,8 @@ std::generator<ast::Statement::Child_Info> ast::Array_Constructor::children()
     for (const auto& elem : elems_)
         co_yield make_child(elem);
 }
+
+bool ast::Array_Constructor::data_safe() const
+{
+    return true;
+}

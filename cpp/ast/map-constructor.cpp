@@ -35,3 +35,8 @@ std::generator<ast::Statement::Child_Info> ast::Map_Constructor::children()
         co_yield make_child(v, "Value");
     }
 }
+
+bool ast::Map_Constructor::data_safe() const
+{
+    return true;
+}

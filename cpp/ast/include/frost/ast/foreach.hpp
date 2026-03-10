@@ -23,10 +23,10 @@ class Foreach final : public Expression
 
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
+    std::string node_label() const final;
+
   protected:
     std::generator<Child_Info> children() const final;
-
-    std::string node_label() const final;
 
   private:
     Expression::Ptr structure_;
