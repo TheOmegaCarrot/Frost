@@ -7,6 +7,7 @@
   (kw_def)
   (kw_export)
   (kw_fn)
+  (kw_do)
   (kw_reduce)
   (kw_map)
   (kw_foreach)

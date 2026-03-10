@@ -11,6 +11,7 @@ Each entry links to its full documentation.
 - [all](collections.md#all)
 - [and_then](functions.md#and_then)
 - [any](collections.md#any)
+- [args](os.md#args)
 - [asin](math.md#asin)
 - [asinh](math.md#asinh)
 - [assert](debug.md#assert)

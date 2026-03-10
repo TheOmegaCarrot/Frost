@@ -31,6 +31,7 @@ module.exports = grammar({
       $.kw_true,
       $.kw_false,
       $.kw_and,
+      $.kw_do,
       $.kw_or,
       $.kw_not,
       $.kw_null,
@@ -258,6 +259,7 @@ module.exports = grammar({
       $.parenthesized_expression,
       $.if_expression,
       $.lambda_expression,
+      $.do_block,
       $.map_expression,
       $.filter_expression,
       $.reduce_expression,
@@ -275,6 +277,7 @@ module.exports = grammar({
     primary_expression: $ => choice(
       $.if_expression,
       $.lambda_expression,
+      $.do_block,
       $.map_expression,
       $.filter_expression,
       $.reduce_expression,
@@ -352,6 +355,11 @@ module.exports = grammar({
       '{',
       repeat(choice($.statement, ';')),
       '}',
+    ),
+
+    do_block: $ => seq(
+      $.kw_do,
+      field('body', $.block),
     ),
 
     map_expression: $ => seq(
@@ -481,6 +489,7 @@ module.exports = grammar({
     no_nl_index_open: _ => token.immediate(prec(1, /[ \t\r\f\v]*\[/)),
     no_nl_dot: _ => token.immediate(prec(1, /[ \t\r\f\v]*\./)),
 
+    kw_do: _ => token('do'),
     kw_if: _ => token('if'),
     kw_else: _ => token('else'),
     kw_elif: _ => token('elif'),

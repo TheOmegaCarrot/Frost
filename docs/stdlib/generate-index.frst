@@ -1,11 +1,11 @@
 # path to directory containing this script
-def me_dir = fn -> {
+def me_dir = do {
     # fs.parent returns an empty string if input contains only the filename
     def unchecked = fs.parent(args[0])
     # Use '.' instead if fs.parent returned ''
     if unchecked == '': '.'
     else: unchecked
-}()
+}
 
 # Filter out all non-markdown files and the README (only keeping the actual stdlib documentation)
 def files = filter fs.list(me_dir) with fn file -> (

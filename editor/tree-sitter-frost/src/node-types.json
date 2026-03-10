@@ -362,6 +362,32 @@
     }
   },
   {
+    "type": "do_block",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_do",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "elif_clause",
     "named": true,
     "fields": {
@@ -1264,6 +1290,10 @@
           "named": true
         },
         {
+          "type": "do_block",
+          "named": true
+        },
+        {
           "type": "filter_expression",
           "named": true
         },
@@ -1589,6 +1619,10 @@
           "named": true
         },
         {
+          "type": "do_block",
+          "named": true
+        },
+        {
           "type": "filter_expression",
           "named": true
         },
@@ -1830,6 +1864,10 @@
   },
   {
     "type": "kw_def",
+    "named": true
+  },
+  {
+    "type": "kw_do",
     "named": true
   },
   {

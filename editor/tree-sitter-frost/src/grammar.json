@@ -985,6 +985,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "do_block"
+        },
+        {
+          "type": "SYMBOL",
           "name": "map_expression"
         },
         {
@@ -1065,6 +1069,10 @@
         {
           "type": "SYMBOL",
           "name": "lambda_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "do_block"
         },
         {
           "type": "SYMBOL",
@@ -1479,6 +1487,23 @@
         {
           "type": "STRING",
           "value": "}"
+        }
+      ]
+    },
+    "do_block": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "kw_do"
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "SYMBOL",
+            "name": "block"
+          }
         }
       ]
     },
@@ -2200,6 +2225,13 @@
         }
       }
     },
+    "kw_do": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "do"
+      }
+    },
     "kw_if": {
       "type": "TOKEN",
       "content": {
@@ -2417,6 +2449,10 @@
       {
         "type": "SYMBOL",
         "name": "kw_and"
+      },
+      {
+        "type": "SYMBOL",
+        "name": "kw_do"
       },
       {
         "type": "SYMBOL",
