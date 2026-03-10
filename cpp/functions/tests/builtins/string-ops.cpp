@@ -760,3 +760,114 @@ TEST_CASE("Builtin to_byte_array/from_byte_array")
         CHECK(str->raw_get<String>().empty());
     }
 }
+
+TEST_CASE("Builtin join")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto join_val = table.lookup("join");
+    REQUIRE(join_val->is<Function>());
+    auto join = join_val->get<Function>().value();
+
+    SECTION("Injected")
+    {
+        CHECK(join_val->is<Function>());
+    }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_WITH(join->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(join->call({Value::create(Array{})}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(
+            join->call({Value::create(Array{}), Value::create(","s),
+                        Value::create("extra"s)}),
+            ContainsSubstring("too many arguments"));
+    }
+
+    SECTION("Type errors")
+    {
+        auto bad_arr = Value::create("not_an_array"s);
+        auto bad_sep = Value::create(42_f);
+        auto good_arr = Value::create(Array{});
+        auto good_sep = Value::create(","s);
+
+        CHECK_THROWS_WITH(join->call({bad_arr, good_sep}),
+                          ContainsSubstring("join"));
+        CHECK_THROWS_WITH(join->call({bad_arr, good_sep}),
+                          ContainsSubstring("Array"));
+        CHECK_THROWS_WITH(join->call({bad_arr, good_sep}),
+                          EndsWith(std::string{bad_arr->type_name()}));
+
+        CHECK_THROWS_WITH(join->call({good_arr, bad_sep}),
+                          ContainsSubstring("join"));
+        CHECK_THROWS_WITH(join->call({good_arr, bad_sep}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(join->call({good_arr, bad_sep}),
+                          EndsWith(std::string{bad_sep->type_name()}));
+    }
+
+    SECTION("Non-String array elements are rejected")
+    {
+        auto arr = Value::create(Array{Value::create("a"s), Value::create(42_f),
+                                       Value::create("b"s)});
+        CHECK_THROWS_WITH(join->call({arr, Value::create(","s)}),
+                          ContainsSubstring("join"));
+        CHECK_THROWS_WITH(join->call({arr, Value::create(","s)}),
+                          ContainsSubstring("Array of Strings"));
+        CHECK_THROWS_WITH(join->call({arr, Value::create(","s)}),
+                          ContainsSubstring("Int"));
+    }
+
+    SECTION("Basic behavior")
+    {
+        auto arr = Value::create(
+            Array{Value::create("foo"s), Value::create("bar"s)});
+        auto res = join->call({arr, Value::create(" "s)});
+        REQUIRE(res->is<String>());
+        CHECK(res->raw_get<String>() == "foo bar");
+    }
+
+    SECTION("Single-element array returns that element")
+    {
+        auto arr = Value::create(Array{Value::create("only"s)});
+        auto res = join->call({arr, Value::create(","s)});
+        REQUIRE(res->is<String>());
+        CHECK(res->raw_get<String>() == "only");
+    }
+
+    SECTION("Empty array returns empty string")
+    {
+        auto res = join->call({Value::create(Array{}), Value::create(","s)});
+        REQUIRE(res->is<String>());
+        CHECK(res->raw_get<String>().empty());
+    }
+
+    SECTION("Empty separator concatenates directly")
+    {
+        auto arr = Value::create(
+            Array{Value::create("a"s), Value::create("b"s), Value::create("c"s)});
+        auto res = join->call({arr, Value::create(""s)});
+        REQUIRE(res->is<String>());
+        CHECK(res->raw_get<String>() == "abc");
+    }
+
+    SECTION("Multi-char separator")
+    {
+        auto arr = Value::create(
+            Array{Value::create("a"s), Value::create("b"s), Value::create("c"s)});
+        auto res = join->call({arr, Value::create(", "s)});
+        REQUIRE(res->is<String>());
+        CHECK(res->raw_get<String>() == "a, b, c");
+    }
+
+    SECTION("Empty strings in array are included")
+    {
+        auto arr = Value::create(
+            Array{Value::create("a"s), Value::create(""s), Value::create("b"s)});
+        auto res = join->call({arr, Value::create("-"s)});
+        REQUIRE(res->is<String>());
+        CHECK(res->raw_get<String>() == "a--b");
+    }
+}

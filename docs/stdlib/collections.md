@@ -12,6 +12,18 @@ The order is unspecified, but consistent with `values(m)`: index `i` in `keys(m)
 Returns an array of all values in map `m`.
 The order is unspecified, but consistent with `keys(m)`: index `i` in `values(m)` corresponds to index `i` in `keys(m)`.
 
+## `map_keys`
+`map_keys(m, f)`
+
+Returns a new map with every key transformed by `f`.
+Values are unchanged.
+
+## `map_values`
+`map_values(m, f)`
+
+Returns a new map with every value transformed by `f`.
+Keys are unchanged.
+
 ## `len`
 `len(s)`
 
@@ -53,6 +65,13 @@ Returns `value` unchanged.
 
 For a `Map`: returns `true` if `index` exists as a key.
 For an `Array`: returns `true` if `index` (must be an `Int`) is a valid index.
+
+## `index`
+`index(k)`
+
+Returns a function that indexes into its argument with key `k`.
+Equivalent to `fn s -> s[k]`.
+Useful in pipelines: `people @ transform(index("name"))`.
 
 ## `stride`
 `stride(arr, n)`
@@ -161,6 +180,12 @@ For `Map` input, `f` must return a `Map`; its entries are merged into the result
 
 Functional form of the `filter` expression.
 Returns elements of an `Array` for which `f` returns truthy, or entries of a `Map` for which `f(k, v)` returns truthy.
+
+## `reject`
+`reject(structure, pred)`
+
+Returns the elements of `structure` for which `pred` returns falsy.
+The inverse of `select`.
 
 ## `fold`
 `fold(structure, f)`

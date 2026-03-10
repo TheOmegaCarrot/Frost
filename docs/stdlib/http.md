@@ -1,7 +1,6 @@
 # HTTP
 
-HTTP support is optional, and must be enabled at build time with `-DWITH_HTTP=YES`.
-This is enabled by default.
+HTTP support can be disabled at build time with `-DWITH_HTTP=NO`.
 
 ## `http.request`
 `http.request(config)`

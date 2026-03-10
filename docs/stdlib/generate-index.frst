@@ -17,7 +17,7 @@ def files = filter fs.list(me_dir) with fn file -> (
 def get_functions = fn docpath -> {
     def lines = open_read(docpath).read_rest() @ split('\n')
     def fn_lines = filter lines with starts_with @ bcurry('## `')
-    map fn_lines with fn line -> re.replace(line, '## `([^`]+)`', '$1')
+    map fn_lines with re.replace @ bcurry('## `([^`]+)`', '$1')
 }
 
 # Create a map from { [filename]: [ functions ] }

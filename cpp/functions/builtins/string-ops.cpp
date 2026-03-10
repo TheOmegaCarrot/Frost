@@ -30,6 +30,33 @@ BUILTIN(split)
                          | to<Array>());
 }
 
+BUILTIN(join)
+{
+    REQUIRE_ARGS("join", TYPES(Array), TYPES(String));
+
+    const auto& target = GET(0, Array);
+    const auto& joiner = GET(1, String);
+
+    for (const auto& e : target)
+    {
+        if (not e->is<String>())
+        {
+            throw Frost_Recoverable_Error{fmt::format(
+                "Function join requires Array of Strings as argument 1, got {}",
+                e->type_name())};
+        }
+    }
+
+    using std::views::transform, std::ranges::to;
+
+    return Value::create(target
+                         | transform([](const Value_Ptr& v) {
+                               return v->raw_get<String>();
+                           })
+                         | std::views::join_with(joiner)
+                         | to<String>());
+}
+
 BUILTIN(b64_encode)
 {
     REQUIRE_ARGS("b64_encode", TYPES(String));
@@ -235,6 +262,7 @@ X_BINARY_PASSTHROUGH
 void inject_string_ops(Symbol_Table& table)
 {
     INJECT(split, 2, 2);
+    INJECT(join, 2, 2);
     INJECT(b64_encode, 1, 1);
     INJECT(b64_decode, 1, 1);
     INJECT(b64_urlencode, 1, 1);

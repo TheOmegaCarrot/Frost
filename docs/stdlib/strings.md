@@ -7,6 +7,12 @@ Splits `s` on each occurrence of `delimiter` and returns an array of strings.
 If `delimiter` is not found, returns a single-element array containing `s`.
 An empty `delimiter` splits into individual bytes.
 
+## `join`
+`join(arr, separator)`
+
+Joins an array of strings into a single string, with `separator` inserted between each element.
+Returns an empty string for an empty array.
+
 ## `to_upper`
 `to_upper(s)`
 
