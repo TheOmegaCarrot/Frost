@@ -526,13 +526,47 @@ if foo: { # syntax error
 }
 ```
 
-One will sometimes see an immediately-invoked function used to work around this:
+If a multi-statement branch is desired, then you can use a do-block, which is described in the next section.
 
 ```frost
-if foo: fn -> {
-    # ...
-}()
+if foo: do {
+    def x = 10
+    x 
+}
 else: 42
+```
+
+### Do
+
+A `do` block is a single expression that begins a new scope, allows `def` statements within, and evaluates to its final expression.
+This was developed in response to a growing pattern of immediately-invoked functions (`fn -> { ... }()`) being used to scope local definitions.
+A `do` block is nearly a drop-in replacement for this ugly but effective pattern, and incurs less runtime overhead.
+
+Any `def` statements are entirely scoped to the block itself:
+
+```frost
+do {
+    def x = 5
+    x
+}
+x # error: Symbol x is not defined
+```
+
+A `do` block evaluates to its final expression:
+
+```frost
+assert(do { 
+    def x = 5  
+    x
+} == 5)
+```
+
+Similarly to block-style functions, a `do` block may not end with a `def` statement:
+
+```frost
+do {
+    def x = 5 # Error: A do block must end in an expression
+}
 ```
 
 ### Iterative Expressions
