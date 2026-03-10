@@ -34,19 +34,19 @@ Useful for providing fallbacks.
 `inv(f)`
 
 Returns a new function that applies `f` and negates the result with `not`.
-Equivalent to `fn ...args -> not f @ pack_call(args)`.
+Returns `fn ...args -> not f @ pack_call(args)`.
 
 ## `curry`
 `curry(f, ...outer)`
 
 Returns a function that, when called with additional arguments, calls `f` with the `outer` arguments prepended.
-Equivalent to `fn ...inner -> f @ pack_call(outer + inner)`.
+Returns `fn ...inner -> f @ pack_call(outer + inner)`.
 
 ## `bcurry`
 `bcurry(f, ...outer)`
 
 Like `curry`, but appends the `outer` arguments at the end instead of prepending them.
-Equivalent to `fn ...inner -> f @ pack_call(inner + outer)`.
+Returns `fn ...inner -> f @ pack_call(inner + outer)`.
 
 ## `collect`
 `collect(...e)`
