@@ -1,9 +1,8 @@
 # Standard Library
 
-Frost's standard library consists of builtin functions (implemented in C++)
-and prelude functions (implemented in Frost, loaded at startup).
+Frost's standard library is available in every program without any imports.
 
-Some builtins are namespaced (`re`, `fs`, `http`) and accessed via dot syntax.
+Some functions are namespaced (`re`, `fs`, `http`) and accessed via dot syntax.
 
 An [alphabetical index of all functions](./index.md) is available.
 
