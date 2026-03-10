@@ -25,3 +25,4 @@ macro(meta_test file)
     )
 endmacro()
 
+meta_test( tests/read_value.cpp )

@@ -39,6 +39,7 @@ set(PARSER_TEST_FILES
     lambda-expr
     threaded-call-expr
     error-messages
+    parse_data
 )
 
 foreach(test_file IN LISTS PARSER_TEST_FILES)

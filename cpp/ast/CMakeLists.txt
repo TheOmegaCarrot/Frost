@@ -52,6 +52,7 @@ set(AST_TEST_FILES
     foreach
     filter
     format-string
+    walk
 )
 
 foreach(test_file IN LISTS AST_TEST_FILES)
