@@ -80,6 +80,15 @@ For arrays and maps, returns a compact single-line representation.
 Like `to_string`, but formats arrays and maps as indented, multi-line output.
 Map keys that are valid identifiers are rendered without quotes.
 
+## `read_value`
+`read_value(s)`
+
+The deserialization dual of `to_string` and `pretty`.
+Parses a string containing a Frost literal expression and returns the corresponding value.
+Accepts the same syntax as Frost literals: scalars, arrays, maps, and arithmetic expressions over literal values.
+Name lookups, function calls, and other non-literal constructs produce an error.
+Produces an error on malformed input.
+
 ## `to_int`
 `to_int(value)`
 

@@ -28,7 +28,7 @@ In these cases, short placeholder names are used in signatures rather than inven
 | Module                              | Description                                                                                |
 |-------------------------------------|--------------------------------------------------------------------------------------------|
 | [Collections](./collections.md)     | `keys`, `values`, `len`, `has`, `range`, `take`, `drop`, `zip`, `sorted`, `group_by`, ... |
-| [Types](./types.md)                 | `is_int`, `is_string`, `type`, `to_string`, `to_int`, `to_float`, `pretty`                |
+| [Types](./types.md)                 | `is_int`, `is_string`, `type`, `to_string`, `read_value`, `to_int`, `to_float`, `pretty`  |
 | [Math](./math.md)                   | `abs`, `sqrt`, `pow`, `min`, `max`, trig, ...                                              |
 | [Strings](./strings.md)             | `split`, `to_upper`, `contains`, `starts_with`, base64, ...                                |
 | [Regex](./regex.md)                 | `re.matches`, `re.replace`, `re.scan_matches`                                              |

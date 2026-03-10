@@ -131,6 +131,7 @@ Each entry links to its full documentation.
 - [re.matches](regex.md#rematches)
 - [re.replace](regex.md#rereplace)
 - [re.scan_matches](regex.md#rescan_matches)
+- [read_value](types.md#read_value)
 - [reject](prelude.md#reject)
 - [rev_args](prelude.md#rev_args)
 - [reverse](collections.md#reverse)
