@@ -118,6 +118,7 @@ Each entry links to its full documentation.
 - [none](collections.md#none)
 - [not_equal](operators.md#not_equal)
 - [nulls](collections.md#nulls)
+- [nums](math.md#nums)
 - [open_append](streams.md#open_append)
 - [open_read](streams.md#open_read)
 - [open_trunc](streams.md#open_trunc)

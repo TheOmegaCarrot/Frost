@@ -173,6 +173,23 @@ Returns `value` constrained to the range `[lo, hi]`.
 Returns `lo` if `value < lo`, `hi` if `value > hi`, otherwise `value` unchanged.
 Returns an `Int` if all three arguments are `Int`; otherwise returns a `Float`.
 
+## `nums`
+
+A map of numeric constants.
+
+| Key | Value |
+|---|---|
+| `pi` | π ≈ 3.14159 |
+| `tau` | 2π ≈ 6.28318 |
+| `e` | Euler's number ≈ 2.71828 |
+| `golden_ratio` | φ ≈ 1.61803 |
+| `maxint` | Largest `Int` value |
+| `minint` | Smallest (most negative) `Int` value |
+| `maxfloat` | Largest finite `Float` value |
+| `minfloat` | Most negative finite `Float` value |
+| `tinyfloat` | Smallest positive normalized `Float` value |
+| `float_epsilon` | Difference between `1.0` and the next representable `Float` |
+
 ## `lerp`
 `lerp(a, b, t)`
 

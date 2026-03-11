@@ -185,6 +185,27 @@ void inject_math(Symbol_Table& table)
     INJECT(hypot, 2, 3);
     INJECT(lerp, 3, 3);
     INJECT(clamp, 3, 3);
+
+    table.define(
+        "nums",
+        Value::create(
+            Value::trusted,
+            Map{
+                {"pi"_s, Value::create(std::numbers::pi)},
+                {"e"_s, Value::create(std::numbers::e)},
+                {"golden_ratio"_s, Value::create(std::numbers::phi)},
+                {"tau"_s, Value::create(std::numbers::pi * 2)},
+                {"maxint"_s, Value::create(std::numeric_limits<Int>::max())},
+                {"minint"_s, Value::create(std::numeric_limits<Int>::min())},
+                {"maxfloat"_s,
+                 Value::create(std::numeric_limits<Float>::max())},
+                {"tinyfloat"_s,
+                 Value::create(std::numeric_limits<Float>::min())},
+                {"float_epsilon"_s,
+                 Value::create(std::numeric_limits<Float>::epsilon())},
+                {"minfloat"_s,
+                 Value::create(std::numeric_limits<Float>::lowest())},
+            }));
 }
 
 } // namespace frst
