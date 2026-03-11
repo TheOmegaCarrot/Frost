@@ -28,6 +28,7 @@ Each entry links to its full documentation.
 - [ceil](math.md#ceil)
 - [chunk](collections.md#chunk)
 - [chunk_by](collections.md#chunk_by)
+- [clamp](math.md#clamp)
 - [collect](functions.md#collect)
 - [compose](functions.md#compose)
 - [const](functions.md#const)

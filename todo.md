@@ -13,6 +13,4 @@
 
 ### Math
 
-- **`clamp(n, lo, hi)`** — extremely common, no clean way to express it without `min`/`max` nesting
-- **`sign` / `signum`** — sign of a number
-- **Mathematical constants (`pi`, `e`)** — unless these are already defined somewhere
+- **Mathematical constants (`pi`, `e`)**

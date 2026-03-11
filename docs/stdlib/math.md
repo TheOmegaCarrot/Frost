@@ -166,6 +166,13 @@ Returns the larger of `a` and `b` as a `Float`.
 
 Returns the Euclidean norm: `sqrt(a² + b²)` or `sqrt(a² + b² + c²)`.
 
+## `clamp`
+`clamp(value, lo, hi)`
+
+Returns `value` constrained to the range `[lo, hi]`.
+Returns `lo` if `value < lo`, `hi` if `value > hi`, otherwise `value` unchanged.
+Returns an `Int` if all three arguments are `Int`; otherwise returns a `Float`.
+
 ## `lerp`
 `lerp(a, b, t)`
 

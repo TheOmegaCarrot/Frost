@@ -38,7 +38,7 @@ TEST_CASE("Builtin math")
         "exp",  "exp2",  "expm1", "abs",   "round",
     };
     const std::vector<std::string> binary_names{"pow", "min", "max", "atan2"};
-    const std::vector<std::string> ternary_names{"lerp"};
+    const std::vector<std::string> ternary_names{"lerp", "clamp"};
     const std::vector<std::string> variadic_names{"hypot"};
 
     SECTION("Injected")
@@ -106,6 +106,7 @@ TEST_CASE("Builtin math")
             {.name = "max", .min = 2, .max = 2},
             {.name = "atan2", .min = 2, .max = 2},
             {.name = "lerp", .min = 3, .max = 3},
+            {.name = "clamp", .min = 3, .max = 3},
             {.name = "hypot", .min = 2, .max = 3},
         };
 
@@ -265,6 +266,20 @@ TEST_CASE("Builtin math")
             CHECK_THROWS_MATCHES(
                 fn->call({good, bad}), Frost_User_Error,
                 MessageMatches(ContainsSubstring("argument 2 (b)")));
+        }
+
+        SECTION("clamp labels lo and hi")
+        {
+            auto fn = get_fn("clamp");
+            CHECK_THROWS_MATCHES(
+                fn->call({bad, good, good}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("argument 1")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good, bad, good}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("argument 2 (lo)")));
+            CHECK_THROWS_MATCHES(
+                fn->call({good, good, bad}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("argument 3 (hi)")));
         }
     }
 
@@ -607,5 +622,99 @@ TEST_CASE("Builtin math")
         REQUIRE(res_mix->is<Float>());
         CHECK(res_mix->get<Float>().value()
               == Catch::Approx(std::lerp(2.0, 6.0, -1.0)));
+    }
+
+    SECTION("clamp")
+    {
+        auto fn = get_fn("clamp");
+
+        // lo=5, hi=10, below=1, within=7, above=15
+        auto make = [](bool as_float, double v) -> Value_Ptr {
+            return as_float ? Value::create(v)
+                            : Value::create(static_cast<Int>(v));
+        };
+
+        struct Perm
+        {
+            std::string name;
+            bool val_f, lo_f, hi_f;
+        };
+
+        // All 8 (val, lo, hi) type permutations
+        const std::vector<Perm> perms{
+            {"iii", false, false, false},
+            {"fii", true,  false, false},
+            {"ifi", false, true,  false},
+            {"iif", false, false, true },
+            {"ffi", true,  true,  false},
+            {"fif", true,  false, true },
+            {"iff", false, true,  true },
+            {"fff", true,  true,  true },
+        };
+
+        for (const auto& p : perms)
+        {
+            bool all_int = !p.val_f && !p.lo_f && !p.hi_f;
+            auto lo  = make(p.lo_f,  5.0);
+            auto hi  = make(p.hi_f, 10.0);
+
+            DYNAMIC_SECTION("clamp lo (" << p.name << ")")
+            {
+                auto r = fn->call({make(p.val_f, 1.0), lo, hi});
+                if (all_int)
+                {
+                    REQUIRE(r->is<Int>());
+                    CHECK(r->raw_get<Int>() == 5_f);
+                }
+                else
+                {
+                    REQUIRE(r->is<Float>());
+                    CHECK(r->raw_get<Float>() == Catch::Approx(5.0));
+                }
+            }
+
+            DYNAMIC_SECTION("no clamp (" << p.name << ")")
+            {
+                auto r = fn->call({make(p.val_f, 7.0), lo, hi});
+                if (all_int)
+                {
+                    REQUIRE(r->is<Int>());
+                    CHECK(r->raw_get<Int>() == 7_f);
+                }
+                else
+                {
+                    REQUIRE(r->is<Float>());
+                    CHECK(r->raw_get<Float>() == Catch::Approx(7.0));
+                }
+            }
+
+            DYNAMIC_SECTION("clamp hi (" << p.name << ")")
+            {
+                auto r = fn->call({make(p.val_f, 15.0), lo, hi});
+                if (all_int)
+                {
+                    REQUIRE(r->is<Int>());
+                    CHECK(r->raw_get<Int>() == 10_f);
+                }
+                else
+                {
+                    REQUIRE(r->is<Float>());
+                    CHECK(r->raw_get<Float>() == Catch::Approx(10.0));
+                }
+            }
+        }
+
+        SECTION("Boundary values are returned unchanged")
+        {
+            auto at_lo = fn->call(
+                {Value::create(5_f), Value::create(5_f), Value::create(10_f)});
+            REQUIRE(at_lo->is<Int>());
+            CHECK(at_lo->raw_get<Int>() == 5_f);
+
+            auto at_hi = fn->call(
+                {Value::create(10_f), Value::create(5_f), Value::create(10_f)});
+            REQUIRE(at_hi->is<Int>());
+            CHECK(at_hi->raw_get<Int>() == 10_f);
+        }
     }
 }

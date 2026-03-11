@@ -149,6 +149,20 @@ BUILTIN(lerp)
         std::lerp(COERCE(0, Float), COERCE(1, Float), COERCE(2, Float)));
 }
 
+BUILTIN(clamp)
+{
+    REQUIRE_ARGS("clamp", TYPES(Int, Float), PARAM("lo", TYPES(Int, Float)),
+                 PARAM("hi", TYPES(Int, Float)));
+
+    if (IS(0, Int) && IS(1, Int) && IS(2, Int))
+    {
+        return Value::create(std::clamp(GET(0, Int), GET(1, Int), GET(2, Int)));
+    }
+
+    return Value::create(
+        std::clamp(COERCE(0, Float), COERCE(1, Float), COERCE(2, Float)));
+}
+
 void inject_math(Symbol_Table& table)
 {
 
@@ -170,6 +184,7 @@ void inject_math(Symbol_Table& table)
     INJECT(round, 1, 1);
     INJECT(hypot, 2, 3);
     INJECT(lerp, 3, 3);
+    INJECT(clamp, 3, 3);
 }
 
 } // namespace frst
