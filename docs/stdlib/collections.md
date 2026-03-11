@@ -159,6 +159,21 @@ A new chunk begins whenever `f(previous, current)` returns falsy.
 chunk_by([1, 1, 2, 2, 1], fn (a, b) -> a == b)  # => [[1, 1], [2, 2], [1]]
 ```
 
+## `flatten`
+`flatten(arr)`
+`flatten(arr, n)`
+
+Flattens nested arrays.
+Without `n`, recursively flattens all levels of nesting.
+With `n`, flattens exactly `n` levels. `n` must be `>= 0`; `n=0` returns `arr` unchanged.
+Non-array elements are always left untouched.
+
+```
+flatten([1, [2, [3, 4]], 5])      # => [1, 2, 3, 4, 5]
+flatten([1, [2, [3, 4]], 5], 1)   # => [1, 2, [3, 4], 5]
+flatten([1, [2, [3, 4]], 5], 0)   # => [1, [2, [3, 4]], 5]
+```
+
 ## `zip`
 `zip(...arrays)`
 

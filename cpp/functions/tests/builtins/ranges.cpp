@@ -2094,3 +2094,162 @@ TEST_CASE("Builtin repeat")
         }
     }
 }
+
+TEST_CASE("Builtin flatten")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto fn = lookup(table, "flatten");
+
+    auto i = [](Int v) { return Value::create(v); };
+    auto arr = [](auto&&... elems) {
+        return Value::create(Array{elems...});
+    };
+
+    // Compare by value, not pointer identity
+    auto ints_eq = [](const Value_Ptr& result, std::vector<Int> expected) {
+        REQUIRE(result->is<Array>());
+        const auto& a = result->raw_get<Array>();
+        REQUIRE(a.size() == expected.size());
+        for (std::size_t k = 0; k < expected.size(); ++k)
+        {
+            REQUIRE(a[k]->is<Int>());
+            CHECK(a[k]->raw_get<Int>() == expected[k]);
+        }
+    };
+
+    SECTION("Injected") { CHECK(table.lookup("flatten")->is<Function>()); }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_MATCHES(fn->call({}), Frost_User_Error,
+                             MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(Array{}), i(1), i(2)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("too many arguments")));
+    }
+
+    SECTION("Type errors")
+    {
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(42)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("flatten") && ContainsSubstring("Array")));
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(Array{}), Value::create(2.5)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("flatten") && ContainsSubstring("Int")
+                           && ContainsSubstring("(n)")));
+    }
+
+    SECTION("Negative n throws")
+    {
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(Array{}), i(-1)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("flatten") && ContainsSubstring(">=0")));
+    }
+
+    SECTION("Empty array returns empty array")
+    {
+        auto r = fn->call({Value::create(Array{})});
+        REQUIRE(r->is<Array>());
+        CHECK(r->raw_get<Array>().empty());
+    }
+
+    SECTION("Flat array is unchanged")
+    {
+        ints_eq(fn->call({arr(i(1), i(2), i(3))}), {1, 2, 3});
+    }
+
+    SECTION("Non-array elements are left untouched")
+    {
+        auto r = fn->call({arr(i(1), Value::null(), Value::create("x"s))});
+        REQUIRE(r->is<Array>());
+        const auto& a = r->raw_get<Array>();
+        REQUIRE(a.size() == 3);
+        CHECK(a[0]->raw_get<Int>() == 1);
+        CHECK(a[1]->is<Null>());
+        CHECK(a[2]->raw_get<String>() == "x");
+    }
+
+    SECTION("flatten (recursive)")
+    {
+        SECTION("One level")
+        {
+            ints_eq(fn->call({arr(i(1), arr(i(2), i(3)), i(4))}), {1, 2, 3, 4});
+        }
+
+        SECTION("Deeply nested")
+        {
+            ints_eq(fn->call({arr(i(1), arr(i(2), arr(i(3), arr(i(4)))))}),
+                    {1, 2, 3, 4});
+        }
+
+        SECTION("Mixed depth nesting")
+        {
+            ints_eq(fn->call({arr(arr(i(1), i(2)), i(3), arr(arr(i(4))))}),
+                    {1, 2, 3, 4});
+        }
+
+        SECTION("Empty nested arrays are dropped")
+        {
+            ints_eq(fn->call({arr(arr(), i(1), arr(), i(2))}), {1, 2});
+        }
+    }
+
+    SECTION("flatten(arr, n)")
+    {
+        // [1, [2, [3, [4]]]]
+        auto nested = arr(i(1), arr(i(2), arr(i(3), arr(i(4)))));
+
+        SECTION("n=0 returns array unchanged")
+        {
+            auto r = fn->call({nested, i(0)});
+            REQUIRE(r->is<Array>());
+            const auto& a = r->raw_get<Array>();
+            REQUIRE(a.size() == 2);
+            CHECK(a[0]->raw_get<Int>() == 1);
+            CHECK(a[1]->is<Array>());
+        }
+
+        SECTION("n=1 flattens one level")
+        {
+            // [1, [2, [3, [4]]]] -> [1, 2, [3, [4]]]
+            auto r = fn->call({nested, i(1)});
+            REQUIRE(r->is<Array>());
+            const auto& a = r->raw_get<Array>();
+            REQUIRE(a.size() == 3);
+            CHECK(a[0]->raw_get<Int>() == 1);
+            CHECK(a[1]->raw_get<Int>() == 2);
+            CHECK(a[2]->is<Array>());
+        }
+
+        SECTION("n=2 flattens two levels")
+        {
+            // [1, [2, [3, [4]]]] -> [1, 2, 3, [4]]
+            auto r = fn->call({nested, i(2)});
+            REQUIRE(r->is<Array>());
+            const auto& a = r->raw_get<Array>();
+            REQUIRE(a.size() == 4);
+            CHECK(a[0]->raw_get<Int>() == 1);
+            CHECK(a[1]->raw_get<Int>() == 2);
+            CHECK(a[2]->raw_get<Int>() == 3);
+            CHECK(a[3]->is<Array>());
+        }
+
+        SECTION("Large n fully flattens")
+        {
+            ints_eq(fn->call({nested, i(100)}), {1, 2, 3, 4});
+        }
+
+        SECTION("n > 0 on flat array is a no-op")
+        {
+            ints_eq(fn->call({arr(i(1), i(2), i(3)), i(5)}), {1, 2, 3});
+        }
+
+        SECTION("Empty array with n returns empty array")
+        {
+            auto r = fn->call({Value::create(Array{}), i(1)});
+            REQUIRE(r->is<Array>());
+            CHECK(r->raw_get<Array>().empty());
+        }
+    }
+}

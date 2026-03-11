@@ -461,6 +461,53 @@ BUILTIN(scan)
     return Value::create(std::move(result));
 }
 
+namespace
+{
+Array do_flatten(const Array& arr)
+{
+    Array out;
+    for (const auto& elem : arr)
+    {
+        if (elem->is<Array>())
+            std::ranges::move(do_flatten(elem->raw_get<Array>()),
+                              std::back_inserter(out));
+        else
+            out.push_back(elem);
+    }
+    return out;
+}
+
+Array do_flatten_n(const Array& arr, Int depth)
+{
+    Array out;
+    for (const auto& elem : arr)
+    {
+        if (depth > 0 && elem->is<Array>())
+            std::ranges::move(do_flatten_n(elem->raw_get<Array>(), depth - 1),
+                              std::back_inserter(out));
+        else
+            out.push_back(elem);
+    }
+    return out;
+}
+} // namespace
+
+BUILTIN(flatten)
+{
+    REQUIRE_ARGS("flatten", TYPES(Array), OPTIONAL(PARAM("n", TYPES(Int))));
+
+    const auto& arr = GET(0, Array);
+
+    if (HAS(1))
+    {
+        auto num = GET(1, Int);
+        GE0_NUM("flatten");
+        return Value::create(do_flatten_n(arr, num));
+    }
+
+    return Value::create(do_flatten(arr));
+}
+
 BUILTIN(partition)
 {
     REQUIRE_ARGS("partition", TYPES(Array), TYPES(Function));
@@ -511,6 +558,7 @@ void inject_ranges(Symbol_Table& table)
     INJECT(group_by, 2, 2);
     INJECT(count_by, 2, 2);
     INJECT(scan, 2, 2);
+    INJECT(flatten, 1, 2);
     INJECT(partition, 2, 2);
 }
 } // namespace frst

@@ -49,6 +49,7 @@ Each entry links to its full documentation.
 - [exp](math.md#exp)
 - [exp2](math.md#exp2)
 - [expm1](math.md#expm1)
+- [flatten](collections.md#flatten)
 - [floor](math.md#floor)
 - [fmt_int](strings.md#fmt_int)
 - [fold](collections.md#fold)
