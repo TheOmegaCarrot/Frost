@@ -55,6 +55,18 @@ range(0, 5, -1)    # => []
 
 Returns an array of `n` `null` values. `n` must be `>= 0`.
 
+## `repeat`
+`repeat(value, n)`
+
+Returns an array of `n` copies of `value`. `n` must be `>= 0`.
+`value` may be of any type.
+
+```
+repeat(0, 3)      # => [0, 0, 0]
+repeat("x", 4)    # => ["x", "x", "x", "x"]
+repeat(null, 0)   # => []
+```
+
 ## `id`
 `id(value)`
 

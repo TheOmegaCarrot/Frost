@@ -3,7 +3,7 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
-#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string.hpp>
 #include <cppcodec/base64_rfc4648.hpp>
 #include <cppcodec/base64_url.hpp>
 
@@ -11,6 +11,20 @@
 
 namespace frst
 {
+namespace
+{
+Value_Ptr do_split(const String& str, const String& delim)
+{
+    using std::views::transform, std::ranges::to;
+    return Value::create(str
+                         | std::views::split(delim)
+                         | transform(to<String>())
+                         | transform([](String&& str) {
+                               return Value::create(std::move(str));
+                           })
+                         | to<Array>());
+}
+} // namespace
 
 BUILTIN(split)
 {
@@ -19,15 +33,26 @@ BUILTIN(split)
     const auto& target = GET(0, String);
     const auto& split_on = GET(1, String);
 
-    using std::views::transform, std::ranges::to;
+    return do_split(target, split_on);
+}
 
-    return Value::create(target
-                         | std::views::split(split_on)
-                         | transform(to<String>())
-                         | transform([](String&& str) {
-                               return Value::create(std::move(str));
-                           })
-                         | to<Array>());
+BUILTIN(lines)
+{
+    REQUIRE_ARGS("lines", TYPES(String));
+
+    return do_split(GET(0, String), "\n");
+}
+
+BUILTIN(replace)
+{
+    REQUIRE_ARGS("replace", TYPES(String), PARAM("find", TYPES(String)),
+                 PARAM("replacement", TYPES(String)));
+
+    const auto& target = GET(0, String);
+    const auto& find = GET(1, String);
+    const auto& replace = GET(2, String);
+
+    return Value::create(boost::replace_all_copy(target, find, replace));
 }
 
 BUILTIN(join)
@@ -226,16 +251,18 @@ BUILTIN(from_byte_array)
 }
 
 #define X_UPPER_LOWER                                                          \
-    X(upper)                                                                   \
-    X(lower)
+    X(to_upper)                                                                \
+    X(to_lower)                                                                \
+    X(trim_left)                                                               \
+    X(trim_right)                                                              \
+    X(trim)
 
-#define X(case)                                                                \
-    BUILTIN(to_##case)                                                         \
+#define X(ALG)                                                                 \
+    BUILTIN(ALG)                                                               \
     {                                                                          \
-        REQUIRE_ARGS("to_" #case, TYPES(String));                              \
+        REQUIRE_ARGS(#ALG, TYPES(String));                                     \
                                                                                \
-        return Value::create(                                                  \
-            boost::algorithm::to_##case##_copy(GET(0, String)));               \
+        return Value::create(boost::algorithm::ALG##_copy(GET(0, String)));    \
     }
 
 X_UPPER_LOWER
@@ -262,6 +289,8 @@ X_BINARY_PASSTHROUGH
 void inject_string_ops(Symbol_Table& table)
 {
     INJECT(split, 2, 2);
+    INJECT(lines, 1, 1);
+    INJECT(replace, 3, 3);
     INJECT(join, 2, 2);
     INJECT(b64_encode, 1, 1);
     INJECT(b64_decode, 1, 1);
@@ -274,7 +303,7 @@ void inject_string_ops(Symbol_Table& table)
 
 #undef X
 
-#define X(case) INJECT(to_##case, 1, 1);
+#define X(ALG) INJECT(ALG, 1, 1);
 
     X_UPPER_LOWER
 

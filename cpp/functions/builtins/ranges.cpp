@@ -355,6 +355,18 @@ X_QUANTIFIERS
 
 #undef X
 
+BUILTIN(repeat)
+{
+    REQUIRE_ARGS("repeat", ANY, TYPES(Int));
+
+    auto num = GET(1, Int);
+
+    GE0_NUM("repeat");
+
+    return Value::create(std::views::repeat(args.at(0), num)
+                         | std::ranges::to<Array>());
+}
+
 namespace
 {
 template <typename T>
@@ -495,6 +507,7 @@ void inject_ranges(Symbol_Table& table)
     INJECT(any, 1, 2);
     INJECT(all, 1, 2);
     INJECT(none, 1, 2);
+    INJECT(repeat, 2, 2);
     INJECT(group_by, 2, 2);
     INJECT(count_by, 2, 2);
     INJECT(scan, 2, 2);

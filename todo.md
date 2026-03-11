@@ -2,13 +2,6 @@
 
 ## Stdlib gaps
 
-### Strings
-
-- **`trim` / `strip`** — remove leading/trailing whitespace; would surprise most users to be missing
-- **`replace(s, from, to)`** — plain string replacement (only regex replace exists)
-- **`lines(s)`** — split by newline; so common in text processing it's almost as obvious as `join`
-- **`repeat(s, n)`** — repeat a string n times
-
 ### Collections
 
 - **`flatten`** — one level of nesting collapsed; natural companion to `zip`, `xprod`, and `chunk`

@@ -2007,3 +2007,90 @@ TEST_CASE("Builtin ranges")
         require_array_eq(fn->call({single}), {a});
     }
 }
+
+TEST_CASE("Builtin repeat")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto fn = lookup(table, "repeat");
+
+    SECTION("Injected") { CHECK(table.lookup("repeat")->is<Function>()); }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_MATCHES(fn->call({}), Frost_User_Error,
+                             MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(fn->call({Value::create(1)}), Frost_User_Error,
+                             MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(1), Value::create(2), Value::create(3)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("too many arguments")));
+    }
+
+    SECTION("Type error: second arg must be Int")
+    {
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(1), Value::create(2.5)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("repeat") && ContainsSubstring("Int")));
+    }
+
+    SECTION("Negative count throws")
+    {
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(1), Value::create(-1)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("repeat") && ContainsSubstring(">=0")));
+    }
+
+    SECTION("Count 0 returns empty array")
+    {
+        auto r = fn->call({Value::create(42), Value::create(0)});
+        REQUIRE(r->is<Array>());
+        CHECK(r->raw_get<Array>().empty());
+    }
+
+    SECTION("Count 1 returns single-element array")
+    {
+        auto val = Value::create(42);
+        auto r = fn->call({val, Value::create(1)});
+        REQUIRE(r->is<Array>());
+        REQUIRE(r->raw_get<Array>().size() == 1);
+        CHECK(r->raw_get<Array>()[0]->raw_get<Int>() == 42);
+    }
+
+    SECTION("Count N produces N copies")
+    {
+        auto val = Value::create(7);
+        auto r = fn->call({val, Value::create(5)});
+        REQUIRE(r->is<Array>());
+        REQUIRE(r->raw_get<Array>().size() == 5);
+        for (const auto& elem : r->raw_get<Array>())
+            CHECK(elem->raw_get<Int>() == 7);
+    }
+
+    SECTION("Works with any value type")
+    {
+        // String
+        {
+            auto r = fn->call({Value::create("hi"s), Value::create(3)});
+            REQUIRE(r->raw_get<Array>().size() == 3);
+            for (const auto& e : r->raw_get<Array>())
+                CHECK(e->raw_get<String>() == "hi");
+        }
+        // Null
+        {
+            auto r = fn->call({Value::null(), Value::create(2)});
+            REQUIRE(r->raw_get<Array>().size() == 2);
+            for (const auto& e : r->raw_get<Array>())
+                CHECK(e->is<Null>());
+        }
+        // Array
+        {
+            auto inner = Value::create(Array{Value::create(1), Value::create(2)});
+            auto r = fn->call({inner, Value::create(2)});
+            REQUIRE(r->raw_get<Array>().size() == 2);
+            for (const auto& e : r->raw_get<Array>())
+                CHECK(e->raw_get<Array>().size() == 2);
+        }
+    }
+}

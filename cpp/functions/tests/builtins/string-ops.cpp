@@ -871,3 +871,275 @@ TEST_CASE("Builtin join")
         CHECK(res->raw_get<String>() == "a--b");
     }
 }
+
+TEST_CASE("Builtin trim/trim_left/trim_right")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+
+    const std::vector<std::string> names{"trim", "trim_left", "trim_right"};
+
+    auto get_fn = [&](std::string_view name) {
+        auto val = table.lookup(std::string{name});
+        REQUIRE(val->is<Function>());
+        return val->get<Function>().value();
+    };
+
+    SECTION("Injected")
+    {
+        for (const auto& name : names)
+            CHECK(table.lookup(name)->is<Function>());
+    }
+
+    SECTION("Arity and type errors")
+    {
+        for (const auto& name : names)
+        {
+            DYNAMIC_SECTION(name)
+            {
+                auto fn = get_fn(name);
+                CHECK_THROWS_WITH(fn->call({}),
+                                  ContainsSubstring("insufficient arguments"));
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("b"s)}),
+                    ContainsSubstring("too many arguments"));
+                CHECK_THROWS_WITH(fn->call({Value::create(1)}),
+                                  ContainsSubstring("String"));
+            }
+        }
+    }
+
+    SECTION("No whitespace is unchanged")
+    {
+        auto val = Value::create("hello"s);
+        CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
+        CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello");
+        CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "hello");
+    }
+
+    SECTION("Leading and trailing spaces")
+    {
+        auto val = Value::create("  hello  "s);
+        CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
+        CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello  ");
+        CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "  hello");
+    }
+
+    SECTION("Only leading whitespace")
+    {
+        auto val = Value::create("   hello"s);
+        CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
+        CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello");
+        CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "   hello");
+    }
+
+    SECTION("Only trailing whitespace")
+    {
+        auto val = Value::create("hello   "s);
+        CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
+        CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello   ");
+        CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "hello");
+    }
+
+    SECTION("Tabs and mixed whitespace")
+    {
+        auto val = Value::create("\t hello \t"s);
+        CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
+        CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello \t");
+        CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "\t hello");
+    }
+
+    SECTION("Newlines are treated as whitespace")
+    {
+        auto val = Value::create("\nhello\n"s);
+        CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
+        CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello\n");
+        CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "\nhello");
+    }
+
+    SECTION("Internal whitespace is preserved")
+    {
+        auto val = Value::create("  hello   world  "s);
+        CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello   world");
+    }
+
+    SECTION("All whitespace returns empty string")
+    {
+        auto val = Value::create("   "s);
+        for (const auto& name : names)
+            CHECK(get_fn(name)->call({val})->raw_get<String>().empty());
+    }
+
+    SECTION("Empty string returns empty string")
+    {
+        auto val = Value::create(""s);
+        for (const auto& name : names)
+            CHECK(get_fn(name)->call({val})->raw_get<String>().empty());
+    }
+}
+
+TEST_CASE("Builtin replace")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto fn_val = table.lookup("replace");
+    REQUIRE(fn_val->is<Function>());
+    auto fn = fn_val->get<Function>().value();
+
+    SECTION("Injected") { CHECK(fn_val->is<Function>()); }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_WITH(fn->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create("b"s)}),
+            ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create("b"s),
+                      Value::create("c"s), Value::create("d"s)}),
+            ContainsSubstring("too many arguments"));
+    }
+
+    SECTION("Type errors")
+    {
+        auto bad = Value::create(1);
+        auto good = Value::create("x"s);
+        CHECK_THROWS_WITH(fn->call({bad, good, good}),
+                          ContainsSubstring("replace") && ContainsSubstring("String"));
+        CHECK_THROWS_WITH(fn->call({good, bad, good}),
+                          ContainsSubstring("replace") && ContainsSubstring("find"));
+        CHECK_THROWS_WITH(fn->call({good, good, bad}),
+                          ContainsSubstring("replace") && ContainsSubstring("replacement"));
+    }
+
+    SECTION("Basic replacement")
+    {
+        auto r = fn->call({Value::create("hello world"s),
+                           Value::create("world"s),
+                           Value::create("frost"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->raw_get<String>() == "hello frost");
+    }
+
+    SECTION("Replaces all occurrences")
+    {
+        auto r = fn->call({Value::create("aXbXcX"s),
+                           Value::create("X"s),
+                           Value::create("-"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->raw_get<String>() == "a-b-c-");
+    }
+
+    SECTION("Find not present returns original")
+    {
+        auto r = fn->call({Value::create("hello"s),
+                           Value::create("xyz"s),
+                           Value::create("!"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->raw_get<String>() == "hello");
+    }
+
+    SECTION("Empty replacement deletes matches")
+    {
+        auto r = fn->call({Value::create("hello"s),
+                           Value::create("l"s),
+                           Value::create(""s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->raw_get<String>() == "heo");
+    }
+
+    SECTION("Multichar find")
+    {
+        auto r = fn->call({Value::create("abcXYZabc"s),
+                           Value::create("XYZ"s),
+                           Value::create("---"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->raw_get<String>() == "abc---abc");
+    }
+
+    SECTION("Non-overlapping: only consumed chars are replaced")
+    {
+        // "aaaa" with find="aa", replacement="b": left-to-right non-overlapping
+        // matches at [0,1] and [2,3] -> "bb"
+        auto r = fn->call({Value::create("aaaa"s),
+                           Value::create("aa"s),
+                           Value::create("b"s)});
+        REQUIRE(r->is<String>());
+        CHECK(r->raw_get<String>() == "bb");
+    }
+}
+
+TEST_CASE("Builtin lines")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto fn_val = table.lookup("lines");
+    REQUIRE(fn_val->is<Function>());
+    auto fn = fn_val->get<Function>().value();
+
+    auto get_strings = [](const Value_Ptr& v) {
+        REQUIRE(v->is<Array>());
+        std::vector<String> result;
+        for (const auto& elem : v->raw_get<Array>())
+        {
+            REQUIRE(elem->is<String>());
+            result.push_back(elem->raw_get<String>());
+        }
+        return result;
+    };
+
+    SECTION("Injected") { CHECK(fn_val->is<Function>()); }
+
+    SECTION("Arity and type errors")
+    {
+        CHECK_THROWS_WITH(fn->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create("b"s)}),
+            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(fn->call({Value::create(1)}),
+                          ContainsSubstring("String"));
+    }
+
+    SECTION("Empty string returns empty array")
+    {
+        auto r = fn->call({Value::create(""s)});
+        REQUIRE(r->is<Array>());
+        CHECK(r->raw_get<Array>().empty());
+    }
+
+    SECTION("Single line with no newline")
+    {
+        auto strs = get_strings(fn->call({Value::create("hello"s)}));
+        REQUIRE(strs.size() == 1);
+        CHECK(strs[0] == "hello");
+    }
+
+    SECTION("Multiple lines")
+    {
+        auto strs = get_strings(fn->call({Value::create("a\nb\nc"s)}));
+        REQUIRE(strs.size() == 3);
+        CHECK(strs[0] == "a");
+        CHECK(strs[1] == "b");
+        CHECK(strs[2] == "c");
+    }
+
+    SECTION("Trailing newline produces empty final element")
+    {
+        auto strs = get_strings(fn->call({Value::create("a\nb\n"s)}));
+        REQUIRE(strs.size() == 3);
+        CHECK(strs[0] == "a");
+        CHECK(strs[1] == "b");
+        CHECK(strs[2] == "");
+    }
+
+    SECTION("Consecutive newlines produce empty elements")
+    {
+        auto strs = get_strings(fn->call({Value::create("a\n\nb"s)}));
+        REQUIRE(strs.size() == 3);
+        CHECK(strs[0] == "a");
+        CHECK(strs[1] == "");
+        CHECK(strs[2] == "b");
+    }
+}
