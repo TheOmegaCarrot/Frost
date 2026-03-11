@@ -202,6 +202,16 @@ Functional form of the `map` expression.
 Applies `f` to each element of an `Array`, or to each key-value pair `(k, v)` of a `Map`.
 For `Map` input, `f` must return a `Map`; its entries are merged into the result, allowing keys to be remapped or entries to be expanded.
 
+## `flat_map`
+`flat_map(arr, f)`
+
+Applies `f` to each element of `arr` and flattens the results one level.
+Equivalent to `arr @ transform(f) @ flatten(1)`.
+
+```
+flat_map([1, 2, 3], fn x -> [x, x * 2])  # => [1, 2, 2, 4, 3, 6]
+```
+
 ## `select`
 `select(structure, f)`
 

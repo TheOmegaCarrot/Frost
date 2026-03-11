@@ -22,6 +22,8 @@ def map_keys = fn m, f -> map m with fn k, v -> ({ [f(k)]: v })
  
 def map_values = fn m, f -> map m with fn k, v -> ({ [k]: f(v) })
 
+def flat_map = fn arr, f -> transform(arr, f) @ flatten(1)
+
 def compose = fn f, g, ...rest -> {
 
     def require_fn = fn f -> {

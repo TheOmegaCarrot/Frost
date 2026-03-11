@@ -1,0 +1,15 @@
+def pair = fn x -> [x, x * 2]
+
+assert(deep_equal(
+    flat_map([1, 2, 3], pair),
+    [1, 2, 2, 4, 3, 6]
+))
+
+# Empty array
+assert(deep_equal(flat_map([], pair), []))
+
+# Only one level is flattened
+assert(deep_equal(
+    flat_map([[1, 2], [3, 4]], fn x -> [x]),
+    [[1, 2], [3, 4]]
+))

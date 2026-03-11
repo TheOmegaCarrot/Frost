@@ -13,6 +13,7 @@ set(INTEGRATION_SCRIPTS
     prelude/compose.frst
     prelude/index.frst
     prelude/map_keys_values.frst
+    prelude/flat_map.frst
     threaded-call-chain.frst
     capture-enclosing-closure.frst
     map-newline-1.frst
