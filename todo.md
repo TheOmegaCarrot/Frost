@@ -10,7 +10,3 @@
 - **`sum` / `product`** — trivially `fold`, but so universally needed they usually get shortcuts
 - **`flat_map`** — map then flatten; common FP operation
 - **`zip_with(f, a, b)`** — zip with a combining function rather than producing pairs
-
-### Math
-
-- **Mathematical constants (`pi`, `e`)**
