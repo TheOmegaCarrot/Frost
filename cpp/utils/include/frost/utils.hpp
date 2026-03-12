@@ -32,6 +32,7 @@ std::expected<std::vector<Fmt_Segment>, std::string> parse_fmt_string(
     X("else")                                                                  \
     X("elif")                                                                  \
     X("def")                                                                   \
+    X("defn")                                                                  \
     X("do")                                                                    \
     X("export")                                                                \
     X("fn")                                                                    \

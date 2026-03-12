@@ -2195,6 +2195,56 @@ struct Export_Def
     static constexpr auto value = define_callback<true>();
     static constexpr auto name = "export def statement";
 };
+
+// `defn name(params) -> body`. Syntactic sugar for
+// `def name = fn name(params) -> body`. The function name is bound as
+// self_name in the Lambda, so the body can call it recursively.
+// Permitted wherever `def` is (top-level and inside block bodies).
+struct Defn
+{
+    static constexpr auto rule = [] {
+        auto kw_defn = LEXY_KEYWORD("defn", identifier::base);
+        return kw_defn >> (param_ws + dsl::p<identifier_required>
+                           + param_ws + dsl::p<lambda_parameters_paren>
+                           + param_ws_nl + LEXY_LIT("->")
+                           + dsl::p<lambda_body>);
+    }();
+    static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
+        [](std::string name, lambda_param_pack params,
+           std::vector<ast::Statement::Ptr> body) {
+            auto lambda = std::make_unique<ast::Lambda>(
+                std::move(params.params), std::move(body),
+                std::move(params.vararg), name);
+            return std::make_unique<ast::Define>(
+                std::move(name), std::move(lambda), false);
+        });
+    static constexpr auto name = "defn statement";
+};
+
+// `export defn name(params) -> body`. Top-level only; same desugaring as
+// `Defn` but produces an exported binding.
+struct Export_Defn
+{
+    static constexpr auto rule = [] {
+        auto kw_export = LEXY_KEYWORD("export", identifier::base);
+        auto kw_defn = LEXY_KEYWORD("defn", identifier::base);
+        return kw_export + param_ws_no_comment + kw_defn
+               + param_ws + dsl::p<identifier_required>
+               + param_ws + dsl::p<lambda_parameters_paren>
+               + param_ws_nl + LEXY_LIT("->")
+               + dsl::p<lambda_body>;
+    }();
+    static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
+        [](std::string name, lambda_param_pack params,
+           std::vector<ast::Statement::Ptr> body) {
+            auto lambda = std::make_unique<ast::Lambda>(
+                std::move(params.params), std::move(body),
+                std::move(params.vararg), name);
+            return std::make_unique<ast::Define>(
+                std::move(name), std::move(lambda), true);
+        });
+    static constexpr auto name = "export defn statement";
+};
 } // namespace node
 
 // =============================================================================
@@ -2214,28 +2264,35 @@ struct expression_statement
 };
 
 // `statement_impl<allow_export>`: a single statement. The template parameter
-// bakes the `export def` allowance in at compile time with zero runtime
-// overhead.
+// bakes the `export def`/`export defn` allowance in at compile time with zero
+// runtime overhead.
 //
-// The ordering: `export def` is tried first (peeked), then `def`, then
-// expression statement. The peek on `export` is needed to commit to the
-// Export_Def branch before Lexy tries the other alternatives.
+// Ordering at top level: `export defn` is peeked before `export def` (both
+// start with `export`, so the more specific peek comes first), then `defn`,
+// then `def`, then expression statement. Inside block bodies the export
+// branches are absent.
 template <bool allow_export>
 struct statement_impl
 {
     static constexpr auto rule = [] {
+        auto kw_defn = LEXY_KEYWORD("defn", identifier::base);
         if constexpr (allow_export)
         {
             auto kw_export = LEXY_KEYWORD("export", identifier::base);
             return param_ws
-                   + ((dsl::peek(kw_export) >> dsl::p<node::Export_Def>)
+                   + ((dsl::peek(kw_export + param_ws_no_comment + kw_defn)
+                           >> dsl::p<node::Export_Defn>)
+                      | (dsl::peek(kw_export) >> dsl::p<node::Export_Def>)
+                      | (dsl::peek(kw_defn) >> dsl::p<node::Defn>)
                       | dsl::p<node::Define>
                       | dsl::p<expression_statement>);
         }
         else
         {
             return param_ws
-                   + (dsl::p<node::Define> | dsl::p<expression_statement>);
+                   + ((dsl::peek(kw_defn) >> dsl::p<node::Defn>)
+                      | dsl::p<node::Define>
+                      | dsl::p<expression_statement>);
         }
     }();
     static constexpr auto value = lexy::forward<ast::Statement::Ptr>;

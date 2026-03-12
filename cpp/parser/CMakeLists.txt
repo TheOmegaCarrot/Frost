@@ -31,6 +31,7 @@ set(PARSER_TEST_FILES
     primary-expr
     if-expr
     define-stmt
+    defn-stmt
     program
     program-stress
     postfix-expr
