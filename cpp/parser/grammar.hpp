@@ -809,6 +809,7 @@ struct lambda_param_pack
 {
     std::vector<std::string> params;
     std::optional<std::string> vararg;
+    std::optional<std::string> self_name;
 };
 
 struct destructure_pack
@@ -997,13 +998,13 @@ struct lambda_param_payload_impl
             return lambda_param_pack{};
         },
         [](std::string vararg) {
-            return lambda_param_pack{{}, std::move(vararg)};
+            return lambda_param_pack{{}, std::move(vararg), std::nullopt};
         },
         [](std::vector<std::string> params, lexy::nullopt) {
-            return lambda_param_pack{std::move(params), std::nullopt};
+            return lambda_param_pack{std::move(params), std::nullopt, std::nullopt};
         },
         [](std::vector<std::string> params, std::string vararg) {
-            return lambda_param_pack{std::move(params), std::move(vararg)};
+            return lambda_param_pack{std::move(params), std::move(vararg), std::nullopt};
         });
     static constexpr auto name = "lambda parameters";
 };
@@ -1035,19 +1036,42 @@ struct lambda_parameters_elided
 };
 
 // `lambda_param_clause`: the parameter clause before `->`.
-// If a `(` follows (after optional whitespace), use the parenthesized form;
-// otherwise use the elided form. Both cases are followed by `->`.
+// Three forms (in priority order):
+//   Named:       `fn f(a, b) -> body`   — identifier then `(` (no newline between)
+//   Parenthesized: `fn (a, b) -> body`  — `(` directly (newlines ok before it)
+//   Elided:      `fn a, b -> body`      — no parens
 struct lambda_param_clause
 {
     static constexpr auto rule = [] {
         auto kw_arrow = LEXY_LIT("->");
-        auto params = dsl::peek(param_ws_nl + dsl::lit_c<'('>)
-                      >> (param_ws_nl + dsl::p<lambda_parameters_paren>)
-                      | dsl::else_
-                      >> (param_ws_nl + dsl::p<lambda_parameters_elided>);
+
+        // Named branch: identifier immediately followed by `(` (no newline).
+        auto named_peek = dsl::peek(
+            param_ws + dsl::ascii::alpha_underscore
+            + dsl::while_(dsl::ascii::word)
+            + param_ws + dsl::lit_c<'('>);
+        auto named_branch = param_ws + dsl::p<identifier_required>
+                            + param_ws + dsl::p<lambda_parameters_paren>;
+
+        auto params =
+            named_peek
+                >> named_branch
+            | dsl::peek(param_ws_nl + dsl::lit_c<'('>)
+                >> (param_ws_nl + dsl::p<lambda_parameters_paren>)
+            | dsl::else_
+                >> (param_ws_nl + dsl::p<lambda_parameters_elided>);
+
         return params + param_ws_nl + kw_arrow;
     }();
-    static constexpr auto value = lexy::forward<lambda_param_pack>;
+
+    static constexpr auto value = lexy::callback<lambda_param_pack>(
+        [](std::string name, lambda_param_pack inner) -> lambda_param_pack {
+            inner.self_name = std::move(name);
+            return inner;
+        },
+        [](lambda_param_pack pack) -> lambda_param_pack {
+            return pack;
+        });
     static constexpr auto name = "lambda parameters";
 };
 
@@ -1293,7 +1317,8 @@ struct Lambda
         [](lambda_param_pack params, std::vector<ast::Statement::Ptr> body) {
             return std::make_unique<ast::Lambda>(std::move(params.params),
                                                  std::move(body),
-                                                 std::move(params.vararg));
+                                                 std::move(params.vararg),
+                                                 std::move(params.self_name));
         });
     static constexpr auto name = "lambda expression";
 };

@@ -24,7 +24,7 @@ def map_values = fn m, f -> map m with fn k, v -> ({ [k]: f(v) })
 
 def flat_map = fn arr, f -> transform(arr, f) @ flatten(1)
 
-def compose = fn f, g, ...rest -> {
+def compose = fn compose(f, g, ...rest) -> {
 
     def require_fn = fn f -> {
         assert(is_function(f),
@@ -36,6 +36,6 @@ def compose = fn f, g, ...rest -> {
     def compose2 = fn f1, f2 -> fn ...args -> f2(pack_call(f1, args))
 
     if len(rest) == 0: compose2(f, g)
-    else: pack_call(self, [ compose2(f, g) ] + rest )
+    else: pack_call(compose, [ compose2(f, g) ] + rest )
 
 }

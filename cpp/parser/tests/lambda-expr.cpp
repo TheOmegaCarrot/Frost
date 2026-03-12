@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/closure.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -1044,6 +1045,149 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK_FALSE(parse("fn() ->"));
         CHECK_FALSE(parse("fn() -> {"));
         CHECK_FALSE(parse("fn() -> }"));
+    }
+
+    SECTION("Named lambda: single param")
+    {
+        auto result = parse("fn f(x) -> x");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {frst::Value::create(7_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 7_f);
+    }
+
+    SECTION("Named lambda: multiple params")
+    {
+        auto result = parse("fn f(x, y) -> x + y");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(
+            value, {frst::Value::create(3_f), frst::Value::create(4_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 7_f);
+    }
+
+    SECTION("Named lambda: no params")
+    {
+        auto result = parse("fn f() -> 42");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 42_f);
+    }
+
+    SECTION("Named lambda: vararg-only")
+    {
+        auto result = parse("fn f(...rest) -> rest");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(
+            value, {frst::Value::create(1_f), frst::Value::create(2_f)});
+        REQUIRE(out->is<frst::Array>());
+        CHECK(out->raw_get<frst::Array>().size() == 2);
+    }
+
+    SECTION("Named lambda: params plus vararg")
+    {
+        auto result = parse("fn f(x, ...rest) -> rest");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {frst::Value::create(1_f),
+                                         frst::Value::create(2_f),
+                                         frst::Value::create(3_f)});
+        REQUIRE(out->is<frst::Array>());
+        CHECK(out->raw_get<frst::Array>().size() == 2);
+    }
+
+    SECTION("Named lambda: space between name and paren gives same result")
+    {
+        auto result_nospace = parse("fn f(x) -> x");
+        auto result_space = parse("fn f (x) -> x");
+        REQUIRE(result_nospace);
+        REQUIRE(result_space);
+
+        frst::Symbol_Table table;
+        auto v1 = require_expression(result_nospace)->evaluate(table);
+        auto v2 = require_expression(result_space)->evaluate(table);
+
+        auto arg = frst::Value::create(5_f);
+        CHECK(call_function(v1, {arg})->get<frst::Int>().value() == 5_f);
+        CHECK(call_function(v2, {arg})->get<frst::Int>().value() == 5_f);
+    }
+
+    SECTION("Named lambda: self-name enables recursion")
+    {
+        auto result = parse("fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {frst::Value::create(5_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 120_f);
+    }
+
+    SECTION("Regression: fn(x) -> x is still unnamed")
+    {
+        auto result = parse("fn(x) -> x");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto closure = std::dynamic_pointer_cast<frst::Closure>(
+            value->get<frst::Function>().value());
+        REQUIRE(closure);
+        CHECK_FALSE(closure->debug_capture_table().has("f"));
+    }
+
+    SECTION("Regression: fn x -> x is unnamed with x as param")
+    {
+        auto result = parse("fn x -> x");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto out = call_function(value, {frst::Value::create(9_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 9_f);
+
+        auto closure = std::dynamic_pointer_cast<frst::Closure>(
+            value->get<frst::Function>().value());
+        REQUIRE(closure);
+        CHECK_FALSE(closure->debug_capture_table().has("x"));
+    }
+
+    SECTION("Regression: fn f -> body treats f as a param, not self-name")
+    {
+        auto result = parse("fn f -> f");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        auto value = expr->evaluate(table);
+        auto arg = frst::Value::create(3_f);
+        auto out = call_function(value, {arg});
+        CHECK(out == arg);
     }
 
     SECTION("Keyword parameters are rejected")

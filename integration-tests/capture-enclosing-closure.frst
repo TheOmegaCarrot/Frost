@@ -1,8 +1,7 @@
 def maker = fn -> {
-    def outer = fn arg -> {
-        def me = self
+    def outer = fn outer(arg) -> {
         def inner = fn inner_arg -> {
-            me(inner_arg)  
+            outer(inner_arg)  
         }
 
         if arg:
