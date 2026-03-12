@@ -901,7 +901,7 @@ Literal(null)
 )");
     }
 
-    SECTION("Named capture is omitted from capture list")
+    SECTION("Named self-reference appears in capture list alongside other captures")
     {
         Symbol_Table captures;
         captures.define("rec", Value::create(123_f));
@@ -923,9 +923,10 @@ Literal(null)
 
         const auto [header, body_dump] = split_header_body(dump);
         const auto capture_names_list = parse_capture_list(header);
-        REQUIRE(capture_names_list.size() == 1);
-        CHECK(capture_names_list[0] == "x");
-        CHECK(header.find("rec") == std::string::npos);
+        REQUIRE(capture_names_list.size() == 2);
+        const std::set<std::string> names{capture_names_list.begin(),
+                                          capture_names_list.end()};
+        CHECK(names == std::set<std::string>{"rec", "x"});
         CHECK(body_dump == "Literal(42)\n");
     }
 

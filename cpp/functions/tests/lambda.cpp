@@ -1799,4 +1799,27 @@ TEST_CASE("Lambda")
         CHECK(capture_names(*inner_closure) == std::set<std::string>{"x"});
         CHECK(inner_closure->call({}) == mid_arg);
     }
+
+    SECTION("node_label covers all combinations of params, vararg, and self_name")
+    {
+        auto null_body = [] {
+            std::vector<Statement::Ptr> body;
+            body.push_back(node<Literal>(Value::null()));
+            return body;
+        };
+
+        CHECK(Lambda{{}, null_body()}.node_label() == "Lambda()");
+        CHECK(Lambda{{"x", "y"}, null_body()}.node_label() == "Lambda(x, y)");
+        CHECK(Lambda{{}, null_body(), "rest"}.node_label() == "Lambda(...rest)");
+        CHECK(Lambda{{"x"}, null_body(), "rest"}.node_label()
+              == "Lambda(x, ...rest)");
+
+        CHECK(Lambda{{}, null_body(), {}, "f"}.node_label() == "Lambda(f:)");
+        CHECK(Lambda{{"x", "y"}, null_body(), {}, "f"}.node_label()
+              == "Lambda(f: x, y)");
+        CHECK(Lambda{{}, null_body(), "rest", "f"}.node_label()
+              == "Lambda(f: ...rest)");
+        CHECK(Lambda{{"x"}, null_body(), "rest", "f"}.node_label()
+              == "Lambda(f: x, ...rest)");
+    }
 }

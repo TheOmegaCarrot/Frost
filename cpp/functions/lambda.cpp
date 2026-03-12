@@ -173,20 +173,14 @@ std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
 
 std::string Lambda::node_label() const
 {
-#pragma message("TODO: address self_name_ change in Lambda::node_label")
-    if (vararg_param_ && params_.size() != 0)
-    {
-        return fmt::format("Lambda({}, ...{})", fmt::join(params_, ", "),
-                           vararg_param_.value());
-    }
-    else if (vararg_param_ && params_.size() == 0)
-    {
-        return fmt::format("Lambda(...{})", vararg_param_.value());
-    }
-    else
-    {
-        return fmt::format("Lambda({})", fmt::join(params_, ", "));
-    }
+    const bool has_params = !params_.empty() || vararg_param_;
+    return fmt::format(
+        "Lambda({}{}{}{}{}{})",
+        self_name_ ? std::string_view{*self_name_} : std::string_view{},
+        self_name_ ? (has_params ? ": " : ":") : "", fmt::join(params_, ", "),
+        !params_.empty() && vararg_param_ ? ", " : "",
+        vararg_param_ ? "..." : "",
+        vararg_param_ ? std::string_view{*vararg_param_} : std::string_view{});
 }
 
 std::generator<Statement::Child_Info> Lambda::children() const

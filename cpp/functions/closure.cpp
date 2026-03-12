@@ -81,7 +81,6 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
 
 std::string Closure::debug_dump() const
 {
-#pragma message("TODO: update Closure::debug_dump")
     std::ostringstream os;
     os << "<Closure>";
 
@@ -91,9 +90,6 @@ std::string Closure::debug_dump() const
             << " (capturing: "
             << (captures_.debug_table()
                 | std::views::keys
-                | std::views::filter([&](const auto& key) {
-                      return key != self_name_;
-                  })
                 | std::views::join_with(',')
                 | std::ranges::to<std::string>())
             << ")";
