@@ -901,10 +901,10 @@ Literal(null)
 )");
     }
 
-    SECTION("Self capture is omitted from capture list")
+    SECTION("Named capture is omitted from capture list")
     {
         Symbol_Table captures;
-        captures.define("self", Value::create(123_f));
+        captures.define("rec", Value::create(123_f));
         captures.define("x", Value::create(1_f));
 
         std::vector<Statement::Ptr> body;
@@ -914,7 +914,9 @@ Literal(null)
                         body_ptr,
                         expr<Literal>(Value::create(42_f)),
                         captures,
-                        0};
+                        0,
+                        {},
+                        "rec"};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;
@@ -923,14 +925,14 @@ Literal(null)
         const auto capture_names_list = parse_capture_list(header);
         REQUIRE(capture_names_list.size() == 1);
         CHECK(capture_names_list[0] == "x");
-        CHECK(header.find("self") == std::string::npos);
+        CHECK(header.find("rec") == std::string::npos);
         CHECK(body_dump == "Literal(42)\n");
     }
 
-    SECTION("Only self capture does not produce a capture list")
+    SECTION("Only named capture does not produce a capture list")
     {
         Symbol_Table captures;
-        captures.define("self", Value::create(123_f));
+        captures.define("rec", Value::create(123_f));
 
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
@@ -939,7 +941,9 @@ Literal(null)
                         body_ptr,
                         expr<Literal>(Value::create(42_f)),
                         captures,
-                        0};
+                        0,
+                        {},
+                        "rec"};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;

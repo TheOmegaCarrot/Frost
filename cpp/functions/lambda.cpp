@@ -27,21 +27,24 @@ Value_Ptr promote_if_weak(const Value_Ptr& fn)
 
 Lambda::Lambda(std::vector<std::string> params,
                std::vector<Statement::Ptr> body_prefix,
-               std::optional<std::string> vararg_param)
+               std::optional<std::string> vararg_param,
+               std::optional<std::string> self_name)
     : params_{std::move(params)}
     , body_prefix_{std::make_shared<std::vector<Statement::Ptr>>(
           std::move(body_prefix))}
     , vararg_param_{std::move(vararg_param)}
+    , self_name_{std::move(self_name)}
 {
     std::flat_set<std::string> param_set{std::from_range, params_};
 
     if (vararg_param_)
         param_set.insert(vararg_param_.value());
 
-    if (param_set.contains("self"))
+    if (self_name_ && param_set.contains(self_name_.value()))
     {
-        throw Frost_Unrecoverable_Error{
-            "Closure parameter cannot be named self"};
+        throw Frost_Unrecoverable_Error{fmt::format(
+            "Closure parameter cannot shadow name bound to self ({})",
+            self_name_.value())};
     }
 
     if (const auto expected_param_set_size =
@@ -73,10 +76,12 @@ Lambda::Lambda(std::vector<std::string> params,
     {
         name.visit(Overload{
             [&](const Statement::Definition& defn) {
-                if (defn.name == "self")
+                if (defn.name == self_name_)
                 {
                     throw Frost_Unrecoverable_Error{
-                        "Closure local definition cannot shadow self"};
+                        fmt::format("Closure local definition cannot shadow "
+                                    "name bound to self ({})",
+                                    self_name_.value())};
                 }
                 if (param_set.contains(defn.name))
                 {
@@ -90,7 +95,7 @@ Lambda::Lambda(std::vector<std::string> params,
             },
             [&](const Statement::Usage& used) {
                 if (used.name
-                    != "self"
+                    != self_name_
                     && !names_defined_so_far.contains(used.name))
                 {
                     names_to_capture_.insert(used.name);
@@ -135,7 +140,8 @@ Lambda::Lambda(std::vector<std::string> params,
     auto weak_closure = Value::create(
         Function{std::make_shared<Weak_Closure>(std::weak_ptr{closure})});
 
-    closure->inject_capture("self", weak_closure);
+    if (self_name_)
+        closure->inject_capture(self_name_.value(), weak_closure);
 
     return Value::create(Function{std::move(closure)});
 }
@@ -148,7 +154,8 @@ std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
     };
 
     std::flat_set<std::string> defns{std::from_range, params_};
-    defns.insert("self");
+    if (self_name_)
+        defns.insert(self_name_.value());
 
     if (vararg_param_)
         defns.insert(vararg_param_.value());
@@ -166,6 +173,7 @@ std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
 
 std::string Lambda::node_label() const
 {
+#pragma message("TODO: address self_name_ change in Lambda::node_label")
     if (vararg_param_ && params_.size() != 0)
     {
         return fmt::format("Lambda({}, ...{})", fmt::join(params_, ", "),

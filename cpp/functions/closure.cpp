@@ -13,12 +13,14 @@ Closure::Closure(std::vector<std::string> parameters,
                  std::shared_ptr<std::vector<ast::Statement::Ptr>> body_prefix,
                  std::shared_ptr<ast::Expression> return_expr,
                  Symbol_Table captures, std::size_t define_count,
-                 std::optional<std::string> vararg_parameter)
+                 std::optional<std::string> vararg_parameter,
+                 std::optional<std::string> self_name)
     : parameters_{std::move(parameters)}
     , body_prefix_{std::move(body_prefix)}
     , return_expr_{std::move(return_expr)}
     , captures_{std::move(captures)}
     , vararg_parameter_{std::move(vararg_parameter)}
+    , self_name_{std::move(self_name)}
     , define_count_{define_count}
 {
     // Assumed: all params in parameters_ and vararg_parameter_ (if present) are
@@ -79,6 +81,7 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
 
 std::string Closure::debug_dump() const
 {
+#pragma message("TODO: update Closure::debug_dump")
     std::ostringstream os;
     os << "<Closure>";
 
@@ -88,8 +91,8 @@ std::string Closure::debug_dump() const
             << " (capturing: "
             << (captures_.debug_table()
                 | std::views::keys
-                | std::views::filter([](const auto& key) {
-                      return key != "self";
+                | std::views::filter([&](const auto& key) {
+                      return key != self_name_;
                   })
                 | std::views::join_with(',')
                 | std::ranges::to<std::string>())

@@ -27,7 +27,8 @@ class Lambda final : public Expression
     ~Lambda() final = default;
 
     Lambda(std::vector<std::string> params, std::vector<Statement::Ptr> body,
-           std::optional<std::string> vararg_param = {});
+           std::optional<std::string> vararg_param = {},
+           std::optional<std::string> self_name = {});
 
     [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
 
@@ -44,6 +45,7 @@ class Lambda final : public Expression
     std::shared_ptr<std::vector<Statement::Ptr>> body_prefix_;
     std::shared_ptr<ast::Expression> return_expr_;
     std::optional<std::string> vararg_param_;
+    std::optional<std::string> self_name_;
     std::size_t closure_define_count_;
 };
 } // namespace frst::ast

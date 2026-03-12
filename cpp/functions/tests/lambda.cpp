@@ -2,6 +2,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <catch2/trompeloeil.hpp>
 
+#include <frost/ast/function_call.hpp>
 #include <frost/ast/lambda.hpp>
 #include <frost/closure.hpp>
 #include <frost/mock/mock-expression.hpp>
@@ -43,14 +44,9 @@ std::unique_ptr<T> node(Args&&... args)
 
 std::set<std::string> capture_names(const Closure& closure)
 {
-    REQUIRE(closure.debug_capture_table().has("self"));
     std::set<std::string> names;
     for (const auto& entry : closure.debug_capture_table().debug_table())
-    {
-        if (entry.first == "self")
-            continue;
         names.insert(entry.first);
-    }
     return names;
 }
 
@@ -62,7 +58,6 @@ std::shared_ptr<Closure> eval_to_closure(const Lambda& node,
     auto fn = result->get<Function>().value();
     auto closure = std::dynamic_pointer_cast<Closure>(fn);
     REQUIRE(closure);
-    REQUIRE(closure->debug_capture_table().has("self"));
     return closure;
 }
 
@@ -72,7 +67,6 @@ std::shared_ptr<Closure> value_to_closure(const Value_Ptr& value)
     auto fn = value->get<Function>().value();
     auto closure = std::dynamic_pointer_cast<Closure>(fn);
     REQUIRE(closure);
-    REQUIRE(closure->debug_capture_table().has("self"));
     return closure;
 }
 } // namespace
@@ -231,26 +225,187 @@ TEST_CASE("Lambda")
                               && ContainsSubstring("x"));
     }
 
-    SECTION("Parameter cannot be named self")
+    SECTION("Vararg parameter cannot shadow self_name")
     {
-        // Frost:
-        // def f = fn (self) -> { }
+        // fn f(...f) -> null  -- "f" as vararg conflicts with self_name "f"
         std::vector<Statement::Ptr> body;
-
-        CHECK_THROWS_WITH((Lambda{{"self"}, std::move(body)}),
-                          ContainsSubstring("self"));
+        body.push_back(node<Literal>(Value::null()));
+        CHECK_THROWS_WITH((Lambda{{}, std::move(body), "f", "f"}),
+                          ContainsSubstring("f"));
     }
 
-    SECTION("Local definition cannot redefine self")
+    SECTION("Parameter cannot shadow self_name")
     {
-        // Frost:
-        // def f = fn () -> { def self = 1 ; null }
+        // fn f(f) -> null  -- "f" as param conflicts with self_name "f"
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>("self", node<Literal>(Value::create(1_f))));
         body.push_back(node<Literal>(Value::null()));
+        CHECK_THROWS_WITH((Lambda{{"f"}, std::move(body), {}, "f"}),
+                          ContainsSubstring("f"));
+    }
 
-        CHECK_THROWS_WITH((Lambda{{}, std::move(body)}),
-                          ContainsSubstring("self"));
+    SECTION("Local definition cannot shadow self_name")
+    {
+        // fn f() -> { def f = 1 ; null }  -- local "f" conflicts with self_name "f"
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<Define>("f", node<Literal>(Value::create(1_f))));
+        body.push_back(node<Literal>(Value::null()));
+        CHECK_THROWS_WITH((Lambda{{}, std::move(body), {}, "f"}),
+                          ContainsSubstring("f"));
+    }
+
+    SECTION("Symbol sequence treats self_name as defined")
+    {
+        // fn f(x) -> f(x)  -- "f" is self_name, not a free variable
+        std::vector<Expression::Ptr> call_args;
+        call_args.push_back(node<Name_Lookup>("x"));
+        std::vector<Statement::Ptr> body;
+        body.push_back(
+            node<Function_Call>(node<Name_Lookup>("f"), std::move(call_args)));
+
+        Lambda lambda{{"x"}, std::move(body), {}, "f"};
+
+        std::vector<Statement::Symbol_Action> actions;
+        for (const auto& action : lambda.symbol_sequence())
+            actions.push_back(action);
+
+        CHECK(actions.empty());
+    }
+
+    SECTION("Self_name is not captured from environment")
+    {
+        // def f = 99  (in outer env)
+        // fn f(x) -> f(x)  -- "f" is self_name; env's "f" must not be captured
+        Symbol_Table env;
+        env.define("f", Value::create(99_f));
+
+        std::vector<Expression::Ptr> call_args;
+        call_args.push_back(node<Name_Lookup>("x"));
+        std::vector<Statement::Ptr> body;
+        body.push_back(
+            node<Function_Call>(node<Name_Lookup>("f"), std::move(call_args)));
+
+        Lambda lambda{{"x"}, std::move(body), {}, "f"};
+        auto closure = eval_to_closure(lambda, env);
+
+        // "f" should be in captures, but as a Weak_Closure (self-ref), not as Int 99
+        REQUIRE(closure->debug_capture_table().has("f"));
+        CHECK(closure->debug_capture_table().lookup("f")->is<Function>());
+    }
+
+    SECTION("Named lambda self_name enables recursion")
+    {
+        // fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)
+        Symbol_Table env;
+
+        std::vector<Expression::Ptr> rec_args;
+        rec_args.push_back(node<Binop>(node<Name_Lookup>("n"), Binary_Op::MINUS,
+                                       node<Literal>(Value::create(1_f))));
+        auto rec_call = node<Function_Call>(node<Name_Lookup>("fact"),
+                                            std::move(rec_args));
+        auto rec_expr = node<Binop>(node<Name_Lookup>("n"), Binary_Op::MULTIPLY,
+                                    std::move(rec_call));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<If>(
+            node<Binop>(node<Name_Lookup>("n"), Binary_Op::LE,
+                        node<Literal>(Value::create(1_f))),
+            node<Literal>(Value::create(1_f)),
+            std::optional<Expression::Ptr>{std::move(rec_expr)}));
+
+        Lambda lambda{{"n"}, std::move(body), {}, "fact"};
+        auto closure = eval_to_closure(lambda, env);
+
+        auto result = closure->call({Value::create(5_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 120_f);
+    }
+
+    SECTION("Inner lambda promotes named lambda Weak_Closure to strong reference")
+    {
+        // fn f(n) -> fn() -> if n <= 0: 0 else: f(n - 1)()
+        //
+        // When f(1) is called, the inner lambda is created. Inside f's execution
+        // environment "f" resolves to a Weak_Closure (the injected self-ref).
+        // Lambda::evaluate() calls promote_if_weak, storing a strong Closure in
+        // the inner lambda's captures instead.
+        //
+        // After dropping the outer strong reference to f's closure, only the
+        // inner lambda's capture keeps it alive. Without the promotion the
+        // closure would be destroyed here and the subsequent call would throw.
+        Symbol_Table env;
+
+        // f(n - 1)
+        std::vector<Expression::Ptr> rec_args;
+        rec_args.push_back(node<Binop>(node<Name_Lookup>("n"), Binary_Op::MINUS,
+                                       node<Literal>(Value::create(1_f))));
+        auto f_of_nm1 = node<Function_Call>(node<Name_Lookup>("f"),
+                                            std::move(rec_args));
+        // f(n - 1)()
+        auto f_of_nm1_called = node<Function_Call>(std::move(f_of_nm1),
+                                                   std::vector<Expression::Ptr>{});
+
+        // fn() -> if n <= 0: 0 else: f(n - 1)()
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<If>(
+            node<Binop>(node<Name_Lookup>("n"), Binary_Op::LE,
+                        node<Literal>(Value::create(0_f))),
+            node<Literal>(Value::create(0_f)),
+            std::optional<Expression::Ptr>{std::move(f_of_nm1_called)}));
+        auto inner_lambda = node<Lambda>(std::vector<std::string>{},
+                                         std::move(inner_body));
+
+        // fn f(n) -> fn() -> ...
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(std::move(inner_lambda));
+        Lambda outer{{"n"}, std::move(outer_body), {}, "f"};
+
+        Value_Ptr inner_val;
+        {
+            auto outer_closure = eval_to_closure(outer, env);
+            inner_val = outer_closure->call({Value::create(1_f)});
+            // outer_closure dropped here; f's Closure survives only if
+            // inner_val holds a strong reference (promote_if_weak worked).
+        }
+
+        // inner() -> if 1 <= 0: 0 else: f(0)()
+        // f(0)() -> if 0 <= 0: 0 -> 0
+        REQUIRE(inner_val->is<Function>());
+        auto result = inner_val->get<Function>().value()->call({});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 0_f);
+    }
+
+    SECTION("Named lambda closes over outer variables")
+    {
+        // def base = 42
+        // fn f(n) -> if n <= 0: base else: f(n - 1)
+        Symbol_Table env;
+        auto base_val = Value::create(42_f);
+        env.define("base", base_val);
+
+        std::vector<Expression::Ptr> rec_args;
+        rec_args.push_back(node<Binop>(node<Name_Lookup>("n"), Binary_Op::MINUS,
+                                       node<Literal>(Value::create(1_f))));
+        auto rec_call = node<Function_Call>(node<Name_Lookup>("f"),
+                                            std::move(rec_args));
+
+        std::vector<Statement::Ptr> body;
+        body.push_back(node<If>(
+            node<Binop>(node<Name_Lookup>("n"), Binary_Op::LE,
+                        node<Literal>(Value::create(0_f))),
+            node<Name_Lookup>("base"),
+            std::optional<Expression::Ptr>{std::move(rec_call)}));
+
+        Lambda lambda{{"n"}, std::move(body), {}, "f"};
+        auto closure = eval_to_closure(lambda, env);
+
+        // capture set should contain "base" and the self-ref "f"
+        CHECK(capture_names(*closure) == std::set<std::string>{"base", "f"});
+        CHECK(closure->debug_capture_table().lookup("base") == base_val);
+
+        auto result = closure->call({Value::create(3_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 42_f);
     }
 
     SECTION("Local definition cannot shadow a variadic parameter")
@@ -375,6 +530,29 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(node<Lambda>(std::vector<std::string>{},
                                           std::move(inner_body), "rest"));
+
+        Lambda outer{{}, std::move(outer_body)};
+        auto outer_closure = eval_to_closure(outer, env);
+
+        CHECK(capture_names(*outer_closure).empty());
+    }
+
+    SECTION("Named inner lambda self_name not captured by outer")
+    {
+        // def f = 99  (in outer env)
+        // def outer = fn () -> { fn f(x) -> f(x) }
+        // outer should NOT capture "f" from env; inner lambda handles it itself
+        Symbol_Table env;
+        env.define("f", Value::create(99_f));
+
+        std::vector<Statement::Ptr> inner_body;
+        inner_body.push_back(node<Name_Lookup>("f"));
+
+        std::vector<Statement::Ptr> outer_body;
+        outer_body.push_back(node<Lambda>(std::vector<std::string>{"x"},
+                                          std::move(inner_body),
+                                          std::optional<std::string>{},
+                                          std::optional<std::string>{"f"}));
 
         Lambda outer{{}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);

@@ -23,7 +23,8 @@ class Closure : public Callable
             std::shared_ptr<std::vector<ast::Statement::Ptr>> body,
             std::shared_ptr<ast::Expression> return_expr, Symbol_Table captures,
             std::size_t define_count,
-            std::optional<std::string> vararg_parameter = {});
+            std::optional<std::string> vararg_parameter = {},
+            std::optional<std::string> self_name = {});
 
     Value_Ptr call(std::span<const Value_Ptr> args) const override;
     std::string debug_dump() const override;
@@ -37,6 +38,7 @@ class Closure : public Callable
     std::shared_ptr<ast::Expression> return_expr_;
     Symbol_Table captures_;
     std::optional<std::string> vararg_parameter_;
+    std::optional<std::string> self_name_;
     std::size_t define_count_;
 };
 
