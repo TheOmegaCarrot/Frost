@@ -1,19 +1,16 @@
 #ifndef FROST_BUILTINS_ASYNC_HTTP_REQUEST_HPP
 #define FROST_BUILTINS_ASYNC_HTTP_REQUEST_HPP
 
+#include <frost/async.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
 #include <chrono>
 #include <expected>
-#include <future>
 #include <optional>
-#include <thread>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/beast/http/verb.hpp>
-
-#include "../async.hpp"
 
 namespace frst::http
 {

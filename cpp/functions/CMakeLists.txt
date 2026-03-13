@@ -22,14 +22,6 @@ add_library( frost-functions
     builtins/type-tests.cpp
 )
 
-if(WITH_HTTP)
-    target_sources( frost-functions
-    PRIVATE
-    builtins/http.cpp
-    builtins/async-impl/http/request.cpp
-    )
-endif()
-
 target_include_directories( frost-functions
     PUBLIC
     include/
@@ -46,15 +38,6 @@ target_link_libraries( frost-functions
     Boost::json
     cppcodec::cppcodec
 )
-
-if(WITH_HTTP)
-    target_link_libraries( frost-functions
-        PUBLIC
-        Boost::url
-        OpenSSL::SSL
-        OpenSSL::Crypto
-    )
-endif()
 
 set(FUNCTIONS_TEST_FILES
     builtin

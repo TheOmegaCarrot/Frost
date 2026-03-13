@@ -12,6 +12,8 @@ add_executable( frost
     repl.cpp
 )
 
+add_subdirectory(ext/)
+
 target_link_libraries( frost
     PUBLIC
     frost-parser
@@ -21,6 +23,7 @@ target_link_libraries( frost
     frost-value
     frost-prelude
     frost-meta
+    frost-ext
     frost-common
     lyra
     replxx::replxx

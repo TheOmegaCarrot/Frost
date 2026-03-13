@@ -1,4 +1,5 @@
 #include <frost/builtins-common.hpp>
+#include <frost/ext.hpp>
 #include <frost/import.hpp>
 #include <frost/parser.hpp>
 #include <frost/prelude.hpp>
@@ -80,6 +81,7 @@ struct Importer
 
         Symbol_Table isolated_table;
         inject_builtins(isolated_table);
+        inject_ext(isolated_table);
         inject_prelude(isolated_table);
         isolated_table.define("imported", Value::create(true));
 

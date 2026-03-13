@@ -16,6 +16,7 @@ target_link_libraries( frost-meta
     frost-ast
     frost-symbol-table
     frost-prelude
+    frost-ext
 )
 
 macro(meta_test file)

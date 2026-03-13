@@ -30,12 +30,7 @@ include(clang-tidy-targets)
 
 include(get-test-libs)
 
-if(WITH_HTTP)
-    find_package(Boost REQUIRED COMPONENTS regex json headers url)
-    find_package(OpenSSL REQUIRED)
-else()
-    find_package(Boost REQUIRED COMPONENTS regex json headers)
-endif()
+find_package(Boost REQUIRED COMPONENTS regex json headers)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE YES)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO YES)
@@ -73,20 +68,14 @@ target_compile_definitions( frost-common
     FROST_VERSION="${PROJECT_VERSION}"
 )
 
-if(WITH_HTTP)
-    message("Enabling HTTP")
-    target_compile_definitions( frost-common
-    INTERFACE
-    FROST_ENABLE_HTTP
-    )
-endif()
-
 add_subdirectory(cpp/)
 
 set(FROST_INTERPRETER_TARGETS
     frost
     frost-ast
+    frost-ext
     frost-functions
+    frost-http
     frost-meta
     frost-parser
     frost-prelude

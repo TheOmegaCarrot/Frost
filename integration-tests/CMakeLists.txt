@@ -27,7 +27,3 @@ foreach(script ${INTEGRATION_SCRIPTS})
 endforeach()
 
 add_subdirectory(import)
-
-if(WITH_HTTP)
-    add_subdirectory(http)
-endif()

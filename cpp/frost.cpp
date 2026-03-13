@@ -1,5 +1,6 @@
 #include <frost/ast.hpp>
 #include <frost/builtin.hpp>
+#include <frost/ext.hpp>
 #include <frost/import.hpp>
 #include <frost/meta.hpp>
 #include <frost/parser.hpp>
@@ -128,6 +129,7 @@ int main(int argc, const char** argv)
 
     frst::Symbol_Table symbols;
     frst::inject_builtins(symbols);
+    frst::inject_ext(symbols);
     frst::inject_meta(symbols);
     frst::inject_prelude(symbols);
 
