@@ -15,8 +15,7 @@
 # Completion criteria:
 # - All assertions in this file pass unchanged.
 
-def flatten = fn (x) -> {
-    def flatten = self
+defn flatten(x) -> {
     if is_array(x):
         reduce x with fn acc, elem -> acc + flatten(elem) init: []
     else:

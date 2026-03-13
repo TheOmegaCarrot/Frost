@@ -4,9 +4,9 @@ Frost is a dynamic, immutable scripting language with flexible, expressive synta
 
 ```frost
 # The classic inefficient recursive fibonacci
-def fib = fn n -> {
+defn fib(n) -> {
     if n < 2: n
-    else: self(n-1) + self(n-2)
+    else: fib(n-1) + fib(n-2)
 }
 
 ( map range(10) with fib ) @ print()

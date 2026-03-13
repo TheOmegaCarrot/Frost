@@ -1,8 +1,8 @@
 def n = 2500
 
-def sum_down = fn (k, acc) -> {
+defn sum_down(k, acc) -> {
     if k == 0: acc
-    else: self(k - 1, acc + k)
+    else: sum_down(k - 1, acc + k)
 }
 
 def result = sum_down(n, 0)
