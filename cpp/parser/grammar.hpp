@@ -1606,13 +1606,13 @@ struct map_destructure_entry
         },
         // Named key with explicit binding.
         [](std::string key, std::string name) {
-            return ast::Map_Destructure::Element{make_string_key_expr(key),
+            return ast::Map_Destructure::Element{make_string_key_expr(std::move(key)),
                                                  std::move(name)};
         },
         // Shorthand: binding name equals key name.
         [](std::string key, lexy::nullopt) {
             return ast::Map_Destructure::Element{make_string_key_expr(key),
-                                                 key};
+                                                 std::move(key)};
         });
     static constexpr auto name = "map destructure entry";
 };
