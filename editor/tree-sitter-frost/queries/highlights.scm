@@ -5,6 +5,7 @@
   (kw_else)
   (kw_elif)
   (kw_def)
+  (kw_defn)
   (kw_export)
   (kw_fn)
   (kw_do)

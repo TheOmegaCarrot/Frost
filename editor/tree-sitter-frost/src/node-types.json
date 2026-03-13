@@ -82,7 +82,15 @@
         "named": true
       },
       {
+        "type": "defn_statement",
+        "named": true
+      },
+      {
         "type": "export_definition",
+        "named": true
+      },
+      {
+        "type": "export_defn_statement",
         "named": true
       },
       {
@@ -347,6 +355,56 @@
     }
   },
   {
+    "type": "defn_statement",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "parameters": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "lambda_parameters_parenthesized",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_defn",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "destructure_name",
     "named": true,
     "fields": {},
@@ -530,6 +588,60 @@
       "types": [
         {
           "type": "kw_def",
+          "named": true
+        },
+        {
+          "type": "kw_export",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "export_defn_statement",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "parameters": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "lambda_parameters_parenthesized",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_defn",
           "named": true
         },
         {
@@ -1864,6 +1976,10 @@
   },
   {
     "type": "kw_def",
+    "named": true
+  },
+  {
+    "type": "kw_defn",
     "named": true
   },
   {

@@ -10,12 +10,21 @@ assert(identity(10) == 10)
 def also_plus = fn (x, y) -> { x + y } # `plus` is a predefined builtin
 assert(also_plus(30, 12) == 42)
 
-# if expressions
-def fib = fn fib(n) -> {
+# defn for functions also works
+# and enables recursion
+
+defn fib(n) -> {
     if n <= 1: n
     else: fib(n-1) + fib(n-2) # recursion
 }
 assert(fib(1) == 1) ; assert(fib(7) == 13)
+
+# defn is just syntax sugar for this
+# a lambda can be given a name for recursion, even without a `def`
+def fib2 = fn fib2(n) -> {
+    if n <= 1: n
+    else: fib2(n-1) + fib(n-2)
+}
 
 # def mutate = fn n -> {
 #   n = 5 # Nope, everything is immutable

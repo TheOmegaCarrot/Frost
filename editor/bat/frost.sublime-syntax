@@ -8,7 +8,7 @@ version: 2
 
 variables:
   ident: '[A-Za-z_][A-Za-z0-9_]*'
-  keyword: '(?:if|else|elif|def|do|export|fn|reduce|map|foreach|filter|with|init|and|or|not)'
+  keyword: '(?:if|else|elif|defn|def|do|export|fn|reduce|map|foreach|filter|with|init|and|or|not)'
   constant: '(?:true|false|null)'
 
 contexts:

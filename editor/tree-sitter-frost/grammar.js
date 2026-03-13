@@ -20,6 +20,7 @@ module.exports = grammar({
       $.kw_else,
       $.kw_elif,
       $.kw_def,
+      $.kw_defn,
       $.kw_export,
       $.kw_fn,
       $.kw_reduce,
@@ -62,7 +63,9 @@ module.exports = grammar({
 
     statement: $ => choice(
       $.export_definition,
+      $.export_defn_statement,
       $.definition,
+      $.defn_statement,
       $.expression_statement,
     ),
 
@@ -76,11 +79,28 @@ module.exports = grammar({
       field('value', $.expression),
     ),
 
+    export_defn_statement: $ => seq(
+      $.kw_export,
+      $.kw_defn,
+      field('name', $.identifier),
+      field('parameters', $.lambda_parameters_parenthesized),
+      '->',
+      field('body', choice($.block, $.expression)),
+    ),
+
     definition: $ => seq(
       $.kw_def,
       field('pattern', $.pattern),
       '=',
       field('value', $.expression),
+    ),
+
+    defn_statement: $ => seq(
+      $.kw_defn,
+      field('name', $.identifier),
+      field('parameters', $.lambda_parameters_parenthesized),
+      '->',
+      field('body', choice($.block, $.expression)),
     ),
 
     pattern: $ => choice(
@@ -494,6 +514,7 @@ module.exports = grammar({
     kw_else: _ => token('else'),
     kw_elif: _ => token('elif'),
     kw_def: _ => token('def'),
+    kw_defn: _ => token('defn'),
     kw_export: _ => token('export'),
     kw_fn: _ => token('fn'),
     kw_reduce: _ => token('reduce'),

@@ -44,7 +44,15 @@
         },
         {
           "type": "SYMBOL",
+          "name": "export_defn_statement"
+        },
+        {
+          "type": "SYMBOL",
           "name": "definition"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "defn_statement"
         },
         {
           "type": "SYMBOL",
@@ -89,6 +97,56 @@
         }
       ]
     },
+    "export_defn_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "kw_export"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "kw_defn"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "parameters",
+          "content": {
+            "type": "SYMBOL",
+            "name": "lambda_parameters_parenthesized"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "->"
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "block"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "expression"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "definition": {
       "type": "SEQ",
       "members": [
@@ -114,6 +172,52 @@
           "content": {
             "type": "SYMBOL",
             "name": "expression"
+          }
+        }
+      ]
+    },
+    "defn_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "kw_defn"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "parameters",
+          "content": {
+            "type": "SYMBOL",
+            "name": "lambda_parameters_parenthesized"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "->"
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "block"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "expression"
+              }
+            ]
           }
         }
       ]
@@ -2260,6 +2364,13 @@
         "value": "def"
       }
     },
+    "kw_defn": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "defn"
+      }
+    },
     "kw_export": {
       "type": "TOKEN",
       "content": {
@@ -2405,6 +2516,10 @@
       {
         "type": "SYMBOL",
         "name": "kw_def"
+      },
+      {
+        "type": "SYMBOL",
+        "name": "kw_defn"
       },
       {
         "type": "SYMBOL",
