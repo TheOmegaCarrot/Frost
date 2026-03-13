@@ -50,11 +50,11 @@ The left-hand side is just inserted as the first argument to the function call o
 That threading "pipeline" is effectively rewritten to `transform(select(split('...', ' '), fn w -> len(w) > 3), to_upper)`.
 The threaded form is certainly nicer, eh?
 
-Functions are also just lambdas bound to a name.
+Functions are also just lambdas bound to a name. The `defn` keyword is shorthand for this pattern.
 A multi-line lambda implicitly returns the last expression.
 
 ```frost
-def describe = fn n -> {
+defn describe(n) -> {
     def word = if n > 0: 'positive' elif n < 0: 'negative' else: 'zero'
     $'${n} is ${word}'
 }
@@ -64,15 +64,13 @@ def describe = fn n -> {
 Format strings are prepended with a `$`, and the format specifiers (`${...}`) must exactly contain names.
 
 Any lambda can be recursive, and the `{}` are optional if the body is just a single expression.
+`defn` makes the function name available inside the body:
 
 ```frost
-def factorial = fn n ->
+defn factorial(n) ->
     if n <= 1: 1
-    else: n * self(n - 1)
+    else: n * factorial(n - 1)
 ```
-
-`self` always refers to the current lambda.
-
 
 ## Logic
 
@@ -206,12 +204,12 @@ try_call(plus, [3, 5])
 
 Frost also provides a mechanism for splitting up code between files.
 
-Any file-scope `def` can be `export`-ed:
+Any file-scope `def` or `defn` can be `export`-ed:
 
 ```frost
 # examples/strutils.frst
-export def shout   = fn s -> to_upper(s) + '!'
-export def whisper = fn s -> to_lower(s) + '...'
+export defn shout(s)   -> to_upper(s) + '!'
+export defn whisper(s) -> to_lower(s) + '...'
 ```
 
 This can then be `import`-ed:

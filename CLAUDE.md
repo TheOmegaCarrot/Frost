@@ -142,6 +142,14 @@ fn x -> x + 1                    # single-expression lambda
 fn (x, y) -> x + y               # multiple parameters
 fn -> { def x = 1; x + 2 }       # block body (statements separated by newlines or ;)
 fn x -> fn y -> x + y            # curried
+fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)  # named lambda (name available for recursion)
+```
+
+`defn name(params) -> body` is sugar for `def name = fn name(params) -> body`:
+
+```frost
+defn add(x, y) -> x + y
+export defn greet(name) -> $'hello, ${name}'
 ```
 
 ### Truthiness

@@ -25,6 +25,7 @@ For most readers, this is not the place to start learning the language; for that
     + [Logical Comparisons](#logical-comparisons)
     + [Arithmetic Operators](#arithmetic-operators)
   * [If Expressions](#if-expressions)
+  * [Do](#do)
   * [Iterative Expressions](#iterative-expressions)
     + [Map](#map-1)
     + [Filter](#filter)
@@ -37,6 +38,7 @@ For most readers, this is not the place to start learning the language; for that
 - [Modules](#modules)
   * [Export](#export)
   * [Import](#import)
+  * [The `imported` variable](#the-imported-variable)
 
 <!-- tocstop -->
 
@@ -82,6 +84,8 @@ Below is a list of reserved words.
 
 - `and`
 - `def`
+- `defn`
+- `do`
 - `elif`
 - `else`
 - `export`
@@ -271,6 +275,8 @@ A function definition consists of the keyword `fn`, followed by an optional list
 The list of arguments may optionally be enclosed in parentheses.
 The body is enclosed in `{}` braces, and may consist of multiple statements.
 If the body consists of only a single expression, then the enclosing `{}` may be omitted.
+This is even true when the single expression appears on the following line.
+
 When a function is called, the final expression is used as the return value.
 _All_ functions return exactly one value. It is typical for side-effect functions (such as `print`) to return `null`.
 
@@ -284,19 +290,23 @@ def f3 = fn a, b -> { a + ( b * 2 ) }
 
 def f4 = fn a, b -> a + ( b * 2 )
 
-f4(2, 4) # 10
+def f5 = fn a, b ->
+    a + ( b * 2 ) # indentation is not required
+
+f5(2, 4) # 10
 ```
 
-Note that when writing a function which returns a map, there is a limitation in the parser.
-The parser will interpret the `{` as starting a block, not a `Map` literal, and thus produce an error.
+Map literals can appear directly as a function body, with one exception: when the _first_ entry uses a computed key (`[...]`), the parser cannot distinguish it from a block. Wrap the map in parentheses, or put an identifier-keyed entry first.
 
 ```frost
-def bad = fn -> { foo: 42 } # syntax error
-def good1 = fn -> {{ foo: 42 }} # ok
-def good2 = fn -> ({foo: 42})
+def f1 = fn -> { foo: 42 }           # ok — identifier first key
+def f2 = fn -> {}                    # ok — empty map
+def f3 = fn -> { [k]: 42 }           # syntax error — computed key is first
+def f4 = fn -> ({ [k]: 42 })         # ok — parenthesised
+def f5 = fn -> { foo: 1, [k]: 42 }   # ok — identifier key is first
 ```
 
-A function may contain local `def` statements, but a `def` statement may not end a function.
+A function may contain local `def` and `defn` statements, but neither may end a function body.
 The body of a function may not `export` any definitions.
 
 ```frost
@@ -326,7 +336,7 @@ def make_adder = fn a -> {
 make_adder(5)(3) # 8
 ```
 
-`{}` braces are not required when returning a new function.
+`{}` braces can also be omitted when returning a new function.
 The following is equivalent:
 
 ```frost
@@ -343,31 +353,30 @@ def add_things = fn i, ...rest -> reduce rest with plus init: i
 add_things(1, 2, 3, 4) # 10 (rest was [2, 3, 4])
 ```
 
-A function may be recursive. Every function implicitly captures itself as `self`.
-Note that the name `factorial` is _not_ available within the below function definition, as it is not defined until _after_ the lambda expression.
+For a function to be able to recurse, it must capture itself.
+For a lambda to capture itself, the following syntax can be used:
 
 ```frost
-def factorial = fn n ->
-    if n <= 1: 1
-    else: n * self(n - 1)
+map [1, 2, 3, 4] with fn fib(n) -> if n <= 1: n else: fib(n-1) + fib(n-2)
 ```
 
-There is a common pitfall when using `self` to recurse.
-Because `self` always refers to the directly-enclosing function, you must bind `self` to a new name for an inner function to recurse into an outer function.
+Here, the closure's own name appears before its parameter list.
+Note that parentheses are required in this form.
+
+For a function being bound to a definition, a shortened form is available.
+The following two snippets are identical in meaning:
 
 ```frost
-# BUG! self is the map lambda, not recursively_double
-def recursively_double = fn arr ->
-    map arr with fn item ->
-        if is_array(item): self(item)
-        else: item * 2
+def fib = fn fib(n) -> {
+    if n <= 1: n
+    else: fib(n-1) + fib(n-2)
+}
+```
 
-# Fix: bind the outer lambda's self to a new name which can be captured
-def recursively_double = fn arr -> {
-    def recurse = self
-    map arr with fn item ->
-        if is_array(item): recurse(item)
-        else: item * 2
+```frost
+defn fib(n) -> {
+    if n <= 1: n
+    else: fib(n-1) + fib(n-2)
 }
 ```
 
@@ -538,11 +547,11 @@ else: 42
 
 ### Do
 
-A `do` block is a single expression that begins a new scope, allows `def` statements within, and evaluates to its final expression.
+A `do` block is a single expression that begins a new scope, allows `def` and `defn` statements within, and evaluates to its final expression.
 This was developed in response to a growing pattern of immediately-invoked functions (`fn -> { ... }()`) being used to scope local definitions.
 A `do` block is nearly a drop-in replacement for this ugly but effective pattern, and incurs less runtime overhead.
 
-Any `def` statements are entirely scoped to the block itself:
+Any `def` or `defn` statements are entirely scoped to the block itself:
 
 ```frost
 do {
@@ -770,7 +779,7 @@ One file may use the `import` function to import what is `export`-ed by another 
 
 ### Export
 
-Any `def` statement at file scope may be prepended with the `export` keyword.
+Any `def` or `defn` statement at file scope may be prepended with the `export` keyword.
 Any definition marked as `export` will be made available when a script is imported.
 This does not change the meaning within that script file, and the name(s) can be used normally.
 The rules for an exported definition are the same as described in previous sections.
@@ -781,7 +790,13 @@ export def foo = 42
 # if this file is imported, then foo will be exported
 ```
 
-It is an error for an `export def` to appear within a function:
+`export defn` is the shorthand form for exporting a named function:
+
+```frost
+export defn greet(name) -> $'hello, ${name}'
+```
+
+It is an error for an `export def` or `export defn` to appear within a function:
 
 ```frost
 def f = fn -> {
