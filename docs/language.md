@@ -570,7 +570,7 @@ assert(do {
 } == 5)
 ```
 
-Similarly to block-style functions, a `do` block may not end with a `def` statement:
+Similarly to block-style functions, a `do` block may not end with a `def` or `defn` statement:
 
 ```frost
 do {
@@ -680,7 +680,7 @@ A foreach expression always returns `null`.
 
 ## Statements
 
-Most of Frost consists of expressions, but there are a couple examples of proper statements.
+Most of Frost consists of expressions, but there are a few proper statements.
 The distinction is that an expression evaluates to a value, whereas a statement does not.
 
 ### Definitions
