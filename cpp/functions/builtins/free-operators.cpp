@@ -31,11 +31,6 @@ X_FREE_BINOP
 
 #undef X
 
-BUILTIN(deep_equal)
-{
-    return Value::deep_equal(args.at(0), args.at(1));
-}
-
 void inject_free_operators(Symbol_Table& table)
 {
 #define X(frost_name, internal_name) INJECT(frost_name, 2, 2);
@@ -43,7 +38,5 @@ void inject_free_operators(Symbol_Table& table)
     X_FREE_BINOP
 
 #undef X
-
-    INJECT(deep_equal, 2, 2);
 }
 } // namespace frst

@@ -16,7 +16,7 @@ using frst::testing::Dummy_Callable;
 
 bool deep_eq(const Value_Ptr& lhs, const Value_Ptr& rhs)
 {
-    return Value::deep_equal(lhs, rhs)->get<Bool>().value();
+    return Value::equal(lhs, rhs)->get<Bool>().value();
 }
 } // namespace
 

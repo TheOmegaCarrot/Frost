@@ -129,14 +129,15 @@ TEST_CASE("Array Equality")
     auto arr1 = Value::create(frst::Array{});
     auto arr2 = Value::create(frst::Array{});
 
-    SECTION("Equals")
+    SECTION("Equals — same content")
     {
-        CHECK(Value::equal(arr1, arr1)->get<frst::Bool>().value());
+        CHECK(Value::equal(arr1, arr2)->get<frst::Bool>().value());
     }
 
-    SECTION("Unequal")
+    SECTION("Unequal — different content")
     {
-        CHECK_FALSE(Value::equal(arr1, arr2)->get<frst::Bool>().value());
+        auto arr3 = Value::create(frst::Array{Value::create(1_f)});
+        CHECK_FALSE(Value::equal(arr1, arr3)->get<frst::Bool>().value());
     }
 }
 
@@ -145,14 +146,15 @@ TEST_CASE("Map Equality")
     auto map1 = Value::create(frst::Map{});
     auto map2 = Value::create(frst::Map{});
 
-    SECTION("Equals")
+    SECTION("Equals — same content")
     {
-        CHECK(Value::equal(map1, map1)->get<frst::Bool>().value());
+        CHECK(Value::equal(map1, map2)->get<frst::Bool>().value());
     }
 
-    SECTION("Unequal")
+    SECTION("Unequal — different content")
     {
-        CHECK_FALSE(Value::equal(map1, map2)->get<frst::Bool>().value());
+        auto map3 = Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
+        CHECK_FALSE(Value::equal(map1, map3)->get<frst::Bool>().value());
     }
 }
 

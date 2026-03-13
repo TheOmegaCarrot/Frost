@@ -213,10 +213,11 @@ TEST_CASE("Comparison Binary ops")
 
         auto arr1 = Value::create(frst::Array{Value::create(1_f)});
         auto arr2 = Value::create(frst::Array{Value::create(1_f)});
-        CHECK(eval_binop(arr1, ast::Binary_Op::EQ, arr1)->get<Bool>().value());
+        auto arr3 = Value::create(frst::Array{Value::create(2_f)});
+        CHECK(eval_binop(arr1, ast::Binary_Op::EQ, arr2)->get<Bool>().value());
         CHECK_FALSE(
-            eval_binop(arr1, ast::Binary_Op::EQ, arr2)->get<Bool>().value());
-        CHECK(eval_binop(arr1, ast::Binary_Op::NE, arr2)->get<Bool>().value());
+            eval_binop(arr1, ast::Binary_Op::EQ, arr3)->get<Bool>().value());
+        CHECK(eval_binop(arr1, ast::Binary_Op::NE, arr3)->get<Bool>().value());
 
         auto map1 = Value::create(frst::Map{
             {Value::create("k"s), Value::create(1_f)},
@@ -224,10 +225,13 @@ TEST_CASE("Comparison Binary ops")
         auto map2 = Value::create(frst::Map{
             {Value::create("k"s), Value::create(1_f)},
         });
-        CHECK(eval_binop(map1, ast::Binary_Op::EQ, map1)->get<Bool>().value());
+        auto map3 = Value::create(frst::Map{
+            {Value::create("k"s), Value::create(2_f)},
+        });
+        CHECK(eval_binop(map1, ast::Binary_Op::EQ, map2)->get<Bool>().value());
         CHECK_FALSE(
-            eval_binop(map1, ast::Binary_Op::EQ, map2)->get<Bool>().value());
-        CHECK(eval_binop(map1, ast::Binary_Op::NE, map2)->get<Bool>().value());
+            eval_binop(map1, ast::Binary_Op::EQ, map3)->get<Bool>().value());
+        CHECK(eval_binop(map1, ast::Binary_Op::NE, map3)->get<Bool>().value());
 
         struct Dummy final : Callable
         {

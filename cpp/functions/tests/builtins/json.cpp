@@ -190,7 +190,7 @@ TEST_CASE("Builtin to_json")
 
         auto parse_json = lookup(table, "parse_json");
         auto round = parse_json->call({json});
-        auto eq = Value::deep_equal(map, round)->get<Bool>().value();
+        auto eq = Value::equal(map, round)->get<Bool>().value();
         CHECK(eq);
     }
 }

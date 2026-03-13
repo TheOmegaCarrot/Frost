@@ -40,7 +40,7 @@ def expected = {
 }
 
 assert(
-    deep_equal(deep_merge(config_a, config_b), expected),
+    deep_merge(config_a, config_b) == expected,
     'deep merge output should match expected nested map'
 )
 

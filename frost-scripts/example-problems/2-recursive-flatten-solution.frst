@@ -23,16 +23,16 @@ defn flatten(x) -> {
 }
 
 assert(
-    deep_equal(flatten([1, [2, [3, []], 4], 5]), [1, 2, 3, 4, 5]),
+    flatten([1, [2, [3, []], 4], 5]) == [1, 2, 3, 4, 5],
     'nested arrays should flatten in order'
 )
 
 assert(
-    deep_equal(flatten(7), [7]),
+    flatten(7) == [7],
     'non-array input should produce a singleton array'
 )
 
 assert(
-    deep_equal(flatten([]), []),
+    flatten([]) == [],
     'empty arrays should stay empty'
 )

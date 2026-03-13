@@ -23,4 +23,4 @@ print(pretty(arr_sums))
 print('==')
 print(pretty(expect))
 
-assert(deep_equal(arr_sums, expect))
+assert(arr_sums == expect)

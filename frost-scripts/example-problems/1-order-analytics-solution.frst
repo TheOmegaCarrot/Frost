@@ -80,11 +80,11 @@ assert(order_total(orders[2]) == 0, 'order_total for order 3 should be 0')
 assert(gross_revenue(orders) == 133, 'gross revenue should be 133')
 
 assert(
-    deep_equal(high_value_order_ids(orders, 50), [1, 4]),
+    high_value_order_ids(orders, 50) == [1, 4],
     'high-value ids should be [1, 4] for threshold 50'
 )
 
 assert(
-    deep_equal(customer_totals(orders), { alice: 59, bob: 24, cara: 50 }),
+    customer_totals(orders) == { alice: 59, bob: 24, cara: 50 },
     'customer totals should be {alice:59, bob:24, cara:50}'
 )

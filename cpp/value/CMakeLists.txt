@@ -1,6 +1,5 @@
 add_library( frost-value
     clone.cpp
-    deep-equal.cpp
     explicit-conversions.cpp
     index-array.cpp
     internal-map-compare.cpp

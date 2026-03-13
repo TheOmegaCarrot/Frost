@@ -12,32 +12,61 @@ namespace frst
     op_err("compare", op_glyph, lhs_type, rhs_type);
 }
 
-struct Compare_Equal_Impl
-{
-    template <Frost_Type T>
-        requires Frost_Primitive<T> || std::same_as<Function, T>
-    static bool operator()(const T& lhs, const T& rhs)
-    {
-        return lhs == rhs;
-    }
-    static bool operator()(const auto&, const auto&)
-    {
-        return false;
-    }
-} constexpr static compare_equal_impl;
-
 bool Value::equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
 {
     if (lhs == rhs)
-        return true; // quick identity check
+        return true;
 
-    const auto& lhs_var = lhs->value_;
-    const auto& rhs_var = rhs->value_;
+    // clang-format really has no clue what to do with this one, eh?
+    // I don't blame it, this is kinda ugly
+    auto visitor = Overload{
+        []<typename T>
+            requires Frost_Primitive<T> || std::same_as<Function, T>
+                     (const T& lhs, const T& rhs) {
+                         return lhs == rhs;
+                     },
+                     [](this const auto& recurse, const Array& lhs,
+                        const Array& rhs) {
+                         if (lhs.size() != rhs.size())
+                             return false;
 
-    if (lhs_var.index() != rhs_var.index())
-        return false; // different types are always unequal
+                         for (const auto& [lhv, rhv] :
+                              std::views::zip(lhs, rhs))
+                         {
+                             if (not std::visit(recurse, lhv->value_,
+                                                rhv->value_))
+                                 return false;
+                         }
 
-    return std::visit(compare_equal_impl, lhs_var, rhs_var);
+                         return true;
+                     },
+                     [](this const auto& recurse, const Map& lhs,
+                        const Map& rhs) {
+                         if (lhs.size() != rhs.size())
+                             return false;
+
+                         for (const auto& [lhs_kv, rhs_kv] :
+                              std::views::zip(lhs, rhs))
+                         {
+                             const auto& [lhs_k, lhs_v] = lhs_kv;
+                             const auto& [rhs_k, rhs_v] = rhs_kv;
+
+                             if (not std::visit(recurse, lhs_k->value_,
+                                                rhs_k->value_)
+                                 || not std::visit(recurse, lhs_v->value_,
+                                                   rhs_v->value_))
+                                 return false;
+                         }
+
+                         return true;
+                     },
+                     []<Frost_Type T, Frost_Type U>
+                         requires(not std::same_as<T, U>)
+        (const T&, const U&) {
+            return false;
+        }};
+
+    return std::visit(visitor, lhs->value_, rhs->value_);
 }
 
 bool Value::not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)

@@ -454,7 +454,7 @@ The ordering operators (`<`, `>`, etc) are only defined for numeric types, and c
 (`3 < 3.14` is well-defined.)
 Equality comparisons (`==` or `!=`) will _never_ cause a type error.
 
-Primitive types are compared by value, but structured types and functions are compared by identity.
+Primitive types, arrays, and maps are compared by value. Functions are compared by identity.
 
 ```frost
 def a = 42
@@ -463,16 +463,7 @@ a == b # true
 
 def arr1 = [1, 2, 3]
 def arr2 = [1, 2, 3]
-def arr3 = arr1
-arr1 == arr2 # false
-arr1 == arr3 # true
-```
-
-For a recursive notion of equality for structured types, the built-in `deep_equal` function can be used.
-This works as expected for both arrays and maps.
-
-```frost
-arr1 @ deep_equal(arr2) # true
+arr1 == arr2 # true
 ```
 
 #### Arithmetic Operators
@@ -725,7 +716,7 @@ Array destructuring can also bind an unknown number of elements to an array:
 
 ```frost
 def [a, b, ...rest] = [1, 2, 3, 4]
-# a == 1 and b == 2 and deep_equal(rest, [3, 4])
+# a == 1 and b == 2 and rest == [3, 4]
 ```
 
 In this form, all of the names before the `...` must match an element, and the `...` name may bind an empty array.

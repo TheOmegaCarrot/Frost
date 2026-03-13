@@ -267,11 +267,6 @@ class Value
     static Value_Ptr divide(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static Value_Ptr modulus(const Value_Ptr& lhs, const Value_Ptr& rhs);
 
-    static Value_Ptr deep_equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
-    {
-        return create(deep_equal_impl(lhs, rhs));
-    }
-
     static Value_Ptr equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
     {
         return create(equal_impl(lhs, rhs));
@@ -322,8 +317,6 @@ class Value
 
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map, Function> value_;
-
-    static bool deep_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
 
     static bool equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
     static bool not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
