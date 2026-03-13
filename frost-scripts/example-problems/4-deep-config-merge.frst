@@ -17,7 +17,7 @@
 # Completion criteria:
 # - All assertions in this file pass unchanged.
 
-def deep_merge = fn (lhs, rhs) -> {
+defn deep_merge(lhs, rhs) -> {
     null
 }
 

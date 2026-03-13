@@ -11,11 +11,12 @@
 # - If x is NOT an Array, return [x].
 # - Preserve left-to-right order.
 # - Support arbitrary nesting depth.
+# - Don't use the built-in flatten
 #
 # Completion criteria:
 # - All assertions in this file pass unchanged.
 
-def flatten = fn (x) -> {
+defn flatten(x) -> {
     null
 }
 
