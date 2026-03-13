@@ -2,10 +2,10 @@
 #define FROST_AST_ARRAY_DESTRUCTURE_HPP
 
 #include "expression.hpp"
-#include "frost/value.hpp"
 #include "statement.hpp"
 
 #include <frost/symbol-table.hpp>
+#include <frost/value.hpp>
 
 namespace frst::ast
 {

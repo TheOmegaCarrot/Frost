@@ -883,4 +883,33 @@ TEST_CASE("Array_Destructure")
 
         CHECK(collect_sequence(node) == std::vector<std::string>{"use:rhs"});
     }
+
+    SECTION("node_label covers all combinations of names, rest, and export")
+    {
+        using Name = Array_Destructure::Name;
+        auto null_expr = [] { return std::make_unique<mock::Mock_Expression>(); };
+
+        CHECK(Array_Destructure({}, std::nullopt, null_expr()).node_label()
+              == "Array_Destructure()");
+        CHECK(Array_Destructure({"a"s, "b"s}, std::nullopt, null_expr())
+                  .node_label()
+              == "Array_Destructure(a,b)");
+        CHECK(Array_Destructure({"a"s}, Name{"rest"s}, null_expr()).node_label()
+              == "Array_Destructure(a,...rest)");
+        CHECK(Array_Destructure({}, Name{"rest"s}, null_expr()).node_label()
+              == "Array_Destructure(...rest)");
+        CHECK(Array_Destructure({"a"s}, Name{Discarded_Binding{}}, null_expr())
+                  .node_label()
+              == "Array_Destructure(a,..._)");
+        CHECK(Array_Destructure({Discarded_Binding{}, "b"s}, Name{"rest"s},
+                                null_expr())
+                  .node_label()
+              == "Array_Destructure(_,b,...rest)");
+        CHECK(Array_Destructure({"a"s, "b"s}, std::nullopt, null_expr(), true)
+                  .node_label()
+              == "Export_Array_Destructure(a,b)");
+        CHECK(Array_Destructure({"a"s}, Name{"rest"s}, null_expr(), true)
+                  .node_label()
+              == "Export_Array_Destructure(a,...rest)");
+    }
 }

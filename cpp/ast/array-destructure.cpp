@@ -1,5 +1,7 @@
 #include <frost/ast/array-destructure.hpp>
 
+#include <fmt/ranges.h>
+
 #include <flat_set>
 
 #include <ranges>
@@ -122,20 +124,21 @@ std::generator<Statement::Symbol_Action> Array_Destructure::symbol_sequence()
 
 std::string Array_Destructure::node_label() const
 {
+    auto name_of = [](const Name& name) -> std::string_view {
+        return name.visit(
+            Overload{[](const Discarded_Binding&) -> std::string_view {
+                         return Discarded_Binding::token;
+                     },
+                     [](const std::string& n) -> std::string_view { return n; }});
+    };
+
     return fmt::format(
-        "{}Array_Destructure({})", export_defs_ ? "Export_" : "",
-        names_
-            | std::views::transform([](const auto& name) {
-                  return name.visit(
-                      Overload{[](const Discarded_Binding&) {
-                                   return Discarded_Binding::token;
-                               },
-                               [](const std::string& name) -> std::string_view {
-                                   return name;
-                               }});
-              })
-            | std::views::join_with(',')
-            | std::ranges::to<std::string>());
+        "{}Array_Destructure({}{}{}{})",
+        export_defs_ ? "Export_" : "",
+        fmt::join(names_ | std::views::transform(name_of), ","),
+        rest_name_ && !names_.empty() ? "," : "",
+        rest_name_ ? "..." : "",
+        rest_name_ ? name_of(*rest_name_) : std::string_view{});
 }
 
 std::generator<Statement::Child_Info> Array_Destructure::children() const
