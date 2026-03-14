@@ -28,7 +28,7 @@ class Mock_Expression : public ast::Expression
     }
 
   protected:
-    std::string node_label() const override
+    std::string do_node_label() const override
     {
         return "Mock_Expression";
     }

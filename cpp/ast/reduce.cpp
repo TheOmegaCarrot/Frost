@@ -45,7 +45,7 @@ std::generator<ast::Statement::Child_Info> ast::Reduce::children() const
         co_yield make_child(*init_, "Init");
 }
 
-std::string ast::Reduce::node_label() const
+std::string ast::Reduce::do_node_label() const
 {
     return "Reduce_Expr";
 }

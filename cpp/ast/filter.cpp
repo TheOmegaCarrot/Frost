@@ -38,7 +38,7 @@ std::generator<ast::Statement::Child_Info> ast::Filter::children() const
     co_yield make_child(operation_, "Operation");
 }
 
-std::string ast::Filter::node_label() const
+std::string ast::Filter::do_node_label() const
 {
     return "Filter_Expr";
 }

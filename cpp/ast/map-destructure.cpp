@@ -72,7 +72,7 @@ std::optional<Map> Map_Destructure::do_execute(Execution_Context& ctx) const
         return std::nullopt;
 }
 
-std::string Map_Destructure::node_label() const
+std::string Map_Destructure::do_node_label() const
 {
     return fmt::format("{}Map_Destructure", export_defs_ ? "Export_" : "");
 }

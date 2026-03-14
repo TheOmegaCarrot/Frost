@@ -25,9 +25,9 @@ class Index final : public Expression
     Index& operator=(Index&&) = delete;
     ~Index() final = default;
 
-    std::string node_label() const final;
-
   protected:
+    std::string do_node_label() const final;
+
     [[nodiscard]] Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
     std::generator<Child_Info> children() const final;

@@ -7,6 +7,8 @@
 #include <string>
 #include <string_view>
 
+#include <fmt/format.h>
+
 #include <frost/execution-context.hpp>
 
 namespace frst::ast
@@ -69,7 +71,7 @@ class Statement
             co_yield std::ranges::elements_of(child.node->symbol_sequence());
     }
 
-    virtual std::string node_label() const = 0;
+    std::string node_label() const;
 
     // True if a node is safe to deserialize from Frost Data
     virtual bool data_safe() const
@@ -95,6 +97,8 @@ class Statement
     }
 
   protected:
+    virtual std::string do_node_label() const = 0;
+
     virtual std::optional<Map> do_execute(Execution_Context& ctx) const = 0;
 
     struct Child_Info
@@ -137,5 +141,27 @@ class Statement
 };
 
 } // namespace frst::ast
+
+template <>
+struct fmt::formatter<frst::ast::Statement::Source_Location>
+    : fmt::formatter<std::string>
+{
+    auto format(const frst::ast::Statement::Source_Location& loc,
+                fmt::format_context& ctx) const
+    {
+        return fmt::format_to(ctx.out(), "{}:{}", loc.line, loc.column);
+    }
+};
+
+template <>
+struct fmt::formatter<frst::ast::Statement::Source_Range>
+    : fmt::formatter<std::string>
+{
+    auto format(const frst::ast::Statement::Source_Range& range,
+                fmt::format_context& ctx) const
+    {
+        return fmt::format_to(ctx.out(), "{}-{}", range.begin, range.end);
+    }
+};
 
 #endif

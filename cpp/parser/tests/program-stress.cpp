@@ -10,6 +10,7 @@
 #include <lexy/input/string_input.hpp>
 
 #include <ranges>
+#include <regex>
 #include <sstream>
 
 #include "../grammar.hpp"
@@ -51,6 +52,12 @@ std::string dump_statement(const frst::ast::Statement::Ptr& statement)
     statement->debug_dump_ast(out);
     return out.str();
 }
+
+std::string strip_source_ranges(const std::string& dump)
+{
+    static const std::regex range_re{R"( \[\d+:\d+-\d+:\d+\])"};
+    return std::regex_replace(dump, range_re, "");
+}
 } // namespace
 
 TEST_CASE("Parser Program Stress Tests")
@@ -76,7 +83,8 @@ TEST_CASE("Parser Program Stress Tests")
 
         for (auto&& [lhs, rhs] : std::views::zip(left_program, right_program))
         {
-            CHECK(dump_statement(lhs) == dump_statement(rhs));
+            CHECK(strip_source_ranges(dump_statement(lhs))
+                  == strip_source_ranges(dump_statement(rhs)));
         }
     };
 

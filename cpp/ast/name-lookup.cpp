@@ -21,7 +21,7 @@ std::generator<ast::Statement::Symbol_Action> ast::Name_Lookup::
     co_yield Usage{name_};
 }
 
-std::string ast::Name_Lookup::node_label() const
+std::string ast::Name_Lookup::do_node_label() const
 {
     return fmt::format("Name_Lookup({})", name_);
 }

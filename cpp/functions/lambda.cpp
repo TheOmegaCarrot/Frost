@@ -172,7 +172,7 @@ std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
     }
 }
 
-std::string Lambda::node_label() const
+std::string Lambda::do_node_label() const
 {
     const bool has_params = !params_.empty() || vararg_param_;
     return fmt::format(

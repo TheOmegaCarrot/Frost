@@ -25,7 +25,7 @@ class String_Node : public frst::ast::Statement
     }
 
   protected:
-    std::string node_label() const override
+    std::string do_node_label() const override
     {
         return fmt::format("String_Node({})", label_);
     }
@@ -57,7 +57,7 @@ class Multi_String_Node : public frst::ast::Statement
     }
 
   protected:
-    std::string node_label() const override
+    std::string do_node_label() const override
     {
         return fmt::format("Multi_String_Node({})", children_.size());
     }
@@ -92,7 +92,7 @@ class Three_Children : public frst::ast::Statement
     }
 
   protected:
-    std::string node_label() const override
+    std::string do_node_label() const override
     {
         return fmt::format("Three_Children()");
     }
@@ -139,7 +139,7 @@ class Tree_Node : public frst::ast::Statement
     }
 
   protected:
-    std::string node_label() const override
+    std::string do_node_label() const override
     {
         return label_;
     }
@@ -175,7 +175,7 @@ TEST_CASE("Basic AST Dump")
         String_Node node{"Testing"};
         auto result = dump_helper(node);
         INFO(result);
-        CHECK(result == "String_Node(Testing)\n");
+        CHECK(result == "String_Node(Testing) [0:0-0:0]\n");
     }
 
     SECTION("Multi String Node")
@@ -184,10 +184,10 @@ TEST_CASE("Basic AST Dump")
         auto result = dump_helper(node);
         INFO(result);
         CHECK(result ==
-              R"(Multi_String_Node(3)
-├── String_Node(Child_1)
-├── String_Node(Child_2)
-└── String_Node(Child_3)
+              R"(Multi_String_Node(3) [0:0-0:0]
+├── String_Node(Child_1) [0:0-0:0]
+├── String_Node(Child_2) [0:0-0:0]
+└── String_Node(Child_3) [0:0-0:0]
 )");
     }
 
@@ -197,13 +197,13 @@ TEST_CASE("Basic AST Dump")
         auto result = dump_helper(node);
         INFO(result);
         CHECK(result ==
-              R"(Three_Children()
+              R"(Three_Children() [0:0-0:0]
 ├── First
-│   └── String_Node(One)
+│   └── String_Node(One) [0:0-0:0]
 ├── Second
-│   └── String_Node(Two)
+│   └── String_Node(Two) [0:0-0:0]
 └── Third
-    └── String_Node(Three)
+    └── String_Node(Three) [0:0-0:0]
 )");
     }
 
@@ -221,12 +221,12 @@ TEST_CASE("Basic AST Dump")
         auto result = dump_helper(root);
         INFO(result);
         CHECK(result ==
-              R"(Root
-├── Child_One
-│   ├── Leaf_A
-│   └── Leaf_B
-└── Child_Two
-    └── Leaf_C
+              R"(Root [0:0-0:0]
+├── Child_One [0:0-0:0]
+│   ├── Leaf_A [0:0-0:0]
+│   └── Leaf_B [0:0-0:0]
+└── Child_Two [0:0-0:0]
+    └── Leaf_C [0:0-0:0]
 )");
     }
 
@@ -240,11 +240,11 @@ TEST_CASE("Basic AST Dump")
         auto result = dump_helper(root);
         INFO(result);
         CHECK(result ==
-              R"(Mixed
-├── Alpha
+              R"(Mixed [0:0-0:0]
+├── Alpha [0:0-0:0]
 ├── Wrapped
-│   └── Bravo
-└── Charlie
+│   └── Bravo [0:0-0:0]
+└── Charlie [0:0-0:0]
 )");
     }
 
@@ -260,12 +260,12 @@ TEST_CASE("Basic AST Dump")
         auto result = dump_helper(root);
         INFO(result);
         CHECK(result ==
-              R"(Root
+              R"(Root [0:0-0:0]
 ├── Group
-│   └── Branch
-│       ├── Leaf_X
-│       └── Leaf_Y
-└── Tail
+│   └── Branch [0:0-0:0]
+│       ├── Leaf_X [0:0-0:0]
+│       └── Leaf_Y [0:0-0:0]
+└── Tail [0:0-0:0]
 )");
     }
 }

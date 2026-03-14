@@ -48,7 +48,7 @@ struct Flag_Statement final : Statement
     }
 
   protected:
-    std::string node_label() const override
+    std::string do_node_label() const override
     {
         return "Flag_Statement";
     }
@@ -81,7 +81,7 @@ struct Uncaptured_Lookup final : Expression
     }
 
   protected:
-    std::string node_label() const final
+    std::string do_node_label() const final
     {
         return "Uncaptured_Lookup";
     }
@@ -501,7 +501,7 @@ TEST_CASE("Call Closure")
         std::cout << dump;
 
         CHECK(dump == R"(<Closure>
-Literal(42)
+Literal(42) [0:0-0:0]
 )");
     }
 
@@ -883,7 +883,7 @@ TEST_CASE("Debug Dump Closure")
         std::cout << dump;
 
         CHECK(dump == R"(<Closure>
-Literal(42)
+Literal(42) [0:0-0:0]
 )");
     }
 
@@ -899,7 +899,7 @@ Literal(42)
         std::cout << dump;
 
         CHECK(dump == R"(<Closure>
-Literal(null)
+Literal(null) [0:0-0:0]
 )");
     }
 
@@ -926,7 +926,7 @@ Literal(null)
         const std::set<std::string> names{capture_names_list.begin(),
                                           capture_names_list.end()};
         CHECK(names == std::set<std::string>{"rec", "x"});
-        CHECK(body_dump == "Literal(42)\n");
+        CHECK(body_dump == "Literal(42) [0:0-0:0]\n");
     }
 
     SECTION("Only named capture does not produce a capture list")
@@ -945,7 +945,7 @@ Literal(null)
         std::cout << dump;
 
         CHECK(dump == R"(<Closure>
-Literal(42)
+Literal(42) [0:0-0:0]
 )");
     }
 
@@ -988,17 +988,17 @@ Literal(42)
             capture_list_start, header.size() - capture_list_start - 1);
         CHECK(capture_list.find(' ') == std::string_view::npos);
 
-        CHECK(body_dump == R"(If
+        CHECK(body_dump == R"(If [0:0-0:0]
 ├── Condition
-│   └── Name_Lookup(x)
+│   └── Name_Lookup(x) [0:0-0:0]
 ├── Consequent
-│   └── Binary(+)
+│   └── Binary(+) [0:0-0:0]
 │       ├── LHS
-│       │   └── Literal(1)
+│       │   └── Literal(1) [0:0-0:0]
 │       └── RHS
-│           └── Name_Lookup(y)
+│           └── Name_Lookup(y) [0:0-0:0]
 └── Alternate
-    └── Literal(0)
+    └── Literal(0) [0:0-0:0]
 )");
     }
 }

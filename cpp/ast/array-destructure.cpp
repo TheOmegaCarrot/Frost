@@ -124,7 +124,7 @@ std::generator<Statement::Symbol_Action> Array_Destructure::symbol_sequence()
         co_yield Definition{std::get<std::string>(rest_name_.value())};
 }
 
-std::string Array_Destructure::node_label() const
+std::string Array_Destructure::do_node_label() const
 {
     auto name_of = [](const Name& name) -> std::string_view {
         return name.visit(

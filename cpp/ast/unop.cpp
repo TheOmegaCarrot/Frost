@@ -23,7 +23,7 @@ Value_Ptr ast::Unop::do_evaluate(Evaluation_Context ctx) const
     THROW_UNREACHABLE;
 }
 
-std::string ast::Unop::node_label() const
+std::string ast::Unop::do_node_label() const
 {
     return fmt::format("Unary({})", format_unary_op(op_));
 }

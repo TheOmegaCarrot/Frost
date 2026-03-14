@@ -24,7 +24,7 @@ Value_Ptr ast::If::do_evaluate(Evaluation_Context ctx) const
     return Value::null();
 }
 
-std::string ast::If::node_label() const
+std::string ast::If::do_node_label() const
 {
     return "If";
 }

@@ -26,9 +26,9 @@ class Define final : public Statement
 
     std::generator<Symbol_Action> symbol_sequence() const final;
 
-    std::string node_label() const final;
-
   protected:
+    std::string do_node_label() const final;
+
     std::optional<Map> do_execute(Execution_Context& ctx) const final;
 
     std::generator<Child_Info> children() const final;

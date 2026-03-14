@@ -45,7 +45,7 @@ Value_Ptr Do_Block::do_evaluate(Evaluation_Context ctx) const
     return value_expr_->evaluate(block_context.as_eval());
 }
 
-std::string Do_Block::node_label() const
+std::string Do_Block::do_node_label() const
 {
     return "Do_Block";
 }

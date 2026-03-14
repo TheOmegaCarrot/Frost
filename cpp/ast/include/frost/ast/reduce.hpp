@@ -21,9 +21,9 @@ class Reduce final : public Expression
     Reduce(Source_Range source_range, Expression::Ptr structure,
            Expression::Ptr operation, std::optional<Expression::Ptr> init);
 
-    std::string node_label() const final;
-
   protected:
+    std::string do_node_label() const final;
+
     [[nodiscard]] Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
     std::generator<Child_Info> children() const final;

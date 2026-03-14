@@ -33,7 +33,7 @@ Value_Ptr ast::Function_Call::do_evaluate(Evaluation_Context ctx) const
     return fn->raw_get<Function>()->call(std::move(args));
 }
 
-std::string ast::Function_Call::node_label() const
+std::string ast::Function_Call::do_node_label() const
 {
     return "Function_Call";
 }

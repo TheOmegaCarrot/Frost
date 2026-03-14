@@ -23,9 +23,10 @@ class Name_Lookup final : public Expression
     Name_Lookup(Source_Range source_range, std::string name);
 
     std::generator<Symbol_Action> symbol_sequence() const final;
-    std::string node_label() const final;
 
   protected:
+    std::string do_node_label() const final;
+
     [[nodiscard]] Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
   private:

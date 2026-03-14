@@ -31,7 +31,7 @@ std::generator<ast::Statement::Symbol_Action> ast::Define::symbol_sequence()
     co_yield Definition{name_};
 }
 
-std::string ast::Define::node_label() const
+std::string ast::Define::do_node_label() const
 {
     return fmt::format("{}Define({})", export_def_ ? "Export_" : "", name_);
 }

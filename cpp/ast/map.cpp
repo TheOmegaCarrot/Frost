@@ -39,7 +39,7 @@ std::generator<ast::Statement::Child_Info> ast::Map::children() const
     co_yield make_child(operation_, "Operation");
 }
 
-std::string ast::Map::node_label() const
+std::string ast::Map::do_node_label() const
 {
     return "Map_Expr";
 }

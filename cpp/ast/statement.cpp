@@ -73,3 +73,8 @@ std::string Statement::child_prefix(const Print_Context& context)
         out += (context.is_last ? "    " : "│   ");
     return out;
 }
+
+std::string Statement::node_label() const
+{
+    return fmt::format("{} [{}]", do_node_label(), source_range_);
+}

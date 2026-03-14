@@ -18,7 +18,7 @@ Value_Ptr ast::Array_Constructor::do_evaluate(Evaluation_Context ctx) const
                          | std::ranges::to<std::vector>());
 }
 
-std::string ast::Array_Constructor::node_label() const
+std::string ast::Array_Constructor::do_node_label() const
 {
     return "Array_Constructor";
 }

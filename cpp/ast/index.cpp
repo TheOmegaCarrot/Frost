@@ -63,7 +63,7 @@ Value_Ptr Index::do_evaluate(Evaluation_Context ctx) const
     THROW_UNREACHABLE;
 }
 
-std::string Index::node_label() const
+std::string Index::do_node_label() const
 {
     return "Index_Expression";
 }

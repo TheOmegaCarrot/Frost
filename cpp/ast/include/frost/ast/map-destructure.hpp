@@ -33,9 +33,9 @@ class Map_Destructure final : public Statement
                     std::vector<Element> destructure_elems,
                     Expression::Ptr expr, bool export_defs = false);
 
-    std::string node_label() const;
-
   protected:
+    std::string do_node_label() const final;
+
     std::optional<Map> do_execute(Execution_Context& ctx) const final;
 
     std::generator<Child_Info> children() const;

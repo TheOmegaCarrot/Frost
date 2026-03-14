@@ -60,7 +60,7 @@ std::generator<ast::Statement::Child_Info> ast::Foreach::children() const
     co_yield make_child(operation_, "Operation");
 }
 
-std::string ast::Foreach::node_label() const
+std::string ast::Foreach::do_node_label() const
 {
     return "Foreach_Expr";
 }

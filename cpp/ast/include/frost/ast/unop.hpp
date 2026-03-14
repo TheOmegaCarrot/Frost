@@ -46,11 +46,11 @@ class Unop final : public Expression
     Unop& operator=(Unop&&) = delete;
     ~Unop() override = default;
 
-    std::string node_label() const final;
-
     bool data_safe() const final;
 
   protected:
+    std::string do_node_label() const final;
+
     Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
     std::generator<Child_Info> children() const final;

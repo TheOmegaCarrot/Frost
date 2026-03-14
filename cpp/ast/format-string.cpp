@@ -28,7 +28,7 @@ Value_Ptr ast::Format_String::do_evaluate(Evaluation_Context ctx) const
     return Value::create(std::move(out));
 }
 
-std::string ast::Format_String::node_label() const
+std::string ast::Format_String::do_node_label() const
 {
     std::string reconstructed_string;
 

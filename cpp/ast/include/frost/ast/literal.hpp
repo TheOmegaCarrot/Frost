@@ -24,11 +24,11 @@ class Literal final : public Expression
     Literal& operator=(Literal&&) = delete;
     ~Literal() final = default;
 
-    std::string node_label() const final;
-
     bool data_safe() const final;
 
   protected:
+    std::string do_node_label() const final;
+
     [[nodiscard]] Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
   private:

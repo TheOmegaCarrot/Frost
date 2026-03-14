@@ -22,11 +22,11 @@ class Array_Constructor final : public Expression
     Array_Constructor(Source_Range source_range,
                       std::vector<Expression::Ptr> elems);
 
-    std::string node_label() const final;
-
     bool data_safe() const final;
 
   protected:
+    std::string do_node_label() const final;
+
     [[nodiscard]] Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
     std::generator<Child_Info> children() const final;

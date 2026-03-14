@@ -20,11 +20,11 @@ class Do_Block final : public Expression
     Do_Block& operator=(Do_Block&&) = delete;
     ~Do_Block() final = default;
 
-    std::string node_label() const final;
-
     std::generator<Symbol_Action> symbol_sequence() const final;
 
   protected:
+    std::string do_node_label() const final;
+
     [[nodiscard]] Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
     std::generator<Child_Info> children() const final;

@@ -22,11 +22,11 @@ class Map_Constructor final : public Expression
 
     Map_Constructor(Source_Range source_range, std::vector<KV_Pair> pairs);
 
-    std::string node_label() const final;
-
     bool data_safe() const final;
 
   protected:
+    std::string do_node_label() const final;
+
     [[nodiscard]] Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
     std::generator<Child_Info> children() const final;

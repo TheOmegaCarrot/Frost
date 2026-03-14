@@ -23,7 +23,7 @@ Value_Ptr ast::Map_Constructor::do_evaluate(Evaluation_Context ctx) const
     return Value::create(std::move(acc));
 }
 
-std::string ast::Map_Constructor::node_label() const
+std::string ast::Map_Constructor::do_node_label() const
 {
     return "Map_Constructor";
 }

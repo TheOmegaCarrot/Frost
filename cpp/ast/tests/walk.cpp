@@ -26,7 +26,7 @@ class Leaf_Node : public ast::Statement
         return std::nullopt;
     }
 
-    std::string node_label() const override
+    std::string do_node_label() const override
     {
         return id_;
     }
@@ -50,7 +50,7 @@ class Parent_Node : public ast::Statement
         return std::nullopt;
     }
 
-    std::string node_label() const override
+    std::string do_node_label() const override
     {
         return id_;
     }
@@ -89,7 +89,7 @@ TEST_CASE("Statement::walk()")
         Leaf_Node leaf{"A"};
         auto labels = walk_labels(leaf);
         REQUIRE(labels.size() == 1);
-        CHECK(labels[0] == "A");
+        CHECK(labels[0] == "A [0:0-0:0]");
     }
 
     SECTION("Node with children yields root first, then children in order")
@@ -100,9 +100,9 @@ TEST_CASE("Statement::walk()")
 
         auto labels = walk_labels(root);
         REQUIRE(labels.size() == 3);
-        CHECK(labels[0] == "Root");
-        CHECK(labels[1] == "B");
-        CHECK(labels[2] == "C");
+        CHECK(labels[0] == "Root [0:0-0:0]");
+        CHECK(labels[1] == "B [0:0-0:0]");
+        CHECK(labels[2] == "C [0:0-0:0]");
     }
 
     SECTION("Depth-first: visits subtree before next sibling")
@@ -119,10 +119,10 @@ TEST_CASE("Statement::walk()")
 
         auto labels = walk_labels(root);
         REQUIRE(labels.size() == 4);
-        CHECK(labels[0] == "Root");
-        CHECK(labels[1] == "Child1");
-        CHECK(labels[2] == "GrandChild");
-        CHECK(labels[3] == "Child2");
+        CHECK(labels[0] == "Root [0:0-0:0]");
+        CHECK(labels[1] == "Child1 [0:0-0:0]");
+        CHECK(labels[2] == "GrandChild [0:0-0:0]");
+        CHECK(labels[3] == "Child2 [0:0-0:0]");
     }
 
     SECTION("Walk yields pointers to the actual nodes")

@@ -19,7 +19,7 @@ Value_Ptr ast::Literal::do_evaluate(Evaluation_Context) const
     return value_;
 }
 
-std::string ast::Literal::node_label() const
+std::string ast::Literal::do_node_label() const
 {
     return fmt::format("Literal({})",
                        value_->to_internal_string({.in_structure = true}));

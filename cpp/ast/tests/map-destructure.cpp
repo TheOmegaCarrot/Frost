@@ -50,7 +50,7 @@ class Sequence_Expression final : public Expression
     }
 
   protected:
-    std::string node_label() const override
+    std::string do_node_label() const override
     {
         return "Sequence_Expression";
     }

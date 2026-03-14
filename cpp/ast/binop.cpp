@@ -67,7 +67,7 @@ Value_Ptr ast::Binop::do_evaluate(Evaluation_Context ctx) const
     THROW_UNREACHABLE;
 }
 
-std::string ast::Binop::node_label() const
+std::string ast::Binop::do_node_label() const
 {
     return fmt::format("Binary({})", format_binary_op(op_));
 }
