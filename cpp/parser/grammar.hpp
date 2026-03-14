@@ -1778,7 +1778,10 @@ struct map_destructure_entry
                          + param_ws_nl
                          + dsl::p<identifier_required>));
         auto named =
-            dsl::else_ >> (dsl::p<identifier_required> + explicit_binding);
+            dsl::else_ >> (dsl::position
+                           + dsl::p<identifier_required>
+                           + dsl::position
+                           + explicit_binding);
 
         return computed | named;
     }();
@@ -1790,14 +1793,18 @@ struct map_destructure_entry
                                                  std::move(name)};
         },
         // Named key with explicit binding.
-        [](std::string key, std::string name) {
+        [](auto key_begin, std::string key, auto key_end, std::string name) {
             return ast::Map_Destructure::Element{
-                make_string_key_expr(std::move(key)), std::move(name)};
+                make_string_key_expr(std::move(key),
+                                     make_source_range(key_begin, key_end)),
+                std::move(name)};
         },
         // Shorthand: binding name equals key name.
-        [](std::string key, lexy::nullopt) {
-            return ast::Map_Destructure::Element{make_string_key_expr(key),
-                                                 std::move(key)};
+        [](auto key_begin, std::string key, auto key_end, lexy::nullopt) {
+            return ast::Map_Destructure::Element{
+                make_string_key_expr(key,
+                                     make_source_range(key_begin, key_end)),
+                std::move(key)};
         });
     static constexpr auto name = "map destructure entry";
 };

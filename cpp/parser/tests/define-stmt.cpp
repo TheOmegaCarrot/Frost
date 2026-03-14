@@ -748,4 +748,85 @@ TEST_CASE("Parser Define Statements")
         CHECK(r1.end.line == 1);
         CHECK(r1.end.column == 20);
     }
+
+    SECTION("Map destructure shorthand key gets source range")
+    {
+        // "def {a, b} = e"
+        //       ^  ^
+        //  col 6  col 9
+        // Shorthand keys produce synthetic Literal("a") and Literal("b")
+        // that should carry the source range of the identifier.
+        auto result = parse("def {a, b} = e");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
+        // Map_Destructure -> Literal("a"), Literal("b"), Name_Lookup("e")
+        // Find the Literal nodes by checking node_label
+        std::vector<const frst::ast::Statement*> key_literals;
+        for (auto* n : nodes)
+            if (n->node_label().starts_with("Literal(\""))
+                key_literals.push_back(n);
+        REQUIRE(key_literals.size() == 2);
+
+        auto a_range = key_literals[0]->source_range();
+        CHECK(a_range.begin.line == 1);
+        CHECK(a_range.begin.column == 6);
+        CHECK(a_range.end.line == 1);
+        CHECK(a_range.end.column == 6);
+
+        auto b_range = key_literals[1]->source_range();
+        CHECK(b_range.begin.line == 1);
+        CHECK(b_range.begin.column == 9);
+        CHECK(b_range.end.line == 1);
+        CHECK(b_range.end.column == 9);
+    }
+
+    SECTION("Map destructure explicit key gets source range")
+    {
+        // "def {foo: bar} = e"
+        //       ^
+        //  col 6-8
+        // Explicit "foo: bar" produces a synthetic Literal("foo")
+        auto result = parse("def {foo: bar} = e");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
+        std::vector<const frst::ast::Statement*> key_literals;
+        for (auto* n : nodes)
+            if (n->node_label().starts_with("Literal(\""))
+                key_literals.push_back(n);
+        REQUIRE(key_literals.size() == 1);
+
+        auto range = key_literals[0]->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 6);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 8);
+    }
+
+    SECTION("Map destructure key range excludes surrounding whitespace")
+    {
+        // "def {  foo  :  bar  } = e"
+        //         ^
+        //    col 8-10
+        auto result = parse("def {  foo  :  bar  } = e");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+
+        auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
+        std::vector<const frst::ast::Statement*> key_literals;
+        for (auto* n : nodes)
+            if (n->node_label().starts_with("Literal(\""))
+                key_literals.push_back(n);
+        REQUIRE(key_literals.size() == 1);
+
+        auto range = key_literals[0]->source_range();
+        CHECK(range.begin.column == 8);
+        CHECK(range.end.column == 10);
+    }
 }
