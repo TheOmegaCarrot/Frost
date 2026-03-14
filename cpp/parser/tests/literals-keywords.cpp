@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -36,14 +37,15 @@ TEST_CASE("Parser Keyword Literals")
         REQUIRE(res_true);
         auto expr_true = std::move(res_true).value();
         frst::Symbol_Table table;
-        auto val_true = expr_true->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto val_true = expr_true->evaluate(ctx);
         REQUIRE(val_true->is<frst::Bool>());
         CHECK(val_true->get<frst::Bool>().value() == true);
 
         auto res_false = parse("false");
         REQUIRE(res_false);
         auto expr_false = std::move(res_false).value();
-        auto val_false = expr_false->evaluate(table);
+        auto val_false = expr_false->evaluate(ctx);
         REQUIRE(val_false->is<frst::Bool>());
         CHECK(val_false->get<frst::Bool>().value() == false);
     }
@@ -54,7 +56,8 @@ TEST_CASE("Parser Keyword Literals")
         REQUIRE(res_null);
         auto expr_null = std::move(res_null).value();
         frst::Symbol_Table table;
-        auto val_null = expr_null->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto val_null = expr_null->evaluate(ctx);
         REQUIRE(val_null->is<frst::Null>());
     }
 }

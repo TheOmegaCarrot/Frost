@@ -29,7 +29,7 @@ class Literal final : public Expression
     bool data_safe() const final;
 
   protected:
-    [[nodiscard]] Value_Ptr do_evaluate(const Symbol_Table&) const final;
+    [[nodiscard]] Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
   private:
     Value_Ptr value_;

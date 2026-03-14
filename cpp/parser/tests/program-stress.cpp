@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -36,9 +37,11 @@ frst::Value_Ptr run_statement(const frst::ast::Statement::Ptr& statement,
     if (auto* expr =
             dynamic_cast<const frst::ast::Expression*>(statement.get()))
     {
-        return expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        return expr->evaluate(eval_ctx);
     }
-    statement->execute(table);
+    frst::Execution_Context exec_ctx{.symbols = table};
+    statement->execute(exec_ctx);
     return frst::Value::null();
 }
 

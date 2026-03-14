@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -46,7 +47,8 @@ TEST_CASE("Parser Filter Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);
@@ -61,7 +63,8 @@ TEST_CASE("Parser Filter Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         const auto& map = out->raw_get<frst::Map>();
         REQUIRE(map.size() == 1);
@@ -79,7 +82,8 @@ TEST_CASE("Parser Filter Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 2_f);
     }
@@ -92,7 +96,8 @@ TEST_CASE("Parser Filter Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 7_f);
 
@@ -100,7 +105,7 @@ TEST_CASE("Parser Filter Expressions")
             parse("(filter [1, 2, 3] with fn (x) -> { x > 2 })[0] == 3");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == true);
     }
@@ -112,7 +117,8 @@ TEST_CASE("Parser Filter Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 1);
@@ -126,7 +132,8 @@ TEST_CASE("Parser Filter Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& outer = out->raw_get<frst::Array>();
         REQUIRE(outer.size() == 1);
@@ -136,7 +143,7 @@ TEST_CASE("Parser Filter Expressions")
         auto result2 = parse("{k: filter [1, 2] with fn (x) -> { x > 1 }}");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Map>());
         auto key = frst::Value::create(std::string{"k"});
         auto it = out2->raw_get<frst::Map>().find(key);
@@ -149,7 +156,7 @@ TEST_CASE("Parser Filter Expressions")
             parse("if filter [1, 2] with fn (x) -> { x > 1 }: 1 else: 2");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
-        auto out3 = expr3->evaluate(table);
+        auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Int>());
         CHECK(out3->get<frst::Int>().value() == 1_f);
     }
@@ -168,7 +175,8 @@ TEST_CASE("Parser Filter Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);
@@ -180,7 +188,7 @@ TEST_CASE("Parser Filter Expressions")
                   "(reduce [1, 2] with fn (acc, y) -> { acc + y }) > 2 }");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Array>());
         const auto& arr2 = out2->raw_get<frst::Array>();
         REQUIRE(arr2.size() == 3);
@@ -192,7 +200,7 @@ TEST_CASE("Parser Filter Expressions")
                              "foreach [1] with fn (y) -> { y }; true }");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
-        auto out3 = expr3->evaluate(table);
+        auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Array>());
         const auto& arr3 = out3->raw_get<frst::Array>();
         REQUIRE(arr3.size() == 2);
@@ -225,10 +233,11 @@ TEST_CASE("Parser Filter Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<IdentityCallable>();
         table.define("f", frst::Value::create(frst::Function{callable}));
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);
@@ -244,7 +253,8 @@ TEST_CASE("Parser Filter Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);

@@ -15,14 +15,20 @@ namespace
 class Leaf_Node : public ast::Statement
 {
   public:
-    explicit Leaf_Node(std::string id) : id_{std::move(id)} {}
+    explicit Leaf_Node(std::string id)
+        : id_{std::move(id)}
+    {
+    }
 
-    std::optional<Map> do_execute(Symbol_Table&) const override
+    std::optional<Map> do_execute(Execution_Context&) const override
     {
         return std::nullopt;
     }
 
-    std::string node_label() const override { return id_; }
+    std::string node_label() const override
+    {
+        return id_;
+    }
 
   private:
     std::string id_;
@@ -32,16 +38,25 @@ class Leaf_Node : public ast::Statement
 class Parent_Node : public ast::Statement
 {
   public:
-    explicit Parent_Node(std::string id) : id_{std::move(id)} {}
+    explicit Parent_Node(std::string id)
+        : id_{std::move(id)}
+    {
+    }
 
-    std::optional<Map> do_execute(Symbol_Table&) const override
+    std::optional<Map> do_execute(Execution_Context&) const override
     {
         return std::nullopt;
     }
 
-    std::string node_label() const override { return id_; }
+    std::string node_label() const override
+    {
+        return id_;
+    }
 
-    void add(Ptr child) { children_.push_back(std::move(child)); }
+    void add(Ptr child)
+    {
+        children_.push_back(std::move(child));
+    }
 
   protected:
     std::generator<Child_Info> children() const override

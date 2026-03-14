@@ -40,7 +40,7 @@ struct Flag_Statement final : Statement
     }
 
     std::optional<frst::Map> do_execute(
-        [[maybe_unused]] Symbol_Table&) const override
+        [[maybe_unused]] Execution_Context&) const override
     {
         ++(*count_);
         return std::nullopt;
@@ -68,9 +68,9 @@ struct Uncaptured_Lookup final : Expression
     {
     }
 
-    [[nodiscard]] Value_Ptr do_evaluate(const Symbol_Table& syms) const final
+    [[nodiscard]] Value_Ptr do_evaluate(Evaluation_Context ctx) const final
     {
-        return syms.lookup(name_);
+        return ctx.symbols.lookup(name_);
     }
 
     std::generator<Symbol_Action> symbol_sequence() const final
@@ -126,8 +126,8 @@ std::shared_ptr<Closure> make_literal_closure(Value_Ptr value)
     Symbol_Table captures;
     std::vector<Statement::Ptr> body;
     auto body_ptr = make_body(std::move(body));
-    return std::make_shared<Closure>(
-        std::vector<std::string>{}, body_ptr, expr<Literal>(value), captures, 0);
+    return std::make_shared<Closure>(std::vector<std::string>{}, body_ptr,
+                                     expr<Literal>(value), captures, 0);
 }
 
 std::pair<std::string, std::string> split_header_body(const std::string& dump)
@@ -345,10 +345,10 @@ TEST_CASE("Call Closure")
         Closure closure{{"p"},    body_ptr, lookup_array_expr({"p", "rest"}),
                         captures, 0,        "rest"};
 
-        CHECK_THROWS_WITH(closure.call({}),
-                          ContainsSubstring("wrong number of arguments")
-                              && ContainsSubstring(
-                                  "Expected at least 1, but got 0."));
+        CHECK_THROWS_WITH(
+            closure.call({}),
+            ContainsSubstring("wrong number of arguments")
+                && ContainsSubstring("Expected at least 1, but got 0."));
     }
 
     SECTION("Fixed parameters bind before variadic extras")
@@ -391,7 +391,7 @@ TEST_CASE("Call Closure")
 
         Closure closure{
             {"a", "b"}, body_ptr, lookup_array_expr({"a", "b", "rest"}),
-            captures, 0, "rest"};
+            captures,   0,        "rest"};
 
         auto result = closure.call({a, b});
         REQUIRE(result->is<Array>());
@@ -409,13 +409,13 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{
-            {"a", "b"}, body_ptr, expr<Name_Lookup>("rest"), captures, 0, "rest"};
+        Closure closure{{"a", "b"}, body_ptr, expr<Name_Lookup>("rest"),
+                        captures,   0,        "rest"};
 
-        CHECK_THROWS_WITH(closure.call({Value::create(1_f)}),
-                          ContainsSubstring("wrong number of arguments")
-                              && ContainsSubstring(
-                                  "Expected at least 2, but got 1."));
+        CHECK_THROWS_WITH(
+            closure.call({Value::create(1_f)}),
+            ContainsSubstring("wrong number of arguments")
+                && ContainsSubstring("Expected at least 2, but got 1."));
     }
 
     SECTION("Variadic-only closure receives empty array")
@@ -787,10 +787,10 @@ Literal(42)
 
         Closure closure{{"p", "q"}, body_ptr, null_expr(), captures, 0, "rest"};
 
-        CHECK_THROWS_WITH(closure.call({Value::create(1_f)}),
-                          ContainsSubstring("wrong number of arguments")
-                              && ContainsSubstring(
-                                  "Expected at least 2, but got 1."));
+        CHECK_THROWS_WITH(
+            closure.call({Value::create(1_f)}),
+            ContainsSubstring("wrong number of arguments")
+                && ContainsSubstring("Expected at least 2, but got 1."));
     }
 
     SECTION("Variadic underflow prevents return expression evaluation")
@@ -806,10 +806,10 @@ Literal(42)
 
         Closure closure{{"p", "q"}, body_ptr, return_expr, captures, 0, "rest"};
 
-        CHECK_THROWS_WITH(closure.call({Value::create(1_f)}),
-                          ContainsSubstring("wrong number of arguments")
-                              && ContainsSubstring(
-                                  "Expected at least 2, but got 1."));
+        CHECK_THROWS_WITH(
+            closure.call({Value::create(1_f)}),
+            ContainsSubstring("wrong number of arguments")
+                && ContainsSubstring("Expected at least 2, but got 1."));
     }
 
     SECTION("Too many arguments is an error")
@@ -901,7 +901,8 @@ Literal(null)
 )");
     }
 
-    SECTION("Named self-reference appears in capture list alongside other captures")
+    SECTION(
+        "Named self-reference appears in capture list alongside other captures")
     {
         Symbol_Table captures;
         captures.define("rec", Value::create(123_f));
@@ -910,12 +911,8 @@ Literal(null)
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{},
-                        body_ptr,
-                        expr<Literal>(Value::create(42_f)),
-                        captures,
-                        0,
-                        {},
+        Closure closure{{},       body_ptr, expr<Literal>(Value::create(42_f)),
+                        captures, 0,        {},
                         "rec"};
 
         const auto dump = closure.debug_dump();
@@ -938,12 +935,8 @@ Literal(null)
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{},
-                        body_ptr,
-                        expr<Literal>(Value::create(42_f)),
-                        captures,
-                        0,
-                        {},
+        Closure closure{{},       body_ptr, expr<Literal>(Value::create(42_f)),
+                        captures, 0,        {},
                         "rec"};
 
         const auto dump = closure.debug_dump();

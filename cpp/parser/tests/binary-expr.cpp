@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -61,7 +62,8 @@ TEST_CASE("Parser Binary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Int>());
             CHECK(value->get<frst::Int>().value() == c.expected);
         }
@@ -74,14 +76,15 @@ TEST_CASE("Parser Binary Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 3_f);
 
         auto result2 = parse("(1 + # comment\n 2)");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto value2 = expr2->evaluate(table);
+        auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 3_f);
     }
@@ -106,7 +109,8 @@ TEST_CASE("Parser Binary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Int>());
             CHECK(value->get<frst::Int>().value() == c.expected);
         }
@@ -134,7 +138,8 @@ TEST_CASE("Parser Binary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Int>());
             CHECK(value->get<frst::Int>().value() == c.expected);
         }
@@ -147,14 +152,15 @@ TEST_CASE("Parser Binary Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("(fn(x) -> x % 3)(10)");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto value2 = expr2->evaluate(table);
+        auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 1_f);
     }
@@ -179,7 +185,8 @@ TEST_CASE("Parser Binary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Bool>());
             CHECK(value->get<frst::Bool>().value() == c.expected);
         }
@@ -205,7 +212,8 @@ TEST_CASE("Parser Binary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Bool>());
             CHECK(value->get<frst::Bool>().value() == c.expected);
         }
@@ -232,7 +240,8 @@ TEST_CASE("Parser Binary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Bool>());
             CHECK(value->get<frst::Bool>().value() == c.expected);
         }
@@ -241,26 +250,27 @@ TEST_CASE("Parser Binary Expressions")
     SECTION("Logical operators return operands and short-circuit")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto value = frst::Value::create(123_f);
         table.define("value", value);
 
         auto or_result = parse("false or value");
         REQUIRE(or_result);
         auto or_expr = require_expression(or_result);
-        auto or_value = or_expr->evaluate(table);
+        auto or_value = or_expr->evaluate(ctx);
         CHECK(or_value == value);
 
         auto and_result = parse("false and missing");
         REQUIRE(and_result);
         auto and_expr = require_expression(and_result);
-        auto and_value = and_expr->evaluate(table);
+        auto and_value = and_expr->evaluate(ctx);
         REQUIRE(and_value->is<frst::Bool>());
         CHECK(and_value->get<frst::Bool>().value() == false);
 
         auto or_short = parse("true or missing");
         REQUIRE(or_short);
         auto or_short_expr = require_expression(or_short);
-        auto or_short_value = or_short_expr->evaluate(table);
+        auto or_short_value = or_short_expr->evaluate(ctx);
         REQUIRE(or_short_value->is<frst::Bool>());
         CHECK(or_short_value->get<frst::Bool>().value() == true);
     }
@@ -301,7 +311,8 @@ TEST_CASE("Parser Binary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Bool>());
             CHECK(value->get<frst::Bool>().value() == c.expected);
         }
@@ -340,12 +351,13 @@ TEST_CASE("Parser Binary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
+            frst::Evaluation_Context ctx{.symbols = table};
             auto left = frst::Value::create(auto{c.left_value});
             auto right = frst::Value::create(7_f);
             table.define("and1", left);
             table.define("or2", right);
 
-            auto value = expr->evaluate(table);
+            auto value = expr->evaluate(ctx);
             CHECK(value == right);
         }
     }
@@ -370,7 +382,8 @@ TEST_CASE("Parser Binary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Int>());
             CHECK(value->get<frst::Int>().value() == c.expected);
         }
@@ -396,7 +409,8 @@ TEST_CASE("Parser Binary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Bool>());
             CHECK(value->get<frst::Bool>().value() == c.expected);
         }

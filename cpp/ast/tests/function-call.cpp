@@ -32,6 +32,7 @@ TEST_CASE("Function Call")
     // Signed: Codex (GPT-5).
 
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
 
     SECTION("Evaluates function then args left-to-right and passes pointers")
     {
@@ -54,15 +55,15 @@ TEST_CASE("Function Call")
 
         trompeloeil::sequence seq;
         REQUIRE_CALL(*fn_ptr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(fn_val);
         REQUIRE_CALL(*arg1_ptr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(v1);
         REQUIRE_CALL(*arg2_ptr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(v2);
         REQUIRE_CALL(*callable, call(_))
@@ -75,7 +76,7 @@ TEST_CASE("Function Call")
         args.push_back(std::move(arg2));
 
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
 
         CHECK(res == ret);
         REQUIRE(calls.size() == 1);
@@ -93,7 +94,9 @@ TEST_CASE("Function Call")
         auto fn_val = Value::create(Function{callable});
         Call_List calls;
 
-        REQUIRE_CALL(*fn_ptr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(fn_val);
         REQUIRE_CALL(*callable, call(_))
             .LR_SIDE_EFFECT(record_call(calls, _1))
             .LR_WITH(_1.empty())
@@ -102,7 +105,7 @@ TEST_CASE("Function Call")
         std::vector<Expression::Ptr> args;
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res->is<Null>());
         REQUIRE(calls.size() == 1);
         CHECK(calls.at(0).empty());
@@ -125,11 +128,11 @@ TEST_CASE("Function Call")
         auto fn_val = Value::create(Function{callable});
 
         REQUIRE_CALL(*fn_ptr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .TIMES(2)
             .RETURN(fn_val);
         REQUIRE_CALL(*arg_ptr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .TIMES(2)
             .RETURN(arg_val);
         REQUIRE_CALL(*callable, call(_))
@@ -143,8 +146,8 @@ TEST_CASE("Function Call")
 
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
 
-        CHECK(node.evaluate(syms) == ret);
-        CHECK(node.evaluate(syms) == ret);
+        CHECK(node.evaluate(ctx) == ret);
+        CHECK(node.evaluate(ctx) == ret);
         CHECK(calls.size() == 2);
     }
 
@@ -167,14 +170,16 @@ TEST_CASE("Function Call")
         Call_List calls;
 
         auto fn_val = Value::create(Function{callable});
-        REQUIRE_CALL(*fn_ptr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(fn_val);
         REQUIRE_CALL(*callable, call(_))
             .LR_SIDE_EFFECT(record_call(calls, _1))
             .LR_WITH(std::equal(_1.begin(), _1.end(), expected.begin()))
             .RETURN(ret);
 
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
 
         CHECK(res == ret);
         REQUIRE(calls.size() == 1);
@@ -191,7 +196,7 @@ TEST_CASE("Function Call")
         auto* arg_ptr = arg.get();
 
         REQUIRE_CALL(*fn_ptr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(1_f));
         FORBID_CALL(*arg_ptr, do_evaluate(_));
 
@@ -200,7 +205,7 @@ TEST_CASE("Function Call")
 
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
 
-        CHECK_THROWS_WITH(node.evaluate(syms),
+        CHECK_THROWS_WITH(node.evaluate(ctx),
                           ContainsSubstring("Cannot call value of type Int"));
     }
 
@@ -213,7 +218,7 @@ TEST_CASE("Function Call")
         auto* arg_ptr = arg.get();
 
         REQUIRE_CALL(*fn_ptr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .THROW(Frost_Recoverable_Error{"fn boom"});
         FORBID_CALL(*arg_ptr, do_evaluate(_));
 
@@ -222,7 +227,7 @@ TEST_CASE("Function Call")
 
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
 
-        CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("fn boom"));
+        CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("fn boom"));
     }
 
     SECTION("Argument evaluation error propagates and call is not invoked")
@@ -238,9 +243,11 @@ TEST_CASE("Function Call")
         auto callable = mock::Mock_Callable::make();
         auto fn_val = Value::create(Function{callable});
 
-        REQUIRE_CALL(*fn_ptr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(fn_val);
         REQUIRE_CALL(*arg1_ptr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .THROW(Frost_Recoverable_Error{"arg boom"});
         FORBID_CALL(*arg2_ptr, do_evaluate(_));
         FORBID_CALL(*callable, call(_));
@@ -251,7 +258,7 @@ TEST_CASE("Function Call")
 
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
 
-        CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("arg boom"));
+        CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("arg boom"));
     }
 
     SECTION("Callable error propagates")
@@ -265,9 +272,11 @@ TEST_CASE("Function Call")
         auto callable = mock::Mock_Callable::make();
         auto fn_val = Value::create(Function{callable});
 
-        REQUIRE_CALL(*fn_ptr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(fn_val);
         REQUIRE_CALL(*arg_ptr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(1_f));
         REQUIRE_CALL(*callable, call(_)).THROW(Frost_Recoverable_Error{"boom"});
 
@@ -276,6 +285,6 @@ TEST_CASE("Function Call")
 
         ast::Function_Call node{std::move(fn_expr), std::move(args)};
 
-        CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("boom"));
+        CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("boom"));
     }
 }

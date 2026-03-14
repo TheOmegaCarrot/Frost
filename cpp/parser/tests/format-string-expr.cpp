@@ -2,6 +2,7 @@
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -57,7 +58,8 @@ TEST_CASE("Parser Format Strings")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::String>());
             CHECK(value->get<frst::String>().value() == "hello");
         }
@@ -70,9 +72,10 @@ TEST_CASE("Parser Format Strings")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         table.define("x", frst::Value::create(42_f));
 
-        auto value = expr->evaluate(table);
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::String>());
         CHECK(value->get<frst::String>().value() == "value 42");
     }
@@ -84,9 +87,10 @@ TEST_CASE("Parser Format Strings")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         table.define("x", frst::Value::create(1_f));
 
-        auto value = expr->evaluate(table);
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::String>());
         CHECK(value->get<frst::String>().value() == "${x}");
     }
@@ -137,7 +141,8 @@ TEST_CASE("Parser Format Strings")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        CHECK_THROWS_MATCHES(expr->evaluate(table),
+        frst::Evaluation_Context ctx{.symbols = table};
+        CHECK_THROWS_MATCHES(expr->evaluate(ctx),
                              frst::Frost_Unrecoverable_Error,
                              MessageMatches(ContainsSubstring("missing")));
     }

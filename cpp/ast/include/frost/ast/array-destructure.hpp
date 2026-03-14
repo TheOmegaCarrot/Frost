@@ -36,7 +36,7 @@ class Array_Destructure final : public Statement
     std::string node_label() const;
 
   protected:
-    std::optional<Map> do_execute(Symbol_Table& table) const final;
+    std::optional<Map> do_execute(Execution_Context& ctx) const final;
 
     std::generator<Child_Info> children() const;
 

@@ -36,10 +36,9 @@ TEST_CASE("Builtin range")
         CHECK_THROWS_WITH(range->call({}),
                           ContainsSubstring("requires at least 1"));
 
-        CHECK_THROWS_WITH(
-            range->call({Value::create(1_f), Value::create(2_f),
-                         Value::create(3_f), Value::create(4_f)}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(range->call({Value::create(1_f), Value::create(2_f),
+                                       Value::create(3_f), Value::create(4_f)}),
+                          ContainsSubstring("too many arguments"));
     }
 
     SECTION("Type checks")
@@ -89,11 +88,14 @@ TEST_CASE("Builtin range")
             auto i = Value::create(1_f);
             auto f = Value::create(3.14);
             CHECK_THROWS_WITH(range->call({f, i, i}),
-                              ContainsSubstring("start") && ContainsSubstring("Int"));
+                              ContainsSubstring("start")
+                                  && ContainsSubstring("Int"));
             CHECK_THROWS_WITH(range->call({i, f, i}),
-                              ContainsSubstring("stop") && ContainsSubstring("Int"));
+                              ContainsSubstring("stop")
+                                  && ContainsSubstring("Int"));
             CHECK_THROWS_WITH(range->call({i, i, f}),
-                              ContainsSubstring("step") && ContainsSubstring("Int"));
+                              ContainsSubstring("step")
+                                  && ContainsSubstring("Int"));
         }
     }
 
@@ -220,8 +222,9 @@ TEST_CASE("Builtin range")
 
         SECTION("step == 0 produces an error")
         {
-            CHECK_THROWS_MATCHES(call3(0, 10, 0), Frost_User_Error,
-                                 MessageMatches(ContainsSubstring("step != 0")));
+            CHECK_THROWS_MATCHES(
+                call3(0, 10, 0), Frost_User_Error,
+                MessageMatches(ContainsSubstring("step != 0")));
         }
 
         SECTION("step=1 matches two-arg form")

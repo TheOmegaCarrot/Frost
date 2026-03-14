@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -48,7 +49,8 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 6_f);
     }
@@ -60,7 +62,8 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 6_f);
     }
@@ -73,7 +76,8 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 5_f);
     }
@@ -85,7 +89,8 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        CHECK_THROWS_WITH(expr->evaluate(table),
+        frst::Evaluation_Context ctx{.symbols = table};
+        CHECK_THROWS_WITH(expr->evaluate(ctx),
                           Catch::Matchers::ContainsSubstring("init"));
     }
 
@@ -97,7 +102,8 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 4_f);
     }
@@ -110,7 +116,8 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 12_f);
 
@@ -118,7 +125,7 @@ TEST_CASE("Parser Reduce Expressions")
             parse("(reduce [] with fn (acc, x) -> { acc + x } init: 4) - 1");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 3_f);
 
@@ -126,7 +133,7 @@ TEST_CASE("Parser Reduce Expressions")
             parse("(reduce {a: 1} with fn (acc, k, v) -> { acc } init: 5) + 1");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
-        auto out3 = expr3->evaluate(table);
+        auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Int>());
         CHECK(out3->get<frst::Int>().value() == 6_f);
     }
@@ -139,7 +146,8 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
 
@@ -147,7 +155,7 @@ TEST_CASE("Parser Reduce Expressions")
             parse("reduce [1, 2] with fn (acc, x) -> { acc + x } init : 0");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 3_f);
     }
@@ -159,7 +167,8 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 1);
@@ -169,7 +178,7 @@ TEST_CASE("Parser Reduce Expressions")
             parse("{[reduce [1, 2] with fn (acc, x) -> { acc + x }]: 1}");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Map>());
         auto key = frst::Value::create(3_f);
         auto it = out2->raw_get<frst::Map>().find(key);
@@ -179,7 +188,7 @@ TEST_CASE("Parser Reduce Expressions")
             "if reduce [1, 2] with fn (acc, x) -> { acc + x }: 1 else: 2");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
-        auto out3 = expr3->evaluate(table);
+        auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Int>());
         CHECK(out3->get<frst::Int>().value() == 1_f);
     }
@@ -199,7 +208,8 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
 
@@ -207,7 +217,7 @@ TEST_CASE("Parser Reduce Expressions")
                              "(map [x] with fn (y) -> { y })[0] + acc }");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 3_f);
 
@@ -215,7 +225,7 @@ TEST_CASE("Parser Reduce Expressions")
                              "init: (map [3] with fn (x) -> { x })[0]");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
-        auto out3 = expr3->evaluate(table);
+        auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Int>());
         CHECK(out3->get<frst::Int>().value() == 6_f);
 
@@ -224,7 +234,7 @@ TEST_CASE("Parser Reduce Expressions")
                   "init: (reduce [1, 2] with fn (acc, x) -> { acc + x })");
         REQUIRE(result4);
         auto expr4 = require_expression(result4);
-        auto out4 = expr4->evaluate(table);
+        auto out4 = expr4->evaluate(ctx);
         REQUIRE(out4->is<frst::Int>());
         CHECK(out4->get<frst::Int>().value() == 3_f);
     }
@@ -253,12 +263,13 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto f_callable = std::make_shared<Identity_Callable>();
         auto g_callable = std::make_shared<Identity_Callable>();
         table.define("f", frst::Value::create(frst::Function{f_callable}));
         table.define("g", frst::Value::create(frst::Function{g_callable}));
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 2_f);
     }
@@ -289,10 +300,11 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<IdentityCallable>();
         table.define("f", frst::Value::create(frst::Function{callable}));
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 6_f);
     }
@@ -323,10 +335,11 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<IdentityCallable>();
         table.define("f", frst::Value::create(frst::Function{callable}));
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
@@ -341,7 +354,8 @@ TEST_CASE("Parser Reduce Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 6_f);
     }
@@ -384,6 +398,7 @@ TEST_CASE("Parser Reduce Expressions")
         };
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(frst::Array{
             frst::Value::create(10_f),
             frst::Value::create(20_f),
@@ -400,7 +415,7 @@ TEST_CASE("Parser Reduce Expressions")
         table.define("f", frst::Value::create(frst::Function{f_callable}));
         table.define("c", c_val);
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 10_f);
         REQUIRE(g_callable->calls.size() == 1);

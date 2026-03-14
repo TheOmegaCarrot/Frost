@@ -38,7 +38,7 @@ class Sequence_Expression final : public Expression
     {
     }
 
-    Value_Ptr do_evaluate(const Symbol_Table&) const override
+    Value_Ptr do_evaluate(Evaluation_Context) const override
     {
         return result_;
     }
@@ -89,6 +89,7 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::create(1_f);
@@ -98,7 +99,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("x", a)).IN_SEQUENCE(seq);
@@ -112,7 +113,7 @@ TEST_CASE("Array_Destructure")
 
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
     }
 
@@ -120,6 +121,7 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::create(1_f);
@@ -129,7 +131,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("x", a)).IN_SEQUENCE(seq);
@@ -153,7 +155,7 @@ TEST_CASE("Array_Destructure")
             true,
         };
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         REQUIRE(result.has_value());
         CHECK(result->size() == 2);
 
@@ -175,6 +177,7 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::null();
@@ -182,7 +185,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("x", a)).IN_SEQUENCE(seq);
@@ -194,7 +197,7 @@ TEST_CASE("Array_Destructure")
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr),
                                true};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         REQUIRE(result.has_value());
         CHECK(result->size() == 1);
 
@@ -207,6 +210,7 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::create(1_f);
@@ -216,7 +220,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("head", a)).IN_SEQUENCE(seq);
@@ -236,7 +240,7 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
     }
 
@@ -244,6 +248,7 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::create(1_f);
@@ -251,7 +256,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("head", a)).IN_SEQUENCE(seq);
@@ -268,7 +273,7 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
     }
 
@@ -276,6 +281,7 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::create(1_f);
@@ -285,7 +291,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("head", a)).IN_SEQUENCE(seq);
@@ -298,7 +304,7 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
     }
 
@@ -306,6 +312,7 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto v1 = Value::create(1_f);
@@ -315,7 +322,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("a", v2)).IN_SEQUENCE(seq);
@@ -335,7 +342,7 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
     }
 
@@ -343,6 +350,7 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::create(1_f);
@@ -351,7 +359,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("a", a)).IN_SEQUENCE(seq);
@@ -370,17 +378,20 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        CHECK_NOTHROW(node.execute(ctx));
     }
 
     SECTION("Errors on insufficient elements")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -390,7 +401,7 @@ TEST_CASE("Array_Destructure")
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr)};
 
         CHECK_THROWS_MATCHES(
-            node.execute(syms), Frost_Recoverable_Error,
+            node.execute(ctx), Frost_Recoverable_Error,
             MessageMatches(Equals("Insufficient Array elements to destructure: "
                                   "required 2 but got 1")));
     }
@@ -399,10 +410,13 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -414,7 +428,7 @@ TEST_CASE("Array_Destructure")
                                std::move(expr)};
 
         CHECK_THROWS_MATCHES(
-            node.execute(syms), Frost_Recoverable_Error,
+            node.execute(ctx), Frost_Recoverable_Error,
             MessageMatches(Equals("Insufficient Array elements to destructure: "
                                   "required 2 but got 1")));
     }
@@ -423,10 +437,13 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -438,7 +455,7 @@ TEST_CASE("Array_Destructure")
                                std::move(expr)};
 
         CHECK_THROWS_MATCHES(
-            node.execute(syms), Frost_Recoverable_Error,
+            node.execute(ctx), Frost_Recoverable_Error,
             MessageMatches(Equals("Insufficient Array elements to destructure: "
                                   "required 2 but got 1")));
     }
@@ -447,10 +464,13 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
-        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -459,7 +479,7 @@ TEST_CASE("Array_Destructure")
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr)};
 
         CHECK_THROWS_MATCHES(
-            node.execute(syms), Frost_Recoverable_Error,
+            node.execute(ctx), Frost_Recoverable_Error,
             MessageMatches(Equals("Too many Array elements to destructure: "
                                   "required 1 but got 2")));
     }
@@ -468,33 +488,39 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         auto arr = Value::create(Array{});
 
-        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        CHECK_NOTHROW(node.execute(ctx));
     }
 
     SECTION("Empty pattern errors on non-empty array")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr)};
 
         CHECK_THROWS_MATCHES(
-            node.execute(syms), Frost_Recoverable_Error,
+            node.execute(ctx), Frost_Recoverable_Error,
             MessageMatches(Equals("Too many Array elements to destructure: "
                                   "required 0 but got 1")));
     }
@@ -503,6 +529,7 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::create(1_f);
@@ -511,7 +538,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
@@ -528,20 +555,21 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        CHECK_NOTHROW(node.execute(ctx));
     }
 
     SECTION("Rest-only binds empty array")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto arr = Value::create(Array{});
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
@@ -555,13 +583,14 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        CHECK_NOTHROW(node.execute(ctx));
     }
 
     SECTION("Discarded rest with exact size")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::create(1_f);
@@ -569,7 +598,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("head", a)).IN_SEQUENCE(seq);
@@ -582,17 +611,20 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        CHECK_NOTHROW(node.execute(ctx));
     }
 
     SECTION("Discarded rest only ignores all elements")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
-        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
@@ -600,13 +632,14 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        CHECK_NOTHROW(node.execute(ctx));
     }
 
     SECTION("Rest with discarded positional binds empty when exact size")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto v1 = Value::create(1_f);
@@ -615,7 +648,7 @@ TEST_CASE("Array_Destructure")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(arr);
 
         REQUIRE_CALL(syms, define("a", v2)).IN_SEQUENCE(seq);
@@ -633,16 +666,17 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        CHECK_NOTHROW(node.execute(ctx));
     }
 
     SECTION("Errors on non-array RHS")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         REQUIRE_CALL(*expr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(1_f));
         FORBID_CALL(syms, define(_, _));
 
@@ -652,7 +686,7 @@ TEST_CASE("Array_Destructure")
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr)};
 
         CHECK_THROWS_MATCHES(
-            node.execute(syms), Frost_Recoverable_Error,
+            node.execute(ctx), Frost_Recoverable_Error,
             MessageMatches(Equals("Cannot destructure Int to Array")));
     }
 
@@ -660,9 +694,10 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         REQUIRE_CALL(*expr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .THROW(Frost_Recoverable_Error{"kaboom"});
         FORBID_CALL(syms, define(_, _));
 
@@ -671,7 +706,7 @@ TEST_CASE("Array_Destructure")
         };
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr)};
 
-        CHECK_THROWS_MATCHES(node.execute(syms), Frost_Recoverable_Error,
+        CHECK_THROWS_MATCHES(node.execute(ctx), Frost_Recoverable_Error,
                              MessageMatches(Equals("kaboom")));
     }
 
@@ -679,9 +714,10 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         REQUIRE_CALL(*expr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(1_f));
         FORBID_CALL(syms, define(_, _));
 
@@ -693,7 +729,7 @@ TEST_CASE("Array_Destructure")
                                std::move(expr)};
 
         CHECK_THROWS_MATCHES(
-            node.execute(syms), Frost_Recoverable_Error,
+            node.execute(ctx), Frost_Recoverable_Error,
             MessageMatches(Equals("Cannot destructure Int to Array")));
     }
 
@@ -747,10 +783,13 @@ TEST_CASE("Array_Destructure")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
-        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -759,7 +798,7 @@ TEST_CASE("Array_Destructure")
         };
         Array_Destructure node{std::move(names), std::nullopt, std::move(expr)};
 
-        CHECK_NOTHROW(node.execute(syms));
+        CHECK_NOTHROW(node.execute(ctx));
     }
 
     SECTION("Symbol sequence includes RHS then definitions")
@@ -887,7 +926,9 @@ TEST_CASE("Array_Destructure")
     SECTION("node_label covers all combinations of names, rest, and export")
     {
         using Name = Array_Destructure::Name;
-        auto null_expr = [] { return std::make_unique<mock::Mock_Expression>(); };
+        auto null_expr = [] {
+            return std::make_unique<mock::Mock_Expression>();
+        };
 
         CHECK(Array_Destructure({}, std::nullopt, null_expr()).node_label()
               == "Array_Destructure()");

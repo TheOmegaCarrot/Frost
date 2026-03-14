@@ -155,7 +155,8 @@ TEST_CASE("Map Not Equal")
 
     SECTION("Unequal — different content")
     {
-        auto map3 = Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
+        auto map3 =
+            Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
         CHECK(Value::not_equal(map1, map3)->get<frst::Bool>().value());
     }
 }

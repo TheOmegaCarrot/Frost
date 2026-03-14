@@ -97,7 +97,8 @@ TEST_CASE("Do_Block - evaluate")
         Do_Block node{std::move(body)};
 
         Symbol_Table syms;
-        auto result = node.evaluate(syms);
+        Evaluation_Context ctx{.symbols = syms};
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<Int>());
         CHECK(result->get<Int>() == 42);
     }
@@ -106,13 +107,14 @@ TEST_CASE("Do_Block - evaluate")
     {
         // If exec_table has no parent, Name_Lookup("x") would throw.
         Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         syms.define("x", Value::create(Int{99}));
 
         std::vector<Statement::Ptr> body;
         body.push_back(name_lookup("x"));
         Do_Block node{std::move(body)};
 
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<Int>());
         CHECK(result->get<Int>() == 99);
     }
@@ -127,7 +129,8 @@ TEST_CASE("Do_Block - evaluate")
         Do_Block node{std::move(body)};
 
         Symbol_Table syms;
-        auto result = node.evaluate(syms);
+        Evaluation_Context ctx{.symbols = syms};
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<Int>());
         CHECK(result->get<Int>() == 7);
     }
@@ -142,7 +145,8 @@ TEST_CASE("Do_Block - evaluate")
         Do_Block node{std::move(body)};
 
         Symbol_Table syms;
-        (void)node.evaluate(syms);
+        Evaluation_Context ctx{.symbols = syms};
+        (void)node.evaluate(ctx);
         CHECK_FALSE(syms.has("x"));
     }
 
@@ -157,7 +161,8 @@ TEST_CASE("Do_Block - evaluate")
         Do_Block node{std::move(body)};
 
         Symbol_Table syms;
-        auto result = node.evaluate(syms);
+        Evaluation_Context ctx{.symbols = syms};
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<Int>());
         CHECK(result->get<Int>() == 5);
     }
@@ -180,8 +185,8 @@ TEST_CASE("Do_Block - evaluate")
         Do_Block node{std::move(body)};
 
         Symbol_Table syms;
-        CHECK_THROWS_WITH(node.evaluate(syms),
-                          ContainsSubstring("prefix boom"));
+        Evaluation_Context ctx{.symbols = syms};
+        CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("prefix boom"));
     }
 
     SECTION("Value expression error propagates")
@@ -197,15 +202,18 @@ TEST_CASE("Do_Block - evaluate")
         Do_Block node{std::move(body)};
 
         Symbol_Table syms;
-        CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("value boom"));
+        Evaluation_Context ctx{.symbols = syms};
+        CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("value boom"));
     }
 
-    SECTION("Standalone expression as prefix statement is evaluated and discarded")
+    SECTION(
+        "Standalone expression as prefix statement is evaluated and discarded")
     {
-        // do { a; b } — name("a") is a prefix expression-statement, not a Define.
-        // Its result must be evaluated (touching exec_table) and discarded;
-        // name("b") is the return value.
+        // do { a; b } — name("a") is a prefix expression-statement, not a
+        // Define. Its result must be evaluated (touching exec_table) and
+        // discarded; name("b") is the return value.
         Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         syms.define("a", Value::create(Int{10}));
         syms.define("b", Value::create(Int{20}));
 
@@ -214,7 +222,7 @@ TEST_CASE("Do_Block - evaluate")
         body.push_back(name_lookup("b")); // value_expr
         Do_Block node{std::move(body)};
 
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<Int>());
         CHECK(result->get<Int>() == 20);
     }
@@ -226,8 +234,9 @@ TEST_CASE("Do_Block - evaluate")
         Do_Block node{std::move(body)};
 
         Symbol_Table syms;
-        CHECK(node.evaluate(syms)->get<Int>() == 3);
-        CHECK(node.evaluate(syms)->get<Int>() == 3);
+        Evaluation_Context ctx{.symbols = syms};
+        CHECK(node.evaluate(ctx)->get<Int>() == 3);
+        CHECK(node.evaluate(ctx)->get<Int>() == 3);
     }
 }
 
@@ -369,15 +378,17 @@ TEST_CASE("Do_Block - nested evaluate")
         // The first `x` reads the outer value (discarded); then local x = 5
         // is defined; the value expression returns the local 5.
         Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         syms.define("x", Value::create(Int{99}));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(name_lookup("x"));                        // reads outer 99, discarded
-        body.push_back(std::make_unique<Define>("x", lit(5)));   // defines local x
-        body.push_back(name_lookup("x"));                        // returns local 5
+        body.push_back(name_lookup("x")); // reads outer 99, discarded
+        body.push_back(
+            std::make_unique<Define>("x", lit(5))); // defines local x
+        body.push_back(name_lookup("x"));           // returns local 5
         Do_Block node{std::move(body)};
 
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<Int>());
         CHECK(result->get<Int>() == 5);
         // Outer scope must not have been modified by the local define.
@@ -399,7 +410,8 @@ TEST_CASE("Do_Block - nested evaluate")
         Do_Block node{std::move(body)};
 
         Symbol_Table syms;
-        auto result = node.evaluate(syms);
+        Evaluation_Context ctx{.symbols = syms};
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<Int>());
         CHECK(result->get<Int>() == 5);
     }
@@ -417,7 +429,8 @@ TEST_CASE("Do_Block - nested evaluate")
         Do_Block node{std::move(body)};
 
         Symbol_Table syms;
-        auto result = node.evaluate(syms);
+        Evaluation_Context ctx{.symbols = syms};
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<Int>());
         CHECK(result->get<Int>() == 3);
     }
@@ -436,7 +449,8 @@ TEST_CASE("Do_Block - nested evaluate")
         Do_Block node{std::move(body)};
 
         Symbol_Table syms;
-        (void)node.evaluate(syms);
+        Evaluation_Context ctx{.symbols = syms};
+        (void)node.evaluate(ctx);
         CHECK_FALSE(syms.has("inner"));
     }
 }
@@ -456,7 +470,8 @@ TEST_CASE("Do_Block - nested symbol_sequence")
         CHECK(collect_sequence(node) == std::vector<std::string>{"use:x"});
     }
 
-    SECTION("Outer local definition suppresses inner block's usage of same name")
+    SECTION(
+        "Outer local definition suppresses inner block's usage of same name")
     {
         // do { def x = 5; do { x; y } }
         // Inner's use:x is absorbed by the outer def:x.
@@ -476,7 +491,8 @@ TEST_CASE("Do_Block - nested symbol_sequence")
     SECTION("Inner block usages propagate through outer block")
     {
         // do { do { a }; b }
-        // Inner's use:a must be visible to an enclosing Lambda's capture analysis.
+        // Inner's use:a must be visible to an enclosing Lambda's capture
+        // analysis.
         std::vector<Statement::Ptr> inner_body;
         inner_body.push_back(name_lookup("a"));
         auto inner = std::make_unique<Do_Block>(std::move(inner_body));

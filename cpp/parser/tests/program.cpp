@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -33,7 +34,8 @@ frst::Value_Ptr evaluate_statement(const frst::ast::Statement::Ptr& statement,
 {
     auto* expr = dynamic_cast<const frst::ast::Expression*>(statement.get());
     REQUIRE(expr);
-    return expr->evaluate(table);
+    frst::Evaluation_Context ctx{.symbols = table};
+    return expr->evaluate(ctx);
 }
 
 struct Constant_Callable final : frst::Callable
@@ -298,7 +300,8 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto v1 = evaluate_statement(program[1], table);
 
         REQUIRE(v1->is<frst::Int>());
@@ -385,12 +388,13 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 8);
 
         frst::Symbol_Table table;
+        frst::Execution_Context ctx{.symbols = table};
         table.define("cond", frst::Value::create(true));
 
-        program[0]->execute(table);
-        program[1]->execute(table);
-        program[2]->execute(table);
-        program[3]->execute(table);
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
+        program[2]->execute(ctx);
+        program[3]->execute(ctx);
 
         auto v1 = evaluate_statement(program[4], table);
         auto v2 = evaluate_statement(program[5], table);
@@ -415,8 +419,9 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
         auto v1 = evaluate_statement(program[2], table);
         auto v2 = evaluate_statement(program[3], table);
 
@@ -634,8 +639,9 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 5);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
 
         auto v1 = evaluate_statement(program[2], table);
         auto v2 = evaluate_statement(program[3], table);
@@ -663,11 +669,12 @@ TEST_CASE("Parser Program")
             REQUIRE(program.size() == 2);
 
             frst::Symbol_Table table;
+            frst::Execution_Context ctx{.symbols = table};
             auto f_callable = std::make_shared<IdentityCallable>();
             table.define("f", frst::Value::create(frst::Function{f_callable}));
 
             auto v1 = evaluate_statement(program[0], table);
-            program[1]->execute(table);
+            program[1]->execute(ctx);
 
             REQUIRE(v1->is<frst::Array>());
             auto x_val = table.lookup("x");
@@ -682,12 +689,13 @@ TEST_CASE("Parser Program")
             REQUIRE(program.size() == 2);
 
             frst::Symbol_Table table;
+            frst::Execution_Context ctx{.symbols = table};
             auto f_callable = std::make_shared<IdentityCallable>();
             table.define("f", frst::Value::create(frst::Function{f_callable}));
             auto z_val = frst::Value::create(9_f);
             table.define("z", z_val);
 
-            program[0]->execute(table);
+            program[0]->execute(ctx);
             auto y_val = table.lookup("y");
             REQUIRE(y_val->is<frst::Array>());
 
@@ -766,9 +774,10 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 8);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
-        program[2]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
+        program[2]->execute(ctx);
 
         auto if_out = evaluate_statement(program[3], table);
         auto foreach_out = evaluate_statement(program[4], table);
@@ -817,6 +826,7 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
+        frst::Execution_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(true);
         auto b_val = frst::Value::create(7_f);
         auto c_val = frst::Value::create(9_f);
@@ -825,7 +835,7 @@ TEST_CASE("Parser Program")
         table.define("c", c_val);
 
         auto v1 = evaluate_statement(program[0], table);
-        program[1]->execute(table);
+        program[1]->execute(ctx);
         auto x_val = table.lookup("x");
 
         CHECK(v1 == b_val);
@@ -841,8 +851,9 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
+        frst::Execution_Context ctx{.symbols = table};
         auto v1 = evaluate_statement(program[0], table);
-        program[1]->execute(table);
+        program[1]->execute(ctx);
         auto v3 = evaluate_statement(program[2], table);
 
         REQUIRE(v1->is<frst::Int>());
@@ -953,10 +964,11 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
+        frst::Execution_Context ctx{.symbols = table};
         table.define("cond", frst::Value::create(true));
 
-        program[0]->execute(table);
-        program[1]->execute(table);
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
 
         auto v1 = evaluate_statement(program[2], table);
         auto v2 = evaluate_statement(program[3], table);
@@ -981,9 +993,10 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 6);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
-        program[2]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
+        program[2]->execute(ctx);
 
         auto v1 = evaluate_statement(program[3], table);
         auto v2 = evaluate_statement(program[4], table);
@@ -1085,9 +1098,10 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 6);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
-        program[2]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
+        program[2]->execute(ctx);
 
         auto v1 = evaluate_statement(program[3], table);
         auto v2 = evaluate_statement(program[4], table);
@@ -1113,8 +1127,9 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
 
         auto f_val = table.lookup("f");
         auto c_val = table.lookup("c");
@@ -1329,8 +1344,9 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
         auto value = evaluate_statement(program[2], table);
 
         REQUIRE(value->is<frst::Int>());
@@ -1345,8 +1361,9 @@ TEST_CASE("Parser Program")
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
         auto v1 = evaluate_statement(program[2], table);
         auto v2 = evaluate_statement(program[3], table);
 

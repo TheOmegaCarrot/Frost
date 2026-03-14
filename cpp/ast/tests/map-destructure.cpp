@@ -37,7 +37,7 @@ class Sequence_Expression final : public Expression
     {
     }
 
-    Value_Ptr do_evaluate(const Symbol_Table&) const override
+    Value_Ptr do_evaluate(Evaluation_Context) const override
     {
         return result_;
     }
@@ -90,6 +90,7 @@ TEST_CASE("Map_Destructure")
         auto key_expr = mock::Mock_Expression::make();
         auto missing_key_expr = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto value = Value::create("beep"s);
@@ -99,16 +100,16 @@ TEST_CASE("Map_Destructure")
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(rhs_map);
         REQUIRE_CALL(*key_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(key_val);
         REQUIRE_CALL(syms, define("bar", value)).IN_SEQUENCE(seq);
         REQUIRE_CALL(*missing_key_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(missing_key_val);
         REQUIRE_CALL(syms, define("answer", _))
             .IN_SEQUENCE(seq)
@@ -121,7 +122,7 @@ TEST_CASE("Map_Destructure")
             Map_Destructure::Element{std::move(missing_key_expr), "answer"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
     }
 
@@ -130,6 +131,7 @@ TEST_CASE("Map_Destructure")
         auto rhs_expr = mock::Mock_Expression::make();
         auto key_expr = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto value = Value::create(42_f);
@@ -138,11 +140,11 @@ TEST_CASE("Map_Destructure")
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(rhs_map);
         REQUIRE_CALL(*key_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(key_val);
         REQUIRE_CALL(syms, define("bar", value)).IN_SEQUENCE(seq);
 
@@ -151,7 +153,7 @@ TEST_CASE("Map_Destructure")
             Map_Destructure::Element{std::move(key_expr), "bar"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr), true};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         REQUIRE(result.has_value());
         CHECK(result->size() == 1);
 
@@ -166,6 +168,7 @@ TEST_CASE("Map_Destructure")
         auto key_expr1 = mock::Mock_Expression::make();
         auto key_expr2 = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto v1 = Value::create(1_f);
@@ -175,16 +178,16 @@ TEST_CASE("Map_Destructure")
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(rhs_map);
         REQUIRE_CALL(*key_expr1, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create("k1"s));
         REQUIRE_CALL(syms, define("a", v1)).IN_SEQUENCE(seq);
         REQUIRE_CALL(*key_expr2, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create("k2"s));
         REQUIRE_CALL(syms, define("b", v2)).IN_SEQUENCE(seq);
 
@@ -193,7 +196,7 @@ TEST_CASE("Map_Destructure")
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr), true};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         REQUIRE(result.has_value());
         CHECK(result->size() == 2);
 
@@ -211,6 +214,7 @@ TEST_CASE("Map_Destructure")
         auto rhs_expr = mock::Mock_Expression::make();
         auto key_expr = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto rhs_map = Value::create(frst::Map{});
@@ -218,11 +222,11 @@ TEST_CASE("Map_Destructure")
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(rhs_map);
         REQUIRE_CALL(*key_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(key_val);
         REQUIRE_CALL(syms, define("bar", _))
             .IN_SEQUENCE(seq)
@@ -233,7 +237,7 @@ TEST_CASE("Map_Destructure")
             Map_Destructure::Element{std::move(key_expr), "bar"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr), true};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         REQUIRE(result.has_value());
         CHECK(result->size() == 1);
 
@@ -262,9 +266,10 @@ TEST_CASE("Map_Destructure")
         auto rhs_expr = mock::Mock_Expression::make();
         auto key_expr = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(1_f));
         FORBID_CALL(*key_expr, do_evaluate(_));
         FORBID_CALL(syms, define(_, _));
@@ -275,7 +280,7 @@ TEST_CASE("Map_Destructure")
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(
-            node.execute(syms), Frost_Recoverable_Error,
+            node.execute(ctx), Frost_Recoverable_Error,
             MessageMatches(Equals("Cannot destructure Int to Map")));
     }
 
@@ -284,12 +289,13 @@ TEST_CASE("Map_Destructure")
         auto rhs_expr = mock::Mock_Expression::make();
         auto key_expr = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(frst::Map{}));
         REQUIRE_CALL(*key_expr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(Array{Value::create(1_f)}));
         FORBID_CALL(syms, define(_, _));
 
@@ -299,7 +305,7 @@ TEST_CASE("Map_Destructure")
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(
-            node.execute(syms), Frost_Recoverable_Error,
+            node.execute(ctx), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring(
                 "Map destructure key expressions must be valid Map keys, "
                 "got:")));
@@ -311,12 +317,13 @@ TEST_CASE("Map_Destructure")
         auto key_expr1 = mock::Mock_Expression::make();
         auto key_expr2 = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(frst::Map{}));
         REQUIRE_CALL(*key_expr1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .THROW(Frost_Recoverable_Error{"kaboom"});
         FORBID_CALL(*key_expr2, do_evaluate(_));
         FORBID_CALL(syms, define(_, _));
@@ -326,7 +333,7 @@ TEST_CASE("Map_Destructure")
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
-        CHECK_THROWS_MATCHES(node.execute(syms), Frost_Recoverable_Error,
+        CHECK_THROWS_MATCHES(node.execute(ctx), Frost_Recoverable_Error,
                              MessageMatches(Equals("kaboom")));
     }
 
@@ -337,6 +344,7 @@ TEST_CASE("Map_Destructure")
         auto key_expr2 = mock::Mock_Expression::make();
         auto key_expr3 = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto value = Value::create(1_f);
@@ -344,16 +352,16 @@ TEST_CASE("Map_Destructure")
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(rhs_map);
         REQUIRE_CALL(*key_expr1, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create("ok"s));
         REQUIRE_CALL(syms, define("first", value)).IN_SEQUENCE(seq);
         REQUIRE_CALL(*key_expr2, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(Array{Value::create(2_f)}));
         FORBID_CALL(*key_expr3, do_evaluate(_));
         FORBID_CALL(syms, define("third", _));
@@ -368,7 +376,7 @@ TEST_CASE("Map_Destructure")
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(
-            node.execute(syms), Frost_Recoverable_Error,
+            node.execute(ctx), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring(
                 "Map destructure key expressions must be valid Map keys, "
                 "got:")));
@@ -381,6 +389,7 @@ TEST_CASE("Map_Destructure")
         auto key_bool = mock::Mock_Expression::make();
         auto key_float = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto v_int = Value::create("i"s);
@@ -394,21 +403,21 @@ TEST_CASE("Map_Destructure")
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(rhs_map);
         REQUIRE_CALL(*key_int, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(7_f));
         REQUIRE_CALL(syms, define("i", v_int)).IN_SEQUENCE(seq);
         REQUIRE_CALL(*key_bool, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(true));
         REQUIRE_CALL(syms, define("b", v_bool)).IN_SEQUENCE(seq);
         REQUIRE_CALL(*key_float, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(3.5));
         REQUIRE_CALL(syms, define("f", v_float)).IN_SEQUENCE(seq);
 
@@ -418,7 +427,7 @@ TEST_CASE("Map_Destructure")
         elems.emplace_back(Map_Destructure::Element{std::move(key_float), "f"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
     }
 
@@ -437,6 +446,7 @@ TEST_CASE("Map_Destructure")
         auto key_expr1 = mock::Mock_Expression::make();
         auto key_expr2 = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto value = Value::create(99_f);
@@ -446,16 +456,16 @@ TEST_CASE("Map_Destructure")
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(rhs_map);
         REQUIRE_CALL(*key_expr1, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(key_val1);
         REQUIRE_CALL(syms, define("a", value)).IN_SEQUENCE(seq);
         REQUIRE_CALL(*key_expr2, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(key_val2);
         REQUIRE_CALL(syms, define("b", value)).IN_SEQUENCE(seq);
 
@@ -464,7 +474,7 @@ TEST_CASE("Map_Destructure")
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
     }
 
@@ -474,22 +484,23 @@ TEST_CASE("Map_Destructure")
         auto key_expr1 = mock::Mock_Expression::make();
         auto key_expr2 = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(frst::Map{}));
         REQUIRE_CALL(*key_expr1, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create("missing"s));
         REQUIRE_CALL(syms, define("a", _))
             .IN_SEQUENCE(seq)
             .LR_WITH(_2->template is<Null>());
         REQUIRE_CALL(*key_expr2, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create("missing"s));
         REQUIRE_CALL(syms, define("b", _))
             .IN_SEQUENCE(seq)
@@ -500,7 +511,7 @@ TEST_CASE("Map_Destructure")
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
         Map_Destructure node{std::move(elems), std::move(rhs_expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
     }
 

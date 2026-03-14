@@ -7,11 +7,11 @@ ast::Array_Constructor::Array_Constructor(std::vector<Expression::Ptr> elems)
 {
 }
 
-Value_Ptr ast::Array_Constructor::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Array_Constructor::do_evaluate(Evaluation_Context ctx) const
 {
     return Value::create(elems_
                          | std::views::transform([&](const auto& each) {
-                               return each->evaluate(syms);
+                               return each->evaluate(ctx);
                            })
                          | std::ranges::to<std::vector>());
 }

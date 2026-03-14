@@ -32,9 +32,9 @@ static Value_Ptr index_map(const Map& map, const Value_Ptr& key_val)
     return Value::null();
 }
 
-Value_Ptr Index::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr Index::do_evaluate(Evaluation_Context ctx) const
 {
-    auto struct_val = structure_->evaluate(syms);
+    auto struct_val = structure_->evaluate(ctx);
     if (!struct_val->is_structured())
     {
         throw Frost_Recoverable_Error{
@@ -42,7 +42,7 @@ Value_Ptr Index::do_evaluate(const Symbol_Table& syms) const
                         struct_val->type_name())};
     }
 
-    auto index_val = index_->evaluate(syms);
+    auto index_val = index_->evaluate(ctx);
 
     if (struct_val->is<Array>())
     {

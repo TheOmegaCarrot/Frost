@@ -107,19 +107,19 @@ Lambda::Lambda(std::vector<std::string> params,
     closure_define_count_ = names_defined_so_far.size();
 }
 
-Value_Ptr Lambda::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr Lambda::do_evaluate(Evaluation_Context ctx) const
 {
     Symbol_Table captures;
     captures.reserve(names_to_capture_.size());
     for (const std::string& name : names_to_capture_)
     {
-        if (not syms.has(name))
+        if (not ctx.symbols.has(name))
         {
             throw Frost_Unrecoverable_Error{fmt::format(
                 "No definition found for captured symbol: {}", name)};
         }
 
-        const auto& value = syms.lookup(name);
+        const auto& value = ctx.symbols.lookup(name);
 
         if (value->is<Function>())
         {

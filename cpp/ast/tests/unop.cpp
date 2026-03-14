@@ -21,6 +21,7 @@ TEST_CASE("Unop")
 {
     auto operand = std::make_unique<mock::Mock_Expression>();
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
 
     auto operand_val = Value::create(42_f);
 
@@ -29,12 +30,12 @@ TEST_CASE("Unop")
         DYNAMIC_SECTION("Operator " << ast::format_unary_op(op))
         {
             REQUIRE_CALL(*operand, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .RETURN(operand_val);
 
             ast::Unop node(std::move(operand), op);
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
 
             if (op == ast::Unary_Op::NEGATE)
                 CHECK(res->get<Int>() == -42_f);
@@ -48,13 +49,14 @@ TEST_CASE("Unop Negate Type Error")
 {
     auto operand = mock::Mock_Expression::make();
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
 
     REQUIRE_CALL(*operand, do_evaluate(_))
-        .LR_WITH(&_1 == &syms)
+        .LR_WITH(&_1.symbols == &syms)
         .RETURN(Value::create("oops"s));
 
     ast::Unop node(std::move(operand), ast::Unary_Op::NEGATE);
 
-    CHECK_THROWS_WITH(node.evaluate(syms),
+    CHECK_THROWS_WITH(node.evaluate(ctx),
                       Equals("Invalid operand for unary - : String"));
 }

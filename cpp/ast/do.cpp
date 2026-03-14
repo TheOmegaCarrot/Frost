@@ -34,12 +34,13 @@ Do_Block::Do_Block(std::vector<ast::Statement::Ptr> body)
         throw Frost_Unrecoverable_Error{"A do block must end in an expression"};
 }
 
-Value_Ptr Do_Block::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr Do_Block::do_evaluate(Evaluation_Context ctx) const
 {
-    Symbol_Table exec_table{&syms};
+    Symbol_Table block_table{&ctx.symbols};
+    Execution_Context block_context{.symbols = block_table};
     for (const auto& statement : body_prefix_)
-        statement->execute(exec_table);
-    return value_expr_->evaluate(exec_table);
+        statement->execute(block_context);
+    return value_expr_->evaluate(block_context.as_eval());
 }
 
 std::string Do_Block::node_label() const

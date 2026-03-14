@@ -13,7 +13,7 @@ ast::Literal::Literal(Value_Ptr value)
     }
 }
 
-Value_Ptr ast::Literal::do_evaluate(const Symbol_Table&) const
+Value_Ptr ast::Literal::do_evaluate(Evaluation_Context) const
 {
     return value_;
 }

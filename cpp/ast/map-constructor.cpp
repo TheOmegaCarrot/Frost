@@ -7,14 +7,14 @@ ast::Map_Constructor::Map_Constructor(std::vector<KV_Pair> pairs)
 {
 }
 
-Value_Ptr ast::Map_Constructor::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Map_Constructor::do_evaluate(Evaluation_Context ctx) const
 {
     Map acc;
 
     for (const auto& [key_expr, value_expr] : pairs_)
     {
-        auto key = key_expr->evaluate(syms);
-        auto value = value_expr->evaluate(syms);
+        auto key = key_expr->evaluate(ctx);
+        auto value = value_expr->evaluate(ctx);
         acc.insert_or_assign(key, value);
     }
 

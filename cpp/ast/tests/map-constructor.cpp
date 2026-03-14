@@ -20,11 +20,12 @@ TEST_CASE("Map Constructor")
     // Signed: Codex (GPT-5).
     constexpr auto make = mock::Mock_Expression::make;
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
 
     SECTION("Empty")
     {
         ast::Map_Constructor node{{}};
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res->get<Map>()->empty());
     }
 
@@ -39,11 +40,11 @@ TEST_CASE("Map Constructor")
         trompeloeil::sequence seq;
 
         REQUIRE_CALL(*k1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key);
         REQUIRE_CALL(*v1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val);
 
@@ -51,7 +52,7 @@ TEST_CASE("Map Constructor")
         pairs.emplace_back(std::move(k1), std::move(v1));
         ast::Map_Constructor node{std::move(pairs)};
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         auto map = res->get<Map>().value();
         CHECK(map.size() == 1);
         CHECK(map.at(key) == val);
@@ -78,27 +79,27 @@ TEST_CASE("Map Constructor")
         trompeloeil::sequence seq;
 
         REQUIRE_CALL(*k1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key1);
         REQUIRE_CALL(*v1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val1);
         REQUIRE_CALL(*k2, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key2);
         REQUIRE_CALL(*v2, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val2);
         REQUIRE_CALL(*k3, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key3);
         REQUIRE_CALL(*v3, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val3);
 
@@ -108,7 +109,7 @@ TEST_CASE("Map Constructor")
         pairs.emplace_back(std::move(k3), std::move(v3));
         ast::Map_Constructor node{std::move(pairs)};
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         auto map = res->get<Map>().value();
         CHECK(map.size() == 3);
         CHECK(map.at(key1) == val1);
@@ -132,19 +133,19 @@ TEST_CASE("Map Constructor")
         trompeloeil::sequence seq;
 
         REQUIRE_CALL(*k1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key1);
         REQUIRE_CALL(*v1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val1);
         REQUIRE_CALL(*k2, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key2);
         REQUIRE_CALL(*v2, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val2);
 
@@ -153,7 +154,7 @@ TEST_CASE("Map Constructor")
         pairs.emplace_back(std::move(k2), std::move(v2));
         ast::Map_Constructor node{std::move(pairs)};
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         auto map = res->get<Map>().value();
         CHECK(map.size() == 1);
         CHECK(map.at(Value::create(1_f)) == val2);
@@ -175,19 +176,19 @@ TEST_CASE("Map Constructor")
         trompeloeil::sequence seq;
 
         REQUIRE_CALL(*k1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key_int);
         REQUIRE_CALL(*v1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val_int);
         REQUIRE_CALL(*k2, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key_float);
         REQUIRE_CALL(*v2, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val_float);
 
@@ -196,7 +197,7 @@ TEST_CASE("Map Constructor")
         pairs.emplace_back(std::move(k2), std::move(v2));
         ast::Map_Constructor node{std::move(pairs)};
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         auto map = res->get<Map>().value();
         CHECK(map.size() == 2);
         CHECK(map.at(Value::create(1_f)) == val_int);

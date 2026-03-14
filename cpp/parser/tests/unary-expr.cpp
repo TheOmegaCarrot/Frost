@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -51,7 +52,8 @@ TEST_CASE("Parser Unary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Int>());
             CHECK(value->get<frst::Int>().value() == expected[i]);
         }
@@ -77,7 +79,8 @@ TEST_CASE("Parser Unary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Bool>());
             CHECK(value->get<frst::Bool>().value() == c.expected);
         }

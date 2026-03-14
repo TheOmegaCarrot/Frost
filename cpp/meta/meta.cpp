@@ -29,7 +29,8 @@ BUILTIN(read_value)
 
     // no data safe node accesses the symbol table,
     // so it's fine for it to be empty
-    return expr->evaluate({});
+    Symbol_Table empty;
+    return expr->evaluate({.symbols = empty});
 }
 
 void inject_meta(Symbol_Table& table)

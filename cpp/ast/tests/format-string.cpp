@@ -52,11 +52,12 @@ TEST_CASE("Format_String")
     SECTION("Literal-only string performs no lookups")
     {
         mock::Mock_Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         Format_String node{"hello world"};
 
         FORBID_CALL(syms, lookup(_));
 
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "hello world");
     }
@@ -64,12 +65,13 @@ TEST_CASE("Format_String")
     SECTION("Single placeholder is substituted using to_internal_string")
     {
         mock::Mock_Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         auto value = Value::create(42_f);
 
         REQUIRE_CALL(syms, lookup("n")).RETURN(value);
 
         Format_String node{"value: ${n}"};
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "value: 42");
     }
@@ -77,6 +79,7 @@ TEST_CASE("Format_String")
     SECTION("Multiple placeholders are evaluated in order")
     {
         mock::Mock_Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::create(1_f);
@@ -86,7 +89,7 @@ TEST_CASE("Format_String")
         REQUIRE_CALL(syms, lookup("b")).IN_SEQUENCE(seq).RETURN(b);
 
         Format_String node{"${a} + ${b}"};
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "1 + 2");
     }
@@ -94,12 +97,13 @@ TEST_CASE("Format_String")
     SECTION("Escaped placeholders are treated as literal text")
     {
         mock::Mock_Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         auto value = Value::create(1_f);
 
         REQUIRE_CALL(syms, lookup("name")).RETURN(value);
 
         Format_String node{R"(\\${name} \${name})"};
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == R"(\1 ${name})");
     }
@@ -107,11 +111,12 @@ TEST_CASE("Format_String")
     SECTION("Literal dollar signs remain literal")
     {
         mock::Mock_Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         Format_String node{"price $5"};
 
         FORBID_CALL(syms, lookup(_));
 
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "price $5");
     }
@@ -119,12 +124,13 @@ TEST_CASE("Format_String")
     SECTION("$${name} yields a literal $ then a placeholder")
     {
         mock::Mock_Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         auto value = Value::create(3_f);
 
         REQUIRE_CALL(syms, lookup("name")).RETURN(value);
 
         Format_String node{"$${name}"};
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "$3");
     }
@@ -132,6 +138,7 @@ TEST_CASE("Format_String")
     SECTION("Adjacent placeholders concatenate")
     {
         mock::Mock_Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto a = Value::create(1_f);
@@ -141,7 +148,7 @@ TEST_CASE("Format_String")
         REQUIRE_CALL(syms, lookup("b")).IN_SEQUENCE(seq).RETURN(b);
 
         Format_String node{"${a}${b}"};
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "12");
     }
@@ -149,6 +156,7 @@ TEST_CASE("Format_String")
     SECTION("Repeated placeholder name is looked up each time")
     {
         mock::Mock_Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         trompeloeil::sequence seq;
 
         auto value = Value::create(7_f);
@@ -157,7 +165,7 @@ TEST_CASE("Format_String")
         REQUIRE_CALL(syms, lookup("x")).IN_SEQUENCE(seq).RETURN(value);
 
         Format_String node{"${x}${x}"};
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "77");
     }
@@ -165,11 +173,12 @@ TEST_CASE("Format_String")
     SECTION("Backslashes without placeholders are preserved")
     {
         mock::Mock_Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         Format_String node{R"(\\)"};
 
         FORBID_CALL(syms, lookup(_));
 
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == R"(\)");
     }
@@ -177,11 +186,12 @@ TEST_CASE("Format_String")
     SECTION("Null values format as null")
     {
         mock::Mock_Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
 
         REQUIRE_CALL(syms, lookup("x")).RETURN(Value::null());
 
         Format_String node{"value: ${x}"};
-        auto result = node.evaluate(syms);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "value: null");
     }
@@ -189,9 +199,10 @@ TEST_CASE("Format_String")
     SECTION("Missing name lookup raises an unrecoverable error")
     {
         Symbol_Table syms;
+        Evaluation_Context ctx{.symbols = syms};
         Format_String node{"${missing}"};
 
-        CHECK_THROWS_MATCHES(node.evaluate(syms), Frost_Unrecoverable_Error,
+        CHECK_THROWS_MATCHES(node.evaluate(ctx), Frost_Unrecoverable_Error,
                              MessageMatches(ContainsSubstring("missing")));
     }
 

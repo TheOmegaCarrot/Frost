@@ -10,7 +10,7 @@ ast::Format_String::Format_String(const std::string& format_string)
     segments_ = std::move(result).value();
 }
 
-Value_Ptr ast::Format_String::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Format_String::do_evaluate(Evaluation_Context ctx) const
 {
     std::string out;
     for (const auto& segment : segments_)
@@ -20,7 +20,7 @@ Value_Ptr ast::Format_String::do_evaluate(const Symbol_Table& syms) const
                 out.append(literal.text);
             },
             [&](const utils::Fmt_Placeholder& name) {
-                out.append(syms.lookup(name.text)->to_internal_string());
+                out.append(ctx.symbols.lookup(name.text)->to_internal_string());
             }});
     }
     return Value::create(std::move(out));

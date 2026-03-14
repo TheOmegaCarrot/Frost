@@ -642,21 +642,17 @@ TEST_CASE("Builtin math")
 
         // All 8 (val, lo, hi) type permutations
         const std::vector<Perm> perms{
-            {"iii", false, false, false},
-            {"fii", true,  false, false},
-            {"ifi", false, true,  false},
-            {"iif", false, false, true },
-            {"ffi", true,  true,  false},
-            {"fif", true,  false, true },
-            {"iff", false, true,  true },
-            {"fff", true,  true,  true },
+            {"iii", false, false, false}, {"fii", true, false, false},
+            {"ifi", false, true, false},  {"iif", false, false, true},
+            {"ffi", true, true, false},   {"fif", true, false, true},
+            {"iff", false, true, true},   {"fff", true, true, true},
         };
 
         for (const auto& p : perms)
         {
             bool all_int = !p.val_f && !p.lo_f && !p.hi_f;
-            auto lo  = make(p.lo_f,  5.0);
-            auto hi  = make(p.hi_f, 10.0);
+            auto lo = make(p.lo_f, 5.0);
+            auto hi = make(p.hi_f, 10.0);
 
             DYNAMIC_SECTION("clamp lo (" << p.name << ")")
             {

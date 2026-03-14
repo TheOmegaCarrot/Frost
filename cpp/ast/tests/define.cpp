@@ -19,6 +19,7 @@ TEST_CASE("Define")
 {
     auto expr = std::make_unique<mock::Mock_Expression>();
     mock::Mock_Symbol_Table syms;
+    Execution_Context ctx{.symbols = syms};
     trompeloeil::sequence seq;
 
     SECTION("Normal")
@@ -27,14 +28,14 @@ TEST_CASE("Define")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(value);
 
         REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
 
         ast::Define node{"foo", std::move(expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
     }
 
@@ -44,14 +45,14 @@ TEST_CASE("Define")
         auto value2 = Value::create("well that's not right"s);
 
         REQUIRE_CALL(*expr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(value1);
 
         REQUIRE_CALL(syms, define("foo", value1)).IN_SEQUENCE(seq);
 
         REQUIRE_CALL(*expr, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(value2);
 
@@ -61,9 +62,9 @@ TEST_CASE("Define")
 
         ast::Define node{"foo", std::move(expr)};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
-        CHECK_THROWS(node.execute(syms));
+        CHECK_THROWS(node.execute(ctx));
     }
 
     SECTION("Exports defined value when enabled")
@@ -72,14 +73,14 @@ TEST_CASE("Define")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(value);
 
         REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
 
         ast::Define node{"foo", std::move(expr), true};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         REQUIRE(result.has_value());
         CHECK(result->size() == 1);
 
@@ -94,14 +95,14 @@ TEST_CASE("Define")
 
         REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(value);
 
         REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
 
         ast::Define node{"foo", std::move(expr), true};
 
-        auto result = node.execute(syms);
+        auto result = node.execute(ctx);
         REQUIRE(result.has_value());
         CHECK(result->size() == 1);
 

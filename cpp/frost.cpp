@@ -21,6 +21,7 @@ using namespace std::literals;
 void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
                   frst::Symbol_Table& symbols, bool do_dump)
 {
+    frst::Execution_Context ctx{.symbols = symbols};
     try
     {
         for (const auto& statement : program)
@@ -28,7 +29,7 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
             if (do_dump)
                 statement->debug_dump_ast(std::cout);
             else
-                statement->execute(symbols);
+                statement->execute(ctx);
         }
     }
     catch (const frst::Frost_Error& err)

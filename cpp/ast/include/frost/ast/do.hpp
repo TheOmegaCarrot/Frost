@@ -25,7 +25,7 @@ class Do_Block final : public Expression
     std::generator<Symbol_Action> symbol_sequence() const final;
 
   protected:
-    [[nodiscard]] Value_Ptr do_evaluate(const Symbol_Table&) const final;
+    [[nodiscard]] Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
     std::generator<Child_Info> children() const final;
 

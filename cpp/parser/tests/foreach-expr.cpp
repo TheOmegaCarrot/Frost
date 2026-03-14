@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -68,10 +69,11 @@ TEST_CASE("Parser Foreach Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<RecordingCallable>();
         table.define("f", frst::Value::create(frst::Function{callable}));
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
         REQUIRE(callable->calls.size() == 3);
         CHECK(callable->calls[0][0]->get<frst::Int>().value() == 1_f);
@@ -86,10 +88,11 @@ TEST_CASE("Parser Foreach Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<RecordingCallable>();
         table.define("f", frst::Value::create(frst::Function{callable}));
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
         REQUIRE(callable->calls.size() == 2);
         for (const auto& call : callable->calls)
@@ -130,10 +133,11 @@ TEST_CASE("Parser Foreach Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<RecordingCallable>();
         table.define("f", frst::Value::create(frst::Function{callable}));
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
         REQUIRE(callable->calls.size() == 2);
         CHECK(callable->calls[0][0]->get<frst::Int>().value() == 2_f);
@@ -149,10 +153,11 @@ TEST_CASE("Parser Foreach Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<RecordingCallable>();
         table.define("f", frst::Value::create(frst::Function{callable}));
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
         REQUIRE(callable->calls.size() == 2);
 
@@ -189,10 +194,11 @@ TEST_CASE("Parser Foreach Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<RecordingCallable>(true);
         table.define("f", frst::Value::create(frst::Function{callable}));
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
         REQUIRE(callable->calls.size() == 1);
         REQUIRE(callable->calls[0].size() == 1);
@@ -206,10 +212,11 @@ TEST_CASE("Parser Foreach Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<RecordingCallable>(true);
         table.define("f", frst::Value::create(frst::Function{callable}));
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
         REQUIRE(callable->calls.size() == 1);
         REQUIRE(callable->calls[0].size() == 2);

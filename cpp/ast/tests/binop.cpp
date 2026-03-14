@@ -21,6 +21,7 @@ TEST_CASE("Numeric Binary ops")
     auto lhs = std::make_unique<mock::Mock_Expression>();
     auto rhs = std::make_unique<mock::Mock_Expression>();
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
 
     auto lhs_val = Value::create(42_f);
     auto rhs_val = Value::create(10_f);
@@ -34,18 +35,18 @@ TEST_CASE("Numeric Binary ops")
             trompeloeil::sequence seq;
 
             REQUIRE_CALL(*lhs, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(lhs_val);
 
             REQUIRE_CALL(*rhs, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(rhs_val);
 
             ast::Binop node(std::move(lhs), op, std::move(rhs));
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
 
             if (op == ast::Binary_Op::PLUS)
                 CHECK(res->get<Int>() == 42_f + 10_f);
@@ -65,6 +66,7 @@ TEST_CASE("Binop Short-Circuit")
 {
     // AI-generated test additions by Codex (GPT-5).
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
 
     SECTION("and short-circuits on falsy lhs")
     {
@@ -73,12 +75,14 @@ TEST_CASE("Binop Short-Circuit")
 
         auto lhs_val = Value::create(false);
 
-        REQUIRE_CALL(*lhs, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(lhs_val);
+        REQUIRE_CALL(*lhs, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(lhs_val);
         FORBID_CALL(*rhs, do_evaluate(_));
 
         ast::Binop node(std::move(lhs), ast::Binary_Op::AND, std::move(rhs));
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res == lhs_val);
     }
 
@@ -92,17 +96,17 @@ TEST_CASE("Binop Short-Circuit")
 
         trompeloeil::sequence seq;
         REQUIRE_CALL(*lhs, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(lhs_val);
         REQUIRE_CALL(*rhs, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(rhs_val);
 
         ast::Binop node(std::move(lhs), ast::Binary_Op::AND, std::move(rhs));
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res == rhs_val);
     }
 
@@ -113,12 +117,14 @@ TEST_CASE("Binop Short-Circuit")
 
         auto lhs_val = Value::create(1_f);
 
-        REQUIRE_CALL(*lhs, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(lhs_val);
+        REQUIRE_CALL(*lhs, do_evaluate(_))
+            .LR_WITH(&_1.symbols == &syms)
+            .RETURN(lhs_val);
         FORBID_CALL(*rhs, do_evaluate(_));
 
         ast::Binop node(std::move(lhs), ast::Binary_Op::OR, std::move(rhs));
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res == lhs_val);
     }
 
@@ -132,17 +138,17 @@ TEST_CASE("Binop Short-Circuit")
 
         trompeloeil::sequence seq;
         REQUIRE_CALL(*lhs, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(lhs_val);
         REQUIRE_CALL(*rhs, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(rhs_val);
 
         ast::Binop node(std::move(lhs), ast::Binary_Op::OR, std::move(rhs));
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res == rhs_val);
     }
 }
@@ -152,6 +158,7 @@ TEST_CASE("Comparison Binary ops")
     // AI-generated test additions by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
 
     auto eval_binop = [&](const Value_Ptr& lhs_val, ast::Binary_Op op,
                           const Value_Ptr& rhs_val) {
@@ -160,16 +167,16 @@ TEST_CASE("Comparison Binary ops")
 
         trompeloeil::sequence seq;
         REQUIRE_CALL(*lhs, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(lhs_val);
         REQUIRE_CALL(*rhs, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(rhs_val);
 
         ast::Binop node(std::move(lhs), op, std::move(rhs));
-        return node.evaluate(syms);
+        return node.evaluate(ctx);
     };
 
     SECTION("Equality and inequality")

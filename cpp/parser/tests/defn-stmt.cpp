@@ -31,7 +31,7 @@ auto parse(std::string_view input)
 }
 
 frst::Value_Ptr call_function(const frst::Value_Ptr& value,
-                               std::vector<frst::Value_Ptr> args)
+                              std::vector<frst::Value_Ptr> args)
 {
     REQUIRE(value->is<frst::Function>());
     auto fn = value->get<frst::Function>().value();
@@ -49,7 +49,8 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
         auto value = table.lookup("f");
         REQUIRE(value->is<frst::Function>());
@@ -66,11 +67,12 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
-        auto out = call_function(table.lookup("add"),
-                                 {frst::Value::create(3_f),
-                                  frst::Value::create(4_f)});
+        auto out =
+            call_function(table.lookup("add"),
+                          {frst::Value::create(3_f), frst::Value::create(4_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 7_f);
     }
@@ -83,7 +85,8 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
         auto out = call_function(table.lookup("f"), {});
         REQUIRE(out->is<frst::Int>());
@@ -98,11 +101,11 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
-        auto out = call_function(table.lookup("f"),
-                                 {frst::Value::create(1_f),
-                                  frst::Value::create(2_f)});
+        auto out = call_function(table.lookup("f"), {frst::Value::create(1_f),
+                                                     frst::Value::create(2_f)});
         REQUIRE(out->is<frst::Array>());
         CHECK(out->raw_get<frst::Array>().size() == 2);
     }
@@ -115,29 +118,30 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
-        auto out = call_function(table.lookup("f"),
-                                 {frst::Value::create(1_f),
-                                  frst::Value::create(2_f),
-                                  frst::Value::create(3_f)});
+        auto out = call_function(table.lookup("f"), {frst::Value::create(1_f),
+                                                     frst::Value::create(2_f),
+                                                     frst::Value::create(3_f)});
         REQUIRE(out->is<frst::Array>());
         CHECK(out->raw_get<frst::Array>().size() == 2);
     }
 
     SECTION("defn self-name enables recursion")
     {
-        auto result = parse(
-            "defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)");
+        auto result =
+            parse("defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)");
         REQUIRE(result);
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
-        auto out = call_function(table.lookup("fact"),
-                                 {frst::Value::create(5_f)});
+        auto out =
+            call_function(table.lookup("fact"), {frst::Value::create(5_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 120_f);
     }
@@ -150,7 +154,8 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
         auto fn = table.lookup("f")->get<frst::Function>().value();
         auto closure = std::dynamic_pointer_cast<frst::Closure>(fn);
@@ -169,10 +174,11 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto* expr =
             dynamic_cast<const frst::ast::Expression*>(program[0].get());
         REQUIRE(expr);
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 10_f);
     }
@@ -185,7 +191,8 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        auto exports = program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        auto exports = program[0]->execute(ctx);
         REQUIRE(exports.has_value());
         REQUIRE(exports->size() == 1);
 
@@ -200,14 +207,15 @@ TEST_CASE("Parser Defn Statements")
 
     SECTION("export defn enables recursion via self-name")
     {
-        auto result = parse(
-            "export defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)");
+        auto result =
+            parse("export defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)");
         REQUIRE(result);
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        auto exports = program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        auto exports = program[0]->execute(ctx);
         REQUIRE(exports.has_value());
 
         auto it = exports->find(frst::Value::create("fact"s));
@@ -246,13 +254,14 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
 
-        auto f_out = call_function(table.lookup("f"),
-                                   {frst::Value::create(3_f)});
-        auto g_out = call_function(table.lookup("g"),
-                                   {frst::Value::create(3_f)});
+        auto f_out =
+            call_function(table.lookup("f"), {frst::Value::create(3_f)});
+        auto g_out =
+            call_function(table.lookup("g"), {frst::Value::create(3_f)});
         CHECK(f_out->get<frst::Int>().value() == 3_f);
         CHECK(g_out->get<frst::Int>().value() == 6_f);
     }
@@ -268,10 +277,10 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
-        auto out = call_function(table.lookup("f"),
-                                 {frst::Value::create(4_f)});
+        auto out = call_function(table.lookup("f"), {frst::Value::create(4_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 10_f);
     }
@@ -287,10 +296,11 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
-        auto out = call_function(table.lookup("sum"),
-                                 {frst::Value::create(4_f)});
+        auto out =
+            call_function(table.lookup("sum"), {frst::Value::create(4_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 10_f);
     }
@@ -303,11 +313,11 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
 
-        auto out = call_function(table.lookup("f"),
-                                 {frst::Value::create(5_f)});
+        auto out = call_function(table.lookup("f"), {frst::Value::create(5_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 15_f);
     }
@@ -320,8 +330,9 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
 
         auto fn = table.lookup("f")->get<frst::Function>().value();
         auto closure = std::dynamic_pointer_cast<frst::Closure>(fn);
@@ -342,10 +353,11 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto* expr =
             dynamic_cast<const frst::ast::Expression*>(program[0].get());
         REQUIRE(expr);
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 12_f);
     }
@@ -358,10 +370,10 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
-        auto out = call_function(table.lookup("f"),
-                                 {frst::Value::create(9_f)});
+        auto out = call_function(table.lookup("f"), {frst::Value::create(9_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 9_f);
     }
@@ -374,10 +386,10 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
-        auto out = call_function(table.lookup("f"),
-                                 {frst::Value::create(3_f)});
+        auto out = call_function(table.lookup("f"), {frst::Value::create(3_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 4_f);
     }

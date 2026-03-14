@@ -9,9 +9,9 @@ ast::Name_Lookup::Name_Lookup(std::string name)
         throw Frost_Unrecoverable_Error{"\"_\" is not a valid identifier"};
 }
 
-Value_Ptr ast::Name_Lookup::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Name_Lookup::do_evaluate(Evaluation_Context ctx) const
 {
-    return syms.lookup(name_);
+    return ctx.symbols.lookup(name_);
 }
 
 std::generator<ast::Statement::Symbol_Action> ast::Name_Lookup::

@@ -11,9 +11,9 @@ ast::Function_Call::Function_Call(Expression::Ptr fn_expr,
 {
 }
 
-Value_Ptr ast::Function_Call::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Function_Call::do_evaluate(Evaluation_Context ctx) const
 {
-    const auto& fn = fn_expr_->evaluate(syms);
+    const auto& fn = fn_expr_->evaluate(ctx);
 
     if (not fn->is<Function>())
     {
@@ -24,7 +24,7 @@ Value_Ptr ast::Function_Call::do_evaluate(const Symbol_Table& syms) const
     const auto args =
         args_exprs_
         | std::views::transform([&](const Expression::Ptr& arg_expr) {
-              return arg_expr->evaluate(syms);
+              return arg_expr->evaluate(ctx);
           })
         | std::ranges::to<std::vector>();
 

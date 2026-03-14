@@ -40,11 +40,11 @@ TEST_CASE("Builtin read_value")
             MessageMatches(ContainsSubstring("insufficient arguments")
                            && ContainsSubstring("requires at least 1")));
 
-        CHECK_THROWS_MATCHES(
-            read_value->call({Value::create(42_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("read_value")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("Int")));
+        CHECK_THROWS_MATCHES(read_value->call({Value::create(42_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("read_value")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("Int")));
 
         CHECK_THROWS_MATCHES(
             read_value->call({Value::create("42"s), Value::create("43"s)}),
@@ -125,8 +125,7 @@ TEST_CASE("Builtin read_value")
     SECTION("Rejects name lookup")
     {
         CHECK_THROWS_MATCHES(
-            read_value->call({Value::create("foo"s)}),
-            Frost_Recoverable_Error,
+            read_value->call({Value::create("foo"s)}), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring("Invalid node in Frost Data")));
     }
 
@@ -156,8 +155,7 @@ TEST_CASE("Builtin read_value")
 
         // Unop is data_safe, but its child is still walked
         CHECK_THROWS_MATCHES(
-            read_value->call({Value::create("-foo"s)}),
-            Frost_Recoverable_Error,
+            read_value->call({Value::create("-foo"s)}), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring("Invalid node in Frost Data")));
 
         // Unsafe node nested inside an array

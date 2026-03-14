@@ -105,9 +105,9 @@ TEST_CASE("Builtin filesystem injection")
     const auto& fs_map = fs_val->raw_get<Map>();
 
     const std::vector<std::string> names{
-        "move",   "symlink", "copy",   "absolute", "canonical",
-        "cd",     "cwd",     "exists", "remove",   "remove_recursively",
-        "mkdir",  "size",    "stat",   "list",     "list_recursively",
+        "move",   "symlink", "copy",      "absolute", "canonical",
+        "cd",     "cwd",     "exists",    "remove",   "remove_recursively",
+        "mkdir",  "size",    "stat",      "list",     "list_recursively",
         "concat", "stem",    "extension", "filename", "parent",
     };
 
@@ -264,10 +264,21 @@ TEST_CASE("Builtin filesystem injection")
         auto good = Value::create("x"s);
 
         const std::vector<std::string> unary_path_fns{
-            "absolute", "canonical", "cd",     "exists",
-            "remove",   "remove_recursively", "mkdir",  "size",
-            "stat",     "list",      "list_recursively",
-            "stem",     "extension", "filename", "parent",
+            "absolute",
+            "canonical",
+            "cd",
+            "exists",
+            "remove",
+            "remove_recursively",
+            "mkdir",
+            "size",
+            "stat",
+            "list",
+            "list_recursively",
+            "stem",
+            "extension",
+            "filename",
+            "parent",
         };
 
         for (const auto& name : unary_path_fns)
@@ -275,21 +286,18 @@ TEST_CASE("Builtin filesystem injection")
             DYNAMIC_SECTION("path label: " << name)
             {
                 auto fn = get_fs_fn(fs_val, name);
-                CHECK_THROWS_MATCHES(
-                    fn->call({bad}), Frost_User_Error,
-                    MessageMatches(ContainsSubstring("path")));
+                CHECK_THROWS_MATCHES(fn->call({bad}), Frost_User_Error,
+                                     MessageMatches(ContainsSubstring("path")));
             }
         }
 
         SECTION("concat labels base and path")
         {
             auto fn = get_fs_fn(fs_val, "concat");
-            CHECK_THROWS_MATCHES(
-                fn->call({bad, good}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("base")));
-            CHECK_THROWS_MATCHES(
-                fn->call({good, bad}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("path")));
+            CHECK_THROWS_MATCHES(fn->call({bad, good}), Frost_User_Error,
+                                 MessageMatches(ContainsSubstring("base")));
+            CHECK_THROWS_MATCHES(fn->call({good, bad}), Frost_User_Error,
+                                 MessageMatches(ContainsSubstring("path")));
         }
     }
 }
@@ -735,18 +743,20 @@ TEST_CASE("Builtin fs.stem")
     auto fs_val = table.lookup("fs");
     auto fn = get_fs_fn(fs_val, "stem");
 
-    SECTION("Injected") { CHECK(fn); }
+    SECTION("Injected")
+    {
+        CHECK(fn);
+    }
 
     SECTION("Arity and type errors")
     {
         CHECK_THROWS_MATCHES(
             fn->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")));
-        CHECK_THROWS_MATCHES(
-            fn->call({Value::create(1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("fs.stem")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("path")));
+        CHECK_THROWS_MATCHES(fn->call({Value::create(1_f)}), Frost_User_Error,
+                             MessageMatches(ContainsSubstring("fs.stem")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("path")));
     }
 
     SECTION("Strips the last extension")
@@ -778,18 +788,20 @@ TEST_CASE("Builtin fs.extension")
     auto fs_val = table.lookup("fs");
     auto fn = get_fs_fn(fs_val, "extension");
 
-    SECTION("Injected") { CHECK(fn); }
+    SECTION("Injected")
+    {
+        CHECK(fn);
+    }
 
     SECTION("Arity and type errors")
     {
         CHECK_THROWS_MATCHES(
             fn->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")));
-        CHECK_THROWS_MATCHES(
-            fn->call({Value::create(1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("fs.extension")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("path")));
+        CHECK_THROWS_MATCHES(fn->call({Value::create(1_f)}), Frost_User_Error,
+                             MessageMatches(ContainsSubstring("fs.extension")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("path")));
     }
 
     SECTION("Returns extension including dot")
@@ -821,18 +833,20 @@ TEST_CASE("Builtin fs.filename")
     auto fs_val = table.lookup("fs");
     auto fn = get_fs_fn(fs_val, "filename");
 
-    SECTION("Injected") { CHECK(fn); }
+    SECTION("Injected")
+    {
+        CHECK(fn);
+    }
 
     SECTION("Arity and type errors")
     {
         CHECK_THROWS_MATCHES(
             fn->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")));
-        CHECK_THROWS_MATCHES(
-            fn->call({Value::create(1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("fs.filename")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("path")));
+        CHECK_THROWS_MATCHES(fn->call({Value::create(1_f)}), Frost_User_Error,
+                             MessageMatches(ContainsSubstring("fs.filename")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("path")));
     }
 
     SECTION("Returns final component of absolute path")
@@ -857,18 +871,20 @@ TEST_CASE("Builtin fs.parent")
     auto fs_val = table.lookup("fs");
     auto fn = get_fs_fn(fs_val, "parent");
 
-    SECTION("Injected") { CHECK(fn); }
+    SECTION("Injected")
+    {
+        CHECK(fn);
+    }
 
     SECTION("Arity and type errors")
     {
         CHECK_THROWS_MATCHES(
             fn->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")));
-        CHECK_THROWS_MATCHES(
-            fn->call({Value::create(1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("fs.parent")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("path")));
+        CHECK_THROWS_MATCHES(fn->call({Value::create(1_f)}), Frost_User_Error,
+                             MessageMatches(ContainsSubstring("fs.parent")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("path")));
     }
 
     SECTION("Returns directory containing the path")

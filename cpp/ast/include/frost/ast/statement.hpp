@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-#include <frost/symbol-table.hpp>
+#include <frost/execution-context.hpp>
 
 namespace frst::ast
 {
@@ -26,11 +26,9 @@ class Statement
     virtual ~Statement() = default;
 
     //! @brief Execute this statement
-    //! @param table Symbol table to use for lookup, and in which to define new
-    //!                 names
-    std::optional<Map> execute(Symbol_Table& table) const
+    std::optional<Map> execute(Execution_Context ctx) const
     {
-        return do_execute(table);
+        return do_execute(ctx);
     }
 
     //! @brief Print AST of this node and all descendents
@@ -68,7 +66,7 @@ class Statement
     }
 
   protected:
-    virtual std::optional<Map> do_execute(Symbol_Table& table) const = 0;
+    virtual std::optional<Map> do_execute(Execution_Context& ctx) const = 0;
 
     struct Child_Info
     {

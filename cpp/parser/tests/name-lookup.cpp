@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 
@@ -59,10 +60,11 @@ TEST_CASE("Name Lookup")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
+            frst::Evaluation_Context ctx{.symbols = table};
             auto value = frst::Value::create(42_f);
             table.define(std::string{c.expected}, value);
 
-            auto evaluated = expr->evaluate(table);
+            auto evaluated = expr->evaluate(ctx);
             CHECK(evaluated == value);
         }
     }
@@ -88,9 +90,10 @@ TEST_CASE("Name Lookup")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        CHECK_THROWS_WITH(expr->evaluate(table),
+        frst::Evaluation_Context ctx{.symbols = table};
+        CHECK_THROWS_WITH(expr->evaluate(ctx),
                           Catch::Matchers::ContainsSubstring("not defined"));
-        CHECK_THROWS_WITH(expr->evaluate(table),
+        CHECK_THROWS_WITH(expr->evaluate(ctx),
                           Catch::Matchers::ContainsSubstring("missing_name"));
     }
 }

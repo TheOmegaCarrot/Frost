@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -60,7 +61,8 @@ TEST_CASE("Parser Primary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Int>());
             CHECK(value->get<frst::Int>().value() == c.expected);
         }
@@ -83,7 +85,8 @@ TEST_CASE("Parser Primary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Float>());
             CHECK(value->get<frst::Float>().value() == c.expected);
         }
@@ -106,7 +109,8 @@ TEST_CASE("Parser Primary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::String>());
             CHECK(value->get<frst::String>().value() == c.expected);
         }
@@ -121,7 +125,8 @@ TEST_CASE("Parser Primary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
             REQUIRE(value->is<frst::Bool>());
             CHECK(value->get<frst::Bool>().value() == bool_expected[i]);
         }
@@ -130,7 +135,8 @@ TEST_CASE("Parser Primary Expressions")
         REQUIRE(null_result);
         auto null_expr = require_expression(null_result);
         frst::Symbol_Table table;
-        auto null_value = null_expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto null_value = null_expr->evaluate(ctx);
         REQUIRE(null_value->is<frst::Null>());
     }
 
@@ -141,10 +147,11 @@ TEST_CASE("Parser Primary Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto value = frst::Value::create(42_f);
         table.define("foo", value);
 
-        auto evaluated = expr->evaluate(table);
+        auto evaluated = expr->evaluate(ctx);
         CHECK(evaluated == value);
     }
 
@@ -155,7 +162,8 @@ TEST_CASE("Parser Primary Expressions")
         auto int_expr = require_expression(int_result);
 
         frst::Symbol_Table table;
-        auto int_value = int_expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto int_value = int_expr->evaluate(ctx);
         REQUIRE(int_value->is<frst::Int>());
         CHECK(int_value->get<frst::Int>().value() == 7_f);
 
@@ -165,13 +173,13 @@ TEST_CASE("Parser Primary Expressions")
 
         auto stored = frst::Value::create(123_f);
         table.define("name", stored);
-        auto nested_value = nested_expr->evaluate(table);
+        auto nested_value = nested_expr->evaluate(ctx);
         CHECK(nested_value == stored);
 
         auto comment_result = parse("(# comment\nname)");
         REQUIRE(comment_result);
         auto comment_expr = require_expression(comment_result);
-        auto comment_value = comment_expr->evaluate(table);
+        auto comment_value = comment_expr->evaluate(ctx);
         CHECK(comment_value == stored);
     }
 
@@ -196,9 +204,10 @@ TEST_CASE("Parser Primary Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        CHECK_THROWS_WITH(expr->evaluate(table),
+        frst::Evaluation_Context ctx{.symbols = table};
+        CHECK_THROWS_WITH(expr->evaluate(ctx),
                           Catch::Matchers::ContainsSubstring("not defined"));
-        CHECK_THROWS_WITH(expr->evaluate(table),
+        CHECK_THROWS_WITH(expr->evaluate(ctx),
                           Catch::Matchers::ContainsSubstring("missing"));
     }
 
@@ -241,9 +250,10 @@ TEST_CASE("Parser Primary Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        CHECK_THROWS_WITH(expr->evaluate(table),
+        frst::Evaluation_Context ctx{.symbols = table};
+        CHECK_THROWS_WITH(expr->evaluate(ctx),
                           Catch::Matchers::ContainsSubstring("not defined"));
-        CHECK_THROWS_WITH(expr->evaluate(table),
+        CHECK_THROWS_WITH(expr->evaluate(ctx),
                           Catch::Matchers::ContainsSubstring("missing"));
     }
 
@@ -258,9 +268,10 @@ TEST_CASE("Parser Primary Expressions")
             auto expr = require_expression(result);
 
             frst::Symbol_Table table;
+            frst::Evaluation_Context ctx{.symbols = table};
             auto value = frst::Value::create(1_f);
             table.define(std::string{input}, value);
-            auto evaluated = expr->evaluate(table);
+            auto evaluated = expr->evaluate(ctx);
             CHECK(evaluated == value);
         }
     }
@@ -272,7 +283,8 @@ TEST_CASE("Parser Primary Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         CHECK(value == frst::Value::null());
     }
 }

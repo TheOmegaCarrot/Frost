@@ -94,9 +94,10 @@ struct Importer
         inject_import(isolated_table, child_search_path);
 
         Map imported;
+        Execution_Context ctx{.symbols = isolated_table};
         for (const auto& statement : parse_result.value())
         {
-            if (const auto& exported = statement->execute(isolated_table))
+            if (const auto& exported = statement->execute(ctx))
                 imported.insert_range(exported.value());
         }
 

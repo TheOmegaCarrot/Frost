@@ -241,4 +241,3 @@ TEST_CASE("Free Operators")
             Frost_User_Error, MessageMatches(ContainsSubstring("invalid")));
     }
 }
-

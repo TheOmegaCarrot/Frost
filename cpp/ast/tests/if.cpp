@@ -22,6 +22,7 @@ TEST_CASE("If")
     auto alternate = mock::Mock_Expression::make();
 
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
 
     auto make_if = [&](bool with_alternate = true) {
         if (with_alternate)
@@ -38,44 +39,44 @@ TEST_CASE("If")
     SECTION("Consequent Taken")
     {
         REQUIRE_CALL(*condition, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(42_f));
 
         REQUIRE_CALL(*consequent, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create("yay!"s));
 
         auto node = make_if();
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res->get<String>() == "yay!");
     }
 
     SECTION("Alternate Taken")
     {
         REQUIRE_CALL(*condition, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(false));
 
         REQUIRE_CALL(*alternate, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create("yay!"s));
 
         auto node = make_if();
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res->get<String>() == "yay!");
     }
 
     SECTION("Null Alternate Taken")
     {
         REQUIRE_CALL(*condition, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(Value::create(false));
 
         auto node = make_if(false);
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res->is<Null>());
     }
 }

@@ -28,24 +28,25 @@ TEST_CASE("Array Constructor")
                        Value::create(Array{val})};
 
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
 
     SECTION("Empty")
     {
         ast::Array_Constructor node{{}};
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res->get<Array>().value().empty());
     }
 
     SECTION("One")
     {
         REQUIRE_CALL(*e1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(values.at(0));
 
         std::vector<ast::Expression::Ptr> v;
         v.emplace_back(std::move(e1));
         ast::Array_Constructor node{std::move(v)};
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res->get<Array>()->size() == 1);
         CHECK(res->get<Array>()->front() == val);
     }
@@ -53,16 +54,16 @@ TEST_CASE("Array Constructor")
     SECTION("FOur")
     {
         REQUIRE_CALL(*e1, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(values.at(0));
         REQUIRE_CALL(*e2, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(values.at(1));
         REQUIRE_CALL(*e3, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(values.at(2));
         REQUIRE_CALL(*e4, do_evaluate(_))
-            .LR_WITH(&_1 == &syms)
+            .LR_WITH(&_1.symbols == &syms)
             .RETURN(values.at(3));
 
         // I love that `initializer_list`s are backed by a `const` array!
@@ -73,7 +74,7 @@ TEST_CASE("Array Constructor")
         v.emplace_back(std::move(e3));
         v.emplace_back(std::move(e4));
         ast::Array_Constructor node{std::move(v)};
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res->get<Array>()->size() == 4);
         CHECK(res->get<Array>().value() == values);
     }

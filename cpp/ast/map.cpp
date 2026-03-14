@@ -1,6 +1,5 @@
 #include <ranges>
 
-#include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
 #include <frost/ast/map.hpp>
@@ -13,16 +12,16 @@ ast::Map::Map(Expression::Ptr structure, Expression::Ptr operation)
 {
 }
 
-Value_Ptr ast::Map::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Map::do_evaluate(Evaluation_Context ctx) const
 {
-    const auto& structure_val = structure_->evaluate(syms);
+    const auto& structure_val = structure_->evaluate(ctx);
     if (not structure_val->is_structured())
     {
         throw Frost_Recoverable_Error{fmt::format(
             "Cannot map value with type {}", structure_val->type_name())};
     }
 
-    const auto& op_val = operation_->evaluate(syms);
+    const auto& op_val = operation_->evaluate(ctx);
     if (not op_val->is<Function>())
     {
         throw Frost_Recoverable_Error{fmt::format(

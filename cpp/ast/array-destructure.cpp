@@ -40,9 +40,9 @@ Array_Destructure::Array_Destructure(std::vector<Name> names,
         rest_name_->visit(duplicate_check);
 }
 
-std::optional<Map> Array_Destructure::do_execute(Symbol_Table& table) const
+std::optional<Map> Array_Destructure::do_execute(Execution_Context& ctx) const
 {
-    Value_Ptr expr_result = expr_->evaluate(table);
+    Value_Ptr expr_result = expr_->evaluate(ctx.as_eval());
 
     Map exports;
 
@@ -75,7 +75,7 @@ std::optional<Map> Array_Destructure::do_execute(Symbol_Table& table) const
         name.visit(Overload{[](const Discarded_Binding&) {
                             },
                             [&](const std::string& name) {
-                                table.define(name, val);
+                                ctx.symbols.define(name, val);
                                 if (export_defs_)
                                 {
                                     exports.emplace(Value::create(auto{name}),
@@ -94,7 +94,7 @@ std::optional<Map> Array_Destructure::do_execute(Symbol_Table& table) const
                                          | std::views::drop(names_.size())
                                          | std::ranges::to<Array>());
 
-                table.define(name, val);
+                ctx.symbols.define(name, val);
 
                 if (export_defs_)
                     exports.emplace(Value::create(auto{name}), val);
@@ -129,15 +129,15 @@ std::string Array_Destructure::node_label() const
             Overload{[](const Discarded_Binding&) -> std::string_view {
                          return Discarded_Binding::token;
                      },
-                     [](const std::string& n) -> std::string_view { return n; }});
+                     [](const std::string& n) -> std::string_view {
+                         return n;
+                     }});
     };
 
     return fmt::format(
-        "{}Array_Destructure({}{}{}{})",
-        export_defs_ ? "Export_" : "",
+        "{}Array_Destructure({}{}{}{})", export_defs_ ? "Export_" : "",
         fmt::join(names_ | std::views::transform(name_of), ","),
-        rest_name_ && !names_.empty() ? "," : "",
-        rest_name_ ? "..." : "",
+        rest_name_ && !names_.empty() ? "," : "", rest_name_ ? "..." : "",
         rest_name_ ? name_of(*rest_name_) : std::string_view{});
 }
 

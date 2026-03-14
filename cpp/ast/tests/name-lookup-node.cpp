@@ -12,6 +12,7 @@ using namespace std::literals;
 TEST_CASE("Name Lookup")
 {
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
     std::string name = "foo";
     auto value = Value::create(42_f);
 
@@ -21,7 +22,7 @@ TEST_CASE("Name Lookup")
 
         ast::Name_Lookup node{name};
 
-        auto res = node.evaluate(syms);
+        auto res = node.evaluate(ctx);
         CHECK(res == value);
     }
 
@@ -32,7 +33,7 @@ TEST_CASE("Name Lookup")
 
         ast::Name_Lookup node{name};
 
-        CHECK_THROWS(node.evaluate(syms));
+        CHECK_THROWS(node.evaluate(ctx));
     }
 
     SECTION("Reject _")

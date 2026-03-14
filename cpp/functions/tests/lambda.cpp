@@ -53,7 +53,8 @@ std::set<std::string> capture_names(const Closure& closure)
 std::shared_ptr<Closure> eval_to_closure(const Lambda& node,
                                          const Symbol_Table& env)
 {
-    auto result = node.evaluate(env);
+    Evaluation_Context ctx{.symbols = env};
+    auto result = node.evaluate(ctx);
     REQUIRE(result->is<Function>());
     auto fn = result->get<Function>().value();
     auto closure = std::dynamic_pointer_cast<Closure>(fn);
@@ -81,6 +82,7 @@ TEST_CASE("Lambda")
         // Frost:
         // def f = fn () -> { side_effect() }
         Symbol_Table env;
+        Evaluation_Context ctx{.symbols = env};
 
         auto expr = std::make_unique<mock::Mock_Expression>();
         auto* expr_ptr = expr.get();
@@ -91,7 +93,7 @@ TEST_CASE("Lambda")
 
         Lambda node{{}, std::move(body)};
 
-        auto result = node.evaluate(env);
+        auto result = node.evaluate(ctx);
         CHECK(result->is<Function>());
     }
 
@@ -808,6 +810,7 @@ TEST_CASE("Lambda")
         // Frost:
         // def f = fn () -> { missing }
         Symbol_Table env;
+        Evaluation_Context ctx{.symbols = env};
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>("missing"));
@@ -815,7 +818,7 @@ TEST_CASE("Lambda")
         Lambda node{{}, std::move(body)};
 
         CHECK_THROWS_WITH(
-            node.evaluate(env),
+            node.evaluate(ctx),
             ContainsSubstring("No definition found for captured symbol"));
     }
 
@@ -854,6 +857,7 @@ TEST_CASE("Lambda")
         // def x = 2
         // def f = fn (y) -> { x + y }
         Symbol_Table env;
+        Evaluation_Context ctx{.symbols = env};
         env.define("x", Value::create(2_f));
 
         std::vector<Statement::Ptr> body;
@@ -862,7 +866,7 @@ TEST_CASE("Lambda")
 
         Lambda node{{"y"}, std::move(body)};
 
-        auto result = node.evaluate(env);
+        auto result = node.evaluate(ctx);
         REQUIRE(result->is<Function>());
         auto fn = result->get<Function>().value();
 
@@ -1035,6 +1039,7 @@ TEST_CASE("Lambda")
         //     null
         // }
         Symbol_Table env;
+        Evaluation_Context ctx{.symbols = env};
 
         std::vector<Statement::Ptr> inner_body;
         inner_body.push_back(node<Name_Lookup>("z"));
@@ -1049,7 +1054,7 @@ TEST_CASE("Lambda")
         Lambda outer{{}, std::move(outer_body)};
 
         CHECK_THROWS_WITH(
-            outer.evaluate(env),
+            outer.evaluate(ctx),
             ContainsSubstring("No definition found for captured symbol")
                 && ContainsSubstring("z"));
     }

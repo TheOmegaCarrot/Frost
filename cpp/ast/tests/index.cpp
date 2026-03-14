@@ -33,18 +33,18 @@ TEST_CASE("Array Index")
             trompeloeil::sequence seq;
 
             REQUIRE_CALL(*struct_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(arr);
 
             REQUIRE_CALL(*idx_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(Value::create(Int{index}));
 
             ast::Index node{std::move(struct_expr), std::move(idx_expr)};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate({.symbols = syms});
 
             Value_Ptr expect = Value::null();
             switch (index)
@@ -82,18 +82,18 @@ TEST_CASE("Array Index Type Error")
     trompeloeil::sequence seq;
 
     REQUIRE_CALL(*struct_expr, do_evaluate(_))
-        .LR_WITH(&_1 == &syms)
+        .LR_WITH(&_1.symbols == &syms)
         .IN_SEQUENCE(seq)
         .RETURN(arr);
 
     REQUIRE_CALL(*idx_expr, do_evaluate(_))
-        .LR_WITH(&_1 == &syms)
+        .LR_WITH(&_1.symbols == &syms)
         .IN_SEQUENCE(seq)
         .RETURN(Value::create("oops"s));
 
     ast::Index node{std::move(struct_expr), std::move(idx_expr)};
 
-    CHECK_THROWS_WITH(node.evaluate(syms),
+    CHECK_THROWS_WITH(node.evaluate({.symbols = syms}),
                       Equals("Array index requires Int, got: String"));
 }
 
@@ -144,18 +144,18 @@ TEST_CASE("Map Index Primitive Key")
             trompeloeil::sequence seq;
 
             REQUIRE_CALL(*struct_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map);
 
             REQUIRE_CALL(*idx_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(test.query);
 
             ast::Index node{std::move(struct_expr), std::move(idx_expr)};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate({.symbols = syms});
 
             if (test.expected->is<Null>())
                 CHECK(res->is<Null>());
@@ -198,19 +198,19 @@ TEST_CASE("Map Index Non-Primitive Key Type Error")
             trompeloeil::sequence seq;
 
             REQUIRE_CALL(*struct_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map);
 
             REQUIRE_CALL(*idx_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(test.key);
 
             ast::Index node{std::move(struct_expr), std::move(idx_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms), Equals(test.expected_error));
+            CHECK_THROWS_WITH(node.evaluate({.symbols = syms}),
+                              Equals(test.expected_error));
         }
     }
 }
-

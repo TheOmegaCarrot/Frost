@@ -4,7 +4,6 @@
 
 #include <fmt/format.h>
 
-#include <algorithm>
 #include <sstream>
 
 using namespace frst;
@@ -56,27 +55,29 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
                         parameters_.size(), args.size())};
     }
 
-    Symbol_Table exec_table(&captures_);
-    exec_table.reserve(define_count_);
+    Symbol_Table scope_table(&captures_);
+    Execution_Context scope_ctx{.symbols = scope_table};
+    scope_ctx.symbols.reserve(define_count_);
     for (const auto& [arg_name, arg_val] : std::views::zip(parameters_, args))
     {
-        exec_table.define(arg_name, arg_val);
+        scope_ctx.symbols.define(arg_name, arg_val);
     }
 
     if (vararg_parameter_)
     {
-        exec_table.define(vararg_parameter_.value(),
-                          Value::create(args
-                                        | std::views::drop(parameters_.size())
-                                        | std::ranges::to<Array>()));
+        scope_ctx.symbols.define(
+            vararg_parameter_.value(),
+            Value::create(args
+                          | std::views::drop(parameters_.size())
+                          | std::ranges::to<Array>()));
     }
 
     for (const ast::Statement::Ptr& node : *body_prefix_)
     {
-        node->execute(exec_table);
+        node->execute(scope_ctx);
     }
 
-    return return_expr_->evaluate(exec_table);
+    return return_expr_->evaluate(scope_ctx.as_eval());
 }
 
 std::string Closure::debug_dump() const

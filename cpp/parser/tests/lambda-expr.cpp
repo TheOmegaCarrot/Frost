@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/closure.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
@@ -74,7 +75,8 @@ TEST_CASE("Parser Lambda Expressions")
             REQUIRE(result);
             auto expr = require_expression(result);
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context eval_ctx{.symbols = table};
+            auto value = expr->evaluate(eval_ctx);
             auto out = call_function(value, std::move(args));
             REQUIRE(out->is<frst::Map>());
             CHECK(out->raw_get<frst::Map>().empty());
@@ -91,7 +93,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 2_f);
     }
@@ -103,7 +106,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
@@ -121,7 +125,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(
             value, {frst::Value::create(1_f), frst::Value::create(2_f)});
         REQUIRE(out->is<frst::Int>());
@@ -135,7 +140,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {frst::Value::create(2_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 4_f);
@@ -148,7 +154,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(
             value, {frst::Value::create(1_f), frst::Value::create(3_f)});
         REQUIRE(out->is<frst::Int>());
@@ -162,7 +169,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {frst::Value::create(1_f),
                                          frst::Value::create(2_f),
                                          frst::Value::create(3_f)});
@@ -180,7 +188,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {frst::Value::create(9_f)});
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
@@ -195,7 +204,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(
             value, {frst::Value::create(2_f), frst::Value::create(5_f)});
         REQUIRE(out->is<frst::Int>());
@@ -209,7 +219,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);
@@ -224,7 +235,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Array>());
         CHECK(out->raw_get<frst::Array>().empty());
     }
@@ -236,7 +248,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
     }
@@ -248,7 +261,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);
@@ -263,7 +277,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Array>());
         CHECK(out->raw_get<frst::Array>().empty());
     }
@@ -275,7 +290,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 1);
@@ -293,11 +309,13 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto* expr =
             dynamic_cast<const frst::ast::Expression*>(program[1].get());
         REQUIRE(expr);
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Array>());
         CHECK(out->raw_get<frst::Array>().empty());
     }
@@ -309,7 +327,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
@@ -375,11 +394,13 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto* expr =
             dynamic_cast<const frst::ast::Expression*>(program[1].get());
         REQUIRE(expr);
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
@@ -393,6 +414,7 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda can be passed as a call argument")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
         auto callable = std::make_shared<IdentityCallable>();
         table.define("id", frst::Value::create(frst::Function{callable}));
 
@@ -400,7 +422,7 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(result);
         auto expr = require_expression(result);
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Function>());
         auto fn = out->get<frst::Function>().value();
         auto fn_out = fn->call({frst::Value::create(5_f)});
@@ -411,6 +433,7 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda can appear inside indexing and call arguments")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
         auto arr_val = frst::Value::create(frst::Array{
             frst::Value::create(11_f),
         });
@@ -422,14 +445,14 @@ TEST_CASE("Parser Lambda Expressions")
         auto result = parse("arr[fn() -> { 0 }()]");
         REQUIRE(result);
         auto expr = require_expression(result);
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 11_f);
 
         auto result2 = parse("id(fn() -> { 3 }())");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(eval_ctx);
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 3_f);
     }
@@ -441,14 +464,15 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Bool>());
         CHECK(out->get<frst::Bool>().value() == true);
 
         auto result2 = parse("fn() -> { true }() and false");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(eval_ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == false);
     }
@@ -460,14 +484,15 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == -2_f);
 
         auto result2 = parse("not fn() -> { true }()");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(eval_ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == false);
     }
@@ -479,7 +504,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 5_f);
     }
@@ -490,7 +516,8 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(result);
         auto expr = require_expression(result);
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
     }
@@ -502,7 +529,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {frst::Value::create(2_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
@@ -515,7 +543,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {frst::Value::create(7_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 7_f);
@@ -528,7 +557,8 @@ TEST_CASE("Parser Lambda Expressions")
             REQUIRE(result);
             auto expr = require_expression(result);
             frst::Symbol_Table table;
-            auto value = expr->evaluate(table);
+            frst::Evaluation_Context eval_ctx{.symbols = table};
+            auto value = expr->evaluate(eval_ctx);
             auto out = call_function(value, {});
             REQUIRE(out->is<frst::Map>());
             const auto& map = out->raw_get<frst::Map>();
@@ -551,7 +581,8 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(result);
         auto expr = require_expression(result);
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
     }
@@ -571,6 +602,7 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda can be followed by indexing and dot access after call")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
         auto arr_val = frst::Value::create(frst::Array{
             frst::Value::create(9_f),
         });
@@ -584,14 +616,14 @@ TEST_CASE("Parser Lambda Expressions")
         auto index_result = parse("fn() -> { arr }()[0]");
         REQUIRE(index_result);
         auto index_expr = require_expression(index_result);
-        auto index_out = index_expr->evaluate(table);
+        auto index_out = index_expr->evaluate(eval_ctx);
         REQUIRE(index_out->is<frst::Int>());
         CHECK(index_out->get<frst::Int>().value() == 9_f);
 
         auto dot_result = parse("fn() -> { obj }().key");
         REQUIRE(dot_result);
         auto dot_expr = require_expression(dot_result);
-        auto dot_out = dot_expr->evaluate(table);
+        auto dot_out = dot_expr->evaluate(eval_ctx);
         REQUIRE(dot_out->is<frst::Int>());
         CHECK(dot_out->get<frst::Int>().value() == 7_f);
     }
@@ -619,13 +651,14 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda captures outer names")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
         auto captured = frst::Value::create(10_f);
         table.define("x", captured);
 
         auto result = parse("fn() -> { x }");
         REQUIRE(result);
         auto expr = require_expression(result);
-        auto value = expr->evaluate(table);
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         CHECK(out == captured);
     }
@@ -637,7 +670,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto arg = frst::Value::create(9_f);
         auto out = call_function(value, {arg});
         CHECK(out == arg);
@@ -650,7 +684,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
@@ -684,7 +719,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {frst::Value::create(3_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 5_f);
@@ -697,7 +733,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == -1_f);
@@ -705,7 +742,7 @@ TEST_CASE("Parser Lambda Expressions")
         auto result2 = parse("fn() -> not false");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto value2 = expr2->evaluate(table);
+        auto value2 = expr2->evaluate(eval_ctx);
         auto out2 = call_function(value2, {});
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == true);
@@ -718,7 +755,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
@@ -731,7 +769,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto outer = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto outer = expr->evaluate(eval_ctx);
         REQUIRE(outer->is<frst::Function>());
         auto outer_out = call_function(outer, {});
         REQUIRE(outer_out->is<frst::Function>());
@@ -747,7 +786,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 2_f);
@@ -755,7 +795,7 @@ TEST_CASE("Parser Lambda Expressions")
         auto result2 = parse("fn() -> ({foo: 3}).foo");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto value2 = expr2->evaluate(table);
+        auto value2 = expr2->evaluate(eval_ctx);
         auto out2 = call_function(value2, {});
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 3_f);
@@ -768,7 +808,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto callable = std::make_shared<IdentityCallable>();
         auto fn_value = frst::Value::create(frst::Function{callable});
         auto out = call_function(value, {fn_value});
@@ -783,7 +824,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 5_f);
     }
@@ -795,7 +837,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 6_f);
     }
@@ -811,11 +854,13 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto* expr =
             dynamic_cast<const frst::ast::Expression*>(program[1].get());
         REQUIRE(expr);
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 6_f);
     }
@@ -837,7 +882,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 2_f);
@@ -850,7 +896,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
@@ -863,7 +910,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
@@ -876,7 +924,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
@@ -889,7 +938,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 2_f);
@@ -902,7 +952,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 6_f);
     }
@@ -915,7 +966,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 2_f);
@@ -928,7 +980,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 2_f);
@@ -948,7 +1001,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
@@ -972,7 +1026,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Bool>());
         CHECK(out->get<frst::Bool>().value() == false);
     }
@@ -984,7 +1039,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 7_f);
     }
@@ -996,7 +1052,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 3_f);
     }
@@ -1008,7 +1065,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
     }
@@ -1054,7 +1112,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {frst::Value::create(7_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 7_f);
@@ -1067,7 +1126,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(
             value, {frst::Value::create(3_f), frst::Value::create(4_f)});
         REQUIRE(out->is<frst::Int>());
@@ -1081,7 +1141,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 42_f);
@@ -1094,7 +1155,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(
             value, {frst::Value::create(1_f), frst::Value::create(2_f)});
         REQUIRE(out->is<frst::Array>());
@@ -1108,7 +1170,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {frst::Value::create(1_f),
                                          frst::Value::create(2_f),
                                          frst::Value::create(3_f)});
@@ -1124,8 +1187,9 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(result_space);
 
         frst::Symbol_Table table;
-        auto v1 = require_expression(result_nospace)->evaluate(table);
-        auto v2 = require_expression(result_space)->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto v1 = require_expression(result_nospace)->evaluate(eval_ctx);
+        auto v2 = require_expression(result_space)->evaluate(eval_ctx);
 
         auto arg = frst::Value::create(5_f);
         CHECK(call_function(v1, {arg})->get<frst::Int>().value() == 5_f);
@@ -1139,7 +1203,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {frst::Value::create(5_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 120_f);
@@ -1152,7 +1217,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto closure = std::dynamic_pointer_cast<frst::Closure>(
             value->get<frst::Function>().value());
         REQUIRE(closure);
@@ -1166,7 +1232,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {frst::Value::create(9_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 9_f);
@@ -1184,7 +1251,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
         auto arg = frst::Value::create(3_f);
         auto out = call_function(value, {arg});
         CHECK(out == arg);
@@ -1205,7 +1273,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 1);

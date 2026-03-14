@@ -2014,14 +2014,19 @@ TEST_CASE("Builtin repeat")
     inject_builtins(table);
     auto fn = lookup(table, "repeat");
 
-    SECTION("Injected") { CHECK(table.lookup("repeat")->is<Function>()); }
+    SECTION("Injected")
+    {
+        CHECK(table.lookup("repeat")->is<Function>());
+    }
 
     SECTION("Arity")
     {
-        CHECK_THROWS_MATCHES(fn->call({}), Frost_User_Error,
-                             MessageMatches(ContainsSubstring("insufficient arguments")));
-        CHECK_THROWS_MATCHES(fn->call({Value::create(1)}), Frost_User_Error,
-                             MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            fn->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create(1)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
         CHECK_THROWS_MATCHES(
             fn->call({Value::create(1), Value::create(2), Value::create(3)}),
             Frost_User_Error,
@@ -2030,16 +2035,18 @@ TEST_CASE("Builtin repeat")
 
     SECTION("Type error: second arg must be Int")
     {
-        CHECK_THROWS_MATCHES(
-            fn->call({Value::create(1), Value::create(2.5)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("repeat") && ContainsSubstring("Int")));
+        CHECK_THROWS_MATCHES(fn->call({Value::create(1), Value::create(2.5)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("repeat")
+                                            && ContainsSubstring("Int")));
     }
 
     SECTION("Negative count throws")
     {
-        CHECK_THROWS_MATCHES(
-            fn->call({Value::create(1), Value::create(-1)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("repeat") && ContainsSubstring(">=0")));
+        CHECK_THROWS_MATCHES(fn->call({Value::create(1), Value::create(-1)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("repeat")
+                                            && ContainsSubstring(">=0")));
     }
 
     SECTION("Count 0 returns empty array")
@@ -2086,7 +2093,8 @@ TEST_CASE("Builtin repeat")
         }
         // Array
         {
-            auto inner = Value::create(Array{Value::create(1), Value::create(2)});
+            auto inner =
+                Value::create(Array{Value::create(1), Value::create(2)});
             auto r = fn->call({inner, Value::create(2)});
             REQUIRE(r->raw_get<Array>().size() == 2);
             for (const auto& e : r->raw_get<Array>())
@@ -2101,7 +2109,9 @@ TEST_CASE("Builtin flatten")
     inject_builtins(table);
     auto fn = lookup(table, "flatten");
 
-    auto i = [](Int v) { return Value::create(v); };
+    auto i = [](Int v) {
+        return Value::create(v);
+    };
     auto arr = [](auto&&... elems) {
         return Value::create(Array{elems...});
     };
@@ -2118,12 +2128,16 @@ TEST_CASE("Builtin flatten")
         }
     };
 
-    SECTION("Injected") { CHECK(table.lookup("flatten")->is<Function>()); }
+    SECTION("Injected")
+    {
+        CHECK(table.lookup("flatten")->is<Function>());
+    }
 
     SECTION("Arity")
     {
-        CHECK_THROWS_MATCHES(fn->call({}), Frost_User_Error,
-                             MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            fn->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
         CHECK_THROWS_MATCHES(
             fn->call({Value::create(Array{}), i(1), i(2)}), Frost_User_Error,
             MessageMatches(ContainsSubstring("too many arguments")));
@@ -2131,20 +2145,23 @@ TEST_CASE("Builtin flatten")
 
     SECTION("Type errors")
     {
+        CHECK_THROWS_MATCHES(fn->call({Value::create(42)}), Frost_User_Error,
+                             MessageMatches(ContainsSubstring("flatten")
+                                            && ContainsSubstring("Array")));
         CHECK_THROWS_MATCHES(
-            fn->call({Value::create(42)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("flatten") && ContainsSubstring("Array")));
-        CHECK_THROWS_MATCHES(
-            fn->call({Value::create(Array{}), Value::create(2.5)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("flatten") && ContainsSubstring("Int")
+            fn->call({Value::create(Array{}), Value::create(2.5)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("flatten")
+                           && ContainsSubstring("Int")
                            && ContainsSubstring("(n)")));
     }
 
     SECTION("Negative n throws")
     {
-        CHECK_THROWS_MATCHES(
-            fn->call({Value::create(Array{}), i(-1)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("flatten") && ContainsSubstring(">=0")));
+        CHECK_THROWS_MATCHES(fn->call({Value::create(Array{}), i(-1)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("flatten")
+                                            && ContainsSubstring(">=0")));
     }
 
     SECTION("Empty array returns empty array")

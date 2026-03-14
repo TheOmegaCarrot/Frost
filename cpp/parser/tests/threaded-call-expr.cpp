@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -96,6 +97,7 @@ TEST_CASE("Parser threaded call expressions")
     SECTION("Threaded call inserts the left-hand side as the first argument")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(10_f);
         table.define("a", a_val);
 
@@ -105,7 +107,7 @@ TEST_CASE("Parser threaded call expressions")
         auto result = parse("a @ f(1, 2)");
         REQUIRE(result);
         auto expr = require_expression(result);
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
 
         REQUIRE(callable->received.size() == 3);
@@ -117,6 +119,7 @@ TEST_CASE("Parser threaded call expressions")
     SECTION("Threaded call supports empty argument lists")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(5_f);
         table.define("a", a_val);
 
@@ -126,7 +129,7 @@ TEST_CASE("Parser threaded call expressions")
         auto result = parse("a @ f()");
         REQUIRE(result);
         auto expr = require_expression(result);
-        (void)expr->evaluate(table);
+        (void)expr->evaluate(ctx);
 
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
@@ -135,6 +138,7 @@ TEST_CASE("Parser threaded call expressions")
     SECTION("Threaded call works with dot and index callees")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(7_f);
         table.define("a", a_val);
 
@@ -152,12 +156,12 @@ TEST_CASE("Parser threaded call expressions")
         auto result1 = parse("a @ obj.m()");
         REQUIRE(result1);
         auto expr1 = require_expression(result1);
-        (void)expr1->evaluate(table);
+        (void)expr1->evaluate(ctx);
 
         auto result2 = parse("a @ arr[0]()");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        (void)expr2->evaluate(table);
+        (void)expr2->evaluate(ctx);
 
         REQUIRE(callable_dot->received.size() == 1);
         CHECK(callable_dot->received[0] == a_val);
@@ -168,20 +172,21 @@ TEST_CASE("Parser threaded call expressions")
     SECTION("Threaded call binds more tightly than unary and binary operators")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<IdentityCallable>();
         table.define("id", frst::Value::create(frst::Function{callable}));
 
         auto result1 = parse("1 + 2 @ id()");
         REQUIRE(result1);
         auto expr1 = require_expression(result1);
-        auto out1 = expr1->evaluate(table);
+        auto out1 = expr1->evaluate(ctx);
         REQUIRE(out1->is<frst::Int>());
         CHECK(out1->get<frst::Int>().value() == 3_f);
 
         auto result2 = parse("not false @ id()");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == true);
     }
@@ -189,6 +194,7 @@ TEST_CASE("Parser threaded call expressions")
     SECTION("Threaded call accepts complex left-hand sides")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         frst::Map obj;
         frst::Array arr;
         arr.push_back(frst::Value::create(4_f));
@@ -203,14 +209,14 @@ TEST_CASE("Parser threaded call expressions")
         auto result1 = parse("obj.arr[0] @ f()");
         REQUIRE(result1);
         auto expr1 = require_expression(result1);
-        auto out1 = expr1->evaluate(table);
+        auto out1 = expr1->evaluate(ctx);
         REQUIRE(out1->is<frst::Int>());
         CHECK(out1->get<frst::Int>().value() == 4_f);
 
         auto result2 = parse("(1 + b) @ f()");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 7_f);
     }
@@ -218,6 +224,7 @@ TEST_CASE("Parser threaded call expressions")
     SECTION("Threaded call is left-associative")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(1_f);
         table.define("a", a_val);
 
@@ -231,7 +238,7 @@ TEST_CASE("Parser threaded call expressions")
         auto result = parse("a @ f() @ g()");
         REQUIRE(result);
         auto expr = require_expression(result);
-        (void)expr->evaluate(table);
+        (void)expr->evaluate(ctx);
 
         REQUIRE(callable_f->received.size() == 1);
         CHECK(callable_f->received[0] == a_val);
@@ -244,6 +251,7 @@ TEST_CASE("Parser threaded call expressions")
             "expressions")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(5_f);
         table.define("a", a_val);
 
@@ -253,14 +261,14 @@ TEST_CASE("Parser threaded call expressions")
         auto result1 = parse("-a @ id()");
         REQUIRE(result1);
         auto expr1 = require_expression(result1);
-        auto out1 = expr1->evaluate(table);
+        auto out1 = expr1->evaluate(ctx);
         REQUIRE(out1->is<frst::Int>());
         CHECK(out1->get<frst::Int>().value() == -5_f);
 
         auto result2 = parse("not a @ id()");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == false);
     }
@@ -268,6 +276,7 @@ TEST_CASE("Parser threaded call expressions")
     SECTION("Threaded call allows whitespace around '@' but not newlines")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(3_f);
         table.define("a", a_val);
 
@@ -277,7 +286,7 @@ TEST_CASE("Parser threaded call expressions")
         auto result = parse("a  @  f( )");
         REQUIRE(result);
         auto expr = require_expression(result);
-        (void)expr->evaluate(table);
+        (void)expr->evaluate(ctx);
 
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
@@ -289,6 +298,7 @@ TEST_CASE("Parser threaded call expressions")
         "Threaded call supports whitespace inside callee chains (no newlines)")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(8_f);
         table.define("a", a_val);
 
@@ -301,7 +311,7 @@ TEST_CASE("Parser threaded call expressions")
         auto result = parse("a @ obj . m ( )");
         REQUIRE(result);
         auto expr = require_expression(result);
-        (void)expr->evaluate(table);
+        (void)expr->evaluate(ctx);
 
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
@@ -328,6 +338,7 @@ TEST_CASE("Parser threaded call expressions")
     SECTION("Threaded call stops at the call and allows postfix on the result")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(9_f);
         table.define("a", a_val);
 
@@ -337,13 +348,14 @@ TEST_CASE("Parser threaded call expressions")
         auto result = parse("a @ f(1)[0]");
         REQUIRE(result);
         auto expr = require_expression(result);
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         CHECK(out == a_val);
     }
 
     SECTION("Threaded call binds tighter than a subsequent call")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(1_f);
         auto b_val = frst::Value::create(2_f);
         table.define("a", a_val);
@@ -357,7 +369,7 @@ TEST_CASE("Parser threaded call expressions")
         auto result = parse("a @ f()(b)");
         REQUIRE(result);
         auto expr = require_expression(result);
-        (void)expr->evaluate(table);
+        (void)expr->evaluate(ctx);
 
         REQUIRE(f_callable->received.size() == 1);
         CHECK(f_callable->received[0] == a_val);
@@ -368,6 +380,7 @@ TEST_CASE("Parser threaded call expressions")
     SECTION("Threaded call with dot call followed by indexing")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto a_val = frst::Value::create(2_f);
         table.define("a", a_val);
 
@@ -380,7 +393,7 @@ TEST_CASE("Parser threaded call expressions")
         auto result = parse("a @ obj.m()[0]");
         REQUIRE(result);
         auto expr = require_expression(result);
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         CHECK(out == a_val);
     }
 

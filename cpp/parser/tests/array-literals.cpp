@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -41,7 +42,8 @@ frst::Value_Ptr evaluate_expression(const frst::ast::Statement::Ptr& statement,
 {
     auto* expr = dynamic_cast<const frst::ast::Expression*>(statement.get());
     REQUIRE(expr);
-    return expr->evaluate(table);
+    frst::Evaluation_Context ctx{.symbols = table};
+    return expr->evaluate(ctx);
 }
 
 struct IdentityCallable final : frst::Callable
@@ -78,7 +80,8 @@ TEST_CASE("Parser Array Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         CHECK(out->raw_get<frst::Array>().empty());
     }
@@ -90,7 +93,8 @@ TEST_CASE("Parser Array Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 3);
@@ -106,7 +110,8 @@ TEST_CASE("Parser Array Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);
@@ -126,7 +131,8 @@ TEST_CASE("Parser Array Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 3);
@@ -142,7 +148,8 @@ TEST_CASE("Parser Array Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);
@@ -159,7 +166,8 @@ TEST_CASE("Parser Array Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 3);
@@ -178,7 +186,8 @@ TEST_CASE("Parser Array Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 1);
@@ -188,7 +197,7 @@ TEST_CASE("Parser Array Literals")
         auto result2 = parse("[1 + # comment\n 2]");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Array>());
         const auto& arr2 = out2->raw_get<frst::Array>();
         REQUIRE(arr2.size() == 1);
@@ -199,6 +208,7 @@ TEST_CASE("Parser Array Literals")
     SECTION("Array literals can be passed as function arguments")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         auto callable = std::make_shared<IdentityCallable>();
         table.define("id", frst::Value::create(frst::Function{callable}));
 
@@ -206,7 +216,7 @@ TEST_CASE("Parser Array Literals")
         REQUIRE(result);
         auto expr = require_expression(result);
 
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);
@@ -227,7 +237,8 @@ TEST_CASE("Parser Array Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == -1_f);
     }
@@ -239,14 +250,15 @@ TEST_CASE("Parser Array Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 2_f);
 
         auto result2 = parse("not [1]");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == false);
     }
@@ -275,7 +287,8 @@ TEST_CASE("Parser Array Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);

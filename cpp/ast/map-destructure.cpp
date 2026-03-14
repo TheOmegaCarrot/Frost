@@ -27,14 +27,14 @@ Map_Destructure::Map_Destructure(std::vector<Element> destructure_elems,
     }
 }
 
-std::optional<Map> Map_Destructure::do_execute(Symbol_Table& table) const
+std::optional<Map> Map_Destructure::do_execute(Execution_Context& ctx) const
 {
-    Value_Ptr expr_result = expr_->evaluate(table);
+    Value_Ptr expr_result = expr_->evaluate(ctx.as_eval());
 
     Map exports;
 
     auto define = [&](const std::string& name, const Value_Ptr& value) {
-        table.define(name, value);
+        ctx.symbols.define(name, value);
         if (export_defs_)
             exports.emplace(Value::create(auto{name}), value);
     };
@@ -49,7 +49,7 @@ std::optional<Map> Map_Destructure::do_execute(Symbol_Table& table) const
 
     for (const auto& [key_expr, name] : destructure_elems_)
     {
-        auto key = key_expr->evaluate(table);
+        auto key = key_expr->evaluate(ctx.as_eval());
         if (not key->is_primitive() || key->is<Null>())
         {
             throw Frost_Recoverable_Error(

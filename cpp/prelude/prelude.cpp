@@ -15,8 +15,9 @@ void inject_prelude(Symbol_Table& table)
     if (!ast)
         throw Frost_Interpreter_Error{ast.error()};
 
+    Execution_Context ctx{.symbols = table};
     for (const auto& statement : ast.value())
-        statement->execute(table);
+        statement->execute(ctx);
 }
 
 } // namespace frst

@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -47,14 +48,15 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("if false: 1 else: 2");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto value2 = expr2->evaluate(table);
+        auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 2_f);
     }
@@ -66,7 +68,8 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Null>());
     }
 
@@ -77,7 +80,8 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 1_f);
     }
@@ -89,7 +93,8 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 2_f);
     }
@@ -101,7 +106,8 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Null>());
     }
 
@@ -112,7 +118,8 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 2_f);
     }
@@ -124,7 +131,8 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 3_f);
     }
@@ -136,14 +144,15 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 3_f);
 
         auto result2 = parse("if false: 1 else: 2 + 3");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto value2 = expr2->evaluate(table);
+        auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 5_f);
     }
@@ -155,14 +164,15 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 14_f);
 
         auto result2 = parse("1 + if true: 2 else: 3 * 4");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto value2 = expr2->evaluate(table);
+        auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 3_f);
     }
@@ -170,6 +180,7 @@ TEST_CASE("Parser If Expressions")
     SECTION("If branches can contain postfix expressions")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
 
         auto arr_val = frst::Value::create(frst::Array{
             frst::Value::create(10_f),
@@ -185,7 +196,7 @@ TEST_CASE("Parser If Expressions")
         auto result = parse("if true: arr[0] else: obj.key");
         REQUIRE(result);
         auto expr = require_expression(result);
-        auto value = expr->evaluate(table);
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 10_f);
     }
@@ -193,6 +204,7 @@ TEST_CASE("Parser If Expressions")
     SECTION("If expression can be parenthesized and then called")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
 
         struct ConstantCallable final : frst::Callable
         {
@@ -220,7 +232,7 @@ TEST_CASE("Parser If Expressions")
         auto result = parse("(if true: a else: b)(1)");
         REQUIRE(result);
         auto expr = require_expression(result);
-        auto value = expr->evaluate(table);
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 10_f);
     }
@@ -232,14 +244,15 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("if null: 1 else: 2");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto value2 = expr2->evaluate(table);
+        auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 2_f);
     }
@@ -251,42 +264,43 @@ TEST_CASE("Parser If Expressions")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto value = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("if true: # c\n1 else: 2");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto value2 = expr2->evaluate(table);
+        auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 1_f);
 
         auto result3 = parse("if true:\n1");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
-        auto value3 = expr3->evaluate(table);
+        auto value3 = expr3->evaluate(ctx);
         REQUIRE(value3->is<frst::Int>());
         CHECK(value3->get<frst::Int>().value() == 1_f);
 
         auto result4 = parse("if false:\n1\nelse:\n2");
         REQUIRE(result4);
         auto expr4 = require_expression(result4);
-        auto value4 = expr4->evaluate(table);
+        auto value4 = expr4->evaluate(ctx);
         REQUIRE(value4->is<frst::Int>());
         CHECK(value4->get<frst::Int>().value() == 2_f);
 
         auto result5 = parse("if true:\n1\nelif true:\n2 else: 3");
         REQUIRE(result5);
         auto expr5 = require_expression(result5);
-        auto value5 = expr5->evaluate(table);
+        auto value5 = expr5->evaluate(ctx);
         REQUIRE(value5->is<frst::Int>());
         CHECK(value5->get<frst::Int>().value() == 1_f);
 
         auto result6 = parse("if true: 1 else:\n2");
         REQUIRE(result6);
         auto expr6 = require_expression(result6);
-        auto value6 = expr6->evaluate(table);
+        auto value6 = expr6->evaluate(ctx);
         REQUIRE(value6->is<frst::Int>());
         CHECK(value6->get<frst::Int>().value() == 1_f);
     }
@@ -294,6 +308,7 @@ TEST_CASE("Parser If Expressions")
     SECTION("Keyword prefixes in branches are treated as identifiers")
     {
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
 
         auto elifx = frst::Value::create(7_f);
         auto elsey = frst::Value::create(9_f);
@@ -303,7 +318,7 @@ TEST_CASE("Parser If Expressions")
         auto result = parse("if true: elifx else: elsey");
         REQUIRE(result);
         auto expr = require_expression(result);
-        auto value = expr->evaluate(table);
+        auto value = expr->evaluate(ctx);
         CHECK(value == elifx);
     }
 

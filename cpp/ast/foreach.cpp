@@ -8,16 +8,16 @@ ast::Foreach::Foreach(Expression::Ptr structure, Expression::Ptr operation)
 {
 }
 
-Value_Ptr ast::Foreach::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Foreach::do_evaluate(Evaluation_Context ctx) const
 {
-    const auto& structure_val = structure_->evaluate(syms);
+    const auto& structure_val = structure_->evaluate(ctx);
     if (not structure_val->is_structured())
     {
         throw Frost_Recoverable_Error{fmt::format(
             "Cannot iterate value with type {}", structure_val->type_name())};
     }
 
-    const auto& op_val = operation_->evaluate(syms);
+    const auto& op_val = operation_->evaluate(ctx);
     if (not op_val->is<Function>())
     {
         throw Frost_Recoverable_Error{

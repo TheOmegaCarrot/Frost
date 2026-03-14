@@ -9,16 +9,16 @@ ast::Binop::Binop(Expression::Ptr lhs, Binary_Op op, Expression::Ptr rhs)
 {
 }
 
-Value_Ptr ast::Binop::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Binop::do_evaluate(Evaluation_Context ctx) const
 {
     using enum Binary_Op;
 
-    auto lhs_val = lhs_->evaluate(syms);
+    auto lhs_val = lhs_->evaluate(ctx);
 
     if (op_ == AND)
     {
         if (lhs_val->truthy())
-            return rhs_->evaluate(syms);
+            return rhs_->evaluate(ctx);
         else
             return lhs_val;
     }
@@ -28,10 +28,10 @@ Value_Ptr ast::Binop::do_evaluate(const Symbol_Table& syms) const
         if (lhs_val->truthy())
             return lhs_val;
         else
-            return rhs_->evaluate(syms);
+            return rhs_->evaluate(ctx);
     }
 
-    auto rhs_val = rhs_->evaluate(syms);
+    auto rhs_val = rhs_->evaluate(ctx);
 
 #define X_BINOP_MAP                                                            \
     X(PLUS, Value::add)                                                        \

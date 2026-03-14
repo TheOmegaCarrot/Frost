@@ -822,8 +822,8 @@ TEST_CASE("Builtin join")
 
     SECTION("Basic behavior")
     {
-        auto arr = Value::create(
-            Array{Value::create("foo"s), Value::create("bar"s)});
+        auto arr =
+            Value::create(Array{Value::create("foo"s), Value::create("bar"s)});
         auto res = join->call({arr, Value::create(" "s)});
         REQUIRE(res->is<String>());
         CHECK(res->raw_get<String>() == "foo bar");
@@ -846,8 +846,8 @@ TEST_CASE("Builtin join")
 
     SECTION("Empty separator concatenates directly")
     {
-        auto arr = Value::create(
-            Array{Value::create("a"s), Value::create("b"s), Value::create("c"s)});
+        auto arr = Value::create(Array{Value::create("a"s), Value::create("b"s),
+                                       Value::create("c"s)});
         auto res = join->call({arr, Value::create(""s)});
         REQUIRE(res->is<String>());
         CHECK(res->raw_get<String>() == "abc");
@@ -855,8 +855,8 @@ TEST_CASE("Builtin join")
 
     SECTION("Multi-char separator")
     {
-        auto arr = Value::create(
-            Array{Value::create("a"s), Value::create("b"s), Value::create("c"s)});
+        auto arr = Value::create(Array{Value::create("a"s), Value::create("b"s),
+                                       Value::create("c"s)});
         auto res = join->call({arr, Value::create(", "s)});
         REQUIRE(res->is<String>());
         CHECK(res->raw_get<String>() == "a, b, c");
@@ -864,8 +864,8 @@ TEST_CASE("Builtin join")
 
     SECTION("Empty strings in array are included")
     {
-        auto arr = Value::create(
-            Array{Value::create("a"s), Value::create(""s), Value::create("b"s)});
+        auto arr = Value::create(Array{Value::create("a"s), Value::create(""s),
+                                       Value::create("b"s)});
         auto res = join->call({arr, Value::create("-"s)});
         REQUIRE(res->is<String>());
         CHECK(res->raw_get<String>() == "a--b");
@@ -922,7 +922,8 @@ TEST_CASE("Builtin trim/trim_left/trim_right")
         auto val = Value::create("  hello  "s);
         CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
         CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello  ");
-        CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "  hello");
+        CHECK(get_fn("trim_right")->call({val})->raw_get<String>()
+              == "  hello");
     }
 
     SECTION("Only leading whitespace")
@@ -930,14 +931,16 @@ TEST_CASE("Builtin trim/trim_left/trim_right")
         auto val = Value::create("   hello"s);
         CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
         CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello");
-        CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "   hello");
+        CHECK(get_fn("trim_right")->call({val})->raw_get<String>()
+              == "   hello");
     }
 
     SECTION("Only trailing whitespace")
     {
         auto val = Value::create("hello   "s);
         CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
-        CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello   ");
+        CHECK(get_fn("trim_left")->call({val})->raw_get<String>()
+              == "hello   ");
         CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "hello");
     }
 
@@ -945,8 +948,10 @@ TEST_CASE("Builtin trim/trim_left/trim_right")
     {
         auto val = Value::create("\t hello \t"s);
         CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
-        CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello \t");
-        CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "\t hello");
+        CHECK(get_fn("trim_left")->call({val})->raw_get<String>()
+              == "hello \t");
+        CHECK(get_fn("trim_right")->call({val})->raw_get<String>()
+              == "\t hello");
     }
 
     SECTION("Newlines are treated as whitespace")
@@ -954,13 +959,15 @@ TEST_CASE("Builtin trim/trim_left/trim_right")
         auto val = Value::create("\nhello\n"s);
         CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello");
         CHECK(get_fn("trim_left")->call({val})->raw_get<String>() == "hello\n");
-        CHECK(get_fn("trim_right")->call({val})->raw_get<String>() == "\nhello");
+        CHECK(get_fn("trim_right")->call({val})->raw_get<String>()
+              == "\nhello");
     }
 
     SECTION("Internal whitespace is preserved")
     {
         auto val = Value::create("  hello   world  "s);
-        CHECK(get_fn("trim")->call({val})->raw_get<String>() == "hello   world");
+        CHECK(get_fn("trim")->call({val})->raw_get<String>()
+              == "hello   world");
     }
 
     SECTION("All whitespace returns empty string")
@@ -986,19 +993,20 @@ TEST_CASE("Builtin replace")
     REQUIRE(fn_val->is<Function>());
     auto fn = fn_val->get<Function>().value();
 
-    SECTION("Injected") { CHECK(fn_val->is<Function>()); }
+    SECTION("Injected")
+    {
+        CHECK(fn_val->is<Function>());
+    }
 
     SECTION("Arity")
     {
         CHECK_THROWS_WITH(fn->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(
-            fn->call({Value::create("a"s), Value::create("b"s)}),
-            ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(
-            fn->call({Value::create("a"s), Value::create("b"s),
-                      Value::create("c"s), Value::create("d"s)}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s)}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s),
+                                    Value::create("c"s), Value::create("d"s)}),
+                          ContainsSubstring("too many arguments"));
     }
 
     SECTION("Type errors")
@@ -1006,26 +1014,27 @@ TEST_CASE("Builtin replace")
         auto bad = Value::create(1);
         auto good = Value::create("x"s);
         CHECK_THROWS_WITH(fn->call({bad, good, good}),
-                          ContainsSubstring("replace") && ContainsSubstring("String"));
+                          ContainsSubstring("replace")
+                              && ContainsSubstring("String"));
         CHECK_THROWS_WITH(fn->call({good, bad, good}),
-                          ContainsSubstring("replace") && ContainsSubstring("find"));
+                          ContainsSubstring("replace")
+                              && ContainsSubstring("find"));
         CHECK_THROWS_WITH(fn->call({good, good, bad}),
-                          ContainsSubstring("replace") && ContainsSubstring("replacement"));
+                          ContainsSubstring("replace")
+                              && ContainsSubstring("replacement"));
     }
 
     SECTION("Basic replacement")
     {
         auto r = fn->call({Value::create("hello world"s),
-                           Value::create("world"s),
-                           Value::create("frost"s)});
+                           Value::create("world"s), Value::create("frost"s)});
         REQUIRE(r->is<String>());
         CHECK(r->raw_get<String>() == "hello frost");
     }
 
     SECTION("Replaces all occurrences")
     {
-        auto r = fn->call({Value::create("aXbXcX"s),
-                           Value::create("X"s),
+        auto r = fn->call({Value::create("aXbXcX"s), Value::create("X"s),
                            Value::create("-"s)});
         REQUIRE(r->is<String>());
         CHECK(r->raw_get<String>() == "a-b-c-");
@@ -1033,8 +1042,7 @@ TEST_CASE("Builtin replace")
 
     SECTION("Find not present returns original")
     {
-        auto r = fn->call({Value::create("hello"s),
-                           Value::create("xyz"s),
+        auto r = fn->call({Value::create("hello"s), Value::create("xyz"s),
                            Value::create("!"s)});
         REQUIRE(r->is<String>());
         CHECK(r->raw_get<String>() == "hello");
@@ -1042,17 +1050,15 @@ TEST_CASE("Builtin replace")
 
     SECTION("Empty replacement deletes matches")
     {
-        auto r = fn->call({Value::create("hello"s),
-                           Value::create("l"s),
-                           Value::create(""s)});
+        auto r = fn->call(
+            {Value::create("hello"s), Value::create("l"s), Value::create(""s)});
         REQUIRE(r->is<String>());
         CHECK(r->raw_get<String>() == "heo");
     }
 
     SECTION("Multichar find")
     {
-        auto r = fn->call({Value::create("abcXYZabc"s),
-                           Value::create("XYZ"s),
+        auto r = fn->call({Value::create("abcXYZabc"s), Value::create("XYZ"s),
                            Value::create("---"s)});
         REQUIRE(r->is<String>());
         CHECK(r->raw_get<String>() == "abc---abc");
@@ -1062,8 +1068,7 @@ TEST_CASE("Builtin replace")
     {
         // "aaaa" with find="aa", replacement="b": left-to-right non-overlapping
         // matches at [0,1] and [2,3] -> "bb"
-        auto r = fn->call({Value::create("aaaa"s),
-                           Value::create("aa"s),
+        auto r = fn->call({Value::create("aaaa"s), Value::create("aa"s),
                            Value::create("b"s)});
         REQUIRE(r->is<String>());
         CHECK(r->raw_get<String>() == "bb");
@@ -1089,15 +1094,17 @@ TEST_CASE("Builtin lines")
         return result;
     };
 
-    SECTION("Injected") { CHECK(fn_val->is<Function>()); }
+    SECTION("Injected")
+    {
+        CHECK(fn_val->is<Function>());
+    }
 
     SECTION("Arity and type errors")
     {
         CHECK_THROWS_WITH(fn->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(
-            fn->call({Value::create("a"s), Value::create("b"s)}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s)}),
+                          ContainsSubstring("too many arguments"));
         CHECK_THROWS_WITH(fn->call({Value::create(1)}),
                           ContainsSubstring("String"));
     }

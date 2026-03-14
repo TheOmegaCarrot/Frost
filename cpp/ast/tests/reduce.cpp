@@ -32,6 +32,7 @@ TEST_CASE("Reduce Array")
     // AI-generated test skeleton by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
     auto structure_expr = mock::Mock_Expression::make();
     auto operation_expr = mock::Mock_Expression::make();
     auto init_expr = mock::Mock_Expression::make();
@@ -48,11 +49,11 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty_array);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*reducer, call(_));
@@ -61,7 +62,7 @@ TEST_CASE("Reduce Array")
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res->is<Null>());
             CHECK(calls.empty());
         }
@@ -78,16 +79,16 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty_array);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*reducer, call(_));
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
 
@@ -95,7 +96,7 @@ TEST_CASE("Reduce Array")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == init_val);
             CHECK(calls.empty());
         }
@@ -111,16 +112,16 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty_array);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*reducer, call(_));
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
 
@@ -128,7 +129,7 @@ TEST_CASE("Reduce Array")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == init_val);
             CHECK(res->is<Null>());
             CHECK(calls.empty());
@@ -145,11 +146,11 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*reducer, call(_));
@@ -158,7 +159,7 @@ TEST_CASE("Reduce Array")
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == elem);
             CHECK(calls.empty());
         }
@@ -177,15 +178,15 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
             REQUIRE_CALL(*reducer, call(_))
@@ -196,7 +197,7 @@ TEST_CASE("Reduce Array")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == result_val);
             REQUIRE(calls.size() == 1);
             REQUIRE(calls.at(0).size() == 2);
@@ -221,11 +222,11 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*init_expr, do_evaluate(_));
@@ -243,7 +244,7 @@ TEST_CASE("Reduce Array")
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == r123);
             REQUIRE(calls.size() == 2);
             REQUIRE(calls.at(0).size() == 2);
@@ -273,15 +274,15 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
             REQUIRE_CALL(*reducer, call(_))
@@ -304,7 +305,7 @@ TEST_CASE("Reduce Array")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == r3);
             REQUIRE(calls.size() == 3);
             REQUIRE(calls.at(0).size() == 2);
@@ -332,15 +333,15 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
             REQUIRE_CALL(*reducer, call(_)).RETURN(result_val);
@@ -349,7 +350,7 @@ TEST_CASE("Reduce Array")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == result_val);
         }
 
@@ -366,16 +367,16 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty_array);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*reducer, call(_));
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
 
@@ -383,7 +384,7 @@ TEST_CASE("Reduce Array")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == init_val);
             CHECK(calls.empty());
         }
@@ -397,7 +398,7 @@ TEST_CASE("Reduce Array")
             auto bad_val = Value::create(123_f);
 
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .RETURN(bad_val);
             FORBID_CALL(*operation_expr, do_evaluate(_));
             FORBID_CALL(*init_expr, do_evaluate(_));
@@ -406,7 +407,7 @@ TEST_CASE("Reduce Array")
                              std::move(operation_expr), std::nullopt};
 
             CHECK_THROWS_WITH(
-                node.evaluate(syms),
+                node.evaluate(ctx),
                 ContainsSubstring("Cannot reduce value with type"));
         }
 
@@ -419,11 +420,11 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(bad_op);
             FORBID_CALL(*init_expr, do_evaluate(_));
@@ -431,7 +432,7 @@ TEST_CASE("Reduce Array")
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
+            CHECK_THROWS_WITH(node.evaluate(ctx),
                               "Reduce operation expected Function, got Int");
         }
 
@@ -445,11 +446,11 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*init_expr, do_evaluate(_));
@@ -459,14 +460,14 @@ TEST_CASE("Reduce Array")
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
-            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
+            CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
         }
 
         // Frost: reduce arr_expr with fn (acc, elem) -> { acc + elem }
         SECTION("Structure expression error propagates")
         {
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .THROW(Frost_Recoverable_Error{"structure boom"});
             FORBID_CALL(*operation_expr, do_evaluate(_));
             FORBID_CALL(*init_expr, do_evaluate(_));
@@ -474,7 +475,7 @@ TEST_CASE("Reduce Array")
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
+            CHECK_THROWS_WITH(node.evaluate(ctx),
                               ContainsSubstring("structure boom"));
         }
 
@@ -486,11 +487,11 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .THROW(Frost_Recoverable_Error{"operation boom"});
             FORBID_CALL(*init_expr, do_evaluate(_));
@@ -498,7 +499,7 @@ TEST_CASE("Reduce Array")
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
+            CHECK_THROWS_WITH(node.evaluate(ctx),
                               ContainsSubstring("operation boom"));
         }
 
@@ -513,16 +514,16 @@ TEST_CASE("Reduce Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*reducer, call(_));
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .THROW(Frost_Recoverable_Error{"init boom"});
 
@@ -530,7 +531,7 @@ TEST_CASE("Reduce Array")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
+            CHECK_THROWS_WITH(node.evaluate(ctx),
                               ContainsSubstring("init boom"));
             CHECK(calls.empty());
         }
@@ -542,6 +543,7 @@ TEST_CASE("Reduce Map")
     // AI-generated test skeleton by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
     auto structure_expr = mock::Mock_Expression::make();
     auto operation_expr = mock::Mock_Expression::make();
     auto init_expr = mock::Mock_Expression::make();
@@ -560,16 +562,16 @@ TEST_CASE("Reduce Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty_map);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*reducer, call(_));
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
 
@@ -577,7 +579,7 @@ TEST_CASE("Reduce Map")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == init_val);
             CHECK(calls.empty());
         }
@@ -599,15 +601,15 @@ TEST_CASE("Reduce Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
             REQUIRE_CALL(*reducer, call(_))
@@ -618,7 +620,7 @@ TEST_CASE("Reduce Map")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == r1);
             REQUIRE(calls.size() == 1);
             CHECK(calls.at(0).at(0) == init_val);
@@ -649,15 +651,15 @@ TEST_CASE("Reduce Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
             REQUIRE_CALL(*reducer, call(_))
@@ -675,7 +677,7 @@ TEST_CASE("Reduce Map")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == r2);
             REQUIRE(calls.size() == 2);
 
@@ -722,15 +724,15 @@ TEST_CASE("Reduce Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
             REQUIRE_CALL(*reducer, call(_))
@@ -741,7 +743,7 @@ TEST_CASE("Reduce Map")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == r1);
             REQUIRE(calls.size() == 1);
             CHECK(calls.at(0).at(0) == init_val);
@@ -765,15 +767,15 @@ TEST_CASE("Reduce Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
             REQUIRE_CALL(*reducer, call(_)).RETURN(r1);
@@ -782,7 +784,7 @@ TEST_CASE("Reduce Map")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res == r1);
         }
     }
@@ -797,10 +799,10 @@ TEST_CASE("Reduce Map")
             auto op_val = Value::create(Function{reducer});
 
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .RETURN(empty_map);
             ALLOW_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .RETURN(op_val);
             FORBID_CALL(*init_expr, do_evaluate(_));
             FORBID_CALL(*reducer, call(_));
@@ -808,7 +810,7 @@ TEST_CASE("Reduce Map")
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
+            CHECK_THROWS_WITH(node.evaluate(ctx),
                               ContainsSubstring("Map reduction requires init"));
         }
 
@@ -818,7 +820,7 @@ TEST_CASE("Reduce Map")
             auto bad_val = Value::create(123_f);
 
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .RETURN(bad_val);
             FORBID_CALL(*operation_expr, do_evaluate(_));
             FORBID_CALL(*init_expr, do_evaluate(_));
@@ -827,7 +829,7 @@ TEST_CASE("Reduce Map")
                              std::move(operation_expr), std::nullopt};
 
             CHECK_THROWS_WITH(
-                node.evaluate(syms),
+                node.evaluate(ctx),
                 ContainsSubstring("Cannot reduce value with type"));
         }
 
@@ -843,11 +845,11 @@ TEST_CASE("Reduce Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(bad_op);
             FORBID_CALL(*init_expr, do_evaluate(_));
@@ -856,7 +858,7 @@ TEST_CASE("Reduce Map")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
+            CHECK_THROWS_WITH(node.evaluate(ctx),
                               "Reduce operation expected Function, got Int");
         }
 
@@ -874,15 +876,15 @@ TEST_CASE("Reduce Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
             REQUIRE_CALL(*reducer, call(_))
@@ -892,7 +894,7 @@ TEST_CASE("Reduce Map")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
+            CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
         }
 
         // Frost: reduce m with fn (acc, k, v) -> { acc } init: init_expr
@@ -909,16 +911,16 @@ TEST_CASE("Reduce Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*reducer, call(_));
             REQUIRE_CALL(*init_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .THROW(Frost_Recoverable_Error{"init boom"});
 
@@ -926,7 +928,7 @@ TEST_CASE("Reduce Map")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
+            CHECK_THROWS_WITH(node.evaluate(ctx),
                               ContainsSubstring("init boom"));
             CHECK(calls.empty());
         }
@@ -942,11 +944,11 @@ TEST_CASE("Reduce Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .THROW(Frost_Recoverable_Error{"operation boom"});
             FORBID_CALL(*init_expr, do_evaluate(_));
@@ -955,7 +957,7 @@ TEST_CASE("Reduce Map")
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
+            CHECK_THROWS_WITH(node.evaluate(ctx),
                               ContainsSubstring("operation boom"));
         }
 
@@ -963,7 +965,7 @@ TEST_CASE("Reduce Map")
         SECTION("Structure expression error propagates")
         {
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .THROW(Frost_Recoverable_Error{"structure boom"});
             FORBID_CALL(*operation_expr, do_evaluate(_));
             FORBID_CALL(*init_expr, do_evaluate(_));
@@ -971,7 +973,7 @@ TEST_CASE("Reduce Map")
             ast::Reduce node{std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
-            CHECK_THROWS_WITH(node.evaluate(syms),
+            CHECK_THROWS_WITH(node.evaluate(ctx),
                               ContainsSubstring("structure boom"));
         }
     }

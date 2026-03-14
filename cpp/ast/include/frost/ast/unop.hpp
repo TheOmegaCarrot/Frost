@@ -2,7 +2,6 @@
 #define FROST_AST_UNOP_HPP
 
 #include "expression.hpp"
-#include "frost/symbol-table.hpp"
 
 #include <fmt/format.h>
 
@@ -52,7 +51,7 @@ class Unop final : public Expression
     bool data_safe() const final;
 
   protected:
-    Value_Ptr do_evaluate(const Symbol_Table& syms) const final;
+    Value_Ptr do_evaluate(Evaluation_Context ctx) const final;
 
     std::generator<Child_Info> children() const final;
 

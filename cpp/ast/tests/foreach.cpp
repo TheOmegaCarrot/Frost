@@ -32,6 +32,7 @@ TEST_CASE("Foreach Array")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
     auto structure_expr = mock::Mock_Expression::make();
     auto operation_expr = mock::Mock_Expression::make();
 
@@ -45,11 +46,11 @@ TEST_CASE("Foreach Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*op, call(_));
@@ -57,7 +58,7 @@ TEST_CASE("Foreach Array")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res->is<Null>());
         }
 
@@ -74,11 +75,11 @@ TEST_CASE("Foreach Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*op, call(_))
@@ -89,7 +90,7 @@ TEST_CASE("Foreach Array")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res->is<Null>());
             REQUIRE(calls.size() == 3);
             REQUIRE(calls.at(0).size() == 1);
@@ -114,11 +115,11 @@ TEST_CASE("Foreach Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*op, call(_))
@@ -133,7 +134,7 @@ TEST_CASE("Foreach Array")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
+            CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
             REQUIRE(calls.size() == 2);
             REQUIRE(calls.at(0).size() == 1);
             REQUIRE(calls.at(1).size() == 1);
@@ -154,11 +155,11 @@ TEST_CASE("Foreach Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*op, call(_))
@@ -169,7 +170,7 @@ TEST_CASE("Foreach Array")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res->is<Null>());
             REQUIRE(calls.size() == 1);
             REQUIRE(calls.at(0).size() == 1);
@@ -184,14 +185,14 @@ TEST_CASE("Foreach Array")
             auto bad_val = Value::create(123_f);
 
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .RETURN(bad_val);
             FORBID_CALL(*operation_expr, do_evaluate(_));
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("Int"));
+            CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("Int"));
         }
 
         SECTION("Non-function operation errors and includes type name")
@@ -201,18 +202,18 @@ TEST_CASE("Foreach Array")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("Int"));
+            CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("Int"));
         }
     }
 }
@@ -222,6 +223,7 @@ TEST_CASE("Foreach Map")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     mock::Mock_Symbol_Table syms;
+    Evaluation_Context ctx{.symbols = syms};
     auto structure_expr = mock::Mock_Expression::make();
     auto operation_expr = mock::Mock_Expression::make();
 
@@ -235,11 +237,11 @@ TEST_CASE("Foreach Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             FORBID_CALL(*op, call(_));
@@ -247,7 +249,7 @@ TEST_CASE("Foreach Map")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res->is<Null>());
         }
 
@@ -265,11 +267,11 @@ TEST_CASE("Foreach Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*op, call(_))
@@ -280,7 +282,7 @@ TEST_CASE("Foreach Map")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res->is<Null>());
             REQUIRE(calls.size() == 2);
             for (const auto& call : calls)
@@ -322,11 +324,11 @@ TEST_CASE("Foreach Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*op, call(_))
@@ -341,7 +343,7 @@ TEST_CASE("Foreach Map")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("kaboom"));
+            CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
             REQUIRE(calls.size() == 1);
             REQUIRE(calls.at(0).size() == 2);
         }
@@ -360,11 +362,11 @@ TEST_CASE("Foreach Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
             REQUIRE_CALL(*op, call(_))
@@ -375,7 +377,7 @@ TEST_CASE("Foreach Map")
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            auto res = node.evaluate(syms);
+            auto res = node.evaluate(ctx);
             CHECK(res->is<Null>());
             REQUIRE(calls.size() == 1);
             REQUIRE(calls.at(0).size() == 2);
@@ -405,14 +407,14 @@ TEST_CASE("Foreach Map")
             auto bad_val = Value::create(123_f);
 
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .RETURN(bad_val);
             FORBID_CALL(*operation_expr, do_evaluate(_));
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("Int"));
+            CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("Int"));
         }
 
         SECTION("Non-function operation errors and includes type name")
@@ -422,18 +424,18 @@ TEST_CASE("Foreach Map")
 
             trompeloeil::sequence seq;
             REQUIRE_CALL(*structure_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
             REQUIRE_CALL(*operation_expr, do_evaluate(_))
-                .LR_WITH(&_1 == &syms)
+                .LR_WITH(&_1.symbols == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
 
-            CHECK_THROWS_WITH(node.evaluate(syms), ContainsSubstring("String"));
+            CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("String"));
         }
     }
 }

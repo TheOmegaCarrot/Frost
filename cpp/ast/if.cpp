@@ -10,12 +10,12 @@ ast::If::If(Expression::Ptr condition, Expression::Ptr consequent,
 {
 }
 
-Value_Ptr ast::If::do_evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::If::do_evaluate(Evaluation_Context ctx) const
 {
-    if (condition_->evaluate(syms)->truthy())
-        return consequent_->evaluate(syms);
+    if (condition_->evaluate(ctx)->truthy())
+        return consequent_->evaluate(ctx);
     else if (alternate_.has_value())
-        return (*alternate_)->evaluate(syms);
+        return (*alternate_)->evaluate(ctx);
 
     // If an if-expression has no alternate branch,
     // and the condition is false, then evaluate to null

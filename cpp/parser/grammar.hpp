@@ -1001,10 +1001,12 @@ struct lambda_param_payload_impl
             return lambda_param_pack{{}, std::move(vararg), std::nullopt};
         },
         [](std::vector<std::string> params, lexy::nullopt) {
-            return lambda_param_pack{std::move(params), std::nullopt, std::nullopt};
+            return lambda_param_pack{std::move(params), std::nullopt,
+                                     std::nullopt};
         },
         [](std::vector<std::string> params, std::string vararg) {
-            return lambda_param_pack{std::move(params), std::move(vararg), std::nullopt};
+            return lambda_param_pack{std::move(params), std::move(vararg),
+                                     std::nullopt};
         });
     static constexpr auto name = "lambda parameters";
 };
@@ -1037,29 +1039,31 @@ struct lambda_parameters_elided
 
 // `lambda_param_clause`: the parameter clause before `->`.
 // Three forms (in priority order):
-//   Named:       `fn f(a, b) -> body`   — identifier then `(` (no newline between)
-//   Parenthesized: `fn (a, b) -> body`  — `(` directly (newlines ok before it)
-//   Elided:      `fn a, b -> body`      — no parens
+//   Named:       `fn f(a, b) -> body`   — identifier then `(` (no newline
+//   between) Parenthesized: `fn (a, b) -> body`  — `(` directly (newlines ok
+//   before it) Elided:      `fn a, b -> body`      — no parens
 struct lambda_param_clause
 {
     static constexpr auto rule = [] {
         auto kw_arrow = LEXY_LIT("->");
 
         // Named branch: identifier immediately followed by `(` (no newline).
-        auto named_peek = dsl::peek(
-            param_ws + dsl::ascii::alpha_underscore
-            + dsl::while_(dsl::ascii::word)
-            + param_ws + dsl::lit_c<'('>);
-        auto named_branch = param_ws + dsl::p<identifier_required>
-                            + param_ws + dsl::p<lambda_parameters_paren>;
+        auto named_peek = dsl::peek(param_ws
+                                    + dsl::ascii::alpha_underscore
+                                    + dsl::while_(dsl::ascii::word)
+                                    + param_ws
+                                    + dsl::lit_c<'('>);
+        auto named_branch = param_ws
+                            + dsl::p<identifier_required>
+                            + param_ws
+                            + dsl::p<lambda_parameters_paren>;
 
-        auto params =
-            named_peek
-                >> named_branch
-            | dsl::peek(param_ws_nl + dsl::lit_c<'('>)
-                >> (param_ws_nl + dsl::p<lambda_parameters_paren>)
-            | dsl::else_
-                >> (param_ws_nl + dsl::p<lambda_parameters_elided>);
+        auto params = named_peek
+                      >> named_branch
+                      | dsl::peek(param_ws_nl + dsl::lit_c<'('>)
+                      >> (param_ws_nl + dsl::p<lambda_parameters_paren>)
+                      | dsl::else_
+                      >> (param_ws_nl + dsl::p<lambda_parameters_elided>);
 
         return params + param_ws_nl + kw_arrow;
     }();
@@ -1315,10 +1319,9 @@ struct Lambda
     }();
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](lambda_param_pack params, std::vector<ast::Statement::Ptr> body) {
-            return std::make_unique<ast::Lambda>(std::move(params.params),
-                                                 std::move(body),
-                                                 std::move(params.vararg),
-                                                 std::move(params.self_name));
+            return std::make_unique<ast::Lambda>(
+                std::move(params.params), std::move(body),
+                std::move(params.vararg), std::move(params.self_name));
         });
     static constexpr auto name = "lambda expression";
 };
@@ -1606,8 +1609,8 @@ struct map_destructure_entry
         },
         // Named key with explicit binding.
         [](std::string key, std::string name) {
-            return ast::Map_Destructure::Element{make_string_key_expr(std::move(key)),
-                                                 std::move(name)};
+            return ast::Map_Destructure::Element{
+                make_string_key_expr(std::move(key)), std::move(name)};
         },
         // Shorthand: binding name equals key name.
         [](std::string key, lexy::nullopt) {
@@ -2204,10 +2207,14 @@ struct Defn
 {
     static constexpr auto rule = [] {
         auto kw_defn = LEXY_KEYWORD("defn", identifier::base);
-        return kw_defn >> (param_ws + dsl::p<identifier_required>
-                           + param_ws + dsl::p<lambda_parameters_paren>
-                           + param_ws_nl + LEXY_LIT("->")
-                           + dsl::p<lambda_body>);
+        return kw_defn
+               >> (param_ws
+                   + dsl::p<identifier_required>
+                   + param_ws
+                   + dsl::p<lambda_parameters_paren>
+                   + param_ws_nl
+                   + LEXY_LIT("->")
+                   + dsl::p<lambda_body>);
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
         [](std::string name, lambda_param_pack params,
@@ -2215,8 +2222,8 @@ struct Defn
             auto lambda = std::make_unique<ast::Lambda>(
                 std::move(params.params), std::move(body),
                 std::move(params.vararg), name);
-            return std::make_unique<ast::Define>(
-                std::move(name), std::move(lambda), false);
+            return std::make_unique<ast::Define>(std::move(name),
+                                                 std::move(lambda), false);
         });
     static constexpr auto name = "defn statement";
 };
@@ -2228,10 +2235,15 @@ struct Export_Defn
     static constexpr auto rule = [] {
         auto kw_export = LEXY_KEYWORD("export", identifier::base);
         auto kw_defn = LEXY_KEYWORD("defn", identifier::base);
-        return kw_export + param_ws_no_comment + kw_defn
-               + param_ws + dsl::p<identifier_required>
-               + param_ws + dsl::p<lambda_parameters_paren>
-               + param_ws_nl + LEXY_LIT("->")
+        return kw_export
+               + param_ws_no_comment
+               + kw_defn
+               + param_ws
+               + dsl::p<identifier_required>
+               + param_ws
+               + dsl::p<lambda_parameters_paren>
+               + param_ws_nl
+               + LEXY_LIT("->")
                + dsl::p<lambda_body>;
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
@@ -2240,8 +2252,8 @@ struct Export_Defn
             auto lambda = std::make_unique<ast::Lambda>(
                 std::move(params.params), std::move(body),
                 std::move(params.vararg), name);
-            return std::make_unique<ast::Define>(
-                std::move(name), std::move(lambda), true);
+            return std::make_unique<ast::Define>(std::move(name),
+                                                 std::move(lambda), true);
         });
     static constexpr auto name = "export defn statement";
 };
@@ -2281,7 +2293,7 @@ struct statement_impl
             auto kw_export = LEXY_KEYWORD("export", identifier::base);
             return param_ws
                    + ((dsl::peek(kw_export + param_ws_no_comment + kw_defn)
-                           >> dsl::p<node::Export_Defn>)
+                       >> dsl::p<node::Export_Defn>)
                       | (dsl::peek(kw_export) >> dsl::p<node::Export_Def>)
                       | (dsl::peek(kw_defn) >> dsl::p<node::Defn>)
                       | dsl::p<node::Define>

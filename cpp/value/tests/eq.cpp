@@ -153,7 +153,8 @@ TEST_CASE("Map Equality")
 
     SECTION("Unequal — different content")
     {
-        auto map3 = Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
+        auto map3 =
+            Value::create(frst::Map{{Value::create("k"s), Value::create(1_f)}});
         CHECK_FALSE(Value::equal(map1, map3)->get<frst::Bool>().value());
     }
 }

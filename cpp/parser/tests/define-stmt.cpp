@@ -35,7 +35,8 @@ frst::Value_Ptr evaluate_expression(const frst::ast::Statement::Ptr& statement,
 {
     auto* expr = dynamic_cast<const frst::ast::Expression*>(statement.get());
     REQUIRE(expr);
-    return expr->evaluate(table);
+    frst::Evaluation_Context ctx{.symbols = table};
+    return expr->evaluate(ctx);
 }
 } // namespace
 
@@ -56,7 +57,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
         auto value = table.lookup("x");
         REQUIRE(value->is<frst::Int>());
@@ -71,7 +73,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        auto exports = program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        auto exports = program[0]->execute(ctx);
         REQUIRE(exports.has_value());
         CHECK(exports->size() == 1);
 
@@ -89,7 +92,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        auto exports = program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        auto exports = program[0]->execute(ctx);
         REQUIRE(exports.has_value());
         CHECK(exports->size() == 2);
 
@@ -118,7 +122,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto value = evaluate_expression(program[1], table);
 
         REQUIRE(value->is<frst::Array>());
@@ -141,7 +146,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        auto exports = program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        auto exports = program[0]->execute(ctx);
         REQUIRE(exports.has_value());
         CHECK(exports->size() == 2);
 
@@ -165,7 +171,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto value = evaluate_expression(program[1], table);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 3_f);
@@ -185,14 +192,15 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
 
         auto result2 = parse("export def { } = {foo: 1}");
         REQUIRE(result2);
         auto program2 = require_program(result2);
         REQUIRE(program2.size() == 1);
 
-        auto exports = program2[0]->execute(table);
+        auto exports = program2[0]->execute(ctx);
         REQUIRE(exports.has_value());
         CHECK(exports->empty());
     }
@@ -205,7 +213,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto value = evaluate_expression(program[1], table);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 7_f);
@@ -225,7 +234,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto value = evaluate_expression(program[1], table);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 42_f);
@@ -233,13 +243,15 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Map destructure shorthand and explicit forms may be mixed")
     {
-        auto result = parse("def {foo, bar: baz} = {foo: 1, bar: 2}; [foo, baz]");
+        auto result =
+            parse("def {foo, bar: baz} = {foo: 1, bar: 2}; [foo, baz]");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto value = evaluate_expression(program[1], table);
         REQUIRE(value->is<frst::Array>());
         auto arr = value->get<frst::Array>().value();
@@ -252,13 +264,15 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Map destructure shorthand may be mixed with computed keys")
     {
-        auto result = parse("def {foo, [1+1]: bar} = {foo: 7, [2]: 9}; [foo, bar]");
+        auto result =
+            parse("def {foo, [1+1]: bar} = {foo: 7, [2]: 9}; [foo, bar]");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto value = evaluate_expression(program[1], table);
         REQUIRE(value->is<frst::Array>());
         auto arr = value->get<frst::Array>().value();
@@ -306,7 +320,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto value = table.lookup("x");
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 1_f);
@@ -326,9 +341,10 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
-        program[2]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
+        program[2]->execute(ctx);
         auto value = evaluate_expression(program[3], table);
 
         REQUIRE(value->is<frst::Int>());
@@ -343,7 +359,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto value = evaluate_expression(program[1], table);
 
         REQUIRE(value->is<frst::Int>());
@@ -358,8 +375,9 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
         auto value = evaluate_expression(program[2], table);
 
         REQUIRE(value->is<frst::Int>());
@@ -378,6 +396,7 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 5);
 
         frst::Symbol_Table table;
+        frst::Execution_Context ctx{.symbols = table};
 
         struct ConstantCallable final : frst::Callable
         {
@@ -408,10 +427,10 @@ TEST_CASE("Parser Define Statements")
                     frst::Value::create(7_f));
         table.define("obj", frst::Value::create(std::move(obj)));
 
-        program[0]->execute(table);
-        program[1]->execute(table);
-        program[2]->execute(table);
-        program[3]->execute(table);
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
+        program[2]->execute(ctx);
+        program[3]->execute(ctx);
         auto value = evaluate_expression(program[4], table);
 
         REQUIRE(value->is<frst::Int>());
@@ -426,8 +445,9 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
-        program[1]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
+        program[1]->execute(ctx);
 
         auto x = table.lookup("x");
         auto y = table.lookup("y");
@@ -574,7 +594,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto value = evaluate_expression(program[1], table);
 
         REQUIRE(value->is<frst::Int>());
@@ -589,7 +610,8 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
-        program[0]->execute(table);
+        frst::Execution_Context ctx{.symbols = table};
+        program[0]->execute(ctx);
         auto value = evaluate_expression(program[1], table);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 2_f);

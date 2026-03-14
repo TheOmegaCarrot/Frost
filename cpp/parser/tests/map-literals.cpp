@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/ast.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
@@ -47,7 +48,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         CHECK(out->raw_get<frst::Map>().empty());
     }
@@ -59,7 +61,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         const auto& map = out->raw_get<frst::Map>();
         REQUIRE(map.size() == 2);
@@ -81,7 +84,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         const auto& map = out->raw_get<frst::Map>();
         REQUIRE(map.size() == 2);
@@ -103,7 +107,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         const auto& map = out->raw_get<frst::Map>();
         REQUIRE(map.size() == 3);
@@ -116,7 +121,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         CHECK(out->raw_get<frst::Map>().size() == 2);
     }
@@ -134,7 +140,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         CHECK(out->raw_get<frst::Map>().size() == 2);
     }
@@ -146,7 +153,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         const auto& map = out->raw_get<frst::Map>();
         auto foo_key = frst::Value::create(std::string{"foo"});
@@ -163,7 +171,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
         const auto& arr = out->raw_get<frst::Array>();
         REQUIRE(arr.size() == 2);
@@ -196,7 +205,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
     }
@@ -214,8 +224,9 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
         table.define("foo", frst::Value::create(42_f));
-        auto out = expr->evaluate(table);
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         const auto& map = out->raw_get<frst::Map>();
         auto key = frst::Value::create(42_f);
@@ -229,7 +240,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         const auto& map = out->raw_get<frst::Map>();
         auto key = frst::Value::create(1_f);
@@ -244,7 +256,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         const auto& map = out->raw_get<frst::Map>();
         auto a_key = frst::Value::create(std::string{"a"});
@@ -262,7 +275,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        CHECK_THROWS_WITH(expr->evaluate(table),
+        frst::Evaluation_Context ctx{.symbols = table};
+        CHECK_THROWS_WITH(expr->evaluate(ctx),
                           Catch::Matchers::ContainsSubstring(
                               "Map keys may only be primitive values"));
     }
@@ -274,7 +288,8 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         const auto& map = out->raw_get<frst::Map>();
         auto key = frst::Value::create(std::string{"a"});
@@ -289,14 +304,15 @@ TEST_CASE("Parser Map Literals")
         REQUIRE(result);
         auto expr = require_expression(result);
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("({a: 1}).a");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
-        auto out2 = expr2->evaluate(table);
+        auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 1_f);
 
@@ -324,7 +340,7 @@ TEST_CASE("Parser Map Literals")
         auto result3 = parse("id({a: 1})");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
-        auto out3 = expr3->evaluate(table);
+        auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Map>());
     }
 
@@ -334,7 +350,8 @@ TEST_CASE("Parser Map Literals")
         REQUIRE(result);
         auto expr = require_expression(result);
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         CHECK(out->raw_get<frst::Map>().size() == 1);
     }
@@ -345,7 +362,8 @@ TEST_CASE("Parser Map Literals")
         REQUIRE(result);
         auto expr = require_expression(result);
         frst::Symbol_Table table;
-        auto out = expr->evaluate(table);
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Map>());
         CHECK(out->raw_get<frst::Map>().empty());
     }

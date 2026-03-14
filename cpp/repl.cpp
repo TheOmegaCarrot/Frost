@@ -18,6 +18,7 @@ using replxx::Replxx;
 void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
                frst::Symbol_Table& symbols, Replxx& rx)
 {
+    frst::Execution_Context ctx{.symbols = symbols};
     try
     {
         for (const auto& statement : ast
@@ -25,14 +26,14 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
                                          | std::views::drop(1)
                                          | std::views::reverse)
         {
-            statement->execute(symbols);
+            statement->execute(ctx);
         }
 
         auto* last_statement = ast.back().get();
         if (auto expr_ptr =
                 dynamic_cast<frst::ast::Expression*>(last_statement))
         {
-            auto val = expr_ptr->evaluate(symbols);
+            auto val = expr_ptr->evaluate(ctx.as_eval());
             if (not val->is<frst::Null>())
             {
                 auto out = val->to_internal_string({.pretty = true});
@@ -41,7 +42,7 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
             }
         }
         else
-            last_statement->execute(symbols);
+            last_statement->execute(ctx);
     }
     catch (const frst::Frost_User_Error& e)
     {
