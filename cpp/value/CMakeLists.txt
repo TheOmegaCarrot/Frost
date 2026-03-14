@@ -33,7 +33,7 @@ set(VALUE_TEST_FILES
     division
     modulus
     eq
-    not_equal
+    not-equal
     lt
     lte
     gt

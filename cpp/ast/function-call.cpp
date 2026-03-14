@@ -1,4 +1,4 @@
-#include <frost/ast/function_call.hpp>
+#include <frost/ast/function-call.hpp>
 
 #include <ranges>
 

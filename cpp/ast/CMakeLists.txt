@@ -7,14 +7,14 @@ add_library( frost-ast
     filter.cpp
     foreach.cpp
     format-string.cpp
-    function_call.cpp
+    function-call.cpp
     if.cpp
     index.cpp
     literal.cpp
     map.cpp
     map-constructor.cpp
     map-destructure.cpp
-    name_lookup.cpp
+    name-lookup.cpp
     reduce.cpp
     statement.cpp
     unop.cpp
@@ -46,9 +46,9 @@ set(AST_TEST_FILES
     array-constructor
     map-constructor
     index
-    name_lookup
-    symbol_sequence
-    function_call
+    name-lookup-node
+    symbol-sequence
+    function-call
     reduce
     map
     foreach

@@ -2,7 +2,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <catch2/trompeloeil.hpp>
 
-#include <frost/ast/function_call.hpp>
+#include <frost/ast/function-call.hpp>
 #include <frost/ast/lambda.hpp>
 #include <frost/closure.hpp>
 #include <frost/mock/mock-expression.hpp>
@@ -245,7 +245,8 @@ TEST_CASE("Lambda")
 
     SECTION("Local definition cannot shadow self_name")
     {
-        // fn f() -> { def f = 1 ; null }  -- local "f" conflicts with self_name "f"
+        // fn f() -> { def f = 1 ; null }  -- local "f" conflicts with self_name
+        // "f"
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>("f", node<Literal>(Value::create(1_f))));
         body.push_back(node<Literal>(Value::null()));
@@ -287,7 +288,8 @@ TEST_CASE("Lambda")
         Lambda lambda{{"x"}, std::move(body), {}, "f"};
         auto closure = eval_to_closure(lambda, env);
 
-        // "f" should be in captures, but as a Weak_Closure (self-ref), not as Int 99
+        // "f" should be in captures, but as a Weak_Closure (self-ref), not as
+        // Int 99
         REQUIRE(closure->debug_capture_table().has("f"));
         CHECK(closure->debug_capture_table().lookup("f")->is<Function>());
     }
@@ -300,17 +302,17 @@ TEST_CASE("Lambda")
         std::vector<Expression::Ptr> rec_args;
         rec_args.push_back(node<Binop>(node<Name_Lookup>("n"), Binary_Op::MINUS,
                                        node<Literal>(Value::create(1_f))));
-        auto rec_call = node<Function_Call>(node<Name_Lookup>("fact"),
-                                            std::move(rec_args));
+        auto rec_call =
+            node<Function_Call>(node<Name_Lookup>("fact"), std::move(rec_args));
         auto rec_expr = node<Binop>(node<Name_Lookup>("n"), Binary_Op::MULTIPLY,
                                     std::move(rec_call));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<If>(
-            node<Binop>(node<Name_Lookup>("n"), Binary_Op::LE,
-                        node<Literal>(Value::create(1_f))),
-            node<Literal>(Value::create(1_f)),
-            std::optional<Expression::Ptr>{std::move(rec_expr)}));
+        body.push_back(
+            node<If>(node<Binop>(node<Name_Lookup>("n"), Binary_Op::LE,
+                                 node<Literal>(Value::create(1_f))),
+                     node<Literal>(Value::create(1_f)),
+                     std::optional<Expression::Ptr>{std::move(rec_expr)}));
 
         Lambda lambda{{"n"}, std::move(body), {}, "fact"};
         auto closure = eval_to_closure(lambda, env);
@@ -320,14 +322,15 @@ TEST_CASE("Lambda")
         CHECK(result->raw_get<Int>() == 120_f);
     }
 
-    SECTION("Inner lambda promotes named lambda Weak_Closure to strong reference")
+    SECTION(
+        "Inner lambda promotes named lambda Weak_Closure to strong reference")
     {
         // fn f(n) -> fn() -> if n <= 0: 0 else: f(n - 1)()
         //
-        // When f(1) is called, the inner lambda is created. Inside f's execution
-        // environment "f" resolves to a Weak_Closure (the injected self-ref).
-        // Lambda::evaluate() calls promote_if_weak, storing a strong Closure in
-        // the inner lambda's captures instead.
+        // When f(1) is called, the inner lambda is created. Inside f's
+        // execution environment "f" resolves to a Weak_Closure (the injected
+        // self-ref). Lambda::evaluate() calls promote_if_weak, storing a strong
+        // Closure in the inner lambda's captures instead.
         //
         // After dropping the outer strong reference to f's closure, only the
         // inner lambda's capture keeps it alive. Without the promotion the
@@ -338,11 +341,11 @@ TEST_CASE("Lambda")
         std::vector<Expression::Ptr> rec_args;
         rec_args.push_back(node<Binop>(node<Name_Lookup>("n"), Binary_Op::MINUS,
                                        node<Literal>(Value::create(1_f))));
-        auto f_of_nm1 = node<Function_Call>(node<Name_Lookup>("f"),
-                                            std::move(rec_args));
+        auto f_of_nm1 =
+            node<Function_Call>(node<Name_Lookup>("f"), std::move(rec_args));
         // f(n - 1)()
-        auto f_of_nm1_called = node<Function_Call>(std::move(f_of_nm1),
-                                                   std::vector<Expression::Ptr>{});
+        auto f_of_nm1_called = node<Function_Call>(
+            std::move(f_of_nm1), std::vector<Expression::Ptr>{});
 
         // fn() -> if n <= 0: 0 else: f(n - 1)()
         std::vector<Statement::Ptr> inner_body;
@@ -351,8 +354,8 @@ TEST_CASE("Lambda")
                         node<Literal>(Value::create(0_f))),
             node<Literal>(Value::create(0_f)),
             std::optional<Expression::Ptr>{std::move(f_of_nm1_called)}));
-        auto inner_lambda = node<Lambda>(std::vector<std::string>{},
-                                         std::move(inner_body));
+        auto inner_lambda =
+            node<Lambda>(std::vector<std::string>{}, std::move(inner_body));
 
         // fn f(n) -> fn() -> ...
         std::vector<Statement::Ptr> outer_body;
@@ -386,15 +389,15 @@ TEST_CASE("Lambda")
         std::vector<Expression::Ptr> rec_args;
         rec_args.push_back(node<Binop>(node<Name_Lookup>("n"), Binary_Op::MINUS,
                                        node<Literal>(Value::create(1_f))));
-        auto rec_call = node<Function_Call>(node<Name_Lookup>("f"),
-                                            std::move(rec_args));
+        auto rec_call =
+            node<Function_Call>(node<Name_Lookup>("f"), std::move(rec_args));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<If>(
-            node<Binop>(node<Name_Lookup>("n"), Binary_Op::LE,
-                        node<Literal>(Value::create(0_f))),
-            node<Name_Lookup>("base"),
-            std::optional<Expression::Ptr>{std::move(rec_call)}));
+        body.push_back(
+            node<If>(node<Binop>(node<Name_Lookup>("n"), Binary_Op::LE,
+                                 node<Literal>(Value::create(0_f))),
+                     node<Name_Lookup>("base"),
+                     std::optional<Expression::Ptr>{std::move(rec_call)}));
 
         Lambda lambda{{"n"}, std::move(body), {}, "f"};
         auto closure = eval_to_closure(lambda, env);
@@ -549,10 +552,9 @@ TEST_CASE("Lambda")
         inner_body.push_back(node<Name_Lookup>("f"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Lambda>(std::vector<std::string>{"x"},
-                                          std::move(inner_body),
-                                          std::optional<std::string>{},
-                                          std::optional<std::string>{"f"}));
+        outer_body.push_back(node<Lambda>(
+            std::vector<std::string>{"x"}, std::move(inner_body),
+            std::optional<std::string>{}, std::optional<std::string>{"f"}));
 
         Lambda outer{{}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
@@ -1800,7 +1802,8 @@ TEST_CASE("Lambda")
         CHECK(inner_closure->call({}) == mid_arg);
     }
 
-    SECTION("node_label covers all combinations of params, vararg, and self_name")
+    SECTION(
+        "node_label covers all combinations of params, vararg, and self_name")
     {
         auto null_body = [] {
             std::vector<Statement::Ptr> body;
@@ -1810,7 +1813,8 @@ TEST_CASE("Lambda")
 
         CHECK(Lambda{{}, null_body()}.node_label() == "Lambda()");
         CHECK(Lambda{{"x", "y"}, null_body()}.node_label() == "Lambda(x, y)");
-        CHECK(Lambda{{}, null_body(), "rest"}.node_label() == "Lambda(...rest)");
+        CHECK(Lambda{{}, null_body(), "rest"}.node_label()
+              == "Lambda(...rest)");
         CHECK(Lambda{{"x"}, null_body(), "rest"}.node_label()
               == "Lambda(x, ...rest)");
 

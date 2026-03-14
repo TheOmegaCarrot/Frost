@@ -2,7 +2,7 @@ add_library( frost-functions
     builtin.cpp
     closure.cpp
     lambda.cpp
-    builtins/and_then.cpp
+    builtins/and-then.cpp
     builtins/debug-helpers.cpp
     builtins/error-handling.cpp
     builtins/filesystem.cpp
@@ -12,7 +12,7 @@ add_library( frost-functions
     builtins/mutable-cell.cpp
     builtins/os.cpp
     builtins/output.cpp
-    builtins/pack_call.cpp
+    builtins/pack-call.cpp
     builtins/ranges.cpp
     builtins/regex.cpp
     builtins/streams.cpp
@@ -57,7 +57,7 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
     range
     nulls
     ranges
-    pack_call
+    pack-call
     debug-helpers
     mformat
     hard-to-test

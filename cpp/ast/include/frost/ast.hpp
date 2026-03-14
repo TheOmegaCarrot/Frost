@@ -12,14 +12,14 @@
 #include <frost/ast/filter.hpp>
 #include <frost/ast/foreach.hpp>
 #include <frost/ast/format-string.hpp>
-#include <frost/ast/function_call.hpp>
+#include <frost/ast/function-call.hpp>
 #include <frost/ast/if.hpp>
 #include <frost/ast/index.hpp>
 #include <frost/ast/literal.hpp>
 #include <frost/ast/map-constructor.hpp>
 #include <frost/ast/map-destructure.hpp>
 #include <frost/ast/map.hpp>
-#include <frost/ast/name_lookup.hpp>
+#include <frost/ast/name-lookup.hpp>
 #include <frost/ast/reduce.hpp>
 #include <frost/ast/statement.hpp>
 #include <frost/ast/unop.hpp>

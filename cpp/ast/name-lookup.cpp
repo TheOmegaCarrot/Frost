@@ -1,4 +1,4 @@
-#include <frost/ast/name_lookup.hpp>
+#include <frost/ast/name-lookup.hpp>
 
 using namespace frst;
 
