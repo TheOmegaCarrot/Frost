@@ -2,8 +2,10 @@
 
 using namespace frst;
 
-ast::Binop::Binop(Expression::Ptr lhs, Binary_Op op, Expression::Ptr rhs)
-    : lhs_{std::move(lhs)}
+ast::Binop::Binop(Source_Range source_range, Expression::Ptr lhs, Binary_Op op,
+                  Expression::Ptr rhs)
+    : Expression(source_range)
+    , lhs_{std::move(lhs)}
     , rhs_{std::move(rhs)}
     , op_{op}
 {

@@ -160,6 +160,126 @@ namespace frst::grammar
 namespace dsl = lexy::dsl;
 
 // =============================================================================
+// Source position infrastructure
+// =============================================================================
+//
+// `dsl::position` captures a raw iterator (e.g. `const char8_t*`) at the
+// current reader position.  To convert this to a human-readable {line,column}
+// we need the start of the input buffer.  A thread_local stores this pointer;
+// `reset_parse_state()` must be called before every `lexy::parse` invocation.
+//
+// An anchor cache avoids re-scanning from the beginning on every call.
+// Because parsing proceeds left-to-right the amortised cost is O(n) total.
+
+namespace detail
+{
+inline thread_local const char8_t* g_input_begin = nullptr;
+inline thread_local const char8_t* g_anchor_pos = nullptr;
+inline thread_local std::size_t g_anchor_line = 1;
+inline thread_local std::size_t g_anchor_col = 1;
+} // namespace detail
+
+template <typename Input>
+void reset_parse_state(const Input& input)
+{
+    auto begin = input.data();
+    detail::g_input_begin = reinterpret_cast<const char8_t*>(begin);
+    detail::g_anchor_pos = detail::g_input_begin;
+    detail::g_anchor_line = 1;
+    detail::g_anchor_col = 1;
+}
+
+inline ast::Statement::Source_Location to_source_location(const auto& pos)
+{
+    auto p = reinterpret_cast<const char8_t*>(&*pos);
+
+    const char8_t* scan_from;
+    std::size_t line, col;
+
+    if (detail::g_anchor_pos && detail::g_anchor_pos <= p)
+    {
+        scan_from = detail::g_anchor_pos;
+        line = detail::g_anchor_line;
+        col = detail::g_anchor_col;
+    }
+    else
+    {
+        scan_from = detail::g_input_begin;
+        line = 1;
+        col = 1;
+    }
+
+    for (auto c = scan_from; c < p; ++c)
+    {
+        if (*c == static_cast<char8_t>('\n'))
+        {
+            ++line;
+            col = 1;
+        }
+        else
+        {
+            ++col;
+        }
+    }
+
+    detail::g_anchor_pos = p;
+    detail::g_anchor_line = line;
+    detail::g_anchor_col = col;
+
+    return {.line = line, .column = col};
+}
+
+inline ast::Statement::Source_Range make_source_range(const auto& begin_pos,
+                                                      const auto& end_pos)
+{
+    auto begin_loc = to_source_location(begin_pos);
+    // end is inclusive (position of last char), so step back one byte
+    // from the exclusive end_pos that dsl::position gives after a token.
+    auto end_p = reinterpret_cast<const char8_t*>(&*end_pos);
+    auto begin_p = reinterpret_cast<const char8_t*>(&*begin_pos);
+    if (end_p <= begin_p)
+        return ast::Statement::no_range;
+    // Temporarily retreat to compute inclusive end location
+    auto prev = end_pos;
+    --prev;
+    auto end_loc = to_source_location(prev);
+    // Restore anchor to exclusive end so subsequent calls start from there
+    detail::g_anchor_pos = end_p;
+    // Recompute anchor values (the exclusive end is one past end_loc)
+    detail::g_anchor_line = end_loc.line;
+    detail::g_anchor_col = end_loc.column + 1;
+    return {.begin = begin_loc, .end = end_loc};
+}
+
+// Compute inclusive end location from a one-past-end position.
+inline ast::Statement::Source_Location
+inclusive_end_loc(const auto& one_past_end_pos)
+{
+    auto prev = one_past_end_pos;
+    --prev;
+    return to_source_location(prev);
+}
+
+// Compute the source location of a prefix operator's first character.
+// `after_ws_pos` is the position captured AFTER the operator token and any
+// automatically-consumed whitespace.  We scan backward past whitespace to
+// find the last character of the operator, then step back `op_len - 1` to
+// reach its first character.
+inline ast::Statement::Source_Location
+prefix_op_begin(const auto& after_ws_pos, std::size_t op_len)
+{
+    auto p = reinterpret_cast<const char8_t*>(&*after_ws_pos);
+    --p;
+    while (*p == u8' ' || *p == u8'\t' || *p == u8'\n' || *p == u8'\r')
+        --p;
+    // p now points to the last character of the operator token.
+    p -= (op_len - 1);
+    return to_source_location(p);
+}
+
+
+
+// =============================================================================
 // Whitespace definitions
 // =============================================================================
 //
@@ -673,7 +793,10 @@ struct Literal
            >> dsl::p<float_literal>)
         | (dsl::peek(dsl::digit<>) >> dsl::p<integer_literal>);
     static constexpr auto value =
-        lexy::new_<ast::Literal, ast::Expression::Ptr>;
+        lexy::callback<ast::Expression::Ptr>([](Value_Ptr val) {
+            return std::make_unique<ast::Literal>(
+                ast::Statement::no_range, std::move(val));
+        });
     static constexpr auto name = "literal";
 };
 
@@ -686,7 +809,8 @@ struct Format_String
         dsl::no_whitespace(dsl::lit_c<'$'> >> dsl::p<format_string_literal>);
     static constexpr auto value =
         lexy::callback<ast::Expression::Ptr>([](std::string format) {
-            return std::make_unique<ast::Format_String>(std::move(format));
+            return std::make_unique<ast::Format_String>(
+                ast::Statement::no_range, std::move(format));
         });
     static constexpr auto name = "format string";
 };
@@ -698,7 +822,10 @@ struct Name_Lookup
 {
     static constexpr auto rule = dsl::p<identifier>;
     static constexpr auto value =
-        lexy::new_<ast::Name_Lookup, ast::Expression::Ptr>;
+        lexy::callback<ast::Expression::Ptr>([](std::string name) {
+            return std::make_unique<ast::Name_Lookup>(
+                ast::Statement::no_range, std::move(name));
+        });
     static constexpr auto name = "name";
 };
 } // namespace node
@@ -787,7 +914,8 @@ constexpr auto index_postfix_op()
             lit_c<'['> >> (param_ws_nl
                            + (require_expr_start_nl<expected_index_expression>()
                               >> dsl::recurse<expression_nl>)+param_ws_nl
-                           + dsl::lit_c<']'>));
+                           + dsl::lit_c<']'>
+                           + dsl::position));
 }
 
 // Dot: `expr.field`. After `.`, an identifier is required. The identifier
@@ -795,7 +923,8 @@ constexpr auto index_postfix_op()
 template <typename op_dot_t>
 constexpr auto dot_postfix_op()
 {
-    return dsl::op<op_dot_t>(dsl::lit_c<'.'> >> dsl::p<identifier_required>);
+    return dsl::op<op_dot_t>(dsl::lit_c<'.'> >> (dsl::p<identifier_required>
+                                                  + dsl::position));
 }
 
 // =============================================================================
@@ -1239,7 +1368,8 @@ struct With_Operation
            >> dsl::recurse<expression>);
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
-            return std::make_unique<node_t>(std::move(structure),
+            return std::make_unique<node_t>(ast::Statement::no_range,
+                                            std::move(structure),
                                             std::move(operation));
         });
     static constexpr auto name = with_operation_name<node_t>();
@@ -1297,12 +1427,14 @@ struct Reduce
         [](ast::Expression::Ptr structure, ast::Expression::Ptr operation,
            lexy::nullopt) {
             return std::make_unique<ast::Reduce>(
+                ast::Statement::no_range,
                 std::move(structure), std::move(operation),
                 std::optional<ast::Expression::Ptr>{});
         },
         [](ast::Expression::Ptr structure, ast::Expression::Ptr operation,
            ast::Expression::Ptr init) {
             return std::make_unique<ast::Reduce>(
+                ast::Statement::no_range,
                 std::move(structure), std::move(operation),
                 std::optional<ast::Expression::Ptr>{std::move(init)});
         });
@@ -1320,6 +1452,7 @@ struct Lambda
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](lambda_param_pack params, std::vector<ast::Statement::Ptr> body) {
             return std::make_unique<ast::Lambda>(
+                ast::Statement::no_range,
                 std::move(params.params), std::move(body),
                 std::move(params.vararg), std::move(params.self_name));
         });
@@ -1343,10 +1476,12 @@ struct Do_Block_Expr
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](lexy::nullopt) -> ast::Expression::Ptr {
             return std::make_unique<ast::Do_Block>(
+                ast::Statement::no_range,
                 std::vector<ast::Statement::Ptr>{});
         },
         [](std::vector<ast::Statement::Ptr> stmts) -> ast::Expression::Ptr {
-            return std::make_unique<ast::Do_Block>(std::move(stmts));
+            return std::make_unique<ast::Do_Block>(
+                ast::Statement::no_range, std::move(stmts));
         });
     static constexpr auto name = "do block";
 };
@@ -1427,12 +1562,14 @@ struct If
         static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
             [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
                lexy::nullopt) {
-                return std::make_unique<ast::If>(std::move(condition),
+                return std::make_unique<ast::If>(ast::Statement::no_range,
+                                                 std::move(condition),
                                                  std::move(consequent));
             },
             [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
                ast::Expression::Ptr alternate) {
-                return std::make_unique<ast::If>(std::move(condition),
+                return std::make_unique<ast::If>(ast::Statement::no_range,
+                                                 std::move(condition),
                                                  std::move(consequent),
                                                  std::move(alternate));
             },
@@ -1461,12 +1598,14 @@ struct If
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
            lexy::nullopt) {
-            return std::make_unique<ast::If>(std::move(condition),
+            return std::make_unique<ast::If>(ast::Statement::no_range,
+                                             std::move(condition),
                                              std::move(consequent));
         },
         [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
            ast::Expression::Ptr alternate) {
-            return std::make_unique<ast::If>(std::move(condition),
+            return std::make_unique<ast::If>(ast::Statement::no_range,
+                                             std::move(condition),
                                              std::move(consequent),
                                              std::move(alternate));
         });
@@ -1480,7 +1619,8 @@ struct If
 inline ast::Expression::Ptr make_string_key_expr(std::string key)
 {
     auto key_value = Value::create(std::move(key));
-    return std::make_unique<ast::Literal>(std::move(key_value));
+    return std::make_unique<ast::Literal>(ast::Statement::no_range,
+                                            std::move(key_value));
 }
 
 // =============================================================================
@@ -1661,7 +1801,8 @@ struct Array
     static constexpr auto rule = dsl::p<array_elements>;
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](std::vector<ast::Expression::Ptr> elems) {
-            return std::make_unique<ast::Array_Constructor>(std::move(elems));
+            return std::make_unique<ast::Array_Constructor>(
+                ast::Statement::no_range, std::move(elems));
         });
     static constexpr auto name = "array literal";
 };
@@ -1671,7 +1812,8 @@ struct Map
     static constexpr auto rule = dsl::p<map_entries>;
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](std::vector<ast::Map_Constructor::KV_Pair> pairs) {
-            return std::make_unique<ast::Map_Constructor>(std::move(pairs));
+            return std::make_unique<ast::Map_Constructor>(
+                ast::Statement::no_range, std::move(pairs));
         });
     static constexpr auto name = "map literal";
 };
@@ -1706,40 +1848,48 @@ struct Map
 struct primary_expression
 {
     static constexpr auto rule =
-        (dsl::peek(dsl::lit_c<'('>)
-         >> (dsl::lit_c<'('>
-             + param_ws_nl
-             + dsl::recurse<expression_nl>
-             + param_ws_nl
-             + dsl::lit_c<')'>))
-        | dsl::peek(LEXY_KEYWORD("if", identifier::base))
-        >> dsl::p<node::If>
-        | dsl::peek(LEXY_KEYWORD("fn", identifier::base))
-        >> dsl::p<node::Lambda>
-        | dsl::peek(LEXY_KEYWORD("do", identifier::base))
-        >> dsl::p<node::Do_Block_Expr>
-        | dsl::peek(LEXY_KEYWORD("map", identifier::base))
-        >> dsl::p<node::Map_Expr>
-        | dsl::peek(LEXY_KEYWORD("filter", identifier::base))
-        >> dsl::p<node::Filter>
-        | dsl::peek(LEXY_KEYWORD("reduce", identifier::base))
-        >> dsl::p<node::Reduce>
-        | dsl::peek(LEXY_KEYWORD("foreach", identifier::base))
-        >> dsl::p<node::Foreach>
-        | dsl::peek(dsl::lit_c<'['>)
-        >> dsl::p<node::Array>
-        | dsl::peek(dsl::lit_c<'{'>)
-        >> dsl::p<node::Map>
-        | dsl::peek(dsl::lit_c<'$'>)
-        >> dsl::p<node::Format_String>
-        | dsl::p<node::Literal>
-        | dsl::peek(LEXY_KEYWORD("elif", identifier::base))
-        >> dsl::error<unexpected_elif>
-        | dsl::peek(LEXY_KEYWORD("else", identifier::base))
-        >> dsl::error<unexpected_else>
-        | dsl::p<node::Name_Lookup>
-        | dsl::error<expected_expression>;
-    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
+        dsl::position
+        + ((dsl::peek(dsl::lit_c<'('>)
+            >> (dsl::lit_c<'('>
+                + param_ws_nl
+                + dsl::recurse<expression_nl>
+                + param_ws_nl
+                + dsl::lit_c<')'>))
+           | dsl::peek(LEXY_KEYWORD("if", identifier::base))
+           >> dsl::p<node::If>
+           | dsl::peek(LEXY_KEYWORD("fn", identifier::base))
+           >> dsl::p<node::Lambda>
+           | dsl::peek(LEXY_KEYWORD("do", identifier::base))
+           >> dsl::p<node::Do_Block_Expr>
+           | dsl::peek(LEXY_KEYWORD("map", identifier::base))
+           >> dsl::p<node::Map_Expr>
+           | dsl::peek(LEXY_KEYWORD("filter", identifier::base))
+           >> dsl::p<node::Filter>
+           | dsl::peek(LEXY_KEYWORD("reduce", identifier::base))
+           >> dsl::p<node::Reduce>
+           | dsl::peek(LEXY_KEYWORD("foreach", identifier::base))
+           >> dsl::p<node::Foreach>
+           | dsl::peek(dsl::lit_c<'['>)
+           >> dsl::p<node::Array>
+           | dsl::peek(dsl::lit_c<'{'>)
+           >> dsl::p<node::Map>
+           | dsl::peek(dsl::lit_c<'$'>)
+           >> dsl::p<node::Format_String>
+           | dsl::p<node::Literal>
+           | dsl::peek(LEXY_KEYWORD("elif", identifier::base))
+           >> dsl::error<unexpected_elif>
+           | dsl::peek(LEXY_KEYWORD("else", identifier::base))
+           >> dsl::error<unexpected_else>
+           | dsl::p<node::Name_Lookup>
+           | dsl::error<expected_expression>)
+        + dsl::position;
+    static constexpr auto value =
+        lexy::callback<ast::Expression::Ptr>(
+            [](auto begin, ast::Expression::Ptr expr, auto end) {
+                if (expr)
+                    expr->set_source_range(make_source_range(begin, end));
+                return expr;
+            });
     static constexpr auto name = "expression";
 };
 
@@ -1931,12 +2081,21 @@ struct expression_impl : lexy::expression_production
                     return value;
                 },
                 [](ast::Expression::Ptr lhs, op_index,
-                   ast::Expression::Ptr index_expr) {
-                    return std::make_unique<ast::Index>(std::move(lhs),
-                                                        std::move(index_expr));
-                },
-                [](ast::Expression::Ptr lhs, op_dot, std::string key) {
+                   ast::Expression::Ptr index_expr, auto end_pos) {
+                    auto range = ast::Statement::Source_Range{
+                        lhs->source_range().begin,
+                        inclusive_end_loc(end_pos)};
                     return std::make_unique<ast::Index>(
+                        range,
+                        std::move(lhs), std::move(index_expr));
+                },
+                [](ast::Expression::Ptr lhs, op_dot, std::string key,
+                   auto end_pos) {
+                    auto range = ast::Statement::Source_Range{
+                        lhs->source_range().begin,
+                        inclusive_end_loc(end_pos)};
+                    return std::make_unique<ast::Index>(
+                        range,
                         std::move(lhs), make_string_key_expr(std::move(key)));
                 });
         };
@@ -1975,19 +2134,26 @@ struct expression_impl : lexy::expression_production
                                         dsl::peek(param_ws_nl + dsl::lit_c<')'>)
                                         | expression_start_nl)
                                         .error<expected_call_arguments> >> dsl::
-                                        p<call_arguments>))
+                                        p<call_arguments>
+                                    + dsl::position))
             / dot_postfix_op<op_dot>()
             / dsl::op<op_threaded_call>(
-                dsl::lit_c<'@'> >> dsl::p<threaded_call>);
+                dsl::lit_c<'@'> >> (dsl::p<threaded_call>
+                                    + dsl::position));
         using operand = dsl::atom;
     };
 
     // PREFIX operators: unary `-` and `not`.
+    // `>>` creates a branch rule (literal as branch condition, position
+    // capture as the then-clause), which Lexy accepts for operator matching.
+    // The captured position is AFTER the operator token and any whitespace;
+    // `prefix_op_begin` scans backward to find the true operator start.
     struct prefix : dsl::prefix_op
     {
         static constexpr auto op =
-            dsl::op<op_neg>(dsl::lit_c<'-'>)
-            / dsl::op<op_not>(LEXY_KEYWORD("not", identifier::base));
+            dsl::op<op_neg>(dsl::lit_c<'-'> >> dsl::position)
+            / dsl::op<op_not>(LEXY_KEYWORD("not", identifier::base)
+                              >> dsl::position);
         using operand = postfix;
     };
 
@@ -2062,49 +2228,71 @@ struct expression_impl : lexy::expression_production
     //     (inserts lhs as first argument)
     //   - (lhs, op_t, rhs) with op_t::op ~ Binary_Op: binary operation
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        // Atom pass-through (no operator).
         [](ast::Expression::Ptr value) {
             return value;
         },
-        []<typename op_t>(op_t, ast::Expression::Ptr rhs)
+        // Prefix: unary operator.  `after_op` is the position captured after
+        // the operator token and whitespace; prefix_op_begin scans backward
+        // to find the true start of the operator.
+        []<typename op_t>(op_t, auto after_op, ast::Expression::Ptr rhs)
             requires requires {
                 { op_t::op } -> std::convertible_to<ast::Unary_Op>;
             }
-                     {
-                         return std::make_unique<ast::Unop>(std::move(rhs),
-                                                            op_t::op);
-                     },
-                     [](ast::Expression::Ptr lhs, op_index,
-                        ast::Expression::Ptr index_expr) {
-                         return std::make_unique<ast::Index>(
-                             std::move(lhs), std::move(index_expr));
-                     },
-                     [](ast::Expression::Ptr lhs, op_call,
-                        std::vector<ast::Expression::Ptr> args) {
-                         return std::make_unique<ast::Function_Call>(
-                             std::move(lhs), std::move(args));
-                     },
-                     [](ast::Expression::Ptr lhs, op_dot, std::string key) {
-                         return std::make_unique<ast::Index>(
-                             std::move(lhs),
-                             make_string_key_expr(std::move(key)));
-                     },
-                     [](ast::Expression::Ptr lhs, op_threaded_call,
-                        threaded_call::result rhs) {
-                         auto args = std::move(rhs.args);
-                         args.insert(args.begin(), std::move(lhs));
-                         return std::make_unique<ast::Function_Call>(
-                             std::move(rhs.callee), std::move(args));
-                     },
-                     []<typename op_t>(ast::Expression::Ptr lhs, op_t,
-                                       ast::Expression::Ptr rhs)
-                         requires requires {
-                             {
-                                 op_t::op
-                             } -> std::convertible_to<ast::Binary_Op>;
-                         }
         {
-            return std::make_unique<ast::Binop>(std::move(lhs), op_t::op,
-                                                std::move(rhs));
+            constexpr std::size_t op_len =
+                (op_t::op == ast::Unary_Op::NEGATE) ? 1 : 3;
+            auto begin = prefix_op_begin(after_op, op_len);
+            auto range = ast::Statement::Source_Range{
+                begin, rhs->source_range().end};
+            return std::make_unique<ast::Unop>(
+                range, std::move(rhs), op_t::op);
+        },
+        // Postfix: index `lhs[expr]`.
+        [](ast::Expression::Ptr lhs, op_index,
+           ast::Expression::Ptr index_expr, auto end_pos) {
+            auto range = ast::Statement::Source_Range{
+                lhs->source_range().begin, inclusive_end_loc(end_pos)};
+            return std::make_unique<ast::Index>(
+                range, std::move(lhs), std::move(index_expr));
+        },
+        // Postfix: function call `lhs(args...)`.
+        [](ast::Expression::Ptr lhs, op_call,
+           std::vector<ast::Expression::Ptr> args, auto end_pos) {
+            auto range = ast::Statement::Source_Range{
+                lhs->source_range().begin, inclusive_end_loc(end_pos)};
+            return std::make_unique<ast::Function_Call>(
+                range, std::move(lhs), std::move(args));
+        },
+        // Postfix: dot access `lhs.field`.
+        [](ast::Expression::Ptr lhs, op_dot, std::string key,
+           auto end_pos) {
+            auto range = ast::Statement::Source_Range{
+                lhs->source_range().begin, inclusive_end_loc(end_pos)};
+            return std::make_unique<ast::Index>(
+                range, std::move(lhs), make_string_key_expr(std::move(key)));
+        },
+        // Postfix: threaded call `lhs @ callee(args...)`.
+        [](ast::Expression::Ptr lhs, op_threaded_call,
+           threaded_call::result rhs, auto end_pos) {
+            auto range = ast::Statement::Source_Range{
+                lhs->source_range().begin, inclusive_end_loc(end_pos)};
+            auto args = std::move(rhs.args);
+            args.insert(args.begin(), std::move(lhs));
+            return std::make_unique<ast::Function_Call>(
+                range, std::move(rhs.callee), std::move(args));
+        },
+        // Infix: binary operator.  Range spans from lhs begin to rhs end.
+        []<typename op_t>(ast::Expression::Ptr lhs, op_t,
+                          ast::Expression::Ptr rhs)
+            requires requires {
+                { op_t::op } -> std::convertible_to<ast::Binary_Op>;
+            }
+        {
+            auto range = ast::Statement::Source_Range{
+                lhs->source_range().begin, rhs->source_range().end};
+            return std::make_unique<ast::Binop>(
+                range, std::move(lhs), op_t::op, std::move(rhs));
         });
 };
 
@@ -2157,17 +2345,20 @@ constexpr auto define_callback()
 {
     return lexy::callback<ast::Statement::Ptr>(
         [](std::string name, ast::Expression::Ptr expr) {
-            return std::make_unique<ast::Define>(std::move(name),
+            return std::make_unique<ast::Define>(ast::Statement::no_range,
+                                                 std::move(name),
                                                  std::move(expr), export_flag);
         },
         [](destructure_pack pack, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Array_Destructure>(
+                ast::Statement::no_range,
                 std::move(pack.names), std::move(pack.rest), std::move(expr),
                 export_flag);
         },
         [](std::vector<ast::Map_Destructure::Element> elems,
            ast::Expression::Ptr expr) {
             return std::make_unique<ast::Map_Destructure>(
+                ast::Statement::no_range,
                 std::move(elems), std::move(expr), export_flag);
         });
 }
@@ -2220,9 +2411,11 @@ struct Defn
         [](std::string name, lambda_param_pack params,
            std::vector<ast::Statement::Ptr> body) {
             auto lambda = std::make_unique<ast::Lambda>(
+                ast::Statement::no_range,
                 std::move(params.params), std::move(body),
                 std::move(params.vararg), name);
-            return std::make_unique<ast::Define>(std::move(name),
+            return std::make_unique<ast::Define>(ast::Statement::no_range,
+                                                 std::move(name),
                                                  std::move(lambda), false);
         });
     static constexpr auto name = "defn statement";
@@ -2250,9 +2443,11 @@ struct Export_Defn
         [](std::string name, lambda_param_pack params,
            std::vector<ast::Statement::Ptr> body) {
             auto lambda = std::make_unique<ast::Lambda>(
+                ast::Statement::no_range,
                 std::move(params.params), std::move(body),
                 std::move(params.vararg), name);
-            return std::make_unique<ast::Define>(std::move(name),
+            return std::make_unique<ast::Define>(ast::Statement::no_range,
+                                                 std::move(name),
                                                  std::move(lambda), true);
         });
     static constexpr auto name = "export defn statement";
@@ -2292,22 +2487,31 @@ struct statement_impl
         {
             auto kw_export = LEXY_KEYWORD("export", identifier::base);
             return param_ws
+                   + dsl::position
                    + ((dsl::peek(kw_export + param_ws_no_comment + kw_defn)
                        >> dsl::p<node::Export_Defn>)
                       | (dsl::peek(kw_export) >> dsl::p<node::Export_Def>)
                       | (dsl::peek(kw_defn) >> dsl::p<node::Defn>)
                       | dsl::p<node::Define>
-                      | dsl::p<expression_statement>);
+                      | dsl::p<expression_statement>)
+                   + dsl::position;
         }
         else
         {
             return param_ws
+                   + dsl::position
                    + ((dsl::peek(kw_defn) >> dsl::p<node::Defn>)
                       | dsl::p<node::Define>
-                      | dsl::p<expression_statement>);
+                      | dsl::p<expression_statement>)
+                   + dsl::position;
         }
     }();
-    static constexpr auto value = lexy::forward<ast::Statement::Ptr>;
+    static constexpr auto value =
+        lexy::callback<ast::Statement::Ptr>(
+            [](auto begin, ast::Statement::Ptr stmt, auto end) {
+                stmt->set_source_range(make_source_range(begin, end));
+                return stmt;
+            });
     static constexpr auto name = "statement";
 };
 

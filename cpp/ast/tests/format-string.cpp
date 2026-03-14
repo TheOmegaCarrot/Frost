@@ -53,7 +53,7 @@ TEST_CASE("Format_String")
     {
         mock::Mock_Symbol_Table syms;
         Evaluation_Context ctx{.symbols = syms};
-        Format_String node{"hello world"};
+        Format_String node{Statement::no_range,"hello world"};
 
         FORBID_CALL(syms, lookup(_));
 
@@ -70,7 +70,7 @@ TEST_CASE("Format_String")
 
         REQUIRE_CALL(syms, lookup("n")).RETURN(value);
 
-        Format_String node{"value: ${n}"};
+        Format_String node{Statement::no_range,"value: ${n}"};
         auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "value: 42");
@@ -88,7 +88,7 @@ TEST_CASE("Format_String")
         REQUIRE_CALL(syms, lookup("a")).IN_SEQUENCE(seq).RETURN(a);
         REQUIRE_CALL(syms, lookup("b")).IN_SEQUENCE(seq).RETURN(b);
 
-        Format_String node{"${a} + ${b}"};
+        Format_String node{Statement::no_range,"${a} + ${b}"};
         auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "1 + 2");
@@ -102,7 +102,7 @@ TEST_CASE("Format_String")
 
         REQUIRE_CALL(syms, lookup("name")).RETURN(value);
 
-        Format_String node{R"(\\${name} \${name})"};
+        Format_String node{Statement::no_range,R"(\\${name} \${name})"};
         auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == R"(\1 ${name})");
@@ -112,7 +112,7 @@ TEST_CASE("Format_String")
     {
         mock::Mock_Symbol_Table syms;
         Evaluation_Context ctx{.symbols = syms};
-        Format_String node{"price $5"};
+        Format_String node{Statement::no_range,"price $5"};
 
         FORBID_CALL(syms, lookup(_));
 
@@ -129,7 +129,7 @@ TEST_CASE("Format_String")
 
         REQUIRE_CALL(syms, lookup("name")).RETURN(value);
 
-        Format_String node{"$${name}"};
+        Format_String node{Statement::no_range,"$${name}"};
         auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "$3");
@@ -147,7 +147,7 @@ TEST_CASE("Format_String")
         REQUIRE_CALL(syms, lookup("a")).IN_SEQUENCE(seq).RETURN(a);
         REQUIRE_CALL(syms, lookup("b")).IN_SEQUENCE(seq).RETURN(b);
 
-        Format_String node{"${a}${b}"};
+        Format_String node{Statement::no_range,"${a}${b}"};
         auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "12");
@@ -164,7 +164,7 @@ TEST_CASE("Format_String")
         REQUIRE_CALL(syms, lookup("x")).IN_SEQUENCE(seq).RETURN(value);
         REQUIRE_CALL(syms, lookup("x")).IN_SEQUENCE(seq).RETURN(value);
 
-        Format_String node{"${x}${x}"};
+        Format_String node{Statement::no_range,"${x}${x}"};
         auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "77");
@@ -174,7 +174,7 @@ TEST_CASE("Format_String")
     {
         mock::Mock_Symbol_Table syms;
         Evaluation_Context ctx{.symbols = syms};
-        Format_String node{R"(\\)"};
+        Format_String node{Statement::no_range,R"(\\)"};
 
         FORBID_CALL(syms, lookup(_));
 
@@ -190,7 +190,7 @@ TEST_CASE("Format_String")
 
         REQUIRE_CALL(syms, lookup("x")).RETURN(Value::null());
 
-        Format_String node{"value: ${x}"};
+        Format_String node{Statement::no_range,"value: ${x}"};
         auto result = node.evaluate(ctx);
         REQUIRE(result->is<frst::String>());
         CHECK(result->get<frst::String>() == "value: null");
@@ -200,7 +200,7 @@ TEST_CASE("Format_String")
     {
         Symbol_Table syms;
         Evaluation_Context ctx{.symbols = syms};
-        Format_String node{"${missing}"};
+        Format_String node{Statement::no_range,"${missing}"};
 
         CHECK_THROWS_MATCHES(node.evaluate(ctx), Frost_Unrecoverable_Error,
                              MessageMatches(ContainsSubstring("missing")));
@@ -208,14 +208,14 @@ TEST_CASE("Format_String")
 
     SECTION("Constructor rejects malformed placeholders")
     {
-        CHECK_THROWS(Format_String("${}"));
-        CHECK_THROWS(Format_String("${1}"));
-        CHECK_THROWS(Format_String("${foo${bar}}"));
+        CHECK_THROWS(Format_String(Statement::no_range, "${}"));
+        CHECK_THROWS(Format_String(Statement::no_range, "${1}"));
+        CHECK_THROWS(Format_String(Statement::no_range, "${foo${bar}}"));
     }
 
     SECTION("symbol_sequence yields placeholder usages in order")
     {
-        Format_String node{R"(a ${x} b \${y} ${z})"};
+        Format_String node{Statement::no_range,R"(a ${x} b \${y} ${z})"};
         auto actions = collect_sequence(node);
         REQUIRE(actions.size() == 2);
         CHECK(actions[0] == "use:x");
@@ -224,7 +224,7 @@ TEST_CASE("Format_String")
 
     SECTION("symbol_sequence includes repeated placeholders in order")
     {
-        Format_String node{"${x}${x}"};
+        Format_String node{Statement::no_range,"${x}${x}"};
         auto actions = collect_sequence(node);
         REQUIRE(actions.size() == 2);
         CHECK(actions[0] == "use:x");

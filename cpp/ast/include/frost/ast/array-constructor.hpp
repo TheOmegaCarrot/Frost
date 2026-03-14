@@ -19,7 +19,8 @@ class Array_Constructor final : public Expression
     Array_Constructor& operator=(Array_Constructor&&) = delete;
     ~Array_Constructor() final = default;
 
-    Array_Constructor(std::vector<Expression::Ptr> elems);
+    Array_Constructor(Source_Range source_range,
+                      std::vector<Expression::Ptr> elems);
 
     std::string node_label() const final;
 

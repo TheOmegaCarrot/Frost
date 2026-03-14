@@ -28,8 +28,9 @@ class Array_Destructure final : public Statement
     Array_Destructure& operator=(Array_Destructure&&) = delete;
     ~Array_Destructure() final = default;
 
-    Array_Destructure(std::vector<Name> names, std::optional<Name> rest_name,
-                      Expression::Ptr expr, bool export_defs = false);
+    Array_Destructure(Source_Range source_range, std::vector<Name> names,
+                      std::optional<Name> rest_name, Expression::Ptr expr,
+                      bool export_defs = false);
 
     std::generator<Symbol_Action> symbol_sequence() const final;
 

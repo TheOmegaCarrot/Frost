@@ -38,6 +38,7 @@ TEST_CASE("Parser Map Literals")
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
         auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 

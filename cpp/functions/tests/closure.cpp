@@ -35,7 +35,8 @@ std::set<std::string> capture_names(const Closure& closure)
 struct Flag_Statement final : Statement
 {
     explicit Flag_Statement(int* count)
-        : count_{count}
+        : Statement(no_range)
+        , count_{count}
     {
     }
 
@@ -64,7 +65,8 @@ struct Flag_Statement final : Statement
 struct Uncaptured_Lookup final : Expression
 {
     explicit Uncaptured_Lookup(std::string name)
-        : name_{std::move(name)}
+        : Expression(no_range)
+        , name_{std::move(name)}
     {
     }
 
@@ -102,7 +104,7 @@ std::shared_ptr<T> expr(Args&&... args)
 
 std::shared_ptr<Expression> null_expr()
 {
-    return expr<Literal>(Value::null());
+    return expr<Literal>(Statement::no_range,Value::null());
 }
 
 std::shared_ptr<Expression> lookup_array_expr(
@@ -111,8 +113,8 @@ std::shared_ptr<Expression> lookup_array_expr(
     std::vector<Expression::Ptr> elems;
     elems.reserve(names.size());
     for (std::string_view name : names)
-        elems.push_back(node<Name_Lookup>(std::string{name}));
-    return expr<Array_Constructor>(std::move(elems));
+        elems.push_back(node<Name_Lookup>(Statement::no_range,std::string{name}));
+    return expr<Array_Constructor>(Statement::no_range,std::move(elems));
 }
 
 std::shared_ptr<std::vector<Statement::Ptr>> make_body(
@@ -127,7 +129,7 @@ std::shared_ptr<Closure> make_literal_closure(Value_Ptr value)
     std::vector<Statement::Ptr> body;
     auto body_ptr = make_body(std::move(body));
     return std::make_shared<Closure>(std::vector<std::string>{}, body_ptr,
-                                     expr<Literal>(value), captures, 0);
+                                     expr<Literal>(Statement::no_range,value), captures, 0);
 }
 
 std::pair<std::string, std::string> split_header_body(const std::string& dump)
@@ -177,7 +179,7 @@ TEST_CASE("Construct Closure")
         captures.define("y", y_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>("missing"));
+        body.push_back(node<Name_Lookup>(Statement::no_range,"missing"));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{"p"}, body_ptr, null_expr(), captures, 0};
@@ -255,7 +257,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, expr<Literal>(out_val), captures, 0};
+        Closure closure{{}, body_ptr, expr<Literal>(Statement::no_range,out_val), captures, 0};
 
         auto result = closure.call({});
         CHECK(result == out_val);
@@ -268,7 +270,7 @@ TEST_CASE("Call Closure")
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{
-            {"p", "q"}, body_ptr, expr<Name_Lookup>("q"), captures, 0};
+            {"p", "q"}, body_ptr, expr<Name_Lookup>(Statement::no_range,"q"), captures, 0};
 
         CHECK_THROWS_WITH(closure.call({Value::create(1_f)}),
                           ContainsSubstring("wrong number of arguments")
@@ -279,9 +281,9 @@ TEST_CASE("Call Closure")
     {
         Symbol_Table captures;
         std::vector<Expression::Ptr> elems;
-        elems.push_back(node<Name_Lookup>("a"));
-        elems.push_back(node<Name_Lookup>("b"));
-        elems.push_back(node<Name_Lookup>("c"));
+        elems.push_back(node<Name_Lookup>(Statement::no_range,"a"));
+        elems.push_back(node<Name_Lookup>(Statement::no_range,"b"));
+        elems.push_back(node<Name_Lookup>(Statement::no_range,"c"));
 
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
@@ -303,7 +305,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"},    body_ptr, expr<Name_Lookup>("rest"),
+        Closure closure{{"p"},    body_ptr, expr<Name_Lookup>(Statement::no_range,"rest"),
                         captures, 0,        "rest"};
 
         auto result = closure.call({Value::create(1_f)});
@@ -321,7 +323,7 @@ TEST_CASE("Call Closure")
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);
 
-        Closure closure{{"p"},    body_ptr, expr<Name_Lookup>("rest"),
+        Closure closure{{"p"},    body_ptr, expr<Name_Lookup>(Statement::no_range,"rest"),
                         captures, 0,        "rest"};
 
         auto result = closure.call({a, b, c});
@@ -336,8 +338,8 @@ TEST_CASE("Call Closure")
     {
         Symbol_Table captures;
         std::vector<Expression::Ptr> elems;
-        elems.push_back(node<Name_Lookup>("p"));
-        elems.push_back(node<Name_Lookup>("rest"));
+        elems.push_back(node<Name_Lookup>(Statement::no_range,"p"));
+        elems.push_back(node<Name_Lookup>(Statement::no_range,"rest"));
 
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
@@ -355,8 +357,8 @@ TEST_CASE("Call Closure")
     {
         Symbol_Table captures;
         std::vector<Expression::Ptr> elems;
-        elems.push_back(node<Name_Lookup>("p"));
-        elems.push_back(node<Name_Lookup>("rest"));
+        elems.push_back(node<Name_Lookup>(Statement::no_range,"p"));
+        elems.push_back(node<Name_Lookup>(Statement::no_range,"rest"));
 
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
@@ -409,7 +411,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"a", "b"}, body_ptr, expr<Name_Lookup>("rest"),
+        Closure closure{{"a", "b"}, body_ptr, expr<Name_Lookup>(Statement::no_range,"rest"),
                         captures,   0,        "rest"};
 
         CHECK_THROWS_WITH(
@@ -424,7 +426,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{},       body_ptr, expr<Name_Lookup>("rest"),
+        Closure closure{{},       body_ptr, expr<Name_Lookup>(Statement::no_range,"rest"),
                         captures, 0,        "rest"};
 
         auto result = closure.call({});
@@ -442,7 +444,7 @@ TEST_CASE("Call Closure")
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);
 
-        Closure closure{{},       body_ptr, expr<Name_Lookup>("rest"),
+        Closure closure{{},       body_ptr, expr<Name_Lookup>(Statement::no_range,"rest"),
                         captures, 0,        "rest"};
 
         auto result = closure.call({a, b, c});
@@ -460,7 +462,7 @@ TEST_CASE("Call Closure")
         captures.define("x", Value::create(10_f));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>("x"));
+        body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{"p"}, body_ptr, null_expr(), captures, 0, "rest"};
@@ -476,7 +478,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"},    body_ptr, expr<Name_Lookup>("p"),
+        Closure closure{{"p"},    body_ptr, expr<Name_Lookup>(Statement::no_range,"p"),
                         captures, 0,        "rest"};
 
         auto a = Value::create(1_f);
@@ -492,7 +494,7 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"},    body_ptr, expr<Literal>(Value::create(42_f)),
+        Closure closure{{"p"},    body_ptr, expr<Literal>(Statement::no_range,Value::create(42_f)),
                         captures, 0,        "rest"};
 
         const auto dump = closure.debug_dump();
@@ -507,11 +509,11 @@ Literal(42)
     {
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>("rest", node<Literal>(Value::create(1_f))));
-        body.push_back(node<Name_Lookup>("rest"));
+        body.push_back(node<Define>(Statement::no_range,"rest", node<Literal>(Statement::no_range,Value::create(1_f))));
+        body.push_back(node<Name_Lookup>(Statement::no_range,"rest"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{},       body_ptr, expr<Name_Lookup>("rest"),
+        Closure closure{{},       body_ptr, expr<Name_Lookup>(Statement::no_range,"rest"),
                         captures, 0,        "rest"};
 
         CHECK_THROWS_WITH(closure.call({}),
@@ -525,7 +527,7 @@ Literal(42)
         auto body_ptr = make_body(std::move(body));
 
         auto p_val = Value::create(99_f);
-        Closure closure{{"p"}, body_ptr, expr<Name_Lookup>("p"), captures, 0};
+        Closure closure{{"p"}, body_ptr, expr<Name_Lookup>(Statement::no_range,"p"), captures, 0};
 
         auto result = closure.call({p_val});
         CHECK(result == p_val);
@@ -539,7 +541,7 @@ Literal(42)
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, expr<Literal>(lit_val), captures, 0};
+        Closure closure{{}, body_ptr, expr<Literal>(Statement::no_range,lit_val), captures, 0};
 
         auto result = closure.call({});
         CHECK(result == lit_val);
@@ -551,7 +553,7 @@ Literal(42)
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, expr<Name_Lookup>("p"), captures, 0};
+        Closure closure{{"p"}, body_ptr, expr<Name_Lookup>(Statement::no_range,"p"), captures, 0};
 
         auto first = Value::create(1_f);
         auto second = Value::create(2_f);
@@ -593,7 +595,7 @@ Literal(42)
         body.push_back(std::move(third));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, expr<Literal>(third_val), captures, 0};
+        Closure closure{{}, body_ptr, expr<Literal>(Statement::no_range,third_val), captures, 0};
 
         auto result = closure.call({});
         CHECK(result == third_val);
@@ -634,10 +636,10 @@ Literal(42)
         Symbol_Table captures;
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>("x", node<Literal>(Value::create(1_f))));
+        body.push_back(node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,Value::create(1_f))));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, expr<Name_Lookup>("x"), captures, 0};
+        Closure closure{{}, body_ptr, expr<Name_Lookup>(Statement::no_range,"x"), captures, 0};
 
         auto first = closure.call({});
         auto second = closure.call({});
@@ -651,10 +653,10 @@ Literal(42)
         Symbol_Table captures;
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>("x", node<Name_Lookup>("p")));
+        body.push_back(node<Define>(Statement::no_range,"x", node<Name_Lookup>(Statement::no_range,"p")));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, expr<Name_Lookup>("x"), captures, 0};
+        Closure closure{{"p"}, body_ptr, expr<Name_Lookup>(Statement::no_range,"x"), captures, 0};
 
         auto first = Value::create(10_f);
         auto second = Value::create(20_f);
@@ -669,14 +671,14 @@ Literal(42)
         captures.define("x", Value::create(2_f));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>("y", node<Name_Lookup>("x")));
-        body.push_back(node<Define>("x", node<Literal>(Value::create(4_f))));
+        body.push_back(node<Define>(Statement::no_range,"y", node<Name_Lookup>(Statement::no_range,"x")));
+        body.push_back(node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,Value::create(4_f))));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{},
                         body_ptr,
-                        expr<Binop>(node<Name_Lookup>("x"), Binary_Op::PLUS,
-                                    node<Name_Lookup>("y")),
+                        expr<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"x"), Binary_Op::PLUS,
+                                    node<Name_Lookup>(Statement::no_range,"y")),
                         captures,
                         0};
 
@@ -693,7 +695,7 @@ Literal(42)
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, expr<Name_Lookup>("x"), captures, 0};
+        Closure closure{{}, body_ptr, expr<Name_Lookup>(Statement::no_range,"x"), captures, 0};
 
         auto result = closure.call({});
         CHECK(result == x_val);
@@ -707,11 +709,11 @@ Literal(42)
         auto local_val = Value::create(2_f);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>("x"));
-        body.push_back(node<Define>("x", node<Literal>(local_val)));
+        body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        body.push_back(node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,local_val)));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{}, body_ptr, expr<Name_Lookup>("x"), captures, 0};
+        Closure closure{{}, body_ptr, expr<Name_Lookup>(Statement::no_range,"x"), captures, 0};
 
         auto result = closure.call({});
         CHECK(result == local_val);
@@ -819,7 +821,7 @@ Literal(42)
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{
-            {"p"}, body_ptr, expr<Literal>(Value::create(1_f)), captures, 0};
+            {"p"}, body_ptr, expr<Literal>(Statement::no_range,Value::create(1_f)), captures, 0};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f), Value::create(2_f)}),
@@ -831,14 +833,14 @@ Literal(42)
     {
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Literal>(Value::null()));
+        body.push_back(node<Literal>(Statement::no_range,Value::null()));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{},
                         body_ptr,
-                        expr<Binop>(node<Literal>(Value::create(1_f)),
+                        expr<Binop>(Statement::no_range,node<Literal>(Statement::no_range,Value::create(1_f)),
                                     Binary_Op::PLUS,
-                                    node<Literal>(Value::create(true))),
+                                    node<Literal>(Statement::no_range,Value::create(true))),
                         captures,
                         0};
 
@@ -875,7 +877,7 @@ TEST_CASE("Debug Dump Closure")
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{
-            {}, body_ptr, expr<Literal>(Value::create(42_f)), captures, 0};
+            {}, body_ptr, expr<Literal>(Statement::no_range,Value::create(42_f)), captures, 0};
 
         const auto dump = closure.debug_dump();
         std::cout << dump;
@@ -911,7 +913,7 @@ Literal(null)
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{},       body_ptr, expr<Literal>(Value::create(42_f)),
+        Closure closure{{},       body_ptr, expr<Literal>(Statement::no_range,Value::create(42_f)),
                         captures, 0,        {},
                         "rec"};
 
@@ -935,7 +937,7 @@ Literal(null)
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{},       body_ptr, expr<Literal>(Value::create(42_f)),
+        Closure closure{{},       body_ptr, expr<Literal>(Statement::no_range,Value::create(42_f)),
                         captures, 0,        {},
                         "rec"};
 
@@ -959,11 +961,11 @@ Literal(42)
         Closure closure{
             {},
             body_ptr,
-            expr<If>(node<Name_Lookup>("x"),
-                     node<Binop>(node<Literal>(Value::create(1_f)),
-                                 Binary_Op::PLUS, node<Name_Lookup>("y")),
+            expr<If>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"x"),
+                     node<Binop>(Statement::no_range,node<Literal>(Statement::no_range,Value::create(1_f)),
+                                 Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range,"y")),
                      std::optional<Expression::Ptr>{
-                         node<Literal>(Value::create(0_f))}),
+                         node<Literal>(Statement::no_range,Value::create(0_f))}),
             captures,
             0};
 

@@ -20,8 +20,10 @@ std::unique_ptr<To> unique_dynamic_cast(std::unique_ptr<From>& from)
 }
 } // namespace
 
-Do_Block::Do_Block(std::vector<ast::Statement::Ptr> body)
-    : body_prefix_{std::move(body)}
+Do_Block::Do_Block(Source_Range source_range,
+                   std::vector<ast::Statement::Ptr> body)
+    : Expression(source_range)
+    , body_prefix_{std::move(body)}
 {
     if (body_prefix_.size() == 0)
         throw Frost_Unrecoverable_Error{"Do block may not have an empty body"};

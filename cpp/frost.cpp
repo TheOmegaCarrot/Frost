@@ -46,6 +46,7 @@ int main(int argc, const char** argv)
     std::vector<std::string> strings_to_evaluate;
     std::optional<std::filesystem::path> file_to_evaluate;
     std::vector<std::string> args_for_frost;
+    bool skip_prelude = false;
     bool do_repl = false;
     bool do_dump = false;
     bool show_help = false;
@@ -81,6 +82,7 @@ int main(int argc, const char** argv)
                | lyra::opt(do_dump)["-d"]["--dump"](
                    "Dump the AST instead of executing.")
                | lyra::opt(do_repl)["-i"]["--interactive"]("Start the REPL.")
+               | lyra::opt(skip_prelude)["--no-prelude"]("Skip prelude")
                | lyra::opt(strings_to_evaluate, "code")["-e"]["--eval"](
                    "Evaluate a snippet of Frost code.")
                | lyra::arg(file_arg, "file")("File to execute.").optional()
@@ -132,7 +134,9 @@ int main(int argc, const char** argv)
     frst::inject_builtins(symbols);
     frst::inject_ext(symbols);
     frst::inject_meta(symbols);
-    frst::inject_prelude(symbols);
+
+    if (not skip_prelude)
+        frst::inject_prelude(symbols);
 
     std::vector<std::filesystem::path> module_search_path;
     if (file_to_evaluate)

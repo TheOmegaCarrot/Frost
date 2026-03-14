@@ -46,6 +46,7 @@ TEST_CASE("Parser Define Statements")
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
         auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
         return lexy::parse<Program_Root>(src, lexy::noop);
     };
 
@@ -681,5 +682,70 @@ TEST_CASE("Parser Define Statements")
 
         REQUIRE(dynamic_cast<frst::ast::Array_Destructure*>(program[0].get()));
         REQUIRE(dynamic_cast<frst::ast::Define*>(program[1].get()));
+    }
+
+    SECTION("Source ranges for define statements")
+    {
+        // "def x = 42" → begin at 'd' {1,1}, end at '2' in 42 {1,10}
+        auto result = parse("def x = 42");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+        auto range = program[0]->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 10);
+    }
+
+    SECTION("Source ranges for export define statements")
+    {
+        // "export def x = 42" → begin at 'e' {1,1}, end at '2' in 42 {1,17}
+        auto result = parse("export def x = 42");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+        auto range = program[0]->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 17);
+    }
+
+    SECTION("Source ranges for expression statements")
+    {
+        // "42" as a statement → begin {1,1}, end {1,2}
+        auto result = parse("42");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+        auto range = program[0]->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 2);
+    }
+
+    SECTION("Source ranges for multiple statements")
+    {
+        // "def x = 1; def y = 2" → two statements
+        // stmt 0: "def x = 1" {1,1} to {1,9}
+        // stmt 1: "def y = 2" {1,12} to {1,20}
+        auto result = parse("def x = 1; def y = 2");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 2);
+
+        auto r0 = program[0]->source_range();
+        CHECK(r0.begin.line == 1);
+        CHECK(r0.begin.column == 1);
+        CHECK(r0.end.line == 1);
+        CHECK(r0.end.column == 9);
+
+        auto r1 = program[1]->source_range();
+        CHECK(r1.begin.line == 1);
+        CHECK(r1.begin.column == 12);
+        CHECK(r1.end.line == 1);
+        CHECK(r1.end.column == 20);
     }
 }

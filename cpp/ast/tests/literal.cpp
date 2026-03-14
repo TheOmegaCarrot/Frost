@@ -18,7 +18,7 @@ TEST_CASE("Literal")
 
     SECTION("Null Literal")
     {
-        auto node = Literal{Value::null()};
+        auto node = Literal{ast::Statement::no_range,Value::null()};
         CHECK(node.evaluate(ctx)->is<Null>());
         node.debug_dump_ast(os);
         CHECK(os.str() == "Literal(null)\n");
@@ -26,7 +26,7 @@ TEST_CASE("Literal")
 
     SECTION("Int Literal")
     {
-        auto node = Literal{Value::create(42_f)};
+        auto node = Literal{ast::Statement::no_range,Value::create(42_f)};
         CHECK(node.evaluate(ctx)->get<Int>() == 42_f);
         node.debug_dump_ast(os);
         CHECK(os.str() == "Literal(42)\n");
@@ -34,7 +34,7 @@ TEST_CASE("Literal")
 
     SECTION("Float Literal")
     {
-        auto node = Literal{Value::create(3.14)};
+        auto node = Literal{ast::Statement::no_range,Value::create(3.14)};
         CHECK(node.evaluate(ctx)->get<Float>() == 3.14);
         node.debug_dump_ast(os);
         auto str = os.str();
@@ -44,7 +44,7 @@ TEST_CASE("Literal")
 
     SECTION("Bool Literal")
     {
-        auto node = Literal{Value::create(true)};
+        auto node = Literal{ast::Statement::no_range,Value::create(true)};
         CHECK(node.evaluate(ctx)->get<Bool>() == true);
         node.debug_dump_ast(os);
         CHECK(os.str() == "Literal(true)\n");
@@ -52,7 +52,7 @@ TEST_CASE("Literal")
 
     SECTION("String Literal")
     {
-        auto node = Literal{Value::create("Hello World!"s)};
+        auto node = Literal{ast::Statement::no_range,Value::create("Hello World!"s)};
         CHECK(node.evaluate(ctx)->get<String>() == "Hello World!");
         node.debug_dump_ast(os);
         CHECK(os.str() == "Literal(\"Hello World!\")\n");

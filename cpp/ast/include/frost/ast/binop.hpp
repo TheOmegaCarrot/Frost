@@ -72,7 +72,8 @@ class Binop final : public Expression
   public:
     using Ptr = std::unique_ptr<Binop>;
 
-    Binop(Expression::Ptr lhs, Binary_Op op, Expression::Ptr rhs);
+    Binop(Source_Range source_range, Expression::Ptr lhs, Binary_Op op,
+          Expression::Ptr rhs);
 
     Binop() = delete;
     Binop(const Binop&) = delete;

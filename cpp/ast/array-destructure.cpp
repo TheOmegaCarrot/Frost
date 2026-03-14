@@ -9,10 +9,12 @@
 using namespace frst;
 using namespace frst::ast;
 
-Array_Destructure::Array_Destructure(std::vector<Name> names,
+Array_Destructure::Array_Destructure(Source_Range source_range,
+                                     std::vector<Name> names,
                                      std::optional<Name> rest_name,
                                      Expression::Ptr expr, bool export_defs)
-    : names_{std::move(names)}
+    : Statement(source_range)
+    , names_{std::move(names)}
     , rest_name_{std::move(rest_name)}
     , expr_{std::move(expr)}
     , export_defs_{export_defs}

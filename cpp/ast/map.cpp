@@ -6,8 +6,10 @@
 
 using namespace frst;
 
-ast::Map::Map(Expression::Ptr structure, Expression::Ptr operation)
-    : structure_{std::move(structure)}
+ast::Map::Map(Source_Range source_range, Expression::Ptr structure,
+              Expression::Ptr operation)
+    : Expression(source_range)
+    , structure_{std::move(structure)}
     , operation_{std::move(operation)}
 {
 }

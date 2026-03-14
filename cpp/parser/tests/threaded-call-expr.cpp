@@ -91,6 +91,7 @@ TEST_CASE("Parser threaded call expressions")
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
         auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 
@@ -402,5 +403,31 @@ TEST_CASE("Parser threaded call expressions")
     {
         auto result = parse("a @ (fn (x) -> { x })(1)");
         REQUIRE(result);
+    }
+
+    SECTION("Source ranges for threaded call")
+    {
+        // "a @ f(1)" → begin at 'a' {1,1}, end at ')' {1,8}
+        auto result = parse("a @ f(1)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 8);
+    }
+
+    SECTION("Source ranges for chained threaded calls")
+    {
+        // "a @ f() @ g()" → begin at 'a' {1,1}, end at ')' {1,14}
+        auto result = parse("a @ f() @ g()");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 13);
     }
 }

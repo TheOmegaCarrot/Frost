@@ -57,12 +57,12 @@ std::vector<std::string> collect_program_sequence(
 
 Expression::Ptr name(std::string_view n)
 {
-    return std::make_unique<Name_Lookup>(std::string{n});
+    return std::make_unique<Name_Lookup>(Statement::no_range, std::string{n});
 }
 
 Expression::Ptr lit_int(Int v)
 {
-    return std::make_unique<Literal>(Value::create(auto{v}));
+    return std::make_unique<Literal>(Statement::no_range, Value::create(auto{v}));
 }
 } // namespace
 
@@ -73,48 +73,48 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("Literal yields no actions")
     {
-        Literal node{Value::create(1_f)};
+        Literal node{Statement::no_range,Value::create(1_f)};
         CHECK(collect_sequence(node).empty());
     }
 
     SECTION("Name lookup yields usage")
     {
-        Name_Lookup node{"x"};
+        Name_Lookup node{Statement::no_range,"x"};
         CHECK(collect_sequence(node) == std::vector<std::string>{"use:x"});
     }
 
     SECTION("Define yields RHS then definition")
     {
-        Define node{"x", name("y")};
+        Define node{Statement::no_range,"x", name("y")};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:y", "def:x"});
     }
 
     SECTION("Define with literal yields only definition")
     {
-        Define node{"x", lit_int(1_f)};
+        Define node{Statement::no_range,"x", lit_int(1_f)};
         CHECK(collect_sequence(node) == std::vector<std::string>{"def:x"});
     }
 
     SECTION("Binary op yields left then right")
     {
-        Binop node{name("a"), Binary_Op::PLUS, name("b")};
+        Binop node{Statement::no_range,name("a"), Binary_Op::PLUS, name("b")};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:a", "use:b"});
     }
 
     SECTION("Binary op nests depth-first")
     {
-        Binop node{
+        Binop node{Statement::no_range,
             name("a"), Binary_Op::PLUS,
-            std::make_unique<Binop>(name("b"), Binary_Op::PLUS, name("c"))};
+            std::make_unique<Binop>(Statement::no_range,name("b"), Binary_Op::PLUS, name("c"))};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:a", "use:b", "use:c"});
     }
 
     SECTION("Unary op yields operand sequence")
     {
-        Unop node{name("x"), Unary_Op::NEGATE};
+        Unop node{Statement::no_range,name("x"), Unary_Op::NEGATE};
         CHECK(collect_sequence(node) == std::vector<std::string>{"use:x"});
     }
 
@@ -123,10 +123,10 @@ TEST_CASE("Symbol Sequence")
         std::vector<Expression::Ptr> elems;
         elems.push_back(name("a"));
         elems.push_back(
-            std::make_unique<Binop>(name("b"), Binary_Op::PLUS, name("c")));
+            std::make_unique<Binop>(Statement::no_range,name("b"), Binary_Op::PLUS, name("c")));
         elems.push_back(lit_int(7_f));
 
-        Array_Constructor node{std::move(elems)};
+        Array_Constructor node{Statement::no_range,std::move(elems)};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:a", "use:b", "use:c"});
     }
@@ -137,9 +137,9 @@ TEST_CASE("Symbol Sequence")
         pairs.emplace_back(name("k1"), name("v1"));
         pairs.emplace_back(
             name("k2"),
-            std::make_unique<Binop>(name("v2"), Binary_Op::PLUS, name("v3")));
+            std::make_unique<Binop>(Statement::no_range,name("v2"), Binary_Op::PLUS, name("v3")));
 
-        Map_Constructor node{std::move(pairs)};
+        Map_Constructor node{Statement::no_range,std::move(pairs)};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:k1", "use:v1", "use:k2",
                                           "use:v2", "use:v3"});
@@ -147,7 +147,7 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("Index yields structure then index")
     {
-        Index node{name("arr"), name("i")};
+        Index node{Statement::no_range,name("arr"), name("i")};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:arr", "use:i"});
     }
@@ -157,9 +157,9 @@ TEST_CASE("Symbol Sequence")
         std::vector<Expression::Ptr> args;
         args.push_back(name("a"));
         args.push_back(
-            std::make_unique<Binop>(name("b"), Binary_Op::PLUS, name("c")));
+            std::make_unique<Binop>(Statement::no_range,name("b"), Binary_Op::PLUS, name("c")));
 
-        Function_Call node{name("fn"), std::move(args)};
+        Function_Call node{Statement::no_range,name("fn"), std::move(args)};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:fn", "use:a", "use:b", "use:c"});
     }
@@ -171,13 +171,13 @@ TEST_CASE("Symbol Sequence")
         inner_args.push_back(name("c"));
 
         auto inner_call =
-            std::make_unique<Function_Call>(name("g"), std::move(inner_args));
+            std::make_unique<Function_Call>(Statement::no_range,name("g"), std::move(inner_args));
 
         std::vector<Expression::Ptr> args;
         args.push_back(name("a"));
         args.push_back(std::move(inner_call));
 
-        Function_Call node{name("f"), std::move(args)};
+        Function_Call node{Statement::no_range,name("f"), std::move(args)};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:f", "use:a", "use:g", "use:b",
                                           "use:c"});
@@ -185,7 +185,7 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("If yields condition, consequent, alternate (structural)")
     {
-        If node{name("cond"), name("then"),
+        If node{Statement::no_range,name("cond"), name("then"),
                 std::optional<Expression::Ptr>{name("else")}};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:cond", "use:then", "use:else"});
@@ -193,14 +193,14 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("If without alternate omits alternate sequence")
     {
-        If node{name("cond"), name("then")};
+        If node{Statement::no_range,name("cond"), name("then")};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:cond", "use:then"});
     }
 
     SECTION("Define with nested expression keeps RHS order")
     {
-        Define node{"x", std::make_unique<Binop>(name("y"), Binary_Op::PLUS,
+        Define node{Statement::no_range,"x", std::make_unique<Binop>(Statement::no_range,name("y"), Binary_Op::PLUS,
                                                  name("z"))};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:y", "use:z", "def:x"});
@@ -209,14 +209,14 @@ TEST_CASE("Symbol Sequence")
     SECTION("Program concatenates statement sequences in order")
     {
         std::vector<Statement::Ptr> program;
-        program.push_back(std::make_unique<Define>(
+        program.push_back(std::make_unique<Define>(Statement::no_range,
             "x",
-            std::make_unique<Binop>(name("a"), Binary_Op::PLUS, name("b"))));
+            std::make_unique<Binop>(Statement::no_range,name("a"), Binary_Op::PLUS, name("b"))));
         program.push_back(
-            std::make_unique<Binop>(name("x"), Binary_Op::MULTIPLY, name("c")));
-        program.push_back(std::make_unique<Define>(
+            std::make_unique<Binop>(Statement::no_range,name("x"), Binary_Op::MULTIPLY, name("c")));
+        program.push_back(std::make_unique<Define>(Statement::no_range,
             "y",
-            std::make_unique<If>(name("cond"), name("x"),
+            std::make_unique<If>(Statement::no_range,name("cond"), name("x"),
                                  std::optional<Expression::Ptr>{name("d")})));
 
         CHECK(collect_program_sequence(program)
@@ -231,22 +231,22 @@ TEST_CASE("Symbol Sequence")
 
         std::vector<Expression::Ptr> elems;
         elems.push_back(
-            std::make_unique<If>(name("cond"), name("t"),
+            std::make_unique<If>(Statement::no_range,name("cond"), name("t"),
                                  std::optional<Expression::Ptr>{name("f")}));
         elems.push_back(
-            std::make_unique<Binop>(name("b"), Binary_Op::PLUS, name("c")));
-        program.push_back(std::make_unique<Define>(
-            "z", std::make_unique<Array_Constructor>(std::move(elems))));
+            std::make_unique<Binop>(Statement::no_range,name("b"), Binary_Op::PLUS, name("c")));
+        program.push_back(std::make_unique<Define>(Statement::no_range,
+            "z", std::make_unique<Array_Constructor>(Statement::no_range,std::move(elems))));
 
         std::vector<Map_Constructor::KV_Pair> pairs;
         pairs.emplace_back(name("k"), name("v1"));
         pairs.emplace_back(
             name("k2"),
-            std::make_unique<Binop>(name("v2"), Binary_Op::PLUS, name("v3")));
-        program.push_back(std::make_unique<Define>(
-            "m", std::make_unique<Map_Constructor>(std::move(pairs))));
+            std::make_unique<Binop>(Statement::no_range,name("v2"), Binary_Op::PLUS, name("v3")));
+        program.push_back(std::make_unique<Define>(Statement::no_range,
+            "m", std::make_unique<Map_Constructor>(Statement::no_range,std::move(pairs))));
 
-        program.push_back(std::make_unique<Index>(name("m"), name("k")));
+        program.push_back(std::make_unique<Index>(Statement::no_range,name("m"), name("k")));
 
         for (const auto& node : program)
         {
@@ -264,12 +264,12 @@ TEST_CASE("Symbol Sequence")
     {
         std::vector<Statement::Ptr> program;
 
-        auto negate = std::make_unique<Unop>(name("a"), Unary_Op::NEGATE);
+        auto negate = std::make_unique<Unop>(Statement::no_range,name("a"), Unary_Op::NEGATE);
 
-        auto add = std::make_unique<Binop>(std::move(negate), Binary_Op::PLUS,
+        auto add = std::make_unique<Binop>(Statement::no_range,std::move(negate), Binary_Op::PLUS,
                                            lit_int(1_f));
 
-        auto stmt_define_x = std::make_unique<Define>("x", std::move(add));
+        auto stmt_define_x = std::make_unique<Define>(Statement::no_range,"x", std::move(add));
 
         program.push_back(std::move(stmt_define_x));
 
@@ -279,7 +279,7 @@ TEST_CASE("Symbol Sequence")
 
         auto else_expr = name("f");
 
-        auto if_expr = std::make_unique<If>(
+        auto if_expr = std::make_unique<If>(Statement::no_range,
             std::move(cond), std::move(then_expr),
             std::optional<Expression::Ptr>{std::move(else_expr)});
 
@@ -292,10 +292,10 @@ TEST_CASE("Symbol Sequence")
         arr_elems.push_back(std::move(if_expr));
 
         auto arr_expr =
-            std::make_unique<Array_Constructor>(std::move(arr_elems));
+            std::make_unique<Array_Constructor>(Statement::no_range,std::move(arr_elems));
 
         auto stmt_define_arr =
-            std::make_unique<Define>("arr", std::move(arr_expr));
+            std::make_unique<Define>(Statement::no_range,"arr", std::move(arr_expr));
 
         program.push_back(std::move(stmt_define_arr));
 
@@ -305,21 +305,21 @@ TEST_CASE("Symbol Sequence")
 
         pairs.emplace_back(
             name("k2"),
-            std::make_unique<Binop>(name("v2"), Binary_Op::PLUS, name("v3")));
+            std::make_unique<Binop>(Statement::no_range,name("v2"), Binary_Op::PLUS, name("v3")));
 
-        auto map_expr = std::make_unique<Map_Constructor>(std::move(pairs));
+        auto map_expr = std::make_unique<Map_Constructor>(Statement::no_range,std::move(pairs));
 
         auto stmt_define_map =
-            std::make_unique<Define>("map", std::move(map_expr));
+            std::make_unique<Define>(Statement::no_range,"map", std::move(map_expr));
 
         program.push_back(std::move(stmt_define_map));
 
-        auto stmt_index = std::make_unique<Index>(name("arr"), name("i"));
+        auto stmt_index = std::make_unique<Index>(Statement::no_range,name("arr"), name("i"));
 
         program.push_back(std::move(stmt_index));
 
         auto stmt_eq =
-            std::make_unique<Binop>(name("x"), Binary_Op::EQ, name("y"));
+            std::make_unique<Binop>(Statement::no_range,name("x"), Binary_Op::EQ, name("y"));
 
         program.push_back(std::move(stmt_eq));
 
@@ -330,7 +330,7 @@ TEST_CASE("Symbol Sequence")
         call_args.push_back(name("arg2"));
 
         auto stmt_call =
-            std::make_unique<Function_Call>(name("func"), std::move(call_args));
+            std::make_unique<Function_Call>(Statement::no_range,name("func"), std::move(call_args));
 
         program.push_back(std::move(stmt_call));
 

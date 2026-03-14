@@ -13,7 +13,8 @@ class String_Node : public frst::ast::Statement
 {
   public:
     String_Node(std::string label)
-        : label_{label}
+        : Statement(no_range)
+        , label_{label}
     {
     }
 
@@ -42,6 +43,7 @@ class Multi_String_Node : public frst::ast::Statement
 {
   public:
     Multi_String_Node(std::size_t num)
+        : Statement(no_range)
     {
         for (auto i = 1uz; i != num + 1; ++i)
             children_.emplace_back(
@@ -76,7 +78,8 @@ class Three_Children : public frst::ast::Statement
 {
   public:
     Three_Children(std::string first, std::string second, std::string third)
-        : first_{std::make_unique<String_Node>(first)}
+        : Statement(no_range)
+        , first_{std::make_unique<String_Node>(first)}
         , second_{std::make_unique<String_Node>(second)}
         , third_{std::make_unique<String_Node>(third)}
     {
@@ -117,7 +120,8 @@ class Tree_Node : public frst::ast::Statement
     };
 
     explicit Tree_Node(std::string label)
-        : label_{std::move(label)}
+        : Statement(no_range)
+        , label_{std::move(label)}
     {
     }
 

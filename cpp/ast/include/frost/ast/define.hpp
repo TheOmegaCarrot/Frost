@@ -15,7 +15,8 @@ class Define final : public Statement
     using Ptr = std::unique_ptr<Define>;
 
     Define() = delete;
-    Define(std::string name, Expression::Ptr expr, bool export_def = false);
+    Define(Source_Range source_range, std::string name, Expression::Ptr expr,
+           bool export_def = false);
 
     Define(const Define&) = delete;
     Define(Define&&) = delete;

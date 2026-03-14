@@ -2,8 +2,10 @@
 
 using namespace frst;
 
-ast::Array_Constructor::Array_Constructor(std::vector<Expression::Ptr> elems)
-    : elems_{std::move(elems)}
+ast::Array_Constructor::Array_Constructor(Source_Range source_range,
+                                          std::vector<Expression::Ptr> elems)
+    : Expression(source_range)
+    , elems_{std::move(elems)}
 {
 }
 

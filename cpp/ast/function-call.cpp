@@ -4,9 +4,11 @@
 
 using namespace frst;
 
-ast::Function_Call::Function_Call(Expression::Ptr fn_expr,
+ast::Function_Call::Function_Call(Source_Range source_range,
+                                  Expression::Ptr fn_expr,
                                   std::vector<Expression::Ptr> args_exprs)
-    : fn_expr_{std::move(fn_expr)}
+    : Expression(source_range)
+    , fn_expr_{std::move(fn_expr)}
     , args_exprs_{std::move(args_exprs)}
 {
 }

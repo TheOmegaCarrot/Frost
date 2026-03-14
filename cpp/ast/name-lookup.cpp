@@ -2,8 +2,9 @@
 
 using namespace frst;
 
-ast::Name_Lookup::Name_Lookup(std::string name)
-    : name_{std::move(name)}
+ast::Name_Lookup::Name_Lookup(Source_Range source_range, std::string name)
+    : Expression(source_range)
+    , name_{std::move(name)}
 {
     if (name_ == "_")
         throw Frost_Unrecoverable_Error{"\"_\" is not a valid identifier"};

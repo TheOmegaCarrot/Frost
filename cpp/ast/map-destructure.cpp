@@ -7,9 +7,11 @@
 using namespace frst;
 using namespace frst::ast;
 
-Map_Destructure::Map_Destructure(std::vector<Element> destructure_elems,
+Map_Destructure::Map_Destructure(Source_Range source_range,
+                                 std::vector<Element> destructure_elems,
                                  Expression::Ptr expr, bool export_defs)
-    : destructure_elems_{std::move(destructure_elems)}
+    : Statement(source_range)
+    , destructure_elems_{std::move(destructure_elems)}
     , expr_{std::move(expr)}
     , export_defs_{export_defs}
 {

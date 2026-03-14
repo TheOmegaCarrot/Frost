@@ -18,8 +18,8 @@ class Reduce final : public Expression
     Reduce& operator=(Reduce&&) = delete;
     ~Reduce() final = default;
 
-    Reduce(Expression::Ptr structure, Expression::Ptr operation,
-           std::optional<Expression::Ptr> init);
+    Reduce(Source_Range source_range, Expression::Ptr structure,
+           Expression::Ptr operation, std::optional<Expression::Ptr> init);
 
     std::string node_label() const final;
 

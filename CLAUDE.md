@@ -18,7 +18,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
 # Build
-cmake --build build -j$(nproc)
+cmake --build build -j4
 
 # Optional flags:
 #   -DBUILD_TESTS=NO   disable tests
@@ -35,7 +35,7 @@ Always run tests with `FROST_SKIP_HTTP_TEST=1` to avoid real network requests:
 # Run all tests
 FROST_SKIP_HTTP_TEST=1 ctest --test-dir build --output-on-failure
 
-# Run a specific test suite (matches by name)
+# Run a specific test suite (matches by the name in the TEST_CASE macro)
 FROST_SKIP_HTTP_TEST=1 ctest --test-dir build -R <test-name>
 
 # Run a specific test binary directly
@@ -57,10 +57,11 @@ Integration tests run `.frst` scripts from `integration-tests/` and are discover
 | `parser/grammar.hpp` | Complete Lexy-based grammar (49KB) — the source of truth for syntax |
 | `ast/` | AST node types; each node implements `.evaluate()` or `.execute()` |
 | `value/` | Runtime `Value` type and all operators |
-| `symbol-table/` | Lexically-scoped variable bindings (`Symbol_Table` with failover chaining) |
+| `execution-context/` | Execution context threaded through evaluation, including lexically-scoped variable bindings (`Symbol_Table` with failover chaining) |
 | `functions/` | Closures, lambdas, builtins (26 builtin modules) |
 | `prelude/prelude.frst` | Standard library written in Frost (loaded at startup) |
 | `meta/` | Special functions which depend on the parser, such as `import` |
+| `ext/` | Optional extensions isolated from the rest of the Frost codebase (HTTP client, etc.) |
 
 ### Value type (`cpp/value/include/frost/value.hpp`)
 
@@ -85,6 +86,8 @@ The primary duties of the agent are writing/updating unit tests and read-only de
 When modifying unit tests, always build and run all tests to ensure correctness.
 If a valid test fails, the agent should simply inform the user. 
 
+The agent must not use Python or sed to edit files.
+
 ## Frost Syntax Cheat Sheet
 
 This cheat sheet is not exhaustive, but serves as a guard against common mistakes.
@@ -102,13 +105,13 @@ else: 3
 if condition: print("yes")   # else: null implicitly
 ```
 
-Braces are NOT valid branch syntax. Use an immediately-invoked function for multi-statement branches:
+Braces are NOT valid branch syntax. Use a `do` block if this is needed:
 
 ```frost
-if condition: fn -> {
+if condition: do {
     def x = 1
     x + 2
-}()
+}
 else: 0
 ```
 

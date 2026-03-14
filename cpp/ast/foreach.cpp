@@ -2,8 +2,10 @@
 
 using namespace frst;
 
-ast::Foreach::Foreach(Expression::Ptr structure, Expression::Ptr operation)
-    : structure_{std::move(structure)}
+ast::Foreach::Foreach(Source_Range source_range, Expression::Ptr structure,
+                      Expression::Ptr operation)
+    : Expression(source_range)
+    , structure_{std::move(structure)}
     , operation_{std::move(operation)}
 {
 }

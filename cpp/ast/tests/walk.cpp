@@ -16,7 +16,8 @@ class Leaf_Node : public ast::Statement
 {
   public:
     explicit Leaf_Node(std::string id)
-        : id_{std::move(id)}
+        : Statement(no_range)
+        , id_{std::move(id)}
     {
     }
 
@@ -39,7 +40,8 @@ class Parent_Node : public ast::Statement
 {
   public:
     explicit Parent_Node(std::string id)
-        : id_{std::move(id)}
+        : Statement(no_range)
+        , id_{std::move(id)}
     {
     }
 

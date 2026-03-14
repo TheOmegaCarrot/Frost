@@ -33,7 +33,7 @@ TEST_CASE("Unop")
                 .LR_WITH(&_1.symbols == &syms)
                 .RETURN(operand_val);
 
-            ast::Unop node(std::move(operand), op);
+            ast::Unop node(ast::Statement::no_range,std::move(operand), op);
 
             auto res = node.evaluate(ctx);
 
@@ -55,7 +55,7 @@ TEST_CASE("Unop Negate Type Error")
         .LR_WITH(&_1.symbols == &syms)
         .RETURN(Value::create("oops"s));
 
-    ast::Unop node(std::move(operand), ast::Unary_Op::NEGATE);
+    ast::Unop node(ast::Statement::no_range,std::move(operand), ast::Unary_Op::NEGATE);
 
     CHECK_THROWS_WITH(node.evaluate(ctx),
                       Equals("Invalid operand for unary - : String"));

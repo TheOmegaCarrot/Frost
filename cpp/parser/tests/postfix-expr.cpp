@@ -72,6 +72,7 @@ TEST_CASE("Parser Postfix Expressions")
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
         auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 
@@ -570,5 +571,57 @@ TEST_CASE("Parser Postfix Expressions")
         {
             CHECK_FALSE(parse(input));
         }
+    }
+
+    SECTION("Source ranges for index expression")
+    {
+        // "arr[1]" → begin at 'a' {1,1}, end at ']' {1,6}
+        auto result = parse("arr[1]");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 6);
+    }
+
+    SECTION("Source ranges for dot access")
+    {
+        // "obj.key" → begin at 'o' {1,1}, end at 'y' {1,7}
+        auto result = parse("obj.key");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 7);
+    }
+
+    SECTION("Source ranges for function call")
+    {
+        // "f(1, 2)" → begin at 'f' {1,1}, end at ')' {1,7}
+        auto result = parse("f(1, 2)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 7);
+    }
+
+    SECTION("Source ranges for chained postfix")
+    {
+        // "obj.f(3)" → begin at 'o' {1,1}, end at ')' {1,8}
+        auto result = parse("obj.f(3)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 8);
     }
 }

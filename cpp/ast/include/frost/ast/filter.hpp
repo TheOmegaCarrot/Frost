@@ -19,7 +19,8 @@ class Filter final : public Expression
     Filter& operator=(Filter&&) = delete;
     ~Filter() final = default;
 
-    Filter(Expression::Ptr structure, Expression::Ptr operation);
+    Filter(Source_Range source_range, Expression::Ptr structure,
+           Expression::Ptr operation);
 
     std::string node_label() const final;
 

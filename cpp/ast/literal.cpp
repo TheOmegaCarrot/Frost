@@ -2,8 +2,9 @@
 
 using namespace frst;
 
-ast::Literal::Literal(Value_Ptr value)
-    : value_{std::move(value)}
+ast::Literal::Literal(Source_Range source_range, Value_Ptr value)
+    : Expression(source_range)
+    , value_{std::move(value)}
 {
     if (!value_->is_primitive())
     {

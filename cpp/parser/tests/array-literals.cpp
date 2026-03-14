@@ -70,6 +70,7 @@ TEST_CASE("Parser Array Literals")
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
         auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 
@@ -267,6 +268,7 @@ TEST_CASE("Parser Array Literals")
     {
         auto src =
             lexy::string_input<lexy::utf8_encoding>(std::string_view{"[]\n42"});
+        frst::grammar::reset_parse_state(src);
         auto program_result = lexy::parse<Program_Root>(src, lexy::noop);
         REQUIRE(program_result);
         auto program = std::move(program_result).value();
@@ -308,5 +310,31 @@ TEST_CASE("Parser Array Literals")
         CHECK_FALSE(parse("[1, 2; 3]"));
         CHECK_FALSE(parse("[1;]"));
         CHECK_FALSE(parse("[;1]"));
+    }
+
+    SECTION("Source ranges for array literals")
+    {
+        // "[]" → begin at '[' {1,1}, end at ']' {1,2}
+        auto result = parse("[]");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 2);
+    }
+
+    SECTION("Source ranges for non-empty arrays")
+    {
+        // "[1, 2, 3]" → begin at '[' {1,1}, end at ']' {1,9}
+        auto result = parse("[1, 2, 3]");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 9);
     }
 }

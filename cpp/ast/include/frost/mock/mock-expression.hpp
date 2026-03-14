@@ -17,6 +17,11 @@ class Mock_Expression : public ast::Expression
 
     using Ptr = std::unique_ptr<Mock_Expression>;
 
+    Mock_Expression()
+        : Expression(no_range)
+    {
+    }
+
     static Ptr make()
     {
         return std::make_unique<Mock_Expression>();

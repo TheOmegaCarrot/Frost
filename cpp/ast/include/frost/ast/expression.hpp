@@ -12,7 +12,12 @@ class Expression : public Statement
   public:
     using Ptr = std::unique_ptr<Expression>;
 
-    Expression() = default;
+    Expression(Source_Range source_range)
+        : Statement(source_range)
+    {
+    }
+
+    Expression() = delete;
     Expression(const Expression&) = delete;
     Expression(Expression&&) = delete;
     Expression& operator=(const Expression&) = delete;

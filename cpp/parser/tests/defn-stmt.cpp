@@ -27,7 +27,8 @@ struct Program_Root
 auto parse(std::string_view input)
 {
     auto src = lexy::string_input<lexy::utf8_encoding>(input);
-    return lexy::parse<Program_Root>(src, lexy::noop);
+    frst::grammar::reset_parse_state(src);
+        return lexy::parse<Program_Root>(src, lexy::noop);
 }
 
 frst::Value_Ptr call_function(const frst::Value_Ptr& value,

@@ -64,6 +64,7 @@ TEST_CASE("Parser Lambda Expressions")
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
         auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 
@@ -302,6 +303,7 @@ TEST_CASE("Parser Lambda Expressions")
     {
         auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"def f = fn(...rest) -> { rest }\n f()"});
+        frst::grammar::reset_parse_state(src);
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -337,6 +339,7 @@ TEST_CASE("Parser Lambda Expressions")
     {
         auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"fn -> { null }"});
+        frst::grammar::reset_parse_state(src);
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -352,6 +355,7 @@ TEST_CASE("Parser Lambda Expressions")
     {
         auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"fn -> {}"});
+        frst::grammar::reset_parse_state(src);
         auto result = lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(result);
         auto program = std::move(result).value();
@@ -365,6 +369,7 @@ TEST_CASE("Parser Lambda Expressions")
     {
         auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"fn -> { null }\nfn() -> { null }"});
+        frst::grammar::reset_parse_state(src);
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -376,6 +381,7 @@ TEST_CASE("Parser Lambda Expressions")
     {
         auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"fn -> { null }; fn() -> { null }"});
+        frst::grammar::reset_parse_state(src);
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -387,6 +393,7 @@ TEST_CASE("Parser Lambda Expressions")
     {
         auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"def f = fn(x) -> { x }\n f(3)"});
+        frst::grammar::reset_parse_state(src);
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -705,6 +712,7 @@ TEST_CASE("Parser Lambda Expressions")
                              "    def b = 2 + a\n"
                              "    { c: b, d: fn p -> p * a }\n"
                              "}\n"});
+        frst::grammar::reset_parse_state(src);
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);
@@ -847,6 +855,7 @@ TEST_CASE("Parser Lambda Expressions")
     {
         auto src = lexy::string_input<lexy::utf8_encoding>(
             std::string_view{"def f = fn(x) -> x + 2\n f(4)"});
+        frst::grammar::reset_parse_state(src);
         auto program_result =
             lexy::parse<frst::grammar::program>(src, lexy::noop);
         REQUIRE(program_result);

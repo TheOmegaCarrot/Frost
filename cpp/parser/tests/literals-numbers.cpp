@@ -36,10 +36,12 @@ TEST_CASE("Parser Numeric Literals")
     // Signed: Codex (GPT-5).
     auto parse_int = [](std::string_view input) {
         auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
         return lexy::parse<Integer_Root>(src, lexy::noop);
     };
     auto parse_float = [](std::string_view input) {
         auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
         return lexy::parse<Float_Root>(src, lexy::noop);
     };
 

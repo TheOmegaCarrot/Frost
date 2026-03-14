@@ -29,7 +29,8 @@ class Map_Destructure final : public Statement
     Map_Destructure& operator=(Map_Destructure&&) = delete;
     ~Map_Destructure() final = default;
 
-    Map_Destructure(std::vector<Element> destructure_elems,
+    Map_Destructure(Source_Range source_range,
+                    std::vector<Element> destructure_elems,
                     Expression::Ptr expr, bool export_defs = false);
 
     std::string node_label() const;

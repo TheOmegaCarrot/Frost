@@ -18,7 +18,26 @@ class Statement
   public:
     using Ptr = std::unique_ptr<Statement>;
 
-    Statement() = default;
+    struct Source_Location
+    {
+        std::size_t line;
+        std::size_t column;
+    };
+
+    struct Source_Range
+    {
+        Source_Location begin;
+        Source_Location end;
+    };
+    constexpr static inline Source_Location no_location{0, 0};
+    constexpr static inline Source_Range no_range{no_location, no_location};
+
+    Statement(Source_Range source_range)
+        : source_range_{source_range}
+    {
+    }
+
+    Statement() = delete;
     Statement(const Statement&) = delete;
     Statement(Statement&&) = delete;
     Statement& operator=(const Statement&) = delete;
@@ -65,6 +84,16 @@ class Statement
             co_yield std::ranges::elements_of(child.node->walk());
     }
 
+    Source_Range source_range() const
+    {
+        return source_range_;
+    }
+
+    void set_source_range(Source_Range range)
+    {
+        source_range_ = range;
+    }
+
   protected:
     virtual std::optional<Map> do_execute(Execution_Context& ctx) const = 0;
 
@@ -103,6 +132,8 @@ class Statement
                             const Child_Info& child);
 
     static std::string child_prefix(const Print_Context& context);
+
+    Source_Range source_range_;
 };
 
 } // namespace frst::ast

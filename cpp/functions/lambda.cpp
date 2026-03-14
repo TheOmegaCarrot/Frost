@@ -25,11 +25,12 @@ Value_Ptr promote_if_weak(const Value_Ptr& fn)
 
 } // namespace
 
-Lambda::Lambda(std::vector<std::string> params,
+Lambda::Lambda(Source_Range source_range, std::vector<std::string> params,
                std::vector<Statement::Ptr> body_prefix,
                std::optional<std::string> vararg_param,
                std::optional<std::string> self_name)
-    : params_{std::move(params)}
+    : Expression(source_range)
+    , params_{std::move(params)}
     , body_prefix_{std::make_shared<std::vector<Statement::Ptr>>(
           std::move(body_prefix))}
     , vararg_param_{std::move(vararg_param)}

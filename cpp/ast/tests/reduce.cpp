@@ -59,7 +59,7 @@ TEST_CASE("Reduce Array")
             FORBID_CALL(*reducer, call(_));
             FORBID_CALL(*init_expr, do_evaluate(_));
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             auto res = node.evaluate(ctx);
@@ -92,7 +92,7 @@ TEST_CASE("Reduce Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -125,7 +125,7 @@ TEST_CASE("Reduce Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -156,7 +156,7 @@ TEST_CASE("Reduce Array")
             FORBID_CALL(*reducer, call(_));
             FORBID_CALL(*init_expr, do_evaluate(_));
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             auto res = node.evaluate(ctx);
@@ -193,7 +193,7 @@ TEST_CASE("Reduce Array")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(result_val);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -241,7 +241,7 @@ TEST_CASE("Reduce Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(r123);
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             auto res = node.evaluate(ctx);
@@ -301,7 +301,7 @@ TEST_CASE("Reduce Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(r3);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -346,7 +346,7 @@ TEST_CASE("Reduce Array")
                 .RETURN(init_val);
             REQUIRE_CALL(*reducer, call(_)).RETURN(result_val);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -380,7 +380,7 @@ TEST_CASE("Reduce Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -403,7 +403,7 @@ TEST_CASE("Reduce Array")
             FORBID_CALL(*operation_expr, do_evaluate(_));
             FORBID_CALL(*init_expr, do_evaluate(_));
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             CHECK_THROWS_WITH(
@@ -429,7 +429,7 @@ TEST_CASE("Reduce Array")
                 .RETURN(bad_op);
             FORBID_CALL(*init_expr, do_evaluate(_));
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             CHECK_THROWS_WITH(node.evaluate(ctx),
@@ -457,7 +457,7 @@ TEST_CASE("Reduce Array")
             REQUIRE_CALL(*reducer, call(_))
                 .THROW(Frost_Recoverable_Error{"kaboom"});
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
@@ -472,7 +472,7 @@ TEST_CASE("Reduce Array")
             FORBID_CALL(*operation_expr, do_evaluate(_));
             FORBID_CALL(*init_expr, do_evaluate(_));
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             CHECK_THROWS_WITH(node.evaluate(ctx),
@@ -496,7 +496,7 @@ TEST_CASE("Reduce Array")
                 .THROW(Frost_Recoverable_Error{"operation boom"});
             FORBID_CALL(*init_expr, do_evaluate(_));
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             CHECK_THROWS_WITH(node.evaluate(ctx),
@@ -527,7 +527,7 @@ TEST_CASE("Reduce Array")
                 .IN_SEQUENCE(seq)
                 .THROW(Frost_Recoverable_Error{"init boom"});
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -575,7 +575,7 @@ TEST_CASE("Reduce Map")
                 .IN_SEQUENCE(seq)
                 .RETURN(init_val);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -616,7 +616,7 @@ TEST_CASE("Reduce Map")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(r1);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -673,7 +673,7 @@ TEST_CASE("Reduce Map")
                 .IN_SEQUENCE(seq)
                 .RETURN(r2);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -739,7 +739,7 @@ TEST_CASE("Reduce Map")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(r1);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -780,7 +780,7 @@ TEST_CASE("Reduce Map")
                 .RETURN(init_val);
             REQUIRE_CALL(*reducer, call(_)).RETURN(r1);
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -807,7 +807,7 @@ TEST_CASE("Reduce Map")
             FORBID_CALL(*init_expr, do_evaluate(_));
             FORBID_CALL(*reducer, call(_));
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             CHECK_THROWS_WITH(node.evaluate(ctx),
@@ -825,7 +825,7 @@ TEST_CASE("Reduce Map")
             FORBID_CALL(*operation_expr, do_evaluate(_));
             FORBID_CALL(*init_expr, do_evaluate(_));
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             CHECK_THROWS_WITH(
@@ -854,7 +854,7 @@ TEST_CASE("Reduce Map")
                 .RETURN(bad_op);
             FORBID_CALL(*init_expr, do_evaluate(_));
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -890,7 +890,7 @@ TEST_CASE("Reduce Map")
             REQUIRE_CALL(*reducer, call(_))
                 .THROW(Frost_Recoverable_Error{"kaboom"});
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -924,7 +924,7 @@ TEST_CASE("Reduce Map")
                 .IN_SEQUENCE(seq)
                 .THROW(Frost_Recoverable_Error{"init boom"});
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -953,7 +953,7 @@ TEST_CASE("Reduce Map")
                 .THROW(Frost_Recoverable_Error{"operation boom"});
             FORBID_CALL(*init_expr, do_evaluate(_));
 
-            ast::Reduce node{
+            ast::Reduce node{ast::Statement::no_range,
                 std::move(structure_expr), std::move(operation_expr),
                 std::optional<ast::Expression::Ptr>{std::move(init_expr)}};
 
@@ -970,7 +970,7 @@ TEST_CASE("Reduce Map")
             FORBID_CALL(*operation_expr, do_evaluate(_));
             FORBID_CALL(*init_expr, do_evaluate(_));
 
-            ast::Reduce node{std::move(structure_expr),
+            ast::Reduce node{ast::Statement::no_range,std::move(structure_expr),
                              std::move(operation_expr), std::nullopt};
 
             CHECK_THROWS_WITH(node.evaluate(ctx),

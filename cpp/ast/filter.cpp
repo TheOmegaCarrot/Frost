@@ -4,8 +4,10 @@
 
 using namespace frst;
 
-ast::Filter::Filter(Expression::Ptr structure, Expression::Ptr operation)
-    : structure_{std::move(structure)}
+ast::Filter::Filter(Source_Range source_range, Expression::Ptr structure,
+                    Expression::Ptr operation)
+    : Expression(source_range)
+    , structure_{std::move(structure)}
     , operation_{std::move(operation)}
 {
 }

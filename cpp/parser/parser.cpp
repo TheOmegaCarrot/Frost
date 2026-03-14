@@ -25,6 +25,7 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_impl(
     {
         std::string err;
 
+        grammar::reset_parse_state(input);
         auto result = lexy::parse<grammar::program>(
             input, reporter.to(std::back_inserter(err)));
 
@@ -76,8 +77,10 @@ std::expected<ast::Expression::Ptr, std::string> parse_data(
     {
         std::string err;
 
+        auto input = lexy::string_input<lexy::utf8_encoding>(text);
+        grammar::reset_parse_state(input);
         auto result = lexy::parse<grammar::data_expression>(
-            lexy::string_input<lexy::utf8_encoding>(text),
+            input,
             lexy_ext::report_error.opts({lexy::visualize_fancy})
                 .to(std::back_inserter(err)));
 

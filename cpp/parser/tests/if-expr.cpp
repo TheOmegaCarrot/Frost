@@ -38,6 +38,7 @@ TEST_CASE("Parser If Expressions")
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
         auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 
@@ -344,5 +345,45 @@ TEST_CASE("Parser If Expressions")
         {
             CHECK_FALSE(parse(input));
         }
+    }
+
+    SECTION("Source ranges for if/else")
+    {
+        // "if true: 1 else: 2" → begin at 'i' {1,1}, end at '2' {1,18}
+        auto result = parse("if true: 1 else: 2");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 18);
+    }
+
+    SECTION("Source ranges for if without else")
+    {
+        // "if true: 42" → begin at 'i' {1,1}, end at '2' in 42 {1,11}
+        auto result = parse("if true: 42");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 11);
+    }
+
+    SECTION("Source ranges for if/elif/else")
+    {
+        // "if false: 1 elif true: 2 else: 3"
+        // begin at 'i' {1,1}, end at '3' {1,32}
+        auto result = parse("if false: 1 elif true: 2 else: 3");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 32);
     }
 }

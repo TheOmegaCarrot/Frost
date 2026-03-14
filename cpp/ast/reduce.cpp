@@ -4,9 +4,11 @@
 
 using namespace frst;
 
-ast::Reduce::Reduce(Expression::Ptr structure, Expression::Ptr operation,
+ast::Reduce::Reduce(Source_Range source_range, Expression::Ptr structure,
+                    Expression::Ptr operation,
                     std::optional<Expression::Ptr> init)
-    : structure_{std::move(structure)}
+    : Expression(source_range)
+    , structure_{std::move(structure)}
     , operation_{std::move(operation)}
     , init_{std::move(init)}
 {

@@ -15,7 +15,8 @@ class Index final : public Expression
   public:
     using Ptr = std::unique_ptr<Index>;
 
-    Index(Expression::Ptr structure, Expression::Ptr index);
+    Index(Source_Range source_range, Expression::Ptr structure,
+          Expression::Ptr index);
 
     Index() = delete;
     Index(const Index&) = delete;

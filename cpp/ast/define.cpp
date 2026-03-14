@@ -2,8 +2,10 @@
 
 using namespace frst;
 
-ast::Define::Define(std::string name, Expression::Ptr expr, bool export_def)
-    : name_{std::move(name)}
+ast::Define::Define(Source_Range source_range, std::string name,
+                    Expression::Ptr expr, bool export_def)
+    : Statement(source_range)
+    , name_{std::move(name)}
     , expr_{std::move(expr)}
     , export_def_{export_def}
 {

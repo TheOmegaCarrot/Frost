@@ -21,7 +21,8 @@ class Format_String final : public Expression
     Format_String& operator=(Format_String&&) = delete;
     ~Format_String() final = default;
 
-    Format_String(const std::string& format_string);
+    Format_String(Source_Range source_range,
+                  const std::string& format_string);
 
     std::string node_label() const final;
 

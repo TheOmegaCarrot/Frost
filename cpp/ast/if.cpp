@@ -2,9 +2,11 @@
 
 using namespace frst;
 
-ast::If::If(Expression::Ptr condition, Expression::Ptr consequent,
+ast::If::If(Source_Range source_range, Expression::Ptr condition,
+            Expression::Ptr consequent,
             std::optional<Expression::Ptr> alternate)
-    : condition_{std::move(condition)}
+    : Expression(source_range)
+    , condition_{std::move(condition)}
     , consequent_{std::move(consequent)}
     , alternate_{std::move(alternate)}
 {

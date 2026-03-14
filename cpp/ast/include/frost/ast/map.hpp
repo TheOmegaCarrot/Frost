@@ -19,7 +19,8 @@ class Map final : public Expression
     Map& operator=(Map&&) = delete;
     ~Map() final = default;
 
-    Map(Expression::Ptr structure, Expression::Ptr operation);
+    Map(Source_Range source_range, Expression::Ptr structure,
+        Expression::Ptr operation);
 
     std::string node_label() const final;
 

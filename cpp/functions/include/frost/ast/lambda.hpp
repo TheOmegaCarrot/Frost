@@ -26,7 +26,8 @@ class Lambda final : public Expression
     Lambda& operator=(Lambda&&) = delete;
     ~Lambda() final = default;
 
-    Lambda(std::vector<std::string> params, std::vector<Statement::Ptr> body,
+    Lambda(Source_Range source_range, std::vector<std::string> params,
+           std::vector<Statement::Ptr> body,
            std::optional<std::string> vararg_param = {},
            std::optional<std::string> self_name = {});
 

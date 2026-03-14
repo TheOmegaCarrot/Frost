@@ -37,6 +37,7 @@ TEST_CASE("Parser Unary Expressions")
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
         auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
         return lexy::parse<Expression_Root>(src, lexy::noop);
     };
 
@@ -96,5 +97,57 @@ TEST_CASE("Parser Unary Expressions")
             CHECK_FALSE(result);
             CHECK(result.error_count() >= 1);
         }
+    }
+
+    SECTION("Source ranges for unary minus")
+    {
+        // "-1" → begin at '-' {1,1}, end at '1' {1,2}
+        auto result = parse("-1");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 2);
+    }
+
+    SECTION("Source ranges for not operator")
+    {
+        // "not true" → begin at 'n' {1,1}, end at 'e' in true {1,8}
+        auto result = parse("not true");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 8);
+    }
+
+    SECTION("Source ranges for double negation")
+    {
+        // "--1" → outer '-' at {1,1}, inner operand '1' at {1,3}
+        auto result = parse("--1");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 3);
+    }
+
+    SECTION("Source ranges for not with parenthesized operand")
+    {
+        // "not (1)" → begin at 'n' {1,1}, end at ')' {1,7}
+        auto result = parse("not (1)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 7);
     }
 }

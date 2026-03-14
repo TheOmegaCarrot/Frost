@@ -2,8 +2,9 @@
 
 using namespace frst;
 
-ast::Unop::Unop(Expression::Ptr operand, Unary_Op op)
-    : operand_{std::move(operand)}
+ast::Unop::Unop(Source_Range source_range, Expression::Ptr operand, Unary_Op op)
+    : Expression(source_range)
+    , operand_{std::move(operand)}
     , op_{op}
 {
 }

@@ -19,7 +19,8 @@ class Foreach final : public Expression
     Foreach& operator=(Foreach&&) = delete;
     ~Foreach() final = default;
 
-    Foreach(Expression::Ptr structure, Expression::Ptr operation);
+    Foreach(Source_Range source_range, Expression::Ptr structure,
+            Expression::Ptr operation);
 
     std::string node_label() const final;
 
