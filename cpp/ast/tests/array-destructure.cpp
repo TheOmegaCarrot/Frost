@@ -932,28 +932,28 @@ TEST_CASE("Array_Destructure")
         };
 
         CHECK(Array_Destructure(Statement::no_range, {}, std::nullopt, null_expr()).node_label()
-              == "Array_Destructure()");
+              == "Array_Destructure() [0:0-0:0]");
         CHECK(Array_Destructure(Statement::no_range, {"a"s, "b"s}, std::nullopt, null_expr())
                   .node_label()
-              == "Array_Destructure(a,b)");
+              == "Array_Destructure(a,b) [0:0-0:0]");
         CHECK(Array_Destructure(Statement::no_range, {"a"s}, Name{"rest"s}, null_expr()).node_label()
-              == "Array_Destructure(a,...rest)");
+              == "Array_Destructure(a,...rest) [0:0-0:0]");
         CHECK(Array_Destructure(Statement::no_range, {}, Name{"rest"s}, null_expr()).node_label()
-              == "Array_Destructure(...rest)");
+              == "Array_Destructure(...rest) [0:0-0:0]");
         CHECK(Array_Destructure(Statement::no_range, {"a"s}, Name{Discarded_Binding{}}, null_expr())
                   .node_label()
-              == "Array_Destructure(a,..._)");
+              == "Array_Destructure(a,..._) [0:0-0:0]");
         CHECK(Array_Destructure(Statement::no_range, {Discarded_Binding{}, "b"s}, Name{"rest"s},
                                 null_expr())
                   .node_label()
-              == "Array_Destructure(_,b,...rest)");
+              == "Array_Destructure(_,b,...rest) [0:0-0:0]");
         CHECK(Array_Destructure(Statement::no_range,
                                std::vector<Name>{"a"s, "b"s}, std::nullopt,
                                null_expr(), true)
                   .node_label()
-              == "Export_Array_Destructure(a,b)");
+              == "Export_Array_Destructure(a,b) [0:0-0:0]");
         CHECK(Array_Destructure(Statement::no_range, {"a"s}, Name{"rest"s}, null_expr(), true)
                   .node_label()
-              == "Export_Array_Destructure(a,...rest)");
+              == "Export_Array_Destructure(a,...rest) [0:0-0:0]");
     }
 }

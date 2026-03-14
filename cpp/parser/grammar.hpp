@@ -2446,18 +2446,20 @@ struct Defn
         auto kw_defn = LEXY_KEYWORD("defn", identifier::base);
         return kw_defn
                >> (param_ws
+                   + dsl::position
                    + dsl::p<identifier_required>
                    + param_ws
                    + dsl::p<lambda_parameters_paren>
                    + param_ws_nl
                    + LEXY_LIT("->")
-                   + dsl::p<lambda_body>);
+                   + dsl::p<lambda_body>
+                   + dsl::position);
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
-        [](std::string name, lambda_param_pack params,
-           std::vector<ast::Statement::Ptr> body) {
+        [](auto begin_pos, std::string name, lambda_param_pack params,
+           std::vector<ast::Statement::Ptr> body, auto end_pos) {
             auto lambda = std::make_unique<ast::Lambda>(
-                ast::Statement::no_range,
+                make_source_range(begin_pos, end_pos),
                 std::move(params.params), std::move(body),
                 std::move(params.vararg), name);
             return std::make_unique<ast::Define>(ast::Statement::no_range,
@@ -2478,18 +2480,20 @@ struct Export_Defn
                + param_ws_no_comment
                + kw_defn
                + param_ws
+               + dsl::position
                + dsl::p<identifier_required>
                + param_ws
                + dsl::p<lambda_parameters_paren>
                + param_ws_nl
                + LEXY_LIT("->")
-               + dsl::p<lambda_body>;
+               + dsl::p<lambda_body>
+               + dsl::position;
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
-        [](std::string name, lambda_param_pack params,
-           std::vector<ast::Statement::Ptr> body) {
+        [](auto begin_pos, std::string name, lambda_param_pack params,
+           std::vector<ast::Statement::Ptr> body, auto end_pos) {
             auto lambda = std::make_unique<ast::Lambda>(
-                ast::Statement::no_range,
+                make_source_range(begin_pos, end_pos),
                 std::move(params.params), std::move(body),
                 std::move(params.vararg), name);
             return std::make_unique<ast::Define>(ast::Statement::no_range,

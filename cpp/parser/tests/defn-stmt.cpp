@@ -28,7 +28,7 @@ auto parse(std::string_view input)
 {
     auto src = lexy::string_input<lexy::utf8_encoding>(input);
     frst::grammar::reset_parse_state(src);
-        return lexy::parse<Program_Root>(src, lexy::noop);
+    return lexy::parse<Program_Root>(src, lexy::noop);
 }
 
 frst::Value_Ptr call_function(const frst::Value_Ptr& value,
@@ -410,5 +410,60 @@ TEST_CASE("Parser Defn Statements")
     {
         CHECK_FALSE(parse("defn f(if) -> if"));
         CHECK_FALSE(parse("defn f(fn) -> fn"));
+    }
+
+    SECTION("defn Lambda gets source range from name to end of body")
+    {
+        // "defn f(x) -> x + 1"
+        //       ^           ^
+        //  col 6            col 18
+        // The Lambda spans from the name 'f' to end of body 'x + 1'
+        auto result = parse("defn f(x) -> x + 1");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
+        // Define -> Lambda -> ...
+        REQUIRE(nodes.size() >= 2);
+        auto lambda_range = nodes[1]->source_range();
+        CHECK(lambda_range.begin.line == 1);
+        CHECK(lambda_range.begin.column == 6);
+        CHECK(lambda_range.end.line == 1);
+        CHECK(lambda_range.end.column == 18);
+    }
+
+    SECTION("export defn Lambda gets source range")
+    {
+        // "export defn g(x) -> x * 2"
+        //              ^           ^
+        //         col 13           col 25
+        auto result = parse("export defn g(x) -> x * 2");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
+        REQUIRE(nodes.size() >= 2);
+        auto lambda_range = nodes[1]->source_range();
+        CHECK(lambda_range.begin.line == 1);
+        CHECK(lambda_range.begin.column == 13);
+        CHECK(lambda_range.end.line == 1);
+        CHECK(lambda_range.end.column == 25);
+    }
+
+    SECTION("defn Lambda range excludes trailing whitespace")
+    {
+        // "defn f(x) -> x   " — trailing spaces should not inflate end
+        auto result = parse("defn f(x) -> x   ");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
+        REQUIRE(nodes.size() >= 2);
+        auto lambda_range = nodes[1]->source_range();
+        CHECK(lambda_range.begin.column == 6);
+        CHECK(lambda_range.end.column == 14);
     }
 }
