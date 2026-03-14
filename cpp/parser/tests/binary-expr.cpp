@@ -534,4 +534,56 @@ TEST_CASE("Parser Binary Expressions")
         CHECK(rhs_range.begin.column == 10);
         CHECK(rhs_range.end.column == 14);
     }
+
+    SECTION("Source ranges for multiline binary expression")
+    {
+        // "(1 +\n 2)": outer range [1:1-2:3], lhs '1' [1:2-1:2], rhs '2' [2:2-2:2]
+        auto result = parse("(1 +\n 2)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 2);
+        CHECK(range.end.column == 3);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        // Binop -> Literal(1), Literal(2)
+        REQUIRE(nodes.size() >= 3);
+
+        auto lhs_range = nodes[1]->source_range();
+        CHECK(lhs_range.begin.line == 1);
+        CHECK(lhs_range.begin.column == 2);
+        CHECK(lhs_range.end.line == 1);
+        CHECK(lhs_range.end.column == 2);
+
+        auto rhs_range = nodes[2]->source_range();
+        CHECK(rhs_range.begin.line == 2);
+        CHECK(rhs_range.begin.column == 2);
+        CHECK(rhs_range.end.line == 2);
+        CHECK(rhs_range.end.column == 2);
+    }
+
+    SECTION("Source ranges exclude trailing comments from operands")
+    {
+        // "(1 + # comment\n 2)": lhs '1' must end at column 2, not bleed into comment
+        auto result = parse("(1 + # comment\n 2)");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        REQUIRE(nodes.size() >= 3);
+
+        auto lhs_range = nodes[1]->source_range();
+        CHECK(lhs_range.begin.line == 1);
+        CHECK(lhs_range.begin.column == 2);
+        CHECK(lhs_range.end.line == 1);
+        CHECK(lhs_range.end.column == 2);
+
+        auto rhs_range = nodes[2]->source_range();
+        CHECK(rhs_range.begin.line == 2);
+        CHECK(rhs_range.begin.column == 2);
+        CHECK(rhs_range.end.line == 2);
+        CHECK(rhs_range.end.column == 2);
+    }
 }

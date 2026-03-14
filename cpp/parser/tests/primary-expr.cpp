@@ -324,4 +324,75 @@ TEST_CASE("Parser Primary Expressions")
         CHECK(range.begin.column == 1);
         CHECK(range.end.column == 8);
     }
+
+    SECTION("Source range for keyword literals")
+    {
+        // "true" → [1:1-1:4]
+        auto r_true = parse("true");
+        REQUIRE(r_true);
+        auto e_true = require_expression(r_true);
+        CHECK(e_true->source_range().begin.column == 1);
+        CHECK(e_true->source_range().end.column == 4);
+
+        // "false" → [1:1-1:5]
+        auto r_false = parse("false");
+        REQUIRE(r_false);
+        auto e_false = require_expression(r_false);
+        CHECK(e_false->source_range().begin.column == 1);
+        CHECK(e_false->source_range().end.column == 5);
+
+        // "null" → [1:1-1:4]
+        auto r_null = parse("null");
+        REQUIRE(r_null);
+        auto e_null = require_expression(r_null);
+        CHECK(e_null->source_range().begin.column == 1);
+        CHECK(e_null->source_range().end.column == 4);
+    }
+
+    SECTION("Source range for multi-digit integer literal")
+    {
+        // "12345" → [1:1-1:5]
+        auto result = parse("12345");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        CHECK(expr->source_range().begin.column == 1);
+        CHECK(expr->source_range().end.column == 5);
+    }
+
+    SECTION("Source range for float literal")
+    {
+        // "3.14" → [1:1-1:4]
+        auto result = parse("3.14");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        CHECK(expr->source_range().begin.column == 1);
+        CHECK(expr->source_range().end.column == 4);
+    }
+
+    SECTION("Source range for string literals")
+    {
+        // "'hello'" → [1:1-1:7]
+        auto r_single = parse("'hello'");
+        REQUIRE(r_single);
+        auto e_single = require_expression(r_single);
+        CHECK(e_single->source_range().begin.column == 1);
+        CHECK(e_single->source_range().end.column == 7);
+
+        // R"("world")" → [1:1-1:7]
+        auto r_double = parse("\"world\"");
+        REQUIRE(r_double);
+        auto e_double = require_expression(r_double);
+        CHECK(e_double->source_range().begin.column == 1);
+        CHECK(e_double->source_range().end.column == 7);
+    }
+
+    SECTION("Source range for empty string literal")
+    {
+        // "''" → [1:1-1:2]
+        auto result = parse("''");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        CHECK(expr->source_range().begin.column == 1);
+        CHECK(expr->source_range().end.column == 2);
+    }
 }

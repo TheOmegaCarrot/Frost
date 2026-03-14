@@ -1335,4 +1335,30 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(range.begin.column == 1);
         CHECK(range.end.column == 7);
     }
+
+    SECTION("Source range for multiline lambda")
+    {
+        // "fn(x) ->\n  x + 1" → [1:1-2:5]
+        auto result = parse("fn(x) ->\n  x + 1");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 2);
+        CHECK(range.end.column == 7);
+    }
+
+    SECTION("Source range for multiline block lambda")
+    {
+        // "fn(x) -> {\n  x\n}" → [1:1-3:1]
+        auto result = parse("fn(x) -> {\n  x\n}");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 3);
+        CHECK(range.end.column == 1);
+    }
 }

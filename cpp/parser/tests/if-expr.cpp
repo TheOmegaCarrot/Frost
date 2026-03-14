@@ -453,4 +453,31 @@ TEST_CASE("Parser If Expressions")
         CHECK(if_nodes[1]->source_range().begin.column == 9);
         CHECK(if_nodes[1]->source_range().end.column == 17);
     }
+
+    SECTION("Multiline if/elif/else source ranges")
+    {
+        // "if a: b\nelif c: d\nelse: e"
+        // outer If: [1:1-3:7], inner If (elif): [2:1-3:7]
+        auto result = parse("if a: b\nelif c: d\nelse: e");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 3);
+        CHECK(range.end.column == 7);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        std::vector<const frst::ast::Statement*> if_nodes;
+        for (auto* n : nodes)
+            if (n->node_label().starts_with("If "))
+                if_nodes.push_back(n);
+        REQUIRE(if_nodes.size() == 2);
+
+        CHECK(if_nodes[1]->source_range().begin.line == 2);
+        CHECK(if_nodes[1]->source_range().begin.column == 1);
+        CHECK(if_nodes[1]->source_range().end.line == 3);
+        CHECK(if_nodes[1]->source_range().end.column == 7);
+    }
 }
