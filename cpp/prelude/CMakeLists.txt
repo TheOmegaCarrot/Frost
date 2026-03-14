@@ -11,7 +11,7 @@ target_link_libraries( frost-prelude
     PUBLIC
     frost-common
     frost-parser
-    frost-symbol-table
+    frost-execution-context
 )
 
 macro(prelude_test file)

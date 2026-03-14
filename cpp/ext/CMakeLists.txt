@@ -9,7 +9,7 @@ target_include_directories( frost-ext
 
 target_link_libraries( frost-ext
     PUBLIC
-    frost-symbol-table
+    frost-execution-context
     frost-common
 )
 

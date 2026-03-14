@@ -33,7 +33,7 @@ target_link_libraries( frost-functions
     frost-utils
     frost-ast
     frost-value
-    frost-symbol-table
+    frost-execution-context
     Boost::regex
     Boost::json
     cppcodec::cppcodec

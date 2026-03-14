@@ -14,7 +14,7 @@ target_link_libraries( frost-meta
     frost-parser
     frost-functions
     frost-ast
-    frost-symbol-table
+    frost-execution-context
     frost-prelude
     frost-ext
 )

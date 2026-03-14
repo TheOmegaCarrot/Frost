@@ -1,6 +1,6 @@
 add_subdirectory(utils/)
 add_subdirectory(value/)
-add_subdirectory(symbol-table/)
+add_subdirectory(execution-context/)
 add_subdirectory(ast/)
 add_subdirectory(functions/)
 add_subdirectory(parser/)
@@ -19,7 +19,7 @@ target_link_libraries( frost
     frost-parser
     frost-ast
     frost-functions
-    frost-symbol-table
+    frost-execution-context
     frost-value
     frost-prelude
     frost-meta

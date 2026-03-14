@@ -29,7 +29,7 @@ target_link_libraries( frost-ast
     PUBLIC
     frost-common
     frost-utils
-    frost-symbol-table
+    frost-execution-context
     frost-value
 )
 

@@ -79,7 +79,7 @@ set(FROST_INTERPRETER_TARGETS
     frost-meta
     frost-parser
     frost-prelude
-    frost-symbol-table
+    frost-execution-context
     frost-utils
     frost-value
 )
