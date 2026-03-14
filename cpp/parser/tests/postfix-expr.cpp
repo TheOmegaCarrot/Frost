@@ -624,4 +624,49 @@ TEST_CASE("Parser Postfix Expressions")
         CHECK(range.end.line == 1);
         CHECK(range.end.column == 8);
     }
+
+    SECTION("Postfix source ranges exclude trailing whitespace")
+    {
+        // "x[0] + 1": index expr 'x[0]' must end at 4, not 5
+        auto result = parse("x[0] + 1");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        REQUIRE(nodes.size() >= 2);
+
+        auto lhs_range = nodes[1]->source_range();
+        CHECK(lhs_range.begin.column == 1);
+        CHECK(lhs_range.end.column == 4);
+    }
+
+    SECTION("Dot access source range excludes trailing whitespace")
+    {
+        // "obj.key + 1": dot access 'obj.key' must end at 7, not 8
+        auto result = parse("obj.key + 1");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        REQUIRE(nodes.size() >= 2);
+
+        auto lhs_range = nodes[1]->source_range();
+        CHECK(lhs_range.begin.column == 1);
+        CHECK(lhs_range.end.column == 7);
+    }
+
+    SECTION("Call source range excludes trailing whitespace")
+    {
+        // "f(1) + 2": call 'f(1)' must end at 4, not 5
+        auto result = parse("f(1) + 2");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        REQUIRE(nodes.size() >= 2);
+
+        auto lhs_range = nodes[1]->source_range();
+        CHECK(lhs_range.begin.column == 1);
+        CHECK(lhs_range.end.column == 4);
+    }
 }

@@ -496,4 +496,42 @@ TEST_CASE("Parser Binary Expressions")
         CHECK(range.end.line == 1);
         CHECK(range.end.column == 14);
     }
+
+    SECTION("Source ranges exclude trailing whitespace from operands")
+    {
+        // "1 + 2": lhs '1' must be [1:1-1:1], not [1:1-1:2]
+        auto result = parse("1 + 2");
+        REQUIRE(result);
+        auto binop = require_expression(result);
+
+        auto nodes = binop->walk() | std::ranges::to<std::vector>();
+        REQUIRE(nodes.size() == 3);
+
+        auto lhs_range = nodes[1]->source_range();
+        CHECK(lhs_range.begin.column == 1);
+        CHECK(lhs_range.end.column == 1);
+
+        auto rhs_range = nodes[2]->source_range();
+        CHECK(rhs_range.begin.column == 5);
+        CHECK(rhs_range.end.column == 5);
+    }
+
+    SECTION("Source ranges exclude trailing whitespace from keyword operands")
+    {
+        // "true and false": lhs 'true' must end at column 4, not 5
+        auto result = parse("true and false");
+        REQUIRE(result);
+        auto binop = require_expression(result);
+
+        auto nodes = binop->walk() | std::ranges::to<std::vector>();
+        REQUIRE(nodes.size() == 3);
+
+        auto lhs_range = nodes[1]->source_range();
+        CHECK(lhs_range.begin.column == 1);
+        CHECK(lhs_range.end.column == 4);
+
+        auto rhs_range = nodes[2]->source_range();
+        CHECK(rhs_range.begin.column == 10);
+        CHECK(rhs_range.end.column == 14);
+    }
 }
