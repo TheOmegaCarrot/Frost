@@ -2,7 +2,7 @@
 
 Frost's standard library is available in every program without any imports.
 
-Some functions are namespaced (`re`, `fs`, `http`) and accessed via dot syntax.
+Some functions are namespaced (`re`, `fs`) and accessed via dot syntax.
 
 An [alphabetical index of all functions](./index.md) is available.
 
@@ -40,4 +40,12 @@ In these cases, short placeholder names are used in signatures rather than inven
 | [OS](./os.md)                       | Interacting with the operating system                                                      |
 | [Filesystem](./filesystem.md)       | Reading, writing, and navigating the filesystem                                            |
 | [JSON](./json.md)                   | Parsing and serializing JSON                                                               |
-| [HTTP](./http.md)                   | Making HTTP requests                                                                       |
+
+## Extensions
+
+Extensions are optional components enabled at build time.
+They are not available in all Frost builds, but are enabled by default.
+
+| Extension                  | Description          |
+|----------------------------|----------------------|
+| [HTTP](./http.md)          | Making HTTP requests |
