@@ -1289,4 +1289,50 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(arr.size() == 1);
         CHECK(arr[0]->get<frst::Int>().value() == 9_f);
     }
+
+    SECTION("Source range for single-param lambda")
+    {
+        // "fn(x) -> x + 1" → [1:1-1:14]
+        auto result = parse("fn(x) -> x + 1");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 14);
+    }
+
+    SECTION("Source range for arrow-only lambda")
+    {
+        // "fn -> 42" → [1:1-1:8]
+        auto result = parse("fn -> 42");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 8);
+    }
+
+    SECTION("Source range for block-body lambda")
+    {
+        // "fn(x) -> { x }" → [1:1-1:14]
+        auto result = parse("fn(x) -> { x }");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 14);
+    }
+
+    SECTION("Source range excludes trailing whitespace")
+    {
+        // "fn -> 1   " → end at column 7, not 10
+        auto result = parse("fn -> 1   ");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 7);
+    }
 }

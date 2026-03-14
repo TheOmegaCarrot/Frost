@@ -829,4 +829,56 @@ TEST_CASE("Parser Define Statements")
         CHECK(range.begin.column == 8);
         CHECK(range.end.column == 10);
     }
+
+    SECTION("Source range for array destructure statement")
+    {
+        // "def [a, b] = x" → [1:1-1:14]
+        auto result = parse("def [a, b] = x");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+        auto range = program[0]->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 14);
+    }
+
+    SECTION("Source range for export array destructure")
+    {
+        // "export def [a, b] = x" → [1:1-1:21]
+        auto result = parse("export def [a, b] = x");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+        auto range = program[0]->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 21);
+    }
+
+    SECTION("Source range for map destructure statement")
+    {
+        // "def {a, b: c} = x" → [1:1-1:17]
+        auto result = parse("def {a, b: c} = x");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+        auto range = program[0]->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 17);
+    }
+
+    SECTION("Source range for export map destructure")
+    {
+        // "export def {a} = x" → [1:1-1:18]
+        auto result = parse("export def {a} = x");
+        REQUIRE(result);
+        auto program = require_program(result);
+        REQUIRE(program.size() == 1);
+        auto range = program[0]->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 18);
+    }
 }

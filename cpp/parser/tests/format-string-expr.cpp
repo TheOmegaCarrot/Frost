@@ -167,4 +167,38 @@ TEST_CASE("Parser Format Strings")
             CHECK(result);
         }
     }
+
+    SECTION("Source range for format string")
+    {
+        // "$'hello ${name}'" → [1:1-1:17]
+        auto result = parse("$'hello ${name}'");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 16);
+    }
+
+    SECTION("Source range for double-quoted format string")
+    {
+        // R"($"x=${val}")" → [1:1-1:11]
+        auto result = parse(R"($"x=${val}")");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 11);
+    }
+
+    SECTION("Source range excludes trailing whitespace")
+    {
+        auto result = parse("$'hi'   ");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 5);
+    }
 }

@@ -278,4 +278,27 @@ TEST_CASE("Parser Filter Expressions")
             CHECK(result.error_count() >= 1);
         }
     }
+
+    SECTION("Source range for filter expression")
+    {
+        // "filter [1] with fn x -> true" → [1:1-1:28]
+        auto result = parse("filter [1] with fn x -> true");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 28);
+    }
+
+    SECTION("Source range excludes trailing whitespace")
+    {
+        auto result = parse("filter [1] with fn x -> true   ");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 28);
+    }
 }

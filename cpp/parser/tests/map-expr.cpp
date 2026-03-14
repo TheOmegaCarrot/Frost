@@ -309,4 +309,27 @@ TEST_CASE("Parser Map Expressions")
             CHECK(result.error_count() >= 1);
         }
     }
+
+    SECTION("Source range for map expression")
+    {
+        // "map [1] with fn x -> x" → [1:1-1:22]
+        auto result = parse("map [1] with fn x -> x");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 22);
+    }
+
+    SECTION("Source range excludes trailing whitespace")
+    {
+        auto result = parse("map [1] with fn x -> x   ");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 22);
+    }
 }

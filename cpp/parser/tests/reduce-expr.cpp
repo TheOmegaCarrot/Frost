@@ -441,4 +441,38 @@ TEST_CASE("Parser Reduce Expressions")
             CHECK(result.error_count() >= 1);
         }
     }
+
+    SECTION("Source range for reduce without init")
+    {
+        // "reduce [1, 2] with fn (a, x) -> a + x" → [1:1-1:37]
+        auto result = parse("reduce [1, 2] with fn (a, x) -> a + x");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 37);
+    }
+
+    SECTION("Source range for reduce with init")
+    {
+        // "reduce [1] with fn (a, x) -> a + x init: 0" → [1:1-1:42]
+        auto result = parse("reduce [1] with fn (a, x) -> a + x init: 0");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 42);
+    }
+
+    SECTION("Source range excludes trailing whitespace")
+    {
+        auto result = parse("reduce [1] with fn (a, x) -> a + x   ");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 34);
+    }
 }

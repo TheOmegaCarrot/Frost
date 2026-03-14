@@ -98,3 +98,60 @@ TEST_CASE("Name Lookup")
                           Catch::Matchers::ContainsSubstring("missing_name"));
     }
 }
+
+namespace
+{
+struct Expression_Root
+{
+    static constexpr auto whitespace = frst::grammar::ws;
+    static constexpr auto rule =
+        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
+    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
+};
+} // namespace
+
+TEST_CASE("Name Lookup Source Ranges")
+{
+    auto parse = [](std::string_view input) {
+        auto src = lexy::string_input<lexy::utf8_encoding>(input);
+        frst::grammar::reset_parse_state(src);
+        return lexy::parse<Expression_Root>(src, lexy::noop);
+    };
+
+    SECTION("Single-character identifier")
+    {
+        // "x" → [1:1-1:1]
+        auto result = parse("x");
+        REQUIRE(result);
+        auto expr = std::move(result).value();
+        REQUIRE(expr);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 1);
+    }
+
+    SECTION("Multi-character identifier")
+    {
+        // "foobar" → [1:1-1:6]
+        auto result = parse("foobar");
+        REQUIRE(result);
+        auto expr = std::move(result).value();
+        REQUIRE(expr);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 6);
+    }
+
+    SECTION("Identifier with underscores")
+    {
+        // "my_var_2" → [1:1-1:8]
+        auto result = parse("my_var_2");
+        REQUIRE(result);
+        auto expr = std::move(result).value();
+        REQUIRE(expr);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 8);
+    }
+}

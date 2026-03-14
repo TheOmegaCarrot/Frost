@@ -288,4 +288,40 @@ TEST_CASE("Parser Primary Expressions")
         auto value = expr->evaluate(ctx);
         CHECK(value == frst::Value::null());
     }
+
+    SECTION("Source range for do block")
+    {
+        // "do { 1 }" → [1:1-1:8]
+        auto result = parse("do { 1 }");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 8);
+    }
+
+    SECTION("Source range for multiline do block")
+    {
+        // "do {\n  1\n}" → [1:1-3:1]
+        auto result = parse("do {\n  1\n}");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 3);
+        CHECK(range.end.column == 1);
+    }
+
+    SECTION("Source range for do block excludes trailing whitespace")
+    {
+        auto result = parse("do { 1 }   ");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+        auto range = expr->source_range();
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.column == 8);
+    }
 }
