@@ -384,4 +384,51 @@ TEST_CASE("Parser Map Literals")
         CHECK_FALSE(parse("{a: 1; }"));
         CHECK_FALSE(parse("{;a: 1}"));
     }
+
+    SECTION("Identifier key sugar gets source range")
+    {
+        // "{foo: 1, bar: 2}"
+        //   ^       ^
+        //  col 2-4  col 10-12
+        auto result = parse("{foo: 1, bar: 2}");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        std::vector<const frst::ast::Statement*> key_literals;
+        for (auto* n : nodes)
+            if (n->node_label().starts_with("Literal(\""))
+                key_literals.push_back(n);
+        REQUIRE(key_literals.size() == 2);
+
+        auto foo_range = key_literals[0]->source_range();
+        CHECK(foo_range.begin.line == 1);
+        CHECK(foo_range.begin.column == 2);
+        CHECK(foo_range.end.column == 4);
+
+        auto bar_range = key_literals[1]->source_range();
+        CHECK(bar_range.begin.column == 10);
+        CHECK(bar_range.end.column == 12);
+    }
+
+    SECTION("Identifier key range excludes surrounding whitespace")
+    {
+        // "{  foo  : 1}"
+        //     ^
+        //  col 4-6
+        auto result = parse("{  foo  : 1}");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        std::vector<const frst::ast::Statement*> key_literals;
+        for (auto* n : nodes)
+            if (n->node_label().starts_with("Literal(\""))
+                key_literals.push_back(n);
+        REQUIRE(key_literals.size() == 1);
+
+        auto range = key_literals[0]->source_range();
+        CHECK(range.begin.column == 4);
+        CHECK(range.end.column == 6);
+    }
 }

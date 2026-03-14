@@ -13,5 +13,4 @@ def zcurry2 = fn f, ...outer ->
 zcurry2(
     fn a, b -> [a, b],
     1, 2, 3, 4
-)('a', 'b', 'c', 'd')
-    @ print()
+)('a', 'b', 'c', 'd') @ print()

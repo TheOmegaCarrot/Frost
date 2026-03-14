@@ -1701,7 +1701,9 @@ struct map_key
                            + dsl::recurse<expression_nl>
                            + param_ws_nl
                            + dsl::lit_c<']'>;
-        auto ident_key = dsl::p<identifier_required>;
+        auto ident_key = dsl::position
+                         + dsl::p<identifier_required>
+                         + dsl::position;
         auto key =
             dsl::peek(dsl::lit_c<'['>) >> bracket_key | dsl::else_ >> ident_key;
         return key;
@@ -1711,8 +1713,9 @@ struct map_key
         [](ast::Expression::Ptr key) {
             return key;
         },
-        [](std::string key) {
-            return make_string_key_expr(std::move(key));
+        [](auto begin_pos, std::string key, auto end_pos) {
+            return make_string_key_expr(std::move(key),
+                                        make_source_range(begin_pos, end_pos));
         });
     static constexpr auto name = "map key";
 };
