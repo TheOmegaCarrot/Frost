@@ -1571,7 +1571,8 @@ struct If
 
             auto elif_branch =
                 kw_elif
-                >> (dsl::recurse<expression>
+                >> (dsl::position
+                    + dsl::recurse<expression>
                     + dsl::lit_c<':'>
                     + param_ws_nl
                     + (require_expr_start_no_nl<expected_if_consequent>()
@@ -1601,18 +1602,29 @@ struct If
         // The third overload "unwraps" the else branch: its single expression
         // becomes the alternate of the enclosing If node.
         static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
-            [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
-               lexy::nullopt) {
-                return std::make_unique<ast::If>(ast::Statement::no_range,
-                                                 std::move(condition),
-                                                 std::move(consequent));
+            [](auto after_elif, ast::Expression::Ptr condition,
+               ast::Expression::Ptr consequent, lexy::nullopt) {
+                auto end = consequent->source_range().end;
+                // Position is after "elif" + auto-whitespace; scan back
+                // past whitespace, then past the 4-char keyword.
+                auto p = reinterpret_cast<const char8_t*>(&*after_elif);
+                auto kw_end = skip_trailing_ws(detail::g_input_begin, p);
+                auto begin = to_source_location(kw_end - 4);
+                return std::make_unique<ast::If>(
+                    ast::Statement::Source_Range{begin, end},
+                    std::move(condition), std::move(consequent));
             },
-            [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
+            [](auto after_elif, ast::Expression::Ptr condition,
+               ast::Expression::Ptr consequent,
                ast::Expression::Ptr alternate) {
-                return std::make_unique<ast::If>(ast::Statement::no_range,
-                                                 std::move(condition),
-                                                 std::move(consequent),
-                                                 std::move(alternate));
+                auto end = alternate->source_range().end;
+                auto p = reinterpret_cast<const char8_t*>(&*after_elif);
+                auto kw_end = skip_trailing_ws(detail::g_input_begin, p);
+                auto begin = to_source_location(kw_end - 4);
+                return std::make_unique<ast::If>(
+                    ast::Statement::Source_Range{begin, end},
+                    std::move(condition), std::move(consequent),
+                    std::move(alternate));
             },
             [](ast::Expression::Ptr alternate) {
                 return alternate;

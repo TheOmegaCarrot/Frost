@@ -386,4 +386,71 @@ TEST_CASE("Parser If Expressions")
         CHECK(range.end.line == 1);
         CHECK(range.end.column == 32);
     }
+
+    SECTION("Synthetic elif If node gets source range from elif to end")
+    {
+        // "if a: b elif c: d else: e"
+        //  ^                        ^  outer If: [1:1-1:25]
+        //          ^                 ^  inner If: [1:9-1:25]
+        auto result = parse("if a: b elif c: d else: e");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        // outer If -> Name_Lookup(a), Name_Lookup(b), inner If -> ...
+        // The inner If is nodes[3] (after outer If, a, b)
+        REQUIRE(nodes.size() >= 4);
+        auto inner_range = nodes[3]->source_range();
+        CHECK(inner_range.begin.line == 1);
+        CHECK(inner_range.begin.column == 9);
+        CHECK(inner_range.end.line == 1);
+        CHECK(inner_range.end.column == 25);
+    }
+
+    SECTION("Chained elif nodes each get correct source ranges")
+    {
+        // "if a: b elif c: d elif e: f else: g"
+        //  ^                                   ^  outer: [1:1-1:35]
+        //          ^                            ^  elif1: [1:9-1:35]
+        //                    ^                  ^  elif2: [1:19-1:35]
+        auto result = parse("if a: b elif c: d elif e: f else: g");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        // Find the If nodes (indices 0, 3, 7 based on tree structure)
+        std::vector<const frst::ast::Statement*> if_nodes;
+        for (auto* n : nodes)
+            if (n->node_label().starts_with("If "))
+                if_nodes.push_back(n);
+        REQUIRE(if_nodes.size() == 3);
+
+        CHECK(if_nodes[0]->source_range().begin.column == 1);
+        CHECK(if_nodes[0]->source_range().end.column == 35);
+
+        CHECK(if_nodes[1]->source_range().begin.column == 9);
+        CHECK(if_nodes[1]->source_range().end.column == 35);
+
+        CHECK(if_nodes[2]->source_range().begin.column == 19);
+        CHECK(if_nodes[2]->source_range().end.column == 35);
+    }
+
+    SECTION("elif without else gets range ending at consequent")
+    {
+        // "if a: b elif c: d"
+        //          ^       ^  inner If: [1:9-1:17]
+        auto result = parse("if a: b elif c: d");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        std::vector<const frst::ast::Statement*> if_nodes;
+        for (auto* n : nodes)
+            if (n->node_label().starts_with("If "))
+                if_nodes.push_back(n);
+        REQUIRE(if_nodes.size() == 2);
+
+        CHECK(if_nodes[1]->source_range().begin.column == 9);
+        CHECK(if_nodes[1]->source_range().end.column == 17);
+    }
 }
