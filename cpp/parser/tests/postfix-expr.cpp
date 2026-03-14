@@ -669,4 +669,67 @@ TEST_CASE("Parser Postfix Expressions")
         CHECK(lhs_range.begin.column == 1);
         CHECK(lhs_range.end.column == 4);
     }
+
+    SECTION("Dot access key literal gets source range of identifier")
+    {
+        // "foo.bar": Index [1:1-1:7], key Literal("bar") [1:5-1:7]
+        auto result = parse("foo.bar");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        CHECK(expr->source_range().begin.column == 1);
+        CHECK(expr->source_range().end.column == 7);
+
+        // walk: [0]=Index, [1]=Name_Lookup(foo), [2]=Literal("bar")
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        REQUIRE(nodes.size() == 3);
+
+        auto key_range = nodes[2]->source_range();
+        CHECK(key_range.begin.line == 1);
+        CHECK(key_range.begin.column == 5);
+        CHECK(key_range.end.line == 1);
+        CHECK(key_range.end.column == 7);
+    }
+
+    SECTION("Dot key range excludes trailing whitespace")
+    {
+        // "x.y + 1": key 'y' must be [1:3-1:3], not extending into the space
+        auto result = parse("x.y + 1");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        // walk into the Binop LHS → Index → key
+        auto top_nodes = expr->walk() | std::ranges::to<std::vector>();
+        // [0]=Binop, [1]=Index(x.y), [2]=Name_Lookup(x), [3]=Literal("y"),
+        // [4]=Literal(1)
+        REQUIRE(top_nodes.size() == 5);
+
+        auto key_range = top_nodes[3]->source_range();
+        CHECK(key_range.begin.column == 3);
+        CHECK(key_range.end.column == 3);
+    }
+
+    SECTION("Chained dot key ranges")
+    {
+        // "a.b.c": each key literal gets its own range
+        auto result = parse("a.b.c");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        CHECK(expr->source_range().begin.column == 1);
+        CHECK(expr->source_range().end.column == 5);
+
+        // walk: [0]=Index(a.b.c), [1]=Index(a.b), [2]=Name_Lookup(a),
+        //       [3]=Literal("b"), [4]=Literal("c")
+        auto nodes = expr->walk() | std::ranges::to<std::vector>();
+        REQUIRE(nodes.size() == 5);
+
+        auto b_range = nodes[3]->source_range();
+        CHECK(b_range.begin.column == 3);
+        CHECK(b_range.end.column == 3);
+
+        auto c_range = nodes[4]->source_range();
+        CHECK(c_range.begin.column == 5);
+        CHECK(c_range.end.column == 5);
+    }
 }

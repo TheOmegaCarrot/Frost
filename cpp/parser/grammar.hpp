@@ -958,10 +958,13 @@ constexpr auto index_postfix_op()
 
 // Dot: `expr.field`. After `.`, an identifier is required. The identifier
 // is converted to a string-key index at AST construction time.
+// Two positions are captured: one before the identifier (for the key range
+// begin) and one after (for the key range end / index expression end).
 template <typename op_dot_t>
 constexpr auto dot_postfix_op()
 {
-    return dsl::op<op_dot_t>(dsl::lit_c<'.'> >> (dsl::p<identifier_required>
+    return dsl::op<op_dot_t>(dsl::lit_c<'.'> >> (dsl::position
+                                                  + dsl::p<identifier_required>
                                                   + dsl::position));
 }
 
@@ -1654,11 +1657,12 @@ struct If
 // Helper: create a Literal AST node wrapping a string key. Used when an
 // identifier-form map key (`foo:`) is desugared to `["foo"]:` at parse time.
 // Both forms produce identical AST nodes — the short form is pure syntax sugar.
-inline ast::Expression::Ptr make_string_key_expr(std::string key)
+inline ast::Expression::Ptr make_string_key_expr(
+    std::string key,
+    ast::Statement::Source_Range range = ast::Statement::no_range)
 {
     auto key_value = Value::create(std::move(key));
-    return std::make_unique<ast::Literal>(ast::Statement::no_range,
-                                            std::move(key_value));
+    return std::make_unique<ast::Literal>(range, std::move(key_value));
 }
 
 // =============================================================================
@@ -2127,14 +2131,16 @@ struct expression_impl : lexy::expression_production
                         range,
                         std::move(lhs), std::move(index_expr));
                 },
-                [](ast::Expression::Ptr lhs, op_dot, std::string key,
-                   auto end_pos) {
+                [](ast::Expression::Ptr lhs, op_dot, auto key_begin,
+                   std::string key, auto end_pos) {
                     auto range = ast::Statement::Source_Range{
                         lhs->source_range().begin,
                         inclusive_end_loc(end_pos)};
+                    auto key_range = make_source_range(key_begin, end_pos);
                     return std::make_unique<ast::Index>(
                         range,
-                        std::move(lhs), make_string_key_expr(std::move(key)));
+                        std::move(lhs),
+                        make_string_key_expr(std::move(key), key_range));
                 });
         };
 
@@ -2303,12 +2309,14 @@ struct expression_impl : lexy::expression_production
                 range, std::move(lhs), std::move(args));
         },
         // Postfix: dot access `lhs.field`.
-        [](ast::Expression::Ptr lhs, op_dot, std::string key,
-           auto end_pos) {
+        [](ast::Expression::Ptr lhs, op_dot, auto key_begin,
+           std::string key, auto end_pos) {
             auto range = ast::Statement::Source_Range{
                 lhs->source_range().begin, inclusive_end_loc(end_pos)};
+            auto key_range = make_source_range(key_begin, end_pos);
             return std::make_unique<ast::Index>(
-                range, std::move(lhs), make_string_key_expr(std::move(key)));
+                range, std::move(lhs),
+                make_string_key_expr(std::move(key), key_range));
         },
         // Postfix: threaded call `lhs @ callee(args...)`.
         [](ast::Expression::Ptr lhs, op_threaded_call,
