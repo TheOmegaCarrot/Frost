@@ -229,25 +229,63 @@ inline ast::Statement::Source_Location to_source_location(const auto& pos)
     return {.line = line, .column = col};
 }
 
+// Scan backward from `end` past automatically-consumed whitespace and
+// line comments.  Lexy's auto-whitespace inserts invisible gaps between
+// a token's last character and the `dsl::position` that follows; this
+// function finds the exclusive-end of the actual content.
+//
+// `stop` is a lower bound — scanning will never go below it.
+inline const char8_t* skip_trailing_ws(const char8_t* stop,
+                                       const char8_t* end)
+{
+    while (end > stop)
+    {
+        auto c = *(end - 1);
+        if (c == u8' ' || c == u8'\t' || c == u8'\n' || c == u8'\r'
+            || c == u8'\f' || c == u8'\v')
+        {
+            --end;
+            continue;
+        }
+        // Check for a line comment (`# ... \n`).  Scan backward on
+        // the current line looking for `#`.
+        auto scan = end;
+        bool found_hash = false;
+        while (scan > stop)
+        {
+            --scan;
+            if (*scan == u8'\n')
+                break;
+            if (*scan == u8'#')
+            {
+                found_hash = true;
+                break;
+            }
+        }
+        if (found_hash)
+        {
+            end = scan;
+            continue;
+        }
+        break;
+    }
+    return end;
+}
+
 inline ast::Statement::Source_Range make_source_range(const auto& begin_pos,
                                                       const auto& end_pos)
 {
-    auto begin_loc = to_source_location(begin_pos);
-    // end is inclusive (position of last char), so step back one byte
-    // from the exclusive end_pos that dsl::position gives after a token.
-    auto end_p = reinterpret_cast<const char8_t*>(&*end_pos);
     auto begin_p = reinterpret_cast<const char8_t*>(&*begin_pos);
+    auto end_p = reinterpret_cast<const char8_t*>(&*end_pos);
     if (end_p <= begin_p)
         return ast::Statement::no_range;
-    // Temporarily retreat to compute inclusive end location
-    auto prev = end_pos;
-    --prev;
-    auto end_loc = to_source_location(prev);
-    // Restore anchor to exclusive end so subsequent calls start from there
-    detail::g_anchor_pos = end_p;
-    // Recompute anchor values (the exclusive end is one past end_loc)
-    detail::g_anchor_line = end_loc.line;
-    detail::g_anchor_col = end_loc.column + 1;
+    // Strip trailing whitespace/comments that Lexy consumed after the
+    // last token to find the true content end.
+    auto actual_end = skip_trailing_ws(begin_p, end_p);
+    if (actual_end <= begin_p)
+        return ast::Statement::no_range;
+    auto begin_loc = to_source_location(begin_p);
+    auto end_loc = to_source_location(actual_end - 1);
     return {.begin = begin_loc, .end = end_loc};
 }
 
@@ -255,9 +293,9 @@ inline ast::Statement::Source_Range make_source_range(const auto& begin_pos,
 inline ast::Statement::Source_Location
 inclusive_end_loc(const auto& one_past_end_pos)
 {
-    auto prev = one_past_end_pos;
-    --prev;
-    return to_source_location(prev);
+    auto end_p = reinterpret_cast<const char8_t*>(&*one_past_end_pos);
+    auto actual_end = skip_trailing_ws(detail::g_input_begin, end_p);
+    return to_source_location(actual_end - 1);
 }
 
 // Compute the source location of a prefix operator's first character.
