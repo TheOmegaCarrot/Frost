@@ -30,13 +30,13 @@ class Lambda final : public Expression
            std::optional<std::string> vararg_param = {},
            std::optional<std::string> self_name = {});
 
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
-
     std::generator<Symbol_Action> symbol_sequence() const final;
 
     std::string node_label() const final;
 
   protected:
+    [[nodiscard]] Value_Ptr do_evaluate(const Symbol_Table& syms) const final;
+
     std::generator<Child_Info> children() const final;
 
   private:

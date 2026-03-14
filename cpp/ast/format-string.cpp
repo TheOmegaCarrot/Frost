@@ -10,7 +10,7 @@ ast::Format_String::Format_String(const std::string& format_string)
     segments_ = std::move(result).value();
 }
 
-Value_Ptr ast::Format_String::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Format_String::do_evaluate(const Symbol_Table& syms) const
 {
     std::string out;
     for (const auto& segment : segments_)

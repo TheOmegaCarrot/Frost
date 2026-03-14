@@ -21,11 +21,11 @@ class Map final : public Expression
 
     Map(Expression::Ptr structure, Expression::Ptr operation);
 
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
-
     std::string node_label() const final;
 
   protected:
+    [[nodiscard]] Value_Ptr do_evaluate(const Symbol_Table& syms) const final;
+
     std::generator<Child_Info> children() const final;
 
   private:

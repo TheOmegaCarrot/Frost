@@ -84,7 +84,7 @@ TEST_CASE("Lambda")
 
         auto expr = std::make_unique<mock::Mock_Expression>();
         auto* expr_ptr = expr.get();
-        FORBID_CALL(*expr_ptr, evaluate(_));
+        FORBID_CALL(*expr_ptr, do_evaluate(_));
 
         std::vector<Statement::Ptr> body;
         body.push_back(std::move(expr));

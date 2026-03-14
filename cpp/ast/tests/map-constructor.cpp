@@ -38,11 +38,11 @@ TEST_CASE("Map Constructor")
 
         trompeloeil::sequence seq;
 
-        REQUIRE_CALL(*k1, evaluate(_))
+        REQUIRE_CALL(*k1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key);
-        REQUIRE_CALL(*v1, evaluate(_))
+        REQUIRE_CALL(*v1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val);
@@ -77,27 +77,27 @@ TEST_CASE("Map Constructor")
 
         trompeloeil::sequence seq;
 
-        REQUIRE_CALL(*k1, evaluate(_))
+        REQUIRE_CALL(*k1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key1);
-        REQUIRE_CALL(*v1, evaluate(_))
+        REQUIRE_CALL(*v1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val1);
-        REQUIRE_CALL(*k2, evaluate(_))
+        REQUIRE_CALL(*k2, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key2);
-        REQUIRE_CALL(*v2, evaluate(_))
+        REQUIRE_CALL(*v2, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val2);
-        REQUIRE_CALL(*k3, evaluate(_))
+        REQUIRE_CALL(*k3, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key3);
-        REQUIRE_CALL(*v3, evaluate(_))
+        REQUIRE_CALL(*v3, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val3);
@@ -131,19 +131,19 @@ TEST_CASE("Map Constructor")
 
         trompeloeil::sequence seq;
 
-        REQUIRE_CALL(*k1, evaluate(_))
+        REQUIRE_CALL(*k1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key1);
-        REQUIRE_CALL(*v1, evaluate(_))
+        REQUIRE_CALL(*v1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val1);
-        REQUIRE_CALL(*k2, evaluate(_))
+        REQUIRE_CALL(*k2, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key2);
-        REQUIRE_CALL(*v2, evaluate(_))
+        REQUIRE_CALL(*v2, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val2);
@@ -174,19 +174,19 @@ TEST_CASE("Map Constructor")
 
         trompeloeil::sequence seq;
 
-        REQUIRE_CALL(*k1, evaluate(_))
+        REQUIRE_CALL(*k1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key_int);
-        REQUIRE_CALL(*v1, evaluate(_))
+        REQUIRE_CALL(*v1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val_int);
-        REQUIRE_CALL(*k2, evaluate(_))
+        REQUIRE_CALL(*k2, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(key_float);
-        REQUIRE_CALL(*v2, evaluate(_))
+        REQUIRE_CALL(*v2, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(val_float);

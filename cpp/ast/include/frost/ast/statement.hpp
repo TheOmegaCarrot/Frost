@@ -28,7 +28,10 @@ class Statement
     //! @brief Execute this statement
     //! @param table Symbol table to use for lookup, and in which to define new
     //!                 names
-    virtual std::optional<Map> execute(Symbol_Table& table) const = 0;
+    std::optional<Map> execute(Symbol_Table& table) const
+    {
+        return do_execute(table);
+    }
 
     //! @brief Print AST of this node and all descendents
     void debug_dump_ast(std::ostream& out) const;
@@ -65,6 +68,8 @@ class Statement
     }
 
   protected:
+    virtual std::optional<Map> do_execute(Symbol_Table& table) const = 0;
+
     struct Child_Info
     {
         const Statement* node = nullptr;

@@ -45,11 +45,11 @@ TEST_CASE("Filter")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(pred_val);
@@ -77,11 +77,11 @@ TEST_CASE("Filter")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(pred_val);
@@ -142,11 +142,11 @@ TEST_CASE("Filter")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(pred_val);
@@ -189,11 +189,11 @@ TEST_CASE("Filter")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(pred_val);
@@ -233,11 +233,11 @@ TEST_CASE("Filter")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(pred_val);
@@ -266,11 +266,11 @@ TEST_CASE("Filter")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(pred_val);
@@ -323,11 +323,11 @@ TEST_CASE("Filter")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(pred_val);
@@ -366,11 +366,11 @@ TEST_CASE("Filter")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(pred_val);
@@ -393,10 +393,10 @@ TEST_CASE("Filter")
         {
             auto bad_val = Value::create(123_f);
 
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .RETURN(bad_val);
-            FORBID_CALL(*operation_expr, evaluate(_));
+            FORBID_CALL(*operation_expr, do_evaluate(_));
 
             ast::Filter node{std::move(structure_expr),
                              std::move(operation_expr)};
@@ -410,11 +410,11 @@ TEST_CASE("Filter")
             auto bad_pred = Value::create("nope"s);
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(bad_pred);

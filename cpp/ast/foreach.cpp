@@ -8,7 +8,7 @@ ast::Foreach::Foreach(Expression::Ptr structure, Expression::Ptr operation)
 {
 }
 
-Value_Ptr ast::Foreach::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Foreach::do_evaluate(const Symbol_Table& syms) const
 {
     const auto& structure_val = structure_->evaluate(syms);
     if (not structure_val->is_structured())

@@ -38,7 +38,7 @@ TEST_CASE("Array Constructor")
 
     SECTION("One")
     {
-        REQUIRE_CALL(*e1, evaluate(_))
+        REQUIRE_CALL(*e1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(values.at(0));
 
@@ -52,16 +52,16 @@ TEST_CASE("Array Constructor")
 
     SECTION("FOur")
     {
-        REQUIRE_CALL(*e1, evaluate(_))
+        REQUIRE_CALL(*e1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(values.at(0));
-        REQUIRE_CALL(*e2, evaluate(_))
+        REQUIRE_CALL(*e2, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(values.at(1));
-        REQUIRE_CALL(*e3, evaluate(_))
+        REQUIRE_CALL(*e3, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(values.at(2));
-        REQUIRE_CALL(*e4, evaluate(_))
+        REQUIRE_CALL(*e4, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(values.at(3));
 

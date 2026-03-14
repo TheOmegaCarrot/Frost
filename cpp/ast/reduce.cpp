@@ -12,7 +12,7 @@ ast::Reduce::Reduce(Expression::Ptr structure, Expression::Ptr operation,
 {
 }
 
-Value_Ptr ast::Reduce::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Reduce::do_evaluate(const Symbol_Table& syms) const
 {
     const auto& structure_val = structure_->evaluate(syms);
     if (not structure_val->is_structured())

@@ -32,7 +32,7 @@ static Value_Ptr index_map(const Map& map, const Value_Ptr& key_val)
     return Value::null();
 }
 
-Value_Ptr Index::evaluate(const Symbol_Table& syms) const
+Value_Ptr Index::do_evaluate(const Symbol_Table& syms) const
 {
     auto struct_val = structure_->evaluate(syms);
     if (!struct_val->is_structured())

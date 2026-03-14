@@ -37,7 +37,7 @@ class Sequence_Expression final : public Expression
     {
     }
 
-    Value_Ptr evaluate(const Symbol_Table&) const override
+    Value_Ptr do_evaluate(const Symbol_Table&) const override
     {
         return result_;
     }
@@ -97,16 +97,16 @@ TEST_CASE("Map_Destructure")
         auto key_val = Value::create("foo"s);
         auto missing_key_val = Value::create("missing"s);
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(rhs_map);
-        REQUIRE_CALL(*key_expr, evaluate(_))
+        REQUIRE_CALL(*key_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(key_val);
         REQUIRE_CALL(syms, define("bar", value)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(*missing_key_expr, evaluate(_))
+        REQUIRE_CALL(*missing_key_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(missing_key_val);
@@ -136,11 +136,11 @@ TEST_CASE("Map_Destructure")
         auto rhs_map = Value::create(frst::Map{{Value::create("foo"s), value}});
         auto key_val = Value::create("foo"s);
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(rhs_map);
-        REQUIRE_CALL(*key_expr, evaluate(_))
+        REQUIRE_CALL(*key_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(key_val);
@@ -173,16 +173,16 @@ TEST_CASE("Map_Destructure")
         auto rhs_map = Value::create(
             frst::Map{{Value::create("k1"s), v1}, {Value::create("k2"s), v2}});
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(rhs_map);
-        REQUIRE_CALL(*key_expr1, evaluate(_))
+        REQUIRE_CALL(*key_expr1, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create("k1"s));
         REQUIRE_CALL(syms, define("a", v1)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(*key_expr2, evaluate(_))
+        REQUIRE_CALL(*key_expr2, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create("k2"s));
@@ -216,11 +216,11 @@ TEST_CASE("Map_Destructure")
         auto rhs_map = Value::create(frst::Map{});
         auto key_val = Value::create("missing"s);
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(rhs_map);
-        REQUIRE_CALL(*key_expr, evaluate(_))
+        REQUIRE_CALL(*key_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(key_val);
@@ -263,10 +263,10 @@ TEST_CASE("Map_Destructure")
         auto key_expr = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(1_f));
-        FORBID_CALL(*key_expr, evaluate(_));
+        FORBID_CALL(*key_expr, do_evaluate(_));
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Map_Destructure::Element> elems;
@@ -285,10 +285,10 @@ TEST_CASE("Map_Destructure")
         auto key_expr = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(frst::Map{}));
-        REQUIRE_CALL(*key_expr, evaluate(_))
+        REQUIRE_CALL(*key_expr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(Array{Value::create(1_f)}));
         FORBID_CALL(syms, define(_, _));
@@ -312,13 +312,13 @@ TEST_CASE("Map_Destructure")
         auto key_expr2 = mock::Mock_Expression::make();
         mock::Mock_Symbol_Table syms;
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(frst::Map{}));
-        REQUIRE_CALL(*key_expr1, evaluate(_))
+        REQUIRE_CALL(*key_expr1, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .THROW(Frost_Recoverable_Error{"kaboom"});
-        FORBID_CALL(*key_expr2, evaluate(_));
+        FORBID_CALL(*key_expr2, do_evaluate(_));
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Map_Destructure::Element> elems;
@@ -342,20 +342,20 @@ TEST_CASE("Map_Destructure")
         auto value = Value::create(1_f);
         auto rhs_map = Value::create(frst::Map{{Value::create("ok"s), value}});
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(rhs_map);
-        REQUIRE_CALL(*key_expr1, evaluate(_))
+        REQUIRE_CALL(*key_expr1, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create("ok"s));
         REQUIRE_CALL(syms, define("first", value)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(*key_expr2, evaluate(_))
+        REQUIRE_CALL(*key_expr2, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(Array{Value::create(2_f)}));
-        FORBID_CALL(*key_expr3, evaluate(_));
+        FORBID_CALL(*key_expr3, do_evaluate(_));
         FORBID_CALL(syms, define("third", _));
 
         std::vector<Map_Destructure::Element> elems;
@@ -392,21 +392,21 @@ TEST_CASE("Map_Destructure")
             {Value::create(3.5), v_float},
         });
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(rhs_map);
-        REQUIRE_CALL(*key_int, evaluate(_))
+        REQUIRE_CALL(*key_int, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(7_f));
         REQUIRE_CALL(syms, define("i", v_int)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(*key_bool, evaluate(_))
+        REQUIRE_CALL(*key_bool, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(true));
         REQUIRE_CALL(syms, define("b", v_bool)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(*key_float, evaluate(_))
+        REQUIRE_CALL(*key_float, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(3.5));
@@ -444,16 +444,16 @@ TEST_CASE("Map_Destructure")
         auto key_val1 = Value::create("dup"s);
         auto key_val2 = Value::create("dup"s);
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(rhs_map);
-        REQUIRE_CALL(*key_expr1, evaluate(_))
+        REQUIRE_CALL(*key_expr1, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(key_val1);
         REQUIRE_CALL(syms, define("a", value)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(*key_expr2, evaluate(_))
+        REQUIRE_CALL(*key_expr2, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(key_val2);
@@ -476,18 +476,18 @@ TEST_CASE("Map_Destructure")
         mock::Mock_Symbol_Table syms;
         trompeloeil::sequence seq;
 
-        REQUIRE_CALL(*rhs_expr, evaluate(_))
+        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(frst::Map{}));
-        REQUIRE_CALL(*key_expr1, evaluate(_))
+        REQUIRE_CALL(*key_expr1, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create("missing"s));
         REQUIRE_CALL(syms, define("a", _))
             .IN_SEQUENCE(seq)
             .LR_WITH(_2->template is<Null>());
-        REQUIRE_CALL(*key_expr2, evaluate(_))
+        REQUIRE_CALL(*key_expr2, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create("missing"s));

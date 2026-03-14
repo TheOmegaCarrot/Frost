@@ -7,7 +7,7 @@ ast::Map_Constructor::Map_Constructor(std::vector<KV_Pair> pairs)
 {
 }
 
-Value_Ptr ast::Map_Constructor::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Map_Constructor::do_evaluate(const Symbol_Table& syms) const
 {
     Map acc;
 

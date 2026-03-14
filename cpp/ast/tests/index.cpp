@@ -32,12 +32,12 @@ TEST_CASE("Array Index")
             auto syms = mock::Mock_Symbol_Table{};
             trompeloeil::sequence seq;
 
-            REQUIRE_CALL(*struct_expr, evaluate(_))
+            REQUIRE_CALL(*struct_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(arr);
 
-            REQUIRE_CALL(*idx_expr, evaluate(_))
+            REQUIRE_CALL(*idx_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(Value::create(Int{index}));
@@ -81,12 +81,12 @@ TEST_CASE("Array Index Type Error")
     auto syms = mock::Mock_Symbol_Table{};
     trompeloeil::sequence seq;
 
-    REQUIRE_CALL(*struct_expr, evaluate(_))
+    REQUIRE_CALL(*struct_expr, do_evaluate(_))
         .LR_WITH(&_1 == &syms)
         .IN_SEQUENCE(seq)
         .RETURN(arr);
 
-    REQUIRE_CALL(*idx_expr, evaluate(_))
+    REQUIRE_CALL(*idx_expr, do_evaluate(_))
         .LR_WITH(&_1 == &syms)
         .IN_SEQUENCE(seq)
         .RETURN(Value::create("oops"s));
@@ -143,12 +143,12 @@ TEST_CASE("Map Index Primitive Key")
             auto syms = mock::Mock_Symbol_Table{};
             trompeloeil::sequence seq;
 
-            REQUIRE_CALL(*struct_expr, evaluate(_))
+            REQUIRE_CALL(*struct_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map);
 
-            REQUIRE_CALL(*idx_expr, evaluate(_))
+            REQUIRE_CALL(*idx_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(test.query);
@@ -197,12 +197,12 @@ TEST_CASE("Map Index Non-Primitive Key Type Error")
             auto syms = mock::Mock_Symbol_Table{};
             trompeloeil::sequence seq;
 
-            REQUIRE_CALL(*struct_expr, evaluate(_))
+            REQUIRE_CALL(*struct_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map);
 
-            REQUIRE_CALL(*idx_expr, evaluate(_))
+            REQUIRE_CALL(*idx_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(test.key);

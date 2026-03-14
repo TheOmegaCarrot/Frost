@@ -13,7 +13,7 @@ ast::Map::Map(Expression::Ptr structure, Expression::Ptr operation)
 {
 }
 
-Value_Ptr ast::Map::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Map::do_evaluate(const Symbol_Table& syms) const
 {
     const auto& structure_val = structure_->evaluate(syms);
     if (not structure_val->is_structured())

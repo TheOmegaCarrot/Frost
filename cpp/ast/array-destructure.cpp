@@ -40,7 +40,7 @@ Array_Destructure::Array_Destructure(std::vector<Name> names,
         rest_name_->visit(duplicate_check);
 }
 
-std::optional<Map> Array_Destructure::execute(Symbol_Table& table) const
+std::optional<Map> Array_Destructure::do_execute(Symbol_Table& table) const
 {
     Value_Ptr expr_result = expr_->evaluate(table);
 

@@ -23,11 +23,11 @@ class Format_String final : public Expression
 
     Format_String(const std::string& format_string);
 
-  public:
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
     std::string node_label() const final;
 
   protected:
+    [[nodiscard]] Value_Ptr do_evaluate(const Symbol_Table& syms) const final;
+
     std::generator<Symbol_Action> symbol_sequence() const final;
 
   private:

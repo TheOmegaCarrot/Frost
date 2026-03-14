@@ -107,7 +107,7 @@ Lambda::Lambda(std::vector<std::string> params,
     closure_define_count_ = names_defined_so_far.size();
 }
 
-[[nodiscard]] Value_Ptr Lambda::evaluate(const Symbol_Table& syms) const
+Value_Ptr Lambda::do_evaluate(const Symbol_Table& syms) const
 {
     Symbol_Table captures;
     captures.reserve(names_to_capture_.size());

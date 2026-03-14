@@ -38,7 +38,7 @@ class Sequence_Expression final : public Expression
     {
     }
 
-    Value_Ptr evaluate(const Symbol_Table&) const override
+    Value_Ptr do_evaluate(const Symbol_Table&) const override
     {
         return result_;
     }
@@ -96,7 +96,7 @@ TEST_CASE("Array_Destructure")
         auto c = Value::create(3_f);
         auto arr = Value::create(Array{a, b, c});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -127,7 +127,7 @@ TEST_CASE("Array_Destructure")
         auto c = Value::create(3_f);
         auto arr = Value::create(Array{a, b, c});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -180,7 +180,7 @@ TEST_CASE("Array_Destructure")
         auto a = Value::null();
         auto arr = Value::create(Array{a});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -214,7 +214,7 @@ TEST_CASE("Array_Destructure")
         auto c = Value::create(3_f);
         auto arr = Value::create(Array{a, b, c});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -249,7 +249,7 @@ TEST_CASE("Array_Destructure")
         auto a = Value::create(1_f);
         auto arr = Value::create(Array{a});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -283,7 +283,7 @@ TEST_CASE("Array_Destructure")
         auto c = Value::create(3_f);
         auto arr = Value::create(Array{a, b, c});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -313,7 +313,7 @@ TEST_CASE("Array_Destructure")
         auto v3 = Value::create(3_f);
         auto arr = Value::create(Array{v1, v2, v3});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -349,7 +349,7 @@ TEST_CASE("Array_Destructure")
         auto b = Value::create(2_f);
         auto arr = Value::create(Array{a, b});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -380,7 +380,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -402,7 +402,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -426,7 +426,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -450,7 +450,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{
@@ -471,7 +471,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{});
 
-        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
@@ -487,7 +487,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
@@ -509,7 +509,7 @@ TEST_CASE("Array_Destructure")
         auto b = Value::create(2_f);
         auto arr = Value::create(Array{a, b});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -539,7 +539,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -567,7 +567,7 @@ TEST_CASE("Array_Destructure")
         auto a = Value::create(1_f);
         auto arr = Value::create(Array{a});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -592,7 +592,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
@@ -613,7 +613,7 @@ TEST_CASE("Array_Destructure")
         auto v2 = Value::create(2_f);
         auto arr = Value::create(Array{v1, v2});
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(arr);
@@ -641,7 +641,7 @@ TEST_CASE("Array_Destructure")
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(1_f));
         FORBID_CALL(syms, define(_, _));
@@ -661,7 +661,7 @@ TEST_CASE("Array_Destructure")
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .THROW(Frost_Recoverable_Error{"kaboom"});
         FORBID_CALL(syms, define(_, _));
@@ -680,7 +680,7 @@ TEST_CASE("Array_Destructure")
         auto expr = std::make_unique<mock::Mock_Expression>();
         mock::Mock_Symbol_Table syms;
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(1_f));
         FORBID_CALL(syms, define(_, _));
@@ -750,7 +750,7 @@ TEST_CASE("Array_Destructure")
 
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
-        REQUIRE_CALL(*expr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
+        REQUIRE_CALL(*expr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(arr);
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{

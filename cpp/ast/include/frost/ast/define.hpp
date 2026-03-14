@@ -23,13 +23,13 @@ class Define final : public Statement
     Define& operator=(Define&&) = delete;
     ~Define() final = default;
 
-    std::optional<Map> execute(Symbol_Table& table) const;
-
     std::generator<Symbol_Action> symbol_sequence() const final;
 
     std::string node_label() const final;
 
   protected:
+    std::optional<Map> do_execute(Symbol_Table& table) const final;
+
     std::generator<Child_Info> children() const final;
 
   private:

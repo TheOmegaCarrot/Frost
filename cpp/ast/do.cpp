@@ -34,7 +34,7 @@ Do_Block::Do_Block(std::vector<ast::Statement::Ptr> body)
         throw Frost_Unrecoverable_Error{"A do block must end in an expression"};
 }
 
-Value_Ptr Do_Block::evaluate(const Symbol_Table& syms) const
+Value_Ptr Do_Block::do_evaluate(const Symbol_Table& syms) const
 {
     Symbol_Table exec_table{&syms};
     for (const auto& statement : body_prefix_)

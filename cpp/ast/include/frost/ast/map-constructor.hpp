@@ -22,13 +22,13 @@ class Map_Constructor final : public Expression
 
     Map_Constructor(std::vector<KV_Pair> pairs);
 
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
-
     std::string node_label() const final;
 
     bool data_safe() const final;
 
   protected:
+    [[nodiscard]] Value_Ptr do_evaluate(const Symbol_Table& syms) const final;
+
     std::generator<Child_Info> children() const final;
 
   private:

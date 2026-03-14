@@ -7,7 +7,7 @@ ast::Array_Constructor::Array_Constructor(std::vector<Expression::Ptr> elems)
 {
 }
 
-Value_Ptr ast::Array_Constructor::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Array_Constructor::do_evaluate(const Symbol_Table& syms) const
 {
     return Value::create(elems_
                          | std::views::transform([&](const auto& each) {

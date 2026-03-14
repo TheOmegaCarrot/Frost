@@ -10,7 +10,7 @@ ast::Filter::Filter(Expression::Ptr structure, Expression::Ptr operation)
 {
 }
 
-Value_Ptr ast::Filter::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Filter::do_evaluate(const Symbol_Table& syms) const
 {
 
     const auto& structure_val = structure_->evaluate(syms);

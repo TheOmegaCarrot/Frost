@@ -47,13 +47,13 @@ class Unop final : public Expression
     Unop& operator=(Unop&&) = delete;
     ~Unop() override = default;
 
-    Value_Ptr evaluate(const Symbol_Table& syms) const final;
-
     std::string node_label() const final;
 
     bool data_safe() const final;
 
   protected:
+    Value_Ptr do_evaluate(const Symbol_Table& syms) const final;
+
     std::generator<Child_Info> children() const final;
 
   private:

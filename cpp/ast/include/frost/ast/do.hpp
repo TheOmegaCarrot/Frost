@@ -20,13 +20,13 @@ class Do_Block final : public Expression
     Do_Block& operator=(Do_Block&&) = delete;
     ~Do_Block() final = default;
 
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table&) const final;
-
     std::string node_label() const final;
 
     std::generator<Symbol_Action> symbol_sequence() const final;
 
   protected:
+    [[nodiscard]] Value_Ptr do_evaluate(const Symbol_Table&) const final;
+
     std::generator<Child_Info> children() const final;
 
   private:

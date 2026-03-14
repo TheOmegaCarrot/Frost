@@ -39,7 +39,7 @@ struct Flag_Statement final : Statement
     {
     }
 
-    std::optional<frst::Map> execute(
+    std::optional<frst::Map> do_execute(
         [[maybe_unused]] Symbol_Table&) const override
     {
         ++(*count_);
@@ -68,7 +68,7 @@ struct Uncaptured_Lookup final : Expression
     {
     }
 
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final
+    [[nodiscard]] Value_Ptr do_evaluate(const Symbol_Table& syms) const final
     {
         return syms.lookup(name_);
     }
@@ -577,13 +577,13 @@ Literal(42)
         auto third_val = Value::create(3_f);
 
         trompeloeil::sequence seq;
-        REQUIRE_CALL(*first_ptr, evaluate(_))
+        REQUIRE_CALL(*first_ptr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .RETURN(first_val);
-        REQUIRE_CALL(*second_ptr, evaluate(_))
+        REQUIRE_CALL(*second_ptr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .RETURN(second_val);
-        REQUIRE_CALL(*third_ptr, evaluate(_))
+        REQUIRE_CALL(*third_ptr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .RETURN(third_val);
 
@@ -612,10 +612,10 @@ Literal(42)
         auto return_val = Value::create(2_f);
 
         trompeloeil::sequence seq;
-        REQUIRE_CALL(*body_expr_ptr, evaluate(_))
+        REQUIRE_CALL(*body_expr_ptr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .RETURN(body_val);
-        REQUIRE_CALL(*return_expr_ptr, evaluate(_))
+        REQUIRE_CALL(*return_expr_ptr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .RETURN(return_val);
 
@@ -740,7 +740,7 @@ Literal(42)
 
         auto expr = std::make_unique<mock::Mock_Expression>();
         auto* expr_ptr = expr.get();
-        FORBID_CALL(*expr_ptr, evaluate(_));
+        FORBID_CALL(*expr_ptr, do_evaluate(_));
 
         std::vector<Statement::Ptr> body;
         body.push_back(std::move(expr));
@@ -760,7 +760,7 @@ Literal(42)
 
         auto return_expr = std::make_shared<mock::Mock_Expression>();
         auto* return_expr_ptr = return_expr.get();
-        FORBID_CALL(*return_expr_ptr, evaluate(_));
+        FORBID_CALL(*return_expr_ptr, do_evaluate(_));
 
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
@@ -779,7 +779,7 @@ Literal(42)
 
         auto expr = std::make_unique<mock::Mock_Expression>();
         auto* expr_ptr = expr.get();
-        FORBID_CALL(*expr_ptr, evaluate(_));
+        FORBID_CALL(*expr_ptr, do_evaluate(_));
 
         std::vector<Statement::Ptr> body;
         body.push_back(std::move(expr));
@@ -799,7 +799,7 @@ Literal(42)
 
         auto return_expr = std::make_shared<mock::Mock_Expression>();
         auto* return_expr_ptr = return_expr.get();
-        FORBID_CALL(*return_expr_ptr, evaluate(_));
+        FORBID_CALL(*return_expr_ptr, do_evaluate(_));
 
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));

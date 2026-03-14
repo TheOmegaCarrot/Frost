@@ -31,13 +31,13 @@ class Array_Destructure final : public Statement
     Array_Destructure(std::vector<Name> names, std::optional<Name> rest_name,
                       Expression::Ptr expr, bool export_defs = false);
 
-    std::optional<Map> execute(Symbol_Table& table) const final;
-
     std::generator<Symbol_Action> symbol_sequence() const final;
 
     std::string node_label() const;
 
   protected:
+    std::optional<Map> do_execute(Symbol_Table& table) const final;
+
     std::generator<Child_Info> children() const;
 
   private:

@@ -37,11 +37,11 @@ TEST_CASE("If")
 
     SECTION("Consequent Taken")
     {
-        REQUIRE_CALL(*condition, evaluate(_))
+        REQUIRE_CALL(*condition, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(42_f));
 
-        REQUIRE_CALL(*consequent, evaluate(_))
+        REQUIRE_CALL(*consequent, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create("yay!"s));
 
@@ -53,11 +53,11 @@ TEST_CASE("If")
 
     SECTION("Alternate Taken")
     {
-        REQUIRE_CALL(*condition, evaluate(_))
+        REQUIRE_CALL(*condition, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(false));
 
-        REQUIRE_CALL(*alternate, evaluate(_))
+        REQUIRE_CALL(*alternate, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create("yay!"s));
 
@@ -69,7 +69,7 @@ TEST_CASE("If")
 
     SECTION("Null Alternate Taken")
     {
-        REQUIRE_CALL(*condition, evaluate(_))
+        REQUIRE_CALL(*condition, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(false));
 

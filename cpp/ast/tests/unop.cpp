@@ -28,7 +28,7 @@ TEST_CASE("Unop")
     {
         DYNAMIC_SECTION("Operator " << ast::format_unary_op(op))
         {
-            REQUIRE_CALL(*operand, evaluate(_))
+            REQUIRE_CALL(*operand, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .RETURN(operand_val);
 
@@ -49,7 +49,7 @@ TEST_CASE("Unop Negate Type Error")
     auto operand = mock::Mock_Expression::make();
     mock::Mock_Symbol_Table syms;
 
-    REQUIRE_CALL(*operand, evaluate(_))
+    REQUIRE_CALL(*operand, do_evaluate(_))
         .LR_WITH(&_1 == &syms)
         .RETURN(Value::create("oops"s));
 

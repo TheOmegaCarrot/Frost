@@ -53,15 +53,15 @@ TEST_CASE("Function Call")
         auto fn_val = Value::create(Function{callable});
 
         trompeloeil::sequence seq;
-        REQUIRE_CALL(*fn_ptr, evaluate(_))
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(fn_val);
-        REQUIRE_CALL(*arg1_ptr, evaluate(_))
+        REQUIRE_CALL(*arg1_ptr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(v1);
-        REQUIRE_CALL(*arg2_ptr, evaluate(_))
+        REQUIRE_CALL(*arg2_ptr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(v2);
@@ -93,7 +93,7 @@ TEST_CASE("Function Call")
         auto fn_val = Value::create(Function{callable});
         Call_List calls;
 
-        REQUIRE_CALL(*fn_ptr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
         REQUIRE_CALL(*callable, call(_))
             .LR_SIDE_EFFECT(record_call(calls, _1))
             .LR_WITH(_1.empty())
@@ -124,11 +124,11 @@ TEST_CASE("Function Call")
 
         auto fn_val = Value::create(Function{callable});
 
-        REQUIRE_CALL(*fn_ptr, evaluate(_))
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .TIMES(2)
             .RETURN(fn_val);
-        REQUIRE_CALL(*arg_ptr, evaluate(_))
+        REQUIRE_CALL(*arg_ptr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .TIMES(2)
             .RETURN(arg_val);
@@ -167,7 +167,7 @@ TEST_CASE("Function Call")
         Call_List calls;
 
         auto fn_val = Value::create(Function{callable});
-        REQUIRE_CALL(*fn_ptr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
         REQUIRE_CALL(*callable, call(_))
             .LR_SIDE_EFFECT(record_call(calls, _1))
             .LR_WITH(std::equal(_1.begin(), _1.end(), expected.begin()))
@@ -190,10 +190,10 @@ TEST_CASE("Function Call")
         auto* fn_ptr = fn_expr.get();
         auto* arg_ptr = arg.get();
 
-        REQUIRE_CALL(*fn_ptr, evaluate(_))
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(1_f));
-        FORBID_CALL(*arg_ptr, evaluate(_));
+        FORBID_CALL(*arg_ptr, do_evaluate(_));
 
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg));
@@ -212,10 +212,10 @@ TEST_CASE("Function Call")
         auto* fn_ptr = fn_expr.get();
         auto* arg_ptr = arg.get();
 
-        REQUIRE_CALL(*fn_ptr, evaluate(_))
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .THROW(Frost_Recoverable_Error{"fn boom"});
-        FORBID_CALL(*arg_ptr, evaluate(_));
+        FORBID_CALL(*arg_ptr, do_evaluate(_));
 
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg));
@@ -238,11 +238,11 @@ TEST_CASE("Function Call")
         auto callable = mock::Mock_Callable::make();
         auto fn_val = Value::create(Function{callable});
 
-        REQUIRE_CALL(*fn_ptr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
-        REQUIRE_CALL(*arg1_ptr, evaluate(_))
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
+        REQUIRE_CALL(*arg1_ptr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .THROW(Frost_Recoverable_Error{"arg boom"});
-        FORBID_CALL(*arg2_ptr, evaluate(_));
+        FORBID_CALL(*arg2_ptr, do_evaluate(_));
         FORBID_CALL(*callable, call(_));
 
         std::vector<Expression::Ptr> args;
@@ -265,8 +265,8 @@ TEST_CASE("Function Call")
         auto callable = mock::Mock_Callable::make();
         auto fn_val = Value::create(Function{callable});
 
-        REQUIRE_CALL(*fn_ptr, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
-        REQUIRE_CALL(*arg_ptr, evaluate(_))
+        REQUIRE_CALL(*fn_ptr, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(fn_val);
+        REQUIRE_CALL(*arg_ptr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .RETURN(Value::create(1_f));
         REQUIRE_CALL(*callable, call(_)).THROW(Frost_Recoverable_Error{"boom"});

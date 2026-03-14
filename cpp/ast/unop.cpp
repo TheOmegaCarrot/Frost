@@ -8,7 +8,7 @@ ast::Unop::Unop(Expression::Ptr operand, Unary_Op op)
 {
 }
 
-Value_Ptr ast::Unop::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Unop::do_evaluate(const Symbol_Table& syms) const
 {
     auto operand_value = operand_->evaluate(syms);
     switch (op_)

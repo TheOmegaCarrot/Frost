@@ -27,7 +27,7 @@ Map_Destructure::Map_Destructure(std::vector<Element> destructure_elems,
     }
 }
 
-std::optional<Map> Map_Destructure::execute(Symbol_Table& table) const
+std::optional<Map> Map_Destructure::do_execute(Symbol_Table& table) const
 {
     Value_Ptr expr_result = expr_->evaluate(table);
 

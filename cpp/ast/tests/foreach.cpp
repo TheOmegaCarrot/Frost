@@ -44,11 +44,11 @@ TEST_CASE("Foreach Array")
             auto op_val = Value::create(Function{op});
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -73,11 +73,11 @@ TEST_CASE("Foreach Array")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -113,11 +113,11 @@ TEST_CASE("Foreach Array")
             std::size_t call_index = 0;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -153,11 +153,11 @@ TEST_CASE("Foreach Array")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -183,10 +183,10 @@ TEST_CASE("Foreach Array")
         {
             auto bad_val = Value::create(123_f);
 
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .RETURN(bad_val);
-            FORBID_CALL(*operation_expr, evaluate(_));
+            FORBID_CALL(*operation_expr, do_evaluate(_));
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
@@ -200,11 +200,11 @@ TEST_CASE("Foreach Array")
             auto op_val = Value::create(123_f);
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -234,11 +234,11 @@ TEST_CASE("Foreach Map")
             auto op_val = Value::create(Function{op});
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -264,11 +264,11 @@ TEST_CASE("Foreach Map")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -321,11 +321,11 @@ TEST_CASE("Foreach Map")
             std::size_t call_index = 0;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -359,11 +359,11 @@ TEST_CASE("Foreach Map")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -404,10 +404,10 @@ TEST_CASE("Foreach Map")
         {
             auto bad_val = Value::create(123_f);
 
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .RETURN(bad_val);
-            FORBID_CALL(*operation_expr, evaluate(_));
+            FORBID_CALL(*operation_expr, do_evaluate(_));
 
             ast::Foreach node{std::move(structure_expr),
                               std::move(operation_expr)};
@@ -421,11 +421,11 @@ TEST_CASE("Foreach Map")
             auto op_val = Value::create("nope"s);
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(map_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);

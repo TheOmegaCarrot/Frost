@@ -24,11 +24,11 @@ class Function_Call final : public Expression
     Function_Call(Expression::Ptr fn_expr,
                   std::vector<Expression::Ptr> args_exprs);
 
-    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& syms) const final;
-
     std::string node_label() const final;
 
   protected:
+    [[nodiscard]] Value_Ptr do_evaluate(const Symbol_Table& syms) const final;
+
     std::generator<Child_Info> children() const final;
 
   private:

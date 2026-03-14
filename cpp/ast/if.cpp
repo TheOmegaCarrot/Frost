@@ -10,7 +10,7 @@ ast::If::If(Expression::Ptr condition, Expression::Ptr consequent,
 {
 }
 
-Value_Ptr ast::If::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::If::do_evaluate(const Symbol_Table& syms) const
 {
     if (condition_->evaluate(syms)->truthy())
         return consequent_->evaluate(syms);

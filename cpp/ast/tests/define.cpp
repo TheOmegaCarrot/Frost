@@ -25,7 +25,7 @@ TEST_CASE("Define")
     {
         auto value = Value::create(42_f);
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(value);
@@ -43,14 +43,14 @@ TEST_CASE("Define")
         auto value1 = Value::create(42_f);
         auto value2 = Value::create("well that's not right"s);
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(value1);
 
         REQUIRE_CALL(syms, define("foo", value1)).IN_SEQUENCE(seq);
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(value2);
@@ -70,7 +70,7 @@ TEST_CASE("Define")
     {
         auto value = Value::create(123_f);
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(value);
@@ -92,7 +92,7 @@ TEST_CASE("Define")
     {
         auto value = Value::null();
 
-        REQUIRE_CALL(*expr, evaluate(_))
+        REQUIRE_CALL(*expr, do_evaluate(_))
             .IN_SEQUENCE(seq)
             .LR_WITH(&_1 == &syms)
             .RETURN(value);

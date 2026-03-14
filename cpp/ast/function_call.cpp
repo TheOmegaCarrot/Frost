@@ -11,7 +11,7 @@ ast::Function_Call::Function_Call(Expression::Ptr fn_expr,
 {
 }
 
-Value_Ptr ast::Function_Call::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Function_Call::do_evaluate(const Symbol_Table& syms) const
 {
     const auto& fn = fn_expr_->evaluate(syms);
 

@@ -33,12 +33,12 @@ TEST_CASE("Numeric Binary ops")
         {
             trompeloeil::sequence seq;
 
-            REQUIRE_CALL(*lhs, evaluate(_))
+            REQUIRE_CALL(*lhs, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(lhs_val);
 
-            REQUIRE_CALL(*rhs, evaluate(_))
+            REQUIRE_CALL(*rhs, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(rhs_val);
@@ -73,8 +73,8 @@ TEST_CASE("Binop Short-Circuit")
 
         auto lhs_val = Value::create(false);
 
-        REQUIRE_CALL(*lhs, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(lhs_val);
-        FORBID_CALL(*rhs, evaluate(_));
+        REQUIRE_CALL(*lhs, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(lhs_val);
+        FORBID_CALL(*rhs, do_evaluate(_));
 
         ast::Binop node(std::move(lhs), ast::Binary_Op::AND, std::move(rhs));
 
@@ -91,11 +91,11 @@ TEST_CASE("Binop Short-Circuit")
         auto rhs_val = Value::create("rhs"s);
 
         trompeloeil::sequence seq;
-        REQUIRE_CALL(*lhs, evaluate(_))
+        REQUIRE_CALL(*lhs, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(lhs_val);
-        REQUIRE_CALL(*rhs, evaluate(_))
+        REQUIRE_CALL(*rhs, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(rhs_val);
@@ -113,8 +113,8 @@ TEST_CASE("Binop Short-Circuit")
 
         auto lhs_val = Value::create(1_f);
 
-        REQUIRE_CALL(*lhs, evaluate(_)).LR_WITH(&_1 == &syms).RETURN(lhs_val);
-        FORBID_CALL(*rhs, evaluate(_));
+        REQUIRE_CALL(*lhs, do_evaluate(_)).LR_WITH(&_1 == &syms).RETURN(lhs_val);
+        FORBID_CALL(*rhs, do_evaluate(_));
 
         ast::Binop node(std::move(lhs), ast::Binary_Op::OR, std::move(rhs));
 
@@ -131,11 +131,11 @@ TEST_CASE("Binop Short-Circuit")
         auto rhs_val = Value::create("rhs"s);
 
         trompeloeil::sequence seq;
-        REQUIRE_CALL(*lhs, evaluate(_))
+        REQUIRE_CALL(*lhs, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(lhs_val);
-        REQUIRE_CALL(*rhs, evaluate(_))
+        REQUIRE_CALL(*rhs, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(rhs_val);
@@ -159,11 +159,11 @@ TEST_CASE("Comparison Binary ops")
         auto rhs = mock::Mock_Expression::make();
 
         trompeloeil::sequence seq;
-        REQUIRE_CALL(*lhs, evaluate(_))
+        REQUIRE_CALL(*lhs, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(lhs_val);
-        REQUIRE_CALL(*rhs, evaluate(_))
+        REQUIRE_CALL(*rhs, do_evaluate(_))
             .LR_WITH(&_1 == &syms)
             .IN_SEQUENCE(seq)
             .RETURN(rhs_val);

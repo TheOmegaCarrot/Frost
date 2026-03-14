@@ -20,12 +20,17 @@ class Expression : public Statement
     ~Expression() override = default;
 
     //! @brief Evaluate the expression, and get the value it evaluates to
-    //!         Expression evaluation never modifies the symbol table
-    [[nodiscard]] virtual Value_Ptr evaluate(
+    [[nodiscard]] Value_Ptr evaluate(const Symbol_Table& table) const
+    {
+        return do_evaluate(table);
+    }
+
+  protected:
+    [[nodiscard]] virtual Value_Ptr do_evaluate(
         const Symbol_Table& table) const = 0;
 
     //! Executing an expression is simply to evaluate it and discard the result
-    std::optional<Map> execute(Symbol_Table& table) const final
+    std::optional<Map> do_execute(Symbol_Table& table) const final
     {
         (void)evaluate(table);
         return std::nullopt;

@@ -169,9 +169,9 @@ TEST_CASE("Do_Block - evaluate")
         auto* bad_ptr = bad.get();
         auto* never_ptr = never.get();
 
-        REQUIRE_CALL(*bad_ptr, evaluate(_))
+        REQUIRE_CALL(*bad_ptr, do_evaluate(_))
             .THROW(Frost_Recoverable_Error{"prefix boom"});
-        FORBID_CALL(*never_ptr, evaluate(_));
+        FORBID_CALL(*never_ptr, do_evaluate(_));
 
         std::vector<Statement::Ptr> body;
         body.push_back(std::make_unique<Define>("x", std::move(bad)));
@@ -189,7 +189,7 @@ TEST_CASE("Do_Block - evaluate")
         auto bad = mock::Mock_Expression::make();
         auto* bad_ptr = bad.get();
 
-        REQUIRE_CALL(*bad_ptr, evaluate(_))
+        REQUIRE_CALL(*bad_ptr, do_evaluate(_))
             .THROW(Frost_Recoverable_Error{"value boom"});
 
         std::vector<Statement::Ptr> body;

@@ -17,7 +17,7 @@ class Leaf_Node : public ast::Statement
   public:
     explicit Leaf_Node(std::string id) : id_{std::move(id)} {}
 
-    std::optional<Map> execute(Symbol_Table&) const override
+    std::optional<Map> do_execute(Symbol_Table&) const override
     {
         return std::nullopt;
     }
@@ -34,7 +34,7 @@ class Parent_Node : public ast::Statement
   public:
     explicit Parent_Node(std::string id) : id_{std::move(id)} {}
 
-    std::optional<Map> execute(Symbol_Table&) const override
+    std::optional<Map> do_execute(Symbol_Table&) const override
     {
         return std::nullopt;
     }

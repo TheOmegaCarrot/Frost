@@ -9,7 +9,7 @@ ast::Binop::Binop(Expression::Ptr lhs, Binary_Op op, Expression::Ptr rhs)
 {
 }
 
-Value_Ptr ast::Binop::evaluate(const Symbol_Table& syms) const
+Value_Ptr ast::Binop::do_evaluate(const Symbol_Table& syms) const
 {
     using enum Binary_Op;
 

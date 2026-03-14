@@ -44,11 +44,11 @@ TEST_CASE("Map Array")
             auto op_val = Value::create(Function{mapper});
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -76,11 +76,11 @@ TEST_CASE("Map Array")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -124,11 +124,11 @@ TEST_CASE("Map Array")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -157,10 +157,10 @@ TEST_CASE("Map Array")
             auto not_structured = Value::create(42_f);
             auto op_val = Value::create("nope"s);
 
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .RETURN(not_structured);
-            FORBID_CALL(*operation_expr, evaluate(_));
+            FORBID_CALL(*operation_expr, do_evaluate(_));
 
             ast::Map node{std::move(structure_expr), std::move(operation_expr)};
 
@@ -173,11 +173,11 @@ TEST_CASE("Map Array")
             auto op_val = Value::create("not-a-function"s);
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(array_val);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -206,11 +206,11 @@ TEST_CASE("Map Map")
             auto op_val = Value::create(Function{mapper});
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(empty);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -242,11 +242,11 @@ TEST_CASE("Map Map")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(input_map);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -309,11 +309,11 @@ TEST_CASE("Map Map")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(input_map);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -352,11 +352,11 @@ TEST_CASE("Map Map")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(input_map);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -392,11 +392,11 @@ TEST_CASE("Map Map")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(input_map);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -430,11 +430,11 @@ TEST_CASE("Map Map")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(input_map);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -465,11 +465,11 @@ TEST_CASE("Map Map")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(input_map);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -497,11 +497,11 @@ TEST_CASE("Map Map")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(input_map);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
@@ -528,11 +528,11 @@ TEST_CASE("Map Map")
             Call_List calls;
 
             trompeloeil::sequence seq;
-            REQUIRE_CALL(*structure_expr, evaluate(_))
+            REQUIRE_CALL(*structure_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(input_map);
-            REQUIRE_CALL(*operation_expr, evaluate(_))
+            REQUIRE_CALL(*operation_expr, do_evaluate(_))
                 .LR_WITH(&_1 == &syms)
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
