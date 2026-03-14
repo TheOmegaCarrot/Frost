@@ -33,7 +33,7 @@ X_FREE_BINOP
 
 void inject_free_operators(Symbol_Table& table)
 {
-#define X(frost_name, internal_name) INJECT(frost_name, 2, 2);
+#define X(frost_name, internal_name) INJECT(frost_name, 2);
 
     X_FREE_BINOP
 

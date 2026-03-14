@@ -293,11 +293,11 @@ Value_Ptr make_stderr()
 
 void inject_streams(Symbol_Table& table)
 {
-    INJECT(open_read, 1, 1);
-    INJECT(open_trunc, 1, 1);
-    INJECT(open_append, 1, 1);
-    INJECT(stringreader, 1, 1);
-    INJECT(stringwriter, 0, 0);
+    INJECT(open_read, 1);
+    INJECT(open_trunc, 1);
+    INJECT(open_append, 1);
+    INJECT(stringreader, 1);
+    INJECT(stringwriter, 0);
 
     table.define("stdin", make_stdin());
     table.define("stderr", make_stderr());

@@ -166,12 +166,12 @@ BUILTIN(has)
 
 void inject_structure_ops(Symbol_Table& table)
 {
-    INJECT(keys, 1, 1);
-    INJECT(values, 1, 1);
-    INJECT(len, 1, 1);
-    INJECT(range, 1, 3);
-    INJECT(nulls, 1, 1);
-    INJECT(id, 1, 1);
-    INJECT(has, 2, 2);
+    INJECT(keys, 1);
+    INJECT(values, 1);
+    INJECT(len, 1);
+    INJECT_R(range, 1, 3);
+    INJECT(nulls, 1);
+    INJECT(id, 1);
+    INJECT(has, 2);
 }
 } // namespace frst

@@ -67,7 +67,10 @@ BUILTIN(mutable_cell)
 {
     struct Wrapper
     {
-        explicit Wrapper(Value_Ptr v) : value(std::move(v)) {}
+        explicit Wrapper(Value_Ptr v)
+            : value(std::move(v))
+        {
+        }
         Value_Ptr value;
         std::mutex mutex;
     };
@@ -107,6 +110,6 @@ BUILTIN(mutable_cell)
 
 void inject_mutable_cell(Symbol_Table& table)
 {
-    INJECT(mutable_cell, 0, 1);
+    INJECT_R(mutable_cell, 0, 1);
 }
 } // namespace frst

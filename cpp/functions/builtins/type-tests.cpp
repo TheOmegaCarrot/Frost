@@ -49,19 +49,19 @@ BUILTIN(type)
 void inject_type_checks(Symbol_Table& table)
 {
 
-    INJECT(is_null, 1, 1);
-    INJECT(is_int, 1, 1);
-    INJECT(is_float, 1, 1);
-    INJECT(is_bool, 1, 1);
-    INJECT(is_string, 1, 1);
-    INJECT(is_array, 1, 1);
-    INJECT(is_map, 1, 1);
-    INJECT(is_function, 1, 1);
-    INJECT(is_nonnull, 1, 1);
-    INJECT(is_numeric, 1, 1);
-    INJECT(is_primitive, 1, 1);
-    INJECT(is_structured, 1, 1);
-    INJECT(type, 1, 1);
+    INJECT(is_null, 1);
+    INJECT(is_int, 1);
+    INJECT(is_float, 1);
+    INJECT(is_bool, 1);
+    INJECT(is_string, 1);
+    INJECT(is_array, 1);
+    INJECT(is_map, 1);
+    INJECT(is_function, 1);
+    INJECT(is_nonnull, 1);
+    INJECT(is_numeric, 1);
+    INJECT(is_primitive, 1);
+    INJECT(is_structured, 1);
+    INJECT(type, 1);
 }
 
 } // namespace frst

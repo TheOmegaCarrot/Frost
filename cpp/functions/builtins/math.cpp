@@ -166,25 +166,25 @@ BUILTIN(clamp)
 void inject_math(Symbol_Table& table)
 {
 
-#define X(FN) INJECT(FN, 1, 1);
+#define X(FN) INJECT(FN, 1);
 
     X_UNARY_MATH_FLOAT
 
 #undef X
 
-#define X(FN) INJECT(FN, 2, 2);
+#define X(FN) INJECT(FN, 2);
 
     X_BINARY_MATH_FLOAT
 
 #undef X
 
-    INJECT(pow, 2, 2);
-    INJECT(atan2, 2, 2);
-    INJECT(abs, 1, 1);
-    INJECT(round, 1, 1);
-    INJECT(hypot, 2, 3);
-    INJECT(lerp, 3, 3);
-    INJECT(clamp, 3, 3);
+    INJECT(pow, 2);
+    INJECT(atan2, 2);
+    INJECT(abs, 1);
+    INJECT(round, 1);
+    INJECT_R(hypot, 2, 3);
+    INJECT(lerp, 3);
+    INJECT(clamp, 3);
 
     table.define(
         "nums",

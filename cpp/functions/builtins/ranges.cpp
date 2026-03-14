@@ -534,31 +534,31 @@ BUILTIN(partition)
 
 void inject_ranges(Symbol_Table& table)
 {
-    INJECT(stride, 2, 2);
-    INJECT(take, 2, 2);
-    INJECT(drop, 2, 2);
-    INJECT(tail, 2, 2);
-    INJECT(drop_tail, 2, 2);
-    INJECT(slide, 2, 2);
-    INJECT(chunk, 2, 2);
-    INJECT(reverse, 1, 1);
-    INJECT(take_while, 2, 2);
-    INJECT(drop_while, 2, 2);
-    INJECT(chunk_by, 2, 2);
+    INJECT(stride, 2);
+    INJECT(take, 2);
+    INJECT(drop, 2);
+    INJECT(tail, 2);
+    INJECT(drop_tail, 2);
+    INJECT(slide, 2);
+    INJECT(chunk, 2);
+    INJECT(reverse, 1);
+    INJECT(take_while, 2);
+    INJECT(drop_while, 2);
+    INJECT(chunk_by, 2);
     INJECT_V(zip, 2);
     INJECT_V(xprod, 2);
-    INJECT(transform, 2, 2);
-    INJECT(select, 2, 2);
-    INJECT(fold, 2, 3);
-    INJECT(sorted, 1, 2);
-    INJECT(any, 1, 2);
-    INJECT(all, 1, 2);
-    INJECT(none, 1, 2);
-    INJECT(repeat, 2, 2);
-    INJECT(group_by, 2, 2);
-    INJECT(count_by, 2, 2);
-    INJECT(scan, 2, 2);
-    INJECT(flatten, 1, 2);
-    INJECT(partition, 2, 2);
+    INJECT(transform, 2);
+    INJECT(select, 2);
+    INJECT_R(fold, 2, 3);
+    INJECT_R(sorted, 1, 2);
+    INJECT_R(any, 1, 2);
+    INJECT_R(all, 1, 2);
+    INJECT_R(none, 1, 2);
+    INJECT(repeat, 2);
+    INJECT(group_by, 2);
+    INJECT(count_by, 2);
+    INJECT(scan, 2);
+    INJECT_R(flatten, 1, 2);
+    INJECT(partition, 2);
 }
 } // namespace frst

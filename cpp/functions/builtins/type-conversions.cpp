@@ -26,9 +26,9 @@ BUILTIN(to_float)
 
 void inject_type_conversions(Symbol_Table& table)
 {
-    INJECT(to_string, 1, 1);
-    INJECT(pretty, 1, 1);
-    INJECT(to_int, 1, 1);
-    INJECT(to_float, 1, 1);
+    INJECT(to_string, 1);
+    INJECT(pretty, 1);
+    INJECT(to_int, 1);
+    INJECT(to_float, 1);
 }
 } // namespace frst

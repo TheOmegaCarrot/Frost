@@ -18,13 +18,17 @@
     Value::create(Function{std::make_shared<Builtin>(                          \
         NAME, #NAME, Builtin::Arity{.min = MIN_ARITY, .max = MAX_ARITY})})
 
-#define INJECT(NAME, MIN_ARITY, MAX_ARITY)                                     \
+#define INJECT_R(NAME, MIN_ARITY, MAX_ARITY)                                   \
     table.define(#NAME, MAKE_BUILTIN(NAME, MIN_ARITY, MAX_ARITY))
 
-#define INJECT_V(NAME, MIN_ARITY) INJECT(NAME, MIN_ARITY, std::nullopt)
+#define INJECT(NAME, ARITY) INJECT_R(NAME, ARITY, ARITY)
 
-#define ENTRY(NAME, MIN_ARITY, MAX_ARITY)                                      \
+#define INJECT_V(NAME, MIN_ARITY) INJECT_R(NAME, MIN_ARITY, std::nullopt)
+
+#define ENTRY_R(NAME, MIN_ARITY, MAX_ARITY)                                    \
     {Value::create(String{#NAME}), MAKE_BUILTIN(NAME, MIN_ARITY, MAX_ARITY)}
+
+#define ENTRY(NAME, ARITY) ENTRY_R(NAME, ARITY, ARITY)
 
 #define INJECT_MAP(NAME, ...)                                                  \
     table.define(#NAME, Value::create(Value::trusted, Map{__VA_ARGS__}));

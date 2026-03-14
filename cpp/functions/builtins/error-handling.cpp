@@ -36,7 +36,7 @@ BUILTIN(try_call)
 
 void inject_error_handling(Symbol_Table& table)
 {
-    INJECT(try_call, 2, 2);
+    INJECT(try_call, 2);
 }
 
 } // namespace frst

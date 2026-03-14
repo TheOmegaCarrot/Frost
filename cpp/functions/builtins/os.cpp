@@ -37,9 +37,9 @@ BUILTIN(sleep)
 
 void inject_os(Symbol_Table& table)
 {
-    INJECT(getenv, 1, 1);
-    INJECT(exit, 1, 1);
-    INJECT(sleep, 1, 1);
+    INJECT(getenv, 1);
+    INJECT(exit, 1);
+    INJECT(sleep, 1);
 }
 
 } // namespace frst

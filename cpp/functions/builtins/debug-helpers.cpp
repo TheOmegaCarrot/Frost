@@ -39,8 +39,8 @@ BUILTIN(assert)
 
 void inject_debug_helpers(Symbol_Table& table)
 {
-    INJECT(debug_dump, 1, 1);
-    INJECT(assert, 1, 2);
+    INJECT(debug_dump, 1);
+    INJECT_R(assert, 1, 2);
 }
 
 } // namespace frst

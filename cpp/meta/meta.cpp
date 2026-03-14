@@ -34,6 +34,6 @@ BUILTIN(read_value)
 
 void inject_meta(Symbol_Table& table)
 {
-    INJECT(read_value, 1, 1);
+    INJECT(read_value, 1);
 }
 } // namespace frst

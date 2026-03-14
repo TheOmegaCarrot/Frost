@@ -75,8 +75,8 @@ BUILTIN(print)
 
 void inject_output(Symbol_Table& table)
 {
-    INJECT(mformat, 2, 2);
-    INJECT(mprint, 2, 2);
-    INJECT(print, 1, 1);
+    INJECT(mformat, 2);
+    INJECT(mprint, 2);
+    INJECT(print, 1);
 }
 } // namespace frst

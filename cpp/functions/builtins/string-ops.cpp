@@ -288,31 +288,31 @@ X_BINARY_PASSTHROUGH
 
 void inject_string_ops(Symbol_Table& table)
 {
-    INJECT(split, 2, 2);
-    INJECT(lines, 1, 1);
-    INJECT(replace, 3, 3);
-    INJECT(join, 2, 2);
-    INJECT(b64_encode, 1, 1);
-    INJECT(b64_decode, 1, 1);
-    INJECT(b64_urlencode, 1, 1);
-    INJECT(b64_urldecode, 1, 1);
+    INJECT(split, 2);
+    INJECT(lines, 1);
+    INJECT(replace, 3);
+    INJECT(join, 2);
+    INJECT(b64_encode, 1);
+    INJECT(b64_decode, 1);
+    INJECT(b64_urlencode, 1);
+    INJECT(b64_urldecode, 1);
 
-#define X(fn) INJECT(fn, 2, 2);
+#define X(fn) INJECT(fn, 2);
 
     X_BINARY_PASSTHROUGH
 
 #undef X
 
-#define X(ALG) INJECT(ALG, 1, 1);
+#define X(ALG) INJECT(ALG, 1);
 
     X_UPPER_LOWER
 
 #undef X
 
-    INJECT(fmt_int, 2, 2);
-    INJECT(parse_int, 2, 2);
-    INJECT(to_byte_array, 1, 1);
-    INJECT(from_byte_array, 1, 1);
+    INJECT(fmt_int, 2);
+    INJECT(parse_int, 2);
+    INJECT(to_byte_array, 1);
+    INJECT(from_byte_array, 1);
 }
 
 } // namespace frst

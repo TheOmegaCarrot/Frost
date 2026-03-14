@@ -179,7 +179,7 @@ BUILTIN(scan_matches)
 void inject_regex(Symbol_Table& table)
 {
     using namespace re;
-    INJECT_MAP(re, ENTRY(matches, 2, 2), ENTRY(contains, 2, 2),
-               ENTRY(replace, 3, 3), ENTRY(scan_matches, 2, 2));
+    INJECT_MAP(re, ENTRY(matches, 2), ENTRY(contains, 2), ENTRY(replace, 3),
+               ENTRY(scan_matches, 2));
 }
 } // namespace frst

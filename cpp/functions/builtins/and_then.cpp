@@ -28,7 +28,7 @@ BUILTIN(or_else)
 
 void inject_and_then(Symbol_Table& table)
 {
-    INJECT(and_then, 2, 2);
-    INJECT(or_else, 2, 2);
+    INJECT(and_then, 2);
+    INJECT(or_else, 2);
 }
 } // namespace frst

@@ -141,7 +141,7 @@ BUILTIN(to_json)
 
 void inject_json(Symbol_Table& table)
 {
-    INJECT(parse_json, 1, 1);
-    INJECT(to_json, 1, 1);
+    INJECT(parse_json, 1);
+    INJECT(to_json, 1);
 }
 } // namespace frst

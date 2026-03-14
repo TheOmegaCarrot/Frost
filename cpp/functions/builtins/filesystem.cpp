@@ -279,13 +279,12 @@ BUILTIN(concat)
 void inject_filesystem(Symbol_Table& table)
 {
     using namespace fs;
-    INJECT_MAP(fs, ENTRY(move, 2, 2), ENTRY(symlink, 2, 2), ENTRY(copy, 2, 2),
-               ENTRY(absolute, 1, 1), ENTRY(canonical, 1, 1), ENTRY(cd, 1, 1),
-               ENTRY(cwd, 0, 0), ENTRY(exists, 1, 1), ENTRY(remove, 1, 1),
-               ENTRY(remove_recursively, 1, 1), ENTRY(mkdir, 1, 1),
-               ENTRY(size, 1, 1), ENTRY(stat, 1, 1), ENTRY(list, 1, 1),
-               ENTRY(list_recursively, 1, 1), ENTRY(concat, 2, 2),
-               ENTRY(stem, 1, 1), ENTRY(parent, 1, 1), ENTRY(filename, 1, 1),
-               ENTRY(extension, 1, 1));
+    INJECT_MAP(fs, ENTRY(move, 2), ENTRY(symlink, 2), ENTRY(copy, 2),
+               ENTRY(absolute, 1), ENTRY(canonical, 1), ENTRY(cd, 1),
+               ENTRY(cwd, 0), ENTRY(exists, 1), ENTRY(remove, 1),
+               ENTRY(remove_recursively, 1), ENTRY(mkdir, 1), ENTRY(size, 1),
+               ENTRY(stat, 1), ENTRY(list, 1), ENTRY(list_recursively, 1),
+               ENTRY(concat, 2), ENTRY(stem, 1), ENTRY(parent, 1),
+               ENTRY(filename, 1), ENTRY(extension, 1));
 }
 } // namespace frst
