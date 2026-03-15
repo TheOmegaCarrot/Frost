@@ -13,7 +13,7 @@ void Statement::debug_dump_ast(std::ostream& out) const
 void Statement::debug_dump_ast_impl(std::ostream& out,
                                     const Print_Context& context) const
 {
-    const auto label = node_label();
+    const auto label = fmt::format("{} [{}]", node_label(), source_range_);
     print_node(out, context, label);
 
     const auto child_prefix_ = child_prefix(context);
@@ -76,5 +76,5 @@ std::string Statement::child_prefix(const Print_Context& context)
 
 std::string Statement::node_label() const
 {
-    return fmt::format("{} [{}]", do_node_label(), source_range_);
+    return do_node_label();
 }

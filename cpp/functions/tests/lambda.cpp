@@ -1816,19 +1816,19 @@ TEST_CASE("Lambda")
             return body;
         };
 
-        CHECK(Lambda{Statement::no_range,{}, null_body()}.node_label() == "Lambda() [0:0-0:0]");
-        CHECK(Lambda{Statement::no_range,{"x", "y"}, null_body()}.node_label() == "Lambda(x, y) [0:0-0:0]");
+        CHECK(Lambda{Statement::no_range,{}, null_body()}.node_label() == "Lambda()");
+        CHECK(Lambda{Statement::no_range,{"x", "y"}, null_body()}.node_label() == "Lambda(x, y)");
         CHECK(Lambda{Statement::no_range,{}, null_body(), "rest"}.node_label()
-              == "Lambda(...rest) [0:0-0:0]");
+              == "Lambda(...rest)");
         CHECK(Lambda{Statement::no_range,{"x"}, null_body(), "rest"}.node_label()
-              == "Lambda(x, ...rest) [0:0-0:0]");
+              == "Lambda(x, ...rest)");
 
-        CHECK(Lambda{Statement::no_range,{}, null_body(), {}, "f"}.node_label() == "Lambda(f:) [0:0-0:0]");
+        CHECK(Lambda{Statement::no_range,{}, null_body(), {}, "f"}.node_label() == "Lambda(f:)");
         CHECK(Lambda{Statement::no_range,{"x", "y"}, null_body(), {}, "f"}.node_label()
-              == "Lambda(f: x, y) [0:0-0:0]");
+              == "Lambda(f: x, y)");
         CHECK(Lambda{Statement::no_range,{}, null_body(), "rest", "f"}.node_label()
-              == "Lambda(f: ...rest) [0:0-0:0]");
+              == "Lambda(f: ...rest)");
         CHECK(Lambda{Statement::no_range,{"x"}, null_body(), "rest", "f"}.node_label()
-              == "Lambda(f: x, ...rest) [0:0-0:0]");
+              == "Lambda(f: x, ...rest)");
     }
 }

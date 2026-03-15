@@ -517,7 +517,7 @@ TEST_CASE("Do_Block - node_label and walk")
         std::vector<Statement::Ptr> body;
         body.push_back(lit(1));
         Do_Block node{Statement::no_range,std::move(body)};
-        CHECK(node.node_label() == "Do_Block [0:0-0:0]");
+        CHECK(node.node_label() == "Do_Block");
     }
 
     SECTION("walk visits prefix nodes then value expression, in order")

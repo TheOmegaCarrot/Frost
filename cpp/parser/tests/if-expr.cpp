@@ -421,7 +421,7 @@ TEST_CASE("Parser If Expressions")
         // Find the If nodes (indices 0, 3, 7 based on tree structure)
         std::vector<const frst::ast::Statement*> if_nodes;
         for (auto* n : nodes)
-            if (n->node_label().starts_with("If "))
+            if (n->node_label() == "If")
                 if_nodes.push_back(n);
         REQUIRE(if_nodes.size() == 3);
 
@@ -446,7 +446,7 @@ TEST_CASE("Parser If Expressions")
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         std::vector<const frst::ast::Statement*> if_nodes;
         for (auto* n : nodes)
-            if (n->node_label().starts_with("If "))
+            if (n->node_label() == "If")
                 if_nodes.push_back(n);
         REQUIRE(if_nodes.size() == 2);
 
@@ -471,7 +471,7 @@ TEST_CASE("Parser If Expressions")
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         std::vector<const frst::ast::Statement*> if_nodes;
         for (auto* n : nodes)
-            if (n->node_label().starts_with("If "))
+            if (n->node_label() == "If")
                 if_nodes.push_back(n);
         REQUIRE(if_nodes.size() == 2);
 

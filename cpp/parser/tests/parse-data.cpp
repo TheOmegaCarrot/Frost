@@ -12,7 +12,7 @@ TEST_CASE("parse_data")
     {
         auto result = parse_data("42");
         REQUIRE(result.has_value());
-        CHECK(result.value()->node_label() == "Literal(42) [1:1-1:2]");
+        CHECK(result.value()->node_label() == "Literal(42)");
     }
 
     SECTION("Parses float literal")
@@ -26,7 +26,7 @@ TEST_CASE("parse_data")
     {
         auto result = parse_data(R"("hello")");
         REQUIRE(result.has_value());
-        CHECK(result.value()->node_label() == R"(Literal("hello") [1:1-1:7])");
+        CHECK(result.value()->node_label() == R"(Literal("hello"))");
     }
 
     SECTION("Parses bool literals")
@@ -44,14 +44,14 @@ TEST_CASE("parse_data")
     {
         auto result = parse_data("[1, 2, 3]");
         REQUIRE(result.has_value());
-        CHECK(result.value()->node_label() == "Array_Constructor [1:1-1:9]");
+        CHECK(result.value()->node_label() == "Array_Constructor");
     }
 
     SECTION("Parses map constructor")
     {
         auto result = parse_data("{foo: 1}");
         REQUIRE(result.has_value());
-        CHECK(result.value()->node_label() == "Map_Constructor [1:1-1:8]");
+        CHECK(result.value()->node_label() == "Map_Constructor");
     }
 
     SECTION("Parses arithmetic expression")
