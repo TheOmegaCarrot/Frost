@@ -31,7 +31,10 @@ class Expression : public Statement
         if (not ctx.runtime.backtrace)
             return do_evaluate(ctx);
 
-        Frame_Guard guard{ctx.runtime.backtrace, AST_Frame{.node = this}};
+        Frame_Guard guard{ctx.runtime.backtrace,
+                         AST_Frame{.node_label = node_label(),
+                                   .source_range = fmt::format(
+                                       "{}", source_range())}};
 
         try
         {
@@ -40,7 +43,10 @@ class Expression : public Statement
         catch (Frost_Error& fe)
         {
             if (!fe.has_backtrace())
+            {
+                ctx.runtime.backtrace->snapshot_if_needed();
                 fe.add_backtrace(ctx.runtime.backtrace->take_snapshot());
+            }
             throw;
         }
     }

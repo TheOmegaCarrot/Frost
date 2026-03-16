@@ -32,8 +32,7 @@ std::string format_backtrace(const frst::Backtrace& bt)
             frst::Overload{
                 [&](const frst::AST_Frame& f) {
                     fmt::format_to(std::back_inserter(out), "{} [{}]\n",
-                                   f.node->node_label(),
-                                   f.node->source_range());
+                                   f.node_label, f.source_range);
                 },
                 [&](const frst::Call_Frame& f) {
                     fmt::format_to(std::back_inserter(out), "Call ({})\n",

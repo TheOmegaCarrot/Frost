@@ -11,19 +11,14 @@
 namespace frst
 {
 
-// Forward declaration
-namespace ast
-{
-class Statement;
-}
-
 // ============================================================
 // Frame types
 // ============================================================
 
 struct AST_Frame
 {
-    const ast::Statement* node; // non-owning, valid during execution
+    std::string node_label;
+    std::string source_range;
 };
 
 struct Call_Frame

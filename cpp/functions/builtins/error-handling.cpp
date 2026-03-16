@@ -5,8 +5,6 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
-#include <frost/ast/statement.hpp>
-
 using namespace std::literals;
 namespace frst
 {
@@ -22,8 +20,8 @@ Value_Ptr format_backtrace_as_value(const Backtrace& bt)
         std::string text = std::visit(
             Overload{
                 [](const AST_Frame& f) {
-                    return fmt::format("{} [{}]", f.node->node_label(),
-                                       f.node->source_range());
+                    return fmt::format("{} [{}]", f.node_label,
+                                       f.source_range);
                 },
                 [](const Call_Frame& f) {
                     return fmt::format("Call ({})", f.function_name);
