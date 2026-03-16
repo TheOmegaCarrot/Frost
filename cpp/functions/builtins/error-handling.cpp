@@ -19,7 +19,7 @@ Value_Ptr format_backtrace_as_value(const Backtrace& bt)
     {
         std::string text = std::visit(
             Overload{
-                [](const AST_Frame& f) {
+                [](const Resolved_AST_Frame& f) {
                     return fmt::format("{} [{}]", f.node_label,
                                        f.source_range);
                 },
@@ -46,7 +46,7 @@ void inject_error_handling(Symbol_Table& table, Backtrace_State* bt)
     table.define(
         "try_call",
         Value::create(Function{std::make_shared<Builtin>(
-            [bt](builtin_args_t args) -> Value_Ptr {
+            [](builtin_args_t args) -> Value_Ptr {
                 // clang-format off
                 REQUIRE_ARGS("try_call",
                         PARAM("function", TYPES(Function)),
@@ -63,20 +63,17 @@ void inject_error_handling(Symbol_Table& table, Backtrace_State* bt)
                              GET(0, Function)->call(GET(1, Array))},
                             {strings.ok, Value::create(true)}});
                 }
-                catch (const Frost_Recoverable_Error& err)
+                catch (Frost_Recoverable_Error& err)
                 {
                     Map result_map{
                         {strings.ok, Value::create(false)},
                         {strings.error, Value::create(String{err.what()})}};
 
-                    if (bt)
+                    if (auto snapshot = err.pilfer_backtrace())
                     {
-                        if (auto snapshot = bt->take_snapshot())
-                        {
-                            result_map.emplace(strings.trace,
-                                               format_backtrace_as_value(
-                                                   *snapshot));
-                        }
+                        result_map.emplace(
+                            strings.trace,
+                            format_backtrace_as_value(*snapshot));
                     }
 
                     return Value::create(Value::trusted,

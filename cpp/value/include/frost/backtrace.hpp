@@ -11,14 +11,19 @@
 namespace frst
 {
 
+// Forward declaration
+namespace ast
+{
+class Statement;
+}
+
 // ============================================================
-// Frame types
+// Live frame types — stored on the mutable stack during execution
 // ============================================================
 
 struct AST_Frame
 {
-    std::string node_label;
-    std::string source_range;
+    const ast::Statement* node; // non-owning, valid during execution
 };
 
 struct Call_Frame
@@ -41,24 +46,37 @@ using Backtrace_Frame =
     std::variant<AST_Frame, Call_Frame, Import_Frame, Iterative_Frame>;
 
 // ============================================================
-// Backtrace — the formatted output, produced on error
+// Snapshot frame types — AST pointers resolved to strings
+// ============================================================
+
+struct Resolved_AST_Frame
+{
+    std::string node_label;
+    std::string source_range;
+};
+
+using Snapshot_Frame =
+    std::variant<Resolved_AST_Frame, Call_Frame, Import_Frame, Iterative_Frame>;
+
+// ============================================================
+// Backtrace — the resolved output, produced on error
 // ============================================================
 
 class Backtrace
 {
   public:
-    explicit Backtrace(std::vector<Backtrace_Frame> frames)
+    explicit Backtrace(std::vector<Snapshot_Frame> frames)
         : frames_{std::move(frames)}
     {
     }
 
-    const std::vector<Backtrace_Frame>& frames() const
+    const std::vector<Snapshot_Frame>& frames() const
     {
         return frames_;
     }
 
   private:
-    std::vector<Backtrace_Frame> frames_;
+    std::vector<Snapshot_Frame> frames_;
 };
 
 // ============================================================
@@ -75,6 +93,7 @@ class Backtrace_State
 
     void push(Backtrace_Frame frame)
     {
+        snapshot_consumed_ = false;
         frames_.push_back(std::move(frame));
     }
 
@@ -83,34 +102,29 @@ class Backtrace_State
         frames_.pop_back();
     }
 
-    // Called during stack unwinding (from Frame_Guard destructor).
+    // Called during stack unwinding (from Frame_Guard destructor)
+    // and from the evaluate() catch block.
     // Captures the full frame stack the first time only.
     void snapshot_if_needed()
     {
-        if (snapshot_.empty() && !frames_.empty())
+        if (!snapshot_consumed_ && snapshot_.empty() && !frames_.empty())
             snapshot_ = frames_;
     }
 
-    // Called by catch sites (top-level or try_call).
-    // Moves the snapshot out and clears it for future errors.
-    std::unique_ptr<Backtrace> take_snapshot()
+    // Move the raw snapshot out and clear it for future errors.
+    // The caller must resolve AST_Frame pointers before they go stale.
+    std::vector<Backtrace_Frame> take_raw_snapshot()
     {
-        if (snapshot_.empty())
-            return nullptr;
-
-        auto bt = std::make_unique<Backtrace>(std::move(snapshot_));
+        snapshot_consumed_ = true;
+        auto result = std::move(snapshot_);
         snapshot_.clear();
-        return bt;
-    }
-
-    const std::vector<Backtrace_Frame>& frames() const
-    {
-        return frames_;
+        return result;
     }
 
   private:
     std::vector<Backtrace_Frame> frames_;
     std::vector<Backtrace_Frame> snapshot_;
+    bool snapshot_consumed_ = false;
 };
 
 // ============================================================

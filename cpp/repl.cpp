@@ -50,17 +50,10 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
     catch (const frst::Frost_User_Error& e)
     {
         fmt::println(stderr, "Error: {}", e.what());
-        if (bt)
-        {
-            // Clear any leftover snapshot from this error
-            bt->take_snapshot();
-        }
     }
     catch (const frst::Frost_Interpreter_Error& e)
     {
         fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
-        if (bt)
-            bt->take_snapshot();
     }
 }
 

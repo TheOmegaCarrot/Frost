@@ -31,10 +31,7 @@ class Expression : public Statement
         if (not ctx.runtime.backtrace)
             return do_evaluate(ctx);
 
-        Frame_Guard guard{ctx.runtime.backtrace,
-                         AST_Frame{.node_label = node_label(),
-                                   .source_range = fmt::format(
-                                       "{}", source_range())}};
+        Frame_Guard guard{ctx.runtime.backtrace, AST_Frame{.node = this}};
 
         try
         {
@@ -45,7 +42,8 @@ class Expression : public Statement
             if (!fe.has_backtrace())
             {
                 ctx.runtime.backtrace->snapshot_if_needed();
-                fe.add_backtrace(ctx.runtime.backtrace->take_snapshot());
+                fe.add_backtrace(
+                    resolve_snapshot(ctx.runtime.backtrace->take_raw_snapshot()));
             }
             throw;
         }
@@ -60,6 +58,42 @@ class Expression : public Statement
     {
         (void)evaluate(ctx.as_eval());
         return std::nullopt;
+    }
+
+  private:
+    static std::unique_ptr<Backtrace> resolve_snapshot(
+        std::vector<Backtrace_Frame> raw)
+    {
+        if (raw.empty())
+            return nullptr;
+
+        std::vector<Snapshot_Frame> resolved;
+        resolved.reserve(raw.size());
+
+        for (const auto& frame : raw)
+        {
+            std::visit(
+                Overload{
+                    [&](const AST_Frame& f) {
+                        resolved.emplace_back(Resolved_AST_Frame{
+                            .node_label = f.node->node_label(),
+                            .source_range =
+                                fmt::format("{}", f.node->source_range())});
+                    },
+                    [&](const Call_Frame& f) {
+                        resolved.emplace_back(f);
+                    },
+                    [&](const Import_Frame& f) {
+                        resolved.emplace_back(f);
+                    },
+                    [&](const Iterative_Frame& f) {
+                        resolved.emplace_back(f);
+                    },
+                },
+                frame);
+        }
+
+        return std::make_unique<Backtrace>(std::move(resolved));
     }
 };
 } // namespace frst::ast

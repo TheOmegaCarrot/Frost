@@ -30,7 +30,7 @@ std::string format_backtrace(const frst::Backtrace& bt)
     {
         std::visit(
             frst::Overload{
-                [&](const frst::AST_Frame& f) {
+                [&](const frst::Resolved_AST_Frame& f) {
                     fmt::format_to(std::back_inserter(out), "{} [{}]\n",
                                    f.node_label, f.source_range);
                 },
