@@ -250,6 +250,10 @@ TEST_CASE("Comparison Binary ops")
             {
                 return "<dummy>";
             }
+            std::string name() const override
+            {
+                return "<dummy>";
+            }
         };
 
         auto fn1 = Value::create(Function{std::make_shared<Dummy>()});

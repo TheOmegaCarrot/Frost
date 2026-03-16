@@ -1,0 +1,2 @@
+defn foo(x) -> x
+foo(1 + "oops")

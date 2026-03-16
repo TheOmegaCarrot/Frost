@@ -1,0 +1,5 @@
+Cannot add incompatible types: Int + String
+Traceback:
+Binary(+) [1:
+Reduce (anonymous lambda)
+Reduce_Expr [1:

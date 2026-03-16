@@ -33,3 +33,8 @@ std::string Builtin::debug_dump() const
 {
     return fmt::format("<builtin:{}>", name_);
 }
+
+std::string Builtin::name() const
+{
+    return fmt::format("<builtin:{}>", name_);
+}

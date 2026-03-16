@@ -1,0 +1,5 @@
+Cannot add incompatible types: Int + String
+Traceback:
+Binary(+) [26:
+Call (lambda (last_crash))
+Function_Call [27:

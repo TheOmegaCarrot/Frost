@@ -55,6 +55,7 @@ struct IdentityCallable final : frst::Callable
     {
         return "<identity>";
     }
+    std::string name() const override { return debug_dump(); }
 };
 } // namespace
 

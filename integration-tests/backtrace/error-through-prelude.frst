@@ -1,0 +1,2 @@
+defn fails(x) -> x + "oops"
+tap(1, fails)

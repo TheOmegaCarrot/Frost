@@ -1,0 +1,4 @@
+def result = do {
+    def x = 1 + "oops"
+    x
+}

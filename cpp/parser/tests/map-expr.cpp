@@ -238,6 +238,7 @@ TEST_CASE("Parser Map Expressions")
             {
                 return "<identity>";
             }
+            std::string name() const override { return debug_dump(); }
         };
 
         auto result = parse("f(map [1, 2] with fn (x) -> { x + 1 })");
@@ -275,6 +276,7 @@ TEST_CASE("Parser Map Expressions")
             {
                 return "<wrap>";
             }
+            std::string name() const override { return debug_dump(); }
         };
 
         auto result = parse("map [1, 2] with fn (x) -> { (x @ f())[0] }");

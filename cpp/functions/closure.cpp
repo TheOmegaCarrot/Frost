@@ -13,7 +13,8 @@ Closure::Closure(std::vector<std::string> parameters,
                  std::shared_ptr<ast::Expression> return_expr,
                  Symbol_Table captures, std::size_t define_count,
                  std::optional<std::string> vararg_parameter,
-                 std::optional<std::string> self_name)
+                 std::optional<std::string> self_name,
+                 Backtrace_State* backtrace)
     : parameters_{std::move(parameters)}
     , body_prefix_{std::move(body_prefix)}
     , return_expr_{std::move(return_expr)}
@@ -21,6 +22,7 @@ Closure::Closure(std::vector<std::string> parameters,
     , vararg_parameter_{std::move(vararg_parameter)}
     , self_name_{std::move(self_name)}
     , define_count_{define_count}
+    , backtrace_{backtrace}
 {
     // Assumed: all params in parameters_ and vararg_parameter_ (if present) are
     // all unique. No duplicates exist.
@@ -56,7 +58,8 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
     }
 
     Symbol_Table scope_table(&captures_);
-    Execution_Context scope_ctx{.symbols = scope_table};
+    Execution_Context scope_ctx{.symbols = scope_table,
+                                .runtime = {.backtrace = backtrace_}};
     scope_ctx.symbols.reserve(define_count_);
     for (const auto& [arg_name, arg_val] : std::views::zip(parameters_, args))
     {
@@ -78,6 +81,13 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
     }
 
     return return_expr_->evaluate(scope_ctx.as_eval());
+}
+
+std::string Closure::name() const
+{
+    if (self_name_)
+        return fmt::format("lambda ({})", *self_name_);
+    return "anonymous lambda";
 }
 
 std::string Closure::debug_dump() const
@@ -132,4 +142,11 @@ Function Weak_Closure::promote() const
 std::string Weak_Closure::debug_dump() const
 {
     return "<closure self-reference>";
+}
+
+std::string Weak_Closure::name() const
+{
+    if (auto closure = closure_.lock())
+        return closure->name();
+    return "expired closure";
 }

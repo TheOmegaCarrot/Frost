@@ -1,0 +1,10 @@
+defn bad(x) -> x + "oops"
+defn mid(x) -> bad(x)
+def r = try_call(mid, [42])
+assert(r.ok == false)
+assert(type(r.trace) == "Array")
+assert(len(r.trace) >= 3)
+# Verify frame ordering: innermost first
+assert(starts_with(r.trace[0], "Binary(+)"))
+assert(starts_with(r.trace[1], "Call (lambda (bad))"))
+assert(starts_with(r.trace[2], "Function_Call"))

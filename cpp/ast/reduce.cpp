@@ -1,5 +1,6 @@
 #include <frost/ast/reduce.hpp>
 
+#include <frost/backtrace.hpp>
 #include <frost/value.hpp>
 
 using namespace frst;
@@ -30,11 +31,17 @@ Value_Ptr ast::Reduce::do_evaluate(Evaluation_Context ctx) const
             "Reduce operation expected Function, got {}", op_val->type_name())};
     }
 
+    const auto& fn = op_val->raw_get<Function>();
+
     auto init = init_.transform([&](const Expression::Ptr& expr) {
         return expr->evaluate(ctx);
     });
 
-    return Value::do_reduce(structure_val, op_val->raw_get<Function>(), init);
+    Frame_Guard guard{ctx.runtime.backtrace,
+                      Iterative_Frame{.operation = "Reduce",
+                                      .function_name = fn->name()}};
+
+    return Value::do_reduce(structure_val, fn, init);
 }
 
 std::generator<ast::Statement::Child_Info> ast::Reduce::children() const

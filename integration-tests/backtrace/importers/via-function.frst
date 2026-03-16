@@ -1,0 +1,2 @@
+defn go(name) -> import(name)
+go(args[1])

@@ -1,0 +1,4 @@
+Cannot add incompatible types: Int + String
+Traceback:
+Binary(+) [1:
+Map_Expr [1:

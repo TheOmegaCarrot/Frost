@@ -1,0 +1,19 @@
+# Catch an error that passes through deep nesting, then crash shallow.
+# Final backtrace must be clean.
+
+defn deep_fail(x) -> x + "oops"
+defn via_map(x) -> map [x] with fn y -> deep_fail(y)
+defn via_do(x) -> do { via_map(x) }
+
+def r = try_call(via_do, [1])
+assert(r.ok == false)
+
+# Exercise all boundary types successfully
+assert(map [1, 2] with fn x -> x * 2 == [2, 4])
+assert(do { 10 + 20 } == 30)
+defn add1(x) -> x + 1
+assert(add1(5) == 6)
+
+# Final crash - only these frames
+defn shallow_crash(x) -> x + "boom"
+shallow_crash(1)

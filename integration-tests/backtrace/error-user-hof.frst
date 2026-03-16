@@ -1,0 +1,3 @@
+defn apply_twice(f, x) -> f(f(x))
+defn fails(x) -> x + "oops"
+apply_twice(fails, 1)

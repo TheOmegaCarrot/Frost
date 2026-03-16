@@ -1,0 +1,5 @@
+Import Boundary (
+Call (<builtin:import>)
+Function_Call [1:
+Call (lambda (go))
+Function_Call [2:

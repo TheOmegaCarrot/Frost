@@ -1,5 +1,6 @@
 #include <frost/ast/filter.hpp>
 
+#include <frost/backtrace.hpp>
 #include <frost/value.hpp>
 
 using namespace frst;
@@ -29,7 +30,13 @@ Value_Ptr ast::Filter::do_evaluate(Evaluation_Context ctx) const
             "Filter operation expected Function, got {}", op_val->type_name())};
     }
 
-    return Value::do_filter(structure_val, op_val->raw_get<Function>());
+    const auto& fn = op_val->raw_get<Function>();
+
+    Frame_Guard guard{ctx.runtime.backtrace,
+                      Iterative_Frame{.operation = "Filter",
+                                      .function_name = fn->name()}};
+
+    return Value::do_filter(structure_val, fn);
 }
 
 std::generator<ast::Statement::Child_Info> ast::Filter::children() const

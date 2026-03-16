@@ -15,6 +15,7 @@ class Mock_Callable : public Callable
                     override);
 
     MAKE_CONST_MOCK(debug_dump, auto()->std::string, override);
+    std::string name() const override { return "<mock>"; }
 
     using Ptr = std::shared_ptr<Mock_Callable>;
 

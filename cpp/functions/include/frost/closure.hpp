@@ -5,6 +5,7 @@
 #include <frost/ast/statement.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
+
 #include <memory>
 
 namespace frst
@@ -24,10 +25,12 @@ class Closure : public Callable
             std::shared_ptr<ast::Expression> return_expr, Symbol_Table captures,
             std::size_t define_count,
             std::optional<std::string> vararg_parameter = {},
-            std::optional<std::string> self_name = {});
+            std::optional<std::string> self_name = {},
+            Backtrace_State* backtrace = nullptr);
 
     Value_Ptr call(std::span<const Value_Ptr> args) const override;
     std::string debug_dump() const override;
+    std::string name() const override;
     const Symbol_Table& debug_capture_table() const;
 
     void inject_capture(const std::string& name, Value_Ptr value);
@@ -40,6 +43,7 @@ class Closure : public Callable
     std::optional<std::string> vararg_parameter_;
     std::optional<std::string> self_name_;
     std::size_t define_count_;
+    Backtrace_State* backtrace_;
 };
 
 class Weak_Closure final : public Callable
@@ -59,6 +63,7 @@ class Weak_Closure final : public Callable
     Function promote() const;
 
     std::string debug_dump() const override;
+    std::string name() const override;
 
   private:
     std::weak_ptr<Closure> closure_;

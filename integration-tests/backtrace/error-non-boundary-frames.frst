@@ -1,0 +1,2 @@
+defn check(x) -> x > 0 and (x + "oops")
+check(1)

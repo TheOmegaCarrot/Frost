@@ -1,0 +1,2 @@
+defn fails(x) -> x + "oops"
+transform([1, 2], fails)

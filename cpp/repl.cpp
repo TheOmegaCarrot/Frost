@@ -1,4 +1,5 @@
 #include <frost/ast.hpp>
+#include <frost/backtrace.hpp>
 #include <frost/builtin.hpp>
 #include <frost/parser.hpp>
 #include <frost/prelude.hpp>
@@ -16,9 +17,11 @@
 using replxx::Replxx;
 
 void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
-               frst::Symbol_Table& symbols, Replxx& rx)
+               frst::Symbol_Table& symbols, Replxx& rx,
+               frst::Backtrace_State* bt)
 {
-    frst::Execution_Context ctx{.symbols = symbols};
+    frst::Execution_Context ctx{.symbols = symbols,
+                                .runtime = {.backtrace = bt}};
     try
     {
         for (const auto& statement : ast
@@ -47,10 +50,17 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
     catch (const frst::Frost_User_Error& e)
     {
         fmt::println(stderr, "Error: {}", e.what());
+        if (bt)
+        {
+            // Clear any leftover snapshot from this error
+            bt->take_snapshot();
+        }
     }
     catch (const frst::Frost_Interpreter_Error& e)
     {
         fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
+        if (bt)
+            bt->take_snapshot();
     }
 }
 
@@ -415,7 +425,7 @@ std::optional<std::string> read_input_segment(Replxx& rx,
     return acc;
 }
 
-void repl(frst::Symbol_Table& symbols)
+void repl(frst::Symbol_Table& symbols, frst::Backtrace_State* bt)
 {
     Replxx rx;
 
@@ -454,7 +464,7 @@ void repl(frst::Symbol_Table& symbols)
         if (parse_result.value().empty())
             continue;
 
-        repl_exec(parse_result.value(), symbols, rx);
+        repl_exec(parse_result.value(), symbols, rx, bt);
         highlight_callback.reset();
     }
 }

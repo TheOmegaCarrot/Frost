@@ -1,0 +1,2 @@
+defn fails(x) -> x + "oops"
+42 @ fails()

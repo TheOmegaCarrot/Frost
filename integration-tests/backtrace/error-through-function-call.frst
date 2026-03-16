@@ -1,0 +1,4 @@
+defn inner(x) -> x + "oops"
+defn middle(x) -> inner(x)
+defn outer(x) -> middle(x)
+outer(42)

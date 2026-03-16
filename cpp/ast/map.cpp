@@ -1,5 +1,6 @@
 #include <ranges>
 
+#include <frost/backtrace.hpp>
 #include <frost/value.hpp>
 
 #include <frost/ast/map.hpp>
@@ -30,7 +31,13 @@ Value_Ptr ast::Map::do_evaluate(Evaluation_Context ctx) const
             "Map operation expected Function, got {}", op_val->type_name())};
     }
 
-    return Value::do_map(structure_val, op_val->raw_get<Function>(), "Map");
+    const auto& fn = op_val->raw_get<Function>();
+
+    Frame_Guard guard{ctx.runtime.backtrace,
+                      Iterative_Frame{.operation = "Map",
+                                      .function_name = fn->name()}};
+
+    return Value::do_map(structure_val, fn, "Map");
 }
 
 std::generator<ast::Statement::Child_Info> ast::Map::children() const

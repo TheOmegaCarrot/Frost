@@ -333,6 +333,7 @@ TEST_CASE("Parser Map Literals")
             {
                 return "<identity>";
             }
+            std::string name() const override { return debug_dump(); }
         };
 
         auto callable = std::make_shared<IdentityCallable>();

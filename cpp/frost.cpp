@@ -1,4 +1,5 @@
 #include <frost/ast.hpp>
+#include <frost/backtrace.hpp>
 #include <frost/builtin.hpp>
 #include <frost/ext.hpp>
 #include <frost/import.hpp>
@@ -18,10 +19,46 @@
 
 using namespace std::literals;
 
-void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
-                  frst::Symbol_Table& symbols, bool do_dump)
+namespace
 {
-    frst::Execution_Context ctx{.symbols = symbols};
+
+std::string format_backtrace(const frst::Backtrace& bt)
+{
+    std::string out;
+
+    for (const auto& frame : bt.frames() | std::views::reverse)
+    {
+        std::visit(
+            frst::Overload{
+                [&](const frst::AST_Frame& f) {
+                    fmt::format_to(std::back_inserter(out), "{} [{}]\n",
+                                   f.node->node_label(),
+                                   f.node->source_range());
+                },
+                [&](const frst::Call_Frame& f) {
+                    fmt::format_to(std::back_inserter(out), "Call ({})\n",
+                                   f.function_name);
+                },
+                [&](const frst::Import_Frame& f) {
+                    fmt::format_to(std::back_inserter(out),
+                                   "Import Boundary ({})\n", f.module_spec);
+                },
+                [&](const frst::Iterative_Frame& f) {
+                    fmt::format_to(std::back_inserter(out), "{} ({})\n",
+                                   f.operation, f.function_name);
+                },
+            },
+            frame);
+    }
+
+    return out;
+}
+
+} // namespace
+
+void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
+                  frst::Execution_Context ctx, bool do_dump)
+{
     try
     {
         for (const auto& statement : program)
@@ -32,14 +69,18 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
                 statement->execute(ctx);
         }
     }
-    catch (const frst::Frost_Error& err)
+    catch (frst::Frost_Error& err)
     {
-        fmt::println(stderr, "{}", err.what());
+        if (auto bt = err.pilfer_backtrace())
+            fmt::print(stderr, "{}\nTraceback:\n{}", err.what(),
+                       format_backtrace(*bt));
+        else
+            fmt::println(stderr, "{}", err.what());
         std::exit(1);
     }
 }
 
-void repl(frst::Symbol_Table& symbols);
+void repl(frst::Symbol_Table& symbols, frst::Backtrace_State* bt);
 int main(int argc, const char** argv)
 {
     const std::span args{argv, argv + argc};
@@ -51,6 +92,7 @@ int main(int argc, const char** argv)
     bool do_dump = false;
     bool show_help = false;
     bool show_version = false;
+    bool do_backtrace = false;
 
     if (argc == 1)
         do_repl = true;
@@ -83,6 +125,8 @@ int main(int argc, const char** argv)
                    "Dump the AST instead of executing.")
                | lyra::opt(do_repl)["-i"]["--interactive"]("Start the REPL.")
                | lyra::opt(skip_prelude)["--no-prelude"]("Skip prelude")
+               | lyra::opt(do_backtrace)["--enable-backtrace"](
+                   "Enable backtrace on error")
                | lyra::opt(strings_to_evaluate, "code")["-e"]["--eval"](
                    "Evaluate a snippet of Frost code.")
                | lyra::arg(file_arg, "file")("File to execute.").optional()
@@ -130,13 +174,19 @@ int main(int argc, const char** argv)
         return 1;
     }
 
+    frst::Backtrace_State trace;
+    frst::Backtrace_State* bt = do_backtrace ? &trace : nullptr;
+
     frst::Symbol_Table symbols;
-    frst::inject_builtins(symbols);
+    frst::inject_builtins(symbols, bt);
     frst::inject_ext(symbols);
     frst::inject_meta(symbols);
 
+    frst::Execution_Context setup_ctx{.symbols = symbols,
+                                      .runtime = {.backtrace = bt}};
+
     if (not skip_prelude)
-        frst::inject_prelude(symbols);
+        frst::inject_prelude(setup_ctx);
 
     std::vector<std::filesystem::path> module_search_path;
     if (file_to_evaluate)
@@ -145,7 +195,7 @@ int main(int argc, const char** argv)
 
     module_search_path.append_range(frst::env_module_path());
 
-    frst::inject_import(symbols, module_search_path);
+    frst::inject_import(symbols, module_search_path, bt);
 
     symbols.define("args", frst::Value::create(
                                args_for_frost
@@ -164,7 +214,7 @@ int main(int argc, const char** argv)
             fmt::println(stderr, "{}", results.error());
             return 1;
         }
-        exec_program(results.value(), symbols, do_dump);
+        exec_program(results.value(), setup_ctx, do_dump);
     }
 
     if (file_to_evaluate)
@@ -175,9 +225,9 @@ int main(int argc, const char** argv)
             fmt::println(stderr, "{}", results.error());
             return 1;
         }
-        exec_program(results.value(), symbols, do_dump);
+        exec_program(results.value(), setup_ctx, do_dump);
     }
 
     if (do_repl)
-        repl(symbols);
+        repl(symbols, bt);
 }

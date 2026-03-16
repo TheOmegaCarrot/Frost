@@ -1,0 +1,4 @@
+defn bad(x) -> x + "oops"
+def r = try_call(bad, [42])
+assert(r.ok == false)
+assert(has(r, "trace") == false)

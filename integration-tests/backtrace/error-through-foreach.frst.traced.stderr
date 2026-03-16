@@ -1,0 +1,5 @@
+Cannot add incompatible types: Int + String
+Traceback:
+Binary(+) [1:
+Foreach (anonymous lambda)
+Foreach_Expr [1:

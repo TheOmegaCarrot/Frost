@@ -1,0 +1,2 @@
+defn boom(n) -> if n <= 0: 1 + "oops" else: boom(n - 1)
+boom(3)

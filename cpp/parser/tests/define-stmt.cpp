@@ -412,6 +412,7 @@ TEST_CASE("Parser Define Statements")
             {
                 return "<constant>";
             }
+            std::string name() const override { return debug_dump(); }
         };
 
         auto callable = std::make_shared<ConstantCallable>();

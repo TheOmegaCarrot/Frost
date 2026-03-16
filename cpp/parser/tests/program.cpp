@@ -51,6 +51,7 @@ struct Constant_Callable final : frst::Callable
     {
         return "<constant>";
     }
+    std::string name() const override { return debug_dump(); }
 };
 
 struct IdentityCallable final : frst::Callable
@@ -68,6 +69,7 @@ struct IdentityCallable final : frst::Callable
     {
         return "<identity>";
     }
+    std::string name() const override { return debug_dump(); }
 };
 
 struct CountingCallable final : frst::Callable
@@ -88,6 +90,7 @@ struct CountingCallable final : frst::Callable
     {
         return "<counting>";
     }
+    std::string name() const override { return debug_dump(); }
 };
 } // namespace
 
@@ -1430,6 +1433,7 @@ TEST_CASE("Parser Program")
             {
                 return "<recording>";
             }
+            std::string name() const override { return debug_dump(); }
         };
 
         auto callable = std::make_shared<RecordingCallable>();

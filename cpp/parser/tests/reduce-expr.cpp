@@ -256,6 +256,7 @@ TEST_CASE("Parser Reduce Expressions")
             {
                 return "<identity>";
             }
+            std::string name() const override { return debug_dump(); }
         };
 
         auto result = parse("reduce [1] with fn (acc, x) -> { acc + x } "
@@ -293,6 +294,7 @@ TEST_CASE("Parser Reduce Expressions")
             {
                 return "<identity>";
             }
+            std::string name() const override { return debug_dump(); }
         };
 
         auto result =
@@ -328,6 +330,7 @@ TEST_CASE("Parser Reduce Expressions")
             {
                 return "<identity>";
             }
+            std::string name() const override { return debug_dump(); }
         };
 
         auto result =
@@ -379,6 +382,7 @@ TEST_CASE("Parser Reduce Expressions")
             {
                 return "<return-acc>";
             }
+            std::string name() const override { return debug_dump(); }
         };
 
         struct Recording_Acc final : frst::Callable
@@ -396,6 +400,7 @@ TEST_CASE("Parser Reduce Expressions")
             {
                 return "<recording-acc>";
             }
+            std::string name() const override { return debug_dump(); }
         };
 
         frst::Symbol_Table table;

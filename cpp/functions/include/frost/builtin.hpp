@@ -43,6 +43,7 @@ class Builtin final : public Callable
     Value_Ptr call(builtin_args_t args) const final;
 
     std::string debug_dump() const final;
+    std::string name() const final;
 
   private:
     function_t function_;
@@ -50,13 +51,14 @@ class Builtin final : public Callable
     Arity arity_;
 };
 
+class Backtrace_State;
+
 #define X_INJECT                                                               \
     X(structure_ops)                                                           \
     X(type_checks)                                                             \
     X(type_conversions)                                                        \
     X(pack_call)                                                               \
     X(debug_helpers)                                                           \
-    X(error_handling)                                                          \
     X(output)                                                                  \
     X(free_operators)                                                          \
     X(math)                                                                    \
@@ -76,13 +78,18 @@ X_INJECT
 
 #undef X
 
-inline void inject_builtins(Symbol_Table& table)
+void inject_error_handling(Symbol_Table&, Backtrace_State* bt = nullptr);
+
+inline void inject_builtins(Symbol_Table& table,
+                            Backtrace_State* bt = nullptr)
 {
 #define X(F) inject_##F(table);
 
     X_INJECT
 
 #undef X
+
+    inject_error_handling(table, bt);
 }
 
 } // namespace frst

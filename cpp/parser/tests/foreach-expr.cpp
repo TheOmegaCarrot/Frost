@@ -50,6 +50,7 @@ struct RecordingCallable final : frst::Callable
     {
         return "<recording>";
     }
+    std::string name() const override { return debug_dump(); }
 };
 } // namespace
 

@@ -1,0 +1,11 @@
+Cannot add incompatible types: Int + String
+Traceback:
+Binary(+) [1:
+Call (lambda (crash))
+Function_Call [2:
+Import Boundary (chain-c)
+Call (<builtin:import>)
+Function_Call [1:
+Import Boundary (chain-b)
+Call (<builtin:import>)
+Function_Call [1:

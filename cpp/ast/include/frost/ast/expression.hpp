@@ -3,6 +3,7 @@
 
 #include "statement.hpp"
 
+#include <frost/backtrace.hpp>
 #include <frost/value.hpp>
 
 namespace frst::ast
@@ -27,7 +28,21 @@ class Expression : public Statement
     //! @brief Evaluate the expression, and get the value it evaluates to
     [[nodiscard]] Value_Ptr evaluate(Evaluation_Context ctx) const
     {
-        return do_evaluate(ctx);
+        if (not ctx.runtime.backtrace)
+            return do_evaluate(ctx);
+
+        Frame_Guard guard{ctx.runtime.backtrace, AST_Frame{.node = this}};
+
+        try
+        {
+            return do_evaluate(ctx);
+        }
+        catch (Frost_Error& fe)
+        {
+            if (!fe.has_backtrace())
+                fe.add_backtrace(ctx.runtime.backtrace->take_snapshot());
+            throw;
+        }
     }
 
   protected:

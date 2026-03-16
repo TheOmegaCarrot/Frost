@@ -1,0 +1,6 @@
+def x = do {
+    def a = do {
+        1 + "oops"
+    }
+    a
+}

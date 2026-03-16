@@ -17,5 +17,10 @@ struct Dummy_Callable final : frst::Callable
     {
         return "<dummy>";
     }
+
+    std::string name() const override
+    {
+        return "<dummy>";
+    }
 };
 } // namespace frst::testing

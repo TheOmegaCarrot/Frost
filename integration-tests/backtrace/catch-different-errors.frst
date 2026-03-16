@@ -1,0 +1,12 @@
+# Catch errors with different messages, verify final crash has correct message.
+
+def r1 = try_call(fn -> 1 + "a", [])
+assert(r1.ok == false)
+assert(r1.error == "Cannot add incompatible types: Int + String")
+
+def r2 = try_call(fn -> 1 / 0, [])
+assert(r2.ok == false)
+assert(r2.error == "Division by zero")
+
+defn crash(x) -> x + []
+crash(1)

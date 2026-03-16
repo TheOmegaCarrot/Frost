@@ -27,3 +27,4 @@ foreach(script ${INTEGRATION_SCRIPTS})
 endforeach()
 
 add_subdirectory(import)
+add_subdirectory(backtrace)

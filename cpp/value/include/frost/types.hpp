@@ -48,6 +48,7 @@ class Callable
 
     virtual Value_Ptr call(std::span<const Value_Ptr> args) const = 0;
     virtual std::string debug_dump() const = 0;
+    virtual std::string name() const = 0;
 };
 
 using Function = std::shared_ptr<Callable>;

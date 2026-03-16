@@ -1,0 +1,4 @@
+defn fails(x) -> x + "oops"
+def result = do {
+    map [1] with fn x -> fails(x)
+}

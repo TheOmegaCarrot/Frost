@@ -1,0 +1,4 @@
+Cannot add incompatible types: Int + String
+Traceback:
+Binary(+) [2:
+Do_Block [1:

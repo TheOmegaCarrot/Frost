@@ -1,4 +1,5 @@
 #include <frost/ast/function-call.hpp>
+#include <frost/backtrace.hpp>
 
 #include <ranges>
 
@@ -30,7 +31,12 @@ Value_Ptr ast::Function_Call::do_evaluate(Evaluation_Context ctx) const
           })
         | std::ranges::to<std::vector>();
 
-    return fn->raw_get<Function>()->call(std::move(args));
+    const auto& callable = fn->raw_get<Function>();
+
+    Frame_Guard guard{ctx.runtime.backtrace,
+                      Call_Frame{.function_name = callable->name()}};
+
+    return callable->call(std::move(args));
 }
 
 std::string ast::Function_Call::do_node_label() const

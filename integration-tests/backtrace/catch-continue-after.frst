@@ -1,0 +1,18 @@
+# Catch a simple error, exercise every boundary successfully, then crash.
+# The final crash trace must be clean.
+
+def r = try_call(fn -> 1 + "oops", [])
+assert(r.ok == false)
+
+# Every boundary type works correctly after catching
+defn add1(x) -> x + 1
+assert(add1(5) == 6)
+assert(map [1, 2] with fn x -> x * 2 == [2, 4])
+assert(filter [1, 2, 3] with fn x -> x > 1 == [2, 3])
+assert((reduce [1, 2, 3] with plus) == 6)
+def d = do { 10 + 20 }
+assert(d == 30)
+
+# Final crash - clean trace
+defn final_fail(x) -> x + "boom"
+final_fail(1)

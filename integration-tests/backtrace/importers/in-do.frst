@@ -1,0 +1,3 @@
+do {
+    import(args[1])
+}

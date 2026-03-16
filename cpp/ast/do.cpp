@@ -39,7 +39,8 @@ Do_Block::Do_Block(Source_Range source_range,
 Value_Ptr Do_Block::do_evaluate(Evaluation_Context ctx) const
 {
     Symbol_Table block_table{&ctx.symbols};
-    Execution_Context block_context{.symbols = block_table};
+    Execution_Context block_context{.symbols = block_table,
+                                    .runtime = ctx.runtime};
     for (const auto& statement : body_prefix_)
         statement->execute(block_context);
     return value_expr_->evaluate(block_context.as_eval());

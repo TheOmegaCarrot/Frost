@@ -46,6 +46,7 @@ struct RecordingCallable final : frst::Callable
     {
         return "<recording>";
     }
+    std::string name() const override { return debug_dump(); }
 };
 
 struct IdentityCallable final : frst::Callable
@@ -63,6 +64,7 @@ struct IdentityCallable final : frst::Callable
     {
         return "<identity>";
     }
+    std::string name() const override { return debug_dump(); }
 };
 
 struct ArgsArrayCallable final : frst::Callable
@@ -82,6 +84,7 @@ struct ArgsArrayCallable final : frst::Callable
     {
         return "<args-array>";
     }
+    std::string name() const override { return debug_dump(); }
 };
 } // namespace
 

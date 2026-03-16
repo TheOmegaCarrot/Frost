@@ -1,42 +1,91 @@
 #include <frost/builtins-common.hpp>
 
+#include <frost/backtrace.hpp>
 #include <frost/builtin.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
+
+#include <frost/ast/statement.hpp>
 
 using namespace std::literals;
 namespace frst
 {
 
-BUILTIN(try_call)
+namespace
 {
-    // clang-format off
-    REQUIRE_ARGS("try_call",
-            PARAM("function", TYPES(Function)),
-            PARAM("args", TYPES(Array)));
-    // clang-format on
 
-    STRINGS(ok, value, error);
-
-    try
+Value_Ptr format_backtrace_as_value(const Backtrace& bt)
+{
+    Array frames;
+    for (const auto& frame : bt.frames() | std::views::reverse)
     {
-        return Value::create(
-            Value::trusted,
-            Map{{strings.value, GET(0, Function)->call(GET(1, Array))},
-                {strings.ok, Value::create(true)}});
+        std::string text = std::visit(
+            Overload{
+                [](const AST_Frame& f) {
+                    return fmt::format("{} [{}]", f.node->node_label(),
+                                       f.node->source_range());
+                },
+                [](const Call_Frame& f) {
+                    return fmt::format("Call ({})", f.function_name);
+                },
+                [](const Import_Frame& f) {
+                    return fmt::format("Import Boundary ({})", f.module_spec);
+                },
+                [](const Iterative_Frame& f) {
+                    return fmt::format("{} ({})", f.operation, f.function_name);
+                },
+            },
+            frame);
+        frames.push_back(Value::create(std::move(text)));
     }
-    catch (const Frost_Recoverable_Error& err)
-    {
-        return Value::create(
-            Value::trusted,
-            Map{{strings.ok, Value::create(false)},
-                {strings.error, Value::create(String{err.what()})}});
-    }
+    return Value::create(std::move(frames));
 }
 
-void inject_error_handling(Symbol_Table& table)
+} // namespace
+
+void inject_error_handling(Symbol_Table& table, Backtrace_State* bt)
 {
-    INJECT(try_call, 2);
+    table.define(
+        "try_call",
+        Value::create(Function{std::make_shared<Builtin>(
+            [bt](builtin_args_t args) -> Value_Ptr {
+                // clang-format off
+                REQUIRE_ARGS("try_call",
+                        PARAM("function", TYPES(Function)),
+                        PARAM("args", TYPES(Array)));
+                // clang-format on
+
+                STRINGS(ok, value, error, trace);
+
+                try
+                {
+                    return Value::create(
+                        Value::trusted,
+                        Map{{strings.value,
+                             GET(0, Function)->call(GET(1, Array))},
+                            {strings.ok, Value::create(true)}});
+                }
+                catch (const Frost_Recoverable_Error& err)
+                {
+                    Map result_map{
+                        {strings.ok, Value::create(false)},
+                        {strings.error, Value::create(String{err.what()})}};
+
+                    if (bt)
+                    {
+                        if (auto snapshot = bt->take_snapshot())
+                        {
+                            result_map.emplace(strings.trace,
+                                               format_backtrace_as_value(
+                                                   *snapshot));
+                        }
+                    }
+
+                    return Value::create(Value::trusted,
+                                         std::move(result_map));
+                }
+            },
+            "try_call", Builtin::Arity{.min = 2, .max = 2})}));
 }
 
 } // namespace frst

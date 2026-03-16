@@ -1,0 +1,3 @@
+Array index requires Int, got: String
+Traceback:
+Index_Expression [1:

@@ -1,0 +1,1 @@
+def result = reduce [1, 2, 3] with fn (acc, x) -> if x == 3: acc + "oops" else: acc + x

@@ -1,3 +1,4 @@
+#include <frost/backtrace.hpp>
 #include <frost/builtins-common.hpp>
 #include <frost/ext.hpp>
 #include <frost/import.hpp>
@@ -36,8 +37,8 @@ namespace
 struct Importer
 {
     std::vector<std::filesystem::path> search_path;
-
     std::flat_map<std::string, Value_Ptr> import_cache;
+    Backtrace_State* backtrace = nullptr;
 
     Value_Ptr operator()(builtin_args_t args)
     {
@@ -70,6 +71,9 @@ struct Importer
     Value_Ptr do_import(const std::string& module_spec,
                         const std::filesystem::path& module_file)
     {
+        Frame_Guard guard{backtrace,
+                          Import_Frame{.module_spec = module_spec}};
+
         auto parse_result = parse_file(module_file);
 
         if (not parse_result)
@@ -80,10 +84,15 @@ struct Importer
         }
 
         Symbol_Table isolated_table;
-        inject_builtins(isolated_table);
+        inject_builtins(isolated_table, backtrace);
         inject_ext(isolated_table);
-        inject_prelude(isolated_table);
         isolated_table.define("imported", Value::create(true));
+
+        Execution_Context isolated_ctx{
+            .symbols = isolated_table,
+            .runtime = {.backtrace = backtrace}};
+
+        inject_prelude(isolated_ctx);
 
         std::vector<std::filesystem::path> child_search_path{
             module_file.parent_path(),
@@ -91,13 +100,12 @@ struct Importer
 
         child_search_path.append_range(env_module_path());
 
-        inject_import(isolated_table, child_search_path);
+        inject_import(isolated_table, child_search_path, backtrace);
 
         Map imported;
-        Execution_Context ctx{.symbols = isolated_table};
         for (const auto& statement : parse_result.value())
         {
-            if (const auto& exported = statement->execute(ctx))
+            if (const auto& exported = statement->execute(isolated_ctx))
                 imported.insert_range(exported.value());
         }
 
@@ -110,10 +118,13 @@ struct Importer
 } // namespace
 
 void inject_import(Symbol_Table& table,
-                   const std::vector<std::filesystem::path>& search_path)
+                   const std::vector<std::filesystem::path>& search_path,
+                   Backtrace_State* bt)
 {
-    table.define("import", Value::create(Function{std::make_shared<Builtin>(
-                               Importer{std::move(search_path), {}}, "import",
-                               Builtin::Arity{.min = 1, .max = 1})}));
+    table.define(
+        "import",
+        Value::create(Function{std::make_shared<Builtin>(
+            Importer{std::move(search_path), {}, bt}, "import",
+            Builtin::Arity{.min = 1, .max = 1})}));
 }
 } // namespace frst

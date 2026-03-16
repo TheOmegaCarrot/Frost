@@ -136,7 +136,8 @@ Value_Ptr Lambda::do_evaluate(Evaluation_Context ctx) const
 
     auto closure = std::make_shared<Closure>(
         params_, body_prefix_, return_expr_, std::move(captures),
-        closure_define_count_, vararg_param_);
+        closure_define_count_, vararg_param_, self_name_,
+        ctx.runtime.backtrace);
 
     auto weak_closure = Value::create(
         Function{std::make_shared<Weak_Closure>(std::weak_ptr{closure})});

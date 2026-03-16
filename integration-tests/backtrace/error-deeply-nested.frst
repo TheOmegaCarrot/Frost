@@ -1,0 +1,6 @@
+defn crashes(x) -> x + "oops"
+def result = do {
+    map [1] with fn x -> do {
+        filter [x] with fn y -> crashes(y)
+    }
+}

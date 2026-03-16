@@ -1,5 +1,7 @@
 #include <frost/ast/foreach.hpp>
 
+#include <frost/backtrace.hpp>
+
 using namespace frst;
 
 ast::Foreach::Foreach(Source_Range source_range, Expression::Ptr structure,
@@ -28,6 +30,10 @@ Value_Ptr ast::Foreach::do_evaluate(Evaluation_Context ctx) const
     }
 
     const auto& op = op_val->raw_get<Function>();
+
+    Frame_Guard guard{ctx.runtime.backtrace,
+                      Iterative_Frame{.operation = "Foreach",
+                                      .function_name = op->name()}};
 
     if (structure_val->is<Array>())
     {
