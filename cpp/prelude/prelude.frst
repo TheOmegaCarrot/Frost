@@ -1,39 +1,39 @@
-def inv = fn f -> fn ...args -> not f @ pack_call(args)
+defn inv(f) -> fn ...args -> not f @ pack_call(args)
 
-def reject = fn structure, pred -> structure @ select( pred @ inv() )
+defn reject(structure, pred) -> structure @ select( pred @ inv() )
 
-def curry = fn f, ...outer -> fn ...inner -> f @ pack_call(outer + inner)
+defn curry(f, ...outer) -> fn ...inner -> f @ pack_call(outer + inner)
 
-def bcurry = fn f, ...outer -> fn ...inner -> f @ pack_call(inner + outer)
+defn bcurry(f, ...outer) -> fn ...inner -> f @ pack_call(inner + outer)
 
-def collect = fn ...e -> e
+defn collect(...e) -> e
 
-def call = fn f, ...args -> pack_call(f, args)
+defn call(f, ...args) -> pack_call(f, args)
 
-def rev_args = fn f -> fn ...args -> pack_call(f, reverse(args))
+defn rev_args(f) -> fn ...args -> pack_call(f, reverse(args))
 
-def tap = fn a, f -> { f(a) ; a }
+defn tap(a, f) -> { f(a) ; a }
 
-def const = fn v -> fn ..._ -> v
+defn const(v) -> fn ..._ -> v
 
-def index = fn k -> fn s -> s[k]
+defn index(k) -> fn s -> s[k]
 
-def map_keys = fn m, f -> map m with fn k, v -> ({ [f(k)]: v })
+defn map_keys(m, f) -> map m with fn k, v -> ({ [f(k)]: v })
  
-def map_values = fn m, f -> map m with fn k, v -> ({ [k]: f(v) })
+defn map_values(m, f) -> map m with fn k, v -> ({ [k]: f(v) })
 
-def flat_map = fn arr, f -> transform(arr, f) @ flatten(1)
+defn flat_map(arr, f) -> transform(arr, f) @ flatten(1)
 
-def compose = fn compose(f, g, ...rest) -> {
+defn compose(f, g, ...rest) -> {
 
-    def require_fn = fn f -> {
+    defn require_fn(f) -> {
         assert(is_function(f),
             mformat('Compose requires functions, got ${type}', {type: type(f)}))
     }
 
     foreach [f, g] + rest with require_fn
 
-    def compose2 = fn f1, f2 -> fn ...args -> f2(pack_call(f1, args))
+    defn compose2(f1, f2) -> fn ...args -> f2(pack_call(f1, args))
 
     if len(rest) == 0: compose2(f, g)
     else: pack_call(compose, [ compose2(f, g) ] + rest )

@@ -3,5 +3,5 @@ Traceback:
 Binary(+) [1:
 Call (lambda (fails))
 Function_Call [15:
-Call (anonymous lambda)
+Call (lambda (tap))
 Function_Call [2:
