@@ -22,11 +22,11 @@ using namespace std::literals;
 namespace
 {
 
-std::string format_backtrace(const frst::Backtrace& bt)
+std::string format_backtrace(const std::vector<frst::Snapshot_Frame>& frames)
 {
     std::string out;
 
-    for (const auto& frame : bt.frames() | std::views::reverse)
+    for (const auto& frame : frames | std::views::reverse)
     {
         std::visit(
             frst::Overload{
@@ -70,9 +70,12 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
     }
     catch (frst::Frost_Error& err)
     {
-        if (auto bt = err.pilfer_backtrace())
+        auto snapshot = ctx.runtime.backtrace
+                            ? ctx.runtime.backtrace->take_snapshot()
+                            : std::vector<frst::Snapshot_Frame>{};
+        if (!snapshot.empty())
             fmt::print(stderr, "{}\nTraceback:\n{}", err.what(),
-                       format_backtrace(*bt));
+                       format_backtrace(snapshot));
         else
             fmt::println(stderr, "{}", err.what());
         std::exit(1);

@@ -1,9 +1,7 @@
 #ifndef FROST_BACKTRACE_HPP
 #define FROST_BACKTRACE_HPP
 
-#include <cstddef>
 #include <exception>
-#include <memory>
 #include <string>
 #include <variant>
 #include <vector>
@@ -46,7 +44,7 @@ using Backtrace_Frame =
     std::variant<AST_Frame, Call_Frame, Import_Frame, Iterative_Frame>;
 
 // ============================================================
-// Snapshot frame types — AST pointers resolved to strings
+// Snapshot frame types — AST pointers resolved to owned strings
 // ============================================================
 
 struct Resolved_AST_Frame
@@ -59,28 +57,7 @@ using Snapshot_Frame =
     std::variant<Resolved_AST_Frame, Call_Frame, Import_Frame, Iterative_Frame>;
 
 // ============================================================
-// Backtrace — the resolved output, produced on error
-// ============================================================
-
-class Backtrace
-{
-  public:
-    explicit Backtrace(std::vector<Snapshot_Frame> frames)
-        : frames_{std::move(frames)}
-    {
-    }
-
-    const std::vector<Snapshot_Frame>& frames() const
-    {
-        return frames_;
-    }
-
-  private:
-    std::vector<Snapshot_Frame> frames_;
-};
-
-// ============================================================
-// Backtrace_State — the live mutable state during execution
+// Backtrace_State — shared mutable frame stack
 // ============================================================
 
 class Backtrace_State
@@ -93,7 +70,6 @@ class Backtrace_State
 
     void push(Backtrace_Frame frame)
     {
-        snapshot_consumed_ = false;
         frames_.push_back(std::move(frame));
     }
 
@@ -102,20 +78,14 @@ class Backtrace_State
         frames_.pop_back();
     }
 
-    // Called during stack unwinding (from Frame_Guard destructor)
-    // and from the evaluate() catch block.
-    // Captures the full frame stack the first time only.
-    void snapshot_if_needed()
-    {
-        if (!snapshot_consumed_ && snapshot_.empty() && !frames_.empty())
-            snapshot_ = frames_;
-    }
+    // Resolve the entire live stack into owned strings.
+    // Called by the first Frame_Guard destructor to detect unwinding.
+    // Defined in ast/backtrace.cpp (needs Statement complete type).
+    void snapshot_if_needed();
 
-    // Move the raw snapshot out and clear it for future errors.
-    // The caller must resolve AST_Frame pointers before they go stale.
-    std::vector<Backtrace_Frame> take_raw_snapshot()
+    // Move the resolved snapshot out. Returns empty if no snapshot.
+    std::vector<Snapshot_Frame> take_snapshot()
     {
-        snapshot_consumed_ = true;
         auto result = std::move(snapshot_);
         snapshot_.clear();
         return result;
@@ -123,8 +93,7 @@ class Backtrace_State
 
   private:
     std::vector<Backtrace_Frame> frames_;
-    std::vector<Backtrace_Frame> snapshot_;
-    bool snapshot_consumed_ = false;
+    std::vector<Snapshot_Frame> snapshot_;
 };
 
 // ============================================================

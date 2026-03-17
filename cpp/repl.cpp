@@ -49,10 +49,14 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
     }
     catch (const frst::Frost_User_Error& e)
     {
+        if (bt)
+            bt->take_snapshot(); // discard stale snapshot
         fmt::println(stderr, "Error: {}", e.what());
     }
     catch (const frst::Frost_Interpreter_Error& e)
     {
+        if (bt)
+            bt->take_snapshot(); // discard stale snapshot
         fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
     }
 }

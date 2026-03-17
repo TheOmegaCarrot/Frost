@@ -1,34 +1,16 @@
 #ifndef FROST_EXCEPTIONS_HPP
 #define FROST_EXCEPTIONS_HPP
 
-#include <memory>
 #include <stdexcept>
 #include <string>
 
-#include "backtrace.hpp"
+#include <boost/preprocessor/stringize.hpp>
 
 namespace frst
 {
 
 struct Frost_Error : std::runtime_error
 {
-  public:
-    void add_backtrace(std::unique_ptr<Backtrace> bt)
-    {
-        if (!backtrace_)
-            backtrace_ = std::move(bt);
-    }
-
-    std::unique_ptr<Backtrace> pilfer_backtrace()
-    {
-        return std::move(backtrace_);
-    }
-
-    bool has_backtrace() const
-    {
-        return backtrace_ != nullptr;
-    }
-
   protected:
     Frost_Error(const char* err)
         : std::runtime_error{err}
@@ -39,9 +21,6 @@ struct Frost_Error : std::runtime_error
         : std::runtime_error{err}
     {
     }
-
-  private:
-    std::unique_ptr<Backtrace> backtrace_;
 };
 
 //! Something has gone wrong inside the interpreter (a bug)
@@ -105,7 +84,7 @@ struct Frost_Unrecoverable_Error : Frost_User_Error
     throw Frost_Interpreter_Error                                              \
     {                                                                          \
         "Hit point which should be unreachable at: " __FILE__                  \
-        ":" BOOST_PP_STRINGIZE(__LINE__)                                                 \
+        ":" BOOST_PP_STRINGIZE(__LINE__)                                       \
     }
 
 } // namespace frst
