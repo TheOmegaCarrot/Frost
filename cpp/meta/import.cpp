@@ -84,7 +84,7 @@ struct Importer
         }
 
         Symbol_Table isolated_table;
-        inject_builtins(isolated_table, backtrace);
+        inject_builtins(isolated_table);
         inject_ext(isolated_table);
         isolated_table.define("imported", Value::create(true));
 

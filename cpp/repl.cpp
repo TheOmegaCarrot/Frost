@@ -47,16 +47,14 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
         else
             last_statement->execute(ctx);
     }
-    catch (const frst::Frost_User_Error& e)
+    catch (frst::Frost_User_Error& e)
     {
-        if (bt)
-            bt->take_snapshot(); // discard stale snapshot
+        e.take_backtrace(); // discard stale snapshot
         fmt::println(stderr, "Error: {}", e.what());
     }
-    catch (const frst::Frost_Interpreter_Error& e)
+    catch (frst::Frost_Interpreter_Error& e)
     {
-        if (bt)
-            bt->take_snapshot(); // discard stale snapshot
+        e.take_backtrace(); // discard stale snapshot
         fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
     }
 }

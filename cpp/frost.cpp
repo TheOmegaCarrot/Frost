@@ -22,34 +22,14 @@ using namespace std::literals;
 namespace
 {
 
-std::string format_backtrace(const std::vector<frst::Snapshot_Frame>& frames)
+std::string format_backtrace(const std::vector<std::string>& frames)
 {
     std::string out;
-
-    for (const auto& frame : frames | std::views::reverse)
+    for (const auto& frame : frames)
     {
-        std::visit(
-            frst::Overload{
-                [&](const frst::Resolved_AST_Frame& f) {
-                    fmt::format_to(std::back_inserter(out), "{} [{}]\n",
-                                   f.node_label, f.source_range);
-                },
-                [&](const frst::Call_Frame& f) {
-                    fmt::format_to(std::back_inserter(out), "Call ({})\n",
-                                   f.function_name);
-                },
-                [&](const frst::Import_Frame& f) {
-                    fmt::format_to(std::back_inserter(out),
-                                   "Import Boundary ({})\n", f.module_spec);
-                },
-                [&](const frst::Iterative_Frame& f) {
-                    fmt::format_to(std::back_inserter(out), "{} ({})\n",
-                                   f.operation, f.function_name);
-                },
-            },
-            frame);
+        out += frame;
+        out += '\n';
     }
-
     return out;
 }
 
@@ -70,12 +50,10 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
     }
     catch (frst::Frost_Error& err)
     {
-        auto snapshot = ctx.runtime.backtrace
-                            ? ctx.runtime.backtrace->take_snapshot()
-                            : std::vector<frst::Snapshot_Frame>{};
-        if (!snapshot.empty())
+        auto bt = err.take_backtrace();
+        if (!bt.empty())
             fmt::print(stderr, "{}\nTraceback:\n{}", err.what(),
-                       format_backtrace(snapshot));
+                       format_backtrace(bt));
         else
             fmt::println(stderr, "{}", err.what());
         std::exit(1);
@@ -178,9 +156,10 @@ int main(int argc, const char** argv)
 
     frst::Backtrace_State trace;
     frst::Backtrace_State* bt = do_backtrace ? &trace : nullptr;
+    frst::Backtrace_State::set_current(bt);
 
     frst::Symbol_Table symbols;
-    frst::inject_builtins(symbols, bt);
+    frst::inject_builtins(symbols);
     frst::inject_ext(symbols);
     frst::inject_meta(symbols);
 

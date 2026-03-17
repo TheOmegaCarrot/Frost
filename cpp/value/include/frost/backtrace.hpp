@@ -44,19 +44,6 @@ using Backtrace_Frame =
     std::variant<AST_Frame, Call_Frame, Import_Frame, Iterative_Frame>;
 
 // ============================================================
-// Snapshot frame types — AST pointers resolved to owned strings
-// ============================================================
-
-struct Resolved_AST_Frame
-{
-    std::string node_label;
-    std::string source_range;
-};
-
-using Snapshot_Frame =
-    std::variant<Resolved_AST_Frame, Call_Frame, Import_Frame, Iterative_Frame>;
-
-// ============================================================
 // Backtrace_State — shared mutable frame stack
 // ============================================================
 
@@ -78,22 +65,26 @@ class Backtrace_State
         frames_.pop_back();
     }
 
-    // Resolve the entire live stack into owned strings.
+    // Resolve the entire live stack into formatted strings.
     // Called by the first Frame_Guard destructor to detect unwinding.
     // Defined in ast/backtrace.cpp (needs Statement complete type).
     void snapshot_if_needed();
 
     // Move the resolved snapshot out. Returns empty if no snapshot.
-    std::vector<Snapshot_Frame> take_snapshot()
+    std::vector<std::string> take_snapshot()
     {
         auto result = std::move(snapshot_);
         snapshot_.clear();
         return result;
     }
 
+    static Backtrace_State* current() { return current_state_; }
+    static void set_current(Backtrace_State* s) { current_state_ = s; }
+
   private:
     std::vector<Backtrace_Frame> frames_;
-    std::vector<Snapshot_Frame> snapshot_;
+    std::vector<std::string> snapshot_;
+    static inline Backtrace_State* current_state_ = nullptr;
 };
 
 // ============================================================

@@ -51,8 +51,6 @@ class Builtin final : public Callable
     Arity arity_;
 };
 
-class Backtrace_State;
-
 #define X_INJECT                                                               \
     X(structure_ops)                                                           \
     X(type_checks)                                                             \
@@ -78,10 +76,9 @@ X_INJECT
 
 #undef X
 
-void inject_error_handling(Symbol_Table&, Backtrace_State* bt = nullptr);
+void inject_error_handling(Symbol_Table&);
 
-inline void inject_builtins(Symbol_Table& table,
-                            Backtrace_State* bt = nullptr)
+inline void inject_builtins(Symbol_Table& table)
 {
 #define X(F) inject_##F(table);
 
@@ -89,7 +86,7 @@ inline void inject_builtins(Symbol_Table& table,
 
 #undef X
 
-    inject_error_handling(table, bt);
+    inject_error_handling(table);
 }
 
 } // namespace frst

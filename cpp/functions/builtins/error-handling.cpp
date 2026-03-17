@@ -1,6 +1,5 @@
 #include <frost/builtins-common.hpp>
 
-#include <frost/backtrace.hpp>
 #include <frost/builtin.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
@@ -9,45 +8,12 @@ using namespace std::literals;
 namespace frst
 {
 
-namespace
-{
-
-Value_Ptr format_backtrace_as_value(
-    const std::vector<Snapshot_Frame>& snapshot_frames)
-{
-    Array frames;
-    for (const auto& frame : snapshot_frames | std::views::reverse)
-    {
-        std::string text = std::visit(
-            Overload{
-                [](const Resolved_AST_Frame& f) {
-                    return fmt::format("{} [{}]", f.node_label,
-                                       f.source_range);
-                },
-                [](const Call_Frame& f) {
-                    return fmt::format("Call ({})", f.function_name);
-                },
-                [](const Import_Frame& f) {
-                    return fmt::format("Import Boundary ({})", f.module_spec);
-                },
-                [](const Iterative_Frame& f) {
-                    return fmt::format("{} ({})", f.operation, f.function_name);
-                },
-            },
-            frame);
-        frames.push_back(Value::create(std::move(text)));
-    }
-    return Value::create(std::move(frames));
-}
-
-} // namespace
-
-void inject_error_handling(Symbol_Table& table, Backtrace_State* bt)
+void inject_error_handling(Symbol_Table& table)
 {
     table.define(
         "try_call",
         Value::create(Function{std::make_shared<Builtin>(
-            [bt](builtin_args_t args) -> Value_Ptr {
+            [](builtin_args_t args) -> Value_Ptr {
                 // clang-format off
                 REQUIRE_ARGS("try_call",
                         PARAM("function", TYPES(Function)),
@@ -70,13 +36,16 @@ void inject_error_handling(Symbol_Table& table, Backtrace_State* bt)
                         {strings.ok, Value::create(false)},
                         {strings.error, Value::create(String{err.what()})}};
 
-                    if (bt)
+                    auto bt = err.take_backtrace();
+                    if (!bt.empty())
                     {
-                        auto snapshot = bt->take_snapshot();
-                        if (!snapshot.empty())
-                            result_map.emplace(
-                                strings.trace,
-                                format_backtrace_as_value(snapshot));
+                        Array frames;
+                        frames.reserve(bt.size());
+                        for (auto& frame : bt)
+                            frames.push_back(
+                                Value::create(std::move(frame)));
+                        result_map.emplace(strings.trace,
+                                           Value::create(std::move(frames)));
                     }
 
                     return Value::create(Value::trusted,
