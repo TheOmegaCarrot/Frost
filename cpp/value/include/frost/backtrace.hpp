@@ -67,8 +67,11 @@ class Backtrace_State
 
     // Resolve the entire live stack into formatted strings.
     // Called by the first Frame_Guard destructor to detect unwinding.
-    // Defined in ast/backtrace.cpp (needs Statement complete type).
-    void snapshot_if_needed();
+    void snapshot_if_needed()
+    {
+        if (snapshot_.empty() && !frames_.empty())
+            do_snapshot(); // defined in ast/backtrace.cpp
+    }
 
     // Move the resolved snapshot out. Returns empty if no snapshot.
     std::vector<std::string> take_snapshot()
@@ -82,9 +85,12 @@ class Backtrace_State
     static void set_current(Backtrace_State* s) { current_state_ = s; }
 
   private:
+    // Defined in ast/backtrace.cpp (needs Statement complete type).
+    void do_snapshot();
+
     std::vector<Backtrace_Frame> frames_;
     std::vector<std::string> snapshot_;
-    static inline Backtrace_State* current_state_ = nullptr;
+    static inline thread_local Backtrace_State* current_state_ = nullptr;
 };
 
 // ============================================================

@@ -24,13 +24,9 @@ namespace
 
 std::string format_backtrace(const std::vector<std::string>& frames)
 {
-    std::string out;
-    for (const auto& frame : frames)
-    {
-        out += frame;
-        out += '\n';
-    }
-    return out;
+    return frames
+           | std::views::join_with('\n')
+           | std::ranges::to<std::string>();
 }
 
 } // namespace
@@ -52,8 +48,8 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
     {
         auto bt = err.take_backtrace();
         if (!bt.empty())
-            fmt::print(stderr, "{}\nTraceback:\n{}", err.what(),
-                       format_backtrace(bt));
+            fmt::println(stderr, "{}\nTraceback:\n{}", err.what(),
+                         format_backtrace(bt));
         else
             fmt::println(stderr, "{}", err.what());
         std::exit(1);
