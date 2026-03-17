@@ -205,6 +205,9 @@ int main(int argc, const char** argv)
         exec_program(results.value(), setup_ctx, do_dump);
     }
 
+    if (not file_to_evaluate && strings_to_evaluate.empty())
+        do_repl = true;
+
     if (do_repl)
         repl(symbols, bt);
 }
