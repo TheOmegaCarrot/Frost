@@ -1,4 +1,4 @@
-#include <frost/builtins-common.hpp>
+#include <frost/extensions-common.hpp>
 
 #include <frost/builtin.hpp>
 #include <frost/symbol-table.hpp>
@@ -21,9 +21,9 @@ BUILTIN(request)
 
 } // namespace http
 
-void inject_http(Symbol_Table& table)
+DECLARE_EXTENSION(http)
 {
     using namespace http;
-    INJECT_MAP(http, ENTRY(request, 1));
+    CREATE_EXTENSION(ENTRY(request, 1));
 }
 } // namespace frst

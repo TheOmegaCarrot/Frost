@@ -14,6 +14,7 @@ target_include_directories( frost-http
 target_link_libraries( frost-http
     PRIVATE
     frost-functions
+    frost-extensions-common
     Boost::url
     OpenSSL::SSL
     OpenSSL::Crypto

@@ -13,6 +13,8 @@ target_link_libraries( frost-ext
     frost-common
 )
 
+add_subdirectory(extensions-common/)
+
 if(WITH_HTTP)
     message("Enabling HTTP")
     add_subdirectory(http)
