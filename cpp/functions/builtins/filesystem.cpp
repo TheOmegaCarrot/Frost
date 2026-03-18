@@ -4,9 +4,12 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
+#include <boost/hof/lift.hpp>
+
 #include <filesystem>
 
 using namespace std::literals;
+namespace stdf = std::filesystem;
 
 namespace frst
 {
@@ -16,27 +19,66 @@ namespace fs
 
 namespace
 {
+
 void throw_if_error(std::error_code ec)
 {
     if (ec)
         throw Frost_Recoverable_Error{ec.message()};
 }
+
+// Template helpers
+
+template <auto Function, typename R = void>
+Value_Ptr fs_unary(std::string_view name, builtin_args_t args)
+{
+    REQUIRE_ARGS(name, PARAM("path", TYPES(String)));
+    std::error_code ec;
+    if constexpr (std::is_void_v<R>)
+    {
+        Function(GET(0, String), ec);
+        throw_if_error(ec);
+        return Value::null();
+    }
+    else
+    {
+        R res = Function(GET(0, String), ec);
+        throw_if_error(ec);
+        return Value::create(std::move(res));
+    }
+}
+
+template <auto Function>
+Value_Ptr fs_binary_void(std::string_view name, std::string_view p1,
+                         std::string_view p2, builtin_args_t args)
+{
+    REQUIRE_ARGS(name, PARAM(p1, TYPES(String)), PARAM(p2, TYPES(String)));
+    std::error_code ec;
+    Function(GET(0, String), GET(1, String), ec);
+    throw_if_error(ec);
+    return Value::null();
+}
+
+template <auto Member>
+Value_Ptr fs_path_component(std::string_view name, builtin_args_t args)
+{
+    REQUIRE_ARGS(name, PARAM("path", TYPES(String)));
+    stdf::path input = GET(0, String);
+    return Value::create(String{(input.*Member)()});
+}
+
 } // namespace
 
-#define BINARY_FS_VOID(frost_name, cpp_name, p1name, p2name)                   \
-    BUILTIN(frost_name)                                                        \
-    {                                                                          \
-        REQUIRE_ARGS("fs." #frost_name, PARAM(#p1name, TYPES(String)),         \
-                     PARAM(#p2name, TYPES(String)));                           \
-                                                                               \
-        std::error_code ec;                                                    \
-        std::filesystem::cpp_name(GET(0, String), GET(1, String), ec);         \
-        throw_if_error(ec);                                                    \
-        return Value::null();                                                  \
-    }
+BUILTIN(move)
+{
+    return fs_binary_void<BOOST_HOF_LIFT(stdf::rename)>("fs.move", "src",
+                                                        "dest", args);
+}
 
-BINARY_FS_VOID(move, rename, src, dest)
-BINARY_FS_VOID(symlink, create_symlink, to, link)
+BUILTIN(symlink)
+{
+    return fs_binary_void<BOOST_HOF_LIFT(stdf::create_symlink)>(
+        "fs.symlink", "to", "link", args);
+}
 
 BUILTIN(copy)
 {
@@ -44,79 +86,86 @@ BUILTIN(copy)
                  PARAM("dest", TYPES(String)));
 
     std::error_code ec;
-    using enum std::filesystem::copy_options;
-    std::filesystem::copy(GET(0, String), GET(1, String), recursive, ec);
+    stdf::copy(GET(0, String), GET(1, String), stdf::copy_options::recursive,
+               ec);
     throw_if_error(ec);
     return Value::null();
 }
 
-#define UNARY_FS(frost_name, cpp_name, R)                                      \
-    BUILTIN(frost_name)                                                        \
-    {                                                                          \
-        REQUIRE_ARGS("fs." #frost_name, PARAM("path", TYPES(String)));         \
-                                                                               \
-        std::error_code ec;                                                    \
-        R res = std::filesystem::cpp_name(GET(0, String), ec);                 \
-        throw_if_error(ec);                                                    \
-        return Value::create(std::move(res));                                  \
-    }
-
-UNARY_FS(absolute, absolute, String)
-UNARY_FS(canonical, canonical, String)
-UNARY_FS(exists, exists, Bool)
-UNARY_FS(remove, remove, Bool)
-UNARY_FS(remove_recursively, remove_all, Int)
-UNARY_FS(mkdir, create_directories, Bool)
-UNARY_FS(size, file_size, Int)
-
-#define UNARY_FS_VOID(frost_name, cpp_name)                                    \
-    BUILTIN(frost_name)                                                        \
-    {                                                                          \
-        REQUIRE_ARGS("fs." #frost_name, PARAM("path", TYPES(String)));         \
-                                                                               \
-        std::error_code ec;                                                    \
-        std::filesystem::cpp_name(GET(0, String), ec);                         \
-        throw_if_error(ec);                                                    \
-        return Value::null();                                                  \
-    }
-
-UNARY_FS_VOID(cd, current_path)
-
-#define NULLARY_FS(frost_name, cpp_name)                                       \
-    BUILTIN(frost_name)                                                        \
-    {                                                                          \
-        std::error_code ec;                                                    \
-        String res = std::filesystem::cpp_name(ec);                            \
-        throw_if_error(ec);                                                    \
-        return Value::create(std::move(res));                                  \
-    }
-
-NULLARY_FS(cwd, current_path)
-
-#define PATH_NULLARY_METHOD(frost_name, cpp_name)                              \
-    BUILTIN(frost_name)                                                        \
-    {                                                                          \
-        REQUIRE_ARGS("fs." #frost_name, PARAM("path", TYPES(String)));         \
-        std::filesystem::path input = GET(0, String);                          \
-        std::error_code ec;                                                    \
-        return Value::create(String{input.cpp_name()});                        \
-    }
-
-PATH_NULLARY_METHOD(parent, parent_path)
-PATH_NULLARY_METHOD(stem, stem)
-PATH_NULLARY_METHOD(filename, filename)
-PATH_NULLARY_METHOD(extension, extension)
-
-BUILTIN(list)
+BUILTIN(absolute)
 {
-    REQUIRE_ARGS("fs.list", PARAM("path", TYPES(String)));
+    return fs_unary<BOOST_HOF_LIFT(stdf::absolute), String>("fs.absolute",
+                                                            args);
+}
+BUILTIN(canonical)
+{
+    return fs_unary<BOOST_HOF_LIFT(stdf::canonical), String>("fs.canonical",
+                                                             args);
+}
+BUILTIN(exists)
+{
+    return fs_unary<BOOST_HOF_LIFT(stdf::exists), Bool>("fs.exists", args);
+}
+BUILTIN(remove)
+{
+    return fs_unary<BOOST_HOF_LIFT(stdf::remove), Bool>("fs.remove", args);
+}
+BUILTIN(remove_recursively)
+{
+    return fs_unary<BOOST_HOF_LIFT(stdf::remove_all), Int>(
+        "fs.remove_recursively", args);
+}
+BUILTIN(mkdir)
+{
+    return fs_unary<BOOST_HOF_LIFT(stdf::create_directories), Bool>("fs.mkdir",
+                                                                    args);
+}
+BUILTIN(size)
+{
+    return fs_unary<BOOST_HOF_LIFT(stdf::file_size), Int>("fs.size", args);
+}
+
+BUILTIN(cd)
+{
+    return fs_unary<BOOST_HOF_LIFT(stdf::current_path)>("fs.cd", args);
+}
+
+BUILTIN(cwd)
+{
+    std::error_code ec;
+    String res = stdf::current_path(ec);
+    throw_if_error(ec);
+    return Value::create(std::move(res));
+}
+
+BUILTIN(parent)
+{
+    return fs_path_component<&stdf::path::parent_path>("fs.parent", args);
+}
+BUILTIN(stem)
+{
+    return fs_path_component<&stdf::path::stem>("fs.stem", args);
+}
+BUILTIN(filename)
+{
+    return fs_path_component<&stdf::path::filename>("fs.filename", args);
+}
+BUILTIN(extension)
+{
+    return fs_path_component<&stdf::path::extension>("fs.extension", args);
+}
+
+namespace
+{
+template <typename directory_iterator_t>
+Value_Ptr list_impl(const String& path)
+{
 
     std::error_code ec;
-    auto itr = std::filesystem::directory_iterator(
-        GET(0, String),
-        std::filesystem::directory_options::skip_permission_denied, ec);
+    auto itr = directory_iterator_t(
+        path, stdf::directory_options::skip_permission_denied, ec);
     throw_if_error(ec);
-    auto end = std::filesystem::directory_iterator{};
+    auto end = directory_iterator_t{};
 
     Array result;
     for (; itr != end; itr.increment(ec))
@@ -129,30 +178,21 @@ BUILTIN(list)
         result.push_back(Value::create(auto{itr->path().string()}));
     }
     return Value::create(std::move(result));
+}
+} // namespace
+
+BUILTIN(list)
+{
+    REQUIRE_ARGS("fs.list", PARAM("path", TYPES(String)));
+
+    return list_impl<stdf::directory_iterator>(GET(0, String));
 }
 
 BUILTIN(list_recursively)
 {
     REQUIRE_ARGS("fs.list_recursively", PARAM("path", TYPES(String)));
 
-    std::error_code ec;
-    auto itr = std::filesystem::recursive_directory_iterator(
-        GET(0, String),
-        std::filesystem::directory_options::skip_permission_denied, ec);
-    throw_if_error(ec);
-    auto end = std::filesystem::recursive_directory_iterator{};
-
-    Array result;
-    for (; itr != end; itr.increment(ec))
-    {
-        if (ec)
-        {
-            ec.clear();
-            continue;
-        }
-        result.push_back(Value::create(auto{itr->path().string()}));
-    }
-    return Value::create(std::move(result));
+    return list_impl<stdf::recursive_directory_iterator>(GET(0, String));
 }
 
 BUILTIN(stat)
@@ -163,10 +203,10 @@ BUILTIN(stat)
             character, fifo, socket, unknown, perms, owner, group, others, read,
             write, exec);
 
-    auto type_to_str = [](std::filesystem::file_type type) {
+    auto type_to_str = [](stdf::file_type type) {
         switch (type)
         {
-            using enum std::filesystem::file_type;
+            using enum stdf::file_type;
 #define X_TYPES                                                                \
     X(none)                                                                    \
     X(not_found)                                                               \
@@ -189,11 +229,16 @@ BUILTIN(stat)
     };
 
     std::error_code ec;
-    auto status = std::filesystem::status(GET(0, String), ec);
+    auto status = stdf::status(GET(0, String), ec);
     throw_if_error(ec);
 
     const auto& perms = status.permissions();
-    using enum std::filesystem::perms;
+    using enum stdf::perms;
+
+    auto has = [&](stdf::perms p) {
+        return Value::create(Bool{(perms & p) != stdf::perms::none});
+    };
+
     Map result{
         {strings.type, type_to_str(status.type())},
         {
@@ -202,61 +247,26 @@ BUILTIN(stat)
                 Value::trusted,
                 Map{
                     {strings.owner,
-                     Value::create(
-                         Value::trusted,
-                         Map{
-                             {strings.read,
-                              Value::create(Bool{
-                                  (perms & owner_read)
-                                  != static_cast<std::filesystem::perms>(0)})},
-                             {strings.write,
-                              Value::create(Bool{
-                                  (perms & owner_write)
-                                  != static_cast<std::filesystem::perms>(0)})},
-                             {strings.exec,
-                              Value::create(Bool{
-                                  (perms & owner_exec)
-                                  != static_cast<std::filesystem::perms>(0)})},
-                         })},
+                     Value::create(Value::trusted,
+                                   Map{
+                                       {strings.read, has(owner_read)},
+                                       {strings.write, has(owner_write)},
+                                       {strings.exec, has(owner_exec)},
+                                   })},
                     {strings.group,
-                     Value::create(
-                         Value::trusted,
-                         Map{
-                             {strings.read,
-                              Value::create(Bool{
-                                  (perms & group_read)
-                                  != static_cast<std::filesystem::perms>(0)})},
-                             {strings.write,
-                              Value::create(Bool{
-                                  (perms & group_write)
-                                  != static_cast<std::filesystem::perms>(0)})},
-                             {strings.exec,
-                              Value::create(Bool{
-                                  (perms & group_exec)
-                                  != static_cast<std::filesystem::perms>(0)})},
-                         })},
-                    {
-                        strings.others,
-                        Value::create(
-                            Value::trusted,
-                            Map{
-                                {strings.read,
-                                 Value::create(Bool{
-                                     (perms & others_read)
-                                     != static_cast<std::filesystem::perms>(
-                                         0)})},
-                                {strings.write,
-                                 Value::create(Bool{
-                                     (perms & others_write)
-                                     != static_cast<std::filesystem::perms>(
-                                         0)})},
-                                {strings.exec,
-                                 Value::create(Bool{
-                                     (perms & others_exec)
-                                     != static_cast<std::filesystem::perms>(
-                                         0)})},
-                            }),
-                    },
+                     Value::create(Value::trusted,
+                                   Map{
+                                       {strings.read, has(group_read)},
+                                       {strings.write, has(group_write)},
+                                       {strings.exec, has(group_exec)},
+                                   })},
+                    {strings.others,
+                     Value::create(Value::trusted,
+                                   Map{
+                                       {strings.read, has(others_read)},
+                                       {strings.write, has(others_write)},
+                                       {strings.exec, has(others_exec)},
+                                   })},
                 }),
         },
     };
@@ -269,9 +279,8 @@ BUILTIN(concat)
     REQUIRE_ARGS("fs.concat", PARAM("base", TYPES(String)),
                  PARAM("path", TYPES(String)));
 
-    return Value::create(String{(std::filesystem::path{GET(0, String)}
-                                 / std::filesystem::path{GET(1, String)})
-                                    .string()});
+    return Value::create(String{
+        (stdf::path{GET(0, String)} / stdf::path{GET(1, String)}).string()});
 }
 
 } // namespace fs
