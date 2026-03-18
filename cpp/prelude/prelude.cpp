@@ -11,11 +11,6 @@ constexpr static const char prelude_text[]{
 void inject_prelude(Symbol_Table& table)
 {
     Execution_Context ctx{.symbols = table};
-    inject_prelude(ctx);
-}
-
-void inject_prelude(Execution_Context ctx)
-{
     auto ast = parse_program(prelude_text);
 
     if (!ast)

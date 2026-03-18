@@ -153,15 +153,16 @@ int main(int argc, const char** argv)
     frst::Backtrace_State trace;
     frst::Backtrace_State::set_current(do_backtrace ? &trace : nullptr);
 
-    frst::Symbol_Table symbols;
-    frst::inject_builtins(symbols);
-    frst::inject_ext(symbols);
-    frst::inject_meta(symbols);
+    frst::Symbol_Table root_symbol_table;
+    frst::inject_builtins(root_symbol_table);
+    frst::inject_ext(root_symbol_table);
+    frst::inject_meta(root_symbol_table);
 
+    frst::Symbol_Table symbols{&root_symbol_table};
     frst::Execution_Context setup_ctx{.symbols = symbols};
 
     if (not skip_prelude)
-        frst::inject_prelude(setup_ctx);
+        frst::inject_prelude(root_symbol_table);
 
     std::vector<std::filesystem::path> module_search_path;
     if (file_to_evaluate)
@@ -170,14 +171,15 @@ int main(int argc, const char** argv)
 
     module_search_path.append_range(frst::env_module_path());
 
-    frst::inject_import(symbols, module_search_path);
+    root_symbol_table.define(
+        "args",
+        frst::Value::create(args_for_frost
+                            | std::views::transform([](auto arg) {
+                                  return frst::Value::create(std::move(arg));
+                              })
+                            | std::ranges::to<frst::Array>()));
 
-    symbols.define("args", frst::Value::create(
-                               args_for_frost
-                               | std::views::transform([](auto arg) {
-                                     return frst::Value::create(std::move(arg));
-                                 })
-                               | std::ranges::to<frst::Array>()));
+    frst::inject_import(symbols, root_symbol_table, module_search_path);
 
     symbols.define("imported", frst::Value::create(false));
 
