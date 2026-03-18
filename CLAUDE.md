@@ -29,17 +29,17 @@ The main binary is output to `build/frost`.
 
 ## Running Tests
 
-Always run tests with `FROST_SKIP_HTTP_TEST=1` to avoid real network requests:
+Always run tests with `FROST_SKIP_HTTP_TESTS=1` to avoid real network requests:
 
 ```bash
 # Run all tests
-FROST_SKIP_HTTP_TEST=1 ctest --test-dir build --output-on-failure
+FROST_SKIP_HTTP_TESTS=1 ctest --test-dir build --output-on-failure
 
 # Run a specific test suite (matches by the name in the TEST_CASE macro)
-FROST_SKIP_HTTP_TEST=1 ctest --test-dir build -R <test-name>
+FROST_SKIP_HTTP_TESTS=1 ctest --test-dir build -R <test-name>
 
 # Run a specific test binary directly
-FROST_SKIP_HTTP_TEST=1 ./build/Frost_Tests/<test-name>
+FROST_SKIP_HTTP_TESTS=1 ./build/Frost_Tests/<test-name>
 ```
 
 Test binaries are placed in `build/Frost_Tests/`. Each test file in `cpp/*/tests/` becomes its own executable via the `make_test()` CMake macro.
