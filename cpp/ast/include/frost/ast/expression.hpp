@@ -32,7 +32,8 @@ class Expression : public Statement
         if (not bt)
             return do_evaluate(ctx);
 
-        Frame_Guard guard{bt, AST_Frame{.node = this}};
+        Frame_Guard guard{bt, fmt::format("{} [{}]", node_label(),
+                                          source_range())};
         return do_evaluate(ctx);
     }
 

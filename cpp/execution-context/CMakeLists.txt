@@ -21,6 +21,5 @@ foreach(test_file IN LISTS SYMBOL_TABLE_TEST_FILES)
     make_test( tests/${test_file}.cpp
         LIBS
         frost-execution-context
-        frost-ast
     )
 endforeach()

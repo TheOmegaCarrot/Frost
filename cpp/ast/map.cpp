@@ -33,9 +33,7 @@ Value_Ptr ast::Map::do_evaluate(Evaluation_Context ctx) const
 
     const auto& fn = op_val->raw_get<Function>();
 
-    Frame_Guard guard{Backtrace_State::current(),
-                      Iterative_Frame{.operation = "Map",
-                                      .function_name = fn->name()}};
+    auto guard = make_frame_guard("Map ({})", fn->name());
 
     return Value::do_map(structure_val, fn, "Map");
 }

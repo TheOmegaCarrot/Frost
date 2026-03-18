@@ -33,8 +33,7 @@ Value_Ptr ast::Function_Call::do_evaluate(Evaluation_Context ctx) const
 
     const auto& callable = fn->raw_get<Function>();
 
-    Frame_Guard guard{Backtrace_State::current(),
-                      Call_Frame{.function_name = callable->name()}};
+    auto guard = make_frame_guard("Call ({})", callable->name());
 
     return callable->call(std::move(args));
 }

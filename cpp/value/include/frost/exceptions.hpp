@@ -1,6 +1,8 @@
 #ifndef FROST_EXCEPTIONS_HPP
 #define FROST_EXCEPTIONS_HPP
 
+#include <frost/backtrace.hpp>
+
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -18,11 +20,27 @@ struct Frost_Error : std::runtime_error
     }
 
   protected:
-    // Non-inline: defined in ast/backtrace.cpp
-    Frost_Error(const char* err);
-    Frost_Error(const std::string& err);
+    Frost_Error(const char* err)
+        : std::runtime_error{err}
+        , backtrace_frames_{snapshot_current()}
+    {
+    }
+
+    Frost_Error(const std::string& err)
+        : std::runtime_error{err}
+        , backtrace_frames_{snapshot_current()}
+    {
+    }
 
   private:
+    static std::vector<std::string> snapshot_current()
+    {
+        auto* bt = Backtrace_State::current();
+        if (!bt)
+            return {};
+        return bt->capture_snapshot();
+    }
+
     std::vector<std::string> backtrace_frames_;
 };
 

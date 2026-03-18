@@ -70,8 +70,7 @@ struct Importer
     Value_Ptr do_import(const std::string& module_spec,
                         const std::filesystem::path& module_file)
     {
-        Frame_Guard guard{Backtrace_State::current(),
-                          Import_Frame{.module_spec = module_spec}};
+        auto guard = make_frame_guard("Import Boundary ({})", module_spec);
 
         auto parse_result = parse_file(module_file);
 

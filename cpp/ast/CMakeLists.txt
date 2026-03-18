@@ -1,5 +1,4 @@
 add_library( frost-ast
-    backtrace.cpp
     array-constructor.cpp
     array-destructure.cpp
     binop.cpp
