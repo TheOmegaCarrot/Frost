@@ -1,0 +1,6 @@
+# imported is false when running directly
+assert(imported == false)
+
+# imported is true inside an imported module
+def m = import('reports_imported')
+assert(m.was_imported == true)

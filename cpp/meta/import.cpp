@@ -10,6 +10,7 @@
 #include <flat_map>
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/scope_exit.hpp>
 #include <fmt/format.h>
 
 namespace frst
@@ -72,6 +73,10 @@ struct Importer
                         const std::filesystem::path& module_file)
     {
         import_stack.push_back(module_spec);
+        BOOST_SCOPE_EXIT_ALL(&)
+        {
+            import_stack.pop_back();
+        };
 
         if (auto cache_hit = import_cache->find(module_file);
             cache_hit != import_cache->end())
@@ -125,7 +130,6 @@ struct Importer
 
         auto import_result = Value::create(Value::trusted, std::move(imported));
         import_cache->insert_or_assign(module_file, import_result);
-        import_stack.pop_back();
         return import_result;
     }
 };

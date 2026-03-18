@@ -15,6 +15,9 @@ set(IMPORT_SCRIPTS
     import-deep.frst
     import-cycles.frst
     import-cache.frst
+    import-imported-var.frst
+    import-bad-args.frst
+    import-error-recovery.frst
 )
 foreach(script ${IMPORT_SCRIPTS})
     get_filename_component(name ${script} NAME_WE)

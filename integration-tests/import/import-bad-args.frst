@@ -1,0 +1,9 @@
+# import requires a String argument
+def r1 = try_call(import, [42])
+assert(r1.ok == false)
+
+def r2 = try_call(import, [null])
+assert(r2.ok == false)
+
+def r3 = try_call(import, [[]])
+assert(r3.ok == false)

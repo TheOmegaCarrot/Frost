@@ -1,0 +1,14 @@
+# A caught import error must not corrupt the import stack.
+# If the stack is not cleaned up, subsequent cycle detection messages
+# will contain stale entries from the failed import.
+
+# Trigger a runtime error inside an imported module
+def bad = try_call(import, ["runtime-error"])
+assert(bad.ok == false)
+
+# Now trigger a real cycle. The error message should only contain
+# entries from the actual cycle, not "runtime-error".
+def cycle = try_call(import, ["cycles.pair_a"])
+assert(cycle.ok == false)
+assert(contains(cycle.error, "Import cycle"))
+assert(not contains(cycle.error, "runtime-error"))
