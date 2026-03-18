@@ -1,0 +1,2 @@
+def a = import('pair_a')
+export def x = a.x

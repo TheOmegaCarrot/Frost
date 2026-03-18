@@ -1,0 +1,2 @@
+def t = import('top')
+export def x = t.x + 2

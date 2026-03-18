@@ -1,0 +1,2 @@
+def a = import('a')
+export def x = a.x

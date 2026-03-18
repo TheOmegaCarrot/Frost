@@ -1,0 +1,31 @@
+# Test: self-import cycle (A -> A)
+def self_cycle = try_call(import, ["cycles.self"])
+assert(self_cycle.ok == false)
+assert(contains(self_cycle.error, "Import cycle"))
+
+# Test: two-module cycle (A -> B -> A)
+def pair_cycle = try_call(import, ["cycles.pair_a"])
+assert(pair_cycle.ok == false)
+assert(contains(pair_cycle.error, "Import cycle"))
+
+# Test: three-module cycle (A -> B -> C -> A)
+def tri_cycle = try_call(import, ["cycles.triangle.a"])
+assert(tri_cycle.ok == false)
+assert(contains(tri_cycle.error, "Import cycle"))
+
+# Test: diamond is NOT a cycle (A imports B and C, both import D)
+# This must succeed - shared dependencies are fine.
+def left = import('cycles.diamond.left')
+def right = import('cycles.diamond.right')
+assert(left.x == 43)
+assert(right.x == 44)
+
+# Test: cycle detected even when the same file is reached via different module specs
+# (entry -> hop -> entry, where hop uses a relative spec for the same resolved file)
+def indirect_cycle = try_call(import, ["cycles.indirect.entry"])
+assert(indirect_cycle.ok == false)
+assert(contains(indirect_cycle.error, "Import cycle"))
+
+# Test: a cycle error is recoverable - subsequent non-cyclic imports still work
+def after = import('cycles.diamond.top')
+assert(after.x == 42)

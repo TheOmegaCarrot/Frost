@@ -1,0 +1,4 @@
+# imports entry via a different relative path (cycles.indirect.entry vs just entry)
+# but it resolves to the same file, so cycle detection must catch it
+def e = import('entry')
+export def y = e.x

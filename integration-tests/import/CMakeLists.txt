@@ -13,6 +13,7 @@ set(IMPORT_SCRIPTS
     import-parent-cwd.frst
     import-destructure.frst
     import-deep.frst
+    import-cycles.frst
 )
 foreach(script ${IMPORT_SCRIPTS})
     get_filename_component(name ${script} NAME_WE)
