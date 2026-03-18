@@ -25,8 +25,7 @@ class Closure : public Callable
             std::shared_ptr<ast::Expression> return_expr, Symbol_Table captures,
             std::size_t define_count,
             std::optional<std::string> vararg_parameter = {},
-            std::optional<std::string> self_name = {},
-            Backtrace_State* backtrace = nullptr);
+            std::optional<std::string> self_name = {});
 
     Value_Ptr call(std::span<const Value_Ptr> args) const override;
     std::string debug_dump() const override;
@@ -43,7 +42,6 @@ class Closure : public Callable
     std::optional<std::string> vararg_parameter_;
     std::optional<std::string> self_name_;
     std::size_t define_count_;
-    Backtrace_State* backtrace_;
 };
 
 class Weak_Closure final : public Callable

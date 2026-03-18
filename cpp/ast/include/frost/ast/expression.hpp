@@ -28,10 +28,11 @@ class Expression : public Statement
     //! @brief Evaluate the expression, and get the value it evaluates to
     [[nodiscard]] Value_Ptr evaluate(Evaluation_Context ctx) const
     {
-        if (not ctx.runtime.backtrace)
+        auto* bt = Backtrace_State::current();
+        if (not bt)
             return do_evaluate(ctx);
 
-        Frame_Guard guard{ctx.runtime.backtrace, AST_Frame{.node = this}};
+        Frame_Guard guard{bt, AST_Frame{.node = this}};
         return do_evaluate(ctx);
     }
 

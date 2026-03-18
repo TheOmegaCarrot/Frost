@@ -17,11 +17,9 @@
 using replxx::Replxx;
 
 void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
-               frst::Symbol_Table& symbols, Replxx& rx,
-               frst::Backtrace_State* bt)
+               frst::Symbol_Table& symbols, Replxx& rx)
 {
-    frst::Execution_Context ctx{.symbols = symbols,
-                                .runtime = {.backtrace = bt}};
+    frst::Execution_Context ctx{.symbols = symbols};
     try
     {
         for (const auto& statement : ast
@@ -428,7 +426,7 @@ std::optional<std::string> read_input_segment(Replxx& rx,
     return acc;
 }
 
-void repl(frst::Symbol_Table& symbols, frst::Backtrace_State* bt)
+void repl(frst::Symbol_Table& symbols)
 {
     Replxx rx;
 
@@ -467,7 +465,7 @@ void repl(frst::Symbol_Table& symbols, frst::Backtrace_State* bt)
         if (parse_result.value().empty())
             continue;
 
-        repl_exec(parse_result.value(), symbols, rx, bt);
+        repl_exec(parse_result.value(), symbols, rx);
         highlight_callback.reset();
     }
 }

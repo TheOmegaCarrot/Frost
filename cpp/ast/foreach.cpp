@@ -31,7 +31,7 @@ Value_Ptr ast::Foreach::do_evaluate(Evaluation_Context ctx) const
 
     const auto& op = op_val->raw_get<Function>();
 
-    Frame_Guard guard{ctx.runtime.backtrace,
+    Frame_Guard guard{Backtrace_State::current(),
                       Iterative_Frame{.operation = "Foreach",
                                       .function_name = op->name()}};
 

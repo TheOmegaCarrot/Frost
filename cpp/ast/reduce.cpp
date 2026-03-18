@@ -37,7 +37,7 @@ Value_Ptr ast::Reduce::do_evaluate(Evaluation_Context ctx) const
         return expr->evaluate(ctx);
     });
 
-    Frame_Guard guard{ctx.runtime.backtrace,
+    Frame_Guard guard{Backtrace_State::current(),
                       Iterative_Frame{.operation = "Reduce",
                                       .function_name = fn->name()}};
 

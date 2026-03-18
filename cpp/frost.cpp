@@ -56,7 +56,7 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
     }
 }
 
-void repl(frst::Symbol_Table& symbols, frst::Backtrace_State* bt);
+void repl(frst::Symbol_Table& symbols);
 int main(int argc, const char** argv)
 {
     const std::span args{argv, argv + argc};
@@ -151,16 +151,14 @@ int main(int argc, const char** argv)
     }
 
     frst::Backtrace_State trace;
-    frst::Backtrace_State* bt = do_backtrace ? &trace : nullptr;
-    frst::Backtrace_State::set_current(bt);
+    frst::Backtrace_State::set_current(do_backtrace ? &trace : nullptr);
 
     frst::Symbol_Table symbols;
     frst::inject_builtins(symbols);
     frst::inject_ext(symbols);
     frst::inject_meta(symbols);
 
-    frst::Execution_Context setup_ctx{.symbols = symbols,
-                                      .runtime = {.backtrace = bt}};
+    frst::Execution_Context setup_ctx{.symbols = symbols};
 
     if (not skip_prelude)
         frst::inject_prelude(setup_ctx);
@@ -172,7 +170,7 @@ int main(int argc, const char** argv)
 
     module_search_path.append_range(frst::env_module_path());
 
-    frst::inject_import(symbols, module_search_path, bt);
+    frst::inject_import(symbols, module_search_path);
 
     symbols.define("args", frst::Value::create(
                                args_for_frost
@@ -209,5 +207,5 @@ int main(int argc, const char** argv)
         do_repl = true;
 
     if (do_repl)
-        repl(symbols, bt);
+        repl(symbols);
 }
