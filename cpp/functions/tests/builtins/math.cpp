@@ -404,18 +404,6 @@ TEST_CASE("Builtin math")
                 .float_in = 10.0,
             },
             {
-                .name = "ceil",
-                .fn = std::ceil,
-                .int_in = 2,
-                .float_in = 2.3,
-            },
-            {
-                .name = "floor",
-                .fn = std::floor,
-                .int_in = 2,
-                .float_in = 2.7,
-            },
-            {
                 .name = "trunc",
                 .fn = std::trunc,
                 .int_in = 2,
@@ -574,6 +562,38 @@ TEST_CASE("Builtin math")
             fn->call({Value::create(std::numeric_limits<Float>::max())}),
             Frost_User_Error,
             MessageMatches(ContainsSubstring("out of range of Int")));
+    }
+
+    SECTION("ceil")
+    {
+        auto fn = get_fn("ceil");
+        auto i = fn->call({Value::create(7_f)});
+        REQUIRE(i->is<Int>());
+        CHECK(i->get<Int>() == 7_f);
+
+        auto f = fn->call({Value::create(2.3)});
+        REQUIRE(f->is<Int>());
+        CHECK(f->get<Int>() == 3_f);
+
+        auto neg = fn->call({Value::create(-2.7)});
+        REQUIRE(neg->is<Int>());
+        CHECK(neg->get<Int>() == -2_f);
+    }
+
+    SECTION("floor")
+    {
+        auto fn = get_fn("floor");
+        auto i = fn->call({Value::create(7_f)});
+        REQUIRE(i->is<Int>());
+        CHECK(i->get<Int>() == 7_f);
+
+        auto f = fn->call({Value::create(2.7)});
+        REQUIRE(f->is<Int>());
+        CHECK(f->get<Int>() == 2_f);
+
+        auto neg = fn->call({Value::create(-2.3)});
+        REQUIRE(neg->is<Int>());
+        CHECK(neg->get<Int>() == -3_f);
     }
 
     SECTION("hypot")

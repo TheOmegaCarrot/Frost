@@ -20,12 +20,14 @@ Produces an error if the rounded value is out of `Int` range.
 ## `ceil`
 `ceil(n)`
 
-Rounds `n` up to the nearest integer, returning a `Float`.
+Rounds `n` up to the nearest integer and returns an `Int`.
+If `n` is already an `Int`, returns it unchanged.
 
 ## `floor`
 `floor(n)`
 
-Rounds `n` down to the nearest integer, returning a `Float`.
+Rounds `n` down to the nearest integer and returns an `Int`.
+If `n` is already an `Int`, returns it unchanged.
 
 ## `trunc`
 `trunc(n)`

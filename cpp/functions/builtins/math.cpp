@@ -29,8 +29,6 @@ namespace frst
     X(log1p)                                                                   \
     X(log2)                                                                    \
     X(log10)                                                                   \
-    X(ceil)                                                                    \
-    X(floor)                                                                   \
     X(trunc)                                                                   \
     X(exp)                                                                     \
     X(exp2)                                                                    \
@@ -149,6 +147,18 @@ BUILTIN(lerp)
         std::lerp(COERCE(0, Float), COERCE(1, Float), COERCE(2, Float)));
 }
 
+BUILTIN(floor)
+{
+    REQUIRE_ARGS("floor", TYPES(Int, Float));
+    return Value::create(Int{std::llround(std::floor(COERCE(0, Float)))});
+}
+
+BUILTIN(ceil)
+{
+    REQUIRE_ARGS("ceil", TYPES(Int, Float));
+    return Value::create(Int{std::llround(std::ceil(COERCE(0, Float)))});
+}
+
 BUILTIN(clamp)
 {
     REQUIRE_ARGS("clamp", TYPES(Int, Float), PARAM("lo", TYPES(Int, Float)),
@@ -184,6 +194,8 @@ void inject_math(Symbol_Table& table)
     INJECT(round, 1);
     INJECT_R(hypot, 2, 3);
     INJECT(lerp, 3);
+    INJECT(floor, 1);
+    INJECT(ceil, 1);
     INJECT(clamp, 3);
 
     table.define(
