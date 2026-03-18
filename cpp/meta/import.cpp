@@ -36,20 +36,20 @@ namespace
 
 struct Importer
 {
-    std::vector<std::filesystem::path> search_path;
-    std::flat_map<std::string, Value_Ptr> import_cache;
+    import::search_path_t search_path;
+
+    // key: resolved filepath
+    // value: cached import result (nullopt while import is in-progress (for
+    // cycle detection))
+    import::import_cache_t import_cache;
+
+    import::import_stack_t import_stack;
 
     Value_Ptr operator()(builtin_args_t args)
     {
         REQUIRE_ARGS("import", PARAM("module", TYPES(String)));
 
         auto module_spec = GET(0, String);
-
-        if (auto cache_hit = import_cache.find(module_spec);
-            cache_hit != import_cache.end())
-        {
-            return cache_hit->second;
-        }
 
         std::filesystem::path module_path =
             boost::replace_all_copy(module_spec, ".", "/") + ".frst";
@@ -59,7 +59,8 @@ struct Importer
             auto prospective_module_file = search_dir / module_path;
             if (std::filesystem::is_regular_file(prospective_module_file))
             {
-                return do_import(module_spec, prospective_module_file);
+                return do_import(module_spec, std::filesystem::canonical(
+                                                  prospective_module_file));
             }
         }
 
@@ -70,6 +71,22 @@ struct Importer
     Value_Ptr do_import(const std::string& module_spec,
                         const std::filesystem::path& module_file)
     {
+        import_stack.push_back(module_spec);
+
+        if (auto cache_hit = import_cache->find(module_file);
+            cache_hit != import_cache->end())
+        {
+            if (not cache_hit->second.has_value())
+            {
+                throw Frost_Recoverable_Error{fmt::format(
+                    "Import cycle ({})", fmt::join(import_stack, " -> "))};
+            }
+
+            return cache_hit->second.value();
+        }
+
+        import_cache->emplace(module_file, std::nullopt);
+
         auto guard = make_frame_guard("Import Boundary ({})", module_spec);
 
         auto parse_result = parse_file(module_file);
@@ -96,7 +113,8 @@ struct Importer
 
         child_search_path.append_range(env_module_path());
 
-        inject_import(isolated_table, child_search_path);
+        inject_import(isolated_table, child_search_path, import_cache,
+                      import_stack);
 
         Map imported;
         for (const auto& statement : parse_result.value())
@@ -106,7 +124,8 @@ struct Importer
         }
 
         auto import_result = Value::create(Value::trusted, std::move(imported));
-        import_cache.emplace(module_spec, import_result);
+        import_cache->insert_or_assign(module_file, import_result);
+        import_stack.pop_back();
         return import_result;
     }
 };
@@ -114,12 +133,14 @@ struct Importer
 } // namespace
 
 void inject_import(Symbol_Table& table,
-                   const std::vector<std::filesystem::path>& search_path)
+                   const import::search_path_t& search_path,
+                   import::import_cache_t import_cache,
+                   const import::import_stack_t& import_stack)
 {
-    table.define(
-        "import",
-        Value::create(Function{std::make_shared<Builtin>(
-            Importer{std::move(search_path), {}}, "import",
-            Builtin::Arity{.min = 1, .max = 1})}));
+    table.define("import", Value::create(Function{std::make_shared<Builtin>(
+                               Importer{.search_path = std::move(search_path),
+                                        .import_cache = import_cache,
+                                        .import_stack = import_stack},
+                               "import", Builtin::Arity{.min = 1, .max = 1})}));
 }
 } // namespace frst
