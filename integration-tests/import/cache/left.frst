@@ -1,0 +1,2 @@
+def c = import('counter')
+export def x = c.x

@@ -1,0 +1,17 @@
+def path = getenv('FROST_CACHE_TEST_FILE')
+open_trunc(path).close()
+
+defn count_executions() ->
+    open_read(path).read_rest() @ split('\n') @ select(fn l -> len(l) > 0) @ len()
+
+# Importing the same module twice only executes it once
+def c1 = import('cache.counter')
+def c2 = import('cache.counter')
+assert(count_executions() == 1)
+
+# Diamond import (left and right both import counter) does not re-execute
+def left = import('cache.left')
+def right = import('cache.right')
+assert(count_executions() == 1)
+assert(left.x == 1)
+assert(right.x == 1)

@@ -14,6 +14,7 @@ set(IMPORT_SCRIPTS
     import-destructure.frst
     import-deep.frst
     import-cycles.frst
+    import-cache.frst
 )
 foreach(script ${IMPORT_SCRIPTS})
     get_filename_component(name ${script} NAME_WE)
@@ -31,6 +32,11 @@ set_tests_properties(
 set_tests_properties(
     Frost_Integration_Import_import-first-match
     PROPERTIES ENVIRONMENT "FROST_MODULE_PATH=${IMPORT_TEST_DIR}/envmods"
+)
+
+set_tests_properties(
+    Frost_Integration_Import_import-cache
+    PROPERTIES ENVIRONMENT "FROST_CACHE_TEST_FILE=${CMAKE_CURRENT_BINARY_DIR}/cache-test-counter.txt"
 )
 
 set_tests_properties(
