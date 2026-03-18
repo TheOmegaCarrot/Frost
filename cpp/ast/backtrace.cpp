@@ -9,13 +9,14 @@
 namespace frst
 {
 
-void Backtrace_State::do_snapshot()
+std::vector<std::string> Backtrace_State::capture_snapshot()
 {
-    snapshot_.reserve(frames_.size());
+    std::vector<std::string> result;
+    result.reserve(frames_.size());
 
     for (const auto& frame : frames_ | std::views::reverse)
     {
-        snapshot_.emplace_back(frame.visit(Overload{
+        result.emplace_back(frame.visit(Overload{
             [](const AST_Frame& f) {
                 return fmt::format("{} [{}]", f.node->node_label(),
                                    f.node->source_range());
@@ -31,6 +32,8 @@ void Backtrace_State::do_snapshot()
             },
         }));
     }
+
+    return result;
 }
 
 } // namespace frst
