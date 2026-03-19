@@ -20,7 +20,7 @@ option(WITH_HTTP "Enable HTTP support" YES)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(CTest)
-include(FetchContent)
+include(CPM)
 include(get-lexy)
 include(get-fmt)
 include(get-replxx)

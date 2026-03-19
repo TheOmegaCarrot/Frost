@@ -1,12 +1,11 @@
 if(BUILD_TESTS)
-    FetchContent_Declare( Catch2
-      GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-      GIT_TAG        v3.12.0
+    CPMAddPackage(
+        NAME Catch2
+        GITHUB_REPOSITORY catchorg/Catch2
+        GIT_TAG v3.12.0
     )
 
-    FetchContent_MakeAvailable(Catch2)
-
-    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+    list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
     include(Catch)
 
     add_library( frost-testing INTERFACE )
