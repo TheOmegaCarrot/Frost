@@ -1,0 +1,3 @@
+def m = import('re')
+assert(m.result.found)
+assert(m.result.count == 3)

@@ -1,0 +1,4 @@
+def m = import('fib')
+assert(m.fib(0) == 0)
+assert(m.fib(1) == 1)
+assert(m.fib(10) == 55)

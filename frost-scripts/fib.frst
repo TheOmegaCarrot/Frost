@@ -1,12 +1,14 @@
-defn fib(n) -> {
+export defn fib(n) -> {
     if n < 2: n
     else: fib(n-1) + fib(n-2)
 }
 
-def input = range(10)
+if not imported: do {
+    def input = range(10)
 
-print(input)
+    print(input)
 
-def fibs = map input with fib
+    def fibs = map input with fib
 
-print(fibs)
+    print(fibs)
+}

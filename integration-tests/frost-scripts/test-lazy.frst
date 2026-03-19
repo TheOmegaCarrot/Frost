@@ -1,0 +1,3 @@
+def m = import('lazy')
+def result = m.gen(0) @ m.gtw(fn n -> n < 5) @ m.lcollect()
+assert(result == [0, 1, 2, 3, 4])

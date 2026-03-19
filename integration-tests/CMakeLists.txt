@@ -28,3 +28,4 @@ endforeach()
 
 add_subdirectory(import)
 add_subdirectory(backtrace)
+add_subdirectory(frost-scripts)

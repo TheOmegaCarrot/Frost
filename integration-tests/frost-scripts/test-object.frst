@@ -1,0 +1,5 @@
+def m = import('object')
+assert(m.obj.val == 42)
+assert(m.obj.square(3) == 9)
+assert(m.obj.mul(2, 3) == 6)
+assert(m.obj.add_val(8) == 50)
