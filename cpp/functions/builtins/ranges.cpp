@@ -16,128 +16,161 @@ constexpr static auto array_array =
         return Value::create(Array{std::from_range, range});
     });
 
-#define ARR const auto& arr = GET(0, Array)
+namespace
+{
+void require_positive(std::string_view name, Int num)
+{
+    if (num <= 0)
+        throw Frost_Recoverable_Error{fmt::format(
+            "Function {} requires its numeric argument to be >0", name)};
+}
 
-#define ARR_NUM                                                                \
-    ARR;                                                                       \
-    auto num = GET(1, Int)
+void require_nonnegative(std::string_view name, Int num)
+{
+    if (num < 0)
+        throw Frost_Recoverable_Error{fmt::format(
+            "Function {} requires its numeric argument to be >=0", name)};
+}
 
-#define ARR_FN                                                                 \
-    ARR;                                                                       \
-    const auto& fn = GET(1, Function)
+template <auto adaptor>
+Value_Ptr apply_view(const Array& arr, Int num)
+{
+    return Value::create(arr | adaptor(num) | std::ranges::to<Array>());
+}
 
-#define GT0_NUM(NAME)                                                          \
-    if (num <= 0)                                                              \
-    throw Frost_Recoverable_Error{"Function " #NAME                            \
-                                  " requires its numeric argument to be >0"}
+template <auto adaptor>
+Value_Ptr apply_rev_view(const Array& arr, Int num)
+{
+    return Value::create(arr
+                         | std::views::reverse
+                         | adaptor(num)
+                         | std::views::reverse
+                         | std::ranges::to<Array>());
+}
 
-#define GE0_NUM(NAME)                                                          \
-    if (num < 0)                                                               \
-    throw Frost_Recoverable_Error{"Function " #NAME                            \
-                                  " requires its numeric argument to be >=0"}
+template <auto adaptor>
+Value_Ptr apply_rewrap_view(const Array& arr, Int num)
+{
+    return Value::create(
+        arr | adaptor(num) | array_array | std::ranges::to<Array>());
+}
 
-#define DIRECT_NUM_IMPL(NAME)                                                  \
-    return Value::create(arr | std::views::NAME(num) | std::ranges::to<Array>())
+template <auto adaptor>
+Value_Ptr apply_pred_view(const Array& arr, const Function& fn)
+{
+    return Value::create(arr
+                         | adaptor([&](const Value_Ptr& val) {
+                               return fn->call({val})->truthy();
+                           })
+                         | std::ranges::to<Array>());
+}
+
+template <auto algorithm>
+Value_Ptr quantifier_impl(std::string_view name, builtin_args_t args)
+{
+    REQUIRE_ARGS(name, TYPES(Array), OPTIONAL(TYPES(Function)));
+
+    const auto& arr = GET(0, Array);
+
+    if (HAS(1))
+    {
+        const auto& fn = GET(1, Function);
+        return Value::create(algorithm(arr, [&](const Value_Ptr& elem) {
+            return fn->call({elem})->truthy();
+        }));
+    }
+
+    return Value::create(algorithm(arr, [](const Value_Ptr& elem) {
+        return elem->truthy();
+    }));
+}
+} // namespace
 
 BUILTIN(stride)
 {
     REQUIRE_ARGS("stride", TYPES(Array), TYPES(Int));
 
-    ARR_NUM;
-    GT0_NUM(stride);
+    const auto& arr = GET(0, Array);
+    auto num = GET(1, Int);
+    require_positive("stride", num);
 
-    DIRECT_NUM_IMPL(stride);
+    return apply_view<std::views::stride>(arr, num);
 }
 
 BUILTIN(take)
 {
     REQUIRE_ARGS("take", TYPES(Array), TYPES(Int));
 
-    ARR_NUM;
-    GE0_NUM(take);
+    const auto& arr = GET(0, Array);
+    auto num = GET(1, Int);
+    require_nonnegative("take", num);
 
-    DIRECT_NUM_IMPL(take);
+    return apply_view<std::views::take>(arr, num);
 }
 
 BUILTIN(drop)
 {
     REQUIRE_ARGS("drop", TYPES(Array), TYPES(Int));
 
-    ARR_NUM;
-    GE0_NUM(drop);
+    const auto& arr = GET(0, Array);
+    auto num = GET(1, Int);
+    require_nonnegative("drop", num);
 
-    DIRECT_NUM_IMPL(drop);
+    return apply_view<std::views::drop>(arr, num);
 }
-
-#define REV_REV_IMPL(NAME)                                                     \
-    return Value::create(arr                                                   \
-                         | std::views::reverse                                 \
-                         | std::views::NAME(num)                               \
-                         | std::views::reverse                                 \
-                         | std::ranges::to<Array>())
 
 BUILTIN(tail)
 {
     REQUIRE_ARGS("tail", TYPES(Array), TYPES(Int));
 
-    ARR_NUM;
-    GE0_NUM(tail);
+    const auto& arr = GET(0, Array);
+    auto num = GET(1, Int);
+    require_nonnegative("tail", num);
 
-    REV_REV_IMPL(take);
+    return apply_rev_view<std::views::take>(arr, num);
 }
 
 BUILTIN(drop_tail)
 {
     REQUIRE_ARGS("drop_tail", TYPES(Array), TYPES(Int));
 
-    ARR_NUM;
-    GE0_NUM(drop_tail);
+    const auto& arr = GET(0, Array);
+    auto num = GET(1, Int);
+    require_nonnegative("drop_tail", num);
 
-    REV_REV_IMPL(drop);
+    return apply_rev_view<std::views::drop>(arr, num);
 }
-
-#define REWRAP_IMPL(NAME)                                                      \
-    return Value::create(                                                      \
-        arr | std::views::NAME(num) | array_array | std::ranges::to<Array>());
 
 BUILTIN(slide)
 {
     REQUIRE_ARGS("slide", TYPES(Array), TYPES(Int));
 
-    ARR_NUM;
-    GT0_NUM(slide);
+    const auto& arr = GET(0, Array);
+    auto num = GET(1, Int);
+    require_positive("slide", num);
 
-    REWRAP_IMPL(slide);
+    return apply_rewrap_view<std::views::slide>(arr, num);
 }
 
 BUILTIN(chunk)
 {
     REQUIRE_ARGS("chunk", TYPES(Array), TYPES(Int));
 
-    ARR_NUM;
-    GT0_NUM(chunk);
+    const auto& arr = GET(0, Array);
+    auto num = GET(1, Int);
+    require_positive("chunk", num);
 
-    REWRAP_IMPL(chunk);
+    return apply_rewrap_view<std::views::chunk>(arr, num);
 }
-
-#define DIRECT_NONE_IMPL(NAME)                                                 \
-    return Value::create(arr | std::views::NAME | std::ranges::to<Array>());
 
 BUILTIN(reverse)
 {
     REQUIRE_ARGS("reverse", TYPES(Array));
 
-    ARR;
+    const auto& arr = GET(0, Array);
 
-    DIRECT_NONE_IMPL(reverse);
+    return Value::create(arr | std::views::reverse | std::ranges::to<Array>());
 }
-
-#define PRED_IMPL(NAME)                                                        \
-    return Value::create(arr                                                   \
-                         | std::views::NAME([&](const Value_Ptr& val) {        \
-                               return fn->call({val})->truthy();               \
-                           })                                                  \
-                         | std::ranges::to<Array>());
 
 // TODO: {take,drop}_while can evaluate the predicate multiple times
 //       per element
@@ -145,25 +178,28 @@ BUILTIN(take_while)
 {
     REQUIRE_ARGS("take_while", TYPES(Array), TYPES(Function));
 
-    ARR_FN;
+    const auto& arr = GET(0, Array);
+    const auto& fn = GET(1, Function);
 
-    PRED_IMPL(take_while);
+    return apply_pred_view<std::views::take_while>(arr, fn);
 }
 
 BUILTIN(drop_while)
 {
     REQUIRE_ARGS("drop_while", TYPES(Array), TYPES(Function));
 
-    ARR_FN;
+    const auto& arr = GET(0, Array);
+    const auto& fn = GET(1, Function);
 
-    PRED_IMPL(drop_while);
+    return apply_pred_view<std::views::drop_while>(arr, fn);
 }
 
 BUILTIN(chunk_by)
 {
     REQUIRE_ARGS("chunk_by", TYPES(Array), TYPES(Function));
 
-    ARR_FN;
+    const auto& arr = GET(0, Array);
+    const auto& fn = GET(1, Function);
 
     return Value::create(arr
                          | std::views::chunk_by([&](const Value_Ptr& first,
@@ -172,7 +208,6 @@ BUILTIN(chunk_by)
                            })
                          | array_array
                          | std::ranges::to<Array>());
-    ;
 }
 
 BUILTIN(zip)
@@ -327,41 +362,25 @@ BUILTIN(sorted)
     return Value::create(std::move(out));
 }
 
-#define X_QUANTIFIERS                                                          \
-    X(any)                                                                     \
-    X(all)                                                                     \
-    X(none)
-
-#define X(quant)                                                               \
-    BUILTIN(quant)                                                             \
-    {                                                                          \
-        REQUIRE_ARGS(#quant, TYPES(Array), OPTIONAL(TYPES(Function)));         \
-                                                                               \
-        auto pred = system_closure(1, 1, [](builtin_args_t args) {             \
-            return args.at(0);                                                 \
-        });                                                                    \
-        if (HAS(1))                                                            \
-            pred = args.at(1);                                                 \
-                                                                               \
-        auto pred_fn = pred->raw_get<Function>();                              \
-                                                                               \
-        return Value::create(std::ranges::quant##_of(                          \
-            GET(0, Array), [&](const Value_Ptr& elem) {                        \
-                return pred_fn->call({elem})->truthy();                        \
-            }));                                                               \
-    }
-
-X_QUANTIFIERS
-
-#undef X
+BUILTIN(any)
+{
+    return quantifier_impl<std::ranges::any_of>("any", args);
+}
+BUILTIN(all)
+{
+    return quantifier_impl<std::ranges::all_of>("all", args);
+}
+BUILTIN(none)
+{
+    return quantifier_impl<std::ranges::none_of>("none", args);
+}
 
 BUILTIN(repeat)
 {
     REQUIRE_ARGS("repeat", ANY, TYPES(Int));
 
     auto num = GET(1, Int);
-
-    GE0_NUM("repeat");
+    require_nonnegative("repeat", num);
 
     return Value::create(std::views::repeat(args.at(0), num)
                          | std::ranges::to<Array>());
@@ -501,7 +520,7 @@ BUILTIN(flatten)
     if (HAS(1))
     {
         auto num = GET(1, Int);
-        GE0_NUM("flatten");
+        require_nonnegative("flatten", num);
         return Value::create(do_flatten_n(arr, num));
     }
 
