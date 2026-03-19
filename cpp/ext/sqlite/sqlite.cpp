@@ -3,6 +3,8 @@
 #include <frost/builtin.hpp>
 #include <frost/value.hpp>
 
+#include <sqlite3.h>
+
 #include <expected>
 
 namespace frst
@@ -54,10 +56,10 @@ DECLARE_EXTENSION(sqlite)
 {
     using namespace sqlite;
     CREATE_EXTENSION(
-        // {
-        //     "version"_s,
-        //     Value::create(String{SQLite::VERSION}),
-        // },
+        {
+            "version"_s,
+            Value::create(String{sqlite3_version}),
+        },
         // ENTRY(open, 1),
     );
 }
