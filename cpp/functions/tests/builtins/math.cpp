@@ -25,10 +25,23 @@ TEST_CASE("Builtin math")
     Symbol_Table table;
     inject_builtins(table);
 
+    auto math_val = table.lookup("math");
+    REQUIRE(math_val->is<Map>());
+    const auto& math_map = math_val->raw_get<Map>();
+
     auto get_fn = [&](const std::string& name) {
-        auto val = table.lookup(name);
-        REQUIRE(val->is<Function>());
-        return val->get<Function>().value();
+        auto key = Value::create(std::string{name});
+        for (const auto& [k, v] : math_map)
+        {
+            if (Value::equal(k, key)->get<Bool>().value())
+            {
+                REQUIRE(v);
+                REQUIRE(v->is<Function>());
+                return v->get<Function>().value();
+            }
+        }
+        FAIL("Missing math function: " + name);
+        return Function{};
     };
 
     const std::vector<std::string> unary_names{
@@ -43,26 +56,17 @@ TEST_CASE("Builtin math")
 
     SECTION("Injected")
     {
+        CHECK(math_val->is<Map>());
+        CHECK(math_map.size() == 34); // 33 functions + nums
+
         for (const auto& name : unary_names)
-        {
-            auto val = table.lookup(name);
-            REQUIRE(val->is<Function>());
-        }
+            get_fn(name);
         for (const auto& name : binary_names)
-        {
-            auto val = table.lookup(name);
-            REQUIRE(val->is<Function>());
-        }
+            get_fn(name);
         for (const auto& name : ternary_names)
-        {
-            auto val = table.lookup(name);
-            REQUIRE(val->is<Function>());
-        }
+            get_fn(name);
         for (const auto& name : variadic_names)
-        {
-            auto val = table.lookup(name);
-            REQUIRE(val->is<Function>());
-        }
+            get_fn(name);
     }
 
     SECTION("Arity")

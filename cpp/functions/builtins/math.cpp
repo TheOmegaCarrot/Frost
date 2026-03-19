@@ -10,6 +10,9 @@
 namespace frst
 {
 
+namespace math
+{
+
 #define X_UNARY_MATH_FLOAT                                                     \
     X(sqrt)                                                                    \
     X(cbrt)                                                                    \
@@ -173,34 +176,34 @@ BUILTIN(clamp)
         std::clamp(COERCE(0, Float), COERCE(1, Float), COERCE(2, Float)));
 }
 
+} // namespace math
+
 void inject_math(Symbol_Table& table)
 {
+    using namespace math;
 
-#define X(FN) INJECT(FN, 1);
+    // clang-format off
+    table.define("math", Value::create(Value::trusted, Map{
 
+#define X(FN) ENTRY(FN, 1),
     X_UNARY_MATH_FLOAT
-
 #undef X
 
-#define X(FN) INJECT(FN, 2);
-
+#define X(FN) ENTRY(FN, 2),
     X_BINARY_MATH_FLOAT
-
 #undef X
 
-    INJECT(pow, 2);
-    INJECT(atan2, 2);
-    INJECT(abs, 1);
-    INJECT(round, 1);
-    INJECT_R(hypot, 2, 3);
-    INJECT(lerp, 3);
-    INJECT(floor, 1);
-    INJECT(ceil, 1);
-    INJECT(clamp, 3);
+        ENTRY(pow, 2),
+        ENTRY(atan2, 2),
+        ENTRY(abs, 1),
+        ENTRY(round, 1),
+        ENTRY_R(hypot, 2, 3),
+        ENTRY(lerp, 3),
+        ENTRY(floor, 1),
+        ENTRY(ceil, 1),
+        ENTRY(clamp, 3),
 
-    table.define(
-        "nums",
-        Value::create(
+        {"nums"_s, Value::create(
             Value::trusted,
             Map{
                 {"pi"_s, Value::create(std::numbers::pi)},
@@ -217,7 +220,9 @@ void inject_math(Symbol_Table& table)
                  Value::create(std::numeric_limits<Float>::epsilon())},
                 {"minfloat"_s,
                  Value::create(std::numeric_limits<Float>::lowest())},
-            }));
+            })},
+    }));
+    // clang-format on
 }
 
 } // namespace frst

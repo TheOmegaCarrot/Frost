@@ -2,7 +2,7 @@
 
 Frost's standard library is available in every program without any imports.
 
-Some functions are namespaced (`re`, `fs`) and accessed via dot syntax.
+Some functions are namespaced (`re`, `fs`, etc.) and accessed via dot syntax.
 
 An [alphabetical index of all functions](./index.md) is available.
 
