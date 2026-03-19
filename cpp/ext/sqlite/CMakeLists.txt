@@ -1,3 +1,6 @@
+
+# enable global LTO propagation to SQLiteCpp targets
+set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
 CPMAddPackage(
     NAME SQLiteCpp
     GITHUB_REPOSITORY SRombauts/SQLiteCpp
