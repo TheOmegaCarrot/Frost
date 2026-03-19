@@ -1,8 +1,5 @@
-add_library(lyra INTERFACE)
-
-target_include_directories(lyra
-    INTERFACE
-    ${PROJECT_SOURCE_DIR}/external/lyra/include
+CPMAddPackage(
+    NAME lyra
+    GITHUB_REPOSITORY bfgroup/Lyra
+    GIT_TAG 1.7.0
 )
-
-add_library(lyra::lyra ALIAS lyra)

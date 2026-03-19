@@ -5,6 +5,12 @@ if(BUILD_TESTS)
         GIT_TAG v3.12.0
     )
 
+    CPMAddPackage(
+        NAME trompeloeil
+        GITHUB_REPOSITORY rollbear/trompeloeil
+        GIT_TAG v49
+    )
+
     list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
     include(Catch)
 
@@ -12,10 +18,10 @@ if(BUILD_TESTS)
     target_link_libraries( frost-testing
         INTERFACE
         Catch2::Catch2WithMain
+        trompeloeil::trompeloeil
     )
     target_include_directories( frost-testing
         INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/trompeloeil/include
         ${CMAKE_CURRENT_SOURCE_DIR}/cpp/test-helpers/include
     )
 endif()
