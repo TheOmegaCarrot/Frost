@@ -17,6 +17,10 @@ void inject_ext(Symbol_Table& table)
     DEFINE_EXTENSION(http);
 #endif
 
+#ifdef FROST_ENABLE_SQLITE
+    DEFINE_EXTENSION(sqlite);
+#endif
+
 #pragma GCC diagnostic pop
 }
 
