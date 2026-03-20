@@ -11,25 +11,25 @@ assert(not bad_open.ok, 'open with bad path should fail')
 # Wrong argument type
 if fs.exists(path): fs.remove(path)
 def db = sqlite.open(path)
-def wrong_type = try_call(db.execute, [123])
+def wrong_type = try_call(db.exec, [123])
 assert(not wrong_type.ok, 'execute with non-string should fail')
-db.execute('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
-db.execute("INSERT INTO t VALUES (1, 'alice')")
+db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+db.exec("INSERT INTO t VALUES (1, 'alice')")
 
 # Duplicate primary key
-def dup = try_call(db.execute, ["INSERT INTO t VALUES (1, 'duplicate')"])
+def dup = try_call(db.exec, ["INSERT INTO t VALUES (1, 'duplicate')"])
 assert(not dup.ok, 'duplicate primary key should fail')
 
 # Invalid SQL
-def bad_sql = try_call(db.execute, ['NOT VALID SQL'])
+def bad_sql = try_call(db.exec, ['NOT VALID SQL'])
 assert(not bad_sql.ok, 'invalid SQL should fail')
 
 # Missing table
-def no_table = try_call(db.execute, ['INSERT INTO nonexistent VALUES (1)'])
+def no_table = try_call(db.exec, ['INSERT INTO nonexistent VALUES (1)'])
 assert(not no_table.ok, 'missing table should fail')
 
 # Connection should still be usable after errors
-def n = db.execute("INSERT INTO t VALUES (2, 'bob')")
+def n = db.exec("INSERT INTO t VALUES (2, 'bob')")
 assert(n == 1, 'insert after errors should succeed')
 
 # Double close

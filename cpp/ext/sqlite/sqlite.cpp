@@ -14,20 +14,20 @@ namespace sqlite
 
 Value_Ptr database_to_closuremap(const std::shared_ptr<Connection>& conn)
 {
-    STRINGS(execute, close);
+    STRINGS(exec, close);
     return Value::create(
         Value::trusted,
         Map{
-            {strings.execute,
-             system_closure(1, 1,
-                            [conn](builtin_args_t args) {
-                                REQUIRE_ARGS("database.execute", TYPES(String));
+            {strings.exec, system_closure(1, 1,
+                                          [conn](builtin_args_t args) {
+                                              REQUIRE_ARGS("database.execute",
+                                                           TYPES(String));
 
-                                return Value::create(
-                                    conn->exec(GET(0, String)));
-                            })},
+                                              return Value::create(
+                                                  conn->exec(GET(0, String)));
+                                          })},
             {strings.close, system_closure(0, 0,
-                                           [conn](builtin_args_t args) {
+                                           [conn](builtin_args_t) {
                                                conn->close();
                                                return Value::null();
                                            })},

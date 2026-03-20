@@ -9,33 +9,33 @@ if fs.exists(path): fs.remove(path)
 def db = sqlite.open(path)
 
 # DDL
-db.execute('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
 
 # sqlite.version is a string
 assert(type(sqlite.version) == 'String', 'sqlite.version should be a string')
 
 # DML - verify row counts for insert, update, delete
-def n1 = db.execute("INSERT INTO t VALUES (1, 'alice')")
+def n1 = db.exec("INSERT INTO t VALUES (1, 'alice')")
 assert(n1 == 1, 'insert should return 1 row changed')
 
-def n2 = db.execute("INSERT INTO t VALUES (2, 'bob'), (3, 'charlie')")
+def n2 = db.exec("INSERT INTO t VALUES (2, 'bob'), (3, 'charlie')")
 assert(n2 == 2, 'insert should return 2 rows changed')
 
-def n3 = db.execute("UPDATE t SET name = 'updated' WHERE id >= 2")
+def n3 = db.exec("UPDATE t SET name = 'updated' WHERE id >= 2")
 assert(n3 == 2, 'update should return 2 rows changed')
 
-def n4 = db.execute('DELETE FROM t WHERE id = 1')
+def n4 = db.exec('DELETE FROM t WHERE id = 1')
 assert(n4 == 1, 'delete should return 1 row changed')
 
 # Multi-statement execute
-def n5 = db.execute("INSERT INTO t VALUES (4, 'diana'); INSERT INTO t VALUES (5, 'eve')")
+def n5 = db.exec("INSERT INTO t VALUES (4, 'diana'); INSERT INTO t VALUES (5, 'eve')")
 assert(n5 == 1, 'multi-statement execute returns changes from last statement')
 
 # Close
 db.close()
 
 # Verify closed connection produces a recoverable error
-def result = try_call(db.execute, ['SELECT 1'])
+def result = try_call(db.exec, ['SELECT 1'])
 assert(not result.ok, 'execute on closed db should fail')
 
 # Clean up filesystem db

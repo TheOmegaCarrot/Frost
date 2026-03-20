@@ -1,6 +1,7 @@
 add_subdirectory(vendored-sqlite)
 
 add_library( frost-sqlite
+    connection.cpp
     sqlite.cpp
 )
 
