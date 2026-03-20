@@ -23,7 +23,10 @@ class Mock_Callable final : public Callable
     MAKE_CONST_MOCK(call, auto(std::span<const Value_Ptr>)->Value_Ptr,
                     override);
     MAKE_CONST_MOCK(debug_dump, auto()->std::string, override);
-    std::string name() const override { return "<mock>"; }
+    std::string name() const override
+    {
+        return "<mock>";
+    }
 
     using Ptr = std::shared_ptr<Mock_Callable>;
 

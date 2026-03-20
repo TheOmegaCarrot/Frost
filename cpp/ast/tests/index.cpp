@@ -42,7 +42,8 @@ TEST_CASE("Array Index")
                 .IN_SEQUENCE(seq)
                 .RETURN(Value::create(Int{index}));
 
-            ast::Index node{ast::Statement::no_range,std::move(struct_expr), std::move(idx_expr)};
+            ast::Index node{ast::Statement::no_range, std::move(struct_expr),
+                            std::move(idx_expr)};
 
             auto res = node.evaluate({.symbols = syms});
 
@@ -91,7 +92,8 @@ TEST_CASE("Array Index Type Error")
         .IN_SEQUENCE(seq)
         .RETURN(Value::create("oops"s));
 
-    ast::Index node{ast::Statement::no_range,std::move(struct_expr), std::move(idx_expr)};
+    ast::Index node{ast::Statement::no_range, std::move(struct_expr),
+                    std::move(idx_expr)};
 
     CHECK_THROWS_WITH(node.evaluate({.symbols = syms}),
                       Equals("Array index requires Int, got: String"));
@@ -153,7 +155,8 @@ TEST_CASE("Map Index Primitive Key")
                 .IN_SEQUENCE(seq)
                 .RETURN(test.query);
 
-            ast::Index node{ast::Statement::no_range,std::move(struct_expr), std::move(idx_expr)};
+            ast::Index node{ast::Statement::no_range, std::move(struct_expr),
+                            std::move(idx_expr)};
 
             auto res = node.evaluate({.symbols = syms});
 
@@ -207,7 +210,8 @@ TEST_CASE("Map Index Non-Primitive Key Type Error")
                 .IN_SEQUENCE(seq)
                 .RETURN(test.key);
 
-            ast::Index node{ast::Statement::no_range,std::move(struct_expr), std::move(idx_expr)};
+            ast::Index node{ast::Statement::no_range, std::move(struct_expr),
+                            std::move(idx_expr)};
 
             CHECK_THROWS_WITH(node.evaluate({.symbols = syms}),
                               Equals(test.expected_error));

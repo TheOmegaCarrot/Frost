@@ -112,7 +112,8 @@ TEST_CASE("Array_Destructure")
             std::string{"y"},
         };
 
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr)};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr)};
 
         auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
@@ -149,7 +150,8 @@ TEST_CASE("Array_Destructure")
             Discarded_Binding{},
         };
 
-        Array_Destructure node{Statement::no_range,
+        Array_Destructure node{
+            Statement::no_range,
             std::move(names),
             Array_Destructure::Name{std::string{"rest"}},
             std::move(expr),
@@ -195,8 +197,8 @@ TEST_CASE("Array_Destructure")
             std::string{"x"},
         };
 
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr),
-                               true};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr), true};
 
         auto result = node.execute(ctx);
         REQUIRE(result.has_value());
@@ -237,7 +239,7 @@ TEST_CASE("Array_Destructure")
         std::vector<Array_Destructure::Name> names{
             std::string{"head"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -270,7 +272,7 @@ TEST_CASE("Array_Destructure")
         std::vector<Array_Destructure::Name> names{
             std::string{"head"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -301,7 +303,7 @@ TEST_CASE("Array_Destructure")
         std::vector<Array_Destructure::Name> names{
             std::string{"head"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
@@ -339,7 +341,7 @@ TEST_CASE("Array_Destructure")
             Discarded_Binding{},
             std::string{"a"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -375,7 +377,7 @@ TEST_CASE("Array_Destructure")
             std::string{"a"},
             std::string{"b"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -399,7 +401,8 @@ TEST_CASE("Array_Destructure")
             std::string{"a"},
             std::string{"b"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr)};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr)};
 
         CHECK_THROWS_MATCHES(
             node.execute(ctx), Frost_Recoverable_Error,
@@ -424,7 +427,7 @@ TEST_CASE("Array_Destructure")
             std::string{"a"},
             std::string{"b"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -451,7 +454,7 @@ TEST_CASE("Array_Destructure")
             std::string{"a"},
             std::string{"b"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
@@ -477,7 +480,8 @@ TEST_CASE("Array_Destructure")
         std::vector<Array_Destructure::Name> names{
             std::string{"a"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr)};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr)};
 
         CHECK_THROWS_MATCHES(
             node.execute(ctx), Frost_Recoverable_Error,
@@ -499,7 +503,8 @@ TEST_CASE("Array_Destructure")
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr)};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr)};
 
         CHECK_NOTHROW(node.execute(ctx));
     }
@@ -518,7 +523,8 @@ TEST_CASE("Array_Destructure")
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr)};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr)};
 
         CHECK_THROWS_MATCHES(
             node.execute(ctx), Frost_Recoverable_Error,
@@ -552,7 +558,7 @@ TEST_CASE("Array_Destructure")
         });
 
         std::vector<Array_Destructure::Name> names{};
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -580,7 +586,7 @@ TEST_CASE("Array_Destructure")
         });
 
         std::vector<Array_Destructure::Name> names{};
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -608,7 +614,7 @@ TEST_CASE("Array_Destructure")
         std::vector<Array_Destructure::Name> names{
             std::string{"head"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
@@ -629,7 +635,7 @@ TEST_CASE("Array_Destructure")
         FORBID_CALL(syms, define(_, _));
 
         std::vector<Array_Destructure::Name> names{};
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
@@ -663,7 +669,7 @@ TEST_CASE("Array_Destructure")
             Discarded_Binding{},
             std::string{"a"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -684,7 +690,8 @@ TEST_CASE("Array_Destructure")
         std::vector<Array_Destructure::Name> names{
             std::string{"a"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr)};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr)};
 
         CHECK_THROWS_MATCHES(
             node.execute(ctx), Frost_Recoverable_Error,
@@ -705,7 +712,8 @@ TEST_CASE("Array_Destructure")
         std::vector<Array_Destructure::Name> names{
             std::string{"a"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr)};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr)};
 
         CHECK_THROWS_MATCHES(node.execute(ctx), Frost_Recoverable_Error,
                              MessageMatches(Equals("kaboom")));
@@ -725,7 +733,7 @@ TEST_CASE("Array_Destructure")
         std::vector<Array_Destructure::Name> names{
             std::string{"a"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -742,7 +750,8 @@ TEST_CASE("Array_Destructure")
         };
 
         CHECK_THROWS_MATCHES(
-            (Array_Destructure{Statement::no_range,std::move(names), std::nullopt,
+            (Array_Destructure{Statement::no_range, std::move(names),
+                               std::nullopt,
                                std::make_unique<mock::Mock_Expression>()}),
             Frost_Unrecoverable_Error,
             MessageMatches(
@@ -756,7 +765,7 @@ TEST_CASE("Array_Destructure")
         };
 
         CHECK_THROWS_MATCHES(
-            (Array_Destructure{Statement::no_range,std::move(names),
+            (Array_Destructure{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"dup"}},
                                std::make_unique<mock::Mock_Expression>()}),
             Frost_Unrecoverable_Error,
@@ -772,7 +781,7 @@ TEST_CASE("Array_Destructure")
         };
 
         CHECK_THROWS_MATCHES(
-            (Array_Destructure{Statement::no_range,std::move(names),
+            (Array_Destructure{Statement::no_range, std::move(names),
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::make_unique<mock::Mock_Expression>()}),
             Frost_Unrecoverable_Error,
@@ -797,7 +806,8 @@ TEST_CASE("Array_Destructure")
             Discarded_Binding{},
             Discarded_Binding{},
         };
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr)};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr)};
 
         CHECK_NOTHROW(node.execute(ctx));
     }
@@ -814,7 +824,7 @@ TEST_CASE("Array_Destructure")
             Discarded_Binding{},
             std::string{"b"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -833,7 +843,7 @@ TEST_CASE("Array_Destructure")
         std::vector<Array_Destructure::Name> names{
             std::string{"a"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
@@ -853,7 +863,7 @@ TEST_CASE("Array_Destructure")
             Discarded_Binding{},
             std::string{"b"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
@@ -874,7 +884,8 @@ TEST_CASE("Array_Destructure")
             Discarded_Binding{},
             std::string{"b"},
         };
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr)};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr)};
 
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:rhs", "def:a", "def:b"});
@@ -888,7 +899,7 @@ TEST_CASE("Array_Destructure")
             });
 
         std::vector<Array_Destructure::Name> names{};
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
@@ -904,7 +915,7 @@ TEST_CASE("Array_Destructure")
             });
 
         std::vector<Array_Destructure::Name> names{};
-        Array_Destructure node{Statement::no_range,std::move(names),
+        Array_Destructure node{Statement::no_range, std::move(names),
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
@@ -919,7 +930,8 @@ TEST_CASE("Array_Destructure")
             });
 
         std::vector<Array_Destructure::Name> names{};
-        Array_Destructure node{Statement::no_range,std::move(names), std::nullopt, std::move(expr)};
+        Array_Destructure node{Statement::no_range, std::move(names),
+                               std::nullopt, std::move(expr)};
 
         CHECK(collect_sequence(node) == std::vector<std::string>{"use:rhs"});
     }
@@ -931,28 +943,38 @@ TEST_CASE("Array_Destructure")
             return std::make_unique<mock::Mock_Expression>();
         };
 
-        CHECK(Array_Destructure(Statement::no_range, {}, std::nullopt, null_expr()).node_label()
+        CHECK(Array_Destructure(Statement::no_range, {}, std::nullopt,
+                                null_expr())
+                  .node_label()
               == "Array_Destructure()");
-        CHECK(Array_Destructure(Statement::no_range, {"a"s, "b"s}, std::nullopt, null_expr())
+        CHECK(Array_Destructure(Statement::no_range, {"a"s, "b"s}, std::nullopt,
+                                null_expr())
                   .node_label()
               == "Array_Destructure(a,b)");
-        CHECK(Array_Destructure(Statement::no_range, {"a"s}, Name{"rest"s}, null_expr()).node_label()
+        CHECK(Array_Destructure(Statement::no_range, {"a"s}, Name{"rest"s},
+                                null_expr())
+                  .node_label()
               == "Array_Destructure(a,...rest)");
-        CHECK(Array_Destructure(Statement::no_range, {}, Name{"rest"s}, null_expr()).node_label()
+        CHECK(Array_Destructure(Statement::no_range, {}, Name{"rest"s},
+                                null_expr())
+                  .node_label()
               == "Array_Destructure(...rest)");
-        CHECK(Array_Destructure(Statement::no_range, {"a"s}, Name{Discarded_Binding{}}, null_expr())
+        CHECK(Array_Destructure(Statement::no_range, {"a"s},
+                                Name{Discarded_Binding{}}, null_expr())
                   .node_label()
               == "Array_Destructure(a,..._)");
-        CHECK(Array_Destructure(Statement::no_range, {Discarded_Binding{}, "b"s}, Name{"rest"s},
+        CHECK(Array_Destructure(Statement::no_range,
+                                {Discarded_Binding{}, "b"s}, Name{"rest"s},
                                 null_expr())
                   .node_label()
               == "Array_Destructure(_,b,...rest)");
         CHECK(Array_Destructure(Statement::no_range,
-                               std::vector<Name>{"a"s, "b"s}, std::nullopt,
-                               null_expr(), true)
+                                std::vector<Name>{"a"s, "b"s}, std::nullopt,
+                                null_expr(), true)
                   .node_label()
               == "Export_Array_Destructure(a,b)");
-        CHECK(Array_Destructure(Statement::no_range, {"a"s}, Name{"rest"s}, null_expr(), true)
+        CHECK(Array_Destructure(Statement::no_range, {"a"s}, Name{"rest"s},
+                                null_expr(), true)
                   .node_label()
               == "Export_Array_Destructure(a,...rest)");
     }

@@ -24,7 +24,7 @@ TEST_CASE("Map Constructor")
 
     SECTION("Empty")
     {
-        ast::Map_Constructor node{ast::Statement::no_range,{}};
+        ast::Map_Constructor node{ast::Statement::no_range, {}};
         auto res = node.evaluate(ctx);
         CHECK(res->get<Map>()->empty());
     }
@@ -50,7 +50,7 @@ TEST_CASE("Map Constructor")
 
         std::vector<ast::Map_Constructor::KV_Pair> pairs;
         pairs.emplace_back(std::move(k1), std::move(v1));
-        ast::Map_Constructor node{ast::Statement::no_range,std::move(pairs)};
+        ast::Map_Constructor node{ast::Statement::no_range, std::move(pairs)};
 
         auto res = node.evaluate(ctx);
         auto map = res->get<Map>().value();
@@ -107,7 +107,7 @@ TEST_CASE("Map Constructor")
         pairs.emplace_back(std::move(k1), std::move(v1));
         pairs.emplace_back(std::move(k2), std::move(v2));
         pairs.emplace_back(std::move(k3), std::move(v3));
-        ast::Map_Constructor node{ast::Statement::no_range,std::move(pairs)};
+        ast::Map_Constructor node{ast::Statement::no_range, std::move(pairs)};
 
         auto res = node.evaluate(ctx);
         auto map = res->get<Map>().value();
@@ -152,7 +152,7 @@ TEST_CASE("Map Constructor")
         std::vector<ast::Map_Constructor::KV_Pair> pairs;
         pairs.emplace_back(std::move(k1), std::move(v1));
         pairs.emplace_back(std::move(k2), std::move(v2));
-        ast::Map_Constructor node{ast::Statement::no_range,std::move(pairs)};
+        ast::Map_Constructor node{ast::Statement::no_range, std::move(pairs)};
 
         auto res = node.evaluate(ctx);
         auto map = res->get<Map>().value();
@@ -195,7 +195,7 @@ TEST_CASE("Map Constructor")
         std::vector<ast::Map_Constructor::KV_Pair> pairs;
         pairs.emplace_back(std::move(k1), std::move(v1));
         pairs.emplace_back(std::move(k2), std::move(v2));
-        ast::Map_Constructor node{ast::Statement::no_range,std::move(pairs)};
+        ast::Map_Constructor node{ast::Statement::no_range, std::move(pairs)};
 
         auto res = node.evaluate(ctx);
         auto map = res->get<Map>().value();

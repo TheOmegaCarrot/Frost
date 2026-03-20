@@ -56,7 +56,8 @@ TEST_CASE("Filter")
                 .RETURN(pred_val);
             FORBID_CALL(*pred, call(_));
 
-            ast::Filter node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Filter node{ast::Statement::no_range,
+                             std::move(structure_expr),
                              std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -102,7 +103,8 @@ TEST_CASE("Filter")
                 .IN_SEQUENCE(seq)
                 .RETURN(Value::create(true));
 
-            ast::Filter node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Filter node{ast::Statement::no_range,
+                             std::move(structure_expr),
                              std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -167,7 +169,8 @@ TEST_CASE("Filter")
                 .IN_SEQUENCE(seq)
                 .RETURN(Value::create(123_f));
 
-            ast::Filter node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Filter node{ast::Statement::no_range,
+                             std::move(structure_expr),
                              std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -209,7 +212,8 @@ TEST_CASE("Filter")
                 .IN_SEQUENCE(seq)
                 .THROW(Frost_Recoverable_Error{"kaboom"});
 
-            ast::Filter node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Filter node{ast::Statement::no_range,
+                             std::move(structure_expr),
                              std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
@@ -244,7 +248,8 @@ TEST_CASE("Filter")
                 .RETURN(pred_val);
             FORBID_CALL(*pred, call(_));
 
-            ast::Filter node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Filter node{ast::Statement::no_range,
+                             std::move(structure_expr),
                              std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -284,7 +289,8 @@ TEST_CASE("Filter")
                 .LR_WITH(_1.size() == 2 && _1[0] == k2 && _1[1] == v2)
                 .RETURN(Value::create(false));
 
-            ast::Filter node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Filter node{ast::Statement::no_range,
+                             std::move(structure_expr),
                              std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -341,7 +347,8 @@ TEST_CASE("Filter")
                 .LR_WITH(_1.size() == 2 && _1[0] == k2 && _1[1] == v2)
                 .RETURN(Value::create(42_f));
 
-            ast::Filter node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Filter node{ast::Statement::no_range,
+                             std::move(structure_expr),
                              std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -379,7 +386,8 @@ TEST_CASE("Filter")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .THROW(Frost_Recoverable_Error{"kaboom"});
 
-            ast::Filter node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Filter node{ast::Statement::no_range,
+                             std::move(structure_expr),
                              std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
@@ -399,7 +407,8 @@ TEST_CASE("Filter")
                 .RETURN(bad_val);
             FORBID_CALL(*operation_expr, do_evaluate(_));
 
-            ast::Filter node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Filter node{ast::Statement::no_range,
+                             std::move(structure_expr),
                              std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("Int"));
@@ -420,7 +429,8 @@ TEST_CASE("Filter")
                 .IN_SEQUENCE(seq)
                 .RETURN(bad_pred);
 
-            ast::Filter node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Filter node{ast::Statement::no_range,
+                             std::move(structure_expr),
                              std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("String"));

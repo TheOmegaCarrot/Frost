@@ -55,7 +55,8 @@ TEST_CASE("Foreach Array")
                 .RETURN(op_val);
             FORBID_CALL(*op, call(_));
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -87,7 +88,8 @@ TEST_CASE("Foreach Array")
                 .RETURN(Value::create(false))
                 .TIMES(3);
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -131,7 +133,8 @@ TEST_CASE("Foreach Array")
                 .RETURN(Value::create(false))
                 .TIMES(2);
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
@@ -167,7 +170,8 @@ TEST_CASE("Foreach Array")
                 .RETURN(Value::create(true))
                 .TIMES(1);
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -189,7 +193,8 @@ TEST_CASE("Foreach Array")
                 .RETURN(bad_val);
             FORBID_CALL(*operation_expr, do_evaluate(_));
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("Int"));
@@ -210,7 +215,8 @@ TEST_CASE("Foreach Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("Int"));
@@ -246,7 +252,8 @@ TEST_CASE("Foreach Map")
                 .RETURN(op_val);
             FORBID_CALL(*op, call(_));
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -279,7 +286,8 @@ TEST_CASE("Foreach Map")
                 .RETURN(Value::create(false))
                 .TIMES(2);
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -340,7 +348,8 @@ TEST_CASE("Foreach Map")
                 .RETURN(Value::create(true))
                 .TIMES(1);
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
@@ -374,7 +383,8 @@ TEST_CASE("Foreach Map")
                 .RETURN(Value::create(true))
                 .TIMES(1);
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -411,7 +421,8 @@ TEST_CASE("Foreach Map")
                 .RETURN(bad_val);
             FORBID_CALL(*operation_expr, do_evaluate(_));
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("Int"));
@@ -432,7 +443,8 @@ TEST_CASE("Foreach Map")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
-            ast::Foreach node{ast::Statement::no_range,std::move(structure_expr),
+            ast::Foreach node{ast::Statement::no_range,
+                              std::move(structure_expr),
                               std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("String"));

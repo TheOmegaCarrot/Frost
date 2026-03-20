@@ -227,7 +227,10 @@ TEST_CASE("Parser Filter Expressions")
             {
                 return "<identity>";
             }
-            std::string name() const override { return debug_dump(); }
+            std::string name() const override
+            {
+                return debug_dump();
+            }
         };
 
         auto result = parse("f(filter [1, 2, 3] with fn (x) -> { x > 1 })");

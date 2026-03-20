@@ -75,7 +75,8 @@ TEST_CASE("Function Call")
         args.push_back(std::move(arg1));
         args.push_back(std::move(arg2));
 
-        ast::Function_Call node{Statement::no_range,std::move(fn_expr), std::move(args)};
+        ast::Function_Call node{Statement::no_range, std::move(fn_expr),
+                                std::move(args)};
         auto res = node.evaluate(ctx);
 
         CHECK(res == ret);
@@ -103,7 +104,8 @@ TEST_CASE("Function Call")
             .RETURN(Value::null());
 
         std::vector<Expression::Ptr> args;
-        ast::Function_Call node{Statement::no_range,std::move(fn_expr), std::move(args)};
+        ast::Function_Call node{Statement::no_range, std::move(fn_expr),
+                                std::move(args)};
 
         auto res = node.evaluate(ctx);
         CHECK(res->is<Null>());
@@ -144,7 +146,8 @@ TEST_CASE("Function Call")
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg));
 
-        ast::Function_Call node{Statement::no_range,std::move(fn_expr), std::move(args)};
+        ast::Function_Call node{Statement::no_range, std::move(fn_expr),
+                                std::move(args)};
 
         CHECK(node.evaluate(ctx) == ret);
         CHECK(node.evaluate(ctx) == ret);
@@ -178,7 +181,8 @@ TEST_CASE("Function Call")
             .LR_WITH(std::equal(_1.begin(), _1.end(), expected.begin()))
             .RETURN(ret);
 
-        ast::Function_Call node{Statement::no_range,std::move(fn_expr), std::move(args)};
+        ast::Function_Call node{Statement::no_range, std::move(fn_expr),
+                                std::move(args)};
         auto res = node.evaluate(ctx);
 
         CHECK(res == ret);
@@ -203,7 +207,8 @@ TEST_CASE("Function Call")
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg));
 
-        ast::Function_Call node{Statement::no_range,std::move(fn_expr), std::move(args)};
+        ast::Function_Call node{Statement::no_range, std::move(fn_expr),
+                                std::move(args)};
 
         CHECK_THROWS_WITH(node.evaluate(ctx),
                           ContainsSubstring("Cannot call value of type Int"));
@@ -225,7 +230,8 @@ TEST_CASE("Function Call")
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg));
 
-        ast::Function_Call node{Statement::no_range,std::move(fn_expr), std::move(args)};
+        ast::Function_Call node{Statement::no_range, std::move(fn_expr),
+                                std::move(args)};
 
         CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("fn boom"));
     }
@@ -256,7 +262,8 @@ TEST_CASE("Function Call")
         args.push_back(std::move(arg1));
         args.push_back(std::move(arg2));
 
-        ast::Function_Call node{Statement::no_range,std::move(fn_expr), std::move(args)};
+        ast::Function_Call node{Statement::no_range, std::move(fn_expr),
+                                std::move(args)};
 
         CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("arg boom"));
     }
@@ -283,7 +290,8 @@ TEST_CASE("Function Call")
         std::vector<Expression::Ptr> args;
         args.push_back(std::move(arg));
 
-        ast::Function_Call node{Statement::no_range,std::move(fn_expr), std::move(args)};
+        ast::Function_Call node{Statement::no_range, std::move(fn_expr),
+                                std::move(args)};
 
         CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("boom"));
     }

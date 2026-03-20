@@ -220,7 +220,10 @@ TEST_CASE("Parser If Expressions")
             {
                 return "<constant>";
             }
-            std::string name() const override { return debug_dump(); }
+            std::string name() const override
+            {
+                return debug_dump();
+            }
         };
 
         auto fn_a = std::make_shared<ConstantCallable>();

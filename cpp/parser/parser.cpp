@@ -80,9 +80,8 @@ std::expected<ast::Expression::Ptr, std::string> parse_data(
         auto input = lexy::string_input<lexy::utf8_encoding>(text);
         grammar::reset_parse_state(input);
         auto result = lexy::parse<grammar::data_expression>(
-            input,
-            lexy_ext::report_error.opts({lexy::visualize_fancy})
-                .to(std::back_inserter(err)));
+            input, lexy_ext::report_error.opts({lexy::visualize_fancy})
+                       .to(std::back_inserter(err)));
 
         if (not result)
             return std::unexpected{err};
