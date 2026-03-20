@@ -93,6 +93,17 @@ The agent must not use Python or sed to edit files.
 This cheat sheet is not exhaustive, but serves as a guard against common mistakes.
 `./docs` is available for more complete information.
 
+### Comments
+
+Frost comments are Python-style.
+
+```frost
+# This is a comment until the end of the line
+this_gets_executed()
+```
+
+Comments must only contain ASCII characters.
+
 ### `if` / `elif` / `else`
 
 Uses colon, not braces or `then`. Each branch is a single expression.
