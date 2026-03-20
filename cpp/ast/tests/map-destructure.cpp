@@ -121,7 +121,8 @@ TEST_CASE("Map_Destructure")
             Map_Destructure::Element{std::move(key_expr), "bar"});
         elems.emplace_back(
             Map_Destructure::Element{std::move(missing_key_expr), "answer"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr)};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr)};
 
         auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
@@ -152,7 +153,8 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr), "bar"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr), true};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr), true};
 
         auto result = node.execute(ctx);
         REQUIRE(result.has_value());
@@ -195,7 +197,8 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr), true};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr), true};
 
         auto result = node.execute(ctx);
         REQUIRE(result.has_value());
@@ -236,7 +239,8 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr), "bar"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr), true};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr), true};
 
         auto result = node.execute(ctx);
         REQUIRE(result.has_value());
@@ -256,7 +260,8 @@ TEST_CASE("Map_Destructure")
             Map_Destructure::Element{mock::Mock_Expression::make(), "dup"});
 
         CHECK_THROWS_MATCHES(
-            (Map_Destructure{Statement::no_range,std::move(elems), mock::Mock_Expression::make()}),
+            (Map_Destructure{Statement::no_range, std::move(elems),
+                             mock::Mock_Expression::make()}),
             Frost_Unrecoverable_Error,
             MessageMatches(
                 Equals("Duplicate destructuring binding name: dup")));
@@ -278,7 +283,8 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr), "bar"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr)};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(
             node.execute(ctx), Frost_Recoverable_Error,
@@ -303,7 +309,8 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr), "bar"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr)};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(
             node.execute(ctx), Frost_Recoverable_Error,
@@ -332,7 +339,8 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr)};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(node.execute(ctx), Frost_Recoverable_Error,
                              MessageMatches(Equals("kaboom")));
@@ -374,7 +382,8 @@ TEST_CASE("Map_Destructure")
             Map_Destructure::Element{std::move(key_expr2), "second"});
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr3), "third"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr)};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(
             node.execute(ctx), Frost_Recoverable_Error,
@@ -426,7 +435,8 @@ TEST_CASE("Map_Destructure")
         elems.emplace_back(Map_Destructure::Element{std::move(key_int), "i"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_bool), "b"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_float), "f"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr)};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr)};
 
         auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
@@ -473,7 +483,8 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr)};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr)};
 
         auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
@@ -510,7 +521,8 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr)};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr)};
 
         auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
@@ -535,7 +547,8 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
-        Map_Destructure node{Statement::no_range,std::move(elems), std::move(rhs_expr)};
+        Map_Destructure node{Statement::no_range, std::move(elems),
+                             std::move(rhs_expr)};
 
         auto seq = collect_sequence(node);
         std::vector<std::string> expected{

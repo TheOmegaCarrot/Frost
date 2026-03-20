@@ -33,7 +33,7 @@ TEST_CASE("Define")
 
         REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
 
-        ast::Define node{ast::Statement::no_range,"foo", std::move(expr)};
+        ast::Define node{ast::Statement::no_range, "foo", std::move(expr)};
 
         auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
@@ -60,7 +60,7 @@ TEST_CASE("Define")
             .IN_SEQUENCE(seq)
             .THROW(Frost_Recoverable_Error{"uh oh"});
 
-        ast::Define node{ast::Statement::no_range,"foo", std::move(expr)};
+        ast::Define node{ast::Statement::no_range, "foo", std::move(expr)};
 
         auto result = node.execute(ctx);
         CHECK_FALSE(result.has_value());
@@ -78,7 +78,8 @@ TEST_CASE("Define")
 
         REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
 
-        ast::Define node{ast::Statement::no_range,"foo", std::move(expr), true};
+        ast::Define node{ast::Statement::no_range, "foo", std::move(expr),
+                         true};
 
         auto result = node.execute(ctx);
         REQUIRE(result.has_value());
@@ -100,7 +101,8 @@ TEST_CASE("Define")
 
         REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
 
-        ast::Define node{ast::Statement::no_range,"foo", std::move(expr), true};
+        ast::Define node{ast::Statement::no_range, "foo", std::move(expr),
+                         true};
 
         auto result = node.execute(ctx);
         REQUIRE(result.has_value());
@@ -113,6 +115,7 @@ TEST_CASE("Define")
 
     SECTION("Reject _")
     {
-        CHECK_THROWS(ast::Define{ast::Statement::no_range, "_", std::move(expr)});
+        CHECK_THROWS(
+            ast::Define{ast::Statement::no_range, "_", std::move(expr)});
     }
 }

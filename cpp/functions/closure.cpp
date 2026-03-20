@@ -92,7 +92,7 @@ std::string Closure::debug_dump() const
     std::ostringstream os;
     os << "<Closure>";
 
-    if (captures_.debug_table().size() > 1)
+    if (not captures_.debug_table().empty())
     {
         os
             << " (capturing: "

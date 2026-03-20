@@ -46,34 +46,58 @@ struct Frost_Error : std::runtime_error
 
 struct Frost_Interpreter_Error : Frost_Error
 {
-    Frost_Interpreter_Error(const char* err)        : Frost_Error{err} {}
-    Frost_Interpreter_Error(const std::string& err) : Frost_Error{err} {}
+    Frost_Interpreter_Error(const char* err)
+        : Frost_Error{err}
+    {
+    }
+    Frost_Interpreter_Error(const std::string& err)
+        : Frost_Error{err}
+    {
+    }
 };
 
 struct Frost_User_Error : Frost_Error
 {
   protected:
-    Frost_User_Error(const char* err)        : Frost_Error{err} {}
-    Frost_User_Error(const std::string& err) : Frost_Error{err} {}
+    Frost_User_Error(const char* err)
+        : Frost_Error{err}
+    {
+    }
+    Frost_User_Error(const std::string& err)
+        : Frost_Error{err}
+    {
+    }
 };
 
 struct Frost_Recoverable_Error : Frost_User_Error
 {
-    Frost_Recoverable_Error(const char* err)        : Frost_User_Error{err} {}
-    Frost_Recoverable_Error(const std::string& err) : Frost_User_Error{err} {}
+    Frost_Recoverable_Error(const char* err)
+        : Frost_User_Error{err}
+    {
+    }
+    Frost_Recoverable_Error(const std::string& err)
+        : Frost_User_Error{err}
+    {
+    }
 };
 
 struct Frost_Unrecoverable_Error : Frost_User_Error
 {
-    Frost_Unrecoverable_Error(const char* err)        : Frost_User_Error{err} {}
-    Frost_Unrecoverable_Error(const std::string& err) : Frost_User_Error{err} {}
+    Frost_Unrecoverable_Error(const char* err)
+        : Frost_User_Error{err}
+    {
+    }
+    Frost_Unrecoverable_Error(const std::string& err)
+        : Frost_User_Error{err}
+    {
+    }
 };
 
 #define THROW_UNREACHABLE                                                      \
     throw Frost_Interpreter_Error                                              \
     {                                                                          \
         "Hit point which should be unreachable at: " __FILE__                  \
-        ":" BOOST_PP_STRINGIZE(__LINE__)                                       \
+        ":" BOOST_PP_STRINGIZE(__LINE__)                                                 \
     }
 
 } // namespace frst

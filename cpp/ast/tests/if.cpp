@@ -27,12 +27,13 @@ TEST_CASE("If")
     auto make_if = [&](bool with_alternate = true) {
         if (with_alternate)
         {
-            return ast::If{ast::Statement::no_range,std::move(condition), std::move(consequent),
-                           std::move(alternate)};
+            return ast::If{ast::Statement::no_range, std::move(condition),
+                           std::move(consequent), std::move(alternate)};
         }
         else
         {
-            return ast::If{ast::Statement::no_range,std::move(condition), std::move(consequent)};
+            return ast::If{ast::Statement::no_range, std::move(condition),
+                           std::move(consequent)};
         }
     };
 

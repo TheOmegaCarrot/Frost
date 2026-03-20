@@ -27,9 +27,8 @@ BUILTIN(try_call)
     }
     catch (Frost_Recoverable_Error& err)
     {
-        Map result_map{
-            {strings.ok, Value::create(false)},
-            {strings.error, Value::create(String{err.what()})}};
+        Map result_map{{strings.ok, Value::create(false)},
+                       {strings.error, Value::create(String{err.what()})}};
 
         auto bt = err.take_backtrace();
         if (!bt.empty())
@@ -38,8 +37,7 @@ BUILTIN(try_call)
             frames.reserve(bt.size());
             for (auto& frame : bt)
                 frames.push_back(Value::create(std::move(frame)));
-            result_map.emplace(strings.trace,
-                               Value::create(std::move(frames)));
+            result_map.emplace(strings.trace, Value::create(std::move(frames)));
         }
 
         return Value::create(Value::trusted, std::move(result_map));

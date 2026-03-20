@@ -91,7 +91,7 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> body;
         body.push_back(std::move(expr));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
 
         auto result = node.evaluate(ctx);
         CHECK(result->is<Function>());
@@ -102,11 +102,13 @@ TEST_CASE("Lambda")
         // Frost:
         // def f = fn (p) -> { x ; def y = 1 ; null }
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
-        body.push_back(node<Define>(Statement::no_range,"y", node<Literal>(Statement::no_range,Value::create(1_f))));
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
+        body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
+        body.push_back(node<Define>(
+            Statement::no_range, "y",
+            node<Literal>(Statement::no_range, Value::create(1_f))));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
 
-        Lambda node{Statement::no_range,{"p"}, std::move(body)};
+        Lambda node{Statement::no_range, {"p"}, std::move(body)};
 
         std::vector<Statement::Symbol_Action> actions;
         for (const auto& action : node.symbol_sequence())
@@ -122,9 +124,11 @@ TEST_CASE("Lambda")
         // Frost:
         // def f = fn () -> { def x = 1 }
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,Value::create(1_f))));
+        body.push_back(node<Define>(
+            Statement::no_range, "x",
+            node<Literal>(Statement::no_range, Value::create(1_f))));
 
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{}, std::move(body)}),
+        CHECK_THROWS_WITH((Lambda{Statement::no_range, {}, std::move(body)}),
                           "A lambda must end in an expression");
     }
 
@@ -133,9 +137,11 @@ TEST_CASE("Lambda")
         // Frost:
         // def f = fn (x) -> { def x = 1 }
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,Value::create(1_f))));
+        body.push_back(node<Define>(
+            Statement::no_range, "x",
+            node<Literal>(Statement::no_range, Value::create(1_f))));
 
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{"x"}, std::move(body)}),
+        CHECK_THROWS_WITH((Lambda{Statement::no_range, {"x"}, std::move(body)}),
                           "A lambda must end in an expression");
     }
 
@@ -144,10 +150,10 @@ TEST_CASE("Lambda")
         // Frost:
         // def f = fn () -> { null ; x }
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
-        body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
+        body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
 
         std::vector<Statement::Symbol_Action> actions;
         for (const auto& action : node.symbol_sequence())
@@ -163,9 +169,9 @@ TEST_CASE("Lambda")
         // Frost:
         // def f = fn (...rest) -> { rest }
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>(Statement::no_range,"rest"));
+        body.push_back(node<Name_Lookup>(Statement::no_range, "rest"));
 
-        Lambda node{Statement::no_range,{}, std::move(body), "rest"};
+        Lambda node{Statement::no_range, {}, std::move(body), "rest"};
 
         std::vector<Statement::Symbol_Action> actions;
         for (const auto& action : node.symbol_sequence())
@@ -180,8 +186,9 @@ TEST_CASE("Lambda")
         // def f = fn (p, q) -> { }
         std::vector<Statement::Ptr> body;
 
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{"p", "q"}, std::move(body)}),
-                          ContainsSubstring("empty body"));
+        CHECK_THROWS_WITH(
+            (Lambda{Statement::no_range, {"p", "q"}, std::move(body)}),
+            ContainsSubstring("empty body"));
     }
 
     SECTION("Empty body with variadic parameter is rejected")
@@ -190,8 +197,9 @@ TEST_CASE("Lambda")
         // def f = fn (...rest) -> { }
         std::vector<Statement::Ptr> body;
 
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{}, std::move(body), "rest"}),
-                          ContainsSubstring("empty body"));
+        CHECK_THROWS_WITH(
+            (Lambda{Statement::no_range, {}, std::move(body), "rest"}),
+            ContainsSubstring("empty body"));
     }
 
     SECTION("Duplicate parameters are rejected at construction")
@@ -200,8 +208,9 @@ TEST_CASE("Lambda")
         // def f = fn (x, x) -> { }
         std::vector<Statement::Ptr> body;
 
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{"x", "x"}, std::move(body)}),
-                          "Closure has duplicate parameters");
+        CHECK_THROWS_WITH(
+            (Lambda{Statement::no_range, {"x", "x"}, std::move(body)}),
+            "Closure has duplicate parameters");
     }
 
     SECTION("Variadic parameter cannot duplicate a fixed parameter")
@@ -210,8 +219,9 @@ TEST_CASE("Lambda")
         // def f = fn (x, ...x) -> { }
         std::vector<Statement::Ptr> body;
 
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{"x"}, std::move(body), "x"}),
-                          "Closure has duplicate parameters");
+        CHECK_THROWS_WITH(
+            (Lambda{Statement::no_range, {"x"}, std::move(body), "x"}),
+            "Closure has duplicate parameters");
     }
 
     SECTION("Local definition cannot shadow a parameter")
@@ -219,10 +229,12 @@ TEST_CASE("Lambda")
         // Frost:
         // def f = fn (x) -> { def x = 2 ; null }
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,Value::create(2_f))));
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
+        body.push_back(node<Define>(
+            Statement::no_range, "x",
+            node<Literal>(Statement::no_range, Value::create(2_f))));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
 
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{"x"}, std::move(body)}),
+        CHECK_THROWS_WITH((Lambda{Statement::no_range, {"x"}, std::move(body)}),
                           ContainsSubstring("parameter")
                               && ContainsSubstring("x"));
     }
@@ -231,18 +243,20 @@ TEST_CASE("Lambda")
     {
         // fn f(...f) -> null  -- "f" as vararg conflicts with self_name "f"
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{}, std::move(body), "f", "f"}),
-                          ContainsSubstring("f"));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
+        CHECK_THROWS_WITH(
+            (Lambda{Statement::no_range, {}, std::move(body), "f", "f"}),
+            ContainsSubstring("f"));
     }
 
     SECTION("Parameter cannot shadow self_name")
     {
         // fn f(f) -> null  -- "f" as param conflicts with self_name "f"
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{"f"}, std::move(body), {}, "f"}),
-                          ContainsSubstring("f"));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
+        CHECK_THROWS_WITH(
+            (Lambda{Statement::no_range, {"f"}, std::move(body), {}, "f"}),
+            ContainsSubstring("f"));
     }
 
     SECTION("Local definition cannot shadow self_name")
@@ -250,22 +264,26 @@ TEST_CASE("Lambda")
         // fn f() -> { def f = 1 ; null }  -- local "f" conflicts with self_name
         // "f"
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>(Statement::no_range,"f", node<Literal>(Statement::no_range,Value::create(1_f))));
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{}, std::move(body), {}, "f"}),
-                          ContainsSubstring("f"));
+        body.push_back(node<Define>(
+            Statement::no_range, "f",
+            node<Literal>(Statement::no_range, Value::create(1_f))));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
+        CHECK_THROWS_WITH(
+            (Lambda{Statement::no_range, {}, std::move(body), {}, "f"}),
+            ContainsSubstring("f"));
     }
 
     SECTION("Symbol sequence treats self_name as defined")
     {
         // fn f(x) -> f(x)  -- "f" is self_name, not a free variable
         std::vector<Expression::Ptr> call_args;
-        call_args.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        call_args.push_back(node<Name_Lookup>(Statement::no_range, "x"));
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Function_Call>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"f"), std::move(call_args)));
+        body.push_back(node<Function_Call>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "f"),
+            std::move(call_args)));
 
-        Lambda lambda{Statement::no_range,{"x"}, std::move(body), {}, "f"};
+        Lambda lambda{Statement::no_range, {"x"}, std::move(body), {}, "f"};
 
         std::vector<Statement::Symbol_Action> actions;
         for (const auto& action : lambda.symbol_sequence())
@@ -282,12 +300,13 @@ TEST_CASE("Lambda")
         env.define("f", Value::create(99_f));
 
         std::vector<Expression::Ptr> call_args;
-        call_args.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        call_args.push_back(node<Name_Lookup>(Statement::no_range, "x"));
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Function_Call>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"f"), std::move(call_args)));
+        body.push_back(node<Function_Call>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "f"),
+            std::move(call_args)));
 
-        Lambda lambda{Statement::no_range,{"x"}, std::move(body), {}, "f"};
+        Lambda lambda{Statement::no_range, {"x"}, std::move(body), {}, "f"};
         auto closure = eval_to_closure(lambda, env);
 
         // "f" should be in captures, but as a Weak_Closure (self-ref), not as
@@ -302,21 +321,28 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Expression::Ptr> rec_args;
-        rec_args.push_back(node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"n"), Binary_Op::MINUS,
-                                       node<Literal>(Statement::no_range,Value::create(1_f))));
-        auto rec_call =
-            node<Function_Call>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"fact"), std::move(rec_args));
-        auto rec_expr = node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"n"), Binary_Op::MULTIPLY,
-                                    std::move(rec_call));
+        rec_args.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "n"),
+            Binary_Op::MINUS,
+            node<Literal>(Statement::no_range, Value::create(1_f))));
+        auto rec_call = node<Function_Call>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "fact"),
+            std::move(rec_args));
+        auto rec_expr = node<Binop>(Statement::no_range,
+                                    node<Name_Lookup>(Statement::no_range, "n"),
+                                    Binary_Op::MULTIPLY, std::move(rec_call));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<If>(Statement::no_range,node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"n"), Binary_Op::LE,
-                                 node<Literal>(Statement::no_range,Value::create(1_f))),
-                     node<Literal>(Statement::no_range,Value::create(1_f)),
-                     std::optional<Expression::Ptr>{std::move(rec_expr)}));
+        body.push_back(node<If>(
+            Statement::no_range,
+            node<Binop>(Statement::no_range,
+                        node<Name_Lookup>(Statement::no_range, "n"),
+                        Binary_Op::LE,
+                        node<Literal>(Statement::no_range, Value::create(1_f))),
+            node<Literal>(Statement::no_range, Value::create(1_f)),
+            std::optional<Expression::Ptr>{std::move(rec_expr)}));
 
-        Lambda lambda{Statement::no_range,{"n"}, std::move(body), {}, "fact"};
+        Lambda lambda{Statement::no_range, {"n"}, std::move(body), {}, "fact"};
         auto closure = eval_to_closure(lambda, env);
 
         auto result = closure->call({Value::create(5_f)});
@@ -341,28 +367,37 @@ TEST_CASE("Lambda")
 
         // f(n - 1)
         std::vector<Expression::Ptr> rec_args;
-        rec_args.push_back(node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"n"), Binary_Op::MINUS,
-                                       node<Literal>(Statement::no_range,Value::create(1_f))));
-        auto f_of_nm1 =
-            node<Function_Call>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"f"), std::move(rec_args));
+        rec_args.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "n"),
+            Binary_Op::MINUS,
+            node<Literal>(Statement::no_range, Value::create(1_f))));
+        auto f_of_nm1 = node<Function_Call>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "f"),
+            std::move(rec_args));
         // f(n - 1)()
-        auto f_of_nm1_called = node<Function_Call>(Statement::no_range,
-            std::move(f_of_nm1), std::vector<Expression::Ptr>{});
+        auto f_of_nm1_called =
+            node<Function_Call>(Statement::no_range, std::move(f_of_nm1),
+                                std::vector<Expression::Ptr>{});
 
         // fn() -> if n <= 0: 0 else: f(n - 1)()
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<If>(Statement::no_range,
-            node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"n"), Binary_Op::LE,
-                        node<Literal>(Statement::no_range,Value::create(0_f))),
-            node<Literal>(Statement::no_range,Value::create(0_f)),
+        inner_body.push_back(node<If>(
+            Statement::no_range,
+            node<Binop>(Statement::no_range,
+                        node<Name_Lookup>(Statement::no_range, "n"),
+                        Binary_Op::LE,
+                        node<Literal>(Statement::no_range, Value::create(0_f))),
+            node<Literal>(Statement::no_range, Value::create(0_f)),
             std::optional<Expression::Ptr>{std::move(f_of_nm1_called)}));
         auto inner_lambda =
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body));
+            node<Lambda>(Statement::no_range, std::vector<std::string>{},
+                         std::move(inner_body));
 
         // fn f(n) -> fn() -> ...
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(std::move(inner_lambda));
-        Lambda outer{Statement::no_range,{"n"}, std::move(outer_body), {}, "f"};
+        Lambda outer{
+            Statement::no_range, {"n"}, std::move(outer_body), {}, "f"};
 
         Value_Ptr inner_val;
         {
@@ -389,19 +424,25 @@ TEST_CASE("Lambda")
         env.define("base", base_val);
 
         std::vector<Expression::Ptr> rec_args;
-        rec_args.push_back(node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"n"), Binary_Op::MINUS,
-                                       node<Literal>(Statement::no_range,Value::create(1_f))));
-        auto rec_call =
-            node<Function_Call>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"f"), std::move(rec_args));
+        rec_args.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "n"),
+            Binary_Op::MINUS,
+            node<Literal>(Statement::no_range, Value::create(1_f))));
+        auto rec_call = node<Function_Call>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "f"),
+            std::move(rec_args));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<If>(Statement::no_range,node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"n"), Binary_Op::LE,
-                                 node<Literal>(Statement::no_range,Value::create(0_f))),
-                     node<Name_Lookup>(Statement::no_range,"base"),
-                     std::optional<Expression::Ptr>{std::move(rec_call)}));
+        body.push_back(node<If>(
+            Statement::no_range,
+            node<Binop>(Statement::no_range,
+                        node<Name_Lookup>(Statement::no_range, "n"),
+                        Binary_Op::LE,
+                        node<Literal>(Statement::no_range, Value::create(0_f))),
+            node<Name_Lookup>(Statement::no_range, "base"),
+            std::optional<Expression::Ptr>{std::move(rec_call)}));
 
-        Lambda lambda{Statement::no_range,{"n"}, std::move(body), {}, "f"};
+        Lambda lambda{Statement::no_range, {"n"}, std::move(body), {}, "f"};
         auto closure = eval_to_closure(lambda, env);
 
         // capture set should contain "base" and the self-ref "f"
@@ -418,12 +459,14 @@ TEST_CASE("Lambda")
         // Frost:
         // def f = fn (...rest) -> { def rest = 2 ; null }
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>(Statement::no_range,"rest", node<Literal>(Statement::no_range,Value::create(2_f))));
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
+        body.push_back(node<Define>(
+            Statement::no_range, "rest",
+            node<Literal>(Statement::no_range, Value::create(2_f))));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
 
-        CHECK_THROWS_WITH((Lambda{Statement::no_range,{}, std::move(body), "rest"}),
-                          ContainsSubstring("parameter")
-                              && ContainsSubstring("rest"));
+        CHECK_THROWS_WITH(
+            (Lambda{Statement::no_range, {}, std::move(body), "rest"}),
+            ContainsSubstring("parameter") && ContainsSubstring("rest"));
     }
 
     SECTION("Captures only free variables")
@@ -439,10 +482,11 @@ TEST_CASE("Lambda")
         env.define("y", y_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"x"), Binary_Op::PLUS,
-                                   node<Name_Lookup>(Statement::no_range,"y")));
+        body.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "x"),
+            Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range, "y")));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure) == std::set<std::string>{"x", "y"});
@@ -462,9 +506,9 @@ TEST_CASE("Lambda")
         Symbol_Table env{&outer};
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure) == std::set<std::string>{"x"});
@@ -484,10 +528,11 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"p"), Binary_Op::PLUS,
-                                   node<Name_Lookup>(Statement::no_range,"x")));
+        body.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "p"),
+            Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range, "x")));
 
-        Lambda node{Statement::no_range,{"p"}, std::move(body)};
+        Lambda node{Statement::no_range, {"p"}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure) == std::set<std::string>{"x"});
@@ -504,9 +549,9 @@ TEST_CASE("Lambda")
         env.define("rest", Value::create(99_f));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>(Statement::no_range,"rest"));
+        body.push_back(node<Name_Lookup>(Statement::no_range, "rest"));
 
-        Lambda node{Statement::no_range,{}, std::move(body), "rest"};
+        Lambda node{Statement::no_range, {}, std::move(body), "rest"};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure).empty());
@@ -530,13 +575,14 @@ TEST_CASE("Lambda")
         env.define("rest", Value::create(99_f));
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"rest"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "rest"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Lambda>(Statement::no_range,std::vector<std::string>{},
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
                                           std::move(inner_body), "rest"));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
 
         CHECK(capture_names(*outer_closure).empty());
@@ -551,14 +597,15 @@ TEST_CASE("Lambda")
         env.define("f", Value::create(99_f));
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"f"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "f"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Lambda>(Statement::no_range,
-            std::vector<std::string>{"x"}, std::move(inner_body),
-            std::optional<std::string>{}, std::optional<std::string>{"f"}));
+        outer_body.push_back(
+            node<Lambda>(Statement::no_range, std::vector<std::string>{"x"},
+                         std::move(inner_body), std::optional<std::string>{},
+                         std::optional<std::string>{"f"}));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
 
         CHECK(capture_names(*outer_closure).empty());
@@ -571,13 +618,14 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"rest"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "rest"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Lambda>(Statement::no_range,std::vector<std::string>{"rest"},
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{"rest"},
                                           std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body), "rest"};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body), "rest"};
         auto outer_closure = eval_to_closure(outer, env);
 
         CHECK(capture_names(*outer_closure).empty());
@@ -594,13 +642,14 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"rest"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "rest"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Lambda>(Statement::no_range,std::vector<std::string>{},
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
                                           std::move(inner_body), "rest"));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body), "rest"};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body), "rest"};
         auto outer_closure = eval_to_closure(outer, env);
 
         CHECK(capture_names(*outer_closure).empty());
@@ -617,13 +666,14 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"rest"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "rest"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body), "rest"};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body), "rest"};
         auto outer_closure = eval_to_closure(outer, env);
 
         auto a = Value::create(1_f);
@@ -649,12 +699,16 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"x"), Binary_Op::PLUS,
-                                   node<Literal>(Statement::no_range,Value::create(1_f))));
-        body.push_back(node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,Value::create(2_f))));
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
+        body.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "x"),
+            Binary_Op::PLUS,
+            node<Literal>(Statement::no_range, Value::create(1_f))));
+        body.push_back(node<Define>(
+            Statement::no_range, "x",
+            node<Literal>(Statement::no_range, Value::create(2_f))));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure) == std::set<std::string>{"x"});
@@ -674,10 +728,12 @@ TEST_CASE("Lambda")
         env.define("y", y_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>(Statement::no_range,"x", node<Name_Lookup>(Statement::no_range,"y")));
-        body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        body.push_back(
+            node<Define>(Statement::no_range, "x",
+                         node<Name_Lookup>(Statement::no_range, "y")));
+        body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure) == std::set<std::string>{"y"});
@@ -698,12 +754,15 @@ TEST_CASE("Lambda")
         env.define("y", y_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"x"), Binary_Op::PLUS,
-                                   node<Name_Lookup>(Statement::no_range,"y")));
-        body.push_back(node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,Value::create(3_f))));
-        body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        body.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "x"),
+            Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range, "y")));
+        body.push_back(node<Define>(
+            Statement::no_range, "x",
+            node<Literal>(Statement::no_range, Value::create(3_f))));
+        body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure) == std::set<std::string>{"x", "y"});
@@ -721,10 +780,12 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,Value::create(7_f))));
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
+        body.push_back(node<Define>(
+            Statement::no_range, "x",
+            node<Literal>(Statement::no_range, Value::create(7_f))));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure).empty());
@@ -741,12 +802,15 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>(Statement::no_range,
-            "x", node<Binop>(Statement::no_range,node<Literal>(Statement::no_range,Value::create(1_f)), Binary_Op::PLUS,
-                             node<Name_Lookup>(Statement::no_range,"x"))));
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
+        body.push_back(node<Define>(
+            Statement::no_range, "x",
+            node<Binop>(Statement::no_range,
+                        node<Literal>(Statement::no_range, Value::create(1_f)),
+                        Binary_Op::PLUS,
+                        node<Name_Lookup>(Statement::no_range, "x"))));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure) == std::set<std::string>{"x"});
@@ -763,12 +827,15 @@ TEST_CASE("Lambda")
         env.define("p", p_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Define>(Statement::no_range,
-            "x", node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"p"), Binary_Op::PLUS,
-                             node<Literal>(Statement::no_range,Value::create(1_f)))));
-        body.push_back(node<Literal>(Statement::no_range,Value::null()));
+        body.push_back(node<Define>(
+            Statement::no_range, "x",
+            node<Binop>(
+                Statement::no_range,
+                node<Name_Lookup>(Statement::no_range, "p"), Binary_Op::PLUS,
+                node<Literal>(Statement::no_range, Value::create(1_f)))));
+        body.push_back(node<Literal>(Statement::no_range, Value::null()));
 
-        Lambda node{Statement::no_range,{"p"}, std::move(body)};
+        Lambda node{Statement::no_range, {"p"}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure).empty());
@@ -791,11 +858,13 @@ TEST_CASE("Lambda")
         env.define("f", f_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<If>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"cond"), node<Name_Lookup>(Statement::no_range,"t"),
-                     std::optional<Expression::Ptr>{node<Name_Lookup>(Statement::no_range,"f")}));
+        body.push_back(node<If>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "cond"),
+            node<Name_Lookup>(Statement::no_range, "t"),
+            std::optional<Expression::Ptr>{
+                node<Name_Lookup>(Statement::no_range, "f")}));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure)
@@ -813,9 +882,9 @@ TEST_CASE("Lambda")
         Evaluation_Context ctx{.symbols = env};
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>(Statement::no_range,"missing"));
+        body.push_back(node<Name_Lookup>(Statement::no_range, "missing"));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
 
         CHECK_THROWS_WITH(
             node.evaluate(ctx),
@@ -842,7 +911,7 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Seq_Mock_Expression>(std::move(seq)));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
         auto closure = eval_to_closure(node, env);
 
         CHECK(capture_names(*closure) == std::set<std::string>{"a", "c"});
@@ -861,10 +930,11 @@ TEST_CASE("Lambda")
         env.define("x", Value::create(2_f));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"x"), Binary_Op::PLUS,
-                                   node<Name_Lookup>(Statement::no_range,"y")));
+        body.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "x"),
+            Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range, "y")));
 
-        Lambda node{Statement::no_range,{"y"}, std::move(body)};
+        Lambda node{Statement::no_range, {"y"}, std::move(body)};
 
         auto result = node.evaluate(ctx);
         REQUIRE(result->is<Function>());
@@ -880,9 +950,9 @@ TEST_CASE("Lambda")
         // def f = fn () -> { x }
         // def f1 = f in env1, def f2 = f in env2
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
 
         Symbol_Table env1;
         auto v1 = Value::create(1_f);
@@ -909,9 +979,9 @@ TEST_CASE("Lambda")
         env.define("x", Value::create(1_f));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
-        Lambda node{Statement::no_range,{}, std::move(body)};
+        Lambda node{Statement::no_range, {}, std::move(body)};
 
         auto closure1 = eval_to_closure(node, env);
         auto closure2 = eval_to_closure(node, env);
@@ -934,15 +1004,19 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Binop>(Statement::no_range,
-            node<Name_Lookup>(Statement::no_range,"x"), Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range,"y")));
+        inner_body.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "x"),
+            Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range, "y")));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Define>(Statement::no_range,"y", node<Literal>(Statement::no_range,y_val)));
         outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body)));
+            node<Define>(Statement::no_range, "y",
+                         node<Literal>(Statement::no_range, y_val)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
 
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure) == std::set<std::string>{"x"});
@@ -968,13 +1042,14 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"p"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "p"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{"p"}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {"p"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
 
         auto p1 = Value::create(10_f);
@@ -1009,17 +1084,19 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Define>(Statement::no_range,"inner", node<Lambda>(Statement::no_range,std::vector<std::string>{},
-                                               std::move(inner_body))));
-        outer_body.push_back(
-            node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,Value::create(2_f))));
-        outer_body.push_back(node<Name_Lookup>(Statement::no_range,"inner"));
+        outer_body.push_back(node<Define>(
+            Statement::no_range, "inner",
+            node<Lambda>(Statement::no_range, std::vector<std::string>{},
+                         std::move(inner_body))));
+        outer_body.push_back(node<Define>(
+            Statement::no_range, "x",
+            node<Literal>(Statement::no_range, Value::create(2_f))));
+        outer_body.push_back(node<Name_Lookup>(Statement::no_range, "inner"));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure) == std::set<std::string>{"x"});
 
@@ -1042,16 +1119,18 @@ TEST_CASE("Lambda")
         Evaluation_Context ctx{.symbols = env};
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"z"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "z"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body)));
-        outer_body.push_back(
-            node<Define>(Statement::no_range,"z", node<Literal>(Statement::no_range,Value::create(42_f))));
-        outer_body.push_back(node<Literal>(Statement::no_range,Value::null()));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
+                                          std::move(inner_body)));
+        outer_body.push_back(node<Define>(
+            Statement::no_range, "z",
+            node<Literal>(Statement::no_range, Value::create(42_f))));
+        outer_body.push_back(node<Literal>(Statement::no_range, Value::null()));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
 
         CHECK_THROWS_WITH(
             outer.evaluate(ctx),
@@ -1072,17 +1151,19 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
         std::vector<Statement::Ptr> mid_body;
-        mid_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body)));
+        mid_body.push_back(node<Lambda>(Statement::no_range,
+                                        std::vector<std::string>{},
+                                        std::move(inner_body)));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(mid_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
+                                          std::move(mid_body)));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure) == std::set<std::string>{"x"});
 
@@ -1118,37 +1199,50 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> inner_body;
         {
             std::vector<Map_Constructor::KV_Pair> pairs;
-            pairs.emplace_back(node<Literal>(Statement::no_range,a_key), node<Name_Lookup>(Statement::no_range,"a"));
-            pairs.emplace_back(node<Literal>(Statement::no_range,b_key), node<Name_Lookup>(Statement::no_range,"b"));
+            pairs.emplace_back(node<Literal>(Statement::no_range, a_key),
+                               node<Name_Lookup>(Statement::no_range, "a"));
+            pairs.emplace_back(node<Literal>(Statement::no_range, b_key),
+                               node<Name_Lookup>(Statement::no_range, "b"));
 
-            inner_body.push_back(
-                node<Define>(Statement::no_range,"m", node<Map_Constructor>(Statement::no_range,std::move(pairs))));
+            inner_body.push_back(node<Define>(
+                Statement::no_range, "m",
+                node<Map_Constructor>(Statement::no_range, std::move(pairs))));
 
             std::vector<Expression::Ptr> elems;
             elems.push_back(
-                node<Index>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"m"), node<Literal>(Statement::no_range,a_key)));
+                node<Index>(Statement::no_range,
+                            node<Name_Lookup>(Statement::no_range, "m"),
+                            node<Literal>(Statement::no_range, a_key)));
             elems.push_back(
-                node<Index>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"m"), node<Literal>(Statement::no_range,b_key)));
+                node<Index>(Statement::no_range,
+                            node<Name_Lookup>(Statement::no_range, "m"),
+                            node<Literal>(Statement::no_range, b_key)));
 
-            inner_body.push_back(node<Array_Constructor>(Statement::no_range,std::move(elems)));
+            inner_body.push_back(
+                node<Array_Constructor>(Statement::no_range, std::move(elems)));
         }
 
         std::vector<Statement::Ptr> outer_body;
         {
             std::vector<Expression::Ptr> a_elems;
-            a_elems.push_back(node<Literal>(Statement::no_range,one));
+            a_elems.push_back(node<Literal>(Statement::no_range, one));
             std::vector<Expression::Ptr> b_elems;
-            b_elems.push_back(node<Literal>(Statement::no_range,one));
+            b_elems.push_back(node<Literal>(Statement::no_range, one));
 
             outer_body.push_back(
-                node<Define>(Statement::no_range,"a", node<Array_Constructor>(Statement::no_range,std::move(a_elems))));
+                node<Define>(Statement::no_range, "a",
+                             node<Array_Constructor>(Statement::no_range,
+                                                     std::move(a_elems))));
             outer_body.push_back(
-                node<Define>(Statement::no_range,"b", node<Array_Constructor>(Statement::no_range,std::move(b_elems))));
-            outer_body.push_back(node<Lambda>(Statement::no_range,std::vector<std::string>{},
+                node<Define>(Statement::no_range, "b",
+                             node<Array_Constructor>(Statement::no_range,
+                                                     std::move(b_elems))));
+            outer_body.push_back(node<Lambda>(Statement::no_range,
+                                              std::vector<std::string>{},
                                               std::move(inner_body)));
         }
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
 
         auto inner_val = outer_closure->call({});
@@ -1175,13 +1269,14 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{"x"}, std::move(inner_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{"x"},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure).empty());
 
@@ -1200,14 +1295,16 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Binop>(Statement::no_range,
-            node<Name_Lookup>(Statement::no_range,"p"), Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range,"q")));
+        inner_body.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "p"),
+            Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range, "q")));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{"q"}, std::move(inner_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{"q"},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{"p"}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {"p"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure).empty());
 
@@ -1238,20 +1335,27 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> inner_body;
         {
-            auto sum_xy = node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"x"), Binary_Op::PLUS,
-                                      node<Name_Lookup>(Statement::no_range,"y"));
-            auto sum_xyp = node<Binop>(Statement::no_range,std::move(sum_xy), Binary_Op::PLUS,
-                                       node<Name_Lookup>(Statement::no_range,"p"));
-            inner_body.push_back(node<Binop>(Statement::no_range,
-                std::move(sum_xyp), Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range,"q")));
+            auto sum_xy = node<Binop>(
+                Statement::no_range,
+                node<Name_Lookup>(Statement::no_range, "x"), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "y"));
+            auto sum_xyp = node<Binop>(
+                Statement::no_range, std::move(sum_xy), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "p"));
+            inner_body.push_back(node<Binop>(
+                Statement::no_range, std::move(sum_xyp), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "q")));
         }
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Define>(Statement::no_range,"y", node<Literal>(Statement::no_range,y_val)));
         outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{"q"}, std::move(inner_body)));
+            node<Define>(Statement::no_range, "y",
+                         node<Literal>(Statement::no_range, y_val)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{"q"},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{"p"}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {"p"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure) == std::set<std::string>{"x"});
 
@@ -1276,15 +1380,17 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(
-            node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,Value::create(1_f))));
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_body.push_back(node<Define>(
+            Statement::no_range, "x",
+            node<Literal>(Statement::no_range, Value::create(1_f))));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure).empty());
 
@@ -1304,14 +1410,17 @@ TEST_CASE("Lambda")
         auto x_outer = Value::create(1_f);
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Define>(Statement::no_range,"x", node<Literal>(Statement::no_range,x_outer)));
         outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{"x"}, std::move(inner_body)));
+            node<Define>(Statement::no_range, "x",
+                         node<Literal>(Statement::no_range, x_outer)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{"x"},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure).empty());
 
@@ -1330,13 +1439,14 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{"x"}, std::move(inner_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{"x"},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{"x"}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {"x"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure).empty());
 
@@ -1358,16 +1468,18 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"p"));
-        inner_body.push_back(
-            node<Define>(Statement::no_range,"p", node<Literal>(Statement::no_range,Value::create(1_f))));
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"p"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "p"));
+        inner_body.push_back(node<Define>(
+            Statement::no_range, "p",
+            node<Literal>(Statement::no_range, Value::create(1_f))));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "p"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{"p"}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {"p"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure).empty());
 
@@ -1396,21 +1508,24 @@ TEST_CASE("Lambda")
         env.define("y", y_val);
 
         std::vector<Statement::Ptr> inner_x_body;
-        inner_x_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_x_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
         std::vector<Statement::Ptr> inner_y_body;
-        inner_y_body.push_back(node<Name_Lookup>(Statement::no_range,"y"));
+        inner_y_body.push_back(node<Name_Lookup>(Statement::no_range, "y"));
 
         std::vector<Statement::Ptr> outer_body;
         {
             std::vector<Expression::Ptr> elems;
-            elems.push_back(node<Lambda>(Statement::no_range,std::vector<std::string>{},
+            elems.push_back(node<Lambda>(Statement::no_range,
+                                         std::vector<std::string>{},
                                          std::move(inner_x_body)));
-            elems.push_back(node<Lambda>(Statement::no_range,std::vector<std::string>{},
+            elems.push_back(node<Lambda>(Statement::no_range,
+                                         std::vector<std::string>{},
                                          std::move(inner_y_body)));
-            outer_body.push_back(node<Array_Constructor>(Statement::no_range,std::move(elems)));
+            outer_body.push_back(
+                node<Array_Constructor>(Statement::no_range, std::move(elems)));
         }
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure) == std::set<std::string>{"x", "y"});
 
@@ -1442,23 +1557,29 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> inner_body;
         {
-            auto sum_ga = node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"g"), Binary_Op::PLUS,
-                                      node<Name_Lookup>(Statement::no_range,"a"));
-            auto sum_gab = node<Binop>(Statement::no_range,std::move(sum_ga), Binary_Op::PLUS,
-                                       node<Name_Lookup>(Statement::no_range,"b"));
-            inner_body.push_back(node<Binop>(Statement::no_range,
-                std::move(sum_gab), Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range,"c")));
+            auto sum_ga = node<Binop>(
+                Statement::no_range,
+                node<Name_Lookup>(Statement::no_range, "g"), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "a"));
+            auto sum_gab = node<Binop>(
+                Statement::no_range, std::move(sum_ga), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "b"));
+            inner_body.push_back(node<Binop>(
+                Statement::no_range, std::move(sum_gab), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "c")));
         }
 
         std::vector<Statement::Ptr> mid_body;
-        mid_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{"c"}, std::move(inner_body)));
+        mid_body.push_back(node<Lambda>(Statement::no_range,
+                                        std::vector<std::string>{"c"},
+                                        std::move(inner_body)));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{"b"}, std::move(mid_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{"b"},
+                                          std::move(mid_body)));
 
-        Lambda outer{Statement::no_range,{"a"}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {"a"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure) == std::set<std::string>{"g"});
 
@@ -1495,18 +1616,20 @@ TEST_CASE("Lambda")
         env.define("y", y_val);
 
         std::vector<Statement::Ptr> inner_x_body;
-        inner_x_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_x_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
         std::vector<Statement::Ptr> inner_y_body;
-        inner_y_body.push_back(node<Name_Lookup>(Statement::no_range,"y"));
+        inner_y_body.push_back(node<Name_Lookup>(Statement::no_range, "y"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<If>(Statement::no_range,
-            node<Name_Lookup>(Statement::no_range,"cond"),
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_x_body)),
-            std::optional<Expression::Ptr>{node<Lambda>(Statement::no_range,
-                std::vector<std::string>{}, std::move(inner_y_body))}));
+        outer_body.push_back(node<If>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "cond"),
+            node<Lambda>(Statement::no_range, std::vector<std::string>{},
+                         std::move(inner_x_body)),
+            std::optional<Expression::Ptr>{
+                node<Lambda>(Statement::no_range, std::vector<std::string>{},
+                             std::move(inner_y_body))}));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure)
               == std::set<std::string>{"cond", "x", "y"});
@@ -1527,18 +1650,21 @@ TEST_CASE("Lambda")
         env.define("x", x_val);
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
         std::vector<Statement::Ptr> outer_body;
         {
             std::vector<Expression::Ptr> elems;
-            elems.push_back(node<Lambda>(Statement::no_range,std::vector<std::string>{},
+            elems.push_back(node<Lambda>(Statement::no_range,
+                                         std::vector<std::string>{},
                                          std::move(inner_body)));
-            elems.push_back(node<Literal>(Statement::no_range,Value::create(0_f)));
-            outer_body.push_back(node<Array_Constructor>(Statement::no_range,std::move(elems)));
+            elems.push_back(
+                node<Literal>(Statement::no_range, Value::create(0_f)));
+            outer_body.push_back(
+                node<Array_Constructor>(Statement::no_range, std::move(elems)));
         }
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure) == std::set<std::string>{"x"});
 
@@ -1560,16 +1686,18 @@ TEST_CASE("Lambda")
         env.define("y", y_val);
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"y"));
-        inner_body.push_back(
-            node<Define>(Statement::no_range,"y", node<Literal>(Statement::no_range,Value::create(1_f))));
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"y"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "y"));
+        inner_body.push_back(node<Define>(
+            Statement::no_range, "y",
+            node<Literal>(Statement::no_range, Value::create(1_f))));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "y"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure) == std::set<std::string>{"y"});
 
@@ -1593,13 +1721,14 @@ TEST_CASE("Lambda")
         Symbol_Table env{&outer_env};
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{},
+                                          std::move(inner_body)));
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure) == std::set<std::string>{"x"});
         CHECK(outer_closure->debug_capture_table().lookup("x") == x_val);
@@ -1626,26 +1755,31 @@ TEST_CASE("Lambda")
         env.define("y", y_val);
 
         std::vector<Statement::Ptr> inner_x_body;
-        inner_x_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_x_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
         std::vector<Statement::Ptr> inner_xy_body;
-        inner_xy_body.push_back(node<Binop>(Statement::no_range,
-            node<Name_Lookup>(Statement::no_range,"x"), Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range,"y")));
+        inner_xy_body.push_back(node<Binop>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "x"),
+            Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range, "y")));
         std::vector<Statement::Ptr> inner_y_body;
-        inner_y_body.push_back(node<Name_Lookup>(Statement::no_range,"y"));
+        inner_y_body.push_back(node<Name_Lookup>(Statement::no_range, "y"));
 
         std::vector<Statement::Ptr> outer_body;
         {
             std::vector<Expression::Ptr> elems;
-            elems.push_back(node<Lambda>(Statement::no_range,std::vector<std::string>{},
+            elems.push_back(node<Lambda>(Statement::no_range,
+                                         std::vector<std::string>{},
                                          std::move(inner_x_body)));
-            elems.push_back(node<Lambda>(Statement::no_range,std::vector<std::string>{},
+            elems.push_back(node<Lambda>(Statement::no_range,
+                                         std::vector<std::string>{},
                                          std::move(inner_xy_body)));
-            elems.push_back(node<Lambda>(Statement::no_range,std::vector<std::string>{},
+            elems.push_back(node<Lambda>(Statement::no_range,
+                                         std::vector<std::string>{},
                                          std::move(inner_y_body)));
-            outer_body.push_back(node<Array_Constructor>(Statement::no_range,std::move(elems)));
+            outer_body.push_back(
+                node<Array_Constructor>(Statement::no_range, std::move(elems)));
         }
 
-        Lambda outer{Statement::no_range,{}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure) == std::set<std::string>{"x", "y"});
 
@@ -1684,28 +1818,35 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> inner_x_body;
         {
-            auto sum_xp = node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"x"), Binary_Op::PLUS,
-                                      node<Name_Lookup>(Statement::no_range,"p"));
-            inner_x_body.push_back(node<Binop>(Statement::no_range,
-                std::move(sum_xp), Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range,"q")));
+            auto sum_xp = node<Binop>(
+                Statement::no_range,
+                node<Name_Lookup>(Statement::no_range, "x"), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "p"));
+            inner_x_body.push_back(node<Binop>(
+                Statement::no_range, std::move(sum_xp), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "q")));
         }
         std::vector<Statement::Ptr> inner_y_body;
         {
-            auto sum_yp = node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"y"), Binary_Op::PLUS,
-                                      node<Name_Lookup>(Statement::no_range,"p"));
-            inner_y_body.push_back(node<Binop>(Statement::no_range,
-                std::move(sum_yp), Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range,"q")));
+            auto sum_yp = node<Binop>(
+                Statement::no_range,
+                node<Name_Lookup>(Statement::no_range, "y"), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "p"));
+            inner_y_body.push_back(node<Binop>(
+                Statement::no_range, std::move(sum_yp), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "q")));
         }
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<If>(Statement::no_range,
-            node<Name_Lookup>(Statement::no_range,"cond"),
-            node<Lambda>(Statement::no_range,std::vector<std::string>{"q"},
+        outer_body.push_back(node<If>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "cond"),
+            node<Lambda>(Statement::no_range, std::vector<std::string>{"q"},
                          std::move(inner_x_body)),
-            std::optional<Expression::Ptr>{node<Lambda>(Statement::no_range,
-                std::vector<std::string>{"q"}, std::move(inner_y_body))}));
+            std::optional<Expression::Ptr>{
+                node<Lambda>(Statement::no_range, std::vector<std::string>{"q"},
+                             std::move(inner_y_body))}));
 
-        Lambda outer{Statement::no_range,{"p"}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {"p"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure)
               == std::set<std::string>{"cond", "x", "y"});
@@ -1738,28 +1879,35 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> inner_x_body;
         {
-            auto sum_xp = node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"x"), Binary_Op::PLUS,
-                                      node<Name_Lookup>(Statement::no_range,"p"));
-            inner_x_body.push_back(node<Binop>(Statement::no_range,
-                std::move(sum_xp), Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range,"q")));
+            auto sum_xp = node<Binop>(
+                Statement::no_range,
+                node<Name_Lookup>(Statement::no_range, "x"), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "p"));
+            inner_x_body.push_back(node<Binop>(
+                Statement::no_range, std::move(sum_xp), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "q")));
         }
         std::vector<Statement::Ptr> inner_y_body;
         {
-            auto sum_yp = node<Binop>(Statement::no_range,node<Name_Lookup>(Statement::no_range,"y"), Binary_Op::PLUS,
-                                      node<Name_Lookup>(Statement::no_range,"p"));
-            inner_y_body.push_back(node<Binop>(Statement::no_range,
-                std::move(sum_yp), Binary_Op::PLUS, node<Name_Lookup>(Statement::no_range,"q")));
+            auto sum_yp = node<Binop>(
+                Statement::no_range,
+                node<Name_Lookup>(Statement::no_range, "y"), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "p"));
+            inner_y_body.push_back(node<Binop>(
+                Statement::no_range, std::move(sum_yp), Binary_Op::PLUS,
+                node<Name_Lookup>(Statement::no_range, "q")));
         }
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<If>(Statement::no_range,
-            node<Name_Lookup>(Statement::no_range,"cond"),
-            node<Lambda>(Statement::no_range,std::vector<std::string>{"q"},
+        outer_body.push_back(node<If>(
+            Statement::no_range, node<Name_Lookup>(Statement::no_range, "cond"),
+            node<Lambda>(Statement::no_range, std::vector<std::string>{"q"},
                          std::move(inner_x_body)),
-            std::optional<Expression::Ptr>{node<Lambda>(Statement::no_range,
-                std::vector<std::string>{"q"}, std::move(inner_y_body))}));
+            std::optional<Expression::Ptr>{
+                node<Lambda>(Statement::no_range, std::vector<std::string>{"q"},
+                             std::move(inner_y_body))}));
 
-        Lambda outer{Statement::no_range,{"p"}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {"p"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure)
               == std::set<std::string>{"cond", "x", "y"});
@@ -1780,17 +1928,19 @@ TEST_CASE("Lambda")
         Symbol_Table env;
 
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(node<Name_Lookup>(Statement::no_range,"x"));
+        inner_body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
 
         std::vector<Statement::Ptr> mid_body;
-        mid_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{}, std::move(inner_body)));
+        mid_body.push_back(node<Lambda>(Statement::no_range,
+                                        std::vector<std::string>{},
+                                        std::move(inner_body)));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Lambda>(Statement::no_range,std::vector<std::string>{"x"}, std::move(mid_body)));
+        outer_body.push_back(node<Lambda>(Statement::no_range,
+                                          std::vector<std::string>{"x"},
+                                          std::move(mid_body)));
 
-        Lambda outer{Statement::no_range,{"x"}, std::move(outer_body)};
+        Lambda outer{Statement::no_range, {"x"}, std::move(outer_body)};
         auto outer_closure = eval_to_closure(outer, env);
         CHECK(capture_names(*outer_closure).empty());
 
@@ -1812,23 +1962,30 @@ TEST_CASE("Lambda")
     {
         auto null_body = [] {
             std::vector<Statement::Ptr> body;
-            body.push_back(node<Literal>(Statement::no_range,Value::null()));
+            body.push_back(node<Literal>(Statement::no_range, Value::null()));
             return body;
         };
 
-        CHECK(Lambda{Statement::no_range,{}, null_body()}.node_label() == "Lambda()");
-        CHECK(Lambda{Statement::no_range,{"x", "y"}, null_body()}.node_label() == "Lambda(x, y)");
-        CHECK(Lambda{Statement::no_range,{}, null_body(), "rest"}.node_label()
+        CHECK(Lambda{Statement::no_range, {}, null_body()}.node_label()
+              == "Lambda()");
+        CHECK(Lambda{Statement::no_range, {"x", "y"}, null_body()}.node_label()
+              == "Lambda(x, y)");
+        CHECK(Lambda{Statement::no_range, {}, null_body(), "rest"}.node_label()
               == "Lambda(...rest)");
-        CHECK(Lambda{Statement::no_range,{"x"}, null_body(), "rest"}.node_label()
-              == "Lambda(x, ...rest)");
+        CHECK(
+            Lambda{Statement::no_range, {"x"}, null_body(), "rest"}.node_label()
+            == "Lambda(x, ...rest)");
 
-        CHECK(Lambda{Statement::no_range,{}, null_body(), {}, "f"}.node_label() == "Lambda(f:)");
-        CHECK(Lambda{Statement::no_range,{"x", "y"}, null_body(), {}, "f"}.node_label()
+        CHECK(Lambda{Statement::no_range, {}, null_body(), {}, "f"}.node_label()
+              == "Lambda(f:)");
+        CHECK(Lambda{Statement::no_range, {"x", "y"}, null_body(), {}, "f"}
+                  .node_label()
               == "Lambda(f: x, y)");
-        CHECK(Lambda{Statement::no_range,{}, null_body(), "rest", "f"}.node_label()
+        CHECK(Lambda{Statement::no_range, {}, null_body(), "rest", "f"}
+                  .node_label()
               == "Lambda(f: ...rest)");
-        CHECK(Lambda{Statement::no_range,{"x"}, null_body(), "rest", "f"}.node_label()
+        CHECK(Lambda{Statement::no_range, {"x"}, null_body(), "rest", "f"}
+                  .node_label()
               == "Lambda(f: x, ...rest)");
     }
 }

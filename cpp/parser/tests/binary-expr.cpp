@@ -537,7 +537,8 @@ TEST_CASE("Parser Binary Expressions")
 
     SECTION("Source ranges for multiline binary expression")
     {
-        // "(1 +\n 2)": outer range [1:1-2:3], lhs '1' [1:2-1:2], rhs '2' [2:2-2:2]
+        // "(1 +\n 2)": outer range [1:1-2:3], lhs '1' [1:2-1:2], rhs '2'
+        // [2:2-2:2]
         auto result = parse("(1 +\n 2)");
         REQUIRE(result);
         auto expr = require_expression(result);
@@ -566,7 +567,8 @@ TEST_CASE("Parser Binary Expressions")
 
     SECTION("Source ranges exclude trailing comments from operands")
     {
-        // "(1 + # comment\n 2)": lhs '1' must end at column 2, not bleed into comment
+        // "(1 + # comment\n 2)": lhs '1' must end at column 2, not bleed into
+        // comment
         auto result = parse("(1 + # comment\n 2)");
         REQUIRE(result);
         auto expr = require_expression(result);

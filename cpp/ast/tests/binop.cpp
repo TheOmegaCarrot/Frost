@@ -44,7 +44,8 @@ TEST_CASE("Numeric Binary ops")
                 .IN_SEQUENCE(seq)
                 .RETURN(rhs_val);
 
-            ast::Binop node(ast::Statement::no_range,std::move(lhs), op, std::move(rhs));
+            ast::Binop node(ast::Statement::no_range, std::move(lhs), op,
+                            std::move(rhs));
 
             auto res = node.evaluate(ctx);
 
@@ -80,7 +81,8 @@ TEST_CASE("Binop Short-Circuit")
             .RETURN(lhs_val);
         FORBID_CALL(*rhs, do_evaluate(_));
 
-        ast::Binop node(ast::Statement::no_range,std::move(lhs), ast::Binary_Op::AND, std::move(rhs));
+        ast::Binop node(ast::Statement::no_range, std::move(lhs),
+                        ast::Binary_Op::AND, std::move(rhs));
 
         auto res = node.evaluate(ctx);
         CHECK(res == lhs_val);
@@ -104,7 +106,8 @@ TEST_CASE("Binop Short-Circuit")
             .IN_SEQUENCE(seq)
             .RETURN(rhs_val);
 
-        ast::Binop node(ast::Statement::no_range,std::move(lhs), ast::Binary_Op::AND, std::move(rhs));
+        ast::Binop node(ast::Statement::no_range, std::move(lhs),
+                        ast::Binary_Op::AND, std::move(rhs));
 
         auto res = node.evaluate(ctx);
         CHECK(res == rhs_val);
@@ -122,7 +125,8 @@ TEST_CASE("Binop Short-Circuit")
             .RETURN(lhs_val);
         FORBID_CALL(*rhs, do_evaluate(_));
 
-        ast::Binop node(ast::Statement::no_range,std::move(lhs), ast::Binary_Op::OR, std::move(rhs));
+        ast::Binop node(ast::Statement::no_range, std::move(lhs),
+                        ast::Binary_Op::OR, std::move(rhs));
 
         auto res = node.evaluate(ctx);
         CHECK(res == lhs_val);
@@ -146,7 +150,8 @@ TEST_CASE("Binop Short-Circuit")
             .IN_SEQUENCE(seq)
             .RETURN(rhs_val);
 
-        ast::Binop node(ast::Statement::no_range,std::move(lhs), ast::Binary_Op::OR, std::move(rhs));
+        ast::Binop node(ast::Statement::no_range, std::move(lhs),
+                        ast::Binary_Op::OR, std::move(rhs));
 
         auto res = node.evaluate(ctx);
         CHECK(res == rhs_val);
@@ -175,7 +180,8 @@ TEST_CASE("Comparison Binary ops")
             .IN_SEQUENCE(seq)
             .RETURN(rhs_val);
 
-        ast::Binop node(ast::Statement::no_range,std::move(lhs), op, std::move(rhs));
+        ast::Binop node(ast::Statement::no_range, std::move(lhs), op,
+                        std::move(rhs));
         return node.evaluate(ctx);
     };
 

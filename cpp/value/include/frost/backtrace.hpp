@@ -15,10 +15,19 @@ namespace frst
 class Backtrace_State
 {
   public:
-    Backtrace_State() { frames_.reserve(256); }
+    Backtrace_State()
+    {
+        frames_.reserve(256);
+    }
 
-    void push(std::string frame) { frames_.push_back(std::move(frame)); }
-    void pop() { frames_.pop_back(); }
+    void push(std::string frame)
+    {
+        frames_.push_back(std::move(frame));
+    }
+    void pop()
+    {
+        frames_.pop_back();
+    }
 
     std::vector<std::string> capture_snapshot() const
     {
@@ -27,8 +36,14 @@ class Backtrace_State
                | std::ranges::to<std::vector<std::string>>();
     }
 
-    static Backtrace_State* current() { return current_state_; }
-    static void set_current(Backtrace_State* s) { current_state_ = s; }
+    static Backtrace_State* current()
+    {
+        return current_state_;
+    }
+    static void set_current(Backtrace_State* s)
+    {
+        current_state_ = s;
+    }
 
   private:
     std::vector<std::string> frames_;
