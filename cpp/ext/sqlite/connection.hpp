@@ -29,6 +29,8 @@ class Connection : public std::enable_shared_from_this<Connection>
 
     int exec(const String& sql);
 
+    Value_Ptr query_positional(const String& sql, const Array& bindings);
+
     void close()
     {
         require_open();
