@@ -5,50 +5,48 @@
 
 #include <sqlite3.h>
 
-#include <expected>
+#include "connection.hpp"
 
 namespace frst
 {
 namespace sqlite
 {
 
-// Value_Ptr database_to_closuremap(const std::shared_ptr<Database>& db)
-// {
-//     STRINGS(execute);
-//     return Value::create(
-//         Value::trusted,
-//         Map{{strings.execute, system_closure(1, 1, [db](builtin_args_t args)
-//         {
-//                  REQUIRE_ARGS("database.execute", TYPES(String));
+Value_Ptr database_to_closuremap(const std::shared_ptr<Connection>& conn)
+{
+    STRINGS(execute, close);
+    return Value::create(
+        Value::trusted,
+        Map{
+            {strings.execute,
+             system_closure(1, 1,
+                            [conn](builtin_args_t args) {
+                                REQUIRE_ARGS("database.execute", TYPES(String));
 
-//                  return Value::create(db->execute(GET(0, String)));
-//              })}});
-// }
+                                return Value::create(
+                                    conn->exec(GET(0, String)));
+                            })},
+            {strings.close, system_closure(0, 0,
+                                           [conn](builtin_args_t args) {
+                                               conn->close();
+                                               return Value::null();
+                                           })},
+        });
+}
 
-// std::expected<std::shared_ptr<Database>, std::string> try_open_db(
-//     const String& filename, int mode)
-// {
-//     try
-//     {
-//         return std::make_shared<Database>(filename, mode);
-//     }
-//     catch (const std::exception& e)
-//     {
-//         return std::unexpected{e.what()};
-//     }
-// }
+std::shared_ptr<Connection> open_db(const String& filename, int mode)
+{
+    return Connection::create(filename, mode);
+}
 
-// BUILTIN(open)
-// {
-//     REQUIRE_ARGS("sqlite.open", TYPES(String));
-//     auto open_result = try_open_db(GET(0, String), SQLite::OPEN_READWRITE
-//                                                        |
-//                                                        SQLite::OPEN_CREATE);
-//     if (not open_result)
-//         return Value::create(std::move(open_result).error());
+BUILTIN(open)
+{
+    REQUIRE_ARGS("sqlite.open", TYPES(String));
+    auto conn =
+        open_db(GET(0, String), SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
 
-//     return database_to_closuremap(std::move(open_result).value());
-// }
+    return database_to_closuremap(std::move(conn));
+}
 
 } // namespace sqlite
 
@@ -60,7 +58,6 @@ DECLARE_EXTENSION(sqlite)
             "version"_s,
             Value::create(String{sqlite3_version}),
         },
-        // ENTRY(open, 1),
-    );
+        ENTRY(open, 1), );
 }
 } // namespace frst
