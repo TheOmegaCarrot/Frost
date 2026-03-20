@@ -1,0 +1,57 @@
+# SQLite db.query error handling
+# Verifies that query errors surface as recoverable Frost errors
+# and do not corrupt connection state.
+
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+db.exec("INSERT INTO t VALUES (1, 'alice')")
+
+# Invalid SQL
+def bad_sql = try_call(db.query, ['NOT VALID'])
+assert(not bad_sql.ok, 'invalid SQL should fail')
+
+# Too few bindings
+def too_few = try_call(db.query, ['SELECT ? + ?', [1]])
+assert(not too_few.ok, 'too few bindings should fail')
+assert(contains(too_few.error, 'expected 2'), 'should mention expected count')
+
+# Too many bindings
+def too_many = try_call(db.query, ['SELECT ?', [1, 2, 3]])
+assert(not too_many.ok, 'too many bindings should fail')
+assert(contains(too_many.error, 'expected 1'), 'should mention expected count')
+
+# Zero bindings when expecting some (no bindings argument)
+def zero_bindings = try_call(db.query, ['SELECT ?'])
+assert(not zero_bindings.ok, 'zero bindings when expecting some should fail')
+assert(contains(zero_bindings.error, 'expected 1'), 'should mention expected count')
+
+# Unsupported binding type: Array
+def bad_arr = try_call(db.query, ['SELECT ?', [[1, 2]]])
+assert(not bad_arr.ok, 'Array binding should fail')
+assert(contains(bad_arr.error, 'unsupported binding type'), 'should mention unsupported type')
+
+# Unsupported binding type: Map
+def bad_map = try_call(db.query, ['SELECT ?', [{a: 1}]])
+assert(not bad_map.ok, 'Map binding should fail')
+assert(contains(bad_map.error, 'unsupported binding type'), 'should mention unsupported type')
+
+# Wrong argument type for SQL parameter
+def wrong_type = try_call(db.query, [123])
+assert(not wrong_type.ok, 'non-string SQL should fail')
+
+# Connection still usable after errors
+def rows = db.query('SELECT * FROM t')
+assert(len(rows) == 1, 'query should succeed after errors')
+
+# Query on closed connection
+db.close()
+def closed = try_call(db.query, ['SELECT 1'])
+assert(not closed.ok, 'query on closed db should fail')
+assert(contains(closed.error, 'closed'), 'should mention closed')
+
+# Clean up filesystem db
+if path != ':memory:': fs.remove(path)

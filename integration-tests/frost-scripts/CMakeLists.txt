@@ -32,7 +32,7 @@ set(FROST_SCRIPTS_SOLUTIONS
     example-problems.5-closure-counter-solution
     example-problems.6-file-log-summarizer-solution
     example-problems.7-regex-etl-solution
-    example-problems.8-prime-count-stress-solution
+    # example-problems.8-prime-count-stress-solution # This one is SO SLOW
     example-problems.9-cli-args-router-solution
 )
 foreach(module ${FROST_SCRIPTS_SOLUTIONS})

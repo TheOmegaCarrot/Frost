@@ -1,0 +1,75 @@
+# SQLite db.query integration tests
+# Usage: frost basic-query.frst -- :memory:
+#        frost basic-query.frst -- /path/to/test.db
+
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+# --- Return path: all 5 SQLite column types ---
+
+db.exec('CREATE TABLE types (i INTEGER, f REAL, t TEXT, b BLOB, n)')
+db.exec("INSERT INTO types VALUES (42, 3.14, 'hello', X'DEADBEEF', NULL)")
+
+def rows = db.query('SELECT * FROM types')
+assert(len(rows) == 1, 'should return one row')
+
+def row = rows[0]
+assert(row.i == 42, 'INTEGER column')
+assert(type(row.i) == 'Int', 'INTEGER maps to Int')
+
+assert(row.f == 3.14, 'REAL column')
+assert(type(row.f) == 'Float', 'REAL maps to Float')
+
+assert(row.t == 'hello', 'TEXT column')
+assert(type(row.t) == 'String', 'TEXT maps to String')
+
+assert(type(row.b) == 'String', 'BLOB maps to String')
+
+assert(row.n == null, 'NULL column')
+assert(type(row.n) == 'Null', 'NULL maps to Null')
+
+# --- Binding path: all supported Frost types ---
+
+# Int binding
+def r_int = db.query('SELECT * FROM types WHERE i = ?', [42])
+assert(len(r_int) == 1, 'Int binding should match')
+
+# Float binding
+def r_float = db.query('SELECT * FROM types WHERE f = ?', [3.14])
+assert(len(r_float) == 1, 'Float binding should match')
+
+# String binding
+def r_str = db.query('SELECT * FROM types WHERE t = ?', ['hello'])
+assert(len(r_str) == 1, 'String binding should match')
+
+# Bool binding (binds as integer 1)
+db.exec('CREATE TABLE bools (b INTEGER)')
+db.exec('INSERT INTO bools VALUES (1)')
+def r_bool = db.query('SELECT * FROM bools WHERE b = ?', [true])
+assert(len(r_bool) == 1, 'Bool binding should match (binds as 1)')
+
+# Null binding
+def r_null = db.query('SELECT * FROM types WHERE n IS ?', [null])
+assert(len(r_null) == 1, 'Null binding with IS should match')
+
+# --- Additional cases ---
+
+# Simple query without bindings
+def all_rows = db.query('SELECT * FROM types')
+assert(type(all_rows) == 'Array', 'query returns an Array')
+assert(len(all_rows) == 1, 'query returns all rows')
+
+# Multiple bindings
+def r_multi = db.query('SELECT * FROM types WHERE i > ? AND t LIKE ?', [0, '%ell%'])
+assert(len(r_multi) == 1, 'multiple bindings should match')
+
+# Empty result set
+def r_empty = db.query('SELECT * FROM types WHERE i = ?', [999])
+assert(r_empty == [], 'no match returns empty array')
+
+# Clean up
+db.close()
+if path != ':memory:': fs.remove(path)

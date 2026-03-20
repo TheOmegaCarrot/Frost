@@ -3,13 +3,14 @@ set(SQLITE_TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(SQLITE_TESTS
     basic-open-execute.frst
     basic-errors.frst
+    basic-query.frst
+    query-errors.frst
 )
 
 find_program(VALGRIND valgrind)
 
 foreach(script ${SQLITE_TESTS})
     get_filename_component(name ${script} NAME_WE)
-    set(db_path "${CMAKE_CURRENT_BINARY_DIR}/${name}.db")
 
     # In-memory
     add_test(
@@ -18,11 +19,11 @@ foreach(script ${SQLITE_TESTS})
                 "${SQLITE_TEST_DIR}/${script}" -- :memory:
     )
 
-    # Filesystem (each test gets its own db file to avoid lock conflicts)
+    # Filesystem (each variant gets its own db file to avoid races under parallel CTest)
     add_test(
         NAME Frost_Ext_SQLite_${name}_file
         COMMAND $<TARGET_FILE:frost>
-                "${SQLITE_TEST_DIR}/${script}" -- ${db_path}
+                "${SQLITE_TEST_DIR}/${script}" -- "${CMAKE_CURRENT_BINARY_DIR}/${name}.db"
     )
 
     if(VALGRIND)
@@ -34,12 +35,12 @@ foreach(script ${SQLITE_TESTS})
                     "${SQLITE_TEST_DIR}/${script}" -- :memory:
         )
 
-        # Filesystem under Valgrind
+        # Filesystem under Valgrind (separate db file from the non-Valgrind variant)
         add_test(
             NAME Frost_Ext_SQLite_Valgrind_${name}_file
             COMMAND ${VALGRIND} --error-exitcode=1 --leak-check=full
                     $<TARGET_FILE:frost>
-                    "${SQLITE_TEST_DIR}/${script}" -- ${db_path}
+                    "${SQLITE_TEST_DIR}/${script}" -- "${CMAKE_CURRENT_BINARY_DIR}/${name}-valgrind.db"
         )
     endif()
 endforeach()
