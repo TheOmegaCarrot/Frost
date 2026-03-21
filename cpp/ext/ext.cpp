@@ -21,6 +21,10 @@ void inject_ext(Symbol_Table& table)
     DEFINE_EXTENSION(sqlite);
 #endif
 
+#ifdef FROST_ENABLE_UNSAFE
+    DEFINE_EXTENSION(unsafe);
+#endif
+
 #pragma GCC diagnostic pop
 }
 

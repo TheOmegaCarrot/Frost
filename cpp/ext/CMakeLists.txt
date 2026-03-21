@@ -17,6 +17,7 @@ add_subdirectory(extensions-common/)
 
 option(WITH_HTTP "Enable HTTP support" YES)
 option(WITH_SQLITE "Enable SQLite support" YES)
+option(WITH_UNSAFE "Enable unsafe functions" YES)
 
 if(WITH_HTTP)
     message("Enabling HTTP")
@@ -31,3 +32,11 @@ if(WITH_SQLITE)
     target_link_libraries(frost-ext PRIVATE frost-sqlite)
     target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_SQLITE)
 endif()
+
+if(WITH_UNSAFE)
+    message("Enabling Unsafe")
+    add_subdirectory(unsafe)
+    target_link_libraries(frost-ext PRIVATE frost-unsafe)
+    target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_UNSAFE)
+endif()
+
