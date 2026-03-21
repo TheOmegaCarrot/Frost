@@ -62,6 +62,8 @@ if is_map(t_bad):
 else:
     null
 
+if imported: exit(0)
+
 # Optional CLI mode:
 # ./build/frost frost-scripts/test-challenges/10-cli-args-router.frst -- sum 1 2 3
 def cli_args = drop(args, 1)

@@ -21,8 +21,10 @@
 def is_prime = fn (n) -> {
     if n < 2:
         false
+    elif n == 2:
+        true
     else:
-        none(range(2, n), fn d -> mod(n, d) == 0)
+        none([2] + range(3, math.sqrt(n) @math.ceil() + 1, 2), fn d -> mod(n, d) == 0)
 }
 
 def count_primes_below = fn (upper) -> {
