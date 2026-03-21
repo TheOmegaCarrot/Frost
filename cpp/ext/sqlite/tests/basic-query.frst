@@ -70,6 +70,17 @@ assert(len(r_multi) == 1, 'multiple bindings should match')
 def r_empty = db.query('SELECT * FROM types WHERE i = ?', [999])
 assert(r_empty == [], 'no match returns empty array')
 
+# Multiple rows returned in order
+db.exec('CREATE TABLE multi (id INTEGER, val TEXT)')
+db.exec('INSERT INTO multi VALUES (?, ?)', [1, 'first'])
+db.exec('INSERT INTO multi VALUES (?, ?)', [2, 'second'])
+db.exec('INSERT INTO multi VALUES (?, ?)', [3, 'third'])
+def r_multi_rows = db.query('SELECT * FROM multi ORDER BY id')
+assert(len(r_multi_rows) == 3, 'should return all rows')
+assert(r_multi_rows[0].val == 'first', 'first row correct')
+assert(r_multi_rows[1].val == 'second', 'second row correct')
+assert(r_multi_rows[2].val == 'third', 'third row correct')
+
 # --- each: per-row callback, returns null ---
 
 db.exec('CREATE TABLE nums (x INTEGER)')
@@ -99,6 +110,15 @@ assert(names == [20, 40, 60], 'collect should transform rows')
 # collect with bindings
 def big = db.collect('SELECT x FROM nums WHERE x >= ?', [20], fn row -> row.x)
 assert(big == [20, 30], 'collect with bindings should filter and transform')
+
+# each on empty result set
+db.exec('CREATE TABLE empty_each (x INTEGER)')
+db.each('SELECT x FROM empty_each', fn row -> db.exec('INSERT INTO nums VALUES (?)', [row.x]))
+assert(db.query('SELECT count(*) as c FROM nums')[0].c == 3, 'each on empty should be a no-op')
+
+# collect on empty result set
+def empty_collect = db.collect('SELECT x FROM empty_each', fn row -> row.x)
+assert(empty_collect == [], 'collect on empty returns empty array')
 
 # Clean up
 db.close()

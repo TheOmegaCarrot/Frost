@@ -38,6 +38,16 @@ def bad_bind = try_call(db.exec, ['INSERT INTO t VALUES (?, ?)', [[1, 2], 'x']])
 assert(not bad_bind.ok, 'Array binding should fail')
 assert(contains(bad_bind.error, 'unsupported binding type'), 'should mention unsupported type')
 
+# Too few bindings
+def exec_few = try_call(db.exec, ['INSERT INTO t VALUES (?, ?)', [1]])
+assert(not exec_few.ok, 'too few bindings should fail')
+assert(contains(exec_few.error, 'expected 2'), 'should mention expected count')
+
+# Too many bindings
+def exec_many = try_call(db.exec, ['INSERT INTO t (id) VALUES (?)', [1, 2, 3]])
+assert(not exec_many.ok, 'too many bindings should fail')
+assert(contains(exec_many.error, 'expected 1'), 'should mention expected count')
+
 # Connection should still be usable after errors
 def n = db.exec('INSERT INTO t VALUES (?, ?)', [2, 'bob'])
 assert(n == 1, 'insert after errors should succeed')

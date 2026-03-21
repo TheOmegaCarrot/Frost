@@ -48,15 +48,60 @@ assert(contains(trailing.error, 'trailing content'), 'should mention trailing co
 def wrong_type = try_call(db.query, [123])
 assert(not wrong_type.ok, 'non-string SQL should fail')
 
+# --- each error paths ---
+
+# each with invalid SQL
+def each_bad = try_call(db.each, ['NOT VALID', fn row -> null])
+assert(not each_bad.ok, 'each with invalid SQL should fail')
+
+# each with wrong binding count
+def each_binds = try_call(db.each, ['SELECT ? + ?', [1], fn row -> null])
+assert(not each_binds.ok, 'each with wrong binding count should fail')
+
+# each with wrong callback type
+def each_no_fn = try_call(db.each, ['SELECT 1', 'not a function'])
+assert(not each_no_fn.ok, 'each with non-function callback should fail')
+
+# each with wrong SQL type
+def each_bad_sql = try_call(db.each, [123, fn row -> null])
+assert(not each_bad_sql.ok, 'each with non-string SQL should fail')
+
+# --- collect error paths ---
+
+# collect with invalid SQL
+def collect_bad = try_call(db.collect, ['NOT VALID', fn row -> null])
+assert(not collect_bad.ok, 'collect with invalid SQL should fail')
+
+# collect with wrong binding count
+def collect_binds = try_call(db.collect, ['SELECT ? + ?', [1], fn row -> null])
+assert(not collect_binds.ok, 'collect with wrong binding count should fail')
+
+# collect with wrong callback type
+def collect_no_fn = try_call(db.collect, ['SELECT 1', 'not a function'])
+assert(not collect_no_fn.ok, 'collect with non-function callback should fail')
+
 # Connection still usable after errors
 def rows = db.query('SELECT * FROM t')
 assert(len(rows) == 1, 'query should succeed after errors')
 
-# Query on closed connection
+# Closed connection errors for all methods
 db.close()
-def closed = try_call(db.query, ['SELECT 1'])
-assert(not closed.ok, 'query on closed db should fail')
-assert(contains(closed.error, 'closed'), 'should mention closed')
+
+def closed_query = try_call(db.query, ['SELECT 1'])
+assert(not closed_query.ok, 'query on closed db should fail')
+assert(contains(closed_query.error, 'closed'), 'should mention closed')
+
+def closed_exec = try_call(db.exec, ['SELECT 1'])
+assert(not closed_exec.ok, 'exec on closed db should fail')
+assert(contains(closed_exec.error, 'closed'), 'should mention closed')
+
+def closed_each = try_call(db.each, ['SELECT 1', fn row -> null])
+assert(not closed_each.ok, 'each on closed db should fail')
+assert(contains(closed_each.error, 'closed'), 'should mention closed')
+
+def closed_collect = try_call(db.collect, ['SELECT 1', fn row -> null])
+assert(not closed_collect.ok, 'collect on closed db should fail')
+assert(contains(closed_collect.error, 'closed'), 'should mention closed')
 
 # Clean up filesystem db
 if path != ':memory:': fs.remove(path)
