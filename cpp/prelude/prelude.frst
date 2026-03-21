@@ -24,6 +24,11 @@ defn map_values(m, f) -> map m with fn k, v -> ({ [k]: f(v) })
 
 defn flat_map(arr, f) -> transform(arr, f) @ flatten(1)
 
+defn dig(m, ...idxs) ->
+    reduce idxs with fn r, i ->
+        r @ and_then(index(i))
+    init: m
+
 defn compose(f, g, ...rest) -> {
 
     defn require_fn(f) -> {
