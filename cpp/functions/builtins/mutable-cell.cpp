@@ -11,21 +11,6 @@
 namespace frst
 {
 
-struct Mutable_Cell
-{
-    Value_Ptr value;
-
-    Value_Ptr get() const
-    {
-        return value;
-    }
-
-    void set(Value_Ptr new_value)
-    {
-        value = new_value;
-    }
-};
-
 struct
 {
 
