@@ -49,8 +49,8 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
     {
         auto bt = e.take_backtrace();
         if (!bt.empty())
-            fmt::println(stderr, "Error: {}\nTraceback:\n{}", e.what(),
-                         fmt::join(bt, "\n"));
+            fmt::println(stderr, "Error: {}\nTraceback:\n{}",
+                         e.what(), fmt::join(bt, "\n"));
         else
             fmt::println(stderr, "Error: {}", e.what());
     }
@@ -58,8 +58,8 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
     {
         auto bt = e.take_backtrace();
         if (!bt.empty())
-            fmt::println(stderr, "INTERNAL ERROR: {}\nTraceback:\n{}", e.what(),
-                         fmt::join(bt, "\n"));
+            fmt::println(stderr, "INTERNAL ERROR: {}\nTraceback:\n{}",
+                         e.what(), fmt::join(bt, "\n"));
         else
             fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
     }
@@ -314,8 +314,9 @@ struct Completion_Callbacks
 
         std::optional<std::string_view> completion;
 
-        for (const auto& candidates : std::views::concat(
-                 frst::utils::reserved_keywords, all_symbol_names()))
+        for (const auto& candidates :
+             std::views::concat(frst::utils::reserved_keywords,
+                                std::views::keys(symbols->debug_table())))
         {
             if (candidates.starts_with(token))
             {
@@ -360,23 +361,14 @@ struct Completion_Callbacks
                 out.emplace_back(std::string{keyword}, Replxx::Color::RED);
         }
 
-        for (const auto& symbol : all_symbol_names())
+        for (const auto& symbol : std::views::keys(symbols->debug_table()))
         {
             if (symbol.starts_with(token))
-                out.emplace_back(std::string{symbol}, Replxx::Color::YELLOW);
+                out.emplace_back(symbol, Replxx::Color::YELLOW);
         }
 
         return out;
     }
-
-    std::vector<std::string_view> all_symbol_names() const
-    {
-        std::vector<std::string_view> names;
-        for (const auto* t = symbols; t; t = t->debug_failover())
-            names.append_range(std::views::keys(t->debug_table()));
-        return names;
-    }
-
     frst::Symbol_Table* symbols;
 };
 
