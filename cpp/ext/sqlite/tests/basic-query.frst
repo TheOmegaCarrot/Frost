@@ -55,7 +55,69 @@ assert(len(r_bool) == 1, 'Bool binding should match (binds as 1)')
 def r_null = db.query('SELECT * FROM types WHERE n IS ?', [null])
 assert(len(r_null) == 1, 'Null binding with IS should match')
 
-# --- Additional cases ---
+# --- Binding edge cases ---
+
+# Bool false binds as 0
+db.exec('INSERT INTO bools VALUES (0)')
+def r_false = db.query('SELECT * FROM bools WHERE b = ?', [false])
+assert(len(r_false) == 1, 'Bool false binding should match 0')
+
+# Empty string binding (distinct from null)
+db.exec('CREATE TABLE strs (s TEXT)')
+db.exec('INSERT INTO strs VALUES (?)', [''])
+db.exec('INSERT INTO strs VALUES (?)', [null])
+def r_empty_str = db.query('SELECT * FROM strs WHERE s = ?', [''])
+assert(len(r_empty_str) == 1, 'empty string binding should match')
+assert(r_empty_str[0].s == '', 'empty string round-trips')
+assert(type(r_empty_str[0].s) == 'String', 'empty string is String not Null')
+
+# Explicit empty bindings array
+def r_no_params = db.query('SELECT 1 as x', [])
+assert(len(r_no_params) == 1, 'empty bindings array should work')
+
+# Unsupported binding type: Function
+def r_fn_bind = try_call(db.query, ['SELECT ?', [fn x -> x]])
+assert(not r_fn_bind.ok, 'Function binding should fail')
+assert(contains(r_fn_bind.error, 'unsupported binding type'), 'should mention unsupported type')
+
+# --- Type round-tripping via exec bindings + query ---
+
+db.exec('CREATE TABLE roundtrip (i INTEGER, f REAL, t TEXT, n)')
+db.exec('INSERT INTO roundtrip VALUES (?, ?, ?, ?)', [42, 3.14, 'hello', null])
+def rt = db.query('SELECT * FROM roundtrip')[0]
+assert(rt.i == 42, 'Int round-trips')
+assert(type(rt.i) == 'Int', 'Int type preserved')
+assert(rt.f == 3.14, 'Float round-trips')
+assert(type(rt.f) == 'Float', 'Float type preserved')
+assert(rt.t == 'hello', 'String round-trips')
+assert(type(rt.t) == 'String', 'String type preserved')
+assert(rt.n == null, 'Null round-trips')
+assert(type(rt.n) == 'Null', 'Null type preserved')
+
+# Negative integers
+db.exec('CREATE TABLE negatives (v INTEGER)')
+db.exec('INSERT INTO negatives VALUES (?)', [-999])
+def r_neg = db.query('SELECT * FROM negatives')[0]
+assert(r_neg.v == -999, 'negative Int round-trips')
+
+# Zero as Int and Float
+db.exec('CREATE TABLE zeros (i INTEGER, f REAL)')
+db.exec('INSERT INTO zeros VALUES (?, ?)', [0, 0.0])
+def r_zero = db.query('SELECT * FROM zeros')[0]
+assert(r_zero.i == 0, 'zero Int round-trips')
+assert(type(r_zero.i) == 'Int', 'zero is Int not Null')
+assert(r_zero.f == 0.0, 'zero Float round-trips')
+assert(type(r_zero.f) == 'Float', 'zero Float type preserved')
+
+# Large integers near INT64 boundaries
+db.exec('CREATE TABLE big_ints (v INTEGER)')
+db.exec('INSERT INTO big_ints VALUES (?)', [9223372036854775807])
+db.exec('INSERT INTO big_ints VALUES (?)', [-9223372036854775807])
+def r_big = db.query('SELECT * FROM big_ints ORDER BY v')
+assert(r_big[0].v == -9223372036854775807, 'large negative Int round-trips')
+assert(r_big[1].v == 9223372036854775807, 'large positive Int round-trips')
+
+# --- Additional query cases ---
 
 # Simple query without bindings
 def all_rows = db.query('SELECT * FROM types')
@@ -80,6 +142,10 @@ assert(len(r_multi_rows) == 3, 'should return all rows')
 assert(r_multi_rows[0].val == 'first', 'first row correct')
 assert(r_multi_rows[1].val == 'second', 'second row correct')
 assert(r_multi_rows[2].val == 'third', 'third row correct')
+
+# Trailing semicolon is accepted
+def r_semi = db.query('SELECT 1 as x;')
+assert(len(r_semi) == 1, 'trailing semicolon should be accepted')
 
 # --- each: per-row callback, returns null ---
 

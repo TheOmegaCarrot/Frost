@@ -34,6 +34,20 @@ assert(n5 == 1, 'parameterized insert should return 1 row changed')
 def n6 = db.exec('INSERT INTO t VALUES (?, ?)', [5, 'eve'])
 assert(n6 == 1, 'parameterized insert should return 1 row changed')
 
+# UPDATE affecting 0 rows
+def n7 = db.exec('UPDATE t SET name = ? WHERE id = ?', ['nobody', 9999])
+assert(n7 == 0, 'update matching nothing should return 0')
+
+# DELETE affecting 0 rows
+def n8 = db.exec('DELETE FROM t WHERE id = ?', [9999])
+assert(n8 == 0, 'delete matching nothing should return 0')
+
+# Trailing semicolon is accepted
+db.exec('CREATE TABLE t2 (x INTEGER)')
+db.exec('INSERT INTO t2 VALUES (1);')
+def n9 = db.query('SELECT count(*) as c FROM t2')[0].c
+assert(n9 == 1, 'trailing semicolon accepted by exec')
+
 # Close
 db.close()
 

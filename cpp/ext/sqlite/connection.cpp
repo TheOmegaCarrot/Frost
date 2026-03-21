@@ -92,6 +92,10 @@ sqlite3_stmt* Connection::prepare_and_bind_(const String& sql,
         throw Frost_Recoverable_Error{msg};
     }
 
+    // Empty or whitespace-only SQL produces a null statement
+    if (not stmt)
+        throw Frost_Recoverable_Error{"empty SQL statement"};
+
     // Reject trailing content after the single statement
     if (tail)
     {

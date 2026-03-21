@@ -80,7 +80,31 @@ assert(not collect_binds.ok, 'collect with wrong binding count should fail')
 def collect_no_fn = try_call(db.collect, ['SELECT 1', 'not a function'])
 assert(not collect_no_fn.ok, 'collect with non-function callback should fail')
 
-# Connection still usable after errors
+# --- callback error propagation ---
+
+# each callback that throws
+def each_throw = try_call(db.each, ['SELECT * FROM t', fn row -> assert(false, 'boom')])
+assert(not each_throw.ok, 'each callback error should propagate')
+assert(contains(each_throw.error, 'boom'), 'should contain callback error message')
+
+# collect callback that throws
+def collect_throw = try_call(db.collect, ['SELECT * FROM t', fn row -> assert(false, 'kaboom')])
+assert(not collect_throw.ok, 'collect callback error should propagate')
+assert(contains(collect_throw.error, 'kaboom'), 'should contain callback error message')
+
+# --- SQL edge cases ---
+
+# Empty SQL string
+def empty_sql = try_call(db.query, [''])
+assert(not empty_sql.ok, 'empty SQL should fail')
+assert(contains(empty_sql.error, 'empty SQL'), 'should mention empty SQL')
+
+# Whitespace-only SQL
+def ws_sql = try_call(db.query, ['   '])
+assert(not ws_sql.ok, 'whitespace-only SQL should fail')
+assert(contains(ws_sql.error, 'empty SQL'), 'should mention empty SQL')
+
+# Connection still usable after all errors
 def rows = db.query('SELECT * FROM t')
 assert(len(rows) == 1, 'query should succeed after errors')
 
