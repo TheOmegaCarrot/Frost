@@ -50,59 +50,105 @@ assert(not wrong_type.ok, 'non-string SQL should fail')
 
 # --- each error paths ---
 
-# each with invalid SQL
-def each_bad = try_call(db.each, ['NOT VALID', fn row -> null])
-assert(not each_bad.ok, 'each with invalid SQL should fail')
-
-# each with wrong binding count
-def each_binds = try_call(db.each, ['SELECT ? + ?', [1], fn row -> null])
-assert(not each_binds.ok, 'each with wrong binding count should fail')
-
-# each with wrong callback type
-def each_no_fn = try_call(db.each, ['SELECT 1', 'not a function'])
-assert(not each_no_fn.ok, 'each with non-function callback should fail')
-
-# each with wrong SQL type
 def each_bad_sql = try_call(db.each, [123, fn row -> null])
-assert(not each_bad_sql.ok, 'each with non-string SQL should fail')
+assert(not each_bad_sql.ok, 'each: non-string SQL should fail')
+
+def each_invalid = try_call(db.each, ['NOT VALID', fn row -> null])
+assert(not each_invalid.ok, 'each: invalid SQL should fail')
+
+def each_trailing = try_call(db.each, ['SELECT 1; SELECT 2', fn row -> null])
+assert(not each_trailing.ok, 'each: trailing content should fail')
+assert(contains(each_trailing.error, 'trailing content'), 'each: should mention trailing content')
+
+def each_too_few = try_call(db.each, ['SELECT ? + ?', [1], fn row -> null])
+assert(not each_too_few.ok, 'each: too few bindings should fail')
+
+def each_too_many = try_call(db.each, ['SELECT ?', [1, 2, 3], fn row -> null])
+assert(not each_too_many.ok, 'each: too many bindings should fail')
+
+def each_zero = try_call(db.each, ['SELECT ?', fn row -> null])
+assert(not each_zero.ok, 'each: zero bindings when expecting some should fail')
+
+def each_bad_bind_arr = try_call(db.each, ['SELECT ?', [[1, 2]], fn row -> null])
+assert(not each_bad_bind_arr.ok, 'each: Array binding should fail')
+
+def each_bad_bind_map = try_call(db.each, ['SELECT ?', [{a: 1}], fn row -> null])
+assert(not each_bad_bind_map.ok, 'each: Map binding should fail')
+
+def each_bad_bind_fn = try_call(db.each, ['SELECT ?', [fn x -> x], fn row -> null])
+assert(not each_bad_bind_fn.ok, 'each: Function binding should fail')
+
+def each_empty_sql = try_call(db.each, ['', fn row -> null])
+assert(not each_empty_sql.ok, 'each: empty SQL should fail')
+assert(contains(each_empty_sql.error, 'empty SQL'), 'each: should mention empty SQL')
+
+def each_no_fn = try_call(db.each, ['SELECT 1', 'not a function'])
+assert(not each_no_fn.ok, 'each: non-function callback should fail')
+
+def each_throw = try_call(db.each, ['SELECT * FROM t', fn row -> assert(false, 'boom')])
+assert(not each_throw.ok, 'each: callback error should propagate')
+assert(contains(each_throw.error, 'boom'), 'each: should contain callback error message')
 
 # --- collect error paths ---
 
-# collect with invalid SQL
-def collect_bad = try_call(db.collect, ['NOT VALID', fn row -> null])
-assert(not collect_bad.ok, 'collect with invalid SQL should fail')
+def collect_bad_sql = try_call(db.collect, [123, fn row -> null])
+assert(not collect_bad_sql.ok, 'collect: non-string SQL should fail')
 
-# collect with wrong binding count
-def collect_binds = try_call(db.collect, ['SELECT ? + ?', [1], fn row -> null])
-assert(not collect_binds.ok, 'collect with wrong binding count should fail')
+def collect_invalid = try_call(db.collect, ['NOT VALID', fn row -> null])
+assert(not collect_invalid.ok, 'collect: invalid SQL should fail')
 
-# collect with wrong callback type
+def collect_trailing = try_call(db.collect, ['SELECT 1; SELECT 2', fn row -> null])
+assert(not collect_trailing.ok, 'collect: trailing content should fail')
+assert(contains(collect_trailing.error, 'trailing content'), 'collect: should mention trailing content')
+
+def collect_too_few = try_call(db.collect, ['SELECT ? + ?', [1], fn row -> null])
+assert(not collect_too_few.ok, 'collect: too few bindings should fail')
+
+def collect_too_many = try_call(db.collect, ['SELECT ?', [1, 2, 3], fn row -> null])
+assert(not collect_too_many.ok, 'collect: too many bindings should fail')
+
+def collect_zero = try_call(db.collect, ['SELECT ?', fn row -> null])
+assert(not collect_zero.ok, 'collect: zero bindings when expecting some should fail')
+
+def collect_bad_bind_arr = try_call(db.collect, ['SELECT ?', [[1, 2]], fn row -> null])
+assert(not collect_bad_bind_arr.ok, 'collect: Array binding should fail')
+
+def collect_bad_bind_map = try_call(db.collect, ['SELECT ?', [{a: 1}], fn row -> null])
+assert(not collect_bad_bind_map.ok, 'collect: Map binding should fail')
+
+def collect_bad_bind_fn = try_call(db.collect, ['SELECT ?', [fn x -> x], fn row -> null])
+assert(not collect_bad_bind_fn.ok, 'collect: Function binding should fail')
+
+def collect_empty_sql = try_call(db.collect, ['', fn row -> null])
+assert(not collect_empty_sql.ok, 'collect: empty SQL should fail')
+assert(contains(collect_empty_sql.error, 'empty SQL'), 'collect: should mention empty SQL')
+
 def collect_no_fn = try_call(db.collect, ['SELECT 1', 'not a function'])
-assert(not collect_no_fn.ok, 'collect with non-function callback should fail')
+assert(not collect_no_fn.ok, 'collect: non-function callback should fail')
 
-# --- callback error propagation ---
-
-# each callback that throws
-def each_throw = try_call(db.each, ['SELECT * FROM t', fn row -> assert(false, 'boom')])
-assert(not each_throw.ok, 'each callback error should propagate')
-assert(contains(each_throw.error, 'boom'), 'should contain callback error message')
-
-# collect callback that throws
 def collect_throw = try_call(db.collect, ['SELECT * FROM t', fn row -> assert(false, 'kaboom')])
-assert(not collect_throw.ok, 'collect callback error should propagate')
-assert(contains(collect_throw.error, 'kaboom'), 'should contain callback error message')
+assert(not collect_throw.ok, 'collect: callback error should propagate')
+assert(contains(collect_throw.error, 'kaboom'), 'collect: should contain callback error message')
 
-# --- SQL edge cases ---
+# --- exec missing error paths ---
 
-# Empty SQL string
-def empty_sql = try_call(db.query, [''])
-assert(not empty_sql.ok, 'empty SQL should fail')
-assert(contains(empty_sql.error, 'empty SQL'), 'should mention empty SQL')
+def exec_zero = try_call(db.exec, ['SELECT ?'])
+assert(not exec_zero.ok, 'exec: zero bindings when expecting some should fail')
 
-# Whitespace-only SQL
-def ws_sql = try_call(db.query, ['   '])
-assert(not ws_sql.ok, 'whitespace-only SQL should fail')
-assert(contains(ws_sql.error, 'empty SQL'), 'should mention empty SQL')
+def exec_bad_bind_map = try_call(db.exec, ['SELECT ?', [{a: 1}]])
+assert(not exec_bad_bind_map.ok, 'exec: Map binding should fail')
+
+def exec_bad_bind_fn = try_call(db.exec, ['SELECT ?', [fn x -> x]])
+assert(not exec_bad_bind_fn.ok, 'exec: Function binding should fail')
+
+def exec_empty_sql = try_call(db.exec, [''])
+assert(not exec_empty_sql.ok, 'exec: empty SQL should fail')
+assert(contains(exec_empty_sql.error, 'empty SQL'), 'exec: should mention empty SQL')
+
+# --- query missing error paths ---
+
+def query_bad_bind_fn = try_call(db.query, ['SELECT ?', [fn x -> x]])
+assert(not query_bad_bind_fn.ok, 'query: Function binding should fail')
 
 # Connection still usable after all errors
 def rows = db.query('SELECT * FROM t')
