@@ -265,3 +265,107 @@ TEST_CASE("unsafe.mutable_cell")
         CHECK(same->call({got, val})->get<Bool>().value() == true);
     }
 }
+
+TEST_CASE("unsafe.weaken")
+{
+    auto weaken = lookup("weaken");
+
+    SECTION("get returns the value while it is alive")
+    {
+        auto val = Value::create(String{"hello"});
+        auto weak = weaken->call({val});
+        auto get = lookup_fn(weak->raw_get<Map>(), "get");
+
+        auto got = get->call({});
+        CHECK(got == val);
+    }
+
+    SECTION("get returns null after value is freed")
+    {
+        auto weak_map = [&] {
+            auto val = Value::create(String{"ephemeral"});
+            return weaken->call({val});
+            // val is dropped here — last strong ref gone
+        }();
+
+        auto get = lookup_fn(weak_map->raw_get<Map>(), "get");
+        CHECK(get->call({}) == Value::null());
+    }
+
+    SECTION("get transitions from alive to null")
+    {
+        auto val = Value::create(Array{Value::create(Int{1})});
+        auto weak = weaken->call({val});
+        auto get = lookup_fn(weak->raw_get<Map>(), "get");
+
+        // alive while val exists
+        CHECK(get->call({}) == val);
+
+        // drop the strong ref
+        val = Value::null();
+
+        // now dead
+        CHECK(get->call({}) == Value::null());
+    }
+
+    SECTION("multiple weak refs to same value")
+    {
+        auto val = Value::create(Int{42});
+        auto weak1 = weaken->call({val});
+        auto weak2 = weaken->call({val});
+        auto get1 = lookup_fn(weak1->raw_get<Map>(), "get");
+        auto get2 = lookup_fn(weak2->raw_get<Map>(), "get");
+
+        CHECK(get1->call({}) == val);
+        CHECK(get2->call({}) == val);
+
+        val = Value::null();
+
+        CHECK(get1->call({}) == Value::null());
+        CHECK(get2->call({}) == Value::null());
+    }
+
+    SECTION("weak ref to null singleton never expires")
+    {
+        auto weak = weaken->call({Value::null()});
+        auto get = lookup_fn(weak->raw_get<Map>(), "get");
+        CHECK(get->call({}) == Value::null());
+        // Can't distinguish "expired" from "holds null" — both return null.
+        // This just verifies it doesn't crash.
+    }
+
+    SECTION("weak ref to bool singleton never expires")
+    {
+        auto val = Value::create(Bool{true});
+        auto weak = weaken->call({val});
+        auto get = lookup_fn(weak->raw_get<Map>(), "get");
+
+        val = Value::null();
+
+        // Bool is a singleton — other strong refs exist internally
+        CHECK(get->call({}) != Value::null());
+    }
+
+    SECTION("works with mutable_cell exchange pattern")
+    {
+        auto cell_fn = lookup("mutable_cell");
+        auto val = Value::create(Map{
+            {Value::create(String{"x"}), Value::create(Int{1})}});
+
+        auto cell = cell_fn->call({val});
+        const auto& m = cell->raw_get<Map>();
+        auto cell_get = lookup_fn(m, "get");
+        auto exchange = lookup_fn(m, "exchange");
+
+        auto weak = weaken->call({cell_get->call({})});
+        auto weak_get = lookup_fn(weak->raw_get<Map>(), "get");
+
+        // drop our local strong ref, cell still holds one
+        val = Value::null();
+        CHECK(weak_get->call({}) != Value::null());
+
+        // drop the cell's strong ref
+        exchange->call({Value::null()});
+        CHECK(weak_get->call({}) == Value::null());
+    }
+}

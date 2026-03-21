@@ -183,6 +183,7 @@ Each entry links to its full documentation.
 - [unsafe.identity](unsafe.md#unsafeidentity)
 - [unsafe.mutable_cell](unsafe.md#unsafemutable_cell)
 - [unsafe.same](unsafe.md#unsafesame)
+- [unsafe.weaken](unsafe.md#unsafeweaken)
 - [values](collections.md#values)
 - [xprod](collections.md#xprod)
 - [zip](collections.md#zip)

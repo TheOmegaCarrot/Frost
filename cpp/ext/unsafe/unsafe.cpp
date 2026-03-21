@@ -10,7 +10,7 @@ BUILTIN(mutable_cell)
     struct Wrapper
     {
         explicit Wrapper(Value_Ptr v)
-            : value(std::move(v))
+            : value{std::move(v)}
         {
         }
         Value_Ptr value;
@@ -50,6 +50,36 @@ BUILTIN(mutable_cell)
         });
 }
 
+BUILTIN(weaken)
+{
+    struct Wrapper
+    {
+        explicit Wrapper(Value_Ptr v)
+            : weak_value{v}
+        {
+        }
+
+        std::weak_ptr<const Value> weak_value;
+    };
+
+    auto weak_ref = std::make_shared<Wrapper>(args.at(0));
+
+    STRINGS(get);
+
+    return Value::create(
+        Value::trusted,
+        Map{
+            {strings.get,
+             system_closure(0, 0,
+                            [weak_ref](builtin_args_t) {
+                                if (auto ptr = weak_ref->weak_value.lock())
+                                    return ptr;
+                                else
+                                    return Value::null();
+                            })},
+        });
+}
+
 BUILTIN(identity)
 {
     return Value::create(
@@ -67,6 +97,6 @@ DECLARE_EXTENSION(unsafe)
 {
     using namespace unsafe;
     CREATE_EXTENSION(ENTRY(identity, 1), ENTRY(same, 2),
-                     ENTRY_R(mutable_cell, 0, 1));
+                     ENTRY_R(mutable_cell, 0, 1), ENTRY(weaken, 1));
 }
 } // namespace frst

@@ -14,6 +14,10 @@ Internal implementation details such as value sharing and allocation are not par
 Returns `true` if `a` and `b` are the exact same object in memory (pointer equality), `false` otherwise.
 This is distinct from `==`, which compares by value.
 
+Note that results may sometimes be surprising.
+Because Frost values are immutable, the implementation can often re-use the same exact object.
+The cases where this optimization can be applied are largely undocumented, and may change between versions without being considered a breaking change.
+
 ```
 def a = [1, 2, 3]
 def b = [1, 2, 3]
@@ -52,3 +56,33 @@ Returns the current value of the cell.
 `.exchange(value)`
 
 Sets the cell to `value` and returns the previous value.
+
+## `unsafe.weaken`
+`unsafe.weaken(value)`
+
+Creates a weak reference to `value`.
+Returns a map with a single method:
+
+### `.get`
+`.get()`
+
+Returns the original value if it is still alive, or `null` if it has been freed.
+A value is freed when all strong references to it are dropped.
+
+```
+defn make_weak() -> do {
+    def val = {data: [1, 2, 3]}
+    def weak = unsafe.weaken(val)
+    assert(weak.get() != null)   # val is in scope
+    weak
+}
+
+def weak = make_weak()
+assert(weak.get() == null)       # val went out of scope
+```
+
+Note that a weak reference to `null` is indistinguishable from an expired weak reference, since both return `null` from `.get()`.
+
+Because Frost values are immutable, the implementation is free to share identical values behind the scenes.
+A weak reference may appear to stay alive longer than expected if the same value happens to be re-used elsewhere.
+This sharing behavior is not stable and may change between versions.

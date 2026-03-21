@@ -1,0 +1,10 @@
+defn make_weak() -> do {
+    def val = {data: [1, 2, 3]}
+    def weak = unsafe.weaken(val)
+    assert(weak.get() != null, 'weak ref should resolve while value in scope')
+    assert(weak.get().data == [1, 2, 3], 'weak ref should return the value')
+    weak
+}
+
+def weak = make_weak()
+assert(weak.get() == null, 'weak ref should be null after scope exit')

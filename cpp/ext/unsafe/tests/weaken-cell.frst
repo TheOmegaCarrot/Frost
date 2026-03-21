@@ -1,0 +1,9 @@
+def cell = unsafe.mutable_cell({data: [1, 2, 3]})
+def weak = unsafe.weaken(cell.get())
+
+assert(weak.get() != null, 'weak ref should resolve while value exists')
+assert(weak.get().data == [1, 2, 3], 'weak ref should return the value')
+
+cell.exchange(null)
+
+assert(weak.get() == null, 'weak ref should return null after value is freed')
