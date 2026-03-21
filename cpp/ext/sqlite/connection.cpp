@@ -31,12 +31,25 @@ Value_Ptr Connection::query_positional(const String& sql, const Array& bindings)
         sqlite3_finalize(stmt);
     };
 
+    const char* tail = nullptr;
     int prepare_rc = sqlite3_prepare_v2(
-        conn_, sql.c_str(), static_cast<int>(sql.size()), &stmt, nullptr);
+        conn_, sql.c_str(), static_cast<int>(sql.size()), &stmt, &tail);
     if (prepare_rc != SQLITE_OK)
     {
         std::string msg = sqlite3_errmsg(conn_);
         throw Frost_Recoverable_Error{msg};
+    }
+
+    // Reject trailing content after the single statement
+    if (tail)
+    {
+        std::string_view remaining{tail};
+        auto pos = remaining.find_first_not_of(" \t\n\r;");
+        if (pos != std::string_view::npos)
+        {
+            throw Frost_Recoverable_Error{
+                "query contains trailing content after the first statement"};
+        }
     }
 
     int param_count = sqlite3_bind_parameter_count(stmt);

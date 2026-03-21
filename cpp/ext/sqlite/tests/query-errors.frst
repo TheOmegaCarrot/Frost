@@ -39,6 +39,11 @@ def bad_map = try_call(db.query, ['SELECT ?', [{a: 1}]])
 assert(not bad_map.ok, 'Map binding should fail')
 assert(contains(bad_map.error, 'unsupported binding type'), 'should mention unsupported type')
 
+# Trailing content (multi-statement)
+def trailing = try_call(db.query, ['SELECT 1; SELECT 2'])
+assert(not trailing.ok, 'trailing content should fail')
+assert(contains(trailing.error, 'trailing content'), 'should mention trailing content')
+
 # Wrong argument type for SQL parameter
 def wrong_type = try_call(db.query, [123])
 assert(not wrong_type.ok, 'non-string SQL should fail')
