@@ -7,6 +7,8 @@ if fs.exists(path): fs.remove(path)
 # sqlite.version is a string
 assert(type(sqlite.version) == 'String', 'sqlite.version should be a string')
 
+# --- open ---
+
 # Open failure - nonexistent directory
 def bad_open = try_call(sqlite.open, ['/no/such/dir/test.db'])
 assert(not bad_open.ok, 'open with bad path should fail')
@@ -15,7 +17,49 @@ def db = sqlite.open(path)
 db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
 db.exec("INSERT INTO t VALUES (1, 'alice')")
 
-# Close
+# --- open_memory ---
+
+def mem = sqlite.open_memory()
+mem.exec('CREATE TABLE m (x INTEGER)')
+mem.exec('INSERT INTO m VALUES (1)')
+def mem_rows = mem.query('SELECT * FROM m')
+assert(len(mem_rows) == 1, 'open_memory: should support full read/write')
+assert(mem_rows[0].x == 1, 'open_memory: should return correct data')
+mem.close()
+
+# --- open_readonly ---
+
+if path != ':memory:': do {
+    # Reopen the file db (created above) as readonly
+    def rdb = sqlite.open_readonly(path)
+
+    # Reads should work
+    def rrows = rdb.query('SELECT * FROM t')
+    assert(len(rrows) == 1, 'open_readonly: should be able to read')
+    assert(rrows[0].name == 'alice', 'open_readonly: should return correct data')
+
+    # Writes should fail
+    def w1 = try_call(rdb.exec, ["INSERT INTO t VALUES (2, 'bob')"])
+    assert(not w1.ok, 'open_readonly: INSERT should fail')
+
+    def w2 = try_call(rdb.exec, ["UPDATE t SET name = 'x' WHERE id = 1"])
+    assert(not w2.ok, 'open_readonly: UPDATE should fail')
+
+    def w3 = try_call(rdb.exec, ['DELETE FROM t WHERE id = 1'])
+    assert(not w3.ok, 'open_readonly: DELETE should fail')
+
+    def w4 = try_call(rdb.exec, ['CREATE TABLE t2 (x INTEGER)'])
+    assert(not w4.ok, 'open_readonly: DDL should fail')
+
+    rdb.close()
+}
+
+# open_readonly on nonexistent file should fail (no CREATE flag)
+def ro_nofile = try_call(sqlite.open_readonly, ['/no/such/dir/test.db'])
+assert(not ro_nofile.ok, 'open_readonly: nonexistent file should fail')
+
+# --- close ---
+
 db.close()
 
 # Double close

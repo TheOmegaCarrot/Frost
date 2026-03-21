@@ -42,37 +42,35 @@ Value_Ptr database_to_closuremap(const std::shared_ptr<Connection>& conn)
         Value::trusted,
         Map{
             {strings.exec,
-             system_closure(1, 2,
-                            [conn](builtin_args_t args) {
-                                REQUIRE_ARGS(
-                                    "database.exec",
-                                    PARAM("SQL", TYPES(String)),
-                                    OPTIONAL(PARAM("bindings", TYPES(Array))));
+             system_closure(
+                 1, 2,
+                 [conn](builtin_args_t args) {
+                     REQUIRE_ARGS("database.exec", PARAM("SQL", TYPES(String)),
+                                  OPTIONAL(PARAM("bindings", TYPES(Array))));
 
-                                return Value::create(conn->exec(
-                                    GET(0, String), extract_bindings(args, 1)));
-                            })},
+                     return Value::create(
+                         conn->exec(GET(0, String), extract_bindings(args, 1)));
+                 })},
             {strings.close, system_closure(0, 0,
                                            [conn](builtin_args_t) {
                                                conn->close();
                                                return Value::null();
                                            })},
             {strings.query,
-             system_closure(1, 2,
-                            [conn](builtin_args_t args) {
-                                REQUIRE_ARGS(
-                                    "database.query",
-                                    PARAM("SQL", TYPES(String)),
-                                    OPTIONAL(PARAM("bindings", TYPES(Array))));
+             system_closure(
+                 1, 2,
+                 [conn](builtin_args_t args) {
+                     REQUIRE_ARGS("database.query", PARAM("SQL", TYPES(String)),
+                                  OPTIONAL(PARAM("bindings", TYPES(Array))));
 
-                                Array rows;
-                                conn->for_each_row(
-                                    GET(0, String), extract_bindings(args, 1),
-                                    [&](Value_Ptr row) {
-                                        rows.push_back(std::move(row));
-                                    });
-                                return Value::create(std::move(rows));
-                            })},
+                     Array rows;
+                     conn->for_each_row(GET(0, String),
+                                        extract_bindings(args, 1),
+                                        [&](Value_Ptr row) {
+                                            rows.push_back(std::move(row));
+                                        });
+                     return Value::create(std::move(rows));
+                 })},
             {strings.each,
              system_closure(
                  2, 3,
@@ -90,9 +88,10 @@ Value_Ptr database_to_closuremap(const std::shared_ptr<Connection>& conn)
                      auto [bindings, callback] =
                          extract_bindings_and_callback(args);
 
-                     conn->for_each_row(
-                         GET(0, String), bindings,
-                         [&](Value_Ptr row) { callback->call({row}); });
+                     conn->for_each_row(GET(0, String), bindings,
+                                        [&](Value_Ptr row) {
+                                            callback->call({row});
+                                        });
                      return Value::null();
                  })},
             {strings.collect,
@@ -114,8 +113,7 @@ Value_Ptr database_to_closuremap(const std::shared_ptr<Connection>& conn)
 
                      Array results;
                      conn->for_each_row(
-                         GET(0, String), bindings,
-                         [&](Value_Ptr row) {
+                         GET(0, String), bindings, [&](Value_Ptr row) {
                              results.push_back(callback->call({row}));
                          });
                      return Value::create(std::move(results));
@@ -137,6 +135,21 @@ BUILTIN(open)
     return database_to_closuremap(std::move(conn));
 }
 
+BUILTIN(open_readonly)
+{
+    REQUIRE_ARGS("sqlite.open_readonly", TYPES(String));
+    auto conn = open_db(GET(0, String), SQLITE_OPEN_READONLY);
+
+    return database_to_closuremap(std::move(conn));
+}
+
+BUILTIN(open_memory)
+{
+    auto conn = open_db(":memory:", SQLITE_OPEN_READWRITE);
+
+    return database_to_closuremap(std::move(conn));
+}
+
 } // namespace sqlite
 
 DECLARE_EXTENSION(sqlite)
@@ -147,6 +160,6 @@ DECLARE_EXTENSION(sqlite)
             "version"_s,
             Value::create(String{sqlite3_version}),
         },
-        ENTRY(open, 1), );
+        ENTRY(open, 1), ENTRY(open_readonly, 1), ENTRY(open_memory, 0), );
 }
 } // namespace frst
