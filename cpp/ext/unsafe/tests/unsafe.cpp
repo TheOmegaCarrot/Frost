@@ -5,6 +5,7 @@
 #include <frost/extensions-common.hpp>
 
 using namespace frst;
+using namespace std::literals;
 
 namespace frst
 {
@@ -19,6 +20,24 @@ Function lookup(const std::string& name)
     static Map ext = make_extension_unsafe();
     auto key = Value::create(String{name});
     return ext.at(key)->raw_get<Function>();
+}
+
+Function lookup_fn(const Map& map, const std::string& name)
+{
+    auto key = Value::create(String{name});
+    auto it = map.find(key);
+    REQUIRE(it != map.end());
+    REQUIRE(it->second->is<Function>());
+    return it->second->get<Function>().value();
+}
+
+Value_Ptr dummy_function()
+{
+    return Value::create(Function{std::make_shared<Builtin>(
+        [](builtin_args_t) {
+            return Value::null();
+        },
+        "dummy", Builtin::Arity{.min = 0, .max = 0})});
 }
 
 } // namespace
@@ -130,5 +149,119 @@ TEST_CASE("unsafe.identity")
         bool ids_equal = identity->call({a})->get<Int>().value()
                          == identity->call({b})->get<Int>().value();
         CHECK(same_says == ids_equal);
+    }
+}
+
+TEST_CASE("unsafe.mutable_cell")
+{
+    auto cell_fn = lookup("mutable_cell");
+
+    SECTION("zero arguments creates a null cell")
+    {
+        auto cell = cell_fn->call({});
+        REQUIRE(cell->is<Map>());
+        auto get = lookup_fn(cell->raw_get<Map>(), "get");
+        CHECK(get->call({}) == Value::null());
+    }
+
+    SECTION("get returns the stored value")
+    {
+        auto val = Value::create(Int{42});
+        auto cell = cell_fn->call({val});
+        auto get = lookup_fn(cell->raw_get<Map>(), "get");
+        CHECK(get->call({}) == val);
+        CHECK(get->call({}) == val);
+    }
+
+    SECTION("exchange returns old value and updates")
+    {
+        auto first = Value::create(Int{1});
+        auto second = Value::create(Int{2});
+        auto cell = cell_fn->call({first});
+        const auto& m = cell->raw_get<Map>();
+        auto get = lookup_fn(m, "get");
+        auto exchange = lookup_fn(m, "exchange");
+
+        auto old = exchange->call({second});
+        CHECK(old == first);
+        CHECK(get->call({}) == second);
+    }
+
+    SECTION("accepts function values")
+    {
+        auto fn = dummy_function();
+        auto cell = cell_fn->call({fn});
+        auto get = lookup_fn(cell->raw_get<Map>(), "get");
+        CHECK(get->call({}) == fn);
+    }
+
+    SECTION("accepts function via exchange")
+    {
+        auto cell = cell_fn->call({Value::null()});
+        const auto& m = cell->raw_get<Map>();
+        auto get = lookup_fn(m, "get");
+        auto exchange = lookup_fn(m, "exchange");
+
+        auto fn = dummy_function();
+        auto old = exchange->call({fn});
+        CHECK(old == Value::null());
+        CHECK(get->call({}) == fn);
+    }
+
+    SECTION("accepts arrays containing functions")
+    {
+        auto fn = dummy_function();
+        auto arr = Value::create(Array{Value::create(Int{1}), fn});
+        auto cell = cell_fn->call({arr});
+        auto get = lookup_fn(cell->raw_get<Map>(), "get");
+        CHECK(get->call({}) == arr);
+    }
+
+    SECTION("accepts maps containing functions")
+    {
+        auto fn = dummy_function();
+        auto map = Value::create(
+            Map{{Value::create(String{"cb"}), fn},
+                {Value::create(String{"x"}), Value::create(Int{1})}});
+        auto cell = cell_fn->call({map});
+        auto get = lookup_fn(cell->raw_get<Map>(), "get");
+        CHECK(get->call({}) == map);
+    }
+
+    SECTION("accepts another mutable cell as value")
+    {
+        auto inner = cell_fn->call({Value::create(Int{1})});
+        auto outer = cell_fn->call({inner});
+        auto get = lookup_fn(outer->raw_get<Map>(), "get");
+        CHECK(get->call({}) == inner);
+    }
+
+    SECTION("different cells are isolated")
+    {
+        auto a0 = Value::create(Int{1});
+        auto b0 = Value::create(Int{2});
+        auto a1 = Value::create(Int{3});
+
+        auto cell_a = cell_fn->call({a0});
+        auto cell_b = cell_fn->call({b0});
+
+        auto get_a = lookup_fn(cell_a->raw_get<Map>(), "get");
+        auto ex_a = lookup_fn(cell_a->raw_get<Map>(), "exchange");
+        auto get_b = lookup_fn(cell_b->raw_get<Map>(), "get");
+
+        ex_a->call({a1});
+        CHECK(get_a->call({}) == a1);
+        CHECK(get_b->call({}) == b0);
+    }
+
+    SECTION("preserves pointer identity")
+    {
+        auto same = lookup("same");
+        auto val = Value::create(String{"hello"});
+        auto cell = cell_fn->call({val});
+        auto get = lookup_fn(cell->raw_get<Map>(), "get");
+
+        auto got = get->call({});
+        CHECK(same->call({got, val})->get<Bool>().value() == true);
     }
 }
