@@ -70,6 +70,36 @@ assert(len(r_multi) == 1, 'multiple bindings should match')
 def r_empty = db.query('SELECT * FROM types WHERE i = ?', [999])
 assert(r_empty == [], 'no match returns empty array')
 
+# --- each: per-row callback, returns null ---
+
+db.exec('CREATE TABLE nums (x INTEGER)')
+db.exec('INSERT INTO nums VALUES (?)', [10])
+db.exec('INSERT INTO nums VALUES (?)', [20])
+db.exec('INSERT INTO nums VALUES (?)', [30])
+
+# each copies rows into another table as a side effect
+db.exec('CREATE TABLE nums_copy (x INTEGER)')
+def each_result = db.each('SELECT x FROM nums', fn row -> db.exec('INSERT INTO nums_copy VALUES (?)', [row.x]))
+assert(each_result == null, 'each should return null')
+def copied = db.query('SELECT x FROM nums_copy ORDER BY x')
+assert(len(copied) == 3, 'each should visit all rows')
+assert(copied[0].x == 10, 'each should preserve order')
+
+# each with bindings
+db.exec('CREATE TABLE big_copy (x INTEGER)')
+db.each('SELECT x FROM nums WHERE x > ?', [10], fn row -> db.exec('INSERT INTO big_copy VALUES (?)', [row.x]))
+def big_copied = db.query('SELECT x FROM big_copy ORDER BY x')
+assert(len(big_copied) == 2, 'each with bindings should filter')
+
+# --- collect: per-row transform, returns array ---
+
+def names = db.collect('SELECT x FROM nums', fn row -> row.x * 2)
+assert(names == [20, 40, 60], 'collect should transform rows')
+
+# collect with bindings
+def big = db.collect('SELECT x FROM nums WHERE x >= ?', [20], fn row -> row.x)
+assert(big == [20, 30], 'collect with bindings should filter and transform')
+
 # Clean up
 db.close()
 if path != ':memory:': fs.remove(path)

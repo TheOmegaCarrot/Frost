@@ -28,8 +28,18 @@ assert(not bad_sql.ok, 'invalid SQL should fail')
 def no_table = try_call(db.exec, ['INSERT INTO nonexistent VALUES (1)'])
 assert(not no_table.ok, 'missing table should fail')
 
+# Trailing content (multi-statement)
+def trailing = try_call(db.exec, ["INSERT INTO t VALUES (2, 'bob'); INSERT INTO t VALUES (3, 'charlie')"])
+assert(not trailing.ok, 'multi-statement exec should fail')
+assert(contains(trailing.error, 'trailing content'), 'should mention trailing content')
+
+# Unsupported binding type
+def bad_bind = try_call(db.exec, ['INSERT INTO t VALUES (?, ?)', [[1, 2], 'x']])
+assert(not bad_bind.ok, 'Array binding should fail')
+assert(contains(bad_bind.error, 'unsupported binding type'), 'should mention unsupported type')
+
 # Connection should still be usable after errors
-def n = db.exec("INSERT INTO t VALUES (2, 'bob')")
+def n = db.exec('INSERT INTO t VALUES (?, ?)', [2, 'bob'])
 assert(n == 1, 'insert after errors should succeed')
 
 # Double close

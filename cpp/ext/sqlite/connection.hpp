@@ -27,13 +27,14 @@ class Connection : public std::enable_shared_from_this<Connection>
     static std::shared_ptr<Connection> create(const String& filename,
                                               int openmode);
 
-    int exec(const String& sql);
+    int exec(const String& sql, const Array& bindings);
 
-    Value_Ptr query_positional(const String& sql, const Array& bindings);
+    void for_each_row(const String& sql, const Array& bindings,
+                      std::function<void(Value_Ptr)> row_fn);
 
     void close()
     {
-        require_open();
+        require_open_();
 
         sqlite3_close_v2(conn_);
         conn_ = nullptr;
@@ -46,11 +47,11 @@ class Connection : public std::enable_shared_from_this<Connection>
     }
 
   private:
-    void require_open()
-    {
-        if (not conn_)
-            throw Frost_Recoverable_Error{"Database connection is closed"};
-    }
+    void require_open_();
+
+    sqlite3_stmt* prepare_and_bind_(const String& sql, const Array& bindings);
+
+    Value_Ptr read_row_(sqlite3_stmt* stmt, int num_cols);
 
     sqlite3* conn_ = nullptr;
 };

@@ -21,75 +21,38 @@ std::shared_ptr<Connection> Connection::create(const String& filename,
     return conn;
 }
 
-Value_Ptr Connection::query_positional(const String& sql, const Array& bindings)
+int Connection::exec(const String& sql, const Array& bindings)
 {
-    require_open();
-
-    sqlite3_stmt* stmt = nullptr;
+    sqlite3_stmt* stmt = prepare_and_bind_(sql, bindings);
     BOOST_SCOPE_EXIT_ALL(&)
     {
         sqlite3_finalize(stmt);
     };
 
-    const char* tail = nullptr;
-    int prepare_rc = sqlite3_prepare_v2(
-        conn_, sql.c_str(), static_cast<int>(sql.size()), &stmt, &tail);
-    if (prepare_rc != SQLITE_OK)
+    while (true)
     {
-        std::string msg = sqlite3_errmsg(conn_);
-        throw Frost_Recoverable_Error{msg};
-    }
-
-    // Reject trailing content after the single statement
-    if (tail)
-    {
-        std::string_view remaining{tail};
-        auto pos = remaining.find_first_not_of(" \t\n\r;");
-        if (pos != std::string_view::npos)
+        int rc = sqlite3_step(stmt);
+        if (rc == SQLITE_DONE)
+            break;
+        if (rc != SQLITE_ROW)
         {
-            throw Frost_Recoverable_Error{
-                "query contains trailing content after the first statement"};
+            std::string msg = sqlite3_errmsg(conn_);
+            throw Frost_Recoverable_Error{msg};
         }
     }
 
-    int param_count = sqlite3_bind_parameter_count(stmt);
-    if (param_count != static_cast<int>(bindings.size()))
-    {
-        throw Frost_Recoverable_Error{
-            fmt::format("query expected {} binding{}, got {}", param_count,
-                        param_count == 1 ? "" : "s", bindings.size())};
-    }
+    return sqlite3_changes(conn_);
+}
 
-    // bind the parameters (if any)
-    for (const auto& [idx, val_ptr] : std::views::enumerate(bindings))
+void Connection::for_each_row(const String& sql, const Array& bindings,
+                              std::function<void(Value_Ptr)> row_fn)
+{
+    sqlite3_stmt* stmt = prepare_and_bind_(sql, bindings);
+    BOOST_SCOPE_EXIT_ALL(&)
     {
-        int pos = static_cast<int>(idx) + 1;
-        val_ptr->visit(Overload{
-            [&](const Null&) {
-                sqlite3_bind_null(stmt, pos);
-            },
-            [&](const Int& v) {
-                sqlite3_bind_int64(stmt, pos, v);
-            },
-            [&](const Float& v) {
-                sqlite3_bind_double(stmt, pos, v);
-            },
-            [&](const Bool& v) {
-                sqlite3_bind_int64(stmt, pos, v ? 1 : 0);
-            },
-            [&](const String& v) {
-                sqlite3_bind_text(stmt, pos, v.c_str(),
-                                  static_cast<int>(v.size()), SQLITE_TRANSIENT);
-            },
-            [&](const auto&) {
-                throw Frost_Recoverable_Error{
-                    "unsupported binding type at index " + std::to_string(idx)};
-            },
-        });
-    }
+        sqlite3_finalize(stmt);
+    };
 
-    // collect the rows
-    Array result_rows;
     int num_cols = sqlite3_column_count(stmt);
     while (true)
     {
@@ -102,66 +65,128 @@ Value_Ptr Connection::query_positional(const String& sql, const Array& bindings)
             throw Frost_Recoverable_Error{msg};
         }
 
-        Map row;
-        // Collect one row
-        for (int i = 0; i != num_cols; ++i)
-        {
-            auto col_name = Value::create(String{sqlite3_column_name(stmt, i)});
-            switch (sqlite3_column_type(stmt, i))
-            {
-            case SQLITE_INTEGER:
-                row.insert_or_assign(
-                    col_name,
-                    Value::create(Int{sqlite3_column_int64(stmt, i)}));
-                break;
-            case SQLITE_FLOAT:
-                row.insert_or_assign(
-                    col_name, Value::create(sqlite3_column_double(stmt, i)));
-                break;
-            case SQLITE_TEXT:
-                row.insert_or_assign(
-                    col_name,
-                    Value::create(String{
-                        reinterpret_cast<const char*>(
-                            sqlite3_column_text(stmt, i)),
-                        static_cast<std::size_t>(sqlite3_column_bytes(stmt, i)),
-                    }));
-                break;
-            case SQLITE_BLOB:
-                row.insert_or_assign(
-                    col_name,
-                    Value::create(String{
-                        static_cast<const char*>(sqlite3_column_blob(stmt, i)),
-                        static_cast<std::size_t>(sqlite3_column_bytes(stmt, i)),
-                    }));
-                break;
-            case SQLITE_NULL:
-                row.insert_or_assign(col_name, Value::null());
-                break;
-            default:
-                THROW_UNREACHABLE;
-            }
-        }
-
-        result_rows.push_back(Value::create(std::move(row)));
+        row_fn(read_row_(stmt, num_cols));
     }
-
-    return Value::create(std::move(result_rows));
 }
 
-int Connection::exec(const String& sql)
+void Connection::require_open_()
 {
-    require_open();
+    if (not conn_)
+        throw Frost_Recoverable_Error{"Database connection is closed"};
+}
 
-    char* errmsg = nullptr;
-    int rc = sqlite3_exec(conn_, sql.c_str(), nullptr, nullptr, &errmsg);
+sqlite3_stmt* Connection::prepare_and_bind_(const String& sql,
+                                            const Array& bindings)
+{
+    require_open_();
+
+    sqlite3_stmt* stmt = nullptr;
+    const char* tail = nullptr;
+
+    int rc = sqlite3_prepare_v2(conn_, sql.c_str(),
+                                static_cast<int>(sql.size()), &stmt, &tail);
     if (rc != SQLITE_OK)
     {
-        std::string msg = errmsg;
-        sqlite3_free(errmsg);
+        std::string msg = sqlite3_errmsg(conn_);
+        sqlite3_finalize(stmt);
         throw Frost_Recoverable_Error{msg};
     }
-    return sqlite3_changes(conn_);
+
+    // Reject trailing content after the single statement
+    if (tail)
+    {
+        std::string_view remaining{tail};
+        auto pos = remaining.find_first_not_of(" \t\n\r;");
+        if (pos != std::string_view::npos)
+        {
+            sqlite3_finalize(stmt);
+            throw Frost_Recoverable_Error{
+                "query contains trailing content after the first statement"};
+        }
+    }
+
+    // Validate binding count
+    int param_count = sqlite3_bind_parameter_count(stmt);
+    if (param_count != static_cast<int>(bindings.size()))
+    {
+        sqlite3_finalize(stmt);
+        throw Frost_Recoverable_Error{
+            fmt::format("query expected {} binding{}, got {}", param_count,
+                        param_count == 1 ? "" : "s", bindings.size())};
+    }
+
+    // Bind parameters
+    for (const auto& [idx, val_ptr] : std::views::enumerate(bindings))
+    {
+        int bind_pos = static_cast<int>(idx) + 1;
+        val_ptr->visit(Overload{
+            [&](const Null&) {
+                sqlite3_bind_null(stmt, bind_pos);
+            },
+            [&](const Int& v) {
+                sqlite3_bind_int64(stmt, bind_pos, v);
+            },
+            [&](const Float& v) {
+                sqlite3_bind_double(stmt, bind_pos, v);
+            },
+            [&](const Bool& v) {
+                sqlite3_bind_int64(stmt, bind_pos, v ? 1 : 0);
+            },
+            [&](const String& v) {
+                sqlite3_bind_text(stmt, bind_pos, v.c_str(),
+                                  static_cast<int>(v.size()), SQLITE_TRANSIENT);
+            },
+            [&](const auto&) {
+                sqlite3_finalize(stmt);
+                throw Frost_Recoverable_Error{
+                    "unsupported binding type at index " + std::to_string(idx)};
+            },
+        });
+    }
+
+    return stmt;
+}
+
+Value_Ptr Connection::read_row_(sqlite3_stmt* stmt, int num_cols)
+{
+    Map row;
+    for (int i = 0; i != num_cols; ++i)
+    {
+        auto col_name = Value::create(String{sqlite3_column_name(stmt, i)});
+        switch (sqlite3_column_type(stmt, i))
+        {
+        case SQLITE_INTEGER:
+            row.insert_or_assign(
+                col_name, Value::create(Int{sqlite3_column_int64(stmt, i)}));
+            break;
+        case SQLITE_FLOAT:
+            row.insert_or_assign(col_name,
+                                 Value::create(sqlite3_column_double(stmt, i)));
+            break;
+        case SQLITE_TEXT:
+            row.insert_or_assign(
+                col_name,
+                Value::create(String{
+                    reinterpret_cast<const char*>(sqlite3_column_text(stmt, i)),
+                    static_cast<std::size_t>(sqlite3_column_bytes(stmt, i)),
+                }));
+            break;
+        case SQLITE_BLOB:
+            row.insert_or_assign(
+                col_name,
+                Value::create(String{
+                    static_cast<const char*>(sqlite3_column_blob(stmt, i)),
+                    static_cast<std::size_t>(sqlite3_column_bytes(stmt, i)),
+                }));
+            break;
+        case SQLITE_NULL:
+            row.insert_or_assign(col_name, Value::null());
+            break;
+        default:
+            THROW_UNREACHABLE;
+        }
+    }
+    return Value::create(std::move(row));
 }
 
 } // namespace frst::sqlite

@@ -27,9 +27,12 @@ assert(n3 == 2, 'update should return 2 rows changed')
 def n4 = db.exec('DELETE FROM t WHERE id = 1')
 assert(n4 == 1, 'delete should return 1 row changed')
 
-# Multi-statement execute
-def n5 = db.exec("INSERT INTO t VALUES (4, 'diana'); INSERT INTO t VALUES (5, 'eve')")
-assert(n5 == 1, 'multi-statement execute returns changes from last statement')
+# Parameterized insert
+def n5 = db.exec('INSERT INTO t VALUES (?, ?)', [4, 'diana'])
+assert(n5 == 1, 'parameterized insert should return 1 row changed')
+
+def n6 = db.exec('INSERT INTO t VALUES (?, ?)', [5, 'eve'])
+assert(n6 == 1, 'parameterized insert should return 1 row changed')
 
 # Close
 db.close()
