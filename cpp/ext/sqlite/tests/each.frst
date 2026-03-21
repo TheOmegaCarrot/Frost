@@ -1,0 +1,93 @@
+# SQLite db.each tests
+
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+db.exec('CREATE TABLE nums (x INTEGER)')
+db.exec('INSERT INTO nums VALUES (?)', [10])
+db.exec('INSERT INTO nums VALUES (?)', [20])
+db.exec('INSERT INTO nums VALUES (?)', [30])
+
+# --- Happy path ---
+
+# each copies rows into another table as a side effect
+db.exec('CREATE TABLE nums_copy (x INTEGER)')
+def each_result = db.each('SELECT x FROM nums', fn row -> db.exec('INSERT INTO nums_copy VALUES (?)', [row.x]))
+assert(each_result == null, 'each should return null')
+def copied = db.query('SELECT x FROM nums_copy ORDER BY x')
+assert(len(copied) == 3, 'each should visit all rows')
+assert(copied[0].x == 10, 'each should preserve order')
+
+# each with bindings
+db.exec('CREATE TABLE big_copy (x INTEGER)')
+db.each('SELECT x FROM nums WHERE x > ?', [10], fn row -> db.exec('INSERT INTO big_copy VALUES (?)', [row.x]))
+def big_copied = db.query('SELECT x FROM big_copy ORDER BY x')
+assert(len(big_copied) == 2, 'each with bindings should filter')
+
+# each on empty result set
+db.exec('CREATE TABLE empty_each (x INTEGER)')
+db.each('SELECT x FROM empty_each', fn row -> db.exec('INSERT INTO nums VALUES (?)', [row.x]))
+assert(db.query('SELECT count(*) as c FROM nums')[0].c == 3, 'each on empty should be a no-op')
+
+# --- Error paths ---
+
+# Non-string SQL
+def each_bad_sql = try_call(db.each, [123, fn row -> null])
+assert(not each_bad_sql.ok, 'each: non-string SQL should fail')
+
+# Invalid SQL
+def each_invalid = try_call(db.each, ['NOT VALID', fn row -> null])
+assert(not each_invalid.ok, 'each: invalid SQL should fail')
+
+# Trailing content
+def each_trailing = try_call(db.each, ['SELECT 1; SELECT 2', fn row -> null])
+assert(not each_trailing.ok, 'each: trailing content should fail')
+assert(contains(each_trailing.error, 'trailing content'), 'each: should mention trailing content')
+
+# Too few bindings
+def each_too_few = try_call(db.each, ['SELECT ? + ?', [1], fn row -> null])
+assert(not each_too_few.ok, 'each: too few bindings should fail')
+
+# Too many bindings
+def each_too_many = try_call(db.each, ['SELECT ?', [1, 2, 3], fn row -> null])
+assert(not each_too_many.ok, 'each: too many bindings should fail')
+
+# Zero bindings when expecting some
+def each_zero = try_call(db.each, ['SELECT ?', fn row -> null])
+assert(not each_zero.ok, 'each: zero bindings when expecting some should fail')
+
+# Unsupported binding type: Array
+def each_bad_arr = try_call(db.each, ['SELECT ?', [[1, 2]], fn row -> null])
+assert(not each_bad_arr.ok, 'each: Array binding should fail')
+
+# Unsupported binding type: Map
+def each_bad_map = try_call(db.each, ['SELECT ?', [{a: 1}], fn row -> null])
+assert(not each_bad_map.ok, 'each: Map binding should fail')
+
+# Unsupported binding type: Function
+def each_bad_fn = try_call(db.each, ['SELECT ?', [fn x -> x], fn row -> null])
+assert(not each_bad_fn.ok, 'each: Function binding should fail')
+
+# Empty SQL
+def each_empty = try_call(db.each, ['', fn row -> null])
+assert(not each_empty.ok, 'each: empty SQL should fail')
+assert(contains(each_empty.error, 'empty SQL'), 'each: should mention empty SQL')
+
+# Non-function callback
+def each_no_fn = try_call(db.each, ['SELECT 1', 'not a function'])
+assert(not each_no_fn.ok, 'each: non-function callback should fail')
+
+# Callback error propagation
+def each_throw = try_call(db.each, ['SELECT * FROM nums', fn row -> assert(false, 'boom')])
+assert(not each_throw.ok, 'each: callback error should propagate')
+assert(contains(each_throw.error, 'boom'), 'each: should contain callback error message')
+
+# Connection still usable after errors
+assert(db.query('SELECT count(*) as c FROM nums')[0].c == 3, 'query should succeed after each errors')
+
+# Clean up
+db.close()
+if path != ':memory:': fs.remove(path)

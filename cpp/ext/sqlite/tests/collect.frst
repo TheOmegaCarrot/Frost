@@ -1,0 +1,87 @@
+# SQLite db.collect tests
+
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+db.exec('CREATE TABLE nums (x INTEGER)')
+db.exec('INSERT INTO nums VALUES (?)', [10])
+db.exec('INSERT INTO nums VALUES (?)', [20])
+db.exec('INSERT INTO nums VALUES (?)', [30])
+
+# --- Happy path ---
+
+# collect transforms rows into an array
+def doubled = db.collect('SELECT x FROM nums', fn row -> row.x * 2)
+assert(doubled == [20, 40, 60], 'collect should transform rows')
+
+# collect with bindings
+def big = db.collect('SELECT x FROM nums WHERE x >= ?', [20], fn row -> row.x)
+assert(big == [20, 30], 'collect with bindings should filter and transform')
+
+# collect on empty result set
+db.exec('CREATE TABLE empty_tbl (x INTEGER)')
+def empty_collect = db.collect('SELECT x FROM empty_tbl', fn row -> row.x)
+assert(empty_collect == [], 'collect on empty returns empty array')
+
+# --- Error paths ---
+
+# Non-string SQL
+def collect_bad_sql = try_call(db.collect, [123, fn row -> null])
+assert(not collect_bad_sql.ok, 'collect: non-string SQL should fail')
+
+# Invalid SQL
+def collect_invalid = try_call(db.collect, ['NOT VALID', fn row -> null])
+assert(not collect_invalid.ok, 'collect: invalid SQL should fail')
+
+# Trailing content
+def collect_trailing = try_call(db.collect, ['SELECT 1; SELECT 2', fn row -> null])
+assert(not collect_trailing.ok, 'collect: trailing content should fail')
+assert(contains(collect_trailing.error, 'trailing content'), 'collect: should mention trailing content')
+
+# Too few bindings
+def collect_too_few = try_call(db.collect, ['SELECT ? + ?', [1], fn row -> null])
+assert(not collect_too_few.ok, 'collect: too few bindings should fail')
+
+# Too many bindings
+def collect_too_many = try_call(db.collect, ['SELECT ?', [1, 2, 3], fn row -> null])
+assert(not collect_too_many.ok, 'collect: too many bindings should fail')
+
+# Zero bindings when expecting some
+def collect_zero = try_call(db.collect, ['SELECT ?', fn row -> null])
+assert(not collect_zero.ok, 'collect: zero bindings when expecting some should fail')
+
+# Unsupported binding type: Array
+def collect_bad_arr = try_call(db.collect, ['SELECT ?', [[1, 2]], fn row -> null])
+assert(not collect_bad_arr.ok, 'collect: Array binding should fail')
+
+# Unsupported binding type: Map
+def collect_bad_map = try_call(db.collect, ['SELECT ?', [{a: 1}], fn row -> null])
+assert(not collect_bad_map.ok, 'collect: Map binding should fail')
+
+# Unsupported binding type: Function
+def collect_bad_fn = try_call(db.collect, ['SELECT ?', [fn x -> x], fn row -> null])
+assert(not collect_bad_fn.ok, 'collect: Function binding should fail')
+
+# Empty SQL
+def collect_empty = try_call(db.collect, ['', fn row -> null])
+assert(not collect_empty.ok, 'collect: empty SQL should fail')
+assert(contains(collect_empty.error, 'empty SQL'), 'collect: should mention empty SQL')
+
+# Non-function callback
+def collect_no_fn = try_call(db.collect, ['SELECT 1', 'not a function'])
+assert(not collect_no_fn.ok, 'collect: non-function callback should fail')
+
+# Callback error propagation
+def collect_throw = try_call(db.collect, ['SELECT * FROM nums', fn row -> assert(false, 'kaboom')])
+assert(not collect_throw.ok, 'collect: callback error should propagate')
+assert(contains(collect_throw.error, 'kaboom'), 'collect: should contain callback error message')
+
+# Connection still usable after errors
+assert(db.query('SELECT count(*) as c FROM nums')[0].c == 3, 'query should succeed after collect errors')
+
+# Clean up
+db.close()
+if path != ':memory:': fs.remove(path)

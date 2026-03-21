@@ -1,0 +1,43 @@
+# SQLite connection lifecycle tests
+
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+# sqlite.version is a string
+assert(type(sqlite.version) == 'String', 'sqlite.version should be a string')
+
+# Open failure - nonexistent directory
+def bad_open = try_call(sqlite.open, ['/no/such/dir/test.db'])
+assert(not bad_open.ok, 'open with bad path should fail')
+
+def db = sqlite.open(path)
+db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+db.exec("INSERT INTO t VALUES (1, 'alice')")
+
+# Close
+db.close()
+
+# Double close
+def close2 = try_call(db.close, [])
+assert(not close2.ok, 'double close should fail')
+
+# Closed connection errors for all methods
+def closed_query = try_call(db.query, ['SELECT 1'])
+assert(not closed_query.ok, 'query on closed db should fail')
+assert(contains(closed_query.error, 'closed'), 'should mention closed')
+
+def closed_exec = try_call(db.exec, ['SELECT 1'])
+assert(not closed_exec.ok, 'exec on closed db should fail')
+assert(contains(closed_exec.error, 'closed'), 'should mention closed')
+
+def closed_each = try_call(db.each, ['SELECT 1', fn row -> null])
+assert(not closed_each.ok, 'each on closed db should fail')
+assert(contains(closed_each.error, 'closed'), 'should mention closed')
+
+def closed_collect = try_call(db.collect, ['SELECT 1', fn row -> null])
+assert(not closed_collect.ok, 'collect on closed db should fail')
+assert(contains(closed_collect.error, 'closed'), 'should mention closed')
+
+# Clean up filesystem db
+if path != ':memory:': fs.remove(path)

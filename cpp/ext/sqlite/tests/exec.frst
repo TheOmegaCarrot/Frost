@@ -1,0 +1,109 @@
+# SQLite db.exec tests
+
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+# --- Happy path ---
+
+# DDL
+db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+
+# DML - verify row counts for insert, update, delete
+def n1 = db.exec("INSERT INTO t VALUES (1, 'alice')")
+assert(n1 == 1, 'insert should return 1 row changed')
+
+def n2 = db.exec("INSERT INTO t VALUES (2, 'bob'), (3, 'charlie')")
+assert(n2 == 2, 'insert should return 2 rows changed')
+
+def n3 = db.exec("UPDATE t SET name = 'updated' WHERE id >= 2")
+assert(n3 == 2, 'update should return 2 rows changed')
+
+def n4 = db.exec('DELETE FROM t WHERE id = 1')
+assert(n4 == 1, 'delete should return 1 row changed')
+
+# Parameterized insert
+def n5 = db.exec('INSERT INTO t VALUES (?, ?)', [4, 'diana'])
+assert(n5 == 1, 'parameterized insert should return 1 row changed')
+
+def n6 = db.exec('INSERT INTO t VALUES (?, ?)', [5, 'eve'])
+assert(n6 == 1, 'parameterized insert should return 1 row changed')
+
+# UPDATE affecting 0 rows
+def n7 = db.exec('UPDATE t SET name = ? WHERE id = ?', ['nobody', 9999])
+assert(n7 == 0, 'update matching nothing should return 0')
+
+# DELETE affecting 0 rows
+def n8 = db.exec('DELETE FROM t WHERE id = ?', [9999])
+assert(n8 == 0, 'delete matching nothing should return 0')
+
+# Trailing semicolon is accepted
+db.exec('CREATE TABLE t2 (x INTEGER)')
+db.exec('INSERT INTO t2 VALUES (1);')
+def n9 = db.query('SELECT count(*) as c FROM t2')[0].c
+assert(n9 == 1, 'trailing semicolon accepted by exec')
+
+# --- Error paths ---
+
+# Wrong argument type
+def wrong_type = try_call(db.exec, [123])
+assert(not wrong_type.ok, 'execute with non-string should fail')
+
+# Invalid SQL
+def bad_sql = try_call(db.exec, ['NOT VALID SQL'])
+assert(not bad_sql.ok, 'invalid SQL should fail')
+
+# Missing table
+def no_table = try_call(db.exec, ['INSERT INTO nonexistent VALUES (1)'])
+assert(not no_table.ok, 'missing table should fail')
+
+# Duplicate primary key
+def dup = try_call(db.exec, ["INSERT INTO t VALUES (2, 'duplicate')"])
+assert(not dup.ok, 'duplicate primary key should fail')
+
+# Trailing content (multi-statement)
+def trailing = try_call(db.exec, ["INSERT INTO t VALUES (6, 'x'); INSERT INTO t VALUES (7, 'y')"])
+assert(not trailing.ok, 'multi-statement exec should fail')
+assert(contains(trailing.error, 'trailing content'), 'should mention trailing content')
+
+# Too few bindings
+def exec_few = try_call(db.exec, ['INSERT INTO t VALUES (?, ?)', [1]])
+assert(not exec_few.ok, 'too few bindings should fail')
+assert(contains(exec_few.error, 'expected 2'), 'should mention expected count')
+
+# Too many bindings
+def exec_many = try_call(db.exec, ['INSERT INTO t (id) VALUES (?)', [1, 2, 3]])
+assert(not exec_many.ok, 'too many bindings should fail')
+assert(contains(exec_many.error, 'expected 1'), 'should mention expected count')
+
+# Zero bindings when expecting some
+def exec_zero = try_call(db.exec, ['SELECT ?'])
+assert(not exec_zero.ok, 'exec: zero bindings when expecting some should fail')
+
+# Unsupported binding type: Array
+def bad_bind = try_call(db.exec, ['INSERT INTO t VALUES (?, ?)', [[1, 2], 'x']])
+assert(not bad_bind.ok, 'Array binding should fail')
+assert(contains(bad_bind.error, 'unsupported binding type'), 'should mention unsupported type')
+
+# Unsupported binding type: Map
+def exec_bad_map = try_call(db.exec, ['SELECT ?', [{a: 1}]])
+assert(not exec_bad_map.ok, 'exec: Map binding should fail')
+
+# Unsupported binding type: Function
+def exec_bad_fn = try_call(db.exec, ['SELECT ?', [fn x -> x]])
+assert(not exec_bad_fn.ok, 'exec: Function binding should fail')
+
+# Empty SQL
+def exec_empty = try_call(db.exec, [''])
+assert(not exec_empty.ok, 'exec: empty SQL should fail')
+assert(contains(exec_empty.error, 'empty SQL'), 'exec: should mention empty SQL')
+
+# Connection still usable after errors
+def n_after = db.exec('INSERT INTO t VALUES (?, ?)', [99, 'recovery'])
+assert(n_after == 1, 'insert after errors should succeed')
+
+# Clean up
+db.close()
+if path != ':memory:': fs.remove(path)

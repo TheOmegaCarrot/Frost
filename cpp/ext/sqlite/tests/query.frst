@@ -1,6 +1,4 @@
-# SQLite db.query integration tests
-# Usage: frost basic-query.frst -- :memory:
-#        frost basic-query.frst -- /path/to/test.db
+# SQLite db.query tests
 
 def path = args[1]
 
@@ -51,16 +49,16 @@ db.exec('INSERT INTO bools VALUES (1)')
 def r_bool = db.query('SELECT * FROM bools WHERE b = ?', [true])
 assert(len(r_bool) == 1, 'Bool binding should match (binds as 1)')
 
+# Bool false binds as 0
+db.exec('INSERT INTO bools VALUES (0)')
+def r_false = db.query('SELECT * FROM bools WHERE b = ?', [false])
+assert(len(r_false) == 1, 'Bool false binding should match 0')
+
 # Null binding
 def r_null = db.query('SELECT * FROM types WHERE n IS ?', [null])
 assert(len(r_null) == 1, 'Null binding with IS should match')
 
 # --- Binding edge cases ---
-
-# Bool false binds as 0
-db.exec('INSERT INTO bools VALUES (0)')
-def r_false = db.query('SELECT * FROM bools WHERE b = ?', [false])
-assert(len(r_false) == 1, 'Bool false binding should match 0')
 
 # Empty string binding (distinct from null)
 db.exec('CREATE TABLE strs (s TEXT)')
@@ -74,11 +72,6 @@ assert(type(r_empty_str[0].s) == 'String', 'empty string is String not Null')
 # Explicit empty bindings array
 def r_no_params = db.query('SELECT 1 as x', [])
 assert(len(r_no_params) == 1, 'empty bindings array should work')
-
-# Unsupported binding type: Function
-def r_fn_bind = try_call(db.query, ['SELECT ?', [fn x -> x]])
-assert(not r_fn_bind.ok, 'Function binding should fail')
-assert(contains(r_fn_bind.error, 'unsupported binding type'), 'should mention unsupported type')
 
 # --- Type round-tripping via exec bindings + query ---
 
@@ -147,44 +140,58 @@ assert(r_multi_rows[2].val == 'third', 'third row correct')
 def r_semi = db.query('SELECT 1 as x;')
 assert(len(r_semi) == 1, 'trailing semicolon should be accepted')
 
-# --- each: per-row callback, returns null ---
+# --- Error paths ---
 
-db.exec('CREATE TABLE nums (x INTEGER)')
-db.exec('INSERT INTO nums VALUES (?)', [10])
-db.exec('INSERT INTO nums VALUES (?)', [20])
-db.exec('INSERT INTO nums VALUES (?)', [30])
+# Invalid SQL
+def bad_sql = try_call(db.query, ['NOT VALID'])
+assert(not bad_sql.ok, 'invalid SQL should fail')
 
-# each copies rows into another table as a side effect
-db.exec('CREATE TABLE nums_copy (x INTEGER)')
-def each_result = db.each('SELECT x FROM nums', fn row -> db.exec('INSERT INTO nums_copy VALUES (?)', [row.x]))
-assert(each_result == null, 'each should return null')
-def copied = db.query('SELECT x FROM nums_copy ORDER BY x')
-assert(len(copied) == 3, 'each should visit all rows')
-assert(copied[0].x == 10, 'each should preserve order')
+# Wrong argument type for SQL parameter
+def wrong_type = try_call(db.query, [123])
+assert(not wrong_type.ok, 'non-string SQL should fail')
 
-# each with bindings
-db.exec('CREATE TABLE big_copy (x INTEGER)')
-db.each('SELECT x FROM nums WHERE x > ?', [10], fn row -> db.exec('INSERT INTO big_copy VALUES (?)', [row.x]))
-def big_copied = db.query('SELECT x FROM big_copy ORDER BY x')
-assert(len(big_copied) == 2, 'each with bindings should filter')
+# Too few bindings
+def too_few = try_call(db.query, ['SELECT ? + ?', [1]])
+assert(not too_few.ok, 'too few bindings should fail')
+assert(contains(too_few.error, 'expected 2'), 'should mention expected count')
 
-# --- collect: per-row transform, returns array ---
+# Too many bindings
+def too_many = try_call(db.query, ['SELECT ?', [1, 2, 3]])
+assert(not too_many.ok, 'too many bindings should fail')
+assert(contains(too_many.error, 'expected 1'), 'should mention expected count')
 
-def names = db.collect('SELECT x FROM nums', fn row -> row.x * 2)
-assert(names == [20, 40, 60], 'collect should transform rows')
+# Zero bindings when expecting some (no bindings argument)
+def zero_bindings = try_call(db.query, ['SELECT ?'])
+assert(not zero_bindings.ok, 'zero bindings when expecting some should fail')
+assert(contains(zero_bindings.error, 'expected 1'), 'should mention expected count')
 
-# collect with bindings
-def big = db.collect('SELECT x FROM nums WHERE x >= ?', [20], fn row -> row.x)
-assert(big == [20, 30], 'collect with bindings should filter and transform')
+# Unsupported binding type: Array
+def bad_arr = try_call(db.query, ['SELECT ?', [[1, 2]]])
+assert(not bad_arr.ok, 'Array binding should fail')
+assert(contains(bad_arr.error, 'unsupported binding type'), 'should mention unsupported type')
 
-# each on empty result set
-db.exec('CREATE TABLE empty_each (x INTEGER)')
-db.each('SELECT x FROM empty_each', fn row -> db.exec('INSERT INTO nums VALUES (?)', [row.x]))
-assert(db.query('SELECT count(*) as c FROM nums')[0].c == 3, 'each on empty should be a no-op')
+# Unsupported binding type: Map
+def bad_map = try_call(db.query, ['SELECT ?', [{a: 1}]])
+assert(not bad_map.ok, 'Map binding should fail')
+assert(contains(bad_map.error, 'unsupported binding type'), 'should mention unsupported type')
 
-# collect on empty result set
-def empty_collect = db.collect('SELECT x FROM empty_each', fn row -> row.x)
-assert(empty_collect == [], 'collect on empty returns empty array')
+# Unsupported binding type: Function
+def bad_fn = try_call(db.query, ['SELECT ?', [fn x -> x]])
+assert(not bad_fn.ok, 'query: Function binding should fail')
+
+# Trailing content (multi-statement)
+def trailing = try_call(db.query, ['SELECT 1; SELECT 2'])
+assert(not trailing.ok, 'trailing content should fail')
+assert(contains(trailing.error, 'trailing content'), 'should mention trailing content')
+
+# Empty SQL
+def empty_sql = try_call(db.query, [''])
+assert(not empty_sql.ok, 'empty SQL should fail')
+assert(contains(empty_sql.error, 'empty SQL'), 'should mention empty SQL')
+
+# Connection still usable after errors
+def recovery = db.query('SELECT * FROM types')
+assert(len(recovery) == 1, 'query should succeed after errors')
 
 # Clean up
 db.close()

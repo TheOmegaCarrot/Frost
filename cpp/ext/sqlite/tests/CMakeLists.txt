@@ -1,10 +1,11 @@
 set(SQLITE_TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(SQLITE_TESTS
-    basic-open-execute.frst
-    basic-errors.frst
-    basic-query.frst
-    query-errors.frst
+    connection.frst
+    exec.frst
+    query.frst
+    each.frst
+    collect.frst
 )
 
 find_program(VALGRIND valgrind)
