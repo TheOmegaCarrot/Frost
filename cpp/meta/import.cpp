@@ -46,8 +46,6 @@ struct Importer
 
     import::import_stack_t import_stack;
 
-    const Symbol_Table* root_table;
-
     Value_Ptr operator()(builtin_args_t args)
     {
         REQUIRE_ARGS("import", PARAM("module", TYPES(String)));
@@ -105,10 +103,14 @@ struct Importer
                 module_file.native(), parse_result.error())};
         }
 
-        Symbol_Table isolated_table{root_table};
+        Symbol_Table isolated_table;
+        inject_builtins(isolated_table);
+        inject_ext(isolated_table);
         isolated_table.define("imported", Value::create(true));
 
         Execution_Context isolated_ctx{.symbols = isolated_table};
+
+        inject_prelude(isolated_ctx);
 
         std::vector<std::filesystem::path> child_search_path{
             module_file.parent_path(),
@@ -116,8 +118,8 @@ struct Importer
 
         child_search_path.append_range(env_module_path());
 
-        inject_import(isolated_table, *root_table, child_search_path,
-                      import_cache, import_stack);
+        inject_import(isolated_table, child_search_path, import_cache,
+                      import_stack);
 
         Map imported;
         for (const auto& statement : parse_result.value())
@@ -134,7 +136,7 @@ struct Importer
 
 } // namespace
 
-void inject_import(Symbol_Table& table, const Symbol_Table& root_table,
+void inject_import(Symbol_Table& table,
                    const import::search_path_t& search_path,
                    import::import_cache_t import_cache,
                    const import::import_stack_t& import_stack)
@@ -142,8 +144,7 @@ void inject_import(Symbol_Table& table, const Symbol_Table& root_table,
     table.define("import", Value::create(Function{std::make_shared<Builtin>(
                                Importer{.search_path = std::move(search_path),
                                         .import_cache = import_cache,
-                                        .import_stack = import_stack,
-                                        .root_table = &root_table},
+                                        .import_stack = import_stack},
                                "import", Builtin::Arity{.min = 1, .max = 1})}));
 }
 } // namespace frst

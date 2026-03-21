@@ -450,8 +450,12 @@ All values are truthy, except for an actual `false` and `null`.
 #### Logical Comparisons
 
 Logical comparisons work as one would expect.
-The ordering operators (`<`, `>`, etc) are only defined for numeric types, and can be mixed.
+The ordering operators (`<`, `>`, etc) compare numeric types as expected, permitting mixing of Int and Float.
 (`3 < 3.14` is well-defined.)
+
+The ordering operators also compare String values lexicographically.
+(`'foo' > 'bar'` is `true`.)
+
 Equality comparisons (`==` or `!=`) will _never_ cause a type error.
 
 Primitive types, arrays, and maps are compared by value. Functions are compared by identity.

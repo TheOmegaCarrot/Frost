@@ -85,6 +85,23 @@ Returns a function that indexes into its argument with key `k`.
 Equivalent to `fn s -> s[k]`.
 Useful in pipelines: `people @ transform(index("name"))`.
 
+## `dig`
+`dig(structure, ...keys)`
+
+Indexes into nested structures, returning `null` if any intermediate value is `null` rather than producing an error.
+Each key is applied in order, indexing into the result of the previous step.
+
+```
+def m = {a: {b: {c: 42}}}
+
+m @ dig('a', 'b', 'c')   # => 42
+m @ dig('a', 'x', 'c')   # => null (missing intermediate key)
+
+def nested = {items: [{name: 'alice'}, {name: 'bob'}]}
+nested @ dig('items', 0, 'name')   # => 'alice'
+nested @ dig('items', 5, 'name')   # => null (out of bounds)
+```
+
 ## `stride`
 `stride(arr, n)`
 

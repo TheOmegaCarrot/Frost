@@ -1,0 +1,37 @@
+def m = {
+    a: {
+        b: {
+            c: 42
+        }
+    }
+}
+
+# Basic deep indexing
+assert( m @ dig('a', 'b', 'c') == 42 )
+assert( m @ dig('a', 'b') == {c: 42} )
+assert( m @ dig('a') == {b: {c: 42}} )
+
+# Null at any intermediate level returns null
+assert( m @ dig('x', 'b', 'c') == null )
+assert( m @ dig('a', 'x', 'c') == null )
+assert( m @ dig('a', 'b', 'x') == null )
+
+# Works with arrays
+def nested = {items: [{name: 'alice'}, {name: 'bob'}]}
+assert( nested @ dig('items', 0, 'name') == 'alice' )
+assert( nested @ dig('items', 5, 'name') == null )
+
+# Single key
+assert( m @ dig('a') == {b: {c: 42}} )
+assert( m @ dig('x') == null )
+
+# Null input
+assert( null @ dig('a') == null )
+
+# No actual lookup
+assert( m @ dig() == m )
+
+# Leaf is an explicit null
+def with_null = {a: {b: null}}
+assert( with_null @ dig('a', 'b') == null )
+assert( with_null @ dig('a') == {b: null} )

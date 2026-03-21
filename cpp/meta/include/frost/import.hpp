@@ -21,7 +21,7 @@ using import_stack_t = std::vector<std::string>;
 } // namespace import
 
 std::vector<std::filesystem::path> env_module_path();
-void inject_import(Symbol_Table& table, const Symbol_Table& root_symbol_table,
+void inject_import(Symbol_Table& table,
                    const import::search_path_t& search_path,
                    import::import_cache_t import_cache =
                        std::make_shared<import::import_cache_map_t>(),
