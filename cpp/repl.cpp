@@ -49,8 +49,8 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
     {
         auto bt = e.take_backtrace();
         if (!bt.empty())
-            fmt::println(stderr, "Error: {}\nTraceback:\n{}",
-                         e.what(), fmt::join(bt, "\n"));
+            fmt::println(stderr, "Error: {}\nTraceback:\n{}", e.what(),
+                         fmt::join(bt, "\n"));
         else
             fmt::println(stderr, "Error: {}", e.what());
     }
@@ -58,8 +58,8 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
     {
         auto bt = e.take_backtrace();
         if (!bt.empty())
-            fmt::println(stderr, "INTERNAL ERROR: {}\nTraceback:\n{}",
-                         e.what(), fmt::join(bt, "\n"));
+            fmt::println(stderr, "INTERNAL ERROR: {}\nTraceback:\n{}", e.what(),
+                         fmt::join(bt, "\n"));
         else
             fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
     }
