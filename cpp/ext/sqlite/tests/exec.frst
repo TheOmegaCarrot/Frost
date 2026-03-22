@@ -114,6 +114,27 @@ assert(contains(exec_empty.error, 'empty SQL'), 'exec: should mention empty SQL'
 def n_after = db.exec('INSERT INTO t VALUES (?, ?)', [99, 'recovery'])
 assert(n_after == 1, 'insert after errors should succeed')
 
+# --- last_insert_rowid ---
+
+db.exec('CREATE TABLE auto_id (id INTEGER PRIMARY KEY, val TEXT)')
+db.exec('INSERT INTO auto_id (val) VALUES (?)', ['first'])
+def rid1 = db.last_insert_rowid()
+assert(rid1 == 1, 'first autoincrement rowid should be 1')
+
+db.exec('INSERT INTO auto_id (val) VALUES (?)', ['second'])
+def rid2 = db.last_insert_rowid()
+assert(rid2 == 2, 'second autoincrement rowid should be 2')
+
+# Explicit id does not break last_insert_rowid
+db.exec('INSERT INTO auto_id VALUES (?, ?)', [100, 'explicit'])
+assert(db.last_insert_rowid() == 100, 'explicit id reflected in last_insert_rowid')
+
+# last_insert_rowid inside a transaction
+db.transaction(fn tx -> {
+    tx.exec('INSERT INTO auto_id (val) VALUES (?)', ['tx_row'])
+    assert(tx.last_insert_rowid() == 101, 'tx.last_insert_rowid works')
+})
+
 # Clean up
 db.close()
 if path != ':memory:': fs.remove(path)

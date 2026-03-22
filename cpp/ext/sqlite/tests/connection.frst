@@ -83,5 +83,13 @@ def closed_collect = try_call(db.collect, ['SELECT 1', fn row -> null])
 assert(not closed_collect.ok, 'collect on closed db should fail')
 assert(contains(closed_collect.error, 'closed'), 'should mention closed')
 
+def closed_script = try_call(db.script, ['SELECT 1'])
+assert(not closed_script.ok, 'script on closed db should fail')
+assert(contains(closed_script.error, 'closed'), 'should mention closed')
+
+def closed_rowid = try_call(db.last_insert_rowid, [])
+assert(not closed_rowid.ok, 'last_insert_rowid on closed db should fail')
+assert(contains(closed_rowid.error, 'closed'), 'should mention closed')
+
 # Clean up filesystem db
 if path != ':memory:': fs.remove(path)

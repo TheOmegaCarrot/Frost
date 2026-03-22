@@ -123,9 +123,16 @@ bool Connection::in_transaction() const
     return conn_ && not sqlite3_get_autocommit(conn_.get());
 }
 
-int Connection::total_changes() const
+int Connection::total_changes()
 {
-    return conn_ ? sqlite3_total_changes(conn_.get()) : 0;
+    require_open_();
+    return sqlite3_total_changes(conn_.get());
+}
+
+Int Connection::last_insert_rowid()
+{
+    require_open_();
+    return sqlite3_last_insert_rowid(conn_.get());
 }
 
 void Connection::require_open_()

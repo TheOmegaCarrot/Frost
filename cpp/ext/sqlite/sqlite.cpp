@@ -132,9 +132,15 @@ struct Data_Methods
         return Value::create(std::move(results));
     }
 
+    Value_Ptr last_insert_rowid(builtin_args_t)
+    {
+        guard();
+        return Value::create(conn->last_insert_rowid());
+    }
+
     Map to_map()
     {
-        STRINGS(exec, query, each, collect, script);
+        STRINGS(exec, query, each, collect, script, last_insert_rowid);
         auto self = std::make_shared<Data_Methods>(std::move(*this));
         return Map{
             {strings.exec, system_closure(1, 2,
@@ -157,6 +163,10 @@ struct Data_Methods
                                              [self](builtin_args_t args) {
                                                  return self->collect(args);
                                              })},
+            {strings.last_insert_rowid,
+             system_closure(0, 0, [self](builtin_args_t args) {
+                 return self->last_insert_rowid(args);
+             })},
         };
     }
 };

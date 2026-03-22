@@ -3,9 +3,38 @@
 SQLite support can be disabled at build time with `-DWITH_SQLITE=NO`.
 
 The `sqlite` module provides access to SQLite databases.
-All functions that accept SQL with parameters use `?` placeholders and an array of bindings.
 Supported binding types are `Null`, `Int`, `Float`, `Bool`, and `String`.
 `Bool` values are stored as integers (`true` → `1`, `false` → `0`).
+
+### Positional bindings
+
+Use `?` placeholders and pass an `Array` of values.
+
+```
+db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
+```
+
+### Named bindings
+
+Use `:name`, `@name`, or `$name` placeholders and pass a `Map` with string keys.
+The keys in the map correspond to the parameter names without the prefix.
+
+```
+db.exec('INSERT INTO t VALUES (:id, :name)', {id: 1, name: 'alice'})
+db.query('SELECT * FROM t WHERE id > @min', {min: 0})
+```
+
+All methods that accept bindings (`exec`, `query`, `each`, `collect`) support both forms.
+
+There are no explicit prepared statements.
+For repeated operations, wrap a parameterized call in a function:
+
+```
+defn insert_user(db, id, name) -> db.exec('INSERT INTO users VALUES (?, ?)', [id, name])
+
+insert_user(db, 1, 'alice')
+insert_user(db, 2, 'bob')
+```
 
 ## `sqlite.version`
 
@@ -40,8 +69,8 @@ Multi-statement SQL is rejected.
 
 ```
 db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
-db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])     # => 1
-db.exec('UPDATE t SET name = ? WHERE id > ?', ['x', 0])  # => 1
+db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])                     # => 1
+db.exec('UPDATE t SET name = :name WHERE id = :id', {name: 'x', id: 1})  # => 1
 ```
 
 ## `db.script`
@@ -100,11 +129,27 @@ Rows are processed one at a time, but the collected results are accumulated in m
 db.collect('SELECT x FROM t', fn row -> row.x * 2)  # => [2, 4, 6]
 ```
 
+## `db.last_insert_rowid`
+`db.last_insert_rowid()`
+
+Returns the rowid of the most recent successful `INSERT` on this connection as an `Int`.
+If no `INSERT` has been performed, returns `0`.
+
+```
+db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+db.exec('INSERT INTO t (name) VALUES (?)', ['alice'])
+db.last_insert_rowid()  # => 1
+db.exec('INSERT INTO t (name) VALUES (?)', ['bob'])
+db.last_insert_rowid()  # => 2
+```
+
+Also available as `tx.last_insert_rowid()` inside a transaction.
+
 ## `db.transaction`
 `db.transaction(callback)`
 
 Executes `callback` inside a SQLite transaction.
-The callback receives a transaction object `tx` with the same data methods as `db` (`exec`, `query`, `each`, `collect`, `script`).
+The callback receives a transaction object `tx` with the same data methods as `db` (`exec`, `query`, `each`, `collect`, `script`, `last_insert_rowid`).
 
 On normal return, the transaction is committed and `db.transaction` returns the total number of rows affected (`Int`).
 If the callback produces an error, the transaction is rolled back and the error propagates.
@@ -121,7 +166,7 @@ While a transaction is active, the `db` object cannot be used for data operation
 All data methods on `db` will produce an error until the transaction completes.
 Use the `tx` object for all database access within the callback.
 
-### `tx.exec`, `tx.query`, `tx.each`, `tx.collect`, `tx.script`
+### `tx.exec`, `tx.query`, `tx.each`, `tx.collect`, `tx.script`, `tx.last_insert_rowid`
 
 These have the same signatures and behavior as their `db` counterparts, but operate within the transaction.
 Queries through `tx` see uncommitted changes made earlier in the same transaction.

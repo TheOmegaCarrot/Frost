@@ -8,6 +8,11 @@
 
 namespace frst::sqlite
 {
+// Connection wraps a SQLite database handle with RAII lifetime.
+//
+// All methods except in_transaction() require an open connection and will
+// throw Frost_Recoverable_Error if called after close().
+// in_transaction() returns false on a closed connection.
 class Connection : public std::enable_shared_from_this<Connection>
 {
     class Restricted
@@ -41,7 +46,8 @@ class Connection : public std::enable_shared_from_this<Connection>
     void close();
 
     bool in_transaction() const;
-    int total_changes() const;
+    int total_changes();
+    Int last_insert_rowid();
 
   private:
     void require_open_();
