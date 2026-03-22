@@ -69,8 +69,8 @@ Multi-statement SQL is rejected.
 
 ```
 db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
-db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])                     # => 1
-db.exec('UPDATE t SET name = :name WHERE id = :id', {name: 'x', id: 1})  # => 1
+db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])                    # => 1
+db.exec('UPDATE t SET name = :name WHERE id = :id', {name: 'x', id: 1}) # => 1
 ```
 
 ## `db.script`

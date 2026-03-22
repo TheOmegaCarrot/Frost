@@ -82,7 +82,7 @@ int Connection::exec(const String& sql, const Map& bindings)
 }
 
 void Connection::for_each_row_impl_(const Stmt_Ptr& stmt,
-                                    std::function<void(Value_Ptr)> row_fn)
+                                    const std::function<void(Value_Ptr)>& row_fn)
 {
     int num_cols = sqlite3_column_count(stmt.get());
     while (true)

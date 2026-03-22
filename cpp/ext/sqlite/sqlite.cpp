@@ -244,7 +244,7 @@ Value_Ptr database_to_closuremap(const std::shared_ptr<Connection>& conn)
     auto guard = [conn]() {
         if (conn->in_transaction())
             throw Frost_Recoverable_Error{
-                "connection has an active transaction; "
+                "connection has an active transaction: "
                 "use the transaction object instead"};
     };
 

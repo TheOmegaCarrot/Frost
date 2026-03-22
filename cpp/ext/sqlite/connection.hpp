@@ -13,7 +13,7 @@ namespace frst::sqlite
 // All methods except in_transaction() require an open connection and will
 // throw Frost_Recoverable_Error if called after close().
 // in_transaction() returns false on a closed connection.
-class Connection : public std::enable_shared_from_this<Connection>
+class Connection
 {
     class Restricted
     {
@@ -59,7 +59,7 @@ class Connection : public std::enable_shared_from_this<Connection>
 
     int exec_impl_(const Stmt_Ptr& stmt);
     void for_each_row_impl_(const Stmt_Ptr& stmt,
-                            std::function<void(Value_Ptr)> row_fn);
+                            const std::function<void(Value_Ptr)>& row_fn);
 
     Stmt_Ptr prepare_(const String& sql);
     void bind_positional_(const Stmt_Ptr& stmt, const Array& bindings);
