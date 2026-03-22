@@ -28,6 +28,14 @@ assert(empty_collect == [], 'collect on empty returns empty array')
 
 # --- Error paths ---
 
+# No arguments
+def collect_no_args = try_call(db.collect, [])
+assert(not collect_no_args.ok, 'collect with no args should fail')
+
+# One argument (missing callback)
+def collect_one_arg = try_call(db.collect, ['SELECT 1'])
+assert(not collect_one_arg.ok, 'collect with only SQL should fail')
+
 # Non-string SQL
 def collect_bad_sql = try_call(db.collect, [123, fn row -> null])
 assert(not collect_bad_sql.ok, 'collect: non-string SQL should fail')
@@ -39,7 +47,7 @@ assert(not collect_invalid.ok, 'collect: invalid SQL should fail')
 # Trailing content
 def collect_trailing = try_call(db.collect, ['SELECT 1; SELECT 2', fn row -> null])
 assert(not collect_trailing.ok, 'collect: trailing content should fail')
-assert(contains(collect_trailing.error, 'trailing content'), 'collect: should mention trailing content')
+assert(collect_trailing.error @ contains('trailing content'), 'collect: should mention trailing content')
 
 # Too few bindings
 def collect_too_few = try_call(db.collect, ['SELECT ? + ?', [1], fn row -> null])
@@ -68,7 +76,7 @@ assert(not collect_bad_fn.ok, 'collect: Function binding should fail')
 # Empty SQL
 def collect_empty = try_call(db.collect, ['', fn row -> null])
 assert(not collect_empty.ok, 'collect: empty SQL should fail')
-assert(contains(collect_empty.error, 'empty SQL'), 'collect: should mention empty SQL')
+assert(collect_empty.error @ contains('empty SQL'), 'collect: should mention empty SQL')
 
 # Non-function callback
 def collect_no_fn = try_call(db.collect, ['SELECT 1', 'not a function'])
@@ -77,7 +85,7 @@ assert(not collect_no_fn.ok, 'collect: non-function callback should fail')
 # Callback error propagation
 def collect_throw = try_call(db.collect, ['SELECT * FROM nums', fn row -> assert(false, 'kaboom')])
 assert(not collect_throw.ok, 'collect: callback error should propagate')
-assert(contains(collect_throw.error, 'kaboom'), 'collect: should contain callback error message')
+assert(collect_throw.error @ contains('kaboom'), 'collect: should contain callback error message')
 
 # Connection still usable after errors
 assert(db.query('SELECT count(*) as c FROM nums')[0].c == 3, 'query should succeed after collect errors')

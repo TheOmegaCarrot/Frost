@@ -8,8 +8,9 @@ def db = sqlite.open(path)
 
 # --- Happy path ---
 
-# DDL
-db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+# DDL returns 0 rows affected
+def n0 = db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+assert(n0 == 0, 'DDL should return 0 rows affected')
 
 # DML - verify row counts for insert, update, delete
 def n1 = db.exec("INSERT INTO t VALUES (1, 'alice')")
@@ -39,13 +40,26 @@ assert(n7 == 0, 'update matching nothing should return 0')
 def n8 = db.exec('DELETE FROM t WHERE id = ?', [9999])
 assert(n8 == 0, 'delete matching nothing should return 0')
 
+# DDL-DML-DDL: verify DDL returns 0 even after intervening DML
+def n_ddl1 = db.exec('CREATE TABLE t2 (x INTEGER)')
+assert(n_ddl1 == 0, 'first DDL should return 0')
+
+def n_dml = db.exec("INSERT INTO t VALUES (6, 'frank'), (7, 'grace')")
+assert(n_dml == 2, 'insert between DDLs should return 2')
+
+def n_ddl2 = db.exec('CREATE TABLE t3 (x INTEGER)')
+assert(n_ddl2 == 0, 'DDL after DML should return 0, not stale count')
+
 # Trailing semicolon is accepted
-db.exec('CREATE TABLE t2 (x INTEGER)')
 db.exec('INSERT INTO t2 VALUES (1);')
 def n9 = db.query('SELECT count(*) as c FROM t2')[0].c
 assert(n9 == 1, 'trailing semicolon accepted by exec')
 
 # --- Error paths ---
+
+# No arguments
+def exec_no_args = try_call(db.exec, [])
+assert(not exec_no_args.ok, 'exec with no args should fail')
 
 # Wrong argument type
 def wrong_type = try_call(db.exec, [123])
@@ -66,17 +80,17 @@ assert(not dup.ok, 'duplicate primary key should fail')
 # Trailing content (multi-statement)
 def trailing = try_call(db.exec, ["INSERT INTO t VALUES (6, 'x'); INSERT INTO t VALUES (7, 'y')"])
 assert(not trailing.ok, 'multi-statement exec should fail')
-assert(contains(trailing.error, 'trailing content'), 'should mention trailing content')
+assert(trailing.error @ contains('trailing content'), 'should mention trailing content')
 
 # Too few bindings
 def exec_few = try_call(db.exec, ['INSERT INTO t VALUES (?, ?)', [1]])
 assert(not exec_few.ok, 'too few bindings should fail')
-assert(contains(exec_few.error, 'expected 2'), 'should mention expected count')
+assert(exec_few.error @ contains('expected 2'), 'should mention expected count')
 
 # Too many bindings
 def exec_many = try_call(db.exec, ['INSERT INTO t (id) VALUES (?)', [1, 2, 3]])
 assert(not exec_many.ok, 'too many bindings should fail')
-assert(contains(exec_many.error, 'expected 1'), 'should mention expected count')
+assert(exec_many.error @ contains('expected 1'), 'should mention expected count')
 
 # Zero bindings when expecting some
 def exec_zero = try_call(db.exec, ['SELECT ?'])
@@ -85,7 +99,7 @@ assert(not exec_zero.ok, 'exec: zero bindings when expecting some should fail')
 # Unsupported binding type: Array
 def bad_bind = try_call(db.exec, ['INSERT INTO t VALUES (?, ?)', [[1, 2], 'x']])
 assert(not bad_bind.ok, 'Array binding should fail')
-assert(contains(bad_bind.error, 'unsupported binding type'), 'should mention unsupported type')
+assert(bad_bind.error @ contains('unsupported binding type'), 'should mention unsupported type')
 
 # Unsupported binding type: Map
 def exec_bad_map = try_call(db.exec, ['SELECT ?', [{a: 1}]])
@@ -98,11 +112,32 @@ assert(not exec_bad_fn.ok, 'exec: Function binding should fail')
 # Empty SQL
 def exec_empty = try_call(db.exec, [''])
 assert(not exec_empty.ok, 'exec: empty SQL should fail')
-assert(contains(exec_empty.error, 'empty SQL'), 'exec: should mention empty SQL')
+assert(exec_empty.error @ contains('empty SQL'), 'exec: should mention empty SQL')
 
 # Connection still usable after errors
 def n_after = db.exec('INSERT INTO t VALUES (?, ?)', [99, 'recovery'])
 assert(n_after == 1, 'insert after errors should succeed')
+
+# --- last_insert_rowid ---
+
+db.exec('CREATE TABLE auto_id (id INTEGER PRIMARY KEY, val TEXT)')
+db.exec('INSERT INTO auto_id (val) VALUES (?)', ['first'])
+def rid1 = db.last_insert_rowid()
+assert(rid1 == 1, 'first autoincrement rowid should be 1')
+
+db.exec('INSERT INTO auto_id (val) VALUES (?)', ['second'])
+def rid2 = db.last_insert_rowid()
+assert(rid2 == 2, 'second autoincrement rowid should be 2')
+
+# Explicit id does not break last_insert_rowid
+db.exec('INSERT INTO auto_id VALUES (?, ?)', [100, 'explicit'])
+assert(db.last_insert_rowid() == 100, 'explicit id reflected in last_insert_rowid')
+
+# last_insert_rowid inside a transaction
+db.transaction(fn tx -> {
+    tx.exec('INSERT INTO auto_id (val) VALUES (?)', ['tx_row'])
+    assert(tx.last_insert_rowid() == 101, 'tx.last_insert_rowid works')
+})
 
 # Clean up
 db.close()

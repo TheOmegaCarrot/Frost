@@ -9,6 +9,6 @@ namespace frst
 void inject_prelude(Symbol_Table& table);
 void inject_prelude(Execution_Context ctx);
 
-}
+} // namespace frst
 
 #endif

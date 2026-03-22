@@ -140,7 +140,21 @@ assert(r_multi_rows[2].val == 'third', 'third row correct')
 def r_semi = db.query('SELECT 1 as x;')
 assert(len(r_semi) == 1, 'trailing semicolon should be accepted')
 
+# --- Duplicate column names ---
+
+# When multiple columns share a name, last column wins (insert_or_assign)
+db.exec('CREATE TABLE dup_cols (x INTEGER, y INTEGER)')
+db.exec('INSERT INTO dup_cols VALUES (1, 2)')
+def dup = db.query('SELECT x, y, x + y AS x FROM dup_cols')[0]
+assert(len(keys(dup)) == 2, 'duplicate column names collapse into one key')
+assert(dup.x == 3, 'last column with duplicate name wins')
+assert(dup.y == 2, 'non-duplicate column preserved')
+
 # --- Error paths ---
+
+# No arguments
+def query_no_args = try_call(db.query, [])
+assert(not query_no_args.ok, 'query with no args should fail')
 
 # Invalid SQL
 def bad_sql = try_call(db.query, ['NOT VALID'])
@@ -153,27 +167,27 @@ assert(not wrong_type.ok, 'non-string SQL should fail')
 # Too few bindings
 def too_few = try_call(db.query, ['SELECT ? + ?', [1]])
 assert(not too_few.ok, 'too few bindings should fail')
-assert(contains(too_few.error, 'expected 2'), 'should mention expected count')
+assert(too_few.error @ contains('expected 2'), 'should mention expected count')
 
 # Too many bindings
 def too_many = try_call(db.query, ['SELECT ?', [1, 2, 3]])
 assert(not too_many.ok, 'too many bindings should fail')
-assert(contains(too_many.error, 'expected 1'), 'should mention expected count')
+assert(too_many.error @ contains('expected 1'), 'should mention expected count')
 
 # Zero bindings when expecting some (no bindings argument)
 def zero_bindings = try_call(db.query, ['SELECT ?'])
 assert(not zero_bindings.ok, 'zero bindings when expecting some should fail')
-assert(contains(zero_bindings.error, 'expected 1'), 'should mention expected count')
+assert(zero_bindings.error @ contains('expected 1'), 'should mention expected count')
 
 # Unsupported binding type: Array
 def bad_arr = try_call(db.query, ['SELECT ?', [[1, 2]]])
 assert(not bad_arr.ok, 'Array binding should fail')
-assert(contains(bad_arr.error, 'unsupported binding type'), 'should mention unsupported type')
+assert(bad_arr.error @ contains('unsupported binding type'), 'should mention unsupported type')
 
 # Unsupported binding type: Map
 def bad_map = try_call(db.query, ['SELECT ?', [{a: 1}]])
 assert(not bad_map.ok, 'Map binding should fail')
-assert(contains(bad_map.error, 'unsupported binding type'), 'should mention unsupported type')
+assert(bad_map.error @ contains('unsupported binding type'), 'should mention unsupported type')
 
 # Unsupported binding type: Function
 def bad_fn = try_call(db.query, ['SELECT ?', [fn x -> x]])
@@ -182,12 +196,12 @@ assert(not bad_fn.ok, 'query: Function binding should fail')
 # Trailing content (multi-statement)
 def trailing = try_call(db.query, ['SELECT 1; SELECT 2'])
 assert(not trailing.ok, 'trailing content should fail')
-assert(contains(trailing.error, 'trailing content'), 'should mention trailing content')
+assert(trailing.error @ contains('trailing content'), 'should mention trailing content')
 
 # Empty SQL
 def empty_sql = try_call(db.query, [''])
 assert(not empty_sql.ok, 'empty SQL should fail')
-assert(contains(empty_sql.error, 'empty SQL'), 'should mention empty SQL')
+assert(empty_sql.error @ contains('empty SQL'), 'should mention empty SQL')
 
 # Connection still usable after errors
 def recovery = db.query('SELECT * FROM types')

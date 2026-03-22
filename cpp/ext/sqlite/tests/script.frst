@@ -1,0 +1,75 @@
+# SQLite db.script tests
+
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+# --- Happy path ---
+
+# Multi-statement DDL
+def n0 = db.script('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT); CREATE TABLE t2 (x INTEGER)')
+assert(n0 == 0, 'DDL-only script should return 0')
+
+# Multi-statement DML
+def n1 = db.script("INSERT INTO t VALUES (1, 'alice'); INSERT INTO t VALUES (2, 'bob'); INSERT INTO t VALUES (3, 'charlie')")
+assert(n1 == 3, 'multi-insert script should return total rows affected')
+
+# Mixed DDL and DML
+def n2 = db.script("CREATE TABLE t3 (v TEXT); INSERT INTO t3 VALUES ('x'); INSERT INTO t3 VALUES ('y')")
+assert(n2 == 2, 'mixed DDL+DML script should count only DML rows')
+
+# Verify data was actually inserted
+def rows = db.query('SELECT * FROM t ORDER BY id')
+assert(len(rows) == 3, 'script inserts should persist')
+assert(rows[0].name == 'alice', 'first row correct')
+assert(rows[2].name == 'charlie', 'third row correct')
+
+def t3_rows = db.query('SELECT * FROM t3 ORDER BY v')
+assert(len(t3_rows) == 2, 'mixed script inserts should persist')
+
+# Single statement works too
+def n3 = db.script("INSERT INTO t VALUES (4, 'diana')")
+assert(n3 == 1, 'single-statement script should work')
+
+# Empty result set operations
+def n4 = db.script("UPDATE t SET name = 'nobody' WHERE id = 9999")
+assert(n4 == 0, 'zero-affect script should return 0')
+
+# Trailing semicolons and whitespace
+def n5 = db.script("INSERT INTO t2 VALUES (1) ;  ;  ")
+assert(n5 == 1, 'trailing semicolons and whitespace should be fine')
+
+# --- Error paths ---
+
+# No arguments
+def script_no_args = try_call(db.script, [])
+assert(not script_no_args.ok, 'script with no args should fail')
+
+# Wrong argument type
+def bad_type = try_call(db.script, [123])
+assert(not bad_type.ok, 'script: non-string should fail')
+
+# Invalid SQL
+def bad_sql = try_call(db.script, ['NOT VALID SQL'])
+assert(not bad_sql.ok, 'script: invalid SQL should fail')
+
+# Error partway through: first statement succeeds, second fails
+db.script('CREATE TABLE partial (id INTEGER PRIMARY KEY)')
+def partial = try_call(db.script, ["INSERT INTO partial VALUES (1); INSERT INTO partial VALUES (1)"])
+assert(not partial.ok, 'script: should fail on duplicate key')
+# First insert may or may not have committed (sqlite3_exec is not atomic without a transaction)
+
+# Empty SQL is accepted by sqlite3_exec
+def empty = db.script('')
+assert(empty == 0, 'script: empty SQL should return 0')
+
+# Closed connection
+db.close()
+def closed = try_call(db.script, ['SELECT 1'])
+assert(not closed.ok, 'script: closed connection should fail')
+assert(closed.error @ contains('closed'), 'script: should mention closed')
+
+# Clean up
+if path != ':memory:': fs.remove(path)
