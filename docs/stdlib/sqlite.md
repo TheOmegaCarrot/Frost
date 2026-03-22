@@ -1,0 +1,153 @@
+# SQLite
+
+SQLite support can be disabled at build time with `-DWITH_SQLITE=NO`.
+
+The `sqlite` module provides access to SQLite databases.
+All functions that accept SQL with parameters use `?` placeholders and an array of bindings.
+Supported binding types are `Null`, `Int`, `Float`, `Bool`, and `String`.
+`Bool` values are stored as integers (`true` → `1`, `false` → `0`).
+
+## `sqlite.version`
+
+A `String` containing the SQLite library version (e.g. `"3.51.3"`).
+
+## `sqlite.open`
+`sqlite.open(path)`
+
+Opens (or creates) a read-write SQLite database at `path`.
+Returns a database object, the methods of which are documented as `db.*`.
+
+## `sqlite.open_readonly`
+`sqlite.open_readonly(path)`
+
+Opens an existing SQLite database at `path` in read-only mode.
+Produces an error if the file does not exist.
+Write operations (`INSERT`, `UPDATE`, `DELETE`, DDL) will fail.
+
+## `sqlite.open_memory`
+`sqlite.open_memory()`
+
+Opens a private in-memory database.
+The database exists only for the lifetime of the returned database object.
+
+## `db.exec`
+`db.exec(sql)`
+`db.exec(sql, bindings)`
+
+Executes a single SQL statement and returns the number of rows affected (`Int`).
+DDL statements return `0`.
+Multi-statement SQL is rejected.
+
+```
+db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])     # => 1
+db.exec('UPDATE t SET name = ? WHERE id > ?', ['x', 0])  # => 1
+```
+
+## `db.script`
+`db.script(sql)`
+
+Executes one or more SQL statements separated by semicolons.
+Returns the total number of rows affected across all statements.
+Does not accept parameter bindings.
+
+Without a wrapping `db.transaction`, each statement is committed individually.
+If a statement fails partway through a script, earlier statements will have already committed.
+
+```
+db.script('CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1); INSERT INTO t VALUES (2)')  # => 2
+```
+
+## `db.query`
+`db.query(sql)`
+`db.query(sql, bindings)`
+
+Executes a single SQL statement and returns all result rows as an `Array` of `Map`s.
+Each map has column names as keys.
+
+```
+db.query('SELECT * FROM t WHERE id > ?', [0])
+# => [{id: 1, name: 'alice'}, {id: 2, name: 'bob'}]
+```
+
+SQLite types map to Frost types: `INTEGER` → `Int`, `REAL` → `Float`, `TEXT` → `String`, `BLOB` → `String`, `NULL` → `null`.
+
+All result rows are loaded into memory at once.
+For large result sets, prefer `db.each` or `db.collect` which process one row at a time.
+Note that even with row-at-a-time processing, each individual column value is fully materialized in memory.
+Databases containing very large `BLOB` or `TEXT` values (e.g. SQLAR archives) should be handled with care.
+
+## `db.each`
+`db.each(sql, callback)`
+`db.each(sql, bindings, callback)`
+
+Executes a query and calls `callback` with each row.
+Only one row is in memory at a time, making this suitable for large result sets.
+Returns `null`.
+
+```
+db.each('SELECT * FROM src', fn row -> db.exec('INSERT INTO dst VALUES (?)', [row.x]))
+```
+
+## `db.collect`
+`db.collect(sql, callback)`
+`db.collect(sql, bindings, callback)`
+
+Executes a query, calls `callback` with each row, and collects the return values into an `Array`.
+Rows are processed one at a time, but the collected results are accumulated in memory.
+
+```
+db.collect('SELECT x FROM t', fn row -> row.x * 2)  # => [2, 4, 6]
+```
+
+## `db.transaction`
+`db.transaction(callback)`
+
+Executes `callback` inside a SQLite transaction.
+The callback receives a transaction object `tx` with the same data methods as `db` (`exec`, `query`, `each`, `collect`, `script`).
+
+On normal return, the transaction is committed and `db.transaction` returns the total number of rows affected (`Int`).
+If the callback produces an error, the transaction is rolled back and the error propagates.
+
+```
+db.transaction(fn tx -> {
+    tx.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
+    tx.exec('INSERT INTO t VALUES (?, ?)', [2, 'bob'])
+})
+# => 2
+```
+
+While a transaction is active, the `db` object cannot be used for data operations.
+All data methods on `db` will produce an error until the transaction completes.
+Use the `tx` object for all database access within the callback.
+
+### `tx.exec`, `tx.query`, `tx.each`, `tx.collect`, `tx.script`
+
+These have the same signatures and behavior as their `db` counterparts, but operate within the transaction.
+Queries through `tx` see uncommitted changes made earlier in the same transaction.
+Note that callbacks passed to `tx.each` and `tx.collect` should also use `tx` for any database operations, not `db`.
+
+### Nested transactions
+
+Nested transactions are not supported.
+Calling `db.transaction` while a transaction is already active produces an error.
+
+### Errors during a transaction
+
+Any error inside the callback — whether from Frost code or from SQLite (e.g. a constraint violation) — causes an automatic rollback.
+The error then propagates to the caller of `db.transaction`.
+
+```
+def result = try_call(db.transaction, [fn tx -> {
+    tx.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
+    tx.exec('INSERT INTO t VALUES (?, ?)', [1, 'duplicate'])  # constraint violation
+}])
+# result.ok == false; both inserts are rolled back
+```
+
+## `db.close`
+`db.close()`
+
+Closes the database connection.
+Produces an error if a transaction is active.
+After closing, all operations on `db` produce an error.

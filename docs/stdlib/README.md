@@ -46,6 +46,7 @@ In these cases, short placeholder names are used in signatures rather than inven
 Extensions are optional components enabled at build time.
 They are not available in all Frost builds, but are enabled by default.
 
-| Extension                  | Description          |
-|----------------------------|----------------------|
-| [HTTP](./http.md)          | Making HTTP requests |
+| Extension                  | Description                    |
+|----------------------------|--------------------------------|
+| [HTTP](./http.md)          | Making HTTP requests           |
+| [SQLite](./sqlite.md)      | Embedded relational database   |
