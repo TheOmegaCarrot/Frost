@@ -21,8 +21,24 @@ std::shared_ptr<Connection> Connection::create(const String& filename,
     return conn;
 }
 
+void Connection::close()
+{
+    std::lock_guard lock{mutex_};
+    require_open_();
+
+    sqlite3_close_v2(conn_);
+    conn_ = nullptr;
+}
+
+Connection::~Connection()
+{
+    if (conn_)
+        sqlite3_close_v2(conn_);
+}
+
 int Connection::script(const String& sql)
 {
+    std::lock_guard lock{mutex_};
     require_open_();
 
     int before = sqlite3_total_changes(conn_);
@@ -41,6 +57,7 @@ int Connection::script(const String& sql)
 
 int Connection::exec(const String& sql, const Array& bindings)
 {
+    std::lock_guard lock{mutex_};
     sqlite3_stmt* stmt = prepare_and_bind_(sql, bindings);
     BOOST_SCOPE_EXIT_ALL(&)
     {
@@ -67,6 +84,7 @@ int Connection::exec(const String& sql, const Array& bindings)
 void Connection::for_each_row(const String& sql, const Array& bindings,
                               std::function<void(Value_Ptr)> row_fn)
 {
+    std::lock_guard lock{mutex_};
     sqlite3_stmt* stmt = prepare_and_bind_(sql, bindings);
     BOOST_SCOPE_EXIT_ALL(&)
     {

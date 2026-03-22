@@ -3,6 +3,7 @@
 
 #include <frost/builtins-common.hpp>
 
+#include <mutex>
 #include <sqlite3.h>
 
 namespace frst::sqlite
@@ -34,19 +35,9 @@ class Connection : public std::enable_shared_from_this<Connection>
     void for_each_row(const String& sql, const Array& bindings,
                       std::function<void(Value_Ptr)> row_fn);
 
-    void close()
-    {
-        require_open_();
+    void close();
 
-        sqlite3_close_v2(conn_);
-        conn_ = nullptr;
-    }
-
-    ~Connection()
-    {
-        if (conn_)
-            sqlite3_close_v2(conn_);
-    }
+    ~Connection();
 
   private:
     void require_open_();
@@ -56,6 +47,7 @@ class Connection : public std::enable_shared_from_this<Connection>
     Value_Ptr read_row_(sqlite3_stmt* stmt, int num_cols);
 
     sqlite3* conn_ = nullptr;
+    std::recursive_mutex mutex_;
 };
 } // namespace frst::sqlite
 
