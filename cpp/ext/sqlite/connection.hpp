@@ -37,16 +37,23 @@ class Connection : public std::enable_shared_from_this<Connection>
 
     void close();
 
-    ~Connection();
-
   private:
     void require_open_();
 
-    sqlite3_stmt* prepare_and_bind_(const String& sql, const Array& bindings);
+    using Stmt_Ptr =
+        std::unique_ptr<sqlite3_stmt, decltype([](sqlite3_stmt* s) {
+                            sqlite3_finalize(s);
+                        })>;
+
+    Stmt_Ptr prepare_and_bind_(const String& sql, const Array& bindings);
 
     Value_Ptr read_row_(sqlite3_stmt* stmt, int num_cols);
 
-    sqlite3* conn_ = nullptr;
+    using Conn_Ptr = std::unique_ptr<sqlite3, decltype([](sqlite3* db) {
+                                         sqlite3_close_v2(db);
+                                     })>;
+
+    Conn_Ptr conn_;
     std::recursive_mutex mutex_;
 };
 } // namespace frst::sqlite
