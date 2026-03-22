@@ -69,27 +69,27 @@ assert(not close2.ok, 'double close should fail')
 # Closed connection errors for all methods
 def closed_query = try_call(db.query, ['SELECT 1'])
 assert(not closed_query.ok, 'query on closed db should fail')
-assert(contains(closed_query.error, 'closed'), 'should mention closed')
+assert(closed_query.error @ contains('closed'), 'should mention closed')
 
 def closed_exec = try_call(db.exec, ['SELECT 1'])
 assert(not closed_exec.ok, 'exec on closed db should fail')
-assert(contains(closed_exec.error, 'closed'), 'should mention closed')
+assert(closed_exec.error @ contains('closed'), 'should mention closed')
 
 def closed_each = try_call(db.each, ['SELECT 1', fn row -> null])
 assert(not closed_each.ok, 'each on closed db should fail')
-assert(contains(closed_each.error, 'closed'), 'should mention closed')
+assert(closed_each.error @ contains('closed'), 'should mention closed')
 
 def closed_collect = try_call(db.collect, ['SELECT 1', fn row -> null])
 assert(not closed_collect.ok, 'collect on closed db should fail')
-assert(contains(closed_collect.error, 'closed'), 'should mention closed')
+assert(closed_collect.error @ contains('closed'), 'should mention closed')
 
 def closed_script = try_call(db.script, ['SELECT 1'])
 assert(not closed_script.ok, 'script on closed db should fail')
-assert(contains(closed_script.error, 'closed'), 'should mention closed')
+assert(closed_script.error @ contains('closed'), 'should mention closed')
 
 def closed_rowid = try_call(db.last_insert_rowid, [])
 assert(not closed_rowid.ok, 'last_insert_rowid on closed db should fail')
-assert(contains(closed_rowid.error, 'closed'), 'should mention closed')
+assert(closed_rowid.error @ contains('closed'), 'should mention closed')
 
 # Clean up filesystem db
 if path != ':memory:': fs.remove(path)

@@ -45,7 +45,7 @@ assert(not each_invalid.ok, 'each: invalid SQL should fail')
 # Trailing content
 def each_trailing = try_call(db.each, ['SELECT 1; SELECT 2', fn row -> null])
 assert(not each_trailing.ok, 'each: trailing content should fail')
-assert(contains(each_trailing.error, 'trailing content'), 'each: should mention trailing content')
+assert(each_trailing.error @ contains('trailing content'), 'each: should mention trailing content')
 
 # Too few bindings
 def each_too_few = try_call(db.each, ['SELECT ? + ?', [1], fn row -> null])
@@ -74,7 +74,7 @@ assert(not each_bad_fn.ok, 'each: Function binding should fail')
 # Empty SQL
 def each_empty = try_call(db.each, ['', fn row -> null])
 assert(not each_empty.ok, 'each: empty SQL should fail')
-assert(contains(each_empty.error, 'empty SQL'), 'each: should mention empty SQL')
+assert(each_empty.error @ contains('empty SQL'), 'each: should mention empty SQL')
 
 # Non-function callback
 def each_no_fn = try_call(db.each, ['SELECT 1', 'not a function'])
@@ -83,7 +83,7 @@ assert(not each_no_fn.ok, 'each: non-function callback should fail')
 # Callback error propagation
 def each_throw = try_call(db.each, ['SELECT * FROM nums', fn row -> assert(false, 'boom')])
 assert(not each_throw.ok, 'each: callback error should propagate')
-assert(contains(each_throw.error, 'boom'), 'each: should contain callback error message')
+assert(each_throw.error @ contains('boom'), 'each: should contain callback error message')
 
 # Connection still usable after errors
 assert(db.query('SELECT count(*) as c FROM nums')[0].c == 3, 'query should succeed after each errors')

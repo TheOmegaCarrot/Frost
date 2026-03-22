@@ -130,27 +130,27 @@ db.transaction(fn tx -> {
 # Named parameter not in query
 def bad_name = try_call(db.exec, ['INSERT INTO t VALUES (:id, :name, :score)', {id: 1, name: 'x', wrong: 2.0}])
 assert(not bad_name.ok, 'unmatched parameter name should fail')
-assert(contains(bad_name.error, 'wrong'), 'should mention the bad parameter name')
+assert(bad_name.error @ contains('wrong'), 'should mention the bad parameter name')
 
 # Too few named bindings
 def too_few = try_call(db.exec, ['INSERT INTO t VALUES (:id, :name, :score)', {id: 1}])
 assert(not too_few.ok, 'too few named bindings should fail')
-assert(contains(too_few.error, 'expected 3'), 'should mention expected count')
+assert(too_few.error @ contains('expected 3'), 'should mention expected count')
 
 # Too many named bindings
 def too_many = try_call(db.exec, ['SELECT :x', {x: 1, y: 2}])
 assert(not too_many.ok, 'too many named bindings should fail')
-assert(contains(too_many.error, 'expected 1'), 'should mention expected count')
+assert(too_many.error @ contains('expected 1'), 'should mention expected count')
 
 # Named bindings with positional (?) parameters
 def mixed = try_call(db.exec, ['SELECT ?', {x: 1}])
 assert(not mixed.ok, 'named bindings with positional params should fail')
-assert(contains(mixed.error, 'positional'), 'should mention positional')
+assert(mixed.error @ contains('positional'), 'should mention positional')
 
 # Unsupported binding type in named map
 def bad_type = try_call(db.exec, ['SELECT :x', {x: [1, 2]}])
 assert(not bad_type.ok, 'Array value in named binding should fail')
-assert(contains(bad_type.error, 'unsupported binding type'), 'should mention unsupported type')
+assert(bad_type.error @ contains('unsupported binding type'), 'should mention unsupported type')
 
 # Non-string key in binding map (Int key)
 def int_key = try_call(db.exec, ['SELECT :x', {[1]: 'hello'}])

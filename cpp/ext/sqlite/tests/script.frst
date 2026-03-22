@@ -65,7 +65,7 @@ assert(empty == 0, 'script: empty SQL should return 0')
 db.close()
 def closed = try_call(db.script, ['SELECT 1'])
 assert(not closed.ok, 'script: closed connection should fail')
-assert(contains(closed.error, 'closed'), 'script: should mention closed')
+assert(closed.error @ contains('closed'), 'script: should mention closed')
 
 # Clean up
 if path != ':memory:': fs.remove(path)

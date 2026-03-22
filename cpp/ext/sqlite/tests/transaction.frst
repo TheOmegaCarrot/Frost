@@ -26,7 +26,7 @@ def failed = try_call(db.transaction, [fn tx -> {
     assert(false, 'intentional error')
 }])
 assert(not failed.ok, 'transaction should propagate exception')
-assert(contains(failed.error, 'intentional error'), 'should contain original error')
+assert(failed.error @ contains('intentional error'), 'should contain original error')
 def after_rollback = db.query('SELECT count(*) as c FROM t')
 assert(after_rollback[0].c == 2, 'rolled-back inserts should not persist')
 
@@ -95,7 +95,7 @@ def db_blocked = try_call(db.transaction, [fn tx -> {
     db.exec("INSERT INTO t VALUES (99, 'blocked')")
 }])
 assert(not db_blocked.ok, 'db.exec during transaction should fail')
-assert(contains(db_blocked.error, 'active transaction'), 'should mention active transaction')
+assert(db_blocked.error @ contains('active transaction'), 'should mention active transaction')
 
 def db_query_blocked = try_call(db.transaction, [fn tx -> {
     db.query('SELECT 1')
@@ -111,13 +111,19 @@ def db_each_blocked = try_call(db.transaction, [fn tx -> {
     db.each('SELECT 1', fn row -> null)
 }])
 assert(not db_each_blocked.ok, 'db.each during transaction should fail')
-assert(contains(db_each_blocked.error, 'active transaction'), 'db.each should mention active transaction')
+assert(db_each_blocked.error @ contains('active transaction'), 'db.each should mention active transaction')
 
 def db_collect_blocked = try_call(db.transaction, [fn tx -> {
     db.collect('SELECT 1', fn row -> row)
 }])
 assert(not db_collect_blocked.ok, 'db.collect during transaction should fail')
-assert(contains(db_collect_blocked.error, 'active transaction'), 'db.collect should mention active transaction')
+assert(db_collect_blocked.error @ contains('active transaction'), 'db.collect should mention active transaction')
+
+def db_rowid_blocked = try_call(db.transaction, [fn tx -> {
+    db.last_insert_rowid()
+}])
+assert(not db_rowid_blocked.ok, 'db.last_insert_rowid during transaction should fail')
+assert(db_rowid_blocked.error @ contains('active transaction'), 'db.last_insert_rowid should mention active transaction')
 
 # --- Error paths ---
 
@@ -130,7 +136,7 @@ def nested = try_call(db.transaction, [fn tx -> {
     db.transaction(fn tx2 -> null)
 }])
 assert(not nested.ok, 'nested transaction via db should fail')
-assert(contains(nested.error, 'active transaction'), 'nested via db should mention active transaction')
+assert(nested.error @ contains('active transaction'), 'nested via db should mention active transaction')
 
 # Nested transaction via tx.script BEGIN (hits SQLite: cannot start a transaction)
 def nested_begin = try_call(db.transaction, [fn tx -> {
@@ -179,7 +185,7 @@ def close_during_tx = try_call(db.transaction, [fn tx -> {
     db.close()
 }])
 assert(not close_during_tx.ok, 'close during transaction should fail')
-assert(contains(close_during_tx.error, 'transaction is active'), 'should mention active transaction')
+assert(close_during_tx.error @ contains('transaction is active'), 'should mention active transaction')
 
 # DB still works after rejected close
 def after_close_attempt = db.query('SELECT count(*) as c FROM t')
@@ -189,7 +195,7 @@ assert(after_close_attempt[0].c == after_count, 'db should still work after reje
 db.close()
 def closed_tx = try_call(db.transaction, [fn tx -> null])
 assert(not closed_tx.ok, 'transaction on closed db should fail')
-assert(contains(closed_tx.error, 'closed'), 'should mention closed')
+assert(closed_tx.error @ contains('closed'), 'should mention closed')
 
 # Clean up
 if path != ':memory:': fs.remove(path)
