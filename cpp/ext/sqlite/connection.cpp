@@ -21,6 +21,24 @@ std::shared_ptr<Connection> Connection::create(const String& filename,
     return conn;
 }
 
+int Connection::script(const String& sql)
+{
+    require_open_();
+
+    int before = sqlite3_total_changes(conn_);
+
+    char* errmsg = nullptr;
+    int rc = sqlite3_exec(conn_, sql.c_str(), nullptr, nullptr, &errmsg);
+    if (rc != SQLITE_OK)
+    {
+        std::string msg = errmsg ? errmsg : "unknown error";
+        sqlite3_free(errmsg);
+        throw Frost_Recoverable_Error{msg};
+    }
+
+    return sqlite3_total_changes(conn_) - before;
+}
+
 int Connection::exec(const String& sql, const Array& bindings)
 {
     sqlite3_stmt* stmt = prepare_and_bind_(sql, bindings);
@@ -28,6 +46,8 @@ int Connection::exec(const String& sql, const Array& bindings)
     {
         sqlite3_finalize(stmt);
     };
+
+    int before = sqlite3_total_changes(conn_);
 
     while (true)
     {
@@ -41,7 +61,7 @@ int Connection::exec(const String& sql, const Array& bindings)
         }
     }
 
-    return sqlite3_changes(conn_);
+    return sqlite3_total_changes(conn_) - before;
 }
 
 void Connection::for_each_row(const String& sql, const Array& bindings,

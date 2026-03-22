@@ -6,6 +6,7 @@ set(SQLITE_TESTS
     query.frst
     each.frst
     collect.frst
+    script.frst
 )
 
 find_program(VALGRIND valgrind)

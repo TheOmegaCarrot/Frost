@@ -8,8 +8,9 @@ def db = sqlite.open(path)
 
 # --- Happy path ---
 
-# DDL
-db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+# DDL returns 0 rows affected
+def n0 = db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+assert(n0 == 0, 'DDL should return 0 rows affected')
 
 # DML - verify row counts for insert, update, delete
 def n1 = db.exec("INSERT INTO t VALUES (1, 'alice')")
@@ -39,8 +40,17 @@ assert(n7 == 0, 'update matching nothing should return 0')
 def n8 = db.exec('DELETE FROM t WHERE id = ?', [9999])
 assert(n8 == 0, 'delete matching nothing should return 0')
 
+# DDL-DML-DDL: verify DDL returns 0 even after intervening DML
+def n_ddl1 = db.exec('CREATE TABLE t2 (x INTEGER)')
+assert(n_ddl1 == 0, 'first DDL should return 0')
+
+def n_dml = db.exec("INSERT INTO t VALUES (6, 'frank'), (7, 'grace')")
+assert(n_dml == 2, 'insert between DDLs should return 2')
+
+def n_ddl2 = db.exec('CREATE TABLE t3 (x INTEGER)')
+assert(n_ddl2 == 0, 'DDL after DML should return 0, not stale count')
+
 # Trailing semicolon is accepted
-db.exec('CREATE TABLE t2 (x INTEGER)')
 db.exec('INSERT INTO t2 VALUES (1);')
 def n9 = db.query('SELECT count(*) as c FROM t2')[0].c
 assert(n9 == 1, 'trailing semicolon accepted by exec')

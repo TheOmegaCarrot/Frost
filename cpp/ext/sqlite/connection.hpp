@@ -29,6 +29,8 @@ class Connection : public std::enable_shared_from_this<Connection>
 
     int exec(const String& sql, const Array& bindings);
 
+    int script(const String& sql);
+
     void for_each_row(const String& sql, const Array& bindings,
                       std::function<void(Value_Ptr)> row_fn);
 

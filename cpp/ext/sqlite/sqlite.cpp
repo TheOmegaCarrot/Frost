@@ -37,7 +37,7 @@ Bindings_And_Callback extract_bindings_and_callback(builtin_args_t args)
 
 Value_Ptr database_to_closuremap(const std::shared_ptr<Connection>& conn)
 {
-    STRINGS(exec, close, query, each, collect);
+    STRINGS(exec, close, query, each, collect, script);
     return Value::create(
         Value::trusted,
         Map{
@@ -51,6 +51,14 @@ Value_Ptr database_to_closuremap(const std::shared_ptr<Connection>& conn)
                      return Value::create(
                          conn->exec(GET(0, String), extract_bindings(args, 1)));
                  })},
+            {strings.script,
+             system_closure(1, 1,
+                            [conn](builtin_args_t args) {
+                                REQUIRE_ARGS("database.script",
+                                             PARAM("SQL", TYPES(String)));
+                                return Value::create(
+                                    conn->script(GET(0, String)));
+                            })},
             {strings.close, system_closure(0, 0,
                                            [conn](builtin_args_t) {
                                                conn->close();
