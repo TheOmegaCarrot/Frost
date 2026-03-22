@@ -44,12 +44,23 @@ def r2 = db.query('SELECT * FROM t WHERE id > :lo AND id < :hi', {lo: 1, hi: 3})
 assert(len(r2) == 1, 'range query should return 1 row')
 assert(r2[0].name == 'bob', 'range query returns bob')
 
+# @ prefix in query
+def r_at = db.query('SELECT * FROM t WHERE id = @id', {id: 2})
+assert(len(r_at) == 1, '@ prefix in query')
+assert(r_at[0].name == 'bob', '@ prefix query returns correct row')
+
+# $ prefix in query
+def r_dollar = db.query('SELECT * FROM t WHERE id = $id', {id: 3})
+assert(len(r_dollar) == 1, '$ prefix in query')
+assert(r_dollar[0].name == 'charlie', '$ prefix query returns correct row')
+
 # Named query returning empty result
 def r3 = db.query('SELECT * FROM t WHERE name = :name', {name: 'nobody'})
 assert(r3 == [], 'no match returns empty array')
 
 # --- each with named bindings ---
 
+# : prefix in each
 db.exec('CREATE TABLE each_out (name TEXT)')
 db.each('SELECT name FROM t WHERE score >= :min ORDER BY name', {min: 8.0}, fn row -> do {
     db.exec('INSERT INTO each_out VALUES (?)', [row.name])
@@ -59,10 +70,37 @@ assert(len(each_rows) == 2, 'each with named bindings should visit 2 rows')
 assert(each_rows[0].name == 'alice', 'each named bindings first row')
 assert(each_rows[1].name == 'charlie', 'each named bindings second row')
 
+# @ prefix in each
+db.exec('CREATE TABLE each_at (name TEXT)')
+db.each('SELECT name FROM t WHERE id = @id', {id: 2}, fn row -> do {
+    db.exec('INSERT INTO each_at VALUES (?)', [row.name])
+})
+def each_at_rows = db.query('SELECT name FROM each_at')
+assert(len(each_at_rows) == 1, '@ prefix in each')
+assert(each_at_rows[0].name == 'bob', '@ prefix each returns correct row')
+
+# $ prefix in each
+db.exec('CREATE TABLE each_dollar (name TEXT)')
+db.each('SELECT name FROM t WHERE id = $id', {id: 3}, fn row -> do {
+    db.exec('INSERT INTO each_dollar VALUES (?)', [row.name])
+})
+def each_dollar_rows = db.query('SELECT name FROM each_dollar')
+assert(len(each_dollar_rows) == 1, '$ prefix in each')
+assert(each_dollar_rows[0].name == 'charlie', '$ prefix each returns correct row')
+
 # --- collect with named bindings ---
 
+# : prefix in collect
 def scores = db.collect('SELECT score FROM t WHERE id <= :max_id ORDER BY id', {max_id: 2}, fn row -> row.score)
 assert(scores == [10.0, 7.0], 'collect with named bindings')
+
+# @ prefix in collect
+def at_names = db.collect('SELECT name FROM t WHERE id = @id', {id: 2}, fn row -> row.name)
+assert(at_names == ['bob'], '@ prefix in collect')
+
+# $ prefix in collect
+def dollar_names = db.collect('SELECT name FROM t WHERE id = $id', {id: 3}, fn row -> row.name)
+assert(dollar_names == ['charlie'], '$ prefix in collect')
 
 # --- All binding value types ---
 
