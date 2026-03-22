@@ -1,0 +1,195 @@
+# SQLite db.transaction tests
+
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
+
+# --- Happy path ---
+
+# Basic commit: callback returns normally, changes persist
+def result = db.transaction(fn tx -> {
+    tx.exec("INSERT INTO t VALUES (1, 'alice')")
+    tx.exec("INSERT INTO t VALUES (2, 'bob')")
+})
+assert(result == 2, 'transaction should return total rows changed')
+def rows = db.query('SELECT * FROM t ORDER BY id')
+assert(len(rows) == 2, 'committed rows should persist')
+assert(rows[0].name == 'alice', 'first row correct')
+assert(rows[1].name == 'bob', 'second row correct')
+
+# Rollback on exception: changes are undone
+def failed = try_call(db.transaction, [fn tx -> {
+    tx.exec("INSERT INTO t VALUES (3, 'charlie')")
+    assert(false, 'intentional error')
+}])
+assert(not failed.ok, 'transaction should propagate exception')
+assert(contains(failed.error, 'intentional error'), 'should contain original error')
+def after_rollback = db.query('SELECT count(*) as c FROM t')
+assert(after_rollback[0].c == 2, 'rolled-back inserts should not persist')
+
+# Query inside transaction sees uncommitted changes
+db.transaction(fn tx -> {
+    tx.exec("INSERT INTO t VALUES (3, 'charlie')")
+    def inside = tx.query('SELECT count(*) as c FROM t')
+    assert(inside[0].c == 3, 'query inside tx should see uncommitted rows')
+})
+def after_commit = db.query('SELECT count(*) as c FROM t')
+assert(after_commit[0].c == 3, 'committed row should persist')
+
+# All data methods work inside a transaction
+db.transaction(fn tx -> {
+    tx.exec('CREATE TABLE tx_test (x INTEGER)')
+    tx.exec('INSERT INTO tx_test VALUES (10)')
+    tx.exec('INSERT INTO tx_test VALUES (20)')
+    tx.exec('INSERT INTO tx_test VALUES (30)')
+
+    # query
+    def qrows = tx.query('SELECT * FROM tx_test ORDER BY x')
+    assert(len(qrows) == 3, 'tx.query should work')
+
+    # query with bindings
+    def qbound = tx.query('SELECT * FROM tx_test WHERE x > ?', [10])
+    assert(len(qbound) == 2, 'tx.query with bindings should work')
+
+    # each
+    tx.exec('CREATE TABLE tx_copy (x INTEGER)')
+    tx.each('SELECT x FROM tx_test', fn row -> tx.exec('INSERT INTO tx_copy VALUES (?)', [row.x]))
+    def copied = tx.query('SELECT count(*) as c FROM tx_copy')
+    assert(copied[0].c == 3, 'tx.each should work')
+
+    # collect
+    def collected = tx.collect('SELECT x FROM tx_test ORDER BY x', fn row -> row.x * 2)
+    assert(collected == [20, 40, 60], 'tx.collect should work')
+
+    # script
+    def n = tx.script("INSERT INTO tx_test VALUES (40); INSERT INTO tx_test VALUES (50)")
+    assert(n == 2, 'tx.script should work')
+})
+
+# Empty transaction (no SQL)
+def tx_empty = db.transaction(fn tx -> null)
+assert(tx_empty == 0, 'empty transaction should return 0 changes')
+def unchanged = db.query('SELECT count(*) as c FROM t')
+assert(unchanged[0].c == 3, 'empty transaction should not alter data')
+
+# Transaction return value is total change count
+def tx_changes = db.transaction(fn tx -> {
+    tx.exec("INSERT INTO t VALUES (10, 'x')")
+    tx.exec("INSERT INTO t VALUES (11, 'y')")
+    tx.exec("INSERT INTO t VALUES (12, 'z')")
+})
+assert(tx_changes == 3, 'transaction should return total rows changed')
+
+# DDL-only transaction returns 0
+def tx_ddl = db.transaction(fn tx -> {
+    tx.exec('CREATE TABLE tx_ddl_test (x INTEGER)')
+})
+assert(tx_ddl == 0, 'DDL-only transaction should return 0')
+
+# --- DB methods blocked during transaction ---
+
+def db_blocked = try_call(db.transaction, [fn tx -> {
+    db.exec("INSERT INTO t VALUES (99, 'blocked')")
+}])
+assert(not db_blocked.ok, 'db.exec during transaction should fail')
+assert(contains(db_blocked.error, 'active transaction'), 'should mention active transaction')
+
+def db_query_blocked = try_call(db.transaction, [fn tx -> {
+    db.query('SELECT 1')
+}])
+assert(not db_query_blocked.ok, 'db.query during transaction should fail')
+
+def db_script_blocked = try_call(db.transaction, [fn tx -> {
+    db.script('SELECT 1')
+}])
+assert(not db_script_blocked.ok, 'db.script during transaction should fail')
+
+def db_each_blocked = try_call(db.transaction, [fn tx -> {
+    db.each('SELECT 1', fn row -> null)
+}])
+assert(not db_each_blocked.ok, 'db.each during transaction should fail')
+assert(contains(db_each_blocked.error, 'active transaction'), 'db.each should mention active transaction')
+
+def db_collect_blocked = try_call(db.transaction, [fn tx -> {
+    db.collect('SELECT 1', fn row -> row)
+}])
+assert(not db_collect_blocked.ok, 'db.collect during transaction should fail')
+assert(contains(db_collect_blocked.error, 'active transaction'), 'db.collect should mention active transaction')
+
+# --- Error paths ---
+
+# Non-function argument
+def bad_arg = try_call(db.transaction, ['not a function'])
+assert(not bad_arg.ok, 'transaction with non-function should fail')
+
+# Nested transaction via db.transaction (hits db guard: active transaction)
+def nested = try_call(db.transaction, [fn tx -> {
+    db.transaction(fn tx2 -> null)
+}])
+assert(not nested.ok, 'nested transaction via db should fail')
+assert(contains(nested.error, 'active transaction'), 'nested via db should mention active transaction')
+
+# Nested transaction via tx.script BEGIN (hits SQLite: cannot start a transaction)
+def nested_begin = try_call(db.transaction, [fn tx -> {
+    tx.script('BEGIN')
+}])
+assert(not nested_begin.ok, 'nested BEGIN via tx.script should fail')
+
+# SQLite-level error causes rollback (constraint violation)
+def before_constraint = db.query('SELECT count(*) as c FROM t')[0].c
+def constraint_fail = try_call(db.transaction, [fn tx -> {
+    tx.exec("INSERT INTO t VALUES (500, 'will rollback')")
+    tx.exec("INSERT INTO t VALUES (1, 'duplicate pk')")
+}])
+assert(not constraint_fail.ok, 'constraint violation should fail transaction')
+def after_constraint = db.query('SELECT count(*) as c FROM t')[0].c
+assert(after_constraint == before_constraint, 'constraint error should rollback all inserts')
+
+# SQLite-level error: insert into nonexistent table
+def before_noent = db.query('SELECT count(*) as c FROM t')[0].c
+def noent_fail = try_call(db.transaction, [fn tx -> {
+    tx.exec("INSERT INTO t VALUES (501, 'will rollback')")
+    tx.exec('INSERT INTO nonexistent VALUES (1)')
+}])
+assert(not noent_fail.ok, 'nonexistent table should fail transaction')
+def after_noent = db.query('SELECT count(*) as c FROM t')[0].c
+assert(after_noent == before_noent, 'SQLite error should rollback all inserts')
+
+# DB is usable after failed transaction
+db.exec("INSERT INTO t VALUES (100, 'after')")
+def after = db.query('SELECT * FROM t WHERE id = 100')
+assert(len(after) == 1, 'db should be usable after failed transaction')
+
+# Rollback undoes all changes even if some succeeded
+def before_count = db.query('SELECT count(*) as c FROM t')[0].c
+def partial_fail = try_call(db.transaction, [fn tx -> {
+    tx.exec("INSERT INTO t VALUES (200, 'will rollback')")
+    tx.exec("INSERT INTO t VALUES (201, 'will rollback too')")
+    assert(false, 'force rollback')
+}])
+assert(not partial_fail.ok, 'should fail')
+def after_count = db.query('SELECT count(*) as c FROM t')[0].c
+assert(after_count == before_count, 'rollback should undo all inserts')
+
+# Close during active transaction should fail
+def close_during_tx = try_call(db.transaction, [fn tx -> {
+    db.close()
+}])
+assert(not close_during_tx.ok, 'close during transaction should fail')
+assert(contains(close_during_tx.error, 'transaction is active'), 'should mention active transaction')
+
+# DB still works after rejected close
+def after_close_attempt = db.query('SELECT count(*) as c FROM t')
+assert(after_close_attempt[0].c == after_count, 'db should still work after rejected close')
+
+# Transaction on closed connection
+db.close()
+def closed_tx = try_call(db.transaction, [fn tx -> null])
+assert(not closed_tx.ok, 'transaction on closed db should fail')
+assert(contains(closed_tx.error, 'closed'), 'should mention closed')
+
+# Clean up
+if path != ':memory:': fs.remove(path)

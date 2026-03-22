@@ -37,6 +37,9 @@ class Connection : public std::enable_shared_from_this<Connection>
 
     void close();
 
+    bool in_transaction() const;
+    int total_changes() const;
+
   private:
     void require_open_();
 

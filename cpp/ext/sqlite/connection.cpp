@@ -90,6 +90,16 @@ void Connection::for_each_row(const String& sql, const Array& bindings,
     }
 }
 
+bool Connection::in_transaction() const
+{
+    return conn_ && !sqlite3_get_autocommit(conn_.get());
+}
+
+int Connection::total_changes() const
+{
+    return conn_ ? sqlite3_total_changes(conn_.get()) : 0;
+}
+
 void Connection::require_open_()
 {
     if (not conn_)

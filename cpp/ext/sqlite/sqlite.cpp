@@ -33,100 +33,171 @@ Bindings_And_Callback extract_bindings_and_callback(builtin_args_t args)
         return {GET(1, Array), GET(2, Function)};
     return {{}, GET(1, Function)};
 }
+
+// Build the data-access closures shared by both db and tx maps.
+// The guard is called before each operation: the db guard rejects calls
+// during an active transaction; the tx guard rejects calls after the
+// transaction has ended.
+Map make_data_closures(std::shared_ptr<Connection> conn, std::string prefix,
+                       std::function<void()> guard)
+{
+    STRINGS(exec, query, each, collect, script);
+    auto px = [&](const char* method) { return prefix + "." + method; };
+
+    return Map{
+        {strings.exec,
+         system_closure(
+             1, 2,
+             [conn, guard, name = px("exec")](builtin_args_t args) {
+                 guard();
+                 REQUIRE_ARGS(name, PARAM("SQL", TYPES(String)),
+                              OPTIONAL(PARAM("bindings", TYPES(Array))));
+
+                 return Value::create(
+                     conn->exec(GET(0, String), extract_bindings(args, 1)));
+             })},
+        {strings.script,
+         system_closure(1, 1,
+                        [conn, guard, name = px("script")](builtin_args_t args) {
+                            guard();
+                            REQUIRE_ARGS(name, PARAM("SQL", TYPES(String)));
+                            return Value::create(
+                                conn->script(GET(0, String)));
+                        })},
+        {strings.query,
+         system_closure(
+             1, 2,
+             [conn, guard, name = px("query")](builtin_args_t args) {
+                 guard();
+                 REQUIRE_ARGS(name, PARAM("SQL", TYPES(String)),
+                              OPTIONAL(PARAM("bindings", TYPES(Array))));
+
+                 Array rows;
+                 conn->for_each_row(GET(0, String),
+                                    extract_bindings(args, 1),
+                                    [&](Value_Ptr row) {
+                                        rows.push_back(std::move(row));
+                                    });
+                 return Value::create(std::move(rows));
+             })},
+        {strings.each,
+         system_closure(
+             2, 3,
+             [conn, guard, name = px("each")](builtin_args_t args) {
+                 guard();
+                 if (args.size() == 3)
+                     REQUIRE_ARGS(name, PARAM("SQL", TYPES(String)),
+                                  PARAM("bindings", TYPES(Array)),
+                                  PARAM("callback", TYPES(Function)));
+                 else
+                     REQUIRE_ARGS(name, PARAM("SQL", TYPES(String)),
+                                  PARAM("callback", TYPES(Function)));
+
+                 auto [bindings, callback] =
+                     extract_bindings_and_callback(args);
+
+                 conn->for_each_row(GET(0, String), bindings,
+                                    [&](Value_Ptr row) {
+                                        callback->call({row});
+                                    });
+                 return Value::null();
+             })},
+        {strings.collect,
+         system_closure(
+             2, 3,
+             [conn, guard, name = px("collect")](builtin_args_t args) {
+                 guard();
+                 if (args.size() == 3)
+                     REQUIRE_ARGS(name, PARAM("SQL", TYPES(String)),
+                                  PARAM("bindings", TYPES(Array)),
+                                  PARAM("callback", TYPES(Function)));
+                 else
+                     REQUIRE_ARGS(name, PARAM("SQL", TYPES(String)),
+                                  PARAM("callback", TYPES(Function)));
+
+                 auto [bindings, callback] =
+                     extract_bindings_and_callback(args);
+
+                 Array results;
+                 conn->for_each_row(
+                     GET(0, String), bindings, [&](Value_Ptr row) {
+                         results.push_back(callback->call({row}));
+                     });
+                 return Value::create(std::move(results));
+             })},
+    };
+}
 } // namespace
 
 Value_Ptr database_to_closuremap(const std::shared_ptr<Connection>& conn)
 {
-    STRINGS(exec, close, query, each, collect, script);
-    return Value::create(
-        Value::trusted,
-        Map{
-            {strings.exec,
-             system_closure(
-                 1, 2,
-                 [conn](builtin_args_t args) {
-                     REQUIRE_ARGS("database.exec", PARAM("SQL", TYPES(String)),
-                                  OPTIONAL(PARAM("bindings", TYPES(Array))));
+    STRINGS(close, transaction);
 
-                     return Value::create(
-                         conn->exec(GET(0, String), extract_bindings(args, 1)));
-                 })},
-            {strings.script,
-             system_closure(1, 1,
-                            [conn](builtin_args_t args) {
-                                REQUIRE_ARGS("database.script",
-                                             PARAM("SQL", TYPES(String)));
-                                return Value::create(
-                                    conn->script(GET(0, String)));
-                            })},
-            {strings.close, system_closure(0, 0,
-                                           [conn](builtin_args_t) {
-                                               conn->close();
-                                               return Value::null();
-                                           })},
-            {strings.query,
-             system_closure(
-                 1, 2,
-                 [conn](builtin_args_t args) {
-                     REQUIRE_ARGS("database.query", PARAM("SQL", TYPES(String)),
-                                  OPTIONAL(PARAM("bindings", TYPES(Array))));
+    auto guard = [conn]() {
+        if (conn->in_transaction())
+            throw Frost_Recoverable_Error{
+                "connection has an active transaction; "
+                "use the transaction object instead"};
+    };
 
-                     Array rows;
-                     conn->for_each_row(GET(0, String),
-                                        extract_bindings(args, 1),
-                                        [&](Value_Ptr row) {
-                                            rows.push_back(std::move(row));
-                                        });
-                     return Value::create(std::move(rows));
-                 })},
-            {strings.each,
-             system_closure(
-                 2, 3,
-                 [conn](builtin_args_t args) {
-                     if (args.size() == 3)
-                         REQUIRE_ARGS("database.each",
-                                      PARAM("SQL", TYPES(String)),
-                                      PARAM("bindings", TYPES(Array)),
-                                      PARAM("callback", TYPES(Function)));
-                     else
-                         REQUIRE_ARGS("database.each",
-                                      PARAM("SQL", TYPES(String)),
-                                      PARAM("callback", TYPES(Function)));
+    Map entries = make_data_closures(conn, "database", guard);
 
-                     auto [bindings, callback] =
-                         extract_bindings_and_callback(args);
+    entries.insert_or_assign(
+        strings.close,
+        system_closure(0, 0,
+                       [conn](builtin_args_t) {
+                           if (conn->in_transaction())
+                               throw Frost_Recoverable_Error{
+                                   "cannot close connection while a "
+                                   "transaction is active"};
+                           conn->close();
+                           return Value::null();
+                       }));
 
-                     conn->for_each_row(GET(0, String), bindings,
-                                        [&](Value_Ptr row) {
-                                            callback->call({row});
-                                        });
-                     return Value::null();
-                 })},
-            {strings.collect,
-             system_closure(
-                 2, 3,
-                 [conn](builtin_args_t args) {
-                     if (args.size() == 3)
-                         REQUIRE_ARGS("database.collect",
-                                      PARAM("SQL", TYPES(String)),
-                                      PARAM("bindings", TYPES(Array)),
-                                      PARAM("callback", TYPES(Function)));
-                     else
-                         REQUIRE_ARGS("database.collect",
-                                      PARAM("SQL", TYPES(String)),
-                                      PARAM("callback", TYPES(Function)));
+    entries.insert_or_assign(
+        strings.transaction,
+        system_closure(
+            1, 1,
+            [conn](builtin_args_t args) {
+                REQUIRE_ARGS("database.transaction",
+                             PARAM("callback", TYPES(Function)));
 
-                     auto [bindings, callback] =
-                         extract_bindings_and_callback(args);
+                auto& callback = GET(0, Function);
 
-                     Array results;
-                     conn->for_each_row(
-                         GET(0, String), bindings, [&](Value_Ptr row) {
-                             results.push_back(callback->call({row}));
-                         });
-                     return Value::create(std::move(results));
-                 })},
-        });
+                if (conn->in_transaction())
+                    throw Frost_Recoverable_Error{
+                        "connection has an active transaction: "
+                        "cannot start a nested transaction"};
+
+                int before = conn->total_changes();
+                conn->script("BEGIN");
+
+                auto tx_guard = [conn]() {
+                    if (!conn->in_transaction())
+                        throw Frost_Recoverable_Error{
+                            "transaction is no longer active"};
+                };
+
+                Map tx_entries =
+                    make_data_closures(conn, "transaction", tx_guard);
+                auto tx = Value::create(Value::trusted, std::move(tx_entries));
+
+                try
+                {
+                    callback->call({tx});
+                    conn->script("COMMIT");
+                    return Value::create(
+                        Int{conn->total_changes() - before});
+                }
+                catch (...)
+                {
+                    if (conn->in_transaction())
+                        conn->script("ROLLBACK");
+                    throw;
+                }
+            }));
+
+    return Value::create(Value::trusted, std::move(entries));
 }
 
 std::shared_ptr<Connection> open_db(const String& filename, int mode)
