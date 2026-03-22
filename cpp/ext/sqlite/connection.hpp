@@ -29,10 +29,13 @@ class Connection : public std::enable_shared_from_this<Connection>
                                               int openmode);
 
     int exec(const String& sql, const Array& bindings);
+    int exec(const String& sql, const Map& bindings);
 
     int script(const String& sql);
 
     void for_each_row(const String& sql, const Array& bindings,
+                      std::function<void(Value_Ptr)> row_fn);
+    void for_each_row(const String& sql, const Map& bindings,
                       std::function<void(Value_Ptr)> row_fn);
 
     void close();
@@ -48,9 +51,18 @@ class Connection : public std::enable_shared_from_this<Connection>
                             sqlite3_finalize(s);
                         })>;
 
-    Stmt_Ptr prepare_and_bind_(const String& sql, const Array& bindings);
+    int exec_impl_(const Stmt_Ptr& stmt);
+    void for_each_row_impl_(const Stmt_Ptr& stmt,
+                            std::function<void(Value_Ptr)> row_fn);
 
-    Value_Ptr read_row_(sqlite3_stmt* stmt, int num_cols);
+    Stmt_Ptr prepare_(const String& sql);
+    void bind_positional_(const Stmt_Ptr& stmt, const Array& bindings);
+    void bind_named_(const Stmt_Ptr& stmt, const Map& bindings);
+    static void bind_value_(const Stmt_Ptr& stmt, int pos,
+                            const Value_Ptr& val_ptr,
+                            const std::string& location);
+
+    Value_Ptr read_row_(const Stmt_Ptr& stmt, int num_cols);
 
     using Conn_Ptr = std::unique_ptr<sqlite3, decltype([](sqlite3* db) {
                                          sqlite3_close_v2(db);

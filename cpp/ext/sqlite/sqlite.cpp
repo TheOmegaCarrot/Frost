@@ -14,22 +14,30 @@ namespace sqlite
 
 namespace
 {
-Array extract_bindings(builtin_args_t args, std::size_t idx)
+bool has_bindings(builtin_args_t args, std::size_t idx)
 {
-    return idx < args.size() ? args.at(idx)->raw_get<Array>() : Array{};
+    return idx < args.size() && not args.at(idx)->is<Function>();
 }
 
-struct Bindings_And_Callback
+template <std::invocable<Value_Ptr> Row_Fn>
+void for_each_row_dispatch(Connection& conn, const String& sql,
+                           builtin_args_t args, std::size_t idx,
+                           Row_Fn&& row_fn)
 {
-    Array bindings;
-    const Function& callback;
-};
-
-Bindings_And_Callback extract_bindings_and_callback(builtin_args_t args)
-{
-    if (args.size() == 3)
-        return {GET(1, Array), GET(2, Function)};
-    return {{}, GET(1, Function)};
+    if (not has_bindings(args, idx))
+    {
+        conn.for_each_row(sql, Array{}, std::forward<Row_Fn>(row_fn));
+    }
+    else if (args.at(idx)->is<Array>())
+    {
+        conn.for_each_row(sql, args.at(idx)->raw_get<Array>(),
+                          std::forward<Row_Fn>(row_fn));
+    }
+    else
+    {
+        conn.for_each_row(sql, args.at(idx)->raw_get<Map>(),
+                          std::forward<Row_Fn>(row_fn));
+    }
 }
 
 // Frost-facing glue for the data-access methods shared by both the
@@ -50,9 +58,14 @@ struct Data_Methods
         guard();
         auto n = name("exec");
         REQUIRE_ARGS(n, PARAM("SQL", TYPES(String)),
-                     OPTIONAL(PARAM("bindings", TYPES(Array))));
-        return Value::create(
-            conn->exec(GET(0, String), extract_bindings(args, 1)));
+                     OPTIONAL(PARAM("bindings", TYPES(Array, Map))));
+
+        auto& sql = GET(0, String);
+        if (not has_bindings(args, 1))
+            return Value::create(conn->exec(sql, Array{}));
+        if (args.at(1)->is<Array>())
+            return Value::create(conn->exec(sql, args.at(1)->raw_get<Array>()));
+        return Value::create(conn->exec(sql, args.at(1)->raw_get<Map>()));
     }
 
     Value_Ptr script(builtin_args_t args)
@@ -68,13 +81,13 @@ struct Data_Methods
         guard();
         auto n = name("query");
         REQUIRE_ARGS(n, PARAM("SQL", TYPES(String)),
-                     OPTIONAL(PARAM("bindings", TYPES(Array))));
+                     OPTIONAL(PARAM("bindings", TYPES(Array, Map))));
 
         Array rows;
-        conn->for_each_row(GET(0, String), extract_bindings(args, 1),
-                           [&](Value_Ptr row) {
-                               rows.push_back(std::move(row));
-                           });
+        for_each_row_dispatch(*conn, GET(0, String), args, 1,
+                              [&](Value_Ptr row) {
+                                  rows.push_back(std::move(row));
+                              });
         return Value::create(std::move(rows));
     }
 
@@ -84,16 +97,17 @@ struct Data_Methods
         auto n = name("each");
         if (args.size() == 3)
             REQUIRE_ARGS(n, PARAM("SQL", TYPES(String)),
-                         PARAM("bindings", TYPES(Array)),
+                         PARAM("bindings", TYPES(Array, Map)),
                          PARAM("callback", TYPES(Function)));
         else
             REQUIRE_ARGS(n, PARAM("SQL", TYPES(String)),
                          PARAM("callback", TYPES(Function)));
 
-        auto [bindings, callback] = extract_bindings_and_callback(args);
-        conn->for_each_row(GET(0, String), bindings, [&](Value_Ptr row) {
-            callback->call({row});
-        });
+        auto& callback = args.back()->raw_get<Function>();
+        for_each_row_dispatch(*conn, GET(0, String), args, 1,
+                              [&](Value_Ptr row) {
+                                  callback->call({row});
+                              });
         return Value::null();
     }
 
@@ -103,17 +117,18 @@ struct Data_Methods
         auto n = name("collect");
         if (args.size() == 3)
             REQUIRE_ARGS(n, PARAM("SQL", TYPES(String)),
-                         PARAM("bindings", TYPES(Array)),
+                         PARAM("bindings", TYPES(Array, Map)),
                          PARAM("callback", TYPES(Function)));
         else
             REQUIRE_ARGS(n, PARAM("SQL", TYPES(String)),
                          PARAM("callback", TYPES(Function)));
 
-        auto [bindings, callback] = extract_bindings_and_callback(args);
+        auto& callback = args.back()->raw_get<Function>();
         Array results;
-        conn->for_each_row(GET(0, String), bindings, [&](Value_Ptr row) {
-            results.push_back(callback->call({row}));
-        });
+        for_each_row_dispatch(*conn, GET(0, String), args, 1,
+                              [&](Value_Ptr row) {
+                                  results.push_back(callback->call({row}));
+                              });
         return Value::create(std::move(results));
     }
 
@@ -175,7 +190,7 @@ struct Database_Methods
         conn->script("BEGIN");
 
         auto tx_guard = [c = conn]() {
-            if (!c->in_transaction())
+            if (not c->in_transaction())
                 throw Frost_Recoverable_Error{
                     "transaction is no longer active"};
         };
