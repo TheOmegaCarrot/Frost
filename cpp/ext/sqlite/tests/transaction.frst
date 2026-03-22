@@ -127,6 +127,10 @@ assert(db_rowid_blocked.error @ contains('active transaction'), 'db.last_insert_
 
 # --- Error paths ---
 
+# No arguments
+def tx_no_args = try_call(db.transaction, [])
+assert(not tx_no_args.ok, 'transaction with no args should fail')
+
 # Non-function argument
 def bad_arg = try_call(db.transaction, ['not a function'])
 assert(not bad_arg.ok, 'transaction with non-function should fail')

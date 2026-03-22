@@ -57,6 +57,10 @@ assert(n9 == 1, 'trailing semicolon accepted by exec')
 
 # --- Error paths ---
 
+# No arguments
+def exec_no_args = try_call(db.exec, [])
+assert(not exec_no_args.ok, 'exec with no args should fail')
+
 # Wrong argument type
 def wrong_type = try_call(db.exec, [123])
 assert(not wrong_type.ok, 'execute with non-string should fail')

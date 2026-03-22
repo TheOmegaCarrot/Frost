@@ -43,6 +43,10 @@ assert(n5 == 1, 'trailing semicolons and whitespace should be fine')
 
 # --- Error paths ---
 
+# No arguments
+def script_no_args = try_call(db.script, [])
+assert(not script_no_args.ok, 'script with no args should fail')
+
 # Wrong argument type
 def bad_type = try_call(db.script, [123])
 assert(not bad_type.ok, 'script: non-string should fail')

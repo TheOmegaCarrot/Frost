@@ -165,6 +165,8 @@ db.transaction(fn tx -> {
 While a transaction is active, the `db` object cannot be used for data operations.
 All data methods on `db` will produce an error until the transaction completes.
 Use the `tx` object for all database access within the callback.
+The `tx` object is only valid for the duration of the callback.
+Immutable bindings prevent accidental misuse, but these safeguards should not be circumvented.
 
 ### `tx.exec`, `tx.query`, `tx.each`, `tx.collect`, `tx.script`, `tx.last_insert_rowid`
 

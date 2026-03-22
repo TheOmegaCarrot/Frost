@@ -140,7 +140,21 @@ assert(r_multi_rows[2].val == 'third', 'third row correct')
 def r_semi = db.query('SELECT 1 as x;')
 assert(len(r_semi) == 1, 'trailing semicolon should be accepted')
 
+# --- Duplicate column names ---
+
+# When multiple columns share a name, last column wins (insert_or_assign)
+db.exec('CREATE TABLE dup_cols (x INTEGER, y INTEGER)')
+db.exec('INSERT INTO dup_cols VALUES (1, 2)')
+def dup = db.query('SELECT x, y, x + y AS x FROM dup_cols')[0]
+assert(len(keys(dup)) == 2, 'duplicate column names collapse into one key')
+assert(dup.x == 3, 'last column with duplicate name wins')
+assert(dup.y == 2, 'non-duplicate column preserved')
+
 # --- Error paths ---
+
+# No arguments
+def query_no_args = try_call(db.query, [])
+assert(not query_no_args.ok, 'query with no args should fail')
 
 # Invalid SQL
 def bad_sql = try_call(db.query, ['NOT VALID'])

@@ -34,6 +34,14 @@ assert(db.query('SELECT count(*) as c FROM nums')[0].c == 3, 'each on empty shou
 
 # --- Error paths ---
 
+# No arguments
+def each_no_args = try_call(db.each, [])
+assert(not each_no_args.ok, 'each with no args should fail')
+
+# One argument (missing callback)
+def each_one_arg = try_call(db.each, ['SELECT 1'])
+assert(not each_one_arg.ok, 'each with only SQL should fail')
+
 # Non-string SQL
 def each_bad_sql = try_call(db.each, [123, fn row -> null])
 assert(not each_bad_sql.ok, 'each: non-string SQL should fail')

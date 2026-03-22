@@ -28,6 +28,14 @@ assert(empty_collect == [], 'collect on empty returns empty array')
 
 # --- Error paths ---
 
+# No arguments
+def collect_no_args = try_call(db.collect, [])
+assert(not collect_no_args.ok, 'collect with no args should fail')
+
+# One argument (missing callback)
+def collect_one_arg = try_call(db.collect, ['SELECT 1'])
+assert(not collect_one_arg.ok, 'collect with only SQL should fail')
+
 # Non-string SQL
 def collect_bad_sql = try_call(db.collect, [123, fn row -> null])
 assert(not collect_bad_sql.ok, 'collect: non-string SQL should fail')

@@ -9,6 +9,13 @@ assert(type(sqlite.version) == 'String', 'sqlite.version should be a string')
 
 # --- open ---
 
+# No arguments
+def open_no_args = try_call(sqlite.open, [])
+assert(not open_no_args.ok, 'open with no args should fail')
+
+def open_ro_no_args = try_call(sqlite.open_readonly, [])
+assert(not open_ro_no_args.ok, 'open_readonly with no args should fail')
+
 # Open failure - nonexistent directory
 def bad_open = try_call(sqlite.open, ['/no/such/dir/test.db'])
 assert(not bad_open.ok, 'open with bad path should fail')
