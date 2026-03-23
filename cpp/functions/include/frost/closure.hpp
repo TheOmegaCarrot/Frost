@@ -10,7 +10,8 @@
 
 namespace frst
 {
-class Closure : public Callable
+class Closure : public Callable,
+                 public std::enable_shared_from_this<Closure>
 {
   public:
     Closure() = delete;
@@ -27,14 +28,22 @@ class Closure : public Callable
             std::optional<std::string> vararg_parameter = {},
             std::optional<std::string> self_name = {});
 
+    static std::shared_ptr<Closure> create(
+        std::vector<std::string> parameters,
+        std::shared_ptr<std::vector<ast::Statement::Ptr>> body,
+        std::shared_ptr<ast::Expression> return_expr, Symbol_Table captures,
+        std::size_t define_count,
+        std::optional<std::string> vararg_parameter = {},
+        std::optional<std::string> self_name = {});
+
     Value_Ptr call(std::span<const Value_Ptr> args) const override;
     std::string debug_dump() const override;
     std::string name() const override;
     const Symbol_Table& debug_capture_table() const;
 
-    void inject_capture(const std::string& name, Value_Ptr value);
-
   private:
+    Function self_function() const;
+
     std::vector<std::string> parameters_;
     std::shared_ptr<std::vector<ast::Statement::Ptr>> body_prefix_;
     std::shared_ptr<ast::Expression> return_expr_;
@@ -42,29 +51,6 @@ class Closure : public Callable
     std::optional<std::string> vararg_parameter_;
     std::optional<std::string> self_name_;
     std::size_t define_count_;
-};
-
-class Weak_Closure final : public Callable
-{
-  public:
-    Weak_Closure() = delete;
-    Weak_Closure(const Weak_Closure&) = delete;
-    Weak_Closure(Weak_Closure&&) = delete;
-    Weak_Closure& operator=(const Weak_Closure&) = delete;
-    Weak_Closure& operator=(Weak_Closure&&) = delete;
-    ~Weak_Closure() override = default;
-
-    Weak_Closure(std::weak_ptr<Closure> closure);
-
-    Value_Ptr call(std::span<const Value_Ptr> args) const final;
-
-    Function promote() const;
-
-    std::string debug_dump() const override;
-    std::string name() const override;
-
-  private:
-    std::weak_ptr<Closure> closure_;
 };
 } // namespace frst
 

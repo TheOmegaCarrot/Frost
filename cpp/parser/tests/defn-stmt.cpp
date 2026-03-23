@@ -161,7 +161,7 @@ TEST_CASE("Parser Defn Statements")
         auto fn = table.lookup("f")->get<frst::Function>().value();
         auto closure = std::dynamic_pointer_cast<const frst::Closure>(fn);
         REQUIRE(closure);
-        CHECK(closure->debug_capture_table().has("f"));
+        CHECK_FALSE(closure->debug_capture_table().has("f"));
     }
 
     SECTION("defn inside a lambda body")
@@ -339,7 +339,7 @@ TEST_CASE("Parser Defn Statements")
         auto closure = std::dynamic_pointer_cast<const frst::Closure>(fn);
         REQUIRE(closure);
         CHECK(closure->debug_capture_table().has("base"));
-        CHECK(closure->debug_capture_table().has("f"));
+        CHECK_FALSE(closure->debug_capture_table().has("f"));
         CHECK_FALSE(closure->debug_capture_table().has("x"));
     }
 

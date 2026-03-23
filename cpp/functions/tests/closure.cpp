@@ -129,9 +129,9 @@ std::shared_ptr<Closure> make_literal_closure(Value_Ptr value)
     Symbol_Table captures;
     std::vector<Statement::Ptr> body;
     auto body_ptr = make_body(std::move(body));
-    return std::make_shared<Closure>(std::vector<std::string>{}, body_ptr,
-                                     expr<Literal>(Statement::no_range, value),
-                                     captures, 0);
+    return Closure::create(std::vector<std::string>{}, body_ptr,
+                           expr<Literal>(Statement::no_range, value),
+                           captures, 0);
 }
 
 std::pair<std::string, std::string> split_header_body(const std::string& dump)
@@ -192,33 +192,6 @@ TEST_CASE("Construct Closure")
         CHECK_FALSE(closure.debug_capture_table().has("p"));
     }
 
-    SECTION("inject_capture adds a new capture")
-    {
-        Symbol_Table captures;
-        std::vector<Statement::Ptr> body;
-        auto body_ptr = make_body(std::move(body));
-        Closure closure{{}, body_ptr, null_expr(), captures, 0};
-
-        auto x_val = Value::create(10_f);
-        closure.inject_capture("x", x_val);
-
-        CHECK(closure.debug_capture_table().has("x"));
-        CHECK(closure.debug_capture_table().lookup("x") == x_val);
-    }
-
-    SECTION("inject_capture rejects duplicate capture names")
-    {
-        Symbol_Table captures;
-        auto x_val = Value::create(10_f);
-        captures.define("x", x_val);
-
-        std::vector<Statement::Ptr> body;
-        auto body_ptr = make_body(std::move(body));
-        Closure closure{{}, body_ptr, null_expr(), captures, 0};
-
-        CHECK_THROWS_WITH(closure.inject_capture("x", Value::create(11_f)),
-                          ContainsSubstring("already defined"));
-    }
 }
 
 TEST_CASE("Call Closure")
@@ -1094,62 +1067,3 @@ Literal(42) [0:0-0:0]
     }
 }
 
-TEST_CASE("Weak Closure")
-{
-    SECTION("call forwards when closure is alive")
-    {
-        auto expected = Value::create(42_f);
-        auto closure = make_literal_closure(expected);
-        Weak_Closure weak{closure};
-
-        auto result = weak.call({});
-        CHECK(result == expected);
-    }
-
-    SECTION("call throws when closure has expired")
-    {
-        std::weak_ptr<Closure> storage;
-        {
-            auto closure = make_literal_closure(Value::create(42_f));
-            storage = closure;
-        }
-        Weak_Closure weak{storage};
-
-        CHECK_THROWS_WITH(weak.call({}),
-                          ContainsSubstring("Closure self-reference expired"));
-    }
-
-    SECTION("promote returns the same callable while alive")
-    {
-        auto expected = Value::create(99_f);
-        auto closure = make_literal_closure(expected);
-        Weak_Closure weak{closure};
-
-        auto promoted = weak.promote();
-        REQUIRE(promoted);
-        CHECK(promoted == std::static_pointer_cast<Callable>(closure));
-        CHECK(promoted->call({}) == expected);
-    }
-
-    SECTION("promote throws when closure has expired")
-    {
-        std::weak_ptr<Closure> storage;
-        {
-            auto closure = make_literal_closure(Value::create(42_f));
-            storage = closure;
-        }
-        Weak_Closure weak{storage};
-
-        CHECK_THROWS_WITH(
-            weak.promote(),
-            ContainsSubstring("Failed to promote closure self-reference"));
-    }
-
-    SECTION("debug_dump is stable")
-    {
-        auto closure = make_literal_closure(Value::create(42_f));
-        Weak_Closure weak{closure};
-
-        CHECK(weak.debug_dump() == "<closure self-reference>");
-    }
-}

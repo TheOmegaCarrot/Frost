@@ -13,16 +13,6 @@ namespace frst::ast
 {
 namespace
 {
-
-Value_Ptr promote_if_weak(const Value_Ptr& fn)
-{
-    if (auto weak_closure = std::dynamic_pointer_cast<const Weak_Closure>(
-            fn->raw_get<Function>()))
-        return Value::create(weak_closure->promote());
-    else
-        return fn;
-}
-
 } // namespace
 
 Lambda::Lambda(Source_Range source_range, std::vector<std::string> params,
@@ -120,31 +110,12 @@ Value_Ptr Lambda::do_evaluate(Evaluation_Context ctx) const
                 "No definition found for captured symbol: {}", name)};
         }
 
-        const auto& value = ctx.symbols.lookup(name);
-
-        if (value->is<Function>())
-        {
-            // special handling to promote any closure self-reference to a
-            // strong reference
-            captures.define(name, promote_if_weak(value));
-        }
-        else
-        {
-            captures.define(name, value);
-        }
+        captures.define(name, ctx.symbols.lookup(name));
     }
 
-    auto closure = std::make_shared<Closure>(
+    return Value::create(Function{Closure::create(
         params_, body_prefix_, return_expr_, std::move(captures),
-        closure_define_count_, vararg_param_, self_name_);
-
-    auto weak_closure = Value::create(
-        Function{std::make_shared<Weak_Closure>(std::weak_ptr{closure})});
-
-    if (self_name_)
-        closure->inject_capture(self_name_.value(), weak_closure);
-
-    return Value::create(Function{std::move(closure)});
+        closure_define_count_, vararg_param_, self_name_)});
 }
 
 std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const

@@ -309,10 +309,9 @@ TEST_CASE("Lambda")
         Lambda lambda{Statement::no_range, {"x"}, std::move(body), {}, "f"};
         auto closure = eval_to_closure(lambda, env);
 
-        // "f" should be in captures, but as a Weak_Closure (self-ref), not as
-        // Int 99
-        REQUIRE(closure->debug_capture_table().has("f"));
-        CHECK(closure->debug_capture_table().lookup("f")->is<Function>());
+        // "f" is the self-name -- resolved at call time via shared_from_this,
+        // so it should NOT appear in captures
+        CHECK_FALSE(closure->debug_capture_table().has("f"));
     }
 
     SECTION("Named lambda self_name enables recursion")
@@ -350,19 +349,16 @@ TEST_CASE("Lambda")
         CHECK(result->raw_get<Int>() == 120_f);
     }
 
-    SECTION(
-        "Inner lambda promotes named lambda Weak_Closure to strong reference")
+    SECTION("Inner lambda captures self-reference as strong reference")
     {
         // fn f(n) -> fn() -> if n <= 0: 0 else: f(n - 1)()
         //
-        // When f(1) is called, the inner lambda is created. Inside f's
-        // execution environment "f" resolves to a Weak_Closure (the injected
-        // self-ref). Lambda::evaluate() calls promote_if_weak, storing a strong
-        // Closure in the inner lambda's captures instead.
+        // When f(1) is called, the inner lambda is created. "f" resolves to
+        // the self-reference defined on f's call stack via shared_from_this.
+        // The inner lambda captures this as a normal strong reference.
         //
         // After dropping the outer strong reference to f's closure, only the
-        // inner lambda's capture keeps it alive. Without the promotion the
-        // closure would be destroyed here and the subsequent call would throw.
+        // inner lambda's capture keeps it alive.
         Symbol_Table env;
 
         // f(n - 1)
@@ -404,7 +400,7 @@ TEST_CASE("Lambda")
             auto outer_closure = eval_to_closure(outer, env);
             inner_val = outer_closure->call({Value::create(1_f)});
             // outer_closure dropped here; f's Closure survives only if
-            // inner_val holds a strong reference (promote_if_weak worked).
+            // inner_val holds a strong reference to it.
         }
 
         // inner() -> if 1 <= 0: 0 else: f(0)()
@@ -445,8 +441,9 @@ TEST_CASE("Lambda")
         Lambda lambda{Statement::no_range, {"n"}, std::move(body), {}, "f"};
         auto closure = eval_to_closure(lambda, env);
 
-        // capture set should contain "base" and the self-ref "f"
-        CHECK(capture_names(*closure) == std::set<std::string>{"base", "f"});
+        // capture set should contain "base" only; "f" is the self-name,
+        // resolved at call time via shared_from_this
+        CHECK(capture_names(*closure) == std::set<std::string>{"base"});
         CHECK(closure->debug_capture_table().lookup("base") == base_val);
 
         auto result = closure->call({Value::create(3_f)});

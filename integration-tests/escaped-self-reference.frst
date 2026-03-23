@@ -1,0 +1,11 @@
+defn outer() -> { defn inner() -> inner ; inner }
+
+# escaped self-reference must survive repeated calls without crashing
+def f = outer()
+assert(is_function(f))
+assert(is_function(f()))
+assert(is_function(f()()))
+assert(is_function(f()()()))
+assert(f == f())
+assert(f() == f()())
+assert(f()() == f()()())

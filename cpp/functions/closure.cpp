@@ -27,14 +27,27 @@ Closure::Closure(std::vector<std::string> parameters,
     // This must be checked by the Lambda AST node.
 }
 
+std::shared_ptr<Closure> Closure::create(
+    std::vector<std::string> parameters,
+    std::shared_ptr<std::vector<ast::Statement::Ptr>> body,
+    std::shared_ptr<ast::Expression> return_expr, Symbol_Table captures,
+    std::size_t define_count, std::optional<std::string> vararg_parameter,
+    std::optional<std::string> self_name)
+{
+    return std::make_shared<Closure>(
+        std::move(parameters), std::move(body), std::move(return_expr),
+        std::move(captures), define_count, std::move(vararg_parameter),
+        std::move(self_name));
+}
+
 const Symbol_Table& Closure::debug_capture_table() const
 {
     return captures_;
 }
 
-void Closure::inject_capture(const std::string& name, Value_Ptr value)
+Function Closure::self_function() const
 {
-    captures_.define(name, value);
+    return std::static_pointer_cast<const Callable>(shared_from_this());
 }
 
 Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
@@ -57,7 +70,7 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
 
     Symbol_Table scope_table(&captures_);
     Execution_Context scope_ctx{.symbols = scope_table};
-    scope_ctx.symbols.reserve(define_count_);
+    scope_ctx.symbols.reserve(define_count_ + (self_name_ ? 1 : 0));
     for (const auto& [arg_name, arg_val] : std::views::zip(parameters_, args))
     {
         scope_ctx.symbols.define(arg_name, arg_val);
@@ -72,6 +85,9 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
                           | std::ranges::to<Array>()));
     }
 
+    if (self_name_)
+        scope_ctx.symbols.define(self_name_.value(), Value::create(self_function()));
+
     for (const ast::Statement::Ptr& node : *body_prefix_)
     {
         node->execute(scope_ctx);
@@ -83,7 +99,7 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
 std::string Closure::name() const
 {
     if (self_name_)
-        return fmt::format("lambda ({})", *self_name_);
+        return fmt::format("lambda ({})", self_name_.value());
     return "anonymous lambda";
 }
 
@@ -113,37 +129,4 @@ std::string Closure::debug_dump() const
     return_expr_->debug_dump_ast(os);
 
     return std::move(os).str();
-}
-
-Weak_Closure::Weak_Closure(std::weak_ptr<Closure> closure)
-    : closure_{closure}
-{
-}
-
-Value_Ptr Weak_Closure::call(std::span<const Value_Ptr> args) const
-{
-    if (auto closure = closure_.lock())
-        return closure->call(args);
-
-    throw Frost_Interpreter_Error{"Closure self-reference expired"};
-}
-
-Function Weak_Closure::promote() const
-{
-    if (auto closure = closure_.lock())
-        return std::static_pointer_cast<Callable>(closure);
-
-    throw Frost_Interpreter_Error{"Failed to promote closure self-reference"};
-}
-
-std::string Weak_Closure::debug_dump() const
-{
-    return "<closure self-reference>";
-}
-
-std::string Weak_Closure::name() const
-{
-    if (auto closure = closure_.lock())
-        return closure->name();
-    return "expired closure";
 }

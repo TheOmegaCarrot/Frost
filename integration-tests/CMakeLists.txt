@@ -17,6 +17,7 @@ set(INTEGRATION_SCRIPTS
     prelude/dig.frst
     threaded-call-chain.frst
     capture-enclosing-closure.frst
+    escaped-self-reference.frst
     map-newline-1.frst
 )
 foreach(script ${INTEGRATION_SCRIPTS})
