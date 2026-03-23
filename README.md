@@ -34,6 +34,9 @@ The following dependencies are fetched automatically by CMake:
 [Catch2](https://github.com/catchorg/Catch2) (test-only),
 [Trompeloeil](https://github.com/rollbear/trompeloeil) (test-only).
 
+Some modules (HTTP, SQLite) are optional and have additional dependencies.
+See the [complete documentation](docs/stdlib.md) for build flags and details.
+
 ### Compiling
 
 ```bash
@@ -50,9 +53,6 @@ frost script.frst         # run a script
 frost                     # start the REPL
 frost -e "print(1 + 2)"   # evaluate an expression
 ```
-
-Some modules (HTTP, SQLite) are optional and have additional dependencies.
-See the [complete documentation](docs/) for build flags and details.
 
 ## Documentation
 
