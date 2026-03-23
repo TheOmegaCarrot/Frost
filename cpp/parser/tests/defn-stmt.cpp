@@ -159,7 +159,7 @@ TEST_CASE("Parser Defn Statements")
         program[0]->execute(ctx);
 
         auto fn = table.lookup("f")->get<frst::Function>().value();
-        auto closure = std::dynamic_pointer_cast<frst::Closure>(fn);
+        auto closure = std::dynamic_pointer_cast<const frst::Closure>(fn);
         REQUIRE(closure);
         CHECK(closure->debug_capture_table().has("f"));
     }
@@ -336,7 +336,7 @@ TEST_CASE("Parser Defn Statements")
         program[1]->execute(ctx);
 
         auto fn = table.lookup("f")->get<frst::Function>().value();
-        auto closure = std::dynamic_pointer_cast<frst::Closure>(fn);
+        auto closure = std::dynamic_pointer_cast<const frst::Closure>(fn);
         REQUIRE(closure);
         CHECK(closure->debug_capture_table().has("base"));
         CHECK(closure->debug_capture_table().has("f"));

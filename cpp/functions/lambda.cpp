@@ -16,8 +16,8 @@ namespace
 
 Value_Ptr promote_if_weak(const Value_Ptr& fn)
 {
-    if (auto weak_closure =
-            std::dynamic_pointer_cast<Weak_Closure>(fn->raw_get<Function>()))
+    if (auto weak_closure = std::dynamic_pointer_cast<const Weak_Closure>(
+            fn->raw_get<Function>()))
         return Value::create(weak_closure->promote());
     else
         return fn;

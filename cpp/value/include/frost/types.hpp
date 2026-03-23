@@ -51,7 +51,7 @@ class Callable
     virtual std::string name() const = 0;
 };
 
-using Function = std::shared_ptr<Callable>;
+using Function = std::shared_ptr<const Callable>;
 
 inline namespace literals
 {

@@ -1232,7 +1232,7 @@ TEST_CASE("Parser Lambda Expressions")
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
         auto value = expr->evaluate(eval_ctx);
-        auto closure = std::dynamic_pointer_cast<frst::Closure>(
+        auto closure = std::dynamic_pointer_cast<const frst::Closure>(
             value->get<frst::Function>().value());
         REQUIRE(closure);
         CHECK_FALSE(closure->debug_capture_table().has("f"));
@@ -1251,7 +1251,7 @@ TEST_CASE("Parser Lambda Expressions")
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 9_f);
 
-        auto closure = std::dynamic_pointer_cast<frst::Closure>(
+        auto closure = std::dynamic_pointer_cast<const frst::Closure>(
             value->get<frst::Function>().value());
         REQUIRE(closure);
         CHECK_FALSE(closure->debug_capture_table().has("x"));

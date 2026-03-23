@@ -50,23 +50,23 @@ std::set<std::string> capture_names(const Closure& closure)
     return names;
 }
 
-std::shared_ptr<Closure> eval_to_closure(const Lambda& node,
-                                         const Symbol_Table& env)
+std::shared_ptr<const Closure> eval_to_closure(const Lambda& node,
+                                               const Symbol_Table& env)
 {
     Evaluation_Context ctx{.symbols = env};
     auto result = node.evaluate(ctx);
     REQUIRE(result->is<Function>());
     auto fn = result->get<Function>().value();
-    auto closure = std::dynamic_pointer_cast<Closure>(fn);
+    auto closure = std::dynamic_pointer_cast<const Closure>(fn);
     REQUIRE(closure);
     return closure;
 }
 
-std::shared_ptr<Closure> value_to_closure(const Value_Ptr& value)
+std::shared_ptr<const Closure> value_to_closure(const Value_Ptr& value)
 {
     REQUIRE(value->is<Function>());
     auto fn = value->get<Function>().value();
-    auto closure = std::dynamic_pointer_cast<Closure>(fn);
+    auto closure = std::dynamic_pointer_cast<const Closure>(fn);
     REQUIRE(closure);
     return closure;
 }
