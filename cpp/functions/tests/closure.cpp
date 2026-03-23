@@ -40,11 +40,10 @@ struct Flag_Statement final : Statement
     {
     }
 
-    std::optional<frst::Map> do_execute(
+    void do_execute(
         [[maybe_unused]] Execution_Context&) const override
     {
         ++(*count_);
-        return std::nullopt;
     }
 
   protected:

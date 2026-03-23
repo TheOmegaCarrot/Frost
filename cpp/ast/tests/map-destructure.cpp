@@ -124,31 +124,13 @@ TEST_CASE("Map_Destructure")
         Map_Destructure node{Statement::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
     }
 
-    SECTION("Exports bound names when enabled")
+    SECTION("Export flag appears in symbol_sequence")
     {
         auto rhs_expr = mock::Mock_Expression::make();
         auto key_expr = mock::Mock_Expression::make();
-        mock::Mock_Symbol_Table syms;
-        Execution_Context ctx{.symbols = syms};
-        trompeloeil::sequence seq;
-
-        auto value = Value::create(42_f);
-        auto rhs_map = Value::create(frst::Map{{Value::create("foo"s), value}});
-        auto key_val = Value::create("foo"s);
-
-        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(rhs_map);
-        REQUIRE_CALL(*key_expr, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(key_val);
-        REQUIRE_CALL(syms, define("bar", value)).IN_SEQUENCE(seq);
 
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
@@ -156,43 +138,21 @@ TEST_CASE("Map_Destructure")
         Map_Destructure node{Statement::no_range, std::move(elems),
                              std::move(rhs_expr), true};
 
-        auto result = node.execute(ctx);
-        REQUIRE(result.has_value());
-        CHECK(result->size() == 1);
+        std::vector<Statement::Definition> defns;
+        for (const auto& action : node.symbol_sequence())
+            if (std::holds_alternative<Statement::Definition>(action))
+                defns.push_back(std::get<Statement::Definition>(action));
 
-        auto it = result->find(Value::create("bar"s));
-        REQUIRE(it != result->end());
-        CHECK(it->second == value);
+        REQUIRE(defns.size() == 1);
+        CHECK(defns[0].name == "bar");
+        CHECK(defns[0].exported == true);
     }
 
-    SECTION("Exports multiple bound names when enabled")
+    SECTION("Export flag on multiple bindings")
     {
         auto rhs_expr = mock::Mock_Expression::make();
         auto key_expr1 = mock::Mock_Expression::make();
         auto key_expr2 = mock::Mock_Expression::make();
-        mock::Mock_Symbol_Table syms;
-        Execution_Context ctx{.symbols = syms};
-        trompeloeil::sequence seq;
-
-        auto v1 = Value::create(1_f);
-        auto v2 = Value::create(2_f);
-        auto rhs_map = Value::create(
-            frst::Map{{Value::create("k1"s), v1}, {Value::create("k2"s), v2}});
-
-        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(rhs_map);
-        REQUIRE_CALL(*key_expr1, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(Value::create("k1"s));
-        REQUIRE_CALL(syms, define("a", v1)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(*key_expr2, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(Value::create("k2"s));
-        REQUIRE_CALL(syms, define("b", v2)).IN_SEQUENCE(seq);
 
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
@@ -200,55 +160,37 @@ TEST_CASE("Map_Destructure")
         Map_Destructure node{Statement::no_range, std::move(elems),
                              std::move(rhs_expr), true};
 
-        auto result = node.execute(ctx);
-        REQUIRE(result.has_value());
-        CHECK(result->size() == 2);
+        std::vector<Statement::Definition> defns;
+        for (const auto& action : node.symbol_sequence())
+            if (std::holds_alternative<Statement::Definition>(action))
+                defns.push_back(std::get<Statement::Definition>(action));
 
-        auto it_a = result->find(Value::create("a"s));
-        REQUIRE(it_a != result->end());
-        CHECK(it_a->second == v1);
-
-        auto it_b = result->find(Value::create("b"s));
-        REQUIRE(it_b != result->end());
-        CHECK(it_b->second == v2);
+        REQUIRE(defns.size() == 2);
+        CHECK(defns[0].name == "a");
+        CHECK(defns[0].exported == true);
+        CHECK(defns[1].name == "b");
+        CHECK(defns[1].exported == true);
     }
 
-    SECTION("Exports null for missing keys when enabled")
+    SECTION("Non-export destructure definitions are not marked exported")
     {
         auto rhs_expr = mock::Mock_Expression::make();
         auto key_expr = mock::Mock_Expression::make();
-        mock::Mock_Symbol_Table syms;
-        Execution_Context ctx{.symbols = syms};
-        trompeloeil::sequence seq;
-
-        auto rhs_map = Value::create(frst::Map{});
-        auto key_val = Value::create("missing"s);
-
-        REQUIRE_CALL(*rhs_expr, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(rhs_map);
-        REQUIRE_CALL(*key_expr, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(key_val);
-        REQUIRE_CALL(syms, define("bar", _))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(_2->template is<Null>());
 
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr), "bar"});
         Map_Destructure node{Statement::no_range, std::move(elems),
-                             std::move(rhs_expr), true};
+                             std::move(rhs_expr)};
 
-        auto result = node.execute(ctx);
-        REQUIRE(result.has_value());
-        CHECK(result->size() == 1);
+        std::vector<Statement::Definition> defns;
+        for (const auto& action : node.symbol_sequence())
+            if (std::holds_alternative<Statement::Definition>(action))
+                defns.push_back(std::get<Statement::Definition>(action));
 
-        auto it = result->find(Value::create("bar"s));
-        REQUIRE(it != result->end());
-        CHECK(it->second->template is<Null>());
+        REQUIRE(defns.size() == 1);
+        CHECK(defns[0].name == "bar");
+        CHECK(defns[0].exported == false);
     }
 
     SECTION("Duplicate binding names are rejected")
@@ -438,8 +380,7 @@ TEST_CASE("Map_Destructure")
         Map_Destructure node{Statement::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
     }
 
     SECTION("Map values with forbidden key types are rejected")
@@ -486,8 +427,7 @@ TEST_CASE("Map_Destructure")
         Map_Destructure node{Statement::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
     }
 
     SECTION("Duplicate missing keys bind null to each name")
@@ -524,8 +464,7 @@ TEST_CASE("Map_Destructure")
         Map_Destructure node{Statement::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
     }
 
     SECTION("Symbol sequence orders usages and definitions")

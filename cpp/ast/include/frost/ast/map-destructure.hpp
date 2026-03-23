@@ -33,14 +33,14 @@ class Map_Destructure final : public Statement
                     std::vector<Element> destructure_elems,
                     Expression::Ptr expr, bool export_defs = false);
 
+    std::generator<Symbol_Action> symbol_sequence() const final;
+
   protected:
     std::string do_node_label() const final;
 
-    std::optional<Map> do_execute(Execution_Context& ctx) const final;
+    void do_execute(Execution_Context& ctx) const final;
 
     std::generator<Child_Info> children() const;
-
-    std::generator<Symbol_Action> symbol_sequence() const final;
 
   private:
     std::vector<Element> destructure_elems_;

@@ -42,11 +42,9 @@ Array_Destructure::Array_Destructure(Source_Range source_range,
         rest_name_->visit(duplicate_check);
 }
 
-std::optional<Map> Array_Destructure::do_execute(Execution_Context& ctx) const
+void Array_Destructure::do_execute(Execution_Context& ctx) const
 {
     Value_Ptr expr_result = expr_->evaluate(ctx.as_eval());
-
-    Map exports;
 
     if (not expr_result->is<Array>())
     {
@@ -74,16 +72,13 @@ std::optional<Map> Array_Destructure::do_execute(Execution_Context& ctx) const
 
     for (const auto& [name, val] : std::views::zip(names_, arr))
     {
-        name.visit(Overload{[](const Discarded_Binding&) {
-                            },
-                            [&](const std::string& name) {
-                                ctx.symbols.define(name, val);
-                                if (export_defs_)
-                                {
-                                    exports.emplace(Value::create(auto{name}),
-                                                    val);
-                                }
-                            }});
+        name.visit(Overload{
+            [](const Discarded_Binding&) {
+            },
+            [&](const std::string& name) {
+                ctx.symbols.define(name, val);
+            },
+        });
     }
 
     if (rest_name_)
@@ -97,16 +92,9 @@ std::optional<Map> Array_Destructure::do_execute(Execution_Context& ctx) const
                                          | std::ranges::to<Array>());
 
                 ctx.symbols.define(name, val);
-
-                if (export_defs_)
-                    exports.emplace(Value::create(auto{name}), val);
-            }});
+            },
+        });
     }
-
-    if (export_defs_)
-        return exports;
-    else
-        return std::nullopt;
 }
 
 std::generator<Statement::Symbol_Action> Array_Destructure::symbol_sequence()
@@ -117,11 +105,13 @@ std::generator<Statement::Symbol_Action> Array_Destructure::symbol_sequence()
     for (const auto& binding : names_)
     {
         if (std::holds_alternative<std::string>(binding))
-            co_yield Definition{std::get<std::string>(binding)};
+            co_yield Definition{.name = std::get<std::string>(binding),
+                                .exported = export_defs_};
     }
 
     if (rest_name_ && std::holds_alternative<std::string>(rest_name_.value()))
-        co_yield Definition{std::get<std::string>(rest_name_.value())};
+        co_yield Definition{.name = std::get<std::string>(rest_name_.value()),
+                            .exported = export_defs_};
 }
 
 std::string Array_Destructure::do_node_label() const

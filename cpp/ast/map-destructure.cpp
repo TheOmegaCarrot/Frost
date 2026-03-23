@@ -29,17 +29,9 @@ Map_Destructure::Map_Destructure(Source_Range source_range,
     }
 }
 
-std::optional<Map> Map_Destructure::do_execute(Execution_Context& ctx) const
+void Map_Destructure::do_execute(Execution_Context& ctx) const
 {
     Value_Ptr expr_result = expr_->evaluate(ctx.as_eval());
-
-    Map exports;
-
-    auto define = [&](const std::string& name, const Value_Ptr& value) {
-        ctx.symbols.define(name, value);
-        if (export_defs_)
-            exports.emplace(Value::create(auto{name}), value);
-    };
 
     if (not expr_result->is<Map>())
     {
@@ -61,15 +53,10 @@ std::optional<Map> Map_Destructure::do_execute(Execution_Context& ctx) const
         }
         auto itr = map.find(key);
         if (itr == map.end())
-            define(name, Value::null());
+            ctx.symbols.define(name, Value::null());
         else
-            define(name, itr->second);
+            ctx.symbols.define(name, itr->second);
     }
-
-    if (export_defs_)
-        return exports;
-    else
-        return std::nullopt;
 }
 
 std::string Map_Destructure::do_node_label() const
@@ -92,6 +79,6 @@ std::generator<Statement::Symbol_Action> Map_Destructure::symbol_sequence()
     for (const auto& [key_expr, name] : destructure_elems_)
     {
         co_yield std::ranges::elements_of(key_expr->symbol_sequence());
-        co_yield Definition{name};
+        co_yield Definition{.name = name, .exported = export_defs_};
     }
 }

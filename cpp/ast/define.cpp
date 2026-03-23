@@ -13,22 +13,17 @@ ast::Define::Define(Source_Range source_range, std::string name,
         throw Frost_Unrecoverable_Error{"\"_\" is not a valid identifier"};
 }
 
-std::optional<Map> ast::Define::do_execute(Execution_Context& ctx) const
+void ast::Define::do_execute(Execution_Context& ctx) const
 {
     auto value = expr_->evaluate(ctx.as_eval());
     ctx.symbols.define(name_, value);
-
-    if (export_def_)
-        return Map{{Value::create(auto{name_}), value}};
-    else
-        return std::nullopt;
 }
 
 std::generator<ast::Statement::Symbol_Action> ast::Define::symbol_sequence()
     const
 {
     co_yield std::ranges::elements_of(expr_->symbol_sequence());
-    co_yield Definition{name_};
+    co_yield Definition{.name = name_, .exported = export_def_};
 }
 
 std::string ast::Define::do_node_label() const

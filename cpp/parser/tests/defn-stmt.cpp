@@ -193,15 +193,12 @@ TEST_CASE("Parser Defn Statements")
 
         frst::Symbol_Table table;
         frst::Execution_Context ctx{.symbols = table};
-        auto exports = program[0]->execute(ctx);
-        REQUIRE(exports.has_value());
-        REQUIRE(exports->size() == 1);
+        program[0]->execute(ctx);
 
-        auto it = exports->find(frst::Value::create("f"s));
-        REQUIRE(it != exports->end());
-        REQUIRE(it->second->is<frst::Function>());
+        auto value = table.lookup("f");
+        REQUIRE(value->is<frst::Function>());
 
-        auto out = call_function(it->second, {frst::Value::create(6_f)});
+        auto out = call_function(value, {frst::Value::create(6_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 12_f);
     }
@@ -216,12 +213,10 @@ TEST_CASE("Parser Defn Statements")
 
         frst::Symbol_Table table;
         frst::Execution_Context ctx{.symbols = table};
-        auto exports = program[0]->execute(ctx);
-        REQUIRE(exports.has_value());
+        program[0]->execute(ctx);
 
-        auto it = exports->find(frst::Value::create("fact"s));
-        REQUIRE(it != exports->end());
-        auto out = call_function(it->second, {frst::Value::create(5_f)});
+        auto out =
+            call_function(table.lookup("fact"), {frst::Value::create(5_f)});
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 120_f);
     }

@@ -115,35 +115,12 @@ TEST_CASE("Array_Destructure")
         Array_Destructure node{Statement::no_range, std::move(names),
                                std::nullopt, std::move(expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
     }
 
-    SECTION("Exports only bound names when enabled")
+    SECTION("Export flag appears in symbol_sequence for bound names only")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
-        mock::Mock_Symbol_Table syms;
-        Execution_Context ctx{.symbols = syms};
-        trompeloeil::sequence seq;
-
-        auto a = Value::create(1_f);
-        auto b = Value::create(2_f);
-        auto c = Value::create(3_f);
-        auto arr = Value::create(Array{a, b, c});
-
-        REQUIRE_CALL(*expr, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(arr);
-
-        REQUIRE_CALL(syms, define("x", a)).IN_SEQUENCE(seq);
-        REQUIRE_CALL(syms, define("rest", _)).IN_SEQUENCE(seq).LR_SIDE_EFFECT({
-            auto val = _2;
-            REQUIRE(val->template is<Array>());
-            const auto& out = val->template raw_get<Array>();
-            REQUIRE(out.size() == 1);
-            CHECK(out.at(0) == c);
-        });
 
         std::vector<Array_Destructure::Name> names{
             std::string{"x"},
@@ -158,55 +135,46 @@ TEST_CASE("Array_Destructure")
             true,
         };
 
-        auto result = node.execute(ctx);
-        REQUIRE(result.has_value());
-        CHECK(result->size() == 2);
+        std::vector<Statement::Symbol_Action> actions;
+        for (const auto& action : node.symbol_sequence())
+            actions.push_back(action);
 
-        CHECK(result->find(Value::create("_"s)) == result->end());
+        // Should have definitions for "x" and "rest" (discarded "_" is excluded)
+        std::vector<Statement::Definition> defns;
+        for (const auto& a : actions)
+            if (std::holds_alternative<Statement::Definition>(a))
+                defns.push_back(std::get<Statement::Definition>(a));
 
-        auto it_x = result->find(Value::create("x"s));
-        REQUIRE(it_x != result->end());
-        CHECK(it_x->second == a);
-
-        auto it_rest = result->find(Value::create("rest"s));
-        REQUIRE(it_rest != result->end());
-        REQUIRE(it_rest->second->template is<Array>());
-        const auto& rest_out = it_rest->second->template raw_get<Array>();
-        REQUIRE(rest_out.size() == 1);
-        CHECK(rest_out.at(0) == c);
+        REQUIRE(defns.size() == 2);
+        CHECK(defns[0].name == "x");
+        CHECK(defns[0].exported == true);
+        CHECK(defns[1].name == "rest");
+        CHECK(defns[1].exported == true);
     }
 
-    SECTION("Exports null values when enabled")
+    SECTION("Non-export destructure definitions are not marked exported")
     {
         auto expr = std::make_unique<mock::Mock_Expression>();
-        mock::Mock_Symbol_Table syms;
-        Execution_Context ctx{.symbols = syms};
-        trompeloeil::sequence seq;
-
-        auto a = Value::null();
-        auto arr = Value::create(Array{a});
-
-        REQUIRE_CALL(*expr, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(arr);
-
-        REQUIRE_CALL(syms, define("x", a)).IN_SEQUENCE(seq);
 
         std::vector<Array_Destructure::Name> names{
             std::string{"x"},
         };
 
         Array_Destructure node{Statement::no_range, std::move(names),
-                               std::nullopt, std::move(expr), true};
+                               std::nullopt, std::move(expr)};
 
-        auto result = node.execute(ctx);
-        REQUIRE(result.has_value());
-        CHECK(result->size() == 1);
+        std::vector<Statement::Symbol_Action> actions;
+        for (const auto& action : node.symbol_sequence())
+            actions.push_back(action);
 
-        auto it = result->find(Value::create("x"s));
-        REQUIRE(it != result->end());
-        CHECK(it->second == a);
+        std::vector<Statement::Definition> defns;
+        for (const auto& a : actions)
+            if (std::holds_alternative<Statement::Definition>(a))
+                defns.push_back(std::get<Statement::Definition>(a));
+
+        REQUIRE(defns.size() == 1);
+        CHECK(defns[0].name == "x");
+        CHECK(defns[0].exported == false);
     }
 
     SECTION("Rest binds remaining elements")
@@ -243,8 +211,7 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
     }
 
     SECTION("Rest binds empty array when no extra elements")
@@ -276,8 +243,7 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
     }
 
     SECTION("Discarded rest ignores extra elements")
@@ -307,8 +273,7 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{Discarded_Binding{}},
                                std::move(expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
     }
 
     SECTION("Rest with discarded positional")
@@ -345,8 +310,7 @@ TEST_CASE("Array_Destructure")
                                Array_Destructure::Name{std::string{"rest"}},
                                std::move(expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
     }
 
     SECTION("Rest binds empty array when exact size")

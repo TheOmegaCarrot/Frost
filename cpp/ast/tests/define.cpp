@@ -35,8 +35,7 @@ TEST_CASE("Define")
 
         ast::Define node{ast::Statement::no_range, "foo", std::move(expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
     }
 
     SECTION("Redefine")
@@ -62,55 +61,41 @@ TEST_CASE("Define")
 
         ast::Define node{ast::Statement::no_range, "foo", std::move(expr)};
 
-        auto result = node.execute(ctx);
-        CHECK_FALSE(result.has_value());
+        node.execute(ctx);
         CHECK_THROWS(node.execute(ctx));
     }
 
-    SECTION("Exports defined value when enabled")
+    SECTION("Export flag appears in symbol_sequence")
     {
-        auto value = Value::create(123_f);
-
-        REQUIRE_CALL(*expr, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(value);
-
-        REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
-
         ast::Define node{ast::Statement::no_range, "foo", std::move(expr),
                          true};
 
-        auto result = node.execute(ctx);
-        REQUIRE(result.has_value());
-        CHECK(result->size() == 1);
+        std::vector<ast::Statement::Symbol_Action> actions;
+        for (const auto& action : node.symbol_sequence())
+            actions.push_back(action);
 
-        auto it = result->find(Value::create("foo"s));
-        REQUIRE(it != result->end());
-        CHECK(it->second == value);
+        REQUIRE(actions.size() >= 1);
+        auto& last = actions.back();
+        REQUIRE(std::holds_alternative<ast::Statement::Definition>(last));
+        auto& defn = std::get<ast::Statement::Definition>(last);
+        CHECK(defn.name == "foo");
+        CHECK(defn.exported == true);
     }
 
-    SECTION("Exports null values when enabled")
+    SECTION("Non-export definition is not marked exported")
     {
-        auto value = Value::null();
+        ast::Define node{ast::Statement::no_range, "foo", std::move(expr)};
 
-        REQUIRE_CALL(*expr, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
-            .RETURN(value);
+        std::vector<ast::Statement::Symbol_Action> actions;
+        for (const auto& action : node.symbol_sequence())
+            actions.push_back(action);
 
-        REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
-
-        ast::Define node{ast::Statement::no_range, "foo", std::move(expr),
-                         true};
-
-        auto result = node.execute(ctx);
-        REQUIRE(result.has_value());
-        CHECK(result->size() == 1);
-
-        auto it = result->find(Value::create("foo"s));
-        REQUIRE(it != result->end());
-        CHECK(it->second == value);
+        REQUIRE(actions.size() >= 1);
+        auto& last = actions.back();
+        REQUIRE(std::holds_alternative<ast::Statement::Definition>(last));
+        auto& defn = std::get<ast::Statement::Definition>(last);
+        CHECK(defn.name == "foo");
+        CHECK(defn.exported == false);
     }
 
     SECTION("Reject _")

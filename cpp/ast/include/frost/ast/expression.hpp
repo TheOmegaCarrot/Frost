@@ -42,10 +42,9 @@ class Expression : public Statement
         Evaluation_Context ctx) const = 0;
 
     //! Executing an expression is simply to evaluate it and discard the result
-    std::optional<Map> do_execute(Execution_Context& ctx) const final
+    void do_execute(Execution_Context& ctx) const final
     {
         (void)evaluate(ctx.as_eval());
-        return std::nullopt;
     }
 };
 } // namespace frst::ast

@@ -66,7 +66,7 @@ TEST_CASE("Parser Define Statements")
         CHECK(value->get<frst::Int>().value() == 42_f);
     }
 
-    SECTION("Exported definition returns a map")
+    SECTION("Exported definition binds value in symbol table")
     {
         auto result = parse("export def x = 42");
         REQUIRE(result);
@@ -75,17 +75,14 @@ TEST_CASE("Parser Define Statements")
 
         frst::Symbol_Table table;
         frst::Execution_Context ctx{.symbols = table};
-        auto exports = program[0]->execute(ctx);
-        REQUIRE(exports.has_value());
-        CHECK(exports->size() == 1);
+        program[0]->execute(ctx);
 
-        auto it = exports->find(frst::Value::create("x"s));
-        REQUIRE(it != exports->end());
-        REQUIRE(it->second->is<frst::Int>());
-        CHECK(it->second->get<frst::Int>().value() == 42_f);
+        auto value = table.lookup("x");
+        REQUIRE(value->is<frst::Int>());
+        CHECK(value->get<frst::Int>().value() == 42_f);
     }
 
-    SECTION("Exported array destructure returns a map")
+    SECTION("Exported array destructure binds values in symbol table")
     {
         auto result = parse("export def [a, ...rest] = [1, 2, 3]");
         REQUIRE(result);
@@ -94,19 +91,15 @@ TEST_CASE("Parser Define Statements")
 
         frst::Symbol_Table table;
         frst::Execution_Context ctx{.symbols = table};
-        auto exports = program[0]->execute(ctx);
-        REQUIRE(exports.has_value());
-        CHECK(exports->size() == 2);
+        program[0]->execute(ctx);
 
-        auto it_a = exports->find(frst::Value::create("a"s));
-        REQUIRE(it_a != exports->end());
-        REQUIRE(it_a->second->is<frst::Int>());
-        CHECK(it_a->second->get<frst::Int>().value() == 1_f);
+        auto a = table.lookup("a");
+        REQUIRE(a->is<frst::Int>());
+        CHECK(a->get<frst::Int>().value() == 1_f);
 
-        auto it_rest = exports->find(frst::Value::create("rest"s));
-        REQUIRE(it_rest != exports->end());
-        REQUIRE(it_rest->second->is<frst::Array>());
-        auto rest_vals = it_rest->second->get<frst::Array>().value();
+        auto rest = table.lookup("rest");
+        REQUIRE(rest->is<frst::Array>());
+        auto rest_vals = rest->get<frst::Array>().value();
         REQUIRE(rest_vals.size() == 2);
         REQUIRE(rest_vals[0]->is<frst::Int>());
         REQUIRE(rest_vals[1]->is<frst::Int>());
@@ -138,7 +131,7 @@ TEST_CASE("Parser Define Statements")
         CHECK(arr[2]->is<frst::Null>());
     }
 
-    SECTION("Exported map destructure returns a map")
+    SECTION("Exported map destructure binds values in symbol table")
     {
         auto result = parse("export def {foo: bar, [40+2]: answer} = "
                             "{foo: 1, [42]: 2}");
@@ -148,19 +141,15 @@ TEST_CASE("Parser Define Statements")
 
         frst::Symbol_Table table;
         frst::Execution_Context ctx{.symbols = table};
-        auto exports = program[0]->execute(ctx);
-        REQUIRE(exports.has_value());
-        CHECK(exports->size() == 2);
+        program[0]->execute(ctx);
 
-        auto it_bar = exports->find(frst::Value::create("bar"s));
-        REQUIRE(it_bar != exports->end());
-        REQUIRE(it_bar->second->is<frst::Int>());
-        CHECK(it_bar->second->get<frst::Int>().value() == 1_f);
+        auto bar = table.lookup("bar");
+        REQUIRE(bar->is<frst::Int>());
+        CHECK(bar->get<frst::Int>().value() == 1_f);
 
-        auto it_answer = exports->find(frst::Value::create("answer"s));
-        REQUIRE(it_answer != exports->end());
-        REQUIRE(it_answer->second->is<frst::Int>());
-        CHECK(it_answer->second->get<frst::Int>().value() == 2_f);
+        auto answer = table.lookup("answer");
+        REQUIRE(answer->is<frst::Int>());
+        CHECK(answer->get<frst::Int>().value() == 2_f);
     }
 
     SECTION("Map destructure allows line breaks and comments")
@@ -201,9 +190,7 @@ TEST_CASE("Parser Define Statements")
         auto program2 = require_program(result2);
         REQUIRE(program2.size() == 1);
 
-        auto exports = program2[0]->execute(ctx);
-        REQUIRE(exports.has_value());
-        CHECK(exports->empty());
+        program2[0]->execute(ctx);
     }
 
     SECTION("Map destructure allows whitespace around colon and key expr")

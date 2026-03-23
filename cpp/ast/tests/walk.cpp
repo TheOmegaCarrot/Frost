@@ -21,9 +21,8 @@ class Leaf_Node : public ast::Statement
     {
     }
 
-    std::optional<Map> do_execute(Execution_Context&) const override
+    void do_execute(Execution_Context&) const override
     {
-        return std::nullopt;
     }
 
     std::string do_node_label() const override
@@ -45,9 +44,8 @@ class Parent_Node : public ast::Statement
     {
     }
 
-    std::optional<Map> do_execute(Execution_Context&) const override
+    void do_execute(Execution_Context&) const override
     {
-        return std::nullopt;
     }
 
     std::string do_node_label() const override

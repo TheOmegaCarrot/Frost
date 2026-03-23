@@ -1,3 +1,4 @@
+#include "frost/exceptions.hpp"
 #include <frost/backtrace.hpp>
 #include <frost/builtins-common.hpp>
 #include <frost/ext.hpp>
@@ -121,11 +122,54 @@ struct Importer
         inject_import(isolated_table, child_search_path, import_cache,
                       import_stack);
 
-        Map imported;
         for (const auto& statement : parse_result.value())
         {
-            if (const auto& exported = statement->execute(isolated_ctx))
-                imported.insert_range(exported.value());
+            statement->execute(isolated_ctx);
+        }
+
+        auto exported_names =
+            parse_result.value()
+            | std::views::transform(
+                [](const ast::Statement::Ptr& stmt)
+                    -> std::generator<ast::Statement::Symbol_Action> {
+                    co_yield std::ranges::elements_of(stmt->symbol_sequence());
+                })
+            | std::views::join
+            | std::views::filter([](const ast::Statement::Symbol_Action& sym) {
+                  return sym.visit(Overload{
+                      [](const ast::Statement::Definition& def) {
+                          return def.exported;
+                      },
+                      [](const ast::Statement::Usage&) {
+                          return false;
+                      },
+                  });
+              })
+            | std::views::transform(
+                [](const ast::Statement::Symbol_Action& sym) {
+                    return sym.visit([](const auto& action) {
+                        return action.name;
+                    });
+                });
+
+        Map imported;
+        for (const std::string& name : exported_names)
+        {
+            try
+            {
+                // names can only be defined once, so collisions should not be
+                // possible here
+                imported.emplace(Value::create(auto{name}),
+                                 isolated_table.lookup(name));
+            }
+            catch (const std::exception& e)
+            {
+                // if the name could not be found, then there is a bug in the
+                // interpreter, because the names were pulled right from the
+                // symbol_sequence
+                throw Frost_Interpreter_Error{fmt::format(
+                    "Error looking up exported symbol {}: {}", name, e.what())};
+            }
         }
 
         auto import_result = Value::create(Value::trusted, std::move(imported));

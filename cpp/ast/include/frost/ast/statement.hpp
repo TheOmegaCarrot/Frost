@@ -47,9 +47,9 @@ class Statement
     virtual ~Statement() = default;
 
     //! @brief Execute this statement
-    std::optional<Map> execute(Execution_Context ctx) const
+    void execute(Execution_Context ctx) const
     {
-        return do_execute(ctx);
+        do_execute(ctx);
     }
 
     //! @brief Print AST of this node and all descendents
@@ -58,6 +58,7 @@ class Statement
     struct Definition
     {
         std::string name;
+        bool exported;
     };
     struct Usage
     {
@@ -99,7 +100,7 @@ class Statement
   protected:
     virtual std::string do_node_label() const = 0;
 
-    virtual std::optional<Map> do_execute(Execution_Context& ctx) const = 0;
+    virtual void do_execute(Execution_Context& ctx) const = 0;
 
     struct Child_Info
     {
