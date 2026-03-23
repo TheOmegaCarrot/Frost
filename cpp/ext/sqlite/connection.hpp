@@ -61,6 +61,8 @@ class Connection
     void for_each_row_impl_(const Stmt_Ptr& stmt,
                             const std::function<void(Value_Ptr)>& row_fn);
 
+    // Possible optimization: LRU cache of prepared statements keyed on the
+    // raw SQL string, avoiding re-preparation for repeated identical queries.
     Stmt_Ptr prepare_(const String& sql);
     void bind_positional_(const Stmt_Ptr& stmt, const Array& bindings);
     void bind_named_(const Stmt_Ptr& stmt, const Map& bindings);
