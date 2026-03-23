@@ -35,7 +35,7 @@ The following dependencies are fetched automatically by CMake:
 [Trompeloeil](https://github.com/rollbear/trompeloeil) (test-only).
 
 Some modules (HTTP, SQLite) are optional and have additional dependencies.
-See the [complete documentation](docs/stdlib.md) for build flags and details.
+See the [complete documentation](docs/stdlib/) for build flags and details.
 
 ### Compiling
 
