@@ -1,6 +1,7 @@
 # SQLite
 
 SQLite support can be disabled at build time with `-DWITH_SQLITE=NO`.
+Frost vendors its own SQLite build, so no system SQLite installation is required.
 
 The `sqlite` module provides access to SQLite databases.
 Supported binding types are `Null`, `Int`, `Float`, `Bool`, and `String`.
