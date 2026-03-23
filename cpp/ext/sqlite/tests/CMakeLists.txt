@@ -9,6 +9,7 @@ set(SQLITE_TESTS
     script.frst
     transaction.frst
     named-bindings.frst
+    callback-nesting.frst
 )
 
 find_program(VALGRIND valgrind)

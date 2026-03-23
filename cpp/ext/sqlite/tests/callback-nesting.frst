@@ -1,0 +1,179 @@
+# SQLite callback nesting tests
+# Tests db operations nested inside each/collect callbacks
+
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+db.exec('CREATE TABLE src (x INTEGER)')
+db.exec('INSERT INTO src VALUES (1)')
+db.exec('INSERT INTO src VALUES (2)')
+db.exec('INSERT INTO src VALUES (3)')
+
+# --- Nesting inside each ---
+
+# query inside each
+db.exec('CREATE TABLE queried (total INTEGER)')
+db.each('SELECT x FROM src', fn row -> do {
+    def count = db.query('SELECT count(*) as c FROM src')[0].c
+    db.exec('INSERT INTO queried VALUES (?)', [count])
+})
+def q_rows = db.query('SELECT * FROM queried')
+assert(len(q_rows) == 3, 'query inside each: should run for all rows')
+assert(q_rows[0].total == 3, 'query inside each: sees full table')
+
+# nested each inside each
+db.exec('CREATE TABLE pairs (a INTEGER, b INTEGER)')
+db.each('SELECT x FROM src WHERE x <= 2', fn outer -> do {
+    db.each('SELECT x FROM src WHERE x > ?', [outer.x], fn inner -> do {
+        db.exec('INSERT INTO pairs VALUES (?, ?)', [outer.x, inner.x])
+    })
+})
+def pairs = db.query('SELECT * FROM pairs ORDER BY a, b')
+assert(len(pairs) == 3, 'nested each: should produce 3 pairs')
+assert(pairs[0].a == 1 and pairs[0].b == 2, 'nested each: (1,2)')
+assert(pairs[1].a == 1 and pairs[1].b == 3, 'nested each: (1,3)')
+assert(pairs[2].a == 2 and pairs[2].b == 3, 'nested each: (2,3)')
+
+# collect inside each
+db.exec('CREATE TABLE collected_in_each (vals TEXT)')
+db.each('SELECT x FROM src WHERE x <= 2', fn outer -> do {
+    def vals = db.collect('SELECT x FROM src WHERE x > ?', [outer.x], fn row -> row.x)
+    db.exec('INSERT INTO collected_in_each VALUES (?)', [to_string(vals)])
+})
+def cie = db.query('SELECT * FROM collected_in_each ORDER BY vals')
+assert(len(cie) == 2, 'collect inside each: two outer rows')
+
+# --- Nesting inside collect ---
+
+# query inside collect
+def counts = db.collect('SELECT x FROM src', fn row -> do {
+    db.query('SELECT count(*) as c FROM src WHERE x >= ?', [row.x])[0].c
+})
+assert(counts == [3, 2, 1], 'query inside collect')
+
+# exec inside collect
+db.exec('CREATE TABLE side_effects (x INTEGER)')
+def results = db.collect('SELECT x FROM src', fn row -> do {
+    db.exec('INSERT INTO side_effects VALUES (?)', [row.x])
+    row.x * 2
+})
+assert(results == [2, 4, 6], 'exec inside collect: return values')
+assert(len(db.query('SELECT * FROM side_effects')) == 3, 'exec inside collect: side effects persisted')
+
+# each inside collect
+db.exec('CREATE TABLE each_in_collect (src INTEGER, dst INTEGER)')
+def outer_vals = db.collect('SELECT x FROM src WHERE x <= 2', fn outer -> do {
+    db.each('SELECT x FROM src WHERE x > ?', [outer.x], fn inner -> do {
+        db.exec('INSERT INTO each_in_collect VALUES (?, ?)', [outer.x, inner.x])
+    })
+    outer.x
+})
+assert(outer_vals == [1, 2], 'each inside collect: return values')
+def eic = db.query('SELECT * FROM each_in_collect ORDER BY src, dst')
+assert(len(eic) == 3, 'each inside collect: side effects')
+
+# nested collect inside collect
+def nested = db.collect('SELECT x FROM src WHERE x <= 2', fn outer -> do {
+    db.collect('SELECT x FROM src WHERE x > ?', [outer.x], fn inner -> outer.x + inner.x)
+})
+assert(nested == [[3, 4], [5]], 'nested collect inside collect')
+
+# --- Transaction inside each ---
+
+db.exec('CREATE TABLE tx_each (x INTEGER)')
+db.each('SELECT x FROM src WHERE x <= 2', fn row -> do {
+    db.transaction(fn tx -> {
+        tx.exec('INSERT INTO tx_each VALUES (?)', [row.x])
+        tx.exec('INSERT INTO tx_each VALUES (?)', [row.x * 10])
+    })
+})
+def tx_rows = db.query('SELECT x FROM tx_each ORDER BY x')
+assert(tx_rows[0].x == 1, 'transaction inside each: first insert')
+assert(tx_rows[1].x == 2, 'transaction inside each: second insert')
+assert(tx_rows[2].x == 10, 'transaction inside each: first tx second row')
+assert(tx_rows[3].x == 20, 'transaction inside each: second tx second row')
+
+# --- Named bindings in nested context ---
+
+db.exec('CREATE TABLE named_nested (label TEXT)')
+db.each('SELECT x FROM src', fn row -> do {
+    db.exec('INSERT INTO named_nested VALUES (:label)', {label: to_string(row.x)})
+})
+def nn = db.query('SELECT label FROM named_nested ORDER BY label')
+assert(len(nn) == 3, 'named bindings inside each')
+assert(nn[0].label == '1', 'named bindings inside each: first row')
+
+def named_collected = db.collect('SELECT x FROM src', fn row -> do {
+    db.query('SELECT count(*) as c FROM src WHERE x >= :min', {min: row.x})[0].c
+})
+assert(named_collected == [3, 2, 1], 'named bindings inside collect')
+
+# --- Transaction rollback inside each ---
+
+db.exec('CREATE TABLE tx_rollback (x INTEGER)')
+def rollback_err = try_call(db.each, ['SELECT x FROM src', fn row -> do {
+    db.transaction(fn tx -> {
+        tx.exec('INSERT INTO tx_rollback VALUES (?)', [row.x])
+        if row.x == 2: assert(false, 'intentional rollback')
+    })
+}])
+assert(not rollback_err.ok, 'transaction rollback inside each should propagate')
+assert(rollback_err.error @ contains('intentional rollback'), 'should contain original error')
+# First transaction (x=1) committed; second (x=2) rolled back; third never ran
+def tr_rows = db.query('SELECT * FROM tx_rollback')
+assert(len(tr_rows) == 1, 'only committed transaction should persist')
+assert(tr_rows[0].x == 1, 'first transaction committed before rollback')
+
+# db still usable after rollback inside each
+db.exec('INSERT INTO tx_rollback VALUES (?)', [99])
+assert(db.query('SELECT count(*) as c FROM tx_rollback')[0].c == 2, 'db usable after rollback in each')
+
+# --- Close during transaction inside each ---
+
+def db3 = sqlite.open(path)
+db3.exec('CREATE TABLE IF NOT EXISTS src3 (x INTEGER)')
+db3.exec('INSERT INTO src3 VALUES (1)')
+db3.exec('INSERT INTO src3 VALUES (2)')
+
+def close_tx_each = try_call(db3.each, ['SELECT x FROM src3', fn row -> do {
+    db3.transaction(fn tx -> {
+        tx.exec('INSERT INTO src3 VALUES (?)', [row.x + 100])
+        db3.close()
+    })
+}])
+assert(not close_tx_each.ok, 'close during transaction inside each should fail')
+assert(close_tx_each.error @ contains('transaction is active'), 'should mention active transaction')
+
+# --- Duplicate column names ---
+
+def dup = db.query('SELECT 1 as x, 2 as y, 3 as x')[0]
+assert(len(keys(dup)) == 2, 'duplicate column names collapse into one key')
+assert(dup.x == 3, 'last column with duplicate name wins')
+assert(dup.y == 2, 'non-duplicate column preserved')
+
+# --- Close during iteration ---
+
+# close during each - second callback will fail on closed db
+def close_each = try_call(db.each, ['SELECT x FROM src', fn row -> db.close()])
+assert(not close_each.ok, 'close during each should fail')
+assert(close_each.error @ contains('closed'), 'should mention closed')
+
+# Reopen for collect test
+def db2 = sqlite.open(path)
+db2.exec('CREATE TABLE IF NOT EXISTS src2 (x INTEGER)')
+db2.exec('INSERT INTO src2 VALUES (1)')
+db2.exec('INSERT INTO src2 VALUES (2)')
+db2.exec('INSERT INTO src2 VALUES (3)')
+
+# close during collect
+def close_collect = try_call(db2.collect, ['SELECT x FROM src2', fn row -> do {
+    db2.close()
+    row.x
+}])
+assert(not close_collect.ok, 'close during collect should fail')
+assert(close_collect.error @ contains('closed'), 'should mention closed')
+
+# Clean up
+if path != ':memory:': fs.remove(path)
