@@ -164,9 +164,10 @@ struct Data_Methods
                                                  return self->collect(args);
                                              })},
             {strings.last_insert_rowid,
-             system_closure(0, 0, [self](builtin_args_t args) {
-                 return self->last_insert_rowid(args);
-             })},
+             system_closure(0, 0,
+                            [self](builtin_args_t args) {
+                                return self->last_insert_rowid(args);
+                            })},
         };
     }
 };

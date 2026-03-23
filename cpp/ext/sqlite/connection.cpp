@@ -81,8 +81,8 @@ int Connection::exec(const String& sql, const Map& bindings)
     return exec_impl_(stmt);
 }
 
-void Connection::for_each_row_impl_(const Stmt_Ptr& stmt,
-                                    const std::function<void(Value_Ptr)>& row_fn)
+void Connection::for_each_row_impl_(
+    const Stmt_Ptr& stmt, const std::function<void(Value_Ptr)>& row_fn)
 {
     int num_cols = sqlite3_column_count(stmt.get());
     while (true)
@@ -125,12 +125,14 @@ bool Connection::in_transaction() const
 
 int Connection::total_changes()
 {
+    std::lock_guard lock{mutex_};
     require_open_();
     return sqlite3_total_changes(conn_.get());
 }
 
 Int Connection::last_insert_rowid()
 {
+    std::lock_guard lock{mutex_};
     require_open_();
     return sqlite3_last_insert_rowid(conn_.get());
 }
@@ -179,28 +181,33 @@ void Connection::bind_value_(const Stmt_Ptr& stmt, int pos,
                              const std::string& location)
 {
     auto* s = stmt.get();
-    val_ptr->visit(Overload{
+    int rc = val_ptr->visit(Overload{
         [&](const Null&) {
-            sqlite3_bind_null(s, pos);
+            return sqlite3_bind_null(s, pos);
         },
         [&](const Int& v) {
-            sqlite3_bind_int64(s, pos, v);
+            return sqlite3_bind_int64(s, pos, v);
         },
         [&](const Float& v) {
-            sqlite3_bind_double(s, pos, v);
+            return sqlite3_bind_double(s, pos, v);
         },
         [&](const Bool& v) {
-            sqlite3_bind_int64(s, pos, v ? 1 : 0);
+            return sqlite3_bind_int64(s, pos, v ? 1 : 0);
         },
         [&](const String& v) {
-            sqlite3_bind_text(s, pos, v.c_str(), static_cast<int>(v.size()),
-                              SQLITE_TRANSIENT);
+            return sqlite3_bind_text(s, pos, v.c_str(),
+                                     static_cast<int>(v.size()),
+                                     SQLITE_TRANSIENT);
         },
-        [&](const auto&) {
+        [&](const auto&) -> int {
             throw Frost_Recoverable_Error{"unsupported binding type at "
                                           + location};
         },
     });
+
+    if (rc != SQLITE_OK)
+        throw Frost_Recoverable_Error{fmt::format(
+            "failed to bind value at {}: {}", location, sqlite3_errstr(rc))};
 }
 
 void Connection::bind_positional_(const Stmt_Ptr& stmt, const Array& bindings)

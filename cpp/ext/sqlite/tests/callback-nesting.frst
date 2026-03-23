@@ -95,6 +95,64 @@ assert(tx_rows[1].x == 2, 'transaction inside each: second insert')
 assert(tx_rows[2].x == 10, 'transaction inside each: first tx second row')
 assert(tx_rows[3].x == 20, 'transaction inside each: second tx second row')
 
+# --- Named bindings in nested context ---
+
+db.exec('CREATE TABLE named_nested (label TEXT)')
+db.each('SELECT x FROM src', fn row -> do {
+    db.exec('INSERT INTO named_nested VALUES (:label)', {label: to_string(row.x)})
+})
+def nn = db.query('SELECT label FROM named_nested ORDER BY label')
+assert(len(nn) == 3, 'named bindings inside each')
+assert(nn[0].label == '1', 'named bindings inside each: first row')
+
+def named_collected = db.collect('SELECT x FROM src', fn row -> do {
+    db.query('SELECT count(*) as c FROM src WHERE x >= :min', {min: row.x})[0].c
+})
+assert(named_collected == [3, 2, 1], 'named bindings inside collect')
+
+# --- Transaction rollback inside each ---
+
+db.exec('CREATE TABLE tx_rollback (x INTEGER)')
+def rollback_err = try_call(db.each, ['SELECT x FROM src', fn row -> do {
+    db.transaction(fn tx -> {
+        tx.exec('INSERT INTO tx_rollback VALUES (?)', [row.x])
+        if row.x == 2: assert(false, 'intentional rollback')
+    })
+}])
+assert(not rollback_err.ok, 'transaction rollback inside each should propagate')
+assert(rollback_err.error @ contains('intentional rollback'), 'should contain original error')
+# First transaction (x=1) committed; second (x=2) rolled back; third never ran
+def tr_rows = db.query('SELECT * FROM tx_rollback')
+assert(len(tr_rows) == 1, 'only committed transaction should persist')
+assert(tr_rows[0].x == 1, 'first transaction committed before rollback')
+
+# db still usable after rollback inside each
+db.exec('INSERT INTO tx_rollback VALUES (?)', [99])
+assert(db.query('SELECT count(*) as c FROM tx_rollback')[0].c == 2, 'db usable after rollback in each')
+
+# --- Close during transaction inside each ---
+
+def db3 = sqlite.open(path)
+db3.exec('CREATE TABLE IF NOT EXISTS src3 (x INTEGER)')
+db3.exec('INSERT INTO src3 VALUES (1)')
+db3.exec('INSERT INTO src3 VALUES (2)')
+
+def close_tx_each = try_call(db3.each, ['SELECT x FROM src3', fn row -> do {
+    db3.transaction(fn tx -> {
+        tx.exec('INSERT INTO src3 VALUES (?)', [row.x + 100])
+        db3.close()
+    })
+}])
+assert(not close_tx_each.ok, 'close during transaction inside each should fail')
+assert(close_tx_each.error @ contains('transaction is active'), 'should mention active transaction')
+
+# --- Duplicate column names ---
+
+def dup = db.query('SELECT 1 as x, 2 as y, 3 as x')[0]
+assert(len(keys(dup)) == 2, 'duplicate column names collapse into one key')
+assert(dup.x == 3, 'last column with duplicate name wins')
+assert(dup.y == 2, 'non-duplicate column preserved')
+
 # --- Close during iteration ---
 
 # close during each - second callback will fail on closed db
