@@ -33,7 +33,6 @@ Available in every Frost program without imports.
 | [Streams](./streams.md)             | Pre-defined `stdin` and `stderr` streams                                   |
 | [Debug](./debug.md)                 | Assertions and value inspection                                            |
 | [Mutable Cell](./mutable-cell.md)   | Mutable state                                                              |
-| [Filesystem](./filesystem.md)       | Reading, writing, and navigating the filesystem                            |
 
 ## Standard Modules
 
@@ -42,6 +41,7 @@ Built-in modules accessed via `import`.
 | Module                           | Import                       | Description                              |
 |----------------------------------|------------------------------|------------------------------------------|
 | [Encoding](./encoding.md)        | `import('std.encoding')`     | Base64, byte arrays, integer formatting  |
+| [Filesystem](./fs.md)            | `import('std.fs')`           | Reading, writing, and navigating the filesystem |
 | [IO](./io.md)                    | `import('std.io')`           | Reading and writing files and streams    |
 | [JSON](./json.md)                | `import('std.json')`         | Encoding and decoding JSON               |
 | [Math](./math.md)                | `import('std.math')`         | Arithmetic, rounding, logarithms, trig   |

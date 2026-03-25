@@ -15,8 +15,7 @@
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
-#include <frost/builtin.hpp>
-#include <frost/symbol-table.hpp>
+#include <frost/stdlib.hpp>
 #include <frost/value.hpp>
 
 using namespace frst;
@@ -25,22 +24,24 @@ using namespace Catch::Matchers;
 
 namespace
 {
-Function get_fs_fn(const Value_Ptr& fs_val, std::string_view name)
+
+Map fs_module()
 {
-    REQUIRE(fs_val->is<Map>());
-    const auto& fs_map = fs_val->raw_get<Map>();
-    auto key = Value::create(std::string{name});
-    for (const auto& [k, v] : fs_map)
-    {
-        if (Value::equal(k, key)->get<Bool>().value())
-        {
-            REQUIRE(v);
-            REQUIRE(v->is<Function>());
-            return v->get<Function>().value();
-        }
-    }
-    FAIL("Missing fs function");
-    return Function{};
+    Stdlib_Registry registry;
+    register_module_fs(registry);
+    auto module = registry.lookup_module("std.fs");
+    REQUIRE(module.has_value());
+    REQUIRE(module.value()->is<Map>());
+    return module.value()->raw_get<Map>();
+}
+
+Function lookup(const Map& mod, const std::string& name)
+{
+    auto key = Value::create(String{name});
+    auto it = mod.find(key);
+    REQUIRE(it != mod.end());
+    REQUIRE(it->second->is<Function>());
+    return it->second->raw_get<Function>();
 }
 
 std::filesystem::path make_temp_dir(std::string_view test_name)
@@ -95,14 +96,9 @@ bool contains_path(const Array& arr, const std::filesystem::path& expected)
 }
 } // namespace
 
-TEST_CASE("Builtin filesystem injection")
+TEST_CASE("std.fs")
 {
-    Symbol_Table table;
-    inject_builtins(table);
-
-    auto fs_val = table.lookup("fs");
-    REQUIRE(fs_val->is<Map>());
-    const auto& fs_map = fs_val->raw_get<Map>();
+    auto mod = fs_module();
 
     const std::vector<std::string> names{
         "move",   "symlink", "copy",      "absolute", "canonical",
@@ -111,12 +107,12 @@ TEST_CASE("Builtin filesystem injection")
         "concat", "stem",    "extension", "filename", "parent",
     };
 
-    SECTION("Injected")
+    SECTION("Registered")
     {
-        REQUIRE(fs_map.size() == names.size());
+        REQUIRE(mod.size() == names.size());
         for (const auto& name : names)
         {
-            auto fn = get_fs_fn(fs_val, name);
+            auto fn = lookup(mod, name);
             REQUIRE(fn);
         }
     }
@@ -161,7 +157,7 @@ TEST_CASE("Builtin filesystem injection")
         {
             DYNAMIC_SECTION("Arity " << test.name)
             {
-                auto fn = get_fs_fn(fs_val, test.name);
+                auto fn = lookup(mod, test.name);
 
                 if (test.min == 0)
                 {
@@ -246,7 +242,7 @@ TEST_CASE("Builtin filesystem injection")
         {
             DYNAMIC_SECTION("Type " << test.name)
             {
-                auto fn = get_fs_fn(fs_val, test.name);
+                auto fn = lookup(mod, test.name);
                 if (test.arity == 1)
                 {
                     CHECK_THROWS_AS(fn->call({bad}), Frost_User_Error);
@@ -285,7 +281,7 @@ TEST_CASE("Builtin filesystem injection")
         {
             DYNAMIC_SECTION("path label: " << name)
             {
-                auto fn = get_fs_fn(fs_val, name);
+                auto fn = lookup(mod, name);
                 CHECK_THROWS_MATCHES(fn->call({bad}), Frost_User_Error,
                                      MessageMatches(ContainsSubstring("path")));
             }
@@ -293,7 +289,7 @@ TEST_CASE("Builtin filesystem injection")
 
         SECTION("concat labels base and path")
         {
-            auto fn = get_fs_fn(fs_val, "concat");
+            auto fn = lookup(mod, "concat");
             CHECK_THROWS_MATCHES(fn->call({bad, good}), Frost_User_Error,
                                  MessageMatches(ContainsSubstring("base")));
             CHECK_THROWS_MATCHES(fn->call({good, bad}), Frost_User_Error,
@@ -302,18 +298,14 @@ TEST_CASE("Builtin filesystem injection")
     }
 }
 
-TEST_CASE("Builtin filesystem operations")
+TEST_CASE("std.fs operations")
 {
-    Symbol_Table table;
-    inject_builtins(table);
-
-    auto fs_val = table.lookup("fs");
-    REQUIRE(fs_val->is<Map>());
+    auto mod = fs_module();
 
     SECTION("cwd and cd")
     {
-        auto cwd_fn = get_fs_fn(fs_val, "cwd");
-        auto cd_fn = get_fs_fn(fs_val, "cd");
+        auto cwd_fn = lookup(mod, "cwd");
+        auto cd_fn = lookup(mod, "cd");
 
         auto dir = make_temp_dir("fs_cwd");
         BOOST_SCOPE_EXIT_ALL(&dir)
@@ -347,10 +339,10 @@ TEST_CASE("Builtin filesystem operations")
 
     SECTION("mkdir, exists, remove, remove_recursively")
     {
-        auto mkdir_fn = get_fs_fn(fs_val, "mkdir");
-        auto exists_fn = get_fs_fn(fs_val, "exists");
-        auto remove_fn = get_fs_fn(fs_val, "remove");
-        auto remove_all_fn = get_fs_fn(fs_val, "remove_recursively");
+        auto mkdir_fn = lookup(mod, "mkdir");
+        auto exists_fn = lookup(mod, "exists");
+        auto remove_fn = lookup(mod, "remove");
+        auto remove_all_fn = lookup(mod, "remove_recursively");
 
         auto dir = make_temp_dir("fs_dirs");
         BOOST_SCOPE_EXIT_ALL(&dir)
@@ -413,10 +405,10 @@ TEST_CASE("Builtin filesystem operations")
 
     SECTION("size, absolute, canonical, concat")
     {
-        auto size_fn = get_fs_fn(fs_val, "size");
-        auto abs_fn = get_fs_fn(fs_val, "absolute");
-        auto canon_fn = get_fs_fn(fs_val, "canonical");
-        auto concat_fn = get_fs_fn(fs_val, "concat");
+        auto size_fn = lookup(mod, "size");
+        auto abs_fn = lookup(mod, "absolute");
+        auto canon_fn = lookup(mod, "canonical");
+        auto concat_fn = lookup(mod, "concat");
 
         auto dir = make_temp_dir("fs_paths");
         BOOST_SCOPE_EXIT_ALL(&dir)
@@ -477,8 +469,8 @@ TEST_CASE("Builtin filesystem operations")
 
     SECTION("move and copy")
     {
-        auto move_fn = get_fs_fn(fs_val, "move");
-        auto copy_fn = get_fs_fn(fs_val, "copy");
+        auto move_fn = lookup(mod, "move");
+        auto copy_fn = lookup(mod, "copy");
 
         auto dir = make_temp_dir("fs_move_copy");
         BOOST_SCOPE_EXIT_ALL(&dir)
@@ -540,8 +532,8 @@ TEST_CASE("Builtin filesystem operations")
 
     SECTION("list and list_recursively")
     {
-        auto list_fn = get_fs_fn(fs_val, "list");
-        auto list_rec_fn = get_fs_fn(fs_val, "list_recursively");
+        auto list_fn = lookup(mod, "list");
+        auto list_rec_fn = lookup(mod, "list_recursively");
 
         auto dir = make_temp_dir("fs_list");
         BOOST_SCOPE_EXIT_ALL(&dir)
@@ -598,7 +590,7 @@ TEST_CASE("Builtin filesystem operations")
 
     SECTION("stat")
     {
-        auto stat_fn = get_fs_fn(fs_val, "stat");
+        auto stat_fn = lookup(mod, "stat");
 
         auto dir = make_temp_dir("fs_stat");
         BOOST_SCOPE_EXIT_ALL(&dir)
@@ -665,7 +657,7 @@ TEST_CASE("Builtin filesystem operations")
 
     SECTION("symlink")
     {
-        auto symlink_fn = get_fs_fn(fs_val, "symlink");
+        auto symlink_fn = lookup(mod, "symlink");
 
         auto dir = make_temp_dir("fs_symlink");
         BOOST_SCOPE_EXIT_ALL(&dir)
@@ -698,7 +690,7 @@ TEST_CASE("Builtin filesystem operations")
 
     SECTION("list_recursively skips permission denied")
     {
-        auto list_rec_fn = get_fs_fn(fs_val, "list_recursively");
+        auto list_rec_fn = lookup(mod, "list_recursively");
 
         auto dir = make_temp_dir("fs_perm");
         auto restricted = dir / "restricted";
@@ -736,17 +728,10 @@ TEST_CASE("Builtin filesystem operations")
     }
 }
 
-TEST_CASE("Builtin fs.stem")
+TEST_CASE("std.fs stem")
 {
-    Symbol_Table table;
-    inject_builtins(table);
-    auto fs_val = table.lookup("fs");
-    auto fn = get_fs_fn(fs_val, "stem");
-
-    SECTION("Injected")
-    {
-        CHECK(fn);
-    }
+    auto mod = fs_module();
+    auto fn = lookup(mod, "stem");
 
     SECTION("Arity and type errors")
     {
@@ -781,17 +766,10 @@ TEST_CASE("Builtin fs.stem")
     }
 }
 
-TEST_CASE("Builtin fs.extension")
+TEST_CASE("std.fs extension")
 {
-    Symbol_Table table;
-    inject_builtins(table);
-    auto fs_val = table.lookup("fs");
-    auto fn = get_fs_fn(fs_val, "extension");
-
-    SECTION("Injected")
-    {
-        CHECK(fn);
-    }
+    auto mod = fs_module();
+    auto fn = lookup(mod, "extension");
 
     SECTION("Arity and type errors")
     {
@@ -826,17 +804,10 @@ TEST_CASE("Builtin fs.extension")
     }
 }
 
-TEST_CASE("Builtin fs.filename")
+TEST_CASE("std.fs filename")
 {
-    Symbol_Table table;
-    inject_builtins(table);
-    auto fs_val = table.lookup("fs");
-    auto fn = get_fs_fn(fs_val, "filename");
-
-    SECTION("Injected")
-    {
-        CHECK(fn);
-    }
+    auto mod = fs_module();
+    auto fn = lookup(mod, "filename");
 
     SECTION("Arity and type errors")
     {
@@ -864,17 +835,10 @@ TEST_CASE("Builtin fs.filename")
     }
 }
 
-TEST_CASE("Builtin fs.parent")
+TEST_CASE("std.fs parent")
 {
-    Symbol_Table table;
-    inject_builtins(table);
-    auto fs_val = table.lookup("fs");
-    auto fn = get_fs_fn(fs_val, "parent");
-
-    SECTION("Injected")
-    {
-        CHECK(fn);
-    }
+    auto mod = fs_module();
+    auto fn = lookup(mod, "parent");
 
     SECTION("Arity and type errors")
     {

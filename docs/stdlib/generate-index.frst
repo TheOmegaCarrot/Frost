@@ -1,5 +1,6 @@
 def re = import('std.regex')
 def io = import('std.io')
+def fs = import('std.fs')
 
 # path to directory containing this script
 def me_dir = do {
@@ -36,6 +37,7 @@ def module_prefixes = {
     ['json.md']: 'json',
     ['math.md']: 'math',
     ['os.md']: 'os',
+    ['fs.md']: 'fs',
     ['io.md']: 'io',
     ['regex.md']: 'regex',
 }

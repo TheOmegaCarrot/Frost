@@ -46,26 +46,26 @@ Each entry links to its full documentation.
 - [flat_map](collections.md#flat_map)
 - [flatten](collections.md#flatten)
 - [fold](collections.md#fold)
-- [fs.absolute](filesystem.md#fsabsolute)
-- [fs.canonical](filesystem.md#fscanonical)
-- [fs.cd](filesystem.md#fscd)
-- [fs.concat](filesystem.md#fsconcat)
-- [fs.copy](filesystem.md#fscopy)
-- [fs.cwd](filesystem.md#fscwd)
-- [fs.exists](filesystem.md#fsexists)
-- [fs.extension](filesystem.md#fsextension)
-- [fs.filename](filesystem.md#fsfilename)
-- [fs.list](filesystem.md#fslist)
-- [fs.list_recursively](filesystem.md#fslist_recursively)
-- [fs.mkdir](filesystem.md#fsmkdir)
-- [fs.move](filesystem.md#fsmove)
-- [fs.parent](filesystem.md#fsparent)
-- [fs.remove](filesystem.md#fsremove)
-- [fs.remove_recursively](filesystem.md#fsremove_recursively)
-- [fs.size](filesystem.md#fssize)
-- [fs.stat](filesystem.md#fsstat)
-- [fs.stem](filesystem.md#fsstem)
-- [fs.symlink](filesystem.md#fssymlink)
+- [fs.absolute](fs.md#absolute) · `std.fs`
+- [fs.canonical](fs.md#canonical) · `std.fs`
+- [fs.cd](fs.md#cd) · `std.fs`
+- [fs.concat](fs.md#concat) · `std.fs`
+- [fs.copy](fs.md#copy) · `std.fs`
+- [fs.cwd](fs.md#cwd) · `std.fs`
+- [fs.exists](fs.md#exists) · `std.fs`
+- [fs.extension](fs.md#extension) · `std.fs`
+- [fs.filename](fs.md#filename) · `std.fs`
+- [fs.list](fs.md#list) · `std.fs`
+- [fs.list_recursively](fs.md#list_recursively) · `std.fs`
+- [fs.mkdir](fs.md#mkdir) · `std.fs`
+- [fs.move](fs.md#move) · `std.fs`
+- [fs.parent](fs.md#parent) · `std.fs`
+- [fs.remove](fs.md#remove) · `std.fs`
+- [fs.remove_recursively](fs.md#remove_recursively) · `std.fs`
+- [fs.size](fs.md#size) · `std.fs`
+- [fs.stat](fs.md#stat) · `std.fs`
+- [fs.stem](fs.md#stem) · `std.fs`
+- [fs.symlink](fs.md#symlink) · `std.fs`
 - [greater_than](operators.md#greater_than)
 - [greater_than_or_equal](operators.md#greater_than_or_equal)
 - [group_by](collections.md#group_by)

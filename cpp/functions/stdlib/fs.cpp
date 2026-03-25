@@ -1,7 +1,5 @@
 #include <frost/builtins-common.hpp>
 
-#include <frost/builtin.hpp>
-#include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
 #include <boost/hof/lift.hpp>
@@ -285,15 +283,12 @@ BUILTIN(concat)
 
 } // namespace fs
 
-void inject_filesystem(Symbol_Table& table)
-{
-    using namespace fs;
-    INJECT_MAP(fs, ENTRY(move, 2), ENTRY(symlink, 2), ENTRY(copy, 2),
-               ENTRY(absolute, 1), ENTRY(canonical, 1), ENTRY(cd, 1),
-               ENTRY(cwd, 0), ENTRY(exists, 1), ENTRY(remove, 1),
-               ENTRY(remove_recursively, 1), ENTRY(mkdir, 1), ENTRY(size, 1),
-               ENTRY(stat, 1), ENTRY(list, 1), ENTRY(list_recursively, 1),
-               ENTRY(concat, 2), ENTRY(stem, 1), ENTRY(parent, 1),
-               ENTRY(filename, 1), ENTRY(extension, 1));
-}
+STDLIB_MODULE(fs, ENTRY(move, 2), ENTRY(symlink, 2), ENTRY(copy, 2),
+              ENTRY(absolute, 1), ENTRY(canonical, 1), ENTRY(cd, 1),
+              ENTRY(cwd, 0), ENTRY(exists, 1), ENTRY(remove, 1),
+              ENTRY(remove_recursively, 1), ENTRY(mkdir, 1), ENTRY(size, 1),
+              ENTRY(stat, 1), ENTRY(list, 1), ENTRY(list_recursively, 1),
+              ENTRY(concat, 2), ENTRY(stem, 1), ENTRY(parent, 1),
+              ENTRY(filename, 1), ENTRY(extension, 1))
+
 } // namespace frst

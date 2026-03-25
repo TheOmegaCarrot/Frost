@@ -22,6 +22,7 @@
 
 def json = import('std.json')
 def io = import('std.io')
+def fs = import('std.fs')
 
 def input_path = 'tmp-log-summarizer-input.txt'
 def output_path = 'tmp-log-summarizer-output.json'

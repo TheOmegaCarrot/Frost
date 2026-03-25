@@ -1,23 +1,27 @@
 # Filesystem
 
-## `fs.absolute`
-`fs.absolute(path)`
+```frost
+def fs = import('std.fs')
+```
+
+## `absolute`
+`absolute(path)`
 
 Returns the absolute form of `path` without resolving symlinks.
 
-## `fs.canonical`
-`fs.canonical(path)`
+## `canonical`
+`canonical(path)`
 
 Returns the canonical absolute path, resolving symlinks and `.`/`..` components.
 Produces an error if `path` does not exist.
 
-## `fs.exists`
-`fs.exists(path)`
+## `exists`
+`exists(path)`
 
 Returns `true` if `path` exists on the filesystem.
 
-## `fs.stat`
-`fs.stat(path)`
+## `stat`
+`stat(path)`
 
 Returns a map describing the file at `path`:
 
@@ -36,78 +40,78 @@ Returns a map describing the file at `path`:
 
 Produces an error if the stat call fails.
 
-## `fs.size`
-`fs.size(path)`
+## `size`
+`size(path)`
 
 Returns the size of the file at `path` in bytes as an `Int`.
 Produces an error if `path` does not exist or is not a regular file.
 
-## `fs.cwd`
-`fs.cwd()`
+## `cwd`
+`cwd()`
 
 Returns the current working directory as a string.
 
-## `fs.cd`
-`fs.cd(path)`
+## `cd`
+`cd(path)`
 
 Changes the current working directory to `path`.
 Produces an error if `path` does not exist or is not accessible.
 
-## `fs.list`
-`fs.list(path)`
+## `list`
+`list(path)`
 
 Returns an array of path strings for all entries in the directory at `path`.
 Produces an error if `path` does not exist or is not a directory.
 
-## `fs.list_recursively`
-`fs.list_recursively(path)`
+## `list_recursively`
+`list_recursively(path)`
 
 Recursively lists all entries under `path`.
 Entries in directories where permission is denied are silently skipped.
 Produces an error if `path` itself does not exist or is not a directory.
 
-## `fs.mkdir`
-`fs.mkdir(path)`
+## `mkdir`
+`mkdir(path)`
 
 Creates `path` and any missing parent directories.
 Returns `true` if the directory was created, `false` if it already existed.
 
-## `fs.move`
-`fs.move(src, dest)`
+## `move`
+`move(src, dest)`
 
 Moves or renames `src` to `dest`. Produces an error on failure.
 
-## `fs.copy`
-`fs.copy(src, dest)`
+## `copy`
+`copy(src, dest)`
 
 Recursively copies `src` to `dest`. Produces an error on failure.
 
-## `fs.symlink`
-`fs.symlink(to, link)`
+## `symlink`
+`symlink(to, link)`
 
 Creates a symbolic link at `link` pointing to `to`. Produces an error on failure.
 
-## `fs.remove`
-`fs.remove(path)`
+## `remove`
+`remove(path)`
 
 Removes the file or empty directory at `path`.
 Returns `true` if something was removed, `false` if `path` did not exist.
 
-## `fs.remove_recursively`
-`fs.remove_recursively(path)`
+## `remove_recursively`
+`remove_recursively(path)`
 
 Recursively removes `path` and all its contents.
 Returns the number of entries removed as an `Int`.
 Returns `0` if `path` did not exist.
 
-## `fs.concat`
-`fs.concat(base, path)`
+## `concat`
+`concat(base, path)`
 
 Joins `base` and `path` using the platform path separator.
 Equivalent to `base / path` in filesystem terms.
 
-## `fs.stem`
-`fs.stem(path)`
+## `stem`
+`stem(path)`
 
 Returns the filename component of `path` with the last extension removed.
 
@@ -117,8 +121,8 @@ fs.stem('archive.tar.gz')   # => 'archive.tar'
 fs.stem('/a/b/file')        # => 'file'
 ```
 
-## `fs.extension`
-`fs.extension(path)`
+## `extension`
+`extension(path)`
 
 Returns the last extension of the filename component of `path`, including the leading dot.
 Returns an empty string if there is no extension.
@@ -129,8 +133,8 @@ fs.extension('archive.tar.gz')  # => '.gz'
 fs.extension('/a/b/file')       # => ''
 ```
 
-## `fs.filename`
-`fs.filename(path)`
+## `filename`
+`filename(path)`
 
 Returns the final component of `path` (the filename), including any extension.
 
@@ -138,8 +142,8 @@ Returns the final component of `path` (the filename), including any extension.
 fs.filename('/a/b/file.txt')  # => 'file.txt'
 ```
 
-## `fs.parent`
-`fs.parent(path)`
+## `parent`
+`parent(path)`
 
 Returns the parent directory of `path`.
 Returns an empty string if `path` contains no directory component.

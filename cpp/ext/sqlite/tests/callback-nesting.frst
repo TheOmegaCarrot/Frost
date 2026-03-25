@@ -1,6 +1,7 @@
 # SQLite callback nesting tests
 # Tests db operations nested inside each/collect callbacks
 
+def fs = import('std.fs')
 def path = args[1]
 
 if fs.exists(path): fs.remove(path)

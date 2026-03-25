@@ -37,6 +37,7 @@ class Stdlib_Registry
 
 #define X_STDLIB_MODULES                                                       \
     X(encoding)                                                                \
+    X(fs)                                                                      \
     X(io)                                                                      \
     X(json)                                                                    \
     X(math)                                                                    \

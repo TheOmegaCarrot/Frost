@@ -5,7 +5,6 @@ add_library( frost-functions
     builtins/and-then.cpp
     builtins/debug-helpers.cpp
     builtins/error-handling.cpp
-    builtins/filesystem.cpp
     builtins/free-operators.cpp
     builtins/mutable-cell.cpp
     builtins/output.cpp
@@ -17,6 +16,7 @@ add_library( frost-functions
     builtins/type-conversions.cpp
     builtins/type-tests.cpp
     stdlib/encoding.cpp
+    stdlib/fs.cpp
     stdlib/io.cpp
     stdlib/json.cpp
     stdlib/math.cpp
@@ -68,11 +68,11 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
     string-ops
     mutable-cell
     streams
-    filesystem
 )
 
 set(FUNCTIONS_STDLIB_TEST_FILES
     encoding
+    fs
     io
     json
     math

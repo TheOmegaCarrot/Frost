@@ -1,5 +1,6 @@
 # SQLite db.collect tests
 
+def fs = import('std.fs')
 def path = args[1]
 
 if fs.exists(path): fs.remove(path)
