@@ -57,6 +57,7 @@ class Builtin final : public Callable
     X(type_conversions)                                                        \
     X(pack_call)                                                               \
     X(debug_helpers)                                                           \
+    X(error_handling)                                                          \
     X(output)                                                                  \
     X(free_operators)                                                          \
     X(math)                                                                    \
@@ -76,8 +77,6 @@ X_INJECT
 
 #undef X
 
-void inject_error_handling(Symbol_Table&);
-
 inline void inject_builtins(Symbol_Table& table)
 {
 #define X(F) inject_##F(table);
@@ -85,8 +84,6 @@ inline void inject_builtins(Symbol_Table& table)
     X_INJECT
 
 #undef X
-
-    inject_error_handling(table);
 }
 
 } // namespace frst
