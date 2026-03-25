@@ -7,7 +7,6 @@ add_library( frost-functions
     builtins/error-handling.cpp
     builtins/filesystem.cpp
     builtins/free-operators.cpp
-    builtins/json.cpp
     builtins/math.cpp
     builtins/mutable-cell.cpp
     builtins/os.cpp
@@ -20,6 +19,7 @@ add_library( frost-functions
     builtins/structure-ops.cpp
     builtins/type-conversions.cpp
     builtins/type-tests.cpp
+    stdlib/json.cpp
 )
 
 target_include_directories( frost-functions

@@ -47,11 +47,19 @@ struct Importer
 
     import::import_stack_t import_stack;
 
+    std::shared_ptr<Stdlib_Registry> stdlib;
+
     Value_Ptr operator()(builtin_args_t args)
     {
         REQUIRE_ARGS("import", PARAM("module", TYPES(String)));
 
         auto module_spec = GET(0, String);
+
+        if (stdlib)
+        {
+            if (auto result = stdlib->lookup_module(module_spec))
+                return result.value();
+        }
 
         std::filesystem::path module_path =
             boost::replace_all_copy(module_spec, ".", "/") + ".frst";
@@ -119,8 +127,8 @@ struct Importer
 
         child_search_path.append_range(env_module_path());
 
-        inject_import(isolated_table, child_search_path, import_cache,
-                      import_stack);
+        inject_import(isolated_table, child_search_path, stdlib,
+                      import_cache, import_stack);
 
         for (const auto& statement : parse_result.value())
         {
@@ -182,13 +190,15 @@ struct Importer
 
 void inject_import(Symbol_Table& table,
                    const import::search_path_t& search_path,
+                   std::shared_ptr<Stdlib_Registry> stdlib,
                    import::import_cache_t import_cache,
                    const import::import_stack_t& import_stack)
 {
     table.define("import", Value::create(Function{std::make_shared<Builtin>(
                                Importer{.search_path = std::move(search_path),
                                         .import_cache = import_cache,
-                                        .import_stack = import_stack},
+                                        .import_stack = import_stack,
+                                        .stdlib = std::move(stdlib)},
                                "import", Builtin::Arity{.min = 1, .max = 1})}));
 }
 } // namespace frst

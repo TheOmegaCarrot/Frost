@@ -68,7 +68,6 @@ class Builtin final : public Callable
     X(and_then)                                                                \
     X(os)                                                                      \
     X(streams)                                                                 \
-    X(json)                                                                    \
     X(filesystem)
 
 #define X(F) void inject_##F(Symbol_Table&);

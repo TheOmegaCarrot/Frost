@@ -7,6 +7,8 @@
 namespace frst
 {
 
+namespace json
+{
 struct Parse_Json_Impl
 {
 
@@ -63,9 +65,9 @@ struct Parse_Json_Impl
 
 } constexpr static parse_json_impl;
 
-BUILTIN(parse_json)
+BUILTIN(decode)
 {
-    REQUIRE_ARGS("parse_json", TYPES(String));
+    REQUIRE_ARGS("json.decode", TYPES(String));
     boost::system::error_code ec;
     boost::json::parse_options opts{
         .max_depth = 1024,
@@ -134,14 +136,12 @@ struct To_Json_Impl
 
 } constexpr static to_json_impl;
 
-BUILTIN(to_json)
+BUILTIN(encode)
 {
     return Value::create(serialize(args.at(0)->visit(to_json_impl)));
 }
+} // namespace json
 
-void inject_json(Symbol_Table& table)
-{
-    INJECT(parse_json, 1);
-    INJECT(to_json, 1);
-}
+STDLIB_MODULE(json, ENTRY(decode, 1), ENTRY(encode, 1))
+
 } // namespace frst

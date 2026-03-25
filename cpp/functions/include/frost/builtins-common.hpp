@@ -2,6 +2,7 @@
 #define FROST_BUILTINS_COMMON_HPP
 
 #include <frost/builtin.hpp>
+#include <frost/stdlib.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
@@ -32,6 +33,14 @@
 
 #define INJECT_MAP(NAME, ...)                                                  \
     table.define(#NAME, Value::create(Value::trusted, Map{__VA_ARGS__}));
+
+#define STDLIB_MODULE(name, ...)                                               \
+    void register_module_##name(Stdlib_Registry& registry)                     \
+    {                                                                          \
+        using namespace name;                                                  \
+        registry.register_module(                                              \
+            "std." #name, Value::create(Value::trusted, Map{__VA_ARGS__}));    \
+    }
 
 #define UNIFORM_VARIADIC(NAME, TYPE)                                           \
     for (const auto& [i, arg] : std::views::enumerate(args))                   \

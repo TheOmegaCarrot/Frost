@@ -1,6 +1,7 @@
 #ifndef FROST_IMPORT_HPP
 #define FROST_IMPORT_HPP
 
+#include <frost/stdlib.hpp>
 #include <frost/symbol-table.hpp>
 
 #include <filesystem>
@@ -23,6 +24,7 @@ using import_stack_t = std::vector<std::string>;
 std::vector<std::filesystem::path> env_module_path();
 void inject_import(Symbol_Table& table,
                    const import::search_path_t& search_path,
+                   std::shared_ptr<Stdlib_Registry> stdlib = nullptr,
                    import::import_cache_t import_cache =
                        std::make_shared<import::import_cache_map_t>(),
                    const import::import_stack_t& import_stack = {

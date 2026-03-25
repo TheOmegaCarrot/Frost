@@ -4,6 +4,7 @@
 #include <frost/ext.hpp>
 #include <frost/import.hpp>
 #include <frost/meta.hpp>
+#include <frost/stdlib.hpp>
 #include <frost/parser.hpp>
 #include <frost/prelude.hpp>
 #include <frost/symbol-table.hpp>
@@ -170,7 +171,8 @@ int main(int argc, const char** argv)
 
     module_search_path.append_range(frst::env_module_path());
 
-    frst::inject_import(symbols, module_search_path);
+    auto stdlib = std::make_shared<frst::Stdlib_Registry>(frst::create_stdlib());
+    frst::inject_import(symbols, module_search_path, stdlib);
 
     symbols.define("args", frst::Value::create(
                                args_for_frost
