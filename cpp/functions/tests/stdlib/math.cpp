@@ -7,10 +7,9 @@
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
-#include <frost/symbol-table.hpp>
-#include <frost/value.hpp>
-
 #include <frost/builtin.hpp>
+#include <frost/stdlib.hpp>
+#include <frost/value.hpp>
 
 using namespace frst;
 
@@ -18,30 +17,36 @@ using namespace std::literals;
 
 using namespace Catch::Matchers;
 
-TEST_CASE("Builtin math")
+namespace
 {
-    // AI-generated test by Codex (GPT-5).
-    // Signed: Codex (GPT-5).
-    Symbol_Table table;
-    inject_builtins(table);
 
-    auto math_val = table.lookup("math");
-    REQUIRE(math_val->is<Map>());
-    const auto& math_map = math_val->raw_get<Map>();
+Map math_module()
+{
+    Stdlib_Registry registry;
+    register_module_math(registry);
+    auto module = registry.lookup_module("std.math");
+    REQUIRE(module.has_value());
+    REQUIRE(module.value()->is<Map>());
+    return module.value()->raw_get<Map>();
+}
+
+Function lookup(const Map& mod, const std::string& name)
+{
+    auto key = Value::create(String{name});
+    auto it = mod.find(key);
+    REQUIRE(it != mod.end());
+    REQUIRE(it->second->is<Function>());
+    return it->second->raw_get<Function>();
+}
+
+} // namespace
+
+TEST_CASE("std.math")
+{
+    auto math_map = math_module();
 
     auto get_fn = [&](const std::string& name) {
-        auto key = Value::create(std::string{name});
-        for (const auto& [k, v] : math_map)
-        {
-            if (Value::equal(k, key)->get<Bool>().value())
-            {
-                REQUIRE(v);
-                REQUIRE(v->is<Function>());
-                return v->get<Function>().value();
-            }
-        }
-        FAIL("Missing math function: " + name);
-        return Function{};
+        return lookup(math_map, name);
     };
 
     const std::vector<std::string> unary_names{
@@ -54,9 +59,8 @@ TEST_CASE("Builtin math")
     const std::vector<std::string> ternary_names{"lerp", "clamp"};
     const std::vector<std::string> variadic_names{"hypot"};
 
-    SECTION("Injected")
+    SECTION("Registered")
     {
-        CHECK(math_val->is<Map>());
         CHECK(math_map.size() == 34); // 33 functions + nums
 
         for (const auto& name : unary_names)
@@ -182,7 +186,7 @@ TEST_CASE("Builtin math")
             auto fn = get_fn(name);
             CHECK_THROWS_MATCHES(
                 fn->call({bad}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("Function " + name)
+                MessageMatches(ContainsSubstring("Function math." + name)
                                && ContainsSubstring("got String")));
         }
 
@@ -191,11 +195,11 @@ TEST_CASE("Builtin math")
             auto fn = get_fn(name);
             CHECK_THROWS_MATCHES(
                 fn->call({bad, good}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("Function " + name)
+                MessageMatches(ContainsSubstring("Function math." + name)
                                && ContainsSubstring("got String")));
             CHECK_THROWS_MATCHES(
                 fn->call({good, bad}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("Function " + name)
+                MessageMatches(ContainsSubstring("Function math." + name)
                                && ContainsSubstring("got String")));
         }
 
@@ -204,15 +208,15 @@ TEST_CASE("Builtin math")
             auto fn = get_fn(name);
             CHECK_THROWS_MATCHES(
                 fn->call({bad, good}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("Function " + name)
+                MessageMatches(ContainsSubstring("Function math." + name)
                                && ContainsSubstring("got String")));
             CHECK_THROWS_MATCHES(
                 fn->call({good, bad}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("Function " + name)
+                MessageMatches(ContainsSubstring("Function math." + name)
                                && ContainsSubstring("got String")));
             CHECK_THROWS_MATCHES(
                 fn->call({good, good, bad}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("Function " + name)
+                MessageMatches(ContainsSubstring("Function math." + name)
                                && ContainsSubstring("got String")));
         }
 
@@ -221,15 +225,15 @@ TEST_CASE("Builtin math")
             auto fn = get_fn(name);
             CHECK_THROWS_MATCHES(
                 fn->call({bad, good, good}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("Function " + name)
+                MessageMatches(ContainsSubstring("Function math." + name)
                                && ContainsSubstring("got String")));
             CHECK_THROWS_MATCHES(
                 fn->call({good, bad, good}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("Function " + name)
+                MessageMatches(ContainsSubstring("Function math." + name)
                                && ContainsSubstring("got String")));
             CHECK_THROWS_MATCHES(
                 fn->call({good, good, bad}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("Function " + name)
+                MessageMatches(ContainsSubstring("Function math." + name)
                                && ContainsSubstring("got String")));
         }
     }

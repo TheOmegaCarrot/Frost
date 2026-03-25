@@ -37,6 +37,7 @@ class Stdlib_Registry
 
 #define X_STDLIB_MODULES                                                       \
     X(json)                                                                    \
+    X(math)                                                                    \
     X(regex)
 
 #define X(module) void register_module_##module(Stdlib_Registry&);

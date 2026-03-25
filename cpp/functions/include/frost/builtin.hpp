@@ -60,7 +60,6 @@ class Builtin final : public Callable
     X(error_handling)                                                          \
     X(output)                                                                  \
     X(free_operators)                                                          \
-    X(math)                                                                    \
     X(string_ops)                                                              \
     X(mutable_cell)                                                            \
     X(ranges)                                                                  \

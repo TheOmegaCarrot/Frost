@@ -18,6 +18,8 @@
 # Completion criteria:
 # - All assertions in this file pass unchanged.
 
+def math = import('std.math')
+
 def is_prime = fn (n) -> {
     if n < 2:
         false

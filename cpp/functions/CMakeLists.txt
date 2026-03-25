@@ -7,7 +7,6 @@ add_library( frost-functions
     builtins/error-handling.cpp
     builtins/filesystem.cpp
     builtins/free-operators.cpp
-    builtins/math.cpp
     builtins/mutable-cell.cpp
     builtins/os.cpp
     builtins/output.cpp
@@ -19,6 +18,7 @@ add_library( frost-functions
     builtins/type-conversions.cpp
     builtins/type-tests.cpp
     stdlib/json.cpp
+    stdlib/math.cpp
     stdlib/regex.cpp
 )
 
@@ -63,7 +63,6 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
     hard-to-test
     error-handling
     free-operators
-    math
     string-ops
     mutable-cell
     streams
@@ -73,6 +72,7 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
 
 set(FUNCTIONS_STDLIB_TEST_FILES
     json
+    math
     regex
 )
 

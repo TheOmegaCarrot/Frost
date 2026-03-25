@@ -97,40 +97,40 @@ Each entry links to its full documentation.
 - [lines](strings.md#lines)
 - [map_keys](collections.md#map_keys)
 - [map_values](collections.md#map_values)
-- [math.abs](math.md#mathabs)
-- [math.acos](math.md#mathacos)
-- [math.acosh](math.md#mathacosh)
-- [math.asin](math.md#mathasin)
-- [math.asinh](math.md#mathasinh)
-- [math.atan](math.md#mathatan)
-- [math.atan2](math.md#mathatan2)
-- [math.atanh](math.md#mathatanh)
-- [math.cbrt](math.md#mathcbrt)
-- [math.ceil](math.md#mathceil)
-- [math.clamp](math.md#mathclamp)
-- [math.cos](math.md#mathcos)
-- [math.cosh](math.md#mathcosh)
-- [math.exp](math.md#mathexp)
-- [math.exp2](math.md#mathexp2)
-- [math.expm1](math.md#mathexpm1)
-- [math.floor](math.md#mathfloor)
-- [math.hypot](math.md#mathhypot)
-- [math.lerp](math.md#mathlerp)
-- [math.log](math.md#mathlog)
-- [math.log10](math.md#mathlog10)
-- [math.log1p](math.md#mathlog1p)
-- [math.log2](math.md#mathlog2)
-- [math.max](math.md#mathmax)
-- [math.min](math.md#mathmin)
-- [math.nums](math.md#mathnums)
-- [math.pow](math.md#mathpow)
-- [math.round](math.md#mathround)
-- [math.sin](math.md#mathsin)
-- [math.sinh](math.md#mathsinh)
-- [math.sqrt](math.md#mathsqrt)
-- [math.tan](math.md#mathtan)
-- [math.tanh](math.md#mathtanh)
-- [math.trunc](math.md#mathtrunc)
+- [math.abs](math.md#abs) · `std.math`
+- [math.acos](math.md#acos) · `std.math`
+- [math.acosh](math.md#acosh) · `std.math`
+- [math.asin](math.md#asin) · `std.math`
+- [math.asinh](math.md#asinh) · `std.math`
+- [math.atan](math.md#atan) · `std.math`
+- [math.atan2](math.md#atan2) · `std.math`
+- [math.atanh](math.md#atanh) · `std.math`
+- [math.cbrt](math.md#cbrt) · `std.math`
+- [math.ceil](math.md#ceil) · `std.math`
+- [math.clamp](math.md#clamp) · `std.math`
+- [math.cos](math.md#cos) · `std.math`
+- [math.cosh](math.md#cosh) · `std.math`
+- [math.exp](math.md#exp) · `std.math`
+- [math.exp2](math.md#exp2) · `std.math`
+- [math.expm1](math.md#expm1) · `std.math`
+- [math.floor](math.md#floor) · `std.math`
+- [math.hypot](math.md#hypot) · `std.math`
+- [math.lerp](math.md#lerp) · `std.math`
+- [math.log](math.md#log) · `std.math`
+- [math.log10](math.md#log10) · `std.math`
+- [math.log1p](math.md#log1p) · `std.math`
+- [math.log2](math.md#log2) · `std.math`
+- [math.max](math.md#max) · `std.math`
+- [math.min](math.md#min) · `std.math`
+- [math.nums](math.md#nums) · `std.math`
+- [math.pow](math.md#pow) · `std.math`
+- [math.round](math.md#round) · `std.math`
+- [math.sin](math.md#sin) · `std.math`
+- [math.sinh](math.md#sinh) · `std.math`
+- [math.sqrt](math.md#sqrt) · `std.math`
+- [math.tan](math.md#tan) · `std.math`
+- [math.tanh](math.md#tanh) · `std.math`
+- [math.trunc](math.md#trunc) · `std.math`
 - [mformat](output.md#mformat)
 - [minus](operators.md#minus)
 - [mod](operators.md#mod)

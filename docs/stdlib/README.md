@@ -26,7 +26,6 @@ Available in every Frost program without imports.
 |-------------------------------------|----------------------------------------------------------------------------|
 | [Collections](./collections.md)     | Slicing, grouping, sorting, searching, and transforming arrays and maps    |
 | [Types](./types.md)                 | Type checking, conversion, and value serialization                         |
-| [Math](./math.md)                   | Arithmetic, rounding, logarithms, and trigonometry                         |
 | [Strings](./strings.md)             | Splitting, joining, case conversion, searching, and encoding               |
 | [Operators](./operators.md)         | Arithmetic and comparison operators as first-class functions               |
 | [Output](./output.md)               | Printing to stdout and string formatting                                   |
@@ -44,6 +43,7 @@ Built-in modules accessed via `import`.
 | Module                           | Import                       | Description                              |
 |----------------------------------|------------------------------|------------------------------------------|
 | [JSON](./json.md)                | `import('std.json')`         | Encoding and decoding JSON               |
+| [Math](./math.md)                | `import('std.math')`         | Arithmetic, rounding, logarithms, trig   |
 | [Regex](./regex.md)              | `import('std.regex')`        | Pattern matching, searching, replacement |
 
 ## Extensions

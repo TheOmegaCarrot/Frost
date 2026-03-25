@@ -40,7 +40,7 @@ namespace math
 #define X(FN)                                                                  \
     BUILTIN(FN)                                                                \
     {                                                                          \
-        REQUIRE_ARGS(#FN, TYPES(Int, Float));                                  \
+        REQUIRE_ARGS("math." #FN, TYPES(Int, Float));                          \
                                                                                \
         return Value::create(std::FN(COERCE(0, Float)));                       \
     }
@@ -56,7 +56,7 @@ X_UNARY_MATH_FLOAT
 #define X(FN)                                                                  \
     BUILTIN(FN)                                                                \
     {                                                                          \
-        REQUIRE_ARGS(#FN, TYPES(Int, Float), TYPES(Int, Float));               \
+        REQUIRE_ARGS("math." #FN, TYPES(Int, Float), TYPES(Int, Float));       \
         return Value::create(                                                  \
             auto{std::FN(COERCE(0, Float), COERCE(1, Float))});                \
     }
@@ -67,21 +67,21 @@ X_BINARY_MATH_FLOAT
 
 BUILTIN(pow)
 {
-    REQUIRE_ARGS("pow", PARAM("base", TYPES(Int, Float)),
+    REQUIRE_ARGS("math.pow", PARAM("base", TYPES(Int, Float)),
                  PARAM("exponent", TYPES(Int, Float)));
     return Value::create(std::pow(COERCE(0, Float), COERCE(1, Float)));
 }
 
 BUILTIN(atan2)
 {
-    REQUIRE_ARGS("atan2", PARAM("y", TYPES(Int, Float)),
+    REQUIRE_ARGS("math.atan2", PARAM("y", TYPES(Int, Float)),
                  PARAM("x", TYPES(Int, Float)));
     return Value::create(std::atan2(COERCE(0, Float), COERCE(1, Float)));
 }
 
 BUILTIN(abs)
 {
-    REQUIRE_ARGS("abs", TYPES(Int, Float));
+    REQUIRE_ARGS("math.abs", TYPES(Int, Float));
 
     const auto& arg = args.at(0);
 
@@ -102,7 +102,7 @@ BUILTIN(abs)
 
 BUILTIN(round)
 {
-    REQUIRE_ARGS("round", TYPES(Int, Float));
+    REQUIRE_ARGS("math.round", TYPES(Int, Float));
 
     const auto& arg = args.at(0);
     if (arg->is<Int>())
@@ -124,7 +124,7 @@ BUILTIN(round)
 
 BUILTIN(hypot)
 {
-    REQUIRE_ARGS("hypot", PARAM("a", TYPES(Int, Float)),
+    REQUIRE_ARGS("math.hypot", PARAM("a", TYPES(Int, Float)),
                  PARAM("b", TYPES(Int, Float)),
                  OPTIONAL(PARAM("c", TYPES(Int, Float))));
 
@@ -143,7 +143,7 @@ BUILTIN(hypot)
 
 BUILTIN(lerp)
 {
-    REQUIRE_ARGS("lerp", TYPES(Int, Float), TYPES(Int, Float),
+    REQUIRE_ARGS("math.lerp", TYPES(Int, Float), TYPES(Int, Float),
                  TYPES(Int, Float));
 
     return Value::create(
@@ -152,19 +152,19 @@ BUILTIN(lerp)
 
 BUILTIN(floor)
 {
-    REQUIRE_ARGS("floor", TYPES(Int, Float));
+    REQUIRE_ARGS("math.floor", TYPES(Int, Float));
     return Value::create(Int{std::llround(std::floor(COERCE(0, Float)))});
 }
 
 BUILTIN(ceil)
 {
-    REQUIRE_ARGS("ceil", TYPES(Int, Float));
+    REQUIRE_ARGS("math.ceil", TYPES(Int, Float));
     return Value::create(Int{std::llround(std::ceil(COERCE(0, Float)))});
 }
 
 BUILTIN(clamp)
 {
-    REQUIRE_ARGS("clamp", TYPES(Int, Float), PARAM("lo", TYPES(Int, Float)),
+    REQUIRE_ARGS("math.clamp", TYPES(Int, Float), PARAM("lo", TYPES(Int, Float)),
                  PARAM("hi", TYPES(Int, Float)));
 
     if (IS(0, Int) && IS(1, Int) && IS(2, Int))
@@ -178,51 +178,59 @@ BUILTIN(clamp)
 
 } // namespace math
 
-void inject_math(Symbol_Table& table)
-{
-    using namespace math;
-
-    // clang-format off
-    table.define("math", Value::create(Value::trusted, Map{
-
-#define X(FN) ENTRY(FN, 1),
-    X_UNARY_MATH_FLOAT
-#undef X
-
-#define X(FN) ENTRY(FN, 2),
-    X_BINARY_MATH_FLOAT
-#undef X
-
-        ENTRY(pow, 2),
-        ENTRY(atan2, 2),
-        ENTRY(abs, 1),
-        ENTRY(round, 1),
-        ENTRY_R(hypot, 2, 3),
-        ENTRY(lerp, 3),
-        ENTRY(floor, 1),
-        ENTRY(ceil, 1),
-        ENTRY(clamp, 3),
-
-        {"nums"_s, Value::create(
-            Value::trusted,
-            Map{
-                {"pi"_s, Value::create(std::numbers::pi)},
-                {"e"_s, Value::create(std::numbers::e)},
-                {"golden_ratio"_s, Value::create(std::numbers::phi)},
-                {"tau"_s, Value::create(std::numbers::pi * 2)},
-                {"maxint"_s, Value::create(std::numeric_limits<Int>::max())},
-                {"minint"_s, Value::create(std::numeric_limits<Int>::min())},
-                {"maxfloat"_s,
-                 Value::create(std::numeric_limits<Float>::max())},
-                {"tinyfloat"_s,
-                 Value::create(std::numeric_limits<Float>::min())},
-                {"float_epsilon"_s,
-                 Value::create(std::numeric_limits<Float>::epsilon())},
-                {"minfloat"_s,
-                 Value::create(std::numeric_limits<Float>::lowest())},
-            })},
-    }));
-    // clang-format on
-}
-
+// clang-format off
+STDLIB_MODULE(math,
+    ENTRY(sqrt, 1),
+    ENTRY(cbrt, 1),
+    ENTRY(sin, 1),
+    ENTRY(cos, 1),
+    ENTRY(tan, 1),
+    ENTRY(asin, 1),
+    ENTRY(acos, 1),
+    ENTRY(atan, 1),
+    ENTRY(sinh, 1),
+    ENTRY(cosh, 1),
+    ENTRY(tanh, 1),
+    ENTRY(asinh, 1),
+    ENTRY(acosh, 1),
+    ENTRY(atanh, 1),
+    ENTRY(log, 1),
+    ENTRY(log1p, 1),
+    ENTRY(log2, 1),
+    ENTRY(log10, 1),
+    ENTRY(trunc, 1),
+    ENTRY(exp, 1),
+    ENTRY(exp2, 1),
+    ENTRY(expm1, 1),
+    ENTRY(min, 2),
+    ENTRY(max, 2),
+    ENTRY(pow, 2),
+    ENTRY(atan2, 2),
+    ENTRY(abs, 1),
+    ENTRY(round, 1),
+    ENTRY_R(hypot, 2, 3),
+    ENTRY(lerp, 3),
+    ENTRY(floor, 1),
+    ENTRY(ceil, 1),
+    ENTRY(clamp, 3),
+    {"nums"_s, Value::create(
+        Value::trusted,
+        Map{
+            {"pi"_s, Value::create(std::numbers::pi)},
+            {"e"_s, Value::create(std::numbers::e)},
+            {"golden_ratio"_s, Value::create(std::numbers::phi)},
+            {"tau"_s, Value::create(std::numbers::pi * 2)},
+            {"maxint"_s, Value::create(std::numeric_limits<Int>::max())},
+            {"minint"_s, Value::create(std::numeric_limits<Int>::min())},
+            {"maxfloat"_s,
+             Value::create(std::numeric_limits<Float>::max())},
+            {"tinyfloat"_s,
+             Value::create(std::numeric_limits<Float>::min())},
+            {"float_epsilon"_s,
+             Value::create(std::numeric_limits<Float>::epsilon())},
+            {"minfloat"_s,
+             Value::create(std::numeric_limits<Float>::lowest())},
+        })}
+)
+// clang-format on
 } // namespace frst
