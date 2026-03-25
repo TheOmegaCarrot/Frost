@@ -14,9 +14,10 @@ def files = filter fs.list(me_dir) with fn file -> (
     )
 
 # Extract the function headings from the file (all headings fit a "## `name`" pattern)
-def get_functions = fn docpath -> {
+defn get_functions(docpath) -> {
     def lines = open_read(docpath).read_rest() @ split('\n')
     def fn_lines = filter lines with starts_with @ bcurry('## `')
+
     map fn_lines with re.replace @ bcurry('## `([^`]+)`', '$1')
 }
 
@@ -27,18 +28,30 @@ def file_fns_map = reduce files with fn acc, file ->
 # Turn a function name into the suffix of an anchor (after the # in "filename#section")
 def fn_to_anchor_suffix = re.replace @ bcurry(R'([^a-z0-9_-])', '')
 
-# Flip it around into a map from function name to full anchor
-def fn_link_map = (
-    reduce keys(file_fns_map) with fn acc, filename ->
-        acc + (reduce file_fns_map[filename] with fn inner, fname ->
-                inner + { [fname]: filename + '#' + fn_to_anchor_suffix(fname) }
-                init: {}
-        )
-    init: {}
-    )
+def module_prefixes = {
+    ['json.md']: 'json',
+}
 
-# Format each entry into a complete markdown anchor, using the function name as display text (sorted)
-def fn_links = reduce fn_link_map with fn acc, k, v -> acc + [ $'- [${k}](${v})' ] init: []
+# Flip it around into a map from function name to full anchor
+# Build entries with display name, anchor, and optional tag
+def fn_link_map = (
+    reduce keys(file_fns_map) with fn acc, filename -> {
+        def prefix = module_prefixes[filename]
+        acc + (reduce file_fns_map[filename] with fn inner, fname -> {
+            def display = if prefix: $'${prefix}.${fname}' else: fname
+            def anchor = filename + '#' + fn_to_anchor_suffix(fname)
+            def tag = if prefix: $' · `std.${prefix}`' else: ''
+            inner + { [display]: { anchor: anchor, tag: tag } }
+        } init: {})
+    }
+    init: {}
+)
+
+# Format each entry
+def fn_links = reduce fn_link_map with fn acc, k, v -> {
+        def {anchor, tag} = v
+        acc + [ $'- [${k}](${anchor})${tag}' ]
+    } init: []
 
 def index_md = open_trunc(fs.concat(me_dir, 'index.md'))
 

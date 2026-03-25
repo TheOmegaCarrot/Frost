@@ -28,6 +28,7 @@ Each entry links to its full documentation.
 - [db.collect](sqlite.md#dbcollect)
 - [db.each](sqlite.md#dbeach)
 - [db.exec](sqlite.md#dbexec)
+- [db.last_insert_rowid](sqlite.md#dblast_insert_rowid)
 - [db.query](sqlite.md#dbquery)
 - [db.script](sqlite.md#dbscript)
 - [db.transaction](sqlite.md#dbtransaction)
@@ -87,6 +88,8 @@ Each entry links to its full documentation.
 - [is_string](types.md#is_string)
 - [is_structured](types.md#is_structured)
 - [join](strings.md#join)
+- [json.decode](json.md#decode) · `std.json`
+- [json.encode](json.md#encode) · `std.json`
 - [keys](collections.md#keys)
 - [len](collections.md#len)
 - [less_than](operators.md#less_than)
@@ -142,7 +145,6 @@ Each entry links to its full documentation.
 - [or_else](functions.md#or_else)
 - [pack_call](functions.md#pack_call)
 - [parse_int](strings.md#parse_int)
-- [parse_json](json.md#parse_json)
 - [partition](collections.md#partition)
 - [plus](operators.md#plus)
 - [pretty](types.md#pretty)
@@ -182,7 +184,6 @@ Each entry links to its full documentation.
 - [to_byte_array](strings.md#to_byte_array)
 - [to_float](types.md#to_float)
 - [to_int](types.md#to_int)
-- [to_json](json.md#to_json)
 - [to_lower](strings.md#to_lower)
 - [to_string](types.md#to_string)
 - [to_upper](strings.md#to_upper)

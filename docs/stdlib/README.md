@@ -1,9 +1,5 @@
 # Standard Library
 
-Frost's standard library is available in every program without any imports.
-
-Some functions are namespaced (`re`, `fs`, etc.) and accessed via dot syntax.
-
 An [alphabetical index of all functions](./index.md) is available.
 
 ## Parameter Name Conventions
@@ -22,24 +18,33 @@ In these cases, short placeholder names are used in signatures rather than inven
 | `path`     | A filesystem path (`String`)   |
 | `pattern`  | A regex pattern (`String`)     |
 
-## Modules
+## Core
 
-| Module                              | Description                                                                                |
-|-------------------------------------|--------------------------------------------------------------------------------------------|
-| [Collections](./collections.md)     | Slicing, grouping, sorting, searching, and transforming arrays and maps |
-| [Types](./types.md)                 | Type checking, conversion, and value serialization                                         |
-| [Math](./math.md)                   | Arithmetic, rounding, logarithms, and trigonometry                                         |
-| [Strings](./strings.md)             | Splitting, joining, case conversion, searching, and encoding                               |
-| [Regex](./regex.md)                 | Pattern matching, searching, and replacement                                               |
-| [Operators](./operators.md)         | Arithmetic and comparison operators as first-class functions                               |
-| [Output](./output.md)               | Printing to stdout and string formatting                                                   |
-| [Streams](./streams.md)             | Reading and writing files, stdin, and stdout                                               |
-| [Functions](./functions.md)         | Error handling and higher-order utilities       |
-| [Debug](./debug.md)                 | Assertions and value inspection                                                            |
-| [Mutable Cell](./mutable-cell.md)   | Mutable state                                                                              |
-| [OS](./os.md)                       | Interacting with the operating system                                                      |
-| [Filesystem](./filesystem.md)       | Reading, writing, and navigating the filesystem                                            |
-| [JSON](./json.md)                   | Parsing and serializing JSON                                                               |
+Available in every Frost program without imports.
+
+| Module                              | Description                                                                |
+|-------------------------------------|----------------------------------------------------------------------------|
+| [Collections](./collections.md)     | Slicing, grouping, sorting, searching, and transforming arrays and maps    |
+| [Types](./types.md)                 | Type checking, conversion, and value serialization                         |
+| [Math](./math.md)                   | Arithmetic, rounding, logarithms, and trigonometry                         |
+| [Strings](./strings.md)             | Splitting, joining, case conversion, searching, and encoding               |
+| [Regex](./regex.md)                 | Pattern matching, searching, and replacement                               |
+| [Operators](./operators.md)         | Arithmetic and comparison operators as first-class functions               |
+| [Output](./output.md)               | Printing to stdout and string formatting                                   |
+| [Streams](./streams.md)             | Reading and writing files, stdin, and stdout                               |
+| [Functions](./functions.md)         | Error handling and higher-order utilities                                   |
+| [Debug](./debug.md)                 | Assertions and value inspection                                            |
+| [Mutable Cell](./mutable-cell.md)   | Mutable state                                                              |
+| [OS](./os.md)                       | Interacting with the operating system                                      |
+| [Filesystem](./filesystem.md)       | Reading, writing, and navigating the filesystem                            |
+
+## Standard Modules
+
+Built-in modules accessed via `import`.
+
+| Module                           | Import                       | Description                    |
+|----------------------------------|------------------------------|--------------------------------|
+| [JSON](./json.md)                | `import('std.json')`         | Encoding and decoding JSON     |
 
 ## Extensions
 
