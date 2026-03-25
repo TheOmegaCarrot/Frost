@@ -29,8 +29,8 @@ Available in every Frost program without imports.
 | [Strings](./strings.md)             | Splitting, joining, case conversion, and searching                         |
 | [Operators](./operators.md)         | Arithmetic and comparison operators as first-class functions               |
 | [Output](./output.md)               | Printing to stdout and string formatting                                   |
-| [Streams](./streams.md)             | Reading and writing files, stdin, and stdout                               |
 | [Functions](./functions.md)         | Error handling and higher-order utilities                                   |
+| [Streams](./streams.md)             | Pre-defined `stdin` and `stderr` streams                                   |
 | [Debug](./debug.md)                 | Assertions and value inspection                                            |
 | [Mutable Cell](./mutable-cell.md)   | Mutable state                                                              |
 | [Filesystem](./filesystem.md)       | Reading, writing, and navigating the filesystem                            |
@@ -42,6 +42,7 @@ Built-in modules accessed via `import`.
 | Module                           | Import                       | Description                              |
 |----------------------------------|------------------------------|------------------------------------------|
 | [Encoding](./encoding.md)        | `import('std.encoding')`     | Base64, byte arrays, integer formatting  |
+| [IO](./io.md)                    | `import('std.io')`           | Reading and writing files and streams    |
 | [JSON](./json.md)                | `import('std.json')`         | Encoding and decoding JSON               |
 | [Math](./math.md)                | `import('std.math')`         | Arithmetic, rounding, logarithms, trig   |
 | [OS](./os.md)                    | `import('std.os')`           | Environment variables, process control   |

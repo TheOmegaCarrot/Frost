@@ -1,8 +1,9 @@
 # Appends a line to a temp file each time this module is executed.
 # The file path is passed via the FROST_CACHE_TEST_FILE env var.
 def os = import('std.os')
+def io = import('std.io')
 def path = os.getenv('FROST_CACHE_TEST_FILE')
-def w = open_append(path)
+def w = io.open_append(path)
 w.writeln('executed')
 w.close()
 export def x = 1

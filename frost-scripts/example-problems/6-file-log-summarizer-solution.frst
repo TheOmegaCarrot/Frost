@@ -21,11 +21,12 @@
 # - All assertions in this file pass unchanged.
 
 def json = import('std.json')
+def io = import('std.io')
 
 def input_path = 'tmp-log-summarizer-input.txt'
 def output_path = 'tmp-log-summarizer-output.json'
 
-def seed = open_trunc(input_path)
+def seed = io.open_trunc(input_path)
 assert(not is_null(seed), 'failed to create input log file')
 
 seed.writeln('INFO startup')
@@ -37,13 +38,13 @@ seed.close()
 
 def summarize_log_file = fn (in_path, out_path) -> {
     def summary = (
-        open_read(in_path).read_rest()
+        io.open_read(in_path).read_rest()
             @ split('\n') 
             @ reject(fn s -> s@len() == 0)
             @ transform(split @bcurry(' '))
             @ count_by(fn a -> a[0])
     )
-    open_trunc(out_path).writeln(summary @json.encode())
+    io.open_trunc(out_path).writeln(summary @json.encode())
     summary
 }
 
@@ -55,7 +56,7 @@ assert(
     'summary should match expected counts'
 )
 
-def out_reader = open_read(output_path)
+def out_reader = io.open_read(output_path)
 assert(not is_null(out_reader), 'output summary file should exist')
 
 def out_text = out_reader.read_rest()

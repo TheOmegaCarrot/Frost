@@ -17,6 +17,7 @@ add_library( frost-functions
     builtins/type-conversions.cpp
     builtins/type-tests.cpp
     stdlib/encoding.cpp
+    stdlib/io.cpp
     stdlib/json.cpp
     stdlib/math.cpp
     stdlib/os.cpp
@@ -72,6 +73,7 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
 
 set(FUNCTIONS_STDLIB_TEST_FILES
     encoding
+    io
     json
     math
     os

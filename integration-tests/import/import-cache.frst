@@ -1,9 +1,10 @@
 def os = import('std.os')
+def io = import('std.io')
 def path = os.getenv('FROST_CACHE_TEST_FILE')
-open_trunc(path).close()
+io.open_trunc(path).close()
 
 defn count_executions() ->
-    open_read(path).read_rest() @ split('\n') @ select(fn l -> len(l) > 0) @ len()
+    io.open_read(path).read_rest() @ split('\n') @ select(fn l -> len(l) > 0) @ len()
 
 # Importing the same module twice only executes it once
 def c1 = import('cache.counter')

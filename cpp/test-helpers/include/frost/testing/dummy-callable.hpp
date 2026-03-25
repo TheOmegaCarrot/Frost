@@ -1,6 +1,7 @@
+#ifndef FROST_TEST_HELPERS_DUMMY_CALLABLE_HPP
+#define FROST_TEST_HELPERS_DUMMY_CALLABLE_HPP
 // AI-generated test helper by Codex (GPT-5).
 // Signed: Codex (GPT-5).
-#pragma once
 
 #include <frost/value.hpp>
 
@@ -24,3 +25,5 @@ struct Dummy_Callable final : frst::Callable
     }
 };
 } // namespace frst::testing
+
+#endif
