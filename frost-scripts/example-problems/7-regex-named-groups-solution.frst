@@ -1,6 +1,4 @@
-def re = import('std.regex')
-
-# Challenge 07: Regex ETL with Named Groups
+# Challenge 07: Regex Named Group Extraction
 #
 # Goal:
 # Extract structured key/value data from free text using named regex groups.
@@ -19,6 +17,8 @@ def re = import('std.regex')
 #
 # Completion criteria:
 # - All assertions in this file pass unchanged.
+
+def re = import('std.regex')
 
 def source = 'team:alpha=x foo=bar env:prod=baz'
 def pattern = '(?:(?<label>\\w+):)?(?<key>\\w+)=(?<value>\\w+)'
