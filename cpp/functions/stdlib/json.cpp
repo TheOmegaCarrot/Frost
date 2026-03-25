@@ -9,7 +9,7 @@ namespace frst
 
 namespace json
 {
-struct Parse_Json_Impl
+struct Decode_Json_Impl
 {
 
     Value_Ptr operator()(this const auto, const std::nullptr_t&)
@@ -63,7 +63,7 @@ struct Parse_Json_Impl
         return Value::create(Value::trusted, std::move(result));
     }
 
-} constexpr static parse_json_impl;
+} constexpr static decode_json_impl;
 
 BUILTIN(decode)
 {
@@ -78,10 +78,10 @@ BUILTIN(decode)
     if (ec)
         throw Frost_Recoverable_Error{ec.message()};
 
-    return boost::json::visit(parse_json_impl, json);
+    return boost::json::visit(decode_json_impl, json);
 }
 
-struct To_Json_Impl
+struct Encode_Json_Impl
 {
 
     boost::json::value operator()(this const auto, const Null&)
@@ -134,11 +134,11 @@ struct To_Json_Impl
         throw Frost_Recoverable_Error{"Cannot serialize Function to JSON"};
     }
 
-} constexpr static to_json_impl;
+} constexpr static encode_json_impl;
 
 BUILTIN(encode)
 {
-    return Value::create(serialize(args.at(0)->visit(to_json_impl)));
+    return Value::create(serialize(args.at(0)->visit(encode_json_impl)));
 }
 } // namespace json
 

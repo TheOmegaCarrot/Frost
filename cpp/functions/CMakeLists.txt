@@ -68,9 +68,12 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
     regex
     mutable-cell
     streams
-    json
     base64
     filesystem
+)
+
+set(FUNCTIONS_STDLIB_TEST_FILES
+    json
 )
 
 foreach(test_file IN LISTS FUNCTIONS_TEST_FILES)
@@ -82,6 +85,13 @@ endforeach()
 
 foreach(test_file IN LISTS FUNCTIONS_BUILTINS_TEST_FILES)
     make_test( tests/builtins/${test_file}.cpp
+        LIBS
+        frost-functions
+    )
+endforeach()
+
+foreach(test_file IN LISTS FUNCTIONS_STDLIB_TEST_FILES)
+    make_test( tests/stdlib/${test_file}.cpp
         LIBS
         frost-functions
     )

@@ -1,3 +1,5 @@
+def json = import('std.json')
+
 def host_env = getenv('HTTPBIN_HOST')
 def host = if is_null(host_env): '127.0.0.1' else: host_env
 
@@ -23,6 +25,6 @@ assert(second.ok, 'second get should succeed')
 assert(first.response.code == 200, 'first status code')
 assert(second.response.code == 200, 'second status code')
 
-def first_json = parse_json(first.response.body)
-def second_json = parse_json(second.response.body)
+def first_json = json.decode(first.response.body)
+def second_json = json.decode(second.response.body)
 assert(first_json.uuid == second_json.uuid, 'task.get should return cached response')

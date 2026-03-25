@@ -1,5 +1,3 @@
-// AI-generated test by Codex (GPT-5).
-// Signed: Codex (GPT-5).
 #include <catch2/catch_all.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -7,7 +5,7 @@
 #include <frost/testing/stringmaker-specializations.hpp>
 
 #include <frost/builtin.hpp>
-#include <frost/symbol-table.hpp>
+#include <frost/stdlib.hpp>
 #include <frost/value.hpp>
 
 using namespace frst;
@@ -17,68 +15,80 @@ using Catch::Matchers::MessageMatches;
 
 namespace
 {
-Function lookup(Symbol_Table& table, const std::string& name)
+
+Map json_module()
 {
-    auto val = table.lookup(name);
-    REQUIRE(val->is<Function>());
-    return val->get<Function>().value();
+    Stdlib_Registry registry;
+    register_module_json(registry);
+    auto module = registry.lookup_module("std.json");
+    REQUIRE(module.has_value());
+    REQUIRE(module.value()->is<Map>());
+    return module.value()->raw_get<Map>();
 }
+
+Function lookup(const Map& mod, const std::string& name)
+{
+    auto key = Value::create(String{name});
+    auto it = mod.find(key);
+    REQUIRE(it != mod.end());
+    REQUIRE(it->second->is<Function>());
+    return it->second->raw_get<Function>();
+}
+
 } // namespace
 
-TEST_CASE("Builtin parse_json")
+TEST_CASE("std.json decode")
 {
-    Symbol_Table table;
-    inject_builtins(table);
+    auto mod = json_module();
+    auto decode = lookup(mod, "decode");
 
-    auto parse_json = lookup(table, "parse_json");
-
-    SECTION("Injected")
+    SECTION("Registered in module")
     {
-        CHECK(parse_json);
+        CHECK(decode);
     }
 
     SECTION("Arity and type errors")
     {
         CHECK_THROWS_MATCHES(
-            parse_json->call({}), Frost_User_Error,
+            decode->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")
                            && ContainsSubstring("requires at least 1")));
-        CHECK_THROWS_MATCHES(parse_json->call({Value::create(1_f)}),
+        CHECK_THROWS_MATCHES(decode->call({Value::create(1_f)}),
                              Frost_User_Error,
-                             MessageMatches(ContainsSubstring("parse_json")
+                             MessageMatches(ContainsSubstring("json.decode")
                                             && ContainsSubstring("String")
                                             && ContainsSubstring("Int")));
     }
 
     SECTION("Parses top-level values")
     {
-        auto i = parse_json->call({Value::create("42"s)});
+        auto i = decode->call({Value::create("42"s)});
         REQUIRE(i->is<Int>());
         CHECK(i->get<Int>().value() == 42_f);
 
-        auto f = parse_json->call({Value::create("1e3"s)});
+        auto f = decode->call({Value::create("1e3"s)});
         REQUIRE(f->is<Float>());
         CHECK(f->get<Float>().value() == Catch::Approx(1000.0));
 
-        auto s = parse_json->call({Value::create("\"hi\""s)});
+        auto s = decode->call({Value::create("\"hi\""s)});
         REQUIRE(s->is<String>());
         CHECK(s->get<String>() == "hi");
 
-        auto b = parse_json->call({Value::create("true"s)});
+        auto b = decode->call({Value::create("true"s)});
         REQUIRE(b->is<Bool>());
         CHECK(b->get<Bool>().value() == true);
 
-        auto n = parse_json->call({Value::create("null"s)});
+        auto n = decode->call({Value::create("null"s)});
         REQUIRE(n->is<Null>());
     }
 
     SECTION("Allows comments and trailing commas")
     {
-        auto arr = parse_json->call({Value::create(R"([1, 2,])"s)});
+        auto arr = decode->call({Value::create(R"([1, 2,])"s)});
         REQUIRE(arr->is<Array>());
         CHECK(arr->raw_get<Array>().size() == 2);
 
-        auto obj = parse_json->call({Value::create(
+        auto obj = decode->call({Value::create(
             R"({ "a": 1, // comment
                 "b": 2, })"s)});
         REQUIRE(obj->is<Map>());
@@ -87,60 +97,57 @@ TEST_CASE("Builtin parse_json")
 
     SECTION("Parse errors are recoverable")
     {
-        CHECK_THROWS_AS(parse_json->call({Value::create("{]"s)}),
+        CHECK_THROWS_AS(decode->call({Value::create("{]"s)}),
                         Frost_Recoverable_Error);
     }
 
     SECTION("Out-of-range unsigned integers are recoverable errors")
     {
-        CHECK_THROWS_AS(
-            parse_json->call({Value::create("18446744073709551615"s)}),
-            Frost_Recoverable_Error);
+        CHECK_THROWS_AS(decode->call({Value::create("18446744073709551615"s)}),
+                        Frost_Recoverable_Error);
     }
 }
 
-TEST_CASE("Builtin to_json")
+TEST_CASE("std.json encode")
 {
-    Symbol_Table table;
-    inject_builtins(table);
+    auto mod = json_module();
+    auto encode = lookup(mod, "encode");
 
-    auto to_json = lookup(table, "to_json");
-
-    SECTION("Injected")
+    SECTION("Registered in module")
     {
-        CHECK(to_json);
+        CHECK(encode);
     }
 
     SECTION("Arity error")
     {
         CHECK_THROWS_MATCHES(
-            to_json->call({}), Frost_User_Error,
+            encode->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")
                            && ContainsSubstring("requires at least 1")));
     }
 
     SECTION("Serializes primitive values compactly")
     {
-        auto i = to_json->call({Value::create(42_f)});
+        auto i = encode->call({Value::create(42_f)});
         REQUIRE(i->is<String>());
         CHECK(i->get<String>() == "42");
 
-        auto f = to_json->call({Value::create(1.5)});
+        auto f = encode->call({Value::create(1.5)});
         REQUIRE(f->is<String>());
-        auto parse_json = lookup(table, "parse_json");
-        auto parsed_f = parse_json->call({f});
+        auto decode = lookup(mod, "decode");
+        auto parsed_f = decode->call({f});
         REQUIRE(parsed_f->is<Float>());
         CHECK(parsed_f->get<Float>().value() == Catch::Approx(1.5));
 
-        auto b = to_json->call({Value::create(true)});
+        auto b = encode->call({Value::create(true)});
         REQUIRE(b->is<String>());
         CHECK(b->get<String>() == "true");
 
-        auto n = to_json->call({Value::null()});
+        auto n = encode->call({Value::null()});
         REQUIRE(n->is<String>());
         CHECK(n->get<String>() == "null");
 
-        auto s = to_json->call({Value::create("hi"s)});
+        auto s = encode->call({Value::create("hi"s)});
         REQUIRE(s->is<String>());
         CHECK(s->get<String>() == "\"hi\"");
     }
@@ -148,7 +155,7 @@ TEST_CASE("Builtin to_json")
     SECTION("Serializes arrays compactly")
     {
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
-        auto json = to_json->call({arr});
+        auto json = encode->call({arr});
         REQUIRE(json->is<String>());
         CHECK(json->get<String>() == "[1,2]");
     }
@@ -157,27 +164,31 @@ TEST_CASE("Builtin to_json")
     {
         auto map = Value::create(Map{{Value::create(1_f), Value::create(2_f)}});
         CHECK_THROWS_MATCHES(
-            to_json->call({map}), Frost_Recoverable_Error,
+            encode->call({map}), Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring("Map with non-String key")
                            && ContainsSubstring("1")));
     }
 
     SECTION("Functions are rejected")
     {
+        Symbol_Table table;
+        inject_builtins(table);
         auto fn = table.lookup("len");
-        CHECK_THROWS_MATCHES(to_json->call({fn}), Frost_Recoverable_Error,
+        CHECK_THROWS_MATCHES(encode->call({fn}), Frost_Recoverable_Error,
                              MessageMatches(ContainsSubstring(
                                  "Cannot serialize Function to JSON")));
     }
 
     SECTION("Structures containing functions are rejected")
     {
+        Symbol_Table table;
+        inject_builtins(table);
         auto fn = table.lookup("len");
         auto arr = Value::create(Array{fn});
-        CHECK_THROWS_AS(to_json->call({arr}), Frost_Recoverable_Error);
+        CHECK_THROWS_AS(encode->call({arr}), Frost_Recoverable_Error);
     }
 
-    SECTION("Round-trip parse_json(to_json(value)) is deep-equal")
+    SECTION("Round-trip decode(encode(value)) is deep-equal")
     {
         auto map = Value::create(Map{
             {Value::create("a"s),
@@ -185,11 +196,11 @@ TEST_CASE("Builtin to_json")
             {Value::create("b"s), Value::create(true)},
         });
 
-        auto json = to_json->call({map});
+        auto json = encode->call({map});
         REQUIRE(json->is<String>());
 
-        auto parse_json = lookup(table, "parse_json");
-        auto round = parse_json->call({json});
+        auto decode = lookup(mod, "decode");
+        auto round = decode->call({json});
         auto eq = Value::equal(map, round)->get<Bool>().value();
         CHECK(eq);
     }

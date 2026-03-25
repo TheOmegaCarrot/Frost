@@ -1,3 +1,5 @@
+def json = import('std.json')
+
 def host_env = getenv('HTTPBIN_HOST')
 def host = if is_null(host_env): '127.0.0.1' else: host_env
 
@@ -27,15 +29,15 @@ def resp = http.request({
 assert(resp.ok, 'http request ok')
 assert(resp.response.code == 200, 'status code')
 
-def json = parse_json(resp.response.body)
+def parsed = json.decode(resp.response.body)
 
-assert(json.args.single == 'solo', 'single query')
-assert(is_array(json.args.multi), 'repeated query should be an array')
-assert(len(json.args.multi) == 2, 'repeated query length')
-assert(json.args.multi[0] == 'one', 'first repeated query value')
-assert(json.args.multi[1] == 'two', 'second repeated query value')
+assert(parsed.args.single == 'solo', 'single query')
+assert(is_array(parsed.args.multi), 'repeated query should be an array')
+assert(len(parsed.args.multi) == 2, 'repeated query length')
+assert(parsed.args.multi[0] == 'one', 'first repeated query value')
+assert(parsed.args.multi[1] == 'two', 'second repeated query value')
 
-def headers_lower = map json.headers with fn (k, v) -> { { [to_lower(k)]: v } }
+def headers_lower = map parsed.headers with fn (k, v) -> { { [to_lower(k)]: v } }
 
 assert(headers_lower['x-one'] == 'one', 'single header')
 assert(contains(headers_lower['x-multi'], 'first'), 'multi header first value')

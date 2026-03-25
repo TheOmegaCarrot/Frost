@@ -1,3 +1,5 @@
+def json = import('std.json')
+
 def host_env = getenv('HTTPBIN_HOST')
 def host = if is_null(host_env): '127.0.0.1' else: host_env
 
@@ -25,7 +27,7 @@ def resp = http.request({
 assert(resp.ok, 'http request ok')
 assert(resp.response.code == 200, 'status code')
 
-def json = parse_json(resp.response.body)
-assert(json.args.alpha == 'one', 'alpha query')
-assert(json.args.beta == 'two words', 'beta query')
-assert(json.args.bare == '', 'bare query')
+def parsed = json.decode(resp.response.body)
+assert(parsed.args.alpha == 'one', 'alpha query')
+assert(parsed.args.beta == 'two words', 'beta query')
+assert(parsed.args.bare == '', 'bare query')

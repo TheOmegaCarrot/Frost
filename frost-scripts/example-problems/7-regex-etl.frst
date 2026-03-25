@@ -1,4 +1,4 @@
-# Challenge 08: Regex ETL with Named Groups
+# Challenge 07: Regex ETL with Named Groups
 #
 # Goal:
 # Extract structured key/value data from free text using named regex groups.

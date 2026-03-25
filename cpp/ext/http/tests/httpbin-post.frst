@@ -1,3 +1,5 @@
+def json = import('std.json')
+
 def host_env = getenv('HTTPBIN_HOST')
 def host = if is_null(host_env): '127.0.0.1' else: host_env
 
@@ -21,8 +23,8 @@ def resp = http.request({
 assert(resp.ok, 'http request ok')
 assert(resp.response.code == 200, 'status code')
 
-def json = parse_json(resp.response.body)
-assert(json.data == 'hello world', 'body matches')
+def parsed = json.decode(resp.response.body)
+assert(parsed.data == 'hello world', 'body matches')
 
 def expected_url = 'http://' + host + ':' + to_string(port) + '/post'
-assert(json.url == expected_url, 'url matches')
+assert(parsed.url == expected_url, 'url matches')

@@ -1,3 +1,5 @@
+def json = import('std.json')
+
 def host_env = getenv('HTTPBIN_HOST')
 def host = if is_null(host_env): '127.0.0.1' else: host_env
 
@@ -24,9 +26,9 @@ def resp = http.request({
 assert(resp.ok, 'http request ok')
 assert(resp.response.code == 200, 'status code')
 
-def json = parse_json(resp.response.body)
+def parsed = json.decode(resp.response.body)
 
-def headers_lower = map json.headers with fn (k, v) -> { { [to_lower(k)]: v } }
+def headers_lower = map parsed.headers with fn (k, v) -> { { [to_lower(k)]: v } }
 
 assert(headers_lower['x-foo'] == 'bar', 'x-foo header')
 assert(headers_lower['x-multi'] == 'hello', 'x-multi header')

@@ -1,4 +1,4 @@
-# Challenge 07: File Log Summarizer
+# Challenge 06: File Log Summarizer
 #
 # Goal:
 # Parse log lines, aggregate counts, and persist summary as JSON.
@@ -19,6 +19,8 @@
 #
 # Completion criteria:
 # - All assertions in this file pass unchanged.
+
+def json = import('std.json')
 
 def input_path = 'tmp-log-summarizer-input.txt'
 def output_path = 'tmp-log-summarizer-output.json'
@@ -51,7 +53,7 @@ assert(not is_null(out_reader), 'output summary file should exist')
 def out_text = out_reader.read_rest()
 out_reader.close()
 
-def parsed = parse_json(out_text)
+def parsed = json.decode(out_text)
 assert(
     parsed == expected,
     'parsed JSON summary should match expected counts'
