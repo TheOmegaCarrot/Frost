@@ -1,8 +1,10 @@
 # IO
 
-`import('std.io')`
+```frost
+def io = import('std.io')
+```
 
-Streams for reading and writing files, strings, stdin, and stderr.
+Streams for reading and writing files and strings.
 
 ## Reader
 

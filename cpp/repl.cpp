@@ -355,17 +355,25 @@ struct Completion_Callbacks
 
         Replxx::completions_t out;
 
+        std::vector<std::string_view> keywords;
         for (const auto& keyword : frst::utils::reserved_keywords)
         {
             if (keyword.starts_with(token))
-                out.emplace_back(std::string{keyword}, Replxx::Color::RED);
+                keywords.push_back(keyword);
         }
+        std::ranges::sort(keywords);
+        for (const auto& kw : keywords)
+            out.emplace_back(std::string{kw}, Replxx::Color::RED);
 
+        std::vector<std::string> completion_syms;
         for (const auto& symbol : std::views::keys(symbols->debug_table()))
         {
             if (symbol.starts_with(token))
-                out.emplace_back(symbol, Replxx::Color::YELLOW);
+                completion_syms.push_back(symbol);
         }
+        std::ranges::sort(completion_syms);
+        for (const auto& sym : completion_syms)
+            out.emplace_back(std::string{sym}, Replxx::Color::YELLOW);
 
         return out;
     }

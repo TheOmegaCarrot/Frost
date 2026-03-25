@@ -74,6 +74,11 @@ Each entry links to its full documentation.
 - [id](collections.md#id)
 - [index](collections.md#index)
 - [inv](functions.md#inv)
+- [io.open_append](io.md#open_append) · `std.io`
+- [io.open_read](io.md#open_read) · `std.io`
+- [io.open_trunc](io.md#open_trunc) · `std.io`
+- [io.stringreader](io.md#stringreader) · `std.io`
+- [io.stringwriter](io.md#stringwriter) · `std.io`
 - [is_array](types.md#is_array)
 - [is_bool](types.md#is_bool)
 - [is_float](types.md#is_float)
@@ -138,9 +143,6 @@ Each entry links to its full documentation.
 - [none](collections.md#none)
 - [not_equal](operators.md#not_equal)
 - [nulls](collections.md#nulls)
-- [open_append](streams.md#open_append)
-- [open_read](streams.md#open_read)
-- [open_trunc](streams.md#open_trunc)
 - [or_else](functions.md#or_else)
 - [os.exit](os.md#exit) · `std.os`
 - [os.getenv](os.md#getenv) · `std.os`
@@ -174,8 +176,6 @@ Each entry links to its full documentation.
 - [stderr](streams.md#stderr)
 - [stdin](streams.md#stdin)
 - [stride](collections.md#stride)
-- [stringreader](streams.md#stringreader)
-- [stringwriter](streams.md#stringwriter)
 - [tail](collections.md#tail)
 - [take](collections.md#take)
 - [take_while](collections.md#take_while)

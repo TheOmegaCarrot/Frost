@@ -1,6 +1,6 @@
 # Streams
 
-Pre-defined stream values available without imports.
+Pre-defined streams available without imports.
 See [IO](./io.md) for file and string stream constructors.
 
 ## `stdin`
