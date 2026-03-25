@@ -16,6 +16,7 @@ add_library( frost-functions
     builtins/structure-ops.cpp
     builtins/type-conversions.cpp
     builtins/type-tests.cpp
+    stdlib/encoding.cpp
     stdlib/json.cpp
     stdlib/math.cpp
     stdlib/os.cpp
@@ -66,11 +67,11 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
     string-ops
     mutable-cell
     streams
-    base64
     filesystem
 )
 
 set(FUNCTIONS_STDLIB_TEST_FILES
+    encoding
     json
     math
     os

@@ -9,10 +9,6 @@ Each entry links to its full documentation.
 - [and_then](functions.md#and_then)
 - [any](collections.md#any)
 - [assert](debug.md#assert)
-- [b64_decode](strings.md#b64_decode)
-- [b64_encode](strings.md#b64_encode)
-- [b64_urldecode](strings.md#b64_urldecode)
-- [b64_urlencode](strings.md#b64_urlencode)
 - [bcurry](functions.md#bcurry)
 - [call](functions.md#call)
 - [chunk](collections.md#chunk)
@@ -37,13 +33,19 @@ Each entry links to its full documentation.
 - [drop](collections.md#drop)
 - [drop_tail](collections.md#drop_tail)
 - [drop_while](collections.md#drop_while)
+- [encoding.b64.decode](encoding.md#b64decode) · `std.encoding`
+- [encoding.b64.encode](encoding.md#b64encode) · `std.encoding`
+- [encoding.b64.urldecode](encoding.md#b64urldecode) · `std.encoding`
+- [encoding.b64.urlencode](encoding.md#b64urlencode) · `std.encoding`
+- [encoding.fmt_int](encoding.md#fmt_int) · `std.encoding`
+- [encoding.from_bytes](encoding.md#from_bytes) · `std.encoding`
+- [encoding.parse_int](encoding.md#parse_int) · `std.encoding`
+- [encoding.to_bytes](encoding.md#to_bytes) · `std.encoding`
 - [ends_with](strings.md#ends_with)
 - [equal](operators.md#equal)
 - [flat_map](collections.md#flat_map)
 - [flatten](collections.md#flatten)
-- [fmt_int](strings.md#fmt_int)
 - [fold](collections.md#fold)
-- [from_byte_array](strings.md#from_byte_array)
 - [fs.absolute](filesystem.md#fsabsolute)
 - [fs.canonical](filesystem.md#fscanonical)
 - [fs.cd](filesystem.md#fscd)
@@ -144,7 +146,6 @@ Each entry links to its full documentation.
 - [os.getenv](os.md#getenv) · `std.os`
 - [os.sleep](os.md#sleep) · `std.os`
 - [pack_call](functions.md#pack_call)
-- [parse_int](strings.md#parse_int)
 - [partition](collections.md#partition)
 - [plus](operators.md#plus)
 - [pretty](types.md#pretty)
@@ -180,7 +181,6 @@ Each entry links to its full documentation.
 - [take_while](collections.md#take_while)
 - [tap](functions.md#tap)
 - [times](operators.md#times)
-- [to_byte_array](strings.md#to_byte_array)
 - [to_float](types.md#to_float)
 - [to_int](types.md#to_int)
 - [to_lower](strings.md#to_lower)
