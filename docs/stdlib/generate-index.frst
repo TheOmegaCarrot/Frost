@@ -1,3 +1,5 @@
+def re = import('std.regex')
+
 # path to directory containing this script
 def me_dir = do {
     # fs.parent returns an empty string if input contains only the filename
@@ -30,6 +32,7 @@ def fn_to_anchor_suffix = re.replace @ bcurry(R'([^a-z0-9_-])', '')
 
 def module_prefixes = {
     ['json.md']: 'json',
+    ['regex.md']: 'regex',
 }
 
 # Flip it around into a map from function name to full anchor

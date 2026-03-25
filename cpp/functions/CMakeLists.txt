@@ -13,13 +13,13 @@ add_library( frost-functions
     builtins/output.cpp
     builtins/pack-call.cpp
     builtins/ranges.cpp
-    builtins/regex.cpp
     builtins/streams.cpp
     builtins/string-ops.cpp
     builtins/structure-ops.cpp
     builtins/type-conversions.cpp
     builtins/type-tests.cpp
     stdlib/json.cpp
+    stdlib/regex.cpp
 )
 
 target_include_directories( frost-functions
@@ -65,7 +65,6 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
     free-operators
     math
     string-ops
-    regex
     mutable-cell
     streams
     base64
@@ -74,6 +73,7 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
 
 set(FUNCTIONS_STDLIB_TEST_FILES
     json
+    regex
 )
 
 foreach(test_file IN LISTS FUNCTIONS_TEST_FILES)

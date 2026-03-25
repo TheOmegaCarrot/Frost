@@ -35,7 +35,9 @@ class Stdlib_Registry
     std::flat_map<std::string, Value_Ptr> registry_;
 };
 
-#define X_STDLIB_MODULES X(json)
+#define X_STDLIB_MODULES                                                       \
+    X(json)                                                                    \
+    X(regex)
 
 #define X(module) void register_module_##module(Stdlib_Registry&);
 

@@ -14,7 +14,7 @@ using namespace frst::literals;
 namespace frst
 {
 
-namespace re
+namespace regex
 {
 
 namespace
@@ -36,7 +36,7 @@ boost::regex regex(const String& re)
 
 BUILTIN(matches)
 {
-    REQUIRE_ARGS("re.matches", PARAM("string", TYPES(String)),
+    REQUIRE_ARGS("regex.matches", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
 
     auto re = regex(GET(1, String));
@@ -46,7 +46,7 @@ BUILTIN(matches)
 
 BUILTIN(contains)
 {
-    REQUIRE_ARGS("re.contains", PARAM("string", TYPES(String)),
+    REQUIRE_ARGS("regex.contains", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
 
     auto re = regex(GET(1, String));
@@ -56,7 +56,7 @@ BUILTIN(contains)
 
 BUILTIN(replace)
 {
-    REQUIRE_ARGS("re.replace", PARAM("string", TYPES(String)),
+    REQUIRE_ARGS("regex.replace", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)),
                  PARAM("replacement", TYPES(String)));
 
@@ -98,7 +98,7 @@ std::optional<std::vector<std::string>> extract_group_names(
 
 BUILTIN(scan_matches)
 {
-    REQUIRE_ARGS("re.scan_matches", PARAM("string", TYPES(String)),
+    REQUIRE_ARGS("regex.scan_matches", PARAM("string", TYPES(String)),
                  PARAM("regex", TYPES(String)));
 
     STRINGS(full, matched, value, index, named, groups, found, count, matches);
@@ -174,12 +174,8 @@ BUILTIN(scan_matches)
     return Value::create(Value::trusted, std::move(result));
 }
 
-} // namespace re
+} // namespace regex
 
-void inject_regex(Symbol_Table& table)
-{
-    using namespace re;
-    INJECT_MAP(re, ENTRY(matches, 2), ENTRY(contains, 2), ENTRY(replace, 3),
-               ENTRY(scan_matches, 2));
-}
+STDLIB_MODULE(regex, ENTRY(matches, 2), ENTRY(contains, 2), ENTRY(replace, 3),
+              ENTRY(scan_matches, 2))
 } // namespace frst

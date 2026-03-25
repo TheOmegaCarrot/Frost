@@ -1,19 +1,23 @@
 # Regex
 
+```frost
+def regex = import('std.regex')
+```
+
 Regex syntax follows the Boost.Regex Perl-compatible dialect.
 
-## `re.matches`
-`re.matches(string, regex)`
+## `matches`
+`matches(string, regex)`
 
 Returns `true` if `regex` matches the entire `string`.
 
-## `re.contains`
-`re.contains(string, regex)`
+## `contains`
+`contains(string, regex)`
 
 Returns `true` if `regex` matches any substring of `string`.
 
-## `re.replace`
-`re.replace(string, regex, replacement)`
+## `replace`
+`replace(string, regex, replacement)`
 
 Replaces all non-overlapping matches of `regex` in `string` with `replacement`.
 The replacement string supports the following substitutions:
@@ -27,8 +31,8 @@ The replacement string supports the following substitutions:
 | `$'`        | The substring following the match    |
 | `$$`        | A literal `$`                        |
 
-## `re.scan_matches`
-`re.scan_matches(string, regex)`
+## `scan_matches`
+`scan_matches(string, regex)`
 
 Returns a map describing all matches of `regex` in `string`:
 

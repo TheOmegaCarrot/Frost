@@ -150,11 +150,11 @@ Each entry links to its full documentation.
 - [pretty](types.md#pretty)
 - [print](output.md#print)
 - [range](collections.md#range)
-- [re.contains](regex.md#recontains)
-- [re.matches](regex.md#rematches)
-- [re.replace](regex.md#rereplace)
-- [re.scan_matches](regex.md#rescan_matches)
 - [read_value](types.md#read_value)
+- [regex.contains](regex.md#contains) · `std.regex`
+- [regex.matches](regex.md#matches) · `std.regex`
+- [regex.replace](regex.md#replace) · `std.regex`
+- [regex.scan_matches](regex.md#scan_matches) · `std.regex`
 - [reject](collections.md#reject)
 - [repeat](collections.md#repeat)
 - [replace](strings.md#replace)

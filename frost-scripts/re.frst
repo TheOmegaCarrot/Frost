@@ -1,3 +1,5 @@
+def re = import('std.regex')
+
 def word = fn l -> $'(?<${l}>\\w+)'
 
 export def labeled_kv_regex = '(?:' + word('label') + ':)?' + word('key') + '=' + word('value')

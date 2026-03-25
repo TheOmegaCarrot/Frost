@@ -1,14 +1,10 @@
-// AI-generated test by Codex (GPT-5).
-// Signed: Codex (GPT-5).
 #include <catch2/catch_all.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
-#include <frost/symbol-table.hpp>
+#include <frost/stdlib.hpp>
 #include <frost/value.hpp>
-
-#include <frost/builtin.hpp>
 
 using namespace frst;
 
@@ -16,38 +12,45 @@ using namespace std::literals;
 
 using namespace Catch::Matchers;
 
-TEST_CASE("Builtin regex")
+namespace
 {
-    Symbol_Table table;
-    inject_builtins(table);
 
-    auto re_val = table.lookup("re");
-    REQUIRE(re_val->is<Map>());
-    const auto& re_map = re_val->raw_get<Map>();
+Map regex_module()
+{
+    Stdlib_Registry registry;
+    register_module_regex(registry);
+    auto module = registry.lookup_module("std.regex");
+    REQUIRE(module.has_value());
+    REQUIRE(module.value()->is<Map>());
+    return module.value()->raw_get<Map>();
+}
 
-    auto get_re_fn = [&](std::string_view name) {
-        auto key = Value::create(std::string{name});
-        for (const auto& [k, v] : re_map)
-        {
-            if (Value::equal(k, key)->get<Bool>().value())
-            {
-                REQUIRE(v);
-                REQUIRE(v->is<Function>());
-                return v->get<Function>().value();
-            }
-        }
-        FAIL("Missing re function");
-        return Function{};
-    };
+Function lookup(const Map& mod, const std::string& name)
+{
+    auto key = Value::create(String{name});
+    auto it = mod.find(key);
+    REQUIRE(it != mod.end());
+    REQUIRE(it->second->is<Function>());
+    return it->second->raw_get<Function>();
+}
+
+} // namespace
+
+TEST_CASE("std.regex")
+{
+    auto mod = regex_module();
 
     const std::vector<std::string> names{"matches", "contains"};
     const std::string replace_name{"replace"};
     const std::string scan_matches_name{"scan_matches"};
 
-    SECTION("Injected")
+    auto get_re_fn = [&](const std::string& name) {
+        return lookup(mod, name);
+    };
+
+    SECTION("Registered in module")
     {
-        CHECK(re_val->is<Map>());
-        CHECK(re_map.size() == 4);
+        CHECK(mod.size() == 4);
 
         for (const auto& name : names)
         {
@@ -132,7 +135,7 @@ TEST_CASE("Builtin regex")
             {
                 auto fn = get_re_fn(name);
                 const auto first_fn =
-                    ContainsSubstring(std::string{"Function re."} + name);
+                    ContainsSubstring(std::string{"Function regex."} + name);
                 const auto first_string = ContainsSubstring("String");
                 const auto first_type =
                     EndsWith(std::string{bad_first->type_name()});
@@ -140,7 +143,7 @@ TEST_CASE("Builtin regex")
                                   first_fn && first_string && first_type);
 
                 const auto second_fn =
-                    ContainsSubstring(std::string{"Function re."} + name);
+                    ContainsSubstring(std::string{"Function regex."} + name);
                 const auto second_string = ContainsSubstring("String");
                 const auto second_type =
                     EndsWith(std::string{bad_second->type_name()});
@@ -159,7 +162,7 @@ TEST_CASE("Builtin regex")
         auto fn = get_re_fn(replace_name);
 
         const auto fn_name =
-            ContainsSubstring(std::string{"Function re."} + replace_name);
+            ContainsSubstring(std::string{"Function regex."} + replace_name);
         const auto expected = ContainsSubstring("String");
 
         CHECK_THROWS_WITH(fn->call({bad_first, good, good}),
@@ -185,7 +188,7 @@ TEST_CASE("Builtin regex")
         auto fn = get_re_fn(scan_matches_name);
 
         const auto fn_name =
-            ContainsSubstring(std::string{"Function re."} + scan_matches_name);
+            ContainsSubstring(std::string{"Function regex."} + scan_matches_name);
         const auto expected = ContainsSubstring("String");
 
         CHECK_THROWS_WITH(fn->call({bad_first, good}),

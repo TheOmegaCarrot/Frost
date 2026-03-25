@@ -62,7 +62,6 @@ class Builtin final : public Callable
     X(free_operators)                                                          \
     X(math)                                                                    \
     X(string_ops)                                                              \
-    X(regex)                                                                   \
     X(mutable_cell)                                                            \
     X(ranges)                                                                  \
     X(and_then)                                                                \
