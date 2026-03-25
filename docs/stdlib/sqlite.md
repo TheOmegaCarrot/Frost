@@ -44,13 +44,15 @@ A `String` containing the SQLite library version (e.g. `"3.51.3"`).
 ## `sqlite.open`
 `sqlite.open(path)`
 
-Opens (or creates) a read-write SQLite database at `path`.
-Returns a database object, the methods of which are documented as `db.*`.
+Opens a read-write SQLite database at `path`, or creates one if it does not exist.
+Returns a database object, the methods of which are documented below as `db.*`.
+Produces an error if the database cannot be opened.
 
 ## `sqlite.open_readonly`
 `sqlite.open_readonly(path)`
 
 Opens an existing SQLite database at `path` in read-only mode.
+Returns a database object.
 Produces an error if the file does not exist.
 Write operations (`INSERT`, `UPDATE`, `DELETE`, DDL) will fail.
 
@@ -58,7 +60,8 @@ Write operations (`INSERT`, `UPDATE`, `DELETE`, DDL) will fail.
 `sqlite.open_memory()`
 
 Opens a private in-memory database.
-The database exists only for the lifetime of the returned database object.
+Returns a database object.
+The database exists only for the lifetime of the returned object.
 
 ## `db.exec`
 `db.exec(sql)`
