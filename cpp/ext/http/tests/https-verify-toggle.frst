@@ -1,14 +1,16 @@
-def host_env = getenv('HTTPS_VERIFY_TEST_HOST')
+def os = import('std.os')
+
+def host_env = os.getenv('HTTPS_VERIFY_TEST_HOST')
 def host = if is_null(host_env): 'self-signed.badssl.com' else: host_env
 
-def port_env = getenv('HTTPS_VERIFY_TEST_PORT')
+def port_env = os.getenv('HTTPS_VERIFY_TEST_PORT')
 def port_str = if is_null(port_env): '443' else: port_env
 
 def port = to_int(port_str)
 
 def skip_on_timeout = fn resp -> {
   if not resp.ok and resp.error.category == 'timeout':
-    exit(77)
+    os.exit(77)
 }
 
 def verify_true_resp = http.request({

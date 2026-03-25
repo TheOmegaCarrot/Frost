@@ -7,9 +7,12 @@
 namespace frst
 {
 
+namespace os
+{
+
 BUILTIN(getenv)
 {
-    REQUIRE_ARGS("getenv", TYPES(String));
+    REQUIRE_ARGS("os.getenv", TYPES(String));
 
     const char* val = std::getenv(GET(0, String).c_str());
 
@@ -21,25 +24,22 @@ BUILTIN(getenv)
 
 BUILTIN(exit)
 {
-    REQUIRE_ARGS("exit", TYPES(Int));
+    REQUIRE_ARGS("os.exit", TYPES(Int));
 
     std::exit(GET(0, Int));
 }
 
 BUILTIN(sleep)
 {
-    REQUIRE_ARGS("sleep", TYPES(Int));
+    REQUIRE_ARGS("os.sleep", TYPES(Int));
 
     std::this_thread::sleep_for(std::chrono::milliseconds(GET(0, Int)));
 
     return Value::null();
 }
 
-void inject_os(Symbol_Table& table)
-{
-    INJECT(getenv, 1);
-    INJECT(exit, 1);
-    INJECT(sleep, 1);
-}
+} // namespace os
+
+STDLIB_MODULE(os, ENTRY(getenv, 1), ENTRY(exit, 1), ENTRY(sleep, 1))
 
 } // namespace frst

@@ -1,19 +1,21 @@
-def host_env = getenv('HTTPS_CA_TEST_HOST')
+def os = import('std.os')
+
+def host_env = os.getenv('HTTPS_CA_TEST_HOST')
 def host = if is_null(host_env): 'httpbin.org' else: host_env
 
-def port_env = getenv('HTTPS_CA_TEST_PORT')
+def port_env = os.getenv('HTTPS_CA_TEST_PORT')
 def port_str = if is_null(port_env): '443' else: port_env
 def port = to_int(port_str)
 
-def ca_file_env = getenv('HTTPS_CA_TEST_FILE')
-def ca_path_env = getenv('HTTPS_CA_TEST_PATH')
+def ca_file_env = os.getenv('HTTPS_CA_TEST_FILE')
+def ca_path_env = os.getenv('HTTPS_CA_TEST_PATH')
 
 assert(not is_null(ca_file_env), 'ca file env present')
 assert(not is_null(ca_path_env), 'ca path env present')
 
 def skip_on_timeout = fn resp -> {
   if not resp.ok and resp.error.category == 'timeout':
-    exit(77)
+    os.exit(77)
 }
 
 def no_custom = http.request({

@@ -1,4 +1,5 @@
-def path = getenv('FROST_CACHE_TEST_FILE')
+def os = import('std.os')
+def path = os.getenv('FROST_CACHE_TEST_FILE')
 open_trunc(path).close()
 
 defn count_executions() ->

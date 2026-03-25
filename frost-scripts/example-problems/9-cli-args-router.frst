@@ -24,6 +24,8 @@
 # - In-file assertions pass.
 # - Optional CLI mode at bottom prints value or error text.
 
+def os = import('std.os')
+
 def route = fn (argv) -> {
     null
 }
@@ -52,7 +54,7 @@ if is_map(t_bad):
 else:
     null
 
-if imported: exit(0)
+if imported: os.exit(0)
 
 # Optional CLI mode:
 # ./build/frost frost-scripts/test-challenges/10-cli-args-router.frst -- sum 1 2 3

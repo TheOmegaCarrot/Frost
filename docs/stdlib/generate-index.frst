@@ -33,6 +33,7 @@ def fn_to_anchor_suffix = re.replace @ bcurry(R'([^a-z0-9_-])', '')
 def module_prefixes = {
     ['json.md']: 'json',
     ['math.md']: 'math',
+    ['os.md']: 'os',
     ['regex.md']: 'regex',
 }
 

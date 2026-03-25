@@ -64,7 +64,6 @@ class Builtin final : public Callable
     X(mutable_cell)                                                            \
     X(ranges)                                                                  \
     X(and_then)                                                                \
-    X(os)                                                                      \
     X(streams)                                                                 \
     X(filesystem)
 

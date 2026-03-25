@@ -1,4 +1,6 @@
-def port_env = getenv('HTTPBIN_PORT')
+def os = import('std.os')
+
+def port_env = os.getenv('HTTPBIN_PORT')
 def plain_port_str = if is_null(port_env): '8080' else: port_env
 def plain_port = to_int(plain_port_str)
 

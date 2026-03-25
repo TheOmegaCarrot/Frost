@@ -33,7 +33,6 @@ Available in every Frost program without imports.
 | [Functions](./functions.md)         | Error handling and higher-order utilities                                   |
 | [Debug](./debug.md)                 | Assertions and value inspection                                            |
 | [Mutable Cell](./mutable-cell.md)   | Mutable state                                                              |
-| [OS](./os.md)                       | Interacting with the operating system                                      |
 | [Filesystem](./filesystem.md)       | Reading, writing, and navigating the filesystem                            |
 
 ## Standard Modules
@@ -44,6 +43,7 @@ Built-in modules accessed via `import`.
 |----------------------------------|------------------------------|------------------------------------------|
 | [JSON](./json.md)                | `import('std.json')`         | Encoding and decoding JSON               |
 | [Math](./math.md)                | `import('std.math')`         | Arithmetic, rounding, logarithms, trig   |
+| [OS](./os.md)                    | `import('std.os')`           | Environment variables, process control   |
 | [Regex](./regex.md)              | `import('std.regex')`        | Pattern matching, searching, replacement |
 
 ## Extensions

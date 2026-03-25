@@ -8,7 +8,6 @@ add_library( frost-functions
     builtins/filesystem.cpp
     builtins/free-operators.cpp
     builtins/mutable-cell.cpp
-    builtins/os.cpp
     builtins/output.cpp
     builtins/pack-call.cpp
     builtins/ranges.cpp
@@ -19,6 +18,7 @@ add_library( frost-functions
     builtins/type-tests.cpp
     stdlib/json.cpp
     stdlib/math.cpp
+    stdlib/os.cpp
     stdlib/regex.cpp
 )
 
@@ -73,6 +73,7 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
 set(FUNCTIONS_STDLIB_TEST_FILES
     json
     math
+    os
     regex
 )
 

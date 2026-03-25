@@ -16,8 +16,6 @@ TEST_CASE("Builtin hard-to-test injection")
     const std::vector<std::string> names{
         "print",
         "mprint",
-        "getenv",
-        "exit",
     };
 
     for (const auto& name : names)

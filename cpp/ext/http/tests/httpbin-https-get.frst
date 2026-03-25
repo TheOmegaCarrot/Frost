@@ -1,16 +1,17 @@
+def os = import('std.os')
 def json = import('std.json')
 
-def host_env = getenv('HTTPBIN_TLS_HOST')
+def host_env = os.getenv('HTTPBIN_TLS_HOST')
 def host = if is_null(host_env): 'httpbin.org' else: host_env
 
-def port_env = getenv('HTTPBIN_TLS_PORT')
+def port_env = os.getenv('HTTPBIN_TLS_PORT')
 def port_str = if is_null(port_env): '443' else: port_env
 
 def port = to_int(port_str)
 
 def skip_on_timeout = fn resp -> {
   if not resp.ok and resp.error.category == 'timeout':
-    exit(77)
+    os.exit(77)
 }
 
 def resp_default = http.request({

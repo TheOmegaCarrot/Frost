@@ -8,7 +8,6 @@ Each entry links to its full documentation.
 - [all](collections.md#all)
 - [and_then](functions.md#and_then)
 - [any](collections.md#any)
-- [args](os.md#args)
 - [assert](debug.md#assert)
 - [b64_decode](strings.md#b64_decode)
 - [b64_encode](strings.md#b64_encode)
@@ -40,7 +39,6 @@ Each entry links to its full documentation.
 - [drop_while](collections.md#drop_while)
 - [ends_with](strings.md#ends_with)
 - [equal](operators.md#equal)
-- [exit](os.md#exit)
 - [flat_map](collections.md#flat_map)
 - [flatten](collections.md#flatten)
 - [fmt_int](strings.md#fmt_int)
@@ -66,7 +64,6 @@ Each entry links to its full documentation.
 - [fs.stat](filesystem.md#fsstat)
 - [fs.stem](filesystem.md#fsstem)
 - [fs.symlink](filesystem.md#fssymlink)
-- [getenv](os.md#getenv)
 - [greater_than](operators.md#greater_than)
 - [greater_than_or_equal](operators.md#greater_than_or_equal)
 - [group_by](collections.md#group_by)
@@ -143,6 +140,9 @@ Each entry links to its full documentation.
 - [open_read](streams.md#open_read)
 - [open_trunc](streams.md#open_trunc)
 - [or_else](functions.md#or_else)
+- [os.exit](os.md#exit) · `std.os`
+- [os.getenv](os.md#getenv) · `std.os`
+- [os.sleep](os.md#sleep) · `std.os`
 - [pack_call](functions.md#pack_call)
 - [parse_int](strings.md#parse_int)
 - [partition](collections.md#partition)
@@ -162,7 +162,6 @@ Each entry links to its full documentation.
 - [reverse](collections.md#reverse)
 - [scan](collections.md#scan)
 - [select](collections.md#select)
-- [sleep](os.md#sleep)
 - [slide](collections.md#slide)
 - [sorted](collections.md#sorted)
 - [split](strings.md#split)
