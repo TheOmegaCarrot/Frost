@@ -21,8 +21,9 @@ namespace
 
 Map io_module()
 {
-    Stdlib_Registry registry;
-    register_module_io(registry);
+    Stdlib_Registry_Builder builder;
+    register_module_io(builder);
+    auto registry = std::move(builder).build();
     auto module = registry.lookup_module("std.io");
     REQUIRE(module.has_value());
     REQUIRE(module.value()->is<Map>());

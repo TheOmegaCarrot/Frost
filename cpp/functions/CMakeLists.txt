@@ -2,6 +2,7 @@ add_library( frost-functions
     builtin.cpp
     closure.cpp
     lambda.cpp
+    stdlib.cpp
     builtins/and-then.cpp
     builtins/debug-helpers.cpp
     builtins/error-handling.cpp

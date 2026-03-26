@@ -27,8 +27,9 @@ namespace
 
 Map fs_module()
 {
-    Stdlib_Registry registry;
-    register_module_fs(registry);
+    Stdlib_Registry_Builder builder;
+    register_module_fs(builder);
+    auto registry = std::move(builder).build();
     auto module = registry.lookup_module("std.fs");
     REQUIRE(module.has_value());
     REQUIRE(module.value()->is<Map>());

@@ -17,8 +17,9 @@ namespace
 
 Map encoding_module()
 {
-    Stdlib_Registry registry;
-    register_module_encoding(registry);
+    Stdlib_Registry_Builder builder;
+    register_module_encoding(builder);
+    auto registry = std::move(builder).build();
     auto module = registry.lookup_module("std.encoding");
     REQUIRE(module.has_value());
     REQUIRE(module.value()->is<Map>());

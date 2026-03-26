@@ -22,8 +22,9 @@ namespace
 
 Map math_module()
 {
-    Stdlib_Registry registry;
-    register_module_math(registry);
+    Stdlib_Registry_Builder builder;
+    register_module_math(builder);
+    auto registry = std::move(builder).build();
     auto module = registry.lookup_module("std.math");
     REQUIRE(module.has_value());
     REQUIRE(module.value()->is<Map>());

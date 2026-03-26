@@ -171,8 +171,11 @@ int main(int argc, const char** argv)
 
     module_search_path.append_range(frst::env_module_path());
 
-    auto stdlib = std::make_shared<frst::Stdlib_Registry>(frst::create_stdlib());
-    frst::inject_import(symbols, module_search_path, stdlib);
+    frst::Stdlib_Registry_Builder builder;
+    frst::register_stdlib(builder);
+    frst::inject_import(
+        symbols, module_search_path,
+        std::make_shared<frst::Stdlib_Registry>(std::move(builder).build()));
 
     symbols.define("args", frst::Value::create(
                                args_for_frost

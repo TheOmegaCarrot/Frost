@@ -18,8 +18,9 @@ namespace
 
 Map json_module()
 {
-    Stdlib_Registry registry;
-    register_module_json(registry);
+    Stdlib_Registry_Builder builder;
+    register_module_json(builder);
+    auto registry = std::move(builder).build();
     auto module = registry.lookup_module("std.json");
     REQUIRE(module.has_value());
     REQUIRE(module.value()->is<Map>());

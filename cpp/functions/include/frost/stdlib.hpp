@@ -3,36 +3,44 @@
 
 #include <frost/value.hpp>
 
+#include <span>
+#include <string_view>
+
 namespace frst
 {
+
+class Stdlib_Registry;
+
+class Stdlib_Registry_Builder
+{
+  public:
+    using module_path_t = std::span<const std::string_view, 2>;
+
+    void register_module(module_path_t path, Value_Ptr contents);
+    Stdlib_Registry build() &&;
+
+  private:
+    std::flat_map<std::string, Map> staged_;
+};
+
 class Stdlib_Registry
 {
-
   public:
-    Stdlib_Registry() = default;
     Stdlib_Registry(const Stdlib_Registry&) = delete;
     Stdlib_Registry(Stdlib_Registry&&) = default;
     Stdlib_Registry& operator=(const Stdlib_Registry&) = delete;
     Stdlib_Registry& operator=(Stdlib_Registry&&) = default;
     ~Stdlib_Registry() = default;
 
-    void register_module(std::string module_name, Value_Ptr module_contents)
-    {
-        registry_.emplace(std::move(module_name), std::move(module_contents));
-    }
-
-    std::optional<Value_Ptr> lookup_module(const std::string& module_name)
-    {
-        auto itr = registry_.find(module_name);
-
-        if (itr == registry_.end())
-            return std::nullopt;
-
-        return itr->second;
-    }
+    std::optional<Value_Ptr> lookup_module(std::string_view path) const;
 
   private:
-    std::flat_map<std::string, Value_Ptr> registry_;
+    friend class Stdlib_Registry_Builder;
+    explicit Stdlib_Registry(Value_Ptr root)
+        : root_(std::move(root))
+    {
+    }
+    Value_Ptr root_;
 };
 
 #define X_STDLIB_MODULES                                                       \
@@ -44,23 +52,19 @@ class Stdlib_Registry
     X(os)                                                                      \
     X(regex)
 
-#define X(module) void register_module_##module(Stdlib_Registry&);
+#define X(module) void register_module_##module(Stdlib_Registry_Builder&);
 
 X_STDLIB_MODULES
 
 #undef X
 
-inline Stdlib_Registry create_stdlib()
+inline void register_stdlib(Stdlib_Registry_Builder& builder)
 {
-    Stdlib_Registry registry;
-
-#define X(module) register_module_##module(registry);
+#define X(module) register_module_##module(builder);
 
     X_STDLIB_MODULES
 
 #undef X
-
-    return registry;
 }
 
 } // namespace frst

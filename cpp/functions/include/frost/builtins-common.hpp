@@ -35,11 +35,12 @@
     table.define(#NAME, Value::create(Value::trusted, Map{__VA_ARGS__}));
 
 #define STDLIB_MODULE(name, ...)                                               \
-    void register_module_##name(Stdlib_Registry& registry)                     \
+    void register_module_##name(Stdlib_Registry_Builder& builder)              \
     {                                                                          \
         using namespace name;                                                  \
-        registry.register_module(                                              \
-            "std." #name, Value::create(Value::trusted, Map{__VA_ARGS__}));    \
+        builder.register_module(                                               \
+            Stdlib_Registry_Builder::module_path_t({"std", #name}),            \
+            Value::create(Value::trusted, Map{__VA_ARGS__}));                  \
     }
 
 #define UNIFORM_VARIADIC(NAME, TYPE)                                           \
