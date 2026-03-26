@@ -46,6 +46,7 @@ set(FUNCTIONS_TEST_FILES
     builtin
     closure
     lambda
+    stdlib
 )
 
 set(FUNCTIONS_BUILTINS_TEST_FILES
