@@ -1,5 +1,8 @@
 #include <catch2/catch_all.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+
+#include <frost/builtins-common.hpp>
+#undef ANY // avoid clash with Trompeloeil's ANY
 #include <catch2/trompeloeil.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
@@ -160,10 +163,11 @@ TEST_CASE("Builtin pack_call")
     SECTION("Callee arity errors propagate")
     {
         auto callee = std::make_shared<Builtin>(
-            [](builtin_args_t) {
+            [](builtin_args_t args) {
+                REQUIRE_NULLARY("exact_arity_0");
                 return Value::null();
             },
-            "exact_arity_0", Builtin::Arity{0, 0});
+            "exact_arity_0");
         auto func_val = Value::create(Function{callee});
         auto args = Value::create(frst::Array{
             Value::create(42_f),

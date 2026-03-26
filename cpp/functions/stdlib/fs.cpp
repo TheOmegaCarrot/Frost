@@ -130,6 +130,7 @@ BUILTIN(cd)
 
 BUILTIN(cwd)
 {
+    REQUIRE_NULLARY("fs.cwd");
     std::error_code ec;
     String res = stdf::current_path(ec);
     throw_if_error(ec);
@@ -283,12 +284,12 @@ BUILTIN(concat)
 
 } // namespace fs
 
-STDLIB_MODULE(fs, ENTRY(move, 2), ENTRY(symlink, 2), ENTRY(copy, 2),
-              ENTRY(absolute, 1), ENTRY(canonical, 1), ENTRY(cd, 1),
-              ENTRY(cwd, 0), ENTRY(exists, 1), ENTRY(remove, 1),
-              ENTRY(remove_recursively, 1), ENTRY(mkdir, 1), ENTRY(size, 1),
-              ENTRY(stat, 1), ENTRY(list, 1), ENTRY(list_recursively, 1),
-              ENTRY(concat, 2), ENTRY(stem, 1), ENTRY(parent, 1),
-              ENTRY(filename, 1), ENTRY(extension, 1))
+STDLIB_MODULE(fs, ENTRY(move), ENTRY(symlink), ENTRY(copy),
+              ENTRY(absolute), ENTRY(canonical), ENTRY(cd),
+              ENTRY(cwd), ENTRY(exists), ENTRY(remove),
+              ENTRY(remove_recursively), ENTRY(mkdir), ENTRY(size),
+              ENTRY(stat), ENTRY(list), ENTRY(list_recursively),
+              ENTRY(concat), ENTRY(stem), ENTRY(parent),
+              ENTRY(filename), ENTRY(extension))
 
 } // namespace frst

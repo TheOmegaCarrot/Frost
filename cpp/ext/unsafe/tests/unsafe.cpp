@@ -41,7 +41,7 @@ Value_Ptr dummy_function()
         [](builtin_args_t) {
             return Value::null();
         },
-        "dummy", Builtin::Arity{.min = 0, .max = 0})});
+        "dummy")});
 }
 
 } // namespace

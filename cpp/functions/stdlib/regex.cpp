@@ -176,6 +176,6 @@ BUILTIN(scan_matches)
 
 } // namespace regex
 
-STDLIB_MODULE(regex, ENTRY(matches, 2), ENTRY(contains, 2), ENTRY(replace, 3),
-              ENTRY(scan_matches, 2))
+STDLIB_MODULE(regex, ENTRY(matches), ENTRY(contains), ENTRY(replace),
+              ENTRY(scan_matches))
 } // namespace frst

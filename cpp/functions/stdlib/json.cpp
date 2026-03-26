@@ -138,10 +138,11 @@ struct Encode_Json_Impl
 
 BUILTIN(encode)
 {
+    REQUIRE_ARGS("json.encode", ANY);
     return Value::create(serialize(args.at(0)->visit(encode_json_impl)));
 }
 } // namespace json
 
-STDLIB_MODULE(json, ENTRY(decode, 1), ENTRY(encode, 1))
+STDLIB_MODULE(json, ENTRY(decode), ENTRY(encode))
 
 } // namespace frst

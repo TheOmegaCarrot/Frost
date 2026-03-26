@@ -40,6 +40,6 @@ BUILTIN(sleep)
 
 } // namespace os
 
-STDLIB_MODULE(os, ENTRY(getenv, 1), ENTRY(exit, 1), ENTRY(sleep, 1))
+STDLIB_MODULE(os, ENTRY(getenv), ENTRY(exit), ENTRY(sleep))
 
 } // namespace frst

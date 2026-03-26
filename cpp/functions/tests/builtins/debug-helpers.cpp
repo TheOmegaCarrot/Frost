@@ -75,7 +75,7 @@ TEST_CASE("Builtin debug_dump")
             [](builtin_args_t) {
                 return Value::null();
             },
-            "dbg", Builtin::Arity{0, 0})});
+            "dbg")});
 
         auto res = debug_dump->call({func});
         REQUIRE(res->is<frst::String>());

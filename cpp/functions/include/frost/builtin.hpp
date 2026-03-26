@@ -24,12 +24,6 @@ class Builtin final : public Callable
   public:
     using Ptr = std::shared_ptr<Builtin>;
 
-    struct Arity
-    {
-        std::size_t min;
-        std::optional<std::size_t> max;
-    };
-
     Builtin() = delete;
     Builtin(const Builtin&) = delete;
     Builtin(Builtin&&) = delete;
@@ -37,8 +31,7 @@ class Builtin final : public Callable
     Builtin& operator=(Builtin&&) = delete;
     ~Builtin() final = default;
 
-    // nullopt max_arity indicates a variadic builtin function
-    Builtin(function_t function, std::string name, const Arity& arity);
+    Builtin(function_t function, std::string name);
 
     Value_Ptr call(builtin_args_t args) const final;
 
@@ -48,7 +41,6 @@ class Builtin final : public Callable
   private:
     function_t function_;
     std::string name_;
-    Arity arity_;
 };
 
 #define X_INJECT                                                               \

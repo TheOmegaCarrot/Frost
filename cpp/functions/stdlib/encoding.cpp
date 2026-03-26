@@ -190,12 +190,12 @@ BUILTIN(from_bytes)
 STDLIB_MODULE(encoding,
               {"b64"_s, Value::create(Value::trusted,
                                       Map{
-                                          ENTRY(encode, 1),
-                                          ENTRY(decode, 1),
-                                          ENTRY(urlencode, 1),
-                                          ENTRY(urldecode, 1),
+                                          ENTRY(encode),
+                                          ENTRY(decode),
+                                          ENTRY(urlencode),
+                                          ENTRY(urldecode),
                                       })},
-              ENTRY(fmt_int, 2), ENTRY(parse_int, 2), ENTRY(to_bytes, 1),
-              ENTRY(from_bytes, 1))
+              ENTRY(fmt_int), ENTRY(parse_int), ENTRY(to_bytes),
+              ENTRY(from_bytes))
 
 } // namespace frst

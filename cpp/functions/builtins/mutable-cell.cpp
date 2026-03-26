@@ -50,6 +50,8 @@ Value_Ptr forbid_cycle(Value_Ptr value)
 
 BUILTIN(mutable_cell)
 {
+    REQUIRE_ARGS("mutable_cell", OPTIONAL(ANY));
+
     struct Wrapper
     {
         explicit Wrapper(Value_Ptr v)
@@ -75,26 +77,25 @@ BUILTIN(mutable_cell)
         Value::trusted,
         Map{
             {strings.exchange,
-             system_closure(1, 1,
-                            [cell](builtin_args_t args) {
-                                auto new_val = forbid_cycle(args.at(0));
-                                std::lock_guard lock{cell->mutex};
-                                return std::exchange(cell->value,
-                                                     std::move(new_val));
-                            })},
+             system_closure([cell](builtin_args_t args) {
+                 REQUIRE_ARGS("mutable_cell.exchange", ANY);
+                 auto new_val = forbid_cycle(args.at(0));
+                 std::lock_guard lock{cell->mutex};
+                 return std::exchange(cell->value, std::move(new_val));
+             })},
             {
                 strings.get,
-                system_closure(0, 0,
-                               [cell](builtin_args_t) {
-                                   std::lock_guard lock{cell->mutex};
-                                   return cell->value;
-                               }),
+                system_closure([cell](builtin_args_t args) {
+                    REQUIRE_NULLARY("mutable_cell.get");
+                    std::lock_guard lock{cell->mutex};
+                    return cell->value;
+                }),
             },
         });
 }
 
 void inject_mutable_cell(Symbol_Table& table)
 {
-    INJECT_R(mutable_cell, 0, 1);
+    INJECT(mutable_cell);
 }
 } // namespace frst

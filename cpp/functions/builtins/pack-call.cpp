@@ -15,6 +15,6 @@ BUILTIN(pack_call)
 
 void inject_pack_call(Symbol_Table& table)
 {
-    INJECT(pack_call, 2);
+    INJECT(pack_call);
 }
 } // namespace frst

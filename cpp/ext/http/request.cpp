@@ -764,11 +764,13 @@ Value_Ptr do_http_request(const Map& request_spec)
 
     STRINGS(get, is_ready);
 
-    auto get = system_closure(0, 0, [task](builtin_args_t) {
+    auto get = system_closure([task](builtin_args_t args) {
+        REQUIRE_NULLARY("http.request.get");
         return task->get();
     });
 
-    auto is_ready = system_closure(0, 0, [task](builtin_args_t) {
+    auto is_ready = system_closure([task](builtin_args_t args) {
+        REQUIRE_NULLARY("http.request.is_ready");
         return task->is_ready();
     });
 

@@ -24,6 +24,7 @@ namespace frst
 #define X(frost_name, internal_name)                                           \
     BUILTIN(frost_name)                                                        \
     {                                                                          \
+        REQUIRE_ARGS(#frost_name, ANY, ANY);                                   \
         return Value::internal_name(args.at(0), args.at(1));                   \
     }
 
@@ -33,7 +34,7 @@ X_FREE_BINOP
 
 void inject_free_operators(Symbol_Table& table)
 {
-#define X(frost_name, internal_name) INJECT(frost_name, 2);
+#define X(frost_name, internal_name) INJECT(frost_name);
 
     X_FREE_BINOP
 

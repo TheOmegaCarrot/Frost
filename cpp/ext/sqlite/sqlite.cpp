@@ -143,31 +143,26 @@ struct Data_Methods
         STRINGS(exec, query, each, collect, script, last_insert_rowid);
         auto self = std::make_shared<Data_Methods>(std::move(*this));
         return Map{
-            {strings.exec, system_closure(1, 2,
-                                          [self](builtin_args_t args) {
-                                              return self->exec(args);
-                                          })},
-            {strings.script, system_closure(1, 1,
-                                            [self](builtin_args_t args) {
-                                                return self->script(args);
-                                            })},
-            {strings.query, system_closure(1, 2,
-                                           [self](builtin_args_t args) {
-                                               return self->query(args);
-                                           })},
-            {strings.each, system_closure(2, 3,
-                                          [self](builtin_args_t args) {
-                                              return self->each(args);
-                                          })},
-            {strings.collect, system_closure(2, 3,
-                                             [self](builtin_args_t args) {
-                                                 return self->collect(args);
-                                             })},
+            {strings.exec, system_closure([self](builtin_args_t args) {
+                 return self->exec(args);
+             })},
+            {strings.script, system_closure([self](builtin_args_t args) {
+                 return self->script(args);
+             })},
+            {strings.query, system_closure([self](builtin_args_t args) {
+                 return self->query(args);
+             })},
+            {strings.each, system_closure([self](builtin_args_t args) {
+                 return self->each(args);
+             })},
+            {strings.collect, system_closure([self](builtin_args_t args) {
+                 return self->collect(args);
+             })},
             {strings.last_insert_rowid,
-             system_closure(0, 0,
-                            [self](builtin_args_t args) {
-                                return self->last_insert_rowid(args);
-                            })},
+             system_closure([self](builtin_args_t args) {
+                 REQUIRE_NULLARY("database.last_insert_rowid");
+                 return self->last_insert_rowid(args);
+             })},
         };
     }
 };
@@ -176,8 +171,9 @@ struct Database_Methods
 {
     std::shared_ptr<Connection> conn;
 
-    Value_Ptr close(builtin_args_t)
+    Value_Ptr close(builtin_args_t args)
     {
+        REQUIRE_NULLARY("database.close");
         if (conn->in_transaction())
             throw Frost_Recoverable_Error{"cannot close connection while a "
                                           "transaction is active"};
@@ -228,12 +224,12 @@ struct Database_Methods
         STRINGS(close, transaction);
         auto self = std::make_shared<Database_Methods>(std::move(*this));
         entries.insert_or_assign(
-            strings.close, system_closure(0, 0, [self](builtin_args_t args) {
+            strings.close, system_closure([self](builtin_args_t args) {
                 return self->close(args);
             }));
         entries.insert_or_assign(
             strings.transaction,
-            system_closure(1, 1, [self](builtin_args_t args) {
+            system_closure([self](builtin_args_t args) {
                 return self->transaction(args);
             }));
     }
@@ -279,6 +275,7 @@ BUILTIN(open_readonly)
 
 BUILTIN(open_memory)
 {
+    REQUIRE_NULLARY("sqlite.open_memory");
     auto conn = open_db(":memory:", SQLITE_OPEN_READWRITE);
 
     return database_to_closuremap(std::move(conn));
@@ -291,7 +288,7 @@ REGISTER_EXTENSION(sqlite,
                        "version"_s,
                        Value::create(String{sqlite3_version}),
                    },
-                   ENTRY(open, 1), ENTRY(open_readonly, 1),
-                   ENTRY(open_memory, 0))
+                   ENTRY(open), ENTRY(open_readonly),
+                   ENTRY(open_memory))
 
 } // namespace frst

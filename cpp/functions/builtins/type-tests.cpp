@@ -4,64 +4,70 @@
 namespace frst
 {
 
-// arity is pre-checked by Builtin::call
+#define TYPE_TEST(FNAME, TYPE)                                                 \
+    BUILTIN(FNAME)                                                             \
+    {                                                                          \
+        REQUIRE_ARGS(#FNAME, ANY);                                             \
+        return Value::create(args.at(0)->is<TYPE>());                          \
+    }
 
-template <Frost_Type T>
-BUILTIN(is_impl)
-{
-    return Value::create(args.at(0)->is<T>());
-}
+TYPE_TEST(is_null, Null)
+TYPE_TEST(is_int, Int)
+TYPE_TEST(is_float, Float)
+TYPE_TEST(is_bool, Bool)
+TYPE_TEST(is_string, String)
+TYPE_TEST(is_array, Array)
+TYPE_TEST(is_map, Map)
+TYPE_TEST(is_function, Function)
 
-auto is_null = is_impl<Null>;
-auto is_int = is_impl<Int>;
-auto is_float = is_impl<Float>;
-auto is_bool = is_impl<Bool>;
-auto is_string = is_impl<String>;
-auto is_array = is_impl<Array>;
-auto is_map = is_impl<Map>;
-auto is_function = is_impl<Function>;
+#undef TYPE_TEST
 
 BUILTIN(is_nonnull)
 {
-    return is_null(args)->logical_not();
+    REQUIRE_ARGS("is_nonnull", ANY);
+    return Value::create(not args.at(0)->is<Null>());
 }
 
 BUILTIN(is_numeric)
 {
+    REQUIRE_ARGS("is_numeric", ANY);
     return Value::create(args.at(0)->is_numeric());
 }
 
 BUILTIN(is_primitive)
 {
+    REQUIRE_ARGS("is_primitive", ANY);
     return Value::create(args.at(0)->is_primitive());
 }
 
 BUILTIN(is_structured)
 {
+    REQUIRE_ARGS("is_structured", ANY);
     return Value::create(args.at(0)->is_structured());
 }
 
 BUILTIN(type)
 {
+    REQUIRE_ARGS("type", ANY);
     return Value::create(String{args.at(0)->type_name()});
 }
 
 void inject_type_checks(Symbol_Table& table)
 {
 
-    INJECT(is_null, 1);
-    INJECT(is_int, 1);
-    INJECT(is_float, 1);
-    INJECT(is_bool, 1);
-    INJECT(is_string, 1);
-    INJECT(is_array, 1);
-    INJECT(is_map, 1);
-    INJECT(is_function, 1);
-    INJECT(is_nonnull, 1);
-    INJECT(is_numeric, 1);
-    INJECT(is_primitive, 1);
-    INJECT(is_structured, 1);
-    INJECT(type, 1);
+    INJECT(is_null);
+    INJECT(is_int);
+    INJECT(is_float);
+    INJECT(is_bool);
+    INJECT(is_string);
+    INJECT(is_array);
+    INJECT(is_map);
+    INJECT(is_function);
+    INJECT(is_nonnull);
+    INJECT(is_numeric);
+    INJECT(is_primitive);
+    INJECT(is_structured);
+    INJECT(type);
 }
 
 } // namespace frst

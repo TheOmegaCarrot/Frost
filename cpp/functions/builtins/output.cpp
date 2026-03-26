@@ -68,6 +68,8 @@ BUILTIN(mprint)
 
 BUILTIN(print)
 {
+    REQUIRE_ARGS("print", ANY);
+
     fmt::println("{}", args.at(0)->to_internal_string());
 
     return Value::null();
@@ -75,8 +77,8 @@ BUILTIN(print)
 
 void inject_output(Symbol_Table& table)
 {
-    INJECT(mformat, 2);
-    INJECT(mprint, 2);
-    INJECT(print, 1);
+    INJECT(mformat);
+    INJECT(mprint);
+    INJECT(print);
 }
 } // namespace frst

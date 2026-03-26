@@ -102,6 +102,8 @@ BUILTIN(stringreader)
 
 BUILTIN(stringwriter)
 {
+    REQUIRE_NULLARY("io.stringwriter");
+
     auto ls = std::make_shared<Locked_Stream<std::ostringstream>>();
     ls->stream = std::make_shared<std::ostringstream>();
 
@@ -111,7 +113,8 @@ BUILTIN(stringwriter)
             {strings.writeln, writeln(ls)},
             {strings.tell, tell(ls)},
             {strings.seek, seek(ls)},
-            {strings.get, system_closure(0, 0, [ls](builtin_args_t) {
+            {strings.get, system_closure([ls](builtin_args_t args) {
+                 REQUIRE_NULLARY("io.stringwriter.get");
                  std::lock_guard lock{ls->mutex};
                  return Value::create(ls->stream->str());
              })}});
@@ -119,8 +122,8 @@ BUILTIN(stringwriter)
 
 } // namespace io
 
-STDLIB_MODULE(io, ENTRY(open_read, 1), ENTRY(open_trunc, 1),
-              ENTRY(open_append, 1), ENTRY(stringreader, 1),
-              ENTRY(stringwriter, 0))
+STDLIB_MODULE(io, ENTRY(open_read), ENTRY(open_trunc),
+              ENTRY(open_append), ENTRY(stringreader),
+              ENTRY(stringwriter))
 
 } // namespace frst

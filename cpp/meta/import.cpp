@@ -201,6 +201,6 @@ void inject_import(Symbol_Table& table,
                                         .import_cache = import_cache,
                                         .import_stack = import_stack,
                                         .stdlib = std::move(stdlib)},
-                               "import", Builtin::Arity{.min = 1, .max = 1})}));
+                               "import")}));
 }
 } // namespace frst

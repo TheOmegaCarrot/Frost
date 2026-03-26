@@ -117,17 +117,17 @@ X_BINARY_PASSTHROUGH
 
 void inject_string_ops(Symbol_Table& table)
 {
-    INJECT(split, 2);
-    INJECT(lines, 1);
-    INJECT(replace, 3);
-    INJECT(join, 2);
-#define X(fn) INJECT(fn, 2);
+    INJECT(split);
+    INJECT(lines);
+    INJECT(replace);
+    INJECT(join);
+#define X(fn) INJECT(fn);
 
     X_BINARY_PASSTHROUGH
 
 #undef X
 
-#define X(ALG) INJECT(ALG, 1);
+#define X(ALG) INJECT(ALG);
 
     X_UPPER_LOWER
 

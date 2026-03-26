@@ -9,8 +9,6 @@
 namespace frst
 {
 
-// arity is pre-checked by Builtin::call
-
 // Map -> array of keys
 // basically `map a_map with fn (k, v) -> { k }`
 BUILTIN(keys)
@@ -53,6 +51,8 @@ BUILTIN(len)
 
 BUILTIN(range)
 {
+    REQUIRE_ARITY("range", 1, 3);
+
     using std::views::iota, std::views::transform, std::views::stride,
         std::views::reverse, std::ranges::to;
     constexpr auto make = [](Int arg) {
@@ -137,6 +137,7 @@ BUILTIN(nulls)
 
 BUILTIN(id)
 {
+    REQUIRE_ARGS("id", ANY);
     return args.at(0);
 }
 
@@ -166,12 +167,12 @@ BUILTIN(has)
 
 void inject_structure_ops(Symbol_Table& table)
 {
-    INJECT(keys, 1);
-    INJECT(values, 1);
-    INJECT(len, 1);
-    INJECT_R(range, 1, 3);
-    INJECT(nulls, 1);
-    INJECT(id, 1);
-    INJECT(has, 2);
+    INJECT(keys);
+    INJECT(values);
+    INJECT(len);
+    INJECT(range);
+    INJECT(nulls);
+    INJECT(id);
+    INJECT(has);
 }
 } // namespace frst

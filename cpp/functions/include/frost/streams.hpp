@@ -19,7 +19,8 @@ struct Locked_Stream
 template <typename fstream_t>
 auto close(const std::shared_ptr<Locked_Stream<fstream_t>>& ls)
 {
-    return system_closure(0, 0, [ls](builtin_args_t) {
+    return system_closure([ls](builtin_args_t args) {
+        REQUIRE_NULLARY("<system closure:close>");
         std::lock_guard lock{ls->mutex};
         ls->stream->close();
         return Value::null();
@@ -29,7 +30,8 @@ auto close(const std::shared_ptr<Locked_Stream<fstream_t>>& ls)
 template <typename fstream_t>
 auto is_open(const std::shared_ptr<Locked_Stream<fstream_t>>& ls)
 {
-    return system_closure(0, 0, [ls](builtin_args_t) {
+    return system_closure([ls](builtin_args_t args) {
+        REQUIRE_NULLARY("<system closure:is_open>");
         std::lock_guard lock{ls->mutex};
         return Value::create(ls->stream->is_open());
     });
@@ -38,7 +40,8 @@ auto is_open(const std::shared_ptr<Locked_Stream<fstream_t>>& ls)
 template <std::derived_from<std::istream> Stream>
 auto eof(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(0, 0, [ls](builtin_args_t) {
+    return system_closure([ls](builtin_args_t args) {
+        REQUIRE_NULLARY("<system closure:eof>");
         std::lock_guard lock{ls->mutex};
         return Value::create(ls->stream->eof());
     });
@@ -47,7 +50,8 @@ auto eof(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 template <std::derived_from<std::istream> Stream>
 auto read_line(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(0, 0, [ls](builtin_args_t) {
+    return system_closure([ls](builtin_args_t args) {
+        REQUIRE_NULLARY("<system closure:read_line>");
         std::lock_guard lock{ls->mutex};
         std::string line;
         std::getline(*ls->stream, line);
@@ -58,7 +62,8 @@ auto read_line(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 template <std::derived_from<std::istream> Stream>
 auto read_one(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(0, 0, [ls](builtin_args_t) {
+    return system_closure([ls](builtin_args_t args) {
+        REQUIRE_NULLARY("<system closure:read_one>");
         std::lock_guard lock{ls->mutex};
         int got = ls->stream->get();
         if (std::char_traits<char>::not_eof(got))
@@ -71,7 +76,8 @@ auto read_one(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 template <std::derived_from<std::istream> Stream>
 auto read_rest(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(0, 0, [ls](builtin_args_t) {
+    return system_closure([ls](builtin_args_t args) {
+        REQUIRE_NULLARY("<system closure:read_rest>");
         std::lock_guard lock{ls->mutex};
         return Value::create(String(std::istreambuf_iterator<char>(*ls->stream),
                                     std::istreambuf_iterator<char>{}));
@@ -81,7 +87,8 @@ auto read_rest(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 template <std::derived_from<std::istream> Stream>
 auto tell(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(0, 0, [ls](builtin_args_t) {
+    return system_closure([ls](builtin_args_t args) {
+        REQUIRE_NULLARY("<system closure:tell>");
         std::lock_guard lock{ls->mutex};
         return Value::create(Int{ls->stream->tellg()});
     });
@@ -90,7 +97,7 @@ auto tell(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 template <std::derived_from<std::istream> Stream>
 auto seek(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(1, 1, [ls](builtin_args_t args) {
+    return system_closure([ls](builtin_args_t args) {
         REQUIRE_ARGS("<system closure:seek>", PARAM("pos", TYPES(Int)));
         std::lock_guard lock{ls->mutex};
         ls->stream->seekg(GET(0, Int));
@@ -101,7 +108,8 @@ auto seek(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 template <std::derived_from<std::ostream> Stream>
 auto tell(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(0, 0, [ls](builtin_args_t) {
+    return system_closure([ls](builtin_args_t args) {
+        REQUIRE_NULLARY("<system closure:tell>");
         std::lock_guard lock{ls->mutex};
         return Value::create(Int{ls->stream->tellp()});
     });
@@ -110,7 +118,7 @@ auto tell(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 template <std::derived_from<std::ostream> Stream>
 auto seek(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(1, 1, [ls](builtin_args_t args) {
+    return system_closure([ls](builtin_args_t args) {
         REQUIRE_ARGS("<system closure:seek>", PARAM("pos", TYPES(Int)));
         std::lock_guard lock{ls->mutex};
         ls->stream->seekp(GET(0, Int));
@@ -121,7 +129,7 @@ auto seek(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 template <std::derived_from<std::ostream> Stream>
 auto write(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(1, 1, [ls](builtin_args_t args) {
+    return system_closure([ls](builtin_args_t args) {
         REQUIRE_ARGS("<system closure:write>", TYPES(String));
         const auto& str = GET(0, String);
         std::lock_guard lock{ls->mutex};
@@ -133,7 +141,7 @@ auto write(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 template <std::derived_from<std::ostream> Stream>
 auto writeln(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(1, 1, [ls](builtin_args_t args) {
+    return system_closure([ls](builtin_args_t args) {
         REQUIRE_ARGS("<system closure:writeln>", TYPES(String));
         const auto& str = GET(0, String);
         std::lock_guard lock{ls->mutex};
@@ -146,7 +154,8 @@ auto writeln(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 template <std::derived_from<std::ostream> Stream>
 auto flush(const std::shared_ptr<Locked_Stream<Stream>>& ls)
 {
-    return system_closure(0, 0, [ls](builtin_args_t) {
+    return system_closure([ls](builtin_args_t args) {
+        REQUIRE_NULLARY("<system closure:flush>");
         std::lock_guard lock{ls->mutex};
         ls->stream->flush();
         return Value::null();

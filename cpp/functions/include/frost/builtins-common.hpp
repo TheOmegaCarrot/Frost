@@ -15,21 +15,12 @@
 
 #define BUILTIN(NAME) Value_Ptr NAME([[maybe_unused]] builtin_args_t args)
 
-#define MAKE_BUILTIN(NAME, MIN_ARITY, MAX_ARITY)                               \
-    Value::create(Function{std::make_shared<Builtin>(                          \
-        NAME, #NAME, Builtin::Arity{.min = MIN_ARITY, .max = MAX_ARITY})})
+#define MAKE_BUILTIN(NAME)                                                     \
+    Value::create(Function{std::make_shared<Builtin>(NAME, #NAME)})
 
-#define INJECT_R(NAME, MIN_ARITY, MAX_ARITY)                                   \
-    table.define(#NAME, MAKE_BUILTIN(NAME, MIN_ARITY, MAX_ARITY))
+#define INJECT(NAME) table.define(#NAME, MAKE_BUILTIN(NAME))
 
-#define INJECT(NAME, ARITY) INJECT_R(NAME, ARITY, ARITY)
-
-#define INJECT_V(NAME, MIN_ARITY) INJECT_R(NAME, MIN_ARITY, std::nullopt)
-
-#define ENTRY_R(NAME, MIN_ARITY, MAX_ARITY)                                    \
-    {Value::create(String{#NAME}), MAKE_BUILTIN(NAME, MIN_ARITY, MAX_ARITY)}
-
-#define ENTRY(NAME, ARITY) ENTRY_R(NAME, ARITY, ARITY)
+#define ENTRY(NAME) {Value::create(String{#NAME}), MAKE_BUILTIN(NAME)}
 
 #define INJECT_MAP(NAME, ...)                                                  \
     table.define(#NAME, Value::create(Value::trusted, Map{__VA_ARGS__}));
@@ -79,17 +70,15 @@
 namespace frst
 {
 template <typename F>
-auto system_function(std::size_t min_args, std::size_t max_args, F&& fn)
+auto system_function(F&& fn)
 {
-    return Function{std::make_shared<Builtin>(
-        std::forward<F>(fn), "<system closure>",
-        Builtin::Arity{.min = min_args, .max = max_args})};
+    return Function{
+        std::make_shared<Builtin>(std::forward<F>(fn), "<system closure>")};
 }
 template <typename F>
-auto system_closure(std::size_t min_args, std::size_t max_args, F&& fn)
+auto system_closure(F&& fn)
 {
-    return Value::create(
-        system_function(min_args, max_args, std::forward<F>(fn)));
+    return Value::create(system_function(std::forward<F>(fn)));
 }
 } // namespace frst
 
@@ -120,6 +109,12 @@ struct Optional
 template <typename T>
 inline constexpr bool is_any_v = std::same_as<T, Any>;
 
+template <typename T>
+inline constexpr bool is_optional_spec_v = false;
+
+template <typename S>
+inline constexpr bool is_optional_spec_v<Optional<S>> = true;
+
 template <typename... Ts>
 constexpr bool matches(const Value_Ptr& v)
 {
@@ -144,6 +139,26 @@ std::string expected_list()
         return names
                | std::views::join_with(" or "sv)
                | std::ranges::to<std::string>();
+    }
+}
+
+inline void require_arity(std::string_view fn, builtin_args_t args,
+                          std::size_t min,
+                          std::optional<std::size_t> max = std::nullopt)
+{
+    if (args.size() < min)
+    {
+        throw Frost_Recoverable_Error{
+            fmt::format("Function {} called with insufficient arguments. "
+                        "Called with {} but requires at least {}.",
+                        fn, args.size(), min)};
+    }
+    if (max && args.size() > *max)
+    {
+        throw Frost_Recoverable_Error{
+            fmt::format("Function {} called with too many arguments. "
+                        "Called with {} but accepts no more than {}.",
+                        fn, args.size(), *max)};
     }
 }
 
@@ -182,6 +197,11 @@ void require_arg(std::string_view fn, builtin_args_t args, std::size_t idx,
 template <typename... Specs>
 void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
 {
+    constexpr std::size_t max_args = sizeof...(Specs);
+    constexpr std::size_t min_args =
+        (... + (is_optional_spec_v<Specs> ? 0 : 1));
+    require_arity(fn, args, min_args, max_args);
+
     std::size_t i = 0;
     (require_arg(fn, args, i++, specs), ...);
 }
@@ -211,5 +231,11 @@ void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
 
 #define REQUIRE_ARGS(NAME, ...)                                                \
     frst::builtin_detail::require_args(NAME, args __VA_OPT__(, ) __VA_ARGS__)
+
+#define REQUIRE_ARITY(NAME, ...)                                               \
+    frst::builtin_detail::require_arity(NAME, args, __VA_ARGS__)
+
+#define REQUIRE_NULLARY(NAME)                                                  \
+    frst::builtin_detail::require_arity(NAME, args, 0, 0)
 
 #endif

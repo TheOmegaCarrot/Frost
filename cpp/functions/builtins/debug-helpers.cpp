@@ -8,6 +8,8 @@ namespace frst
 
 BUILTIN(debug_dump)
 {
+    REQUIRE_ARGS("debug_dump", ANY);
+
     if (const auto& arg = args.at(0); arg->is<Function>())
     {
         return Value::create(arg->raw_get<Function>()->debug_dump());
@@ -39,8 +41,8 @@ BUILTIN(assert)
 
 void inject_debug_helpers(Symbol_Table& table)
 {
-    INJECT(debug_dump, 1);
-    INJECT_R(assert, 1, 2);
+    INJECT(debug_dump);
+    INJECT(assert);
 }
 
 } // namespace frst

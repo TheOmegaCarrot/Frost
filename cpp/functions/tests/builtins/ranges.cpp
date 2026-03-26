@@ -22,9 +22,9 @@ using trompeloeil::_;
 namespace
 {
 template <typename Fn>
-Function make_builtin(Fn fn, std::string name, Builtin::Arity arity)
+Function make_builtin(Fn fn, std::string name)
 {
-    return std::make_shared<Builtin>(std::move(fn), std::move(name), arity);
+    return std::make_shared<Builtin>(std::move(fn), std::move(name));
 }
 
 Function lookup(Symbol_Table& table, const std::string& name)
@@ -849,7 +849,7 @@ TEST_CASE("Builtin ranges")
                 seen.push_back(args.at(0));
                 return Value::create(args.at(0)->raw_get<Int>() < 2_f);
             },
-            "pred", Builtin::Arity{.min = 1, .max = 1})});
+            "pred")});
 
         auto res = fn->call({arr, pred});
         require_array_eq(res, {a, b});
@@ -868,7 +868,7 @@ TEST_CASE("Builtin ranges")
                 seen.push_back(args.at(0));
                 return Value::create(true);
             },
-            "pred_all", Builtin::Arity{.min = 1, .max = 1})});
+            "pred_all")});
 
         auto res_all = fn->call({arr, pred_all});
         require_array_eq(res_all, {a, b, c, d});
@@ -886,7 +886,7 @@ TEST_CASE("Builtin ranges")
                 seen.push_back(args.at(0));
                 return Value::create(false);
             },
-            "pred_none", Builtin::Arity{.min = 1, .max = 1})});
+            "pred_none")});
 
         auto res_none = fn->call({arr, pred_none});
         require_array_eq(res_none, {});
@@ -920,7 +920,7 @@ TEST_CASE("Builtin ranges")
                 seen.push_back(args.at(0));
                 return Value::create(args.at(0)->raw_get<Int>() < 2_f);
             },
-            "pred", Builtin::Arity{.min = 1, .max = 1})});
+            "pred")});
 
         auto res = fn->call({arr, pred});
         require_array_eq(res, {c, d});
@@ -939,7 +939,7 @@ TEST_CASE("Builtin ranges")
                 seen.push_back(args.at(0));
                 return Value::create(true);
             },
-            "pred_all", Builtin::Arity{.min = 1, .max = 1})});
+            "pred_all")});
 
         auto res_all = fn->call({arr, pred_all});
         require_array_eq(res_all, {});
@@ -957,7 +957,7 @@ TEST_CASE("Builtin ranges")
                 seen.push_back(args.at(0));
                 return Value::create(false);
             },
-            "pred_none", Builtin::Arity{.min = 1, .max = 1})});
+            "pred_none")});
 
         auto res_none = fn->call({arr, pred_none});
         require_array_eq(res_none, {a, b, c, d});
@@ -983,7 +983,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t) -> Value_Ptr {
                 throw Frost_Recoverable_Error{"kaboom"};
             },
-            "boom", Builtin::Arity{.min = 1, .max = 1})});
+            "boom")});
 
         CHECK_THROWS_WITH(take_fn->call({arr, boom}),
                           ContainsSubstring("kaboom"));
@@ -1008,7 +1008,7 @@ TEST_CASE("Builtin ranges")
                 return Value::create(args.at(0)->raw_get<Int>()
                                      == args.at(1)->raw_get<Int>());
             },
-            "eq", Builtin::Arity{.min = 2, .max = 2})});
+            "eq")});
 
         auto res = fn->call({arr, eq_pred});
         REQUIRE(res->is<Array>());
@@ -1023,7 +1023,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t) {
                 return Value::create(true);
             },
-            "true", Builtin::Arity{.min = 2, .max = 2})});
+            "true")});
         auto res_true = fn->call({arr, always_true});
         REQUIRE(res_true->is<Array>());
         const auto& outer_true = res_true->raw_get<Array>();
@@ -1034,7 +1034,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t) {
                 return Value::create(false);
             },
-            "false", Builtin::Arity{.min = 2, .max = 2})});
+            "false")});
         auto res_false = fn->call({arr, always_false});
         REQUIRE(res_false->is<Array>());
         const auto& outer_false = res_false->raw_get<Array>();
@@ -1054,7 +1054,7 @@ TEST_CASE("Builtin ranges")
                 ++call_count;
                 return Value::create(true);
             },
-            "count", Builtin::Arity{.min = 2, .max = 2})});
+            "count")});
         auto res_empty = fn->call({empty, count_pred});
         require_array_eq(res_empty, {});
         CHECK(call_count == 0);
@@ -1071,7 +1071,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t args) {
                 return Value::create(args.at(0)->raw_get<Int>() * 2_f);
             },
-            "op", Builtin::Arity{.min = 1, .max = 1});
+            "op");
 
         auto res = fn->call({arr, Value::create(Function{op})});
         REQUIRE(res->is<Array>());
@@ -1090,7 +1090,7 @@ TEST_CASE("Builtin ranges")
                     Map{{args.at(0),
                          Value::create(args.at(1)->raw_get<Int>() * 2_f)}});
             },
-            "map_op", Builtin::Arity{.min = 2, .max = 2});
+            "map_op");
 
         auto map_res = fn->call({map, Value::create(Function{map_op})});
         REQUIRE(map_res->is<Map>());
@@ -1112,7 +1112,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t) {
                 return Value::create(1_f);
             },
-            "bad", Builtin::Arity{.min = 2, .max = 2});
+            "bad");
 
         CHECK_THROWS_WITH(fn->call({map, Value::create(Function{bad_op})}),
                           ContainsSubstring("Builtin transform"));
@@ -1122,7 +1122,7 @@ TEST_CASE("Builtin ranges")
             [collision_key](builtin_args_t) {
                 return Value::create(Map{{collision_key, Value::create(1_f)}});
             },
-            "collide", Builtin::Arity{.min = 2, .max = 2});
+            "collide");
 
         CHECK_THROWS_WITH(fn->call({map, Value::create(Function{collide_op})}),
                           ContainsSubstring("key collision"));
@@ -1140,7 +1140,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t args) {
                 return Value::create(args.at(0)->raw_get<Int>() > 1_f);
             },
-            "pred", Builtin::Arity{.min = 1, .max = 1});
+            "pred");
 
         auto res = fn->call({arr, Value::create(Function{pred})});
         require_array_eq(res, {b, c});
@@ -1153,7 +1153,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t args) {
                 return Value::create(args.at(1)->raw_get<Int>() == 2_f);
             },
-            "pred", Builtin::Arity{.min = 2, .max = 2});
+            "pred");
 
         auto map_res = fn->call({map, Value::create(Function{map_pred})});
         REQUIRE(map_res->is<Map>());
@@ -1176,7 +1176,7 @@ TEST_CASE("Builtin ranges")
                 return Value::create(args.at(0)->raw_get<Int>()
                                      + args.at(1)->raw_get<Int>());
             },
-            "op", Builtin::Arity{.min = 2, .max = 2});
+            "op");
 
         auto res = fn->call({arr, Value::create(Function{op})});
         CHECK(res->raw_get<Int>() == 6_f);
@@ -1201,7 +1201,7 @@ TEST_CASE("Builtin ranges")
                 return Value::create(args.at(0)->raw_get<Int>()
                                      + args.at(2)->raw_get<Int>());
             },
-            "op", Builtin::Arity{.min = 3, .max = 3});
+            "op");
 
         auto res_map = fn->call({map, Value::create(Function{map_op}), init});
         CHECK(res_map->raw_get<Int>() == 13_f);
@@ -1216,7 +1216,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t args) {
                 return args.at(0);
             },
-            "op", Builtin::Arity{.min = 3, .max = 3});
+            "op");
 
         CHECK_THROWS_WITH(fn->call({map, Value::create(Function{op})}),
                           ContainsSubstring("Map reduction requires init"));
@@ -1683,7 +1683,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t args) {
                 return Value::create(args.at(0)->raw_get<Int>() < 2_f);
             },
-            "pred_lt_two", Builtin::Arity{.min = 1, .max = 1});
+            "pred_lt_two");
 
         CHECK(any_fn->call({arr, Value::create(Function{pred_lt_two})})
                   ->get<Bool>()
@@ -1705,7 +1705,7 @@ TEST_CASE("Builtin ranges")
                 ++call_count;
                 return Value::create(true);
             },
-            "count", Builtin::Arity{.min = 1, .max = 1});
+            "count");
 
         CHECK(any_fn->call({empty, Value::create(Function{count_pred})})
                   ->get<Bool>()
@@ -1734,12 +1734,12 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t) {
                 return Value::create(true);
             },
-            "pred_true", Builtin::Arity{.min = 1, .max = 1});
+            "pred_true");
         auto pred_false = make_builtin(
             [](builtin_args_t) {
                 return Value::create(false);
             },
-            "pred_false", Builtin::Arity{.min = 1, .max = 1});
+            "pred_false");
 
         CHECK(any_fn->call({arr, Value::create(Function{pred_true})})
                   ->get<Bool>()
@@ -1780,12 +1780,12 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t) {
                 return Value::null();
             },
-            "pred_null", Builtin::Arity{.min = 1, .max = 1});
+            "pred_null");
         auto pred_int = make_builtin(
             [](builtin_args_t) {
                 return Value::create(0_f);
             },
-            "pred_int", Builtin::Arity{.min = 1, .max = 1});
+            "pred_int");
 
         CHECK(any_fn->call({arr, Value::create(Function{pred_null})})
                   ->get<Bool>()
@@ -1833,7 +1833,7 @@ TEST_CASE("Builtin ranges")
                 seen.push_back(args.at(0));
                 return Value::create(args.at(0)->raw_get<Int>() > 0_f);
             },
-            "pred_any", Builtin::Arity{.min = 1, .max = 1});
+            "pred_any");
 
         CHECK(any_fn->call({arr, Value::create(Function{pred_any})})
                   ->get<Bool>()
@@ -1852,7 +1852,7 @@ TEST_CASE("Builtin ranges")
                 seen.push_back(args.at(0));
                 return Value::create(args.at(0)->raw_get<Int>() == 0_f);
             },
-            "pred_all", Builtin::Arity{.min = 1, .max = 1});
+            "pred_all");
 
         CHECK(all_fn->call({arr, Value::create(Function{pred_all})})
                   ->get<Bool>()
@@ -1871,7 +1871,7 @@ TEST_CASE("Builtin ranges")
                 seen.push_back(args.at(0));
                 return Value::create(args.at(0)->raw_get<Int>() == 1_f);
             },
-            "pred_none", Builtin::Arity{.min = 1, .max = 1});
+            "pred_none");
 
         CHECK(none_fn->call({arr, Value::create(Function{pred_none})})
                   ->get<Bool>()
@@ -1894,7 +1894,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t) -> Value_Ptr {
                 throw Frost_Recoverable_Error{"kaboom"};
             },
-            "boom", Builtin::Arity{.min = 1, .max = 1});
+            "boom");
 
         CHECK_THROWS_WITH(any_fn->call({arr, Value::create(Function{boom})}),
                           ContainsSubstring("kaboom"));
@@ -1924,7 +1924,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t args) {
                 return Value::greater_than(args.at(0), args.at(1));
             },
-            "desc", Builtin::Arity{.min = 2, .max = 2});
+            "desc");
 
         require_array_eq(fn->call({arr, Value::create(Function{desc})}),
                          {a, c, b});
@@ -1959,7 +1959,7 @@ TEST_CASE("Builtin ranges")
                     return Value::create(1_f);
                 return Value::null();
             },
-            "truthy_int_cmp", Builtin::Arity{.min = 2, .max = 2});
+            "truthy_int_cmp");
 
         require_array_eq(
             fn->call({arr, Value::create(Function{truthy_int_cmp})}),
@@ -1974,7 +1974,7 @@ TEST_CASE("Builtin ranges")
             [](builtin_args_t) -> Value_Ptr {
                 throw Frost_Recoverable_Error{"kaboom"};
             },
-            "boom", Builtin::Arity{.min = 2, .max = 2});
+            "boom");
 
         CHECK_THROWS_WITH(fn->call({arr, Value::create(Function{boom})}),
                           ContainsSubstring("kaboom"));
