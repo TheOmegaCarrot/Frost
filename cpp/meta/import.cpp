@@ -55,6 +55,9 @@ struct Importer
 
         auto module_spec = GET(0, String);
 
+        if (module_spec.empty())
+            throw Frost_Recoverable_Error{"import requires a non-empty module name"};
+
         if (stdlib)
         {
             if (auto result = stdlib->lookup_module(module_spec))
@@ -114,7 +117,6 @@ struct Importer
 
         Symbol_Table isolated_table;
         inject_builtins(isolated_table);
-        inject_ext(isolated_table);
         isolated_table.define("imported", Value::create(true));
 
         Execution_Context isolated_ctx{.symbols = isolated_table};
@@ -127,8 +129,8 @@ struct Importer
 
         child_search_path.append_range(env_module_path());
 
-        inject_import(isolated_table, child_search_path, stdlib,
-                      import_cache, import_stack);
+        inject_import(isolated_table, child_search_path, stdlib, import_cache,
+                      import_stack);
 
         for (const auto& statement : parse_result.value())
         {

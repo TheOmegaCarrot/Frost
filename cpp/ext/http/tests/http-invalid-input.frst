@@ -1,3 +1,5 @@
+def http = import('ext.http')
+
 def missing_uri = try_call(http.request, [{
   method: 'GET'
 }])

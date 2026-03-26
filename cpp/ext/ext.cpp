@@ -3,26 +3,26 @@
 namespace frst
 {
 
-#define DEFINE_EXTENSION(name)                                                 \
-    Map make_extension_##name();                                               \
-    table.define(#name, Value::create(Value::trusted, make_extension_##name()));
+#define DO_REGISTER_EXTENSION(name)                                            \
+    void register_module_##name(Stdlib_Registry_Builder&);                     \
+    register_module_##name(builder);
 
-void inject_ext(Symbol_Table& table)
+void register_extensions(Stdlib_Registry_Builder& builder)
 {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wvexing-parse"
     // The "vexing parse" is _actually_ intended here
 
 #ifdef FROST_ENABLE_HTTP
-    DEFINE_EXTENSION(http);
+    DO_REGISTER_EXTENSION(http);
 #endif
 
 #ifdef FROST_ENABLE_SQLITE
-    DEFINE_EXTENSION(sqlite);
+    DO_REGISTER_EXTENSION(sqlite);
 #endif
 
 #ifdef FROST_ENABLE_UNSAFE
-    DEFINE_EXTENSION(unsafe);
+    DO_REGISTER_EXTENSION(unsafe);
 #endif
 
 #pragma GCC diagnostic pop

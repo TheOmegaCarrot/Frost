@@ -34,14 +34,16 @@
 #define INJECT_MAP(NAME, ...)                                                  \
     table.define(#NAME, Value::create(Value::trusted, Map{__VA_ARGS__}));
 
-#define STDLIB_MODULE(name, ...)                                               \
+#define REGISTRY_MODULE(toplevel, name, ...)                                   \
     void register_module_##name(Stdlib_Registry_Builder& builder)              \
     {                                                                          \
         using namespace name;                                                  \
         builder.register_module(                                               \
-            Stdlib_Registry_Builder::module_path_t({"std", #name}),            \
+            Stdlib_Registry_Builder::module_path_t({#toplevel, #name}),        \
             Value::create(Value::trusted, Map{__VA_ARGS__}));                  \
     }
+
+#define STDLIB_MODULE(name, ...) REGISTRY_MODULE(std, name, __VA_ARGS__)
 
 #define UNIFORM_VARIADIC(NAME, TYPE)                                           \
     for (const auto& [i, arg] : std::views::enumerate(args))                   \

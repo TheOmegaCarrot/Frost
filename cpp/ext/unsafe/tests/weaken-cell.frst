@@ -1,3 +1,5 @@
+def unsafe = import('ext.unsafe')
+
 def cell = unsafe.mutable_cell({data: [1, 2, 3]})
 def weak = unsafe.weaken(cell.get())
 

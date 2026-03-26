@@ -1,3 +1,5 @@
+def unsafe = import('ext.unsafe')
+
 defn make_weak() -> do {
     def val = {data: [1, 2, 3]}
     def weak = unsafe.weaken(val)

@@ -1,3 +1,5 @@
+def http = import('ext.http')
+
 def bad_host_type = try_call(http.request, [{
   uri: {
     host: 42

@@ -1,4 +1,5 @@
 def os = import('std.os')
+def http = import('ext.http')
 
 def port_env = os.getenv('HTTPBIN_PORT')
 def plain_port_str = if is_null(port_env): '8080' else: port_env

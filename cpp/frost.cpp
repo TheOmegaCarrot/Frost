@@ -4,9 +4,9 @@
 #include <frost/ext.hpp>
 #include <frost/import.hpp>
 #include <frost/meta.hpp>
-#include <frost/stdlib.hpp>
 #include <frost/parser.hpp>
 #include <frost/prelude.hpp>
+#include <frost/stdlib.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
@@ -156,7 +156,6 @@ int main(int argc, const char** argv)
 
     frst::Symbol_Table symbols;
     frst::inject_builtins(symbols);
-    frst::inject_ext(symbols);
     frst::inject_meta(symbols);
 
     frst::Execution_Context setup_ctx{.symbols = symbols};
@@ -173,6 +172,7 @@ int main(int argc, const char** argv)
 
     frst::Stdlib_Registry_Builder builder;
     frst::register_stdlib(builder);
+    frst::register_extensions(builder);
     frst::inject_import(
         symbols, module_search_path,
         std::make_shared<frst::Stdlib_Registry>(std::move(builder).build()));

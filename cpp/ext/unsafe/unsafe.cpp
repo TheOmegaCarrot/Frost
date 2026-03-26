@@ -79,10 +79,6 @@ BUILTIN(same)
 
 } // namespace unsafe
 
-DECLARE_EXTENSION(unsafe)
-{
-    using namespace unsafe;
-    CREATE_EXTENSION(ENTRY(identity, 1), ENTRY(same, 2),
-                     ENTRY_R(mutable_cell, 0, 1), ENTRY(weaken, 1));
-}
+REGISTER_EXTENSION(unsafe, ENTRY(identity, 1), ENTRY(same, 2),
+                   ENTRY_R(mutable_cell, 0, 1), ENTRY(weaken, 1));
 } // namespace frst

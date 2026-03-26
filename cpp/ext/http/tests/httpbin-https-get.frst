@@ -1,5 +1,6 @@
 def os = import('std.os')
 def json = import('std.json')
+def http = import('ext.http')
 
 def host_env = os.getenv('HTTPBIN_TLS_HOST')
 def host = if is_null(host_env): 'httpbin.org' else: host_env

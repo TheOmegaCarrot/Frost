@@ -2,6 +2,7 @@
 # Tests db operations nested inside each/collect callbacks
 
 def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
 def path = args[1]
 
 if fs.exists(path): fs.remove(path)

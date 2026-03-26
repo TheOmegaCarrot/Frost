@@ -21,9 +21,6 @@ BUILTIN(request)
 
 } // namespace http
 
-DECLARE_EXTENSION(http)
-{
-    using namespace http;
-    CREATE_EXTENSION(ENTRY(request, 1));
-}
+REGISTER_EXTENSION(http, ENTRY(request, 1));
+
 } // namespace frst

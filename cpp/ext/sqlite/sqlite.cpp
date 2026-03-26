@@ -286,14 +286,12 @@ BUILTIN(open_memory)
 
 } // namespace sqlite
 
-DECLARE_EXTENSION(sqlite)
-{
-    using namespace sqlite;
-    CREATE_EXTENSION(
-        {
-            "version"_s,
-            Value::create(String{sqlite3_version}),
-        },
-        ENTRY(open, 1), ENTRY(open_readonly, 1), ENTRY(open_memory, 0), );
-}
+REGISTER_EXTENSION(sqlite,
+                   {
+                       "version"_s,
+                       Value::create(String{sqlite3_version}),
+                   },
+                   ENTRY(open, 1), ENTRY(open_readonly, 1),
+                   ENTRY(open_memory, 0))
+
 } // namespace frst

@@ -1,15 +1,14 @@
 #include <catch2/catch_all.hpp>
 
-#include <frost/value.hpp>
-
 #include <frost/extensions-common.hpp>
+#include <frost/value.hpp>
 
 using namespace frst;
 using namespace std::literals;
 
 namespace frst
 {
-DECLARE_EXTENSION(unsafe);
+void register_module_unsafe(Stdlib_Registry_Builder&);
 }
 
 namespace
@@ -17,7 +16,12 @@ namespace
 
 Function lookup(const std::string& name)
 {
-    static Map ext = make_extension_unsafe();
+    static auto ext = [] {
+        Stdlib_Registry_Builder builder;
+        register_module_unsafe(builder);
+        auto registry = std::move(builder).build();
+        return registry.lookup_module("ext.unsafe").value()->raw_get<Map>();
+    }();
     auto key = Value::create(String{name});
     return ext.at(key)->raw_get<Function>();
 }
@@ -349,8 +353,8 @@ TEST_CASE("unsafe.weaken")
     SECTION("works with mutable_cell exchange pattern")
     {
         auto cell_fn = lookup("mutable_cell");
-        auto val = Value::create(Map{
-            {Value::create(String{"x"}), Value::create(Int{1})}});
+        auto val = Value::create(
+            Map{{Value::create(String{"x"}), Value::create(Int{1})}});
 
         auto cell = cell_fn->call({val});
         const auto& m = cell->raw_get<Map>();

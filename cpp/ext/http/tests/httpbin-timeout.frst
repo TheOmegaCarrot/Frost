@@ -1,4 +1,5 @@
 def os = import('std.os')
+def http = import('ext.http')
 
 def host_env = os.getenv('HTTPBIN_HOST')
 def host = if is_null(host_env): '127.0.0.1' else: host_env
