@@ -154,6 +154,14 @@ TEST_CASE("std.encoding b64")
             b64_decode->call({}), Frost_User_Error,
             MessageMatches(ContainsSubstring("insufficient arguments")
                            && ContainsSubstring("requires at least 1")));
+        CHECK_THROWS_MATCHES(
+            b64_urlencode->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")
+                           && ContainsSubstring("requires at least 1")));
+        CHECK_THROWS_MATCHES(
+            b64_urldecode->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")
+                           && ContainsSubstring("requires at least 1")));
     }
 
     SECTION("Type errors")

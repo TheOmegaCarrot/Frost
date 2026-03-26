@@ -181,6 +181,25 @@ TEST_CASE("Type Tests")
         check_type(v_func, "Function");
     }
 
+    SECTION("is_* arity")
+    {
+        const std::vector<std::string> names{
+            "is_null",    "is_int",       "is_float",    "is_bool",
+            "is_string",  "is_array",     "is_map",      "is_function",
+            "is_nonnull", "is_numeric",   "is_primitive", "is_structured",
+        };
+
+        for (const auto& name : names)
+        {
+            auto fn = get_fn(name);
+            CHECK_THROWS_WITH(fn->call({}), Catch::Matchers::ContainsSubstring(
+                                                "insufficient arguments"));
+            CHECK_THROWS_WITH(
+                fn->call({Value::null(), Value::null()}),
+                Catch::Matchers::ContainsSubstring("too many arguments"));
+        }
+    }
+
     SECTION("type arity")
     {
         // AI-generated test additions by Codex (GPT-5).

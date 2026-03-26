@@ -21,6 +21,15 @@ TEST_CASE("Builtin keys")
     REQUIRE(keys_val->is<Function>());
     auto keys = keys_val->get<Function>().value();
 
+    SECTION("Arity")
+    {
+        CHECK_THROWS_WITH(keys->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(
+            keys->call({Value::create(Map{}), Value::create(Map{})}),
+            ContainsSubstring("too many arguments"));
+    }
+
     SECTION("Wrong Type")
     {
         std::vector<Value_Ptr> not_maps{
