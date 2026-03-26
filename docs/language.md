@@ -38,7 +38,10 @@ For most readers, this is not the place to start learning the language; for that
 - [Modules](#modules)
   * [Export](#export)
   * [Import](#import)
+    + [Built-in modules](#built-in-modules)
+    + [File-based modules](#file-based-modules)
   * [The `imported` variable](#the-imported-variable)
+  * [The `args` variable](#the-args-variable)
 
 <!-- tocstop -->
 
@@ -802,12 +805,46 @@ def f = fn -> {
 
 ### Import
 
-The function `import` takes a module specification, and returns a map with keys being the exported names, and values being the values bound to those names.
+The function `import` takes a module specification and returns a value.
+The module specification must be a non-empty `String`.
 
-A module specification is a `String` which serves as a relative path using `.` as a path separator.
+#### Built-in modules
+
+Frost ships with built-in modules under the `std` and `ext` namespaces.
+These are available without any files on disk.
+
+```frost
+def fs = import('std.fs')
+def http = import('ext.http')
+```
+
+A complete list of built-in modules is in the [standard library documentation](./stdlib).
+
+The built-in module registry is a nested `Map`.
+`import` walks the `.`-separated path segments through this structure and returns whatever value it reaches.
+This means you can import at any level of granularity:
+
+```frost
+def std = import('std')           # the entire standard library (a Map of Maps)
+def b64 = import('std.encoding.b64')  # a specific sub-map
+def encode = import('std.encoding.b64.encode')  # a single function
+```
+
+Because `import` returns a `Map`, you can even apply destructuring to it:
+
+```frost
+def { fs, io, json } = import('std') # imports fs, io, and json in one line
+def { http, sqlite } = import('ext')
+```
+
+#### File-based modules
+
+If no built-in module matches, `import` treats the specification as a relative path using `.` as a path separator.
 The `.frst` file extension is added automatically.
 For example: `'foo.bar.baz'` specifies a relative path `foo/bar/baz.frst`.
 The module specification `'foo'` specifies a relative path `foo.frst`.
+
+The result is a `Map` with keys being the exported names, and values being the values bound to those names.
 
 `import` will first check relative to the importing file.
 If no file can be found relative to the importing file, the interpreter will then look relative to the current working directory.

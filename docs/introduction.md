@@ -202,8 +202,20 @@ try_call(plus, [3, 5])
 
 ## Modules
 
-Frost also provides a mechanism for splitting up code between files.
+Frost has a set of built-in modules accessed via `import`:
 
+```frost
+def fs = import('std.fs')
+def json = import('std.json')
+def io = import('std.io')
+
+fs.exists('data.json')
+json.decode(io.open_read('data.json').read_rest())
+```
+
+Modules under `std` are always available; modules under `ext` are optional and can be disabled at build time.
+
+You can also split your own code across files.
 Any file-scope `def` or `defn` can be `export`-ed:
 
 ```frost
@@ -219,7 +231,7 @@ def str = import('examples.strutils')
 print(str.shout('hello')) # HELLO!
 ```
 
-Global variables do _not_ leak into the script that calls `import`, and `import` simply returns a map of all `export`-ed definitions.
+Global variables do _not_ leak into the script that calls `import`, and file-based `import` returns a map of all `export`-ed definitions.
 
 That's most of the language! The core of Frost is intentionally pretty small.
 For more exact details on exactly how the language works, you can read the [language reference](./language.md).
