@@ -33,24 +33,27 @@ def file_fns_map = reduce files with fn acc, file ->
 def fn_to_anchor_suffix = re.replace @ bcurry(R'([^a-z0-9_-])', '')
 
 def module_prefixes = {
-    ['encoding.md']: 'encoding',
-    ['json.md']: 'json',
-    ['math.md']: 'math',
-    ['os.md']: 'os',
-    ['fs.md']: 'fs',
-    ['io.md']: 'io',
-    ['regex.md']: 'regex',
+    ['encoding.md']: {module: 'encoding', ns: 'std'},
+    ['json.md']: {module: 'json', ns: 'std'},
+    ['math.md']: {module: 'math', ns: 'std'},
+    ['os.md']: {module: 'os', ns: 'std'},
+    ['fs.md']: {module: 'fs', ns: 'std'},
+    ['io.md']: {module: 'io', ns: 'std'},
+    ['regex.md']: {module: 'regex', ns: 'std'},
+    ['http.md']: {module: 'http', ns: 'ext'},
+    ['sqlite.md']: {module: 'sqlite', ns: 'ext'},
+    ['unsafe.md']: {module: 'unsafe', ns: 'ext'},
 }
 
 # Flip it around into a map from function name to full anchor
 # Build entries with display name, anchor, and optional tag
 def fn_link_map = (
     reduce keys(file_fns_map) with fn acc, filename -> {
-        def prefix = module_prefixes[filename]
+        def { module: prefix, ns } = module_prefixes[filename] or {}
         acc + (reduce file_fns_map[filename] with fn inner, fname -> {
             def display = if prefix: $'${prefix}.${fname}' else: fname
             def anchor = filename + '#' + fn_to_anchor_suffix(fname)
-            def tag = if prefix: $' · `std.${prefix}`' else: ''
+            def tag = if prefix: $' · `${ns}.${prefix}`' else: ''
             inner + { [display]: { anchor: anchor, tag: tag } }
         } init: {})
     }

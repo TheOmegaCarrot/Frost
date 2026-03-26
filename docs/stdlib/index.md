@@ -19,14 +19,6 @@ Each entry links to its full documentation.
 - [contains](strings.md#contains)
 - [count_by](collections.md#count_by)
 - [curry](functions.md#curry)
-- [db.close](sqlite.md#dbclose)
-- [db.collect](sqlite.md#dbcollect)
-- [db.each](sqlite.md#dbeach)
-- [db.exec](sqlite.md#dbexec)
-- [db.last_insert_rowid](sqlite.md#dblast_insert_rowid)
-- [db.query](sqlite.md#dbquery)
-- [db.script](sqlite.md#dbscript)
-- [db.transaction](sqlite.md#dbtransaction)
 - [debug_dump](debug.md#debug_dump)
 - [dig](collections.md#dig)
 - [divide](operators.md#divide)
@@ -70,7 +62,7 @@ Each entry links to its full documentation.
 - [greater_than_or_equal](operators.md#greater_than_or_equal)
 - [group_by](collections.md#group_by)
 - [has](collections.md#has)
-- [http.request](http.md#httprequest)
+- [http.request](http.md#request) · `ext.http`
 - [id](collections.md#id)
 - [index](collections.md#index)
 - [inv](functions.md#inv)
@@ -168,10 +160,18 @@ Each entry links to its full documentation.
 - [slide](collections.md#slide)
 - [sorted](collections.md#sorted)
 - [split](strings.md#split)
-- [sqlite.open](sqlite.md#sqliteopen)
-- [sqlite.open_memory](sqlite.md#sqliteopen_memory)
-- [sqlite.open_readonly](sqlite.md#sqliteopen_readonly)
-- [sqlite.version](sqlite.md#sqliteversion)
+- [sqlite.db.close](sqlite.md#dbclose) · `ext.sqlite`
+- [sqlite.db.collect](sqlite.md#dbcollect) · `ext.sqlite`
+- [sqlite.db.each](sqlite.md#dbeach) · `ext.sqlite`
+- [sqlite.db.exec](sqlite.md#dbexec) · `ext.sqlite`
+- [sqlite.db.last_insert_rowid](sqlite.md#dblast_insert_rowid) · `ext.sqlite`
+- [sqlite.db.query](sqlite.md#dbquery) · `ext.sqlite`
+- [sqlite.db.script](sqlite.md#dbscript) · `ext.sqlite`
+- [sqlite.db.transaction](sqlite.md#dbtransaction) · `ext.sqlite`
+- [sqlite.open](sqlite.md#open) · `ext.sqlite`
+- [sqlite.open_memory](sqlite.md#open_memory) · `ext.sqlite`
+- [sqlite.open_readonly](sqlite.md#open_readonly) · `ext.sqlite`
+- [sqlite.version](sqlite.md#version) · `ext.sqlite`
 - [starts_with](strings.md#starts_with)
 - [stderr](streams.md#stderr)
 - [stdin](streams.md#stdin)
@@ -192,10 +192,10 @@ Each entry links to its full documentation.
 - [trim_right](strings.md#trim_right)
 - [try_call](functions.md#try_call)
 - [type](types.md#type)
-- [unsafe.identity](unsafe.md#unsafeidentity)
-- [unsafe.mutable_cell](unsafe.md#unsafemutable_cell)
-- [unsafe.same](unsafe.md#unsafesame)
-- [unsafe.weaken](unsafe.md#unsafeweaken)
+- [unsafe.identity](unsafe.md#identity) · `ext.unsafe`
+- [unsafe.mutable_cell](unsafe.md#mutable_cell) · `ext.unsafe`
+- [unsafe.same](unsafe.md#same) · `ext.unsafe`
+- [unsafe.weaken](unsafe.md#weaken) · `ext.unsafe`
 - [values](collections.md#values)
 - [xprod](collections.md#xprod)
 - [zip](collections.md#zip)

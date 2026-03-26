@@ -1,5 +1,9 @@
 # Unsafe
 
+```frost
+def unsafe = import('ext.unsafe')
+```
+
 The `unsafe` module provides functions that bypass Frost's usual safety guarantees.
 These are opt-in and intended for advanced use cases such as performance-critical code, debugging, and interop patterns that require unrestricted mutability or pointer-level introspection.
 
@@ -8,8 +12,8 @@ The `unsafe` module is optional and can be disabled at build time with `-DWITH_U
 The precise behavior of these functions may change between versions.
 Internal implementation details such as value sharing and allocation are not part of Frost's stability guarantees, so results from pointer-level operations like `same` and `identity` may differ across releases.
 
-## `unsafe.same`
-`unsafe.same(a, b)`
+## `same`
+`same(a, b)`
 
 Returns `true` if `a` and `b` are the exact same object in memory (pointer equality), `false` otherwise.
 This is distinct from `==`, which compares by value.
@@ -28,15 +32,15 @@ unsafe.same(a, b) # => false (distinct objects)
 unsafe.same(a, c) # => true  (same object)
 ```
 
-## `unsafe.identity`
-`unsafe.identity(value)`
+## `identity`
+`identity(value)`
 
 Returns the memory address of `value` as an `Int`.
 Two calls return the same `Int` if and only if `unsafe.same` would return `true` for the two values.
 
-## `unsafe.mutable_cell`
-`unsafe.mutable_cell()`
-`unsafe.mutable_cell(initial)`
+## `mutable_cell`
+`mutable_cell()`
+`mutable_cell(initial)`
 
 Creates a mutable cell with no restrictions on what it can hold.
 Unlike the standard `mutable_cell`, this cell accepts functions, other mutable cells, and structures containing them.
@@ -57,8 +61,8 @@ Returns the current value of the cell.
 
 Sets the cell to `value` and returns the previous value.
 
-## `unsafe.weaken`
-`unsafe.weaken(value)`
+## `weaken`
+`weaken(value)`
 
 Creates a weak reference to `value`.
 Returns a map with a single method:

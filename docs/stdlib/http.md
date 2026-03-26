@@ -1,9 +1,13 @@
 # HTTP
 
+```frost
+def http = import('ext.http')
+```
+
 HTTP support can be disabled at build time with `-DWITH_HTTP=NO`.
 
-## `http.request`
-`http.request(config)`
+## `request`
+`request(config)`
 
 Performs an asynchronous HTTP request.
 Returns immediately with a handle map; use `.is_ready()` to poll and `.get()` to retrieve the result when ready.

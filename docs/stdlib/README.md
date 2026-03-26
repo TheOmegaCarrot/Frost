@@ -53,8 +53,8 @@ Built-in modules accessed via `import`.
 Extensions are optional components enabled at build time.
 They are not available in all Frost builds, but are enabled by default.
 
-| Extension                  | Description                      | Dependencies              |
-|----------------------------|----------------------------------|---------------------------|
-| [HTTP](./http.md)          | Making HTTP requests             | Boost `url`, OpenSSL      |
-| [SQLite](./sqlite.md)      | Embedded relational database     | None (vendored)           |
-| [Unsafe](./unsafe.md)      | Bypass Frost's safety guarantees | None                      |
+| Extension                  | Import                       | Description                      | Dependencies              |
+|----------------------------|------------------------------|----------------------------------|---------------------------|
+| [HTTP](./http.md)          | `import('ext.http')`         | Making HTTP requests             | Boost `url`, OpenSSL      |
+| [SQLite](./sqlite.md)      | `import('ext.sqlite')`       | Embedded relational database     | None (vendored)           |
+| [Unsafe](./unsafe.md)      | `import('ext.unsafe')`       | Bypass Frost's safety guarantees | None                      |

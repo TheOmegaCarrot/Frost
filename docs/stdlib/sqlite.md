@@ -1,5 +1,9 @@
 # SQLite
 
+```frost
+def sqlite = import('ext.sqlite')
+```
+
 SQLite support can be disabled at build time with `-DWITH_SQLITE=NO`.
 Frost vendors its own SQLite build, so no system SQLite installation is required.
 
@@ -37,27 +41,27 @@ insert_user(db, 1, 'alice')
 insert_user(db, 2, 'bob')
 ```
 
-## `sqlite.version`
+## `version`
 
 A `String` containing the SQLite library version (e.g. `"3.51.3"`).
 
-## `sqlite.open`
-`sqlite.open(path)`
+## `open`
+`open(path)`
 
 Opens a read-write SQLite database at `path`, or creates one if it does not exist.
 Returns a database object, the methods of which are documented below as `db.*`.
 Produces an error if the database cannot be opened.
 
-## `sqlite.open_readonly`
-`sqlite.open_readonly(path)`
+## `open_readonly`
+`open_readonly(path)`
 
 Opens an existing SQLite database at `path` in read-only mode.
 Returns a database object.
 Produces an error if the file does not exist.
 Write operations (`INSERT`, `UPDATE`, `DELETE`, DDL) will fail.
 
-## `sqlite.open_memory`
-`sqlite.open_memory()`
+## `open_memory`
+`open_memory()`
 
 Opens a private in-memory database.
 Returns a database object.
