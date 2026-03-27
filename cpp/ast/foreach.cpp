@@ -58,7 +58,7 @@ Value_Ptr ast::Foreach::do_evaluate(Evaluation_Context ctx) const
     THROW_UNREACHABLE;
 }
 
-std::generator<ast::Statement::Child_Info> ast::Foreach::children() const
+std::generator<ast::AST_Node::Child_Info> ast::Foreach::children() const
 {
     co_yield make_child(structure_, "Structure");
     co_yield make_child(operation_, "Operation");

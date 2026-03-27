@@ -20,7 +20,7 @@ TEST_CASE("Name Lookup")
     {
         REQUIRE_CALL(syms, lookup(name)).RETURN(value);
 
-        ast::Name_Lookup node{ast::Statement::no_range, name};
+        ast::Name_Lookup node{ast::AST_Node::no_range, name};
 
         auto res = node.evaluate(ctx);
         CHECK(res == value);
@@ -31,13 +31,13 @@ TEST_CASE("Name Lookup")
         REQUIRE_CALL(syms, lookup(name))
             .THROW(Frost_Recoverable_Error{"Uh oh"});
 
-        ast::Name_Lookup node{ast::Statement::no_range, name};
+        ast::Name_Lookup node{ast::AST_Node::no_range, name};
 
         CHECK_THROWS(node.evaluate(ctx));
     }
 
     SECTION("Reject _")
     {
-        CHECK_THROWS((ast::Name_Lookup{ast::Statement::no_range, "_"}));
+        CHECK_THROWS((ast::Name_Lookup{ast::AST_Node::no_range, "_"}));
     }
 }

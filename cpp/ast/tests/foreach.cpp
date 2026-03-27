@@ -55,7 +55,7 @@ TEST_CASE("Foreach Array")
                 .RETURN(op_val);
             FORBID_CALL(*op, call(_));
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -88,7 +88,7 @@ TEST_CASE("Foreach Array")
                 .RETURN(Value::create(false))
                 .TIMES(3);
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -133,7 +133,7 @@ TEST_CASE("Foreach Array")
                 .RETURN(Value::create(false))
                 .TIMES(2);
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -170,7 +170,7 @@ TEST_CASE("Foreach Array")
                 .RETURN(Value::create(true))
                 .TIMES(1);
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -193,7 +193,7 @@ TEST_CASE("Foreach Array")
                 .RETURN(bad_val);
             FORBID_CALL(*operation_expr, do_evaluate(_));
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -215,7 +215,7 @@ TEST_CASE("Foreach Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -252,7 +252,7 @@ TEST_CASE("Foreach Map")
                 .RETURN(op_val);
             FORBID_CALL(*op, call(_));
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -286,7 +286,7 @@ TEST_CASE("Foreach Map")
                 .RETURN(Value::create(false))
                 .TIMES(2);
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -348,7 +348,7 @@ TEST_CASE("Foreach Map")
                 .RETURN(Value::create(true))
                 .TIMES(1);
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -383,7 +383,7 @@ TEST_CASE("Foreach Map")
                 .RETURN(Value::create(true))
                 .TIMES(1);
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -421,7 +421,7 @@ TEST_CASE("Foreach Map")
                 .RETURN(bad_val);
             FORBID_CALL(*operation_expr, do_evaluate(_));
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 
@@ -443,7 +443,7 @@ TEST_CASE("Foreach Map")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
-            ast::Foreach node{ast::Statement::no_range,
+            ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
                               std::move(operation_expr)};
 

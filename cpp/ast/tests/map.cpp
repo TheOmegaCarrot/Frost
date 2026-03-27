@@ -55,7 +55,7 @@ TEST_CASE("Map Array")
                 .RETURN(op_val);
             FORBID_CALL(*mapper, call(_));
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -99,7 +99,7 @@ TEST_CASE("Map Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(r3);
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -144,7 +144,7 @@ TEST_CASE("Map Array")
                 .IN_SEQUENCE(seq)
                 .THROW(Frost_Recoverable_Error{"kaboom"});
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
@@ -166,7 +166,7 @@ TEST_CASE("Map Array")
                 .RETURN(not_structured);
             FORBID_CALL(*operation_expr, do_evaluate(_));
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("Int"));
@@ -187,7 +187,7 @@ TEST_CASE("Map Array")
                 .IN_SEQUENCE(seq)
                 .RETURN(op_val);
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("String"));
@@ -223,7 +223,7 @@ TEST_CASE("Map Map")
                 .RETURN(op_val);
             FORBID_CALL(*mapper, call(_));
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -265,7 +265,7 @@ TEST_CASE("Map Map")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(Value::create(Map{{out_k2, out_v2}}));
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -333,7 +333,7 @@ TEST_CASE("Map Map")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(Value::create(Map{{out_k3, out_v3}, {out_k4, out_v4}}));
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -377,7 +377,7 @@ TEST_CASE("Map Map")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(Value::create(Map{}));
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             auto res = node.evaluate(ctx);
@@ -418,7 +418,7 @@ TEST_CASE("Map Map")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(Value::create(Map{{dup_key, Value::create(20_f)}}));
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx),
@@ -457,7 +457,7 @@ TEST_CASE("Map Map")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(Value::create(Map{{dup_key2, Value::create(20_f)}}));
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx),
@@ -491,7 +491,7 @@ TEST_CASE("Map Map")
                 .THROW(Frost_Recoverable_Error{
                     "Map keys may only be primitive values, got Array"});
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             CHECK_THROWS_WITH(
@@ -523,7 +523,7 @@ TEST_CASE("Map Map")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(Value::create(123_f));
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("Int"));
@@ -555,7 +555,7 @@ TEST_CASE("Map Map")
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .THROW(Frost_Recoverable_Error{"kaboom"});
 
-            ast::Map node{ast::Statement::no_range, std::move(structure_expr),
+            ast::Map node{ast::AST_Node::no_range, std::move(structure_expr),
                           std::move(operation_expr)};
 
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));

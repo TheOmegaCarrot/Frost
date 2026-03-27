@@ -19,7 +19,7 @@ void ast::Define::do_execute(Execution_Context& ctx) const
     ctx.symbols.define(name_, value);
 }
 
-std::generator<ast::Statement::Symbol_Action> ast::Define::symbol_sequence()
+std::generator<ast::AST_Node::Symbol_Action> ast::Define::symbol_sequence()
     const
 {
     co_yield std::ranges::elements_of(expr_->symbol_sequence());
@@ -31,7 +31,7 @@ std::string ast::Define::do_node_label() const
     return fmt::format("{}Define({})", export_def_ ? "Export_" : "", name_);
 }
 
-std::generator<ast::Statement::Child_Info> ast::Define::children() const
+std::generator<ast::AST_Node::Child_Info> ast::Define::children() const
 {
     co_yield make_child(expr_);
 }

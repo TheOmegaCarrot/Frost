@@ -23,7 +23,7 @@ std::string ast::Array_Constructor::do_node_label() const
     return "Array_Constructor";
 }
 
-std::generator<ast::Statement::Child_Info> ast::Array_Constructor::children()
+std::generator<ast::AST_Node::Child_Info> ast::Array_Constructor::children()
     const
 {
     for (const auto& elem : elems_)

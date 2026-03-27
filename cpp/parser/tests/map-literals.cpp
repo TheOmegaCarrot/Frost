@@ -399,7 +399,7 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
-        std::vector<const frst::ast::Statement*> key_literals;
+        std::vector<const frst::ast::AST_Node*> key_literals;
         for (auto* n : nodes)
             if (n->node_label().starts_with("Literal(\""))
                 key_literals.push_back(n);
@@ -425,7 +425,7 @@ TEST_CASE("Parser Map Literals")
         auto expr = require_expression(result);
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
-        std::vector<const frst::ast::Statement*> key_literals;
+        std::vector<const frst::ast::AST_Node*> key_literals;
         for (auto* n : nodes)
             if (n->node_label().starts_with("Literal(\""))
                 key_literals.push_back(n);

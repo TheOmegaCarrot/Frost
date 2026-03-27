@@ -8,7 +8,7 @@ namespace frst::ast::utils
 
 struct
 {
-    static std::generator<Statement::Symbol_Action> operator()(
+    static std::generator<AST_Node::Symbol_Action> operator()(
         const auto& node_ptr)
     {
         return node_ptr->symbol_sequence();

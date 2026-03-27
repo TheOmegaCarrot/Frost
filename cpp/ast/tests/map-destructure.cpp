@@ -30,7 +30,7 @@ namespace
 class Sequence_Expression final : public Expression
 {
   public:
-    Sequence_Expression(std::vector<Statement::Symbol_Action> actions,
+    Sequence_Expression(std::vector<AST_Node::Symbol_Action> actions,
                         Value_Ptr result = Value::null())
         : Expression(no_range)
         , actions_{std::move(actions)}
@@ -43,7 +43,7 @@ class Sequence_Expression final : public Expression
         return result_;
     }
 
-    std::generator<Statement::Symbol_Action> symbol_sequence() const override
+    std::generator<AST_Node::Symbol_Action> symbol_sequence() const override
     {
         for (const auto& action : actions_)
             co_yield action;
@@ -56,17 +56,17 @@ class Sequence_Expression final : public Expression
     }
 
   private:
-    std::vector<Statement::Symbol_Action> actions_;
+    std::vector<AST_Node::Symbol_Action> actions_;
     Value_Ptr result_;
 };
 
-std::string action_to_string(const Statement::Symbol_Action& action)
+std::string action_to_string(const AST_Node::Symbol_Action& action)
 {
     return action.visit(Overload{
-        [](const Statement::Definition& action) {
+        [](const AST_Node::Definition& action) {
             return "def:" + action.name;
         },
-        [](const Statement::Usage& action) {
+        [](const AST_Node::Usage& action) {
             return "use:" + action.name;
         },
     });
@@ -121,7 +121,7 @@ TEST_CASE("Map_Destructure")
             Map_Destructure::Element{std::move(key_expr), "bar"});
         elems.emplace_back(
             Map_Destructure::Element{std::move(missing_key_expr), "answer"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
         node.execute(ctx);
@@ -135,13 +135,13 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr), "bar"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr), true};
 
-        std::vector<Statement::Definition> defns;
+        std::vector<AST_Node::Definition> defns;
         for (const auto& action : node.symbol_sequence())
-            if (std::holds_alternative<Statement::Definition>(action))
-                defns.push_back(std::get<Statement::Definition>(action));
+            if (std::holds_alternative<AST_Node::Definition>(action))
+                defns.push_back(std::get<AST_Node::Definition>(action));
 
         REQUIRE(defns.size() == 1);
         CHECK(defns[0].name == "bar");
@@ -157,13 +157,13 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr), true};
 
-        std::vector<Statement::Definition> defns;
+        std::vector<AST_Node::Definition> defns;
         for (const auto& action : node.symbol_sequence())
-            if (std::holds_alternative<Statement::Definition>(action))
-                defns.push_back(std::get<Statement::Definition>(action));
+            if (std::holds_alternative<AST_Node::Definition>(action))
+                defns.push_back(std::get<AST_Node::Definition>(action));
 
         REQUIRE(defns.size() == 2);
         CHECK(defns[0].name == "a");
@@ -180,13 +180,13 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr), "bar"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
-        std::vector<Statement::Definition> defns;
+        std::vector<AST_Node::Definition> defns;
         for (const auto& action : node.symbol_sequence())
-            if (std::holds_alternative<Statement::Definition>(action))
-                defns.push_back(std::get<Statement::Definition>(action));
+            if (std::holds_alternative<AST_Node::Definition>(action))
+                defns.push_back(std::get<AST_Node::Definition>(action));
 
         REQUIRE(defns.size() == 1);
         CHECK(defns[0].name == "bar");
@@ -202,7 +202,7 @@ TEST_CASE("Map_Destructure")
             Map_Destructure::Element{mock::Mock_Expression::make(), "dup"});
 
         CHECK_THROWS_MATCHES(
-            (Map_Destructure{Statement::no_range, std::move(elems),
+            (Map_Destructure{AST_Node::no_range, std::move(elems),
                              mock::Mock_Expression::make()}),
             Frost_Unrecoverable_Error,
             MessageMatches(
@@ -225,7 +225,7 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr), "bar"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(
@@ -251,7 +251,7 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr), "bar"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(
@@ -281,7 +281,7 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(node.execute(ctx), Frost_Recoverable_Error,
@@ -324,7 +324,7 @@ TEST_CASE("Map_Destructure")
             Map_Destructure::Element{std::move(key_expr2), "second"});
         elems.emplace_back(
             Map_Destructure::Element{std::move(key_expr3), "third"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
         CHECK_THROWS_MATCHES(
@@ -377,7 +377,7 @@ TEST_CASE("Map_Destructure")
         elems.emplace_back(Map_Destructure::Element{std::move(key_int), "i"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_bool), "b"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_float), "f"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
         node.execute(ctx);
@@ -424,7 +424,7 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
         node.execute(ctx);
@@ -461,7 +461,7 @@ TEST_CASE("Map_Destructure")
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
         node.execute(ctx);
@@ -470,23 +470,23 @@ TEST_CASE("Map_Destructure")
     SECTION("Symbol sequence orders usages and definitions")
     {
         auto rhs_expr = std::make_unique<Sequence_Expression>(
-            std::vector<Statement::Symbol_Action>{
-                Statement::Usage{"rhs"},
+            std::vector<AST_Node::Symbol_Action>{
+                AST_Node::Usage{"rhs"},
             });
         auto key_expr1 = std::make_unique<Sequence_Expression>(
-            std::vector<Statement::Symbol_Action>{
-                Statement::Usage{"k1"},
+            std::vector<AST_Node::Symbol_Action>{
+                AST_Node::Usage{"k1"},
             });
         auto key_expr2 = std::make_unique<Sequence_Expression>(
-            std::vector<Statement::Symbol_Action>{
-                Statement::Usage{"k2"},
-                Statement::Usage{"k2b"},
+            std::vector<AST_Node::Symbol_Action>{
+                AST_Node::Usage{"k2"},
+                AST_Node::Usage{"k2b"},
             });
 
         std::vector<Map_Destructure::Element> elems;
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr1), "a"});
         elems.emplace_back(Map_Destructure::Element{std::move(key_expr2), "b"});
-        Map_Destructure node{Statement::no_range, std::move(elems),
+        Map_Destructure node{AST_Node::no_range, std::move(elems),
                              std::move(rhs_expr)};
 
         auto seq = collect_sequence(node);

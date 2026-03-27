@@ -38,7 +38,7 @@ Value_Ptr ast::Map::do_evaluate(Evaluation_Context ctx) const
     return Value::do_map(structure_val, fn, "Map");
 }
 
-std::generator<ast::Statement::Child_Info> ast::Map::children() const
+std::generator<ast::AST_Node::Child_Info> ast::Map::children() const
 {
     co_yield make_child(structure_, "Structure");
     co_yield make_child(operation_, "Operation");

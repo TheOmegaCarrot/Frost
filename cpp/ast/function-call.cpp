@@ -43,7 +43,7 @@ std::string ast::Function_Call::do_node_label() const
     return "Function_Call";
 }
 
-std::generator<ast::Statement::Child_Info> ast::Function_Call::children() const
+std::generator<ast::AST_Node::Child_Info> ast::Function_Call::children() const
 {
     co_yield make_child(fn_expr_, "Function");
     for (const auto& [i, arg] : std::views::enumerate(args_exprs_))

@@ -103,7 +103,7 @@ std::shared_ptr<T> expr(Args&&... args)
 
 std::shared_ptr<Expression> null_expr()
 {
-    return expr<Literal>(Statement::no_range, Value::null());
+    return expr<Literal>(AST_Node::no_range, Value::null());
 }
 
 std::shared_ptr<Expression> lookup_array_expr(
@@ -113,8 +113,8 @@ std::shared_ptr<Expression> lookup_array_expr(
     elems.reserve(names.size());
     for (std::string_view name : names)
         elems.push_back(
-            node<Name_Lookup>(Statement::no_range, std::string{name}));
-    return expr<Array_Constructor>(Statement::no_range, std::move(elems));
+            node<Name_Lookup>(AST_Node::no_range, std::string{name}));
+    return expr<Array_Constructor>(AST_Node::no_range, std::move(elems));
 }
 
 std::shared_ptr<std::vector<Statement::Ptr>> make_body(
@@ -129,7 +129,7 @@ std::shared_ptr<Closure> make_literal_closure(Value_Ptr value)
     std::vector<Statement::Ptr> body;
     auto body_ptr = make_body(std::move(body));
     return Closure::create(std::vector<std::string>{}, body_ptr,
-                           expr<Literal>(Statement::no_range, value),
+                           expr<Literal>(AST_Node::no_range, value),
                            captures, 0);
 }
 
@@ -180,7 +180,7 @@ TEST_CASE("Construct Closure")
         captures.define("y", y_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>(Statement::no_range, "missing"));
+        body.push_back(node<Name_Lookup>(AST_Node::no_range, "missing"));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{"p"}, body_ptr, null_expr(), captures, 0};
@@ -233,7 +233,7 @@ TEST_CASE("Call Closure")
 
         Closure closure{{},
                         body_ptr,
-                        expr<Literal>(Statement::no_range, out_val),
+                        expr<Literal>(AST_Node::no_range, out_val),
                         captures,
                         0};
 
@@ -249,7 +249,7 @@ TEST_CASE("Call Closure")
 
         Closure closure{{"p", "q"},
                         body_ptr,
-                        expr<Name_Lookup>(Statement::no_range, "q"),
+                        expr<Name_Lookup>(AST_Node::no_range, "q"),
                         captures,
                         0};
 
@@ -262,9 +262,9 @@ TEST_CASE("Call Closure")
     {
         Symbol_Table captures;
         std::vector<Expression::Ptr> elems;
-        elems.push_back(node<Name_Lookup>(Statement::no_range, "a"));
-        elems.push_back(node<Name_Lookup>(Statement::no_range, "b"));
-        elems.push_back(node<Name_Lookup>(Statement::no_range, "c"));
+        elems.push_back(node<Name_Lookup>(AST_Node::no_range, "a"));
+        elems.push_back(node<Name_Lookup>(AST_Node::no_range, "b"));
+        elems.push_back(node<Name_Lookup>(AST_Node::no_range, "c"));
 
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
@@ -287,7 +287,7 @@ TEST_CASE("Call Closure")
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{
-            {"p"},    body_ptr, expr<Name_Lookup>(Statement::no_range, "rest"),
+            {"p"},    body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
             captures, 0,        "rest"};
 
         auto result = closure.call({Value::create(1_f)});
@@ -306,7 +306,7 @@ TEST_CASE("Call Closure")
         auto c = Value::create(3_f);
 
         Closure closure{
-            {"p"},    body_ptr, expr<Name_Lookup>(Statement::no_range, "rest"),
+            {"p"},    body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
             captures, 0,        "rest"};
 
         auto result = closure.call({a, b, c});
@@ -321,8 +321,8 @@ TEST_CASE("Call Closure")
     {
         Symbol_Table captures;
         std::vector<Expression::Ptr> elems;
-        elems.push_back(node<Name_Lookup>(Statement::no_range, "p"));
-        elems.push_back(node<Name_Lookup>(Statement::no_range, "rest"));
+        elems.push_back(node<Name_Lookup>(AST_Node::no_range, "p"));
+        elems.push_back(node<Name_Lookup>(AST_Node::no_range, "rest"));
 
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
@@ -340,8 +340,8 @@ TEST_CASE("Call Closure")
     {
         Symbol_Table captures;
         std::vector<Expression::Ptr> elems;
-        elems.push_back(node<Name_Lookup>(Statement::no_range, "p"));
-        elems.push_back(node<Name_Lookup>(Statement::no_range, "rest"));
+        elems.push_back(node<Name_Lookup>(AST_Node::no_range, "p"));
+        elems.push_back(node<Name_Lookup>(AST_Node::no_range, "rest"));
 
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
@@ -396,7 +396,7 @@ TEST_CASE("Call Closure")
 
         Closure closure{{"a", "b"},
                         body_ptr,
-                        expr<Name_Lookup>(Statement::no_range, "rest"),
+                        expr<Name_Lookup>(AST_Node::no_range, "rest"),
                         captures,
                         0,
                         "rest"};
@@ -414,7 +414,7 @@ TEST_CASE("Call Closure")
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{
-            {},       body_ptr, expr<Name_Lookup>(Statement::no_range, "rest"),
+            {},       body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
             captures, 0,        "rest"};
 
         auto result = closure.call({});
@@ -433,7 +433,7 @@ TEST_CASE("Call Closure")
         auto c = Value::create(3_f);
 
         Closure closure{
-            {},       body_ptr, expr<Name_Lookup>(Statement::no_range, "rest"),
+            {},       body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
             captures, 0,        "rest"};
 
         auto result = closure.call({a, b, c});
@@ -451,7 +451,7 @@ TEST_CASE("Call Closure")
         captures.define("x", Value::create(10_f));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
+        body.push_back(node<Name_Lookup>(AST_Node::no_range, "x"));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{"p"}, body_ptr, null_expr(), captures, 0, "rest"};
@@ -468,7 +468,7 @@ TEST_CASE("Call Closure")
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{
-            {"p"},    body_ptr, expr<Name_Lookup>(Statement::no_range, "p"),
+            {"p"},    body_ptr, expr<Name_Lookup>(AST_Node::no_range, "p"),
             captures, 0,        "rest"};
 
         auto a = Value::create(1_f);
@@ -486,7 +486,7 @@ TEST_CASE("Call Closure")
 
         Closure closure{{"p"},
                         body_ptr,
-                        expr<Literal>(Statement::no_range, Value::create(42_f)),
+                        expr<Literal>(AST_Node::no_range, Value::create(42_f)),
                         captures,
                         0,
                         "rest"};
@@ -504,13 +504,13 @@ Literal(42) [0:0-0:0]
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            Statement::no_range, "rest",
-            node<Literal>(Statement::no_range, Value::create(1_f))));
-        body.push_back(node<Name_Lookup>(Statement::no_range, "rest"));
+            AST_Node::no_range, "rest",
+            node<Literal>(AST_Node::no_range, Value::create(1_f))));
+        body.push_back(node<Name_Lookup>(AST_Node::no_range, "rest"));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{
-            {},       body_ptr, expr<Name_Lookup>(Statement::no_range, "rest"),
+            {},       body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
             captures, 0,        "rest"};
 
         CHECK_THROWS_WITH(closure.call({}),
@@ -526,7 +526,7 @@ Literal(42) [0:0-0:0]
         auto p_val = Value::create(99_f);
         Closure closure{{"p"},
                         body_ptr,
-                        expr<Name_Lookup>(Statement::no_range, "p"),
+                        expr<Name_Lookup>(AST_Node::no_range, "p"),
                         captures,
                         0};
 
@@ -544,7 +544,7 @@ Literal(42) [0:0-0:0]
 
         Closure closure{{},
                         body_ptr,
-                        expr<Literal>(Statement::no_range, lit_val),
+                        expr<Literal>(AST_Node::no_range, lit_val),
                         captures,
                         0};
 
@@ -560,7 +560,7 @@ Literal(42) [0:0-0:0]
 
         Closure closure{{"p"},
                         body_ptr,
-                        expr<Name_Lookup>(Statement::no_range, "p"),
+                        expr<Name_Lookup>(AST_Node::no_range, "p"),
                         captures,
                         0};
 
@@ -606,7 +606,7 @@ Literal(42) [0:0-0:0]
 
         Closure closure{{},
                         body_ptr,
-                        expr<Literal>(Statement::no_range, third_val),
+                        expr<Literal>(AST_Node::no_range, third_val),
                         captures,
                         0};
 
@@ -650,13 +650,13 @@ Literal(42) [0:0-0:0]
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            Statement::no_range, "x",
-            node<Literal>(Statement::no_range, Value::create(1_f))));
+            AST_Node::no_range, "x",
+            node<Literal>(AST_Node::no_range, Value::create(1_f))));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{},
                         body_ptr,
-                        expr<Name_Lookup>(Statement::no_range, "x"),
+                        expr<Name_Lookup>(AST_Node::no_range, "x"),
                         captures,
                         0};
 
@@ -673,13 +673,13 @@ Literal(42) [0:0-0:0]
 
         std::vector<Statement::Ptr> body;
         body.push_back(
-            node<Define>(Statement::no_range, "x",
-                         node<Name_Lookup>(Statement::no_range, "p")));
+            node<Define>(AST_Node::no_range, "x",
+                         node<Name_Lookup>(AST_Node::no_range, "p")));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{"p"},
                         body_ptr,
-                        expr<Name_Lookup>(Statement::no_range, "x"),
+                        expr<Name_Lookup>(AST_Node::no_range, "x"),
                         captures,
                         0};
 
@@ -697,20 +697,20 @@ Literal(42) [0:0-0:0]
 
         std::vector<Statement::Ptr> body;
         body.push_back(
-            node<Define>(Statement::no_range, "y",
-                         node<Name_Lookup>(Statement::no_range, "x")));
+            node<Define>(AST_Node::no_range, "y",
+                         node<Name_Lookup>(AST_Node::no_range, "x")));
         body.push_back(node<Define>(
-            Statement::no_range, "x",
-            node<Literal>(Statement::no_range, Value::create(4_f))));
+            AST_Node::no_range, "x",
+            node<Literal>(AST_Node::no_range, Value::create(4_f))));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{
             {},
             body_ptr,
-            expr<Binop>(Statement::no_range,
-                        node<Name_Lookup>(Statement::no_range, "x"),
+            expr<Binop>(AST_Node::no_range,
+                        node<Name_Lookup>(AST_Node::no_range, "x"),
                         Binary_Op::PLUS,
-                        node<Name_Lookup>(Statement::no_range, "y")),
+                        node<Name_Lookup>(AST_Node::no_range, "y")),
             captures,
             0};
 
@@ -729,7 +729,7 @@ Literal(42) [0:0-0:0]
 
         Closure closure{{},
                         body_ptr,
-                        expr<Name_Lookup>(Statement::no_range, "x"),
+                        expr<Name_Lookup>(AST_Node::no_range, "x"),
                         captures,
                         0};
 
@@ -745,15 +745,15 @@ Literal(42) [0:0-0:0]
         auto local_val = Value::create(2_f);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Name_Lookup>(Statement::no_range, "x"));
+        body.push_back(node<Name_Lookup>(AST_Node::no_range, "x"));
         body.push_back(
-            node<Define>(Statement::no_range, "x",
-                         node<Literal>(Statement::no_range, local_val)));
+            node<Define>(AST_Node::no_range, "x",
+                         node<Literal>(AST_Node::no_range, local_val)));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{},
                         body_ptr,
-                        expr<Name_Lookup>(Statement::no_range, "x"),
+                        expr<Name_Lookup>(AST_Node::no_range, "x"),
                         captures,
                         0};
 
@@ -864,7 +864,7 @@ Literal(42) [0:0-0:0]
 
         Closure closure{{"p"},
                         body_ptr,
-                        expr<Literal>(Statement::no_range, Value::create(1_f)),
+                        expr<Literal>(AST_Node::no_range, Value::create(1_f)),
                         captures,
                         0};
 
@@ -878,17 +878,17 @@ Literal(42) [0:0-0:0]
     {
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
-        body.push_back(node<Literal>(Statement::no_range, Value::null()));
+        body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{
             {},
             body_ptr,
             expr<Binop>(
-                Statement::no_range,
-                node<Literal>(Statement::no_range, Value::create(1_f)),
+                AST_Node::no_range,
+                node<Literal>(AST_Node::no_range, Value::create(1_f)),
                 Binary_Op::PLUS,
-                node<Literal>(Statement::no_range, Value::create(true))),
+                node<Literal>(AST_Node::no_range, Value::create(true))),
             captures,
             0};
 
@@ -926,7 +926,7 @@ TEST_CASE("Debug Dump Closure")
 
         Closure closure{{},
                         body_ptr,
-                        expr<Literal>(Statement::no_range, Value::create(42_f)),
+                        expr<Literal>(AST_Node::no_range, Value::create(42_f)),
                         captures,
                         0};
 
@@ -966,7 +966,7 @@ Literal(null) [0:0-0:0]
 
         Closure closure{{},
                         body_ptr,
-                        expr<Literal>(Statement::no_range, Value::create(42_f)),
+                        expr<Literal>(AST_Node::no_range, Value::create(42_f)),
                         captures,
                         0,
                         {},
@@ -994,7 +994,7 @@ Literal(null) [0:0-0:0]
 
         Closure closure{{},
                         body_ptr,
-                        expr<Literal>(Statement::no_range, Value::create(42_f)),
+                        expr<Literal>(AST_Node::no_range, Value::create(42_f)),
                         captures,
                         0,
                         {},
@@ -1020,15 +1020,15 @@ Literal(42) [0:0-0:0]
         Closure closure{
             {},
             body_ptr,
-            expr<If>(Statement::no_range,
-                     node<Name_Lookup>(Statement::no_range, "x"),
+            expr<If>(AST_Node::no_range,
+                     node<Name_Lookup>(AST_Node::no_range, "x"),
                      node<Binop>(
-                         Statement::no_range,
-                         node<Literal>(Statement::no_range, Value::create(1_f)),
+                         AST_Node::no_range,
+                         node<Literal>(AST_Node::no_range, Value::create(1_f)),
                          Binary_Op::PLUS,
-                         node<Name_Lookup>(Statement::no_range, "y")),
+                         node<Name_Lookup>(AST_Node::no_range, "y")),
                      std::optional<Expression::Ptr>{node<Literal>(
-                         Statement::no_range, Value::create(0_f))}),
+                         AST_Node::no_range, Value::create(0_f))}),
             captures,
             0};
 

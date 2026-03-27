@@ -44,7 +44,7 @@ std::string ast::Format_String::do_node_label() const
     return fmt::format("Format_String({})", reconstructed_string);
 }
 
-std::generator<ast::Statement::Symbol_Action> ast::Format_String::
+std::generator<ast::AST_Node::Symbol_Action> ast::Format_String::
     symbol_sequence() const
 {
     for (const auto& segment : segments_)

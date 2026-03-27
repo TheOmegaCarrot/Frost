@@ -16,7 +16,7 @@ class Leaf_Node : public ast::Statement
 {
   public:
     explicit Leaf_Node(std::string id)
-        : Statement(no_range)
+        : Statement(AST_Node::no_range)
         , id_{std::move(id)}
     {
     }
@@ -39,7 +39,7 @@ class Parent_Node : public ast::Statement
 {
   public:
     explicit Parent_Node(std::string id)
-        : Statement(no_range)
+        : Statement(AST_Node::no_range)
         , id_{std::move(id)}
     {
     }
@@ -130,7 +130,7 @@ TEST_CASE("Statement::walk()")
         const auto* child_ptr = child.get();
         root.add(std::move(child));
 
-        std::vector<const ast::Statement*> nodes;
+        std::vector<const ast::AST_Node*> nodes;
         for (const auto* n : root.walk())
             nodes.push_back(n);
 

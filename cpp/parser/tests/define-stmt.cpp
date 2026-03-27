@@ -755,7 +755,7 @@ TEST_CASE("Parser Define Statements")
         auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
         // Map_Destructure -> Literal("a"), Literal("b"), Name_Lookup("e")
         // Find the Literal nodes by checking node_label
-        std::vector<const frst::ast::Statement*> key_literals;
+        std::vector<const frst::ast::AST_Node*> key_literals;
         for (auto* n : nodes)
             if (n->node_label().starts_with("Literal(\""))
                 key_literals.push_back(n);
@@ -786,7 +786,7 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 1);
 
         auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
-        std::vector<const frst::ast::Statement*> key_literals;
+        std::vector<const frst::ast::AST_Node*> key_literals;
         for (auto* n : nodes)
             if (n->node_label().starts_with("Literal(\""))
                 key_literals.push_back(n);
@@ -810,7 +810,7 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 1);
 
         auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
-        std::vector<const frst::ast::Statement*> key_literals;
+        std::vector<const frst::ast::AST_Node*> key_literals;
         for (auto* n : nodes)
             if (n->node_label().starts_with("Literal(\""))
                 key_literals.push_back(n);

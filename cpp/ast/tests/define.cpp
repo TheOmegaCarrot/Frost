@@ -33,7 +33,7 @@ TEST_CASE("Define")
 
         REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
 
-        ast::Define node{ast::Statement::no_range, "foo", std::move(expr)};
+        ast::Define node{ast::AST_Node::no_range, "foo", std::move(expr)};
 
         node.execute(ctx);
     }
@@ -59,7 +59,7 @@ TEST_CASE("Define")
             .IN_SEQUENCE(seq)
             .THROW(Frost_Recoverable_Error{"uh oh"});
 
-        ast::Define node{ast::Statement::no_range, "foo", std::move(expr)};
+        ast::Define node{ast::AST_Node::no_range, "foo", std::move(expr)};
 
         node.execute(ctx);
         CHECK_THROWS(node.execute(ctx));
@@ -67,33 +67,33 @@ TEST_CASE("Define")
 
     SECTION("Export flag appears in symbol_sequence")
     {
-        ast::Define node{ast::Statement::no_range, "foo", std::move(expr),
+        ast::Define node{ast::AST_Node::no_range, "foo", std::move(expr),
                          true};
 
-        std::vector<ast::Statement::Symbol_Action> actions;
+        std::vector<ast::AST_Node::Symbol_Action> actions;
         for (const auto& action : node.symbol_sequence())
             actions.push_back(action);
 
         REQUIRE(actions.size() >= 1);
         auto& last = actions.back();
-        REQUIRE(std::holds_alternative<ast::Statement::Definition>(last));
-        auto& defn = std::get<ast::Statement::Definition>(last);
+        REQUIRE(std::holds_alternative<ast::AST_Node::Definition>(last));
+        auto& defn = std::get<ast::AST_Node::Definition>(last);
         CHECK(defn.name == "foo");
         CHECK(defn.exported == true);
     }
 
     SECTION("Non-export definition is not marked exported")
     {
-        ast::Define node{ast::Statement::no_range, "foo", std::move(expr)};
+        ast::Define node{ast::AST_Node::no_range, "foo", std::move(expr)};
 
-        std::vector<ast::Statement::Symbol_Action> actions;
+        std::vector<ast::AST_Node::Symbol_Action> actions;
         for (const auto& action : node.symbol_sequence())
             actions.push_back(action);
 
         REQUIRE(actions.size() >= 1);
         auto& last = actions.back();
-        REQUIRE(std::holds_alternative<ast::Statement::Definition>(last));
-        auto& defn = std::get<ast::Statement::Definition>(last);
+        REQUIRE(std::holds_alternative<ast::AST_Node::Definition>(last));
+        auto& defn = std::get<ast::AST_Node::Definition>(last);
         CHECK(defn.name == "foo");
         CHECK(defn.exported == false);
     }
@@ -101,6 +101,6 @@ TEST_CASE("Define")
     SECTION("Reject _")
     {
         CHECK_THROWS(
-            ast::Define{ast::Statement::no_range, "_", std::move(expr)});
+            ast::Define{ast::AST_Node::no_range, "_", std::move(expr)});
     }
 }

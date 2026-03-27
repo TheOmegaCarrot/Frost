@@ -32,7 +32,7 @@ TEST_CASE("Array Constructor")
 
     SECTION("Empty")
     {
-        ast::Array_Constructor node{ast::Statement::no_range, {}};
+        ast::Array_Constructor node{ast::AST_Node::no_range, {}};
         auto res = node.evaluate(ctx);
         CHECK(res->get<Array>().value().empty());
     }
@@ -45,7 +45,7 @@ TEST_CASE("Array Constructor")
 
         std::vector<ast::Expression::Ptr> v;
         v.emplace_back(std::move(e1));
-        ast::Array_Constructor node{ast::Statement::no_range, std::move(v)};
+        ast::Array_Constructor node{ast::AST_Node::no_range, std::move(v)};
         auto res = node.evaluate(ctx);
         CHECK(res->get<Array>()->size() == 1);
         CHECK(res->get<Array>()->front() == val);
@@ -73,7 +73,7 @@ TEST_CASE("Array Constructor")
         v.emplace_back(std::move(e2));
         v.emplace_back(std::move(e3));
         v.emplace_back(std::move(e4));
-        ast::Array_Constructor node{ast::Statement::no_range, std::move(v)};
+        ast::Array_Constructor node{ast::AST_Node::no_range, std::move(v)};
         auto res = node.evaluate(ctx);
         CHECK(res->get<Array>()->size() == 4);
         CHECK(res->get<Array>().value() == values);

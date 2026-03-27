@@ -64,14 +64,14 @@ std::string Map_Destructure::do_node_label() const
     return fmt::format("{}Map_Destructure", export_defs_ ? "Export_" : "");
 }
 
-std::generator<Statement::Child_Info> Map_Destructure::children() const
+std::generator<AST_Node::Child_Info> Map_Destructure::children() const
 {
     for (const auto& [key, name] : destructure_elems_)
         co_yield make_child(key, fmt::format("Bind({})", name));
     co_yield make_child(expr_, "RHS");
 }
 
-std::generator<Statement::Symbol_Action> Map_Destructure::symbol_sequence()
+std::generator<AST_Node::Symbol_Action> Map_Destructure::symbol_sequence()
     const
 {
     co_yield std::ranges::elements_of(expr_->symbol_sequence());

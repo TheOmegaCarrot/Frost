@@ -189,7 +189,7 @@ void reset_parse_state(const Input& input)
     detail::g_anchor_col = 1;
 }
 
-inline ast::Statement::Source_Location to_source_location(const auto& pos)
+inline ast::AST_Node::Source_Location to_source_location(const auto& pos)
 {
     auto p = reinterpret_cast<const char8_t*>(&*pos);
 
@@ -281,25 +281,25 @@ inline const char8_t* skip_trailing_ws(const char8_t* stop, const char8_t* end)
     return end;
 }
 
-inline ast::Statement::Source_Range make_source_range(const auto& begin_pos,
+inline ast::AST_Node::Source_Range make_source_range(const auto& begin_pos,
                                                       const auto& end_pos)
 {
     auto begin_p = reinterpret_cast<const char8_t*>(&*begin_pos);
     auto end_p = reinterpret_cast<const char8_t*>(&*end_pos);
     if (end_p <= begin_p)
-        return ast::Statement::no_range;
+        return ast::AST_Node::no_range;
     // Strip trailing whitespace/comments that Lexy consumed after the
     // last token to find the true content end.
     auto actual_end = skip_trailing_ws(begin_p, end_p);
     if (actual_end <= begin_p)
-        return ast::Statement::no_range;
+        return ast::AST_Node::no_range;
     auto begin_loc = to_source_location(begin_p);
     auto end_loc = to_source_location(actual_end - 1);
     return {.begin = begin_loc, .end = end_loc};
 }
 
 // Compute inclusive end location from a one-past-end position.
-inline ast::Statement::Source_Location inclusive_end_loc(
+inline ast::AST_Node::Source_Location inclusive_end_loc(
     const auto& one_past_end_pos)
 {
     auto end_p = reinterpret_cast<const char8_t*>(&*one_past_end_pos);
@@ -312,7 +312,7 @@ inline ast::Statement::Source_Location inclusive_end_loc(
 // automatically-consumed whitespace.  We scan backward past whitespace to
 // find the last character of the operator, then step back `op_len - 1` to
 // reach its first character.
-inline ast::Statement::Source_Location prefix_op_begin(const auto& after_ws_pos,
+inline ast::AST_Node::Source_Location prefix_op_begin(const auto& after_ws_pos,
                                                        std::size_t op_len)
 {
     auto p = reinterpret_cast<const char8_t*>(&*after_ws_pos);
@@ -839,7 +839,7 @@ struct Literal
         | (dsl::peek(dsl::digit<>) >> dsl::p<integer_literal>);
     static constexpr auto value =
         lexy::callback<ast::Expression::Ptr>([](Value_Ptr val) {
-            return std::make_unique<ast::Literal>(ast::Statement::no_range,
+            return std::make_unique<ast::Literal>(ast::AST_Node::no_range,
                                                   std::move(val));
         });
     static constexpr auto name = "literal";
@@ -855,7 +855,7 @@ struct Format_String
     static constexpr auto value =
         lexy::callback<ast::Expression::Ptr>([](std::string format) {
             return std::make_unique<ast::Format_String>(
-                ast::Statement::no_range, std::move(format));
+                ast::AST_Node::no_range, std::move(format));
         });
     static constexpr auto name = "format string";
 };
@@ -868,7 +868,7 @@ struct Name_Lookup
     static constexpr auto rule = dsl::p<identifier>;
     static constexpr auto value =
         lexy::callback<ast::Expression::Ptr>([](std::string name) {
-            return std::make_unique<ast::Name_Lookup>(ast::Statement::no_range,
+            return std::make_unique<ast::Name_Lookup>(ast::AST_Node::no_range,
                                                       std::move(name));
         });
     static constexpr auto name = "name";
@@ -1416,7 +1416,7 @@ struct With_Operation
            >> dsl::recurse<expression>);
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr structure, ast::Expression::Ptr operation) {
-            return std::make_unique<node_t>(ast::Statement::no_range,
+            return std::make_unique<node_t>(ast::AST_Node::no_range,
                                             std::move(structure),
                                             std::move(operation));
         });
@@ -1475,13 +1475,13 @@ struct Reduce
         [](ast::Expression::Ptr structure, ast::Expression::Ptr operation,
            lexy::nullopt) {
             return std::make_unique<ast::Reduce>(
-                ast::Statement::no_range, std::move(structure),
+                ast::AST_Node::no_range, std::move(structure),
                 std::move(operation), std::optional<ast::Expression::Ptr>{});
         },
         [](ast::Expression::Ptr structure, ast::Expression::Ptr operation,
            ast::Expression::Ptr init) {
             return std::make_unique<ast::Reduce>(
-                ast::Statement::no_range, std::move(structure),
+                ast::AST_Node::no_range, std::move(structure),
                 std::move(operation),
                 std::optional<ast::Expression::Ptr>{std::move(init)});
         });
@@ -1499,7 +1499,7 @@ struct Lambda
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](lambda_param_pack params, std::vector<ast::Statement::Ptr> body) {
             return std::make_unique<ast::Lambda>(
-                ast::Statement::no_range, std::move(params.params),
+                ast::AST_Node::no_range, std::move(params.params),
                 std::move(body), std::move(params.vararg),
                 std::move(params.self_name));
         });
@@ -1523,10 +1523,10 @@ struct Do_Block_Expr
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](lexy::nullopt) -> ast::Expression::Ptr {
             return std::make_unique<ast::Do_Block>(
-                ast::Statement::no_range, std::vector<ast::Statement::Ptr>{});
+                ast::AST_Node::no_range, std::vector<ast::Statement::Ptr>{});
         },
         [](std::vector<ast::Statement::Ptr> stmts) -> ast::Expression::Ptr {
-            return std::make_unique<ast::Do_Block>(ast::Statement::no_range,
+            return std::make_unique<ast::Do_Block>(ast::AST_Node::no_range,
                                                    std::move(stmts));
         });
     static constexpr auto name = "do block";
@@ -1616,7 +1616,7 @@ struct If
                 auto kw_end = skip_trailing_ws(detail::g_input_begin, p);
                 auto begin = to_source_location(kw_end - 4);
                 return std::make_unique<ast::If>(
-                    ast::Statement::Source_Range{begin, end},
+                    ast::AST_Node::Source_Range{begin, end},
                     std::move(condition), std::move(consequent));
             },
             [](auto after_elif, ast::Expression::Ptr condition,
@@ -1627,7 +1627,7 @@ struct If
                 auto kw_end = skip_trailing_ws(detail::g_input_begin, p);
                 auto begin = to_source_location(kw_end - 4);
                 return std::make_unique<ast::If>(
-                    ast::Statement::Source_Range{begin, end},
+                    ast::AST_Node::Source_Range{begin, end},
                     std::move(condition), std::move(consequent),
                     std::move(alternate));
             },
@@ -1656,14 +1656,14 @@ struct If
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
            lexy::nullopt) {
-            return std::make_unique<ast::If>(ast::Statement::no_range,
+            return std::make_unique<ast::If>(ast::AST_Node::no_range,
                                              std::move(condition),
                                              std::move(consequent));
         },
         [](ast::Expression::Ptr condition, ast::Expression::Ptr consequent,
            ast::Expression::Ptr alternate) {
             return std::make_unique<ast::If>(
-                ast::Statement::no_range, std::move(condition),
+                ast::AST_Node::no_range, std::move(condition),
                 std::move(consequent), std::move(alternate));
         });
     static constexpr auto name = "if expression";
@@ -1675,7 +1675,7 @@ struct If
 // Both forms produce identical AST nodes — the short form is pure syntax sugar.
 inline ast::Expression::Ptr make_string_key_expr(
     std::string key,
-    ast::Statement::Source_Range range = ast::Statement::no_range)
+    ast::AST_Node::Source_Range range = ast::AST_Node::no_range)
 {
     auto key_value = Value::create(std::move(key));
     return std::make_unique<ast::Literal>(range, std::move(key_value));
@@ -1869,7 +1869,7 @@ struct Array
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](std::vector<ast::Expression::Ptr> elems) {
             return std::make_unique<ast::Array_Constructor>(
-                ast::Statement::no_range, std::move(elems));
+                ast::AST_Node::no_range, std::move(elems));
         });
     static constexpr auto name = "array literal";
 };
@@ -1880,7 +1880,7 @@ struct Map
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](std::vector<ast::Map_Constructor::KV_Pair> pairs) {
             return std::make_unique<ast::Map_Constructor>(
-                ast::Statement::no_range, std::move(pairs));
+                ast::AST_Node::no_range, std::move(pairs));
         });
     static constexpr auto name = "map literal";
 };
@@ -2147,14 +2147,14 @@ struct expression_impl : lexy::expression_production
                 },
                 [](ast::Expression::Ptr lhs, op_index,
                    ast::Expression::Ptr index_expr, auto end_pos) {
-                    auto range = ast::Statement::Source_Range{
+                    auto range = ast::AST_Node::Source_Range{
                         lhs->source_range().begin, inclusive_end_loc(end_pos)};
                     return std::make_unique<ast::Index>(range, std::move(lhs),
                                                         std::move(index_expr));
                 },
                 [](ast::Expression::Ptr lhs, op_dot, auto key_begin,
                    std::string key, auto end_pos) {
-                    auto range = ast::Statement::Source_Range{
+                    auto range = ast::AST_Node::Source_Range{
                         lhs->source_range().begin, inclusive_end_loc(end_pos)};
                     auto key_range = make_source_range(key_begin, end_pos);
                     return std::make_unique<ast::Index>(
@@ -2305,7 +2305,7 @@ struct expression_impl : lexy::expression_production
                          constexpr std::size_t op_len =
                              (op_t::op == ast::Unary_Op::NEGATE) ? 1 : 3;
                          auto begin = prefix_op_begin(after_op, op_len);
-                         auto range = ast::Statement::Source_Range{
+                         auto range = ast::AST_Node::Source_Range{
                              begin, rhs->source_range().end};
                          return std::make_unique<ast::Unop>(
                              range, std::move(rhs), op_t::op);
@@ -2313,7 +2313,7 @@ struct expression_impl : lexy::expression_production
                      // Postfix: index `lhs[expr]`.
                      [](ast::Expression::Ptr lhs, op_index,
                         ast::Expression::Ptr index_expr, auto end_pos) {
-                         auto range = ast::Statement::Source_Range{
+                         auto range = ast::AST_Node::Source_Range{
                              lhs->source_range().begin,
                              inclusive_end_loc(end_pos)};
                          return std::make_unique<ast::Index>(
@@ -2322,7 +2322,7 @@ struct expression_impl : lexy::expression_production
                      // Postfix: function call `lhs(args...)`.
                      [](ast::Expression::Ptr lhs, op_call,
                         std::vector<ast::Expression::Ptr> args, auto end_pos) {
-                         auto range = ast::Statement::Source_Range{
+                         auto range = ast::AST_Node::Source_Range{
                              lhs->source_range().begin,
                              inclusive_end_loc(end_pos)};
                          return std::make_unique<ast::Function_Call>(
@@ -2331,7 +2331,7 @@ struct expression_impl : lexy::expression_production
                      // Postfix: dot access `lhs.field`.
                      [](ast::Expression::Ptr lhs, op_dot, auto key_begin,
                         std::string key, auto end_pos) {
-                         auto range = ast::Statement::Source_Range{
+                         auto range = ast::AST_Node::Source_Range{
                              lhs->source_range().begin,
                              inclusive_end_loc(end_pos)};
                          auto key_range = make_source_range(key_begin, end_pos);
@@ -2342,7 +2342,7 @@ struct expression_impl : lexy::expression_production
                      // Postfix: threaded call `lhs @ callee(args...)`.
                      [](ast::Expression::Ptr lhs, op_threaded_call,
                         threaded_call::result rhs, auto end_pos) {
-                         auto range = ast::Statement::Source_Range{
+                         auto range = ast::AST_Node::Source_Range{
                              lhs->source_range().begin,
                              inclusive_end_loc(end_pos)};
                          auto args = std::move(rhs.args);
@@ -2360,7 +2360,7 @@ struct expression_impl : lexy::expression_production
                              } -> std::convertible_to<ast::Binary_Op>;
                          }
         {
-            auto range = ast::Statement::Source_Range{lhs->source_range().begin,
+            auto range = ast::AST_Node::Source_Range{lhs->source_range().begin,
                                                       rhs->source_range().end};
             return std::make_unique<ast::Binop>(range, std::move(lhs), op_t::op,
                                                 std::move(rhs));
@@ -2416,19 +2416,19 @@ constexpr auto define_callback()
 {
     return lexy::callback<ast::Statement::Ptr>(
         [](std::string name, ast::Expression::Ptr expr) {
-            return std::make_unique<ast::Define>(ast::Statement::no_range,
+            return std::make_unique<ast::Define>(ast::AST_Node::no_range,
                                                  std::move(name),
                                                  std::move(expr), export_flag);
         },
         [](destructure_pack pack, ast::Expression::Ptr expr) {
             return std::make_unique<ast::Array_Destructure>(
-                ast::Statement::no_range, std::move(pack.names),
+                ast::AST_Node::no_range, std::move(pack.names),
                 std::move(pack.rest), std::move(expr), export_flag);
         },
         [](std::vector<ast::Map_Destructure::Element> elems,
            ast::Expression::Ptr expr) {
             return std::make_unique<ast::Map_Destructure>(
-                ast::Statement::no_range, std::move(elems), std::move(expr),
+                ast::AST_Node::no_range, std::move(elems), std::move(expr),
                 export_flag);
         });
 }
@@ -2485,7 +2485,7 @@ struct Defn
             auto lambda = std::make_unique<ast::Lambda>(
                 make_source_range(begin_pos, end_pos), std::move(params.params),
                 std::move(body), std::move(params.vararg), name);
-            return std::make_unique<ast::Define>(ast::Statement::no_range,
+            return std::make_unique<ast::Define>(ast::AST_Node::no_range,
                                                  std::move(name),
                                                  std::move(lambda), false);
         });
@@ -2518,7 +2518,7 @@ struct Export_Defn
             auto lambda = std::make_unique<ast::Lambda>(
                 make_source_range(begin_pos, end_pos), std::move(params.params),
                 std::move(body), std::move(params.vararg), name);
-            return std::make_unique<ast::Define>(ast::Statement::no_range,
+            return std::make_unique<ast::Define>(ast::AST_Node::no_range,
                                                  std::move(name),
                                                  std::move(lambda), true);
         });

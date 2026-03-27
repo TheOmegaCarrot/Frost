@@ -1,16 +1,16 @@
-#include <frost/ast/statement.hpp>
+#include <frost/ast/ast-node.hpp>
 
-using frst::ast::Statement;
+using frst::ast::AST_Node;
 
 // ChatGPT wrote this AST-dump code because I couldn't be bothered
 // I just adapted it a little
-void Statement::debug_dump_ast(std::ostream& out) const
+void AST_Node::debug_dump_ast(std::ostream& out) const
 {
     debug_dump_ast_impl(
         out, Print_Context{.prefix = "", .is_last = true, .is_root = true});
 }
 
-void Statement::debug_dump_ast_impl(std::ostream& out,
+void AST_Node::debug_dump_ast_impl(std::ostream& out,
                                     const Print_Context& context) const
 {
     const auto label = fmt::format("{} [{}]", node_label(), source_range_);
@@ -32,7 +32,7 @@ void Statement::debug_dump_ast_impl(std::ostream& out,
         print_child(out, Print_Context{child_prefix_, true, false}, previous);
 }
 
-void Statement::print_node(std::ostream& out, const Print_Context& context,
+void AST_Node::print_node(std::ostream& out, const Print_Context& context,
                            std::string_view label)
 {
     if (context.is_root)
@@ -45,7 +45,7 @@ void Statement::print_node(std::ostream& out, const Print_Context& context,
             << "\n";
 }
 
-void Statement::print_child(std::ostream& out, const Print_Context& context,
+void AST_Node::print_child(std::ostream& out, const Print_Context& context,
                             const Child_Info& child)
 {
 
@@ -64,7 +64,7 @@ void Statement::print_child(std::ostream& out, const Print_Context& context,
                                     Print_Context{labeled_prefix, true, false});
 }
 
-std::string Statement::child_prefix(const Print_Context& context)
+std::string AST_Node::child_prefix(const Print_Context& context)
 {
     std::string out(context.prefix);
     // For non-root nodes, extend the prefix: keep a vertical bar if more
@@ -74,7 +74,7 @@ std::string Statement::child_prefix(const Print_Context& context)
     return out;
 }
 
-std::string Statement::node_label() const
+std::string AST_Node::node_label() const
 {
     return do_node_label();
 }

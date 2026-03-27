@@ -16,7 +16,7 @@ add_library( frost-ast
     map-destructure.cpp
     name-lookup.cpp
     reduce.cpp
-    statement.cpp
+    ast-node.cpp
     unop.cpp
 )
 

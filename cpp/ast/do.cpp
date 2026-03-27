@@ -50,14 +50,14 @@ std::string Do_Block::do_node_label() const
     return "Do_Block";
 }
 
-std::generator<Statement::Child_Info> Do_Block::children() const
+std::generator<AST_Node::Child_Info> Do_Block::children() const
 {
     for (const auto& statement : body_prefix_)
         co_yield make_child(statement);
     co_yield make_child(value_expr_);
 }
 
-std::generator<Statement::Symbol_Action> Do_Block::symbol_sequence() const
+std::generator<AST_Node::Symbol_Action> Do_Block::symbol_sequence() const
 {
     std::flat_set<std::string> defns;
 
@@ -65,11 +65,11 @@ std::generator<Statement::Symbol_Action> Do_Block::symbol_sequence() const
         return action.name;
     };
 
-    for (const Statement::Symbol_Action& action :
+    for (const AST_Node::Symbol_Action& action :
          utils::body_symbol_sequence(body_prefix_, value_expr_))
     {
         const auto name = action.visit(get_name);
-        if (std::holds_alternative<Statement::Definition>(action))
+        if (std::holds_alternative<AST_Node::Definition>(action))
             defns.insert(name);
         else if (not defns.contains(name))
             co_yield action;

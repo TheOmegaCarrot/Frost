@@ -97,7 +97,7 @@ void Array_Destructure::do_execute(Execution_Context& ctx) const
     }
 }
 
-std::generator<Statement::Symbol_Action> Array_Destructure::symbol_sequence()
+std::generator<AST_Node::Symbol_Action> Array_Destructure::symbol_sequence()
     const
 {
     co_yield std::ranges::elements_of(expr_->symbol_sequence());
@@ -133,7 +133,7 @@ std::string Array_Destructure::do_node_label() const
         rest_name_ ? name_of(*rest_name_) : std::string_view{});
 }
 
-std::generator<Statement::Child_Info> Array_Destructure::children() const
+std::generator<AST_Node::Child_Info> Array_Destructure::children() const
 {
     co_yield make_child(expr_);
 }

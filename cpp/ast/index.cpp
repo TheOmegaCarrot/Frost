@@ -68,7 +68,7 @@ std::string Index::do_node_label() const
     return "Index_Expression";
 }
 
-std::generator<Statement::Child_Info> Index::children() const
+std::generator<AST_Node::Child_Info> Index::children() const
 {
     co_yield make_child(structure_, "Structure");
     co_yield make_child(index_, "Index");

@@ -62,11 +62,11 @@ Lambda::Lambda(Source_Range source_range, std::vector<std::string> params,
 
     std::flat_set<std::string> names_defined_so_far{std::from_range, param_set};
 
-    for (const Statement::Symbol_Action& name :
+    for (const AST_Node::Symbol_Action& name :
          utils::body_symbol_sequence(*body_prefix_, return_expr_))
     {
         name.visit(Overload{
-            [&](const Statement::Definition& defn) {
+            [&](const AST_Node::Definition& defn) {
                 if (defn.name == self_name_)
                 {
                     throw Frost_Unrecoverable_Error{
@@ -84,7 +84,7 @@ Lambda::Lambda(Source_Range source_range, std::vector<std::string> params,
 
                 names_defined_so_far.insert(defn.name);
             },
-            [&](const Statement::Usage& used) {
+            [&](const AST_Node::Usage& used) {
                 if (used.name
                     != self_name_
                     && !names_defined_so_far.contains(used.name))
@@ -118,7 +118,7 @@ Value_Ptr Lambda::do_evaluate(Evaluation_Context ctx) const
         closure_define_count_, vararg_param_, self_name_)});
 }
 
-std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
+std::generator<AST_Node::Symbol_Action> Lambda::symbol_sequence() const
 {
 
     const auto get_name = [](const auto& action) -> const auto& {
@@ -132,11 +132,11 @@ std::generator<Statement::Symbol_Action> Lambda::symbol_sequence() const
     if (vararg_param_)
         defns.insert(vararg_param_.value());
 
-    for (const Statement::Symbol_Action& action :
+    for (const AST_Node::Symbol_Action& action :
          utils::body_symbol_sequence(*body_prefix_, return_expr_))
     {
         const auto& name = action.visit(get_name);
-        if (std::holds_alternative<Statement::Definition>(action))
+        if (std::holds_alternative<AST_Node::Definition>(action))
             defns.insert(name);
         else if (not defns.contains(name))
             co_yield action;
@@ -155,7 +155,7 @@ std::string Lambda::do_node_label() const
         vararg_param_ ? std::string_view{*vararg_param_} : std::string_view{});
 }
 
-std::generator<Statement::Child_Info> Lambda::children() const
+std::generator<AST_Node::Child_Info> Lambda::children() const
 {
     for (const auto& statement : *body_prefix_)
         co_yield make_child(statement);
