@@ -164,7 +164,8 @@ BUILTIN(ceil)
 
 BUILTIN(clamp)
 {
-    REQUIRE_ARGS("math.clamp", TYPES(Int, Float), PARAM("lo", TYPES(Int, Float)),
+    REQUIRE_ARGS("math.clamp", TYPES(Int, Float),
+                 PARAM("lo", TYPES(Int, Float)),
                  PARAM("hi", TYPES(Int, Float)));
 
     if (IS(0, Int) && IS(1, Int) && IS(2, Int))

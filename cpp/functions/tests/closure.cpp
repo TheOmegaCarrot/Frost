@@ -40,8 +40,7 @@ struct Flag_Statement final : Statement
     {
     }
 
-    void do_execute(
-        [[maybe_unused]] Execution_Context&) const override
+    void do_execute([[maybe_unused]] Execution_Context&) const override
     {
         ++(*count_);
     }
@@ -129,8 +128,8 @@ std::shared_ptr<Closure> make_literal_closure(Value_Ptr value)
     std::vector<Statement::Ptr> body;
     auto body_ptr = make_body(std::move(body));
     return Closure::create(std::vector<std::string>{}, body_ptr,
-                           expr<Literal>(AST_Node::no_range, value),
-                           captures, 0);
+                           expr<Literal>(AST_Node::no_range, value), captures,
+                           0);
 }
 
 std::pair<std::string, std::string> split_header_body(const std::string& dump)
@@ -190,7 +189,6 @@ TEST_CASE("Construct Closure")
         CHECK(closure.debug_capture_table().lookup("y") == y_val);
         CHECK_FALSE(closure.debug_capture_table().has("p"));
     }
-
 }
 
 TEST_CASE("Call Closure")
@@ -394,12 +392,9 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"a", "b"},
-                        body_ptr,
-                        expr<Name_Lookup>(AST_Node::no_range, "rest"),
-                        captures,
-                        0,
-                        "rest"};
+        Closure closure{
+            {"a", "b"}, body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
+            captures,   0,        "rest"};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f)}),
@@ -704,15 +699,14 @@ Literal(42) [0:0-0:0]
             node<Literal>(AST_Node::no_range, Value::create(4_f))));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{
-            {},
-            body_ptr,
-            expr<Binop>(AST_Node::no_range,
-                        node<Name_Lookup>(AST_Node::no_range, "x"),
-                        Binary_Op::PLUS,
-                        node<Name_Lookup>(AST_Node::no_range, "y")),
-            captures,
-            0};
+        Closure closure{{},
+                        body_ptr,
+                        expr<Binop>(AST_Node::no_range,
+                                    node<Name_Lookup>(AST_Node::no_range, "x"),
+                                    Binary_Op::PLUS,
+                                    node<Name_Lookup>(AST_Node::no_range, "y")),
+                        captures,
+                        0};
 
         auto result = closure.call({});
         CHECK(result->get<Int>() == 6_f);
@@ -884,11 +878,10 @@ Literal(42) [0:0-0:0]
         Closure closure{
             {},
             body_ptr,
-            expr<Binop>(
-                AST_Node::no_range,
-                node<Literal>(AST_Node::no_range, Value::create(1_f)),
-                Binary_Op::PLUS,
-                node<Literal>(AST_Node::no_range, Value::create(true))),
+            expr<Binop>(AST_Node::no_range,
+                        node<Literal>(AST_Node::no_range, Value::create(1_f)),
+                        Binary_Op::PLUS,
+                        node<Literal>(AST_Node::no_range, Value::create(true))),
             captures,
             0};
 
@@ -1065,4 +1058,3 @@ Literal(42) [0:0-0:0]
 )");
     }
 }
-

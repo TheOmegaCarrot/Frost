@@ -11,7 +11,7 @@ void AST_Node::debug_dump_ast(std::ostream& out) const
 }
 
 void AST_Node::debug_dump_ast_impl(std::ostream& out,
-                                    const Print_Context& context) const
+                                   const Print_Context& context) const
 {
     const auto label = fmt::format("{} [{}]", node_label(), source_range_);
     print_node(out, context, label);
@@ -33,7 +33,7 @@ void AST_Node::debug_dump_ast_impl(std::ostream& out,
 }
 
 void AST_Node::print_node(std::ostream& out, const Print_Context& context,
-                           std::string_view label)
+                          std::string_view label)
 {
     if (context.is_root)
         out << label << "\n";
@@ -46,7 +46,7 @@ void AST_Node::print_node(std::ostream& out, const Print_Context& context,
 }
 
 void AST_Node::print_child(std::ostream& out, const Print_Context& context,
-                            const Child_Info& child)
+                           const Child_Info& child)
 {
 
     if (child.label.empty())

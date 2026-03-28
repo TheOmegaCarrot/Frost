@@ -31,8 +31,7 @@ BUILTIN(mutable_cell)
     return Value::create(
         Value::trusted,
         Map{
-            {strings.exchange,
-             system_closure([cell](builtin_args_t args) {
+            {strings.exchange, system_closure([cell](builtin_args_t args) {
                  REQUIRE_ARGS("unsafe.mutable_cell.exchange", ANY);
                  auto new_val = args.at(0);
                  std::lock_guard lock{cell->mutex};
@@ -59,15 +58,14 @@ BUILTIN(weaken)
         Value::trusted,
         Map{
             {strings.get,
-             system_closure(
-                 [weak_ref = std::weak_ptr<const Value>(
-                      args.at(0))](builtin_args_t args) {
-                     REQUIRE_NULLARY("unsafe.weaken.get");
-                     if (auto ptr = weak_ref.lock())
-                         return ptr;
-                     else
-                         return Value::null();
-                 })},
+             system_closure([weak_ref = std::weak_ptr<const Value>(args.at(0))](
+                                builtin_args_t args) {
+                 REQUIRE_NULLARY("unsafe.weaken.get");
+                 if (auto ptr = weak_ref.lock())
+                     return ptr;
+                 else
+                     return Value::null();
+             })},
         });
 }
 
@@ -86,6 +84,6 @@ BUILTIN(same)
 
 } // namespace unsafe
 
-REGISTER_EXTENSION(unsafe, ENTRY(identity), ENTRY(same),
-                   ENTRY(mutable_cell), ENTRY(weaken));
+REGISTER_EXTENSION(unsafe, ENTRY(identity), ENTRY(same), ENTRY(mutable_cell),
+                   ENTRY(weaken));
 } // namespace frst

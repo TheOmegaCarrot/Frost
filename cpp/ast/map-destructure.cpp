@@ -71,8 +71,7 @@ std::generator<AST_Node::Child_Info> Map_Destructure::children() const
     co_yield make_child(expr_, "RHS");
 }
 
-std::generator<AST_Node::Symbol_Action> Map_Destructure::symbol_sequence()
-    const
+std::generator<AST_Node::Symbol_Action> Map_Destructure::symbol_sequence() const
 {
     co_yield std::ranges::elements_of(expr_->symbol_sequence());
 

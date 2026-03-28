@@ -38,8 +38,7 @@ TEST_CASE("Builder registers a module")
     REQUIRE(result.value()->is<Map>());
 }
 
-TEST_CASE("Builder groups modules under the same namespace",
-          "")
+TEST_CASE("Builder groups modules under the same namespace", "")
 {
     Stdlib_Registry_Builder builder;
     builder.register_module(
@@ -86,8 +85,7 @@ TEST_CASE("Builder rejects empty module segment")
     Stdlib_Registry_Builder builder;
     REQUIRE_THROWS_MATCHES(
         builder.register_module(
-            Stdlib_Registry_Builder::module_path_t({"std", ""}),
-            Value::null()),
+            Stdlib_Registry_Builder::module_path_t({"std", ""}), Value::null()),
         Frost_Interpreter_Error, MessageMatches(ContainsSubstring("Empty")));
 }
 
@@ -108,8 +106,7 @@ TEST_CASE("Builder rejects duplicate registration")
 
 // --- Lookup: namespace level ---
 
-TEST_CASE("Lookup of a namespace returns the namespace Map",
-          "")
+TEST_CASE("Lookup of a namespace returns the namespace Map", "")
 {
     Stdlib_Registry_Builder builder;
     builder.register_module(
@@ -193,8 +190,7 @@ TEST_CASE("Lookup returns nullopt for missing module")
     CHECK_FALSE(registry.lookup_module("std.fake").has_value());
 }
 
-TEST_CASE("Lookup returns nullopt when traversing through a non-Map",
-          "")
+TEST_CASE("Lookup returns nullopt when traversing through a non-Map", "")
 {
     Stdlib_Registry_Builder builder;
     builder.register_module(
@@ -219,8 +215,7 @@ TEST_CASE("Lookup returns nullopt for missing deep key")
 
 // --- register_stdlib produces a working registry ---
 
-TEST_CASE("register_stdlib populates all standard modules",
-          "")
+TEST_CASE("register_stdlib populates all standard modules", "")
 {
     Stdlib_Registry_Builder builder;
     register_stdlib(builder);

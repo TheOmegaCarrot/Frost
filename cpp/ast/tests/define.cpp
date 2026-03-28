@@ -67,8 +67,7 @@ TEST_CASE("Define")
 
     SECTION("Export flag appears in symbol_sequence")
     {
-        ast::Define node{ast::AST_Node::no_range, "foo", std::move(expr),
-                         true};
+        ast::Define node{ast::AST_Node::no_range, "foo", std::move(expr), true};
 
         std::vector<ast::AST_Node::Symbol_Action> actions;
         for (const auto& action : node.symbol_sequence())

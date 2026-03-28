@@ -56,7 +56,8 @@ struct Importer
         auto module_spec = GET(0, String);
 
         if (module_spec.empty())
-            throw Frost_Recoverable_Error{"import requires a non-empty module name"};
+            throw Frost_Recoverable_Error{
+                "import requires a non-empty module name"};
 
         if (stdlib)
         {

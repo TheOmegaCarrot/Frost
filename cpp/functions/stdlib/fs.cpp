@@ -284,12 +284,11 @@ BUILTIN(concat)
 
 } // namespace fs
 
-STDLIB_MODULE(fs, ENTRY(move), ENTRY(symlink), ENTRY(copy),
-              ENTRY(absolute), ENTRY(canonical), ENTRY(cd),
-              ENTRY(cwd), ENTRY(exists), ENTRY(remove),
-              ENTRY(remove_recursively), ENTRY(mkdir), ENTRY(size),
-              ENTRY(stat), ENTRY(list), ENTRY(list_recursively),
-              ENTRY(concat), ENTRY(stem), ENTRY(parent),
-              ENTRY(filename), ENTRY(extension))
+STDLIB_MODULE(fs, ENTRY(move), ENTRY(symlink), ENTRY(copy), ENTRY(absolute),
+              ENTRY(canonical), ENTRY(cd), ENTRY(cwd), ENTRY(exists),
+              ENTRY(remove), ENTRY(remove_recursively), ENTRY(mkdir),
+              ENTRY(size), ENTRY(stat), ENTRY(list), ENTRY(list_recursively),
+              ENTRY(concat), ENTRY(stem), ENTRY(parent), ENTRY(filename),
+              ENTRY(extension))
 
 } // namespace frst

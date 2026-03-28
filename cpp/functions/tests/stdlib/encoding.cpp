@@ -215,10 +215,10 @@ TEST_CASE("std.encoding fmt_int")
                            && ContainsSubstring("Int")
                            && ContainsSubstring("number")));
 
-        CHECK_THROWS_MATCHES(
-            fmt_int->call({Value::create(123), bad_base}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("Int")
-                           && ContainsSubstring("base")));
+        CHECK_THROWS_MATCHES(fmt_int->call({Value::create(123), bad_base}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("Int")
+                                            && ContainsSubstring("base")));
     }
 
     SECTION("Base range checks")
@@ -299,10 +299,10 @@ TEST_CASE("std.encoding parse_int")
             MessageMatches(ContainsSubstring("encoding.parse_int")
                            && ContainsSubstring("String")));
 
-        CHECK_THROWS_MATCHES(
-            parse_int->call({Value::create("123"s), bad_base}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("Int")
-                           && ContainsSubstring("base")));
+        CHECK_THROWS_MATCHES(parse_int->call({Value::create("123"s), bad_base}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("Int")
+                                            && ContainsSubstring("base")));
     }
 
     SECTION("Base range checks")
@@ -396,8 +396,7 @@ TEST_CASE("std.encoding to_bytes/from_bytes")
             MessageMatches(ContainsSubstring("insufficient arguments")
                            && ContainsSubstring("requires at least 1")));
         CHECK_THROWS_MATCHES(
-            from_bytes->call(
-                {Value::create(Array{}), Value::create(Array{})}),
+            from_bytes->call({Value::create(Array{}), Value::create(Array{})}),
             Frost_User_Error,
             MessageMatches(ContainsSubstring("too many arguments")
                            && ContainsSubstring("no more than 1")));
@@ -487,12 +486,12 @@ TEST_CASE("std.encoding to_bytes/from_bytes")
 
     SECTION("from_bytes rejects out-of-range Int elements")
     {
-        CHECK_THROWS_WITH(from_bytes->call(
-                              {Value::create(Array{Value::create(Int{-1})})}),
-                          ContainsSubstring("range [0, 255]"));
-        CHECK_THROWS_WITH(from_bytes->call(
-                              {Value::create(Array{Value::create(Int{256})})}),
-                          ContainsSubstring("range [0, 255]"));
+        CHECK_THROWS_WITH(
+            from_bytes->call({Value::create(Array{Value::create(Int{-1})})}),
+            ContainsSubstring("range [0, 255]"));
+        CHECK_THROWS_WITH(
+            from_bytes->call({Value::create(Array{Value::create(Int{256})})}),
+            ContainsSubstring("range [0, 255]"));
     }
 
     SECTION("Empty input")

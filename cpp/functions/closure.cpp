@@ -86,7 +86,8 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
     }
 
     if (self_name_)
-        scope_ctx.symbols.define(self_name_.value(), Value::create(self_function()));
+        scope_ctx.symbols.define(self_name_.value(),
+                                 Value::create(self_function()));
 
     for (const ast::Statement::Ptr& node : *body_prefix_)
     {

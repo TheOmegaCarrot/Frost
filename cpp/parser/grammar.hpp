@@ -282,7 +282,7 @@ inline const char8_t* skip_trailing_ws(const char8_t* stop, const char8_t* end)
 }
 
 inline ast::AST_Node::Source_Range make_source_range(const auto& begin_pos,
-                                                      const auto& end_pos)
+                                                     const auto& end_pos)
 {
     auto begin_p = reinterpret_cast<const char8_t*>(&*begin_pos);
     auto end_p = reinterpret_cast<const char8_t*>(&*end_pos);
@@ -313,7 +313,7 @@ inline ast::AST_Node::Source_Location inclusive_end_loc(
 // find the last character of the operator, then step back `op_len - 1` to
 // reach its first character.
 inline ast::AST_Node::Source_Location prefix_op_begin(const auto& after_ws_pos,
-                                                       std::size_t op_len)
+                                                      std::size_t op_len)
 {
     auto p = reinterpret_cast<const char8_t*>(&*after_ws_pos);
     --p;
@@ -854,8 +854,8 @@ struct Format_String
         dsl::no_whitespace(dsl::lit_c<'$'> >> dsl::p<format_string_literal>);
     static constexpr auto value =
         lexy::callback<ast::Expression::Ptr>([](std::string format) {
-            return std::make_unique<ast::Format_String>(
-                ast::AST_Node::no_range, std::move(format));
+            return std::make_unique<ast::Format_String>(ast::AST_Node::no_range,
+                                                        std::move(format));
         });
     static constexpr auto name = "format string";
 };
@@ -2361,7 +2361,7 @@ struct expression_impl : lexy::expression_production
                          }
         {
             auto range = ast::AST_Node::Source_Range{lhs->source_range().begin,
-                                                      rhs->source_range().end};
+                                                     rhs->source_range().end};
             return std::make_unique<ast::Binop>(range, std::move(lhs), op_t::op,
                                                 std::move(rhs));
         });

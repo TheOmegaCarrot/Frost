@@ -392,8 +392,7 @@ TEST_CASE("Lambda")
         // fn f(n) -> fn() -> ...
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(std::move(inner_lambda));
-        Lambda outer{
-            AST_Node::no_range, {"n"}, std::move(outer_body), {}, "f"};
+        Lambda outer{AST_Node::no_range, {"n"}, std::move(outer_body), {}, "f"};
 
         Value_Ptr inner_val;
         {
@@ -827,8 +826,8 @@ TEST_CASE("Lambda")
         body.push_back(node<Define>(
             AST_Node::no_range, "x",
             node<Binop>(
-                AST_Node::no_range,
-                node<Name_Lookup>(AST_Node::no_range, "p"), Binary_Op::PLUS,
+                AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "p"),
+                Binary_Op::PLUS,
                 node<Literal>(AST_Node::no_range, Value::create(1_f)))));
         body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
 
@@ -1006,9 +1005,8 @@ TEST_CASE("Lambda")
             Binary_Op::PLUS, node<Name_Lookup>(AST_Node::no_range, "y")));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Define>(AST_Node::no_range, "y",
-                         node<Literal>(AST_Node::no_range, y_val)));
+        outer_body.push_back(node<Define>(
+            AST_Node::no_range, "y", node<Literal>(AST_Node::no_range, y_val)));
         outer_body.push_back(node<Lambda>(AST_Node::no_range,
                                           std::vector<std::string>{},
                                           std::move(inner_body)));
@@ -1206,14 +1204,12 @@ TEST_CASE("Lambda")
                 node<Map_Constructor>(AST_Node::no_range, std::move(pairs))));
 
             std::vector<Expression::Ptr> elems;
-            elems.push_back(
-                node<Index>(AST_Node::no_range,
-                            node<Name_Lookup>(AST_Node::no_range, "m"),
-                            node<Literal>(AST_Node::no_range, a_key)));
-            elems.push_back(
-                node<Index>(AST_Node::no_range,
-                            node<Name_Lookup>(AST_Node::no_range, "m"),
-                            node<Literal>(AST_Node::no_range, b_key)));
+            elems.push_back(node<Index>(
+                AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "m"),
+                node<Literal>(AST_Node::no_range, a_key)));
+            elems.push_back(node<Index>(
+                AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "m"),
+                node<Literal>(AST_Node::no_range, b_key)));
 
             inner_body.push_back(
                 node<Array_Constructor>(AST_Node::no_range, std::move(elems)));
@@ -1333,9 +1329,8 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> inner_body;
         {
             auto sum_xy = node<Binop>(
-                AST_Node::no_range,
-                node<Name_Lookup>(AST_Node::no_range, "x"), Binary_Op::PLUS,
-                node<Name_Lookup>(AST_Node::no_range, "y"));
+                AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "x"),
+                Binary_Op::PLUS, node<Name_Lookup>(AST_Node::no_range, "y"));
             auto sum_xyp = node<Binop>(
                 AST_Node::no_range, std::move(sum_xy), Binary_Op::PLUS,
                 node<Name_Lookup>(AST_Node::no_range, "p"));
@@ -1345,9 +1340,8 @@ TEST_CASE("Lambda")
         }
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(
-            node<Define>(AST_Node::no_range, "y",
-                         node<Literal>(AST_Node::no_range, y_val)));
+        outer_body.push_back(node<Define>(
+            AST_Node::no_range, "y", node<Literal>(AST_Node::no_range, y_val)));
         outer_body.push_back(node<Lambda>(AST_Node::no_range,
                                           std::vector<std::string>{"q"},
                                           std::move(inner_body)));
@@ -1555,9 +1549,8 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> inner_body;
         {
             auto sum_ga = node<Binop>(
-                AST_Node::no_range,
-                node<Name_Lookup>(AST_Node::no_range, "g"), Binary_Op::PLUS,
-                node<Name_Lookup>(AST_Node::no_range, "a"));
+                AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "g"),
+                Binary_Op::PLUS, node<Name_Lookup>(AST_Node::no_range, "a"));
             auto sum_gab = node<Binop>(
                 AST_Node::no_range, std::move(sum_ga), Binary_Op::PLUS,
                 node<Name_Lookup>(AST_Node::no_range, "b"));
@@ -1816,9 +1809,8 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> inner_x_body;
         {
             auto sum_xp = node<Binop>(
-                AST_Node::no_range,
-                node<Name_Lookup>(AST_Node::no_range, "x"), Binary_Op::PLUS,
-                node<Name_Lookup>(AST_Node::no_range, "p"));
+                AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "x"),
+                Binary_Op::PLUS, node<Name_Lookup>(AST_Node::no_range, "p"));
             inner_x_body.push_back(node<Binop>(
                 AST_Node::no_range, std::move(sum_xp), Binary_Op::PLUS,
                 node<Name_Lookup>(AST_Node::no_range, "q")));
@@ -1826,9 +1818,8 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> inner_y_body;
         {
             auto sum_yp = node<Binop>(
-                AST_Node::no_range,
-                node<Name_Lookup>(AST_Node::no_range, "y"), Binary_Op::PLUS,
-                node<Name_Lookup>(AST_Node::no_range, "p"));
+                AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "y"),
+                Binary_Op::PLUS, node<Name_Lookup>(AST_Node::no_range, "p"));
             inner_y_body.push_back(node<Binop>(
                 AST_Node::no_range, std::move(sum_yp), Binary_Op::PLUS,
                 node<Name_Lookup>(AST_Node::no_range, "q")));
@@ -1877,9 +1868,8 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> inner_x_body;
         {
             auto sum_xp = node<Binop>(
-                AST_Node::no_range,
-                node<Name_Lookup>(AST_Node::no_range, "x"), Binary_Op::PLUS,
-                node<Name_Lookup>(AST_Node::no_range, "p"));
+                AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "x"),
+                Binary_Op::PLUS, node<Name_Lookup>(AST_Node::no_range, "p"));
             inner_x_body.push_back(node<Binop>(
                 AST_Node::no_range, std::move(sum_xp), Binary_Op::PLUS,
                 node<Name_Lookup>(AST_Node::no_range, "q")));
@@ -1887,9 +1877,8 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> inner_y_body;
         {
             auto sum_yp = node<Binop>(
-                AST_Node::no_range,
-                node<Name_Lookup>(AST_Node::no_range, "y"), Binary_Op::PLUS,
-                node<Name_Lookup>(AST_Node::no_range, "p"));
+                AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "y"),
+                Binary_Op::PLUS, node<Name_Lookup>(AST_Node::no_range, "p"));
             inner_y_body.push_back(node<Binop>(
                 AST_Node::no_range, std::move(sum_yp), Binary_Op::PLUS,
                 node<Name_Lookup>(AST_Node::no_range, "q")));

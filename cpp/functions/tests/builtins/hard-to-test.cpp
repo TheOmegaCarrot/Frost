@@ -38,7 +38,6 @@ TEST_CASE("Builtin print arity")
 
     CHECK_THROWS_WITH(print_fn->call({}),
                       ContainsSubstring("insufficient arguments"));
-    CHECK_THROWS_WITH(
-        print_fn->call({Value::null(), Value::null()}),
-        ContainsSubstring("too many arguments"));
+    CHECK_THROWS_WITH(print_fn->call({Value::null(), Value::null()}),
+                      ContainsSubstring("too many arguments"));
 }

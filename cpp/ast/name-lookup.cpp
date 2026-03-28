@@ -15,8 +15,8 @@ Value_Ptr ast::Name_Lookup::do_evaluate(Evaluation_Context ctx) const
     return ctx.symbols.lookup(name_);
 }
 
-std::generator<ast::AST_Node::Symbol_Action> ast::Name_Lookup::
-    symbol_sequence() const
+std::generator<ast::AST_Node::Symbol_Action> ast::Name_Lookup::symbol_sequence()
+    const
 {
     co_yield Usage{name_};
 }

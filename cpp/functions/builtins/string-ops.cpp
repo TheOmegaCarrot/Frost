@@ -132,7 +132,6 @@ void inject_string_ops(Symbol_Table& table)
     X_UPPER_LOWER
 
 #undef X
-
 }
 
 } // namespace frst

@@ -326,8 +326,8 @@ TEST_CASE("Symbol Sequence")
 
         program.push_back(std::move(stmt_define_map));
 
-        auto stmt_index = std::make_unique<Index>(AST_Node::no_range,
-                                                  name("arr"), name("i"));
+        auto stmt_index =
+            std::make_unique<Index>(AST_Node::no_range, name("arr"), name("i"));
 
         program.push_back(std::move(stmt_index));
 

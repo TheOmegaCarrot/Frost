@@ -10,8 +10,7 @@
 
 namespace frst
 {
-class Closure : public Callable,
-                 public std::enable_shared_from_this<Closure>
+class Closure : public Callable, public std::enable_shared_from_this<Closure>
 {
   public:
     Closure() = delete;

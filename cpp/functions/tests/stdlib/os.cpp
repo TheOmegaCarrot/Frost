@@ -56,18 +56,17 @@ TEST_CASE("std.os")
         {
             CHECK_THROWS_MATCHES(
                 getenv->call({}), Frost_User_Error,
-                MessageMatches(
-                    ContainsSubstring("insufficient arguments")
-                    && ContainsSubstring("requires at least 1")));
+                MessageMatches(ContainsSubstring("insufficient arguments")
+                               && ContainsSubstring("requires at least 1")));
         }
 
         SECTION("Type error")
         {
-            CHECK_THROWS_MATCHES(
-                getenv->call({Value::create(1_f)}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("os.getenv")
-                               && ContainsSubstring("String")
-                               && ContainsSubstring("Int")));
+            CHECK_THROWS_MATCHES(getenv->call({Value::create(1_f)}),
+                                 Frost_User_Error,
+                                 MessageMatches(ContainsSubstring("os.getenv")
+                                                && ContainsSubstring("String")
+                                                && ContainsSubstring("Int")));
         }
 
         SECTION("Returns null for unset variable")
@@ -93,9 +92,8 @@ TEST_CASE("std.os")
         {
             CHECK_THROWS_MATCHES(
                 sleep->call({}), Frost_User_Error,
-                MessageMatches(
-                    ContainsSubstring("insufficient arguments")
-                    && ContainsSubstring("requires at least 1")));
+                MessageMatches(ContainsSubstring("insufficient arguments")
+                               && ContainsSubstring("requires at least 1")));
         }
 
         SECTION("Type error")
@@ -122,9 +120,8 @@ TEST_CASE("std.os")
         {
             CHECK_THROWS_MATCHES(
                 exit->call({}), Frost_User_Error,
-                MessageMatches(
-                    ContainsSubstring("insufficient arguments")
-                    && ContainsSubstring("requires at least 1")));
+                MessageMatches(ContainsSubstring("insufficient arguments")
+                               && ContainsSubstring("requires at least 1")));
         }
 
         SECTION("Type error")

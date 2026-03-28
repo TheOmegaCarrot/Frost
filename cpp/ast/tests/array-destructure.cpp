@@ -139,7 +139,8 @@ TEST_CASE("Array_Destructure")
         for (const auto& action : node.symbol_sequence())
             actions.push_back(action);
 
-        // Should have definitions for "x" and "rest" (discarded "_" is excluded)
+        // Should have definitions for "x" and "rest" (discarded "_" is
+        // excluded)
         std::vector<AST_Node::Definition> defns;
         for (const auto& a : actions)
             if (std::holds_alternative<AST_Node::Definition>(a))
@@ -907,10 +908,10 @@ TEST_CASE("Array_Destructure")
             return std::make_unique<mock::Mock_Expression>();
         };
 
-        CHECK(Array_Destructure(AST_Node::no_range, {}, std::nullopt,
-                                null_expr())
-                  .node_label()
-              == "Array_Destructure()");
+        CHECK(
+            Array_Destructure(AST_Node::no_range, {}, std::nullopt, null_expr())
+                .node_label()
+            == "Array_Destructure()");
         CHECK(Array_Destructure(AST_Node::no_range, {"a"s, "b"s}, std::nullopt,
                                 null_expr())
                   .node_label()
@@ -927,9 +928,8 @@ TEST_CASE("Array_Destructure")
                                 Name{Discarded_Binding{}}, null_expr())
                   .node_label()
               == "Array_Destructure(a,..._)");
-        CHECK(Array_Destructure(AST_Node::no_range,
-                                {Discarded_Binding{}, "b"s}, Name{"rest"s},
-                                null_expr())
+        CHECK(Array_Destructure(AST_Node::no_range, {Discarded_Binding{}, "b"s},
+                                Name{"rest"s}, null_expr())
                   .node_label()
               == "Array_Destructure(_,b,...rest)");
         CHECK(Array_Destructure(AST_Node::no_range,

@@ -76,8 +76,7 @@ BUILTIN(mutable_cell)
     return Value::create(
         Value::trusted,
         Map{
-            {strings.exchange,
-             system_closure([cell](builtin_args_t args) {
+            {strings.exchange, system_closure([cell](builtin_args_t args) {
                  REQUIRE_ARGS("mutable_cell.exchange", ANY);
                  auto new_val = forbid_cycle(args.at(0));
                  std::lock_guard lock{cell->mutex};

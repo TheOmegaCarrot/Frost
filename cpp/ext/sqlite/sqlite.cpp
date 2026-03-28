@@ -223,15 +223,14 @@ struct Database_Methods
     {
         STRINGS(close, transaction);
         auto self = std::make_shared<Database_Methods>(std::move(*this));
-        entries.insert_or_assign(
-            strings.close, system_closure([self](builtin_args_t args) {
-                return self->close(args);
-            }));
-        entries.insert_or_assign(
-            strings.transaction,
-            system_closure([self](builtin_args_t args) {
-                return self->transaction(args);
-            }));
+        entries.insert_or_assign(strings.close,
+                                 system_closure([self](builtin_args_t args) {
+                                     return self->close(args);
+                                 }));
+        entries.insert_or_assign(strings.transaction,
+                                 system_closure([self](builtin_args_t args) {
+                                     return self->transaction(args);
+                                 }));
     }
 };
 } // namespace
@@ -288,7 +287,6 @@ REGISTER_EXTENSION(sqlite,
                        "version"_s,
                        Value::create(String{sqlite3_version}),
                    },
-                   ENTRY(open), ENTRY(open_readonly),
-                   ENTRY(open_memory))
+                   ENTRY(open), ENTRY(open_readonly), ENTRY(open_memory))
 
 } // namespace frst

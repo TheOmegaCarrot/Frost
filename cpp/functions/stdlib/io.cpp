@@ -12,8 +12,8 @@ namespace frst
 
 using namespace streams_detail;
 
-STRINGS(close, is_open, read_line, read_one, read_rest, tell, seek, eof,
-        write, writeln, get, flush);
+STRINGS(close, is_open, read_line, read_one, read_rest, tell, seek, eof, write,
+        writeln, get, flush);
 
 namespace io
 {
@@ -122,8 +122,7 @@ BUILTIN(stringwriter)
 
 } // namespace io
 
-STDLIB_MODULE(io, ENTRY(open_read), ENTRY(open_trunc),
-              ENTRY(open_append), ENTRY(stringreader),
-              ENTRY(stringwriter))
+STDLIB_MODULE(io, ENTRY(open_read), ENTRY(open_trunc), ENTRY(open_append),
+              ENTRY(stringreader), ENTRY(stringwriter))
 
 } // namespace frst

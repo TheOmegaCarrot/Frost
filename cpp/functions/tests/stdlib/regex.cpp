@@ -188,8 +188,8 @@ TEST_CASE("std.regex")
         auto good = Value::create("a"s);
         auto fn = get_re_fn(scan_matches_name);
 
-        const auto fn_name =
-            ContainsSubstring(std::string{"Function regex."} + scan_matches_name);
+        const auto fn_name = ContainsSubstring(std::string{"Function regex."}
+                                               + scan_matches_name);
         const auto expected = ContainsSubstring("String");
 
         CHECK_THROWS_WITH(fn->call({bad_first, good}),

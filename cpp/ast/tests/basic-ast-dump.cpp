@@ -18,8 +18,7 @@ class String_Node : public frst::ast::Statement
     {
     }
 
-    void do_execute(
-        [[maybe_unused]] frst::Execution_Context&) const override
+    void do_execute([[maybe_unused]] frst::Execution_Context&) const override
     {
     }
 
@@ -49,8 +48,7 @@ class Multi_String_Node : public frst::ast::Statement
                 std::make_unique<String_Node>(fmt::format("Child_{}", i)));
     }
 
-    void do_execute(
-        [[maybe_unused]] frst::Execution_Context&) const override
+    void do_execute([[maybe_unused]] frst::Execution_Context&) const override
     {
     }
 
@@ -83,8 +81,7 @@ class Three_Children : public frst::ast::Statement
     {
     }
 
-    void do_execute(
-        [[maybe_unused]] frst::Execution_Context&) const override
+    void do_execute([[maybe_unused]] frst::Execution_Context&) const override
     {
     }
 
@@ -122,8 +119,7 @@ class Tree_Node : public frst::ast::Statement
     {
     }
 
-    void do_execute(
-        [[maybe_unused]] frst::Execution_Context&) const override
+    void do_execute([[maybe_unused]] frst::Execution_Context&) const override
     {
     }
 
