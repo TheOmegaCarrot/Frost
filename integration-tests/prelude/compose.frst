@@ -10,9 +10,9 @@ def composed2 = compose(f, g)
 assert(composed2(10) == 22)
 
 
-def sum = fn ...args -> reduce args with plus
+def varsum = fn ...args -> reduce args with plus
 
-def sum_then_add1 = compose(sum, f)
+def sum_then_add1 = compose(varsum, f)
 assert(sum_then_add1(1, 2, 3) == 7)
 
 

@@ -15,6 +15,8 @@ set(INTEGRATION_SCRIPTS
     prelude/map_keys_values.frst
     prelude/flat_map.frst
     prelude/dig.frst
+    prelude/sum.frst
+    prelude/product.frst
     threaded-call-chain.frst
     capture-enclosing-closure.frst
     escaped-self-reference.frst
