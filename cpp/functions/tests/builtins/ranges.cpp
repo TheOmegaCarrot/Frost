@@ -72,6 +72,7 @@ TEST_CASE("Builtin ranges")
     const std::vector<std::string> pred_names{
         "take_while", "drop_while", "chunk_by",  "group_by",
         "count_by",   "scan",       "partition",  "sort_by",
+        "find",
     };
     const std::vector<std::string> maplike_names{
         "transform",
@@ -2126,6 +2127,81 @@ TEST_CASE("Builtin ranges")
 
         CHECK_THROWS_WITH(fn->call({arr, Value::create(Function{mixed_proj})}),
                           ContainsSubstring("compare incompatible types"));
+    }
+
+    SECTION("find semantics")
+    {
+        auto fn = lookup(table, "find");
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+        auto arr = Value::create(Array{a, b, c});
+
+        auto gt1 = make_builtin(
+            [](builtin_args_t args) {
+                return Value::greater_than(args.at(0), Value::create(1_f));
+            },
+            "gt1");
+
+        // Returns the first matching element
+        auto result = fn->call({arr, Value::create(Function{gt1})});
+        CHECK(result == b);
+
+        // Returns null when no element matches
+        auto gt10 = make_builtin(
+            [](builtin_args_t args) {
+                return Value::greater_than(args.at(0), Value::create(10_f));
+            },
+            "gt10");
+        CHECK(fn->call({arr, Value::create(Function{gt10})})->is<Null>());
+
+        // Empty array returns null
+        auto always = make_builtin(
+            [](builtin_args_t) { return Value::create(true); },
+            "always");
+        CHECK(fn->call({Value::create(Array{}), Value::create(Function{always})})
+                  ->is<Null>());
+
+        // Returns the exact same pointer, not a copy
+        auto is2 = make_builtin(
+            [&](builtin_args_t args) {
+                return Value::equal(args.at(0), b);
+            },
+            "is2");
+        CHECK(fn->call({arr, Value::create(Function{is2})}).get() == b.get());
+    }
+
+    SECTION("find short-circuits")
+    {
+        auto fn = lookup(table, "find");
+
+        int call_count = 0;
+        auto counting = make_builtin(
+            [&](builtin_args_t args) {
+                ++call_count;
+                return Value::equal(args.at(0), Value::create(2_f));
+            },
+            "counting");
+
+        auto arr = Value::create(
+            Array{Value::create(1_f), Value::create(2_f), Value::create(3_f)});
+
+        fn->call({arr, Value::create(Function{counting})});
+        CHECK(call_count == 2);
+    }
+
+    SECTION("find predicate error propagates")
+    {
+        auto fn = lookup(table, "find");
+        auto arr = Value::create(Array{Value::create(1_f)});
+        auto boom = make_builtin(
+            [](builtin_args_t) -> Value_Ptr {
+                throw Frost_Recoverable_Error{"kaboom"};
+            },
+            "boom");
+
+        CHECK_THROWS_WITH(fn->call({arr, Value::create(Function{boom})}),
+                          ContainsSubstring("kaboom"));
     }
 
     SECTION("reverse semantics")

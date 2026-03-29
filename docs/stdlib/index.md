@@ -35,6 +35,7 @@ Each entry links to its full documentation.
 - [encoding.to_bytes](encoding.md#to_bytes) · `std.encoding`
 - [ends_with](strings.md#ends_with)
 - [equal](operators.md#equal)
+- [find](collections.md#find)
 - [flat_map](collections.md#flat_map)
 - [flatten](collections.md#flatten)
 - [fold](collections.md#fold)

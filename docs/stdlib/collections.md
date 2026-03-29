@@ -286,6 +286,12 @@ Returns `true` if all elements of `arr` are truthy, or if `f` returns truthy for
 
 Returns `true` if no element of `arr` is truthy, or if `f` returns falsy for every element.
 
+## `find`
+`find(arr, predicate)`
+
+Returns the first element of `arr` for which `predicate` returns truthy, or `null` if no element matches.
+Short-circuits on the first match.
+
 ## `group_by`
 `group_by(arr, f)`
 

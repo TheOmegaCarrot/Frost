@@ -483,6 +483,22 @@ BUILTIN(count_by)
     return generalize_map(std::move(counts));
 }
 
+BUILTIN(find)
+{
+    REQUIRE_ARGS("find", TYPES(Array), PARAM("predicate", TYPES(Function)));
+
+    const auto& arr = GET(0, Array);
+    const auto& pred = GET(1, Function);
+    auto itr = std::ranges::find_if(arr, [&](const Value_Ptr& val) {
+        return pred->call({val})->truthy();
+    });
+
+    if (itr == arr.end())
+        return Value::null();
+
+    return *itr;
+}
+
 BUILTIN(scan)
 {
     REQUIRE_ARGS("scan", TYPES(Array), TYPES(Function));
@@ -605,6 +621,7 @@ void inject_ranges(Symbol_Table& table)
     INJECT(repeat);
     INJECT(group_by);
     INJECT(count_by);
+    INJECT(find);
     INJECT(scan);
     INJECT(flatten);
     INJECT(partition);
