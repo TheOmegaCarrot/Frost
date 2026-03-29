@@ -158,6 +158,7 @@ Each entry links to its full documentation.
 - [scan](collections.md#scan)
 - [select](collections.md#select)
 - [slide](collections.md#slide)
+- [sort_by](collections.md#sort_by)
 - [sorted](collections.md#sorted)
 - [split](strings.md#split)
 - [sqlite.db.close](sqlite.md#dbclose) · `ext.sqlite`

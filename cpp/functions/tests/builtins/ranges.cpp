@@ -71,7 +71,7 @@ TEST_CASE("Builtin ranges")
     };
     const std::vector<std::string> pred_names{
         "take_while", "drop_while", "chunk_by",  "group_by",
-        "count_by",   "scan",       "partition",
+        "count_by",   "scan",       "partition",  "sort_by",
     };
     const std::vector<std::string> maplike_names{
         "transform",
@@ -1987,6 +1987,144 @@ TEST_CASE("Builtin ranges")
             Value::create(Array{Value::create(1_f), Value::create("a"s)});
 
         CHECK_THROWS_WITH(fn->call({mixed}),
+                          ContainsSubstring("compare incompatible types"));
+    }
+
+    SECTION("sort_by semantics")
+    {
+        auto fn = lookup(table, "sort_by");
+
+        // Sort by projection: sort integers by their negation (descending)
+        auto a = Value::create(1_f);
+        auto b = Value::create(2_f);
+        auto c = Value::create(3_f);
+        auto arr = Value::create(Array{b, c, a});
+
+        auto negate = make_builtin(
+            [](builtin_args_t args) {
+                return args.at(0)->negate();
+            },
+            "negate");
+
+        require_array_eq(fn->call({arr, Value::create(Function{negate})}),
+                         {c, b, a});
+
+        // Original array unchanged
+        const auto& orig = arr->raw_get<Array>();
+        REQUIRE(orig.size() == 3);
+        CHECK(orig.at(0) == b);
+        CHECK(orig.at(1) == c);
+        CHECK(orig.at(2) == a);
+
+        // Sort strings by length
+        auto s1 = Value::create("bb"s);
+        auto s2 = Value::create("a"s);
+        auto s3 = Value::create("ccc"s);
+        auto str_arr = Value::create(Array{s3, s1, s2});
+
+        auto str_len = make_builtin(
+            [](builtin_args_t args) {
+                return Value::create(
+                    static_cast<Int>(args.at(0)->raw_get<String>().size()));
+            },
+            "str_len");
+
+        require_array_eq(
+            fn->call({str_arr, Value::create(Function{str_len})}),
+            {s2, s1, s3});
+
+        // Empty array
+        require_array_eq(
+            fn->call({Value::create(Array{}), Value::create(Function{negate})}),
+            {});
+
+        // Single element
+        require_array_eq(
+            fn->call({Value::create(Array{a}), Value::create(Function{negate})}),
+            {a});
+    }
+
+    SECTION("sort_by stability")
+    {
+        auto fn = lookup(table, "sort_by");
+
+        // Elements with equal keys should preserve original order
+        auto a = Value::create("ax"s);
+        auto b = Value::create("bx"s);
+        auto c = Value::create("cy"s);
+        auto d = Value::create("dy"s);
+        auto arr = Value::create(Array{c, a, d, b});
+
+        // Project to second character -- a and b both have "x", c and d have "y"
+        auto second_char = make_builtin(
+            [](builtin_args_t args) {
+                const auto& s = args.at(0)->raw_get<String>();
+                return Value::create(std::string(1, s.at(1)));
+            },
+            "second_char");
+
+        auto result = fn->call({arr, Value::create(Function{second_char})});
+        REQUIRE(result->is<Array>());
+        const auto& out = result->raw_get<Array>();
+        REQUIRE(out.size() == 4);
+        // "x" keys first (c, d original order preserved), then "y" keys (a, b)
+        CHECK(out.at(0) == a);
+        CHECK(out.at(1) == b);
+        CHECK(out.at(2) == c);
+        CHECK(out.at(3) == d);
+    }
+
+    SECTION("sort_by projection called once per element")
+    {
+        auto fn = lookup(table, "sort_by");
+
+        auto arr = Value::create(
+            Array{Value::create(3_f), Value::create(1_f), Value::create(2_f)});
+
+        int call_count = 0;
+        auto counting_proj = make_builtin(
+            [&](builtin_args_t args) {
+                ++call_count;
+                return args.at(0);
+            },
+            "counting_proj");
+
+        fn->call({arr, Value::create(Function{counting_proj})});
+        CHECK(call_count == 3);
+    }
+
+    SECTION("sort_by projection error propagates")
+    {
+        auto fn = lookup(table, "sort_by");
+        auto arr = Value::create(Array{Value::create(1_f), Value::create(0_f)});
+        auto boom = make_builtin(
+            [](builtin_args_t) -> Value_Ptr {
+                throw Frost_Recoverable_Error{"kaboom"};
+            },
+            "boom");
+
+        CHECK_THROWS_WITH(fn->call({arr, Value::create(Function{boom})}),
+                          ContainsSubstring("kaboom"));
+    }
+
+    SECTION("sort_by rejects non-comparable keys")
+    {
+        auto fn = lookup(table, "sort_by");
+
+        // Projection returns mixed types that can't be compared
+        int call_count = 0;
+        auto mixed_proj = make_builtin(
+            [&](builtin_args_t) -> Value_Ptr {
+                if (call_count++ == 0)
+                    return Value::create(1_f);
+                return Value::create("a"s);
+            },
+            "mixed_proj");
+
+        auto arr = Value::create(
+            Array{Value::create(1_f), Value::create(2_f)});
+
+        CHECK_THROWS_WITH(fn->call({arr, Value::create(Function{mixed_proj})}),
                           ContainsSubstring("compare incompatible types"));
     }
 

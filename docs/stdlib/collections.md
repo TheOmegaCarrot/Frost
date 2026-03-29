@@ -259,6 +259,15 @@ Without `f`, uses the default `<` ordering.
 With `f`, uses `f(a, b)` as the comparator, where `f` should return truthy if `a` should come before `b`.
 Uses a stable sort.
 
+## `sort_by`
+`sort_by(arr, projection)`
+
+Returns a sorted copy of `arr`, using `projection` as a key function.
+Each element is sorted by the value of `projection(element)` under the default `<` ordering.
+The projection is called exactly once per element.
+Uses a stable sort.
+Combines well with [`index`](#index): `sort_by(users, index("name"))`.
+
 ## `any`
 `any(arr)`
 `any(arr, f)`

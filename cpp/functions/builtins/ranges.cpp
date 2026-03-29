@@ -365,6 +365,31 @@ BUILTIN(sorted)
     return Value::create(std::move(out));
 }
 
+BUILTIN(sort_by)
+{
+    REQUIRE_ARGS("sort_by", TYPES(Array), PARAM("projection", TYPES(Function)));
+
+    const auto& proj = GET(1, Function);
+
+    auto projected = GET(0, Array)
+                     | std::views::transform([&](const Value_Ptr& val) {
+                           return std::pair{val, proj->call({val})};
+                       })
+                     | std::ranges::to<std::vector>();
+
+    std::ranges::stable_sort(
+        projected,
+        [](const Value_Ptr& l, const Value_Ptr& r) {
+            return Value::less_than(l, r)->truthy();
+        },
+        [](const auto& pair) {
+            return pair.second;
+        });
+
+    return Value::create(
+        projected | std::views::keys | std::ranges::to<Array>());
+}
+
 BUILTIN(any)
 {
     return quantifier_impl<std::ranges::any_of>("any", args);
@@ -573,6 +598,7 @@ void inject_ranges(Symbol_Table& table)
     INJECT(select);
     INJECT(fold);
     INJECT(sorted);
+    INJECT(sort_by);
     INJECT(any);
     INJECT(all);
     INJECT(none);
