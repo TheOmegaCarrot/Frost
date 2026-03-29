@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-n = 4000
+n = 250_000
 words = ["AbCdEfGhIj"] * n
 lowered = [word.lower() for word in words]
 uppered = [word.upper() for word in lowered]

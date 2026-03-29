@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-n = 6000
+n = 70_000
 
-text = "a" * n
+text = ""
+for i in range(n):
+    text += "a"
 result = len(text)
 
-assert result == 6000
+assert result == 70_000
 print(result)

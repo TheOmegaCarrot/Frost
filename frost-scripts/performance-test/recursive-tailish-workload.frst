@@ -1,10 +1,10 @@
-def n = 2500
+def depth = 2500
+def iters = 250
 
-defn sum_down(k, acc) -> {
+defn sum_down(k, acc) ->
     if k == 0: acc
     else: sum_down(k - 1, acc + k)
-}
 
-def result = sum_down(n, 0)
-assert(result == 3126250, 'tailish recursion sum')
+def result = reduce range(iters) with fn (acc, _) -> acc + sum_down(depth, 0) init: 0
+assert(result == 781562500, 'tailish recursion sum')
 print(result)

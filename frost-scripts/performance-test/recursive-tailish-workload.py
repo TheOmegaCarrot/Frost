@@ -2,9 +2,10 @@
 
 import sys
 
-sys.setrecursionlimit(10_000)
+sys.setrecursionlimit(5000)
 
-n = 2500
+depth = 2500
+iters = 250
 
 
 def sum_down(k: int, acc: int) -> int:
@@ -13,6 +14,6 @@ def sum_down(k: int, acc: int) -> int:
     return sum_down(k - 1, acc + k)
 
 
-result = sum_down(n, 0)
-assert result == 3_126_250
+result = sum(sum_down(depth, 0) for _ in range(iters))
+assert result == 781_562_500
 print(result)

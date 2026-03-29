@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-n = 120_000
+n = 2_600_000
 
 
 def inc(x: int) -> int:
@@ -8,5 +8,5 @@ def inc(x: int) -> int:
 
 
 result = sum(inc(i) for i in range(n))
-assert result == 7_200_060_000
+assert result == 3_380_001_300_000
 print(result)

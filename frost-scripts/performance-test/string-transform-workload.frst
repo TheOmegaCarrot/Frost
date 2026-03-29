@@ -1,4 +1,4 @@
-def n = 4000
+def n = 250000
 def words = map range(n) with fn (i) -> { 'AbCdEfGhIj' }
 def lowered = map words with to_lower
 def uppered = map lowered with to_upper

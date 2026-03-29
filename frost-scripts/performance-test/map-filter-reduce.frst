@@ -1,7 +1,7 @@
 # AI-generated performance test by Codex (GPT-5).
 # Signed: Codex (GPT-5).
 
-def n = 50000
+def n = 1800000
 def input = range(n)
 
 def squares = map input with fn (x) -> { x * x }
