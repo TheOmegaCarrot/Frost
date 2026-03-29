@@ -4,7 +4,7 @@
 `print(value)`
 
 Prints `value` to stdout followed by a newline.
-Uses the same display representation as `to_string`.
+Uses the same display representation as [`to_string`](types.md#to_string).
 
 ## `mformat`
 `mformat(format string, replacement map)`

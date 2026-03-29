@@ -22,7 +22,7 @@ reduce [1, 2, 3] with plus
 # 6
 ```
 
-(`plus` is a predefined function which is equivalent to `fn a, b -> a + b`.)
+([`plus`](./stdlib/operators.md#plus) is a predefined function which is equivalent to `fn a, b -> a + b`.)
 
 You can also optionally add an `init` clause:
 
@@ -173,7 +173,7 @@ def tag = fn label, ...items ->
 ```
 
 In a variadic function, extra arguments are collected into an array.
-When writing higher-order functions, this meshes well with two important functions: `pack_call` and `try_call`.
+When writing higher-order functions, this meshes well with two important functions: [`pack_call`](./stdlib/functions.md#pack_call) and [`try_call`](./stdlib/functions.md#try_call).
 
 `pack_call` takes a function and an array of arguments, and calls that function with those arguments.
 
@@ -182,7 +182,7 @@ pack_call(plus, [3, 5]) # 8
 ```
 
 This results in some nice definitions of higher-order functions.
-Internally, the function `curry`, which partially applies a function, is defined as:
+Internally, the function [`curry`](./stdlib/functions.md#curry), which partially applies a function, is defined as:
 
 ```frost
 def curry = fn f, ...outer -> fn ...inner -> pack_call(f, outer + inner)

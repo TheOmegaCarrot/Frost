@@ -11,7 +11,7 @@ An empty `delimiter` splits into individual bytes.
 `lines(s)`
 
 Splits `s` on each newline (`\n`) and returns an array of strings.
-Equivalent to `split(s, "\n")`.
+Equivalent to [`split`](#split)`(s, "\n")`.
 
 ## `join`
 `join(arr, separator)`

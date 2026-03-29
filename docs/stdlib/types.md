@@ -70,7 +70,7 @@ Possible values: `"Null"`, `"Int"`, `"Float"`, `"Bool"`, `"String"`, `"Array"`, 
 ## `to_string`
 `to_string(value)`
 
-Converts `value` to its display string: the same representation that `print` would output.
+Converts `value` to its display string: the same representation that [`print`](output.md#print) would output.
 For strings, returns the string itself (unquoted).
 For arrays and maps, returns a compact single-line representation.
 

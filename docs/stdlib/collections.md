@@ -215,7 +215,7 @@ xprod([1, 2], ["a", "b"])  # => [[1, "a"], [1, "b"], [2, "a"], [2, "b"]]
 ## `transform`
 `transform(structure, f)`
 
-Functional form of the `map` expression.
+Functional form of the [`map` expression](../language.md#map).
 Applies `f` to each element of an `Array`, or to each key-value pair `(k, v)` of a `Map`.
 For `Map` input, `f` must return a `Map`; its entries are merged into the result, allowing keys to be remapped or entries to be expanded.
 
@@ -223,7 +223,7 @@ For `Map` input, `f` must return a `Map`; its entries are merged into the result
 `flat_map(arr, f)`
 
 Applies `f` to each element of `arr` and flattens the results one level.
-Equivalent to `arr @ transform(f) @ flatten(1)`.
+Equivalent to `arr @ transform(f) @ flatten(1)`. See [`transform`](#transform) and [`flatten`](#flatten).
 
 ```
 flat_map([1, 2, 3], fn x -> [x, x * 2])  # => [1, 2, 2, 4, 3, 6]
@@ -232,20 +232,20 @@ flat_map([1, 2, 3], fn x -> [x, x * 2])  # => [1, 2, 2, 4, 3, 6]
 ## `select`
 `select(structure, f)`
 
-Functional form of the `filter` expression.
+Functional form of the [`filter` expression](../language.md#filter).
 Returns elements of an `Array` for which `f` returns truthy, or entries of a `Map` for which `f(k, v)` returns truthy.
 
 ## `reject`
 `reject(structure, pred)`
 
 Returns the elements of `structure` for which `pred` returns falsy.
-The inverse of `select`.
+The inverse of [`select`](#select).
 
 ## `fold`
 `fold(structure, f)`
 `fold(structure, f, init)`
 
-Functional form of the `reduce` expression.
+Functional form of the [`reduce` expression](../language.md#reduce).
 Reduces `structure` to a single value by repeatedly applying `f`.
 Without `init`, the first element is used as the initial accumulator.
 For maps, `f` receives `(accumulator, key, value)`.

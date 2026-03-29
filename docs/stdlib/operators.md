@@ -1,7 +1,7 @@
 # Operators
 
 Functional forms of the built-in infix operators. Useful for passing operators
-as first-class values, e.g. to `fold` or `sorted`.
+as first-class values, e.g. to [`fold`](collections.md#fold) or [`sorted`](collections.md#sorted).
 
 ## `plus`
 `plus(a, b)`

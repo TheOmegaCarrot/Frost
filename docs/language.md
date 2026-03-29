@@ -281,7 +281,7 @@ If the body consists of only a single expression, then the enclosing `{}` may be
 This is even true when the single expression appears on the following line.
 
 When a function is called, the final expression is used as the return value.
-_All_ functions return exactly one value. It is typical for side-effect functions (such as `print`) to return `null`.
+_All_ functions return exactly one value. It is typical for side-effect functions (such as [`print`](./stdlib/output.md#print)) to return `null`.
 
 All of the following function definitions are identical in meaning:
 ```frost
@@ -604,6 +604,8 @@ map {foo: 42, bar: 10} with fn k, v -> ({ [k]: v, [k + k]: v + v })
 # { foo: 42, bar: 10, foofoo: 84, barbar: 20 }
 ```
 
+See also [`transform`](./stdlib/collections.md#transform), the functional form for use in `@` pipelines.
+
 #### Filter
 
 A filter expression takes the form:
@@ -621,6 +623,8 @@ As with `map`, the iteration order over a `Map` is unspecified.
 filter [1, 2, 3, 4] with fn n -> n % 2 == 0 # [2, 4]
 filter {foo: 42, bar: 11} with fn k, v -> v % 2 == 0 # { foo: 42 }
 ```
+
+See also [`select`](./stdlib/collections.md#select), the functional form for use in `@` pipelines.
 
 #### Reduce
 
@@ -659,6 +663,8 @@ Once again, the iteration order over a `Map` is unspecified.
 ```frost
 reduce {foo: 42, bar: 10} with fn acc, k, v -> { acc + v } init: 0 # 52
 ```
+
+See also [`fold`](./stdlib/collections.md#fold), the functional form for use in `@` pipelines.
 
 #### Foreach
 

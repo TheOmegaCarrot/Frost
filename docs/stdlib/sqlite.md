@@ -88,7 +88,7 @@ Executes one or more SQL statements separated by semicolons.
 Returns the total number of rows affected across all statements.
 Does not accept parameter bindings.
 
-Without a wrapping `db.transaction`, each statement is committed individually.
+Without a wrapping [`db.transaction`](#dbtransaction), each statement is committed individually.
 If a statement fails partway through a script, earlier statements will have already committed.
 
 ```
@@ -110,7 +110,7 @@ db.query('SELECT * FROM t WHERE id > ?', [0])
 SQLite types map to Frost types: `INTEGER` → `Int`, `REAL` → `Float`, `TEXT` → `String`, `BLOB` → `String`, `NULL` → `null`.
 
 All result rows are loaded into memory at once.
-For large result sets, prefer `db.each` or `db.collect` which process one row at a time.
+For large result sets, prefer [`db.each`](#dbeach) or [`db.collect`](#dbcollect) which process one row at a time.
 Note that even with row-at-a-time processing, each individual column value is fully materialized in memory.
 Databases containing very large `BLOB` or `TEXT` values (e.g. SQLAR archives) should be handled with care.
 

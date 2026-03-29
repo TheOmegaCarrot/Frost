@@ -43,7 +43,7 @@ Two calls return the same `Int` if and only if `unsafe.same` would return `true`
 `mutable_cell(initial)`
 
 Creates a mutable cell with no restrictions on what it can hold.
-Unlike the standard `mutable_cell`, this cell accepts functions, other mutable cells, and structures containing them.
+Unlike the standard [`mutable_cell`](mutable-cell.md#mutable_cell), this cell accepts functions, other mutable cells, and structures containing them.
 
 This makes it possible to create reference cycles, which will leak memory with no warning and no guardrails.
 Regular Frost code guarantees that reference cycles are impossible, and thus the implementation has no cycle detection.

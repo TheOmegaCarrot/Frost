@@ -142,5 +142,4 @@ Returns the accumulated content as a `String`.
 
 ---
 
-**Note:** `stdin`, `stdout`, and `stderr` are available as global builtins without importing this module.
-See [Streams](./streams.md) for their documentation.
+**Note:** [`stdin`](streams.md#stdin), [`stdout`](streams.md#stdout), and [`stderr`](streams.md#stderr) are available as global builtins without importing this module.
