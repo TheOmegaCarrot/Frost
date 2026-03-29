@@ -175,6 +175,7 @@ Each entry links to its full documentation.
 - [starts_with](strings.md#starts_with)
 - [stderr](streams.md#stderr)
 - [stdin](streams.md#stdin)
+- [stdout](streams.md#stdout)
 - [stride](collections.md#stride)
 - [tail](collections.md#tail)
 - [take](collections.md#take)
