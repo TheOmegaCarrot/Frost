@@ -38,8 +38,7 @@ Value_Ptr ast::Foreach::do_evaluate(Evaluation_Context ctx) const
         const auto& arr = structure_val->raw_get<Array>();
         for (const auto& elem : arr)
         {
-            if (op->call({elem})->truthy())
-                break;
+            op->call({elem});
         }
         return Value::null();
     }
@@ -49,8 +48,7 @@ Value_Ptr ast::Foreach::do_evaluate(Evaluation_Context ctx) const
         const auto& map = structure_val->raw_get<Map>();
         for (const auto& [k, v] : map)
         {
-            if (op->call({k, v})->truthy())
-                break;
+            op->call({k, v});
         }
         return Value::null();
     }

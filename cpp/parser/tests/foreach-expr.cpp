@@ -192,7 +192,7 @@ TEST_CASE("Parser Foreach Expressions")
         CHECK(saw_b);
     }
 
-    SECTION("Foreach over arrays stops when operation returns truthy")
+    SECTION("Foreach over arrays ignores return value")
     {
         auto result = parse("foreach [1, 2, 3] with f");
         REQUIRE(result);
@@ -205,12 +205,13 @@ TEST_CASE("Parser Foreach Expressions")
 
         auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
-        REQUIRE(callable->calls.size() == 1);
-        REQUIRE(callable->calls[0].size() == 1);
+        REQUIRE(callable->calls.size() == 3);
         CHECK(callable->calls[0][0]->get<frst::Int>().value() == 1_f);
+        CHECK(callable->calls[1][0]->get<frst::Int>().value() == 2_f);
+        CHECK(callable->calls[2][0]->get<frst::Int>().value() == 3_f);
     }
 
-    SECTION("Foreach over maps stops when operation returns truthy")
+    SECTION("Foreach over maps ignores return value")
     {
         auto result = parse("foreach {a: 1, b: 2} with f");
         REQUIRE(result);
@@ -223,8 +224,7 @@ TEST_CASE("Parser Foreach Expressions")
 
         auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
-        REQUIRE(callable->calls.size() == 1);
-        REQUIRE(callable->calls[0].size() == 2);
+        REQUIRE(callable->calls.size() == 2);
     }
 
     SECTION("Invalid foreach expressions fail to parse")

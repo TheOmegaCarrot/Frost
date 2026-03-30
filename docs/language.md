@@ -679,9 +679,7 @@ foreach a_map with binary_function
 In the `Array` form, the function is called with each array element in order.
 In the `Map` form, the function is called with each key-value pair in an unspecified order.
 
-In both forms, if the function returns a truthy value, iteration stops, and the function is not called again.
-
-A foreach expression always returns `null`.
+The return value of the function is ignored. A foreach expression always returns `null`.
 
 ## Statements
 
