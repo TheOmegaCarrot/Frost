@@ -739,6 +739,19 @@ struct null_literal
 // before the plain `"` / `'` alternatives.
 struct string_literal
 {
+    // Escape sequences shared by double-quoted and single-quoted strings.
+    // Each variant extends this with its own delimiter escape.
+    static constexpr auto common_escapes = lexy::symbol_table<char>
+                                               .map<'n'>('\n')
+                                               .map<'t'>('\t')
+                                               .map<'r'>('\r')
+                                               .map<'\\'>('\\')
+                                               .map<'0'>('\0');
+
+    // \xNN: two hex digits interpreted as a raw byte.
+    static constexpr auto hex_escape =
+        dsl::lit_c<'x'> >> dsl::code_unit_id<lexy::byte_encoding, 2>;
+
     struct raw_r_double
     {
         static constexpr auto rule =
@@ -759,33 +772,23 @@ struct string_literal
 
     struct raw_double
     {
-        static constexpr auto escapes = lexy::symbol_table<char>
-                                            .map<'n'>('\n')
-                                            .map<'t'>('\t')
-                                            .map<'r'>('\r')
-                                            .map<'\\'>('\\')
-                                            .map<'"'>('"')
-                                            .map<'0'>('\0');
+        static constexpr auto escapes = common_escapes.map<'"'>('"');
 
         static constexpr auto rule = dsl::quoted.limit(dsl::ascii::newline)(
-            dsl::unicode::character, dsl::backslash_escape.symbol<escapes>());
+            dsl::unicode::character,
+            dsl::backslash_escape.symbol<escapes>().rule(hex_escape));
         static constexpr auto value = lexy::as_string<std::string>;
         static constexpr auto name = "string literal";
     };
 
     struct raw_single
     {
-        static constexpr auto escapes = lexy::symbol_table<char>
-                                            .map<'n'>('\n')
-                                            .map<'t'>('\t')
-                                            .map<'r'>('\r')
-                                            .map<'\\'>('\\')
-                                            .map<'\''>('\'')
-                                            .map<'0'>('\0');
+        static constexpr auto escapes = common_escapes.map<'\''>('\'');
 
         static constexpr auto rule = dsl::single_quoted.limit(
-            dsl::ascii::newline)(dsl::unicode::character,
-                                 dsl::backslash_escape.symbol<escapes>());
+            dsl::ascii::newline)(
+            dsl::unicode::character,
+            dsl::backslash_escape.symbol<escapes>().rule(hex_escape));
         static constexpr auto value = lexy::as_string<std::string>;
         static constexpr auto name = "string literal";
     };

@@ -178,6 +178,7 @@ The supported escape sequences are:
 - `\"`: double quote (only in `"`-style string)
 - `\'`: single quote (only in `'`-style string)
 - `\0`: null byte
+- `\xNN`: arbitrary byte, where `NN` is exactly two hexadecimal digits (e.g. `\x0a`, `\xff`)
 
 Format strings are prepended with a `$`, and may be `'`-style or `"`-style strings.
 Raw string literals may not be used as format strings.

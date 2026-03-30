@@ -114,6 +114,85 @@ TEST_CASE("Parser String Literals")
         expect_roundtrip("R\"(" + emoji + ")\"");
     }
 
+    SECTION("Hex escape sequences")
+    {
+        using namespace std::literals;
+
+        struct Case
+        {
+            std::string double_input;
+            std::string single_input;
+            std::string expected;
+        };
+
+        const Case cases[] = {
+            // Basic byte values
+            {"\"\\x41\"", "'\\x41'", "A"},
+            {"\"\\x00\"", "'\\x00'", "\0"s},
+            {"\"\\x0a\"", "'\\x0a'", "\n"},
+            {"\"\\x09\"", "'\\x09'", "\t"},
+            {"\"\\x7f\"", "'\\x7f'", "\x7f"s},
+            {"\"\\x80\"", "'\\x80'", "\x80"s},
+            {"\"\\xff\"", "'\\xff'", "\xff"s},
+            // Uppercase hex digits
+            {"\"\\xFF\"", "'\\xFF'", "\xff"s},
+            {"\"\\x0A\"", "'\\x0A'", "\n"},
+            {"\"\\xAB\"", "'\\xAB'", "\xab"s},
+            // Mixed case
+            {"\"\\xaF\"", "'\\xaF'", "\xaf"s},
+            // Multiple hex escapes
+            {"\"\\x48\\x69\"", "'\\x48\\x69'", "Hi"},
+            // Mixed with named escapes
+            {"\"\\x41\\n\\x42\"", "'\\x41\\n\\x42'", "A\nB"},
+            {"\"\\t\\x20\\\\\"", "'\\t\\x20\\\\'", "\t \\"},
+            // Adjacent to plain text
+            {"\"abc\\x21def\"", "'abc\\x21def'", "abc!def"},
+        };
+
+        for (const auto& c : cases)
+        {
+            INFO("double: " << c.double_input);
+            auto result = parse(c.double_input);
+            REQUIRE(result);
+            auto value = std::move(result).value();
+            REQUIRE(value->is<frst::String>());
+            CHECK(value->get<frst::String>().value() == c.expected);
+
+            INFO("single: " << c.single_input);
+            auto result2 = parse(c.single_input);
+            REQUIRE(result2);
+            auto value2 = std::move(result2).value();
+            REQUIRE(value2->is<frst::String>());
+            CHECK(value2->get<frst::String>().value() == c.expected);
+        }
+    }
+
+    SECTION("Hex escapes are not processed in raw strings")
+    {
+        auto result = parse("R\"(\\x41)\"");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == "\\x41");
+
+        auto result2 = parse("R'(\\x41)'");
+        REQUIRE(result2);
+        CHECK(result2.value()->get<frst::String>().value() == "\\x41");
+    }
+
+    SECTION("Invalid hex escapes")
+    {
+        // Only one hex digit
+        CHECK_FALSE(parse("\"\\x0\""));
+        CHECK_FALSE(parse("'\\x0'"));
+
+        // Non-hex digit after \x
+        CHECK_FALSE(parse("\"\\xGG\""));
+        CHECK_FALSE(parse("'\\xGG'"));
+
+        // \x at end of string (no digits)
+        CHECK_FALSE(parse("\"\\x\""));
+        CHECK_FALSE(parse("'\\x'"));
+    }
+
     SECTION("Invalid strings")
     {
         struct Case
@@ -125,7 +204,6 @@ TEST_CASE("Parser String Literals")
         const Case cases[] = {
             {"\"unterminated", "'unterminated"},
             {"\"bad\\qescape\"", "'bad\\qescape'"},
-            {"\"bad\\xescape\"", "'bad\\xescape'"},
             {"\"bad\\u1234\"", "'bad\\u1234'"},
         };
 

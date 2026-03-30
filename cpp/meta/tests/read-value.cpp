@@ -79,6 +79,32 @@ TEST_CASE("Builtin read_value")
         CHECK(n->is<Null>());
     }
 
+    SECTION("Parses hex escape sequences in strings")
+    {
+        auto s = read_value->call({Value::create(R"("\x41\x42\x43")"s)});
+        REQUIRE(s->is<String>());
+        CHECK(s->get<String>() == "ABC");
+
+        auto nul = read_value->call({Value::create(R"("\x00")"s)});
+        REQUIRE(nul->is<String>());
+        CHECK(nul->get<String>() == std::string(1, '\0'));
+
+        auto high = read_value->call({Value::create(R"("\x80\xff")"s)});
+        REQUIRE(high->is<String>());
+        CHECK(high->get<String>() == "\x80\xff"s);
+    }
+
+    SECTION("debug_dump round-trips strings with non-printable bytes")
+    {
+        // Build a string containing bytes that debug_dump formats as \xNN
+        auto binary = "\x00\x01\x7f\x80\xff"s;
+        auto original = Value::create(String{binary});
+        auto dumped = original->to_internal_string({.in_structure = true});
+        auto reparsed = read_value->call({Value::create(std::move(dumped))});
+        REQUIRE(reparsed->is<String>());
+        CHECK(reparsed->get<String>() == binary);
+    }
+
     SECTION("Parses negative numbers")
     {
         auto neg_int = read_value->call({Value::create("-7"s)});
