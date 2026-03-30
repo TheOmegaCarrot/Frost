@@ -14,6 +14,7 @@
 #include "../grammar.hpp"
 
 using namespace frst::literals;
+using namespace std::literals;
 using Catch::Matchers::ContainsSubstring;
 using Catch::Matchers::MessageMatches;
 
@@ -79,6 +80,21 @@ TEST_CASE("Parser Format Strings")
         auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::String>());
         CHECK(value->get<frst::String>().value() == "value 42");
+    }
+
+    SECTION("Hex escapes work in format strings")
+    {
+        auto result = parse(R"($"\x48\x69 ${name}\x21")");
+        REQUIRE(result);
+        auto expr = require_expression(result);
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
+        table.define("name", frst::Value::create("world"s));
+
+        auto value = expr->evaluate(ctx);
+        REQUIRE(value->is<frst::String>());
+        CHECK(value->get<frst::String>().value() == "Hi world!");
     }
 
     SECTION("Escaped placeholder is treated as literal")
