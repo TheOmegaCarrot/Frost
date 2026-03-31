@@ -61,8 +61,11 @@ class Connection
     void for_each_row_impl_(const Stmt_Ptr& stmt,
                             const std::function<void(Value_Ptr)>& row_fn);
 
-    // Possible optimization: LRU cache of prepared statements keyed on the
-    // raw SQL string, avoiding re-preparation for repeated identical queries.
+    // Prepared statement caching was benchmarked and rejected. Two scripts
+    // ran 5k inserts: one with unique SQL per call (string concatenation, zero
+    // hits), one with a single parameterized query (all hits). Frost runtime
+    // dominates: cache hits saved ~13ms (53ms to 40ms), but cache misses added
+    // ~9ms (80ms to 89ms) from bookkeeping. Not worth the added complexity.
     Stmt_Ptr prepare_(const String& sql);
     void bind_positional_(const Stmt_Ptr& stmt, const Array& bindings);
     void bind_named_(const Stmt_Ptr& stmt, const Map& bindings);
