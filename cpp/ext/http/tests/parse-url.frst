@@ -1,0 +1,51 @@
+# http.parse_url tests
+
+def http = import('ext.http')
+
+# Basic HTTPS URL
+assert(http.parse_url('https://example.com/api/v1') == {
+    host: "example.com",
+    path: "/api/v1",
+    tls: true
+})
+
+# HTTP URL with port
+assert(http.parse_url('http://localhost:8080/path') == {
+    host: "localhost",
+    path: "/path",
+    port: 8080,
+    tls: false
+})
+
+# Bare domain defaults path to /
+assert(http.parse_url('https://example.com') == {
+    host: "example.com",
+    path: "/",
+    tls: true
+})
+
+# Query parameters
+assert(http.parse_url('https://example.com/search?q=hello&limit=10') == {
+    host: "example.com",
+    path: "/search",
+    query: {
+        limit: "10",
+        q: "hello"
+    },
+    tls: true
+})
+
+# Value-less query parameter
+assert(http.parse_url('https://example.com/?debug') == {
+    host: "example.com",
+    path: "/",
+    query: {
+        debug: null
+    },
+    tls: true
+})
+
+# Invalid URL
+def bad = try_call(http.parse_url, ['not a url'])
+assert(not bad.ok)
+assert(contains(bad.error, 'invalid URL'))

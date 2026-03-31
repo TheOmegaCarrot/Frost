@@ -63,6 +63,7 @@ Each entry links to its full documentation.
 - [greater_than_or_equal](operators.md#greater_than_or_equal)
 - [group_by](collections.md#group_by)
 - [has](collections.md#has)
+- [http.parse_url](http.md#parse_url) · `ext.http`
 - [http.request](http.md#request) · `ext.http`
 - [id](collections.md#id)
 - [index](collections.md#index)

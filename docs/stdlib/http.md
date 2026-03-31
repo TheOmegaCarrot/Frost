@@ -6,6 +6,20 @@ def http = import('ext.http')
 
 HTTP support can be disabled at build time with `-DWITH_HTTP=NO`.
 
+## `parse_url`
+`parse_url(url)`
+
+Parses a URL string and returns a Map suitable for use as the `uri` field of [`request`](#request).
+
+```frost
+http.parse_url('https://example.com/api?q=hello')
+# => {host: "example.com", path: "/api", query: {q: "hello"}, tls: true}
+```
+
+The returned map contains `host`, `path`, and `tls`.
+`port` is included only when explicitly present in the URL.
+`query` is included only when the URL contains query parameters.
+
 ## `request`
 `request(config)`
 

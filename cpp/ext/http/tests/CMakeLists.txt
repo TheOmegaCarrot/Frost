@@ -88,6 +88,12 @@ set(HTTP_DIRECT_SCRIPTS
     http-invalid-parse-guards-extra.frst
 )
 
+# parse_url is pure local parsing, it can run unconditionally
+add_test(
+    NAME Frost_Ext_HTTP_parse_url
+    COMMAND $<TARGET_FILE:frost> "${HTTP_TEST_DIR}/parse-url.frst"
+)
+
 foreach(script ${HTTP_DIRECT_SCRIPTS})
     add_http_script_test(
         RUNNER http-direct-runner.sh
