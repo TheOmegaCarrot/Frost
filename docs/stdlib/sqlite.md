@@ -7,6 +7,12 @@ def sqlite = import('ext.sqlite')
 SQLite support can be disabled at build time with `-DWITH_SQLITE=NO`.
 Frost vendors its own SQLite build, so no system SQLite installation is required.
 
+The vendored build enables the following extensions:
+
+- [**FTS5**](https://www.sqlite.org/fts5.html) — full-text search
+- [**Math functions**](https://www.sqlite.org/lang_mathfunc.html)
+- [**CSV virtual table**](https://www.sqlite.org/csv.html)
+
 The `sqlite` module provides access to SQLite databases.
 Supported binding types are `Null`, `Int`, `Float`, `Bool`, and `String`.
 `Bool` values are stored as integers (`true` → `1`, `false` → `0`).
