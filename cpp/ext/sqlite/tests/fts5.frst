@@ -1,0 +1,14 @@
+# Verify FTS5 full-text search is enabled
+
+def sqlite = import('ext.sqlite')
+def db = sqlite.open(args[1])
+
+db.exec('CREATE VIRTUAL TABLE fts_test USING fts5(content)')
+db.exec('INSERT INTO fts_test VALUES (?)', ['hello world'])
+db.exec('INSERT INTO fts_test VALUES (?)', ['goodbye world'])
+
+def rows = db.query('SELECT * FROM fts_test WHERE fts_test MATCH ?', ['hello'])
+assert(len(rows) == 1, 'FTS5 MATCH should return one row')
+assert(rows[0].content == 'hello world')
+
+db.close()

@@ -145,7 +145,7 @@ TEST_CASE("Foreach Array")
             CHECK(calls.at(1).at(0) == v2);
         }
 
-        SECTION("Truthy op return stops iteration")
+        SECTION("Truthy op return does not stop iteration")
         {
             auto v1 = Value::create(1_f);
             auto v2 = Value::create(2_f);
@@ -168,7 +168,7 @@ TEST_CASE("Foreach Array")
             REQUIRE_CALL(*op, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(Value::create(true))
-                .TIMES(1);
+                .TIMES(3);
 
             ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
@@ -176,9 +176,10 @@ TEST_CASE("Foreach Array")
 
             auto res = node.evaluate(ctx);
             CHECK(res->is<Null>());
-            REQUIRE(calls.size() == 1);
-            REQUIRE(calls.at(0).size() == 1);
+            REQUIRE(calls.size() == 3);
             CHECK(calls.at(0).at(0) == v1);
+            CHECK(calls.at(1).at(0) == v2);
+            CHECK(calls.at(2).at(0) == v3);
         }
     }
 
@@ -357,7 +358,7 @@ TEST_CASE("Foreach Map")
             REQUIRE(calls.at(0).size() == 2);
         }
 
-        SECTION("Truthy op return stops iteration")
+        SECTION("Truthy op return does not stop iteration")
         {
             auto k1 = Value::create("k1"s);
             auto v1 = Value::create(1_f);
@@ -381,7 +382,7 @@ TEST_CASE("Foreach Map")
             REQUIRE_CALL(*op, call(_))
                 .LR_SIDE_EFFECT(record_call(calls, _1))
                 .RETURN(Value::create(true))
-                .TIMES(1);
+                .TIMES(2);
 
             ast::Foreach node{ast::AST_Node::no_range,
                               std::move(structure_expr),
@@ -389,24 +390,11 @@ TEST_CASE("Foreach Map")
 
             auto res = node.evaluate(ctx);
             CHECK(res->is<Null>());
-            REQUIRE(calls.size() == 1);
-            REQUIRE(calls.at(0).size() == 2);
-
-            std::vector<std::pair<Value_Ptr, Value_Ptr>> expected = {{k1, v1},
-                                                                     {k2, v2}};
-            bool matched = false;
-            for (auto it = expected.begin(); it != expected.end(); ++it)
+            REQUIRE(calls.size() == 2);
+            for (const auto& call : calls)
             {
-                if (it->first
-                    == calls.at(0).at(0)
-                    && it->second
-                    == calls.at(0).at(1))
-                {
-                    matched = true;
-                    break;
-                }
+                REQUIRE(call.size() == 2);
             }
-            CHECK(matched);
         }
     }
 

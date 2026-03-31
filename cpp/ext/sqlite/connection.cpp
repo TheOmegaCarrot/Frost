@@ -1,5 +1,7 @@
 #include "connection.hpp"
 
+#include <csv.h>
+
 namespace frst::sqlite
 {
 
@@ -15,6 +17,8 @@ std::shared_ptr<Connection> Connection::create(const String& filename,
         std::string msg = sqlite3_errmsg(conn->conn_.get());
         throw Frost_Recoverable_Error{msg};
     }
+
+    sqlite3_csv_init(conn->conn_.get(), nullptr, nullptr);
 
     return conn;
 }

@@ -1,0 +1,17 @@
+# Verify CSV virtual table extension is enabled
+
+def sqlite = import('ext.sqlite')
+def db = sqlite.open(args[1])
+
+def csv_data = 'name,age\nAlice,30\nBob,25'
+def sql = 'CREATE VIRTUAL TABLE csv_test USING csv(data="' + csv_data + '", header=yes)'
+db.exec(sql)
+
+def rows = db.query('SELECT * FROM csv_test', [])
+assert(len(rows) == 2, 'CSV should have two data rows')
+assert(rows[0].name == 'Alice')
+assert(rows[0].age == '30')
+assert(rows[1].name == 'Bob')
+assert(rows[1].age == '25')
+
+db.close()

@@ -10,6 +10,9 @@ set(SQLITE_TESTS
     transaction.frst
     named-bindings.frst
     callback-nesting.frst
+    fts5.frst
+    math-functions.frst
+    csv-extension.frst
 )
 
 find_program(VALGRIND valgrind)

@@ -1,0 +1,13 @@
+# Verify SQLite math functions are enabled
+
+def sqlite = import('ext.sqlite')
+def db = sqlite.open(args[1])
+
+def rows = db.query('SELECT pi() as pi, abs(-5) as a, sign(-3) as s', [])
+assert(len(rows) == 1, 'should return one row')
+assert(rows[0].pi > 3.14)
+assert(rows[0].pi < 3.15)
+assert(rows[0].a == 5)
+assert(rows[0].s == -1)
+
+db.close()
