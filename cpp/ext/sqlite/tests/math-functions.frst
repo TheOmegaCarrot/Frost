@@ -1,7 +1,12 @@
 # Verify SQLite math functions are enabled
 
+def fs = import('std.fs')
 def sqlite = import('ext.sqlite')
-def db = sqlite.open(args[1])
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
 
 def rows = db.query('SELECT pi() as pi, abs(-5) as a, sign(-3) as s', [])
 assert(len(rows) == 1, 'should return one row')
@@ -11,3 +16,4 @@ assert(rows[0].a == 5)
 assert(rows[0].s == -1)
 
 db.close()
+if path != ':memory:': fs.remove(path)

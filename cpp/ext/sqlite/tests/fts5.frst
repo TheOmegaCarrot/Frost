@@ -1,7 +1,12 @@
 # Verify FTS5 full-text search is enabled
 
+def fs = import('std.fs')
 def sqlite = import('ext.sqlite')
-def db = sqlite.open(args[1])
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
 
 db.exec('CREATE VIRTUAL TABLE fts_test USING fts5(content)')
 db.exec('INSERT INTO fts_test VALUES (?)', ['hello world'])
@@ -12,3 +17,4 @@ assert(len(rows) == 1, 'FTS5 MATCH should return one row')
 assert(rows[0].content == 'hello world')
 
 db.close()
+if path != ':memory:': fs.remove(path)
