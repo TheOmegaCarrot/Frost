@@ -5,11 +5,6 @@
 
 Calls `function` with the elements of the array `args` spread as individual arguments.
 
-## `call`
-`call(f, ...args)`
-
-Calls `f` with `args`. Variadic equivalent of `pack_call`.
-
 ## `try_call`
 `try_call(function, args)`
 

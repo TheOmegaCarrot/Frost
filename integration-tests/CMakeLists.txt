@@ -6,7 +6,6 @@ set(INTEGRATION_SCRIPTS
     prelude/reject.frst
     prelude/curry.frst
     prelude/collect.frst
-    prelude/call.frst
     prelude/rev-args.frst
     prelude/tap.frst
     prelude/const.frst

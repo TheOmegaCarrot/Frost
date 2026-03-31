@@ -8,8 +8,6 @@ defn bcurry(f, ...outer) -> fn ...inner -> f @ pack_call(inner + outer)
 
 defn collect(...e) -> e
 
-defn call(f, ...args) -> pack_call(f, args)
-
 defn rev_args(f) -> fn ...args -> pack_call(f, reverse(args))
 
 defn tap(a, f) -> { f(a) ; a }
