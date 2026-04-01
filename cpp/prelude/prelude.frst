@@ -46,3 +46,5 @@ defn compose(f, g, ...rest) -> {
     else: call(compose, [ compose2(f, g) ] + rest )
 
 }
+
+defn spread(f) -> fn arr -> call(f, arr)

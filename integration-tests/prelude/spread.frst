@@ -1,0 +1,13 @@
+defn add(a, b) -> a + b
+
+# spread unpacks an array into arguments
+assert(spread(add)([1, 2]) == 3)
+
+# works with transform
+def pairs = [[1, 'a'], [2, 'b'], [3, 'c']]
+def firsts = pairs @ transform(spread(fn (n, _) -> n))
+assert(firsts == [1, 2, 3])
+
+# works with select
+def high_pairs = [[1, 10], [2, 20], [3, 5]] @ select(spread(fn (_, v) -> v > 8))
+assert(high_pairs == [[1, 10], [2, 20]])

@@ -16,6 +16,7 @@ set(INTEGRATION_SCRIPTS
     prelude/dig.frst
     prelude/sum.frst
     prelude/product.frst
+    prelude/spread.frst
     threaded-call-chain.frst
     capture-enclosing-closure.frst
     escaped-self-reference.frst

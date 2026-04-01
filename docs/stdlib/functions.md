@@ -50,6 +50,18 @@ Returns `fn ...inner -> f @ call(inner + outer)`.
 
 Returns all arguments as an array.
 
+## `spread`
+`spread(f)`
+
+Returns a function that takes a single array and calls `f` with its elements spread as individual arguments.
+Returns `fn arr -> call(f, arr)`.
+
+```frost
+def names = ['Alice', 'Bob']
+def ages = [30, 25]
+foreach zip(names, ages) with spread(fn (name, age) -> print(name + ' is ' + to_string(age)))
+```
+
 ## `rev_args`
 `rev_args(f)`
 

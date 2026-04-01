@@ -162,6 +162,7 @@ Each entry links to its full documentation.
 - [sort_by](collections.md#sort_by)
 - [sorted](collections.md#sorted)
 - [split](strings.md#split)
+- [spread](functions.md#spread)
 - [sqlite.db.close](sqlite.md#dbclose) · `ext.sqlite`
 - [sqlite.db.collect](sqlite.md#dbcollect) · `ext.sqlite`
 - [sqlite.db.each](sqlite.md#dbeach) · `ext.sqlite`
