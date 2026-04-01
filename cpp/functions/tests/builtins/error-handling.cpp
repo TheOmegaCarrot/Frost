@@ -139,7 +139,7 @@ TEST_CASE("Builtin try_call")
         CHECK(map.at(key_value)->is<Null>());
     }
 
-    SECTION("Calls function with array elements (pack_call semantics)")
+    SECTION("Calls function with array elements (call semantics)")
     {
         auto callable = mock::Mock_Callable::make();
         auto fn = Value::create(Function{callable});

@@ -19,7 +19,7 @@ using namespace std::literals;
 using Catch::Matchers::ContainsSubstring;
 using trompeloeil::_;
 
-TEST_CASE("Builtin pack_call")
+TEST_CASE("Builtin call")
 {
     // AI-generated test additions by Codex (GPT-5).
     // Signed: Codex (GPT-5).
@@ -27,20 +27,20 @@ TEST_CASE("Builtin pack_call")
     Symbol_Table table;
     inject_builtins(table);
 
-    auto pack_call_val = table.lookup("pack_call");
-    REQUIRE(pack_call_val->is<Function>());
-    auto pack_call_fn = pack_call_val->get<Function>().value();
+    auto call_val = table.lookup("call");
+    REQUIRE(call_val->is<Function>());
+    auto call_fn = call_val->get<Function>().value();
 
     SECTION("Arity: too few arguments")
     {
-        CHECK_THROWS_WITH(pack_call_fn->call({}),
+        CHECK_THROWS_WITH(call_fn->call({}),
                           ContainsSubstring("insufficient arguments"));
     }
 
     SECTION("Arity: too many arguments")
     {
         CHECK_THROWS_WITH(
-            pack_call_fn->call({Value::null(), Value::null(), Value::null()}),
+            call_fn->call({Value::null(), Value::null(), Value::null()}),
             ContainsSubstring("too many arguments"));
     }
 
@@ -49,13 +49,13 @@ TEST_CASE("Builtin pack_call")
         auto arg_list = Value::create(frst::Array{Value::create(1_f)});
         try
         {
-            pack_call_fn->call({Value::create(1_f), arg_list});
+            call_fn->call({Value::create(1_f), arg_list});
             FAIL("Expected type error for function argument");
         }
         catch (const Frost_User_Error& err)
         {
             const std::string msg = err.what();
-            CHECK_THAT(msg, ContainsSubstring("Function pack_call"));
+            CHECK_THAT(msg, ContainsSubstring("Function call"));
             CHECK_THAT(msg,
                        ContainsSubstring("requires Function as argument 1"));
             CHECK_THAT(msg, ContainsSubstring("(function)"));
@@ -69,13 +69,13 @@ TEST_CASE("Builtin pack_call")
         auto func_val = Value::create(Function{callable});
         try
         {
-            pack_call_fn->call({func_val, Value::create(1_f)});
+            call_fn->call({func_val, Value::create(1_f)});
             FAIL("Expected type error for args argument");
         }
         catch (const Frost_User_Error& err)
         {
             const std::string msg = err.what();
-            CHECK_THAT(msg, ContainsSubstring("Function pack_call"));
+            CHECK_THAT(msg, ContainsSubstring("Function call"));
             CHECK_THAT(msg, ContainsSubstring("requires Array as argument 2"));
             CHECK_THAT(msg, ContainsSubstring("(args)"));
             CHECK_THAT(msg, ContainsSubstring("got Int"));
@@ -97,7 +97,7 @@ TEST_CASE("Builtin pack_call")
             })
             .RETURN(Value::null());
 
-        auto res = pack_call_fn->call({func_val, empty_args});
+        auto res = call_fn->call({func_val, empty_args});
 
         CHECK(called);
         CHECK(observed_size == 0);
@@ -140,7 +140,7 @@ TEST_CASE("Builtin pack_call")
                 }
             })
             .RETURN(expected_return);
-        auto res = pack_call_fn->call({func_val, arr_val});
+        auto res = call_fn->call({func_val, arr_val});
 
         CHECK(called);
         CHECK(observed_size == expected->size());
@@ -156,7 +156,7 @@ TEST_CASE("Builtin pack_call")
         auto args = Value::create(frst::Array{Value::create(1_f)});
 
         REQUIRE_CALL(*callable, call(_)).THROW(Frost_Recoverable_Error{"boom"});
-        CHECK_THROWS_WITH(pack_call_fn->call({func_val, args}),
+        CHECK_THROWS_WITH(call_fn->call({func_val, args}),
                           ContainsSubstring("boom"));
     }
 
@@ -176,7 +176,7 @@ TEST_CASE("Builtin pack_call")
 
         try
         {
-            pack_call_fn->call({func_val, args});
+            call_fn->call({func_val, args});
             FAIL("Expected arity error from callee");
         }
         catch (const Frost_User_Error& err)

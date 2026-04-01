@@ -173,19 +173,19 @@ def tag = fn label, ...items ->
 ```
 
 In a variadic function, extra arguments are collected into an array.
-When writing higher-order functions, this meshes well with two important functions: [`pack_call`](./stdlib/functions.md#pack_call) and [`try_call`](./stdlib/functions.md#try_call).
+When writing higher-order functions, this meshes well with two important functions: [`call`](./stdlib/functions.md#call) and [`try_call`](./stdlib/functions.md#try_call).
 
-`pack_call` takes a function and an array of arguments, and calls that function with those arguments.
+`call` takes a function and an array of arguments, and calls that function with those arguments.
 
 ```frost
-pack_call(plus, [3, 5]) # 8
+call(plus, [3, 5]) # 8
 ```
 
 This results in some nice definitions of higher-order functions.
 Internally, the function [`curry`](./stdlib/functions.md#curry), which partially applies a function, is defined as:
 
 ```frost
-def curry = fn f, ...outer -> fn ...inner -> pack_call(f, outer + inner)
+def curry = fn f, ...outer -> fn ...inner -> call(f, outer + inner)
 ```
 
 `try_call` is similar in that it takes a function and an array of arguments,

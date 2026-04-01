@@ -9,7 +9,7 @@ add_library( frost-functions
     builtins/free-operators.cpp
     builtins/mutable-cell.cpp
     builtins/output.cpp
-    builtins/pack-call.cpp
+    builtins/call.cpp
     builtins/ranges.cpp
     builtins/streams.cpp
     builtins/string-ops.cpp
@@ -61,7 +61,7 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
     range
     nulls
     ranges
-    pack-call
+    call
     debug-helpers
     mformat
     hard-to-test

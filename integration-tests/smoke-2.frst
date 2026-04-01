@@ -201,7 +201,7 @@ assert(sugary1() == desugary1())
 
 def bind_front = fn (fun, ...args1) -> {
     fn (...args2) -> {
-        pack_call(fun, args1 + args2) # pack_call "unpacks" an array into an argument list
+        call(fun, args1 + args2) # call "unpacks" an array into an argument list
         # first arg MUST be a function, second arg MUST be an array, normal arity rules apply
     }
 }

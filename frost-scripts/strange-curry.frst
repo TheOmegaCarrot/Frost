@@ -1,10 +1,10 @@
 def rcurry = fn f, ...outer ->
                 fn ...inner ->
-                    f @ pack_call( inner @ reverse() + outer @ reverse() )
+                    f @ call( inner @ reverse() + outer @ reverse() )
 
 def zcurry2 = fn f, ...outer ->
                 fn ...inner ->
-                    map zip(outer, inner) with fn args -> pack_call(f, args)
+                    map zip(outer, inner) with fn args -> call(f, args)
 
 ;
 

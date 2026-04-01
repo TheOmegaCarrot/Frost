@@ -1,6 +1,6 @@
 # Hey, there's almost an idea here!
 export def object = fn obj -> map obj with 
-        fn k, v -> if is_function(v): { [k]: fn ...args -> pack_call(v, [obj] + args) }
+        fn k, v -> if is_function(v): { [k]: fn ...args -> call(v, [obj] + args) }
                     else: { [k]: v }
 
 export def obj = object({

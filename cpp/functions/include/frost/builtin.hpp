@@ -47,7 +47,7 @@ class Builtin final : public Callable
     X(structure_ops)                                                           \
     X(type_checks)                                                             \
     X(type_conversions)                                                        \
-    X(pack_call)                                                               \
+    X(call)                                                               \
     X(debug_helpers)                                                           \
     X(error_handling)                                                          \
     X(output)                                                                  \

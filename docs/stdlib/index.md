@@ -10,6 +10,7 @@ Each entry links to its full documentation.
 - [any](collections.md#any)
 - [assert](debug.md#assert)
 - [bcurry](functions.md#bcurry)
+- [call](functions.md#call)
 - [chunk](collections.md#chunk)
 - [chunk_by](collections.md#chunk_by)
 - [collect](functions.md#collect)
@@ -140,7 +141,6 @@ Each entry links to its full documentation.
 - [os.exit](os.md#exit) · `std.os`
 - [os.getenv](os.md#getenv) · `std.os`
 - [os.sleep](os.md#sleep) · `std.os`
-- [pack_call](functions.md#pack_call)
 - [partition](collections.md#partition)
 - [plus](operators.md#plus)
 - [pretty](types.md#pretty)

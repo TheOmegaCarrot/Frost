@@ -2,10 +2,10 @@
 
 namespace frst
 {
-BUILTIN(pack_call)
+BUILTIN(call)
 {
     // clang-format off
-    REQUIRE_ARGS("pack_call",
+    REQUIRE_ARGS("call",
             PARAM("function", TYPES(Function)),
             PARAM("args", TYPES(Array)));
     // clang-format on
@@ -13,8 +13,8 @@ BUILTIN(pack_call)
     return GET(0, Function)->call(GET(1, Array));
 }
 
-void inject_pack_call(Symbol_Table& table)
+void inject_call(Symbol_Table& table)
 {
-    INJECT(pack_call);
+    INJECT(call);
 }
 } // namespace frst
