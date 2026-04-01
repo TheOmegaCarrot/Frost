@@ -9,6 +9,7 @@ RUN apt-get update \
         mold \
         libboost-json-dev \
         libboost-regex-dev \
+        zlib1g-dev \
     && if [ "${WITH_HTTP}" = "Yes" ]; then \
         apt-get install -y --no-install-recommends \
             libboost-url-dev \
@@ -35,6 +36,7 @@ RUN apt-get update \
         libboost-regex1.83.0 \
         libgcc-s1 \
         libstdc++6 \
+        zlib1g \
     && if [ "${WITH_HTTP}" = "Yes" ]; then \
         apt-get install -y --no-install-recommends \
             libboost-url1.83.0 \
