@@ -1,0 +1,19 @@
+# Verify sqlar_compress/sqlar_uncompress extensions are enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+def original = 'hello world hello world hello world hello world hello world'
+def row = db.query('SELECT sqlar_compress(?) as compressed, length(?) as orig_len', [original, original])[0]
+
+# Verify round-trip: uncompress(compress(x), len(x)) == x
+def restored = db.query('SELECT sqlar_uncompress(?, ?) as restored', [row.compressed, row.orig_len])[0].restored
+assert(restored == original, 'sqlar round-trip must preserve data')
+
+db.close()
+if path != ':memory:': fs.remove(path)

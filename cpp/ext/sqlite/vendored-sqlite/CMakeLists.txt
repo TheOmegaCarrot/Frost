@@ -1,6 +1,8 @@
 enable_language(C)
 
-add_library(sqlite3 STATIC sqlite3.c csv.c)
+find_package(ZLIB REQUIRED)
+
+add_library(sqlite3 STATIC sqlite3.c csv.c fileio.c sqlar.c)
 
 target_include_directories(sqlite3
     PUBLIC
@@ -13,3 +15,5 @@ target_compile_definitions(sqlite3
     SQLITE_ENABLE_MATH_FUNCTIONS
     SQLITE_CORE
 )
+
+target_link_libraries(sqlite3 PRIVATE ZLIB::ZLIB)

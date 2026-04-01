@@ -13,6 +13,8 @@ set(SQLITE_TESTS
     fts5.frst
     math-functions.frst
     csv-extension.frst
+    fileio.frst
+    sqlar-compress.frst
 )
 
 find_program(VALGRIND valgrind)

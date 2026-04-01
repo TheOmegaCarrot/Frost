@@ -56,5 +56,5 @@ They are not available in all Frost builds, but are enabled by default.
 | Extension                  | Import                       | Description                      | Dependencies              |
 |----------------------------|------------------------------|----------------------------------|---------------------------|
 | [HTTP](./http.md)          | `import('ext.http')`         | Making HTTP requests             | Boost `url`, OpenSSL      |
-| [SQLite](./sqlite.md)      | `import('ext.sqlite')`       | Embedded relational database     | None (vendored)           |
+| [SQLite](./sqlite.md)      | `import('ext.sqlite')`       | Embedded relational database     | SQLite (vendored), zlib   |
 | [Unsafe](./unsafe.md)      | `import('ext.unsafe')`       | Bypass Frost's safety guarantees | None                      |

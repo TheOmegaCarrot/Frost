@@ -1,6 +1,6 @@
 #include "connection.hpp"
 
-#include <csv.h>
+#include <extensions.h>
 
 namespace frst::sqlite
 {
@@ -19,6 +19,8 @@ std::shared_ptr<Connection> Connection::create(const String& filename,
     }
 
     sqlite3_csv_init(conn->conn_.get(), nullptr, nullptr);
+    sqlite3_fileio_init(conn->conn_.get(), nullptr, nullptr);
+    sqlite3_sqlar_init(conn->conn_.get(), nullptr, nullptr);
 
     return conn;
 }

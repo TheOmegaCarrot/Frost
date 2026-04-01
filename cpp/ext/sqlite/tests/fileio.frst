@@ -1,0 +1,22 @@
+# Verify readfile/writefile extensions are enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+# Use the db path to derive a unique temp file, avoiding races between
+# the memory and file test variants.
+def tmp = path + '.fileio-test.txt'
+if fs.exists(tmp): fs.remove(tmp)
+
+def db = sqlite.open(path)
+
+db.exec('SELECT writefile(?, ?)', [tmp, 'hello from fileio'])
+def content = db.query('SELECT readfile(?) as f', [tmp])[0].f
+assert(content == 'hello from fileio')
+
+fs.remove(tmp)
+db.close()
+if path != ':memory:': fs.remove(path)
