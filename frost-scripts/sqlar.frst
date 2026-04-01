@@ -1,0 +1,48 @@
+# Usage: unpack-augmented-sqlar.frst sqlar-archive [pattern]
+# Unpacks files with names matching pattern, or all files if no pattern provided
+# 
+# Also unpacks extra "sqlar augmentation" columns into companion files where the column is not null
+# For example, if the sqlar has the extra column 'mtd', and the row with 'foo.txt' has non-null 'mtd',
+# then the content of 'mtd' will be written to foo.mtd.txt
+
+def { fs } = import('std')
+
+def sqlite = import('ext.sqlite')
+
+export defn is_sqlar(db) -> (
+    db.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'sqlar'")
+        @ len() != 0
+)
+
+def canonical_sqlar_columns = [ 'name', 'mode', 'mtime', 'sz', 'data' ]
+
+export defn augmented_columns(db) -> (
+    db.collect("PRAGMA table_info('sqlar')", fn row -> row.name)
+        @ reject(fn name -> canonical_sqlar_columns @ find(fn row -> row == name))
+)
+
+export defn unpack(db, pat) -> # exec with select is actually correct here because the purpose is the writefile
+    db.exec("SELECT writefile( name, sqlar_uncompress(data, sz), mode, mtime) FROM sqlar WHERE name LIKE ?",
+        [$'%${pat}%'])
+
+defn augment_filepath(path, aug) -> fs.parent(path) @fs.concat( fs.stem(path) + $'.${aug}' + fs.extension(path) )
+
+export defn unpack_augmented(db, pat) -> {
+    unpack(db, pat)
+    def mtd_cols = augmented_columns(db)
+
+    def filenames = db.collect("SELECT name FROM sqlar WHERE NAME LIKE ?", [ $'%${pat}%' ], fn row -> row.name)
+    
+    foreach xprod(filenames, mtd_cols) with spread(fn filename, col -> {
+        def aug_fname = filename @ augment_filepath(col)
+        # SQLite doesn't let you parameterize column names :(
+        db.exec($"SELECT writefile(?, ${col}) FROM sqlar WHERE name = ? AND ${col} NOT NULL", [ aug_fname, filename ])
+    })
+}
+
+if not imported: do {
+    assert(len(args) == 3, "Expected 2 arguments")
+    def db = sqlite.open_readonly(args[1])
+    assert(is_sqlar(db), "Expected sqlar archive")
+    unpack_augmented(db, args[2])
+}
