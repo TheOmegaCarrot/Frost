@@ -1,5 +1,5 @@
-# Usage: unpack-augmented-sqlar.frst sqlar-archive [pattern]
-# Unpacks files with names matching pattern, or all files if no pattern provided
+# Usage: sqlar.frst sqlar-archive [pattern]
+# Unpacks files with names matching pattern, or all files if no pattern is provided
 # 
 # Also unpacks extra "sqlar augmentation" columns into companion files where the column is not null
 # For example, if the sqlar has the extra column 'mtd', and the row with 'foo.txt' has non-null 'mtd',
@@ -41,8 +41,8 @@ export defn unpack_augmented(db, pat) -> {
 }
 
 if not imported: do {
-    assert(len(args) == 3, "Expected 2 arguments")
+    assert(len(args) == 2 or len(args) == 3, "Expected 1 or 2 arguments")
     def db = sqlite.open_readonly(args[1])
     assert(is_sqlar(db), "Expected sqlar archive")
-    unpack_augmented(db, args[2])
+    unpack_augmented(db, args[2] or '')
 }
