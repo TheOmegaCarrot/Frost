@@ -1,7 +1,7 @@
 # Catch a simple error, exercise every boundary successfully, then crash.
 # The final crash trace must be clean.
 
-def r = try_call(fn -> 1 + "oops", [])
+def r = try_call(fn -> 1 + "oops")
 assert(r.ok == false)
 
 # Every boundary type works correctly after catching

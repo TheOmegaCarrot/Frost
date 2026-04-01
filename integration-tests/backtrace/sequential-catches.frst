@@ -7,12 +7,12 @@ assert(r1.ok == false)
 assert(1 + 2 == 3)
 
 # Cycle 2: Map
-def r2 = try_call(fn -> map [1] with fn x -> x + "b", [])
+def r2 = try_call(fn -> map [1] with fn x -> x + "b")
 assert(r2.ok == false)
 assert(map [1] with fn x -> x + 1 == [2])
 
 # Cycle 3: Do_Block
-def r3 = try_call(fn -> do { 1 + "c" }, [])
+def r3 = try_call(fn -> do { 1 + "c" })
 assert(r3.ok == false)
 assert(do { 10 } == 10)
 

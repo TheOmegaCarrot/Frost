@@ -31,7 +31,7 @@ assert(empty_collect == [], 'collect on empty returns empty array')
 # --- Error paths ---
 
 # No arguments
-def collect_no_args = try_call(db.collect, [])
+def collect_no_args = try_call(db.collect)
 assert(not collect_no_args.ok, 'collect with no args should fail')
 
 # One argument (missing callback)

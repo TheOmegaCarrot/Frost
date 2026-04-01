@@ -16,7 +16,7 @@ def sum_then_add1 = compose(varsum, f)
 assert(sum_then_add1(1, 2, 3) == 7)
 
 
-def missing0 = try_call(compose, [])
+def missing0 = try_call(compose)
 assert(missing0.ok == false)
 assert(contains(missing0.error, "Expected at least 2, but got 0."))
 

@@ -155,7 +155,7 @@ assert(dup.y == 2, 'non-duplicate column preserved')
 # --- Error paths ---
 
 # No arguments
-def query_no_args = try_call(db.query, [])
+def query_no_args = try_call(db.query)
 assert(not query_no_args.ok, 'query with no args should fail')
 
 # Invalid SQL

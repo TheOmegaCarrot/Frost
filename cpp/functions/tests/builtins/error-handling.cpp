@@ -52,7 +52,7 @@ TEST_CASE("Builtin try_call")
         CHECK_THROWS_WITH(try_call->call({}),
                           ContainsSubstring("Called with 0"));
         CHECK_THROWS_WITH(try_call->call({}),
-                          ContainsSubstring("requires at least 2"));
+                          ContainsSubstring("requires at least 1"));
 
         CHECK_THROWS_WITH(
             try_call->call({Value::null(), Value::null(), Value::null()}),
@@ -63,6 +63,39 @@ TEST_CASE("Builtin try_call")
         CHECK_THROWS_WITH(
             try_call->call({Value::null(), Value::null(), Value::null()}),
             ContainsSubstring("no more than 2"));
+    }
+
+    SECTION("Omitted args calls zero-arg function")
+    {
+        auto callable = mock::Mock_Callable::make();
+        auto fn = Value::create(Function{callable});
+
+        REQUIRE_CALL(*callable, call(_))
+            .WITH(_1.empty())
+            .RETURN(Value::create(42_f));
+
+        auto res = try_call->call({fn});
+        REQUIRE(res->is<Map>());
+        auto map = res->get<Map>().value();
+        CHECK(map.at(key_ok)->get<Bool>().value() == true);
+        CHECK(map.at(key_value)->get<Int>().value() == 42_f);
+    }
+
+    SECTION("Omitted args captures error from zero-arg function")
+    {
+        auto callable = mock::Mock_Callable::make();
+        auto fn = Value::create(Function{callable});
+
+        REQUIRE_CALL(*callable, call(_))
+            .WITH(_1.empty())
+            .THROW(Frost_Recoverable_Error{"no args boom"});
+
+        auto res = try_call->call({fn});
+        REQUIRE(res->is<Map>());
+        auto map = res->get<Map>().value();
+        CHECK(map.at(key_ok)->get<Bool>().value() == false);
+        CHECK_THAT(map.at(key_error)->raw_get<String>(),
+                   ContainsSubstring("no args boom"));
     }
 
     SECTION("Type checks")

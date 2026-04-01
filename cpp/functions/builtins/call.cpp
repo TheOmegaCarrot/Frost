@@ -7,10 +7,12 @@ BUILTIN(call)
     // clang-format off
     REQUIRE_ARGS("call",
             PARAM("function", TYPES(Function)),
-            PARAM("args", TYPES(Array)));
+            OPTIONAL(PARAM("args", TYPES(Array))));
     // clang-format on
 
-    return GET(0, Function)->call(GET(1, Array));
+    if (HAS(1))
+        return GET(0, Function)->call(GET(1, Array));
+    return GET(0, Function)->call({});
 }
 
 void inject_call(Symbol_Table& table)

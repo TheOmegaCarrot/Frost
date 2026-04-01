@@ -44,6 +44,19 @@ TEST_CASE("Builtin call")
             ContainsSubstring("too many arguments"));
     }
 
+    SECTION("Omitted args calls zero-arg function")
+    {
+        auto callable = mock::Mock_Callable::make();
+        auto func_val = Value::create(Function{callable});
+
+        REQUIRE_CALL(*callable, call(_))
+            .WITH(_1.empty())
+            .RETURN(Value::create(42_f));
+
+        auto res = call_fn->call({func_val});
+        CHECK(res->get<Int>().value() == 42_f);
+    }
+
     SECTION("Type error: function argument")
     {
         auto arg_list = Value::create(frst::Array{Value::create(1_f)});

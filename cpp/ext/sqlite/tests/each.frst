@@ -37,7 +37,7 @@ assert(db.query('SELECT count(*) as c FROM nums')[0].c == 3, 'each on empty shou
 # --- Error paths ---
 
 # No arguments
-def each_no_args = try_call(db.each, [])
+def each_no_args = try_call(db.each)
 assert(not each_no_args.ok, 'each with no args should fail')
 
 # One argument (missing callback)

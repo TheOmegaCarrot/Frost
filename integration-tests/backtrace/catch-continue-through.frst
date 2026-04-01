@@ -8,28 +8,28 @@ assert(r1.ok == false)
 assert(1 + 2 == 3)
 
 # Through Map
-def r2 = try_call(fn -> map [1] with fn x -> x + "oops", [])
+def r2 = try_call(fn -> map [1] with fn x -> x + "oops")
 assert(r2.ok == false)
 def ok_map = map [1, 2] with fn x -> x * 2
 assert(ok_map == [2, 4])
 
 # Through Filter
-def r3 = try_call(fn -> filter [1] with fn x -> x + "oops", [])
+def r3 = try_call(fn -> filter [1] with fn x -> x + "oops")
 assert(r3.ok == false)
 def ok_filter = filter [1, 2, 3] with fn x -> x > 1
 assert(ok_filter == [2, 3])
 
 # Through Reduce
-def r4 = try_call(fn -> reduce [1, 2] with fn (acc, x) -> acc + "oops", [])
+def r4 = try_call(fn -> reduce [1, 2] with fn (acc, x) -> acc + "oops")
 assert(r4.ok == false)
 assert((reduce [1, 2, 3] with plus) == 6)
 
 # Through Foreach
-def r5 = try_call(fn -> foreach [1] with fn x -> x + "oops", [])
+def r5 = try_call(fn -> foreach [1] with fn x -> x + "oops")
 assert(r5.ok == false)
 
 # Through Do_Block
-def r6 = try_call(fn -> do { 1 + "oops" }, [])
+def r6 = try_call(fn -> do { 1 + "oops" })
 assert(r6.ok == false)
 assert(do { 10 + 20 } == 30)
 

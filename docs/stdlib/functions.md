@@ -1,14 +1,16 @@
 # Functions
 
 ## `call`
+`call(function)`
 `call(function, args)`
 
-Calls `function` with the elements of the array `args` spread as individual arguments.
+Calls `function` with no arguments, or with the elements of the array `args` spread as individual arguments.
 
 ## `try_call`
+`try_call(function)`
 `try_call(function, args)`
 
-Calls `function` with the elements of `args` spread as arguments.
+Calls `function` with no arguments, or with the elements of `args` spread as arguments.
 Returns `{ ok: true, value: result }` on success, or `{ ok: false, error: message }` if the call produces a recoverable error.
 
 ## `and_then`

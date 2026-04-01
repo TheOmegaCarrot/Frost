@@ -12,10 +12,10 @@ assert(type(sqlite.version) == 'String', 'sqlite.version should be a string')
 # --- open ---
 
 # No arguments
-def open_no_args = try_call(sqlite.open, [])
+def open_no_args = try_call(sqlite.open)
 assert(not open_no_args.ok, 'open with no args should fail')
 
-def open_ro_no_args = try_call(sqlite.open_readonly, [])
+def open_ro_no_args = try_call(sqlite.open_readonly)
 assert(not open_ro_no_args.ok, 'open_readonly with no args should fail')
 
 # Open failure - nonexistent directory
@@ -72,7 +72,7 @@ assert(not ro_nofile.ok, 'open_readonly: nonexistent file should fail')
 db.close()
 
 # Double close
-def close2 = try_call(db.close, [])
+def close2 = try_call(db.close)
 assert(not close2.ok, 'double close should fail')
 
 # Closed connection errors for all methods
@@ -96,7 +96,7 @@ def closed_script = try_call(db.script, ['SELECT 1'])
 assert(not closed_script.ok, 'script on closed db should fail')
 assert(closed_script.error @ contains('closed'), 'should mention closed')
 
-def closed_rowid = try_call(db.last_insert_rowid, [])
+def closed_rowid = try_call(db.last_insert_rowid)
 assert(not closed_rowid.ok, 'last_insert_rowid on closed db should fail')
 assert(closed_rowid.error @ contains('closed'), 'should mention closed')
 

@@ -13,16 +13,23 @@ BUILTIN(try_call)
     // clang-format off
     REQUIRE_ARGS("try_call",
             PARAM("function", TYPES(Function)),
-            PARAM("args", TYPES(Array)));
+            OPTIONAL(PARAM("args", TYPES(Array))));
     // clang-format on
 
     STRINGS(ok, value, error, trace);
+
+    const auto& fn = GET(0, Function);
+    auto invoke = [&] {
+        if (HAS(1))
+            return fn->call(GET(1, Array));
+        return fn->call({});
+    };
 
     try
     {
         return Value::create(
             Value::trusted,
-            Map{{strings.value, GET(0, Function)->call(GET(1, Array))},
+            Map{{strings.value, invoke()},
                 {strings.ok, Value::create(true)}});
     }
     catch (Frost_Recoverable_Error& err)
