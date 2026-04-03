@@ -66,6 +66,7 @@ Each entry links to its full documentation.
 - [http.parse_url](http.md#parse_url) · `ext.http`
 - [http.request](http.md#request) · `ext.http`
 - [id](collections.md#id)
+- [includes](collections.md#includes)
 - [index](collections.md#index)
 - [inv](functions.md#inv)
 - [io.open_append](io.md#open_append) · `std.io`

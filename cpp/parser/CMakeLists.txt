@@ -12,6 +12,7 @@ target_link_libraries( frost-parser
     frost-common
     frost-ast
     frost-functions
+    frost-utils
     foonathan::lexy
 )
 

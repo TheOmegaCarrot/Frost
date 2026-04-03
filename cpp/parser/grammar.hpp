@@ -793,14 +793,81 @@ struct string_literal
         static constexpr auto name = "string literal";
     };
 
+    // Tag type to distinguish triple-quoted content for indentation trimming.
+    struct Multiline_Content
+    {
+        std::string text;
+    };
+
+    // Escape sequences for triple-quoted strings: \n and \r are forbidden
+    // because actual newlines are available and escape-produced newlines
+    // interact poorly with indentation trimming.
+    static constexpr auto multiline_escapes = lexy::symbol_table<char>
+                                                  .map<'t'>('\t')
+                                                  .map<'\\'>('\\')
+                                                  .map<'0'>('\0');
+
+    // Triple-quoted multiline strings: """...""" and '''...'''
+    // Escape sequences are processed. Indentation is trimmed based
+    // on the closing delimiter's position.
+    struct triple_double_inner
+    {
+        static constexpr auto escapes = multiline_escapes.map<'"'>('"');
+
+        static constexpr auto rule =
+            dsl::delimited(LEXY_LIT("\"\"\""),
+                           LEXY_LIT("\"\"\""))(
+                dsl::unicode::character,
+                dsl::backslash_escape.symbol<escapes>().rule(hex_escape));
+        static constexpr auto value = lexy::as_string<std::string>;
+        static constexpr auto name = "string literal";
+    };
+
+    struct triple_double
+    {
+        static constexpr auto rule = dsl::p<triple_double_inner>;
+        static constexpr auto value = lexy::callback<Multiline_Content>(
+            [](std::string s) { return Multiline_Content{std::move(s)}; });
+    };
+
+    struct triple_single_inner
+    {
+        static constexpr auto escapes = multiline_escapes.map<'\''>('\'');
+
+        static constexpr auto rule =
+            dsl::delimited(LEXY_LIT("'''"),
+                           LEXY_LIT("'''"))(
+                dsl::unicode::character,
+                dsl::backslash_escape.symbol<escapes>().rule(hex_escape));
+        static constexpr auto value = lexy::as_string<std::string>;
+        static constexpr auto name = "string literal";
+    };
+
+    struct triple_single
+    {
+        static constexpr auto rule = dsl::p<triple_single_inner>;
+        static constexpr auto value = lexy::callback<Multiline_Content>(
+            [](std::string s) { return Multiline_Content{std::move(s)}; });
+    };
+
     static constexpr auto rule = dsl::p<raw_r_double>
                                  | dsl::p<raw_r_single>
+                                 | dsl::p<triple_double>
+                                 | dsl::p<triple_single>
                                  | dsl::p<raw_double>
                                  | dsl::p<raw_single>;
     static constexpr auto value =
-        lexy::callback<Value_Ptr>([](std::string str) {
-            return Value::create(std::move(str));
-        });
+        lexy::callback<Value_Ptr>(
+            [](std::string str) {
+                return Value::create(std::move(str));
+            },
+            [](Multiline_Content content) {
+                auto result =
+                    utils::trim_multiline_indentation(content.text);
+                if (not result.has_value())
+                    throw Frost_Interpreter_Error{result.error()};
+                return Value::create(std::move(result).value());
+            });
     static constexpr auto name = "string literal";
 };
 

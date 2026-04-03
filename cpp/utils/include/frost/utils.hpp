@@ -27,6 +27,9 @@ using Fmt_Segment = std::variant<Fmt_Literal, Fmt_Placeholder>;
 std::expected<std::vector<Fmt_Segment>, std::string> parse_fmt_string(
     const std::string& str);
 
+std::expected<std::string, std::string> trim_multiline_indentation(
+    std::string_view content);
+
 #define FROST_X_KEYWORDS                                                       \
     X("if")                                                                    \
     X("else")                                                                  \

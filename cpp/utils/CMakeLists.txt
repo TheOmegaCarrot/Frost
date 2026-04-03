@@ -1,5 +1,6 @@
 add_library( frost-utils
     parse-fmt-string.cpp
+    trim-multiline.cpp
 )
 
 target_include_directories( frost-utils
@@ -14,6 +15,7 @@ target_link_libraries( frost-utils
 
 set(UTILS_TEST_FILES
     parse-fmt-string
+    trim-multiline
 )
 
 foreach(test_file IN LISTS UTILS_TEST_FILES)

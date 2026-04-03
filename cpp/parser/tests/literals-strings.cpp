@@ -254,4 +254,188 @@ TEST_CASE("Parser String Literals")
         auto result2 = parse(raw_single);
         CHECK_FALSE(result2);
     }
+
+    SECTION("Triple-quoted strings: basic multiline")
+    {
+        auto result = parse(R"("""
+    hello
+    world
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == R"(hello
+world)");
+    }
+
+    SECTION("Triple-quoted strings: single-quoted variant")
+    {
+        auto result = parse(R"('''
+    hello
+    world
+    ''')");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == R"(hello
+world)");
+    }
+
+    SECTION("Triple-quoted strings: indentation beyond closing is preserved")
+    {
+        auto result = parse(R"("""
+    if true:
+      nested
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == R"(if true:
+  nested)");
+    }
+
+    SECTION("Triple-quoted strings: empty lines preserved")
+    {
+        auto result = parse(R"("""
+    line 1
+
+    line 3
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == R"(line 1
+
+line 3)");
+    }
+
+    SECTION("Triple-quoted strings: escape sequences processed")
+    {
+        auto result = parse(R"("""
+    hello\tworld
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == "hello\tworld");
+    }
+
+    SECTION("Triple-quoted strings: hex escapes processed")
+    {
+        auto result = parse(R"("""
+    \x48\x69
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == "Hi");
+    }
+
+    SECTION("Triple-quoted strings: no indentation on closing delimiter")
+    {
+        auto result = parse(R"("""
+hello
+world
+""")");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == R"(hello
+world)");
+    }
+
+    SECTION("Triple-quoted strings: single content line")
+    {
+        auto result = parse(R"("""
+    hello
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == "hello");
+    }
+
+    SECTION("Triple-quoted strings: can contain double quotes")
+    {
+        auto result = parse(R"("""
+    she said "hi"
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value()
+              == R"(she said "hi")");
+    }
+
+    SECTION("Triple-quoted strings: single-quoted can contain single quotes")
+    {
+        auto result = parse(R"('''
+    it's fine
+    ''')");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == "it's fine");
+    }
+
+    SECTION("Triple-quoted strings: triple-single can contain triple-double")
+    {
+        auto result = parse(R"--('''
+    some """quoted""" text
+    ''')--");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value()
+              == R"(some """quoted""" text)");
+    }
+
+    SECTION("Triple-quoted strings: triple-double can contain triple-single")
+    {
+        auto result = parse(R"("""
+    some '''quoted''' text
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value()
+              == "some '''quoted''' text");
+    }
+
+    SECTION("Triple-quoted strings: tab indentation")
+    {
+        auto result = parse("\"\"\"\n\thello\n\tworld\n\t\"\"\"");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == R"(hello
+world)");
+    }
+
+    SECTION("Triple-quoted strings: mixed indentation levels")
+    {
+        auto result = parse(R"("""
+    a
+        b
+            c
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == R"(a
+    b
+        c)");
+    }
+
+    SECTION("Triple-quoted strings: empty content")
+    {
+        auto result = parse("\"\"\"\n\"\"\"");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == "");
+    }
+
+    SECTION("Triple-quoted strings: whitespace-only content")
+    {
+        auto result = parse(R"("""
+
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == "");
+    }
+
+    SECTION("Triple-quoted strings: \\n and \\r escapes are forbidden")
+    {
+        auto with_n = parse(R"("""
+    hello\nworld
+    """)");
+        CHECK_FALSE(with_n);
+
+        auto with_r = parse(R"("""
+    hello\rworld
+    """)");
+        CHECK_FALSE(with_r);
+    }
+
+    SECTION("Triple-quoted strings: regular strings still work")
+    {
+        auto regular = parse(R"("hello")");
+        REQUIRE(regular);
+        CHECK(regular.value()->get<frst::String>().value() == "hello");
+
+        auto single = parse("'hello'");
+        REQUIRE(single);
+        CHECK(single.value()->get<frst::String>().value() == "hello");
+    }
 }
