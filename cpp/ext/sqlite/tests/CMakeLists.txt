@@ -10,24 +10,27 @@ set(SQLITE_TESTS
     transaction.frst
     named-bindings.frst
     callback-nesting.frst
-    fts5.frst
-    math-functions.frst
-    csv-extension.frst
-    fileio.frst
-    sqlar-compress.frst
-    generate-series.frst
-    regexp.frst
-    sha3.frst
-    uuid.frst
-    foreign-keys.frst
-    soundex.frst
-    dbstat.frst
-    percentile.frst
+)
+
+set(SQLITE_FEATURE_CHECKS
+    feature-checks/csv-extension.frst
+    feature-checks/dbstat.frst
+    feature-checks/fileio.frst
+    feature-checks/foreign-keys.frst
+    feature-checks/fts5.frst
+    feature-checks/generate-series.frst
+    feature-checks/math-functions.frst
+    feature-checks/percentile.frst
+    feature-checks/regexp.frst
+    feature-checks/sha3.frst
+    feature-checks/soundex.frst
+    feature-checks/sqlar-compress.frst
+    feature-checks/uuid.frst
 )
 
 find_program(VALGRIND valgrind)
 
-foreach(script ${SQLITE_TESTS})
+foreach(script ${SQLITE_TESTS} ${SQLITE_FEATURE_CHECKS})
     get_filename_component(name ${script} NAME_WE)
 
     # In-memory
