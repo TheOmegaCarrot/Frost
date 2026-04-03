@@ -171,6 +171,12 @@ contexts:
       pop: true
 
   strings:
+    - match: '"""'
+      scope: punctuation.definition.string.begin.frost
+      push: triple-string-double
+    - match: "'''"
+      scope: punctuation.definition.string.begin.frost
+      push: triple-string-single
     - match: '"'
       scope: punctuation.definition.string.begin.frost
       push: string-double
@@ -203,6 +209,26 @@ contexts:
     - match: '\n'
       scope: invalid.illegal.newline.frost
       pop: true
+
+  triple-string-double:
+    - meta_scope: string.quoted.double.multiline.frost
+    - match: '"""'
+      scope: punctuation.definition.string.end.frost
+      pop: true
+    - match: '\\[t"\\0]'
+      scope: constant.character.escape.frost
+    - match: '\\.'
+      scope: invalid.illegal.escape.frost
+
+  triple-string-single:
+    - meta_scope: string.quoted.single.multiline.frost
+    - match: "'''"
+      scope: punctuation.definition.string.end.frost
+      pop: true
+    - match: "\\\\[t'\\\\0]"
+      scope: constant.character.escape.frost
+    - match: '\\.'
+      scope: invalid.illegal.escape.frost
 
   format-strings:
     - match: '\$"'

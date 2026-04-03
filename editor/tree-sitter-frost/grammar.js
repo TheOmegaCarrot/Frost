@@ -430,6 +430,8 @@ module.exports = grammar({
       $.integer,
       $.boolean,
       $.null,
+      $.triple_string_double,
+      $.triple_string_single,
       $.double_string,
       $.single_string,
       $.raw_string_double,
@@ -445,6 +447,8 @@ module.exports = grammar({
     null: $ => $.kw_null,
 
     // Atomic tokens: no extras (including comments) can be injected inside.
+    triple_string_double: _ => token(seq('"""', /([^"\\]|\\.|"[^"]|""[^"])*/, '"""')),
+    triple_string_single: _ => token(seq("'''", /([^'\\]|\\.|'[^']|''[^'])*/, "'''")),
     double_string: _ => token(seq('"', /[^"\\\n]*(?:\\.[^"\\\n]*)*/, '"')),
     single_string: _ => token(seq("'", /[^'\\\n]*(?:\\.[^'\\\n]*)*/u, "'")),
 

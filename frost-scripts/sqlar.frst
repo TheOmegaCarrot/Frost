@@ -10,7 +10,11 @@ def { fs } = import('std')
 def sqlite = import('ext.sqlite')
 
 export defn is_sqlar(db) -> (
-    db.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'sqlar'")
+    db.query('''
+        SELECT name 
+        FROM sqlite_master
+        WHERE type = 'table' AND name = 'sqlar'
+        ''')
         @ len() != 0
 )
 
@@ -22,7 +26,12 @@ export defn augmented_columns(db) -> (
 )
 
 export defn unpack(db, pat) -> # exec with select is actually correct here because the purpose is the writefile
-    db.exec("SELECT writefile( name, sqlar_uncompress(data, sz), mode, mtime) FROM sqlar WHERE name LIKE ?",
+    db.exec('''
+            SELECT writefile( name, sqlar_uncompress(data, sz), mode, mtime) 
+            FROM sqlar
+            WHERE name 
+            LIKE ?
+            ''',
         [$'%${pat}%'])
 
 defn augment_filepath(path, aug) -> fs.parent(path) @fs.concat( fs.stem(path) + $'.${aug}' + fs.extension(path) )
@@ -31,7 +40,11 @@ export defn unpack_augmented(db, pat) -> {
     unpack(db, pat)
     def mtd_cols = augmented_columns(db)
 
-    def filenames = db.collect("SELECT name FROM sqlar WHERE NAME LIKE ?", [ $'%${pat}%' ], fn row -> row.name)
+    def filenames = db.collect('''
+                            SELECT name
+                            FROM sqlar
+                            WHERE NAME LIKE ?
+                            ''', [ $'%${pat}%' ], fn row -> row.name)
     
     foreach xprod(filenames, mtd_cols) with spread(fn filename, col -> {
         def aug_fname = filename @ augment_filepath(col)

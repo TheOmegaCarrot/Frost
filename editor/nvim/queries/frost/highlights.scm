@@ -30,6 +30,8 @@
   [
     (double_string)
     (single_string)
+    (triple_string_double)
+    (triple_string_single)
     (raw_string_double)
     (raw_string_single)
   ] @string

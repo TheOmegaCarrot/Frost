@@ -1947,6 +1947,14 @@
         },
         {
           "type": "SYMBOL",
+          "name": "triple_string_double"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "triple_string_single"
+        },
+        {
+          "type": "SYMBOL",
           "name": "double_string"
         },
         {
@@ -2001,6 +2009,46 @@
     "null": {
       "type": "SYMBOL",
       "name": "kw_null"
+    },
+    "triple_string_double": {
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "\"\"\""
+          },
+          {
+            "type": "PATTERN",
+            "value": "([^\"\\\\]|\\\\.|\"[^\"]|\"\"[^\"])*"
+          },
+          {
+            "type": "STRING",
+            "value": "\"\"\""
+          }
+        ]
+      }
+    },
+    "triple_string_single": {
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "'''"
+          },
+          {
+            "type": "PATTERN",
+            "value": "([^'\\\\]|\\\\.|'[^']|''[^'])*"
+          },
+          {
+            "type": "STRING",
+            "value": "'''"
+          }
+        ]
+      }
     },
     "double_string": {
       "type": "TOKEN",

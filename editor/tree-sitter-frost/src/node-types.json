@@ -52,6 +52,14 @@
       {
         "type": "single_string",
         "named": true
+      },
+      {
+        "type": "triple_string_double",
+        "named": true
+      },
+      {
+        "type": "triple_string_single",
+        "named": true
       }
     ]
   },
@@ -2072,6 +2080,14 @@
   },
   {
     "type": "single_string",
+    "named": true
+  },
+  {
+    "type": "triple_string_double",
+    "named": true
+  },
+  {
+    "type": "triple_string_single",
     "named": true
   },
   {
