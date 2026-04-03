@@ -1,0 +1,25 @@
+# Verify percentile and ordered-set aggregate functions are enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+db.exec('CREATE TABLE vals (x REAL)')
+foreach [10, 20, 30, 40, 50] with fn v -> db.exec('INSERT INTO vals VALUES (?)', [v])
+
+# median
+assert(db.query('SELECT median(x) as m FROM vals')[0].m == 30.0)
+
+# percentile (function-call syntax)
+def p50 = db.query('SELECT percentile(x, 50) as p FROM vals')[0].p
+assert(p50 == 30.0)
+
+def p25 = db.query('SELECT percentile(x, 25) as p FROM vals')[0].p
+assert(p25 == 20.0)
+
+db.close()
+if path != ':memory:': fs.remove(path)

@@ -1,0 +1,19 @@
+# Verify dbstat virtual table is enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+db.exec('CREATE TABLE t (x INTEGER)')
+db.exec('INSERT INTO t VALUES (1)')
+
+def pages = db.query('SELECT count(*) as n FROM dbstat')
+assert(len(pages) == 1)
+assert(pages[0].n > 0, 'dbstat should report at least one page')
+
+db.close()
+if path != ':memory:': fs.remove(path)

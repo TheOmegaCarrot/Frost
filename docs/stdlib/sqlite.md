@@ -10,18 +10,26 @@ The SQLAR extension requires zlib, which is linked from the system.
 
 The vendored build enables the following non-default compile options:
 
+- [**DEFAULT_FOREIGN_KEYS=1**](https://www.sqlite.org/compile.html#default_foreign_keys) — foreign key enforcement is on by default
+- [**DEFAULT_MEMSTATUS=0**](https://www.sqlite.org/compile.html#default_memstatus) — disables memory usage tracking for faster allocations
+- [**LIKE_DOESNT_MATCH_BLOBS**](https://www.sqlite.org/compile.html#like_doesnt_match_blobs) — LIKE/GLOB return FALSE for BLOB operands
+- [**MAX_EXPR_DEPTH=0**](https://www.sqlite.org/compile.html#max_expr_depth) — no limit on expression depth
 - [**STAT4**](https://www.sqlite.org/compile.html#enable_stat4) — collects histogram data for improved query planner decisions
-- [**UPDATE_DELETE_LIMIT**](https://www.sqlite.org/compile.html#enable_update_delete_limit) — allows `LIMIT` and `ORDER BY` on `UPDATE` and `DELETE` statements
+- [**TEMP_STORE=2**](https://www.sqlite.org/compile.html#temp_store) — temporary tables and indices default to memory
+- [**USE_ALLOCA**](https://www.sqlite.org/compile.html#use_alloca) — uses stack allocations for temporaries
 
 The vendored build also enables the following extensions:
 
+- [**CSV virtual table**](https://www.sqlite.org/csv.html)
+- [**dbstat**](https://www.sqlite.org/dbstat.html) — virtual table for storage analysis
 - [**FTS5**](https://www.sqlite.org/fts5.html) — full-text search
 - [**Math functions**](https://www.sqlite.org/lang_mathfunc.html)
-- [**CSV virtual table**](https://www.sqlite.org/csv.html)
+- [**Percentile**](https://www.sqlite.org/lang_aggfunc.html#percentile_disc) — `median()` and `percentile()` aggregate functions
 - [**File I/O**](https://www.sqlite.org/cli.html#file_i_o_functions) — `readfile()`, `writefile()`, and the `fsdir` virtual table
 - [**generate_series**](https://www.sqlite.org/series.html) — table-valued function for generating integer sequences
 - [**REGEXP**](https://www.sqlite.org/lang_expr.html#regexp) — enables the `REGEXP` operator for pattern matching
 - [**SHA3**](https://www.sqlite.org/sha3query.html) — `sha3()` and `sha3_query()` hash functions
+- [**Soundex**](https://www.sqlite.org/lang_corefunc.html#soundex) — `soundex()` function for phonetic string matching
 - [**SQLAR**](https://www.sqlite.org/sqlar.html) — `sqlar_compress()` and `sqlar_uncompress()` for working with SQLite Archive files
 - [**UUID**](https://www.sqlite.org/src/file?name=ext/misc/uuid.c) — `uuid()`, `uuid_str()`, and `uuid_blob()` for generating and converting UUIDs
 

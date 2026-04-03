@@ -1,0 +1,16 @@
+# Verify soundex function is enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+assert(db.query('SELECT soundex("Robert") as s')[0].s == 'R163')
+assert(db.query('SELECT soundex("Rupert") as s')[0].s == 'R163')
+assert(db.query('SELECT soundex("Smith") as s')[0].s != 'R163')
+
+db.close()
+if path != ':memory:': fs.remove(path)

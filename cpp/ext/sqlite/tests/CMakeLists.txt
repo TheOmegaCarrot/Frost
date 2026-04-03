@@ -19,6 +19,10 @@ set(SQLITE_TESTS
     regexp.frst
     sha3.frst
     uuid.frst
+    foreign-keys.frst
+    soundex.frst
+    dbstat.frst
+    percentile.frst
 )
 
 find_program(VALGRIND valgrind)
