@@ -18,7 +18,7 @@ def canonical_sqlar_columns = [ 'name', 'mode', 'mtime', 'sz', 'data' ]
 
 export defn augmented_columns(db) -> (
     db.collect("PRAGMA table_info('sqlar')", fn row -> row.name)
-        @ reject(fn name -> canonical_sqlar_columns @ find(fn row -> row == name))
+        @ reject(fn name -> canonical_sqlar_columns @ includes(name))
 )
 
 export defn unpack(db, pat) -> # exec with select is actually correct here because the purpose is the writefile
