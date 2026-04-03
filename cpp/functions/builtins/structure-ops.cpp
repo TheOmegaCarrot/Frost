@@ -165,6 +165,19 @@ BUILTIN(has)
     }
 }
 
+BUILTIN(includes)
+{
+    REQUIRE_ARGS("includes", TYPES(Array), ANY);
+
+    const auto& arr = GET(0, Array);
+
+    const auto itr = std::ranges::find_if(arr, [&](const Value_Ptr& elem) {
+        return Value::equal(elem, args.at(1))->truthy();
+    });
+
+    return Value::create(itr != arr.end());
+}
+
 void inject_structure_ops(Symbol_Table& table)
 {
     INJECT(keys);
@@ -174,5 +187,6 @@ void inject_structure_ops(Symbol_Table& table)
     INJECT(nulls);
     INJECT(id);
     INJECT(has);
+    INJECT(includes);
 }
 } // namespace frst

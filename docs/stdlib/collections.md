@@ -78,6 +78,11 @@ Returns `value` unchanged.
 For a `Map`: returns `true` if `index` exists as a key.
 For an `Array`: returns `true` if `index` (must be an `Int`) is a valid index.
 
+## `includes`
+`includes(array, value)`
+
+Returns `true` if `array` contains an element equal to `value`.
+
 ## `index`
 `index(k)`
 

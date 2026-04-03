@@ -52,6 +52,7 @@ set(FUNCTIONS_TEST_FILES
 set(FUNCTIONS_BUILTINS_TEST_FILES
     keys
     has
+    includes
     and-then
     type-tests
     type-conversions
