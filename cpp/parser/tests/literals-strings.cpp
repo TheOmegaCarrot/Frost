@@ -301,7 +301,7 @@ world)");
 line 3)");
     }
 
-    SECTION("Triple-quoted strings: escape sequences processed")
+    SECTION("Triple-quoted strings: \\t escape")
     {
         auto result = parse(R"("""
     hello\tworld
@@ -310,13 +310,49 @@ line 3)");
         CHECK(result.value()->get<frst::String>().value() == "hello\tworld");
     }
 
-    SECTION("Triple-quoted strings: hex escapes processed")
+    SECTION("Triple-quoted strings: \\\\ escape")
+    {
+        auto result = parse(R"("""
+    back\\slash
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value() == "back\\slash");
+    }
+
+    SECTION("Triple-quoted strings: \\0 escape")
+    {
+        using namespace std::literals;
+        auto result = parse(R"("""
+    null\0byte
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value()
+              == "null\0byte"s);
+    }
+
+    SECTION("Triple-quoted strings: escaped delimiter quotes")
+    {
+        auto result = parse(R"("""
+    say \"hello\"
+    """)");
+        REQUIRE(result);
+        CHECK(result.value()->get<frst::String>().value()
+              == R"(say "hello")");
+
+        auto single = parse(R"('''
+    it\'s escaped
+    ''')");
+        REQUIRE(single);
+        CHECK(single.value()->get<frst::String>().value()
+              == "it's escaped");
+    }
+
+    SECTION("Triple-quoted strings: hex escapes are forbidden")
     {
         auto result = parse(R"("""
     \x48\x69
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == "Hi");
+        CHECK_FALSE(result);
     }
 
     SECTION("Triple-quoted strings: no indentation on closing delimiter")

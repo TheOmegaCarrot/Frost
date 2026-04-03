@@ -15,6 +15,8 @@ For most readers, this is not the place to start learning the language; for that
   * [Float](#float)
   * [Bool](#bool)
   * [String](#string)
+    + [Multiline strings](#multiline-strings)
+    + [Format strings](#format-strings)
   * [Array](#array)
   * [Map](#map)
   * [Functions](#functions)
@@ -179,6 +181,35 @@ The supported escape sequences are:
 - `\'`: single quote (only in `'`-style string)
 - `\0`: null byte
 - `\xNN`: arbitrary byte, where `NN` is exactly two hexadecimal digits (e.g. `\x0a`, `\xff`)
+
+#### Multiline strings
+
+Triple-quoted strings (`"""..."""` or `'''...'''`) may span multiple lines.
+The opening delimiter must be immediately followed by a newline.
+Indentation is trimmed based on the closing delimiter's position: each content line has the closing delimiter's leading whitespace stripped.
+Lines indented further than the closing delimiter retain their extra indentation.
+Empty lines are preserved.
+
+```frost
+def sql = """
+    SELECT *
+    FROM users
+    WHERE active = 1
+    """
+# sql == "SELECT *\nFROM users\nWHERE active = 1"
+
+def code = """
+    if true:
+      nested
+    """
+# code == "if true:\n  nested"
+```
+
+The `\n`, `\r`, and `\xNN` escape sequences are not available in multiline strings.
+Newlines are written directly, and byte escapes are restricted because they can produce newline bytes that interfere with indentation trimming.
+The remaining escape sequences (`\\`, `\t`, `\0`, `\"`, `\'`) are supported.
+
+#### Format strings
 
 Format strings are prepended with a `$`, and may be `'`-style or `"`-style strings.
 Raw string literals may not be used as format strings.

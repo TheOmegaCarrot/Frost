@@ -799,9 +799,9 @@ struct string_literal
         std::string text;
     };
 
-    // Escape sequences for triple-quoted strings: \n and \r are forbidden
-    // because actual newlines are available and escape-produced newlines
-    // interact poorly with indentation trimming.
+    // Escape sequences for triple-quoted strings: \n, \r, and \xNN are
+    // forbidden because actual newlines are available and escape-produced
+    // newlines interact poorly with indentation trimming.
     static constexpr auto multiline_escapes = lexy::symbol_table<char>
                                                   .map<'t'>('\t')
                                                   .map<'\\'>('\\')
@@ -818,7 +818,7 @@ struct string_literal
             dsl::delimited(LEXY_LIT("\"\"\""),
                            LEXY_LIT("\"\"\""))(
                 dsl::unicode::character,
-                dsl::backslash_escape.symbol<escapes>().rule(hex_escape));
+                dsl::backslash_escape.symbol<escapes>());
         static constexpr auto value = lexy::as_string<std::string>;
         static constexpr auto name = "string literal";
     };
@@ -838,7 +838,7 @@ struct string_literal
             dsl::delimited(LEXY_LIT("'''"),
                            LEXY_LIT("'''"))(
                 dsl::unicode::character,
-                dsl::backslash_escape.symbol<escapes>().rule(hex_escape));
+                dsl::backslash_escape.symbol<escapes>());
         static constexpr auto value = lexy::as_string<std::string>;
         static constexpr auto name = "string literal";
     };
