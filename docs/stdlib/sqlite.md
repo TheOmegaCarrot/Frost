@@ -8,13 +8,22 @@ SQLite support can be disabled at build time with `-DWITH_SQLITE=NO`.
 Frost vendors its own SQLite build, so no system SQLite installation is required.
 The SQLAR extension requires zlib, which is linked from the system.
 
-The vendored build enables the following extensions:
+The vendored build enables the following non-default compile options:
+
+- [**STAT4**](https://www.sqlite.org/compile.html#enable_stat4) — collects histogram data for improved query planner decisions
+- [**UPDATE_DELETE_LIMIT**](https://www.sqlite.org/compile.html#enable_update_delete_limit) — allows `LIMIT` and `ORDER BY` on `UPDATE` and `DELETE` statements
+
+The vendored build also enables the following extensions:
 
 - [**FTS5**](https://www.sqlite.org/fts5.html) — full-text search
 - [**Math functions**](https://www.sqlite.org/lang_mathfunc.html)
 - [**CSV virtual table**](https://www.sqlite.org/csv.html)
 - [**File I/O**](https://www.sqlite.org/cli.html#file_i_o_functions) — `readfile()`, `writefile()`, and the `fsdir` virtual table
+- [**generate_series**](https://www.sqlite.org/series.html) — table-valued function for generating integer sequences
+- [**REGEXP**](https://www.sqlite.org/lang_expr.html#regexp) — enables the `REGEXP` operator for pattern matching
+- [**SHA3**](https://www.sqlite.org/sha3query.html) — `sha3()` and `sha3_query()` hash functions
 - [**SQLAR**](https://www.sqlite.org/sqlar.html) — `sqlar_compress()` and `sqlar_uncompress()` for working with SQLite Archive files
+- [**UUID**](https://www.sqlite.org/src/file?name=ext/misc/uuid.c) — `uuid()`, `uuid_str()`, and `uuid_blob()` for generating and converting UUIDs
 
 The `sqlite` module provides access to SQLite databases.
 Supported binding types are `Null`, `Int`, `Float`, `Bool`, and `String`.

@@ -15,6 +15,10 @@ set(SQLITE_TESTS
     csv-extension.frst
     fileio.frst
     sqlar-compress.frst
+    generate-series.frst
+    regexp.frst
+    sha3.frst
+    uuid.frst
 )
 
 find_program(VALGRIND valgrind)

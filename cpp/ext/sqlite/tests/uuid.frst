@@ -1,0 +1,21 @@
+# Verify uuid extension is enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+# uuid() produces a string in standard format
+def uid = db.query('SELECT uuid() as u')[0].u
+assert(is_string(uid))
+assert(len(uid) == 36, 'UUID should be 36 characters (8-4-4-4-12)')
+
+# Two calls produce different UUIDs
+def uid2 = db.query('SELECT uuid() as u')[0].u
+assert(uid != uid2)
+
+db.close()
+if path != ':memory:': fs.remove(path)

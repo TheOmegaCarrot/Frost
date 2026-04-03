@@ -1,0 +1,22 @@
+# Verify regexp extension is enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+db.exec('CREATE TABLE t (name TEXT)')
+db.exec('INSERT INTO t VALUES (?)', ['hello'])
+db.exec('INSERT INTO t VALUES (?)', ['world'])
+db.exec('INSERT INTO t VALUES (?)', ['help'])
+
+def matches = db.query('SELECT name FROM t WHERE name REGEXP ?', ['^hel'])
+assert(len(matches) == 2)
+assert(matches[0].name == 'hello')
+assert(matches[1].name == 'help')
+
+db.close()
+if path != ':memory:': fs.remove(path)

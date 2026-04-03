@@ -13,8 +13,20 @@ int sqlite3_csv_init(sqlite3* db, char** pzErrMsg,
 int sqlite3_fileio_init(sqlite3* db, char** pzErrMsg,
                         const sqlite3_api_routines* pApi);
 
+int sqlite3_regexp_init(sqlite3* db, char** pzErrMsg,
+                        const sqlite3_api_routines* pApi);
+
+int sqlite3_series_init(sqlite3* db, char** pzErrMsg,
+                        const sqlite3_api_routines* pApi);
+
+int sqlite3_shathree_init(sqlite3* db, char** pzErrMsg,
+                          const sqlite3_api_routines* pApi);
+
 int sqlite3_sqlar_init(sqlite3* db, char** pzErrMsg,
                        const sqlite3_api_routines* pApi);
+
+int sqlite3_uuid_init(sqlite3* db, char** pzErrMsg,
+                      const sqlite3_api_routines* pApi);
 
 #ifdef __cplusplus
 }

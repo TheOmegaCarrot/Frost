@@ -1,0 +1,21 @@
+# Verify generate_series extension is enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+def rows = db.query('SELECT value FROM generate_series(1, 5)')
+assert(len(rows) == 5, 'generate_series should produce 5 rows')
+assert(rows[0].value == 1)
+assert(rows[4].value == 5)
+
+# Step parameter
+def stepped = db.query('SELECT value FROM generate_series(0, 10, 3)')
+assert(transform(stepped, fn r -> r.value) == [0, 3, 6, 9])
+
+db.close()
+if path != ':memory:': fs.remove(path)

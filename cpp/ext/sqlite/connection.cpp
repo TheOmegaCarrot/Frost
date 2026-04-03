@@ -18,9 +18,14 @@ std::shared_ptr<Connection> Connection::create(const String& filename,
         throw Frost_Recoverable_Error{msg};
     }
 
-    sqlite3_csv_init(conn->conn_.get(), nullptr, nullptr);
-    sqlite3_fileio_init(conn->conn_.get(), nullptr, nullptr);
-    sqlite3_sqlar_init(conn->conn_.get(), nullptr, nullptr);
+    auto* db = conn->conn_.get();
+    sqlite3_csv_init(db, nullptr, nullptr);
+    sqlite3_fileio_init(db, nullptr, nullptr);
+    sqlite3_regexp_init(db, nullptr, nullptr);
+    sqlite3_series_init(db, nullptr, nullptr);
+    sqlite3_shathree_init(db, nullptr, nullptr);
+    sqlite3_sqlar_init(db, nullptr, nullptr);
+    sqlite3_uuid_init(db, nullptr, nullptr);
 
     return conn;
 }

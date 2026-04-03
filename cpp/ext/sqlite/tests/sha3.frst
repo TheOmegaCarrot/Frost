@@ -1,0 +1,25 @@
+# Verify sha3 extension is enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+# sha3 produces a hex string
+def hash = db.query('SELECT sha3("hello") as h')[0].h
+assert(is_string(hash))
+assert(len(hash) > 0)
+
+# Same input produces same hash
+def hash2 = db.query('SELECT sha3("hello") as h')[0].h
+assert(hash == hash2)
+
+# Different input produces different hash
+def hash3 = db.query('SELECT sha3("world") as h')[0].h
+assert(hash != hash3)
+
+db.close()
+if path != ':memory:': fs.remove(path)
