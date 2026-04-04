@@ -70,9 +70,8 @@ TEST_CASE("Builtin ranges")
         "xprod",
     };
     const std::vector<std::string> pred_names{
-        "take_while", "drop_while", "chunk_by",  "group_by",
-        "count_by",   "scan",       "partition",  "sort_by",
-        "find",
+        "take_while", "drop_while", "chunk_by", "group_by", "count_by",
+        "scan",       "partition",  "sort_by",  "find",
     };
     const std::vector<std::string> maplike_names{
         "transform",
@@ -2030,9 +2029,8 @@ TEST_CASE("Builtin ranges")
             },
             "str_len");
 
-        require_array_eq(
-            fn->call({str_arr, Value::create(Function{str_len})}),
-            {s2, s1, s3});
+        require_array_eq(fn->call({str_arr, Value::create(Function{str_len})}),
+                         {s2, s1, s3});
 
         // Empty array
         require_array_eq(
@@ -2040,9 +2038,9 @@ TEST_CASE("Builtin ranges")
             {});
 
         // Single element
-        require_array_eq(
-            fn->call({Value::create(Array{a}), Value::create(Function{negate})}),
-            {a});
+        require_array_eq(fn->call({Value::create(Array{a}),
+                                   Value::create(Function{negate})}),
+                         {a});
     }
 
     SECTION("sort_by stability")
@@ -2056,7 +2054,8 @@ TEST_CASE("Builtin ranges")
         auto d = Value::create("dy"s);
         auto arr = Value::create(Array{c, a, d, b});
 
-        // Project to second character -- a and b both have "x", c and d have "y"
+        // Project to second character -- a and b both have "x", c and d have
+        // "y"
         auto second_char = make_builtin(
             [](builtin_args_t args) {
                 const auto& s = args.at(0)->raw_get<String>();
@@ -2122,8 +2121,7 @@ TEST_CASE("Builtin ranges")
             },
             "mixed_proj");
 
-        auto arr = Value::create(
-            Array{Value::create(1_f), Value::create(2_f)});
+        auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
         CHECK_THROWS_WITH(fn->call({arr, Value::create(Function{mixed_proj})}),
                           ContainsSubstring("compare incompatible types"));
@@ -2157,10 +2155,13 @@ TEST_CASE("Builtin ranges")
 
         // Empty array returns null
         auto always = make_builtin(
-            [](builtin_args_t) { return Value::create(true); },
+            [](builtin_args_t) {
+                return Value::create(true);
+            },
             "always");
-        CHECK(fn->call({Value::create(Array{}), Value::create(Function{always})})
-                  ->is<Null>());
+        CHECK(
+            fn->call({Value::create(Array{}), Value::create(Function{always})})
+                ->is<Null>());
 
         // Returns the exact same pointer, not a copy
         auto is2 = make_builtin(

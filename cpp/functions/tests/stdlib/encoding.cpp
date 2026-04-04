@@ -567,12 +567,10 @@ TEST_CASE("std.encoding hex")
 
     SECTION("Invalid input")
     {
-        CHECK_THROWS_AS(
-            hex_decode->call({Value::create(String{"zz"s})}),
-            Frost_Recoverable_Error);
-        CHECK_THROWS_AS(
-            hex_decode->call({Value::create(String{"abc"s})}),
-            Frost_Recoverable_Error);
+        CHECK_THROWS_AS(hex_decode->call({Value::create(String{"zz"s})}),
+                        Frost_Recoverable_Error);
+        CHECK_THROWS_AS(hex_decode->call({Value::create(String{"abc"s})}),
+                        Frost_Recoverable_Error);
     }
 
     SECTION("Arity")
@@ -587,12 +585,12 @@ TEST_CASE("std.encoding hex")
 
     SECTION("Type errors")
     {
-        CHECK_THROWS_MATCHES(
-            hex_encode->call({Value::create(42_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("String")));
-        CHECK_THROWS_MATCHES(
-            hex_decode->call({Value::create(42_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("String")));
+        CHECK_THROWS_MATCHES(hex_encode->call({Value::create(42_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("String")));
+        CHECK_THROWS_MATCHES(hex_decode->call({Value::create(42_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("String")));
     }
 }
 
@@ -648,12 +646,10 @@ TEST_CASE("std.encoding url")
 
     SECTION("Invalid input")
     {
-        CHECK_THROWS_AS(
-            url_decode->call({Value::create(String{"%GG"s})}),
-            Frost_Recoverable_Error);
-        CHECK_THROWS_AS(
-            url_decode->call({Value::create(String{"%"s})}),
-            Frost_Recoverable_Error);
+        CHECK_THROWS_AS(url_decode->call({Value::create(String{"%GG"s})}),
+                        Frost_Recoverable_Error);
+        CHECK_THROWS_AS(url_decode->call({Value::create(String{"%"s})}),
+                        Frost_Recoverable_Error);
     }
 
     SECTION("Arity")
@@ -668,11 +664,11 @@ TEST_CASE("std.encoding url")
 
     SECTION("Type errors")
     {
-        CHECK_THROWS_MATCHES(
-            url_encode->call({Value::create(42_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("String")));
-        CHECK_THROWS_MATCHES(
-            url_decode->call({Value::create(42_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("String")));
+        CHECK_THROWS_MATCHES(url_encode->call({Value::create(42_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("String")));
+        CHECK_THROWS_MATCHES(url_decode->call({Value::create(42_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("String")));
     }
 }

@@ -11,8 +11,7 @@ TEST_CASE("utils::trim_multiline_indentation")
     {
         CHECK(trim_multiline_indentation("hello").value() == "hello");
         CHECK(trim_multiline_indentation("").value() == "");
-        CHECK(trim_multiline_indentation("  spaced  ").value()
-              == "  spaced  ");
+        CHECK(trim_multiline_indentation("  spaced  ").value() == "  spaced  ");
     }
 
     SECTION("Basic multiline trimming")
@@ -73,8 +72,7 @@ TEST_CASE("utils::trim_multiline_indentation")
 
     SECTION("Tab indentation")
     {
-        auto result =
-            trim_multiline_indentation("\n\thello\n\tworld\n\t");
+        auto result = trim_multiline_indentation("\n\thello\n\tworld\n\t");
         REQUIRE(result.has_value());
         CHECK(result.value() == "hello\nworld");
     }

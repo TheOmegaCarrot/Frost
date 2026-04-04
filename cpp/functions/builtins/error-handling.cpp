@@ -29,8 +29,7 @@ BUILTIN(try_call)
     {
         return Value::create(
             Value::trusted,
-            Map{{strings.value, invoke()},
-                {strings.ok, Value::create(true)}});
+            Map{{strings.value, invoke()}, {strings.ok, Value::create(true)}});
     }
     catch (Frost_Recoverable_Error& err)
     {

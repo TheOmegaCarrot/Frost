@@ -326,8 +326,7 @@ line 3)");
     null\0byte
     """)");
         REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value()
-              == "null\0byte"s);
+        CHECK(result.value()->get<frst::String>().value() == "null\0byte"s);
     }
 
     SECTION("Triple-quoted strings: escaped delimiter quotes")
@@ -336,15 +335,13 @@ line 3)");
     say \"hello\"
     """)");
         REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value()
-              == R"(say "hello")");
+        CHECK(result.value()->get<frst::String>().value() == R"(say "hello")");
 
         auto single = parse(R"('''
     it\'s escaped
     ''')");
         REQUIRE(single);
-        CHECK(single.value()->get<frst::String>().value()
-              == "it's escaped");
+        CHECK(single.value()->get<frst::String>().value() == "it's escaped");
     }
 
     SECTION("Triple-quoted strings: hex escapes are forbidden")

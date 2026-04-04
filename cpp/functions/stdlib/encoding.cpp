@@ -101,8 +101,8 @@ BUILTIN(decode)
 
     try
     {
-        return Value::create(String(
-            std::from_range, boost::urls::decode_view(GET(0, String))));
+        return Value::create(
+            String(std::from_range, boost::urls::decode_view(GET(0, String))));
     }
     catch (const boost::system::system_error& e)
     {

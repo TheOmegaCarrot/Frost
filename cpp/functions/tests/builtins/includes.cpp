@@ -31,10 +31,9 @@ TEST_CASE("Builtin includes")
                           ContainsSubstring("insufficient arguments"));
         CHECK_THROWS_WITH(includes->call({Value::create(Array{})}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(
-            includes->call(
-                {Value::create(Array{}), Value::null(), Value::null()}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(includes->call({Value::create(Array{}), Value::null(),
+                                          Value::null()}),
+                          ContainsSubstring("too many arguments"));
     }
 
     SECTION("First argument must be Array")
