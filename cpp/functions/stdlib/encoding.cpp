@@ -6,13 +6,19 @@
 #include <cppcodec/base64_rfc4648.hpp>
 #include <cppcodec/base64_url.hpp>
 
+#include <openssl/crypto.h>
+
+#include <boost/scope_exit.hpp>
+
+#include <fmt/ranges.h>
+
 namespace frst
 {
 
 namespace encoding
 {
 
-inline namespace b64
+namespace b64
 {
 
 BUILTIN(encode)
@@ -74,6 +80,44 @@ BUILTIN(urldecode)
 }
 
 } // namespace b64
+
+namespace hex
+{
+
+BUILTIN(encode)
+{
+    REQUIRE_ARGS("encoding.hex.encode", TYPES(String));
+
+    const auto& input = GET(0, String);
+    return Value::create(fmt::format(
+        "{:02x}", fmt::join(std::span{reinterpret_cast<const unsigned char*>(
+                                          input.data()),
+                                      input.size()},
+                            "")));
+}
+
+BUILTIN(decode)
+{
+    REQUIRE_ARGS("encoding.hex.decode", TYPES(String));
+
+    const auto& input = GET(0, String);
+
+    long len = 0;
+    auto* buf = OPENSSL_hexstr2buf(input.c_str(), &len);
+    BOOST_SCOPE_EXIT_ALL(&)
+    {
+        OPENSSL_free(buf);
+    };
+
+    if (not buf)
+        throw Frost_Recoverable_Error{
+            "encoding.hex.decode: invalid hex string"};
+
+    String result(reinterpret_cast<char*>(buf), len);
+    return Value::create(std::move(result));
+}
+
+} // namespace hex
 
 BUILTIN(fmt_int)
 {
@@ -190,10 +234,15 @@ BUILTIN(from_bytes)
 STDLIB_MODULE(encoding,
               {"b64"_s, Value::create(Value::trusted,
                                       Map{
-                                          ENTRY(encode),
-                                          ENTRY(decode),
-                                          ENTRY(urlencode),
-                                          ENTRY(urldecode),
+                                          NS_ENTRY(b64, encode),
+                                          NS_ENTRY(b64, decode),
+                                          NS_ENTRY(b64, urlencode),
+                                          NS_ENTRY(b64, urldecode),
+                                      })},
+              {"hex"_s, Value::create(Value::trusted,
+                                      Map{
+                                          NS_ENTRY(hex, encode),
+                                          NS_ENTRY(hex, decode),
                                       })},
               ENTRY(fmt_int), ENTRY(parse_int), ENTRY(to_bytes),
               ENTRY(from_bytes))

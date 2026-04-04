@@ -56,8 +56,9 @@ TEST_CASE("std.encoding")
 
     SECTION("Registered")
     {
-        CHECK(mod.size() == 5);
+        CHECK(mod.size() == 6);
         lookup_submap(mod, "b64");
+        lookup_submap(mod, "hex");
         lookup(mod, "fmt_int");
         lookup(mod, "parse_int");
         lookup(mod, "to_bytes");

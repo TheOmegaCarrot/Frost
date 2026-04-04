@@ -18,9 +18,15 @@
 #define MAKE_BUILTIN(NAME)                                                     \
     Value::create(Function{std::make_shared<Builtin>(NAME, #NAME)})
 
-#define INJECT(NAME) table.define(#NAME, MAKE_BUILTIN(NAME))
+#define MAKE_NS_BUILTIN(NS, NAME)                                              \
+    Value::create(Function{std::make_shared<Builtin>(NS::NAME, #NAME)})
 
 #define ENTRY(NAME) {Value::create(String{#NAME}), MAKE_BUILTIN(NAME)}
+
+#define NS_ENTRY(NS, NAME)                                                     \
+    {Value::create(String{#NAME}), MAKE_NS_BUILTIN(NS, NAME)}
+
+#define INJECT(NAME) table.define(#NAME, MAKE_BUILTIN(NAME))
 
 #define INJECT_MAP(NAME, ...)                                                  \
     table.define(#NAME, Value::create(Value::trusted, Map{__VA_ARGS__}));
