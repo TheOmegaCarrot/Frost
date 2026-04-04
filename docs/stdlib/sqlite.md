@@ -6,7 +6,6 @@ def sqlite = import('ext.sqlite')
 
 SQLite support can be disabled at build time with `-DWITH_SQLITE=NO`.
 Frost vendors its own SQLite build, so no system SQLite installation is required.
-The SQLAR extension requires zlib, which is linked from the system.
 
 The vendored build enables the following non-default compile options:
 

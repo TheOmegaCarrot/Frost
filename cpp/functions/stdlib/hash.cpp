@@ -4,6 +4,7 @@
 #include <frost/value.hpp>
 
 #include <openssl/evp.h>
+#include <zlib.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/scope_exit.hpp>
@@ -73,6 +74,16 @@ Value_Ptr hmac_string(const std::string& algorithm, const String& key,
 
 } // namespace
 
+BUILTIN(crc32)
+{
+    REQUIRE_ARGS("hash.crc32", PARAM("input", TYPES(String)));
+
+    const auto& input = GET(0, String);
+    auto checksum = ::crc32(0L, reinterpret_cast<const unsigned char*>(input.data()),
+                            static_cast<uInt>(input.size()));
+    return Value::create(fmt::format("{:08x}", checksum));
+}
+
 #define X_HASH_ALGS                                                            \
     X(md5)                                                                     \
     X(sha1)                                                                    \
@@ -127,7 +138,7 @@ static const auto hmac_map = Value::create(Value::trusted, Map{X_HASH_ALGS});
 
 #define X(ALG) ENTRY(ALG),
 
-STDLIB_MODULE(hash, {"hmac"_s, hmac_map}, X_HASH_ALGS)
+STDLIB_MODULE(hash, ENTRY(crc32), {"hmac"_s, hmac_map}, X_HASH_ALGS)
 #undef X
 
 } // namespace frst

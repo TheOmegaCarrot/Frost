@@ -31,6 +31,7 @@ include(get-test-libs)
 
 find_package(Boost REQUIRED COMPONENTS regex json url headers)
 find_package(OpenSSL REQUIRED)
+find_package(ZLIB REQUIRED)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE YES)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO YES)

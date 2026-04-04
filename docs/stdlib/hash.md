@@ -42,6 +42,11 @@ hash.hmac.sha256('my-secret-key', 'message to authenticate')
 | `ripemd160` | RIPEMD-160 | 160-bit |
 | `sm3` | SM3 | 256-bit |
 
+## `crc32`
+`crc32(input)`
+
+Returns the CRC-32 checksum (32-bit) of `input` as an 8-character hexadecimal string.
+
 ## `md5`
 `md5(input)`
 

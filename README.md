@@ -25,6 +25,7 @@ The following must be installed on your system:
 | mold                          | Linker                                                                           |
 | Boost                         | `regex`, `json`, `url`, `headers` components                                     |
 | OpenSSL                       | `libcrypto` (used by `std.hash`)                                                 |
+| zlib                          | Used by `std.hash` and SQLite extensions                                         |
 
 The following dependencies are fetched automatically by CMake:
 [lexy](https://github.com/foonathan/lexy),

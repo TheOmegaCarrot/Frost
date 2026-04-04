@@ -279,3 +279,40 @@ TEST_CASE("stdlib::hash::hmac")
                           ContainsSubstring("String"));
     }
 }
+
+TEST_CASE("stdlib::hash::crc32")
+{
+    auto mod = hash_module();
+    auto crc = lookup(mod, "crc32");
+
+    SECTION("Reference outputs")
+    {
+        CHECK(crc->call({Value::create(""s)})->raw_get<String>()
+              == "00000000");
+        CHECK(crc->call({Value::create("hello"s)})->raw_get<String>()
+              == "3610a686");
+        CHECK(crc->call({Value::create("123456789"s)})->raw_get<String>()
+              == "cbf43926");
+    }
+
+    SECTION("Always 8 hex characters")
+    {
+        auto result = crc->call({Value::create("x"s)});
+        CHECK(result->raw_get<String>().size() == 8);
+    }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_WITH(crc->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(
+            crc->call({Value::create("a"s), Value::create("b"s)}),
+            ContainsSubstring("too many arguments"));
+    }
+
+    SECTION("Type constraint")
+    {
+        CHECK_THROWS_WITH(crc->call({Value::create(42_f)}),
+                          ContainsSubstring("String"));
+    }
+}

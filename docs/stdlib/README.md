@@ -42,7 +42,7 @@ Built-in modules accessed via `import`.
 |----------------------------------|------------------------------|------------------------------------------|
 | [Encoding](./encoding.md)        | `import('std.encoding')`     | Binary and text encoding utilities        |
 | [Filesystem](./fs.md)            | `import('std.fs')`           | Reading, writing, and navigating the filesystem |
-| [Hash](./hash.md)                | `import('std.hash')`         | Cryptographic hash functions (MD5, SHA, BLAKE2, etc.) |
+| [Hash](./hash.md)                | `import('std.hash')`         | Hash functions, checksums, and HMAC                   |
 | [IO](./io.md)                    | `import('std.io')`           | Reading and writing files and streams    |
 | [JSON](./json.md)                | `import('std.json')`         | Encoding and decoding JSON               |
 | [Math](./math.md)                | `import('std.math')`         | Arithmetic, rounding, logarithms, trig   |
@@ -57,5 +57,5 @@ They are not available in all Frost builds, but are enabled by default.
 | Extension                  | Import                       | Description                      | Extra Dependencies              |
 |----------------------------|------------------------------|----------------------------------|---------------------------|
 | [HTTP](./http.md)          | `import('ext.http')`         | Making HTTP requests             | None                      |
-| [SQLite](./sqlite.md)      | `import('ext.sqlite')`       | Embedded relational database     | SQLite (vendored), zlib   |
+| [SQLite](./sqlite.md)      | `import('ext.sqlite')`       | Embedded relational database     | SQLite (vendored)         |
 | [Unsafe](./unsafe.md)      | `import('ext.unsafe')`       | Bypass Frost's safety guarantees | None                      |
