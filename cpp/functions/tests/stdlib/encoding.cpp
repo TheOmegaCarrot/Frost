@@ -56,9 +56,10 @@ TEST_CASE("std.encoding")
 
     SECTION("Registered")
     {
-        CHECK(mod.size() == 6);
+        CHECK(mod.size() == 7);
         lookup_submap(mod, "b64");
         lookup_submap(mod, "hex");
+        lookup_submap(mod, "url");
         lookup(mod, "fmt_int");
         lookup(mod, "parse_int");
         lookup(mod, "to_bytes");
@@ -73,6 +74,22 @@ TEST_CASE("std.encoding")
         lookup(b64, "decode");
         lookup(b64, "urlencode");
         lookup(b64, "urldecode");
+    }
+
+    SECTION("hex submap")
+    {
+        auto hex = lookup_submap(mod, "hex");
+        CHECK(hex.size() == 2);
+        lookup(hex, "encode");
+        lookup(hex, "decode");
+    }
+
+    SECTION("url submap")
+    {
+        auto url = lookup_submap(mod, "url");
+        CHECK(url.size() == 2);
+        lookup(url, "encode");
+        lookup(url, "decode");
     }
 }
 
@@ -504,5 +521,158 @@ TEST_CASE("std.encoding to_bytes/from_bytes")
         auto str = from_bytes->call({Value::create(Array{})});
         REQUIRE(str->is<String>());
         CHECK(str->raw_get<String>().empty());
+    }
+}
+
+TEST_CASE("std.encoding hex")
+{
+    auto mod = encoding_module();
+    auto hex = lookup_submap(mod, "hex");
+    auto hex_encode = lookup(hex, "encode");
+    auto hex_decode = lookup(hex, "decode");
+
+    SECTION("Known vectors")
+    {
+        struct Case
+        {
+            std::string input;
+            std::string hex;
+        };
+
+        const Case cases[] = {
+            {""s, ""s},
+            {"hello"s, "68656c6c6f"s},
+            {"\x00\x01\xff"s, "0001ff"s},
+        };
+
+        for (const auto& c : cases)
+        {
+            auto enc = hex_encode->call({Value::create(String{c.input})});
+            REQUIRE(enc->is<String>());
+            CHECK(enc->raw_get<String>() == c.hex);
+
+            auto dec = hex_decode->call({Value::create(String{c.hex})});
+            REQUIRE(dec->is<String>());
+            CHECK(dec->raw_get<String>() == c.input);
+        }
+    }
+
+    SECTION("Round-trip")
+    {
+        auto input = "binary\x00data\xff"s;
+        auto encoded = hex_encode->call({Value::create(String{input})});
+        auto decoded = hex_decode->call({encoded});
+        CHECK(decoded->raw_get<String>() == input);
+    }
+
+    SECTION("Invalid input")
+    {
+        CHECK_THROWS_AS(
+            hex_decode->call({Value::create(String{"zz"s})}),
+            Frost_Recoverable_Error);
+        CHECK_THROWS_AS(
+            hex_decode->call({Value::create(String{"abc"s})}),
+            Frost_Recoverable_Error);
+    }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_MATCHES(
+            hex_encode->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            hex_decode->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
+    }
+
+    SECTION("Type errors")
+    {
+        CHECK_THROWS_MATCHES(
+            hex_encode->call({Value::create(42_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("String")));
+        CHECK_THROWS_MATCHES(
+            hex_decode->call({Value::create(42_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("String")));
+    }
+}
+
+TEST_CASE("std.encoding url")
+{
+    auto mod = encoding_module();
+    auto url = lookup_submap(mod, "url");
+    auto url_encode = lookup(url, "encode");
+    auto url_decode = lookup(url, "decode");
+
+    SECTION("Known vectors")
+    {
+        struct Case
+        {
+            std::string input;
+            std::string encoded;
+        };
+
+        const Case cases[] = {
+            {""s, ""s},
+            {"hello"s, "hello"s},
+            {"hello world"s, "hello%20world"s},
+            {"a&b=c"s, "a%26b%3Dc"s},
+            {"100%"s, "100%25"s},
+        };
+
+        for (const auto& c : cases)
+        {
+            auto enc = url_encode->call({Value::create(String{c.input})});
+            REQUIRE(enc->is<String>());
+            CHECK(enc->raw_get<String>() == c.encoded);
+
+            auto dec = url_decode->call({Value::create(String{c.encoded})});
+            REQUIRE(dec->is<String>());
+            CHECK(dec->raw_get<String>() == c.input);
+        }
+    }
+
+    SECTION("Round-trip")
+    {
+        auto input = "hello world & foo=bar/baz"s;
+        auto encoded = url_encode->call({Value::create(String{input})});
+        auto decoded = url_decode->call({encoded});
+        CHECK(decoded->raw_get<String>() == input);
+    }
+
+    SECTION("Unreserved characters are not encoded")
+    {
+        auto input = "ABCxyz0189-._~"s;
+        auto enc = url_encode->call({Value::create(String{input})});
+        CHECK(enc->raw_get<String>() == input);
+    }
+
+    SECTION("Invalid input")
+    {
+        CHECK_THROWS_AS(
+            url_decode->call({Value::create(String{"%GG"s})}),
+            Frost_Recoverable_Error);
+        CHECK_THROWS_AS(
+            url_decode->call({Value::create(String{"%"s})}),
+            Frost_Recoverable_Error);
+    }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_MATCHES(
+            url_encode->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            url_decode->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
+    }
+
+    SECTION("Type errors")
+    {
+        CHECK_THROWS_MATCHES(
+            url_encode->call({Value::create(42_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("String")));
+        CHECK_THROWS_MATCHES(
+            url_decode->call({Value::create(42_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("String")));
     }
 }

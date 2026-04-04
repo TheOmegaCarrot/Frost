@@ -22,7 +22,7 @@ cmake --build build -j4
 
 # Optional flags:
 #   -DBUILD_TESTS=NO   disable tests
-#   -DWITH_HTTP=NO     disable HTTP support (removes Boost url dep)
+#   -DWITH_HTTP=NO     disable HTTP support
 ```
 
 The main binary is output to `build/frost`.

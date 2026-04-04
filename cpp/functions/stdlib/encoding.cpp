@@ -9,6 +9,9 @@
 #include <openssl/crypto.h>
 
 #include <boost/scope_exit.hpp>
+#include <boost/url/decode_view.hpp>
+#include <boost/url/encode.hpp>
+#include <boost/url/rfc/unreserved_chars.hpp>
 
 #include <fmt/ranges.h>
 
@@ -81,6 +84,35 @@ BUILTIN(urldecode)
 
 } // namespace b64
 
+namespace url
+{
+
+BUILTIN(encode)
+{
+    REQUIRE_ARGS("encoding.url.encode", TYPES(String));
+
+    return Value::create(
+        boost::urls::encode(GET(0, String), boost::urls::unreserved_chars));
+}
+
+BUILTIN(decode)
+{
+    REQUIRE_ARGS("encoding.url.decode", TYPES(String));
+
+    try
+    {
+        return Value::create(String(
+            std::from_range, boost::urls::decode_view(GET(0, String))));
+    }
+    catch (const boost::system::system_error& e)
+    {
+        throw Frost_Recoverable_Error{
+            fmt::format("encoding.url.decode: {}", e.what())};
+    }
+}
+
+} // namespace url
+
 namespace hex
 {
 
@@ -101,6 +133,9 @@ BUILTIN(decode)
     REQUIRE_ARGS("encoding.hex.decode", TYPES(String));
 
     const auto& input = GET(0, String);
+
+    if (input.empty())
+        return Value::create(String{});
 
     long len = 0;
     auto* buf = OPENSSL_hexstr2buf(input.c_str(), &len);
@@ -243,6 +278,11 @@ STDLIB_MODULE(encoding,
                                       Map{
                                           NS_ENTRY(hex, encode),
                                           NS_ENTRY(hex, decode),
+                                      })},
+              {"url"_s, Value::create(Value::trusted,
+                                      Map{
+                                          NS_ENTRY(url, encode),
+                                          NS_ENTRY(url, decode),
                                       })},
               ENTRY(fmt_int), ENTRY(parse_int), ENTRY(to_bytes),
               ENTRY(from_bytes))

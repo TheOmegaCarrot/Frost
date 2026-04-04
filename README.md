@@ -23,7 +23,7 @@ The following must be installed on your system:
 | C++26 compiler (GCC or Clang) | Minimum GCC 15's stdlib, Clang's stdlib does not support all necessary features. |
 | CMake 3.31.6+                 |                                                                                  |
 | mold                          | Linker                                                                           |
-| Boost                         | `regex`, `json`, `headers` components                                            |
+| Boost                         | `regex`, `json`, `url`, `headers` components                                     |
 | OpenSSL                       | `libcrypto` (used by `std.hash`)                                                 |
 
 The following dependencies are fetched automatically by CMake:

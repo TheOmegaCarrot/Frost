@@ -1,5 +1,3 @@
-find_package(Boost REQUIRED COMPONENTS url)
-
 add_library( frost-http
     http.cpp
     request.cpp

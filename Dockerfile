@@ -9,12 +9,9 @@ RUN apt-get update \
         mold \
         libboost-json-dev \
         libboost-regex-dev \
+        libboost-url-dev \
         libssl-dev \
         zlib1g-dev \
-    && if [ "${WITH_HTTP}" = "Yes" ]; then \
-        apt-get install -y --no-install-recommends \
-            libboost-url-dev; \
-    fi \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
@@ -26,22 +23,17 @@ RUN cmake -S . -B /build -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_TESTS=No -DWIT
 
 FROM debian:trixie-slim AS runtime
 
-ARG WITH_HTTP=Yes
-
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         libboost-container1.83.0 \
         libboost-json1.83.0 \
         libboost-regex1.83.0 \
+        libboost-url1.83.0 \
         libgcc-s1 \
         libssl3t64 \
         libstdc++6 \
         zlib1g \
-    && if [ "${WITH_HTTP}" = "Yes" ]; then \
-        apt-get install -y --no-install-recommends \
-            libboost-url1.83.0; \
-    fi \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /build/frost /usr/local/bin/frost

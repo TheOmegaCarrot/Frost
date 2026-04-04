@@ -62,3 +62,13 @@ Encodes `s` using URL-safe Base64 and returns the result as a string.
 
 Decodes a URL-safe Base64 string and returns the raw bytes as a string.
 Produces an error on invalid input.
+
+## `url.encode`
+`url.encode(s)`
+
+Percent-encodes `s` per RFC 3986. Unreserved characters (`A-Z a-z 0-9 - . _ ~`) are not encoded.
+
+## `url.decode`
+`url.decode(s)`
+
+Decodes a percent-encoded string. Produces an error on invalid input (e.g. `%GG`, truncated `%`).

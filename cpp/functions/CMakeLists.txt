@@ -40,6 +40,7 @@ target_link_libraries( frost-functions
     frost-execution-context
     Boost::regex
     Boost::json
+    Boost::url
     OpenSSL::Crypto
     cppcodec::cppcodec
 )

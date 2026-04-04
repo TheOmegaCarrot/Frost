@@ -29,7 +29,7 @@ include(clang-tidy-targets)
 
 include(get-test-libs)
 
-find_package(Boost REQUIRED COMPONENTS regex json headers)
+find_package(Boost REQUIRED COMPONENTS regex json url headers)
 find_package(OpenSSL REQUIRED)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE YES)
