@@ -9,11 +9,11 @@ RUN apt-get update \
         mold \
         libboost-json-dev \
         libboost-regex-dev \
+        libssl-dev \
         zlib1g-dev \
     && if [ "${WITH_HTTP}" = "Yes" ]; then \
         apt-get install -y --no-install-recommends \
-            libboost-url-dev \
-            libssl-dev; \
+            libboost-url-dev; \
     fi \
     && rm -rf /var/lib/apt/lists/*
 
@@ -35,12 +35,12 @@ RUN apt-get update \
         libboost-json1.83.0 \
         libboost-regex1.83.0 \
         libgcc-s1 \
+        libssl3t64 \
         libstdc++6 \
         zlib1g \
     && if [ "${WITH_HTTP}" = "Yes" ]; then \
         apt-get install -y --no-install-recommends \
-            libboost-url1.83.0 \
-            libssl3t64; \
+            libboost-url1.83.0; \
     fi \
     && rm -rf /var/lib/apt/lists/*
 

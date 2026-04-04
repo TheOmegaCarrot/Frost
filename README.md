@@ -24,6 +24,7 @@ The following must be installed on your system:
 | CMake 3.31.6+                 |                                                                                  |
 | mold                          | Linker                                                                           |
 | Boost                         | `regex`, `json`, `headers` components                                            |
+| OpenSSL                       | `libcrypto` (used by `std.hash`)                                                 |
 
 The following dependencies are fetched automatically by CMake:
 [lexy](https://github.com/foonathan/lexy),
