@@ -32,6 +32,7 @@ The vendored build also enables the following extensions:
 - [**Soundex**](https://www.sqlite.org/lang_corefunc.html#soundex) — `soundex()` function for phonetic string matching
 - [**SQLAR**](https://www.sqlite.org/sqlar.html) — `sqlar_compress()` and `sqlar_uncompress()` for working with SQLite Archive files
 - [**UUID**](https://www.sqlite.org/src/file?name=ext/misc/uuid.c) — `uuid()`, `uuid_str()`, and `uuid_blob()` for generating and converting UUIDs
+- [**Zipfile**](https://www.sqlite.org/zipfile.html) — virtual table for reading and writing ZIP archives
 
 The `sqlite` module provides access to SQLite databases.
 Supported binding types are `Null`, `Int`, `Float`, `Bool`, and `String`.

@@ -28,6 +28,9 @@ int sqlite3_sqlar_init(sqlite3* db, char** pzErrMsg,
 int sqlite3_uuid_init(sqlite3* db, char** pzErrMsg,
                       const sqlite3_api_routines* pApi);
 
+int sqlite3_zipfile_init(sqlite3* db, char** pzErrMsg,
+                         const sqlite3_api_routines* pApi);
+
 #ifdef __cplusplus
 }
 #endif

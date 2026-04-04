@@ -26,6 +26,7 @@ set(SQLITE_FEATURE_CHECKS
     feature-checks/soundex.frst
     feature-checks/sqlar-compress.frst
     feature-checks/uuid.frst
+    feature-checks/zipfile.frst
 )
 
 find_program(VALGRIND valgrind)
