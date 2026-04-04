@@ -10,6 +10,9 @@ extern "C" {
 int sqlite3_csv_init(sqlite3* db, char** pzErrMsg,
                      const sqlite3_api_routines* pApi);
 
+int sqlite3_decimal_init(sqlite3* db, char** pzErrMsg,
+                         const sqlite3_api_routines* pApi);
+
 int sqlite3_fileio_init(sqlite3* db, char** pzErrMsg,
                         const sqlite3_api_routines* pApi);
 

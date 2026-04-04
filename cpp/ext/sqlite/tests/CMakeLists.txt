@@ -15,6 +15,7 @@ set(SQLITE_TESTS
 set(SQLITE_FEATURE_CHECKS
     feature-checks/csv-extension.frst
     feature-checks/dbstat.frst
+    feature-checks/decimal.frst
     feature-checks/fileio.frst
     feature-checks/foreign-keys.frst
     feature-checks/fts5.frst

@@ -19,6 +19,7 @@ std::shared_ptr<Connection> Connection::create(const String& filename,
     }
 
     auto* db = conn->conn_.get();
+    sqlite3_decimal_init(db, nullptr, nullptr);
     sqlite3_csv_init(db, nullptr, nullptr);
     sqlite3_fileio_init(db, nullptr, nullptr);
     sqlite3_regexp_init(db, nullptr, nullptr);

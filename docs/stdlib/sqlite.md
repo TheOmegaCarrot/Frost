@@ -21,6 +21,7 @@ The vendored build enables the following non-default compile options:
 The vendored build also enables the following extensions:
 
 - [**CSV virtual table**](https://www.sqlite.org/csv.html)
+- [**Decimal**](https://www.sqlite.org/floatingpoint.html#the_decimal_c_extension) — exact decimal arithmetic functions (`decimal_add`, `decimal_mul`, `decimal_sum`, etc.)
 - [**dbstat**](https://www.sqlite.org/dbstat.html) — virtual table for storage analysis
 - [**FTS5**](https://www.sqlite.org/fts5.html) — full-text search
 - [**Math functions**](https://www.sqlite.org/lang_mathfunc.html)

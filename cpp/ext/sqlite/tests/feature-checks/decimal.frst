@@ -1,0 +1,29 @@
+# Verify decimal extension is enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+# decimal_sum avoids floating-point drift
+db.exec('CREATE TABLE prices (amount TEXT)')
+db.exec('INSERT INTO prices VALUES (?)', ['0.1'])
+db.exec('INSERT INTO prices VALUES (?)', ['0.2'])
+db.exec('INSERT INTO prices VALUES (?)', ['0.3'])
+
+def total = db.query('SELECT decimal_sum(amount) as t FROM prices')[0].t
+assert(total == '0.6', 'decimal_sum should produce exact result')
+
+# decimal_add
+def added = db.query('SELECT decimal_add("0.1", "0.2") as r')[0].r
+assert(added == '0.3')
+
+# decimal_mul
+def mulled = db.query('SELECT decimal_mul("1.5", "2.0") as r')[0].r
+assert(mulled == '3.0')
+
+db.close()
+if path != ':memory:': fs.remove(path)
