@@ -19,6 +19,7 @@ set(INTEGRATION_SCRIPTS
     prelude/spread.frst
     threaded-call-chain.frst
     capture-enclosing-closure.frst
+    recursive-destructure.frst
     escaped-self-reference.frst
     map-newline-1.frst
 )

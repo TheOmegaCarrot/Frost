@@ -1,0 +1,106 @@
+# Recursive destructuring integration tests
+
+# --- Basic nesting ---
+
+def [a, [b, c]] = [1, [2, 3]]
+assert(a == 1)
+assert(b == 2)
+assert(c == 3)
+
+def {foo: [x, y]} = {foo: [10, 20]}
+assert(x == 10)
+assert(y == 20)
+
+def [{alpha}, beta] = [{alpha: 'a'}, 'b']
+assert(alpha == 'a')
+assert(beta == 'b')
+
+def {outer: {inner: val}} = {outer: {inner: 42}}
+assert(val == 42)
+
+# --- Deep nesting ---
+
+def [[[deep]]] = [[[99]]]
+assert(deep == 99)
+
+# --- Discards in nested patterns ---
+
+def [_, [_, kept]] = [1, [2, 3]]
+assert(kept == 3)
+
+def {ignored: _, used: v} = {ignored: 'skip', used: 'keep'}
+assert(v == 'keep')
+
+# --- Rest in nested arrays ---
+
+def [head, [first, ...nested_rest]] = [0, [1, 2, 3, 4]]
+assert(head == 0)
+assert(first == 1)
+assert(nested_rest == [2, 3, 4])
+
+def {data: [_, ...rest]} = {data: [10, 20, 30]}
+assert(rest == [20, 30])
+
+# --- Empty nested ---
+
+def [ok, []] = [1, []]
+assert(ok == 1)
+
+# --- Missing map keys produce null ---
+
+def {present, missing} = {present: 1}
+assert(present == 1)
+assert(missing == null)
+
+# --- Interaction with closures and capture analysis ---
+
+# Nested destructure bindings should be captured by closures
+def make_adder = fn -> {
+    def [base, [scale, offset]] = [10, [2, 5]]
+    fn x -> base + scale * x + offset
+}
+def adder = make_adder()
+assert(adder(3) == 21)  # 10 + 2*3 + 5
+
+# Map destructure bindings captured by closures
+def make_greeter = fn -> {
+    def {greeting, punctuation} = {greeting: 'hello', punctuation: '!'}
+    fn name -> greeting + ' ' + name + punctuation
+}
+assert(make_greeter()('world') == 'hello world!')
+
+# Nested destructure in a closure that captures from outer scope
+def outer_val = 100
+def make_fn = fn -> {
+    def [a, {b}] = [1, {b: 2}]
+    fn -> a + b + outer_val
+}
+assert(make_fn()() == 103)
+
+# Destructure bindings used across multiple closures
+def [shared_a, shared_b] = [10, 20]
+def fn1 = fn -> shared_a
+def fn2 = fn -> shared_b
+def fn3 = fn -> shared_a + shared_b
+assert(fn1() == 10)
+assert(fn2() == 20)
+assert(fn3() == 30)
+
+# Recursive function using destructured bindings
+defn sum_nested(arr) -> {
+    def [head, ...tail] = arr
+    if len(tail) == 0: head
+    else: head + sum_nested(tail)
+}
+assert(sum_nested([1, 2, 3, 4]) == 10)
+
+# Destructure inside a do block
+def result = do {
+    def [a, [b, c]] = [1, [2, 3]]
+    a + b + c
+}
+assert(result == 6)
+
+# Destructure with rest discard
+def [kept_val, ..._] = [42, 'ignore', 'these']
+assert(kept_val == 42)

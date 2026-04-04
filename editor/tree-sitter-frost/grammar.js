@@ -118,14 +118,12 @@ module.exports = grammar({
     array_destructure_elements: $ => choice(
       $.rest_pattern,
       seq(
-        commaSep1NoTrailing($.destructure_name),
+        commaSep1NoTrailing($.pattern),
         optional(seq(',', $.rest_pattern)),
       ),
     ),
 
-    rest_pattern: $ => seq('...', field('name', $.destructure_name)),
-
-    destructure_name: $ => $.identifier,
+    rest_pattern: $ => seq('...', field('name', $.identifier)),
 
     map_destructure_pattern: $ => seq(
       '{',
@@ -140,12 +138,12 @@ module.exports = grammar({
       seq(
         field('key', $.map_key_expression),
         ':',
-        field('name', $.destructure_name),
+        field('name', $.pattern),
       ),
       // Identifier key: explicit binding, or shorthand (key name used as binding).
       seq(
         field('key', $.identifier),
-        optional(seq(':', field('name', $.destructure_name))),
+        optional(seq(':', field('name', $.pattern))),
       ),
     ),
 

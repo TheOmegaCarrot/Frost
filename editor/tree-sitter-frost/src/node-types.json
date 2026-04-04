@@ -177,7 +177,7 @@
       "required": true,
       "types": [
         {
-          "type": "destructure_name",
+          "type": "pattern",
           "named": true
         },
         {
@@ -407,21 +407,6 @@
       "types": [
         {
           "type": "kw_defn",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "destructure_name",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
           "named": true
         }
       ]
@@ -1056,7 +1041,7 @@
         "required": false,
         "types": [
           {
-            "type": "destructure_name",
+            "type": "pattern",
             "named": true
           }
         ]
@@ -1573,7 +1558,7 @@
         "required": true,
         "types": [
           {
-            "type": "destructure_name",
+            "type": "identifier",
             "named": true
           }
         ]

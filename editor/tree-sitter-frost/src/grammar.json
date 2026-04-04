@@ -283,7 +283,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "destructure_name"
+                  "name": "pattern"
                 },
                 {
                   "type": "REPEAT",
@@ -296,7 +296,7 @@
                       },
                       {
                         "type": "SYMBOL",
-                        "name": "destructure_name"
+                        "name": "pattern"
                       }
                     ]
                   }
@@ -340,14 +340,10 @@
           "name": "name",
           "content": {
             "type": "SYMBOL",
-            "name": "destructure_name"
+            "name": "identifier"
           }
         }
       ]
-    },
-    "destructure_name": {
-      "type": "SYMBOL",
-      "name": "identifier"
     },
     "map_destructure_pattern": {
       "type": "SEQ",
@@ -426,7 +422,7 @@
               "name": "name",
               "content": {
                 "type": "SYMBOL",
-                "name": "destructure_name"
+                "name": "pattern"
               }
             }
           ]
@@ -457,7 +453,7 @@
                       "name": "name",
                       "content": {
                         "type": "SYMBOL",
-                        "name": "destructure_name"
+                        "name": "pattern"
                       }
                     }
                   ]
