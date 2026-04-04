@@ -4,7 +4,6 @@
 // Amalgam header including all AST components
 
 #include <frost/ast/array-constructor.hpp>
-#include <frost/ast/array-destructure.hpp>
 #include <frost/ast/binop.hpp>
 #include <frost/ast/define.hpp>
 #include <frost/ast/do.hpp>
@@ -17,7 +16,6 @@
 #include <frost/ast/index.hpp>
 #include <frost/ast/literal.hpp>
 #include <frost/ast/map-constructor.hpp>
-#include <frost/ast/map-destructure.hpp>
 #include <frost/ast/map.hpp>
 #include <frost/ast/name-lookup.hpp>
 #include <frost/ast/reduce.hpp>

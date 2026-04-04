@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/ast/destructure-leaf.hpp>
 #include <frost/value.hpp>
 
 #include <fmt/format.h>
@@ -65,6 +66,18 @@ Expression::Ptr lit_int(Int v)
     return std::make_unique<Literal>(AST_Node::no_range,
                                      Value::create(auto{v}));
 }
+
+Destructure::Ptr leaf(std::string n, bool exported = false)
+{
+    return std::make_unique<Destructure_Leaf>(AST_Node::no_range,
+                                              std::move(n), exported);
+}
+
+Statement::Ptr def(std::string n, Expression::Ptr expr)
+{
+    return std::make_unique<Define>(AST_Node::no_range, leaf(n),
+                                   std::move(expr));
+}
 } // namespace
 
 TEST_CASE("Symbol Sequence")
@@ -86,14 +99,14 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("Define yields RHS then definition")
     {
-        Define node{AST_Node::no_range, "x", name("y")};
+        Define node{AST_Node::no_range, leaf("x"), name("y")};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:y", "def:x"});
     }
 
     SECTION("Define with literal yields only definition")
     {
-        Define node{AST_Node::no_range, "x", lit_int(1_f)};
+        Define node{AST_Node::no_range, leaf("x"), lit_int(1_f)};
         CHECK(collect_sequence(node) == std::vector<std::string>{"def:x"});
     }
 
@@ -201,7 +214,7 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("Define with nested expression keeps RHS order")
     {
-        Define node{AST_Node::no_range, "x",
+        Define node{AST_Node::no_range, leaf("x"),
                     std::make_unique<Binop>(AST_Node::no_range, name("y"),
                                             Binary_Op::PLUS, name("z"))};
         CHECK(collect_sequence(node)
@@ -211,14 +224,12 @@ TEST_CASE("Symbol Sequence")
     SECTION("Program concatenates statement sequences in order")
     {
         std::vector<Statement::Ptr> program;
-        program.push_back(std::make_unique<Define>(
-            AST_Node::no_range, "x",
+        program.push_back(def("x",
             std::make_unique<Binop>(AST_Node::no_range, name("a"),
                                     Binary_Op::PLUS, name("b"))));
         program.push_back(std::make_unique<Binop>(
             AST_Node::no_range, name("x"), Binary_Op::MULTIPLY, name("c")));
-        program.push_back(std::make_unique<Define>(
-            AST_Node::no_range, "y",
+        program.push_back(def("y",
             std::make_unique<If>(AST_Node::no_range, name("cond"), name("x"),
                                  std::optional<Expression::Ptr>{name("d")})));
 
@@ -238,8 +249,7 @@ TEST_CASE("Symbol Sequence")
                                  std::optional<Expression::Ptr>{name("f")}));
         elems.push_back(std::make_unique<Binop>(AST_Node::no_range, name("b"),
                                                 Binary_Op::PLUS, name("c")));
-        program.push_back(std::make_unique<Define>(
-            AST_Node::no_range, "z",
+        program.push_back(def("z",
             std::make_unique<Array_Constructor>(AST_Node::no_range,
                                                 std::move(elems))));
 
@@ -248,8 +258,7 @@ TEST_CASE("Symbol Sequence")
         pairs.emplace_back(
             name("k2"), std::make_unique<Binop>(AST_Node::no_range, name("v2"),
                                                 Binary_Op::PLUS, name("v3")));
-        program.push_back(std::make_unique<Define>(
-            AST_Node::no_range, "m",
+        program.push_back(def("m",
             std::make_unique<Map_Constructor>(AST_Node::no_range,
                                               std::move(pairs))));
 
@@ -279,8 +288,7 @@ TEST_CASE("Symbol Sequence")
             std::make_unique<Binop>(AST_Node::no_range, std::move(negate),
                                     Binary_Op::PLUS, lit_int(1_f));
 
-        auto stmt_define_x =
-            std::make_unique<Define>(AST_Node::no_range, "x", std::move(add));
+        auto stmt_define_x = def("x", std::move(add));
 
         program.push_back(std::move(stmt_define_x));
 
@@ -305,8 +313,7 @@ TEST_CASE("Symbol Sequence")
         auto arr_expr = std::make_unique<Array_Constructor>(
             AST_Node::no_range, std::move(arr_elems));
 
-        auto stmt_define_arr = std::make_unique<Define>(
-            AST_Node::no_range, "arr", std::move(arr_expr));
+        auto stmt_define_arr = def("arr", std::move(arr_expr));
 
         program.push_back(std::move(stmt_define_arr));
 
@@ -321,8 +328,7 @@ TEST_CASE("Symbol Sequence")
         auto map_expr = std::make_unique<Map_Constructor>(AST_Node::no_range,
                                                           std::move(pairs));
 
-        auto stmt_define_map = std::make_unique<Define>(
-            AST_Node::no_range, "map", std::move(map_expr));
+        auto stmt_define_map = def("map", std::move(map_expr));
 
         program.push_back(std::move(stmt_define_map));
 

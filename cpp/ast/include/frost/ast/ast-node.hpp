@@ -89,24 +89,24 @@ class AST_Node
         source_range_ = range;
     }
 
-  protected:
-    virtual std::string do_node_label() const = 0;
-
     struct Child_Info
     {
         const AST_Node* node = nullptr;
         std::string label;
     };
 
-    static Child_Info make_child(const auto& child, std::string label = {})
-    {
-        return Child_Info{child.get(), std::move(label)};
-    }
-
     //! @brief Iterate over children (possibly empty)
     virtual std::generator<Child_Info> children() const
     {
         co_return;
+    }
+
+  protected:
+    virtual std::string do_node_label() const = 0;
+
+    static Child_Info make_child(const auto& child, std::string label = {})
+    {
+        return Child_Info{child.get(), std::move(label)};
     }
 
   private:

@@ -1,6 +1,5 @@
 add_library( frost-ast
     array-constructor.cpp
-    array-destructure.cpp
     binop.cpp
     define.cpp
     do.cpp
@@ -13,7 +12,6 @@ add_library( frost-ast
     literal.cpp
     map.cpp
     map-constructor.cpp
-    map-destructure.cpp
     name-lookup.cpp
     reduce.cpp
     ast-node.cpp
@@ -38,8 +36,6 @@ set(AST_TEST_FILES
     literal
     define
     do
-    array-destructure
-    map-destructure
     if
     binop
     unop

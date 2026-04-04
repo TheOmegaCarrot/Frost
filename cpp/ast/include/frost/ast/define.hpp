@@ -26,18 +26,16 @@ class Define final : public Statement
     ~Define() final = default;
 
     std::generator<Symbol_Action> symbol_sequence() const final;
+    std::generator<Child_Info> children() const final;
 
   protected:
     std::string do_node_label() const final;
 
     void do_execute(Execution_Context& ctx) const final;
 
-    std::generator<Child_Info> children() const final;
-
   private:
     Destructure::Ptr destructure_;
     Expression::Ptr expr_;
-    bool export_def_;
 };
 
 } // namespace frst::ast

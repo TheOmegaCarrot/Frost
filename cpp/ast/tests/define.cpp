@@ -1,105 +1,133 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <catch2/trompeloeil.hpp>
 
+#include <frost/mock/mock-destructure.hpp>
 #include <frost/mock/mock-expression.hpp>
 #include <frost/mock/mock-symbol-table.hpp>
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
-#include <frost/ast.hpp>
-#include <frost/symbol-table.hpp>
+#include <frost/ast/define.hpp>
+#include <frost/value.hpp>
+
+#include <ranges>
+#include <vector>
 
 using namespace frst;
 using namespace std::literals;
+using Catch::Matchers::ContainsSubstring;
 
 using trompeloeil::_;
 
 TEST_CASE("Define")
 {
-    auto expr = std::make_unique<mock::Mock_Expression>();
-    mock::Mock_Symbol_Table syms;
-    Execution_Context ctx{.symbols = syms};
-    trompeloeil::sequence seq;
-
-    SECTION("Normal")
+    SECTION("Evaluates expression and passes result to destructure")
     {
+        mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
+
+        auto expr = mock::Mock_Expression::make();
+        auto dest = mock::Mock_Destructure::make();
+        auto* expr_ptr = expr.get();
+        auto* dest_ptr = dest.get();
+
         auto value = Value::create(42_f);
 
-        REQUIRE_CALL(*expr, do_evaluate(_))
+        trompeloeil::sequence seq;
+        REQUIRE_CALL(*expr_ptr, do_evaluate(_))
             .IN_SEQUENCE(seq)
-            .LR_WITH(&_1.symbols == &syms)
             .RETURN(value);
+        REQUIRE_CALL(*dest_ptr, do_destructure(_, value))
+            .IN_SEQUENCE(seq);
 
-        REQUIRE_CALL(syms, define("foo", value)).IN_SEQUENCE(seq);
-
-        ast::Define node{ast::AST_Node::no_range, "foo", std::move(expr)};
-
+        ast::Define node{ast::AST_Node::no_range, std::move(dest),
+                         std::move(expr)};
         node.execute(ctx);
     }
 
-    SECTION("Redefine")
+    SECTION("Expression error propagates, destructure not called")
     {
-        auto value1 = Value::create(42_f);
-        auto value2 = Value::create("well that's not right"s);
+        mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
-        REQUIRE_CALL(*expr, do_evaluate(_))
-            .LR_WITH(&_1.symbols == &syms)
-            .IN_SEQUENCE(seq)
-            .RETURN(value1);
+        auto expr = mock::Mock_Expression::make();
+        auto dest = mock::Mock_Destructure::make();
+        auto* expr_ptr = expr.get();
+        auto* dest_ptr = dest.get();
 
-        REQUIRE_CALL(syms, define("foo", value1)).IN_SEQUENCE(seq);
+        REQUIRE_CALL(*expr_ptr, do_evaluate(_))
+            .THROW(Frost_Recoverable_Error{"expr boom"});
+        FORBID_CALL(*dest_ptr, do_destructure(_, _));
 
-        REQUIRE_CALL(*expr, do_evaluate(_))
-            .LR_WITH(&_1.symbols == &syms)
-            .IN_SEQUENCE(seq)
-            .RETURN(value2);
+        ast::Define node{ast::AST_Node::no_range, std::move(dest),
+                         std::move(expr)};
 
-        REQUIRE_CALL(syms, define("foo", value2))
-            .IN_SEQUENCE(seq)
-            .THROW(Frost_Recoverable_Error{"uh oh"});
-
-        ast::Define node{ast::AST_Node::no_range, "foo", std::move(expr)};
-
-        node.execute(ctx);
-        CHECK_THROWS(node.execute(ctx));
+        CHECK_THROWS_WITH(node.execute(ctx),
+                          ContainsSubstring("expr boom"));
     }
 
-    SECTION("Export flag appears in symbol_sequence")
+    SECTION("Destructure error propagates")
     {
-        ast::Define node{ast::AST_Node::no_range, "foo", std::move(expr), true};
+        mock::Mock_Symbol_Table syms;
+        Execution_Context ctx{.symbols = syms};
 
-        std::vector<ast::AST_Node::Symbol_Action> actions;
-        for (const auto& action : node.symbol_sequence())
-            actions.push_back(action);
+        auto expr = mock::Mock_Expression::make();
+        auto dest = mock::Mock_Destructure::make();
+        auto* expr_ptr = expr.get();
+        auto* dest_ptr = dest.get();
 
-        REQUIRE(actions.size() >= 1);
-        auto& last = actions.back();
-        REQUIRE(std::holds_alternative<ast::AST_Node::Definition>(last));
-        auto& defn = std::get<ast::AST_Node::Definition>(last);
-        CHECK(defn.name == "foo");
-        CHECK(defn.exported == true);
+        REQUIRE_CALL(*expr_ptr, do_evaluate(_))
+            .RETURN(Value::create(42_f));
+        REQUIRE_CALL(*dest_ptr, do_destructure(_, _))
+            .THROW(Frost_Recoverable_Error{"dest boom"});
+
+        ast::Define node{ast::AST_Node::no_range, std::move(dest),
+                         std::move(expr)};
+
+        CHECK_THROWS_WITH(node.execute(ctx),
+                          ContainsSubstring("dest boom"));
     }
 
-    SECTION("Non-export definition is not marked exported")
+    SECTION("symbol_sequence chains expression then destructure")
     {
-        ast::Define node{ast::AST_Node::no_range, "foo", std::move(expr)};
+        auto expr = mock::Mock_Expression::make();
+        auto dest = mock::Mock_Destructure::make();
 
-        std::vector<ast::AST_Node::Symbol_Action> actions;
-        for (const auto& action : node.symbol_sequence())
-            actions.push_back(action);
+        // Both mocks yield empty symbol sequences by default,
+        // so the combined sequence is empty
+        ast::Define node{ast::AST_Node::no_range, std::move(dest),
+                         std::move(expr)};
 
-        REQUIRE(actions.size() >= 1);
-        auto& last = actions.back();
-        REQUIRE(std::holds_alternative<ast::AST_Node::Definition>(last));
-        auto& defn = std::get<ast::AST_Node::Definition>(last);
-        CHECK(defn.name == "foo");
-        CHECK(defn.exported == false);
+        auto actions =
+            node.symbol_sequence() | std::ranges::to<std::vector>();
+        CHECK(actions.empty());
     }
 
-    SECTION("Reject _")
+    SECTION("children yields expression and destructure")
     {
-        CHECK_THROWS(
-            ast::Define{ast::AST_Node::no_range, "_", std::move(expr)});
+        auto expr = mock::Mock_Expression::make();
+        auto dest = mock::Mock_Destructure::make();
+
+        ast::Define node{ast::AST_Node::no_range, std::move(dest),
+                         std::move(expr)};
+
+        auto kids =
+            node.children() | std::ranges::to<std::vector>();
+        REQUIRE(kids.size() == 2);
+        CHECK(kids[0].label == "Expression");
+        CHECK(kids[1].label == "Bindings");
+    }
+
+    SECTION("node_label")
+    {
+        auto expr = mock::Mock_Expression::make();
+        auto dest = mock::Mock_Destructure::make();
+
+        ast::Define node{ast::AST_Node::no_range, std::move(dest),
+                         std::move(expr)};
+
+        CHECK(node.node_label() == "Define");
     }
 }
