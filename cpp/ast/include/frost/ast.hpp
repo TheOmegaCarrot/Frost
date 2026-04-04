@@ -6,6 +6,10 @@
 #include <frost/ast/array-constructor.hpp>
 #include <frost/ast/binop.hpp>
 #include <frost/ast/define.hpp>
+#include <frost/ast/destructure-array.hpp>
+#include <frost/ast/destructure-leaf.hpp>
+#include <frost/ast/destructure-map.hpp>
+#include <frost/ast/destructure.hpp>
 #include <frost/ast/do.hpp>
 #include <frost/ast/expression.hpp>
 #include <frost/ast/filter.hpp>

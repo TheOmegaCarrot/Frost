@@ -11,6 +11,7 @@
 #include <utility>
 
 #include <frost/ast.hpp>
+#include <frost/ast/destructure-leaf.hpp>
 #include <frost/closure.hpp>
 #include <frost/mock/mock-expression.hpp>
 #include <frost/symbol-table.hpp>
@@ -92,6 +93,12 @@ template <typename T, typename... Args>
 std::unique_ptr<T> node(Args&&... args)
 {
     return std::make_unique<T>(std::forward<Args>(args)...);
+}
+
+ast::Destructure::Ptr leaf(std::string n, bool exported = false)
+{
+    return std::make_unique<ast::Destructure_Leaf>(
+        ast::AST_Node::no_range, std::move(n), exported);
 }
 
 template <typename T, typename... Args>
@@ -499,7 +506,7 @@ Literal(42) [0:0-0:0]
         Symbol_Table captures;
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            AST_Node::no_range, "rest",
+            AST_Node::no_range, leaf("rest"),
             node<Literal>(AST_Node::no_range, Value::create(1_f))));
         body.push_back(node<Name_Lookup>(AST_Node::no_range, "rest"));
         auto body_ptr = make_body(std::move(body));
@@ -645,7 +652,7 @@ Literal(42) [0:0-0:0]
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Literal>(AST_Node::no_range, Value::create(1_f))));
         auto body_ptr = make_body(std::move(body));
 
@@ -668,7 +675,7 @@ Literal(42) [0:0-0:0]
 
         std::vector<Statement::Ptr> body;
         body.push_back(
-            node<Define>(AST_Node::no_range, "x",
+            node<Define>(AST_Node::no_range, leaf("x"),
                          node<Name_Lookup>(AST_Node::no_range, "p")));
         auto body_ptr = make_body(std::move(body));
 
@@ -692,10 +699,10 @@ Literal(42) [0:0-0:0]
 
         std::vector<Statement::Ptr> body;
         body.push_back(
-            node<Define>(AST_Node::no_range, "y",
+            node<Define>(AST_Node::no_range, leaf("y"),
                          node<Name_Lookup>(AST_Node::no_range, "x")));
         body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Literal>(AST_Node::no_range, Value::create(4_f))));
         auto body_ptr = make_body(std::move(body));
 
@@ -741,7 +748,7 @@ Literal(42) [0:0-0:0]
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>(AST_Node::no_range, "x"));
         body.push_back(
-            node<Define>(AST_Node::no_range, "x",
+            node<Define>(AST_Node::no_range, leaf("x"),
                          node<Literal>(AST_Node::no_range, local_val)));
         auto body_ptr = make_body(std::move(body));
 

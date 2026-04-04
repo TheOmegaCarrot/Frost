@@ -2,6 +2,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <catch2/trompeloeil.hpp>
 
+#include <frost/ast/destructure-leaf.hpp>
 #include <frost/ast/function-call.hpp>
 #include <frost/ast/lambda.hpp>
 #include <frost/closure.hpp>
@@ -40,6 +41,12 @@ template <typename T, typename... Args>
 std::unique_ptr<T> node(Args&&... args)
 {
     return std::make_unique<T>(std::forward<Args>(args)...);
+}
+
+Destructure::Ptr leaf(std::string n, bool exported = false)
+{
+    return std::make_unique<Destructure_Leaf>(
+        AST_Node::no_range, std::move(n), exported);
 }
 
 std::set<std::string> capture_names(const Closure& closure)
@@ -104,7 +111,7 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Name_Lookup>(AST_Node::no_range, "x"));
         body.push_back(node<Define>(
-            AST_Node::no_range, "y",
+            AST_Node::no_range, leaf("y"),
             node<Literal>(AST_Node::no_range, Value::create(1_f))));
         body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
 
@@ -125,7 +132,7 @@ TEST_CASE("Lambda")
         // def f = fn () -> { def x = 1 }
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Literal>(AST_Node::no_range, Value::create(1_f))));
 
         CHECK_THROWS_WITH((Lambda{AST_Node::no_range, {}, std::move(body)}),
@@ -138,7 +145,7 @@ TEST_CASE("Lambda")
         // def f = fn (x) -> { def x = 1 }
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Literal>(AST_Node::no_range, Value::create(1_f))));
 
         CHECK_THROWS_WITH((Lambda{AST_Node::no_range, {"x"}, std::move(body)}),
@@ -230,7 +237,7 @@ TEST_CASE("Lambda")
         // def f = fn (x) -> { def x = 2 ; null }
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Literal>(AST_Node::no_range, Value::create(2_f))));
         body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
 
@@ -265,7 +272,7 @@ TEST_CASE("Lambda")
         // "f"
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            AST_Node::no_range, "f",
+            AST_Node::no_range, leaf("f"),
             node<Literal>(AST_Node::no_range, Value::create(1_f))));
         body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
         CHECK_THROWS_WITH(
@@ -456,7 +463,7 @@ TEST_CASE("Lambda")
         // def f = fn (...rest) -> { def rest = 2 ; null }
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            AST_Node::no_range, "rest",
+            AST_Node::no_range, leaf("rest"),
             node<Literal>(AST_Node::no_range, Value::create(2_f))));
         body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
 
@@ -700,7 +707,7 @@ TEST_CASE("Lambda")
             Binary_Op::PLUS,
             node<Literal>(AST_Node::no_range, Value::create(1_f))));
         body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Literal>(AST_Node::no_range, Value::create(2_f))));
         body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
 
@@ -725,7 +732,7 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> body;
         body.push_back(
-            node<Define>(AST_Node::no_range, "x",
+            node<Define>(AST_Node::no_range, leaf("x"),
                          node<Name_Lookup>(AST_Node::no_range, "y")));
         body.push_back(node<Name_Lookup>(AST_Node::no_range, "x"));
 
@@ -754,7 +761,7 @@ TEST_CASE("Lambda")
             AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "x"),
             Binary_Op::PLUS, node<Name_Lookup>(AST_Node::no_range, "y")));
         body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Literal>(AST_Node::no_range, Value::create(3_f))));
         body.push_back(node<Name_Lookup>(AST_Node::no_range, "x"));
 
@@ -777,7 +784,7 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Literal>(AST_Node::no_range, Value::create(7_f))));
         body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
 
@@ -799,7 +806,7 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Binop>(AST_Node::no_range,
                         node<Literal>(AST_Node::no_range, Value::create(1_f)),
                         Binary_Op::PLUS,
@@ -824,7 +831,7 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Binop>(
                 AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "p"),
                 Binary_Op::PLUS,
@@ -1006,7 +1013,7 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(node<Define>(
-            AST_Node::no_range, "y", node<Literal>(AST_Node::no_range, y_val)));
+            AST_Node::no_range, leaf("y"), node<Literal>(AST_Node::no_range, y_val)));
         outer_body.push_back(node<Lambda>(AST_Node::no_range,
                                           std::vector<std::string>{},
                                           std::move(inner_body)));
@@ -1083,11 +1090,11 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(node<Define>(
-            AST_Node::no_range, "inner",
+            AST_Node::no_range, leaf("inner"),
             node<Lambda>(AST_Node::no_range, std::vector<std::string>{},
                          std::move(inner_body))));
         outer_body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Literal>(AST_Node::no_range, Value::create(2_f))));
         outer_body.push_back(node<Name_Lookup>(AST_Node::no_range, "inner"));
 
@@ -1121,7 +1128,7 @@ TEST_CASE("Lambda")
                                           std::vector<std::string>{},
                                           std::move(inner_body)));
         outer_body.push_back(node<Define>(
-            AST_Node::no_range, "z",
+            AST_Node::no_range, leaf("z"),
             node<Literal>(AST_Node::no_range, Value::create(42_f))));
         outer_body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
 
@@ -1200,7 +1207,7 @@ TEST_CASE("Lambda")
                                node<Name_Lookup>(AST_Node::no_range, "b"));
 
             inner_body.push_back(node<Define>(
-                AST_Node::no_range, "m",
+                AST_Node::no_range, leaf("m"),
                 node<Map_Constructor>(AST_Node::no_range, std::move(pairs))));
 
             std::vector<Expression::Ptr> elems;
@@ -1223,11 +1230,11 @@ TEST_CASE("Lambda")
             b_elems.push_back(node<Literal>(AST_Node::no_range, one));
 
             outer_body.push_back(
-                node<Define>(AST_Node::no_range, "a",
+                node<Define>(AST_Node::no_range, leaf("a"),
                              node<Array_Constructor>(AST_Node::no_range,
                                                      std::move(a_elems))));
             outer_body.push_back(
-                node<Define>(AST_Node::no_range, "b",
+                node<Define>(AST_Node::no_range, leaf("b"),
                              node<Array_Constructor>(AST_Node::no_range,
                                                      std::move(b_elems))));
             outer_body.push_back(node<Lambda>(AST_Node::no_range,
@@ -1341,7 +1348,7 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(node<Define>(
-            AST_Node::no_range, "y", node<Literal>(AST_Node::no_range, y_val)));
+            AST_Node::no_range, leaf("y"), node<Literal>(AST_Node::no_range, y_val)));
         outer_body.push_back(node<Lambda>(AST_Node::no_range,
                                           std::vector<std::string>{"q"},
                                           std::move(inner_body)));
@@ -1372,7 +1379,7 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> inner_body;
         inner_body.push_back(node<Define>(
-            AST_Node::no_range, "x",
+            AST_Node::no_range, leaf("x"),
             node<Literal>(AST_Node::no_range, Value::create(1_f))));
         inner_body.push_back(node<Name_Lookup>(AST_Node::no_range, "x"));
 
@@ -1405,7 +1412,7 @@ TEST_CASE("Lambda")
 
         std::vector<Statement::Ptr> outer_body;
         outer_body.push_back(
-            node<Define>(AST_Node::no_range, "x",
+            node<Define>(AST_Node::no_range, leaf("x"),
                          node<Literal>(AST_Node::no_range, x_outer)));
         outer_body.push_back(node<Lambda>(AST_Node::no_range,
                                           std::vector<std::string>{"x"},
@@ -1461,7 +1468,7 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> inner_body;
         inner_body.push_back(node<Name_Lookup>(AST_Node::no_range, "p"));
         inner_body.push_back(node<Define>(
-            AST_Node::no_range, "p",
+            AST_Node::no_range, leaf("p"),
             node<Literal>(AST_Node::no_range, Value::create(1_f))));
         inner_body.push_back(node<Name_Lookup>(AST_Node::no_range, "p"));
 
@@ -1678,7 +1685,7 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> inner_body;
         inner_body.push_back(node<Name_Lookup>(AST_Node::no_range, "y"));
         inner_body.push_back(node<Define>(
-            AST_Node::no_range, "y",
+            AST_Node::no_range, leaf("y"),
             node<Literal>(AST_Node::no_range, Value::create(1_f))));
         inner_body.push_back(node<Name_Lookup>(AST_Node::no_range, "y"));
 

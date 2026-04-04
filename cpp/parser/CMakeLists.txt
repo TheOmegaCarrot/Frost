@@ -32,6 +32,7 @@ set(PARSER_TEST_FILES
     primary-expr
     if-expr
     define-stmt
+    destructure-parser
     defn-stmt
     program
     program-stress
