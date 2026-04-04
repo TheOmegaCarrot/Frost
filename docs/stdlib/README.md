@@ -40,8 +40,9 @@ Built-in modules accessed via `import`.
 
 | Module                           | Import                       | Description                              |
 |----------------------------------|------------------------------|------------------------------------------|
-| [Encoding](./encoding.md)        | `import('std.encoding')`     | Base64, byte arrays, integer formatting  |
+| [Encoding](./encoding.md)        | `import('std.encoding')`     | Binary and text encoding utilities        |
 | [Filesystem](./fs.md)            | `import('std.fs')`           | Reading, writing, and navigating the filesystem |
+| [Hash](./hash.md)                | `import('std.hash')`         | Cryptographic hash functions (MD5, SHA, BLAKE2, etc.) |
 | [IO](./io.md)                    | `import('std.io')`           | Reading and writing files and streams    |
 | [JSON](./json.md)                | `import('std.json')`         | Encoding and decoding JSON               |
 | [Math](./math.md)                | `import('std.math')`         | Arithmetic, rounding, logarithms, trig   |

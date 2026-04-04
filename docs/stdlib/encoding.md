@@ -28,6 +28,19 @@ Returns an array of `Int` values representing the raw byte values (0--255) of ea
 Converts an array of `Int` values in the range `[0, 255]` to a string.
 Produces an error if any element is not an `Int` or is out of range.
 
+## `hex.encode`
+`hex.encode(s)`
+
+Encodes `s` as a lowercase hexadecimal string. Each byte becomes two hex characters.
+
+## `hex.decode`
+`hex.decode(s)`
+
+Decodes a hexadecimal string and returns the raw bytes as a string.
+Input length must be even. Produces an error on invalid input.
+The result is a raw binary string that may contain non-printable bytes.
+Printing such strings directly may produce unexpected terminal output.
+
 ## `b64.encode`
 `b64.encode(s)`
 

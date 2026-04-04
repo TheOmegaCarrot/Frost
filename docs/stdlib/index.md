@@ -31,6 +31,8 @@ Each entry links to its full documentation.
 - [encoding.b64.urlencode](encoding.md#b64urlencode) · `std.encoding`
 - [encoding.fmt_int](encoding.md#fmt_int) · `std.encoding`
 - [encoding.from_bytes](encoding.md#from_bytes) · `std.encoding`
+- [encoding.hex.decode](encoding.md#hexdecode) · `std.encoding`
+- [encoding.hex.encode](encoding.md#hexencode) · `std.encoding`
 - [encoding.parse_int](encoding.md#parse_int) · `std.encoding`
 - [encoding.to_bytes](encoding.md#to_bytes) · `std.encoding`
 - [ends_with](strings.md#ends_with)
@@ -63,6 +65,22 @@ Each entry links to its full documentation.
 - [greater_than_or_equal](operators.md#greater_than_or_equal)
 - [group_by](collections.md#group_by)
 - [has](collections.md#has)
+- [hash.blake2b512](hash.md#blake2b512) · `std.hash`
+- [hash.blake2s256](hash.md#blake2s256) · `std.hash`
+- [hash.md5](hash.md#md5) · `std.hash`
+- [hash.ripemd160](hash.md#ripemd160) · `std.hash`
+- [hash.sha1](hash.md#sha1) · `std.hash`
+- [hash.sha224](hash.md#sha224) · `std.hash`
+- [hash.sha256](hash.md#sha256) · `std.hash`
+- [hash.sha384](hash.md#sha384) · `std.hash`
+- [hash.sha3_224](hash.md#sha3_224) · `std.hash`
+- [hash.sha3_256](hash.md#sha3_256) · `std.hash`
+- [hash.sha3_384](hash.md#sha3_384) · `std.hash`
+- [hash.sha3_512](hash.md#sha3_512) · `std.hash`
+- [hash.sha512](hash.md#sha512) · `std.hash`
+- [hash.sha512_224](hash.md#sha512_224) · `std.hash`
+- [hash.sha512_256](hash.md#sha512_256) · `std.hash`
+- [hash.sm3](hash.md#sm3) · `std.hash`
 - [http.parse_url](http.md#parse_url) · `ext.http`
 - [http.request](http.md#request) · `ext.http`
 - [id](collections.md#id)
