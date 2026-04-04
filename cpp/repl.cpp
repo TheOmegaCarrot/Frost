@@ -385,6 +385,20 @@ bool should_read_more(std::string& input)
     if (input.ends_with(':') || input.ends_with("->"))
         return true;
 
+    static bool in_multiline_string = false;
+    auto multiline_string_delim = [&] {
+        return input.ends_with("'''") || input.ends_with("\"\"\"");
+    };
+
+    if (not in_multiline_string && multiline_string_delim())
+        return in_multiline_string = true;
+
+    if (in_multiline_string && multiline_string_delim())
+        return in_multiline_string = false;
+
+    if (in_multiline_string)
+        return true;
+
     if (input.ends_with('\\'))
     {
         input.pop_back();
