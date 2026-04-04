@@ -1,6 +1,7 @@
 #ifndef FROST_AST_DEFINE_HPP
 #define FROST_AST_DEFINE_HPP
 
+#include "destructure.hpp"
 #include "expression.hpp"
 #include "statement.hpp"
 
@@ -15,8 +16,8 @@ class Define final : public Statement
     using Ptr = std::unique_ptr<Define>;
 
     Define() = delete;
-    Define(Source_Range source_range, std::string name, Expression::Ptr expr,
-           bool export_def = false);
+    Define(Source_Range source_range, Destructure::Ptr destructure,
+           Expression::Ptr expr);
 
     Define(const Define&) = delete;
     Define(Define&&) = delete;
@@ -34,7 +35,7 @@ class Define final : public Statement
     std::generator<Child_Info> children() const final;
 
   private:
-    std::string name_;
+    Destructure::Ptr destructure_;
     Expression::Ptr expr_;
     bool export_def_;
 };

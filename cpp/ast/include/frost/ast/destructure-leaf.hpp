@@ -17,6 +17,8 @@ class Destructure_Leaf final : public Destructure
         , name_{std::move(name)}
         , exported_{exported}
     {
+        if (name_.empty())
+            throw Frost_Interpreter_Error{"Attempting to bind an empty name!"};
     }
 
     Destructure_Leaf() = delete;

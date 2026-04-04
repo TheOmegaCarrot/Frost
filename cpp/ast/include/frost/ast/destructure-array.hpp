@@ -33,7 +33,7 @@ class Destructure_Array final : public Destructure
         for (const auto& d : destructures_)
             co_yield std::ranges::elements_of(d->symbol_sequence());
 
-        if (rest_name_)
+        if (rest_name_ && rest_name_ != "_")
             co_yield Definition{rest_name_.value(), exported_};
     }
 

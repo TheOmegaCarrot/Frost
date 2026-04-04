@@ -55,6 +55,9 @@ set(AST_TEST_FILES
     filter
     format-string
     walk
+    destructure-leaf
+    destructure-array-node
+    destructure-map-node
 )
 
 foreach(test_file IN LISTS AST_TEST_FILES)

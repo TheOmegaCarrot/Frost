@@ -58,11 +58,12 @@ class Destructure_Map final : public Destructure
     void do_destructure(Execution_Context ctx,
                         const Value_Ptr& value) const final
     {
-        if (not value->is<Map>())
+        if (not value->is<frst::Map>())
             throw Frost_Recoverable_Error{fmt::format(
                 "Destructure expected Map, got {}", value->type_name())};
 
-        const Map& map_being_destructured = value->raw_get<Map>();
+        const frst::Map& map_being_destructured =
+            value->raw_get<frst::Map>();
 
         for (const auto& [key_expr, destructure_child] : destructure_elems_)
         {
@@ -72,7 +73,7 @@ class Destructure_Map final : public Destructure
                 throw Frost_Recoverable_Error{
                     fmt::format("Map destructure key expressions must be valid "
                                 "Map keys, got: {}",
-                                key->to_internal_string())};
+                                key->type_name())};
             }
 
             auto itr = map_being_destructured.find(key);
