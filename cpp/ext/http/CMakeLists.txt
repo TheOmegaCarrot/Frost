@@ -1,5 +1,4 @@
 find_package(Boost REQUIRED COMPONENTS url)
-find_package(OpenSSL REQUIRED)
 
 add_library( frost-http
     http.cpp

@@ -226,6 +226,7 @@ TEST_CASE("register_stdlib populates all standard modules", "")
     CHECK(registry.lookup_module("std.io").has_value());
     CHECK(registry.lookup_module("std.json").has_value());
     CHECK(registry.lookup_module("std.math").has_value());
+    CHECK(registry.lookup_module("std.hash").has_value());
     CHECK(registry.lookup_module("std.os").has_value());
     CHECK(registry.lookup_module("std.regex").has_value());
 
@@ -233,7 +234,7 @@ TEST_CASE("register_stdlib populates all standard modules", "")
     auto std_ns = registry.lookup_module("std");
     REQUIRE(std_ns.has_value());
     REQUIRE(std_ns.value()->is<Map>());
-    CHECK(std_ns.value()->raw_get<Map>().size() == 7);
+    CHECK(std_ns.value()->raw_get<Map>().size() == 8);
 }
 
 TEST_CASE("register_stdlib deep path into encoding.b64")

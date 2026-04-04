@@ -18,6 +18,7 @@ add_library( frost-functions
     builtins/type-tests.cpp
     stdlib/encoding.cpp
     stdlib/fs.cpp
+    stdlib/hash.cpp
     stdlib/io.cpp
     stdlib/json.cpp
     stdlib/math.cpp
@@ -39,6 +40,7 @@ target_link_libraries( frost-functions
     frost-execution-context
     Boost::regex
     Boost::json
+    OpenSSL::Crypto
     cppcodec::cppcodec
 )
 
@@ -76,6 +78,7 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
 set(FUNCTIONS_STDLIB_TEST_FILES
     encoding
     fs
+    hash
     io
     json
     math
