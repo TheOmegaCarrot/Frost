@@ -31,6 +31,15 @@ Function lookup(const Map& mod, const std::string& name)
     return it->second->raw_get<Function>();
 }
 
+Map lookup_submap(const Map& mod, const std::string& name)
+{
+    auto key = Value::create(String{name});
+    auto it = mod.find(key);
+    REQUIRE(it != mod.end());
+    REQUIRE(it->second->is<Map>());
+    return it->second->raw_get<Map>();
+}
+
 } // namespace
 
 TEST_CASE("stdlib::hash")
@@ -51,6 +60,25 @@ TEST_CASE("stdlib::hash")
             auto key = Value::create(String{std::string{name}});
             auto it = mod.find(key);
             REQUIRE(it != mod.end());
+            CHECK(it->second->is<Function>());
+        }
+    }
+
+    SECTION("HMAC sub-map is registered with all algorithms")
+    {
+        auto hmac = lookup_submap(mod, "hmac");
+        const std::string_view expected[] = {
+            "md5",       "sha1",       "sha224",     "sha256",
+            "sha384",    "sha512",     "sha3_224",   "sha3_256",
+            "sha3_384",  "sha3_512",   "blake2s256", "blake2b512",
+            "ripemd160", "sha512_224", "sha512_256", "sm3",
+        };
+
+        for (auto name : expected)
+        {
+            auto key = Value::create(String{std::string{name}});
+            auto it = hmac.find(key);
+            REQUIRE(it != hmac.end());
             CHECK(it->second->is<Function>());
         }
     }
@@ -159,5 +187,95 @@ TEST_CASE("stdlib::hash")
         auto a = sha256->call({Value::create("hello"s)});
         auto b = sha256->call({Value::create("world"s)});
         CHECK(a->raw_get<String>() != b->raw_get<String>());
+    }
+}
+
+TEST_CASE("stdlib::hash::hmac")
+{
+    auto mod = hash_module();
+    auto hmac = lookup_submap(mod, "hmac");
+
+    SECTION("Reference outputs: HMAC-SHA256")
+    {
+        auto fn = lookup(hmac, "sha256");
+        auto key = Value::create("secret"s);
+        auto msg = Value::create("hello"s);
+        auto result = fn->call({key, msg});
+        CHECK(result->raw_get<String>()
+              == "88aab3ede8d3adf94d26ab90d3bafd4a2083070c3bcce9c014ee04a443847c0b");
+    }
+
+    SECTION("Reference outputs: multiple algorithms")
+    {
+        auto key = Value::create("secret"s);
+        auto msg = Value::create("hello"s);
+
+        struct Case
+        {
+            std::string name;
+            std::string expected;
+        };
+
+        const Case cases[] = {
+            {"md5", "bade63863c61ed0b3165806ecd6acefc"},
+            {"sha1", "5112055c05f944f85755efc5cd8970e194e9f45b"},
+            {"sha256",
+             "88aab3ede8d3adf94d26ab90d3bafd4a2083070c3bcce9c014ee04a443847c0b"},
+            {"sha512",
+             "db1595ae88a62fd151ec1cba81b98c39df82daae7b4cb9820f446d5bf02f1dcf"
+             "ca6683d88cab3e273f5963ab8ec469a746b5b19086371239f67d1e5f99a79440"},
+        };
+
+        for (const auto& c : cases)
+        {
+            auto fn = lookup(hmac, c.name);
+            auto result = fn->call({key, msg});
+            REQUIRE(result->is<String>());
+            CHECK(result->raw_get<String>() == c.expected);
+        }
+    }
+
+    SECTION("Empty message")
+    {
+        auto fn = lookup(hmac, "sha256");
+        auto result = fn->call({Value::create("key"s), Value::create(""s)});
+        CHECK(result->raw_get<String>()
+              == "5d5d139563c95b5967b9bd9a8c9b233a9dedb45072794cd232dc1b74832607d0");
+    }
+
+    SECTION("Different keys produce different outputs")
+    {
+        auto fn = lookup(hmac, "sha256");
+        auto msg = Value::create("hello"s);
+        auto a = fn->call({Value::create("key1"s), msg});
+        auto b = fn->call({Value::create("key2"s), msg});
+        CHECK(a->raw_get<String>() != b->raw_get<String>());
+    }
+
+    SECTION("Arity: too few arguments")
+    {
+        auto fn = lookup(hmac, "sha256");
+        CHECK_THROWS_WITH(fn->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(fn->call({Value::create("key"s)}),
+                          ContainsSubstring("insufficient arguments"));
+    }
+
+    SECTION("Arity: too many arguments")
+    {
+        auto fn = lookup(hmac, "sha256");
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create("b"s),
+                      Value::create("c"s)}),
+            ContainsSubstring("too many arguments"));
+    }
+
+    SECTION("Type constraints")
+    {
+        auto fn = lookup(hmac, "sha256");
+        CHECK_THROWS_WITH(fn->call({Value::create(42_f), Value::create("x"s)}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(fn->call({Value::create("x"s), Value::create(42_f)}),
+                          ContainsSubstring("String"));
     }
 }

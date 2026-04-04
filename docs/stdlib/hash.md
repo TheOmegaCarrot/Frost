@@ -14,6 +14,13 @@ def enc = import('std.encoding')
 def raw_digest = enc.hex.decode(hash.sha256('hello'))
 ```
 
+The module also provides HMAC (Hash-based Message Authentication Code) variants of each algorithm via the `hmac` sub-map.
+Each HMAC function takes a key and a message, both `String`, and returns a lowercase hexadecimal `String`.
+
+```frost
+hash.hmac.sha256('my-secret-key', 'message to authenticate')
+```
+
 ## Available algorithms
 
 | Function | Algorithm | Digest size |
@@ -114,3 +121,87 @@ Returns the RIPEMD-160 digest (160-bit) of `input`.
 `sm3(input)`
 
 Returns the SM3 digest (256-bit) of `input`.
+
+## HMAC
+
+Each hash algorithm has a corresponding HMAC function under `hmac`.
+
+## `hmac.md5`
+`hmac.md5(key, message)`
+
+Returns the HMAC-MD5 of `message` using `key`.
+
+## `hmac.sha1`
+`hmac.sha1(key, message)`
+
+Returns the HMAC-SHA-1 of `message` using `key`.
+
+## `hmac.sha224`
+`hmac.sha224(key, message)`
+
+Returns the HMAC-SHA-224 of `message` using `key`.
+
+## `hmac.sha256`
+`hmac.sha256(key, message)`
+
+Returns the HMAC-SHA-256 of `message` using `key`.
+
+## `hmac.sha384`
+`hmac.sha384(key, message)`
+
+Returns the HMAC-SHA-384 of `message` using `key`.
+
+## `hmac.sha512`
+`hmac.sha512(key, message)`
+
+Returns the HMAC-SHA-512 of `message` using `key`.
+
+## `hmac.sha3_224`
+`hmac.sha3_224(key, message)`
+
+Returns the HMAC-SHA3-224 of `message` using `key`.
+
+## `hmac.sha3_256`
+`hmac.sha3_256(key, message)`
+
+Returns the HMAC-SHA3-256 of `message` using `key`.
+
+## `hmac.sha3_384`
+`hmac.sha3_384(key, message)`
+
+Returns the HMAC-SHA3-384 of `message` using `key`.
+
+## `hmac.sha3_512`
+`hmac.sha3_512(key, message)`
+
+Returns the HMAC-SHA3-512 of `message` using `key`.
+
+## `hmac.sha512_224`
+`hmac.sha512_224(key, message)`
+
+Returns the HMAC-SHA-512/224 of `message` using `key`.
+
+## `hmac.sha512_256`
+`hmac.sha512_256(key, message)`
+
+Returns the HMAC-SHA-512/256 of `message` using `key`.
+
+## `hmac.blake2s256`
+`hmac.blake2s256(key, message)`
+
+Returns the HMAC-BLAKE2s of `message` using `key`.
+
+## `hmac.blake2b512`
+`hmac.blake2b512(key, message)`
+
+Returns the HMAC-BLAKE2b of `message` using `key`.
+
+## `hmac.ripemd160`
+`hmac.ripemd160(key, message)`
+
+Returns the HMAC-RIPEMD-160 of `message` using `key`.
+
+## `hmac.sm3`
+`hmac.sm3(key, message)`
+
+Returns the HMAC-SM3 of `message` using `key`.

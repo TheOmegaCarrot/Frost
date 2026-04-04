@@ -35,6 +35,8 @@ Each entry links to its full documentation.
 - [encoding.hex.encode](encoding.md#hexencode) · `std.encoding`
 - [encoding.parse_int](encoding.md#parse_int) · `std.encoding`
 - [encoding.to_bytes](encoding.md#to_bytes) · `std.encoding`
+- [encoding.url.decode](encoding.md#urldecode) · `std.encoding`
+- [encoding.url.encode](encoding.md#urlencode) · `std.encoding`
 - [ends_with](strings.md#ends_with)
 - [equal](operators.md#equal)
 - [find](collections.md#find)
@@ -67,6 +69,22 @@ Each entry links to its full documentation.
 - [has](collections.md#has)
 - [hash.blake2b512](hash.md#blake2b512) · `std.hash`
 - [hash.blake2s256](hash.md#blake2s256) · `std.hash`
+- [hash.hmac.blake2b512](hash.md#hmacblake2b512) · `std.hash`
+- [hash.hmac.blake2s256](hash.md#hmacblake2s256) · `std.hash`
+- [hash.hmac.md5](hash.md#hmacmd5) · `std.hash`
+- [hash.hmac.ripemd160](hash.md#hmacripemd160) · `std.hash`
+- [hash.hmac.sha1](hash.md#hmacsha1) · `std.hash`
+- [hash.hmac.sha224](hash.md#hmacsha224) · `std.hash`
+- [hash.hmac.sha256](hash.md#hmacsha256) · `std.hash`
+- [hash.hmac.sha384](hash.md#hmacsha384) · `std.hash`
+- [hash.hmac.sha3_224](hash.md#hmacsha3_224) · `std.hash`
+- [hash.hmac.sha3_256](hash.md#hmacsha3_256) · `std.hash`
+- [hash.hmac.sha3_384](hash.md#hmacsha3_384) · `std.hash`
+- [hash.hmac.sha3_512](hash.md#hmacsha3_512) · `std.hash`
+- [hash.hmac.sha512](hash.md#hmacsha512) · `std.hash`
+- [hash.hmac.sha512_224](hash.md#hmacsha512_224) · `std.hash`
+- [hash.hmac.sha512_256](hash.md#hmacsha512_256) · `std.hash`
+- [hash.hmac.sm3](hash.md#hmacsm3) · `std.hash`
 - [hash.md5](hash.md#md5) · `std.hash`
 - [hash.ripemd160](hash.md#ripemd160) · `std.hash`
 - [hash.sha1](hash.md#sha1) · `std.hash`
