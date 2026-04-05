@@ -40,6 +40,102 @@ void Connection::close()
     conn_.reset();
 }
 
+namespace
+{
+
+Value_Ptr value_to_frost(sqlite3_value* val)
+{
+    switch (sqlite3_value_type(val))
+    {
+    case SQLITE_INTEGER:
+        return Value::create(Int{sqlite3_value_int64(val)});
+    case SQLITE_FLOAT:
+        return Value::create(sqlite3_value_double(val));
+    case SQLITE_TEXT:
+        return Value::create(
+            String{reinterpret_cast<const char*>(sqlite3_value_text(val)),
+                   static_cast<std::size_t>(sqlite3_value_bytes(val))});
+    case SQLITE_BLOB:
+        return Value::create(
+            String{static_cast<const char*>(sqlite3_value_blob(val)),
+                   static_cast<std::size_t>(sqlite3_value_bytes(val))});
+    case SQLITE_NULL:
+    default:
+        return Value::null();
+    }
+}
+
+void result_to_sqlite(sqlite3_context* ctx, const Value_Ptr& val)
+{
+    val->visit(Overload{
+        [&](const Null&) {
+            sqlite3_result_null(ctx);
+        },
+        [&](const Int& v) {
+            sqlite3_result_int64(ctx, v);
+        },
+        [&](const Float& v) {
+            sqlite3_result_double(ctx, v);
+        },
+        [&](const Bool& v) {
+            sqlite3_result_int64(ctx, v ? 1 : 0);
+        },
+        [&](const String& v) {
+            sqlite3_result_text(ctx, v.c_str(), static_cast<int>(v.size()),
+                                SQLITE_TRANSIENT);
+        },
+        [&](const auto&) {
+            sqlite3_result_error(ctx, "unsupported return type", -1);
+        },
+    });
+}
+
+void scalar_callback(sqlite3_context* ctx, int argc, sqlite3_value** argv)
+{
+    auto* fn = static_cast<Function*>(sqlite3_user_data(ctx));
+
+    Array args;
+    args.reserve(static_cast<std::size_t>(argc));
+    for (int i = 0; i < argc; ++i)
+        args.push_back(value_to_frost(argv[i]));
+
+    try
+    {
+        auto result = (*fn)->call(args);
+        result_to_sqlite(ctx, result);
+    }
+    catch (const Frost_Error& e)
+    {
+        sqlite3_result_error(ctx, e.what(), -1);
+    }
+}
+
+void function_destroy(void* user_data)
+{
+    delete static_cast<Function*>(user_data);
+}
+
+} // namespace
+
+void Connection::create_function(const String& name, const Function& fn)
+{
+    std::lock_guard lock{mutex_};
+    require_open_();
+
+    auto* fn_copy = new Function{fn};
+
+    int rc = sqlite3_create_function_v2(conn_.get(), name.c_str(), -1,
+                                        SQLITE_UTF8, fn_copy, scalar_callback,
+                                        nullptr, nullptr, function_destroy);
+    if (rc != SQLITE_OK)
+    {
+        delete fn_copy;
+        throw Frost_Recoverable_Error{
+            fmt::format("Failed to create SQL function '{}': {}", name,
+                        sqlite3_errmsg(conn_.get()))};
+    }
+}
+
 int Connection::script(const String& sql)
 {
     std::lock_guard lock{mutex_};

@@ -219,9 +219,19 @@ struct Database_Methods
         }
     }
 
+    Value_Ptr create_function(builtin_args_t args)
+    {
+        REQUIRE_ARGS("database.create_function",
+                     PARAM("name", TYPES(String)),
+                     PARAM("function", TYPES(Function)));
+
+        conn->create_function(GET(0, String), GET(1, Function));
+        return Value::null();
+    }
+
     void merge_into(Map& entries)
     {
-        STRINGS(close, transaction);
+        STRINGS(close, transaction, create_function);
         auto self = std::make_shared<Database_Methods>(std::move(*this));
         entries.insert_or_assign(strings.close,
                                  system_closure([self](builtin_args_t args) {
@@ -230,6 +240,10 @@ struct Database_Methods
         entries.insert_or_assign(strings.transaction,
                                  system_closure([self](builtin_args_t args) {
                                      return self->transaction(args);
+                                 }));
+        entries.insert_or_assign(strings.create_function,
+                                 system_closure([self](builtin_args_t args) {
+                                     return self->create_function(args);
                                  }));
     }
 };

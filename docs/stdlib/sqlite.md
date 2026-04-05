@@ -227,6 +227,27 @@ def result = try_call(db.transaction, [fn tx -> {
 # result.ok == false; both inserts are rolled back
 ```
 
+## `db.create_function`
+`db.create_function(name, function)`
+
+Registers a Frost function as a scalar SQL function with the given name.
+The function can accept any number of arguments.
+SQLite values are converted to Frost types (`INTEGER` → `Int`, `REAL` → `Float`, `TEXT` → `String`, `NULL` → `null`), and the return value is converted back.
+
+If the Frost function produces an error, it becomes a SQL error, which is then propagated back to the calling Frost code as a recoverable error.
+
+```
+db.create_function('double', fn x -> x * 2)
+db.query('SELECT double(21)')  # => [{["double(21)"]: 42}]
+
+db.create_function('is_even', fn x -> x % 2 == 0)
+db.query('SELECT val FROM t WHERE is_even(val)')
+```
+
+Registering a function with the same name as an existing one replaces it.
+
+Functions that return `Array`, `Map`, or `Function` values are not supported and will produce a SQL error.
+
 ## `db.close`
 `db.close()`
 

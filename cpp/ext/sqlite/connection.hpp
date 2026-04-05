@@ -45,6 +45,8 @@ class Connection
 
     void close();
 
+    void create_function(const String& name, const Function& fn);
+
     bool in_transaction() const;
     int total_changes();
     Int last_insert_rowid();

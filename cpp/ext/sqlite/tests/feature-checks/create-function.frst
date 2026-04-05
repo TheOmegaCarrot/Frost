@@ -1,0 +1,89 @@
+# Verify user-defined scalar SQL functions
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+# Basic scalar function
+db.create_function('double', fn x -> x * 2)
+assert(db.query('SELECT double(21) as r')[0].r == 42)
+
+# Multi-argument function
+db.create_function('add3', fn (a, b, c) -> a + b + c)
+assert(db.query('SELECT add3(10, 20, 30) as r')[0].r == 60)
+
+# String return
+db.create_function('greet', fn name -> 'hello ' + name)
+assert(db.query('SELECT greet("world") as r')[0].r == 'hello world')
+
+# Null handling
+db.create_function('is_null', fn x -> if x == null: 1 else: 0)
+assert(db.query('SELECT is_null(NULL) as r')[0].r == 1)
+assert(db.query('SELECT is_null(42) as r')[0].r == 0)
+
+# Use in WHERE clause
+db.exec('CREATE TABLE t (val INTEGER)')
+foreach [1, 2, 3, 4, 5] with fn v -> db.exec('INSERT INTO t VALUES (?)', [v])
+db.create_function('is_even', fn x -> x % 2 == 0)
+def evens = db.query('SELECT val FROM t WHERE is_even(val)')
+assert(len(evens) == 2)
+assert(evens[0].val == 2)
+assert(evens[1].val == 4)
+
+# Error in function propagates as SQL error
+db.create_function('bad', fn x -> x + 'oops')
+def bad_result = try_call(fn -> db.query('SELECT bad(42)'))
+assert(not bad_result.ok)
+assert(bad_result.error @ contains('incompatible'))
+
+# Float input/output round-trip
+db.create_function('half', fn x -> x / 2.0)
+assert(db.query('SELECT half(7.0) as r')[0].r == 3.5)
+
+# Zero-argument function
+db.create_function('the_answer', fn -> 42)
+assert(db.query('SELECT the_answer() as r')[0].r == 42)
+
+# Bool return (maps to integer 1/0)
+db.create_function('is_positive', fn x -> x > 0)
+assert(db.query('SELECT is_positive(5) as r')[0].r == 1)
+assert(db.query('SELECT is_positive(-1) as r')[0].r == 0)
+
+# Null return
+db.create_function('to_null', fn x -> null)
+assert(db.query('SELECT to_null(1) as r')[0].r == null)
+
+# Unsupported return type (Array) produces SQL error
+db.create_function('returns_array', fn x -> [1, 2, 3])
+def arr_result = try_call(fn -> db.query('SELECT returns_array(1)'))
+assert(not arr_result.ok)
+assert(arr_result.error @ contains('unsupported'))
+
+# Unsupported return type (Map) produces SQL error
+db.create_function('returns_map', fn x -> {a: 1})
+def map_result = try_call(fn -> db.query('SELECT returns_map(1)'))
+assert(not map_result.ok)
+assert(map_result.error @ contains('unsupported'))
+
+# Overwriting an existing function replaces it
+db.create_function('replaceable', fn x -> x * 2)
+assert(db.query('SELECT replaceable(5) as r')[0].r == 10)
+db.create_function('replaceable', fn x -> x * 3)
+assert(db.query('SELECT replaceable(5) as r')[0].r == 15)
+
+# Arity mismatch propagates as SQL error
+db.create_function('needs_two', fn (a, b) -> a + b)
+def arity_result = try_call(fn -> db.query('SELECT needs_two(1)'))
+assert(not arity_result.ok)
+
+# create_function on closed connection errors
+db.close()
+def closed_result = try_call(fn -> db.create_function('nope', fn x -> x))
+assert(not closed_result.ok)
+assert(closed_result.error @ contains('closed'))
+
+if path != ':memory:': fs.remove(path)
