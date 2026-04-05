@@ -37,6 +37,7 @@ For most readers, this is not the place to start learning the language; for that
   * [Definitions](#definitions)
     + [Array Destructuring](#array-destructuring)
     + [Map Destructuring](#map-destructuring)
+    + [Recursive Destructuring](#recursive-destructuring)
 - [Modules](#modules)
   * [Export](#export)
   * [Import](#import)
@@ -805,6 +806,39 @@ def { foo, bar } = # something
 ```
 
 The above two examples are identical in meaning.
+
+#### Recursive Destructuring
+
+Array and map destructuring patterns can be nested arbitrarily.
+Anywhere a name can appear in a destructure pattern, a nested array or map pattern can appear instead.
+
+```frost
+def [a, [b, c]] = [1, [2, 3]]
+# a == 1 and b == 2 and c == 3
+
+def {foo: [x, y]} = {foo: [10, 20]}
+# x == 10 and y == 20
+
+def [{alpha}, beta] = [{alpha: 'a'}, 'b']
+# alpha == 'a' and beta == 'b'
+
+def {outer: {inner: val}} = {outer: {inner: 42}}
+# val == 42
+```
+
+Rest bindings can appear inside nested array patterns:
+
+```frost
+def [head, [first, ...tail]] = [0, [1, 2, 3]]
+# head == 0 and first == 1 and tail == [2, 3]
+```
+
+The discard binding `_` works at any nesting level:
+
+```frost
+def [_, [_, x]] = [1, [2, 3]]
+# x == 3
+```
 
 ## Modules
 

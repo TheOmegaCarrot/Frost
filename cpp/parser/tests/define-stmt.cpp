@@ -286,8 +286,7 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
-        auto* destructure =
-            dynamic_cast<frst::ast::Define*>(program[0].get());
+        auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
     }
 
@@ -456,8 +455,7 @@ TEST_CASE("Parser Define Statements")
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
 
-        auto* destructure =
-            dynamic_cast<frst::ast::Define*>(program[0].get());
+        auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
     }
 
@@ -468,8 +466,7 @@ TEST_CASE("Parser Define Statements")
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
 
-        auto* destructure =
-            dynamic_cast<frst::ast::Define*>(program[0].get());
+        auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
     }
 
@@ -480,8 +477,7 @@ TEST_CASE("Parser Define Statements")
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
 
-        auto* destructure =
-            dynamic_cast<frst::ast::Define*>(program[0].get());
+        auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
 
         auto result2 = parse("def [...   rest] = 1");
@@ -501,8 +497,7 @@ TEST_CASE("Parser Define Statements")
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
 
-        auto* destructure =
-            dynamic_cast<frst::ast::Define*>(program[0].get());
+        auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
     }
 
@@ -513,8 +508,7 @@ TEST_CASE("Parser Define Statements")
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
 
-        auto* destructure =
-            dynamic_cast<frst::ast::Define*>(program[0].get());
+        auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
 
         auto result2 = parse("def [a, # c\n b] = 1");
@@ -534,8 +528,7 @@ TEST_CASE("Parser Define Statements")
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
 
-        auto* destructure =
-            dynamic_cast<frst::ast::Define*>(program[0].get());
+        auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
 
         auto result2 = parse("def [a, ... # c\n rest] = 1");
@@ -555,8 +548,7 @@ TEST_CASE("Parser Define Statements")
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
 
-        auto* destructure =
-            dynamic_cast<frst::ast::Define*>(program[0].get());
+        auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
     }
 
@@ -567,8 +559,7 @@ TEST_CASE("Parser Define Statements")
         auto program = require_program(result);
         REQUIRE(program.size() == 1);
 
-        auto* destructure =
-            dynamic_cast<frst::ast::Define*>(program[0].get());
+        auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
     }
 
@@ -753,7 +744,6 @@ TEST_CASE("Parser Define Statements")
         REQUIRE(program.size() == 1);
 
         auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
-        // Map_Destructure -> Literal("a"), Literal("b"), Name_Lookup("e")
         // Find the Literal nodes by checking node_label
         std::vector<const frst::ast::AST_Node*> key_literals;
         for (auto* n : nodes)
