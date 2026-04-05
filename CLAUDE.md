@@ -20,9 +20,8 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 # Build
 cmake --build build -j4
 
-# Optional flags:
+# Common optional flags:
 #   -DBUILD_TESTS=NO   disable tests
-#   -DWITH_HTTP=NO     disable HTTP support
 ```
 
 The main binary is output to `build/frost`.
@@ -54,11 +53,11 @@ Integration tests run `.frst` scripts from `integration-tests/` and are discover
 
 | Module | Purpose |
 |---|---|
-| `parser/grammar.hpp` | Complete Lexy-based grammar (49KB) — the source of truth for syntax |
+| `parser/grammar.hpp` | Complete Lexy-based grammar — the source of truth for syntax - large and complex, any work in here should be cautious, and rigorously tested |
 | `ast/` | AST node types; each node implements `.evaluate()` or `.execute()` |
 | `value/` | Runtime `Value` type and all operators |
 | `execution-context/` | Execution context threaded through evaluation, including lexically-scoped variable bindings (`Symbol_Table` with failover chaining) |
-| `functions/` | Closures, lambdas, builtins (26 builtin modules) |
+| `functions/` | Closures, lambdas, builtins (several builtin modules, and the stdlib) |
 | `prelude/prelude.frst` | Standard library written in Frost (loaded at startup) |
 | `meta/` | Special functions which depend on the parser, such as `import` |
 | `ext/` | Optional extensions isolated from the rest of the Frost codebase (HTTP client, etc.) |
@@ -73,7 +72,8 @@ Integration tests run `.frst` scripts from `integration-tests/` and are discover
 
 ### AST evaluation pattern
 
-Each AST node receives a `Symbol_Table&` and returns a `Value_Ptr`. The parser builds the AST; nodes are defined in `cpp/ast/include/frost/ast/`.
+Each AST node receives an `Execution_Context` (Statements) or `Evaluation_Context` (Expressions) and returns a `Value_Ptr`. The Context contains the symbol table. The parser builds the AST; nodes are defined in `cpp/ast/include/frost/ast/`.
+Expressions are incapable of modifying the symbol table by design.
 
 ### Adding a builtin function
 
@@ -84,7 +84,11 @@ Each builtin module lives in `cpp/functions/builtins/`. Registration is in `cpp/
 The agent must not modify files without explicit instruction.
 The primary duties of the agent are writing/updating unit tests and read-only debugging.
 When modifying unit tests, always build and run all tests to ensure correctness.
-If a valid test fails, the agent should simply inform the user. 
+If a valid test fails, the agent should simply inform the user.
+
+Read before you write — especially for simple tasks. Simple tasks have the highest error rate because the verification steps that naturally happen for complex tasks get skipped. Before writing code, verify the project APIs you intend to call against their actual declarations. Do not assume method names, parameter types, or API shapes from memory.
+
+When writing tests, always consider what the test must prove. Every test should prove some behavior of the code unit being tested.
 
 The agent must not use Python or sed to edit files.
 
@@ -128,7 +132,7 @@ else: 0
 
 ### `@` threading operator
 
-`a @ f` means `f(a)`. `a @ f(x)` means `f(a, x)` — the left-hand value is threaded in as the **first** argument.
+`a @ f()` means `f(a)`. `a @ f(x)` means `f(a, x)` — the left-hand value is threaded in as the **first** argument.
 
 ```frost
 [1, 2, 3] @ transform(fn x -> x * 2)   # transform([1, 2, 3], fn x -> x * 2)
@@ -153,7 +157,7 @@ $'result: ${x + 1}'  # syntax error — expressions not allowed
 
 ```frost
 fn x -> x + 1                    # single-expression lambda
-fn (x, y) -> x + y               # multiple parameters
+fn x, y -> x + y                 # multiple parameters
 fn -> { def x = 1; x + 2 }       # block body (statements separated by newlines or ;)
 fn x -> fn y -> x + y            # curried
 fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)  # named lambda (name available for recursion)
