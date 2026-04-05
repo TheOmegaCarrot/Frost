@@ -27,6 +27,12 @@ set(CRASH_SCRIPTS
     error-in-index.frst
     error-in-format-string.frst
     error-user-hof.frst
+    error-destructure-array.frst
+    error-destructure-nested-array.frst
+    error-destructure-map.frst
+    error-destructure-computed-key.frst
+    error-destructure-map-in-array.frst
+    error-destructure-deeply-nested.frst
 )
 
 foreach(script ${CRASH_SCRIPTS})
