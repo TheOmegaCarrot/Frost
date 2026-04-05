@@ -1,1 +1,1 @@
-Cannot add incompatible types: Int + Array
+Error: Cannot add incompatible types: Int + Array

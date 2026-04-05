@@ -62,6 +62,8 @@ void repl_exec(const std::vector<frst::ast::Statement::Ptr>& ast,
                          fmt::join(bt, "\n"));
         else
             fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
+
+        std::exit(1);
     }
 }
 

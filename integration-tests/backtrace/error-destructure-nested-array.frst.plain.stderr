@@ -1,1 +1,1 @@
-Destructure expected Array, got Int
+Error: Destructure expected Array, got Int

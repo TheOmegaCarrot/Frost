@@ -20,18 +20,6 @@
 
 using namespace std::literals;
 
-namespace
-{
-
-std::string format_backtrace(const std::vector<std::string>& frames)
-{
-    return frames
-           | std::views::join_with('\n')
-           | std::ranges::to<std::string>();
-}
-
-} // namespace
-
 void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
                   frst::Execution_Context ctx, bool do_dump)
 {
@@ -45,14 +33,26 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
                 statement->execute(ctx);
         }
     }
-    catch (frst::Frost_Error& err)
+    catch (frst::Frost_User_Error& e)
     {
-        auto bt = err.take_backtrace();
+        auto bt = e.take_backtrace();
         if (!bt.empty())
-            fmt::println(stderr, "{}\nTraceback:\n{}", err.what(),
-                         format_backtrace(bt));
+            fmt::println(stderr, "Error: {}\nTraceback:\n{}", e.what(),
+                         fmt::join(bt, "\n"));
         else
-            fmt::println(stderr, "{}", err.what());
+            fmt::println(stderr, "Error: {}", e.what());
+
+        std::exit(1);
+    }
+    catch (frst::Frost_Interpreter_Error& e)
+    {
+        auto bt = e.take_backtrace();
+        if (!bt.empty())
+            fmt::println(stderr, "INTERNAL ERROR: {}\nTraceback:\n{}", e.what(),
+                         fmt::join(bt, "\n"));
+        else
+            fmt::println(stderr, "INTERNAL ERROR: {}", e.what());
+
         std::exit(1);
     }
 }

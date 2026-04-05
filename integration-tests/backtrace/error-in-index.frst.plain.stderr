@@ -1,1 +1,1 @@
-Array index requires Int, got: String
+Error: Array index requires Int, got: String

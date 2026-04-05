@@ -1,4 +1,4 @@
-Cannot add incompatible types: Int + Array
+Error: Cannot add incompatible types: Int + Array
 Traceback:
 Binary(+) [11:
 Call (lambda (crash))

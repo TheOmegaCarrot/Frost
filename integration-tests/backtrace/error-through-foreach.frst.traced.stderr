@@ -1,4 +1,4 @@
-Cannot add incompatible types: Int + String
+Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [1:
 Foreach (anonymous lambda)

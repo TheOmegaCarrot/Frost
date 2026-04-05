@@ -1,4 +1,4 @@
-Cannot add incompatible types: Int + String
+Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [26:
 Call (lambda (last_crash))

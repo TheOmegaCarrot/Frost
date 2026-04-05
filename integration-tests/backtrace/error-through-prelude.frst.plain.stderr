@@ -1,1 +1,1 @@
-Cannot add incompatible types: Int + String
+Error: Cannot add incompatible types: Int + String
