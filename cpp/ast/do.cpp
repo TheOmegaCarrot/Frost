@@ -20,7 +20,7 @@ std::unique_ptr<To> unique_dynamic_cast(std::unique_ptr<From>& from)
 }
 } // namespace
 
-Do_Block::Do_Block(Source_Range source_range,
+Do_Block::Do_Block(const Source_Range& source_range,
                    std::vector<ast::Statement::Ptr> body)
     : Expression(source_range)
     , body_prefix_{std::move(body)}

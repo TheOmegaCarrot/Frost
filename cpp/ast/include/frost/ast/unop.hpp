@@ -37,7 +37,7 @@ class Unop final : public Expression
   public:
     using Ptr = std::unique_ptr<Unop>;
 
-    Unop(Source_Range source_range, Expression::Ptr operand, Unary_Op op);
+    Unop(const Source_Range& source_range, Expression::Ptr operand, Unary_Op op);
 
     Unop() = delete;
     Unop(const Unop&) = delete;

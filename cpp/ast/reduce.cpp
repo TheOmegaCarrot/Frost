@@ -5,7 +5,7 @@
 
 using namespace frst;
 
-ast::Reduce::Reduce(Source_Range source_range, Expression::Ptr structure,
+ast::Reduce::Reduce(const Source_Range& source_range, Expression::Ptr structure,
                     Expression::Ptr operation,
                     std::optional<Expression::Ptr> init)
     : Expression(source_range)

@@ -18,7 +18,7 @@ class Reduce final : public Expression
     Reduce& operator=(Reduce&&) = delete;
     ~Reduce() final = default;
 
-    Reduce(Source_Range source_range, Expression::Ptr structure,
+    Reduce(const Source_Range& source_range, Expression::Ptr structure,
            Expression::Ptr operation, std::optional<Expression::Ptr> init);
 
   protected:

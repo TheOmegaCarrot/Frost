@@ -2,7 +2,7 @@
 
 using namespace frst;
 
-ast::If::If(Source_Range source_range, Expression::Ptr condition,
+ast::If::If(const Source_Range& source_range, Expression::Ptr condition,
             Expression::Ptr consequent,
             std::optional<Expression::Ptr> alternate)
     : Expression(source_range)

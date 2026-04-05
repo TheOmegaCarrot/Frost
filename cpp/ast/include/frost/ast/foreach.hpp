@@ -19,7 +19,7 @@ class Foreach final : public Expression
     Foreach& operator=(Foreach&&) = delete;
     ~Foreach() final = default;
 
-    Foreach(Source_Range source_range, Expression::Ptr structure,
+    Foreach(const Source_Range& source_range, Expression::Ptr structure,
             Expression::Ptr operation);
 
   protected:

@@ -19,7 +19,7 @@ class Array_Constructor final : public Expression
     Array_Constructor& operator=(Array_Constructor&&) = delete;
     ~Array_Constructor() final = default;
 
-    Array_Constructor(Source_Range source_range,
+    Array_Constructor(const Source_Range& source_range,
                       std::vector<Expression::Ptr> elems);
 
     bool data_safe() const final;

@@ -4,7 +4,7 @@
 
 using namespace frst;
 
-ast::Foreach::Foreach(Source_Range source_range, Expression::Ptr structure,
+ast::Foreach::Foreach(const Source_Range& source_range, Expression::Ptr structure,
                       Expression::Ptr operation)
     : Expression(source_range)
     , structure_{std::move(structure)}

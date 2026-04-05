@@ -10,7 +10,7 @@ class If final : public Expression
   public:
     using Ptr = std::unique_ptr<If>;
 
-    If(Source_Range source_range, Expression::Ptr condition,
+    If(const Source_Range& source_range, Expression::Ptr condition,
        Expression::Ptr consequent,
        std::optional<Expression::Ptr> alternate = std::nullopt);
 

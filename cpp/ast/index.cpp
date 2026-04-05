@@ -5,7 +5,7 @@
 using namespace frst;
 using namespace frst::ast;
 
-Index::Index(Source_Range source_range, Expression::Ptr structure,
+Index::Index(const Source_Range& source_range, Expression::Ptr structure,
              Expression::Ptr index)
     : Expression(source_range)
     , structure_{std::move(structure)}

@@ -2,7 +2,7 @@
 
 using namespace frst;
 
-ast::Map_Constructor::Map_Constructor(Source_Range source_range,
+ast::Map_Constructor::Map_Constructor(const Source_Range& source_range,
                                       std::vector<KV_Pair> pairs)
     : Expression(source_range)
     , pairs_{std::move(pairs)}

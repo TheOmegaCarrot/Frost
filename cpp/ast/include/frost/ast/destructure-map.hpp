@@ -25,7 +25,7 @@ class Destructure_Map final : public Destructure
     Destructure_Map& operator=(Destructure_Map&&) = delete;
     ~Destructure_Map() final = default;
 
-    Destructure_Map(Source_Range source_range,
+    Destructure_Map(const Source_Range& source_range,
                     std::vector<Element> destructure_elems)
         : Destructure(source_range)
         , destructure_elems_{std::move(destructure_elems)}
@@ -53,6 +53,7 @@ class Destructure_Map final : public Destructure
         }
     }
 
+  protected:
     std::string do_node_label() const final
     {
         return "Destructure_Map";
@@ -61,7 +62,6 @@ class Destructure_Map final : public Destructure
     void do_destructure(Execution_Context ctx,
                         const Value_Ptr& value) const final;
 
-  protected:
   private:
     std::vector<Element> destructure_elems_;
 };

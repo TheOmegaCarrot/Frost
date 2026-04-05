@@ -19,7 +19,7 @@ class Map final : public Expression
     Map& operator=(Map&&) = delete;
     ~Map() final = default;
 
-    Map(Source_Range source_range, Expression::Ptr structure,
+    Map(const Source_Range& source_range, Expression::Ptr structure,
         Expression::Ptr operation);
 
   protected:

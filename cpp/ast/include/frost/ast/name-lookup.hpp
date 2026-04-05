@@ -20,7 +20,7 @@ class Name_Lookup final : public Expression
     Name_Lookup& operator=(Name_Lookup&&) = delete;
     ~Name_Lookup() final = default;
 
-    Name_Lookup(Source_Range source_range, std::string name);
+    Name_Lookup(const Source_Range& source_range, std::string name);
 
     std::generator<Symbol_Action> symbol_sequence() const final;
 

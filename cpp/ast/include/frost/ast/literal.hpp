@@ -15,7 +15,7 @@ class Literal final : public Expression
   public:
     using Ptr = std::unique_ptr<Literal>;
 
-    Literal(Source_Range source_range, Value_Ptr value);
+    Literal(const Source_Range& source_range, Value_Ptr value);
 
     Literal() = delete;
     Literal(const Literal&) = delete;

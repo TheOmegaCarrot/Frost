@@ -13,7 +13,7 @@ class Destructure : public AST_Node
   public:
     using Ptr = std::unique_ptr<Destructure>;
 
-    Destructure(Source_Range source_range)
+    Destructure(const Source_Range& source_range)
         : AST_Node(source_range)
     {
     }

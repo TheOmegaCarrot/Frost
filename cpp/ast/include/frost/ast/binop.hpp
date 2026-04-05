@@ -72,7 +72,7 @@ class Binop final : public Expression
   public:
     using Ptr = std::unique_ptr<Binop>;
 
-    Binop(Source_Range source_range, Expression::Ptr lhs, Binary_Op op,
+    Binop(const Source_Range& source_range, Expression::Ptr lhs, Binary_Op op,
           Expression::Ptr rhs);
 
     Binop() = delete;

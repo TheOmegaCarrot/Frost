@@ -32,7 +32,7 @@ class AST_Node
     constexpr static inline Source_Location no_location{0, 0};
     constexpr static inline Source_Range no_range{no_location, no_location};
 
-    AST_Node(Source_Range source_range)
+    AST_Node(const Source_Range& source_range)
         : source_range_{source_range}
     {
     }

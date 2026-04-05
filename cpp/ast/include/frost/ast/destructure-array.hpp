@@ -18,7 +18,7 @@ class Destructure_Array final : public Destructure
     Destructure_Array& operator=(Destructure_Array&&) = delete;
     ~Destructure_Array() final = default;
 
-    Destructure_Array(Source_Range source_range,
+    Destructure_Array(const Source_Range& source_range,
                       std::vector<Destructure::Ptr> destructures,
                       std::optional<std::string> rest_name, bool exported)
         : Destructure{source_range}
@@ -28,7 +28,7 @@ class Destructure_Array final : public Destructure
     {
     }
 
-    std::generator<Symbol_Action> symbol_sequence() const
+    std::generator<Symbol_Action> symbol_sequence() const final
     {
         for (const auto& d : destructures_)
             co_yield std::ranges::elements_of(d->symbol_sequence());

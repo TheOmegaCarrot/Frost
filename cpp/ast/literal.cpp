@@ -2,7 +2,7 @@
 
 using namespace frst;
 
-ast::Literal::Literal(Source_Range source_range, Value_Ptr value)
+ast::Literal::Literal(const Source_Range& source_range, Value_Ptr value)
     : Expression(source_range)
     , value_{std::move(value)}
 {

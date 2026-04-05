@@ -16,7 +16,7 @@ class Define final : public Statement
     using Ptr = std::unique_ptr<Define>;
 
     Define() = delete;
-    Define(Source_Range source_range, Destructure::Ptr destructure,
+    Define(const Source_Range& source_range, Destructure::Ptr destructure,
            Expression::Ptr expr);
 
     Define(const Define&) = delete;

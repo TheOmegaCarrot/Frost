@@ -2,7 +2,7 @@
 
 using namespace frst;
 
-ast::Array_Constructor::Array_Constructor(Source_Range source_range,
+ast::Array_Constructor::Array_Constructor(const Source_Range& source_range,
                                           std::vector<Expression::Ptr> elems)
     : Expression(source_range)
     , elems_{std::move(elems)}

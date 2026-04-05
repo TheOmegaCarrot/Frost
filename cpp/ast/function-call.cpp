@@ -5,7 +5,7 @@
 
 using namespace frst;
 
-ast::Function_Call::Function_Call(Source_Range source_range,
+ast::Function_Call::Function_Call(const Source_Range& source_range,
                                   Expression::Ptr fn_expr,
                                   std::vector<Expression::Ptr> args_exprs)
     : Expression(source_range)

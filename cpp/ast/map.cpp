@@ -7,7 +7,7 @@
 
 using namespace frst;
 
-ast::Map::Map(Source_Range source_range, Expression::Ptr structure,
+ast::Map::Map(const Source_Range& source_range, Expression::Ptr structure,
               Expression::Ptr operation)
     : Expression(source_range)
     , structure_{std::move(structure)}

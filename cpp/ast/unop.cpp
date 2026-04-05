@@ -2,7 +2,7 @@
 
 using namespace frst;
 
-ast::Unop::Unop(Source_Range source_range, Expression::Ptr operand, Unary_Op op)
+ast::Unop::Unop(const Source_Range& source_range, Expression::Ptr operand, Unary_Op op)
     : Expression(source_range)
     , operand_{std::move(operand)}
     , op_{op}

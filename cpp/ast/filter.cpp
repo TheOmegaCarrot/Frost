@@ -5,7 +5,7 @@
 
 using namespace frst;
 
-ast::Filter::Filter(Source_Range source_range, Expression::Ptr structure,
+ast::Filter::Filter(const Source_Range& source_range, Expression::Ptr structure,
                     Expression::Ptr operation)
     : Expression(source_range)
     , structure_{std::move(structure)}

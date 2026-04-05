@@ -2,7 +2,7 @@
 
 using namespace frst;
 
-ast::Format_String::Format_String(Source_Range source_range,
+ast::Format_String::Format_String(const Source_Range& source_range,
                                   const std::string& format_string)
     : Expression(source_range)
 {

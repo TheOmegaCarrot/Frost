@@ -13,7 +13,7 @@ class Statement : public AST_Node
   public:
     using Ptr = std::unique_ptr<Statement>;
 
-    Statement(Source_Range source_range)
+    Statement(const Source_Range& source_range)
         : AST_Node(source_range)
     {
     }

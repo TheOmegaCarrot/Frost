@@ -19,7 +19,7 @@ class Filter final : public Expression
     Filter& operator=(Filter&&) = delete;
     ~Filter() final = default;
 
-    Filter(Source_Range source_range, Expression::Ptr structure,
+    Filter(const Source_Range& source_range, Expression::Ptr structure,
            Expression::Ptr operation);
 
   protected:

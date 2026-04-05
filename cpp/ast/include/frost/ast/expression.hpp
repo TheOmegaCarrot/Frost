@@ -13,7 +13,7 @@ class Expression : public Statement
   public:
     using Ptr = std::unique_ptr<Expression>;
 
-    Expression(Source_Range source_range)
+    Expression(const Source_Range& source_range)
         : Statement(source_range)
     {
     }
