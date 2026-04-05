@@ -4,7 +4,6 @@
 #include <frost/value.hpp>
 
 #include <openssl/evp.h>
-#include <zlib.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/scope_exit.hpp>
@@ -74,13 +73,36 @@ Value_Ptr hmac_string(const std::string& algorithm, const String& key,
 
 } // namespace
 
+namespace
+{
+std::uint32_t compute_crc32(std::string_view input)
+{
+    // CRC-32/ISO-HDLC (same polynomial and convention as zlib)
+    static constexpr auto table = [] {
+        std::array<std::uint32_t, 256> t{};
+        for (std::uint32_t i = 0; i < 256; ++i)
+        {
+            auto c = i;
+            for (int k = 0; k < 8; ++k)
+                c = (c & 1) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
+            t[i] = c;
+        }
+        return t;
+    }();
+
+    std::uint32_t crc = 0xFFFFFFFFu;
+    for (unsigned char byte : input)
+        crc = table[(crc ^ byte) & 0xFF] ^ (crc >> 8);
+    return crc ^ 0xFFFFFFFFu;
+}
+} // namespace
+
 BUILTIN(crc32)
 {
     REQUIRE_ARGS("hash.crc32", PARAM("input", TYPES(String)));
 
     const auto& input = GET(0, String);
-    auto checksum = ::crc32(0L, reinterpret_cast<const unsigned char*>(input.data()),
-                            static_cast<uInt>(input.size()));
+    auto checksum = compute_crc32(input);
     return Value::create(fmt::format("{:08x}", checksum));
 }
 

@@ -34,4 +34,5 @@ target_compile_definitions(sqlite3
     SQLITE_OMIT_UTF16
 )
 
+find_package(ZLIB REQUIRED)
 target_link_libraries(sqlite3 PRIVATE ZLIB::ZLIB)

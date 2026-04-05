@@ -2,9 +2,6 @@
 
 ## Lamguage
 
-- Recursive destructuring
-    - `def [ {foo}, {bar: {baz: [wow, _, cool, ..._]}}, ...rest ] = [ { foo: 42 }, { baz: [ 1, 2, 3, 4 ] } ]`
-    - `foo == 42 and wow == 1 and cool == 3 and rest == []`
 - Pattern matching 
     - Still working on the design
 
