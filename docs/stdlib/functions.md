@@ -13,6 +13,18 @@ Calls `function` with no arguments, or with the elements of the array `args` spr
 Calls `function` with no arguments, or with the elements of `args` spread as arguments.
 Returns `{ ok: true, value: result }` on success, or `{ ok: false, error: message }` if the call produces a recoverable error.
 
+## `error`
+`error(message)`
+
+Produces a recoverable error with the given message.
+The error can be caught by `try_call`.
+
+## `fatal`
+`fatal(message)`
+
+Produces an unrecoverable error with the given message.
+The error cannot be caught by `try_call` and will terminate the program.
+
 ## `and_then`
 `and_then(value, f)`
 

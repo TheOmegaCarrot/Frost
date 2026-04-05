@@ -39,6 +39,8 @@ Each entry links to its full documentation.
 - [encoding.url.encode](encoding.md#urlencode) · `std.encoding`
 - [ends_with](strings.md#ends_with)
 - [equal](operators.md#equal)
+- [error](functions.md#error)
+- [fatal](functions.md#fatal)
 - [find](collections.md#find)
 - [flat_map](collections.md#flat_map)
 - [flatten](collections.md#flatten)
@@ -69,6 +71,7 @@ Each entry links to its full documentation.
 - [has](collections.md#has)
 - [hash.blake2b512](hash.md#blake2b512) · `std.hash`
 - [hash.blake2s256](hash.md#blake2s256) · `std.hash`
+- [hash.crc32](hash.md#crc32) · `std.hash`
 - [hash.hmac.blake2b512](hash.md#hmacblake2b512) · `std.hash`
 - [hash.hmac.blake2s256](hash.md#hmacblake2s256) · `std.hash`
 - [hash.hmac.md5](hash.md#hmacmd5) · `std.hash`
@@ -202,11 +205,13 @@ Each entry links to its full documentation.
 - [spread](functions.md#spread)
 - [sqlite.db.close](sqlite.md#dbclose) · `ext.sqlite`
 - [sqlite.db.collect](sqlite.md#dbcollect) · `ext.sqlite`
+- [sqlite.db.create_function](sqlite.md#dbcreate_function) · `ext.sqlite`
 - [sqlite.db.each](sqlite.md#dbeach) · `ext.sqlite`
 - [sqlite.db.exec](sqlite.md#dbexec) · `ext.sqlite`
 - [sqlite.db.last_insert_rowid](sqlite.md#dblast_insert_rowid) · `ext.sqlite`
 - [sqlite.db.query](sqlite.md#dbquery) · `ext.sqlite`
 - [sqlite.db.script](sqlite.md#dbscript) · `ext.sqlite`
+- [sqlite.db.trace](sqlite.md#dbtrace) · `ext.sqlite`
 - [sqlite.db.transaction](sqlite.md#dbtransaction) · `ext.sqlite`
 - [sqlite.open](sqlite.md#open) · `ext.sqlite`
 - [sqlite.open_memory](sqlite.md#open_memory) · `ext.sqlite`

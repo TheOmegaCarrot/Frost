@@ -8,6 +8,7 @@
 #include <frost/value.hpp>
 
 #include <frost/builtin.hpp>
+#include <frost/builtins-common.hpp>
 
 using namespace frst;
 
@@ -228,5 +229,93 @@ TEST_CASE("Builtin try_call")
             .THROW(Frost_Interpreter_Error{"internal boom"});
         CHECK_THROWS_WITH(try_call->call({fn, args}),
                           ContainsSubstring("internal boom"));
+    }
+}
+
+TEST_CASE("Builtin error")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto error_fn = table.lookup("error")->get<Function>().value();
+
+    SECTION("Throws recoverable error with message")
+    {
+        CHECK_THROWS_AS(error_fn->call({Value::create("boom"s)}),
+                        Frost_Recoverable_Error);
+        CHECK_THROWS_WITH(error_fn->call({Value::create("boom"s)}),
+                          "boom");
+    }
+
+    SECTION("Catchable by try_call")
+    {
+        auto try_call_fn = table.lookup("try_call")->get<Function>().value();
+        auto thrower = Value::create(
+            system_function([&](builtin_args_t) -> Value_Ptr {
+                error_fn->call({Value::create("caught"s)});
+                return Value::null();
+            }));
+        auto result = try_call_fn->call({thrower});
+        REQUIRE(result->is<Map>());
+        auto map = result->get<Map>().value();
+        CHECK(map.at(Value::create("ok"s))->get<Bool>().value() == false);
+        CHECK_THAT(map.at(Value::create("error"s))->raw_get<String>(),
+                   ContainsSubstring("caught"));
+    }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_WITH(error_fn->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(
+            error_fn->call({Value::create("a"s), Value::create("b"s)}),
+            ContainsSubstring("too many arguments"));
+    }
+
+    SECTION("Type constraint")
+    {
+        CHECK_THROWS_WITH(error_fn->call({Value::create(42_f)}),
+                          ContainsSubstring("String"));
+    }
+}
+
+TEST_CASE("Builtin fatal")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto fatal_fn = table.lookup("fatal")->get<Function>().value();
+
+    SECTION("Throws unrecoverable error with message")
+    {
+        CHECK_THROWS_AS(fatal_fn->call({Value::create("kaboom"s)}),
+                        Frost_Unrecoverable_Error);
+        CHECK_THROWS_WITH(fatal_fn->call({Value::create("kaboom"s)}),
+                          "kaboom");
+    }
+
+    SECTION("Not catchable by try_call")
+    {
+        auto try_call_fn = table.lookup("try_call")->get<Function>().value();
+        auto thrower = Value::create(
+            system_function([&](builtin_args_t) -> Value_Ptr {
+                fatal_fn->call({Value::create("uncatchable"s)});
+                return Value::null();
+            }));
+        CHECK_THROWS_AS(try_call_fn->call({thrower}),
+                        Frost_Unrecoverable_Error);
+    }
+
+    SECTION("Arity")
+    {
+        CHECK_THROWS_WITH(fatal_fn->call({}),
+                          ContainsSubstring("insufficient arguments"));
+        CHECK_THROWS_WITH(
+            fatal_fn->call({Value::create("a"s), Value::create("b"s)}),
+            ContainsSubstring("too many arguments"));
+    }
+
+    SECTION("Type constraint")
+    {
+        CHECK_THROWS_WITH(fatal_fn->call({Value::create(42_f)}),
+                          ContainsSubstring("String"));
     }
 }

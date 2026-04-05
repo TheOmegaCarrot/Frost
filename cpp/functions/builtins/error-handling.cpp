@@ -50,9 +50,25 @@ BUILTIN(try_call)
     }
 }
 
+BUILTIN(error)
+{
+    REQUIRE_ARGS("error", PARAM("error", TYPES(String)));
+
+    throw Frost_Recoverable_Error{GET(0, String)};
+}
+
+BUILTIN(fatal)
+{
+    REQUIRE_ARGS("fatal", PARAM("error", TYPES(String)));
+
+    throw Frost_Unrecoverable_Error{GET(0, String)};
+}
+
 void inject_error_handling(Symbol_Table& table)
 {
     INJECT(try_call);
+    INJECT(error);
+    INJECT(fatal);
 }
 
 } // namespace frst
