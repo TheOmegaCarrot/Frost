@@ -248,6 +248,37 @@ Registering a function with the same name as an existing one replaces it.
 
 Functions that return `Array`, `Map`, or `Function` values are not supported and will produce a SQL error.
 
+## `db.create_aggregate`
+`db.create_aggregate(name, init, step)`
+`db.create_aggregate(name, init, step, finalize)`
+
+Registers a user-defined aggregate SQL function with the given name.
+The aggregate follows the fold/reduce pattern:
+
+- `init` -- the initial accumulator value (any Frost value)
+- `step(acc, ...args)` -- called once per row; receives the current accumulator as the first argument, followed by the SQL column arguments. Returns the new accumulator.
+- `finalize(acc)` -- optional; called once after all rows; receives the final accumulator and returns the aggregate result. If omitted, the final accumulator is returned directly as the SQL result.
+
+When no rows match the query, `finalize` is called on `init` (or `init` is returned directly if `finalize` is omitted).
+
+The accumulator can be any Frost value, including `Array` or `Map`, but the value that becomes the SQL result must be a primitive type (`Null`, `Int`, `Float`, `Bool`, or `String`).
+
+Errors in `step` or `finalize` are surfaced as errors. An error in `step` stops processing remaining rows.
+
+Registering an aggregate with the same name as an existing function or aggregate replaces it.
+
+```
+# Simple sum
+db.create_aggregate('sum2', 0, fn (acc, x) -> acc + x)
+db.query('SELECT sum2(val) as total FROM t')
+
+# Custom average using an Array accumulator
+db.create_aggregate('avg2', [0, 0],
+    fn (acc, x) -> [acc[0] + x, acc[1] + 1],
+    fn acc -> acc[0] / acc[1])
+db.query('SELECT avg2(score) as mean FROM students')
+```
+
 ## `db.trace`
 `db.trace(callback)`
 `db.trace(null)`

@@ -1,0 +1,143 @@
+# Verify user-defined aggregate SQL functions
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+db.exec('CREATE TABLE t (val INTEGER)')
+foreach [1, 2, 3, 4, 5] with fn v -> db.exec('INSERT INTO t VALUES (?)', [v])
+
+# Basic sum without finalize
+db.create_aggregate('sum2', 0, fn (acc, x) -> acc + x)
+assert(db.query('SELECT sum2(val) as r FROM t')[0].r == 15)
+
+# Zero rows without finalize returns init directly
+assert(db.query('SELECT sum2(val) as r FROM t WHERE 1=0')[0].r == 0)
+
+# Zero rows with finalize calls finalize on init
+db.create_aggregate('sum_final', 0,
+    fn (acc, x) -> acc + x,
+    fn acc -> acc * 10)
+assert(db.query('SELECT sum_final(val) as r FROM t WHERE 1=0')[0].r == 0)
+assert(db.query('SELECT sum_final(val) as r FROM t')[0].r == 150)
+
+# String concatenation without finalize
+db.exec('CREATE TABLE names (name TEXT)')
+foreach ['alice', 'bob', 'carol'] with fn n -> db.exec('INSERT INTO names VALUES (?)', [n])
+db.create_aggregate('concat_agg', '',
+    fn (acc, s) -> if acc == '': s else: acc + ', ' + s)
+assert(db.query('SELECT concat_agg(name) as r FROM names')[0].r == 'alice, bob, carol')
+
+# Non-primitive accumulator with finalize (average)
+db.create_aggregate('avg2', [0, 0],
+    fn (acc, x) -> [acc[0] + x, acc[1] + 1],
+    fn acc -> acc[0] / acc[1])
+assert(db.query('SELECT avg2(val) as r FROM t')[0].r == 3)
+
+# Multi-argument step
+db.exec('CREATE TABLE pairs (a INTEGER, b INTEGER)')
+foreach [[1, 2], [3, 4], [5, 6]] with fn p -> db.exec('INSERT INTO pairs VALUES (?, ?)', p)
+db.create_aggregate('sum_product', 0, fn (acc, a, b) -> acc + a * b)
+assert(db.query('SELECT sum_product(a, b) as r FROM pairs')[0].r == 44)
+
+# GROUP BY isolation
+db.exec('CREATE TABLE grouped (grp TEXT, val INTEGER)')
+foreach [['a', 1], ['a', 2], ['b', 10], ['b', 20]] with fn r ->
+    db.exec('INSERT INTO grouped VALUES (?, ?)', r)
+def groups = db.query('SELECT grp, sum2(val) as total FROM grouped GROUP BY grp ORDER BY grp')
+assert(len(groups) == 2)
+assert(groups[0].total == 3)
+assert(groups[1].total == 30)
+
+# Null SQL values arrive as Frost null
+db.exec('CREATE TABLE nullable (val INTEGER)')
+db.exec('INSERT INTO nullable VALUES (1)')
+db.exec('INSERT INTO nullable VALUES (NULL)')
+db.exec('INSERT INTO nullable VALUES (3)')
+db.create_aggregate('count_nonnull', 0,
+    fn (acc, x) -> if x != null: acc + 1 else: acc)
+assert(db.query('SELECT count_nonnull(val) as r FROM nullable')[0].r == 2)
+
+# Error in step propagates
+db.create_aggregate('bad_step', 0, fn (acc, x) -> acc + 'oops')
+def step_result = try_call(fn -> db.query('SELECT bad_step(val) as r FROM t'))
+assert(not step_result.ok)
+assert(step_result.error @ contains('incompatible'))
+
+# Error on very first row of step
+db.create_aggregate('bad_first', 'not a number', fn (acc, x) -> acc + x)
+def first_result = try_call(fn -> db.query('SELECT bad_first(val) as r FROM t'))
+assert(not first_result.ok)
+assert(first_result.error @ contains('incompatible'))
+
+# Error in finalize propagates
+db.create_aggregate('bad_final', 0,
+    fn (acc, x) -> acc + x,
+    fn acc -> acc + 'oops')
+def final_result = try_call(fn -> db.query('SELECT bad_final(val) as r FROM t'))
+assert(not final_result.ok)
+assert(final_result.error @ contains('incompatible'))
+
+# Non-primitive accumulator without finalize produces SQL error
+db.create_aggregate('returns_array', [], fn (acc, x) -> acc + [x])
+def arr_result = try_call(fn -> db.query('SELECT returns_array(val) as r FROM t'))
+assert(not arr_result.ok)
+assert(arr_result.error @ contains('unsupported'))
+
+# Single row
+db.exec('CREATE TABLE single (val INTEGER)')
+db.exec('INSERT INTO single VALUES (42)')
+db.create_aggregate('single_sum', 0, fn (acc, x) -> acc + x)
+assert(db.query('SELECT single_sum(val) as r FROM single')[0].r == 42)
+
+# Float accumulator and result
+db.create_aggregate('sum_float', 0.0, fn (acc, x) -> acc + x)
+assert(db.query('SELECT sum_float(val) as r FROM t')[0].r == 15.0)
+
+# Null init
+db.create_aggregate('first_nonnull', null,
+    fn (acc, x) -> if acc == null: x else: acc)
+assert(db.query('SELECT first_nonnull(val) as r FROM t')[0].r == 1)
+
+# Null return from finalize
+db.create_aggregate('always_null', 0,
+    fn (acc, x) -> acc + x,
+    fn acc -> null)
+assert(db.query('SELECT always_null(val) as r FROM t')[0].r == null)
+
+# Bool return from finalize (maps to 1/0)
+db.create_aggregate('any_gt3', false,
+    fn (acc, x) -> acc or x > 3,
+    fn acc -> acc)
+assert(db.query('SELECT any_gt3(val) as r FROM t')[0].r == 1)
+
+# Multiple aggregates in the same query
+db.create_aggregate('my_min', null,
+    fn (acc, x) -> if acc == null: x elif x < acc: x else: acc)
+db.create_aggregate('my_max', null,
+    fn (acc, x) -> if acc == null: x elif x > acc: x else: acc)
+def multi = db.query('SELECT my_min(val) as lo, my_max(val) as hi FROM t')[0]
+assert(multi.lo == 1)
+assert(multi.hi == 5)
+
+# Arity mismatch in step propagates
+db.create_aggregate('needs_two_cols', 0, fn (acc, a, b) -> acc + a + b)
+def arity_result = try_call(fn -> db.query('SELECT needs_two_cols(val) as r FROM t'))
+assert(not arity_result.ok)
+
+# Replacing an aggregate
+db.create_aggregate('replaceable', 0, fn (acc, x) -> acc + x)
+assert(db.query('SELECT replaceable(val) as r FROM t')[0].r == 15)
+db.create_aggregate('replaceable', 0, fn (acc, x) -> acc + x * 2)
+assert(db.query('SELECT replaceable(val) as r FROM t')[0].r == 30)
+
+# Closed connection error
+db.close()
+def closed = try_call(fn -> db.create_aggregate('nope', 0, fn (a, x) -> a))
+assert(not closed.ok)
+assert(closed.error @ contains('closed'))
+
+if path != ':memory:': fs.remove(path)

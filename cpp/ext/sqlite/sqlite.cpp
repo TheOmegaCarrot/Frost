@@ -221,31 +221,43 @@ struct Database_Methods
 
     Value_Ptr create_function(builtin_args_t args)
     {
-        REQUIRE_ARGS("database.create_function",
-                     PARAM("name", TYPES(String)),
+        REQUIRE_ARGS("database.create_function", PARAM("name", TYPES(String)),
                      PARAM("function", TYPES(Function)));
 
         conn->create_function(GET(0, String), GET(1, Function));
         return Value::null();
     }
 
+    Value_Ptr create_aggregate(builtin_args_t args)
+    {
+        REQUIRE_ARGS("database.create_aggregate", PARAM("name", TYPES(String)),
+                     PARAM("init", ANY), PARAM("step", TYPES(Function)),
+                     OPTIONAL(PARAM("finalize", TYPES(Function))));
+
+        std::optional<Function> finalize;
+        if (HAS(3))
+            finalize = GET(3, Function);
+
+        conn->create_aggregate(GET(0, String), args[1], GET(2, Function),
+                               std::move(finalize));
+        return Value::null();
+    }
+
     Value_Ptr trace(builtin_args_t args)
     {
-        if (args.size() == 1 && args[0]->is<Null>())
-        {
-            conn->trace(std::nullopt);
-            return Value::null();
-        }
-
         REQUIRE_ARGS("database.trace",
-                     PARAM("callback", TYPES(Function)));
-        conn->trace(GET(0, Function));
+                     PARAM("callback", TYPES(Function, Null)));
+
+        if (args[0]->is<Null>())
+            conn->trace(std::nullopt);
+        else
+            conn->trace(GET(0, Function));
         return Value::null();
     }
 
     void merge_into(Map& entries)
     {
-        STRINGS(close, transaction, create_function, trace);
+        STRINGS(close, transaction, create_function, create_aggregate, trace);
         auto self = std::make_shared<Database_Methods>(std::move(*this));
         entries.insert_or_assign(strings.close,
                                  system_closure([self](builtin_args_t args) {
@@ -258,6 +270,10 @@ struct Database_Methods
         entries.insert_or_assign(strings.create_function,
                                  system_closure([self](builtin_args_t args) {
                                      return self->create_function(args);
+                                 }));
+        entries.insert_or_assign(strings.create_aggregate,
+                                 system_closure([self](builtin_args_t args) {
+                                     return self->create_aggregate(args);
                                  }));
         entries.insert_or_assign(strings.trace,
                                  system_closure([self](builtin_args_t args) {

@@ -10,6 +10,9 @@ set(SQLITE_TESTS
     transaction.frst
     named-bindings.frst
     callback-nesting.frst
+    create-function.frst
+    create-aggregate.frst
+    trace.frst
 )
 
 set(SQLITE_FEATURE_CHECKS
@@ -28,8 +31,6 @@ set(SQLITE_FEATURE_CHECKS
     feature-checks/sqlar-compress.frst
     feature-checks/uuid.frst
     feature-checks/zipfile.frst
-    feature-checks/create-function.frst
-    feature-checks/trace.frst
 )
 
 find_program(VALGRIND valgrind)

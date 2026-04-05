@@ -149,6 +149,95 @@ int trace_callback(unsigned mask, void* user_data, void* stmt_ptr, void*)
     return 0;
 }
 
+struct Aggregate_User_Data
+{
+    Value_Ptr init;
+    Function step_fn;
+    std::optional<Function> finalize_fn;
+};
+
+struct Aggregate_Accumulator
+{
+    Value_Ptr acc;
+    std::optional<std::string> step_error;
+};
+
+void aggregate_step(sqlite3_context* ctx, int argc, sqlite3_value** argv)
+{
+    auto* ud = static_cast<Aggregate_User_Data*>(sqlite3_user_data(ctx));
+    auto** agg_pp = static_cast<Aggregate_Accumulator**>(
+        sqlite3_aggregate_context(ctx, sizeof(Aggregate_Accumulator*)));
+    if (not agg_pp)
+        return;
+
+    if (not *agg_pp)
+        *agg_pp = new Aggregate_Accumulator{ud->init, std::nullopt};
+
+    auto* agg = *agg_pp;
+
+    if (agg->step_error)
+        return;
+
+    Array args;
+    args.reserve(static_cast<std::size_t>(argc) + 1);
+    args.push_back(agg->acc);
+    for (int i = 0; i < argc; ++i)
+        args.push_back(value_to_frost(argv[i]));
+
+    try
+    {
+        agg->acc = ud->step_fn->call(args);
+    }
+    catch (const Frost_Error& e)
+    {
+        agg->step_error = e.what();
+    }
+}
+
+void aggregate_final(sqlite3_context* ctx)
+{
+    auto* ud = static_cast<Aggregate_User_Data*>(sqlite3_user_data(ctx));
+    auto** agg_pp = static_cast<Aggregate_Accumulator**>(
+        sqlite3_aggregate_context(ctx, sizeof(Aggregate_Accumulator*)));
+
+    std::unique_ptr<Aggregate_Accumulator> agg;
+    if (agg_pp and *agg_pp)
+    {
+        agg.reset(*agg_pp);
+        *agg_pp = nullptr;
+    }
+
+    Value_Ptr final_acc = agg ? agg->acc : ud->init;
+
+    if (agg and agg->step_error)
+    {
+        sqlite3_result_error(ctx, agg->step_error.value().c_str(), -1);
+        return;
+    }
+
+    try
+    {
+        if (ud->finalize_fn)
+        {
+            auto result = ud->finalize_fn.value()->call({final_acc});
+            result_to_sqlite(ctx, result);
+        }
+        else
+        {
+            result_to_sqlite(ctx, final_acc);
+        }
+    }
+    catch (const Frost_Error& e)
+    {
+        sqlite3_result_error(ctx, e.what(), -1);
+    }
+}
+
+void aggregate_destroy(void* user_data)
+{
+    delete static_cast<Aggregate_User_Data*>(user_data);
+}
+
 } // namespace
 
 void Connection::create_function(const String& name, const Function& fn)
@@ -166,6 +255,29 @@ void Connection::create_function(const String& name, const Function& fn)
         delete fn_copy;
         throw Frost_Recoverable_Error{
             fmt::format("Failed to create SQL function '{}': {}", name,
+                        sqlite3_errmsg(conn_.get()))};
+    }
+}
+
+void Connection::create_aggregate(const String& name, const Value_Ptr& init,
+                                  const Function& step,
+                                  std::optional<Function> finalize)
+{
+    std::lock_guard lock{mutex_};
+    require_open_();
+
+    auto* ud =
+        new Aggregate_User_Data{init, step, std::move(finalize)};
+
+    int rc = sqlite3_create_function_v2(conn_.get(), name.c_str(), -1,
+                                        SQLITE_UTF8, ud, nullptr,
+                                        aggregate_step, aggregate_final,
+                                        aggregate_destroy);
+    if (rc != SQLITE_OK)
+    {
+        delete ud;
+        throw Frost_Recoverable_Error{
+            fmt::format("Failed to create SQL aggregate '{}': {}", name,
                         sqlite3_errmsg(conn_.get()))};
     }
 }

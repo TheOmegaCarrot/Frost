@@ -46,6 +46,9 @@ class Connection
     void close();
 
     void create_function(const String& name, const Function& fn);
+    void create_aggregate(const String& name, const Value_Ptr& init,
+                          const Function& step,
+                          std::optional<Function> finalize = std::nullopt);
     void trace(std::optional<Function> fn);
 
     bool in_transaction() const;

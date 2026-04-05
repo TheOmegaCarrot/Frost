@@ -205,6 +205,7 @@ Each entry links to its full documentation.
 - [spread](functions.md#spread)
 - [sqlite.db.close](sqlite.md#dbclose) · `ext.sqlite`
 - [sqlite.db.collect](sqlite.md#dbcollect) · `ext.sqlite`
+- [sqlite.db.create_aggregate](sqlite.md#dbcreate_aggregate) · `ext.sqlite`
 - [sqlite.db.create_function](sqlite.md#dbcreate_function) · `ext.sqlite`
 - [sqlite.db.each](sqlite.md#dbeach) · `ext.sqlite`
 - [sqlite.db.exec](sqlite.md#dbexec) · `ext.sqlite`
