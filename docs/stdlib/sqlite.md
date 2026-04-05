@@ -258,7 +258,8 @@ Pass `null` to disable tracing.
 
 Only one trace callback can be active at a time. Registering a new one replaces the previous.
 
-Errors thrown by the callback are silently ignored to prevent interference with SQL execution.
+Errors produced by the callback are reported to stderr but do not interrupt SQL execution.
+Fatal errors (`fatal`) terminate the program with less grace than usual.
 
 ```
 db.trace(fn sql -> print(sql))

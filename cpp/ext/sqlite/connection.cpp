@@ -131,9 +131,19 @@ int trace_callback(unsigned mask, void* user_data, void* stmt_ptr, void*)
     {
         (*fn)->call({Value::create(std::move(sql))});
     }
-    catch (...)
+    catch (const Frost_Recoverable_Error& e)
     {
-        // Trace callbacks must not propagate exceptions into SQLite
+        fmt::println(stderr, "error in trace callback: {}", e.what());
+    }
+    catch (const Frost_Unrecoverable_Error& e)
+    {
+        fmt::println(stderr, "fatal error in trace callback: {}", e.what());
+        std::exit(1);
+    }
+    catch (const Frost_Interpreter_Error& e)
+    {
+        fmt::println(stderr, "internal error in trace callback: {}", e.what());
+        std::exit(1);
     }
 
     return 0;
