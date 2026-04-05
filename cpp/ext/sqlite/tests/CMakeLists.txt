@@ -29,6 +29,7 @@ set(SQLITE_FEATURE_CHECKS
     feature-checks/uuid.frst
     feature-checks/zipfile.frst
     feature-checks/create-function.frst
+    feature-checks/trace.frst
 )
 
 find_program(VALGRIND valgrind)

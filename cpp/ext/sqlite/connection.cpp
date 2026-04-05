@@ -115,6 +115,30 @@ void function_destroy(void* user_data)
     delete static_cast<Function*>(user_data);
 }
 
+int trace_callback(unsigned mask, void* user_data, void* stmt_ptr, void*)
+{
+    if (mask != SQLITE_TRACE_STMT)
+        return 0;
+
+    auto* fn = static_cast<Function*>(user_data);
+    auto* stmt = static_cast<sqlite3_stmt*>(stmt_ptr);
+
+    char* expanded = sqlite3_expanded_sql(stmt);
+    String sql = expanded ? String{expanded} : String{sqlite3_sql(stmt)};
+    sqlite3_free(expanded);
+
+    try
+    {
+        (*fn)->call({Value::create(std::move(sql))});
+    }
+    catch (...)
+    {
+        // Trace callbacks must not propagate exceptions into SQLite
+    }
+
+    return 0;
+}
+
 } // namespace
 
 void Connection::create_function(const String& name, const Function& fn)
@@ -133,6 +157,25 @@ void Connection::create_function(const String& name, const Function& fn)
         throw Frost_Recoverable_Error{
             fmt::format("Failed to create SQL function '{}': {}", name,
                         sqlite3_errmsg(conn_.get()))};
+    }
+}
+
+void Connection::trace(std::optional<Function> fn)
+{
+    std::lock_guard lock{mutex_};
+    require_open_();
+
+    if (fn)
+    {
+        auto* fn_copy = new Function{std::move(fn.value())};
+        sqlite3_trace_v2(conn_.get(), SQLITE_TRACE_STMT, trace_callback,
+                         fn_copy);
+        trace_fn_.reset(fn_copy);
+    }
+    else
+    {
+        sqlite3_trace_v2(conn_.get(), 0, nullptr, nullptr);
+        trace_fn_.reset();
     }
 }
 

@@ -46,6 +46,7 @@ class Connection
     void close();
 
     void create_function(const String& name, const Function& fn);
+    void trace(std::optional<Function> fn);
 
     bool in_transaction() const;
     int total_changes();
@@ -82,6 +83,7 @@ class Connection
                                      })>;
 
     Conn_Ptr conn_;
+    std::unique_ptr<Function> trace_fn_;
     std::recursive_mutex mutex_;
 };
 } // namespace frst::sqlite

@@ -229,9 +229,23 @@ struct Database_Methods
         return Value::null();
     }
 
+    Value_Ptr trace(builtin_args_t args)
+    {
+        if (args.size() == 1 && args[0]->is<Null>())
+        {
+            conn->trace(std::nullopt);
+            return Value::null();
+        }
+
+        REQUIRE_ARGS("database.trace",
+                     PARAM("callback", TYPES(Function)));
+        conn->trace(GET(0, Function));
+        return Value::null();
+    }
+
     void merge_into(Map& entries)
     {
-        STRINGS(close, transaction, create_function);
+        STRINGS(close, transaction, create_function, trace);
         auto self = std::make_shared<Database_Methods>(std::move(*this));
         entries.insert_or_assign(strings.close,
                                  system_closure([self](builtin_args_t args) {
@@ -244,6 +258,10 @@ struct Database_Methods
         entries.insert_or_assign(strings.create_function,
                                  system_closure([self](builtin_args_t args) {
                                      return self->create_function(args);
+                                 }));
+        entries.insert_or_assign(strings.trace,
+                                 system_closure([self](builtin_args_t args) {
+                                     return self->trace(args);
                                  }));
     }
 };

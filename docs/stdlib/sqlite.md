@@ -248,6 +248,26 @@ Registering a function with the same name as an existing one replaces it.
 
 Functions that return `Array`, `Map`, or `Function` values are not supported and will produce a SQL error.
 
+## `db.trace`
+`db.trace(callback)`
+`db.trace(null)`
+
+Registers a callback that is called with the SQL text of each statement before it executes.
+Bound parameter values are expanded into the SQL string (e.g., `INSERT INTO t VALUES (42)` rather than `INSERT INTO t VALUES (?)`).
+Pass `null` to disable tracing.
+
+Only one trace callback can be active at a time. Registering a new one replaces the previous.
+
+Errors thrown by the callback are silently ignored to prevent interference with SQL execution.
+
+```
+db.trace(fn sql -> print(sql))
+db.exec('INSERT INTO t VALUES (?)', [42])
+# prints: INSERT INTO t VALUES (42)
+
+db.trace(null)  # disable tracing
+```
+
 ## `db.close`
 `db.close()`
 

@@ -1,0 +1,66 @@
+# Verify SQL statement tracing
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+# Trace captures executed SQL with expanded bindings
+def log = mutable_cell([])
+db.trace(fn sql -> log.exchange(log.get() + [sql]))
+
+db.exec('CREATE TABLE t (x INTEGER)')
+db.exec('INSERT INTO t VALUES (?)', [42])
+
+def traces = log.get()
+assert(len(traces) == 2)
+assert(traces[0] == 'CREATE TABLE t (x INTEGER)')
+assert(traces[1] == 'INSERT INTO t VALUES (42)')
+
+# Disabling trace with null
+db.trace(null)
+log.exchange([])
+db.exec('INSERT INTO t VALUES (?)', [99])
+assert(len(log.get()) == 0, 'trace should be disabled')
+
+# Re-enabling trace
+db.trace(fn sql -> log.exchange(log.get() + [sql]))
+log.exchange([])
+db.exec('SELECT * FROM t')
+assert(len(log.get()) == 1)
+
+# Replacing trace callback
+db.trace(fn sql -> log.exchange(log.get() + ['NEW: ' + sql]))
+log.exchange([])
+db.exec('SELECT 1')
+assert(log.get()[0] @ starts_with('NEW:'))
+
+# Multi-statement script fires per statement
+db.trace(fn sql -> log.exchange(log.get() + [sql]))
+log.exchange([])
+db.script('INSERT INTO t VALUES (10); INSERT INTO t VALUES (20)')
+def script_traces = log.get()
+assert(len(script_traces) == 2, 'script should trace 2 statements')
+
+# Transaction traces BEGIN, inner statements, and COMMIT
+log.exchange([])
+db.transaction(fn tx -> {
+    tx.exec('INSERT INTO t VALUES (?)', [100])
+})
+def tx_traces = log.get()
+assert(len(tx_traces) == 3, 'transaction should trace 3 statements')
+assert(tx_traces[0] == 'BEGIN')
+assert(tx_traces[1] == 'INSERT INTO t VALUES (100)')
+assert(tx_traces[2] == 'COMMIT')
+
+# Trace on closed connection errors
+db.trace(null)
+db.close()
+def closed_result = try_call(fn -> db.trace(fn sql -> null))
+assert(not closed_result.ok)
+assert(closed_result.error @ contains('closed'))
+
+if path != ':memory:': fs.remove(path)
