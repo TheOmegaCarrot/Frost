@@ -2,6 +2,8 @@ add_library( frost-ast
     array-constructor.cpp
     binop.cpp
     define.cpp
+    destructure-array.cpp
+    destructure-map.cpp
     do.cpp
     filter.cpp
     foreach.cpp
