@@ -1104,8 +1104,11 @@ struct destructure_pattern_impl
         },
         // Leaf identifier
         [](auto begin, std::string name, auto end) -> ast::Destructure::Ptr {
+            std::optional<std::string> opt_name =
+                name == "_" ? std::nullopt
+                            : std::optional<std::string>{std::move(name)};
             return std::make_unique<ast::Destructure_Leaf>(
-                make_source_range(begin, end), std::move(name), exported);
+                make_source_range(begin, end), std::move(opt_name), exported);
         });
     static constexpr auto name = "destructure pattern";
 };
@@ -1941,7 +1944,10 @@ struct map_destructure_entry_impl
                                                            key_end)),
                     std::make_unique<ast::Destructure_Leaf>(
                         make_source_range(key_begin, key_end),
-                        std::string{key}, exported)};
+                        key == "_"
+                            ? std::optional<std::string>{}
+                            : std::optional<std::string>{std::string{key}},
+                        exported)};
             });
     static constexpr auto name = "map destructure entry";
 };
@@ -2589,7 +2595,8 @@ struct Defn
                 make_source_range(begin_pos, end_pos), std::move(params.params),
                 std::move(body), std::move(params.vararg), name);
             auto leaf = std::make_unique<ast::Destructure_Leaf>(
-                ast::AST_Node::no_range, std::string{name}, false);
+                ast::AST_Node::no_range,
+                std::optional<std::string>{std::string{name}}, false);
             return std::make_unique<ast::Define>(ast::AST_Node::no_range,
                                                  std::move(leaf),
                                                  std::move(lambda));
@@ -2624,7 +2631,8 @@ struct Export_Defn
                 make_source_range(begin_pos, end_pos), std::move(params.params),
                 std::move(body), std::move(params.vararg), name);
             auto leaf = std::make_unique<ast::Destructure_Leaf>(
-                ast::AST_Node::no_range, std::string{name}, true);
+                ast::AST_Node::no_range,
+                std::optional<std::string>{std::string{name}}, true);
             return std::make_unique<ast::Define>(ast::AST_Node::no_range,
                                                  std::move(leaf),
                                                  std::move(lambda));

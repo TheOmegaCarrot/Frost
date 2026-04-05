@@ -34,8 +34,11 @@ class Destructure_Map final : public Destructure
 
     std::generator<Symbol_Action> symbol_sequence() const final
     {
-        for (const auto& [_, child] : destructure_elems_)
+        for (const auto& [key_expr, child] : destructure_elems_)
+        {
+            co_yield std::ranges::elements_of(key_expr->symbol_sequence());
             co_yield std::ranges::elements_of(child->symbol_sequence());
+        }
     }
 
     std::generator<Child_Info> children() const final

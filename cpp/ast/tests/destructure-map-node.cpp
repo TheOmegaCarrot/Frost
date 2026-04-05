@@ -10,6 +10,7 @@
 #include <frost/testing/stringmaker-specializations.hpp>
 
 #include <frost/ast/destructure-map.hpp>
+#include <frost/ast/name-lookup.hpp>
 #include <frost/value.hpp>
 
 #include <ranges>
@@ -239,7 +240,7 @@ TEST_CASE("Destructure_Map")
         auto key_expr = mock::Mock_Expression::make();
         auto mock_child = mock::Mock_Destructure::make();
 
-        // Mock_Destructure has default empty symbol_sequence
+        // Mock_Expression and Mock_Destructure have empty symbol_sequences
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
@@ -247,8 +248,27 @@ TEST_CASE("Destructure_Map")
 
         auto actions =
             node.symbol_sequence() | std::ranges::to<std::vector>();
-        // Mock children yield nothing, so sequence is empty
         CHECK(actions.empty());
+    }
+
+    SECTION("symbol_sequence includes key expression usages")
+    {
+        // Use a Name_Lookup as the key expression so it yields a Usage
+        auto key_expr = std::make_unique<frst::ast::Name_Lookup>(
+            AST_Node::no_range, "my_key");
+        auto mock_child = mock::Mock_Destructure::make();
+
+        std::vector<Destructure_Map::Element> elems;
+        elems.push_back({std::move(key_expr), std::move(mock_child)});
+
+        Destructure_Map node{AST_Node::no_range, std::move(elems)};
+
+        auto actions =
+            node.symbol_sequence() | std::ranges::to<std::vector>();
+        REQUIRE(actions.size() == 1);
+        auto* usage = std::get_if<AST_Node::Usage>(&actions[0]);
+        REQUIRE(usage);
+        CHECK(usage->name == "my_key");
     }
 
     SECTION("node_label")

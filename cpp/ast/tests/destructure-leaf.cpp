@@ -40,7 +40,7 @@ TEST_CASE("Destructure_Leaf")
 
         FORBID_CALL(syms, define(_, _));
 
-        Destructure_Leaf leaf{AST_Node::no_range, "_", false};
+        Destructure_Leaf leaf{AST_Node::no_range, std::nullopt, false};
         leaf.destructure(ctx, Value::create(42_f));
     }
 
@@ -109,7 +109,7 @@ TEST_CASE("Destructure_Leaf")
 
     SECTION("symbol_sequence: discard _ yields nothing")
     {
-        Destructure_Leaf leaf{AST_Node::no_range, "_", false};
+        Destructure_Leaf leaf{AST_Node::no_range, std::nullopt, false};
 
         auto actions =
             leaf.symbol_sequence() | std::ranges::to<std::vector>();
@@ -130,7 +130,7 @@ TEST_CASE("Destructure_Leaf")
 
         FORBID_CALL(syms, define(_, _));
 
-        Destructure_Leaf leaf{AST_Node::no_range, "_", true};
+        Destructure_Leaf leaf{AST_Node::no_range, std::nullopt, true};
         leaf.destructure(ctx, Value::create(42_f));
 
         auto actions =
@@ -143,7 +143,7 @@ TEST_CASE("Destructure_Leaf")
         Destructure_Leaf leaf{AST_Node::no_range, "myvar", false};
         CHECK(leaf.node_label() == "Destructure_Leaf(myvar)");
 
-        Destructure_Leaf discard{AST_Node::no_range, "_", false};
-        CHECK(discard.node_label() == "Destructure_Leaf(_)");
+        Destructure_Leaf discard{AST_Node::no_range, std::nullopt, false};
+        CHECK(discard.node_label() == "Destructure_Leaf(discarded)");
     }
 }

@@ -104,3 +104,11 @@ assert(result == 6)
 # Destructure with rest discard
 def [kept_val, ..._] = [42, 'ignore', 'these']
 assert(kept_val == 42)
+
+# Computed key in map destructure captures free variables in closures
+def computed_key = 'foo'
+def computed_fn = fn -> {
+    def {[computed_key]: val} = {foo: 99}
+    val
+}
+assert(computed_fn() == 99)
