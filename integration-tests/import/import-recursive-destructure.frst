@@ -1,0 +1,18 @@
+# Import a module that uses recursive destructuring with export
+
+def m = import('export-recursive-destructure')
+
+# Array nested in array
+assert(m.a == 1)
+assert(m.b == 2)
+assert(m.c == 3)
+
+# Array nested in map
+assert(m.x == 10)
+assert(m.y == 20)
+
+# Map nested in map
+assert(m.val == 42)
+
+# Verify only leaf names are exported (not intermediate structure keys)
+assert(len(m) == 6)

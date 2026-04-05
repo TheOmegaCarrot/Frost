@@ -1,0 +1,3 @@
+export def [a, [b, c]] = [1, [2, 3]]
+export def {foo: [x, y]} = {foo: [10, 20]}
+export def {nested: {deep: val}} = {nested: {deep: 42}}

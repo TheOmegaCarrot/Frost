@@ -44,9 +44,9 @@ class Destructure_Map final : public Destructure
         {
             // suboptimal but can be improved later on
             const auto& [key_expr, destructure_child] = pair;
-            std::string label = fmt::format("Pair {}", i + 1);
-            co_yield make_child(key_expr, label);
-            co_yield make_child(destructure_child, label);
+            co_yield make_child(key_expr, fmt::format("Key {}", i + 1));
+            co_yield make_child(destructure_child,
+                                fmt::format("Binding {}", i + 1));
         }
     }
 
@@ -62,8 +62,7 @@ class Destructure_Map final : public Destructure
             throw Frost_Recoverable_Error{fmt::format(
                 "Destructure expected Map, got {}", value->type_name())};
 
-        const frst::Map& map_being_destructured =
-            value->raw_get<frst::Map>();
+        const frst::Map& map_being_destructured = value->raw_get<frst::Map>();
 
         for (const auto& [key_expr, destructure_child] : destructure_elems_)
         {

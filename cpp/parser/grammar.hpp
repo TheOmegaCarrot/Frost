@@ -1077,28 +1077,35 @@ struct destructure_pattern_impl
 {
     static constexpr auto rule =
         dsl::peek(dsl::lit_c<'['>)
-        >> dsl::recurse<array_destructure_pattern_impl<exported>>
+        >> (dsl::position
+            + dsl::recurse<array_destructure_pattern_impl<exported>>
+            + dsl::position)
         | dsl::peek(dsl::lit_c<'{'>)
-        >> dsl::recurse<map_destructure_entries_impl<exported>>
+        >> (dsl::position
+            + dsl::recurse<map_destructure_entries_impl<exported>>
+            + dsl::position)
         | dsl::else_
-        >> dsl::p<identifier_required>;
+        >> (dsl::position
+            + dsl::p<identifier_required>
+            + dsl::position);
 
     static constexpr auto value = lexy::callback<ast::Destructure::Ptr>(
         // From array destructure
-        [](destructure_pack pack) {
+        [](auto begin, destructure_pack pack, auto end) {
             return std::make_unique<ast::Destructure_Array>(
-                ast::AST_Node::no_range, std::move(pack.elements),
+                make_source_range(begin, end), std::move(pack.elements),
                 std::move(pack.rest_name), exported);
         },
         // From map destructure
-        [](std::vector<ast::Destructure_Map::Element> elems) {
+        [](auto begin, std::vector<ast::Destructure_Map::Element> elems,
+           auto end) {
             return std::make_unique<ast::Destructure_Map>(
-                ast::AST_Node::no_range, std::move(elems));
+                make_source_range(begin, end), std::move(elems));
         },
         // Leaf identifier
-        [](std::string name) -> ast::Destructure::Ptr {
+        [](auto begin, std::string name, auto end) -> ast::Destructure::Ptr {
             return std::make_unique<ast::Destructure_Leaf>(
-                ast::AST_Node::no_range, std::move(name), exported);
+                make_source_range(begin, end), std::move(name), exported);
         });
     static constexpr auto name = "destructure pattern";
 };

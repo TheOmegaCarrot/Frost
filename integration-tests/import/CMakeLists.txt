@@ -12,6 +12,7 @@ set(IMPORT_SCRIPTS
     import-cwd.frst
     import-parent-cwd.frst
     import-destructure.frst
+    import-recursive-destructure.frst
     import-deep.frst
     import-cycles.frst
     import-cache.frst

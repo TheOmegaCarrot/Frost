@@ -211,3 +211,223 @@ TEST_CASE("Parser Recursive Destructuring")
         CHECK(lookup(table, "x")->get<frst::Int>().value() == 42_f);
     }
 }
+
+namespace
+{
+// Helper: find all nodes matching a label prefix via walk()
+std::vector<const frst::ast::AST_Node*>
+find_nodes(const frst::ast::Statement::Ptr& stmt, std::string_view prefix)
+{
+    std::vector<const frst::ast::AST_Node*> result;
+    for (auto* n : stmt->walk())
+        if (n->node_label().starts_with(prefix))
+            result.push_back(n);
+    return result;
+}
+} // namespace
+
+TEST_CASE("Parser Destructure Source Ranges")
+{
+    SECTION("Leaf identifier range")
+    {
+        // "def x = 1"
+        //      ^
+        //  col 5
+        auto result = parse("def x = 1");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto leaves = find_nodes(program[0], "Destructure_Leaf");
+        REQUIRE(leaves.size() == 1);
+        auto range = leaves[0]->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 5);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 5);
+    }
+
+    SECTION("Array destructure range spans brackets")
+    {
+        // "def [a, b] = x"
+        //      ^    ^
+        //  col 5  col 10
+        auto result = parse("def [a, b] = x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto arrays = find_nodes(program[0], "Destructure_Array");
+        REQUIRE(arrays.size() == 1);
+        auto range = arrays[0]->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 5);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 10);
+    }
+
+    SECTION("Map destructure range spans braces")
+    {
+        // "def {foo} = x"
+        //      ^   ^
+        //  col 5  col 9
+        auto result = parse("def {foo} = x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto maps = find_nodes(program[0], "Destructure_Map");
+        REQUIRE(maps.size() == 1);
+        auto range = maps[0]->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 5);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 9);
+    }
+
+    SECTION("Nested array ranges are independent")
+    {
+        // "def [a, [b, c]] = x"
+        //      ^         ^
+        //  col 5       col 15
+        //          ^      ^
+        //      col 9  col 14
+        auto result = parse("def [a, [b, c]] = x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto arrays = find_nodes(program[0], "Destructure_Array");
+        REQUIRE(arrays.size() == 2);
+
+        auto outer = arrays[0]->source_range();
+        CHECK(outer.begin.column == 5);
+        CHECK(outer.end.column == 15);
+
+        auto inner = arrays[1]->source_range();
+        CHECK(inner.begin.column == 9);
+        CHECK(inner.end.column == 14);
+    }
+
+    SECTION("Nested leaf ranges in array")
+    {
+        // "def [a, [b, c]] = x"
+        //      ^   ^   ^
+        //  col 6  10  13
+        auto result = parse("def [a, [b, c]] = x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto leaves = find_nodes(program[0], "Destructure_Leaf");
+        REQUIRE(leaves.size() == 3);
+
+        CHECK(leaves[0]->source_range().begin.column == 6);
+        CHECK(leaves[1]->source_range().begin.column == 10);
+        CHECK(leaves[2]->source_range().begin.column == 13);
+    }
+
+    SECTION("Map inside array range")
+    {
+        // "def [a, {foo: b}] = x"
+        //      ^           ^
+        //  col 5        col 17
+        //          ^      ^
+        //      col 9  col 16
+        auto result = parse("def [a, {foo: b}] = x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto arrays = find_nodes(program[0], "Destructure_Array");
+        REQUIRE(arrays.size() == 1);
+        CHECK(arrays[0]->source_range().begin.column == 5);
+        CHECK(arrays[0]->source_range().end.column == 17);
+
+        auto maps = find_nodes(program[0], "Destructure_Map");
+        REQUIRE(maps.size() == 1);
+        CHECK(maps[0]->source_range().begin.column == 9);
+        CHECK(maps[0]->source_range().end.column == 16);
+    }
+
+    SECTION("Array inside map range")
+    {
+        // "def {foo: [a, b]} = x"
+        //      ^           ^
+        //  col 5         col 17
+        //            ^      ^
+        //        col 11  col 16
+        auto result = parse("def {foo: [a, b]} = x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto maps = find_nodes(program[0], "Destructure_Map");
+        REQUIRE(maps.size() == 1);
+        CHECK(maps[0]->source_range().begin.column == 5);
+        CHECK(maps[0]->source_range().end.column == 17);
+
+        auto arrays = find_nodes(program[0], "Destructure_Array");
+        REQUIRE(arrays.size() == 1);
+        CHECK(arrays[0]->source_range().begin.column == 11);
+        CHECK(arrays[0]->source_range().end.column == 16);
+    }
+
+    SECTION("Map shorthand leaf gets identifier range")
+    {
+        // "def {foo} = x"
+        //       ^
+        //   col 6-8
+        auto result = parse("def {foo} = x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto leaves = find_nodes(program[0], "Destructure_Leaf");
+        REQUIRE(leaves.size() == 1);
+        auto range = leaves[0]->source_range();
+        CHECK(range.begin.column == 6);
+        CHECK(range.end.column == 8);
+    }
+
+    SECTION("Map explicit binding leaf gets pattern range")
+    {
+        // "def {foo: bar} = x"
+        //            ^
+        //        col 11-13
+        auto result = parse("def {foo: bar} = x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto leaves = find_nodes(program[0], "Destructure_Leaf");
+        REQUIRE(leaves.size() == 1);
+        auto range = leaves[0]->source_range();
+        CHECK(range.begin.column == 11);
+        CHECK(range.end.column == 13);
+    }
+
+    SECTION("Multiline destructure ranges")
+    {
+        // "def [\n  a,\n  [b, c]\n] = x"
+        auto result = parse("def [\n  a,\n  [b, c]\n] = x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto arrays = find_nodes(program[0], "Destructure_Array");
+        REQUIRE(arrays.size() == 2);
+
+        auto outer = arrays[0]->source_range();
+        CHECK(outer.begin.line == 1);
+        CHECK(outer.begin.column == 5);
+        CHECK(outer.end.line == 4);
+        CHECK(outer.end.column == 1);
+
+        auto inner = arrays[1]->source_range();
+        CHECK(inner.begin.line == 3);
+        CHECK(inner.begin.column == 3);
+        CHECK(inner.end.line == 3);
+        CHECK(inner.end.column == 8);
+    }
+}
