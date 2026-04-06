@@ -69,3 +69,13 @@ def r = os.run('/usr/bin/env', [], {env: {MY_VAR: 'value'}})
 # Replace environment entirely
 def r = os.run('/usr/bin/env', [], {replace_env: {PATH: '/usr/bin'}})
 ```
+
+### Notes
+
+`run` always waits for the child process to exit before returning.
+Both stdout and stderr are captured in full; this is not a streaming interface.
+
+If the child process is killed by a signal (e.g., SIGSEGV), `exit_code` will be non-zero.
+Any output the child flushed before the signal is still captured.
+
+If the command cannot be found or fails to launch, `run` produces an error.
