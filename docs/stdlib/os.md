@@ -31,8 +31,9 @@ Returns a Map with three keys:
 - `stderr` (`String`) -- the captured standard error
 - `exit_code` (`Int`) -- the process exit code
 
-`command` is the path to the executable.
+`command` is the executable to run. It can be an absolute path or a program name, which is looked up in `PATH`.
 `args` is an Array of Strings passed as command-line arguments.
+Each element is passed as a single argument with no word splitting -- `os.run('foo', ['bar baz'])` is equivalent to `foo 'bar baz'`, not `foo bar baz`.
 
 ```
 def r = os.run('/bin/echo', ['hello', 'world'])
