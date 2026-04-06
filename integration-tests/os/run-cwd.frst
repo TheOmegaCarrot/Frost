@@ -1,0 +1,10 @@
+def os = import('std.os')
+
+# Working directory
+def r = os.run('/bin/pwd', [], {cwd: '/tmp'})
+assert(r.stdout == "/tmp\n")
+
+# cwd combined with args
+def r2 = os.run('/bin/ls', ['-d', '.'], {cwd: '/tmp'})
+assert(r2.stdout == ".\n")
+assert(r2.exit_code == 0)

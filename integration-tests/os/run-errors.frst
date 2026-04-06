@@ -1,0 +1,54 @@
+def os = import('std.os')
+
+# Nonexistent command
+def r1 = try_call(fn -> os.run('/nonexistent/command', []))
+assert(not r1.ok)
+assert(r1.error @ contains('os.run'))
+
+# Non-String in args array
+def r2 = try_call(fn -> os.run('/bin/echo', [1]))
+assert(not r2.ok)
+assert(r2.error @ contains('Strings'))
+
+# Unknown option key
+def r3 = try_call(fn -> os.run('/bin/echo', [], {bogus: 'val'}))
+assert(not r3.ok)
+assert(r3.error @ contains('unknown option'))
+
+# Wrong type for stdin option
+def r4 = try_call(fn -> os.run('/bin/echo', [], {stdin: 42}))
+assert(not r4.ok)
+assert(r4.error @ contains('String'))
+
+# Wrong type for cwd option
+def r5 = try_call(fn -> os.run('/bin/echo', [], {cwd: 42}))
+assert(not r5.ok)
+assert(r5.error @ contains('String'))
+
+# Wrong type for env option
+def r6 = try_call(fn -> os.run('/bin/echo', [], {env: 'not a map'}))
+assert(not r6.ok)
+assert(r6.error @ contains('Map'))
+
+# Both env and replace_env
+def r7 = try_call(fn -> os.run('/bin/echo', [], {env: {A: '1'}, replace_env: {B: '2'}}))
+assert(not r7.ok)
+assert(r7.error @ contains('both'))
+
+# Non-String key in env map
+def r8 = try_call(fn -> os.run('/bin/echo', [], {env: {[1]: 'val'}}))
+assert(not r8.ok)
+assert(r8.error @ contains('Strings'))
+
+# Non-String value in env map
+def r9 = try_call(fn -> os.run('/bin/echo', [], {env: {key: 42}}))
+assert(not r9.ok)
+assert(r9.error @ contains('Strings'))
+
+# Arity: too few args
+def r10 = try_call(fn -> os.run('/bin/echo'))
+assert(not r10.ok)
+
+# Arity: wrong type for command
+def r11 = try_call(fn -> os.run(42, []))
+assert(not r11.ok)

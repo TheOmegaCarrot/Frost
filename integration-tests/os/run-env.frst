@@ -1,0 +1,24 @@
+def os = import('std.os')
+
+# Merge: inherits current env and adds new vars
+def r = os.run('/usr/bin/env', [], {env: {FROST_TEST_VAR: 'hello'}})
+assert(r.stdout @ contains('FROST_TEST_VAR=hello'), 'new var present')
+assert(r.stdout @ contains('PATH='), 'inherited PATH present')
+
+# Merge: override existing var
+def r2 = os.run('/usr/bin/env', [], {env: {HOME: '/override'}})
+assert(r2.stdout @ contains('HOME=/override'), 'HOME overridden')
+
+# Replace: only specified vars exist
+def r3 = os.run('/usr/bin/env', [], {replace_env: {ONLY: 'this'}})
+assert(r3.stdout == "ONLY=this\n", 'only specified var')
+
+# Replace: empty env
+def r4 = os.run('/usr/bin/env', [], {replace_env: {}})
+assert(r4.stdout == '', 'empty env')
+
+# Replace: multiple vars
+def r5 = os.run('/usr/bin/env', [], {replace_env: {A: '1', B: '2'}})
+assert(r5.stdout @ contains('A=1'))
+assert(r5.stdout @ contains('B=2'))
+assert(len(split(trim(r5.stdout), "\n")) == 2, 'exactly 2 vars')

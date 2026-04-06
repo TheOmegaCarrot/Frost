@@ -1,0 +1,24 @@
+def os = import('std.os')
+
+# Basic stdout capture
+def r = os.run('/bin/echo', ['hello', 'world'])
+assert(r.stdout == "hello world\n")
+assert(r.stderr == '')
+assert(r.exit_code == 0)
+
+# No args
+def r2 = os.run('/bin/echo', [])
+assert(r2.stdout == "\n")
+
+# Stderr capture
+def r3 = os.run('/bin/sh', ['-c', 'echo err >&2'])
+assert(r3.stderr == "err\n")
+assert(r3.stdout == '')
+
+# Non-zero exit code
+def r4 = os.run('/bin/false', [])
+assert(r4.exit_code == 1)
+
+# Multiple args preserved in order
+def r5 = os.run('/bin/echo', ['a', 'b', 'c', 'd'])
+assert(r5.stdout == "a b c d\n")

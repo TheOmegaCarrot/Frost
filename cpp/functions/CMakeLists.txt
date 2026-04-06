@@ -42,6 +42,7 @@ target_link_libraries( frost-functions
     Boost::json
     Boost::url
     OpenSSL::Crypto
+    Boost::filesystem
     cppcodec::cppcodec
 )
 

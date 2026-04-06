@@ -1,0 +1,18 @@
+def os = import('std.os')
+
+# Basic stdin piping
+def r = os.run('/usr/bin/cat', [], {stdin: 'hello from stdin'})
+assert(r.stdout == 'hello from stdin')
+assert(r.exit_code == 0)
+
+# Empty stdin
+def r2 = os.run('/usr/bin/cat', [], {stdin: ''})
+assert(r2.stdout == '')
+
+# Multiline stdin
+def r3 = os.run('/usr/bin/cat', [], {stdin: "line1\nline2\nline3"})
+assert(r3.stdout == "line1\nline2\nline3")
+
+# Stdin with processing (grep)
+def r4 = os.run('/bin/grep', ['foo'], {stdin: "foo\nbar\nfoobar"})
+assert(r4.stdout == "foo\nfoobar\n")

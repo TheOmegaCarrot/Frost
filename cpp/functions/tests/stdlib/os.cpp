@@ -42,10 +42,11 @@ TEST_CASE("std.os")
 
     SECTION("Registered")
     {
-        CHECK(mod.size() == 3);
+        CHECK(mod.size() == 4);
         lookup(mod, "getenv");
         lookup(mod, "exit");
         lookup(mod, "sleep");
+        lookup(mod, "run");
     }
 
     SECTION("getenv")
