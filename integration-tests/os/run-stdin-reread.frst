@@ -1,0 +1,7 @@
+def os = import('std.os')
+
+# Process reads all stdin, does work, then tries to read again
+def r = os.run('/bin/sh', ['-c', 'cat > /dev/null; sleep 0; read line; echo "after: $line"'],
+               {stdin: 'some data'})
+assert(r.stdout == "after: \n")
+assert(r.exit_code == 0)

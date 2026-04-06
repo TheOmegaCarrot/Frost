@@ -1,0 +1,14 @@
+def os = import('std.os')
+
+def crash_bin = args[1]
+def sigpipe_bin = args[2]
+
+# SIGSEGV: output flushed before crash is captured
+def r1 = os.run(crash_bin, [])
+assert(r1.stdout == "before crash\n", 'stdout captured before crash')
+assert(r1.exit_code != 0, 'non-zero exit on crash')
+
+# SIGPIPE: output flushed before signal is captured
+def r2 = os.run(sigpipe_bin, [])
+assert(r2.stdout == "before sigpipe\n", 'stdout captured before sigpipe')
+assert(r2.exit_code != 0, 'non-zero exit on sigpipe')

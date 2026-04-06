@@ -198,8 +198,12 @@ Value_Ptr run_process(const String& exe, std::vector<std::string> cmd_args,
         stdin_stream.pipe().close();
     }
 
+    // Read stdout and stderr concurrently to avoid deadlock when the
+    // child fills one pipe buffer while we're blocked reading the other.
+    std::string stderr_data;
+    std::thread stderr_reader([&] { stderr_data = read_stream(stderr_stream); });
     auto stdout_data = read_stream(stdout_stream);
-    auto stderr_data = read_stream(stderr_stream);
+    stderr_reader.join();
 
     proc.wait();
 

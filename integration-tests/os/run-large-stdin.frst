@@ -1,0 +1,9 @@
+def os = import('std.os')
+
+# Feed >64KB of stdin to a process that echoes it back.
+# Parent writes stdin synchronously while child writes stdout --
+# if both pipe buffers fill, this deadlocks.
+def large = join(repeat('x', 100000), '')
+def r = os.run('/usr/bin/cat', [], {stdin: large})
+assert(r.stdout == large)
+assert(r.exit_code == 0)

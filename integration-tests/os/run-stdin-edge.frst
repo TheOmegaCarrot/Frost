@@ -1,0 +1,18 @@
+def os = import('std.os')
+
+# Process reads stdin after we've closed it (should get EOF, not hang)
+def r1 = os.run('/bin/sh', ['-c', 'read line; echo "got: $line"'], {stdin: 'hello'})
+assert(r1.stdout == "got: hello\n", 'read after close')
+
+# Process tries to read stdin when no stdin option given (bp::null -- immediate EOF)
+def r2 = os.run('/bin/sh', ['-c', 'read line; echo "got: $line"'])
+assert(r2.stdout == "got: \n", 'read from null stdin')
+
+# Process reads stdin twice -- second read gets EOF
+def r3 = os.run('/bin/sh', ['-c', 'read a; read b; echo "$a $b"'], {stdin: "first\nsecond"})
+assert(r3.stdout == "first second\n", 'two reads')
+
+# Process ignores stdin entirely
+def r4 = os.run('/bin/echo', ['hi'], {stdin: 'ignored data'})
+assert(r4.stdout == "hi\n", 'stdin ignored')
+assert(r4.exit_code == 0)

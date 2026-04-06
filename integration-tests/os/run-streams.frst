@@ -1,0 +1,26 @@
+def os = import('std.os')
+
+# Interleaved stdout and stderr
+def r = os.run('/bin/sh', ['-c', 'echo out1; echo err1 >&2; echo out2; echo err2 >&2'])
+assert(r.stdout == "out1\nout2\n")
+assert(r.stderr == "err1\nerr2\n")
+
+# Large stdout (exceeds typical 64KB pipe buffer)
+# seq produces "1\n2\n...\n100000\n" which is well over 64KB
+def r2 = os.run('/usr/bin/seq', ['100000'])
+assert(len(r2.stdout) > 65536)
+assert(r2.exit_code == 0)
+
+# Binary-like output (null bytes)
+def r3 = os.run('/bin/sh', ['-c', 'printf "a\\0b\\0c"'])
+assert(len(r3.stdout) == 5)
+
+# Process that closes stdout early but keeps running
+def r4 = os.run('/bin/sh', ['-c', 'echo done; exec 1>&-; sleep 0'])
+assert(r4.stdout == "done\n")
+assert(r4.exit_code == 0)
+
+# Process that writes only to stderr
+def r5 = os.run('/bin/sh', ['-c', 'echo only_err >&2'])
+assert(r5.stdout == '')
+assert(r5.stderr == "only_err\n")

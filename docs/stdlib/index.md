@@ -180,6 +180,7 @@ Each entry links to its full documentation.
 - [or_else](functions.md#or_else)
 - [os.exit](os.md#exit) · `std.os`
 - [os.getenv](os.md#getenv) · `std.os`
+- [os.run](os.md#run) · `std.os`
 - [os.sleep](os.md#sleep) · `std.os`
 - [partition](collections.md#partition)
 - [plus](operators.md#plus)

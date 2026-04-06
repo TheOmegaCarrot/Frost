@@ -1,0 +1,9 @@
+def os = import('std.os')
+
+# Write 128KB to stderr BEFORE writing anything to stdout.
+# If os.run reads stdout first (sequentially), it will block
+# waiting for stdout data while the child blocks trying to
+# flush its full stderr pipe buffer -- deadlock.
+def r = os.run('/bin/sh', ['-c', 'seq 1 20000 >&2; echo done'])
+assert(r.stdout == "done\n")
+assert(r.exit_code == 0)
