@@ -10,6 +10,8 @@ RUN apt-get update \
         libboost-json-dev \
         libboost-regex-dev \
         libboost-url-dev \
+        libboost-filesystem-dev \
+        libboost-dev \
         libssl-dev \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -30,6 +32,8 @@ RUN apt-get update \
         libboost-json1.83.0 \
         libboost-regex1.83.0 \
         libboost-url1.83.0 \
+        libboost-filesystem1.83.0 \
+        libboost-atomic1.83.0 \
         libgcc-s1 \
         libssl3t64 \
         libstdc++6 \

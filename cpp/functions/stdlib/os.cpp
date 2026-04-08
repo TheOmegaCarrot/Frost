@@ -2,15 +2,24 @@
 
 #include <frost/value.hpp>
 
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 108600
 #include <boost/process/v1/args.hpp>
 #include <boost/process/v1/child.hpp>
 #include <boost/process/v1/env.hpp>
 #include <boost/process/v1/io.hpp>
 #include <boost/process/v1/start_dir.hpp>
+namespace bp = boost::process::v1;
+#else
+#include <boost/process/args.hpp>
+#include <boost/process/child.hpp>
+#include <boost/process/env.hpp>
+#include <boost/process/io.hpp>
+#include <boost/process/start_dir.hpp>
+namespace bp = boost::process;
+#endif
 
 #include <thread>
-
-namespace bp = boost::process::v1;
 
 namespace frst
 {
