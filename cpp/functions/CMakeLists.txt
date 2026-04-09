@@ -16,6 +16,7 @@ add_library( frost-functions
     builtins/structure-ops.cpp
     builtins/type-conversions.cpp
     builtins/type-tests.cpp
+    stdlib/cli.cpp
     stdlib/encoding.cpp
     stdlib/fs.cpp
     stdlib/hash.cpp
@@ -78,6 +79,7 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
 )
 
 set(FUNCTIONS_STDLIB_TEST_FILES
+    cli
     encoding
     fs
     hash

@@ -44,6 +44,7 @@ class Stdlib_Registry
 };
 
 #define X_STDLIB_MODULES                                                       \
+    X(cli)                                                                     \
     X(encoding)                                                                \
     X(fs)                                                                      \
     X(io)                                                                      \
