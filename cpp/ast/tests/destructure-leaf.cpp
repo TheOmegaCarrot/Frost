@@ -47,12 +47,9 @@ TEST_CASE("Destructure_Leaf")
     SECTION("Works with various value types")
     {
         std::vector<Value_Ptr> values = {
-            Value::create(42_f),
-            Value::create("hello"s),
-            Value::create(3.14),
-            Value::create(true),
-            Value::null(),
-            Value::create(Array{Value::create(1_f)}),
+            Value::create(42_f),  Value::create("hello"s),
+            Value::create(3.14),  Value::create(true),
+            Value::null(),        Value::create(Array{Value::create(1_f)}),
             Value::create(Map{}),
         };
 
@@ -85,8 +82,7 @@ TEST_CASE("Destructure_Leaf")
     {
         Destructure_Leaf leaf{AST_Node::no_range, "foo", false};
 
-        auto actions =
-            leaf.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions = leaf.symbol_sequence() | std::ranges::to<std::vector>();
         REQUIRE(actions.size() == 1);
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
@@ -98,8 +94,7 @@ TEST_CASE("Destructure_Leaf")
     {
         Destructure_Leaf leaf{AST_Node::no_range, "bar", true};
 
-        auto actions =
-            leaf.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions = leaf.symbol_sequence() | std::ranges::to<std::vector>();
         REQUIRE(actions.size() == 1);
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
@@ -111,16 +106,14 @@ TEST_CASE("Destructure_Leaf")
     {
         Destructure_Leaf leaf{AST_Node::no_range, std::nullopt, false};
 
-        auto actions =
-            leaf.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions = leaf.symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
     }
 
     SECTION("Empty name is rejected")
     {
-        CHECK_THROWS_AS(
-            Destructure_Leaf(AST_Node::no_range, "", false),
-            Frost_Interpreter_Error);
+        CHECK_THROWS_AS(Destructure_Leaf(AST_Node::no_range, "", false),
+                        Frost_Interpreter_Error);
     }
 
     SECTION("Exported discard _ does not define and yields nothing")
@@ -133,8 +126,7 @@ TEST_CASE("Destructure_Leaf")
         Destructure_Leaf leaf{AST_Node::no_range, std::nullopt, true};
         leaf.destructure(ctx, Value::create(42_f));
 
-        auto actions =
-            leaf.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions = leaf.symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
     }
 

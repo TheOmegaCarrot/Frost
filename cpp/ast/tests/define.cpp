@@ -36,11 +36,8 @@ TEST_CASE("Define")
         auto value = Value::create(42_f);
 
         trompeloeil::sequence seq;
-        REQUIRE_CALL(*expr_ptr, do_evaluate(_))
-            .IN_SEQUENCE(seq)
-            .RETURN(value);
-        REQUIRE_CALL(*dest_ptr, do_destructure(_, value))
-            .IN_SEQUENCE(seq);
+        REQUIRE_CALL(*expr_ptr, do_evaluate(_)).IN_SEQUENCE(seq).RETURN(value);
+        REQUIRE_CALL(*dest_ptr, do_destructure(_, value)).IN_SEQUENCE(seq);
 
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
                          std::move(expr)};
@@ -64,8 +61,7 @@ TEST_CASE("Define")
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
                          std::move(expr)};
 
-        CHECK_THROWS_WITH(node.execute(ctx),
-                          ContainsSubstring("expr boom"));
+        CHECK_THROWS_WITH(node.execute(ctx), ContainsSubstring("expr boom"));
     }
 
     SECTION("Destructure error propagates")
@@ -78,16 +74,14 @@ TEST_CASE("Define")
         auto* expr_ptr = expr.get();
         auto* dest_ptr = dest.get();
 
-        REQUIRE_CALL(*expr_ptr, do_evaluate(_))
-            .RETURN(Value::create(42_f));
+        REQUIRE_CALL(*expr_ptr, do_evaluate(_)).RETURN(Value::create(42_f));
         REQUIRE_CALL(*dest_ptr, do_destructure(_, _))
             .THROW(Frost_Recoverable_Error{"dest boom"});
 
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
                          std::move(expr)};
 
-        CHECK_THROWS_WITH(node.execute(ctx),
-                          ContainsSubstring("dest boom"));
+        CHECK_THROWS_WITH(node.execute(ctx), ContainsSubstring("dest boom"));
     }
 
     SECTION("symbol_sequence chains expression then destructure")
@@ -100,8 +94,7 @@ TEST_CASE("Define")
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
                          std::move(expr)};
 
-        auto actions =
-            node.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions = node.symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
     }
 
@@ -113,8 +106,7 @@ TEST_CASE("Define")
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
                          std::move(expr)};
 
-        auto kids =
-            node.children() | std::ranges::to<std::vector>();
+        auto kids = node.children() | std::ranges::to<std::vector>();
         REQUIRE(kids.size() == 2);
         CHECK(kids[0].label == "Expression");
         CHECK(kids[1].label == "Bindings");

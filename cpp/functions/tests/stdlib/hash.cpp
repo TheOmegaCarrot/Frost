@@ -202,7 +202,8 @@ TEST_CASE("stdlib::hash::hmac")
         auto msg = Value::create("hello"s);
         auto result = fn->call({key, msg});
         CHECK(result->raw_get<String>()
-              == "88aab3ede8d3adf94d26ab90d3bafd4a2083070c3bcce9c014ee04a443847c0b");
+              == "88aab3ede8d3adf94d26ab90d3bafd4a2083070c3bcce9c014ee04a443847"
+                 "c0b");
     }
 
     SECTION("Reference outputs: multiple algorithms")
@@ -219,11 +220,12 @@ TEST_CASE("stdlib::hash::hmac")
         const Case cases[] = {
             {"md5", "bade63863c61ed0b3165806ecd6acefc"},
             {"sha1", "5112055c05f944f85755efc5cd8970e194e9f45b"},
-            {"sha256",
-             "88aab3ede8d3adf94d26ab90d3bafd4a2083070c3bcce9c014ee04a443847c0b"},
+            {"sha256", "88aab3ede8d3adf94d26ab90d3bafd4a2083070c3bcce9c014ee04a"
+                       "443847c0b"},
             {"sha512",
              "db1595ae88a62fd151ec1cba81b98c39df82daae7b4cb9820f446d5bf02f1dcf"
-             "ca6683d88cab3e273f5963ab8ec469a746b5b19086371239f67d1e5f99a79440"},
+             "ca6683d88cab3e273f5963ab8ec469a746b5b19086371239f67d1e5f99a7944"
+             "0"},
         };
 
         for (const auto& c : cases)
@@ -240,7 +242,8 @@ TEST_CASE("stdlib::hash::hmac")
         auto fn = lookup(hmac, "sha256");
         auto result = fn->call({Value::create("key"s), Value::create(""s)});
         CHECK(result->raw_get<String>()
-              == "5d5d139563c95b5967b9bd9a8c9b233a9dedb45072794cd232dc1b74832607d0");
+              == "5d5d139563c95b5967b9bd9a8c9b233a9dedb45072794cd232dc1b7483260"
+                 "7d0");
     }
 
     SECTION("Different keys produce different outputs")
@@ -264,10 +267,9 @@ TEST_CASE("stdlib::hash::hmac")
     SECTION("Arity: too many arguments")
     {
         auto fn = lookup(hmac, "sha256");
-        CHECK_THROWS_WITH(
-            fn->call({Value::create("a"s), Value::create("b"s),
-                      Value::create("c"s)}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s),
+                                    Value::create("c"s)}),
+                          ContainsSubstring("too many arguments"));
     }
 
     SECTION("Type constraints")
@@ -287,8 +289,7 @@ TEST_CASE("stdlib::hash::crc32")
 
     SECTION("Reference outputs")
     {
-        CHECK(crc->call({Value::create(""s)})->raw_get<String>()
-              == "00000000");
+        CHECK(crc->call({Value::create(""s)})->raw_get<String>() == "00000000");
         CHECK(crc->call({Value::create("hello"s)})->raw_get<String>()
               == "3610a686");
         CHECK(crc->call({Value::create("123456789"s)})->raw_get<String>()
@@ -305,9 +306,8 @@ TEST_CASE("stdlib::hash::crc32")
     {
         CHECK_THROWS_WITH(crc->call({}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(
-            crc->call({Value::create("a"s), Value::create("b"s)}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(crc->call({Value::create("a"s), Value::create("b"s)}),
+                          ContainsSubstring("too many arguments"));
     }
 
     SECTION("Type constraint")

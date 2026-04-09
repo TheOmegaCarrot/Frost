@@ -11,7 +11,8 @@ class Do_Block final : public Expression
   public:
     using Ptr = std::unique_ptr<Do_Block>;
 
-    Do_Block(const Source_Range& source_range, std::vector<ast::Statement::Ptr> body);
+    Do_Block(const Source_Range& source_range,
+             std::vector<ast::Statement::Ptr> body);
 
     Do_Block() = delete;
     Do_Block(const Do_Block&) = delete;

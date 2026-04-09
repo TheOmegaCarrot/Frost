@@ -18,10 +18,10 @@
 
 using namespace frst;
 using namespace std::literals;
+using Catch::Matchers::ContainsSubstring;
 using frst::ast::AST_Node;
 using frst::ast::Destructure;
 using frst::ast::Destructure_Map;
-using Catch::Matchers::ContainsSubstring;
 
 using trompeloeil::_;
 
@@ -142,8 +142,7 @@ TEST_CASE("Destructure_Map")
 
         auto mock_child = mock::Mock_Destructure::make();
 
-        REQUIRE_CALL(*key_ptr, do_evaluate(_))
-            .RETURN(Value::create(Array{}));
+        REQUIRE_CALL(*key_ptr, do_evaluate(_)).RETURN(Value::create(Array{}));
 
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
@@ -225,8 +224,7 @@ TEST_CASE("Destructure_Map")
         auto map = Value::create(Map{{key, val}});
 
         REQUIRE_CALL(*key_ptr, do_evaluate(_)).RETURN(key);
-        REQUIRE_CALL(*child, do_destructure(_, _))
-            .WITH(_2.get() == val.get());
+        REQUIRE_CALL(*child, do_destructure(_, _)).WITH(_2.get() == val.get());
 
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
@@ -246,8 +244,7 @@ TEST_CASE("Destructure_Map")
 
         Destructure_Map node{AST_Node::no_range, std::move(elems)};
 
-        auto actions =
-            node.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions = node.symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
     }
 
@@ -263,8 +260,7 @@ TEST_CASE("Destructure_Map")
 
         Destructure_Map node{AST_Node::no_range, std::move(elems)};
 
-        auto actions =
-            node.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions = node.symbol_sequence() | std::ranges::to<std::vector>();
         REQUIRE(actions.size() == 1);
         auto* usage = std::get_if<AST_Node::Usage>(&actions[0]);
         REQUIRE(usage);
@@ -333,8 +329,7 @@ TEST_CASE("Destructure_Map")
 
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_found_expr), std::move(mock_found)});
-        elems.push_back(
-            {std::move(key_missing_expr), std::move(mock_missing)});
+        elems.push_back({std::move(key_missing_expr), std::move(mock_missing)});
 
         Destructure_Map node{AST_Node::no_range, std::move(elems)};
         node.destructure(ctx, map);

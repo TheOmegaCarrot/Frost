@@ -183,6 +183,12 @@ Option_Spec parse_one_option(const String& long_name, const Map& sub)
         }
     }
 
+    if (result.required and result.default_value)
+        throw Frost_Recoverable_Error{fmt::format(
+            "cli.parse: option '{}': required and default are mutually "
+            "exclusive",
+            long_name)};
+
     return result;
 }
 

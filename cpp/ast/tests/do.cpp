@@ -31,8 +31,8 @@ Expression::Ptr name_lookup(std::string_view n)
 
 Destructure::Ptr leaf(std::string n)
 {
-    return std::make_unique<Destructure_Leaf>(AST_Node::no_range,
-                                              std::move(n), false);
+    return std::make_unique<Destructure_Leaf>(AST_Node::no_range, std::move(n),
+                                              false);
 }
 
 std::string action_to_string(const AST_Node::Symbol_Action& action)
@@ -194,8 +194,8 @@ TEST_CASE("Do_Block - evaluate")
         FORBID_CALL(*never_ptr, do_evaluate(_));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, leaf("x"), std::move(bad)));
+        body.push_back(std::make_unique<Define>(AST_Node::no_range, leaf("x"),
+                                                std::move(bad)));
         body.push_back(std::move(never)); // becomes value_expr_
 
         Do_Block node{AST_Node::no_range, std::move(body)};
@@ -469,8 +469,8 @@ TEST_CASE("Do_Block - nested evaluate")
         // do { do { def inner = 1; inner } }
         // After evaluation, "inner" must not be accessible in syms.
         std::vector<Statement::Ptr> inner_body;
-        inner_body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, leaf("inner"), lit(1)));
+        inner_body.push_back(std::make_unique<Define>(AST_Node::no_range,
+                                                      leaf("inner"), lit(1)));
         inner_body.push_back(name_lookup("inner"));
         auto inner = std::make_unique<Do_Block>(AST_Node::no_range,
                                                 std::move(inner_body));

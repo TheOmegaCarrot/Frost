@@ -2,7 +2,8 @@
 
 using namespace frst;
 
-ast::Name_Lookup::Name_Lookup(const Source_Range& source_range, std::string name)
+ast::Name_Lookup::Name_Lookup(const Source_Range& source_range,
+                              std::string name)
     : Expression(source_range)
     , name_{std::move(name)}
 {

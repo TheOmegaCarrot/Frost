@@ -69,14 +69,14 @@ Expression::Ptr lit_int(Int v)
 
 Destructure::Ptr leaf(std::string n, bool exported = false)
 {
-    return std::make_unique<Destructure_Leaf>(AST_Node::no_range,
-                                              std::move(n), exported);
+    return std::make_unique<Destructure_Leaf>(AST_Node::no_range, std::move(n),
+                                              exported);
 }
 
 Statement::Ptr def(std::string n, Expression::Ptr expr)
 {
     return std::make_unique<Define>(AST_Node::no_range, leaf(n),
-                                   std::move(expr));
+                                    std::move(expr));
 }
 } // namespace
 
@@ -224,12 +224,13 @@ TEST_CASE("Symbol Sequence")
     SECTION("Program concatenates statement sequences in order")
     {
         std::vector<Statement::Ptr> program;
-        program.push_back(def("x",
-            std::make_unique<Binop>(AST_Node::no_range, name("a"),
-                                    Binary_Op::PLUS, name("b"))));
+        program.push_back(
+            def("x", std::make_unique<Binop>(AST_Node::no_range, name("a"),
+                                             Binary_Op::PLUS, name("b"))));
         program.push_back(std::make_unique<Binop>(
             AST_Node::no_range, name("x"), Binary_Op::MULTIPLY, name("c")));
-        program.push_back(def("y",
+        program.push_back(def(
+            "y",
             std::make_unique<If>(AST_Node::no_range, name("cond"), name("x"),
                                  std::optional<Expression::Ptr>{name("d")})));
 
@@ -249,18 +250,16 @@ TEST_CASE("Symbol Sequence")
                                  std::optional<Expression::Ptr>{name("f")}));
         elems.push_back(std::make_unique<Binop>(AST_Node::no_range, name("b"),
                                                 Binary_Op::PLUS, name("c")));
-        program.push_back(def("z",
-            std::make_unique<Array_Constructor>(AST_Node::no_range,
-                                                std::move(elems))));
+        program.push_back(def("z", std::make_unique<Array_Constructor>(
+                                       AST_Node::no_range, std::move(elems))));
 
         std::vector<Map_Constructor::KV_Pair> pairs;
         pairs.emplace_back(name("k"), name("v1"));
         pairs.emplace_back(
             name("k2"), std::make_unique<Binop>(AST_Node::no_range, name("v2"),
                                                 Binary_Op::PLUS, name("v3")));
-        program.push_back(def("m",
-            std::make_unique<Map_Constructor>(AST_Node::no_range,
-                                              std::move(pairs))));
+        program.push_back(def("m", std::make_unique<Map_Constructor>(
+                                       AST_Node::no_range, std::move(pairs))));
 
         program.push_back(
             std::make_unique<Index>(AST_Node::no_range, name("m"), name("k")));

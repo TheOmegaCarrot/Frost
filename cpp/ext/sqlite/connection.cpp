@@ -266,13 +266,11 @@ void Connection::create_aggregate(const String& name, const Value_Ptr& init,
     std::lock_guard lock{mutex_};
     require_open_();
 
-    auto* ud =
-        new Aggregate_User_Data{init, step, std::move(finalize)};
+    auto* ud = new Aggregate_User_Data{init, step, std::move(finalize)};
 
-    int rc = sqlite3_create_function_v2(conn_.get(), name.c_str(), -1,
-                                        SQLITE_UTF8, ud, nullptr,
-                                        aggregate_step, aggregate_final,
-                                        aggregate_destroy);
+    int rc = sqlite3_create_function_v2(
+        conn_.get(), name.c_str(), -1, SQLITE_UTF8, ud, nullptr, aggregate_step,
+        aggregate_final, aggregate_destroy);
     if (rc != SQLITE_OK)
     {
         delete ud;

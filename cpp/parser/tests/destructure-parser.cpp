@@ -215,8 +215,8 @@ TEST_CASE("Parser Recursive Destructuring")
 namespace
 {
 // Helper: find all nodes matching a label prefix via walk()
-std::vector<const frst::ast::AST_Node*>
-find_nodes(const frst::ast::Statement::Ptr& stmt, std::string_view prefix)
+std::vector<const frst::ast::AST_Node*> find_nodes(
+    const frst::ast::Statement::Ptr& stmt, std::string_view prefix)
 {
     std::vector<const frst::ast::AST_Node*> result;
     for (auto* n : stmt->walk())

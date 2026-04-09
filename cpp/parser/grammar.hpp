@@ -1085,9 +1085,7 @@ struct destructure_pattern_impl
             + dsl::recurse<map_destructure_entries_impl<exported>>
             + dsl::position)
         | dsl::else_
-        >> (dsl::position
-            + dsl::p<identifier_required>
-            + dsl::position);
+        >> (dsl::position + dsl::p<identifier_required> + dsl::position);
 
     static constexpr auto value = lexy::callback<ast::Destructure::Ptr>(
         // From array destructure
@@ -1133,8 +1131,10 @@ struct destructure_pattern_list_impl
 struct destructure_rest_binding
 {
     static constexpr auto rule = dsl::p<identifier_required>;
-    static constexpr auto value = lexy::callback<std::string>(
-        [](std::string name) { return name; });
+    static constexpr auto value =
+        lexy::callback<std::string>([](std::string name) {
+            return name;
+        });
     static constexpr auto name = "rest binding";
 };
 
@@ -1919,36 +1919,31 @@ struct map_destructure_entry_impl
         return computed | named;
     }();
 
-    static constexpr auto value =
-        lexy::callback<ast::Destructure_Map::Element>(
-            // Computed key with pattern binding.
-            [](ast::Expression::Ptr key, ast::Destructure::Ptr dest) {
-                return ast::Destructure_Map::Element{std::move(key),
-                                                     std::move(dest)};
-            },
-            // Named key with explicit pattern binding.
-            [](auto key_begin, std::string key, auto key_end,
-               ast::Destructure::Ptr dest) {
-                return ast::Destructure_Map::Element{
-                    make_string_key_expr(std::move(key),
-                                         make_source_range(key_begin,
-                                                           key_end)),
-                    std::move(dest)};
-            },
-            // Shorthand: key name used as leaf binding name.
-            [](auto key_begin, std::string key, auto key_end,
-               lexy::nullopt) {
-                return ast::Destructure_Map::Element{
-                    make_string_key_expr(key,
-                                         make_source_range(key_begin,
-                                                           key_end)),
-                    std::make_unique<ast::Destructure_Leaf>(
-                        make_source_range(key_begin, key_end),
-                        key == "_"
-                            ? std::optional<std::string>{}
-                            : std::optional<std::string>{std::string{key}},
-                        exported)};
-            });
+    static constexpr auto value = lexy::callback<ast::Destructure_Map::Element>(
+        // Computed key with pattern binding.
+        [](ast::Expression::Ptr key, ast::Destructure::Ptr dest) {
+            return ast::Destructure_Map::Element{std::move(key),
+                                                 std::move(dest)};
+        },
+        // Named key with explicit pattern binding.
+        [](auto key_begin, std::string key, auto key_end,
+           ast::Destructure::Ptr dest) {
+            return ast::Destructure_Map::Element{
+                make_string_key_expr(std::move(key),
+                                     make_source_range(key_begin, key_end)),
+                std::move(dest)};
+        },
+        // Shorthand: key name used as leaf binding name.
+        [](auto key_begin, std::string key, auto key_end, lexy::nullopt) {
+            return ast::Destructure_Map::Element{
+                make_string_key_expr(key,
+                                     make_source_range(key_begin, key_end)),
+                std::make_unique<ast::Destructure_Leaf>(
+                    make_source_range(key_begin, key_end),
+                    key == "_" ? std::optional<std::string>{}
+                               : std::optional<std::string>{std::string{key}},
+                    exported)};
+        });
     static constexpr auto name = "map destructure entry";
 };
 
@@ -2525,7 +2520,9 @@ constexpr auto define_lhs = [] {
 template <bool export_flag>
 constexpr auto define_payload = [] {
     return define_lhs<export_flag>
-           + dsl::lit_c<'='> + param_ws + dsl::p<expression>;
+           + dsl::lit_c<'='>
+           + param_ws
+           + dsl::p<expression>;
 }();
 
 // `define_callback`: constructs a Define from a Destructure::Ptr and
@@ -2533,12 +2530,11 @@ constexpr auto define_payload = [] {
 // Destructure::Ptr.
 constexpr auto define_callback()
 {
-    return lexy::callback<ast::Statement::Ptr>(
-        [](ast::Destructure::Ptr dest, ast::Expression::Ptr expr) {
-            return std::make_unique<ast::Define>(ast::AST_Node::no_range,
-                                                 std::move(dest),
-                                                 std::move(expr));
-        });
+    return lexy::callback<ast::Statement::Ptr>([](ast::Destructure::Ptr dest,
+                                                  ast::Expression::Ptr expr) {
+        return std::make_unique<ast::Define>(ast::AST_Node::no_range,
+                                             std::move(dest), std::move(expr));
+    });
 }
 
 // `def name = expr`. The `def` keyword commits; then `define_payload` must
@@ -2562,8 +2558,7 @@ struct Export_Def
     static constexpr auto rule = [] {
         auto kw_export = LEXY_KEYWORD("export", identifier::base);
         auto kw_def = LEXY_KEYWORD("def", identifier::base);
-        return kw_export + param_ws_no_comment + kw_def
-               + define_payload<true>;
+        return kw_export + param_ws_no_comment + kw_def + define_payload<true>;
     }();
     static constexpr auto value = define_callback();
     static constexpr auto name = "export def statement";
@@ -2597,9 +2592,8 @@ struct Defn
             auto leaf = std::make_unique<ast::Destructure_Leaf>(
                 ast::AST_Node::no_range,
                 std::optional<std::string>{std::string{name}}, false);
-            return std::make_unique<ast::Define>(ast::AST_Node::no_range,
-                                                 std::move(leaf),
-                                                 std::move(lambda));
+            return std::make_unique<ast::Define>(
+                ast::AST_Node::no_range, std::move(leaf), std::move(lambda));
         });
     static constexpr auto name = "defn statement";
 };
@@ -2633,9 +2627,8 @@ struct Export_Defn
             auto leaf = std::make_unique<ast::Destructure_Leaf>(
                 ast::AST_Node::no_range,
                 std::optional<std::string>{std::string{name}}, true);
-            return std::make_unique<ast::Define>(ast::AST_Node::no_range,
-                                                 std::move(leaf),
-                                                 std::move(lambda));
+            return std::make_unique<ast::Define>(
+                ast::AST_Node::no_range, std::move(leaf), std::move(lambda));
         });
     static constexpr auto name = "export defn statement";
 };

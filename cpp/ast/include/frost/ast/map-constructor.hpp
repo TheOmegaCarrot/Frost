@@ -20,7 +20,8 @@ class Map_Constructor final : public Expression
     Map_Constructor& operator=(Map_Constructor&&) = delete;
     ~Map_Constructor() final = default;
 
-    Map_Constructor(const Source_Range& source_range, std::vector<KV_Pair> pairs);
+    Map_Constructor(const Source_Range& source_range,
+                    std::vector<KV_Pair> pairs);
 
     bool data_safe() const final;
 

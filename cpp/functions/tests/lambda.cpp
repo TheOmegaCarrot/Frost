@@ -45,8 +45,8 @@ std::unique_ptr<T> node(Args&&... args)
 
 Destructure::Ptr leaf(std::string n, bool exported = false)
 {
-    return std::make_unique<Destructure_Leaf>(
-        AST_Node::no_range, std::move(n), exported);
+    return std::make_unique<Destructure_Leaf>(AST_Node::no_range, std::move(n),
+                                              exported);
 }
 
 std::set<std::string> capture_names(const Closure& closure)
@@ -1012,8 +1012,9 @@ TEST_CASE("Lambda")
             Binary_Op::PLUS, node<Name_Lookup>(AST_Node::no_range, "y")));
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Define>(
-            AST_Node::no_range, leaf("y"), node<Literal>(AST_Node::no_range, y_val)));
+        outer_body.push_back(
+            node<Define>(AST_Node::no_range, leaf("y"),
+                         node<Literal>(AST_Node::no_range, y_val)));
         outer_body.push_back(node<Lambda>(AST_Node::no_range,
                                           std::vector<std::string>{},
                                           std::move(inner_body)));
@@ -1347,8 +1348,9 @@ TEST_CASE("Lambda")
         }
 
         std::vector<Statement::Ptr> outer_body;
-        outer_body.push_back(node<Define>(
-            AST_Node::no_range, leaf("y"), node<Literal>(AST_Node::no_range, y_val)));
+        outer_body.push_back(
+            node<Define>(AST_Node::no_range, leaf("y"),
+                         node<Literal>(AST_Node::no_range, y_val)));
         outer_body.push_back(node<Lambda>(AST_Node::no_range,
                                           std::vector<std::string>{"q"},
                                           std::move(inner_body)));

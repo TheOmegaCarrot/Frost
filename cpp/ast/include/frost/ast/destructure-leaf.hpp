@@ -12,8 +12,8 @@ class Destructure_Leaf final : public Destructure
   public:
     using Ptr = std::unique_ptr<Destructure_Leaf>;
 
-    Destructure_Leaf(const Source_Range& source_range, std::optional<std::string> name,
-                     bool exported)
+    Destructure_Leaf(const Source_Range& source_range,
+                     std::optional<std::string> name, bool exported)
         : Destructure(source_range)
         , name_{std::move(name)}
         , exported_{exported}

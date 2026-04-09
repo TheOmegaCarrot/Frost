@@ -242,15 +242,14 @@ TEST_CASE("Builtin error")
     {
         CHECK_THROWS_AS(error_fn->call({Value::create("boom"s)}),
                         Frost_Recoverable_Error);
-        CHECK_THROWS_WITH(error_fn->call({Value::create("boom"s)}),
-                          "boom");
+        CHECK_THROWS_WITH(error_fn->call({Value::create("boom"s)}), "boom");
     }
 
     SECTION("Catchable by try_call")
     {
         auto try_call_fn = table.lookup("try_call")->get<Function>().value();
-        auto thrower = Value::create(
-            system_function([&](builtin_args_t) -> Value_Ptr {
+        auto thrower =
+            Value::create(system_function([&](builtin_args_t) -> Value_Ptr {
                 error_fn->call({Value::create("caught"s)});
                 return Value::null();
             }));
@@ -288,15 +287,14 @@ TEST_CASE("Builtin fatal")
     {
         CHECK_THROWS_AS(fatal_fn->call({Value::create("kaboom"s)}),
                         Frost_Unrecoverable_Error);
-        CHECK_THROWS_WITH(fatal_fn->call({Value::create("kaboom"s)}),
-                          "kaboom");
+        CHECK_THROWS_WITH(fatal_fn->call({Value::create("kaboom"s)}), "kaboom");
     }
 
     SECTION("Not catchable by try_call")
     {
         auto try_call_fn = table.lookup("try_call")->get<Function>().value();
-        auto thrower = Value::create(
-            system_function([&](builtin_args_t) -> Value_Ptr {
+        auto thrower =
+            Value::create(system_function([&](builtin_args_t) -> Value_Ptr {
                 fatal_fn->call({Value::create("uncatchable"s)});
                 return Value::null();
             }));

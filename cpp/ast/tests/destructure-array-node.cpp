@@ -82,8 +82,7 @@ TEST_CASE("Destructure_Array")
         std::vector<Destructure::Ptr> children;
         children.push_back(std::move(mock_a));
 
-        auto arr = Value::create(
-            Array{Value::create(1_f), Value::create(2_f)});
+        auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
         Destructure_Array node{AST_Node::no_range, std::move(children),
                                std::nullopt, false};
@@ -117,8 +116,8 @@ TEST_CASE("Destructure_Array")
         REQUIRE_CALL(syms, define("rest", _))
             .LR_SIDE_EFFECT(captured_rest = _2);
 
-        Destructure_Array node{AST_Node::no_range, std::move(children),
-                               "rest", false};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "rest",
+                               false};
         node.destructure(ctx, arr);
 
         REQUIRE(captured_rest->is<Array>());
@@ -147,8 +146,8 @@ TEST_CASE("Destructure_Array")
         REQUIRE_CALL(syms, define("rest", _))
             .LR_SIDE_EFFECT(captured_rest = _2);
 
-        Destructure_Array node{AST_Node::no_range, std::move(children),
-                               "rest", false};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "rest",
+                               false};
         node.destructure(ctx, arr);
 
         REQUIRE(captured_rest->is<Array>());
@@ -164,8 +163,8 @@ TEST_CASE("Destructure_Array")
         auto* a = mock_a.get();
 
         auto val = Value::create(1_f);
-        auto arr = Value::create(
-            Array{val, Value::create(2_f), Value::create(3_f)});
+        auto arr =
+            Value::create(Array{val, Value::create(2_f), Value::create(3_f)});
 
         std::vector<Destructure::Ptr> children;
         children.push_back(std::move(mock_a));
@@ -173,8 +172,8 @@ TEST_CASE("Destructure_Array")
         REQUIRE_CALL(*a, do_destructure(_, val));
         FORBID_CALL(syms, define(_, _));
 
-        Destructure_Array node{AST_Node::no_range, std::move(children),
-                               "_", false};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "_",
+                               false};
         node.destructure(ctx, arr);
     }
 
@@ -224,8 +223,7 @@ TEST_CASE("Destructure_Array")
         children.push_back(std::move(mock_a));
 
         // Check pointer identity, not just value equality
-        REQUIRE_CALL(*a, do_destructure(_, _))
-            .WITH(_2.get() == val.get());
+        REQUIRE_CALL(*a, do_destructure(_, _)).WITH(_2.get() == val.get());
 
         Destructure_Array node{AST_Node::no_range, std::move(children),
                                std::nullopt, false};
@@ -236,11 +234,10 @@ TEST_CASE("Destructure_Array")
     {
         std::vector<Destructure::Ptr> children;
 
-        Destructure_Array node{AST_Node::no_range, std::move(children),
-                               "rest", true};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "rest",
+                               true};
 
-        auto actions =
-            node.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions = node.symbol_sequence() | std::ranges::to<std::vector>();
         REQUIRE(actions.size() == 1);
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
@@ -252,11 +249,10 @@ TEST_CASE("Destructure_Array")
     {
         std::vector<Destructure::Ptr> children;
 
-        Destructure_Array node{AST_Node::no_range, std::move(children),
-                               "_", false};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "_",
+                               false};
 
-        auto actions =
-            node.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions = node.symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
     }
 
@@ -271,8 +267,8 @@ TEST_CASE("Destructure_Array")
     SECTION("node_label with rest")
     {
         std::vector<Destructure::Ptr> children;
-        Destructure_Array node{AST_Node::no_range, std::move(children),
-                               "tail", false};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "tail",
+                               false};
         CHECK(node.node_label() == "Destructure_Array(rest: tail)");
     }
 
@@ -286,8 +282,7 @@ TEST_CASE("Destructure_Array")
         auto* a = mock_a.get();
         auto* b = mock_b.get();
 
-        auto arr = Value::create(
-            Array{Value::create(1_f), Value::create(2_f)});
+        auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
         std::vector<Destructure::Ptr> children;
         children.push_back(std::move(mock_a));

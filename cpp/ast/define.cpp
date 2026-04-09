@@ -2,8 +2,8 @@
 
 using namespace frst;
 
-ast::Define::Define(const Source_Range& source_range, Destructure::Ptr destructure,
-                    Expression::Ptr expr)
+ast::Define::Define(const Source_Range& source_range,
+                    Destructure::Ptr destructure, Expression::Ptr expr)
     : Statement(source_range)
     , destructure_{std::move(destructure)}
     , expr_{std::move(expr)}

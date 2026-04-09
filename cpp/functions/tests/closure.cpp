@@ -97,8 +97,8 @@ std::unique_ptr<T> node(Args&&... args)
 
 ast::Destructure::Ptr leaf(std::string n, bool exported = false)
 {
-    return std::make_unique<ast::Destructure_Leaf>(
-        ast::AST_Node::no_range, std::move(n), exported);
+    return std::make_unique<ast::Destructure_Leaf>(ast::AST_Node::no_range,
+                                                   std::move(n), exported);
 }
 
 template <typename T, typename... Args>
