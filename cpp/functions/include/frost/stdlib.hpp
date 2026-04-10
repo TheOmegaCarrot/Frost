@@ -49,7 +49,6 @@ class Stdlib_Registry
     X(fs)                                                                      \
     X(io)                                                                      \
     X(json)                                                                    \
-    X(hash)                                                                    \
     X(math)                                                                    \
     X(os)                                                                      \
     X(regex)

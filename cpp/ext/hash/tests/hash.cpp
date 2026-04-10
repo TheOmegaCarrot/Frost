@@ -1,12 +1,17 @@
 #include <catch2/catch_all.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
-#include <frost/stdlib.hpp>
+#include <frost/extensions-common.hpp>
 #include <frost/value.hpp>
 
 using namespace frst;
 using namespace std::literals;
 using Catch::Matchers::ContainsSubstring;
+
+namespace frst
+{
+void register_module_hash(Stdlib_Registry_Builder&);
+}
 
 namespace
 {
@@ -16,7 +21,7 @@ Map hash_module()
     Stdlib_Registry_Builder builder;
     register_module_hash(builder);
     auto registry = std::move(builder).build();
-    auto module = registry.lookup_module("std.hash");
+    auto module = registry.lookup_module("ext.hash");
     REQUIRE(module.has_value());
     REQUIRE(module.value()->is<Map>());
     return module.value()->raw_get<Map>();
@@ -42,7 +47,7 @@ Map lookup_submap(const Map& mod, const std::string& name)
 
 } // namespace
 
-TEST_CASE("stdlib::hash")
+TEST_CASE("ext::hash")
 {
     auto mod = hash_module();
 
@@ -190,7 +195,7 @@ TEST_CASE("stdlib::hash")
     }
 }
 
-TEST_CASE("stdlib::hash::hmac")
+TEST_CASE("ext::hash::hmac")
 {
     auto mod = hash_module();
     auto hmac = lookup_submap(mod, "hmac");
@@ -282,7 +287,7 @@ TEST_CASE("stdlib::hash::hmac")
     }
 }
 
-TEST_CASE("stdlib::hash::crc32")
+TEST_CASE("ext::hash::crc32")
 {
     auto mod = hash_module();
     auto crc = lookup(mod, "crc32");

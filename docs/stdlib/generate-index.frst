@@ -36,7 +36,7 @@ def module_prefixes = {
     ['cli.md']: {module: 'cli', ns: 'std'},
     ['encoding.md']: {module: 'encoding', ns: 'std'},
     ['fs.md']: {module: 'fs', ns: 'std'},
-    ['hash.md']: { module: 'hash', ns: 'std' },
+    ['hash.md']: {module: 'hash', ns: 'ext'},
     ['http.md']: {module: 'http', ns: 'ext'},
     ['io.md']: {module: 'io', ns: 'std'},
     ['json.md']: {module: 'json', ns: 'std'},

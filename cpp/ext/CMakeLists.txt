@@ -15,9 +15,17 @@ target_link_libraries( frost-ext
 
 add_subdirectory(extensions-common/)
 
+option(WITH_HASH "Enable hash and HMAC functions" YES)
 option(WITH_HTTP "Enable HTTP support" YES)
 option(WITH_SQLITE "Enable SQLite support" YES)
 option(WITH_UNSAFE "Enable unsafe functions" YES)
+
+if(WITH_HASH)
+    message("Enabling Hash")
+    add_subdirectory(hash)
+    target_link_libraries(frost-ext PRIVATE frost-hash)
+    target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_HASH)
+endif()
 
 if(WITH_HTTP)
     message("Enabling HTTP")

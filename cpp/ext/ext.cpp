@@ -13,6 +13,10 @@ void register_extensions(Stdlib_Registry_Builder& builder)
 #pragma GCC diagnostic ignored "-Wvexing-parse"
     // The "vexing parse" is _actually_ intended here
 
+#ifdef FROST_ENABLE_HASH
+    DO_REGISTER_EXTENSION(hash);
+#endif
+
 #ifdef FROST_ENABLE_HTTP
     DO_REGISTER_EXTENSION(http);
 #endif

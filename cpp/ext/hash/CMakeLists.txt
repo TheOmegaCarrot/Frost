@@ -1,21 +1,18 @@
 find_package(OpenSSL REQUIRED)
 
-add_library( frost-http
-    http.cpp
-    request.cpp
+add_library( frost-hash
+    hash.cpp
 )
 
-target_include_directories( frost-http
+target_include_directories( frost-hash
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries( frost-http
+target_link_libraries( frost-hash
     PRIVATE
     frost-functions
     frost-extensions-common
-    Boost::url
-    OpenSSL::SSL
     OpenSSL::Crypto
 )
 

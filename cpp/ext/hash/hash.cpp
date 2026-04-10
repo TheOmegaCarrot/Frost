@@ -1,4 +1,4 @@
-#include <frost/builtins-common.hpp>
+#include <frost/extensions-common.hpp>
 
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
@@ -160,7 +160,7 @@ static const auto hmac_map = Value::create(Value::trusted, Map{X_HASH_ALGS});
 
 #define X(ALG) ENTRY(ALG),
 
-STDLIB_MODULE(hash, ENTRY(crc32), {"hmac"_s, hmac_map}, X_HASH_ALGS)
+REGISTER_EXTENSION(hash, ENTRY(crc32), {"hmac"_s, hmac_map}, X_HASH_ALGS)
 #undef X
 
 } // namespace frst

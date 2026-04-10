@@ -1,7 +1,7 @@
 # Hash
 
 ```frost
-def hash = import('std.hash')
+def hash = import('ext.hash')
 ```
 
 All hash functions take a single `String` argument and return a lowercase hexadecimal `String` digest.

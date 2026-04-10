@@ -43,7 +43,6 @@ Built-in modules accessed via `import`.
 | [CLI](./cli.md)                  | `import('std.cli')`          | Building command-line tools              |
 | [Encoding](./encoding.md)        | `import('std.encoding')`     | Binary and text encoding utilities        |
 | [Filesystem](./fs.md)            | `import('std.fs')`           | Reading, writing, and navigating the filesystem |
-| [Hash](./hash.md)                | `import('std.hash')`         | Hash functions, checksums, and HMAC                   |
 | [IO](./io.md)                    | `import('std.io')`           | Reading and writing files and streams    |
 | [JSON](./json.md)                | `import('std.json')`         | Encoding and decoding JSON               |
 | [Math](./math.md)                | `import('std.math')`         | Arithmetic, rounding, logarithms, trig   |
@@ -55,8 +54,9 @@ Built-in modules accessed via `import`.
 Extensions are optional components enabled at build time.
 They are not available in all Frost builds, but are enabled by default.
 
-| Extension                  | Import                       | Description                      | Extra Dependencies              |
-|----------------------------|------------------------------|----------------------------------|---------------------------|
-| [HTTP](./http.md)          | `import('ext.http')`         | Making HTTP requests             | None                      |
-| [SQLite](./sqlite.md)      | `import('ext.sqlite')`       | Embedded relational database     | SQLite (vendored)         |
-| [Unsafe](./unsafe.md)      | `import('ext.unsafe')`       | Bypass Frost's safety guarantees | None                      |
+| Extension                  | Import                       | Description                         | Extra Dependencies        |
+|----------------------------|------------------------------|-------------------------------------|---------------------------|
+| [Hash](./hash.md)          | `import('ext.hash')`         | Hash functions, checksums, and HMAC | OpenSSL                   |
+| [HTTP](./http.md)          | `import('ext.http')`         | Making HTTP requests                | OpenSSL                   |
+| [SQLite](./sqlite.md)      | `import('ext.sqlite')`       | Embedded relational database        | SQLite (vendored)         |
+| [Unsafe](./unsafe.md)      | `import('ext.unsafe')`       | Bypass Frost's safety guarantees    | None                      |

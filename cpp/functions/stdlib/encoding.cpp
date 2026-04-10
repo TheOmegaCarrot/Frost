@@ -6,9 +6,6 @@
 #include <cppcodec/base64_rfc4648.hpp>
 #include <cppcodec/base64_url.hpp>
 
-#include <openssl/crypto.h>
-
-#include <boost/scope_exit.hpp>
 #include <boost/url/decode_view.hpp>
 #include <boost/url/encode.hpp>
 #include <boost/url/rfc/unreserved_chars.hpp>
@@ -137,18 +134,31 @@ BUILTIN(decode)
     if (input.empty())
         return Value::create(String{});
 
-    long len = 0;
-    auto* buf = OPENSSL_hexstr2buf(input.c_str(), &len);
-    BOOST_SCOPE_EXIT_ALL(&)
-    {
-        OPENSSL_free(buf);
-    };
-
-    if (not buf)
+    if (input.size() % 2 != 0)
         throw Frost_Recoverable_Error{
             "encoding.hex.decode: invalid hex string"};
 
-    String result(reinterpret_cast<char*>(buf), len);
+    auto nibble = [](char c) -> int {
+        if (c >= '0' && c <= '9')
+            return c - '0';
+        if (c >= 'a' && c <= 'f')
+            return 10 + (c - 'a');
+        if (c >= 'A' && c <= 'F')
+            return 10 + (c - 'A');
+        return -1;
+    };
+
+    String result;
+    result.reserve(input.size() / 2);
+    for (std::size_t i = 0; i < input.size(); i += 2)
+    {
+        int hi = nibble(input[i]);
+        int lo = nibble(input[i + 1]);
+        if (hi < 0 || lo < 0)
+            throw Frost_Recoverable_Error{
+                "encoding.hex.decode: invalid hex string"};
+        result.push_back(static_cast<char>((hi << 4) | lo));
+    }
     return Value::create(std::move(result));
 }
 
