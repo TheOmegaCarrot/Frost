@@ -57,8 +57,9 @@ TEST_CASE("std.cli")
 
     SECTION("Registered")
     {
-        CHECK(mod.size() == 1);
+        CHECK(mod.size() == 2);
         lookup(mod, "parse");
+        lookup(mod, "prompt");
     }
 }
 

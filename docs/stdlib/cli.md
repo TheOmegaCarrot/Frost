@@ -192,3 +192,33 @@ cli.parse: option 'env': required and default are mutually exclusive
 # Parse error
 deploy: missing required option '--env'
 ```
+
+## `prompt`
+`prompt(message)`
+
+Prints `message` followed by a space to stderr (no newline) and reads a line from stdin.
+Returns the line as a `String`, or `null` if the user aborts with end-of-file.
+Only the trailing newline is stripped; any other whitespace the user typed is preserved.
+
+```
+def name = cli.prompt('What is your name?')
+if name != null: print($'Hello, ${name}')
+```
+
+stderr is used so that the prompt is visible even when stdout is redirected (`frost script.frst > out.txt`).
+
+### Building a yes/no confirmation
+
+`std.cli` does not provide a dedicated confirmation helper because the right behavior on end-of-file or unrecognized input depends on the script.
+A few lines using `prompt` cover most needs:
+
+```
+def ans = cli.prompt('Delete all files? [y/N]')
+def confirmed = ans and ( ans @ to_lower() @ trim() @ starts_with('y') )
+if confirmed: do {
+    # ...
+}
+```
+
+This pattern treats end-of-file as "no" (the safe default), which is usually what you want for destructive actions.
+Invert the logic for prompts where the safe default is "yes".

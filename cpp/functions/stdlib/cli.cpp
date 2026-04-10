@@ -4,6 +4,7 @@
 
 #include <flat_map>
 #include <flat_set>
+#include <iostream>
 
 namespace frst
 {
@@ -626,8 +627,21 @@ BUILTIN(parse)
     return parse_args(spec, frost_args, tool_name);
 }
 
+BUILTIN(prompt)
+{
+    REQUIRE_ARGS("cli.prompt", PARAM("message", TYPES(String)));
+
+    fmt::print(stderr, "{} ", GET(0, String));
+    std::fflush(stderr);
+
+    std::string line;
+    if (not std::getline(std::cin, line))
+        return Value::null();
+    return Value::create(String{std::move(line)});
+}
+
 } // namespace cli
 
-STDLIB_MODULE(cli, ENTRY(parse))
+STDLIB_MODULE(cli, ENTRY(parse), ENTRY(prompt))
 
 } // namespace frst
