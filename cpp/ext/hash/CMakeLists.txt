@@ -1,4 +1,5 @@
 find_package(OpenSSL REQUIRED)
+find_package(ZLIB REQUIRED)
 
 add_library( frost-hash
     hash.cpp
@@ -14,6 +15,7 @@ target_link_libraries( frost-hash
     frost-functions
     frost-extensions-common
     OpenSSL::Crypto
+    ZLIB::ZLIB
 )
 
 add_subdirectory(tests)
