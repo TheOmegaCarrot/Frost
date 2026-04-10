@@ -4,6 +4,8 @@
 def hash = import('ext.hash')
 ```
 
+Hash support can be disabled at build time with `-DWITH_HASH=NO`.
+
 All hash functions take a single `String` argument and return a lowercase hexadecimal `String` digest.
 Frost strings are binary-safe, so the input may contain arbitrary bytes.
 

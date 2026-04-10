@@ -32,11 +32,11 @@ The following dependencies are fetched automatically by CMake:
 [{fmt}](https://github.com/fmtlib/fmt),
 [replxx](https://github.com/AmokHuginnsson/replxx),
 [cppcodec](https://github.com/tplgy/cppcodec),
-[Lyra](https://github.com/bfgroup/Lyra),
 [Catch2](https://github.com/catchorg/Catch2) (test-only),
 [Trompeloeil](https://github.com/rollbear/trompeloeil) (test-only).
 
-Some modules (HTTP, SQLite) are optional and have additional dependencies.
+Several modules (HTTP, SQLite, etc) are optional extensions that
+can be individually enabled or disabled at build time.
 See the [complete documentation](docs/stdlib/) for build flags and details.
 
 ### Compiling
