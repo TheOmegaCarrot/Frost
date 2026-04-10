@@ -13,6 +13,8 @@ Each entry links to its full documentation.
 - [call](functions.md#call)
 - [chunk](collections.md#chunk)
 - [chunk_by](collections.md#chunk_by)
+- [cli.parse](cli.md#parse) · `std.cli`
+- [cli.prompt](cli.md#prompt) · `std.cli`
 - [collect](functions.md#collect)
 - [compose](functions.md#compose)
 - [const](functions.md#const)
@@ -182,7 +184,6 @@ Each entry links to its full documentation.
 - [os.getenv](os.md#getenv) · `std.os`
 - [os.run](os.md#run) · `std.os`
 - [os.sleep](os.md#sleep) · `std.os`
-- [parse](cli.md#parse)
 - [partition](collections.md#partition)
 - [plus](operators.md#plus)
 - [pretty](types.md#pretty)
