@@ -5,6 +5,6 @@ defn sum_down(k, acc) ->
     if k == 0: acc
     else: sum_down(k - 1, acc + k)
 
-def result = reduce range(iters) with fn (acc, _) -> acc + sum_down(depth, 0) init: 0
+def result = reduce range(iters) init: 0 with fn (acc, _) -> acc + sum_down(depth, 0)
 assert(result == 781562500, 'tailish recursion sum')
 print(result)

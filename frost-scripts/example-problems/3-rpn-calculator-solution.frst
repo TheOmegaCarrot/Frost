@@ -31,7 +31,7 @@ def ops = {
 }
 
 def eval_rpn = fn (tokens) -> {
-    def [result] = reduce tokens with fn stack, tok -> {
+    def [result] = reduce tokens init: [] with fn stack, tok -> {
         def parsed = to_int(tok)
         if parsed:
             stack + [parsed]
@@ -39,7 +39,7 @@ def eval_rpn = fn (tokens) -> {
                 def [lhs, rhs, rest] = [ stack[-2], stack[-1], stack @ drop_tail(2) ]
                 rest + [ops[tok](lhs, rhs)]
             }
-    } init: []
+    }
     result
 }
 

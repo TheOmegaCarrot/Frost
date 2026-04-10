@@ -1,1 +1,1 @@
-reduce [1, 2, 3] with fn(acc, x) -> { acc + x } init 0
+reduce [1, 2, 3] init 0 with fn(acc, x) -> { acc + x }

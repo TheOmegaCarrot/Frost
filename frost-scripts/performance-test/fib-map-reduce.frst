@@ -8,6 +8,6 @@ defn fib(n) -> {
 
 def input = range(30)
 def fibs = map input with fib
-def total = reduce fibs with fn (acc, x) -> { acc + x } init: 0
+def total = reduce fibs init: 0 with fn (acc, x) -> { acc + x }
 
 print(total)

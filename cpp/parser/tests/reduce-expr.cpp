@@ -45,7 +45,7 @@ TEST_CASE("Parser Reduce Expressions")
     SECTION("Reduce array with init")
     {
         auto result =
-            parse("reduce [1, 2, 3] with fn (acc, x) -> { acc + x } init: 0");
+            parse("reduce [1, 2, 3] init: 0 with fn (acc, x) -> { acc + x }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -72,7 +72,7 @@ TEST_CASE("Parser Reduce Expressions")
     SECTION("Reduce empty array with init returns init")
     {
         auto result =
-            parse("reduce [] with fn (acc, x) -> { acc + x } init: 5");
+            parse("reduce [] init: 5 with fn (acc, x) -> { acc + x }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -123,7 +123,7 @@ TEST_CASE("Parser Reduce Expressions")
         CHECK(out->get<frst::Int>().value() == 12_f);
 
         auto result2 =
-            parse("(reduce [] with fn (acc, x) -> { acc + x } init: 4) - 1");
+            parse("(reduce [] init: 4 with fn (acc, x) -> { acc + x }) - 1");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(ctx);
@@ -131,7 +131,7 @@ TEST_CASE("Parser Reduce Expressions")
         CHECK(out2->get<frst::Int>().value() == 3_f);
 
         auto result3 =
-            parse("(reduce {a: 1} with fn (acc, k, v) -> { acc } init: 5) + 1");
+            parse("(reduce {a: 1} init: 5 with fn (acc, k, v) -> { acc }) + 1");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
         auto out3 = expr3->evaluate(ctx);
@@ -142,7 +142,7 @@ TEST_CASE("Parser Reduce Expressions")
     SECTION("Whitespace and comments are allowed around reduce init")
     {
         auto result =
-            parse("reduce [1, 2] with fn (acc, x) -> { acc + x } init:\n0");
+            parse("reduce [1, 2] init:\n0 with fn (acc, x) -> { acc + x }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -153,7 +153,7 @@ TEST_CASE("Parser Reduce Expressions")
         CHECK(out->get<frst::Int>().value() == 3_f);
 
         auto result2 =
-            parse("reduce [1, 2] with fn (acc, x) -> { acc + x } init : 0");
+            parse("reduce [1, 2] init : 0 with fn (acc, x) -> { acc + x }");
         REQUIRE(result2);
         auto expr2 = require_expression(result2);
         auto out2 = expr2->evaluate(ctx);
@@ -222,8 +222,9 @@ TEST_CASE("Parser Reduce Expressions")
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 3_f);
 
-        auto result3 = parse("reduce [1, 2] with fn (acc, x) -> { acc + x } "
-                             "init: (map [3] with fn (x) -> { x })[0]");
+        auto result3 = parse("reduce [1, 2] "
+                             "init: (map [3] with fn (x) -> { x })[0] "
+                             "with fn (acc, x) -> { acc + x }");
         REQUIRE(result3);
         auto expr3 = require_expression(result3);
         auto out3 = expr3->evaluate(ctx);
@@ -231,8 +232,9 @@ TEST_CASE("Parser Reduce Expressions")
         CHECK(out3->get<frst::Int>().value() == 6_f);
 
         auto result4 =
-            parse("reduce {a: 1} with fn (acc, k, v) -> { acc } "
-                  "init: (reduce [1, 2] with fn (acc, x) -> { acc + x })");
+            parse("reduce {a: 1} "
+                  "init: (reduce [1, 2] with fn (acc, x) -> { acc + x }) "
+                  "with fn (acc, k, v) -> { acc }");
         REQUIRE(result4);
         auto expr4 = require_expression(result4);
         auto out4 = expr4->evaluate(ctx);
@@ -262,8 +264,9 @@ TEST_CASE("Parser Reduce Expressions")
             }
         };
 
-        auto result = parse("reduce [1] with fn (acc, x) -> { acc + x } "
-                            "init: (map [1] with f @ g())[0]");
+        auto result = parse("reduce [1] "
+                            "init: (map [1] with f @ g())[0] "
+                            "with fn (acc, x) -> { acc + x }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -361,8 +364,8 @@ TEST_CASE("Parser Reduce Expressions")
     {
         auto result =
             parse("reduce (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
-                  "with fn (acc, x) -> { acc + x } "
-                  "init: (map [1] with fn (x) -> { x })[0]");
+                  "init: (map [1] with fn (x) -> { x })[0] "
+                  "with fn (acc, x) -> { acc + x }");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -375,7 +378,7 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Nested reduce in operation expression is parsed correctly")
     {
-        auto result = parse("reduce a with reduce b with f init: c");
+        auto result = parse("reduce a with reduce b init: c with f");
         REQUIRE(result);
         auto expr = require_expression(result);
 
@@ -448,10 +451,10 @@ TEST_CASE("Parser Reduce Expressions")
     {
         const std::string_view cases[] = {
             "reduce with f",
-            "reduce [1] init: 0 with f",
-            "reduce [1] with f init",
-            "reduce [1] with f init:",
-            "reduce [1] with f init: 0 init: 1",
+            "reduce [1] with f init: 0",
+            "reduce [1] init 0 with f",
+            "reduce [1] init: with f",
+            "reduce [1] init: 0 init: 1 with f",
         };
 
         for (const auto& input : cases)
@@ -477,8 +480,8 @@ TEST_CASE("Parser Reduce Expressions")
 
     SECTION("Source range for reduce with init")
     {
-        // "reduce [1] with fn (a, x) -> a + x init: 0" → [1:1-1:42]
-        auto result = parse("reduce [1] with fn (a, x) -> a + x init: 0");
+        // "reduce [1] init: 0 with fn (a, x) -> a + x" -> [1:1-1:42]
+        auto result = parse("reduce [1] init: 0 with fn (a, x) -> a + x");
         REQUIRE(result);
         auto expr = require_expression(result);
         auto range = expr->source_range();

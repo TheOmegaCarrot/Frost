@@ -5,7 +5,7 @@ map filter foreach reduce
 def a = map xs with fn (x) -> { x + 1 }
 def b = filter a with fn (x) -> { x > 2 }
 def c = foreach b with print
-def d = reduce b with fn (acc, x) -> { acc + x } init: 0
+def d = reduce b init: 0 with fn (acc, x) -> { acc + x }
 
 ---
 
@@ -183,6 +183,17 @@ def d = reduce b with fn (acc, x) -> { acc + x } init: 0
                                       (postfix_expression
                                         (primary_expression
                                           (identifier))))))))))
+                        (kw_init)
+                        (or_expression
+                          (and_expression
+                            (equality_expression
+                              (comparison_expression
+                                (sum_expression
+                                  (product_expression
+                                    (unary_expression
+                                      (postfix_expression
+                                        (primary_expression
+                                          (integer))))))))))
                         (kw_with)
                         (or_expression
                           (and_expression
@@ -216,15 +227,4 @@ def d = reduce b with fn (acc, x) -> { acc + x } init: 0
                                                             (unary_expression
                                                               (postfix_expression
                                                                 (primary_expression
-                                                                  (identifier))))))))))))))))))))))
-                        (kw_init)
-                        (or_expression
-                          (and_expression
-                            (equality_expression
-                              (comparison_expression
-                                (sum_expression
-                                  (product_expression
-                                    (unary_expression
-                                      (postfix_expression
-                                        (primary_expression
-                                          (integer))))))))))))))))))))))
+                                                                  (identifier))))))))))))))))))))))))))))))))))

@@ -26,8 +26,8 @@ defn get_functions(docpath) -> {
 }
 
 # Create a map from { [filename]: [ functions ] }
-def file_fns_map = reduce files with fn acc, file ->  
-    acc + { [fs.filename(file)]: get_functions(file) } init: {}
+def file_fns_map = reduce files init: {} with fn acc, file ->
+    acc + { [fs.filename(file)]: get_functions(file) }
 
 # Turn a function name into the suffix of an anchor (after the # in "filename#section")
 def fn_to_anchor_suffix = re.replace @ bcurry(R'([^a-z0-9_-])', '')
@@ -50,23 +50,26 @@ def module_prefixes = {
 # Flip it around into a map from function name to full anchor
 # Build entries with display name, anchor, and optional tag
 def fn_link_map = (
-    reduce keys(file_fns_map) with fn acc, filename -> {
+    reduce keys(file_fns_map) init: {} with fn acc, filename -> {
         def { module: prefix, ns } = module_prefixes[filename] or {}
-        acc + (reduce file_fns_map[filename] with fn inner, fname -> {
-            def display = if prefix: $'${prefix}.${fname}' else: fname
-            def anchor = filename + '#' + fn_to_anchor_suffix(fname)
-            def tag = if prefix: $' · `${ns}.${prefix}`' else: ''
-            inner + { [display]: { anchor: anchor, tag: tag } }
-        } init: {})
+
+        acc + (
+            reduce file_fns_map[filename] init: {} with fn inner, fname -> {
+                def display = if prefix: $'${prefix}.${fname}' else: fname
+                def anchor = filename + '#' + fn_to_anchor_suffix(fname)
+                def tag = if prefix: $' · `${ns}.${prefix}`' else: ''
+
+                inner + { [display]: { anchor: anchor, tag: tag } }
+        })
+
     }
-    init: {}
 )
 
 # Format each entry
-def fn_links = reduce fn_link_map with fn acc, k, v -> {
+def fn_links = reduce fn_link_map init: [] with fn acc, k, v -> {
         def {anchor, tag} = v
         acc + [ $'- [${k}](${anchor})${tag}' ]
-    } init: []
+    }
 
 def index_md = io.open_trunc(fs.concat(me_dir, 'index.md'))
 

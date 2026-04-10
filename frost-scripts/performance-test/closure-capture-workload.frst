@@ -2,6 +2,6 @@ def n = 100000
 def adders = map range(n) with fn (i) -> { fn (x) -> { x + i } }
 def applied = map adders with fn (f) -> { f(1) }
 
-def result = reduce applied with fn (acc, x) -> { acc + x } init: 0
+def result = reduce applied init: 0 with fn (acc, x) -> { acc + x }
 assert(result == 5000050000, 'closure capture sum')
 print(result)

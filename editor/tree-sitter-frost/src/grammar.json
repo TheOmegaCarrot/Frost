@@ -1713,18 +1713,6 @@
             }
           },
           {
-            "type": "SYMBOL",
-            "name": "kw_with"
-          },
-          {
-            "type": "FIELD",
-            "name": "operation",
-            "content": {
-              "type": "SYMBOL",
-              "name": "expression"
-            }
-          },
-          {
             "type": "CHOICE",
             "members": [
               {
@@ -1752,6 +1740,18 @@
                 "type": "BLANK"
               }
             ]
+          },
+          {
+            "type": "SYMBOL",
+            "name": "kw_with"
+          },
+          {
+            "type": "FIELD",
+            "name": "operation",
+            "content": {
+              "type": "SYMBOL",
+              "name": "expression"
+            }
           }
         ]
       }

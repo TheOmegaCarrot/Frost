@@ -6,6 +6,6 @@ def input = range(n)
 
 def squares = map input with fn (x) -> { x * x }
 def filtered = filter squares with fn (x) -> { x < 1000000000 }
-def total = reduce filtered with fn (acc, x) -> { acc + x } init: 0
+def total = reduce filtered init: 0 with fn (acc, x) -> { acc + x }
 
 print(total)

@@ -610,8 +610,8 @@ TEST_CASE("Parser Program")
             "with fn (x) -> { (reduce [1, 2] with fn (acc, y) -> { acc + y }) "
             "+ x };"
             "reduce (map [1, 2] with fn (x) -> { x }) "
-            "with fn (acc, x) -> { acc + x } "
-            "init: (reduce [1, 2] with fn (acc, x) -> { acc + x });"
+            "init: (reduce [1, 2] with fn (acc, x) -> { acc + x }) "
+            "with fn (acc, x) -> { acc + x };"
             "map [1] with fn (x) -> { foreach [1] with fn (y) -> { y }; x }");
         REQUIRE(result);
         auto program = require_program(result);
@@ -646,7 +646,7 @@ TEST_CASE("Parser Program")
                   "id(map [1, 2] with inc)[0];\n"
                   "(filter [1, 2, 3] with fn (x) -> { x > 1 }) @ id();\n"
                   "reduce (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
-                  "with fn (acc, x) -> { acc + x } init: 0");
+                  "init: 0 with fn (acc, x) -> { acc + x }");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 5);

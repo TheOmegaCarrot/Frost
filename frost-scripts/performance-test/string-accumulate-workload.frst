@@ -1,6 +1,6 @@
 def n = 70000
 
-def text = reduce range(n) with fn (acc, i) -> { acc + 'a' } init: ''
+def text = reduce range(n) init: '' with fn (acc, i) -> { acc + 'a' }
 def result = len(text)
 
 assert(result == 70000, 'string accumulation length')

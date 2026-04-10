@@ -404,9 +404,9 @@ module.exports = grammar({
     reduce_expression: $ => prec.right(seq(
       $.kw_reduce,
       field('structure', $.expression),
+      optional(seq($.kw_init, ':', field('init', $.expression))),
       $.kw_with,
       field('operation', $.expression),
-      optional(seq($.kw_init, ':', field('init', $.expression))),
     )),
 
     array_literal: $ => seq('[', optional(field('elements', $.array_elements)), ']'),

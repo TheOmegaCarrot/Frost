@@ -52,7 +52,7 @@ def orders = [
 ]
 
 def order_total = fn (order) -> {
-    reduce order.items with fn acc, item -> acc + item.price * item.qty init: 0
+    reduce order.items init: 0 with fn acc, item -> acc + item.price * item.qty
 }
 
 def gross_revenue = fn (all_orders) -> {

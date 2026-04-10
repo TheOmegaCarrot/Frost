@@ -1557,10 +1557,11 @@ using Foreach = With_Keyword_Expr<ast::Foreach>;
 // `reduce` is similar to map/filter/foreach but has an optional `init:` clause:
 //
 //   reduce expr with fn
-//   reduce expr with fn init: initial_value
+//   reduce expr init: initial_value with fn
 //
-// The `init_clause` is optional. When absent, lexy::nullopt is produced and
-// the value callback passes std::nullopt to the AST constructor.
+// The `init_clause` is optional and appears between the structure and the
+// `with` keyword. When absent, lexy::nullopt is produced and the value
+// callback passes std::nullopt to the AST constructor.
 struct Reduce
 {
     static constexpr auto rule = [] {
@@ -1579,21 +1580,22 @@ struct Reduce
         return kw_reduce
                >> (param_ws_nl
                    + dsl::recurse<expression>
+                   + init_clause
                    + param_ws_nl
                    + kw_with
                    + param_ws_nl
                    + (require_expr_start_no_nl<expected_with_expression>()
-                      >> dsl::recurse<expression>)+init_clause);
+                      >> dsl::recurse<expression>));
     }();
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
-        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation,
-           lexy::nullopt) {
+        [](ast::Expression::Ptr structure, lexy::nullopt,
+           ast::Expression::Ptr operation) {
             return std::make_unique<ast::Reduce>(
                 ast::AST_Node::no_range, std::move(structure),
                 std::move(operation), std::optional<ast::Expression::Ptr>{});
         },
-        [](ast::Expression::Ptr structure, ast::Expression::Ptr operation,
-           ast::Expression::Ptr init) {
+        [](ast::Expression::Ptr structure, ast::Expression::Ptr init,
+           ast::Expression::Ptr operation) {
             return std::make_unique<ast::Reduce>(
                 ast::AST_Node::no_range, std::move(structure),
                 std::move(operation),

@@ -384,7 +384,7 @@ Any extra arguments will be collected into an array which is the variadic argume
 The variadic argument array may be empty.
 
 ```frost
-def add_things = fn i, ...rest -> reduce rest with plus init: i
+def add_things = fn i, ...rest -> reduce rest init: i with plus
 
 add_things(1, 2, 3, 4) # 10 (rest was [2, 3, 4])
 ```
@@ -665,8 +665,8 @@ A reduce expression takes one of the following forms:
 
 ```frost
 reduce an_array with binary_operation
-reduce an_array with binary_operation init: value
-reduce a_map with ternary_operation init: value
+reduce an_array init: value with binary_operation
+reduce a_map init: value with ternary_operation
 ```
 
 In the first form, the function is first called with the first two elements.
@@ -683,7 +683,7 @@ Reducing an empty array without an `init:` clause will return `null`.
 In the second form, the value after `init:` is used as the initial accumulator value.
 
 ```frost
-reduce [1, 2, 3, 4] with fn a, b -> { a + b } init: 0 # 10 (the function is called 4 times)
+reduce [1, 2, 3, 4] init: 0 with fn a, b -> { a + b } # 10 (the function is called 4 times)
 ```
 
 Note: in the above example, the `{}` braces in the function body are not mandatory, but they are included here for clarity.
@@ -694,7 +694,7 @@ The `init:` clause is required for the `Map` form.
 Once again, the iteration order over a `Map` is unspecified.
 
 ```frost
-reduce {foo: 42, bar: 10} with fn acc, k, v -> { acc + v } init: 0 # 52
+reduce {foo: 42, bar: 10} init: 0 with fn acc, k, v -> { acc + v } # 52
 ```
 
 See also [`fold`](./stdlib/collections.md#fold), the functional form for use in `@` pipelines.

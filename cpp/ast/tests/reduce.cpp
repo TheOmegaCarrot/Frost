@@ -67,7 +67,7 @@ TEST_CASE("Reduce Array")
             CHECK(calls.empty());
         }
 
-        // Frost: reduce [] with fn (acc, elem) -> { acc + elem } init: 42
+        // Frost: reduce [] init: 42 with fn (acc, elem) -> { acc + elem }
         SECTION(
             "Empty array with init returns init; init evaluated; op not called")
         {
@@ -102,7 +102,7 @@ TEST_CASE("Reduce Array")
             CHECK(calls.empty());
         }
 
-        // Frost: reduce [] with fn (acc, elem) -> { acc + elem } init: null
+        // Frost: reduce [] init: null with fn (acc, elem) -> { acc + elem }
         SECTION("Empty array with explicit null init returns null")
         {
             auto empty_array = Value::create(Array{});
@@ -166,7 +166,7 @@ TEST_CASE("Reduce Array")
             CHECK(calls.empty());
         }
 
-        // Frost: reduce [1] with fn (acc, elem) -> { acc + elem } init: 10
+        // Frost: reduce [1] init: 10 with fn (acc, elem) -> { acc + elem }
         SECTION("Single element with init calls op once with (init, elem)")
         {
             auto elem = Value::create(1_f);
@@ -258,8 +258,7 @@ TEST_CASE("Reduce Array")
             CHECK(calls.at(1).at(1) == v3);
         }
 
-        // Frost: reduce [1, 2, 3] with fn (acc, elem) -> { acc + elem } init:
-        // 10
+        // Frost: reduce [1, 2, 3] init: 10 with fn (acc, elem) -> { acc + elem }
         SECTION("Multiple elements with init folds left starting from init")
         {
             auto v1 = Value::create(1_f);
@@ -323,8 +322,7 @@ TEST_CASE("Reduce Array")
             CHECK(calls.at(2).at(1) == v3);
         }
 
-        // Frost: reduce arr_expr with fn (acc, elem) -> { acc + elem } init:
-        // init_expr
+        // Frost: reduce arr_expr init: init_expr with fn (acc, elem) -> { acc + elem }
         SECTION("Evaluation order: structure then operation then init")
         {
             auto elem = Value::create(1_f);
@@ -359,8 +357,7 @@ TEST_CASE("Reduce Array")
             CHECK(res == result_val);
         }
 
-        // Frost: reduce [] with fn (acc, elem) -> { acc + elem } init:
-        // init_expr
+        // Frost: reduce [] init: init_expr with fn (acc, elem) -> { acc + elem }
         SECTION("Init evaluated even when array is empty")
         {
             auto empty_array = Value::create(Array{});
@@ -485,7 +482,7 @@ TEST_CASE("Reduce Array")
                               ContainsSubstring("structure boom"));
         }
 
-        // Frost: reduce arr_expr with op_expr init: init_expr
+        // Frost: reduce arr_expr init: init_expr with op_expr
         SECTION("Operation expression error propagates")
         {
             auto array_val =
@@ -509,8 +506,7 @@ TEST_CASE("Reduce Array")
                               ContainsSubstring("operation boom"));
         }
 
-        // Frost: reduce arr_expr with fn (acc, elem) -> { acc + elem } init:
-        // init_expr
+        // Frost: reduce arr_expr init: init_expr with fn (acc, elem) -> { acc + elem }
         SECTION("Init expression error propagates and op not called")
         {
             auto array_val = Value::create(Array{Value::create(1_f)});
@@ -557,7 +553,7 @@ TEST_CASE("Reduce Map")
 
     SECTION("Success cases")
     {
-        // Frost: reduce {} with fn (acc, k, v) -> { acc } init: 42
+        // Frost: reduce {} init: 42 with fn (acc, k, v) -> { acc }
         SECTION(
             "Empty map with init returns init; init evaluated; op not called")
         {
@@ -592,7 +588,7 @@ TEST_CASE("Reduce Map")
             CHECK(calls.empty());
         }
 
-        // Frost: reduce { [1]: "a" } with fn (acc, k, v) -> { acc } init: 0
+        // Frost: reduce { [1]: "a" } init: 0 with fn (acc, k, v) -> { acc }
         SECTION("Single element map calls reducer once")
         {
             const auto k1 = Value::create(1_f);
@@ -717,7 +713,7 @@ TEST_CASE("Reduce Map")
                  || (matches_kv(call0, k2, v2) && matches_kv(call1, k1, v1))));
         }
 
-        // Frost: reduce { [1]: "a" } with fn (acc, k, v) -> { acc } init: null
+        // Frost: reduce { [1]: "a" } init: null with fn (acc, k, v) -> { acc }
         SECTION("Null init is allowed")
         {
             const auto k1 = Value::create(1_f);
@@ -762,7 +758,7 @@ TEST_CASE("Reduce Map")
             CHECK(calls.at(0).at(2) == v1);
         }
 
-        // Frost: reduce m with fn (acc, k, v) -> { acc } init: init_expr
+        // Frost: reduce m init: init_expr with fn (acc, k, v) -> { acc }
         SECTION("Evaluation order: structure then operation then init")
         {
             const auto k1 = Value::create(1_f);
@@ -826,7 +822,7 @@ TEST_CASE("Reduce Map")
                               ContainsSubstring("Map reduction requires init"));
         }
 
-        // Frost: reduce 123 with fn (acc, k, v) -> { acc } init: 0
+        // Frost: reduce 123 init: 0 with fn (acc, k, v) -> { acc }
         SECTION("Non-structured value errors and op not evaluated")
         {
             auto bad_val = Value::create(123_f);
@@ -845,7 +841,7 @@ TEST_CASE("Reduce Map")
                 ContainsSubstring("Cannot reduce value with type"));
         }
 
-        // Frost: reduce { [1]: "a" } with 123 init: 0
+        // Frost: reduce { [1]: "a" } init: 0 with 123
         SECTION("Non-function operation errors")
         {
             const auto k1 = Value::create(1_f);
@@ -875,7 +871,7 @@ TEST_CASE("Reduce Map")
                               "Reduce operation expected Function, got Int");
         }
 
-        // Frost: reduce { [1]: "a" } with fn_that_goes_kaboom init: 0
+        // Frost: reduce { [1]: "a" } init: 0 with fn_that_goes_kaboom
         SECTION("Reducer error propagates")
         {
             const auto k1 = Value::create(1_f);
@@ -911,7 +907,7 @@ TEST_CASE("Reduce Map")
             CHECK_THROWS_WITH(node.evaluate(ctx), ContainsSubstring("kaboom"));
         }
 
-        // Frost: reduce m with fn (acc, k, v) -> { acc } init: init_expr
+        // Frost: reduce m init: init_expr with fn (acc, k, v) -> { acc }
         SECTION("Init expression error propagates")
         {
             const auto k1 = Value::create(1_f);
@@ -948,7 +944,7 @@ TEST_CASE("Reduce Map")
             CHECK(calls.empty());
         }
 
-        // Frost: reduce m with op_expr init: 0
+        // Frost: reduce m init: 0 with op_expr
         SECTION("Operation expression error propagates")
         {
             const auto k1 = Value::create(1_f);
@@ -977,7 +973,7 @@ TEST_CASE("Reduce Map")
                               ContainsSubstring("operation boom"));
         }
 
-        // Frost: reduce m with fn (acc, k, v) -> { acc } init: 0
+        // Frost: reduce m init: 0 with fn (acc, k, v) -> { acc }
         SECTION("Structure expression error propagates")
         {
             REQUIRE_CALL(*structure_expr, do_evaluate(_))

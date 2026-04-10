@@ -106,7 +106,7 @@ def sugared_map_access = a_map.k1 # only for string keys (equivalent to above)
 # map reduction
 def map_reduce = fn (dict) -> {
     # map reduction requires an `init: <expr>` clause
-    reduce dict with fn (acc, k, v) -> { acc + v } init: 0
+    reduce dict init: 0 with fn (acc, k, v) -> { acc + v }
 }
 
 assert(map_reduce( { k1: 3, k2: 5 } ) == 8)

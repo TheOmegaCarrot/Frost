@@ -18,7 +18,7 @@
 
 defn flatten_(x) -> {
     if is_array(x):
-        reduce x with fn acc, elem -> acc + flatten_(elem) init: []
+        reduce x init: [] with fn acc, elem -> acc + flatten_(elem)
     else:
         [x]
 }

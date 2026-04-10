@@ -12,9 +12,9 @@ def data = [
 ]
 
 def row_totals = map data with fn (row) -> {
-    reduce row with fn (acc, x) -> { acc + x } init: 0
+    reduce row init: 0 with fn (acc, x) -> { acc + x }
 }
 
-def result = reduce row_totals with fn (acc, x) -> { acc + x } init: 0
+def result = reduce row_totals init: 0 with fn (acc, x) -> { acc + x }
 assert(result == 5050, 'literal-heavy parse workload sum')
 print(result)

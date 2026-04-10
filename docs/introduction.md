@@ -27,7 +27,7 @@ reduce [1, 2, 3] with plus
 You can also optionally add an `init` clause:
 
 ```frost
-reduce [1, 2, 3] with plus init: 10
+reduce [1, 2, 3] init: 10 with plus
 # 16
 ```
 ## Functions

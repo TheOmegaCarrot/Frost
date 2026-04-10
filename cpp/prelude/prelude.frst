@@ -27,9 +27,8 @@ defn sum(arr) -> reduce arr with plus
 defn product(arr) -> reduce arr with times
 
 defn dig(m, ...idxs) ->
-    reduce idxs with fn r, i ->
+    reduce idxs init: m with fn r, i ->
         r @ and_then(index(i))
-    init: m
 
 defn compose(f, g, ...rest) -> {
 
