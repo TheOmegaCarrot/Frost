@@ -41,7 +41,8 @@ struct Cli_Spec
 {
     std::optional<String> name;
     std::optional<String> description;
-    std::optional<String> help_text;
+    // Cached as Value_Ptr to avoid copying potentially-large help text.
+    std::optional<Value_Ptr> help_text;
     std::vector<Flag_Spec> flags;
     std::vector<Option_Spec> options;
     std::vector<Positional_Spec> positional;
@@ -53,17 +54,25 @@ struct Cli_Spec
     std::flat_map<String, std::size_t> long_to_option;
 };
 
-// Type-check helper: throws with a contextual message or returns a
-// reference to the underlying value (or a copy, for trivially-copyable
-// types like Bool).
+// Type-check helper: throws with a contextual message or returns the
+// validated Value_Ptr passed through unchanged. Useful when the caller
+// wants to keep the Value_Ptr (e.g. to avoid copying a large payload).
 template <Frost_Type T>
-const auto& require_as(const Value_Ptr& v, std::string_view what)
+const Value_Ptr& require_value(const Value_Ptr& v, std::string_view what)
 {
     if (not v->is<T>())
         throw Frost_Recoverable_Error{
             fmt::format("cli.parse: {} must be a {}, got {}", what,
                         type_str<T>(), v->type_name())};
-    return v->raw_get<T>();
+    return v;
+}
+
+// Type-check helper: returns a reference to the underlying value (or a
+// copy, for trivially-copyable types like Bool).
+template <Frost_Type T>
+const auto& require_as(const Value_Ptr& v, std::string_view what)
+{
+    return require_value<T>(v, what)->template raw_get<T>();
 }
 
 // Parses a short-name spec: must be a single-character String.
@@ -225,15 +234,18 @@ Cli_Spec parse_spec(const Map& spec_map)
         else if (key == "description")
             spec.description = require_as<String>(v_val, "description");
         else if (key == "help")
-            spec.help_text = require_as<String>(v_val, "help");
+            // Cache the Value_Ptr directly to avoid copying potentially-
+            // large help text into the spec struct.
+            spec.help_text.emplace(require_value<String>(v_val, "help"));
         else if (key == "flags")
             spec.flags = parse_flags(require_as<Map>(v_val, "flags"));
         else if (key == "options")
             spec.options = parse_options(require_as<Map>(v_val, "options"));
         else if (key == "positional")
         {
-            if (v_val->is<Bool>() && v_val->raw_get<Bool>())
-                spec.raw_collect_positional = true;
+            if (v_val->is<Bool>())
+                // true: raw collect; false: no positionals (same as absent)
+                spec.raw_collect_positional = v_val->raw_get<Bool>();
             else
                 spec.positional = parse_positional(v_val);
         }
@@ -296,7 +308,7 @@ void validate_spec(Cli_Spec& spec)
     }
 }
 
-String generate_help(const Cli_Spec& spec, const String& tool_name);
+Value_Ptr generate_help(const Cli_Spec& spec, const String& tool_name);
 
 Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
                      const String& tool_name)
@@ -476,7 +488,7 @@ Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
     return Value::create(
         Value::trusted,
         Map{{key_flags, Value::create(Value::trusted, std::move(flags_map))},
-            {key_help, Value::create(generate_help(spec, tool_name))},
+            {key_help, generate_help(spec, tool_name)},
             {key_options,
              Value::create(Value::trusted, std::move(options_map))},
             {key_positional, Value::create(std::move(positional_arr))}});
@@ -484,7 +496,7 @@ Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
 
 // -- Help generation --
 
-String generate_help(const Cli_Spec& spec, const String& tool_name)
+Value_Ptr generate_help(const Cli_Spec& spec, const String& tool_name)
 {
     if (spec.help_text)
         return spec.help_text.value();
@@ -584,7 +596,7 @@ String generate_help(const Cli_Spec& spec, const String& tool_name)
         }
     }
 
-    return out;
+    return Value::create(String{std::move(out)});
 }
 
 } // namespace

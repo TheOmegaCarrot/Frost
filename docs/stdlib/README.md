@@ -40,6 +40,7 @@ Built-in modules accessed via `import`.
 
 | Module                           | Import                       | Description                              |
 |----------------------------------|------------------------------|------------------------------------------|
+| [CLI](./cli.md)                  | `import('std.cli')`          | Building command-line tools              |
 | [Encoding](./encoding.md)        | `import('std.encoding')`     | Binary and text encoding utilities        |
 | [Filesystem](./fs.md)            | `import('std.fs')`           | Reading, writing, and navigating the filesystem |
 | [Hash](./hash.md)                | `import('std.hash')`         | Hash functions, checksums, and HMAC                   |

@@ -182,6 +182,7 @@ Each entry links to its full documentation.
 - [os.getenv](os.md#getenv) · `std.os`
 - [os.run](os.md#run) · `std.os`
 - [os.sleep](os.md#sleep) · `std.os`
+- [parse](cli.md#parse)
 - [partition](collections.md#partition)
 - [plus](operators.md#plus)
 - [pretty](types.md#pretty)

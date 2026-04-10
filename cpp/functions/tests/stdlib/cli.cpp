@@ -404,12 +404,30 @@ TEST_CASE("cli.parse spec validation")
             MessageMatches(ContainsSubstring("positional")));
     }
 
-    SECTION("positional as false")
+    SECTION("positional as false means no positionals")
+    {
+        // Equivalent to omitting `positional` or using `[]`.
+        auto result = parse->call(
+            {Value::create(make_args({"s.frst"})),
+             Value::create(
+                 Value::trusted,
+                 Map{{"positional"_s, Value::create(Bool{false})}})});
+        REQUIRE(result->is<Map>());
+        CHECK(get(result->raw_get<Map>(), "positional")
+                  ->raw_get<Array>()
+                  .empty());
+    }
+
+    SECTION("positional as false rejects positional args")
     {
         CHECK_THROWS_MATCHES(
-            call_with_spec(Map{{"positional"_s, Value::create(Bool{false})}}),
+            parse->call(
+                {Value::create(make_args({"s.frst", "extra"})),
+                 Value::create(
+                     Value::trusted,
+                     Map{{"positional"_s, Value::create(Bool{false})}})}),
             Frost_Recoverable_Error,
-            MessageMatches(ContainsSubstring("positional")));
+            MessageMatches(ContainsSubstring("unexpected positional")));
     }
 
     SECTION("Positional entry not a Map")
@@ -931,6 +949,30 @@ TEST_CASE("cli.parse successful parsing")
         CHECK(get(get(result, "options")->raw_get<Map>(), "env")
                   ->raw_get<String>()
               == "-v");
+    }
+
+    SECTION("Option consumes following arg even if it looks like a flag")
+    {
+        // GNU behavior: `--env --verbose` makes `--verbose` the value of
+        // `--env`, even though `--verbose` is also a declared flag.
+        Map flag = {};
+        Map flags = {
+            {"verbose"_s, Value::create(Value::trusted, std::move(flag))}};
+        Map opt = {};
+        Map options = {
+            {"env"_s, Value::create(Value::trusted, std::move(opt))}};
+        auto result = do_parse(
+            {"s.frst", "--env", "--verbose"},
+            Map{{"flags"_s,
+                 Value::create(Value::trusted, std::move(flags))},
+                {"options"_s,
+                 Value::create(Value::trusted, std::move(options))}});
+        CHECK(get(get(result, "options")->raw_get<Map>(), "env")
+                  ->raw_get<String>()
+              == "--verbose");
+        CHECK(get(get(result, "flags")->raw_get<Map>(), "verbose")
+                  ->raw_get<Bool>()
+              == false);
     }
 
     SECTION("Long option name with dashes")
