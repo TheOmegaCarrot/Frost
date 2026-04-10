@@ -4,7 +4,6 @@
 
 #include <flat_map>
 #include <flat_set>
-#include <map>
 
 namespace frst
 {
@@ -54,49 +53,47 @@ struct Cli_Spec
     std::flat_map<String, std::size_t> long_to_option;
 };
 
-void require_string_key(const Value_Ptr& k_val, std::string_view context)
+// Type-check helper: throws with a contextual message or returns a
+// reference to the underlying value (or a copy, for trivially-copyable
+// types like Bool).
+template <Frost_Type T>
+const auto& require_as(const Value_Ptr& v, std::string_view what)
 {
-    if (not k_val->is<String>())
+    if (not v->is<T>())
         throw Frost_Recoverable_Error{
-            fmt::format("cli.parse: {} keys must be Strings, got {}", context,
-                        k_val->type_name())};
+            fmt::format("cli.parse: {} must be a {}, got {}", what,
+                        type_str<T>(), v->type_name())};
+    return v->raw_get<T>();
+}
+
+// Parses a short-name spec: must be a single-character String.
+char require_short_char(const Value_Ptr& v, std::string_view what)
+{
+    const auto& s = require_as<String>(v, fmt::format("{}: short", what));
+    if (s.size() != 1)
+        throw Frost_Recoverable_Error{fmt::format(
+            "cli.parse: {}: short must be a single character", what)};
+    return s.at(0);
 }
 
 Flag_Spec parse_one_flag(const String& long_name, const Map& sub)
 {
     Flag_Spec result;
     result.long_name = long_name;
+    auto ctx = fmt::format("flag '{}'", long_name);
 
     for (const auto& [k_val, v_val] : sub)
     {
-        require_string_key(k_val, "flag spec");
-        const auto& key = k_val->raw_get<String>();
+        const auto& key = require_as<String>(k_val, "flag spec key");
 
         if (key == "short")
-        {
-            if (not v_val->is<String>())
-                throw Frost_Recoverable_Error{fmt::format(
-                    "cli.parse: flag '{}': short must be a String", long_name)};
-            const auto& s = v_val->raw_get<String>();
-            if (s.size() != 1)
-                throw Frost_Recoverable_Error{fmt::format(
-                    "cli.parse: flag '{}': short must be a single character",
-                    long_name)};
-            result.short_name = s.at(0);
-        }
+            result.short_name = require_short_char(v_val, ctx);
         else if (key == "description")
-        {
-            if (not v_val->is<String>())
-                throw Frost_Recoverable_Error{fmt::format(
-                    "cli.parse: flag '{}': description must be a String",
-                    long_name)};
-            result.description = v_val->raw_get<String>();
-        }
+            result.description =
+                require_as<String>(v_val, fmt::format("{}: description", ctx));
         else
-        {
-            throw Frost_Recoverable_Error{fmt::format(
-                "cli.parse: flag '{}': unknown key '{}'", long_name, key)};
-        }
+            throw Frost_Recoverable_Error{
+                fmt::format("cli.parse: {}: unknown key '{}'", ctx, key)};
     }
 
     return result;
@@ -108,14 +105,10 @@ std::vector<Flag_Spec> parse_flags(const Map& flags_map)
 
     for (const auto& [k_val, v_val] : flags_map)
     {
-        require_string_key(k_val, "flags");
-        const auto& long_name = k_val->raw_get<String>();
-
-        if (not v_val->is<Map>())
-            throw Frost_Recoverable_Error{fmt::format(
-                "cli.parse: flag '{}' spec must be a Map", long_name)};
-
-        result.push_back(parse_one_flag(long_name, v_val->raw_get<Map>()));
+        const auto& long_name = require_as<String>(k_val, "flags key");
+        const auto& sub =
+            require_as<Map>(v_val, fmt::format("flag '{}' spec", long_name));
+        result.push_back(parse_one_flag(long_name, sub));
     }
 
     return result;
@@ -125,69 +118,34 @@ Option_Spec parse_one_option(const String& long_name, const Map& sub)
 {
     Option_Spec result;
     result.long_name = long_name;
+    auto ctx = fmt::format("option '{}'", long_name);
 
     for (const auto& [k_val, v_val] : sub)
     {
-        require_string_key(k_val, "option spec");
-        const auto& key = k_val->raw_get<String>();
+        const auto& key = require_as<String>(k_val, "option spec key");
 
         if (key == "short")
-        {
-            if (not v_val->is<String>())
-                throw Frost_Recoverable_Error{fmt::format(
-                    "cli.parse: option '{}': short must be a String",
-                    long_name)};
-            const auto& s = v_val->raw_get<String>();
-            if (s.size() != 1)
-                throw Frost_Recoverable_Error{fmt::format(
-                    "cli.parse: option '{}': short must be a single character",
-                    long_name)};
-            result.short_name = s.at(0);
-        }
+            result.short_name = require_short_char(v_val, ctx);
         else if (key == "required")
-        {
-            if (not v_val->is<Bool>())
-                throw Frost_Recoverable_Error{fmt::format(
-                    "cli.parse: option '{}': required must be a Bool",
-                    long_name)};
-            result.required = v_val->raw_get<Bool>();
-        }
+            result.required =
+                require_as<Bool>(v_val, fmt::format("{}: required", ctx));
         else if (key == "default")
-        {
-            if (not v_val->is<String>())
-                throw Frost_Recoverable_Error{fmt::format(
-                    "cli.parse: option '{}': default must be a String",
-                    long_name)};
-            result.default_value = v_val->raw_get<String>();
-        }
+            result.default_value =
+                require_as<String>(v_val, fmt::format("{}: default", ctx));
         else if (key == "repeatable")
-        {
-            if (not v_val->is<Bool>())
-                throw Frost_Recoverable_Error{fmt::format(
-                    "cli.parse: option '{}': repeatable must be a Bool",
-                    long_name)};
-            result.repeatable = v_val->raw_get<Bool>();
-        }
+            result.repeatable =
+                require_as<Bool>(v_val, fmt::format("{}: repeatable", ctx));
         else if (key == "description")
-        {
-            if (not v_val->is<String>())
-                throw Frost_Recoverable_Error{fmt::format(
-                    "cli.parse: option '{}': description must be a String",
-                    long_name)};
-            result.description = v_val->raw_get<String>();
-        }
+            result.description =
+                require_as<String>(v_val, fmt::format("{}: description", ctx));
         else
-        {
-            throw Frost_Recoverable_Error{fmt::format(
-                "cli.parse: option '{}': unknown key '{}'", long_name, key)};
-        }
+            throw Frost_Recoverable_Error{
+                fmt::format("cli.parse: {}: unknown key '{}'", ctx, key)};
     }
 
-    if (result.required and result.default_value)
+    if (result.required && result.default_value)
         throw Frost_Recoverable_Error{fmt::format(
-            "cli.parse: option '{}': required and default are mutually "
-            "exclusive",
-            long_name)};
+            "cli.parse: {}: required and default are mutually exclusive", ctx)};
 
     return result;
 }
@@ -198,14 +156,10 @@ std::vector<Option_Spec> parse_options(const Map& options_map)
 
     for (const auto& [k_val, v_val] : options_map)
     {
-        require_string_key(k_val, "options");
-        const auto& long_name = k_val->raw_get<String>();
-
-        if (not v_val->is<Map>())
-            throw Frost_Recoverable_Error{fmt::format(
-                "cli.parse: option '{}' spec must be a Map", long_name)};
-
-        result.push_back(parse_one_option(long_name, v_val->raw_get<Map>()));
+        const auto& long_name = require_as<String>(k_val, "options key");
+        const auto& sub =
+            require_as<Map>(v_val, fmt::format("option '{}' spec", long_name));
+        result.push_back(parse_one_option(long_name, sub));
     }
 
     return result;
@@ -224,45 +178,33 @@ std::vector<Positional_Spec> parse_positional(const Value_Ptr& val)
 
     for (const auto& [i, entry] : std::views::enumerate(arr))
     {
-        if (not entry->is<Map>())
-            throw Frost_Recoverable_Error{
-                fmt::format("cli.parse: positional[{}] must be a Map", i)};
+        auto ctx = fmt::format("positional[{}]", i);
+        const auto& entry_map = require_as<Map>(entry, ctx);
 
         Positional_Spec spec;
         bool has_name = false;
 
-        for (const auto& [k_val, v_val] : entry->raw_get<Map>())
+        for (const auto& [k_val, v_val] : entry_map)
         {
-            require_string_key(k_val, "positional spec");
-            const auto& key = k_val->raw_get<String>();
+            const auto& key = require_as<String>(k_val, "positional spec key");
 
             if (key == "name")
             {
-                if (not v_val->is<String>())
-                    throw Frost_Recoverable_Error{fmt::format(
-                        "cli.parse: positional[{}]: name must be a String", i)};
-                spec.name = v_val->raw_get<String>();
+                spec.name =
+                    require_as<String>(v_val, fmt::format("{}: name", ctx));
                 has_name = true;
             }
             else if (key == "description")
-            {
-                if (not v_val->is<String>())
-                    throw Frost_Recoverable_Error{fmt::format(
-                        "cli.parse: positional[{}]: description must be a "
-                        "String",
-                        i)};
-                spec.description = v_val->raw_get<String>();
-            }
+                spec.description = require_as<String>(
+                    v_val, fmt::format("{}: description", ctx));
             else
-            {
-                throw Frost_Recoverable_Error{fmt::format(
-                    "cli.parse: positional[{}]: unknown key '{}'", i, key)};
-            }
+                throw Frost_Recoverable_Error{
+                    fmt::format("cli.parse: {}: unknown key '{}'", ctx, key)};
         }
 
         if (not has_name)
             throw Frost_Recoverable_Error{
-                fmt::format("cli.parse: positional[{}]: name is required", i)};
+                fmt::format("cli.parse: {}: name is required", ctx)};
 
         result.push_back(std::move(spec));
     }
@@ -276,55 +218,28 @@ Cli_Spec parse_spec(const Map& spec_map)
 
     for (const auto& [k_val, v_val] : spec_map)
     {
-        require_string_key(k_val, "spec");
-        const auto& key = k_val->raw_get<String>();
+        const auto& key = require_as<String>(k_val, "spec key");
 
         if (key == "name")
-        {
-            if (not v_val->is<String>())
-                throw Frost_Recoverable_Error{
-                    "cli.parse: name must be a String"};
-            spec.name = v_val->raw_get<String>();
-        }
+            spec.name = require_as<String>(v_val, "name");
         else if (key == "description")
-        {
-            if (not v_val->is<String>())
-                throw Frost_Recoverable_Error{
-                    "cli.parse: description must be a String"};
-            spec.description = v_val->raw_get<String>();
-        }
+            spec.description = require_as<String>(v_val, "description");
         else if (key == "help")
-        {
-            if (not v_val->is<String>())
-                throw Frost_Recoverable_Error{
-                    "cli.parse: help must be a String"};
-            spec.help_text = v_val->raw_get<String>();
-        }
+            spec.help_text = require_as<String>(v_val, "help");
         else if (key == "flags")
-        {
-            if (not v_val->is<Map>())
-                throw Frost_Recoverable_Error{"cli.parse: flags must be a Map"};
-            spec.flags = parse_flags(v_val->raw_get<Map>());
-        }
+            spec.flags = parse_flags(require_as<Map>(v_val, "flags"));
         else if (key == "options")
-        {
-            if (not v_val->is<Map>())
-                throw Frost_Recoverable_Error{
-                    "cli.parse: options must be a Map"};
-            spec.options = parse_options(v_val->raw_get<Map>());
-        }
+            spec.options = parse_options(require_as<Map>(v_val, "options"));
         else if (key == "positional")
         {
-            if (v_val->is<Bool>() and v_val->raw_get<Bool>())
+            if (v_val->is<Bool>() && v_val->raw_get<Bool>())
                 spec.raw_collect_positional = true;
             else
                 spec.positional = parse_positional(v_val);
         }
         else
-        {
             throw Frost_Recoverable_Error{
                 fmt::format("cli.parse: unknown spec key '{}'", key)};
-        }
     }
 
     return spec;
@@ -386,15 +301,10 @@ String generate_help(const Cli_Spec& spec, const String& tool_name);
 Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
                      const String& tool_name)
 {
-    // State is pre-populated with every declared flag/option so later
-    // lookups are safe.
-    std::map<String, bool> flag_values;
-    for (const auto& f : spec.flags)
-        flag_values.emplace(f.long_name, false);
-
-    std::map<String, std::vector<String>> option_values;
-    for (const auto& o : spec.options)
-        option_values.emplace(o.long_name, std::vector<String>{});
+    // Parse state: vectors indexed parallel to spec.flags and
+    // spec.options, so lookup tables can feed their indices directly in.
+    std::vector<bool> flag_values(spec.flags.size(), false);
+    std::vector<std::vector<String>> option_values(spec.options.size());
 
     std::vector<String> positionals;
     bool past_double_dash = false;
@@ -431,72 +341,72 @@ Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
             auto fit = spec.long_to_flag.find(name);
             if (fit != spec.long_to_flag.end())
             {
-                flag_values.at(name) = true;
+                flag_values.at(fit->second) = true;
                 continue;
             }
 
             auto oit = spec.long_to_option.find(name);
             if (oit != spec.long_to_option.end())
             {
+                const auto& opt = spec.options.at(oit->second);
+                auto& vals = option_values.at(oit->second);
                 if (i + 1 >= args.size())
                     err(fmt::format("option '--{}' requires a value", name));
                 ++i;
-                const auto& val = args.at(i)->raw_get<String>();
-                auto& vals = option_values.at(name);
-                if (not vals.empty()
-                    and not spec.options.at(oit->second).repeatable)
+                if (not vals.empty() && not opt.repeatable)
                     err(fmt::format("option '--{}' cannot be repeated", name));
-                vals.push_back(val);
+                vals.push_back(args.at(i)->raw_get<String>());
                 continue;
             }
 
             err(fmt::format("unknown option '--{}'", name));
         }
-
-        // Short form: -abc
-        // Index loop because a value-taking option must be the last char
-        // in the bundle, and we need the position to enforce that.
-        for (std::size_t j = 1; j < arg.size(); ++j)
+        else
         {
-            char c = arg.at(j);
-
-            auto fit = spec.short_to_flag.find(c);
-            if (fit != spec.short_to_flag.end())
+            // Short form: -abc
+            // Index loop because a value-taking option must be the last char
+            // in the bundle, and we need the position to enforce that.
+            for (std::size_t j = 1; j < arg.size(); ++j)
             {
-                flag_values.at(spec.flags.at(fit->second).long_name) = true;
-                continue;
-            }
+                char c = arg.at(j);
 
-            auto oit = spec.short_to_option.find(c);
-            if (oit != spec.short_to_option.end())
-            {
-                // Value-taking option must be the last char in a bundle.
-                if (j + 1 < arg.size())
-                    err(fmt::format(
-                        "option '-{}' takes a value and must be the last "
-                        "option in a bundle",
-                        c));
-                const auto& opt_name = spec.options.at(oit->second).long_name;
-                if (i + 1 >= args.size())
-                    err(fmt::format("option '-{}' requires a value", c));
-                ++i;
-                const auto& val = args.at(i)->raw_get<String>();
-                auto& vals = option_values.at(opt_name);
-                if (not vals.empty()
-                    and not spec.options.at(oit->second).repeatable)
-                    err(fmt::format("option '-{}' cannot be repeated", c));
-                vals.push_back(val);
-                break; // value-taking option ends the bundle
-            }
+                auto fit = spec.short_to_flag.find(c);
+                if (fit != spec.short_to_flag.end())
+                {
+                    flag_values.at(fit->second) = true;
+                    continue;
+                }
 
-            err(fmt::format("unknown option '-{}'", c));
+                auto oit = spec.short_to_option.find(c);
+                if (oit != spec.short_to_option.end())
+                {
+                    // Value-taking option must be the last char in a bundle.
+                    if (j + 1 < arg.size())
+                        err(fmt::format(
+                            "option '-{}' takes a value and must be the last "
+                            "option in a bundle",
+                            c));
+                    const auto& opt = spec.options.at(oit->second);
+                    auto& vals = option_values.at(oit->second);
+                    if (i + 1 >= args.size())
+                        err(fmt::format("option '-{}' requires a value", c));
+                    ++i;
+                    if (not vals.empty() && not opt.repeatable)
+                        err(fmt::format("option '-{}' cannot be repeated", c));
+                    vals.push_back(args.at(i)->raw_get<String>());
+                    break; // value-taking option ends the bundle
+                }
+
+                err(fmt::format("unknown option '-{}'", c));
+            }
         }
     }
 
     // Post-walk: check required options and apply defaults
-    for (const auto& o : spec.options)
+    for (std::size_t idx = 0; idx < spec.options.size(); ++idx)
     {
-        auto& vals = option_values.at(o.long_name);
+        const auto& o = spec.options.at(idx);
+        auto& vals = option_values.at(idx);
         if (vals.empty())
         {
             if (o.required)
@@ -506,14 +416,12 @@ Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
         }
     }
 
-    // Check positional counts
-    if (spec.raw_collect_positional)
+    // Check positional counts (skipped in raw-collect mode).
+    if (not spec.raw_collect_positional
+        && positionals.size()
+        != spec.positional.size())
     {
-        // Raw collect mode -- no validation
-    }
-    else if (positionals.size() != spec.positional.size())
-    {
-        if (spec.positional.empty() and not positionals.empty())
+        if (spec.positional.empty())
             err(fmt::format("unexpected positional argument: '{}'",
                             positionals.at(0)));
         else
@@ -525,15 +433,15 @@ Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
 
     // Flags sub-map
     Map flags_map;
-    for (const auto& [name, was_set] : flag_values)
-        flags_map.insert_or_assign(Value::create(String{name}),
-                                   Value::create(Bool{was_set}));
+    for (std::size_t idx = 0; idx < spec.flags.size(); ++idx)
+        flags_map.insert_or_assign(
+            Value::create(String{spec.flags.at(idx).long_name}),
+            Value::create(Bool{flag_values.at(idx)}));
 
     // Options sub-map
     Map options_map;
-    for (const auto& o : spec.options)
+    for (const auto& [o, vals] : std::views::zip(spec.options, option_values))
     {
-        const auto& vals = option_values.at(o.long_name);
         auto key = Value::create(String{o.long_name});
 
         if (o.repeatable)
@@ -585,7 +493,7 @@ String generate_help(const Cli_Spec& spec, const String& tool_name)
 
     // Usage line
     out += fmt::format("Usage: {}", tool_name);
-    if (not spec.flags.empty() or not spec.options.empty())
+    if (not spec.flags.empty() || not spec.options.empty())
         out += " [options]";
     if (spec.raw_collect_positional)
     {
@@ -602,7 +510,7 @@ String generate_help(const Cli_Spec& spec, const String& tool_name)
         out += fmt::format("\n{}\n", spec.description.value());
 
     // Options section
-    if (not spec.flags.empty() or not spec.options.empty())
+    if (not spec.flags.empty() || not spec.options.empty())
     {
         out += "\nOptions:\n";
 

@@ -221,6 +221,7 @@ TEST_CASE("register_stdlib populates all standard modules", "")
     register_stdlib(builder);
     auto registry = std::move(builder).build();
 
+    CHECK(registry.lookup_module("std.cli").has_value());
     CHECK(registry.lookup_module("std.encoding").has_value());
     CHECK(registry.lookup_module("std.fs").has_value());
     CHECK(registry.lookup_module("std.io").has_value());
@@ -234,7 +235,7 @@ TEST_CASE("register_stdlib populates all standard modules", "")
     auto std_ns = registry.lookup_module("std");
     REQUIRE(std_ns.has_value());
     REQUIRE(std_ns.value()->is<Map>());
-    CHECK(std_ns.value()->raw_get<Map>().size() == 8);
+    CHECK(std_ns.value()->raw_get<Map>().size() == 9);
 }
 
 TEST_CASE("register_stdlib deep path into encoding.b64")
