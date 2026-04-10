@@ -25,7 +25,6 @@ target_link_libraries( frost
     frost-meta
     frost-ext
     frost-common
-    lyra
     replxx::replxx
 )
 

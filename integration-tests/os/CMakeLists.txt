@@ -27,5 +27,5 @@ endforeach()
 add_test(
     NAME Frost_Integration_OS_run-signals
     COMMAND $<TARGET_FILE:frost> "${OS_TEST_DIR}/run-signals.frst"
-            -- $<TARGET_FILE:crash-after-flush> $<TARGET_FILE:sigpipe-self>
+            $<TARGET_FILE:crash-after-flush> $<TARGET_FILE:sigpipe-self>
 )

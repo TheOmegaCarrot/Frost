@@ -23,7 +23,6 @@ include(CPM)
 include(get-lexy)
 include(get-fmt)
 include(get-replxx)
-include(lyra)
 include(cppcodec)
 include(clang-tidy-targets)
 

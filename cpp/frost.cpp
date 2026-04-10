@@ -11,7 +11,6 @@
 #include <frost/value.hpp>
 
 #include <fmt/format.h>
-#include <lyra/lyra.hpp>
 
 #include <iostream>
 #include <optional>
@@ -57,93 +56,109 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
     }
 }
 
+constexpr std::string_view HELP_TEXT = R"(Usage: frost [options] [file [args...]]
+
+Run a Frost script, or start the REPL with no arguments.
+
+Options:
+  -h, --help             Show this help message and exit
+      --version          Show version and exit
+  -d, --dump             Dump the AST instead of executing
+  -i, --interactive      Start the REPL after any -e or file
+      --no-prelude       Skip loading the prelude
+      --enable-backtrace Enable backtrace on error
+  -e, --eval <code>      Evaluate a snippet of Frost code (repeatable)
+
+Driver options end at the first non-flag argument (the script file)
+or an explicit `--` terminator. Everything after passes through to
+the script verbatim as `args`.
+)";
+
 void repl(frst::Symbol_Table& symbols);
 int main(int argc, const char** argv)
 {
-    const std::span args{argv, argv + argc};
+    const std::span argv_span{argv, argv + argc};
     std::vector<std::string> strings_to_evaluate;
     std::optional<std::filesystem::path> file_to_evaluate;
     std::vector<std::string> args_for_frost;
     bool skip_prelude = false;
     bool do_repl = false;
     bool do_dump = false;
-    bool show_help = false;
-    bool show_version = false;
     bool do_backtrace = false;
 
-    if (argc == 1)
-        do_repl = true;
-
-    std::vector<std::string> pre_args;
-    std::vector<std::string> post_args;
-    bool after_double_dash = false;
-
-    for (const auto& arg : args | std::views::drop(1))
+    // Parse driver flags in a single pass.
+    //
+    // Driver flags are everything up to:
+    //   - the first non-flag argument (the script file), OR
+    //   - an explicit `--` terminator.
+    //
+    // Everything after that point (including the script file itself)
+    // passes through to the script verbatim -- so a script can freely
+    // use any flag name without the driver stealing it.
+    std::size_t i = 1;
+    while (i < argv_span.size())
     {
-        if (!after_double_dash && arg == "--"sv)
+        std::string_view arg = argv_span[i];
+
+        if (arg == "--")
         {
-            after_double_dash = true;
-            continue;
+            ++i; // swallow the terminator
+            break;
         }
 
-        if (after_double_dash)
-            post_args.emplace_back(arg);
+        if (not arg.starts_with('-') || arg == "-")
+            break; // first non-flag: start of script args
+
+        auto take_value = [&](std::string_view name) -> std::string_view {
+            if (i + 1 >= argv_span.size())
+            {
+                fmt::println(stderr, "frost: option '{}' requires a value",
+                             name);
+                std::exit(1);
+            }
+            return argv_span[++i];
+        };
+
+        if (arg == "-h" || arg == "--help" || arg == "-?")
+        {
+            fmt::print("{}", HELP_TEXT);
+            return 0;
+        }
+        else if (arg == "--version")
+        {
+            fmt::println("frost {}", FROST_VERSION);
+            return 0;
+        }
+        else if (arg == "-d" || arg == "--dump")
+            do_dump = true;
+        else if (arg == "-i" || arg == "--interactive")
+            do_repl = true;
+        else if (arg == "--no-prelude")
+            skip_prelude = true;
+        else if (arg == "--enable-backtrace")
+            do_backtrace = true;
+        else if (arg == "-e" || arg == "--eval")
+            strings_to_evaluate.emplace_back(take_value(arg));
         else
-            pre_args.emplace_back(arg);
+        {
+            fmt::println(stderr, "frost: unknown option '{}'", arg);
+            return 1;
+        }
+
+        ++i;
     }
 
-    std::string file_arg;
-    std::vector<std::string> extra_args;
+    // Everything else is script args, verbatim.
+    std::vector<std::string> script_args(std::from_range,
+                                         argv_span | std::views::drop(i));
 
-    auto cli = lyra::cli()
-               | lyra::help(show_help)
-               | lyra::opt(show_version)["--version"]("Show version and exit.")
-               | lyra::opt(do_dump)["-d"]["--dump"](
-                   "Dump the AST instead of executing.")
-               | lyra::opt(do_repl)["-i"]["--interactive"]("Start the REPL.")
-               | lyra::opt(skip_prelude)["--no-prelude"]("Skip prelude")
-               | lyra::opt(do_backtrace)["--enable-backtrace"](
-                   "Enable backtrace on error")
-               | lyra::opt(strings_to_evaluate, "code")["-e"]["--eval"](
-                   "Evaluate a snippet of Frost code.")
-               | lyra::arg(file_arg, "file")("File to execute.").optional()
-               | lyra::arg(extra_args,
-                           "args")("Arguments passed to the Frost program.");
+    // When `-e` is used, the code provided via -e is the entry point and
+    // script_args are pure pass-through arguments. Otherwise, the first
+    // script arg (if any) is the file to run.
+    if (strings_to_evaluate.empty() && not script_args.empty())
+        file_to_evaluate.emplace(script_args.front());
 
-    std::vector<const char*> parse_argv;
-    parse_argv.reserve(pre_args.size() + 1);
-    parse_argv.push_back(args.front());
-    parse_argv.append_range(
-        std::views::transform(pre_args, &std::string::c_str));
-
-    auto result =
-        cli.parse({static_cast<int>(parse_argv.size()), parse_argv.data()});
-    if (!result)
-    {
-        fmt::println(stderr, "{}", result.message());
-        return 1;
-    }
-
-    if (show_help)
-    {
-        std::cerr << cli;
-        return 0;
-    }
-
-    if (show_version)
-    {
-        fmt::println("frost {}", FROST_VERSION);
-        return 0;
-    }
-
-    if (!file_arg.empty())
-    {
-        file_to_evaluate.emplace(file_arg);
-        args_for_frost.emplace_back(std::move(file_arg));
-    }
-
-    args_for_frost.append_range(extra_args);
-    args_for_frost.append_range(post_args);
+    args_for_frost = std::move(script_args);
 
     if (do_dump && do_repl)
     {

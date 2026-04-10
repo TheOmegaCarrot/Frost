@@ -41,7 +41,7 @@ foreach(module ${FROST_SCRIPTS_SOLUTIONS})
         NAME Frost_Integration_FrostScripts_${name}
         COMMAND $<TARGET_FILE:frost>
                 "${FROST_SCRIPTS_TEST_DIR}/import-runner.frst"
-                -- ${module}
+                ${module}
     )
     set_tests_properties(
         Frost_Integration_FrostScripts_${name}
