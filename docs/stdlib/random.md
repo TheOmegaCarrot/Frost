@@ -1,0 +1,179 @@
+# Random
+
+```frost
+def random = import('std.random')
+```
+
+Pseudo-random number generation, sampling, and shuffling.
+
+> **Not for cryptography.** `std.random` is designed for simulation, sampling, and games.
+> Its output is fully predictable from a seed value, which is the **opposite** of what
+> security-sensitive code requires. Do **not** use `std.random` for tokens, keys,
+> initialization vectors, salts, passwords, or anything else where predictability would be
+> a vulnerability. Cryptographic randomness belongs in `ext.hash`.
+
+## Engines
+
+`std.random` exposes randomness via **engines** — Map "closure bundles" that hold a private
+random state and expose draw methods. Each call advances the engine's internal state.
+
+There are two ways to obtain an engine:
+
+| Engine | Description |
+|---|---|
+| `random.rng` | A default engine, seeded from the operating system at startup. Use this when you don't care about reproducibility. |
+| `random.seed(n)` | A fresh engine seeded with the integer `n`. Same `n` always produces the same sequence. Use this for reproducible tests, replays, and simulations. |
+
+```frost
+def random = import('std.random')
+
+# Convenient default
+def roll = random.rng.int(1, 6)
+
+# Reproducible
+def rng = random.seed(42)
+def first = rng.int(1, 6)
+def second = rng.int(1, 6)
+```
+
+The import system allows for some more convenient forms:
+
+```frost
+def rng = import('std.random.rng')
+def first = rng.int(1, 5) # OS-seeded
+```
+
+```frost
+def rng = import('std.random').seed(1234)
+def first = rng.int(1, 5) # reproducible
+```
+
+Engines are stateful. Two references to the same engine share state — binding an engine
+to a new name does not fork it.
+
+```frost
+def a = random.seed(42)
+def b = a               # same engine, not a copy
+a.int(0, 100)           # advances the engine
+b.int(0, 100)           # sees the *next* draw, not a fresh start
+```
+
+Each call to `random.seed(n)` returns an *independent* engine, even with the same seed.
+
+```frost
+def x = random.seed(42)
+def y = random.seed(42) # different engine, same starting state
+x.int(0, 100) == y.int(0, 100)   # true -- both at their first draw
+```
+
+The draw methods are documented below as `rng.METHOD` since `random.rng` is the most common
+access path.
+
+## `seed`
+`seed(n)`
+
+Returns a new engine seeded with the `Int` value `n`.
+Two engines created with the same seed produce identical sequences across all methods,
+including the collection operations.
+
+```frost
+def a = random.seed(2024)
+def b = random.seed(2024)
+a.int(1, 100) == b.int(1, 100)                  # true
+a.shuffle([1, 2, 3]) == b.shuffle([1, 2, 3])    # true
+```
+
+Any `Int` is a valid seed, including `0` and negative values.
+
+Seeded engines are well-suited for reproducible test fixtures, deterministic simulations,
+and replaying scenarios with known seeds.
+
+## `rng`
+
+A default engine pre-seeded from the operating system at startup.
+Use this for casual non-reproducible randomness.
+
+```frost
+random.rng.int(1, 6)
+random.rng.choice(['a', 'b', 'c'])
+```
+
+## `rng.int`
+`rng.int(low, high)`
+
+Returns a uniformly-distributed `Int` in `[low, high]` — inclusive on both ends.
+Errors if `low > high`.
+`low == high` is allowed and always returns that value.
+
+```frost
+def rng = random.seed(0)
+rng.int(1, 6)        # 1 through 6 inclusive
+rng.int(-10, 10)     # any int in [-10, 10]
+rng.int(5, 5)        # always 5
+```
+
+## `rng.float`
+`rng.float(low, high)`
+
+Returns a uniformly-distributed `Float` in `[low, high]`.
+Errors if `low > high`.
+`low == high` is allowed and always returns that value.
+
+```frost
+random.rng.float(0.0, 1.0)
+random.rng.float(-1.0, 1.0)
+```
+
+## `rng.bool`
+`rng.bool()`
+`rng.bool(probability)`
+
+Returns a `Bool`.
+
+Without arguments, behaves like a fair coin: each result is `true` half the time.
+
+With a `Float` `probability` in `[0.0, 1.0]`, returns `true` with that probability and
+`false` otherwise.
+Errors if `probability` is outside `[0.0, 1.0]`.
+
+```frost
+random.rng.bool()        # 50/50
+random.rng.bool(0.7)     # 70% true
+random.rng.bool(0.0)     # always false
+random.rng.bool(1.0)     # always true
+```
+
+## `rng.choice`
+`rng.choice(arr)`
+
+Returns one uniformly-randomly-selected element from the `Array` `arr`.
+Errors if `arr` is empty.
+
+```frost
+random.rng.choice(['rock', 'paper', 'scissors'])
+random.rng.choice([1, 2, 3, 4, 5])
+```
+
+## `rng.sample`
+`rng.sample(arr, n)`
+
+Returns a new `Array` containing `n` distinct elements drawn from `arr` without replacement.
+Errors if `n` is negative or greater than `len(arr)`.
+`n == 0` returns an empty array; `n == len(arr)` returns a permutation of the input.
+
+```frost
+def deck = range(52)
+def hand = random.rng.sample(deck, 5)   # 5 distinct cards
+```
+
+## `rng.shuffle`
+`rng.shuffle(arr)`
+
+Returns a new `Array` containing the same elements as `arr` in a uniformly-random order.
+The input is not modified.
+
+```frost
+def deck = random.rng.shuffle(range(52))
+random.rng.shuffle(['a', 'b', 'c'])
+```
+

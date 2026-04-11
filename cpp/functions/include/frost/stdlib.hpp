@@ -51,6 +51,7 @@ class Stdlib_Registry
     X(json)                                                                    \
     X(math)                                                                    \
     X(os)                                                                      \
+    X(random)                                                                  \
     X(regex)
 
 #define X(module) void register_module_##module(Stdlib_Registry_Builder&);

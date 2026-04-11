@@ -23,6 +23,7 @@ add_library( frost-functions
     stdlib/json.cpp
     stdlib/math.cpp
     stdlib/os.cpp
+    stdlib/random.cpp
     stdlib/regex.cpp
 )
 
@@ -84,6 +85,7 @@ set(FUNCTIONS_STDLIB_TEST_FILES
     json
     math
     os
+    random
     regex
 )
 

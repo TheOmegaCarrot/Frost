@@ -47,6 +47,7 @@ Built-in modules accessed via `import`.
 | [JSON](./json.md)                | `import('std.json')`         | Encoding and decoding JSON               |
 | [Math](./math.md)                | `import('std.math')`         | Arithmetic, rounding, logarithms, trig   |
 | [OS](./os.md)                    | `import('std.os')`           | Environment variables, process control   |
+| [Random](./random.md)            | `import('std.random')`       | Pseudo-random numbers, shuffling |
 | [Regex](./regex.md)              | `import('std.regex')`        | Pattern matching, searching, replacement |
 
 ## Extensions

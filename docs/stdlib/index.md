@@ -188,6 +188,14 @@ Each entry links to its full documentation.
 - [plus](operators.md#plus)
 - [pretty](types.md#pretty)
 - [print](output.md#print)
+- [random.rng](random.md#rng) · `std.random`
+- [random.rng.bool](random.md#rngbool) · `std.random`
+- [random.rng.choice](random.md#rngchoice) · `std.random`
+- [random.rng.float](random.md#rngfloat) · `std.random`
+- [random.rng.int](random.md#rngint) · `std.random`
+- [random.rng.sample](random.md#rngsample) · `std.random`
+- [random.rng.shuffle](random.md#rngshuffle) · `std.random`
+- [random.seed](random.md#seed) · `std.random`
 - [range](collections.md#range)
 - [read_value](types.md#read_value)
 - [regex.contains](regex.md#contains) · `std.regex`
