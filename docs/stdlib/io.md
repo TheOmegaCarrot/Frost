@@ -103,23 +103,23 @@ Streams are automatically closed once there is no reference to them.
 `open_read(path)`
 
 Opens the file at `path` for reading.
-Returns `null` if the file cannot be opened.
 Returns a [Reader](#reader) with full support for all reader methods.
+Produces an error if the file cannot be opened.
 
 ## `open_trunc`
 `open_trunc(path)`
 
 Opens the file at `path` for writing, truncating it if it exists and creating it if it does not.
-Returns `null` if the file cannot be opened.
 Returns a [Writer](#writer) with full support for all writer methods.
+Produces an error if the file cannot be opened.
 
 ## `open_append`
 `open_append(path)`
 
 Opens the file at `path` for appending.
 New writes are added after existing content.
-Returns `null` if the file cannot be opened.
 Returns a [Writer](#writer) with full support for all writer methods.
+Produces an error if the file cannot be opened.
 
 ## `stringreader`
 `stringreader(s)`

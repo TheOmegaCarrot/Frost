@@ -241,11 +241,16 @@ TEST_CASE("std.io open_trunc")
                                             && ContainsSubstring("path")));
     }
 
-    SECTION("Open failure returns null")
+    SECTION("Open failure throws an error identifying the path")
     {
+        // Opening a directory for writing must fail. The error should name
+        // the path so the caller knows which target failed.
         auto dir = make_test_dir("std_io_open_trunc_fail");
-        auto result = open_trunc_fn->call({Value::create(dir.string())});
-        CHECK(result->is<Null>());
+        CHECK_THROWS_MATCHES(
+            open_trunc_fn->call({Value::create(dir.string())}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("Failed to open")
+                           && ContainsSubstring(dir.string())));
     }
 
     SECTION("Write then read")
@@ -288,6 +293,40 @@ TEST_CASE("std.io open_trunc")
         REQUIRE(read_value->is<String>());
         CHECK(read_value->get<String>() == "aZc");
     }
+
+    SECTION("Truncates existing content")
+    {
+        // Re-opening an existing file with open_trunc must discard its prior
+        // contents. If truncation were skipped, the new short write would leave
+        // the tail of the old long write visible.
+        auto dir = make_test_dir("std_io_open_trunc_truncates");
+        auto path = unique_path(dir, "trunc");
+
+        // Seed the file with long content.
+        auto first =
+            open_trunc_fn->call({Value::create(path.string())});
+        auto first_write = get_map_fn(first, "write");
+        auto first_close = get_map_fn(first, "close");
+        first_write->call(
+            {Value::create("original long content that should be gone"s)});
+        first_close->call({});
+
+        // Re-open the same path with open_trunc and write something shorter.
+        auto second =
+            open_trunc_fn->call({Value::create(path.string())});
+        auto second_write = get_map_fn(second, "write");
+        auto second_close = get_map_fn(second, "close");
+        second_write->call({Value::create("new"s)});
+        second_close->call({});
+
+        // The result must be exactly "new" -- no trailing bytes from the
+        // original content.
+        auto reader = open_read_fn->call({Value::create(path.string())});
+        auto read_rest = get_map_fn(reader, "read_rest");
+        auto read_value = read_rest->call({});
+        REQUIRE(read_value->is<String>());
+        CHECK(read_value->get<String>() == "new");
+    }
 }
 
 TEST_CASE("std.io open_append")
@@ -309,6 +348,18 @@ TEST_CASE("std.io open_append")
                                             && ContainsSubstring("String")
                                             && ContainsSubstring("Int")
                                             && ContainsSubstring("path")));
+    }
+
+    SECTION("Open failure throws an error identifying the path")
+    {
+        // Opening a directory for writing must fail. The error should name
+        // the path so the caller knows which target failed.
+        auto dir = make_test_dir("std_io_open_append_fail");
+        CHECK_THROWS_MATCHES(
+            open_append_fn->call({Value::create(dir.string())}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("Failed to open")
+                           && ContainsSubstring(dir.string())));
     }
 
     SECTION("Append writes after existing content")
@@ -358,10 +409,18 @@ TEST_CASE("std.io open_read")
                                             && ContainsSubstring("path")));
     }
 
-    SECTION("Open failure returns null")
+    SECTION("Open failure throws an error identifying the path")
     {
-        auto result = open_read_fn->call({Value::create("nope.txt"s)});
-        CHECK(result->is<Null>());
+        // Reading a nonexistent path must fail. The error should name
+        // the path so the caller knows which target failed.
+        const std::string missing =
+            "./build/streams/definitely_nonexistent.txt";
+        std::filesystem::remove(missing);
+        CHECK_THROWS_MATCHES(
+            open_read_fn->call({Value::create(String{missing})}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("Failed to open")
+                           && ContainsSubstring(missing)));
     }
 
     SECTION("Read and eof")
