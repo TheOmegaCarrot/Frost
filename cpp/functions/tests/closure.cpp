@@ -129,16 +129,6 @@ std::shared_ptr<std::vector<Statement::Ptr>> make_body(
     return std::make_shared<std::vector<Statement::Ptr>>(std::move(body));
 }
 
-std::shared_ptr<Closure> make_literal_closure(Value_Ptr value)
-{
-    Symbol_Table captures;
-    std::vector<Statement::Ptr> body;
-    auto body_ptr = make_body(std::move(body));
-    return Closure::create(std::vector<std::string>{}, body_ptr,
-                           expr<Literal>(AST_Node::no_range, value), captures,
-                           0);
-}
-
 std::pair<std::string, std::string> split_header_body(const std::string& dump)
 {
     const auto pos = dump.find('\n');

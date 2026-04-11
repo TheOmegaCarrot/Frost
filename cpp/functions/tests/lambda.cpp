@@ -906,7 +906,7 @@ TEST_CASE("Lambda")
 
         std::vector<AST_Node::Symbol_Action> seq{
             AST_Node::Usage{"a"},
-            AST_Node::Definition{"b"},
+            AST_Node::Definition{.name = "b", .exported = false},
             AST_Node::Usage{"b"},
             AST_Node::Usage{"c"},
         };
