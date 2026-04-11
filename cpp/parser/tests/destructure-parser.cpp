@@ -238,9 +238,9 @@ TEST_CASE("Parser Destructure Source Ranges")
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
-        auto leaves = find_nodes(program[0], "Destructure_Leaf");
-        REQUIRE(leaves.size() == 1);
-        auto range = leaves[0]->source_range();
+        auto bindings = find_nodes(program[0], "Destructure_Binding");
+        REQUIRE(bindings.size() == 1);
+        auto range = bindings[0]->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 5);
         CHECK(range.end.line == 1);
@@ -309,7 +309,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         CHECK(inner.end.column == 14);
     }
 
-    SECTION("Nested leaf ranges in array")
+    SECTION("Nested binding ranges in array")
     {
         // "def [a, [b, c]] = x"
         //      ^   ^   ^
@@ -319,12 +319,12 @@ TEST_CASE("Parser Destructure Source Ranges")
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
-        auto leaves = find_nodes(program[0], "Destructure_Leaf");
-        REQUIRE(leaves.size() == 3);
+        auto bindings = find_nodes(program[0], "Destructure_Binding");
+        REQUIRE(bindings.size() == 3);
 
-        CHECK(leaves[0]->source_range().begin.column == 6);
-        CHECK(leaves[1]->source_range().begin.column == 10);
-        CHECK(leaves[2]->source_range().begin.column == 13);
+        CHECK(bindings[0]->source_range().begin.column == 6);
+        CHECK(bindings[1]->source_range().begin.column == 10);
+        CHECK(bindings[2]->source_range().begin.column == 13);
     }
 
     SECTION("Map inside array range")
@@ -373,7 +373,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         CHECK(arrays[0]->source_range().end.column == 16);
     }
 
-    SECTION("Map shorthand leaf gets identifier range")
+    SECTION("Map shorthand binding gets identifier range")
     {
         // "def {foo} = x"
         //       ^
@@ -383,14 +383,14 @@ TEST_CASE("Parser Destructure Source Ranges")
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
-        auto leaves = find_nodes(program[0], "Destructure_Leaf");
-        REQUIRE(leaves.size() == 1);
-        auto range = leaves[0]->source_range();
+        auto bindings = find_nodes(program[0], "Destructure_Binding");
+        REQUIRE(bindings.size() == 1);
+        auto range = bindings[0]->source_range();
         CHECK(range.begin.column == 6);
         CHECK(range.end.column == 8);
     }
 
-    SECTION("Map explicit binding leaf gets pattern range")
+    SECTION("Map explicit binding gets pattern range")
     {
         // "def {foo: bar} = x"
         //            ^
@@ -400,9 +400,9 @@ TEST_CASE("Parser Destructure Source Ranges")
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
-        auto leaves = find_nodes(program[0], "Destructure_Leaf");
-        REQUIRE(leaves.size() == 1);
-        auto range = leaves[0]->source_range();
+        auto bindings = find_nodes(program[0], "Destructure_Binding");
+        REQUIRE(bindings.size() == 1);
+        auto range = bindings[0]->source_range();
         CHECK(range.begin.column == 11);
         CHECK(range.end.column == 13);
     }

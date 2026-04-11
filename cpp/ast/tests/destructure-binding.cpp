@@ -6,7 +6,7 @@
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
-#include <frost/ast/destructure-leaf.hpp>
+#include <frost/ast/destructure-binding.hpp>
 #include <frost/value.hpp>
 
 #include <ranges>
@@ -18,7 +18,7 @@ using namespace std::literals;
 
 using trompeloeil::_;
 
-TEST_CASE("Destructure_Leaf")
+TEST_CASE("Destructure_Binding")
 {
     SECTION("Binds name to value")
     {
@@ -26,11 +26,11 @@ TEST_CASE("Destructure_Leaf")
         Execution_Context ctx{.symbols = syms};
 
         auto val = Value::create(42_f);
-        Destructure_Leaf leaf{AST_Node::no_range, "x", false};
+        Destructure_Binding binding{AST_Node::no_range, "x", false};
 
         REQUIRE_CALL(syms, define("x", val));
 
-        leaf.destructure(ctx, val);
+        binding.destructure(ctx, val);
     }
 
     SECTION("Discard _ does not define")
@@ -40,8 +40,8 @@ TEST_CASE("Destructure_Leaf")
 
         FORBID_CALL(syms, define(_, _));
 
-        Destructure_Leaf leaf{AST_Node::no_range, std::nullopt, false};
-        leaf.destructure(ctx, Value::create(42_f));
+        Destructure_Binding binding{AST_Node::no_range, std::nullopt, false};
+        binding.destructure(ctx, Value::create(42_f));
     }
 
     SECTION("Works with various value types")
@@ -60,8 +60,8 @@ TEST_CASE("Destructure_Leaf")
 
             REQUIRE_CALL(syms, define("v", val));
 
-            Destructure_Leaf leaf{AST_Node::no_range, "v", false};
-            leaf.destructure(ctx, val);
+            Destructure_Binding binding{AST_Node::no_range, "v", false};
+            binding.destructure(ctx, val);
         }
     }
 
@@ -74,15 +74,16 @@ TEST_CASE("Destructure_Leaf")
 
         REQUIRE_CALL(syms, define("x", val));
 
-        Destructure_Leaf leaf{AST_Node::no_range, "x", true};
-        leaf.destructure(ctx, val);
+        Destructure_Binding binding{AST_Node::no_range, "x", true};
+        binding.destructure(ctx, val);
     }
 
     SECTION("symbol_sequence: normal name, not exported")
     {
-        Destructure_Leaf leaf{AST_Node::no_range, "foo", false};
+        Destructure_Binding binding{AST_Node::no_range, "foo", false};
 
-        auto actions = leaf.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions =
+            binding.symbol_sequence() | std::ranges::to<std::vector>();
         REQUIRE(actions.size() == 1);
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
@@ -92,9 +93,10 @@ TEST_CASE("Destructure_Leaf")
 
     SECTION("symbol_sequence: normal name, exported")
     {
-        Destructure_Leaf leaf{AST_Node::no_range, "bar", true};
+        Destructure_Binding binding{AST_Node::no_range, "bar", true};
 
-        auto actions = leaf.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions =
+            binding.symbol_sequence() | std::ranges::to<std::vector>();
         REQUIRE(actions.size() == 1);
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
@@ -104,15 +106,16 @@ TEST_CASE("Destructure_Leaf")
 
     SECTION("symbol_sequence: discard _ yields nothing")
     {
-        Destructure_Leaf leaf{AST_Node::no_range, std::nullopt, false};
+        Destructure_Binding binding{AST_Node::no_range, std::nullopt, false};
 
-        auto actions = leaf.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions =
+            binding.symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
     }
 
     SECTION("Empty name is rejected")
     {
-        CHECK_THROWS_AS(Destructure_Leaf(AST_Node::no_range, "", false),
+        CHECK_THROWS_AS(Destructure_Binding(AST_Node::no_range, "", false),
                         Frost_Interpreter_Error);
     }
 
@@ -123,19 +126,20 @@ TEST_CASE("Destructure_Leaf")
 
         FORBID_CALL(syms, define(_, _));
 
-        Destructure_Leaf leaf{AST_Node::no_range, std::nullopt, true};
-        leaf.destructure(ctx, Value::create(42_f));
+        Destructure_Binding binding{AST_Node::no_range, std::nullopt, true};
+        binding.destructure(ctx, Value::create(42_f));
 
-        auto actions = leaf.symbol_sequence() | std::ranges::to<std::vector>();
+        auto actions =
+            binding.symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
     }
 
     SECTION("node_label")
     {
-        Destructure_Leaf leaf{AST_Node::no_range, "myvar", false};
-        CHECK(leaf.node_label() == "Destructure_Leaf(myvar)");
+        Destructure_Binding binding{AST_Node::no_range, "myvar", false};
+        CHECK(binding.node_label() == "Destructure_Binding(myvar)");
 
-        Destructure_Leaf discard{AST_Node::no_range, std::nullopt, false};
-        CHECK(discard.node_label() == "Destructure_Leaf(discarded)");
+        Destructure_Binding discard{AST_Node::no_range, std::nullopt, false};
+        CHECK(discard.node_label() == "Destructure_Binding(discarded)");
     }
 }

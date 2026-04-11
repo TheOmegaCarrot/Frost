@@ -1,5 +1,5 @@
-#ifndef FROST_AST_MATCH_LEAF_HPP
-#define FROST_AST_MATCH_LEAF_HPP
+#ifndef FROST_AST_MATCH_BINDING_HPP
+#define FROST_AST_MATCH_BINDING_HPP
 
 #include <frost/ast/match-pattern.hpp>
 
@@ -14,7 +14,7 @@ namespace frst::ast
 //     to_string(Type_Constraint::Float) == "Float"
 //     from_string("Float")               == Type_Constraint::Float
 //
-// `Unconstrained` is the sentinel for a leaf with no `is TYPE` clause; it
+// `Unconstrained` is the sentinel for a binding with no `is TYPE` clause; it
 // has no user-facing surface syntax.
 #define X_TYPE_CONSTRAINTS                                                     \
     X(Null)                                                                    \
@@ -114,27 +114,27 @@ struct fmt::formatter<frst::ast::Type_Constraint>
 
 namespace frst::ast
 {
-class Match_Leaf final : public Match_Pattern
+class Match_Binding final : public Match_Pattern
 {
 
   public:
-    using Ptr = std::unique_ptr<Match_Leaf>;
+    using Ptr = std::unique_ptr<Match_Binding>;
 
-    Match_Leaf(const Source_Range& source_range,
-               std::optional<std::string> name,
-               std::optional<Type_Constraint> type_constraint)
+    Match_Binding(const Source_Range& source_range,
+                  std::optional<std::string> name,
+                  std::optional<Type_Constraint> type_constraint)
         : Match_Pattern(source_range)
         , name_{std::move(name)}
         , type_constraint_{type_constraint}
     {
     }
 
-    Match_Leaf() = delete;
-    Match_Leaf(const Match_Leaf&) = delete;
-    Match_Leaf(Match_Leaf&&) = delete;
-    Match_Leaf& operator=(const Match_Leaf&) = delete;
-    Match_Leaf& operator=(Match_Leaf&&) = delete;
-    ~Match_Leaf() final = default;
+    Match_Binding() = delete;
+    Match_Binding(const Match_Binding&) = delete;
+    Match_Binding(Match_Binding&&) = delete;
+    Match_Binding& operator=(const Match_Binding&) = delete;
+    Match_Binding& operator=(Match_Binding&&) = delete;
+    ~Match_Binding() final = default;
 
     std::generator<Symbol_Action> symbol_sequence() const final
     {
@@ -157,10 +157,10 @@ class Match_Leaf final : public Match_Pattern
     std::string do_node_label() const final
     {
         if (type_constraint_)
-            return fmt::format("Match_Leaf({} is {})", name_.value_or("_"),
+            return fmt::format("Match_Binding({} is {})", name_.value_or("_"),
                                type_constraint_.value());
         else
-            return fmt::format("Match_Leaf({})", name_.value_or("_"));
+            return fmt::format("Match_Binding({})", name_.value_or("_"));
     }
 
   private:

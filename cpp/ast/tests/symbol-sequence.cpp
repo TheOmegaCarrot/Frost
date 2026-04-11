@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/ast.hpp>
-#include <frost/ast/destructure-leaf.hpp>
+#include <frost/ast/destructure-binding.hpp>
 #include <frost/value.hpp>
 
 #include <fmt/format.h>
@@ -67,15 +67,15 @@ Expression::Ptr lit_int(Int v)
                                      Value::create(auto{v}));
 }
 
-Destructure::Ptr leaf(std::string n, bool exported = false)
+Destructure::Ptr binding(std::string n, bool exported = false)
 {
-    return std::make_unique<Destructure_Leaf>(AST_Node::no_range, std::move(n),
-                                              exported);
+    return std::make_unique<Destructure_Binding>(AST_Node::no_range,
+                                                 std::move(n), exported);
 }
 
 Statement::Ptr def(std::string n, Expression::Ptr expr)
 {
-    return std::make_unique<Define>(AST_Node::no_range, leaf(n),
+    return std::make_unique<Define>(AST_Node::no_range, binding(n),
                                     std::move(expr));
 }
 } // namespace
@@ -99,14 +99,14 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("Define yields RHS then definition")
     {
-        Define node{AST_Node::no_range, leaf("x"), name("y")};
+        Define node{AST_Node::no_range, binding("x"), name("y")};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:y", "def:x"});
     }
 
     SECTION("Define with literal yields only definition")
     {
-        Define node{AST_Node::no_range, leaf("x"), lit_int(1_f)};
+        Define node{AST_Node::no_range, binding("x"), lit_int(1_f)};
         CHECK(collect_sequence(node) == std::vector<std::string>{"def:x"});
     }
 
@@ -214,7 +214,7 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("Define with nested expression keeps RHS order")
     {
-        Define node{AST_Node::no_range, leaf("x"),
+        Define node{AST_Node::no_range, binding("x"),
                     std::make_unique<Binop>(AST_Node::no_range, name("y"),
                                             Binary_Op::PLUS, name("z"))};
         CHECK(collect_sequence(node)

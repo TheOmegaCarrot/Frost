@@ -7,7 +7,7 @@
 #include <frost/ast/binop.hpp>
 #include <frost/ast/define.hpp>
 #include <frost/ast/destructure-array.hpp>
-#include <frost/ast/destructure-leaf.hpp>
+#include <frost/ast/destructure-binding.hpp>
 #include <frost/ast/destructure-map.hpp>
 #include <frost/ast/destructure.hpp>
 #include <frost/ast/do.hpp>
@@ -21,7 +21,7 @@
 #include <frost/ast/literal.hpp>
 #include <frost/ast/map-constructor.hpp>
 #include <frost/ast/map.hpp>
-#include <frost/ast/match-leaf.hpp>
+#include <frost/ast/match-binding.hpp>
 #include <frost/ast/match-pattern.hpp>
 #include <frost/ast/match-value.hpp>
 #include <frost/ast/name-lookup.hpp>

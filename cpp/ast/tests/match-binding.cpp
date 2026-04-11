@@ -4,7 +4,7 @@
 #include <frost/mock/mock-symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 
-#include <frost/ast/match-leaf.hpp>
+#include <frost/ast/match-binding.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
@@ -36,18 +36,18 @@ Value_Ptr make_function()
     return Value::create(Function{std::make_shared<Dummy_Callable>()});
 }
 
-Match_Leaf::Ptr make_leaf(std::optional<std::string> name,
-                          std::optional<Type_Constraint> constraint)
+Match_Binding::Ptr make_binding(std::optional<std::string> name,
+                                std::optional<Type_Constraint> constraint)
 {
-    return std::make_unique<Match_Leaf>(AST_Node::no_range, std::move(name),
-                                        constraint);
+    return std::make_unique<Match_Binding>(AST_Node::no_range, std::move(name),
+                                           constraint);
 }
 
 } // namespace
 
-TEST_CASE("Match_Leaf: try_match without constraint")
+TEST_CASE("Match_Binding: try_match without constraint")
 {
-    SECTION("Named leaf binds value and returns true")
+    SECTION("Named binding binds value and returns true")
     {
         mock::Mock_Symbol_Table syms;
         Execution_Context ctx{.symbols = syms};
@@ -55,22 +55,22 @@ TEST_CASE("Match_Leaf: try_match without constraint")
         auto val = Value::create(42_f);
         REQUIRE_CALL(syms, define("x", val));
 
-        auto leaf = make_leaf("x"s, std::nullopt);
-        CHECK(leaf->try_match(ctx, val));
+        auto binding = make_binding("x"s, std::nullopt);
+        CHECK(binding->try_match(ctx, val));
     }
 
-    SECTION("Discard leaf returns true without binding")
+    SECTION("Discard binding returns true without binding")
     {
         mock::Mock_Symbol_Table syms;
         Execution_Context ctx{.symbols = syms};
 
         FORBID_CALL(syms, define(_, _));
 
-        auto leaf = make_leaf(std::nullopt, std::nullopt);
-        CHECK(leaf->try_match(ctx, Value::create(42_f)));
+        auto binding = make_binding(std::nullopt, std::nullopt);
+        CHECK(binding->try_match(ctx, Value::create(42_f)));
     }
 
-    SECTION("Unconstrained leaf accepts any value type")
+    SECTION("Unconstrained binding accepts any value type")
     {
         std::vector<Value_Ptr> values = {
             Value::create(42_f),    Value::create(3.14),
@@ -84,13 +84,13 @@ TEST_CASE("Match_Leaf: try_match without constraint")
             mock::Mock_Symbol_Table syms;
             Execution_Context ctx{.symbols = syms};
             REQUIRE_CALL(syms, define("v", v));
-            auto leaf = make_leaf("v"s, std::nullopt);
-            CHECK(leaf->try_match(ctx, v));
+            auto binding = make_binding("v"s, std::nullopt);
+            CHECK(binding->try_match(ctx, v));
         }
     }
 }
 
-TEST_CASE("Match_Leaf: try_match with constraint")
+TEST_CASE("Match_Binding: try_match with constraint")
 {
     SECTION("Bind path: matching constraint binds and returns true")
     {
@@ -100,8 +100,8 @@ TEST_CASE("Match_Leaf: try_match with constraint")
         auto val = Value::create(42_f);
         REQUIRE_CALL(syms, define("n", val));
 
-        auto leaf = make_leaf("n"s, Type_Constraint::Int);
-        CHECK(leaf->try_match(ctx, val));
+        auto binding = make_binding("n"s, Type_Constraint::Int);
+        CHECK(binding->try_match(ctx, val));
     }
 
     SECTION("Bind path: mismatched constraint returns false without binding")
@@ -111,8 +111,8 @@ TEST_CASE("Match_Leaf: try_match with constraint")
 
         FORBID_CALL(syms, define(_, _));
 
-        auto leaf = make_leaf("n"s, Type_Constraint::Int);
-        CHECK_FALSE(leaf->try_match(ctx, Value::create("not int"s)));
+        auto binding = make_binding("n"s, Type_Constraint::Int);
+        CHECK_FALSE(binding->try_match(ctx, Value::create("not int"s)));
     }
 
     SECTION("Discard path: matching constraint succeeds without binding")
@@ -122,8 +122,8 @@ TEST_CASE("Match_Leaf: try_match with constraint")
 
         FORBID_CALL(syms, define(_, _));
 
-        auto leaf = make_leaf(std::nullopt, Type_Constraint::Float);
-        CHECK(leaf->try_match(ctx, Value::create(3.14)));
+        auto binding = make_binding(std::nullopt, Type_Constraint::Float);
+        CHECK(binding->try_match(ctx, Value::create(3.14)));
     }
 
     SECTION("Discard path: mismatched constraint returns false")
@@ -133,12 +133,12 @@ TEST_CASE("Match_Leaf: try_match with constraint")
 
         FORBID_CALL(syms, define(_, _));
 
-        auto leaf = make_leaf(std::nullopt, Type_Constraint::Bool);
-        CHECK_FALSE(leaf->try_match(ctx, Value::create(42_f)));
+        auto binding = make_binding(std::nullopt, Type_Constraint::Bool);
+        CHECK_FALSE(binding->try_match(ctx, Value::create(42_f)));
     }
 }
 
-TEST_CASE("Match_Leaf: each concrete type constraint")
+TEST_CASE("Match_Binding: each concrete type constraint")
 {
     struct Case
     {
@@ -175,8 +175,8 @@ TEST_CASE("Match_Leaf: each concrete type constraint")
             mock::Mock_Symbol_Table syms;
             Execution_Context ctx{.symbols = syms};
             REQUIRE_CALL(syms, define("x", c.positive));
-            auto leaf = make_leaf("x"s, c.constraint);
-            CHECK(leaf->try_match(ctx, c.positive));
+            auto binding = make_binding("x"s, c.constraint);
+            CHECK(binding->try_match(ctx, c.positive));
         }
 
         DYNAMIC_SECTION(TC::to_string(c.constraint) << " rejects negative")
@@ -184,13 +184,13 @@ TEST_CASE("Match_Leaf: each concrete type constraint")
             mock::Mock_Symbol_Table syms;
             Execution_Context ctx{.symbols = syms};
             FORBID_CALL(syms, define(_, _));
-            auto leaf = make_leaf("x"s, c.constraint);
-            CHECK_FALSE(leaf->try_match(ctx, c.negative));
+            auto binding = make_binding("x"s, c.constraint);
+            CHECK_FALSE(binding->try_match(ctx, c.negative));
         }
     }
 }
 
-TEST_CASE("Match_Leaf: category constraints")
+TEST_CASE("Match_Binding: category constraints")
 {
     struct Typed_Value
     {
@@ -214,8 +214,8 @@ TEST_CASE("Match_Leaf: category constraints")
     auto check_match = [](Type_Constraint c, const Value_Ptr& v, bool expected) {
         Symbol_Table syms;
         Execution_Context ctx{.symbols = syms};
-        auto leaf = make_leaf("x"s, c);
-        CHECK(leaf->try_match(ctx, v) == expected);
+        auto binding = make_binding("x"s, c);
+        CHECK(binding->try_match(ctx, v) == expected);
         CHECK(syms.has("x") == expected);
     };
 
@@ -258,22 +258,22 @@ TEST_CASE("Match_Leaf: category constraints")
     }
 }
 
-TEST_CASE("Match_Leaf: duplicate binding is unrecoverable")
+TEST_CASE("Match_Binding: duplicate binding is unrecoverable")
 {
     // Binding a name that is already defined in the target symbol table
     // propagates Frost_Unrecoverable_Error from Symbol_Table::define -- this
-    // is how Match_Leaf signals "this isn't a match failure, it's a bug in
-    // the pattern or enclosing scope."
+    // is how Match_Binding signals "this isn't a match failure, it's a bug
+    // in the pattern or enclosing scope."
     Symbol_Table syms;
     syms.define("x", Value::create(1_f));
     Execution_Context ctx{.symbols = syms};
 
-    auto leaf = make_leaf("x"s, std::nullopt);
-    CHECK_THROWS_AS(leaf->try_match(ctx, Value::create(2_f)),
+    auto binding = make_binding("x"s, std::nullopt);
+    CHECK_THROWS_AS(binding->try_match(ctx, Value::create(2_f)),
                     Frost_Unrecoverable_Error);
 }
 
-TEST_CASE("Match_Leaf: constraint check runs before bind attempt")
+TEST_CASE("Match_Binding: constraint check runs before bind attempt")
 {
     // A pattern with a constraint that fails against the value should
     // NEVER reach the define() call -- even if the name would collide with
@@ -285,17 +285,18 @@ TEST_CASE("Match_Leaf: constraint check runs before bind attempt")
     Execution_Context ctx{.symbols = syms};
 
     // "x is String" applied to an Int -- constraint fails first.
-    auto leaf = make_leaf("x"s, Type_Constraint::String);
-    CHECK_FALSE(leaf->try_match(ctx, Value::create(42_f)));
+    auto binding = make_binding("x"s, Type_Constraint::String);
+    CHECK_FALSE(binding->try_match(ctx, Value::create(42_f)));
     // Reached here without throwing -> define() was never called.
 }
 
-TEST_CASE("Match_Leaf: symbol_sequence")
+TEST_CASE("Match_Binding: symbol_sequence")
 {
-    SECTION("Named leaf yields one Definition")
+    SECTION("Named binding yields one Definition")
     {
-        auto leaf = make_leaf("foo"s, std::nullopt);
-        auto actions = leaf->symbol_sequence() | std::ranges::to<std::vector>();
+        auto binding = make_binding("foo"s, std::nullopt);
+        auto actions =
+            binding->symbol_sequence() | std::ranges::to<std::vector>();
         REQUIRE(actions.size() == 1);
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
@@ -303,17 +304,19 @@ TEST_CASE("Match_Leaf: symbol_sequence")
         CHECK(def->exported == false);
     }
 
-    SECTION("Discard leaf yields nothing")
+    SECTION("Discard binding yields nothing")
     {
-        auto leaf = make_leaf(std::nullopt, std::nullopt);
-        auto actions = leaf->symbol_sequence() | std::ranges::to<std::vector>();
+        auto binding = make_binding(std::nullopt, std::nullopt);
+        auto actions =
+            binding->symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
     }
 
     SECTION("Constraint does not affect symbol_sequence (named)")
     {
-        auto leaf = make_leaf("foo"s, Type_Constraint::Int);
-        auto actions = leaf->symbol_sequence() | std::ranges::to<std::vector>();
+        auto binding = make_binding("foo"s, Type_Constraint::Int);
+        auto actions =
+            binding->symbol_sequence() | std::ranges::to<std::vector>();
         REQUIRE(actions.size() == 1);
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
@@ -322,52 +325,53 @@ TEST_CASE("Match_Leaf: symbol_sequence")
 
     SECTION("Constraint does not affect symbol_sequence (discard)")
     {
-        auto leaf = make_leaf(std::nullopt, Type_Constraint::Int);
-        auto actions = leaf->symbol_sequence() | std::ranges::to<std::vector>();
+        auto binding = make_binding(std::nullopt, Type_Constraint::Int);
+        auto actions =
+            binding->symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
     }
 }
 
-TEST_CASE("Match_Leaf: node_label")
+TEST_CASE("Match_Binding: node_label")
 {
     SECTION("Named, no constraint")
     {
-        auto leaf = make_leaf("foo"s, std::nullopt);
-        CHECK(leaf->node_label() == "Match_Leaf(foo)");
+        auto binding = make_binding("foo"s, std::nullopt);
+        CHECK(binding->node_label() == "Match_Binding(foo)");
     }
 
     SECTION("Discard, no constraint")
     {
-        auto leaf = make_leaf(std::nullopt, std::nullopt);
-        CHECK(leaf->node_label() == "Match_Leaf(_)");
+        auto binding = make_binding(std::nullopt, std::nullopt);
+        CHECK(binding->node_label() == "Match_Binding(_)");
     }
 
     SECTION("Named, with constraint")
     {
-        auto leaf = make_leaf("foo"s, Type_Constraint::Int);
-        CHECK(leaf->node_label() == "Match_Leaf(foo is Int)");
+        auto binding = make_binding("foo"s, Type_Constraint::Int);
+        CHECK(binding->node_label() == "Match_Binding(foo is Int)");
     }
 
     SECTION("Discard, with constraint")
     {
-        auto leaf = make_leaf(std::nullopt, Type_Constraint::Float);
-        CHECK(leaf->node_label() == "Match_Leaf(_ is Float)");
+        auto binding = make_binding(std::nullopt, Type_Constraint::Float);
+        CHECK(binding->node_label() == "Match_Binding(_ is Float)");
     }
 
     SECTION("Category constraints render by name")
     {
-        auto a = make_leaf("x"s, Type_Constraint::Numeric);
-        CHECK(a->node_label() == "Match_Leaf(x is Numeric)");
+        auto a = make_binding("x"s, Type_Constraint::Numeric);
+        CHECK(a->node_label() == "Match_Binding(x is Numeric)");
 
-        auto b = make_leaf("x"s, Type_Constraint::Primitive);
-        CHECK(b->node_label() == "Match_Leaf(x is Primitive)");
+        auto b = make_binding("x"s, Type_Constraint::Primitive);
+        CHECK(b->node_label() == "Match_Binding(x is Primitive)");
 
-        auto c = make_leaf("x"s, Type_Constraint::Structured);
-        CHECK(c->node_label() == "Match_Leaf(x is Structured)");
+        auto c = make_binding("x"s, Type_Constraint::Structured);
+        CHECK(c->node_label() == "Match_Binding(x is Structured)");
     }
 }
 
-TEST_CASE("Match_Leaf: Type_Constraint helpers")
+TEST_CASE("Match_Binding: Type_Constraint helpers")
 {
     SECTION("to_string maps each value to its enum name")
     {

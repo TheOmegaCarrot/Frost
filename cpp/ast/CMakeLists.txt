@@ -53,10 +53,10 @@ set(AST_TEST_FILES
     filter
     format-string
     walk
-    destructure-leaf
+    destructure-binding
     destructure-array-node
     destructure-map-node
-    match-leaf
+    match-binding
     match-value
 )
 

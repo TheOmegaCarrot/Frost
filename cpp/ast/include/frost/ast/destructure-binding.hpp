@@ -1,5 +1,5 @@
-#ifndef FROST_AST_DESTRUCTURE_LEAF_HPP
-#define FROST_AST_DESTRUCTURE_LEAF_HPP
+#ifndef FROST_AST_DESTRUCTURE_BINDING_HPP
+#define FROST_AST_DESTRUCTURE_BINDING_HPP
 
 #include "frost/execution-context.hpp"
 #include <frost/ast/destructure.hpp>
@@ -7,13 +7,13 @@
 namespace frst::ast
 {
 
-class Destructure_Leaf final : public Destructure
+class Destructure_Binding final : public Destructure
 {
   public:
-    using Ptr = std::unique_ptr<Destructure_Leaf>;
+    using Ptr = std::unique_ptr<Destructure_Binding>;
 
-    Destructure_Leaf(const Source_Range& source_range,
-                     std::optional<std::string> name, bool exported)
+    Destructure_Binding(const Source_Range& source_range,
+                        std::optional<std::string> name, bool exported)
         : Destructure(source_range)
         , name_{std::move(name)}
         , exported_{exported}
@@ -22,12 +22,12 @@ class Destructure_Leaf final : public Destructure
             throw Frost_Interpreter_Error{"Attempting to bind an empty name!"};
     }
 
-    Destructure_Leaf() = delete;
-    Destructure_Leaf(const Destructure_Leaf&) = delete;
-    Destructure_Leaf(Destructure_Leaf&&) = delete;
-    Destructure_Leaf& operator=(const Destructure_Leaf&) = delete;
-    Destructure_Leaf& operator=(Destructure_Leaf&&) = delete;
-    ~Destructure_Leaf() final = default;
+    Destructure_Binding() = delete;
+    Destructure_Binding(const Destructure_Binding&) = delete;
+    Destructure_Binding(Destructure_Binding&&) = delete;
+    Destructure_Binding& operator=(const Destructure_Binding&) = delete;
+    Destructure_Binding& operator=(Destructure_Binding&&) = delete;
+    ~Destructure_Binding() final = default;
 
     std::generator<AST_Node::Symbol_Action> symbol_sequence() const final
     {
@@ -45,7 +45,8 @@ class Destructure_Leaf final : public Destructure
 
     std::string do_node_label() const final
     {
-        return fmt::format("Destructure_Leaf({})", name_.value_or("discarded"));
+        return fmt::format("Destructure_Binding({})",
+                           name_.value_or("discarded"));
     }
 
   private:

@@ -9,7 +9,7 @@
 
 #include <frost/ast.hpp>
 #include <frost/ast/destructure-array.hpp>
-#include <frost/ast/destructure-leaf.hpp>
+#include <frost/ast/destructure-binding.hpp>
 #include <frost/ast/destructure-map.hpp>
 #include <frost/ast/lambda.hpp>
 #include <frost/utils.hpp>
@@ -1071,7 +1071,7 @@ template <bool exported>
 struct map_destructure_entries_impl;
 
 // A single destructure pattern element. Recursively allows nested
-// array/map destructuring, or a leaf identifier binding.
+// array/map destructuring, or an identifier binding.
 template <bool exported>
 struct destructure_pattern_impl
 {
@@ -1105,7 +1105,7 @@ struct destructure_pattern_impl
             std::optional<std::string> opt_name =
                 name == "_" ? std::nullopt
                             : std::optional<std::string>{std::move(name)};
-            return std::make_unique<ast::Destructure_Leaf>(
+            return std::make_unique<ast::Destructure_Binding>(
                 make_source_range(begin, end), std::move(opt_name), exported);
         });
     static constexpr auto name = "destructure pattern";
@@ -1935,12 +1935,12 @@ struct map_destructure_entry_impl
                                      make_source_range(key_begin, key_end)),
                 std::move(dest)};
         },
-        // Shorthand: key name used as leaf binding name.
+        // Shorthand: key name used as binding name.
         [](auto key_begin, std::string key, auto key_end, lexy::nullopt) {
             return ast::Destructure_Map::Element{
                 make_string_key_expr(key,
                                      make_source_range(key_begin, key_end)),
-                std::make_unique<ast::Destructure_Leaf>(
+                std::make_unique<ast::Destructure_Binding>(
                     make_source_range(key_begin, key_end),
                     key == "_" ? std::optional<std::string>{}
                                : std::optional<std::string>{std::string{key}},
@@ -2509,7 +2509,7 @@ namespace node
 {
 // `define_lhs`: the left-hand side of a `def` statement.
 // Three forms, all producing Destructure::Ptr:
-//   def name = expr               — leaf binding
+//   def name = expr               — identifier binding
 //   def [a, b, ...rest] = expr   — array destructure (recursive)
 //   def {key: pattern} = expr     — map destructure (recursive)
 // Templated on export_flag to thread it into destructure node constructors.
@@ -2591,11 +2591,12 @@ struct Defn
             auto lambda = std::make_unique<ast::Lambda>(
                 make_source_range(begin_pos, end_pos), std::move(params.params),
                 std::move(body), std::move(params.vararg), name);
-            auto leaf = std::make_unique<ast::Destructure_Leaf>(
+            auto binding = std::make_unique<ast::Destructure_Binding>(
                 ast::AST_Node::no_range,
                 std::optional<std::string>{std::string{name}}, false);
             return std::make_unique<ast::Define>(
-                ast::AST_Node::no_range, std::move(leaf), std::move(lambda));
+                ast::AST_Node::no_range, std::move(binding),
+                std::move(lambda));
         });
     static constexpr auto name = "defn statement";
 };
@@ -2626,11 +2627,12 @@ struct Export_Defn
             auto lambda = std::make_unique<ast::Lambda>(
                 make_source_range(begin_pos, end_pos), std::move(params.params),
                 std::move(body), std::move(params.vararg), name);
-            auto leaf = std::make_unique<ast::Destructure_Leaf>(
+            auto binding = std::make_unique<ast::Destructure_Binding>(
                 ast::AST_Node::no_range,
                 std::optional<std::string>{std::string{name}}, true);
             return std::make_unique<ast::Define>(
-                ast::AST_Node::no_range, std::move(leaf), std::move(lambda));
+                ast::AST_Node::no_range, std::move(binding),
+                std::move(lambda));
         });
     static constexpr auto name = "export defn statement";
 };
