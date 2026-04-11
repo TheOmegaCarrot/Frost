@@ -10,7 +10,7 @@ Pseudo-random number generation, sampling, and shuffling.
 > Its output is fully predictable from a seed value, which is the **opposite** of what
 > security-sensitive code requires. Do **not** use `std.random` for tokens, keys,
 > initialization vectors, salts, passwords, or anything else where predictability would be
-> a vulnerability. Cryptographic randomness belongs in `ext.hash`.
+> a vulnerability.
 
 ## Engines
 
