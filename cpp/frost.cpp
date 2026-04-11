@@ -56,7 +56,8 @@ void exec_program(const std::vector<frst::ast::Statement::Ptr>& program,
     }
 }
 
-constexpr std::string_view HELP_TEXT = R"(Usage: frost [options] [file [args...]]
+constexpr std::string_view HELP_TEXT =
+    R"(Usage: frost [options] [file [args...]]
 
 Run a Frost script, or start the REPL with no arguments.
 

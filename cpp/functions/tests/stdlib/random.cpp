@@ -240,8 +240,12 @@ TEST_CASE("std.random rng.int")
         }
         // Both negative and positive values, plus zero, should appear.
         CHECK(seen.contains(0));
-        CHECK(std::ranges::any_of(seen, [](Int n) { return n < 0; }));
-        CHECK(std::ranges::any_of(seen, [](Int n) { return n > 0; }));
+        CHECK(std::ranges::any_of(seen, [](Int n) {
+            return n < 0;
+        }));
+        CHECK(std::ranges::any_of(seen, [](Int n) {
+            return n > 0;
+        }));
     }
 
     SECTION("low > high throws")
@@ -266,9 +270,8 @@ TEST_CASE("std.random rng.int")
                           ContainsSubstring("insufficient arguments"));
         CHECK_THROWS_WITH(int_fn->call({int_v(1_f)}),
                           ContainsSubstring("insufficient arguments"));
-        CHECK_THROWS_WITH(
-            int_fn->call({int_v(1_f), int_v(2_f), int_v(3_f)}),
-            ContainsSubstring("too many arguments"));
+        CHECK_THROWS_WITH(int_fn->call({int_v(1_f), int_v(2_f), int_v(3_f)}),
+                          ContainsSubstring("too many arguments"));
     }
 }
 
@@ -344,9 +347,9 @@ TEST_CASE("std.random rng.float")
 
     SECTION("Degenerate range (low == high) returns that value")
     {
-        // Degenerate distributions are accepted (lo > hi is the only rejection).
-        // libstdc++'s uniform_real_distribution(a, a) returns a; this test locks
-        // that behavior in.
+        // Degenerate distributions are accepted (lo > hi is the only
+        // rejection). libstdc++'s uniform_real_distribution(a, a) returns a;
+        // this test locks that behavior in.
         for (int i = 0; i < 100; ++i)
         {
             auto v = float_fn->call({float_v(5.0), float_v(5.0)});
@@ -533,8 +536,9 @@ TEST_CASE("std.random rng.choice")
         for (int i = 0; i < 50; ++i)
         {
             auto v = choice_fn->call({arr});
-            CHECK(std::ranges::any_of(
-                elements, [&](const auto& e) { return e == v; }));
+            CHECK(std::ranges::any_of(elements, [&](const auto& e) {
+                return e == v;
+            }));
         }
     }
 
@@ -626,31 +630,29 @@ TEST_CASE("std.random rng.sample")
         REQUIRE(result.size() == 2);
         // Each sampled element must be one of the input elements.
         for (const auto& elem : result)
-            CHECK(std::ranges::any_of(
-                elements, [&](const auto& e) { return e == elem; }));
+            CHECK(std::ranges::any_of(elements, [&](const auto& e) {
+                return e == elem;
+            }));
     }
 
     SECTION("Negative n throws")
     {
-        CHECK_THROWS_WITH(
-            sample_fn->call({int_array(1_f, 10_f), int_v(-1_f)}),
-            ContainsSubstring("negative"));
+        CHECK_THROWS_WITH(sample_fn->call({int_array(1_f, 10_f), int_v(-1_f)}),
+                          ContainsSubstring("negative"));
     }
 
     SECTION("n > len(arr) throws")
     {
-        CHECK_THROWS_WITH(
-            sample_fn->call({int_array(1_f, 5_f), int_v(10_f)}),
-            ContainsSubstring("greater than the input size"));
+        CHECK_THROWS_WITH(sample_fn->call({int_array(1_f, 5_f), int_v(10_f)}),
+                          ContainsSubstring("greater than the input size"));
     }
 
     SECTION("Type checking")
     {
         CHECK_THROWS_WITH(sample_fn->call({int_v(1_f), int_v(1_f)}),
                           ContainsSubstring("Array"));
-        CHECK_THROWS_WITH(
-            sample_fn->call({int_array(1_f, 5_f), float_v(1.5)}),
-            ContainsSubstring("Int"));
+        CHECK_THROWS_WITH(sample_fn->call({int_array(1_f, 5_f), float_v(1.5)}),
+                          ContainsSubstring("Int"));
     }
 
     SECTION("Arity")
@@ -725,8 +727,7 @@ TEST_CASE("std.random rng.shuffle")
         {
             auto v = shuffle_fn->call({int_array(0_f, 2_f)});
             const auto& result = v->raw_get<Array>();
-            perms.insert({result[0]->raw_get<Int>(),
-                          result[1]->raw_get<Int>(),
+            perms.insert({result[0]->raw_get<Int>(), result[1]->raw_get<Int>(),
                           result[2]->raw_get<Int>()});
         }
         CHECK(perms.size() == 6);
@@ -735,7 +736,10 @@ TEST_CASE("std.random rng.shuffle")
     SECTION("Preserves multiset on arrays with duplicates")
     {
         auto input = Value::create(Array{
-            int_v(1_f), int_v(1_f), int_v(2_f), int_v(2_f),
+            int_v(1_f),
+            int_v(1_f),
+            int_v(2_f),
+            int_v(2_f),
         });
         for (int i = 0; i < 50; ++i)
         {
@@ -876,7 +880,7 @@ TEST_CASE("std.random reproducibility")
             interleaved_seq.push_back(
                 a_int->call({int_v(0_f), int_v(1000_f)})->raw_get<Int>());
             // Pull from b too; should not affect a's sequence.
-            (void) b_int->call({int_v(0_f), int_v(1000_f)});
+            (void)b_int->call({int_v(0_f), int_v(1000_f)});
         }
 
         CHECK(baseline_seq == interleaved_seq);
@@ -943,15 +947,16 @@ TEST_CASE("std.random bundle aliasing")
         auto int_fn = lookup_fn(bundle, "int");
         auto float_fn = lookup_fn(bundle, "float");
         auto i1 = int_fn->call({int_v(0_f), int_v(1000000_f)})->raw_get<Int>();
-        auto f1 = float_fn->call({float_v(0.0), float_v(1.0)})->raw_get<Float>();
+        auto f1 =
+            float_fn->call({float_v(0.0), float_v(1.0)})->raw_get<Float>();
 
         auto bundle2 = seeded(42_f);
         auto int_fn_2 = lookup_fn(bundle2, "int");
         auto float_fn_2 = lookup_fn(bundle2, "float");
         auto i2 =
             int_fn_2->call({int_v(0_f), int_v(1000000_f)})->raw_get<Int>();
-        auto f2 = float_fn_2->call({float_v(0.0), float_v(1.0)})
-                      ->raw_get<Float>();
+        auto f2 =
+            float_fn_2->call({float_v(0.0), float_v(1.0)})->raw_get<Float>();
 
         CHECK(i1 == i2);
         CHECK(f1 == f2);

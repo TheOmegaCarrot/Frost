@@ -303,8 +303,7 @@ TEST_CASE("std.io open_trunc")
         auto path = unique_path(dir, "trunc");
 
         // Seed the file with long content.
-        auto first =
-            open_trunc_fn->call({Value::create(path.string())});
+        auto first = open_trunc_fn->call({Value::create(path.string())});
         auto first_write = get_map_fn(first, "write");
         auto first_close = get_map_fn(first, "close");
         first_write->call(
@@ -312,8 +311,7 @@ TEST_CASE("std.io open_trunc")
         first_close->call({});
 
         // Re-open the same path with open_trunc and write something shorter.
-        auto second =
-            open_trunc_fn->call({Value::create(path.string())});
+        auto second = open_trunc_fn->call({Value::create(path.string())});
         auto second_write = get_map_fn(second, "write");
         auto second_close = get_map_fn(second, "close");
         second_write->call({Value::create("new"s)});

@@ -258,7 +258,8 @@ TEST_CASE("Reduce Array")
             CHECK(calls.at(1).at(1) == v3);
         }
 
-        // Frost: reduce [1, 2, 3] init: 10 with fn (acc, elem) -> { acc + elem }
+        // Frost: reduce [1, 2, 3] init: 10 with fn (acc, elem) ->
+        //                                          { acc + elem }
         SECTION("Multiple elements with init folds left starting from init")
         {
             auto v1 = Value::create(1_f);
@@ -322,7 +323,8 @@ TEST_CASE("Reduce Array")
             CHECK(calls.at(2).at(1) == v3);
         }
 
-        // Frost: reduce arr_expr init: init_expr with fn (acc, elem) -> { acc + elem }
+        // Frost: reduce arr_expr init: init_expr with fn (acc, elem) ->
+        //                                              { acc + elem }
         SECTION("Evaluation order: structure then operation then init")
         {
             auto elem = Value::create(1_f);
@@ -357,7 +359,8 @@ TEST_CASE("Reduce Array")
             CHECK(res == result_val);
         }
 
-        // Frost: reduce [] init: init_expr with fn (acc, elem) -> { acc + elem }
+        // Frost: reduce [] init: init_expr with fn (acc, elem) ->
+        //                                      { acc + elem }
         SECTION("Init evaluated even when array is empty")
         {
             auto empty_array = Value::create(Array{});
@@ -506,7 +509,8 @@ TEST_CASE("Reduce Array")
                               ContainsSubstring("operation boom"));
         }
 
-        // Frost: reduce arr_expr init: init_expr with fn (acc, elem) -> { acc + elem }
+        // Frost: reduce arr_expr init: init_expr with fn (acc, elem) -> { acc +
+        // elem }
         SECTION("Init expression error propagates and op not called")
         {
             auto array_val = Value::create(Array{Value::create(1_f)});

@@ -410,9 +410,8 @@ TEST_CASE("cli.parse spec validation")
         // Equivalent to omitting `positional` or using `[]`.
         auto result = parse->call(
             {Value::create(make_args({"s.frst"})),
-             Value::create(
-                 Value::trusted,
-                 Map{{"positional"_s, Value::create(Bool{false})}})});
+             Value::create(Value::trusted,
+                           Map{{"positional"_s, Value::create(Bool{false})}})});
         REQUIRE(result->is<Map>());
         CHECK(get(result->raw_get<Map>(), "positional")
                   ->raw_get<Array>()
@@ -422,11 +421,10 @@ TEST_CASE("cli.parse spec validation")
     SECTION("positional as false rejects positional args")
     {
         CHECK_THROWS_MATCHES(
-            parse->call(
-                {Value::create(make_args({"s.frst", "extra"})),
-                 Value::create(
-                     Value::trusted,
-                     Map{{"positional"_s, Value::create(Bool{false})}})}),
+            parse->call({Value::create(make_args({"s.frst", "extra"})),
+                         Value::create(Value::trusted,
+                                       Map{{"positional"_s,
+                                            Value::create(Bool{false})}})}),
             Frost_Recoverable_Error,
             MessageMatches(ContainsSubstring("unexpected positional")));
     }
@@ -964,8 +962,7 @@ TEST_CASE("cli.parse successful parsing")
             {"env"_s, Value::create(Value::trusted, std::move(opt))}};
         auto result = do_parse(
             {"s.frst", "--env", "--verbose"},
-            Map{{"flags"_s,
-                 Value::create(Value::trusted, std::move(flags))},
+            Map{{"flags"_s, Value::create(Value::trusted, std::move(flags))},
                 {"options"_s,
                  Value::create(Value::trusted, std::move(options))}});
         CHECK(get(get(result, "options")->raw_get<Map>(), "env")
