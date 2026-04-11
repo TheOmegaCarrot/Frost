@@ -56,6 +56,8 @@ set(AST_TEST_FILES
     destructure-leaf
     destructure-array-node
     destructure-map-node
+    match-leaf
+    match-value
 )
 
 foreach(test_file IN LISTS AST_TEST_FILES)

@@ -21,6 +21,9 @@
 #include <frost/ast/literal.hpp>
 #include <frost/ast/map-constructor.hpp>
 #include <frost/ast/map.hpp>
+#include <frost/ast/match-leaf.hpp>
+#include <frost/ast/match-pattern.hpp>
+#include <frost/ast/match-value.hpp>
 #include <frost/ast/name-lookup.hpp>
 #include <frost/ast/reduce.hpp>
 #include <frost/ast/statement.hpp>
