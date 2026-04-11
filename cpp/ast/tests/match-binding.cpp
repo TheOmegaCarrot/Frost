@@ -256,6 +256,18 @@ TEST_CASE("Match_Binding: category constraints")
             }
         }
     }
+
+    SECTION("Nonnull matches everything except Null")
+    {
+        for (const auto& [name, v] : all_types)
+        {
+            DYNAMIC_SECTION(name)
+            {
+                const bool expected = (name != "Null");
+                check_match(Type_Constraint::Nonnull, v, expected);
+            }
+        }
+    }
 }
 
 TEST_CASE("Match_Binding: duplicate binding is unrecoverable")
@@ -386,6 +398,7 @@ TEST_CASE("Match_Binding: Type_Constraint helpers")
         CHECK(TC::to_string(Type_Constraint::Primitive) == "Primitive");
         CHECK(TC::to_string(Type_Constraint::Numeric) == "Numeric");
         CHECK(TC::to_string(Type_Constraint::Structured) == "Structured");
+        CHECK(TC::to_string(Type_Constraint::Nonnull) == "Nonnull");
     }
 
     SECTION("from_string maps each enum name to its value")
@@ -401,6 +414,7 @@ TEST_CASE("Match_Binding: Type_Constraint helpers")
         CHECK(TC::from_string("Primitive") == Type_Constraint::Primitive);
         CHECK(TC::from_string("Numeric") == Type_Constraint::Numeric);
         CHECK(TC::from_string("Structured") == Type_Constraint::Structured);
+        CHECK(TC::from_string("Nonnull") == Type_Constraint::Nonnull);
     }
 
     SECTION("from_string returns nullopt for unrecognized strings")
@@ -422,7 +436,7 @@ TEST_CASE("Match_Binding: Type_Constraint helpers")
             Type_Constraint::String,    Type_Constraint::Array,
             Type_Constraint::Map,       Type_Constraint::Function,
             Type_Constraint::Primitive, Type_Constraint::Numeric,
-            Type_Constraint::Structured,
+            Type_Constraint::Structured, Type_Constraint::Nonnull,
         };
         for (auto v : all_values)
             CHECK(TC::from_string(TC::to_string(v)) == v);

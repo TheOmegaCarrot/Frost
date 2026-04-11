@@ -56,7 +56,9 @@ set(AST_TEST_FILES
     destructure-binding
     destructure-array-node
     destructure-map-node
+    match-array
     match-binding
+    match-map
     match-value
 )
 

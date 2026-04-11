@@ -27,7 +27,8 @@ namespace frst::ast
     X(Function)                                                                \
     X(Primitive)                                                               \
     X(Numeric)                                                                 \
-    X(Structured)
+    X(Structured)                                                              \
+    X(Nonnull)
 
 enum class Type_Constraint
 {
@@ -95,6 +96,8 @@ inline bool satisfies(std::optional<Type_Constraint> constraint,
             return Frost_Numeric<Type>;
         case Type_Constraint::Structured:
             return Frost_Structured<Type>;
+        case Type_Constraint::Nonnull:
+            return not std::same_as<Null, Type>;
         }
         THROW_UNREACHABLE;
     });
