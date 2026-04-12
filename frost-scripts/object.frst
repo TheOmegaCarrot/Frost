@@ -1,7 +1,8 @@
 # Hey, there's almost an idea here!
-export def object = fn obj -> map obj with 
-        fn k, v -> if is_function(v): { [k]: fn ...args -> call(v, [obj] + args) }
-                    else: { [k]: v }
+export defn object(obj) -> map obj with fn k, v -> match v {
+        _ is Function => { [k]: fn ...args -> call(v, [obj] + args) },
+        _ => { [k]: v }
+    }
 
 export def obj = object({
     square: fn this, x ->  this.mul(this, x, x),

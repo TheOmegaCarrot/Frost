@@ -21,7 +21,7 @@ assert(fib(1) == 1) ; assert(fib(7) == 13)
 
 # defn is just syntax sugar for this
 # a lambda can be given a name for recursion, even without a `def`
-def fib2 = fn fib2(n) -> {
+defn fib2(n) -> {
     if n <= 1: n
     else: fib2(n-1) + fib(n-2)
 }
@@ -30,15 +30,21 @@ def fib2 = fn fib2(n) -> {
 #   n = 5 # Nope, everything is immutable
 # }
 
-def more_if = fn (n) -> {
+def more_if = fn n -> {
     if n == 1: 2
     elif n == 2: 10
     else: n - 1
 }
 
+defn match_too(n) -> match n {
+    1 => 2,
+    2 => 10,
+    _ => n - 1,
+}
+
 # this has the same meaning as the `more_if` function,
 # but the formatting is ugly (but equivalent)
-def also_allowed_for_if = fn (n) -> {
+defn also_allowed_for_if(n) -> {
     if  n == 1 :
         2
         elif n == 2 :
@@ -52,7 +58,7 @@ assert(also_allowed_for_if(2) == 10)
 def arr = [ 1, 2, 3 ]
 
 # name scoping
-def sum_arr = fn (arr) -> {
+def sum_arr = fn arr -> {
     # arr is local to function, and is distinct from global `arr`
     reduce arr with plus # language-level reduction (also, closure captures `plus`)
     # reduce <expr evaluating to array> with <expr evaluating to function> [init: <some value>]
@@ -61,7 +67,7 @@ def sum_arr = fn (arr) -> {
 
 assert(sum_arr(arr) == 6)
 
-def double_arr = fn (arr) -> {
+defn double_arr(arr) -> {
     map arr with fn (x) -> { 2 * x }
 }
 
@@ -123,12 +129,12 @@ def map_map = fn (dict) -> {
 assert(map_map( { k1: 1, k2: 4 } ) == { k1: 2, k2: 5, k1k1: 3, k2k2: 6 })
 
 # array iteration
-def iterate_array = fn (arr) -> {
+defn iterate_array(arr) -> {
     foreach arr with fn (item) -> { print(item) }
 }
 
 # map iteration
-def iterate_map = fn (dict) -> {
+defn iterate_map(dict) -> {
     foreach dict with fn (k, v) -> { print($"${k}: ${v}") }
 }
 

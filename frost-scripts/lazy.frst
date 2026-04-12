@@ -10,14 +10,16 @@ export defn gen_take_while(genpair, pred) -> {
 
 export def gtw = gen_take_while
 
-export defn lazy_collect(genpair) -> {
-    def n = genpair[0]
-    def next = genpair[1]
-
-    if len(genpair) == 0: []
-    else: [n] + lazy_collect(next())
+export defn lazy_collect(genpair) -> match genpair {
+    [n is Int, next is Function] => [n] + lazy_collect(next()),
+    _ => [],
 }
 
 export def lcollect = lazy_collect
 
-if not imported: print( gen(0) @ gtw(fn n -> n < 8) @ lcollect() )
+def result = gen(0) @ gtw(fn n -> n < 8) @ lcollect()
+
+if not imported: print(result)
+
+assert(result == [0, 1, 2, 3, 4, 5, 6, 7])
+
