@@ -25,21 +25,12 @@ class Match_Value final : public Match_Pattern
     Match_Value& operator=(Match_Value&&) = delete;
     ~Match_Value() final = default;
 
-    std::generator<Child_Info> children() const final
-    {
-        co_yield make_child(expr_);
-    }
+    std::generator<Child_Info> children() const final;
 
   protected:
-    bool do_try_match(Execution_Context ctx, const Value_Ptr& value) const final
-    {
-        return Value::equal(value, expr_->evaluate(ctx.as_eval()))->truthy();
-    }
-
-    std::string do_node_label() const final
-    {
-        return "Match_Value";
-    }
+    bool do_try_match(Execution_Context ctx,
+                      const Value_Ptr& value) const final;
+    std::string do_node_label() const final;
 
   private:
     Expression::Ptr expr_;

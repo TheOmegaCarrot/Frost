@@ -14,6 +14,10 @@ add_library( frost-ast
     literal.cpp
     map.cpp
     map-constructor.cpp
+    match-array.cpp
+    match-binding.cpp
+    match-map.cpp
+    match-value.cpp
     name-lookup.cpp
     reduce.cpp
     ast-node.cpp
