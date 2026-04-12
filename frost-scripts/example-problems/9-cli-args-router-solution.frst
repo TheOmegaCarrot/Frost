@@ -69,15 +69,8 @@ if imported: os.exit(0)
 # Optional CLI mode:
 # ./build/frost frost-scripts/test-challenges/10-cli-args-router.frst -- sum 1 2 3
 def cli_args = drop(args, 1)
-if len(cli_args) > 0:
-    (fn -> {
-        def cli_res = route(cli_args)
-        if is_map(cli_res) and has(cli_res, 'ok') and cli_res.ok:
-            print(cli_res.value)
-        else:
-            if is_map(cli_res) and has(cli_res, 'error'):
-                print(cli_res.error)
-            else:
-                print('route() returned an unexpected value')
-    })()
-else: null
+if len(cli_args) > 0: match route(cli_args) {
+        {ok: true, value} => print(value),
+        {ok: false, error} => print(error),
+        _ => print('route() returned an unexpected value')
+    }

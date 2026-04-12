@@ -1,6 +1,8 @@
 [
   (block)
   (if_expression)
+  (match_expression)
+  (match_arm)
   (parenthesized_expression)
   (no_nl_arguments)
   (array_literal)

@@ -29,6 +29,18 @@
   "{" @delimiter
   "}" @delimiter @sentinel) @container
 
+(match_expression
+  "{" @delimiter
+  "}" @delimiter @sentinel) @container
+
+(match_array_pattern
+  "[" @delimiter
+  "]" @delimiter @sentinel) @container
+
+(match_map_pattern
+  "{" @delimiter
+  "}" @delimiter @sentinel) @container
+
 (map_key_expression
   "[" @delimiter
   "]" @delimiter @sentinel) @container

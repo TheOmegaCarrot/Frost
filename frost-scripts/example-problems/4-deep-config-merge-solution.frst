@@ -18,16 +18,16 @@
 # - All assertions in this file pass unchanged.
 
 defn deep_merge(lhs, rhs) -> {
-    if not (is_map(lhs) and is_map(rhs)):
-        rhs
-    else:
-        reduce keys(rhs) init: lhs with fn acc, k -> {
-            def rv = rhs[k]
-            if acc @ has(k):
-                acc + { [k]: deep_merge(acc[k], rv) }
-            else:
-                acc + { [k]: rv }
-        }
+    match [lhs, rhs] {
+        [_ is Map, _ is Map] => reduce keys(rhs) init: lhs with fn acc, k -> {
+                def rv = rhs[k]
+                if acc @ has(k):
+                    acc + { [k]: deep_merge(acc[k], rv) }
+                else:
+                    acc + { [k]: rv }
+        },
+        _ => rhs,
+    }
 }
 
 def config_a = {

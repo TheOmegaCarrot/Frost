@@ -16,11 +16,10 @@
 # Completion criteria:
 # - All assertions in this file pass unchanged.
 
-defn flatten_(x) -> {
-    if is_array(x):
-        reduce x init: [] with fn acc, elem -> acc + flatten_(elem)
-    else:
-        [x]
+defn flatten_(x) -> match x {
+    arr is Array => 
+        reduce x init: [] with fn acc, elem -> acc + flatten_(elem),
+    _ => [x],
 }
 
 assert(
