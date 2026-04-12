@@ -46,11 +46,13 @@ export defn unpack_augmented(db, pat) -> {
                             WHERE NAME LIKE ?
                             ''', [ $'%${pat}%' ], fn row -> row.name)
     
-    foreach xprod(filenames, mtd_cols) with spread(fn filename, col -> {
+    defn write_file(filename, col) -> {
         def aug_fname = filename @ augment_filepath(col)
         # SQLite doesn't let you parameterize column names :(
         db.exec($"SELECT writefile(?, ${col}) FROM sqlar WHERE name = ? AND ${col} NOT NULL", [ aug_fname, filename ])
-    })
+    }
+
+    xprod_with(write_file, filenames, mtd_cols)
 }
 
 if not imported: do {
