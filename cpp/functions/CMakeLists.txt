@@ -75,6 +75,7 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
     string-ops
     mutable-cell
     streams
+    structure-ops
 )
 
 set(FUNCTIONS_STDLIB_TEST_FILES

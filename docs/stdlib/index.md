@@ -47,6 +47,7 @@ Each entry links to its full documentation.
 - [flat_map](collections.md#flat_map)
 - [flatten](collections.md#flatten)
 - [fold](collections.md#fold)
+- [from_entries](collections.md#from_entries)
 - [fs.absolute](fs.md#absolute) · `std.fs`
 - [fs.canonical](fs.md#canonical) · `std.fs`
 - [fs.cd](fs.md#cd) · `std.fs`
@@ -240,6 +241,7 @@ Each entry links to its full documentation.
 - [take_while](collections.md#take_while)
 - [tap](functions.md#tap)
 - [times](operators.md#times)
+- [to_entries](collections.md#to_entries)
 - [to_float](types.md#to_float)
 - [to_int](types.md#to_int)
 - [to_lower](strings.md#to_lower)

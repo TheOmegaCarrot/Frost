@@ -178,6 +178,72 @@ BUILTIN(includes)
     return Value::create(itr != arr.end());
 }
 
+BUILTIN(to_entries)
+{
+    REQUIRE_ARGS("to_entries", TYPES(Map));
+    STRINGS(key, value);
+
+    const auto& in = GET(0, Map);
+
+    return Value::create(in
+                         | std::views::transform([&](const auto& pair) {
+                               return Value::create(
+                                   Value::trusted,
+                                   Map{
+                                       {strings.key, pair.first},
+                                       {strings.value, pair.second},
+                                   });
+                           })
+                         | std::ranges::to<Array>());
+}
+
+BUILTIN(from_entries)
+{
+    REQUIRE_ARGS("from_entries", TYPES(Array));
+    STRINGS(key, value);
+
+    const auto& in = GET(0, Array);
+
+    Array ks;
+    Array vs;
+    ks.reserve(in.size());
+    vs.reserve(in.size());
+    Map result{std::sorted_unique, std::move(ks), std::move(vs)};
+    for (const auto& [i, elem] : std::views::enumerate(in))
+    {
+        if (not elem->is<Map>())
+            throw Frost_Recoverable_Error{
+                fmt::format("from_entries: element {} is {}, expected Map", i,
+                            elem->type_name())};
+
+        const auto& entry = elem->raw_get<Map>();
+
+        const auto key_itr = entry.find(strings.key);
+        if (key_itr == entry.end())
+            throw Frost_Recoverable_Error{
+                fmt::format("from_entries: element {} is missing 'key'", i)};
+
+        const auto& k = key_itr->second;
+        if (k->visit([&]<typename T>(const T&) {
+                return not Frost_Map_Key<T>;
+            }))
+            throw Frost_Recoverable_Error{
+                fmt::format("from_entries: element {} has invalid key type: {}",
+                            i, k->type_name())};
+
+        const auto value_itr = entry.find(strings.value);
+        if (value_itr == entry.end())
+            throw Frost_Recoverable_Error{
+                fmt::format("from_entries: element {} is missing 'value'", i)};
+
+        const auto& v = value_itr->second;
+
+        result.insert_or_assign(k, v);
+    }
+
+    return Value::create(Value::trusted, std::move(result));
+}
+
 void inject_structure_ops(Symbol_Table& table)
 {
     INJECT(keys);
@@ -188,5 +254,7 @@ void inject_structure_ops(Symbol_Table& table)
     INJECT(id);
     INJECT(has);
     INJECT(includes);
+    INJECT(to_entries);
+    INJECT(from_entries);
 }
 } // namespace frst

@@ -354,3 +354,32 @@ map_into(['a', 'b', 'c'], fn s -> { [s]: len(s) })
 map_into(range(3), fn n -> { [n]: n * n })
 # => { [0]: 0, [1]: 1, [2]: 4 }
 ```
+
+## `to_entries`
+`to_entries(m)`
+
+Converts a map into an array of `{key: k, value: v}` entries.
+The order of entries in the result is unspecified.
+
+```frost
+to_entries({a: 1, b: 2})
+# => [{key: 'a', value: 1}, {key: 'b', value: 2}]  (order may vary)
+```
+
+## `from_entries`
+`from_entries(arr)`
+
+Converts an array of `{key: k, value: v}` maps into a single map.
+Each element must be a map containing at least a `key` and a `value` entry.
+Keys must be valid map keys (non-null primitives). Extra entries in the element maps are ignored.
+On duplicate keys, the last entry wins.
+
+```frost
+from_entries([{key: 'a', value: 1}, {key: 'b', value: 2}])
+# => {a: 1, b: 2}
+
+from_entries([{key: 'x', value: 1}, {key: 'x', value: 2}])
+# => {x: 2}
+```
+
+`to_entries` and `from_entries` are inverses: `from_entries(to_entries(m)) == m` for any map `m`.
