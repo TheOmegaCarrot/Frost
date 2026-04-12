@@ -1,14 +1,9 @@
-def re = import('std.regex')
-def io = import('std.io')
-def fs = import('std.fs')
+def {regex: re, io, fs} = import('std')
 
 # path to directory containing this script
-def me_dir = do {
-    # fs.parent returns an empty string if input contains only the filename
-    def unchecked = fs.parent(args[0])
-    # Use '.' instead if fs.parent returned ''
-    if unchecked == '': '.'
-    else: unchecked
+def me_dir = match fs.parent(args[0]) {
+    '' => '.',
+    p => p,
 }
 
 # Filter out all non-markdown files and the README (only keeping the actual stdlib documentation)
@@ -51,19 +46,22 @@ def module_prefixes = {
 # Flip it around into a map from function name to full anchor
 # Build entries with display name, anchor, and optional tag
 def fn_link_map = (
-    reduce keys(file_fns_map) init: {} with fn acc, filename -> {
-        def { module: prefix, ns } = module_prefixes[filename] or {}
-
+    reduce keys(file_fns_map) init: {} with fn acc, filename ->
         acc + (
             reduce file_fns_map[filename] init: {} with fn inner, fname -> {
-                def display = if prefix: $'${prefix}.${fname}' else: fname
                 def anchor = filename + '#' + fn_to_anchor_suffix(fname)
-                def tag = if prefix: $' · `${ns}.${prefix}`' else: ''
 
-                inner + { [display]: { anchor: anchor, tag: tag } }
-        })
-
-    }
+                match module_prefixes[filename] {
+                    {module: prefix, ns} => inner + {
+                        [$'${prefix}.${fname}']: {
+                            anchor: anchor,
+                            tag: $' · `${ns}.${prefix}`',
+                        }
+                    },
+                    _ => inner + { [fname]: { anchor: anchor, tag: '' } },
+                }
+            }
+        )
 )
 
 # Format each entry
