@@ -4,16 +4,16 @@
   body {
     font-family: 'SF Mono', 'Consolas', 'Monaco', 'Menlo', monospace;
     font-size: 13px;
-    background: #fafafa;
-    color: #333;
+    background: #1e1e2e;
+    color: #cdd6f4;
     height: 100vh;
     overflow: hidden;
   }
 
   #toolbar {
     height: 36px;
-    background: #f0f0f0;
-    border-bottom: 1px solid #d0d0d0;
+    background: #181825;
+    border-bottom: 1px solid #313244;
     display: flex;
     align-items: center;
     padding: 0 16px;
@@ -22,11 +22,11 @@
 
   #toolbar .filename {
     font-weight: 600;
-    color: #555;
+    color: #cdd6f4;
   }
 
   #toolbar .stats {
-    color: #999;
+    color: #6c7086;
     font-size: 11px;
   }
 
@@ -46,18 +46,18 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #999;
+    color: #6c7086;
     padding: 4px 16px 8px;
     user-select: none;
   }
 
   #source-pane {
-    border-right: 1px solid #d0d0d0;
-    background: #fff;
+    border-right: 1px solid #313244;
+    background: #1e1e2e;
   }
 
   #ast-pane {
-    background: #fafafa;
+    background: #181825;
   }
 
   /* --- Source pane --- */
@@ -69,11 +69,11 @@
   }
 
   .source-line:hover {
-    background: rgba(0, 0, 0, 0.02);
+    background: rgba(255, 255, 255, 0.02);
   }
 
   .line-number {
-    color: #b0b0b0;
+    color: #585b70;
     min-width: 4em;
     text-align: right;
     padding-right: 16px;
@@ -91,16 +91,16 @@
   }
 
   .ch.hl-source {
-    background: rgba(59, 130, 246, 0.2);
+    background: rgba(137, 180, 250, 0.45);
   }
 
   .ch.hl-source-pin {
-    background: rgba(245, 158, 11, 0.25);
+    background: rgba(249, 226, 175, 0.35);
   }
 
   /* When both hover and pin are active, hover wins visually */
   .ch.hl-source.hl-source-pin {
-    background: rgba(59, 130, 246, 0.2);
+    background: rgba(137, 180, 250, 0.45);
   }
 
   /* --- AST pane --- */
@@ -129,7 +129,7 @@
   }
 
   .node-row:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .toggle {
@@ -138,7 +138,7 @@
     text-align: center;
     cursor: pointer;
     user-select: none;
-    color: #aaa;
+    color: #585b70;
     font-size: 10px;
     flex-shrink: 0;
   }
@@ -150,31 +150,31 @@
   li:not(.expanded) > ul { display: none; }
 
   .node-label {
-    color: #333;
+    color: #cdd6f4;
   }
 
   .wrapper-label {
-    color: #999;
+    color: #6c7086;
     font-style: italic;
   }
 
   .range-info {
-    color: #bbb;
+    color: #7f849c;
     font-size: 11px;
   }
 
   /* --- Highlighting --- */
 
   .node-row.hl-primary {
-    background: rgba(59, 130, 246, 0.25) !important;
+    background: rgba(137, 180, 250, 0.35) !important;
   }
 
   .node-row.hl-ancestor {
-    background: rgba(59, 130, 246, 0.08) !important;
+    background: rgba(137, 180, 250, 0.12) !important;
   }
 
   .node-row.hl-pin {
-    background: rgba(245, 158, 11, 0.2) !important;
+    background: rgba(249, 226, 175, 0.3) !important;
   }
 
   /* Pin indicator dot */
@@ -184,7 +184,7 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: rgb(245, 158, 11);
+    background: rgb(249, 226, 175);
     margin-left: 4px;
     flex-shrink: 0;
   }
