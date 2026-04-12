@@ -87,7 +87,7 @@ inline bool satisfies(std::optional<Type_Constraint> constraint,
         case Type_Constraint::Array:
             return std::same_as<Array, Type>;
         case Type_Constraint::Map:
-            return std::same_as<Map, Type>;
+            return std::same_as<frst::Map, Type>;
         case Type_Constraint::Function:
             return std::same_as<Function, Type>;
         case Type_Constraint::Primitive:

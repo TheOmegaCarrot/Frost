@@ -2156,6 +2156,13 @@ struct match_binding_pattern
 // Value pattern: a primitive literal OR a parenthesized expression. The
 // resulting expression is wrapped in a Match_Value node and compared
 // against the scrutinee at runtime via Frost equality.
+//
+// `node::Literal` builds its AST node with `no_range` (it relies on the
+// surrounding `primary_expression` to fix the range up). Since we consume it
+// directly here, we must set the inner expression's range ourselves so the
+// finished AST never contains `no_range` nodes. For the parenthesized branch,
+// the inner expression already has its own range from `primary_expression`,
+// so we leave it alone.
 struct match_value_pattern
 {
     static constexpr auto rule = [] {
@@ -2165,13 +2172,26 @@ struct match_value_pattern
                           + param_ws_nl
                           + dsl::lit_c<')'>;
         auto paren_value = dsl::peek(dsl::lit_c<'('>) >> paren_expr;
+        auto format_value =
+            dsl::peek(dsl::lit_c<'$'>) >> dsl::p<node::Format_String>;
         auto literal_value = dsl::p<node::Literal>;
-        return dsl::position + (paren_value | literal_value) + dsl::position;
+        return dsl::position
+               + (paren_value | format_value | literal_value)
+               + dsl::position;
     }();
     static constexpr auto value = lexy::callback<ast::Match_Pattern::Ptr>(
         [](auto begin, ast::Expression::Ptr expr, auto end) {
-            return std::make_unique<ast::Match_Value>(
-                make_source_range(begin, end), std::move(expr));
+            auto range = make_source_range(begin, end);
+            // `node::Literal`, `node::Format_String`, and `node::Name_Lookup`
+            // all build their AST nodes with `no_range`, relying on the
+            // surrounding `primary_expression` to fix the range up. We
+            // consume them directly, so we have to assign the range here
+            // when it's still `no_range`. The parenthesized branch already
+            // has its own range from `primary_expression`, so we leave it
+            // alone.
+            if (expr->source_range().begin.line == 0)
+                expr->set_source_range(range);
+            return std::make_unique<ast::Match_Value>(range, std::move(expr));
         });
     static constexpr auto name = "match value pattern";
 };
@@ -2241,14 +2261,24 @@ constexpr auto match_pattern_start_char = dsl::ascii::alpha_underscore
 
 // Pattern list for array patterns. Separate production so its value is a
 // `lexy::as_list` sink, which the array payload consumes as a vector.
-// The separator uses `comma_sep_nl_after(pattern_start)` so the list ends
-// gracefully when a `, ...rest` follows -- the comma is left for the
-// payload to consume as part of the rest clause.
+//
+// Two interacting constraints on the separator:
+//   1. The list must end gracefully before `, ...rest` so the payload can
+//      consume the comma as part of the rest clause. We achieve this by
+//      having the separator's peek refuse to commit when the next character
+//      is `.`.
+//   2. A trailing comma is allowed: `[a, b,]`. We use `dsl::trailing_sep`
+//      and broaden the peek to also accept the closing `]` after the comma.
 struct match_pattern_list
 {
     static constexpr auto rule = [] {
-        auto sep = comma_sep_nl_after(match_pattern_start_char);
-        return dsl::list(dsl::recurse<match_pattern>, dsl::sep(sep));
+        auto after = match_pattern_start_char | dsl::lit_c<']'>;
+        auto sep = comma_sep_nl_after(after);
+        // `dsl::trailing_sep` requires the item to be a branch rule, so we
+        // wrap `match_pattern` in a peek-guarded branch.
+        auto item =
+            dsl::peek(match_pattern_start_char) >> dsl::recurse<match_pattern>;
+        return dsl::list(item, dsl::trailing_sep(sep));
     }();
     static constexpr auto value =
         lexy::as_list<std::vector<ast::Match_Pattern::Ptr>>;
@@ -2265,6 +2295,12 @@ struct match_array_pack
 
 // Array pattern payload: the contents of `[...]`. Mirrors
 // `destructure_payload_impl`'s structure.
+//
+// A trailing comma after the last element is permitted only where another
+// element could syntactically follow -- i.e., after a normal pattern in
+// `[a, b,]`. A rest clause is the syntactic terminator of the array, so
+// `[a, b, ...rest,]` and `[...rest,]` are NOT accepted. The pattern-list
+// case is handled by `match_pattern_list`'s `trailing_sep`.
 struct match_array_payload
 {
     static constexpr auto rule = [] {
@@ -2275,7 +2311,8 @@ struct match_array_payload
         // consume here.
         auto patterns_then_rest =
             dsl::p<match_pattern_list>
-            + dsl::opt(dsl::peek(param_ws_nl + dsl::lit_c<','>)
+            + dsl::opt(dsl::peek(param_ws_nl + dsl::lit_c<','>
+                                 + param_ws_nl + LEXY_LIT("..."))
                        >> (param_ws_nl
                            + dsl::lit_c<','>
                            + param_ws_nl
@@ -2417,8 +2454,12 @@ struct match_map_pattern
         static constexpr auto rule = [] {
             auto entry_start = dsl::peek(map_entry_start);
             auto item = entry_start >> dsl::p<match_map_entry>;
-            auto sep = comma_sep_nl_after(map_entry_start);
-            auto list = dsl::list(item, dsl::sep(sep));
+            // Trailing comma is allowed: `{a, b,}`. Broaden the separator's
+            // peek to accept the closing `}` after the comma, then use
+            // `dsl::trailing_sep`.
+            auto sep =
+                comma_sep_nl_after(map_entry_start | dsl::lit_c<'}'>);
+            auto list = dsl::list(item, dsl::trailing_sep(sep));
             return braced_list(map_entry_start, list);
         }();
         static constexpr auto value =
