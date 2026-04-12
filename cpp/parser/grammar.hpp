@@ -1155,8 +1155,11 @@ struct destructure_pattern_list_impl
             dsl::ascii::alpha_underscore / dsl::lit_c<'['> / dsl::lit_c<'{'>;
         auto item = dsl::peek(elem_start)
                     >> dsl::recurse<destructure_pattern_impl<exported>>;
-        auto sep = comma_sep_nl_after(elem_start);
-        return dsl::list(item, dsl::sep(sep));
+        // Trailing comma is allowed: `[a, b,]`. Broaden the separator's
+        // peek to also accept the closing `]` so the list commits to the
+        // comma even when no further element follows.
+        auto sep = comma_sep_nl_after(elem_start | dsl::lit_c<']'>);
+        return dsl::list(item, dsl::trailing_sep(sep));
     }();
     static constexpr auto value =
         lexy::as_list<std::vector<ast::Destructure::Ptr>>;
@@ -2001,16 +2004,15 @@ struct map_entries
 };
 
 // `map_destructure_entries`: `{key: pattern, ...}` in a def destructure.
-// Uses dsl::sep (no trailing comma allowed) since trailing commas in
-// destructure patterns are less natural and could mask typos.
+// Trailing comma is allowed: `{a, b,}`.
 template <bool exported>
 struct map_destructure_entries_impl
 {
     static constexpr auto rule = [] {
         auto entry_start = dsl::peek(map_entry_start);
         auto item = entry_start >> dsl::p<map_destructure_entry_impl<exported>>;
-        auto sep = comma_sep_nl_after(map_entry_start);
-        auto list = dsl::list(item, dsl::sep(sep));
+        auto sep = comma_sep_nl_after(map_entry_start | dsl::lit_c<'}'>);
+        auto list = dsl::list(item, dsl::trailing_sep(sep));
         return braced_list(map_entry_start, list);
     }();
     static constexpr auto value =

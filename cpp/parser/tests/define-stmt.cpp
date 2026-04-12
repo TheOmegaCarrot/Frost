@@ -179,10 +179,10 @@ TEST_CASE("Parser Define Statements")
         CHECK(value->get<frst::Int>().value() == 3_f);
     }
 
-    SECTION("Map destructure rejects trailing comma")
+    SECTION("Map destructure accepts trailing comma")
     {
         auto result = parse("def {foo: bar,} = {foo: 1}");
-        REQUIRE_FALSE(result);
+        REQUIRE(result);
     }
 
     SECTION("Map destructure allows empty pattern")
@@ -637,8 +637,6 @@ TEST_CASE("Parser Define Statements")
             "if true: 1 else: def x = 2",
             "if true: def x = 1",
             "if true: 1 elif false: def x = 2 else: 3",
-            "def [a,] = 1",
-            "def [a, b,] = 1",
             "def [...rest,] = 1",
             "def [a ...rest] = 1",
             "def [a, ...] = 1",
