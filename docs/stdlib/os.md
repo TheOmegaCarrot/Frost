@@ -35,7 +35,7 @@ Returns a Map with three keys:
 `args` is an Array of Strings passed as command-line arguments.
 Each element is passed as a single argument with no word splitting -- `os.run('foo', ['bar baz'])` is equivalent to `foo 'bar baz'`, not `foo bar baz`.
 
-```
+```frost
 def r = os.run('/bin/echo', ['hello', 'world'])
 # r.stdout == "hello world\n"
 # r.exit_code == 0
@@ -55,7 +55,7 @@ The optional third argument is a Map that may contain any of the following keys:
 `env` and `replace_env` are mutually exclusive.
 Both expect a Map with String keys and String values.
 
-```
+```frost
 # Pipe data to stdin
 def r = os.run('/usr/bin/cat', [], {stdin: 'hello'})
 # r.stdout == "hello"

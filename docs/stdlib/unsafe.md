@@ -22,7 +22,7 @@ Note that results may sometimes be surprising.
 Because Frost values are immutable, the implementation can often re-use the same exact object.
 The cases where this optimization can be applied are largely undocumented, and may change between versions without being considered a breaking change.
 
-```
+```frost
 def a = [1, 2, 3]
 def b = [1, 2, 3]
 def c = a
@@ -73,7 +73,7 @@ Returns a map with a single method:
 Returns the original value if it is still alive, or `null` if it has been freed.
 A value is freed when all strong references to it are dropped.
 
-```
+```frost
 defn make_weak() -> do {
     def val = {data: [1, 2, 3]}
     def weak = unsafe.weaken(val)

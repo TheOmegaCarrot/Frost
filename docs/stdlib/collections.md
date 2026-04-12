@@ -230,7 +230,7 @@ For `Map` input, `f` must return a `Map`; its entries are merged into the result
 Applies `f` to each element of `arr` and flattens the results one level.
 Equivalent to `arr @ transform(f) @ flatten(1)`. See [`transform`](#transform) and [`flatten`](#flatten).
 
-```
+```frost
 flat_map([1, 2, 3], fn x -> [x, x * 2])  # => [1, 2, 2, 4, 3, 6]
 ```
 

@@ -115,7 +115,7 @@ Equivalent to `base / path` in filesystem terms.
 
 Returns the filename component of `path` with the last extension removed.
 
-```
+```frost
 fs.stem('/a/b/file.txt')    # => 'file'
 fs.stem('archive.tar.gz')   # => 'archive.tar'
 fs.stem('/a/b/file')        # => 'file'
@@ -127,7 +127,7 @@ fs.stem('/a/b/file')        # => 'file'
 Returns the last extension of the filename component of `path`, including the leading dot.
 Returns an empty string if there is no extension.
 
-```
+```frost
 fs.extension('/a/b/file.txt')   # => '.txt'
 fs.extension('archive.tar.gz')  # => '.gz'
 fs.extension('/a/b/file')       # => ''
@@ -138,7 +138,7 @@ fs.extension('/a/b/file')       # => ''
 
 Returns the final component of `path` (the filename), including any extension.
 
-```
+```frost
 fs.filename('/a/b/file.txt')  # => 'file.txt'
 ```
 
@@ -148,7 +148,7 @@ fs.filename('/a/b/file.txt')  # => 'file.txt'
 Returns the parent directory of `path`.
 Returns an empty string if `path` contains no directory component.
 
-```
+```frost
 fs.parent('/a/b/file.txt')  # => '/a/b'
 fs.parent('/a/b')           # => '/a'
 fs.parent('file.txt')       # => ''

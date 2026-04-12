@@ -22,7 +22,7 @@ Returns a Map with four keys:
 `args[0]` is treated as the script path and is consumed internally (used as the default tool name in error messages and help output).
 Everything after `args[0]` is parsed against the spec.
 
-```
+```frost
 def cli = import('std.cli')
 
 def parsed = cli.parse(args, {
@@ -72,7 +72,7 @@ The `flags` key is a Map where each key is the flag's long name and each value i
 
 In the result, every declared flag appears under `result.flags` as a `Bool`: `true` if it was present in `args`, `false` otherwise.
 
-```
+```frost
 flags: {
     verbose: { short: 'v', description: 'Verbose output' },
     ['dry-run']: { description: 'Dry-run mode' },
@@ -100,7 +100,7 @@ In the result, every declared option appears under `result.options`:
 Option values are always Strings.
 `cli.parse` does not perform any type coercion; for other types, apply a conversion like [`to_int`](types.md#to_int) on the parsed value.
 
-```
+```frost
 options: {
     env:     { short: 'e', required: true },
     retries: { short: 'r', default: '3' },
@@ -123,7 +123,7 @@ Each positional spec entry is a Map:
 | `name` | `String` | Required. Used in help output. |
 | `description` | `String` | Shown in the auto-generated help. |
 
-```
+```frost
 positional: [
     { name: 'source', description: 'Input file' },
     { name: 'dest', description: 'Output file' },
@@ -132,13 +132,13 @@ positional: [
 
 Or for scripts that want to handle positionals themselves:
 
-```
+```frost
 positional: true
 ```
 
 [Array destructuring](../language.md#array-destructuring) pairs nicely with declared positionals when you want to bind them by name:
 
-```
+```frost
 def [source, dest] = parsed.positional
 ```
 
@@ -162,7 +162,7 @@ Otherwise, help is auto-generated from `name`, `description`, and the declared f
 `cli.parse` does not handle `--help` or `-h` automatically.
 The typical pattern is to add a `help` flag to the spec and check it in the result:
 
-```
+```frost
 def parsed = cli.parse(args, {
     flags: {
         help: { short: 'h', description: 'Show help' },
@@ -200,7 +200,7 @@ Prints `message` followed by a space to stderr (no newline) and reads a line fro
 Returns the line as a `String`, or `null` if the user aborts with end-of-file.
 Only the trailing newline is stripped; any other whitespace the user typed is preserved.
 
-```
+```frost
 def name = cli.prompt('What is your name?')
 if name != null: print($'Hello, ${name}')
 ```
@@ -212,7 +212,7 @@ stderr is used so that the prompt is visible even when stdout is redirected (`fr
 `std.cli` does not provide a dedicated confirmation helper because the right behavior on end-of-file or unrecognized input depends on the script.
 A few lines using `prompt` cover most needs:
 
-```
+```frost
 def ans = cli.prompt('Delete all files? [y/N]')
 def confirmed = ans and ( ans @ to_lower() @ trim() @ starts_with('y') )
 if confirmed: do {

@@ -1136,6 +1136,6 @@ if not imported: print(greet('world'))
 When running a file, `args` is prefined as an `Array` of `String` values containing the command-line arguments passed to the program.
 `args[0]` is the path to the main script file, and any subsequent elements are any additional arguments.
 
-```
+```bash
 frost script.frst foo bar   # args == ["script.frst", "foo", "bar"]
 ```

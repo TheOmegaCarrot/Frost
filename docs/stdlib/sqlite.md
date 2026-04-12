@@ -42,7 +42,7 @@ Supported binding types are `Null`, `Int`, `Float`, `Bool`, and `String`.
 
 Use `?` placeholders and pass an `Array` of values.
 
-```
+```frost
 db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
 ```
 
@@ -51,7 +51,7 @@ db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
 Use `:name`, `@name`, or `$name` placeholders and pass a `Map` with string keys.
 The keys in the map correspond to the parameter names without the prefix.
 
-```
+```frost
 db.exec('INSERT INTO t VALUES (:id, :name)', {id: 1, name: 'alice'})
 db.query('SELECT * FROM t WHERE id > @min', {min: 0})
 ```
@@ -61,7 +61,7 @@ All methods that accept bindings (`exec`, `query`, `each`, `collect`) support bo
 There are no explicit prepared statements.
 For repeated operations, wrap a parameterized call in a function:
 
-```
+```frost
 defn insert_user(db, id, name) -> db.exec('INSERT INTO users VALUES (?, ?)', [id, name])
 
 insert_user(db, 1, 'alice')
@@ -102,7 +102,7 @@ Executes a single SQL statement and returns the number of rows affected (`Int`).
 DDL statements return `0`.
 Multi-statement SQL is rejected.
 
-```
+```frost
 db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
 db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])                    # => 1
 db.exec('UPDATE t SET name = :name WHERE id = :id', {name: 'x', id: 1}) # => 1
@@ -118,7 +118,7 @@ Does not accept parameter bindings.
 Without a wrapping [`db.transaction`](#dbtransaction), each statement is committed individually.
 If a statement fails partway through a script, earlier statements will have already committed.
 
-```
+```frost
 db.script('CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1); INSERT INTO t VALUES (2)')  # => 2
 ```
 
@@ -129,7 +129,7 @@ db.script('CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1); INSERT INTO t 
 Executes a single SQL statement and returns all result rows as an `Array` of `Map`s.
 Each map has column names as keys.
 
-```
+```frost
 db.query('SELECT * FROM t WHERE id > ?', [0])
 # => [{id: 1, name: 'alice'}, {id: 2, name: 'bob'}]
 ```
@@ -149,7 +149,7 @@ Executes a query and calls `callback` with each row.
 Only one row is in memory at a time, making this suitable for large result sets.
 Returns `null`.
 
-```
+```frost
 db.each('SELECT * FROM src', fn row -> db.exec('INSERT INTO dst VALUES (?)', [row.x]))
 ```
 
@@ -160,7 +160,7 @@ db.each('SELECT * FROM src', fn row -> db.exec('INSERT INTO dst VALUES (?)', [ro
 Executes a query, calls `callback` with each row, and collects the return values into an `Array`.
 Rows are processed one at a time, but the collected results are accumulated in memory.
 
-```
+```frost
 db.collect('SELECT x FROM t', fn row -> row.x * 2)  # => [2, 4, 6]
 ```
 
@@ -170,7 +170,7 @@ db.collect('SELECT x FROM t', fn row -> row.x * 2)  # => [2, 4, 6]
 Returns the rowid of the most recent successful `INSERT` on this connection as an `Int`.
 If no `INSERT` has been performed, returns `0`.
 
-```
+```frost
 db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
 db.exec('INSERT INTO t (name) VALUES (?)', ['alice'])
 db.last_insert_rowid()  # => 1
@@ -189,7 +189,7 @@ The callback receives a transaction object `tx` with the same data methods as `d
 On normal return, the transaction is committed and `db.transaction` returns the total number of rows affected (`Int`).
 If the callback produces an error, the transaction is rolled back and the error propagates.
 
-```
+```frost
 db.transaction(fn tx -> {
     tx.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
     tx.exec('INSERT INTO t VALUES (?, ?)', [2, 'bob'])
@@ -219,7 +219,7 @@ Calling `db.transaction` while a transaction is already active produces an error
 Any error inside the callback — whether from Frost code or from SQLite (e.g. a constraint violation) — causes an automatic rollback.
 The error then propagates to the caller of `db.transaction`.
 
-```
+```frost
 def result = try_call(db.transaction, [fn tx -> {
     tx.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
     tx.exec('INSERT INTO t VALUES (?, ?)', [1, 'duplicate'])  # constraint violation
@@ -236,7 +236,7 @@ SQLite values are converted to Frost types (`INTEGER` → `Int`, `REAL` → `Flo
 
 If the Frost function produces an error, it becomes a SQL error, which is then propagated back to the calling Frost code as a recoverable error.
 
-```
+```frost
 db.create_function('double', fn x -> x * 2)
 db.query('SELECT double(21)')  # => [{["double(21)"]: 42}]
 
@@ -267,7 +267,7 @@ Errors in `step` or `finalize` are surfaced as errors. An error in `step` stops 
 
 Registering an aggregate with the same name as an existing function or aggregate replaces it.
 
-```
+```frost
 # Simple sum
 db.create_aggregate('sum2', 0, fn (acc, x) -> acc + x)
 db.query('SELECT sum2(val) as total FROM t')
@@ -292,7 +292,7 @@ Only one trace callback can be active at a time. Registering a new one replaces 
 Errors produced by the callback are reported to stderr but do not interrupt SQL execution.
 Fatal errors (`fatal`) terminate the program with less grace than usual.
 
-```
+```frost
 db.trace(fn sql -> print(sql))
 db.exec('INSERT INTO t VALUES (?)', [42])
 # prints: INSERT INTO t VALUES (42)
