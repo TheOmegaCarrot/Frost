@@ -1,3 +1,6 @@
+// astviz -- interactive AST visualizer for Frost
+// Written by Claude (Anthropic), with design direction from Ethan Hancock
+
 #include <frost/ast/ast-node.hpp>
 #include <frost/parser.hpp>
 

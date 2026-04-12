@@ -164,13 +164,21 @@
 
   .toggle {
     display: inline-block;
-    width: 14px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
     text-align: center;
     cursor: pointer;
     user-select: none;
     color: #585b70;
-    font-size: 10px;
+    font-size: 11px;
     flex-shrink: 0;
+    border-radius: 3px;
+  }
+
+  .toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #a6adc8;
   }
 
   .toggle::before { content: '\25b8'; }
@@ -228,6 +236,22 @@
     color: #f38ba8;
   }
 
+  /* Range warnings (gentle) */
+  .warn-text {
+    color: #f9e2af;
+    font-size: 12px;
+    margin-left: 6px;
+  }
+
+  .toolbar-warnings {
+    color: #f9e2af;
+    font-size: 11px;
+  }
+
+  .toolbar-warnings.clean {
+    color: #a6e3a1;
+  }
+
   /* Toolbar buttons */
   .toolbar-btn {
     background: #313244;
@@ -249,6 +273,7 @@
 <div id="toolbar">
   <span class="filename" id="filename"></span>
   <span class="stats" id="stats"></span>
+  <span class="toolbar-warnings" id="warnings"></span>
   <button class="toolbar-btn" id="btn-expand-all">Expand All</button>
   <button class="toolbar-btn" id="btn-collapse-all">Collapse All</button>
 </div>
@@ -423,10 +448,100 @@
     entries.sort(function(a, b) { return a.size - b.size; });
   });
 
+  // --- Source range validation ---
+  var warnings = [];
+
+  function rangeContains(outer, inner) {
+    if (inner.sl < outer.sl || inner.el > outer.el) return false;
+    if (inner.sl === outer.sl && inner.sc < outer.sc) return false;
+    if (inner.el === outer.el && inner.ec > outer.ec) return false;
+    return true;
+  }
+
+  function rangeOverlaps(a, b) {
+    // True if a and b partially overlap (not disjoint and not one containing the other)
+    var aBeforeB = (a.el < b.sl) || (a.el === b.sl && a.ec < b.sc);
+    var bBeforeA = (b.el < a.sl) || (b.el === a.sl && b.ec < a.sc);
+    if (aBeforeB || bBeforeA) return false; // disjoint
+    if (rangeContains(a, b) || rangeContains(b, a)) return false; // containment
+    return true; // partial overlap
+  }
+
+  function addWarning(nodeId, msg) {
+    warnings.push({ id: nodeId, msg: msg });
+    var el = nodeElements.get(nodeId);
+    if (!el) return;
+    var span = document.createElement('span');
+    span.className = 'warn-text';
+    span.textContent = '\u26a0 ' + msg;
+    el.appendChild(span);
+  }
+
+  function validateNode(node, parent) {
+    if (node.range) {
+      var r = node.range;
+
+      // Inverted range
+      if (r.el < r.sl || (r.el === r.sl && r.ec < r.sc)) {
+        addWarning(node.id, 'Inverted range: end before start');
+      }
+
+      // Range beyond source bounds
+      if (r.sl < 1 || r.el > sourceLines.length) {
+        addWarning(node.id, 'Range beyond source: line ' + r.sl + '-' + r.el +
+          ' (source has ' + sourceLines.length + ' lines)');
+      } else {
+        if (r.sc > sourceLines[r.sl - 1].length + 1) {
+          addWarning(node.id, 'Start column ' + r.sc + ' beyond line ' + r.sl +
+            ' length (' + sourceLines[r.sl - 1].length + ')');
+        }
+        if (r.ec > sourceLines[r.el - 1].length + 1) {
+          addWarning(node.id, 'End column ' + r.ec + ' beyond line ' + r.el +
+            ' length (' + sourceLines[r.el - 1].length + ')');
+        }
+      }
+
+      // Child exceeds parent
+      if (parent && parent.range && !rangeContains(parent.range, r)) {
+        addWarning(node.id, 'Range exceeds parent (' + node.label +
+          ' [' + r.sl + ':' + r.sc + '-' + r.el + ':' + r.ec + ']' +
+          ' outside ' + parent.label +
+          ' [' + parent.range.sl + ':' + parent.range.sc + '-' +
+          parent.range.el + ':' + parent.range.ec + '])');
+      }
+    }
+
+    // Overlapping siblings
+    if (node.children) {
+      var rangedChildren = node.children.filter(function(c) { return c.range; });
+      for (var i = 0; i < rangedChildren.length; i++) {
+        for (var j = i + 1; j < rangedChildren.length; j++) {
+          if (rangeOverlaps(rangedChildren[i].range, rangedChildren[j].range)) {
+            addWarning(rangedChildren[j].id,
+              'Range overlaps sibling ' + rangedChildren[i].label);
+          }
+        }
+      }
+
+      node.children.forEach(function(child) { validateNode(child, node); });
+    }
+  }
+
+  data.ast.forEach(function(stmt) { validateNode(stmt, null); });
+
   // --- Stats ---
   document.getElementById('filename').textContent = data.filename;
   document.getElementById('stats').textContent =
     sourceLines.length + ' lines, ' + nodeMap.size + ' nodes';
+
+  var warningsEl = document.getElementById('warnings');
+  if (warnings.length > 0) {
+    warningsEl.textContent = '\u26a0 ' + warnings.length + ' warning' +
+      (warnings.length === 1 ? '' : 's');
+  } else {
+    warningsEl.textContent = '\u2713 no warnings';
+    warningsEl.classList.add('clean');
+  }
 
   // --- Highlighting state ---
   var hoverASTIds = [];
