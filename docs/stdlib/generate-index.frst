@@ -45,23 +45,19 @@ def module_prefixes = {
 
 # Flip it around into a map from function name to full anchor
 # Build entries with display name, anchor, and optional tag
-def fn_link_map = (
-    reduce keys(file_fns_map) init: {} with fn acc, filename ->
-        acc + (
-            reduce file_fns_map[filename] init: {} with fn inner, fname -> {
-                def anchor = filename + '#' + fn_to_anchor_suffix(fname)
-
-                match module_prefixes[filename] {
-                    {module: prefix, ns} => inner + {
-                        [$'${prefix}.${fname}']: {
-                            anchor: anchor,
-                            tag: $' · `${ns}.${prefix}`',
-                        }
-                    },
-                    _ => inner + { [fname]: { anchor: anchor, tag: '' } },
+def fn_link_map = map_into(keys(file_fns_map), fn filename ->
+    map_into(file_fns_map[filename], fn fname -> {
+        def anchor = filename + '#' + fn_to_anchor_suffix(fname)
+        match module_prefixes[filename] {
+            {module: prefix, ns} => {
+                [$'${prefix}.${fname}']: {
+                    anchor: anchor,
+                    tag: $' · `${ns}.${prefix}`',
                 }
-            }
-        )
+            },
+            _ => { [fname]: {anchor: anchor, tag: ''} },
+        }
+    })
 )
 
 # Format each entry

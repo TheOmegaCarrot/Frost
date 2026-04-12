@@ -41,7 +41,7 @@ When `step > 0`, yields `start, start + step, ...` while the value is `< stop`.
 When `step < 0`, yields `start, start + step, ...` while the value is `> stop`.
 Returns an empty array if the range is already exhausted at `start`.
 
-```
+```frost
 range(5)           # => [0, 1, 2, 3, 4]
 range(2, 5)        # => [2, 3, 4]
 range(0, 10, 2)    # => [0, 2, 4, 6, 8]
@@ -61,7 +61,7 @@ Returns an array of `n` `null` values. `n` must be `>= 0`.
 Returns an array of `n` copies of `value`. `n` must be `>= 0`.
 `value` may be of any type.
 
-```
+```frost
 repeat(0, 3)      # => [0, 0, 0]
 repeat("x", 4)    # => ["x", "x", "x", "x"]
 repeat(null, 0)   # => []
@@ -96,7 +96,7 @@ Useful in pipelines: `people @ transform(index("name"))`.
 Indexes into nested structures, returning `null` if any intermediate value is `null` rather than producing an error.
 Each key is applied in order, indexing into the result of the previous step.
 
-```
+```frost
 def m = {a: {b: {c: 42}}}
 
 m @ dig('a', 'b', 'c')   # => 42
@@ -112,7 +112,7 @@ nested @ dig('items', 5, 'name')   # => null (out of bounds)
 
 Returns every `n`th element of `arr` starting from index 0. `n` must be `> 0`.
 
-```
+```frost
 stride([1, 2, 3, 4, 5, 6], 2)  # => [1, 3, 5]
 ```
 
@@ -141,7 +141,7 @@ Returns all but the last `n` elements of `arr`. `n` must be `>= 0`.
 
 Returns an array of overlapping windows of size `n`. `n` must be `> 0`.
 
-```
+```frost
 slide([1, 2, 3, 4], 3)  # => [[1, 2, 3], [2, 3, 4]]
 ```
 
@@ -152,7 +152,7 @@ Returns an array of non-overlapping chunks of size `n`.
 The last chunk may be smaller than `n` if the array length is not evenly divisible.
 `n` must be `> 0`.
 
-```
+```frost
 chunk([1, 2, 3, 4, 5], 2)  # => [[1, 2], [3, 4], [5]]
 ```
 
@@ -177,7 +177,7 @@ Drops elements from the start of `arr` as long as `f` returns truthy, then retur
 Groups consecutive elements into chunks.
 A new chunk begins whenever `f(previous, current)` returns falsy.
 
-```
+```frost
 chunk_by([1, 1, 2, 2, 1], fn (a, b) -> a == b)  # => [[1, 1], [2, 2], [1]]
 ```
 
@@ -190,7 +190,7 @@ Without `n`, recursively flattens all levels of nesting.
 With `n`, flattens exactly `n` levels. `n` must be `>= 0`; `n=0` returns `arr` unchanged.
 Non-array elements are always left untouched.
 
-```
+```frost
 flatten([1, [2, [3, 4]], 5])      # => [1, 2, 3, 4, 5]
 flatten([1, [2, [3, 4]], 5], 1)   # => [1, 2, [3, 4], 5]
 flatten([1, [2, [3, 4]], 5], 0)   # => [1, [2, [3, 4]], 5]
@@ -202,7 +202,7 @@ flatten([1, [2, [3, 4]], 5], 0)   # => [1, [2, [3, 4]], 5]
 Combines two or more arrays element by element.
 Returns an array of arrays, truncated to the length of the shortest input.
 
-```
+```frost
 zip([1, 2, 3], ["a", "b", "c"])  # => [[1, "a"], [2, "b"], [3, "c"]]
 ```
 
@@ -213,7 +213,7 @@ Returns the cartesian product of two or more arrays.
 Each element of the result is an array containing one element from each input.
 Returns an empty array if any input is empty.
 
-```
+```frost
 xprod([1, 2], ["a", "b"])  # => [[1, "a"], [1, "b"], [2, "a"], [2, "b"]]
 ```
 
@@ -302,7 +302,7 @@ Short-circuits on the first match.
 
 Returns a map where each key is a value returned by `f`, and each value is an array of all elements in `arr` that produced that key.
 
-```
+```frost
 group_by([1, 2, 3, 4, 5], fn (x) -> x % 2)
 # => { [0]: [2, 4], [1]: [1, 3, 5] }
 ```
@@ -312,7 +312,7 @@ group_by([1, 2, 3, 4, 5], fn (x) -> x % 2)
 
 Returns a map where each key is a value returned by `f`, and each value is an `Int` count of how many elements produced that key.
 
-```
+```frost
 count_by(["a", "b", "a", "c", "a"], id)
 # => { ["a"]: 3, ["b"]: 1, ["c"]: 1 }
 ```
@@ -325,7 +325,7 @@ The first element of the result is the first element of `arr` (used as the initi
 Each subsequent element is `f(previous_accumulator, current_element)`.
 Returns an empty array for empty input.
 
-```
+```frost
 scan([1, 2, 3, 4], fn(acc, x) -> acc + x)  # => [1, 3, 6, 10]
 ```
 
@@ -335,7 +335,22 @@ scan([1, 2, 3, 4], fn(acc, x) -> acc + x)  # => [1, 3, 6, 10]
 Splits `arr` into two arrays based on predicate `f`.
 Returns `{ pass: [...], fail: [...] }` where `pass` contains elements for which `f` returned truthy and `fail` contains the rest.
 
-```
+```frost
 partition([1, 2, 3, 4, 5], fn (x) -> x % 2 == 1)
 # => { pass: [1, 3, 5], fail: [2, 4] }
+```
+
+## `map_into`
+`map_into(arr, f)`
+
+Calls `f` on each element of `arr`. Each call must return a `Map`.
+The results are merged left-to-right into a single `Map`.
+Later entries overwrite earlier ones on key collision.
+
+```frost
+map_into(['a', 'b', 'c'], fn s -> { [s]: len(s) })
+# => { a: 1, b: 1, c: 1 }
+
+map_into(range(3), fn n -> { [n]: n * n })
+# => { [0]: 0, [1]: 1, [2]: 4 }
 ```

@@ -1,0 +1,44 @@
+# Basic: build a map from an array
+assert(map_into([1, 2, 3], fn x -> ({[x]: x * 10})) == {[1]: 10, [2]: 20, [3]: 30})
+
+# String keys
+def result = map_into(['a', 'b', 'c'], fn x -> ({[x]: to_upper(x)}))
+assert(result == {a: 'A', b: 'B', c: 'C'})
+
+# Empty array produces empty map
+assert(map_into([], fn x -> ({[x]: x})) == {})
+
+# Single element
+assert(map_into([42], fn x -> ({answer: x})) == {answer: 42})
+
+# Later entries win on key collision (left-to-right merge)
+def collisions = map_into([1, 2, 3], fn x -> ({key: x}))
+assert(collisions.key == 3)
+
+# Lookup table from pairs
+def pairs = [['one', 1], ['two', 2], ['three', 3]]
+def lookup = map_into(pairs, fn p -> ({[p[0]]: p[1]}))
+assert(lookup.one == 1)
+assert(lookup.two == 2)
+assert(lookup.three == 3)
+
+# Nested map_into
+def groups = {x: [1, 2], y: [3, 4]}
+def flat = map_into(keys(groups), fn k ->
+    map_into(groups[k], fn v -> ({[$'${k}_${v}']: v})))
+assert(flat.x_1 == 1)
+assert(flat.x_2 == 2)
+assert(flat.y_3 == 3)
+assert(flat.y_4 == 4)
+
+# Works in a pipeline with @
+def indexed = (
+    [10, 20, 30]
+    @ transform(fn x -> [to_string(x), x])
+    @ map_into(fn pair -> ({[pair[0]]: pair[1]}))
+)
+assert(indexed == {["10"]: 10, ["20"]: 20, ["30"]: 30})
+
+# Function returns multi-key maps
+def expanded = map_into([1, 2], fn x -> ({[x]: x, [x * 10]: x * 10}))
+assert(expanded == {[1]: 1, [10]: 10, [2]: 2, [20]: 20})

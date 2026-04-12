@@ -135,6 +135,7 @@ Each entry links to its full documentation.
 - [less_than](operators.md#less_than)
 - [less_than_or_equal](operators.md#less_than_or_equal)
 - [lines](strings.md#lines)
+- [map_into](collections.md#map_into)
 - [map_keys](collections.md#map_keys)
 - [map_values](collections.md#map_values)
 - [math.abs](math.md#abs) · `std.math`

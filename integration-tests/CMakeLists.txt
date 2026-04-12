@@ -17,6 +17,7 @@ set(INTEGRATION_SCRIPTS
     prelude/sum.frst
     prelude/product.frst
     prelude/spread.frst
+    prelude/map_into.frst
     threaded-call-chain.frst
     capture-enclosing-closure.frst
     recursive-destructure.frst

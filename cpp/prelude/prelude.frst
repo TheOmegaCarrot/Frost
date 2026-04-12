@@ -47,3 +47,5 @@ defn compose(f, g, ...rest) -> {
 }
 
 defn spread(f) -> fn arr -> call(f, arr)
+
+defn map_into(arr, f) -> reduce arr init: {} with fn acc, x -> acc + f(x)
