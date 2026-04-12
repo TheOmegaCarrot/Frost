@@ -1,0 +1,416 @@
+# Match strain test
+#
+# Throws weird data, edge-case patterns, and unusual combinations at the
+# match machinery to find breakage. Every assert that passes is a
+# regression test for something that could plausibly go wrong.
+
+# ==========================================================================
+# 1. Type discrimination at the boundary
+# ==========================================================================
+
+# 0, '', [], {} are truthy but should match their specific type, not leak
+# into other arms.
+defn type_tag(v) -> match v {
+    _ is Null     => 'null',
+    _ is Bool     => 'bool',
+    _ is Int      => 'int',
+    _ is Float    => 'float',
+    _ is String   => 'string',
+    _ is Array    => 'array',
+    _ is Map      => 'map',
+    _ is Function => 'function'
+}
+
+assert(type_tag(null) == 'null')
+assert(type_tag(true) == 'bool')
+assert(type_tag(false) == 'bool')
+assert(type_tag(0) == 'int')
+assert(type_tag(-1) == 'int')
+assert(type_tag(0.0) == 'float')
+assert(type_tag(-0.0) == 'float')
+assert(type_tag('') == 'string')
+assert(type_tag([]) == 'array')
+assert(type_tag({}) == 'map')
+assert(type_tag(fn -> 1) == 'function')
+
+# Composite constraints
+defn check_numeric(v) -> match v { _ is Numeric => true, _ => false }
+defn check_prim(v) -> match v { _ is Primitive => true, _ => false }
+defn check_struct(v) -> match v { _ is Structured => true, _ => false }
+defn check_nn(v) -> match v { _ is Nonnull => true, _ => false }
+
+assert(check_numeric(1))
+assert(check_numeric(1.5))
+assert(not check_numeric('x'))
+assert(check_prim(1))
+assert(check_prim('x'))
+assert(check_prim(true))
+assert(check_prim(null))
+assert(not check_prim([]))
+assert(check_struct([]))
+assert(check_struct({}))
+assert(not check_struct(1))
+assert(check_nn(0))
+assert(check_nn(false))
+assert(check_nn(''))
+assert(not check_nn(null))
+
+# ==========================================================================
+# 2. Cross-type equality: value patterns must be type-strict
+# ==========================================================================
+
+# Int 0 is NOT equal to Float 0.0, Bool false, null, or String '0'
+defn match_zero(v) -> match v { 0 => 'int-zero', _ => 'other' }
+assert(match_zero(0) == 'int-zero')
+assert(match_zero(0.0) == 'other')
+assert(match_zero(false) == 'other')
+assert(match_zero(null) == 'other')
+assert(match_zero('0') == 'other')
+
+defn match_false(v) -> match v { false => 'false', _ => 'other' }
+assert(match_false(false) == 'false')
+assert(match_false(null) == 'other')
+assert(match_false(0) == 'other')
+
+defn match_empty_str(v) -> match v { '' => 'empty', _ => 'other' }
+assert(match_empty_str('') == 'empty')
+assert(match_empty_str(null) == 'other')
+assert(match_empty_str(0) == 'other')
+
+# ==========================================================================
+# 3. Array patterns: length edge cases
+# ==========================================================================
+
+defn arr_shape(v) -> match v {
+    [] => 'empty',
+    [_] => 'one',
+    [_, _] => 'two',
+    [_, _, _] => 'three',
+    [_, _, _, ..._] => 'many',
+    _ => 'not-array'
+}
+assert(arr_shape([]) == 'empty')
+assert(arr_shape([1]) == 'one')
+assert(arr_shape([1, 2]) == 'two')
+assert(arr_shape([1, 2, 3]) == 'three')
+assert(arr_shape([1, 2, 3, 4]) == 'many')
+assert(arr_shape([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == 'many')
+assert(arr_shape('not an array') == 'not-array')
+assert(arr_shape({}) == 'not-array')
+
+# Rest produces empty array when size == pattern count
+def rest_exact = match [1, 2] { [a, b, ...rest] => rest }
+assert(rest_exact == [])
+
+# Rest with zero leading patterns captures everything
+def rest_all = match [1, 2, 3] { [...all] => all }
+assert(rest_all == [1, 2, 3])
+
+# Nested empty arrays
+assert(match [[]] { [[]] => 'yes', _ => 'no' } == 'yes')
+assert(match [[], []] { [[], []] => 'yes', _ => 'no' } == 'yes')
+assert(match [[1]] { [[]] => 'no', _ => 'yes' } == 'yes')
+
+# ==========================================================================
+# 4. Map patterns: key types and presence
+# ==========================================================================
+
+# Non-string keys: Int, Bool, Float
+def int_key_map = {[1]: 'one', [2]: 'two'}
+assert(match int_key_map { {[1]: v} => v, _ => 'no' } == 'one')
+
+def bool_key_map = {[true]: 'yes', [false]: 'no'}
+assert(match bool_key_map { {[true]: v, [false]: w} => v + w } == 'yesno')
+
+# Missing key fails the arm, doesn't error
+assert(match {a: 1} { {b: _} => 'found', _ => 'missing' } == 'missing')
+assert(match {} { {a: _} => 'found', _ => 'empty' } == 'empty')
+
+# Extra keys are fine
+assert(match {a: 1, b: 2, c: 3} { {a} => a } == 1)
+
+# Empty map pattern matches any map
+assert(match {a: 1, b: 2} { {} => 'any-map', _ => 'no' } == 'any-map')
+assert(match {} { {} => 'empty-map', _ => 'no' } == 'empty-map')
+
+# Empty map pattern does NOT match non-maps
+assert(match [] { {} => 'map', _ => 'no' } == 'no')
+assert(match 42 { {} => 'map', _ => 'no' } == 'no')
+
+# ==========================================================================
+# 5. Guard edge cases
+# ==========================================================================
+
+# Guard sees pattern bindings
+assert(match [3, 4] { [a, b] if: a + b == 7 => 'sum7', _ => 'no' } == 'sum7')
+assert(match [3, 4] { [a, b] if: a + b == 8 => 'sum8', _ => 'no' } == 'no')
+
+# Guard with null is falsy -- arm skips
+assert(match 1 { n if: null => 'never', _ => 'fallthrough' } == 'fallthrough')
+
+# Guard with 0 is truthy -- arm wins
+assert(match 1 { n if: 0 => 'zero-is-truthy', _ => 'no' } == 'zero-is-truthy')
+
+# Guard with '' is truthy
+assert(match 1 { n if: '' => 'truthy', _ => 'no' } == 'truthy')
+
+# Guard with false is falsy
+assert(match 1 { n if: false => 'never', _ => 'fallthrough' } == 'fallthrough')
+
+# Multiple guards in sequence -- only first truthy guard wins
+defn clamp(n, lo, hi) -> match n {
+    n if: n < lo => lo,
+    n if: n > hi => hi,
+    n => n
+}
+assert(clamp(5, 1, 10) == 5)
+assert(clamp(-3, 1, 10) == 1)
+assert(clamp(99, 1, 10) == 10)
+
+# ==========================================================================
+# 6. Value patterns: tricky equality
+# ==========================================================================
+
+# String with special characters
+assert(match 'hello\nworld' { 'hello\nworld' => 'yes', _ => 'no' } == 'yes')
+
+# Large integers
+assert(match 999999999999 { 999999999999 => 'big', _ => 'no' } == 'big')
+
+# Negative via parenthesized expression
+assert(match -42 { (-42) => 'neg', _ => 'no' } == 'neg')
+assert(match -42 { (-43) => 'wrong', _ => 'right' } == 'right')
+
+# Parenthesized complex expression
+def half = 21
+assert(match 42 { (half * 2) => 'computed', _ => 'no' } == 'computed')
+
+# ==========================================================================
+# 7. Arm ordering and short-circuit
+# ==========================================================================
+
+# More specific arms shadow more general ones
+defn specificity(v) -> match v {
+    0 => 'zero',
+    1 => 'one',
+    n is Int if: n < 0 => 'negative',
+    n is Int => 'positive',
+    _ => 'other'
+}
+assert(specificity(0) == 'zero')
+assert(specificity(1) == 'one')
+assert(specificity(-5) == 'negative')
+assert(specificity(42) == 'positive')
+assert(specificity('x') == 'other')
+
+# Wildcard binding catches everything -- later arms never run
+defn first_wins(v) -> match v {
+    x => 'first',
+    42 => 'never'
+}
+assert(first_wins(42) == 'first')
+assert(first_wins('anything') == 'first')
+
+# ==========================================================================
+# 8. Nested patterns: deep and wide
+# ==========================================================================
+
+# 4 levels deep
+def deep_data = [[[[42]]]]
+assert(match deep_data { [[[[n]]]] => n } == 42)
+
+# Map in array in map in array
+def matrioska = [{outer: [{inner: 'found'}]}]
+assert(match matrioska {
+    [{outer: [{inner: val}]}] => val,
+    _ => 'no'
+} == 'found')
+
+# Array of maps, pick specific element by content
+def records = [
+    {type: 'header', value: 'H'},
+    {type: 'body', value: 'B'},
+    {type: 'footer', value: 'F'}
+]
+assert(match records {
+    [{type: 'header', value: h}, {type: 'body', value: b}, ..._] =>
+        h + b,
+    _ => 'no'
+} == 'HB')
+
+# Type constraints inside nested positions
+assert(match [1, 'two', 3.0] {
+    [_ is Int, _ is String, _ is Float] => 'typed',
+    _ => 'no'
+} == 'typed')
+
+assert(match [1, 2, 3.0] {
+    [_ is Int, _ is String, _ is Float] => 'typed',
+    _ => 'no'
+} == 'no')
+
+# ==========================================================================
+# 9. Match result used immediately in expressions
+# ==========================================================================
+
+# Arithmetic
+assert(match 5 { n => n } + 10 == 15)
+assert(match 3 { n => n } * match 4 { n => n } == 12)
+
+# String concat
+assert(match 'hello' { s => s } + ', ' + match 'world' { s => s } == 'hello, world')
+
+# Indexing into match result
+assert(match [10, 20, 30] { a => a }[1] == 20)
+
+# Match as function argument
+assert(to_string(match 42 { n => n }) == '42')
+
+# ==========================================================================
+# 10. Pattern vs value: the disambiguation gauntlet
+# ==========================================================================
+
+# `x` alone is always a binding
+def x_val = 99
+assert(match 1 { x_val => x_val } == 1)
+
+# `(x)` is always a value lookup
+assert(match 99 { (x_val) => 'found', _ => 'no' } == 'found')
+assert(match 98 { (x_val) => 'found', _ => 'no' } == 'no')
+
+# Literal is always a value
+assert(match 42 { 42 => 'lit', x => 'bind' } == 'lit')
+
+# null/true/false are literals, not bindings
+assert(match null { null => 'null-lit', _ => 'no' } == 'null-lit')
+assert(match true { true => 'true-lit', _ => 'no' } == 'true-lit')
+assert(match false { false => 'false-lit', _ => 'no' } == 'false-lit')
+
+# `_` is a discard binding, not a value -- it matches anything
+assert(match 'whatever' { _ => 'discarded' } == 'discarded')
+
+# Multiple `_` in one pattern (P2169-style)
+assert(match [1, 2, 3] { [_, _, _] => 'three', _ => 'no' } == 'three')
+
+# ==========================================================================
+# 11. try_call interaction -- match errors are recoverable
+# ==========================================================================
+
+# No-match error is recoverable
+def no_match_result = try_call(fn v -> match v { 1 => 'one' }, [42])
+assert(no_match_result.ok == false)
+assert(is_string(no_match_result.error))
+
+# Successful match through try_call
+def ok_result = try_call(fn v -> match v { n => n + 1 }, [41])
+assert(ok_result.ok == true)
+assert(ok_result.value == 42)
+
+# ==========================================================================
+# 12. Match with do-block results
+# ==========================================================================
+
+def complex_result = match {x: 10, y: 20} {
+    {x, y} => do {
+        def sum = x + y
+        def product = x * y
+        {sum: sum, product: product}
+    },
+    _ => {}
+}
+assert(complex_result.sum == 30)
+assert(complex_result.product == 200)
+
+# ==========================================================================
+# 13. Same binding name in different arms -- each arm is independent
+# ==========================================================================
+
+defn arm_isolation(v) -> match v {
+    [n] => n * 10,
+    {n} => n * 100,
+    n is Int => n * 1000
+}
+assert(arm_isolation([5]) == 50)
+assert(arm_isolation({n: 5}) == 500)
+assert(arm_isolation(5) == 5000)
+
+# ==========================================================================
+# 14. Stress: many arms
+# ==========================================================================
+
+defn day_name(n) -> match n {
+    1 => 'Monday',
+    2 => 'Tuesday',
+    3 => 'Wednesday',
+    4 => 'Thursday',
+    5 => 'Friday',
+    6 => 'Saturday',
+    7 => 'Sunday',
+    _ => 'unknown'
+}
+assert(day_name(1) == 'Monday')
+assert(day_name(4) == 'Thursday')
+assert(day_name(7) == 'Sunday')
+assert(day_name(0) == 'unknown')
+assert(day_name(8) == 'unknown')
+
+# ==========================================================================
+# 15. Stress: large nested data
+# ==========================================================================
+
+defn sum_tree(tree) -> match tree {
+    {left, right, value} =>
+        sum_tree(left) + value + sum_tree(right),
+    {value} => value,
+    _ => 0
+}
+
+def tree = {
+    value: 10,
+    left: {
+        value: 5,
+        left: {value: 2},
+        right: {value: 7}
+    },
+    right: {
+        value: 15,
+        left: {value: 12},
+        right: {value: 20}
+    }
+}
+assert(sum_tree(tree) == 71)
+assert(sum_tree({value: 42}) == 42)
+assert(sum_tree(null) == 0)
+
+# ==========================================================================
+# 16. Format string value patterns
+# ==========================================================================
+
+def proto = 'https'
+defn check_url(s) -> match s {
+    $'${proto}://localhost' => 'local-secure',
+    'http://localhost' => 'local-plain',
+    _ => 'other'
+}
+assert(check_url('https://localhost') == 'local-secure')
+assert(check_url('http://localhost') == 'local-plain')
+assert(check_url('ftp://localhost') == 'other')
+
+# ==========================================================================
+# 17. Match inside match (non-trivial nesting)
+# ==========================================================================
+
+defn classify_pair(pair) -> match pair {
+    [a, b] => match [type_tag(a), type_tag(b)] {
+        ['int', 'int'] => 'both-int',
+        ['string', 'string'] => 'both-string',
+        [ta, tb] if: ta == tb => 'same-type',
+        _ => 'mixed'
+    },
+    _ => 'not-a-pair'
+}
+assert(classify_pair([1, 2]) == 'both-int')
+assert(classify_pair(['a', 'b']) == 'both-string')
+assert(classify_pair([true, false]) == 'same-type')
+assert(classify_pair([1, 'x']) == 'mixed')
+assert(classify_pair([1, 2, 3]) == 'not-a-pair')

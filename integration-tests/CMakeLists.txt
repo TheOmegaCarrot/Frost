@@ -22,6 +22,8 @@ set(INTEGRATION_SCRIPTS
     recursive-destructure.frst
     escaped-self-reference.frst
     map-newline-1.frst
+    match-capture-strain.frst
+    match-strain.frst
 )
 foreach(script ${INTEGRATION_SCRIPTS})
     get_filename_component(name ${script} NAME_WE)

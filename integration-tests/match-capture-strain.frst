@@ -1,0 +1,280 @@
+# Match + closure capture analysis strain test
+#
+# Every section tries to stress the interaction between match patterns and
+# closure capture. The capture analyser must correctly identify which
+# variables are free (need capturing) vs locally bound (by patterns).
+
+# ==========================================================================
+# 1. Match INSIDE a closure -- outer variables must be captured
+# ==========================================================================
+
+# --- Outer variable used in arm result ---
+def base = 100
+def f1 = fn v -> match v { n => n + base }
+assert(f1(5) == 105)
+
+# --- Outer variable used in a guard ---
+def threshold = 10
+def f2 = fn v -> match v {
+    n if: n > threshold => 'big',
+    _ => 'small'
+}
+assert(f2(20) == 'big')
+assert(f2(3) == 'small')
+
+# --- Outer variable used in a (var) value pattern ---
+def magic = 42
+def f3 = fn v -> match v { (magic) => 'magic', _ => 'mundane' }
+assert(f3(42) == 'magic')
+assert(f3(43) == 'mundane')
+
+# --- Outer variable used as computed map key ---
+def key_name = 'id'
+def f4 = fn m -> match m { {[key_name]: val} => val, _ => null }
+assert(f4({id: 99}) == 99)
+
+# --- Outer variable used in a format-string value pattern ---
+def greeting = 'hello'
+def f5 = fn s -> match s {
+    $'${greeting}, world' => 'matched',
+    _ => 'no'
+}
+assert(f5('hello, world') == 'matched')
+assert(f5('hi, world') == 'no')
+
+# --- Multiple outer variables, different arms ---
+def x1 = 1
+def x2 = 2
+def x3 = 3
+def f6 = fn v -> match v {
+    (x1) => 'one',
+    (x2) => 'two',
+    (x3) => 'three',
+    _ => 'other'
+}
+assert(f6(1) == 'one')
+assert(f6(2) == 'two')
+assert(f6(3) == 'three')
+assert(f6(4) == 'other')
+
+# ==========================================================================
+# 2. Closure INSIDE a match arm -- pattern bindings must be captured
+# ==========================================================================
+
+# --- Simple binding captured by returned closure ---
+def c1 = match 42 { n => fn -> n }
+assert(c1() == 42)
+
+# --- Array pattern bindings captured ---
+def c2 = match [1, 2, 3] { [a, b, c] => fn -> a + b + c }
+assert(c2() == 6)
+
+# --- Rest binding captured ---
+def c3 = match [1, 2, 3, 4] { [h, ...t] => fn -> [h, t] }
+assert(c3() == [1, [2, 3, 4]])
+
+# --- Map shorthand binding captured ---
+def c4 = match {name: 'alice', age: 30} { {name, age} => fn -> $'${name} is ${age}' }
+assert(c4() == 'alice is 30')
+
+# --- Type-constrained binding captured ---
+def c5 = match 42 { n is Int => fn -> n * 2, _ => fn -> 0 }
+assert(c5() == 84)
+
+# --- Closure captures BOTH pattern binding and outer scope ---
+def outer_base = 1000
+def c6 = match [5, 10] { [a, b] => fn -> a + b + outer_base }
+assert(c6() == 1015)
+
+# --- Each arm produces an independent closure with its own captures ---
+def make_fn = fn v -> match v {
+    n is Int => fn x -> n + x,
+    s is String => fn x -> s + to_string(x),
+    _ => fn x -> x
+}
+def int_fn = make_fn(10)
+def str_fn = make_fn('val:')
+assert(int_fn(5) == 15)
+assert(str_fn(5) == 'val:5')
+
+# ==========================================================================
+# 3. Pattern binding SHADOWS outer variable -- closure must capture the
+#    shadow, not the original
+# ==========================================================================
+
+def shadow_me = 'outer'
+def c7 = match 'inner' { shadow_me => fn -> shadow_me }
+assert(c7() == 'inner')
+
+# Same but with the outer variable also used in a different arm via (var)
+def sentinel = 999
+def f7 = fn v -> match v {
+    (sentinel) => fn -> 'was sentinel',
+    sentinel => fn -> sentinel
+}
+# v == 999: first arm matches via value comparison
+assert(f7(999)() == 'was sentinel')
+# v == 7: first arm fails, second arm binds `sentinel` to 7 (shadowing outer)
+assert(f7(7)() == 7)
+
+# ==========================================================================
+# 4. Nested: match-in-closure-in-match
+# ==========================================================================
+
+def classify = fn v -> match v {
+    [inner] => match inner {
+        n is Int => fn factor -> n * factor,
+        s is String => fn suffix -> s + suffix,
+        _ => fn _ -> null
+    },
+    _ => fn _ -> 'flat'
+}
+def int_result = classify([10])
+assert(int_result(3) == 30)
+def str_result = classify(['hi'])
+assert(str_result('!') == 'hi!')
+assert(classify('flat')('x') == 'flat')
+
+# ==========================================================================
+# 5. Closure-in-closure-in-match -- deep capture chain
+# ==========================================================================
+
+def deep = match {a: 1, b: 2} {
+    {a, b} => fn x -> fn y -> a + b + x + y
+}
+assert(deep(10)(100) == 113)
+
+# ==========================================================================
+# 6. Recursive function using match
+# ==========================================================================
+
+defn fib(n) -> match n {
+    0 => 0,
+    1 => 1,
+    n => fib(n - 1) + fib(n - 2)
+}
+assert(fib(0) == 0)
+assert(fib(1) == 1)
+assert(fib(10) == 55)
+
+# Recursive match with accumulator -- closure captures the recursive fn
+defn sum_list(xs) -> match xs {
+    [] => 0,
+    [h, ...t] => h + sum_list(t)
+}
+assert(sum_list([1, 2, 3, 4]) == 10)
+assert(sum_list([]) == 0)
+
+# ==========================================================================
+# 7. Match inside higher-order function pipelines
+# ==========================================================================
+
+def classifier = fn v -> match v {
+    n is Int if: n > 0 => 'pos',
+    n is Int => 'non-pos',
+    _ => 'other'
+}
+def results = map [3, -1, 0, 'x'] with classifier
+assert(results == ['pos', 'non-pos', 'non-pos', 'other'])
+
+# Match arm returns a closure, then map over the closures
+def adders = map [1, 2, 3] with fn n -> match n {
+    n => fn x -> n + x
+}
+assert(adders[0](10) == 11)
+assert(adders[1](10) == 12)
+assert(adders[2](10) == 13)
+
+# ==========================================================================
+# 8. Guard captures both pattern binding and outer variable
+# ==========================================================================
+
+def limit = 50
+def bounded_double = fn v -> match v {
+    n is Int if: n * 2 < limit => n * 2,
+    n is Int => limit,
+    _ => 0
+}
+assert(bounded_double(10) == 20)
+assert(bounded_double(30) == 50)
+assert(bounded_double('x') == 0)
+
+# ==========================================================================
+# 9. Closure returned from match used as a callback
+# ==========================================================================
+
+def make_predicate = fn config -> match config {
+    {min, max} => fn v -> v >= min and v <= max,
+    {min} => fn v -> v >= min,
+    _ => fn _ -> true
+}
+def in_range = make_predicate({min: 3, max: 7})
+def filtered = filter [1, 2, 3, 4, 5, 6, 7, 8, 9] with in_range
+assert(filtered == [3, 4, 5, 6, 7])
+
+# ==========================================================================
+# 10. Match on closure call result -- ensure the call happens in the right
+#     scope and the result is properly matched
+# ==========================================================================
+
+def producer = fn -> [1, [2, 3]]
+def c10 = match producer() {
+    [a, [b, c]] => fn -> a + b + c
+}
+assert(c10() == 6)
+
+# ==========================================================================
+# 11. Discard bindings don't interfere with capture
+# ==========================================================================
+
+def c11 = match [1, 2, 3] {
+    [_, mid, _] => fn -> mid
+}
+assert(c11() == 2)
+
+# Multiple discards + a real capture in nested position
+def c12 = match {x: [0, 42, 0]} {
+    {x: [_, val, _]} => fn -> val * 2
+}
+assert(c12() == 84)
+
+# ==========================================================================
+# 12. Match arm closure survives its creating scope (escape test)
+# ==========================================================================
+
+defn make_matcher(data) -> match data {
+    {tag: 'add', amount: n} => fn v -> v + n,
+    {tag: 'mul', amount: n} => fn v -> v * n,
+    _ => fn v -> v
+}
+
+def add5 = make_matcher({tag: 'add', amount: 5})
+def mul3 = make_matcher({tag: 'mul', amount: 3})
+def ident = make_matcher({tag: 'unknown'})
+
+assert(add5(10) == 15)
+assert(mul3(10) == 30)
+assert(ident(10) == 10)
+
+# Chain escaped closures
+assert(add5(mul3(2)) == 11)
+
+# ==========================================================================
+# 13. Deeply nested patterns with closures at every level
+# ==========================================================================
+
+def data = {
+    users: [
+        {name: 'alice', prefs: {theme: 'dark'}},
+        {name: 'bob', prefs: {theme: 'light'}}
+    ]
+}
+
+def result = match data {
+    {users: [{name: first, prefs: {theme}}, ...rest]} =>
+        fn -> {first: first, theme: theme, others: len(rest)}
+}
+def info = result()
+assert(info.first == 'alice')
+assert(info.theme == 'dark')
+assert(info.others == 1)

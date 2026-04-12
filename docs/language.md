@@ -108,7 +108,9 @@ Below is a list of reserved words.
 - `foreach`
 - `if`
 - `init`
+- `is`
 - `map`
+- `match`
 - `not`
 - `null`
 - `or`
@@ -671,6 +673,9 @@ match value {
     null               => 'nothing'
 }
 ```
+
+The `if` denotes a guard clause.
+See [Guards](#guards) for a full explanation of that syntax.
 
 #### Array Patterns
 
