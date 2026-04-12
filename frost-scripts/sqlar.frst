@@ -34,7 +34,7 @@ export defn unpack(db, pat) -> # exec with select is actually correct here becau
             ''',
         [$'%${pat}%'])
 
-defn augment_filepath(path, aug) -> fs.parent(path) @fs.concat( fs.stem(path) + $'.${aug}' + fs.extension(path) )
+defn augment_filepath(path, aug) -> path + $'.${aug}'
 
 export defn unpack_augmented(db, pat) -> {
     unpack(db, pat)
