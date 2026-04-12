@@ -39,6 +39,18 @@
     flex: 1;
     overflow: auto;
     padding: 8px 0;
+    min-width: 100px;
+  }
+
+  #divider {
+    width: 5px;
+    background: #313244;
+    cursor: col-resize;
+    flex-shrink: 0;
+  }
+
+  #divider:hover, #divider.dragging {
+    background: #585b70;
   }
 
   .pane-header {
@@ -227,6 +239,7 @@
     <div class="pane-header">Source</div>
     <div id="source-code"></div>
   </div>
+  <div id="divider"></div>
   <div id="ast-pane" class="pane">
     <div class="pane-header">AST</div>
     <div id="ast-tree"></div>
@@ -536,6 +549,36 @@
     if (pinnedId === nodeId) clearPin();
     else pinNode(nodeId);
   });
+  // --- Resizable panes ---
+  var divider = document.getElementById('divider');
+  var container = document.getElementById('container');
+  var sourcePane = document.getElementById('source-pane');
+  var astPane = document.getElementById('ast-pane');
+
+  divider.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    divider.classList.add('dragging');
+
+    function onMove(e) {
+      var rect = container.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var total = rect.width - 5; // subtract divider width
+      var ratio = Math.max(0.1, Math.min(0.9, x / rect.width));
+      sourcePane.style.flex = 'none';
+      sourcePane.style.width = (ratio * total) + 'px';
+      astPane.style.flex = '1';
+    }
+
+    function onUp() {
+      divider.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
   // --- Expand / Collapse all ---
   document.getElementById('btn-expand-all').addEventListener('click', function() {
     document.querySelectorAll('#ast-tree li').forEach(function(li) {
