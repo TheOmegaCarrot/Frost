@@ -206,6 +206,24 @@ Returns an array of arrays, truncated to the length of the shortest input.
 zip([1, 2, 3], ["a", "b", "c"])  # => [[1, "a"], [2, "b"], [3, "c"]]
 ```
 
+## `zip_with`
+`zip_with(f, ...arrays)`
+
+Combines two or more arrays element-wise by applying `f` to corresponding elements.
+The function receives one argument per array.
+If the input arrays are of unequal length, all are truncated to the length of the shortest input.
+(See the second example below.)
+
+Equivalent to `map zip(...arrays) with` [`spread`](functions.md#spread)`(f)`, but without materializing the intermediate array of arrays.
+
+```frost
+zip_with(fn a, b -> a + b, [1, 2, 3], [10, 20, 30])
+# => [11, 22, 33]
+
+zip_with(fn a, b, c -> a * b + c, [2, 3, 4], [10, 20, 30], [1, 1])
+# => [21, 61]
+```
+
 ## `xprod`
 `xprod(...arrays)`
 
@@ -215,6 +233,23 @@ Returns an empty array if any input is empty.
 
 ```frost
 xprod([1, 2], ["a", "b"])  # => [[1, "a"], [1, "b"], [2, "a"], [2, "b"]]
+```
+
+## `xprod_with`
+`xprod_with(f, ...arrays)`
+
+Computes the cartesian product of two or more arrays, applying `f` to each element of the product.
+The function receives one argument per array.
+Returns an empty array if any input is empty.
+
+Equivalent to `map xprod(...arrays) with` [`spread`](functions.md#spread)`(f)`, but without materializing the intermediate array of arrays.
+
+```frost
+xprod_with(fn a, b -> a + b, [10, 20], [1, 2])
+# => [11, 12, 21, 22]
+
+xprod_with(fn a, b -> a + b, ['a', 'b'], ['1', '2'])
+# => ['a1', 'a2', 'b1', 'b2']
 ```
 
 ## `transform`

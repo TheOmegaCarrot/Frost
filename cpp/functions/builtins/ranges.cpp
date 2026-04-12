@@ -210,53 +210,78 @@ BUILTIN(chunk_by)
                          | std::ranges::to<Array>());
 }
 
+// Shared implementation for zip and zip_with. Iterates corresponding
+// elements from each array (truncating to the shortest) and calls
+// `combine` with a span of the current row. Raw pointers to the inner
+// Arrays avoid copying the flat_map containers out of their Value shells.
+Array zip_impl(std::span<const Value_Ptr> arrays, auto&& combine)
+{
+    std::vector<const Array*> cols =
+        arrays
+        | std::views::transform([](const Value_Ptr& arg) {
+              return &arg->raw_get<Array>();
+          })
+        | std::ranges::to<std::vector>();
+
+    const std::size_t shortest =
+        (*std::ranges::min_element(cols, {}, [](const auto* a) {
+            return a->size();
+        }))->size();
+
+    auto gather_row = [&](std::size_t i) {
+        return cols
+               | std::views::transform([i](const Array* a) {
+                     return a->at(i);
+                 })
+               | std::ranges::to<std::vector>();
+    };
+
+    return std::views::iota(0uz, shortest)
+           | std::views::transform([&](std::size_t i) {
+                 auto row = gather_row(i);
+                 return combine(std::span<const Value_Ptr>{row});
+             })
+           | std::ranges::to<Array>();
+}
+
 BUILTIN(zip)
 {
     REQUIRE_ARITY("zip", 2);
     UNIFORM_VARIADIC(zip, Array);
 
-    std::vector<const Array*> raw_args =
-        args
-        | std::views::transform([](const Value_Ptr& arg) {
-              return &arg->raw_get<Array>();
-          })
-        | std::ranges::to<std::vector>();
-
-    const std::size_t smallest_len =
-        (*std::ranges::min_element(raw_args, {}, [](const auto* val) {
-            return val->size();
-        }))->size();
-
-    std::vector<Value_Ptr> result;
-    result.reserve(smallest_len);
-
-    for (auto i = 0uz; i < smallest_len; ++i)
-    {
-        Array row;
-        row.reserve(raw_args.size());
-        for (const auto& arr : raw_args)
-            row.push_back(arr->at(i));
-        result.push_back(Value::create(std::move(row)));
-    }
-
-    return Value::create(std::move(result));
+    return Value::create(zip_impl(args, [](std::span<const Value_Ptr> row) {
+        return Value::create(Array{std::from_range, row});
+    }));
 }
 
-BUILTIN(xprod)
+BUILTIN(zip_with)
 {
-    REQUIRE_ARITY("xprod", 2);
-    UNIFORM_VARIADIC(xprod, Array);
+    REQUIRE_ARGS("zip_with", PARAM("function", TYPES(Function)),
+                 UNIFORM_REST(2, "array", TYPES(Array)));
 
+    const auto& fn = GET(0, Function);
+    auto arrays = args.subspan(1);
+
+    return Value::create(zip_impl(arrays, [&](std::span<const Value_Ptr> row) {
+        return fn->call(row);
+    }));
+}
+
+// Shared implementation for xprod and xprod_with. Iterates the cartesian
+// product of all input arrays and calls `combine` with a span of the
+// current tuple.
+Array xprod_impl(std::span<const Value_Ptr> arrays, auto&& combine)
+{
     std::vector<const Array*> raw_args =
-        args
+        arrays
         | std::views::transform([](const Value_Ptr& arg) {
               return &arg->raw_get<Array>();
           })
         | std::ranges::to<std::vector>();
 
-    for (const auto& arr : raw_args)
+    for (const auto* arr : raw_args)
         if (arr->empty())
-            return Value::create(Array{});
+            return {};
 
     // like a mixed-radix odometer
     struct Tracked_Index
@@ -265,7 +290,7 @@ BUILTIN(xprod)
         std::size_t size;
     };
     std::vector<Tracked_Index> tracked_indices;
-    tracked_indices.reserve(args.size());
+    tracked_indices.reserve(arrays.size());
     for (const auto* arr : raw_args)
         tracked_indices.push_back({.size = arr->size()});
 
@@ -273,15 +298,14 @@ BUILTIN(xprod)
 
     while (true)
     {
-        Array elem;
-        elem.reserve(raw_args.size());
-
-        // push in a row according to tracked indices
+        // gather the current tuple according to tracked indices
+        std::vector<Value_Ptr> row;
+        row.reserve(raw_args.size());
         for (const auto& [raw_arg, idx_tracker] :
              std::views::zip(raw_args, tracked_indices))
-            elem.push_back(raw_arg->at(idx_tracker.index));
+            row.push_back(raw_arg->at(idx_tracker.index));
 
-        result.push_back(Value::create(std::move(elem)));
+        result.push_back(combine(std::span<const Value_Ptr>{row}));
 
         // bump up the tracked indices
         bool are_carrying = true;
@@ -304,7 +328,31 @@ BUILTIN(xprod)
             break;
     }
 
-    return Value::create(std::move(result));
+    return result;
+}
+
+BUILTIN(xprod)
+{
+    REQUIRE_ARITY("xprod", 2);
+    UNIFORM_VARIADIC(xprod, Array);
+
+    return Value::create(xprod_impl(args, [](std::span<const Value_Ptr> row) {
+        return Value::create(Array{std::from_range, row});
+    }));
+}
+
+BUILTIN(xprod_with)
+{
+    REQUIRE_ARGS("xprod_with", PARAM("function", TYPES(Function)),
+                 UNIFORM_REST(2, "array", TYPES(Array)));
+
+    const auto& fn = GET(0, Function);
+    auto arrays = args.subspan(1);
+
+    return Value::create(
+        xprod_impl(arrays, [&](std::span<const Value_Ptr> row) {
+            return fn->call(row);
+        }));
 }
 
 BUILTIN(transform)
@@ -609,7 +657,9 @@ void inject_ranges(Symbol_Table& table)
     INJECT(drop_while);
     INJECT(chunk_by);
     INJECT(zip);
+    INJECT(zip_with);
     INJECT(xprod);
+    INJECT(xprod_with);
     INJECT(transform);
     INJECT(select);
     INJECT(fold);

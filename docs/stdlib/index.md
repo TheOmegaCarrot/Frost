@@ -259,4 +259,6 @@ Each entry links to its full documentation.
 - [unsafe.weaken](unsafe.md#weaken) · `ext.unsafe`
 - [values](collections.md#values)
 - [xprod](collections.md#xprod)
+- [xprod_with](collections.md#xprod_with)
 - [zip](collections.md#zip)
+- [zip_with](collections.md#zip_with)

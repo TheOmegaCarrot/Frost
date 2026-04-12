@@ -121,6 +121,22 @@ inline constexpr bool is_optional_spec_v = false;
 template <typename S>
 inline constexpr bool is_optional_spec_v<Optional<S>> = true;
 
+// A spec that matches all remaining arguments uniformly. Must be the last
+// spec in a REQUIRE_ARGS call.
+template <typename... Ts>
+struct Uniform_Rest
+{
+    Types<Ts...> types;
+    std::string_view label;
+    std::size_t min_count;
+};
+
+template <typename T>
+inline constexpr bool is_uniform_rest_v = false;
+
+template <typename... Ts>
+inline constexpr bool is_uniform_rest_v<Uniform_Rest<Ts...>> = true;
+
 template <typename... Ts>
 constexpr bool matches(const Value_Ptr& v)
 {
@@ -200,13 +216,45 @@ void require_arg(std::string_view fn, builtin_args_t args, std::size_t idx,
     require_arg(fn, args, idx, spec.spec);
 }
 
+template <typename... Ts>
+void require_arg(std::string_view fn, builtin_args_t args, std::size_t idx,
+                 Uniform_Rest<Ts...> spec)
+{
+    for (auto i = idx; i < args.size(); ++i)
+        require_arg(fn, args, i, spec.types, spec.label);
+}
+
+template <typename T>
+constexpr std::size_t min_args_for(const T&)
+{
+    if constexpr (is_optional_spec_v<T>)
+        return 0;
+    else if constexpr (is_uniform_rest_v<T>)
+        return 0; // handled separately via min_count
+    else
+        return 1;
+}
+
+template <typename T>
+constexpr std::size_t rest_min_for(const T& spec)
+{
+    if constexpr (is_uniform_rest_v<T>)
+        return spec.min_count;
+    else
+        return 0;
+}
+
 template <typename... Specs>
 void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
 {
-    constexpr std::size_t max_args = sizeof...(Specs);
-    constexpr std::size_t min_args =
-        (... + (is_optional_spec_v<Specs> ? 0 : 1));
-    require_arity(fn, args, min_args, max_args);
+    constexpr bool has_rest = (is_uniform_rest_v<Specs> || ...);
+    const std::size_t min_args =
+        (... + min_args_for(specs)) + (... + rest_min_for(specs));
+
+    if constexpr (has_rest)
+        require_arity(fn, args, min_args);
+    else
+        require_arity(fn, args, min_args, sizeof...(Specs));
 
     std::size_t i = 0;
     (require_arg(fn, args, i++, specs), ...);
@@ -233,6 +281,12 @@ void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
 #define ANY                                                                    \
     frst::builtin_detail::Types<frst::builtin_detail::Any>                     \
     {                                                                          \
+    }
+
+#define UNIFORM_REST(MIN, LABEL, TYPES_SPEC)                                   \
+    frst::builtin_detail::Uniform_Rest                                          \
+    {                                                                          \
+        TYPES_SPEC, LABEL, static_cast<std::size_t>(MIN)                       \
     }
 
 #define REQUIRE_ARGS(NAME, ...)                                                \

@@ -2484,4 +2484,312 @@ TEST_CASE("Builtin flatten")
             CHECK(r->raw_get<Array>().empty());
         }
     }
+
+    SECTION("zip_with")
+    {
+        auto fn = lookup(table, "zip_with");
+
+        auto add_fn = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t a) {
+                return Value::create(a.at(0)->raw_get<Int>()
+                                    + a.at(1)->raw_get<Int>());
+            },
+            "add")});
+
+        auto mul_fn = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t a) {
+                return Value::create(a.at(0)->raw_get<Int>()
+                                    * a.at(1)->raw_get<Int>());
+            },
+            "mul")});
+
+        auto add3_fn = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t a) {
+                return Value::create(a.at(0)->raw_get<Int>()
+                                    + a.at(1)->raw_get<Int>()
+                                    + a.at(2)->raw_get<Int>());
+            },
+            "add3")});
+
+        SECTION("Arity: too few arguments")
+        {
+            CHECK_THROWS_WITH(fn->call({}),
+                              ContainsSubstring("insufficient"));
+            CHECK_THROWS_WITH(fn->call({add_fn}),
+                              ContainsSubstring("insufficient"));
+            CHECK_THROWS_WITH(
+                fn->call({add_fn, Value::create(Array{})}),
+                ContainsSubstring("insufficient"));
+        }
+
+        SECTION("Type: first arg must be Function")
+        {
+            CHECK_THROWS_WITH(
+                fn->call({Value::create(42_f),
+                          Value::create(Array{}),
+                          Value::create(Array{})}),
+                ContainsSubstring("Function"));
+        }
+
+        SECTION("Type: remaining args must be Array")
+        {
+            CHECK_THROWS_WITH(
+                fn->call({add_fn,
+                          Value::create(Array{}),
+                          Value::create(42_f)}),
+                ContainsSubstring("Array"));
+        }
+
+        SECTION("Two equal-length arrays")
+        {
+            auto r = fn->call({
+                add_fn,
+                Value::create(Array{Value::create(1_f), Value::create(2_f)}),
+                Value::create(Array{Value::create(10_f), Value::create(20_f)}),
+            });
+            REQUIRE(r->is<Array>());
+            const auto& arr = r->raw_get<Array>();
+            REQUIRE(arr.size() == 2);
+            CHECK(arr[0]->raw_get<Int>() == 11_f);
+            CHECK(arr[1]->raw_get<Int>() == 22_f);
+        }
+
+        SECTION("Truncates to shortest")
+        {
+            auto r = fn->call({
+                add_fn,
+                Value::create(Array{Value::create(1_f), Value::create(2_f),
+                                    Value::create(3_f)}),
+                Value::create(Array{Value::create(10_f), Value::create(20_f)}),
+            });
+            REQUIRE(r->is<Array>());
+            const auto& arr = r->raw_get<Array>();
+            REQUIRE(arr.size() == 2);
+            CHECK(arr[0]->raw_get<Int>() == 11_f);
+            CHECK(arr[1]->raw_get<Int>() == 22_f);
+        }
+
+        SECTION("Three arrays")
+        {
+            auto r = fn->call({
+                add3_fn,
+                Value::create(Array{Value::create(1_f), Value::create(2_f)}),
+                Value::create(Array{Value::create(10_f), Value::create(20_f)}),
+                Value::create(Array{Value::create(100_f), Value::create(200_f)}),
+            });
+            REQUIRE(r->is<Array>());
+            const auto& arr = r->raw_get<Array>();
+            REQUIRE(arr.size() == 2);
+            CHECK(arr[0]->raw_get<Int>() == 111_f);
+            CHECK(arr[1]->raw_get<Int>() == 222_f);
+        }
+
+        SECTION("Empty arrays produce empty result")
+        {
+            auto r = fn->call({
+                add_fn,
+                Value::create(Array{}),
+                Value::create(Array{}),
+            });
+            REQUIRE(r->is<Array>());
+            CHECK(r->raw_get<Array>().empty());
+        }
+
+        SECTION("One empty array truncates to empty")
+        {
+            auto r = fn->call({
+                add_fn,
+                Value::create(Array{Value::create(1_f)}),
+                Value::create(Array{}),
+            });
+            REQUIRE(r->is<Array>());
+            CHECK(r->raw_get<Array>().empty());
+        }
+
+        SECTION("Different function: multiply")
+        {
+            auto r = fn->call({
+                mul_fn,
+                Value::create(Array{Value::create(3_f), Value::create(5_f)}),
+                Value::create(Array{Value::create(7_f), Value::create(11_f)}),
+            });
+            REQUIRE(r->is<Array>());
+            const auto& arr = r->raw_get<Array>();
+            REQUIRE(arr.size() == 2);
+            CHECK(arr[0]->raw_get<Int>() == 21_f);
+            CHECK(arr[1]->raw_get<Int>() == 55_f);
+        }
+
+        SECTION("Equivalent to map zip(...) with f")
+        {
+            // zip_with(f, a, b) should equal map zip(a, b) with spread(f)
+            auto a = Value::create(Array{Value::create(1_f), Value::create(2_f)});
+            auto b = Value::create(Array{Value::create(10_f), Value::create(20_f)});
+
+            auto zw_result = fn->call({add_fn, a, b});
+
+            auto zip_fn = lookup(table, "zip");
+            auto zipped = zip_fn->call({a, b});
+            // Manually apply add to each pair
+            const auto& pairs = zipped->raw_get<Array>();
+            Array manual;
+            for (const auto& pair : pairs)
+            {
+                const auto& row = pair->raw_get<Array>();
+                manual.push_back(
+                    Value::create(row[0]->raw_get<Int>()
+                                  + row[1]->raw_get<Int>()));
+            }
+
+            REQUIRE(zw_result->is<Array>());
+            const auto& zw = zw_result->raw_get<Array>();
+            REQUIRE(zw.size() == manual.size());
+            for (std::size_t j = 0; j < zw.size(); ++j)
+                CHECK(Value::equal(zw[j], manual[j])->truthy());
+        }
+    }
+
+    SECTION("xprod_with")
+    {
+        auto fn = lookup(table, "xprod_with");
+
+        auto add_fn = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t a) {
+                return Value::create(a.at(0)->raw_get<Int>()
+                                    + a.at(1)->raw_get<Int>());
+            },
+            "add")});
+
+        auto concat_fn = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t a) {
+                return Value::create(a.at(0)->raw_get<String>()
+                                    + a.at(1)->raw_get<String>());
+            },
+            "concat")});
+
+        auto add3_fn = Value::create(Function{std::make_shared<Builtin>(
+            [](builtin_args_t a) {
+                return Value::create(a.at(0)->raw_get<Int>()
+                                    + a.at(1)->raw_get<Int>()
+                                    + a.at(2)->raw_get<Int>());
+            },
+            "add3")});
+
+        SECTION("Arity: too few arguments")
+        {
+            CHECK_THROWS_WITH(fn->call({}),
+                              ContainsSubstring("insufficient"));
+            CHECK_THROWS_WITH(fn->call({add_fn}),
+                              ContainsSubstring("insufficient"));
+            CHECK_THROWS_WITH(
+                fn->call({add_fn, Value::create(Array{})}),
+                ContainsSubstring("insufficient"));
+        }
+
+        SECTION("Type: first arg must be Function")
+        {
+            CHECK_THROWS_WITH(
+                fn->call({Value::create(42_f),
+                          Value::create(Array{}),
+                          Value::create(Array{})}),
+                ContainsSubstring("Function"));
+        }
+
+        SECTION("Type: remaining args must be Array")
+        {
+            CHECK_THROWS_WITH(
+                fn->call({add_fn,
+                          Value::create(Array{}),
+                          Value::create(42_f)}),
+                ContainsSubstring("Array"));
+        }
+
+        SECTION("Two arrays: applies f to each pair in the product")
+        {
+            auto r = fn->call({
+                add_fn,
+                Value::create(Array{Value::create(10_f), Value::create(20_f)}),
+                Value::create(Array{Value::create(1_f), Value::create(2_f)}),
+            });
+            REQUIRE(r->is<Array>());
+            const auto& arr = r->raw_get<Array>();
+            // 2x2 = 4 combinations: 10+1, 10+2, 20+1, 20+2
+            REQUIRE(arr.size() == 4);
+            CHECK(arr[0]->raw_get<Int>() == 11_f);
+            CHECK(arr[1]->raw_get<Int>() == 12_f);
+            CHECK(arr[2]->raw_get<Int>() == 21_f);
+            CHECK(arr[3]->raw_get<Int>() == 22_f);
+        }
+
+        SECTION("Three arrays")
+        {
+            auto r = fn->call({
+                add3_fn,
+                Value::create(Array{Value::create(100_f), Value::create(200_f)}),
+                Value::create(Array{Value::create(10_f)}),
+                Value::create(Array{Value::create(1_f), Value::create(2_f)}),
+            });
+            REQUIRE(r->is<Array>());
+            const auto& arr = r->raw_get<Array>();
+            // 2x1x2 = 4 combinations
+            REQUIRE(arr.size() == 4);
+            CHECK(arr[0]->raw_get<Int>() == 111_f);
+            CHECK(arr[1]->raw_get<Int>() == 112_f);
+            CHECK(arr[2]->raw_get<Int>() == 211_f);
+            CHECK(arr[3]->raw_get<Int>() == 212_f);
+        }
+
+        SECTION("Empty array produces empty result")
+        {
+            auto r = fn->call({
+                add_fn,
+                Value::create(Array{Value::create(1_f)}),
+                Value::create(Array{}),
+            });
+            REQUIRE(r->is<Array>());
+            CHECK(r->raw_get<Array>().empty());
+        }
+
+        SECTION("String concatenation across product")
+        {
+            auto r = fn->call({
+                concat_fn,
+                Value::create(Array{Value::create("a"s), Value::create("b"s)}),
+                Value::create(Array{Value::create("1"s), Value::create("2"s)}),
+            });
+            REQUIRE(r->is<Array>());
+            const auto& arr = r->raw_get<Array>();
+            REQUIRE(arr.size() == 4);
+            CHECK(arr[0]->raw_get<String>() == "a1");
+            CHECK(arr[1]->raw_get<String>() == "a2");
+            CHECK(arr[2]->raw_get<String>() == "b1");
+            CHECK(arr[3]->raw_get<String>() == "b2");
+        }
+
+        SECTION("Equivalent to map xprod(...) with spread(f)")
+        {
+            auto a = Value::create(Array{Value::create(1_f), Value::create(2_f)});
+            auto b = Value::create(Array{Value::create(10_f), Value::create(20_f)});
+
+            auto xw_result = fn->call({add_fn, a, b});
+
+            auto xprod_fn = lookup(table, "xprod");
+            auto product = xprod_fn->call({a, b});
+            const auto& tuples = product->raw_get<Array>();
+            Array manual;
+            for (const auto& tup : tuples)
+            {
+                const auto& row = tup->raw_get<Array>();
+                manual.push_back(
+                    Value::create(row[0]->raw_get<Int>()
+                                  + row[1]->raw_get<Int>()));
+            }
+
+            REQUIRE(xw_result->is<Array>());
+            const auto& xw = xw_result->raw_get<Array>();
+            REQUIRE(xw.size() == manual.size());
+            for (std::size_t j = 0; j < xw.size(); ++j)
+                CHECK(Value::equal(xw[j], manual[j])->truthy());
+        }
+    }
 }
