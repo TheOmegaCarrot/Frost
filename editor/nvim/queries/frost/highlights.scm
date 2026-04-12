@@ -15,6 +15,8 @@
   (kw_filter)
   (kw_with)
   (kw_init)
+  (kw_match)
+  (kw_is)
   (kw_and)
   (kw_or)
   (kw_not)
@@ -82,6 +84,12 @@
 
 (map_destructure_entry
   key: (identifier) @property)
+
+(match_map_entry
+  key: (identifier) @property)
+
+(match_type_constraint
+  type: (identifier) @type)
 
 [
   "..."

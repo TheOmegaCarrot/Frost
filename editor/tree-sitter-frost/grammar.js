@@ -29,6 +29,8 @@ module.exports = grammar({
       $.kw_filter,
       $.kw_with,
       $.kw_init,
+      $.kw_match,
+      $.kw_is,
       $.kw_true,
       $.kw_false,
       $.kw_and,
@@ -282,6 +284,7 @@ module.exports = grammar({
       $.filter_expression,
       $.reduce_expression,
       $.foreach_expression,
+      $.match_expression,
     ),
 
     no_nl_arguments: $ => seq(
@@ -300,6 +303,7 @@ module.exports = grammar({
       $.filter_expression,
       $.reduce_expression,
       $.foreach_expression,
+      $.match_expression,
       $.identifier,
       $.literal,
       $.array_literal,
@@ -408,6 +412,119 @@ module.exports = grammar({
       $.kw_with,
       field('operation', $.expression),
     )),
+
+    // `match TARGET { PATTERN (if: GUARD)? => RESULT, ... }`
+    //
+    // Arms are required to be comma-separated. A trailing comma is allowed.
+    // The arm list is optional (an empty `match v {}` parses).
+    match_expression: $ => prec.right(seq(
+      $.kw_match,
+      field('target', $.expression),
+      '{',
+      optional(field('arms', $.match_arm_list)),
+      '}',
+    )),
+
+    match_arm_list: $ => seq(
+      $.match_arm,
+      repeat(seq(',', $.match_arm)),
+      optional(','),
+    ),
+
+    match_arm: $ => seq(
+      field('pattern', $.match_pattern),
+      optional(field('guard', $.match_guard)),
+      '=>',
+      field('result', $.expression),
+    ),
+
+    // `if: EXPRESSION` -- the colon distinguishes this from a normal `if`
+    // expression and matches Frost's other if-positions.
+    match_guard: $ => seq(
+      $.kw_if,
+      ':',
+      field('condition', $.expression),
+    ),
+
+    match_pattern: $ => choice(
+      $.match_binding_pattern,
+      $.match_value_pattern,
+      $.match_array_pattern,
+      $.match_map_pattern,
+    ),
+
+    // Identifier (or `_` discard) optionally followed by `is TYPE`. Type
+    // names are contextual keywords -- they're parsed as identifiers here
+    // and validated by the AST builder.
+    match_binding_pattern: $ => seq(
+      field('name', $.identifier),
+      optional(field('constraint', $.match_type_constraint)),
+    ),
+
+    match_type_constraint: $ => seq(
+      $.kw_is,
+      field('type', $.identifier),
+    ),
+
+    // Primitive literal OR a parenthesized expression. The parens
+    // explicitly mark "this is a value to compare against, not a binding".
+    match_value_pattern: $ => choice(
+      $.literal,
+      seq('(', field('expression', $.expression), ')'),
+    ),
+
+    match_array_pattern: $ => seq(
+      '[',
+      optional(field('elements', $.match_array_elements)),
+      ']',
+    ),
+
+    match_array_elements: $ => choice(
+      $.match_rest_pattern,
+      seq(
+        $.match_pattern,
+        repeat(seq(',', $.match_pattern)),
+        optional(seq(',', $.match_rest_pattern)),
+      ),
+    ),
+
+    // `...name` (named rest) or `..._` (discard rest).
+    match_rest_pattern: $ => seq('...', field('name', $.identifier)),
+
+    match_map_pattern: $ => seq(
+      '{',
+      optional(field('entries', $.match_map_entry_list)),
+      '}',
+    ),
+
+    match_map_entry_list: $ => seq(
+      $.match_map_entry,
+      repeat(seq(',', $.match_map_entry)),
+      optional(','),
+    ),
+
+    // Four forms:
+    //   [expr]: pattern         -- computed key
+    //   identifier: pattern     -- named key with explicit pattern
+    //   identifier              -- shorthand: key name doubles as binding
+    //   identifier is TYPE      -- shorthand with type constraint
+    match_map_entry: $ => choice(
+      seq(
+        field('key', $.map_key_expression),
+        ':',
+        field('pattern', $.match_pattern),
+      ),
+      seq(
+        field('key', $.identifier),
+        ':',
+        field('pattern', $.match_pattern),
+      ),
+      seq(
+        field('key', $.identifier),
+        field('constraint', $.match_type_constraint),
+      ),
+      field('key', $.identifier),
+    ),
 
     array_literal: $ => seq('[', optional(field('elements', $.array_elements)), ']'),
 
@@ -525,6 +642,8 @@ module.exports = grammar({
     kw_filter: _ => token('filter'),
     kw_with: _ => token('with'),
     kw_init: _ => token('init'),
+    kw_match: _ => token('match'),
+    kw_is: _ => token('is'),
     kw_true: _ => token('true'),
     kw_false: _ => token('false'),
     kw_and: _ => token('and'),

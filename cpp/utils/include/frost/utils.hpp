@@ -45,6 +45,8 @@ std::expected<std::string, std::string> trim_multiline_indentation(
     X("filter")                                                                \
     X("with")                                                                  \
     X("init")                                                                  \
+    X("match")                                                                 \
+    X("is")                                                                    \
     X("true")                                                                  \
     X("false")                                                                 \
     X("and")                                                                   \

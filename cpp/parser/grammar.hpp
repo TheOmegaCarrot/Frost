@@ -12,6 +12,12 @@
 #include <frost/ast/destructure-binding.hpp>
 #include <frost/ast/destructure-map.hpp>
 #include <frost/ast/lambda.hpp>
+#include <frost/ast/match-array.hpp>
+#include <frost/ast/match-binding.hpp>
+#include <frost/ast/match-map.hpp>
+#include <frost/ast/match-pattern.hpp>
+#include <frost/ast/match-value.hpp>
+#include <frost/ast/match.hpp>
 #include <frost/utils.hpp>
 
 #include <lexy/callback.hpp>
@@ -576,6 +582,36 @@ struct expected_destructure_rest
 struct expected_identifier
 {
     static constexpr auto name = "identifier";
+};
+
+struct expected_match_pattern
+{
+    static constexpr auto name = "match pattern";
+};
+
+struct expected_type_constraint
+{
+    static constexpr auto name = "type constraint name (after `is`)";
+};
+
+struct expected_match_arrow
+{
+    static constexpr auto name = "`=>` after match pattern (or guard)";
+};
+
+struct expected_match_arm_result
+{
+    static constexpr auto name = "expression after `=>`";
+};
+
+struct expected_match_guard_expression
+{
+    static constexpr auto name = "expression after `if:`";
+};
+
+struct expected_match_target
+{
+    static constexpr auto name = "expression after `match`";
 };
 
 // =============================================================================
@@ -2010,6 +2046,493 @@ struct Map
 } // namespace node
 
 // =============================================================================
+// Match patterns
+// =============================================================================
+//
+// Match patterns are the left-hand side of `match` arms. They are a separate
+// AST hierarchy from destructure patterns -- destructure is "always succeed"
+// while match is "fallible try_match." The shapes are similar enough that
+// these productions parallel the destructure productions, but the AST nodes
+// produced (Match_Binding, Match_Value, Match_Array, Match_Map) live in their
+// own subtree.
+//
+// Surface syntax:
+//   foo            -- bind to `foo`
+//   _              -- discard
+//   foo is Int     -- bind + type-check (`is TYPE` only on bindings)
+//   _ is Int       -- discard + type-check
+//   42             -- value pattern (literal)
+//   "hi"           -- value pattern (literal)
+//   true / null    -- value pattern (literal)
+//   (expr)         -- value pattern (parenthesized expression)
+//   [a, b, ...rs]  -- array pattern with optional ...rest / ..._
+//   {key: pat}     -- map pattern with optional shorthand and computed keys
+
+// Forward declarations: match patterns are mutually recursive (a Match_Array
+// can contain other patterns, etc.).
+struct match_pattern;
+struct match_array_pattern;
+struct match_map_pattern;
+
+// Type constraint sub-productions: one per Type_Constraint enum value.
+// Each matches its keyword as a complete word (via LEXY_KEYWORD's word
+// boundary check) and produces the corresponding constant.
+//
+// Type constraint names are *contextual* keywords -- they're only treated
+// specially when they appear after `is` in a match pattern. They're NOT in
+// the global FROST_X_KEYWORDS, so users can still name regular bindings
+// `Int`, `Float`, etc. (though that's strongly discouraged).
+//
+// Pushing the set into Lexy this way means a typo like `is Itn` produces
+// a Lexy-level error pointing at the bad token, rather than parsing as a
+// generic identifier and only failing at AST construction time.
+#define X(NAME)                                                                \
+    struct match_tc_##NAME                                                     \
+    {                                                                          \
+        static constexpr auto rule =                                           \
+            LEXY_KEYWORD(#NAME, identifier::base);                             \
+        static constexpr auto value =                                          \
+            lexy::callback<ast::Type_Constraint>([] {                          \
+                return ast::Type_Constraint::NAME;                             \
+            });                                                                \
+    };
+X_TYPE_CONSTRAINTS
+#undef X
+
+// `is TYPE` clause: the keyword `is`, then exactly one of the type
+// constraint keywords. Lexy emits its own "expected one of: ..." error if
+// none of the keywords match.
+struct match_type_constraint
+{
+    static constexpr auto rule = [] {
+        auto kw_is = LEXY_KEYWORD("is", identifier::base);
+        auto choice =
+#define X(NAME) dsl::p<match_tc_##NAME> |
+            X_TYPE_CONSTRAINTS
+#undef X
+                dsl::error<expected_type_constraint>;
+        return kw_is + param_ws_nl + choice;
+    }();
+    static constexpr auto value = lexy::forward<ast::Type_Constraint>;
+    static constexpr auto name = "type constraint";
+};
+
+// Binding pattern: `_ | identifier` followed by optional `is TYPE`.
+// `_` becomes a discard (Match_Binding with std::nullopt for the name).
+// Anything else is a real bound name. Type constraint is optional.
+struct match_binding_pattern
+{
+    static constexpr auto rule = [] {
+        auto opt_constraint = dsl::opt(
+            dsl::peek(param_ws + LEXY_KEYWORD("is", identifier::base))
+            >> (param_ws + dsl::p<match_type_constraint>));
+        return dsl::position
+               + dsl::p<identifier_required>
+               + opt_constraint
+               + dsl::position;
+    }();
+    static constexpr auto value = lexy::callback<ast::Match_Pattern::Ptr>(
+        [](auto begin, std::string name, lexy::nullopt, auto end)
+            -> ast::Match_Pattern::Ptr {
+            std::optional<std::string> opt_name =
+                name == "_" ? std::nullopt
+                            : std::optional<std::string>{std::move(name)};
+            return std::make_unique<ast::Match_Binding>(
+                make_source_range(begin, end), std::move(opt_name),
+                std::nullopt);
+        },
+        [](auto begin, std::string name, ast::Type_Constraint constraint,
+           auto end) -> ast::Match_Pattern::Ptr {
+            std::optional<std::string> opt_name =
+                name == "_" ? std::nullopt
+                            : std::optional<std::string>{std::move(name)};
+            return std::make_unique<ast::Match_Binding>(
+                make_source_range(begin, end), std::move(opt_name),
+                constraint);
+        });
+    static constexpr auto name = "match binding pattern";
+};
+
+// Value pattern: a primitive literal OR a parenthesized expression. The
+// resulting expression is wrapped in a Match_Value node and compared
+// against the scrutinee at runtime via Frost equality.
+struct match_value_pattern
+{
+    static constexpr auto rule = [] {
+        auto paren_expr = dsl::lit_c<'('>
+                          + param_ws_nl
+                          + dsl::recurse<expression_nl>
+                          + param_ws_nl
+                          + dsl::lit_c<')'>;
+        auto paren_value = dsl::peek(dsl::lit_c<'('>) >> paren_expr;
+        auto literal_value = dsl::p<node::Literal>;
+        return dsl::position + (paren_value | literal_value) + dsl::position;
+    }();
+    static constexpr auto value = lexy::callback<ast::Match_Pattern::Ptr>(
+        [](auto begin, ast::Expression::Ptr expr, auto end) {
+            return std::make_unique<ast::Match_Value>(
+                make_source_range(begin, end), std::move(expr));
+        });
+    static constexpr auto name = "match value pattern";
+};
+
+// Top-level pattern dispatch. Order matters:
+//   1. `[` -> array pattern
+//   2. `{` -> map pattern
+//   3. `(` -> parenthesized value pattern
+//   4. literal-starting tokens (digit, quote, $, true/false/null kw) -> value
+//   5. identifier or `_` -> binding pattern
+struct match_pattern
+{
+    static constexpr auto rule = [] {
+        auto kw_true = LEXY_KEYWORD("true", identifier::base);
+        auto kw_false = LEXY_KEYWORD("false", identifier::base);
+        auto kw_null = LEXY_KEYWORD("null", identifier::base);
+
+        auto literal_lookahead = dsl::peek(kw_true | kw_false | kw_null
+                                           | dsl::digit<>
+                                           | dsl::lit_c<'"'>
+                                           | dsl::lit_c<'\''>
+                                           | dsl::lit_c<'$'>);
+
+        auto array_branch = dsl::peek(dsl::lit_c<'['>)
+                            >> dsl::recurse<match_array_pattern>;
+        auto map_branch = dsl::peek(dsl::lit_c<'{'>)
+                          >> dsl::recurse<match_map_pattern>;
+        auto paren_branch = dsl::peek(dsl::lit_c<'('>)
+                            >> dsl::p<match_value_pattern>;
+        auto literal_branch = literal_lookahead >> dsl::p<match_value_pattern>;
+        auto binding_branch = dsl::peek(dsl::ascii::alpha_underscore)
+                              >> dsl::p<match_binding_pattern>;
+
+        return array_branch | map_branch | paren_branch | literal_branch
+               | binding_branch | dsl::error<expected_match_pattern>;
+    }();
+    static constexpr auto value = lexy::forward<ast::Match_Pattern::Ptr>;
+    static constexpr auto name = "match pattern";
+};
+
+// Rest clause for array patterns: `...identifier` or `..._`. Lives as its
+// own production so it can be referenced from `dsl::p<...>`.
+struct match_rest_clause
+{
+    static constexpr auto rule =
+        LEXY_LIT("...") + param_ws_nl + dsl::p<identifier_required>;
+    static constexpr auto value =
+        lexy::callback<ast::Match_Array::Rest>([](std::string name) {
+            if (name == "_")
+                return ast::Match_Array::Rest{std::nullopt};
+            return ast::Match_Array::Rest{std::move(name)};
+        });
+    static constexpr auto name = "rest clause";
+};
+
+// Pattern-start lookahead used by both `match_pattern_list` and the
+// surrounding array payload. Includes everything that can begin a pattern;
+// crucially excludes `...` so the rest clause stops the list cleanly.
+constexpr auto match_pattern_start_char = dsl::ascii::alpha_underscore
+                                          | dsl::lit_c<'['>
+                                          | dsl::lit_c<'{'>
+                                          | dsl::lit_c<'('>
+                                          | dsl::digit<>
+                                          | dsl::lit_c<'"'>
+                                          | dsl::lit_c<'\''>
+                                          | dsl::lit_c<'$'>;
+
+// Pattern list for array patterns. Separate production so its value is a
+// `lexy::as_list` sink, which the array payload consumes as a vector.
+// The separator uses `comma_sep_nl_after(pattern_start)` so the list ends
+// gracefully when a `, ...rest` follows -- the comma is left for the
+// payload to consume as part of the rest clause.
+struct match_pattern_list
+{
+    static constexpr auto rule = [] {
+        auto sep = comma_sep_nl_after(match_pattern_start_char);
+        return dsl::list(dsl::recurse<match_pattern>, dsl::sep(sep));
+    }();
+    static constexpr auto value =
+        lexy::as_list<std::vector<ast::Match_Pattern::Ptr>>;
+    static constexpr auto name = "match patterns";
+};
+
+// Pack: the parsed payload of an array pattern -- the element patterns and
+// (optionally) the rest clause.
+struct match_array_pack
+{
+    std::vector<ast::Match_Pattern::Ptr> elements;
+    std::optional<ast::Match_Array::Rest> rest;
+};
+
+// Array pattern payload: the contents of `[...]`. Mirrors
+// `destructure_payload_impl`'s structure.
+struct match_array_payload
+{
+    static constexpr auto rule = [] {
+        auto rest_branch =
+            dsl::peek(LEXY_LIT("...")) >> dsl::p<match_rest_clause>;
+        // patterns then optional `, ...rest`. The pattern list's separator
+        // bails out when it sees a `, ...`, leaving the comma for us to
+        // consume here.
+        auto patterns_then_rest =
+            dsl::p<match_pattern_list>
+            + dsl::opt(dsl::peek(param_ws_nl + dsl::lit_c<','>)
+                       >> (param_ws_nl
+                           + dsl::lit_c<','>
+                           + param_ws_nl
+                           + rest_branch));
+        auto rest_only = rest_branch;
+        auto patterns_only =
+            dsl::peek(match_pattern_start_char) >> patterns_then_rest;
+        return dsl::opt(rest_only | patterns_only);
+    }();
+    static constexpr auto value = lexy::callback<match_array_pack>(
+        [](lexy::nullopt) {
+            return match_array_pack{};
+        },
+        [](ast::Match_Array::Rest rest) {
+            return match_array_pack{{}, std::move(rest)};
+        },
+        [](std::vector<ast::Match_Pattern::Ptr> elems, lexy::nullopt) {
+            return match_array_pack{std::move(elems), std::nullopt};
+        },
+        [](std::vector<ast::Match_Pattern::Ptr> elems,
+           ast::Match_Array::Rest rest) {
+            return match_array_pack{std::move(elems), std::move(rest)};
+        });
+    static constexpr auto name = "match array payload";
+};
+
+// Array pattern: `[pat, pat, ..., ...rest?]`.
+struct match_array_pattern
+{
+    static constexpr auto rule = dsl::position
+                                 + dsl::lit_c<'['>
+                                 + param_ws_nl
+                                 + dsl::p<match_array_payload>
+                                 + param_ws_nl
+                                 + dsl::lit_c<']'>
+                                 + dsl::position;
+    static constexpr auto value = lexy::callback<ast::Match_Pattern::Ptr>(
+        [](auto begin, match_array_pack pack, auto end) {
+            return std::make_unique<ast::Match_Array>(
+                make_source_range(begin, end), std::move(pack.elements),
+                std::move(pack.rest));
+        });
+    static constexpr auto name = "match array pattern";
+};
+
+// Map pattern entry. Three forms:
+//   [expr]: pattern        -- computed key with explicit pattern
+//   identifier: pattern    -- named key with explicit pattern
+//   identifier             -- shorthand: key name doubles as binding name
+//   identifier is TYPE     -- shorthand with type constraint
+//
+// All forms desugar to a Match_Map::Element with an Expression key and a
+// Match_Pattern sub-pattern. Identifier keys become string Literal
+// expressions. The shorthand `is TYPE` and an explicit `: pattern` are
+// mutually exclusive: `{foo is Int}` is shorthand-with-constraint, and
+// `{foo: bar is Int}` is explicit-with-the-pattern's-own-constraint.
+struct match_map_entry
+{
+    static constexpr auto rule = [] {
+        auto bracket_key_expr = dsl::lit_c<'['>
+                                + param_ws_nl
+                                + dsl::recurse<expression_nl>
+                                + param_ws_nl
+                                + dsl::lit_c<']'>;
+        auto computed = dsl::peek(dsl::lit_c<'['>)
+                        >> (bracket_key_expr
+                            + param_ws_nl
+                            + dsl::lit_c<':'>
+                            + param_ws_nl
+                            + dsl::recurse<match_pattern>);
+
+        // Named key: an identifier followed by exactly one of:
+        //   - `: pattern` (explicit form)
+        //   - `is TYPE`   (shorthand with constraint)
+        //   - nothing     (plain shorthand)
+        auto explicit_form =
+            dsl::peek(param_ws_nl + dsl::lit_c<':'>)
+            >> (param_ws_nl
+                + dsl::lit_c<':'>
+                + param_ws_nl
+                + dsl::recurse<match_pattern>);
+        auto shorthand_constraint_form =
+            dsl::peek(param_ws + LEXY_KEYWORD("is", identifier::base))
+            >> (param_ws + dsl::p<match_type_constraint>);
+        auto trailer =
+            dsl::opt(explicit_form | shorthand_constraint_form);
+
+        auto named = dsl::else_
+                     >> (dsl::position
+                         + dsl::p<identifier_required>
+                         + dsl::position
+                         + trailer);
+
+        return computed | named;
+    }();
+
+    static constexpr auto value = lexy::callback<ast::Match_Map::Element>(
+        // Computed key: [expr]: pattern
+        [](ast::Expression::Ptr key, ast::Match_Pattern::Ptr pat) {
+            return ast::Match_Map::Element{std::move(key), std::move(pat)};
+        },
+        // Named key, explicit pattern: identifier: pattern
+        [](auto key_begin, std::string key, auto key_end,
+           ast::Match_Pattern::Ptr pat) {
+            return ast::Match_Map::Element{
+                make_string_key_expr(std::move(key),
+                                     make_source_range(key_begin, key_end)),
+                std::move(pat)};
+        },
+        // Plain shorthand: `{foo}` -> `{['foo']: Match_Binding("foo")}`.
+        [](auto key_begin, std::string key, auto key_end, lexy::nullopt) {
+            auto key_range = make_source_range(key_begin, key_end);
+            std::optional<std::string> bind_name =
+                key == "_" ? std::nullopt : std::optional<std::string>{key};
+            return ast::Match_Map::Element{
+                make_string_key_expr(std::move(key), key_range),
+                std::make_unique<ast::Match_Binding>(
+                    key_range, std::move(bind_name), std::nullopt)};
+        },
+        // Shorthand with constraint: `{foo is Int}` ->
+        // `{['foo']: Match_Binding("foo", Int)}`.
+        [](auto key_begin, std::string key, auto key_end,
+           ast::Type_Constraint constraint) {
+            auto key_range = make_source_range(key_begin, key_end);
+            std::optional<std::string> bind_name =
+                key == "_" ? std::nullopt : std::optional<std::string>{key};
+            return ast::Match_Map::Element{
+                make_string_key_expr(std::move(key), key_range),
+                std::make_unique<ast::Match_Binding>(
+                    key_range, std::move(bind_name), constraint)};
+        });
+    static constexpr auto name = "match map entry";
+};
+
+struct match_map_pattern
+{
+    struct entries
+    {
+        static constexpr auto rule = [] {
+            auto entry_start = dsl::peek(map_entry_start);
+            auto item = entry_start >> dsl::p<match_map_entry>;
+            auto sep = comma_sep_nl_after(map_entry_start);
+            auto list = dsl::list(item, dsl::sep(sep));
+            return braced_list(map_entry_start, list);
+        }();
+        static constexpr auto value =
+            list_or_empty<ast::Match_Map::Element>();
+        static constexpr auto name = "match map entries";
+    };
+
+    static constexpr auto rule =
+        dsl::position + dsl::p<entries> + dsl::position;
+    static constexpr auto value = lexy::callback<ast::Match_Pattern::Ptr>(
+        [](auto begin, std::vector<ast::Match_Map::Element> elems, auto end) {
+            return std::make_unique<ast::Match_Map>(
+                make_source_range(begin, end), std::move(elems));
+        });
+    static constexpr auto name = "match map pattern";
+};
+
+// A single match arm: `pattern (if: guard)? => result`.
+//
+// Newlines are permitted before/after `=>` so users can break long results
+// onto a new line.
+struct match_arm
+{
+    static constexpr auto rule = [] {
+        auto kw_if = LEXY_KEYWORD("if", identifier::base);
+        auto guard_clause =
+            dsl::opt(dsl::peek(param_ws_nl + kw_if)
+                     >> (param_ws_nl
+                         + kw_if
+                         + param_ws_nl
+                         + dsl::lit_c<':'>
+                         + param_ws_nl
+                         + (require_expr_start_nl<expected_match_guard_expression>()
+                            >> dsl::recurse<expression_nl>)));
+        auto arrow = LEXY_LIT("=>");
+        return dsl::p<match_pattern>
+               + guard_clause
+               + param_ws_nl
+               + dsl::must(arrow).error<expected_match_arrow>
+               + param_ws_nl
+               + (require_expr_start_nl<expected_match_arm_result>()
+                  >> dsl::recurse<expression_nl>);
+    }();
+    static constexpr auto value = lexy::callback<ast::Match::Arm>(
+        [](ast::Match_Pattern::Ptr pat, lexy::nullopt,
+           ast::Expression::Ptr result) {
+            return ast::Match::Arm{.pattern = std::move(pat),
+                                   .guard = std::nullopt,
+                                   .result = std::move(result)};
+        },
+        [](ast::Match_Pattern::Ptr pat, ast::Expression::Ptr guard,
+           ast::Expression::Ptr result) {
+            return ast::Match::Arm{.pattern = std::move(pat),
+                                   .guard = std::move(guard),
+                                   .result = std::move(result)};
+        });
+    static constexpr auto name = "match arm";
+};
+
+// `match_arm_list`: comma-separated arms with an optional trailing comma.
+// Lives as a separate production so its value is `lexy::as_list<vector>`,
+// which the outer Match production consumes as a single vector argument.
+struct match_arm_list
+{
+    static constexpr auto rule = [] {
+        auto item = dsl::peek(match_pattern_start_char) >> dsl::p<match_arm>;
+        return dsl::list(item, dsl::trailing_sep(comma_sep_nl));
+    }();
+    static constexpr auto value = lexy::as_list<std::vector<ast::Match::Arm>>;
+    static constexpr auto name = "match arms";
+};
+
+namespace node
+{
+// `match TARGET { ARM, ARM, ... }` -- the top-level match expression.
+//
+// Arms are required to be comma-separated even when one-arm-per-line. A
+// trailing comma is permitted. An empty arm list is accepted at the parser
+// level (the constructed Match node would simply return null at evaluation
+// time).
+struct Match
+{
+    static constexpr auto rule = [] {
+        auto kw_match = LEXY_KEYWORD("match", identifier::base);
+        auto arms_clause =
+            param_ws_nl
+            + dsl::opt(dsl::peek(match_pattern_start_char)
+                       >> dsl::p<match_arm_list>)
+            + param_ws_nl
+            + dsl::lit_c<'}'>;
+        return kw_match
+               >> (param_ws_nl
+                   + (require_expr_start_no_nl<expected_match_target>()
+                      >> dsl::recurse<expression>)
+                   + param_ws_nl
+                   + dsl::lit_c<'{'>
+                   + arms_clause);
+    }();
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](ast::Expression::Ptr target, lexy::nullopt) {
+            return std::make_unique<ast::Match>(
+                ast::AST_Node::no_range, std::move(target),
+                std::vector<ast::Match::Arm>{});
+        },
+        [](ast::Expression::Ptr target,
+           std::vector<ast::Match::Arm> arms) {
+            return std::make_unique<ast::Match>(
+                ast::AST_Node::no_range, std::move(target), std::move(arms));
+        });
+    static constexpr auto name = "match expression";
+};
+} // namespace node
+
+// =============================================================================
 // Primary expression (the dispatch table)
 // =============================================================================
 //
@@ -2059,6 +2582,8 @@ struct primary_expression
            >> dsl::p<node::Reduce>
            | dsl::peek(LEXY_KEYWORD("foreach", identifier::base))
            >> dsl::p<node::Foreach>
+           | dsl::peek(LEXY_KEYWORD("match", identifier::base))
+           >> dsl::p<node::Match>
            | dsl::peek(dsl::lit_c<'['>)
            >> dsl::p<node::Array>
            | dsl::peek(dsl::lit_c<'{'>)

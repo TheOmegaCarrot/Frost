@@ -29,12 +29,12 @@ assert(raw.count == 3, 'scan_matches should find exactly 3 matches')
 def extract_triples = fn (text, re_pat) -> {
     def matches = re.scan_matches(text, re_pat)
 
-    def get_label = fn match, name -> match.named[name].value
+    def get_label = fn m, name -> m.named[name].value
 
-    map matches.matches with fn match -> ({
-        label: match @ get_label('label'),
-        key: match @ get_label('key'),
-        value: match @ get_label('value'),
+    map matches.matches with fn m -> ({
+        label: m @ get_label('label'),
+        key: m @ get_label('key'),
+        value: m @ get_label('value'),
     })
 }
 
