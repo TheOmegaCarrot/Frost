@@ -184,6 +184,26 @@ null or "default"    # => "default"
 false or 0           # => 0
 ```
 
+### Match expressions
+
+```frost
+match value {
+    42              => 'the answer',       # literal value pattern
+    n is Int        => $'int: ${n}',       # binding with type constraint
+    (some_var)      => 'matched var',      # parenthesized: compares against existing variable
+    [a, b, ...rest] => a + b,              # array pattern with rest
+    {name, age: a}  => a,                  # map pattern (shorthand + explicit)
+    _ if: guard     => 'guarded',          # guard with `if:` (note the colon)
+    _               => 'catch-all'         # discard binding
+}
+```
+
+- Arms are **comma-separated** (even across newlines). Trailing comma permitted.
+- No match is a **runtime error** (not null).
+- Bare identifier = binding. `(expr)` = value comparison. Literal = value comparison.
+- Map patterns require keys to be **present**; missing key = no match.
+- Type constraints: `Null`, `Int`, `Float`, `Bool`, `String`, `Array`, `Map`, `Function`, `Primitive`, `Numeric`, `Structured`, `Nonnull`.
+
 ### Map / filter / reduce expressions
 
 ```frost

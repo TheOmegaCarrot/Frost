@@ -30,7 +30,7 @@ Match_Value::Ptr make_value_pattern(Expression::Ptr expr)
 
 } // namespace
 
-TEST_CASE("Match_Value: evaluates expression and compares to scrutinee")
+TEST_CASE("Match_Value: evaluates expression and compares to match target")
 {
     mock::Mock_Symbol_Table syms;
     Execution_Context ctx{.symbols = syms};
@@ -64,13 +64,13 @@ TEST_CASE("Match_Value: mismatch returns false")
 
 TEST_CASE("Match_Value: equality across primitive types")
 {
-    // Each row: the value the expression yields, and a scrutinee. `match`
+    // Each row: the value the expression yields, and a match target. `match`
     // is the expected truth value of equality under Frost's `==`.
     struct Case
     {
         std::string description;
         Value_Ptr expr_value;
-        Value_Ptr scrutinee;
+        Value_Ptr match_target;
         bool match;
     };
 
@@ -115,14 +115,14 @@ TEST_CASE("Match_Value: equality across primitive types")
             REQUIRE_CALL(*expr, do_evaluate(_)).RETURN(c.expr_value);
 
             auto pat = make_value_pattern(std::move(expr));
-            CHECK(pat->try_match(ctx, c.scrutinee) == c.match);
+            CHECK(pat->try_match(ctx, c.match_target) == c.match);
         }
     }
 }
 
 TEST_CASE("Match_Value: equality of structured values")
 {
-    auto run = [](Value_Ptr expr_value, Value_Ptr scrutinee, bool match) {
+    auto run = [](Value_Ptr expr_value, Value_Ptr match_target, bool expected) {
         mock::Mock_Symbol_Table syms;
         Execution_Context ctx{.symbols = syms};
 
@@ -130,7 +130,7 @@ TEST_CASE("Match_Value: equality of structured values")
         REQUIRE_CALL(*expr, do_evaluate(_)).RETURN(expr_value);
 
         auto pat = make_value_pattern(std::move(expr));
-        CHECK(pat->try_match(ctx, scrutinee) == match);
+        CHECK(pat->try_match(ctx, match_target) == expected);
     };
 
     SECTION("Equal arrays match")

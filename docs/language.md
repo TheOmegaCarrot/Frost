@@ -28,6 +28,13 @@ For most readers, this is not the place to start learning the language; for that
     + [Arithmetic Operators](#arithmetic-operators)
   * [If Expressions](#if-expressions)
   * [Do](#do)
+  * [Match Expressions](#match-expressions)
+    + [Patterns](#patterns)
+    + [Type Constraints](#type-constraints)
+    + [Array Patterns](#array-patterns)
+    + [Map Patterns](#map-patterns)
+    + [Nesting](#nesting)
+    + [Guards](#guards)
   * [Iterative Expressions](#iterative-expressions)
     + [Map](#map-1)
     + [Filter](#filter)
@@ -609,6 +616,133 @@ do {
 }
 ```
 
+### Match Expressions
+
+A `match` expression compares a value against a series of patterns and evaluates the result of the first matching arm.
+
+```frost
+def result = match value {
+    1 => 'one',
+    2 => 'two',
+    _ => 'other'
+}
+```
+
+Arms are comma-separated.
+A trailing comma is permitted.
+If no arm matches, the expression produces an error.
+
+#### Patterns
+
+A pattern can be one of the following forms:
+
+| Pattern | Meaning |
+|---|---|
+| `name` | Binding: matches anything, binds the value to `name` |
+| `_` | Discard: matches anything, binds nothing |
+| `name is Type` | Constrained binding: matches if the value satisfies the type constraint |
+| `_ is Type` | Constrained discard: matches if the type constraint is satisfied |
+| `42`, `'hi'`, `true`, `null` | Literal value: matches if the value is equal |
+| `(expr)` | Parenthesized expression: evaluates `expr` and matches if equal |
+| `$'...'` | Format string: evaluates the format string and matches if equal |
+| `[p1, p2, ...]` | Array: matches an array element-wise |
+| `[p1, p2, ...rest]` | Array with rest: matches leading elements, binds the tail |
+| `[p1, p2, ..._]` | Array with discard rest: matches leading elements, drops the tail |
+| `{key: pattern, ...}` | Map: matches a map by key, applying sub-patterns to each value |
+
+Anywhere a pattern appears, any of these forms can be used.
+This means array and map patterns nest to arbitrary depth (see [Nesting](#nesting)).
+
+Bare identifiers are always bindings. To compare against an existing variable, wrap it in parentheses: `(x)`.
+
+#### Type Constraints
+
+Type constraints can follow a binding name or `_`. The available constraints are:
+
+`Null`, `Int`, `Float`, `Bool`, `String`, `Array`, `Map`, `Function` -- match a specific type.
+
+`Primitive`, `Numeric`, `Structured`, `Nonnull` -- match type categories.
+
+```frost
+match value {
+    n is Int if: n > 0 => 'positive int',
+    _ is String        => 'some string',
+    _ is Nonnull       => 'something else',
+    null               => 'nothing'
+}
+```
+
+#### Array Patterns
+
+Array patterns match element-wise.
+Without a rest clause, the array must have exactly as many elements as the pattern.
+With a rest clause, the array may be longer.
+
+```frost
+match [1, 2, 3] {
+    [a, b, c]       => a + b + c,     # exact match
+    [head, ...tail] => head,           # at least one element
+    []              => 'empty'         # empty array
+}
+```
+
+#### Map Patterns
+
+Map patterns match by key. Every key named in the pattern must be present in the match target; missing keys cause the arm to fail.
+Extra keys in the match target are ignored.
+
+```frost
+match {name: 'alice', age: 30, role: 'admin'} {
+    {name: n, supervisor: s} => $'${n} works for ${s}', # no match
+    {name: n, role: 'admin'} => $'admin: ${n}', # match
+    {name: n}                => n,
+    _                        => 'unknown'
+}
+```
+
+The shorthand form `{key}` is equivalent to `{key: key}`, and `{key is Type}` is equivalent to `{key: key is Type}`.
+
+Map keys can also be computed with bracket syntax: `{[expr]: pattern}`.
+
+#### Nesting
+
+Array and map patterns nest arbitrarily. Anywhere a binding can appear, a nested pattern can appear instead.
+
+```frost
+def data = {
+    users: [
+        {name: 'alice', tags: ['admin', 'staff']},
+        {name: 'bob', tags: []}
+    ]
+}
+
+match data {
+    {
+        users: [
+            {name: first, tags: [role, ..._]},
+            ...rest
+        ]
+    } => $'${first} is ${role}',
+    _ => 'no match'
+}
+# "alice is admin"
+```
+
+#### Guards
+
+An arm can have a guard expression with `if:`.
+The guard runs only after the pattern matches, and the arm wins only if the guard is truthy.
+
+```frost
+match n {
+    x if: x > 0 and x < 100  => 'small positive',
+    x if: x >= 100           => 'large',
+    _                        => 'non-positive'
+}
+```
+
+Bindings from the pattern are in scope within the guard expression.
+
 ### Iterative Expressions
 
 There are 4 iterative expressions built into the language itself: `map`, `filter`, `reduce` and `foreach`.
@@ -776,13 +910,13 @@ A `def` statement can destructure a `Map`.
 The right-hand side may be any expression which evaluates to a `Map`, but these examples only use literals for clarity.
 
 ```frost
-def { foo: bar, beep: boop, no: nada } = { foo: 42, beep: 10, dropped: 128 }
-# bar == 42 and boop == 10 and nada == null
+def { foo: bar, beep: boop } = { foo: 42, beep: 10, dropped: 128 }
+# bar == 42 and boop == 10
 ```
 
 Every key on the left is looked up in the map on the right.
 The "value position" on the left contains a name to be bound to the value at that key.
-Keys which are not found in the map are bound to `null`.
+Every key named in the pattern must be present in the map; a missing key is an error.
 This matching does not need to be exhaustive (it is not an error that the value at key `dropped` was not bound to a name).
 
 The keys on the left do not necessarily need to be string keys, though in practice they often are.

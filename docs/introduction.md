@@ -94,6 +94,27 @@ def max_retries = config["max_retries"] or 3
 def should_log = config["verbose"] and not config["quiet"]
 ```
 
+## Pattern Matching
+
+Frost has `match` expressions for branching on the shape and contents of a value.
+
+```frost
+defn describe(v) -> match v {
+    null               => 'nothing',
+    n is Int if: n > 0 => 'positive int',
+    s is String        => $'string: ${s}',
+    [first, ...rest]   => $'array starting with ${first}',
+    {name}             => $'has name: ${name}',
+    _                  => 'something else'
+}
+```
+
+Arms are tried top-to-bottom; the first match wins.
+`_` is the catch-all.
+Bindings like `n`, `s`, `first`, and `name` are scoped to their arm.
+Guards (`if:`) add extra conditions after a pattern matches.
+See the [language reference](./language.md#match-expressions) for the full details.
+
 ## Maps
 
 The previous example also demonstrated maps.
@@ -126,11 +147,11 @@ You can also destructure a map in a `def`.
 
 ```frost
 def person = { name: 'Alice', age: 30, city: 'Portland' }
-def { name: n, age: a, favorite_color: c } = person
-# n = "Alice", a = 30, c = null
+def { name: n, age: a } = person
+# n = "Alice", a = 30
 ```
 
-You do not need to provide a binding for every key, and any missing keys will be bound to `null`.
+You do not need to provide a binding for every key, but every key you name must be present in the map.
 
 ## Arrays
 

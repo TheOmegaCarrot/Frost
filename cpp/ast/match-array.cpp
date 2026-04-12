@@ -27,7 +27,7 @@ bool Match_Array::do_try_match(Execution_Context ctx,
     const auto& arr = value->raw_get<Array>();
 
     // Without a rest clause the sizes must match exactly; with one the
-    // scrutinee may be longer than the element patterns.
+    // match target may be longer than the element patterns.
     if (rest_)
     {
         if (arr.size() < subpatterns_.size())

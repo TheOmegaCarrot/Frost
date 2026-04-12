@@ -13,11 +13,11 @@ namespace frst::ast
 
 //! @brief Match an Array value element-wise, with an optional rest clause.
 //!
-//! Without a rest clause: the scrutinee must be an Array with exactly as
+//! Without a rest clause: the match target must be an Array with exactly as
 //! many elements as there are element patterns. Each pattern is tried
 //! against the corresponding element in order.
 //!
-//! With a rest clause: the scrutinee must be an Array with *at least* as
+//! With a rest clause: the match target must be an Array with *at least* as
 //! many elements as there are element patterns. The leading elements are
 //! matched positionally against the element patterns; the remaining
 //! elements are gathered into a fresh Array. If the rest clause names an

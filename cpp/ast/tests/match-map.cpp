@@ -37,7 +37,7 @@ Match_Map::Ptr make_map(std::vector<Match_Map::Element> elements)
 }
 
 // Build a Frost Map value from a list of (string key, value) pairs. Mirrors
-// the common scrutinee shape for map-pattern tests.
+// the common match target shape for map-pattern tests.
 Value_Ptr make_string_keyed_map(
     std::initializer_list<std::pair<std::string, Value_Ptr>> entries)
 {
@@ -49,7 +49,7 @@ Value_Ptr make_string_keyed_map(
 
 } // namespace
 
-TEST_CASE("Match_Map: non-map scrutinee fails without consulting subpatterns")
+TEST_CASE("Match_Map: non-map match target fails without consulting subpatterns")
 {
     mock::Mock_Symbol_Table syms;
     Execution_Context ctx{.symbols = syms};
@@ -63,11 +63,11 @@ TEST_CASE("Match_Map: non-map scrutinee fails without consulting subpatterns")
     elements.push_back({literal_key(Value::create("name"s)), std::move(inner)});
     auto pat = make_map(std::move(elements));
 
-    SECTION("Int scrutinee") { CHECK_FALSE(pat->try_match(ctx, Value::create(42_f))); }
-    SECTION("String scrutinee") { CHECK_FALSE(pat->try_match(ctx, Value::create("hi"s))); }
-    SECTION("Array scrutinee") { CHECK_FALSE(pat->try_match(ctx, Value::create(Array{}))); }
-    SECTION("Null scrutinee") { CHECK_FALSE(pat->try_match(ctx, Value::null())); }
-    SECTION("Bool scrutinee") { CHECK_FALSE(pat->try_match(ctx, Value::create(true))); }
+    SECTION("Int match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(42_f))); }
+    SECTION("String match target") { CHECK_FALSE(pat->try_match(ctx, Value::create("hi"s))); }
+    SECTION("Array match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(Array{}))); }
+    SECTION("Null match target") { CHECK_FALSE(pat->try_match(ctx, Value::null())); }
+    SECTION("Bool match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(true))); }
 }
 
 TEST_CASE("Match_Map: empty pattern matches any map")
@@ -160,7 +160,7 @@ TEST_CASE("Match_Map: missing key fails the match without consulting sub-pattern
     }
 }
 
-TEST_CASE("Match_Map: extra keys in scrutinee are ignored")
+TEST_CASE("Match_Map: extra keys in match target are ignored")
 {
     // A pattern that names one key matches a map with many keys, as long
     // as the named key matches. Extra keys don't disturb the match.

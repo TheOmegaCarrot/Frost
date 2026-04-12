@@ -54,7 +54,7 @@ Value_Ptr int_array(std::size_t n)
 
 } // namespace
 
-TEST_CASE("Match_Array: non-array scrutinee fails without calling subpatterns")
+TEST_CASE("Match_Array: non-array match target fails without calling subpatterns")
 {
     // The type check must run first. No sub-pattern should be consulted,
     // so FORBID_CALL the mock.
@@ -68,11 +68,11 @@ TEST_CASE("Match_Array: non-array scrutinee fails without calling subpatterns")
     subs.push_back(std::move(inner));
     auto pat = make_array(std::move(subs));
 
-    SECTION("Int scrutinee") { CHECK_FALSE(pat->try_match(ctx, Value::create(42_f))); }
-    SECTION("String scrutinee") { CHECK_FALSE(pat->try_match(ctx, Value::create("hi"s))); }
-    SECTION("Map scrutinee") { CHECK_FALSE(pat->try_match(ctx, Value::create(Map{}))); }
-    SECTION("Null scrutinee") { CHECK_FALSE(pat->try_match(ctx, Value::null())); }
-    SECTION("Bool scrutinee") { CHECK_FALSE(pat->try_match(ctx, Value::create(true))); }
+    SECTION("Int match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(42_f))); }
+    SECTION("String match target") { CHECK_FALSE(pat->try_match(ctx, Value::create("hi"s))); }
+    SECTION("Map match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(Map{}))); }
+    SECTION("Null match target") { CHECK_FALSE(pat->try_match(ctx, Value::null())); }
+    SECTION("Bool match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(true))); }
 }
 
 TEST_CASE("Match_Array: exact-length matching without rest")

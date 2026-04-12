@@ -2155,7 +2155,7 @@ struct match_binding_pattern
 
 // Value pattern: a primitive literal OR a parenthesized expression. The
 // resulting expression is wrapped in a Match_Value node and compared
-// against the scrutinee at runtime via Frost equality.
+// against the match target at runtime via Frost equality.
 //
 // `node::Literal` builds its AST node with `no_range` (it relies on the
 // surrounding `primary_expression` to fix the range up). Since we consume it
