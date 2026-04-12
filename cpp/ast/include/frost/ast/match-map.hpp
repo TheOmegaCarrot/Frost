@@ -13,19 +13,14 @@ namespace frst::ast
 //! @brief Match a Map value by key/pattern pairs.
 //!
 //! The match target must be a Map. Each declared entry evaluates its key
-//! expression to produce a lookup key and tries its sub-pattern against
-//! the value at that key. A missing key yields `null` for the sub-pattern,
-//! matching Frost's uniform "missing map key = null" semantics used by
-//! destructuring and indexing. The overall match succeeds only when every
-//! declared entry's sub-pattern succeeds in order.
+//! expression to produce a lookup key. If the key is absent from the
+//! match target the match fails immediately; the sub-pattern is never
+//! consulted. If the key is present, its sub-pattern is tried against
+//! the corresponding value. The overall match succeeds only when every
+//! declared entry's key is found and its sub-pattern succeeds.
 //!
 //! Extra keys in the match target that aren't declared in the pattern are
 //! permitted; Match_Map only checks the keys it names.
-//!
-//! Users who want to require a key to be non-null can express it via a
-//! type constraint on the binding (e.g. `{age: a is Int}`), and users who
-//! need to literally distinguish "key absent" from "key present, value
-//! null" can fall back to a guard using `has(m, key)`.
 //!
 //! A key expression that evaluates to an invalid Map key type is a
 //! malformed pattern (but a recoverable error), not a match failure.
@@ -95,10 +90,11 @@ class Match_Map final : public Match_Pattern
             }
 
             auto itr = match_target.find(key);
-            auto sub_value =
-                (itr == match_target.end()) ? Value::null() : itr->second;
 
-            if (not pattern->try_match(ctx, sub_value))
+            if (itr == match_target.end())
+                return false;
+
+            if (not pattern->try_match(ctx, itr->second))
                 return false;
         }
 

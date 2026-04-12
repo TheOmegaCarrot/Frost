@@ -107,10 +107,11 @@ TEST_CASE("Parser Define Statements")
         CHECK(rest_vals[1]->get<frst::Int>().value() == 3_f);
     }
 
-    SECTION("Map destructure binds names and missing keys to null")
+    SECTION("Map destructure binds present keys and errors on missing keys")
     {
-        auto result = parse("def {foo: bar, [40+2]: answer, missing: none} = "
-                            "{foo: 'beep', [42]: 'life'}; [bar, answer, none]");
+        // All keys present: binds correctly.
+        auto result = parse("def {foo: bar, [40+2]: answer} = "
+                            "{foo: 'beep', [42]: 'life'}; [bar, answer]");
         REQUIRE(result);
         auto program = require_program(result);
         REQUIRE(program.size() == 2);
@@ -122,13 +123,23 @@ TEST_CASE("Parser Define Statements")
 
         REQUIRE(value->is<frst::Array>());
         auto arr = value->get<frst::Array>().value();
-        REQUIRE(arr.size() == 3);
+        REQUIRE(arr.size() == 2);
 
         REQUIRE(arr[0]->is<frst::String>());
         CHECK(arr[0]->get<frst::String>().value() == "beep");
         REQUIRE(arr[1]->is<frst::String>());
         CHECK(arr[1]->get<frst::String>().value() == "life");
-        CHECK(arr[2]->is<frst::Null>());
+    }
+
+    SECTION("Map destructure throws on missing key")
+    {
+        auto result = parse("def {foo: bar, missing: none} = {foo: 'beep'}");
+        REQUIRE(result);
+        auto program = require_program(result);
+
+        frst::Symbol_Table table;
+        frst::Execution_Context ctx{.symbols = table};
+        CHECK_THROWS(program[0]->execute(ctx));
     }
 
     SECTION("Exported map destructure binds values in symbol table")

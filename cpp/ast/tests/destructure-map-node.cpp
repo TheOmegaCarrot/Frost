@@ -62,7 +62,7 @@ TEST_CASE("Destructure_Map")
         node.destructure(ctx, map);
     }
 
-    SECTION("Missing key passes null to child")
+    SECTION("Missing key throws an error")
     {
         mock::Mock_Symbol_Table syms;
         Execution_Context ctx{.symbols = syms};
@@ -71,19 +71,19 @@ TEST_CASE("Destructure_Map")
         auto* key_ptr = key_expr.get();
 
         auto mock_child = mock::Mock_Destructure::make();
-        auto* child = mock_child.get();
+        FORBID_CALL(*mock_child, do_destructure(_, _));
 
         auto key = Value::create("missing"s);
         auto map = Value::create(Map{});
 
         REQUIRE_CALL(*key_ptr, do_evaluate(_)).RETURN(key);
-        REQUIRE_CALL(*child, do_destructure(_, Value::null()));
 
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
         Destructure_Map node{AST_Node::no_range, std::move(elems)};
-        node.destructure(ctx, map);
+        CHECK_THROWS_WITH(node.destructure(ctx, map),
+                          ContainsSubstring("not found"));
     }
 
     SECTION("Non-string primitive keys work")
@@ -302,7 +302,7 @@ TEST_CASE("Destructure_Map")
                           ContainsSubstring("child boom"));
     }
 
-    SECTION("Mixed found and missing keys")
+    SECTION("Mixed found and missing keys throws on missing")
     {
         mock::Mock_Symbol_Table syms;
         Execution_Context ctx{.symbols = syms};
@@ -315,24 +315,26 @@ TEST_CASE("Destructure_Map")
         auto mock_found = mock::Mock_Destructure::make();
         auto mock_missing = mock::Mock_Destructure::make();
         auto* found = mock_found.get();
-        auto* missing = mock_missing.get();
+        FORBID_CALL(*mock_missing, do_destructure(_, _));
 
         auto key_a = Value::create("a"s);
         auto key_b = Value::create("b"s);
         auto val_a = Value::create(1_f);
         auto map = Value::create(Map{{key_a, val_a}});
 
+        // Key "a" is found and destructured normally; key "b" is missing
+        // and throws before the child destructure is consulted.
         REQUIRE_CALL(*key_found_ptr, do_evaluate(_)).RETURN(key_a);
         REQUIRE_CALL(*key_missing_ptr, do_evaluate(_)).RETURN(key_b);
         REQUIRE_CALL(*found, do_destructure(_, val_a));
-        REQUIRE_CALL(*missing, do_destructure(_, Value::null()));
 
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_found_expr), std::move(mock_found)});
         elems.push_back({std::move(key_missing_expr), std::move(mock_missing)});
 
         Destructure_Map node{AST_Node::no_range, std::move(elems)};
-        node.destructure(ctx, map);
+        CHECK_THROWS_WITH(node.destructure(ctx, map),
+                          ContainsSubstring("not found"));
     }
 
     SECTION("Bool key works")

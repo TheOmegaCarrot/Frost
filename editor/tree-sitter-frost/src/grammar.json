@@ -2075,8 +2075,16 @@
                       "value": ","
                     },
                     {
-                      "type": "SYMBOL",
-                      "name": "match_rest_pattern"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "match_rest_pattern"
+                        },
+                        {
+                          "type": "BLANK"
+                        }
+                      ]
                     }
                   ]
                 },

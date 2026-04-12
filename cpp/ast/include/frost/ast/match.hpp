@@ -106,7 +106,7 @@ class Match final : public Expression
             return result->evaluate(arm_ctx.as_eval());
         }
 
-        return Value::null();
+        throw Frost_Recoverable_Error{"Match expression found no match"};
     }
 
     std::string do_node_label() const final

@@ -24,10 +24,17 @@ void Destructure_Map::do_destructure(Execution_Context ctx,
         }
 
         auto itr = map_being_destructured.find(key);
-        if (itr == map_being_destructured.end())
-            destructure_child->destructure(ctx, Value::null());
-        else
+
+        if (itr != map_being_destructured.end())
+        {
             destructure_child->destructure(ctx, itr->second);
+        }
+        else
+        {
+            throw Frost_Recoverable_Error{fmt::format(
+                "Map destructure expected key {}, but was not found",
+                key->to_internal_string())};
+        }
     }
 }
 

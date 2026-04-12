@@ -125,36 +125,17 @@ TEST_CASE("Match_Map: key found, sub-pattern fails")
     CHECK_FALSE(pat->try_match(ctx, m));
 }
 
-TEST_CASE("Match_Map: missing key passes null to the sub-pattern (loose)")
+TEST_CASE("Match_Map: missing key fails the match without consulting sub-pattern")
 {
-    // This is the key Match_Map semantic: missing = null, matching
-    // Destructure_Map and indexing. The sub-pattern sees a Null Value_Ptr
-    // and decides for itself whether that constitutes a match.
+    // A missing key is an immediate match failure. The sub-pattern is never
+    // called -- there is no implicit null substitution.
     mock::Mock_Symbol_Table syms;
     Execution_Context ctx{.symbols = syms};
 
-    SECTION("Sub-pattern accepts null: match succeeds")
+    SECTION("Missing key on a non-empty map")
     {
         auto inner = mock::Mock_Match_Pattern::make();
-        REQUIRE_CALL(*inner, do_try_match(_, _))
-            .WITH(_2->template is<Null>())
-            .RETURN(true);
-
-        std::vector<Match_Map::Element> elements;
-        elements.push_back(
-            {literal_key(Value::create("missing"s)), std::move(inner)});
-        auto pat = make_map(std::move(elements));
-
-        auto m = make_string_keyed_map({{"other", Value::create(1_f)}});
-        CHECK(pat->try_match(ctx, m));
-    }
-
-    SECTION("Sub-pattern rejects null: match fails")
-    {
-        auto inner = mock::Mock_Match_Pattern::make();
-        REQUIRE_CALL(*inner, do_try_match(_, _))
-            .WITH(_2->template is<Null>())
-            .RETURN(false);
+        FORBID_CALL(*inner, do_try_match(_, _));
 
         std::vector<Match_Map::Element> elements;
         elements.push_back(
@@ -168,16 +149,14 @@ TEST_CASE("Match_Map: missing key passes null to the sub-pattern (loose)")
     SECTION("Missing key on an empty map")
     {
         auto inner = mock::Mock_Match_Pattern::make();
-        REQUIRE_CALL(*inner, do_try_match(_, _))
-            .WITH(_2->template is<Null>())
-            .RETURN(true);
+        FORBID_CALL(*inner, do_try_match(_, _));
 
         std::vector<Match_Map::Element> elements;
         elements.push_back(
             {literal_key(Value::create("k"s)), std::move(inner)});
         auto pat = make_map(std::move(elements));
 
-        CHECK(pat->try_match(ctx, Value::create(frst::Map{})));
+        CHECK_FALSE(pat->try_match(ctx, Value::create(frst::Map{})));
     }
 }
 

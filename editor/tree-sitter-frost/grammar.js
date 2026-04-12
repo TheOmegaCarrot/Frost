@@ -484,7 +484,7 @@ module.exports = grammar({
       seq(
         $.match_pattern,
         repeat(seq(',', $.match_pattern)),
-        optional(seq(',', $.match_rest_pattern)),
+        optional(seq(',', optional($.match_rest_pattern))),
       ),
     ),
 

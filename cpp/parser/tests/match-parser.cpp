@@ -94,11 +94,10 @@ TEST_CASE("Parser Match: minimum case (single arm, no guard)")
     CHECK(lookup(table, "x")->get<frst::Int>().value() == 42_f);
 }
 
-TEST_CASE("Parser Match: empty arm list returns null")
+TEST_CASE("Parser Match: empty arm list throws")
 {
     frst::Symbol_Table table;
-    run("def x = match 1 {}", table);
-    CHECK(lookup(table, "x")->is<frst::Null>());
+    CHECK_THROWS(run("def x = match 1 {}", table));
 }
 
 TEST_CASE("Parser Match: multiple arms, first matching wins")

@@ -46,11 +46,11 @@ assert(rest == [20, 30])
 def [ok, []] = [1, []]
 assert(ok == 1)
 
-# --- Missing map keys produce null ---
+# --- Missing map keys are an error ---
+# (Exhaustiveness is not required, but all named keys must be present.)
 
-def {present, missing} = {present: 1}
+def {present} = {present: 1, extra: 2}
 assert(present == 1)
-assert(missing == null)
 
 # --- Interaction with closures and capture analysis ---
 

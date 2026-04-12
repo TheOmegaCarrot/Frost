@@ -234,6 +234,6 @@ assert(c == 1 and d == 2 and more == [3, 4, 5])
 def fmt_string = $'a = ${a}, b = ${b}'
 assert(fmt_string == 'a = 1, b = 2')
 
-# map destructuring! (does not need to be exhaustive)
-def { foo: foo, bar: the, nope: nada } = { foo: 'something', bar: 42, wow: 'cool' }
-assert(foo == 'something' and the == 42 and nada == null)
+# map destructuring! (does not need to be exhaustive, but keys must be present)
+def { foo: foo, bar: the } = { foo: 'something', bar: 42, wow: 'cool' }
+assert(foo == 'something' and the == 42)

@@ -129,7 +129,7 @@ TEST_CASE("Match: returns the matching arm's result")
     CHECK(out->raw_get<String>() == "chosen result");
 }
 
-TEST_CASE("Match: no matching arm returns null")
+TEST_CASE("Match: no matching arm throws")
 {
     Symbol_Table syms;
     Evaluation_Context ctx{.symbols = syms};
@@ -152,15 +152,13 @@ TEST_CASE("Match: no matching arm returns null")
     arms.push_back(arm(std::move(pat2), std::move(result2)));
     auto m = make_match(std::move(target), std::move(arms));
 
-    auto out = m->evaluate(ctx);
-    CHECK(out->is<Null>());
+    CHECK_THROWS(m->evaluate(ctx));
 }
 
-TEST_CASE("Match: empty arm list returns null after evaluating target")
+TEST_CASE("Match: empty arm list throws after evaluating target")
 {
-    // Current behavior: Match with no arms evaluates the target and returns
-    // null. This might be surprising (is a zero-arm match even valid?), so
-    // this test locks the chosen behavior in.
+    // Match with no arms evaluates the target then throws because there
+    // are zero arms to try.
     Symbol_Table syms;
     Evaluation_Context ctx{.symbols = syms};
 
@@ -170,8 +168,7 @@ TEST_CASE("Match: empty arm list returns null after evaluating target")
         .RETURN(Value::create(1_f));
 
     auto m = make_match(std::move(target), {});
-    auto out = m->evaluate(ctx);
-    CHECK(out->is<Null>());
+    CHECK_THROWS(m->evaluate(ctx));
 }
 
 TEST_CASE("Match: first-match-wins short-circuits later arms")
@@ -248,8 +245,7 @@ TEST_CASE("Match: arms are tried in declaration order")
     arms.push_back(arm(std::move(pat3), std::move(r3)));
     auto m = make_match(std::move(target), std::move(arms));
 
-    auto out = m->evaluate(ctx);
-    CHECK(out->is<Null>());
+    CHECK_THROWS(m->evaluate(ctx));
 }
 
 // =============================================================================
@@ -279,7 +275,7 @@ TEST_CASE("Match: guard runs only after its pattern matches")
                                std::move(result)));
     auto m = make_match(std::move(target), std::move(arms));
 
-    CHECK(m->evaluate(ctx)->is<Null>());
+    CHECK_THROWS(m->evaluate(ctx));
 }
 
 TEST_CASE("Match: truthy guard allows arm to win")
@@ -347,7 +343,7 @@ TEST_CASE("Match: non-truthy guard skips the arm")
 TEST_CASE("Match: guard that returns null is falsy (arm skipped)")
 {
     // In Frost, null is falsy. A guard returning null should behave like
-    // a false guard.
+    // a false guard -- the arm is skipped and no-match throws.
     Symbol_Table syms;
     Evaluation_Context ctx{.symbols = syms};
 
@@ -368,7 +364,7 @@ TEST_CASE("Match: guard that returns null is falsy (arm skipped)")
                                std::move(result)));
     auto m = make_match(std::move(target), std::move(arms));
 
-    CHECK(m->evaluate(ctx)->is<Null>());
+    CHECK_THROWS(m->evaluate(ctx));
 }
 
 // =============================================================================
