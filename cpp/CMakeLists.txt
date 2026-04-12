@@ -13,6 +13,7 @@ add_executable( frost
 )
 
 add_subdirectory(ext/)
+add_subdirectory(tooling/)
 
 target_link_libraries( frost
     PUBLIC

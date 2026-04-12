@@ -1,0 +1,503 @@
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'SF Mono', 'Consolas', 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+    background: #fafafa;
+    color: #333;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #toolbar {
+    height: 36px;
+    background: #f0f0f0;
+    border-bottom: 1px solid #d0d0d0;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+  }
+
+  #toolbar .filename {
+    font-weight: 600;
+    color: #555;
+  }
+
+  #toolbar .stats {
+    color: #999;
+    font-size: 11px;
+  }
+
+  #container {
+    display: flex;
+    height: calc(100vh - 36px);
+  }
+
+  .pane {
+    flex: 1;
+    overflow: auto;
+    padding: 8px 0;
+  }
+
+  .pane-header {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #999;
+    padding: 4px 16px 8px;
+    user-select: none;
+  }
+
+  #source-pane {
+    border-right: 1px solid #d0d0d0;
+    background: #fff;
+  }
+
+  #ast-pane {
+    background: #fafafa;
+  }
+
+  /* --- Source pane --- */
+
+  .source-line {
+    display: flex;
+    line-height: 20px;
+    min-height: 20px;
+  }
+
+  .source-line:hover {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .line-number {
+    color: #b0b0b0;
+    min-width: 4em;
+    text-align: right;
+    padding-right: 16px;
+    padding-left: 8px;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .source-content {
+    white-space: pre;
+  }
+
+  .ch {
+    position: relative;
+  }
+
+  .ch.hl-source {
+    background: rgba(59, 130, 246, 0.2);
+  }
+
+  .ch.hl-source-pin {
+    background: rgba(245, 158, 11, 0.25);
+  }
+
+  /* When both hover and pin are active, hover wins visually */
+  .ch.hl-source.hl-source-pin {
+    background: rgba(59, 130, 246, 0.2);
+  }
+
+  /* --- AST pane --- */
+
+  #ast-tree ul {
+    list-style: none;
+    padding-left: 20px;
+  }
+
+  #ast-tree > ul {
+    padding-left: 8px;
+  }
+
+  #ast-tree li {
+    line-height: 22px;
+  }
+
+  .node-row {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 6px;
+    border-radius: 3px;
+    gap: 4px;
+    cursor: default;
+    white-space: nowrap;
+  }
+
+  .node-row:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .toggle {
+    display: inline-block;
+    width: 14px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    color: #aaa;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .toggle::before { content: '\25b8'; }
+
+  li.expanded > .node-row > .toggle::before { content: '\25be'; }
+
+  li:not(.expanded) > ul { display: none; }
+
+  .node-label {
+    color: #333;
+  }
+
+  .wrapper-label {
+    color: #999;
+    font-style: italic;
+  }
+
+  .range-info {
+    color: #bbb;
+    font-size: 11px;
+  }
+
+  /* --- Highlighting --- */
+
+  .node-row.hl-primary {
+    background: rgba(59, 130, 246, 0.25) !important;
+  }
+
+  .node-row.hl-ancestor {
+    background: rgba(59, 130, 246, 0.08) !important;
+  }
+
+  .node-row.hl-pin {
+    background: rgba(245, 158, 11, 0.2) !important;
+  }
+
+  /* Pin indicator dot */
+  .node-row.hl-pin::after {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgb(245, 158, 11);
+    margin-left: 4px;
+    flex-shrink: 0;
+  }
+</style>
+
+<div id="toolbar">
+  <span class="filename" id="filename"></span>
+  <span class="stats" id="stats"></span>
+</div>
+<div id="container">
+  <div id="source-pane" class="pane">
+    <div class="pane-header">Source</div>
+    <div id="source-code"></div>
+  </div>
+  <div id="ast-pane" class="pane">
+    <div class="pane-header">AST</div>
+    <div id="ast-tree"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var data = window.FROST_DATA;
+  var sourceLines = data.source.split('\n');
+
+  // --- Indexes ---
+  var nodeMap = new Map();        // id -> node JSON object
+  var nodeElements = new Map();   // id -> .node-row DOM element
+  var charElements = new Map();   // "L:C" -> .ch DOM element
+  var charToNodes = new Map();    // "L:C" -> [{id, size}, ...]
+
+  // --- Render source ---
+  var sourceEl = document.getElementById('source-code');
+  var lineNumWidth = String(sourceLines.length).length;
+
+  sourceLines.forEach(function(line, idx) {
+    var lineNum = idx + 1;
+    var lineDiv = document.createElement('div');
+    lineDiv.className = 'source-line';
+
+    var numSpan = document.createElement('span');
+    numSpan.className = 'line-number';
+    numSpan.textContent = String(lineNum).padStart(lineNumWidth);
+    lineDiv.appendChild(numSpan);
+
+    var content = document.createElement('span');
+    content.className = 'source-content';
+
+    for (var col = 0; col < line.length; col++) {
+      var ch = document.createElement('span');
+      ch.className = 'ch';
+      ch.dataset.line = lineNum;
+      ch.dataset.col = col + 1;
+      ch.textContent = line[col];
+      content.appendChild(ch);
+      charElements.set(lineNum + ':' + (col + 1), ch);
+    }
+
+    lineDiv.appendChild(content);
+    sourceEl.appendChild(lineDiv);
+  });
+
+  // --- Render AST tree ---
+  function renderNode(node, parentUl) {
+    nodeMap.set(node.id, node);
+
+    var li = document.createElement('li');
+    li.dataset.nodeId = node.id;
+
+    var hasChildren = node.children && node.children.length > 0;
+    if (hasChildren) li.classList.add('expanded');
+
+    var row = document.createElement('div');
+    row.className = 'node-row';
+    nodeElements.set(node.id, row);
+
+    if (hasChildren) {
+      var toggle = document.createElement('span');
+      toggle.className = 'toggle';
+      toggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        li.classList.toggle('expanded');
+      });
+      row.appendChild(toggle);
+    }
+
+    var label = document.createElement('span');
+    label.className = node.range ? 'node-label' : 'wrapper-label';
+    label.textContent = node.label;
+    row.appendChild(label);
+
+    if (node.range) {
+      var rangeSpan = document.createElement('span');
+      rangeSpan.className = 'range-info';
+      var r = node.range;
+      rangeSpan.textContent = '[' + r.sl + ':' + r.sc + '-' + r.el + ':' + r.ec + ']';
+      row.appendChild(rangeSpan);
+    }
+
+    li.appendChild(row);
+
+    if (hasChildren) {
+      var childUl = document.createElement('ul');
+      node.children.forEach(function(child) { renderNode(child, childUl); });
+      li.appendChild(childUl);
+    }
+
+    parentUl.appendChild(li);
+  }
+
+  var rootUl = document.createElement('ul');
+  data.ast.forEach(function(stmt) { renderNode(stmt, rootUl); });
+  document.getElementById('ast-tree').appendChild(rootUl);
+
+  // --- Build reverse index: source position -> AST nodes ---
+  function rangeSize(r) {
+    return (r.el - r.sl) * 10000 + (r.ec - r.sc);
+  }
+
+  function indexNode(node) {
+    if (node.range) {
+      var r = node.range;
+      for (var line = r.sl; line <= r.el; line++) {
+        var lineText = sourceLines[line - 1] || '';
+        var startCol = (line === r.sl) ? r.sc : 1;
+        var endCol = (line === r.el) ? r.ec : lineText.length;
+        for (var col = startCol; col <= endCol; col++) {
+          var key = line + ':' + col;
+          if (!charToNodes.has(key)) charToNodes.set(key, []);
+          charToNodes.get(key).push({ id: node.id, size: rangeSize(r) });
+        }
+      }
+    }
+    if (node.children) node.children.forEach(indexNode);
+  }
+
+  data.ast.forEach(indexNode);
+
+  // Sort: innermost (smallest range) first
+  charToNodes.forEach(function(entries) {
+    entries.sort(function(a, b) { return a.size - b.size; });
+  });
+
+  // --- Stats ---
+  document.getElementById('filename').textContent = data.filename;
+  document.getElementById('stats').textContent =
+    sourceLines.length + ' lines, ' + nodeMap.size + ' nodes';
+
+  // --- Highlighting state ---
+  var hoverASTIds = [];
+  var hoverCharKeys = [];
+  var pinnedId = null;
+  var pinASTIds = [];
+  var pinCharKeys = [];
+
+  function clearHover() {
+    hoverASTIds.forEach(function(id) {
+      var el = nodeElements.get(id);
+      if (el) {
+        el.classList.remove('hl-primary');
+        el.classList.remove('hl-ancestor');
+      }
+    });
+    hoverASTIds = [];
+
+    hoverCharKeys.forEach(function(key) {
+      var el = charElements.get(key);
+      if (el) el.classList.remove('hl-source');
+    });
+    hoverCharKeys = [];
+  }
+
+  function forEachCharInRange(range, fn) {
+    for (var line = range.sl; line <= range.el; line++) {
+      var lineText = sourceLines[line - 1] || '';
+      var startCol = (line === range.sl) ? range.sc : 1;
+      var endCol = (line === range.el) ? range.ec : lineText.length;
+      for (var col = startCol; col <= endCol; col++) {
+        fn(line + ':' + col);
+      }
+    }
+  }
+
+  function highlightSourceChars(range, cls, keyList) {
+    forEachCharInRange(range, function(key) {
+      var el = charElements.get(key);
+      if (el) {
+        el.classList.add(cls);
+        keyList.push(key);
+      }
+    });
+  }
+
+  function ensureVisible(nodeId) {
+    // Expand ancestor tree nodes so this node is visible
+    var el = nodeElements.get(nodeId);
+    if (!el) return;
+    var li = el.closest('li');
+    var parent = li ? li.parentElement : null;
+    while (parent) {
+      var parentLi = parent.closest('li');
+      if (parentLi && !parentLi.classList.contains('expanded')) {
+        parentLi.classList.add('expanded');
+      }
+      parent = parentLi ? parentLi.parentElement : null;
+    }
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  // --- Source -> AST ---
+  document.getElementById('source-pane').addEventListener('mouseover', function(e) {
+    var ch = e.target.closest('.ch');
+    if (!ch) return;
+
+    clearHover();
+
+    var key = ch.dataset.line + ':' + ch.dataset.col;
+    var entries = charToNodes.get(key);
+    if (!entries) return;
+
+    entries.forEach(function(entry, idx) {
+      var el = nodeElements.get(entry.id);
+      if (!el) return;
+      el.classList.add(idx === 0 ? 'hl-primary' : 'hl-ancestor');
+      hoverASTIds.push(entry.id);
+    });
+
+    if (entries.length > 0) ensureVisible(entries[0].id);
+  });
+
+  document.getElementById('source-pane').addEventListener('mouseleave', function() {
+    clearHover();
+  });
+
+  // --- AST -> Source ---
+  document.getElementById('ast-pane').addEventListener('mouseover', function(e) {
+    var row = e.target.closest('.node-row');
+    if (!row) return;
+
+    clearHover();
+
+    var li = row.closest('li');
+    var nodeId = parseInt(li.dataset.nodeId, 10);
+    var node = nodeMap.get(nodeId);
+
+    if (node && node.range) {
+      highlightSourceChars(node.range, 'hl-source', hoverCharKeys);
+      row.classList.add('hl-primary');
+      hoverASTIds.push(nodeId);
+    }
+  });
+
+  document.getElementById('ast-pane').addEventListener('mouseleave', function() {
+    clearHover();
+  });
+
+  // --- Click to pin ---
+  function clearPin() {
+    pinCharKeys.forEach(function(key) {
+      var el = charElements.get(key);
+      if (el) el.classList.remove('hl-source-pin');
+    });
+    pinASTIds.forEach(function(id) {
+      var el = nodeElements.get(id);
+      if (el) el.classList.remove('hl-pin');
+    });
+    pinCharKeys = [];
+    pinASTIds = [];
+    pinnedId = null;
+  }
+
+  function pinNode(nodeId) {
+    var node = nodeMap.get(nodeId);
+    if (!node || !node.range) return;
+
+    clearPin();
+    pinnedId = nodeId;
+
+    highlightSourceChars(node.range, 'hl-source-pin', pinCharKeys);
+
+    var el = nodeElements.get(nodeId);
+    if (el) {
+      el.classList.add('hl-pin');
+      pinASTIds.push(nodeId);
+    }
+  }
+
+  document.getElementById('source-pane').addEventListener('click', function(e) {
+    var ch = e.target.closest('.ch');
+    if (!ch) return;
+
+    var key = ch.dataset.line + ':' + ch.dataset.col;
+    var entries = charToNodes.get(key);
+    if (!entries || entries.length === 0) return;
+
+    var innermostId = entries[0].id;
+    if (pinnedId === innermostId) clearPin();
+    else pinNode(innermostId);
+  });
+
+  document.getElementById('ast-pane').addEventListener('click', function(e) {
+    if (e.target.closest('.toggle')) return;
+
+    var row = e.target.closest('.node-row');
+    if (!row) return;
+
+    var li = row.closest('li');
+    var nodeId = parseInt(li.dataset.nodeId, 10);
+
+    if (pinnedId === nodeId) clearPin();
+    else pinNode(nodeId);
+  });
+})();
+</script>
