@@ -102,6 +102,24 @@
     position: relative;
   }
 
+  /* --- Syntax highlighting (Catppuccin Mocha) --- */
+  .ch.hl-comment { color: #6c7086; font-style: italic; }
+  .ch.hl-keyword { color: #cba6f7; }
+  .ch.hl-constant-builtin { color: #fab387; }
+  .ch.hl-number { color: #fab387; }
+  .ch.hl-string { color: #a6e3a1; }
+  .ch.hl-string-special { color: #a6e3a1; }
+  .ch.hl-string-escape { color: #f2cdcd; }
+  .ch.hl-error { color: #f38ba8; text-decoration: wavy underline; }
+  .ch.hl-variable-parameter { color: #f2cdcd; }
+  .ch.hl-variable { color: #cdd6f4; }
+  .ch.hl-function { color: #89b4fa; }
+  .ch.hl-property { color: #89dceb; }
+  .ch.hl-type { color: #f9e2af; }
+  .ch.hl-operator { color: #94e2d5; }
+  .ch.hl-punctuation-bracket { color: #9399b2; }
+  .ch.hl-punctuation-delimiter { color: #9399b2; }
+
   .ch.hl-source {
     background: rgba(137, 180, 250, 0.45);
   }
@@ -289,6 +307,31 @@
     lineDiv.appendChild(content);
     sourceEl.appendChild(lineDiv);
   });
+
+  // --- Apply syntax highlighting ---
+  if (data.highlights && data.highlights.length > 0) {
+    // Map byte offsets to "line:col" keys
+    var byteToKey = [];
+    var byteOff = 0;
+    sourceLines.forEach(function(line, idx) {
+      for (var col = 0; col < line.length; col++) {
+        byteToKey[byteOff + col] = (idx + 1) + ':' + (col + 1);
+      }
+      byteOff += line.length + 1; // +1 for newline
+    });
+
+    // Apply highlights in order (last capture wins per character)
+    data.highlights.forEach(function(hl) {
+      for (var b = hl.s; b < hl.e; b++) {
+        var key = byteToKey[b];
+        if (!key) continue;
+        var el = charElements.get(key);
+        if (el) {
+          el.className = 'ch hl-' + hl.c;
+        }
+      }
+    });
+  }
 
   // --- Render AST tree ---
   function renderNode(node, parentUl) {
