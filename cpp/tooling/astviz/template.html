@@ -560,6 +560,11 @@
 
     highlightSourceChars(node.range, 'hl-source-pin', pinCharKeys);
 
+    // Scroll source to the start of the range
+    var startKey = node.range.sl + ':' + node.range.sc;
+    var startEl = charElements.get(startKey);
+    if (startEl) startEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
     var el = nodeElements.get(nodeId);
     if (el) {
       el.classList.add('hl-pin');
