@@ -188,11 +188,39 @@
     margin-left: 4px;
     flex-shrink: 0;
   }
+
+  /* no_range warning */
+  .node-row.no-range .node-label {
+    color: #f38ba8;
+  }
+
+  .node-row.no-range .range-info {
+    color: #f38ba8;
+  }
+
+  /* Toolbar buttons */
+  .toolbar-btn {
+    background: #313244;
+    color: #a6adc8;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .toolbar-btn:hover {
+    background: #45475a;
+    color: #cdd6f4;
+  }
 </style>
 
 <div id="toolbar">
   <span class="filename" id="filename"></span>
   <span class="stats" id="stats"></span>
+  <button class="toolbar-btn" id="btn-expand-all">Expand All</button>
+  <button class="toolbar-btn" id="btn-collapse-all">Collapse All</button>
 </div>
 <div id="container">
   <div id="source-pane" class="pane">
@@ -273,8 +301,12 @@
       row.appendChild(toggle);
     }
 
+    // Flag real AST nodes that are missing a source range (a bug)
+    var isNoRange = !node.range && !node.wrapper;
+    if (isNoRange) row.classList.add('no-range');
+
     var label = document.createElement('span');
-    label.className = node.range ? 'node-label' : 'wrapper-label';
+    label.className = node.wrapper ? 'wrapper-label' : 'node-label';
     label.textContent = node.label;
     row.appendChild(label);
 
@@ -284,6 +316,11 @@
       var r = node.range;
       rangeSpan.textContent = '[' + r.sl + ':' + r.sc + '-' + r.el + ':' + r.ec + ']';
       row.appendChild(rangeSpan);
+    } else if (isNoRange) {
+      var warnSpan = document.createElement('span');
+      warnSpan.className = 'range-info';
+      warnSpan.textContent = '[no range]';
+      row.appendChild(warnSpan);
     }
 
     li.appendChild(row);
@@ -498,6 +535,18 @@
 
     if (pinnedId === nodeId) clearPin();
     else pinNode(nodeId);
+  });
+  // --- Expand / Collapse all ---
+  document.getElementById('btn-expand-all').addEventListener('click', function() {
+    document.querySelectorAll('#ast-tree li').forEach(function(li) {
+      if (li.querySelector('ul')) li.classList.add('expanded');
+    });
+  });
+
+  document.getElementById('btn-collapse-all').addEventListener('click', function() {
+    document.querySelectorAll('#ast-tree li.expanded').forEach(function(li) {
+      li.classList.remove('expanded');
+    });
   });
 })();
 </script>

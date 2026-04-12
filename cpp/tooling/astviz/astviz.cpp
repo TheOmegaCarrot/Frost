@@ -46,6 +46,7 @@ static json::object node_to_json(const AST_Node& node, int& next_id)
             json::object wrapper;
             wrapper["id"] = next_id++;
             wrapper["label"] = child.label;
+            wrapper["wrapper"] = true;
             wrapper["children"] = json::array{
                 node_to_json(*child.node, next_id)};
             children.push_back(std::move(wrapper));
