@@ -244,6 +244,21 @@ BUILTIN(from_entries)
     return Value::create(Value::trusted, std::move(result));
 }
 
+BUILTIN(dissoc)
+{
+    REQUIRE_ARGS("dissoc", TYPES(Map),
+                 VARIADIC_REST(1, "key", TYPES(Int, Float, Bool, String)));
+
+    auto input = GET(0, Map);
+
+    for (const auto& val : args | std::views::drop(1))
+    {
+        input.erase(val); // maybe no-op and that's ok
+    }
+
+    return Value::create(Value::trusted, std::move(input));
+}
+
 void inject_structure_ops(Symbol_Table& table)
 {
     INJECT(keys);
@@ -256,5 +271,6 @@ void inject_structure_ops(Symbol_Table& table)
     INJECT(includes);
     INJECT(to_entries);
     INJECT(from_entries);
+    INJECT(dissoc);
 }
 } // namespace frst

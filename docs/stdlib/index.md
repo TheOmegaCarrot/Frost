@@ -23,6 +23,7 @@ Each entry links to its full documentation.
 - [curry](functions.md#curry)
 - [debug_dump](debug.md#debug_dump)
 - [dig](collections.md#dig)
+- [dissoc](collections.md#dissoc)
 - [divide](operators.md#divide)
 - [drop](collections.md#drop)
 - [drop_tail](collections.md#drop_tail)

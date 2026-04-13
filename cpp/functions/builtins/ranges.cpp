@@ -257,7 +257,7 @@ BUILTIN(zip)
 BUILTIN(zip_with)
 {
     REQUIRE_ARGS("zip_with", PARAM("function", TYPES(Function)),
-                 UNIFORM_REST(2, "array", TYPES(Array)));
+                 VARIADIC_REST(2, "array", TYPES(Array)));
 
     const auto& fn = GET(0, Function);
     auto arrays = args.subspan(1);
@@ -344,7 +344,7 @@ BUILTIN(xprod)
 BUILTIN(xprod_with)
 {
     REQUIRE_ARGS("xprod_with", PARAM("function", TYPES(Function)),
-                 UNIFORM_REST(2, "array", TYPES(Array)));
+                 VARIADIC_REST(2, "array", TYPES(Array)));
 
     const auto& fn = GET(0, Function);
     auto arrays = args.subspan(1);

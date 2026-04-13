@@ -124,7 +124,7 @@ inline constexpr bool is_optional_spec_v<Optional<S>> = true;
 // A spec that matches all remaining arguments uniformly. Must be the last
 // spec in a REQUIRE_ARGS call.
 template <typename... Ts>
-struct Uniform_Rest
+struct Variadic_Rest
 {
     Types<Ts...> types;
     std::string_view label;
@@ -132,10 +132,10 @@ struct Uniform_Rest
 };
 
 template <typename T>
-inline constexpr bool is_uniform_rest_v = false;
+inline constexpr bool is_variadic_rest_v = false;
 
 template <typename... Ts>
-inline constexpr bool is_uniform_rest_v<Uniform_Rest<Ts...>> = true;
+inline constexpr bool is_variadic_rest_v<Variadic_Rest<Ts...>> = true;
 
 template <typename... Ts>
 constexpr bool matches(const Value_Ptr& v)
@@ -218,7 +218,7 @@ void require_arg(std::string_view fn, builtin_args_t args, std::size_t idx,
 
 template <typename... Ts>
 void require_arg(std::string_view fn, builtin_args_t args, std::size_t idx,
-                 Uniform_Rest<Ts...> spec)
+                 Variadic_Rest<Ts...> spec)
 {
     for (auto i = idx; i < args.size(); ++i)
         require_arg(fn, args, i, spec.types, spec.label);
@@ -229,7 +229,7 @@ constexpr std::size_t min_args_for(const T&)
 {
     if constexpr (is_optional_spec_v<T>)
         return 0;
-    else if constexpr (is_uniform_rest_v<T>)
+    else if constexpr (is_variadic_rest_v<T>)
         return 0; // handled separately via min_count
     else
         return 1;
@@ -238,7 +238,7 @@ constexpr std::size_t min_args_for(const T&)
 template <typename T>
 constexpr std::size_t rest_min_for(const T& spec)
 {
-    if constexpr (is_uniform_rest_v<T>)
+    if constexpr (is_variadic_rest_v<T>)
         return spec.min_count;
     else
         return 0;
@@ -247,7 +247,7 @@ constexpr std::size_t rest_min_for(const T& spec)
 template <typename... Specs>
 void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
 {
-    constexpr bool has_rest = (is_uniform_rest_v<Specs> || ...);
+    constexpr bool has_rest = (is_variadic_rest_v<Specs> || ...);
     const std::size_t min_args =
         (... + min_args_for(specs)) + (... + rest_min_for(specs));
 
@@ -283,8 +283,8 @@ void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
     {                                                                          \
     }
 
-#define UNIFORM_REST(MIN, LABEL, TYPES_SPEC)                                   \
-    frst::builtin_detail::Uniform_Rest                                         \
+#define VARIADIC_REST(MIN, LABEL, TYPES_SPEC)                                   \
+    frst::builtin_detail::Variadic_Rest                                         \
     {                                                                          \
         TYPES_SPEC, LABEL, static_cast<std::size_t>(MIN)                       \
     }

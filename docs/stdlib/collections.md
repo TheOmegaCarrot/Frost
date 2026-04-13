@@ -418,3 +418,18 @@ from_entries([{key: 'x', value: 1}, {key: 'x', value: 2}])
 ```
 
 `to_entries` and `from_entries` are inverses: `from_entries(to_entries(m)) == m` for any map `m`.
+
+## `dissoc`
+`dissoc(m, ...keys)`
+
+Returns a new map with the given keys removed.
+Each key must be a valid map key (non-null primitive).
+Missing keys are silently ignored.
+
+```frost
+dissoc({a: 1, b: 2, c: 3}, 'b')        # => {a: 1, c: 3}
+dissoc({a: 1, b: 2, c: 3}, 'a', 'c')   # => {b: 2}
+dissoc({a: 1}, 'missing')               # => {a: 1}
+
+{a: 1, b: 2, c: 3} @ dissoc('b')       # => {a: 1, c: 3}
+```

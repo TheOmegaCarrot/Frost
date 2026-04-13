@@ -428,3 +428,195 @@ TEST_CASE("round-trip preserves empty map")
     auto reconstructed = call1(from_entries, call1(to_entries, empty));
     CHECK(Value::equal(empty, reconstructed)->truthy());
 }
+
+// =============================================================================
+// dissoc
+// =============================================================================
+
+TEST_CASE("dissoc: arity")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    CHECK_THROWS_WITH(dissoc->call({}),
+                      ContainsSubstring("insufficient arguments"));
+    CHECK_THROWS_WITH(dissoc->call({Value::create(Map{})}),
+                      ContainsSubstring("insufficient arguments"));
+}
+
+TEST_CASE("dissoc: first argument must be Map")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    auto key = Value::create("k"s);
+    CHECK_THROWS(dissoc->call({Value::null(), key}));
+    CHECK_THROWS(dissoc->call({Value::create(42_f), key}));
+    CHECK_THROWS(dissoc->call({Value::create("hi"s), key}));
+    CHECK_THROWS(dissoc->call({Value::create(Array{}), key}));
+}
+
+TEST_CASE("dissoc: key arguments must be valid map key types")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    auto m = Value::create(Map{});
+    CHECK_THROWS(dissoc->call({m, Value::null()}));
+    CHECK_THROWS(dissoc->call({m, Value::create(Array{})}));
+    CHECK_THROWS(dissoc->call({m, Value::create(Map{})}));
+}
+
+TEST_CASE("dissoc: remove a single string key")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    auto m = Value::create(Map{
+        {Value::create("a"s), Value::create(1_f)},
+        {Value::create("b"s), Value::create(2_f)},
+        {Value::create("c"s), Value::create(3_f)},
+    });
+
+    auto result = dissoc->call({m, Value::create("b"s)});
+    REQUIRE(result->is<Map>());
+    const auto& out = result->raw_get<Map>();
+    CHECK(out.size() == 2);
+    CHECK(out.find(Value::create("a"s)) != out.end());
+    CHECK(out.find(Value::create("b"s)) == out.end());
+    CHECK(out.find(Value::create("c"s)) != out.end());
+}
+
+TEST_CASE("dissoc: remove multiple keys")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    auto m = Value::create(Map{
+        {Value::create("a"s), Value::create(1_f)},
+        {Value::create("b"s), Value::create(2_f)},
+        {Value::create("c"s), Value::create(3_f)},
+    });
+
+    auto result =
+        dissoc->call({m, Value::create("a"s), Value::create("c"s)});
+    REQUIRE(result->is<Map>());
+    const auto& out = result->raw_get<Map>();
+    REQUIRE(out.size() == 1);
+    CHECK(out.find(Value::create("b"s))->second->get<Int>().value() == 2_f);
+}
+
+TEST_CASE("dissoc: missing key is a no-op")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    auto m = Value::create(Map{
+        {Value::create("a"s), Value::create(1_f)},
+    });
+
+    auto result = dissoc->call({m, Value::create("missing"s)});
+    REQUIRE(result->is<Map>());
+    CHECK(result->raw_get<Map>().size() == 1);
+    CHECK(Value::equal(m, result)->truthy());
+}
+
+TEST_CASE("dissoc: non-string key types")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    auto m = Value::create(Map{
+        {Value::create(1_f), Value::create("one"s)},
+        {Value::create(2_f), Value::create("two"s)},
+        {Value::create(true), Value::create("yes"s)},
+        {Value::create(3.14), Value::create("pi"s)},
+    });
+
+    auto result = dissoc->call({m, Value::create(1_f), Value::create(true)});
+    REQUIRE(result->is<Map>());
+    const auto& out = result->raw_get<Map>();
+    CHECK(out.size() == 2);
+    CHECK(out.find(Value::create(1_f)) == out.end());
+    CHECK(out.find(Value::create(true)) == out.end());
+    CHECK(out.find(Value::create(2_f)) != out.end());
+    CHECK(out.find(Value::create(3.14)) != out.end());
+}
+
+TEST_CASE("dissoc: removing all keys yields empty map")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    auto m = Value::create(Map{
+        {Value::create("x"s), Value::create(1_f)},
+        {Value::create("y"s), Value::create(2_f)},
+    });
+
+    auto result =
+        dissoc->call({m, Value::create("x"s), Value::create("y"s)});
+    REQUIRE(result->is<Map>());
+    CHECK(result->raw_get<Map>().empty());
+}
+
+TEST_CASE("dissoc: does not mutate the original map")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    auto m = Value::create(Map{
+        {Value::create("a"s), Value::create(1_f)},
+        {Value::create("b"s), Value::create(2_f)},
+    });
+
+    auto _ = dissoc->call({m, Value::create("a"s)});
+    CHECK(m->raw_get<Map>().size() == 2);
+}
+
+TEST_CASE("dissoc: duplicate keys in arguments")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    auto m = Value::create(Map{
+        {Value::create("a"s), Value::create(1_f)},
+        {Value::create("b"s), Value::create(2_f)},
+    });
+
+    auto result = dissoc->call(
+        {m, Value::create("a"s), Value::create("a"s)});
+    REQUIRE(result->is<Map>());
+    const auto& out = result->raw_get<Map>();
+    REQUIRE(out.size() == 1);
+    CHECK(out.find(Value::create("b"s)) != out.end());
+}
+
+TEST_CASE("dissoc: mixed key types")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto dissoc = get_fn(table, "dissoc");
+
+    auto m = Value::create(Map{
+        {Value::create("a"s), Value::create(1_f)},
+        {Value::create(42_f), Value::create(2_f)},
+        {Value::create(true), Value::create(3_f)},
+    });
+
+    auto result =
+        dissoc->call({m, Value::create("a"s), Value::create(42_f)});
+    REQUIRE(result->is<Map>());
+    const auto& out = result->raw_get<Map>();
+    REQUIRE(out.size() == 1);
+    CHECK(out.find(Value::create(true)) != out.end());
+}
