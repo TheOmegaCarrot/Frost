@@ -45,6 +45,11 @@ struct Importer
     // cycle detection))
     import::import_cache_t import_cache;
 
+    // Serializes all file-based imports interpreter-wide. Recursive because
+    // transitive imports (A imports B imports C) re-enter do_import on the
+    // same thread.
+    import::import_mutex_t import_mutex;
+
     import::import_stack_t import_stack;
 
     std::shared_ptr<Stdlib_Registry> stdlib;
@@ -85,6 +90,8 @@ struct Importer
     Value_Ptr do_import(const std::string& module_spec,
                         const std::filesystem::path& module_file)
     {
+        std::lock_guard lock{*import_mutex};
+
         import_stack.push_back(module_spec);
         BOOST_SCOPE_EXIT_ALL(&)
         {
@@ -131,7 +138,7 @@ struct Importer
         child_search_path.append_range(env_module_path());
 
         inject_import(isolated_table, child_search_path, stdlib, import_cache,
-                      import_stack);
+                      import_mutex, import_stack);
 
         for (const auto& statement : parse_result.value())
         {
@@ -195,11 +202,13 @@ void inject_import(Symbol_Table& table,
                    const import::search_path_t& search_path,
                    std::shared_ptr<Stdlib_Registry> stdlib,
                    import::import_cache_t import_cache,
+                   import::import_mutex_t import_mutex,
                    const import::import_stack_t& import_stack)
 {
     table.define("import", Value::create(Function{std::make_shared<Builtin>(
                                Importer{.search_path = std::move(search_path),
                                         .import_cache = import_cache,
+                                        .import_mutex = import_mutex,
                                         .import_stack = import_stack,
                                         .stdlib = std::move(stdlib)},
                                "import")}));
