@@ -3143,6 +3143,7 @@ struct Defn
                >> (param_ws
                    + dsl::position
                    + dsl::p<identifier_required>
+                   + dsl::position
                    + param_ws
                    + dsl::p<lambda_parameters_paren>
                    + param_ws_nl
@@ -3151,13 +3152,14 @@ struct Defn
                    + dsl::position);
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
-        [](auto begin_pos, std::string name, lambda_param_pack params,
+        [](auto begin_pos, std::string name, auto name_end_pos,
+           lambda_param_pack params,
            std::vector<ast::Statement::Ptr> body, auto end_pos) {
             auto lambda = std::make_unique<ast::Lambda>(
                 make_source_range(begin_pos, end_pos), std::move(params.params),
                 std::move(body), std::move(params.vararg), name);
             auto binding = std::make_unique<ast::Destructure_Binding>(
-                ast::AST_Node::no_range,
+                make_source_range(begin_pos, name_end_pos),
                 std::optional<std::string>{std::string{name}}, false);
             return std::make_unique<ast::Define>(
                 ast::AST_Node::no_range, std::move(binding), std::move(lambda));
@@ -3178,6 +3180,7 @@ struct Export_Defn
                + param_ws
                + dsl::position
                + dsl::p<identifier_required>
+               + dsl::position
                + param_ws
                + dsl::p<lambda_parameters_paren>
                + param_ws_nl
@@ -3186,13 +3189,14 @@ struct Export_Defn
                + dsl::position;
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
-        [](auto begin_pos, std::string name, lambda_param_pack params,
+        [](auto begin_pos, std::string name, auto name_end_pos,
+           lambda_param_pack params,
            std::vector<ast::Statement::Ptr> body, auto end_pos) {
             auto lambda = std::make_unique<ast::Lambda>(
                 make_source_range(begin_pos, end_pos), std::move(params.params),
                 std::move(body), std::move(params.vararg), name);
             auto binding = std::make_unique<ast::Destructure_Binding>(
-                ast::AST_Node::no_range,
+                make_source_range(begin_pos, name_end_pos),
                 std::optional<std::string>{std::string{name}}, true);
             return std::make_unique<ast::Define>(
                 ast::AST_Node::no_range, std::move(binding), std::move(lambda));

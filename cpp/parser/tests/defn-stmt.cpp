@@ -461,4 +461,63 @@ TEST_CASE("Parser Defn Statements")
         CHECK(lambda_range.begin.column == 6);
         CHECK(lambda_range.end.column == 14);
     }
+
+    SECTION("defn binding gets source range of the identifier")
+    {
+        // "defn square(x) -> x * x"
+        //       ^~~~~~
+        //  col 6     col 11
+        auto result = parse("defn square(x) -> x * x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
+        auto* binding = dynamic_cast<const frst::ast::Destructure_Binding*>(
+            nodes.back());
+        REQUIRE(binding);
+        auto range = binding->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 6);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 11);
+    }
+
+    SECTION("export defn binding gets source range of the identifier")
+    {
+        // "export defn greet(name) -> name"
+        //              ^~~~~
+        //         col 13   col 17
+        auto result = parse("export defn greet(name) -> name");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
+        auto* binding = dynamic_cast<const frst::ast::Destructure_Binding*>(
+            nodes.back());
+        REQUIRE(binding);
+        auto range = binding->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 13);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 17);
+    }
+
+    SECTION("defn binding range is not no_range")
+    {
+        auto result = parse("defn f(x) -> x");
+        REQUIRE(result);
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
+        auto* binding = dynamic_cast<const frst::ast::Destructure_Binding*>(
+            nodes.back());
+        REQUIRE(binding);
+        auto range = binding->source_range();
+        // no_range is {0,0}-{0,0}; a valid range must have nonzero positions
+        CHECK(range.begin.line > 0);
+        CHECK(range.begin.column > 0);
+    }
 }
