@@ -24,8 +24,9 @@ namespace
 
 // Helper: build a Match_Array from a vector of sub-patterns and an optional
 // rest clause.
-Match_Array::Ptr make_array(std::vector<Match_Pattern::Ptr> subpatterns,
-                            std::optional<Match_Array::Rest> rest = std::nullopt)
+Match_Array::Ptr make_array(
+    std::vector<Match_Pattern::Ptr> subpatterns,
+    std::optional<Match_Array::Rest> rest = std::nullopt)
 {
     return std::make_unique<Match_Array>(
         AST_Node::no_range, std::move(subpatterns), std::move(rest));
@@ -54,7 +55,8 @@ Value_Ptr int_array(std::size_t n)
 
 } // namespace
 
-TEST_CASE("Match_Array: non-array match target fails without calling subpatterns")
+TEST_CASE(
+    "Match_Array: non-array match target fails without calling subpatterns")
 {
     // The type check must run first. No sub-pattern should be consulted,
     // so FORBID_CALL the mock.
@@ -68,11 +70,26 @@ TEST_CASE("Match_Array: non-array match target fails without calling subpatterns
     subs.push_back(std::move(inner));
     auto pat = make_array(std::move(subs));
 
-    SECTION("Int match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(42_f))); }
-    SECTION("String match target") { CHECK_FALSE(pat->try_match(ctx, Value::create("hi"s))); }
-    SECTION("Map match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(Map{}))); }
-    SECTION("Null match target") { CHECK_FALSE(pat->try_match(ctx, Value::null())); }
-    SECTION("Bool match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(true))); }
+    SECTION("Int match target")
+    {
+        CHECK_FALSE(pat->try_match(ctx, Value::create(42_f)));
+    }
+    SECTION("String match target")
+    {
+        CHECK_FALSE(pat->try_match(ctx, Value::create("hi"s)));
+    }
+    SECTION("Map match target")
+    {
+        CHECK_FALSE(pat->try_match(ctx, Value::create(Map{})));
+    }
+    SECTION("Null match target")
+    {
+        CHECK_FALSE(pat->try_match(ctx, Value::null()));
+    }
+    SECTION("Bool match target")
+    {
+        CHECK_FALSE(pat->try_match(ctx, Value::create(true)));
+    }
 }
 
 TEST_CASE("Match_Array: exact-length matching without rest")

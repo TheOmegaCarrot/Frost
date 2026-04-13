@@ -40,8 +40,10 @@ static json::object node_to_json(const AST_Node& node, int& next_id)
 
     const auto range = node.source_range();
     const auto no = AST_Node::no_range;
-    if (range.begin.line != no.begin.line
-        or range.begin.column != no.begin.column)
+    if (range.begin.line
+        != no.begin.line
+        or range.begin.column
+        != no.begin.column)
     {
         obj["range"] = json::object{
             {"sl", static_cast<std::int64_t>(range.begin.line)},
@@ -64,8 +66,8 @@ static json::object node_to_json(const AST_Node& node, int& next_id)
             wrapper["id"] = next_id++;
             wrapper["label"] = child.label;
             wrapper["wrapper"] = true;
-            wrapper["children"] = json::array{
-                node_to_json(*child.node, next_id)};
+            wrapper["children"] =
+                json::array{node_to_json(*child.node, next_id)};
             children.push_back(std::move(wrapper));
         }
     }
@@ -83,20 +85,21 @@ static json::array get_highlights(const std::string& source)
     auto* parser = ts_parser_new();
     ts_parser_set_language(parser, tree_sitter_frost());
 
-    auto* tree = ts_parser_parse_string(
-        parser, nullptr, source.c_str(),
-        static_cast<uint32_t>(source.size()));
+    auto* tree = ts_parser_parse_string(parser, nullptr, source.c_str(),
+                                        static_cast<uint32_t>(source.size()));
 
     uint32_t error_offset;
     TSQueryError error_type;
-    auto* query = ts_query_new(
-        tree_sitter_frost(), highlights_scm, sizeof(highlights_scm),
-        &error_offset, &error_type);
+    auto* query =
+        ts_query_new(tree_sitter_frost(), highlights_scm,
+                     sizeof(highlights_scm), &error_offset, &error_type);
 
     if (not query)
     {
-        std::cerr << "Warning: highlight query failed at offset "
-                  << error_offset << "\n";
+        std::cerr
+            << "Warning: highlight query failed at offset "
+            << error_offset
+            << "\n";
         ts_tree_delete(tree);
         ts_parser_delete(parser);
         return {};
@@ -113,8 +116,8 @@ static json::array get_highlights(const std::string& source)
         const auto& capture = match.captures[capture_index];
 
         uint32_t name_len;
-        const auto* name = ts_query_capture_name_for_id(
-            query, capture.index, &name_len);
+        const auto* name =
+            ts_query_capture_name_for_id(query, capture.index, &name_len);
 
         auto scope = std::string(name, name_len);
         std::ranges::replace(scope, '.', '-');
@@ -153,8 +156,7 @@ int main(int argc, char** argv)
         std::cerr << "Error: could not read file: " << path << "\n";
         return 1;
     }
-    const auto source = std::string{
-        std::istreambuf_iterator<char>{ifs}, {}};
+    const auto source = std::string{std::istreambuf_iterator<char>{ifs}, {}};
     ifs.close();
 
     // Parse with Frost parser (for AST)
@@ -186,8 +188,7 @@ int main(int argc, char** argv)
     // Escape </ as <\/ to prevent premature </script> closing
     auto json_str = json::serialize(data);
     for (std::size_t pos = 0;
-         (pos = json_str.find("</", pos)) != std::string::npos;
-         pos += 3)
+         (pos = json_str.find("</", pos)) != std::string::npos; pos += 3)
     {
         json_str.replace(pos, 2, "<\\/");
     }

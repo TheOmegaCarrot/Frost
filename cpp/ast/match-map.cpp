@@ -37,10 +37,10 @@ bool Match_Map::do_try_match(Execution_Context ctx,
                 return not Frost_Map_Key<T>;
             }))
         {
-            throw Frost_Recoverable_Error{fmt::format(
-                "Map match key expressions must be valid Map keys, "
-                "got: {}",
-                key->type_name())};
+            throw Frost_Recoverable_Error{
+                fmt::format("Map match key expressions must be valid Map keys, "
+                            "got: {}",
+                            key->type_name())};
         }
 
         auto itr = match_target.find(key);

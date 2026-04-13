@@ -2492,41 +2492,38 @@ TEST_CASE("Builtin flatten")
         auto add_fn = Value::create(Function{std::make_shared<Builtin>(
             [](builtin_args_t a) {
                 return Value::create(a.at(0)->raw_get<Int>()
-                                    + a.at(1)->raw_get<Int>());
+                                     + a.at(1)->raw_get<Int>());
             },
             "add")});
 
         auto mul_fn = Value::create(Function{std::make_shared<Builtin>(
             [](builtin_args_t a) {
                 return Value::create(a.at(0)->raw_get<Int>()
-                                    * a.at(1)->raw_get<Int>());
+                                     * a.at(1)->raw_get<Int>());
             },
             "mul")});
 
         auto add3_fn = Value::create(Function{std::make_shared<Builtin>(
             [](builtin_args_t a) {
                 return Value::create(a.at(0)->raw_get<Int>()
-                                    + a.at(1)->raw_get<Int>()
-                                    + a.at(2)->raw_get<Int>());
+                                     + a.at(1)->raw_get<Int>()
+                                     + a.at(2)->raw_get<Int>());
             },
             "add3")});
 
         SECTION("Arity: too few arguments")
         {
-            CHECK_THROWS_WITH(fn->call({}),
-                              ContainsSubstring("insufficient"));
+            CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
             CHECK_THROWS_WITH(fn->call({add_fn}),
                               ContainsSubstring("insufficient"));
-            CHECK_THROWS_WITH(
-                fn->call({add_fn, Value::create(Array{})}),
-                ContainsSubstring("insufficient"));
+            CHECK_THROWS_WITH(fn->call({add_fn, Value::create(Array{})}),
+                              ContainsSubstring("insufficient"));
         }
 
         SECTION("Type: first arg must be Function")
         {
             CHECK_THROWS_WITH(
-                fn->call({Value::create(42_f),
-                          Value::create(Array{}),
+                fn->call({Value::create(42_f), Value::create(Array{}),
                           Value::create(Array{})}),
                 ContainsSubstring("Function"));
         }
@@ -2534,9 +2531,7 @@ TEST_CASE("Builtin flatten")
         SECTION("Type: remaining args must be Array")
         {
             CHECK_THROWS_WITH(
-                fn->call({add_fn,
-                          Value::create(Array{}),
-                          Value::create(42_f)}),
+                fn->call({add_fn, Value::create(Array{}), Value::create(42_f)}),
                 ContainsSubstring("Array"));
         }
 
@@ -2575,7 +2570,8 @@ TEST_CASE("Builtin flatten")
                 add3_fn,
                 Value::create(Array{Value::create(1_f), Value::create(2_f)}),
                 Value::create(Array{Value::create(10_f), Value::create(20_f)}),
-                Value::create(Array{Value::create(100_f), Value::create(200_f)}),
+                Value::create(
+                    Array{Value::create(100_f), Value::create(200_f)}),
             });
             REQUIRE(r->is<Array>());
             const auto& arr = r->raw_get<Array>();
@@ -2623,8 +2619,10 @@ TEST_CASE("Builtin flatten")
         SECTION("Equivalent to map zip(...) with f")
         {
             // zip_with(f, a, b) should equal map zip(a, b) with spread(f)
-            auto a = Value::create(Array{Value::create(1_f), Value::create(2_f)});
-            auto b = Value::create(Array{Value::create(10_f), Value::create(20_f)});
+            auto a =
+                Value::create(Array{Value::create(1_f), Value::create(2_f)});
+            auto b =
+                Value::create(Array{Value::create(10_f), Value::create(20_f)});
 
             auto zw_result = fn->call({add_fn, a, b});
 
@@ -2636,9 +2634,8 @@ TEST_CASE("Builtin flatten")
             for (const auto& pair : pairs)
             {
                 const auto& row = pair->raw_get<Array>();
-                manual.push_back(
-                    Value::create(row[0]->raw_get<Int>()
-                                  + row[1]->raw_get<Int>()));
+                manual.push_back(Value::create(row[0]->raw_get<Int>()
+                                               + row[1]->raw_get<Int>()));
             }
 
             REQUIRE(zw_result->is<Array>());
@@ -2656,41 +2653,38 @@ TEST_CASE("Builtin flatten")
         auto add_fn = Value::create(Function{std::make_shared<Builtin>(
             [](builtin_args_t a) {
                 return Value::create(a.at(0)->raw_get<Int>()
-                                    + a.at(1)->raw_get<Int>());
+                                     + a.at(1)->raw_get<Int>());
             },
             "add")});
 
         auto concat_fn = Value::create(Function{std::make_shared<Builtin>(
             [](builtin_args_t a) {
                 return Value::create(a.at(0)->raw_get<String>()
-                                    + a.at(1)->raw_get<String>());
+                                     + a.at(1)->raw_get<String>());
             },
             "concat")});
 
         auto add3_fn = Value::create(Function{std::make_shared<Builtin>(
             [](builtin_args_t a) {
                 return Value::create(a.at(0)->raw_get<Int>()
-                                    + a.at(1)->raw_get<Int>()
-                                    + a.at(2)->raw_get<Int>());
+                                     + a.at(1)->raw_get<Int>()
+                                     + a.at(2)->raw_get<Int>());
             },
             "add3")});
 
         SECTION("Arity: too few arguments")
         {
-            CHECK_THROWS_WITH(fn->call({}),
-                              ContainsSubstring("insufficient"));
+            CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
             CHECK_THROWS_WITH(fn->call({add_fn}),
                               ContainsSubstring("insufficient"));
-            CHECK_THROWS_WITH(
-                fn->call({add_fn, Value::create(Array{})}),
-                ContainsSubstring("insufficient"));
+            CHECK_THROWS_WITH(fn->call({add_fn, Value::create(Array{})}),
+                              ContainsSubstring("insufficient"));
         }
 
         SECTION("Type: first arg must be Function")
         {
             CHECK_THROWS_WITH(
-                fn->call({Value::create(42_f),
-                          Value::create(Array{}),
+                fn->call({Value::create(42_f), Value::create(Array{}),
                           Value::create(Array{})}),
                 ContainsSubstring("Function"));
         }
@@ -2698,9 +2692,7 @@ TEST_CASE("Builtin flatten")
         SECTION("Type: remaining args must be Array")
         {
             CHECK_THROWS_WITH(
-                fn->call({add_fn,
-                          Value::create(Array{}),
-                          Value::create(42_f)}),
+                fn->call({add_fn, Value::create(Array{}), Value::create(42_f)}),
                 ContainsSubstring("Array"));
         }
 
@@ -2725,7 +2717,8 @@ TEST_CASE("Builtin flatten")
         {
             auto r = fn->call({
                 add3_fn,
-                Value::create(Array{Value::create(100_f), Value::create(200_f)}),
+                Value::create(
+                    Array{Value::create(100_f), Value::create(200_f)}),
                 Value::create(Array{Value::create(10_f)}),
                 Value::create(Array{Value::create(1_f), Value::create(2_f)}),
             });
@@ -2768,8 +2761,10 @@ TEST_CASE("Builtin flatten")
 
         SECTION("Equivalent to map xprod(...) with spread(f)")
         {
-            auto a = Value::create(Array{Value::create(1_f), Value::create(2_f)});
-            auto b = Value::create(Array{Value::create(10_f), Value::create(20_f)});
+            auto a =
+                Value::create(Array{Value::create(1_f), Value::create(2_f)});
+            auto b =
+                Value::create(Array{Value::create(10_f), Value::create(20_f)});
 
             auto xw_result = fn->call({add_fn, a, b});
 
@@ -2780,9 +2775,8 @@ TEST_CASE("Builtin flatten")
             for (const auto& tup : tuples)
             {
                 const auto& row = tup->raw_get<Array>();
-                manual.push_back(
-                    Value::create(row[0]->raw_get<Int>()
-                                  + row[1]->raw_get<Int>()));
+                manual.push_back(Value::create(row[0]->raw_get<Int>()
+                                               + row[1]->raw_get<Int>()));
             }
 
             REQUIRE(xw_result->is<Array>());

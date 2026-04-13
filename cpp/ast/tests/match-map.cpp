@@ -49,7 +49,8 @@ Value_Ptr make_string_keyed_map(
 
 } // namespace
 
-TEST_CASE("Match_Map: non-map match target fails without consulting subpatterns")
+TEST_CASE(
+    "Match_Map: non-map match target fails without consulting subpatterns")
 {
     mock::Mock_Symbol_Table syms;
     Execution_Context ctx{.symbols = syms};
@@ -63,11 +64,26 @@ TEST_CASE("Match_Map: non-map match target fails without consulting subpatterns"
     elements.push_back({literal_key(Value::create("name"s)), std::move(inner)});
     auto pat = make_map(std::move(elements));
 
-    SECTION("Int match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(42_f))); }
-    SECTION("String match target") { CHECK_FALSE(pat->try_match(ctx, Value::create("hi"s))); }
-    SECTION("Array match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(Array{}))); }
-    SECTION("Null match target") { CHECK_FALSE(pat->try_match(ctx, Value::null())); }
-    SECTION("Bool match target") { CHECK_FALSE(pat->try_match(ctx, Value::create(true))); }
+    SECTION("Int match target")
+    {
+        CHECK_FALSE(pat->try_match(ctx, Value::create(42_f)));
+    }
+    SECTION("String match target")
+    {
+        CHECK_FALSE(pat->try_match(ctx, Value::create("hi"s)));
+    }
+    SECTION("Array match target")
+    {
+        CHECK_FALSE(pat->try_match(ctx, Value::create(Array{})));
+    }
+    SECTION("Null match target")
+    {
+        CHECK_FALSE(pat->try_match(ctx, Value::null()));
+    }
+    SECTION("Bool match target")
+    {
+        CHECK_FALSE(pat->try_match(ctx, Value::create(true)));
+    }
 }
 
 TEST_CASE("Match_Map: empty pattern matches any map")
@@ -77,7 +93,10 @@ TEST_CASE("Match_Map: empty pattern matches any map")
 
     auto pat = make_map({});
 
-    SECTION("Empty map") { CHECK(pat->try_match(ctx, Value::create(frst::Map{}))); }
+    SECTION("Empty map")
+    {
+        CHECK(pat->try_match(ctx, Value::create(frst::Map{})));
+    }
     SECTION("Non-empty map")
     {
         auto m = make_string_keyed_map({
@@ -125,7 +144,8 @@ TEST_CASE("Match_Map: key found, sub-pattern fails")
     CHECK_FALSE(pat->try_match(ctx, m));
 }
 
-TEST_CASE("Match_Map: missing key fails the match without consulting sub-pattern")
+TEST_CASE(
+    "Match_Map: missing key fails the match without consulting sub-pattern")
 {
     // A missing key is an immediate match failure. The sub-pattern is never
     // called -- there is no implicit null substitution.
@@ -317,8 +337,7 @@ TEST_CASE("Match_Map: invalid key types throw")
     SECTION("Array key throws")
     {
         auto key_expr = mock::Mock_Expression::make();
-        REQUIRE_CALL(*key_expr, do_evaluate(_))
-            .RETURN(Value::create(Array{}));
+        REQUIRE_CALL(*key_expr, do_evaluate(_)).RETURN(Value::create(Array{}));
 
         auto inner = mock::Mock_Match_Pattern::make();
         FORBID_CALL(*inner, do_try_match(_, _));
@@ -397,7 +416,8 @@ TEST_CASE("Match_Map: children exposes key expressions and sub-patterns")
     CHECK(kids[3].label == "Pattern 2");
 }
 
-TEST_CASE("Match_Map: symbol_sequence propagates actions from keys and patterns")
+TEST_CASE(
+    "Match_Map: symbol_sequence propagates actions from keys and patterns")
 {
     // symbol_sequence walks children (each yields whatever its
     // symbol_sequence produces). A Literal key produces no actions; a

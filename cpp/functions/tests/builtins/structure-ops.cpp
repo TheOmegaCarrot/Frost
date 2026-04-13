@@ -288,7 +288,11 @@ TEST_CASE("from_entries: extra keys in entry maps are ignored")
     auto result = call1(from_entries, entries);
     REQUIRE(result->is<Map>());
     CHECK(result->raw_get<Map>().size() == 1);
-    CHECK(result->raw_get<Map>().find(Value::create("a"s))->second->get<Int>().value() == 1_f);
+    CHECK(result->raw_get<Map>()
+              .find(Value::create("a"s))
+              ->second->get<Int>()
+              .value()
+          == 1_f);
 }
 
 TEST_CASE("from_entries: element not a map")
@@ -299,7 +303,8 @@ TEST_CASE("from_entries: element not a map")
 
     auto bad = Value::create(Array{Value::create(42_f)});
     CHECK_THROWS_WITH(call1(from_entries, bad),
-                      ContainsSubstring("element 0") && ContainsSubstring("Map"));
+                      ContainsSubstring("element 0")
+                          && ContainsSubstring("Map"));
 }
 
 TEST_CASE("from_entries: missing 'key'")

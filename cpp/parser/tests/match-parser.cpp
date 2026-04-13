@@ -117,19 +117,20 @@ TEST_CASE("Parser Match: trailing comma after the last arm is allowed")
 TEST_CASE("Parser Match: arms separated by newlines and commas")
 {
     frst::Symbol_Table table;
-    run(
-        "def x = match 2 {\n"
+    run("def x = match 2 {\n"
         "    1 => 'one',\n"
         "    2 => 'two',\n"
         "    _ => 'other',\n"
-        "}", table);
+        "}",
+        table);
     CHECK(lookup(table, "x")->raw_get<frst::String>() == "two");
 }
 
 TEST_CASE("Parser Match: nested match expressions")
 {
     frst::Symbol_Table table;
-    run("def x = match (match 1 { 1 => 2, _ => 0 }) { 2 => 'inner', _ => 'no' }",
+    run("def x = match (match 1 { 1 => 2, _ => 0 }) { 2 => 'inner', _ => 'no' "
+        "}",
         table);
     CHECK(lookup(table, "x")->raw_get<frst::String>() == "inner");
 }
@@ -199,8 +200,7 @@ TEST_CASE("Parser Match: every Type_Constraint is parseable")
         {"def x = match 1 { n is Int => 1 }", "Match_Binding(n is Int)"},
         {"def x = match 1 { n is Float => 1 }", "Match_Binding(n is Float)"},
         {"def x = match 1 { n is Bool => 1 }", "Match_Binding(n is Bool)"},
-        {"def x = match 1 { n is String => 1 }",
-         "Match_Binding(n is String)"},
+        {"def x = match 1 { n is String => 1 }", "Match_Binding(n is String)"},
         {"def x = match 1 { n is Array => 1 }", "Match_Binding(n is Array)"},
         {"def x = match 1 { n is Map => 1 }", "Match_Binding(n is Map)"},
         {"def x = match 1 { n is Function => 1 }",
@@ -254,8 +254,8 @@ TEST_CASE("Parser Match: format string as value pattern")
 {
     // Format strings evaluate at match time and compare via Frost equality.
     // The interpolated identifier is looked up in the surrounding scope.
-    auto stmt = parse_one(
-        "def x = match 'hi' { $'h${suffix}' => 'yes', _ => 'no' }");
+    auto stmt =
+        parse_one("def x = match 'hi' { $'h${suffix}' => 'yes', _ => 'no' }");
     auto values = find_nodes(stmt, "Match_Value");
     REQUIRE(values.size() == 1);
     auto kids = values[0]->children() | std::ranges::to<std::vector>();
@@ -318,8 +318,7 @@ TEST_CASE("Parser Match: empty array pattern matches empty array")
 
 TEST_CASE("Parser Match: array pattern with named rest")
 {
-    auto stmt =
-        parse_one("def x = match [1, 2, 3] { [a, ...rest] => rest }");
+    auto stmt = parse_one("def x = match [1, 2, 3] { [a, ...rest] => rest }");
     auto arrays = find_nodes(stmt, "Match_Array");
     REQUIRE(arrays.size() == 1);
     CHECK(arrays[0]->node_label() == "Match_Array(...rest)");
@@ -334,8 +333,7 @@ TEST_CASE("Parser Match: array pattern with named rest")
 
 TEST_CASE("Parser Match: array pattern with discard rest")
 {
-    auto stmt =
-        parse_one("def x = match [1, 2, 3] { [a, ..._] => a, _ => 0 }");
+    auto stmt = parse_one("def x = match [1, 2, 3] { [a, ..._] => a, _ => 0 }");
     auto arrays = find_nodes(stmt, "Match_Array");
     REQUIRE(arrays.size() == 1);
     CHECK(arrays[0]->node_label() == "Match_Array(..._)");
@@ -347,14 +345,12 @@ TEST_CASE("Parser Match: array pattern with discard rest")
 
 TEST_CASE("Parser Match: rest-only array patterns")
 {
-    auto named =
-        parse_one("def x = match [1, 2] { [...all] => all }");
+    auto named = parse_one("def x = match [1, 2] { [...all] => all }");
     auto named_arrays = find_nodes(named, "Match_Array");
     REQUIRE(named_arrays.size() == 1);
     CHECK(named_arrays[0]->node_label() == "Match_Array(...all)");
 
-    auto discard =
-        parse_one("def x = match [1, 2] { [..._] => 'any' }");
+    auto discard = parse_one("def x = match [1, 2] { [..._] => 'any' }");
     auto discard_arrays = find_nodes(discard, "Match_Array");
     REQUIRE(discard_arrays.size() == 1);
     CHECK(discard_arrays[0]->node_label() == "Match_Array(..._)");
@@ -379,9 +375,9 @@ TEST_CASE("Parser Match: explicit map entry `key: pattern`")
 TEST_CASE("Parser Match: computed-key map entry `[expr]: pattern`")
 {
     frst::Symbol_Table table;
-    run(
-        "def k = 'name'\n"
-        "def x = match {name: 'Alice'} { {[k]: n} => n, _ => 'none' }", table);
+    run("def k = 'name'\n"
+        "def x = match {name: 'Alice'} { {[k]: n} => n, _ => 'none' }",
+        table);
     CHECK(lookup(table, "x")->raw_get<frst::String>() == "Alice");
 }
 
@@ -431,8 +427,7 @@ TEST_CASE("Parser Match: empty map pattern matches any map")
 TEST_CASE("Parser Match: mixed map entry forms in one pattern")
 {
     frst::Symbol_Table table;
-    run(
-        "def k = 'computed'\n"
+    run("def k = 'computed'\n"
         "def m = {a: 1, b: 2, computed: 3, c: 4}\n"
         "def x = match m { {a, b: bb, [k]: cc, c is Int} => a + bb + cc + c }",
         table);
@@ -460,15 +455,14 @@ TEST_CASE("Parser Match: array inside map")
 TEST_CASE("Parser Match: map inside array")
 {
     frst::Symbol_Table table;
-    run("def x = match [{a: 1}, {a: 2}] { [{a: x}, {a: y}] => x + y }",
-        table);
+    run("def x = match [{a: 1}, {a: 2}] { [{a: x}, {a: y}] => x + y }", table);
     CHECK(lookup(table, "x")->get<frst::Int>().value() == 3_f);
 }
 
 TEST_CASE("Parser Match: type constraints on array elements")
 {
-    auto stmt = parse_one(
-        "def x = match [1, 'hi'] { [a is Int, b is String] => 'ok', _ => 'no' }");
+    auto stmt = parse_one("def x = match [1, 'hi'] { [a is Int, b is String] "
+                          "=> 'ok', _ => 'no' }");
     auto bindings = find_nodes(stmt, "Match_Binding");
     // Two for the array elements, one for the catch-all `_`.
     REQUIRE(bindings.size() == 3);
@@ -477,7 +471,8 @@ TEST_CASE("Parser Match: type constraints on array elements")
     CHECK(bindings[2]->node_label() == "Match_Binding(_)");
 
     frst::Symbol_Table table;
-    run("def x = match [1, 'hi'] { [a is Int, b is String] => 'ok', _ => 'no' }",
+    run("def x = match [1, 'hi'] { [a is Int, b is String] => 'ok', _ => 'no' "
+        "}",
         table);
     CHECK(lookup(table, "x")->raw_get<frst::String>() == "ok");
 }
@@ -541,7 +536,8 @@ TEST_CASE("Parser Match: parenthesized identifier is a value pattern")
 
     frst::Symbol_Table table;
     run("def x = 7\n"
-        "def y = match 7 { (x) => 'eq', _ => 'no' }", table);
+        "def y = match 7 { (x) => 'eq', _ => 'no' }",
+        table);
     CHECK(lookup(table, "y")->raw_get<frst::String>() == "eq");
 }
 
@@ -562,7 +558,8 @@ TEST_CASE("Parser Match: newline before `=>`")
     run("def x = match 1 {\n"
         "    n\n"
         "        => n + 1\n"
-        "}", table);
+        "}",
+        table);
     CHECK(lookup(table, "x")->get<frst::Int>().value() == 2_f);
 }
 
@@ -572,7 +569,8 @@ TEST_CASE("Parser Match: newline after `=>`")
     run("def x = match 1 {\n"
         "    n =>\n"
         "        n + 1\n"
-        "}", table);
+        "}",
+        table);
     CHECK(lookup(table, "x")->get<frst::Int>().value() == 2_f);
 }
 
@@ -585,7 +583,8 @@ TEST_CASE("Parser Match: newlines inside array pattern")
         "        b,\n"
         "        c\n"
         "    ] => a + b + c\n"
-        "}", table);
+        "}",
+        table);
     CHECK(lookup(table, "x")->get<frst::Int>().value() == 6_f);
 }
 
@@ -597,7 +596,8 @@ TEST_CASE("Parser Match: newlines inside map pattern")
         "        a: aa,\n"
         "        b: bb,\n"
         "    } => aa + bb\n"
-        "}", table);
+        "}",
+        table);
     CHECK(lookup(table, "x")->get<frst::Int>().value() == 3_f);
 }
 
@@ -609,7 +609,8 @@ TEST_CASE("Parser Match: multi-line result expression")
         "        def doubled = n * 2\n"
         "        doubled + 1\n"
         "    }\n"
-        "}", table);
+        "}",
+        table);
     CHECK(lookup(table, "x")->get<frst::Int>().value() == 11_f);
 }
 
@@ -778,7 +779,8 @@ TEST_CASE("Parser Match: trailing comma in map pattern is accepted")
     CHECK(lookup(table, "x")->get<frst::Int>().value() == 3_f);
 }
 
-TEST_CASE("Parser Match Errors: trailing comma after array rest clause is rejected")
+TEST_CASE(
+    "Parser Match Errors: trailing comma after array rest clause is rejected")
 {
     // Trailing commas are only allowed where another element could
     // syntactically follow. The rest clause is the syntactic terminator
@@ -903,7 +905,8 @@ TEST_CASE("Parser Match: bare `_` is a Match_Binding, not a Match_Value")
 // Source ranges: extra cases
 // =============================================================================
 
-TEST_CASE("Parser Match Source Ranges: top-level Match node spans `match` to `}`")
+TEST_CASE(
+    "Parser Match Source Ranges: top-level Match node spans `match` to `}`")
 {
     // "def x = match 1 { _ => 1 }"
     //         ^                ^
@@ -918,7 +921,8 @@ TEST_CASE("Parser Match Source Ranges: top-level Match node spans `match` to `}`
     CHECK(range.end.column == 26);
 }
 
-TEST_CASE("Parser Match Source Ranges: Match_Binding with type constraint covers `name is TYPE`")
+TEST_CASE("Parser Match Source Ranges: Match_Binding with type constraint "
+          "covers `name is TYPE`")
 {
     // "def x = match 1 { n is Int => 1, _ => 0 }"
     //                    ^      ^
@@ -952,7 +956,8 @@ TEST_CASE("Parser Match Source Ranges: Match_Value spans the literal token")
     CHECK(inner.end.line != 0);
 }
 
-TEST_CASE("Parser Match Source Ranges: Match_Value spans parenthesized expression including parens")
+TEST_CASE("Parser Match Source Ranges: Match_Value spans parenthesized "
+          "expression including parens")
 {
     // "def x = match 5 { (2 + 3) => 'a', _ => 'b' }"
     //                    ^     ^
@@ -989,7 +994,8 @@ TEST_CASE("Parser Match: comment inside arm list")
     run("def x = match 5 {\n"
         "    # this arm catches everything\n"
         "    n => n + 1\n"
-        "}", table);
+        "}",
+        table);
     CHECK(lookup(table, "x")->get<frst::Int>().value() == 6_f);
 }
 
@@ -998,7 +1004,8 @@ TEST_CASE("Parser Match: newline immediately after opening brace")
     frst::Symbol_Table table;
     run("def x = match 5 {\n"
         "_ => 42\n"
-        "}", table);
+        "}",
+        table);
     CHECK(lookup(table, "x")->get<frst::Int>().value() == 42_f);
 }
 
@@ -1040,7 +1047,8 @@ TEST_CASE("Parser Match: stress test")
                 } => [n, first, second, third, a],
                 _ => null
             }
-        )", table);
+        )",
+            table);
         auto& arr = lookup(table, "x")->raw_get<frst::Array>();
         REQUIRE(arr.size() == 5);
         CHECK(arr[0]->raw_get<frst::String>() == "alice");
@@ -1077,12 +1085,13 @@ TEST_CASE("Parser Match: stress test")
             def inputs = [null, true, false, 0, -3, 7, -1.5, 2.5, '', 'hi',
                           [], [1], [1, 2, 3, 4], {}, {a: 1}]
             def results = map inputs with classify
-        )", table);
+        )",
+            table);
         auto& r = lookup(table, "results")->raw_get<frst::Array>();
         std::vector<std::string> expected = {
-            "nil", "tru", "fls", "zero", "neg-int", "pos-int", "neg-flt",
-            "flt", "empty-str", "str", "empty-arr", "one-arr", "many-arr",
-            "map", "map"};
+            "nil",       "tru",     "fls",      "zero",      "neg-int",
+            "pos-int",   "neg-flt", "flt",      "empty-str", "str",
+            "empty-arr", "one-arr", "many-arr", "map",       "map"};
         REQUIRE(r.size() == expected.size());
         for (std::size_t i = 0; i < expected.size(); ++i)
             CHECK(r[i]->raw_get<frst::String>() == expected[i]);
@@ -1104,7 +1113,8 @@ TEST_CASE("Parser Match: stress test")
                 [_, _, [_, last,], {k: kv,},] => last + kv,
                 _ => 0,
             }
-        )", table);
+        )",
+            table);
         CHECK(lookup(table, "x")->get<frst::Int>().value() == 6_f);
         CHECK(lookup(table, "y")->get<frst::Int>().value() == 3_f);
         CHECK(lookup(table, "z")->get<frst::Int>().value() == 9_f);
@@ -1139,20 +1149,29 @@ TEST_CASE("Parser Match: stress test")
             def with_op = match 5 { _ => 10 } * 2 + 1
             def in_lambda = (fn x -> match x { n => n + 100 })(7)
             def in_pipeline = 5 @ (fn n -> match n { _ => n * n })()
-        )", table);
+        )",
+            table);
         CHECK(lookup(table, "in_array")->raw_get<frst::Array>().size() == 2);
         auto& m = lookup(table, "in_map")->raw_get<frst::Map>();
-        CHECK(m.find(frst::Value::create("first"s))->second->get<frst::Int>().value() == 2_f);
-        CHECK(m.find(frst::Value::create("second"s))->second->raw_get<frst::String>() == "X");
-        CHECK(lookup(table, "index_into_match")->get<frst::Int>().value() == 20_f);
+        CHECK(m.find(frst::Value::create("first"s))
+                  ->second->get<frst::Int>()
+                  .value()
+              == 2_f);
+        CHECK(m.find(frst::Value::create("second"s))
+                  ->second->raw_get<frst::String>()
+              == "X");
+        CHECK(lookup(table, "index_into_match")->get<frst::Int>().value()
+              == 20_f);
         CHECK(lookup(table, "nested")->get<frst::Int>().value() == 2_f);
-        CHECK(lookup(table, "in_arm_result")->raw_get<frst::String>() == "deep");
+        CHECK(lookup(table, "in_arm_result")->raw_get<frst::String>()
+              == "deep");
         CHECK(lookup(table, "with_op")->get<frst::Int>().value() == 21_f);
         CHECK(lookup(table, "in_lambda")->get<frst::Int>().value() == 107_f);
         CHECK(lookup(table, "in_pipeline")->get<frst::Int>().value() == 25_f);
     }
 
-    SECTION("Format strings, computed keys, shorthand, and constraints together")
+    SECTION(
+        "Format strings, computed keys, shorthand, and constraints together")
     {
         frst::Symbol_Table table;
         run(R"(
@@ -1172,7 +1191,8 @@ TEST_CASE("Parser Match: stress test")
                 } if: v > count => $'${n}-${mid}',
                 _ => 'no'
             }
-        )", table);
+        )",
+            table);
         CHECK(lookup(table, "x")->raw_get<frst::String>() == "world-b");
     }
 
@@ -1187,7 +1207,8 @@ TEST_CASE("Parser Match: stress test")
                 $'${prefix}, ${name}' => 'matched',
                 _ => 'no'
             }
-        )", table);
+        )",
+            table);
         CHECK(lookup(table, "x")->raw_get<frst::String>() == "matched");
     }
 
@@ -1209,10 +1230,11 @@ TEST_CASE("Parser Match: stress test")
                 [0, 0], [0, 5], [3, 0],
                 [1, 1], [-1, 1], [-1, -1], [1, -1]
             ] with classify
-        )", table);
+        )",
+            table);
         auto& r = lookup(table, "results")->raw_get<frst::Array>();
-        std::vector<std::string> expected = {
-            "origin", "on-y", "on-x", "q1", "q2", "q3", "q4"};
+        std::vector<std::string> expected = {"origin", "on-y", "on-x", "q1",
+                                             "q2",     "q3",   "q4"};
         REQUIRE(r.size() == expected.size());
         for (std::size_t i = 0; i < expected.size(); ++i)
             CHECK(r[i]->raw_get<frst::String>() == expected[i]);
@@ -1239,7 +1261,8 @@ TEST_CASE("Parser Match: stress test")
                 # catch-all
                 _ => -1
             }
-        )", table);
+        )",
+            table);
         CHECK(lookup(table, "x")->get<frst::Int>().value() == 123_f);
     }
 
@@ -1255,7 +1278,8 @@ TEST_CASE("Parser Match: stress test")
                 (target) => 'matched-existing',
                 _ => 'no'
             }
-        )", table);
+        )",
+            table);
         CHECK(lookup(table, "shadow_test")->get<frst::Int>().value() == 100_f);
         CHECK(lookup(table, "lookup_test")->raw_get<frst::String>()
               == "matched-existing");
@@ -1277,7 +1301,8 @@ TEST_CASE("Parser Match: stress test")
                 [] => 'empty',
                 _ => 'no'
             }
-        )", table);
+        )",
+            table);
         CHECK(lookup(table, "x")->raw_get<frst::String>() == "ok");
         CHECK(lookup(table, "y")->raw_get<frst::String>() == "ok");
         CHECK(lookup(table, "z")->raw_get<frst::String>() == "empty");
@@ -1311,19 +1336,20 @@ TEST_CASE("Parser Match: stress test")
                 _ is Function   => 'function',
                 _               => 'other'
             }
-        )", table);
+        )",
+            table);
         auto& l = lookup(table, "labels")->raw_get<frst::Array>();
-        std::vector<std::string> expected_labels = {
-            "null", "int", "float", "bool", "string", "array", "map",
-            "function"};
+        std::vector<std::string> expected_labels = {"null", "int",     "float",
+                                                    "bool", "string",  "array",
+                                                    "map",  "function"};
         REQUIRE(l.size() == expected_labels.size());
         for (std::size_t i = 0; i < expected_labels.size(); ++i)
             CHECK(l[i]->raw_get<frst::String>() == expected_labels[i]);
 
         auto& c = lookup(table, "composite")->raw_get<frst::Array>();
         std::vector<std::string> expected_composite = {
-            "null", "numeric", "numeric", "primitive", "primitive",
-            "structured", "structured", "function"};
+            "null",      "numeric",    "numeric",    "primitive",
+            "primitive", "structured", "structured", "function"};
         REQUIRE(c.size() == expected_composite.size());
         for (std::size_t i = 0; i < expected_composite.size(); ++i)
             CHECK(c[i]->raw_get<frst::String>() == expected_composite[i]);
@@ -1354,12 +1380,13 @@ TEST_CASE("Parser Match: stress test")
                 [], [1], [1, 2], [1, 2, 3, 4],
                 {}, {key: 'v'}, true
             ] with f
-        )", table);
+        )",
+            table);
         auto& r = lookup(table, "results")->raw_get<frst::Array>();
         std::vector<std::string> expected = {
-            "null", "zero", "k", "small-int", "big-int", "hi-literal",
-            "other-str", "empty-array", "singleton", "pair", "long-array",
-            "map", "map", "other"};
+            "null",       "zero",      "k",           "small-int", "big-int",
+            "hi-literal", "other-str", "empty-array", "singleton", "pair",
+            "long-array", "map",       "map",         "other"};
         REQUIRE(r.size() == expected.size());
         for (std::size_t i = 0; i < expected.size(); ++i)
             CHECK(r[i]->raw_get<frst::String>() == expected[i]);

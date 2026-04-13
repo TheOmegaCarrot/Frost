@@ -51,8 +51,7 @@ bool Match_Array::do_try_match(Execution_Context ctx,
                     | std::views::drop(subpatterns_.size())
                     | std::ranges::to<Array>();
 
-        ctx.symbols.define(rest_->name.value(),
-                           Value::create(std::move(tail)));
+        ctx.symbols.define(rest_->name.value(), Value::create(std::move(tail)));
     }
 
     return true;

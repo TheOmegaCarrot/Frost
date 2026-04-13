@@ -27,8 +27,14 @@ struct Dummy_Callable : Callable
     {
         return Value::null();
     }
-    std::string debug_dump() const override { return "<dummy>"; }
-    std::string name() const override { return "<dummy>"; }
+    std::string debug_dump() const override
+    {
+        return "<dummy>";
+    }
+    std::string name() const override
+    {
+        return "<dummy>";
+    }
 };
 
 Value_Ptr make_function()
@@ -73,10 +79,10 @@ TEST_CASE("Match_Binding: try_match without constraint")
     SECTION("Unconstrained binding accepts any value type")
     {
         std::vector<Value_Ptr> values = {
-            Value::create(42_f),    Value::create(3.14),
-            Value::create(true),    Value::create("hello"s),
-            Value::null(),          Value::create(Array{}),
-            Value::create(Map{}),   make_function(),
+            Value::create(42_f),  Value::create(3.14),
+            Value::create(true),  Value::create("hello"s),
+            Value::null(),        Value::create(Array{}),
+            Value::create(Map{}), make_function(),
         };
 
         for (const auto& v : values)
@@ -149,22 +155,21 @@ TEST_CASE("Match_Binding: each concrete type constraint")
 
     const std::vector<Case> cases = [] {
         std::vector<Case> v;
+        v.push_back({Type_Constraint::Null, Value::null(), Value::create(0_f)});
         v.push_back(
-            {Type_Constraint::Null, Value::null(), Value::create(0_f)});
-        v.push_back({Type_Constraint::Int, Value::create(42_f),
-                     Value::create(3.14)});
-        v.push_back({Type_Constraint::Float, Value::create(3.14),
-                     Value::create(42_f)});
-        v.push_back({Type_Constraint::Bool, Value::create(true),
-                     Value::create(42_f)});
+            {Type_Constraint::Int, Value::create(42_f), Value::create(3.14)});
+        v.push_back(
+            {Type_Constraint::Float, Value::create(3.14), Value::create(42_f)});
+        v.push_back(
+            {Type_Constraint::Bool, Value::create(true), Value::create(42_f)});
         v.push_back({Type_Constraint::String, Value::create("s"s),
                      Value::create(42_f)});
         v.push_back({Type_Constraint::Array, Value::create(Array{}),
                      Value::create(42_f)});
-        v.push_back({Type_Constraint::Map, Value::create(Map{}),
-                     Value::create(42_f)});
-        v.push_back({Type_Constraint::Function, make_function(),
-                     Value::create(42_f)});
+        v.push_back(
+            {Type_Constraint::Map, Value::create(Map{}), Value::create(42_f)});
+        v.push_back(
+            {Type_Constraint::Function, make_function(), Value::create(42_f)});
         return v;
     }();
 
@@ -198,20 +203,17 @@ TEST_CASE("Match_Binding: category constraints")
         Value_Ptr value;
     };
     const std::vector<Typed_Value> all_types = {
-        {"Null", Value::null()},
-        {"Bool", Value::create(true)},
-        {"Int", Value::create(42_f)},
-        {"Float", Value::create(3.14)},
-        {"String", Value::create("s"s)},
-        {"Array", Value::create(Array{})},
-        {"Map", Value::create(Map{})},
-        {"Function", make_function()},
+        {"Null", Value::null()},         {"Bool", Value::create(true)},
+        {"Int", Value::create(42_f)},    {"Float", Value::create(3.14)},
+        {"String", Value::create("s"s)}, {"Array", Value::create(Array{})},
+        {"Map", Value::create(Map{})},   {"Function", make_function()},
     };
 
     // Uses a real Symbol_Table (not a mock) so we can verify both the
     // return value and the binding state with a single `has(...)` check,
     // without having to thread conditional expectations through the mock.
-    auto check_match = [](Type_Constraint c, const Value_Ptr& v, bool expected) {
+    auto check_match = [](Type_Constraint c, const Value_Ptr& v,
+                          bool expected) {
         Symbol_Table syms;
         Execution_Context ctx{.symbols = syms};
         auto binding = make_binding("x"s, c);
@@ -237,9 +239,16 @@ TEST_CASE("Match_Binding: category constraints")
         {
             DYNAMIC_SECTION(name)
             {
-                const bool expected = (name == "Null" || name == "Bool"
-                                       || name == "Int" || name == "Float"
-                                       || name == "String");
+                const bool expected = (name
+                                       == "Null"
+                                       || name
+                                       == "Bool"
+                                       || name
+                                       == "Int"
+                                       || name
+                                       == "Float"
+                                       || name
+                                       == "String");
                 check_match(Type_Constraint::Primitive, v, expected);
             }
         }
@@ -431,11 +440,11 @@ TEST_CASE("Match_Binding: Type_Constraint helpers")
     SECTION("Round-trip: from_string(to_string(x)) == x for all values")
     {
         const std::vector<Type_Constraint> all_values{
-            Type_Constraint::Null,      Type_Constraint::Int,
-            Type_Constraint::Float,     Type_Constraint::Bool,
-            Type_Constraint::String,    Type_Constraint::Array,
-            Type_Constraint::Map,       Type_Constraint::Function,
-            Type_Constraint::Primitive, Type_Constraint::Numeric,
+            Type_Constraint::Null,       Type_Constraint::Int,
+            Type_Constraint::Float,      Type_Constraint::Bool,
+            Type_Constraint::String,     Type_Constraint::Array,
+            Type_Constraint::Map,        Type_Constraint::Function,
+            Type_Constraint::Primitive,  Type_Constraint::Numeric,
             Type_Constraint::Structured, Type_Constraint::Nonnull,
         };
         for (auto v : all_values)

@@ -78,8 +78,7 @@ TEST_CASE("Match_Value: equality across primitive types")
         {"Int == same Int", Value::create(42_f), Value::create(42_f), true},
         {"Int != different Int", Value::create(42_f), Value::create(41_f),
          false},
-        {"Float == same Float", Value::create(3.14), Value::create(3.14),
-         true},
+        {"Float == same Float", Value::create(3.14), Value::create(3.14), true},
         {"Float != different Float", Value::create(3.14), Value::create(2.71),
          false},
         {"Bool == same Bool", Value::create(true), Value::create(true), true},
@@ -96,10 +95,9 @@ TEST_CASE("Match_Value: equality across primitive types")
         // Cross-type comparisons: Frost `==` is type-strict.
         {"Int 3 != Float 3.0", Value::create(3_f), Value::create(3.0), false},
         {"Float 3.0 != Int 3", Value::create(3.0), Value::create(3_f), false},
-        {"Int 42 != String \"42\"", Value::create(42_f),
-         Value::create("42"s), false},
-        {"Bool true != Int 1", Value::create(true), Value::create(1_f),
+        {"Int 42 != String \"42\"", Value::create(42_f), Value::create("42"s),
          false},
+        {"Bool true != Int 1", Value::create(true), Value::create(1_f), false},
         {"Bool false != Int 0", Value::create(false), Value::create(0_f),
          false},
     };
@@ -136,8 +134,7 @@ TEST_CASE("Match_Value: equality of structured values")
     SECTION("Equal arrays match")
     {
         run(Value::create(Array{Value::create(1_f), Value::create(2_f)}),
-            Value::create(Array{Value::create(1_f), Value::create(2_f)}),
-            true);
+            Value::create(Array{Value::create(1_f), Value::create(2_f)}), true);
     }
 
     SECTION("Arrays differing in length do not match")
@@ -176,8 +173,7 @@ TEST_CASE("Match_Value: equality of structured values")
 
     SECTION("Maps differing in a value do not match")
     {
-        run(Value::create(
-                frst::Map{{Value::create("a"s), Value::create(1_f)}}),
+        run(Value::create(frst::Map{{Value::create("a"s), Value::create(1_f)}}),
             Value::create(
                 frst::Map{{Value::create("a"s), Value::create(99_f)}}),
             false);

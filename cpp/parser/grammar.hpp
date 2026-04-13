@@ -2091,8 +2091,7 @@ struct match_map_pattern;
 #define X(NAME)                                                                \
     struct match_tc_##NAME                                                     \
     {                                                                          \
-        static constexpr auto rule =                                           \
-            LEXY_KEYWORD(#NAME, identifier::base);                             \
+        static constexpr auto rule = LEXY_KEYWORD(#NAME, identifier::base);    \
         static constexpr auto value =                                          \
             lexy::callback<ast::Type_Constraint>([] {                          \
                 return ast::Type_Constraint::NAME;                             \
@@ -2125,17 +2124,17 @@ struct match_type_constraint
 struct match_binding_pattern
 {
     static constexpr auto rule = [] {
-        auto opt_constraint = dsl::opt(
-            dsl::peek(param_ws + LEXY_KEYWORD("is", identifier::base))
-            >> (param_ws + dsl::p<match_type_constraint>));
+        auto opt_constraint =
+            dsl::opt(dsl::peek(param_ws + LEXY_KEYWORD("is", identifier::base))
+                     >> (param_ws + dsl::p<match_type_constraint>));
         return dsl::position
                + dsl::p<identifier_required>
                + opt_constraint
                + dsl::position;
     }();
     static constexpr auto value = lexy::callback<ast::Match_Pattern::Ptr>(
-        [](auto begin, std::string name, lexy::nullopt, auto end)
-            -> ast::Match_Pattern::Ptr {
+        [](auto begin, std::string name, lexy::nullopt,
+           auto end) -> ast::Match_Pattern::Ptr {
             std::optional<std::string> opt_name =
                 name == "_" ? std::nullopt
                             : std::optional<std::string>{std::move(name)};
@@ -2149,8 +2148,7 @@ struct match_binding_pattern
                 name == "_" ? std::nullopt
                             : std::optional<std::string>{std::move(name)};
             return std::make_unique<ast::Match_Binding>(
-                make_source_range(begin, end), std::move(opt_name),
-                constraint);
+                make_source_range(begin, end), std::move(opt_name), constraint);
         });
     static constexpr auto name = "match binding pattern";
 };
@@ -2211,24 +2209,30 @@ struct match_pattern
         auto kw_false = LEXY_KEYWORD("false", identifier::base);
         auto kw_null = LEXY_KEYWORD("null", identifier::base);
 
-        auto literal_lookahead = dsl::peek(kw_true | kw_false | kw_null
+        auto literal_lookahead = dsl::peek(kw_true
+                                           | kw_false
+                                           | kw_null
                                            | dsl::digit<>
                                            | dsl::lit_c<'"'>
                                            | dsl::lit_c<'\''>
                                            | dsl::lit_c<'$'>);
 
-        auto array_branch = dsl::peek(dsl::lit_c<'['>)
-                            >> dsl::recurse<match_array_pattern>;
-        auto map_branch = dsl::peek(dsl::lit_c<'{'>)
-                          >> dsl::recurse<match_map_pattern>;
-        auto paren_branch = dsl::peek(dsl::lit_c<'('>)
-                            >> dsl::p<match_value_pattern>;
+        auto array_branch =
+            dsl::peek(dsl::lit_c<'['>) >> dsl::recurse<match_array_pattern>;
+        auto map_branch =
+            dsl::peek(dsl::lit_c<'{'>) >> dsl::recurse<match_map_pattern>;
+        auto paren_branch =
+            dsl::peek(dsl::lit_c<'('>) >> dsl::p<match_value_pattern>;
         auto literal_branch = literal_lookahead >> dsl::p<match_value_pattern>;
         auto binding_branch = dsl::peek(dsl::ascii::alpha_underscore)
                               >> dsl::p<match_binding_pattern>;
 
-        return array_branch | map_branch | paren_branch | literal_branch
-               | binding_branch | dsl::error<expected_match_pattern>;
+        return array_branch
+               | map_branch
+               | paren_branch
+               | literal_branch
+               | binding_branch
+               | dsl::error<expected_match_pattern>;
     }();
     static constexpr auto value = lexy::forward<ast::Match_Pattern::Ptr>;
     static constexpr auto name = "match pattern";
@@ -2313,12 +2317,12 @@ struct match_array_payload
         // consume here.
         auto patterns_then_rest =
             dsl::p<match_pattern_list>
-            + dsl::opt(dsl::peek(param_ws_nl + dsl::lit_c<','>
-                                 + param_ws_nl + LEXY_LIT("..."))
-                       >> (param_ws_nl
-                           + dsl::lit_c<','>
-                           + param_ws_nl
-                           + rest_branch));
+            + dsl::opt(
+                dsl::peek(param_ws_nl
+                          + dsl::lit_c<','>
+                          + param_ws_nl
+                          + LEXY_LIT("..."))
+                >> (param_ws_nl + dsl::lit_c<','> + param_ws_nl + rest_branch));
         auto rest_only = rest_branch;
         auto patterns_only =
             dsl::peek(match_pattern_start_char) >> patterns_then_rest;
@@ -2390,17 +2394,15 @@ struct match_map_entry
         //   - `: pattern` (explicit form)
         //   - `is TYPE`   (shorthand with constraint)
         //   - nothing     (plain shorthand)
-        auto explicit_form =
-            dsl::peek(param_ws_nl + dsl::lit_c<':'>)
-            >> (param_ws_nl
-                + dsl::lit_c<':'>
-                + param_ws_nl
-                + dsl::recurse<match_pattern>);
+        auto explicit_form = dsl::peek(param_ws_nl + dsl::lit_c<':'>)
+                             >> (param_ws_nl
+                                 + dsl::lit_c<':'>
+                                 + param_ws_nl
+                                 + dsl::recurse<match_pattern>);
         auto shorthand_constraint_form =
             dsl::peek(param_ws + LEXY_KEYWORD("is", identifier::base))
             >> (param_ws + dsl::p<match_type_constraint>);
-        auto trailer =
-            dsl::opt(explicit_form | shorthand_constraint_form);
+        auto trailer = dsl::opt(explicit_form | shorthand_constraint_form);
 
         auto named = dsl::else_
                      >> (dsl::position
@@ -2459,13 +2461,11 @@ struct match_map_pattern
             // Trailing comma is allowed: `{a, b,}`. Broaden the separator's
             // peek to accept the closing `}` after the comma, then use
             // `dsl::trailing_sep`.
-            auto sep =
-                comma_sep_nl_after(map_entry_start | dsl::lit_c<'}'>);
+            auto sep = comma_sep_nl_after(map_entry_start | dsl::lit_c<'}'>);
             auto list = dsl::list(item, dsl::trailing_sep(sep));
             return braced_list(map_entry_start, list);
         }();
-        static constexpr auto value =
-            list_or_empty<ast::Match_Map::Element>();
+        static constexpr auto value = list_or_empty<ast::Match_Map::Element>();
         static constexpr auto name = "match map entries";
     };
 
@@ -2487,15 +2487,15 @@ struct match_arm
 {
     static constexpr auto rule = [] {
         auto kw_if = LEXY_KEYWORD("if", identifier::base);
-        auto guard_clause =
-            dsl::opt(dsl::peek(param_ws_nl + kw_if)
-                     >> (param_ws_nl
-                         + kw_if
-                         + param_ws_nl
-                         + dsl::lit_c<':'>
-                         + param_ws_nl
-                         + (require_expr_start_nl<expected_match_guard_expression>()
-                            >> dsl::recurse<expression_nl>)));
+        auto guard_clause = dsl::opt(
+            dsl::peek(param_ws_nl + kw_if)
+            >> (param_ws_nl
+                + kw_if
+                + param_ws_nl
+                + dsl::lit_c<':'>
+                + param_ws_nl
+                + (require_expr_start_nl<expected_match_guard_expression>()
+                   >> dsl::recurse<expression_nl>)));
         auto arrow = LEXY_LIT("=>");
         return dsl::p<match_pattern>
                + guard_clause
@@ -2546,28 +2546,25 @@ struct Match
 {
     static constexpr auto rule = [] {
         auto kw_match = LEXY_KEYWORD("match", identifier::base);
-        auto arms_clause =
-            param_ws_nl
-            + dsl::opt(dsl::peek(match_pattern_start_char)
-                       >> dsl::p<match_arm_list>)
-            + param_ws_nl
-            + dsl::lit_c<'}'>;
+        auto arms_clause = param_ws_nl
+                           + dsl::opt(dsl::peek(match_pattern_start_char)
+                                      >> dsl::p<match_arm_list>)
+                           + param_ws_nl
+                           + dsl::lit_c<'}'>;
         return kw_match
                >> (param_ws_nl
                    + (require_expr_start_no_nl<expected_match_target>()
-                      >> dsl::recurse<expression>)
-                   + param_ws_nl
+                      >> dsl::recurse<expression>)+param_ws_nl
                    + dsl::lit_c<'{'>
                    + arms_clause);
     }();
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](ast::Expression::Ptr target, lexy::nullopt) {
-            return std::make_unique<ast::Match>(
-                ast::AST_Node::no_range, std::move(target),
-                std::vector<ast::Match::Arm>{});
+            return std::make_unique<ast::Match>(ast::AST_Node::no_range,
+                                                std::move(target),
+                                                std::vector<ast::Match::Arm>{});
         },
-        [](ast::Expression::Ptr target,
-           std::vector<ast::Match::Arm> arms) {
+        [](ast::Expression::Ptr target, std::vector<ast::Match::Arm> arms) {
             return std::make_unique<ast::Match>(
                 ast::AST_Node::no_range, std::move(target), std::move(arms));
         });
@@ -3163,8 +3160,7 @@ struct Defn
                 ast::AST_Node::no_range,
                 std::optional<std::string>{std::string{name}}, false);
             return std::make_unique<ast::Define>(
-                ast::AST_Node::no_range, std::move(binding),
-                std::move(lambda));
+                ast::AST_Node::no_range, std::move(binding), std::move(lambda));
         });
     static constexpr auto name = "defn statement";
 };
@@ -3199,8 +3195,7 @@ struct Export_Defn
                 ast::AST_Node::no_range,
                 std::optional<std::string>{std::string{name}}, true);
             return std::make_unique<ast::Define>(
-                ast::AST_Node::no_range, std::move(binding),
-                std::move(lambda));
+                ast::AST_Node::no_range, std::move(binding), std::move(lambda));
         });
     static constexpr auto name = "export defn statement";
 };

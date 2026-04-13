@@ -284,7 +284,7 @@ void require_args(std::string_view fn, builtin_args_t args, Specs... specs)
     }
 
 #define UNIFORM_REST(MIN, LABEL, TYPES_SPEC)                                   \
-    frst::builtin_detail::Uniform_Rest                                          \
+    frst::builtin_detail::Uniform_Rest                                         \
     {                                                                          \
         TYPES_SPEC, LABEL, static_cast<std::size_t>(MIN)                       \
     }
