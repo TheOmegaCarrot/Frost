@@ -19,10 +19,12 @@ Open the resulting HTML file in any modern browser.
 
 ### Two-pane layout
 
-- **Source pane** (left): the original Frost source with line numbers.
+- **Source pane** (left): the original Frost source with line numbers and syntax
+  highlighting (via the tree-sitter grammar).
 - **AST pane** (right): a collapsible tree matching the structure of `frost -d`.
   Each node shows its label and source range. Structural wrapper nodes
   (Expression, Bindings, LHS, RHS, etc.) appear in italic gray.
+- The divider between panes is draggable to resize.
 
 ### Bidirectional highlighting
 
@@ -37,15 +39,48 @@ Open the resulting HTML file in any modern browser.
 ### Click to pin
 
 Click a source character or AST node to pin the highlight (amber). The pin
-persists while you move between panes. Click the same element again to unpin.
+persists while you move between panes. Clicking an AST node also scrolls the
+source pane to the corresponding code. Click the same element again to unpin.
+Press Escape to clear the pin.
+
+### Search
+
+- **Source search**: case-insensitive substring search. Matches are highlighted
+  in amber and the view scrolls to the first match.
+- **AST search**: filters the tree by node label. Non-matching subtrees are
+  collapsed and matching nodes are highlighted. The original expand/collapse
+  state is restored when the search is cleared.
+
+Press Escape to clear both searches.
+
+### Tree navigation
+
+- Click a toggle arrow to expand or collapse a single node.
+- Alt+click a toggle arrow to recursively expand or collapse the entire subtree.
+- **Expand All** / **Collapse All** buttons in the toolbar.
+
+### Source range warnings
+
+The tool automatically validates AST source ranges and flags issues:
+
+- **no_range**: a real AST node missing its source range (red).
+- **Inverted range**: end position before start position.
+- **Range beyond source**: line or column exceeds the actual source text.
+- **Child exceeds parent**: a child node's range extends outside its parent's.
+- **Overlapping siblings**: two sibling nodes with partially overlapping ranges.
+
+Warnings appear as amber text next to the flagged node. The toolbar shows a
+summary count, or a green checkmark if no warnings are found.
 
 ## How it works
 
 The C++ side (`astviz.cpp`) parses the input file with `frst::parse_file()`,
 walks the AST via `children()`, and serializes the tree to JSON using
-Boost.JSON. The HTML template (`template.html`) is embedded at compile time via
-`#embed`. The output is a single HTML file with the JSON data and template
-concatenated together.
+Boost.JSON. Syntax highlighting is produced by parsing the source a second time
+with the tree-sitter Frost grammar and running the `highlights.scm` queries.
+The HTML template (`template.html`) and highlight queries are embedded at
+compile time via `#embed`. The output is a single HTML file with the JSON data
+and template concatenated together.
 
 The JavaScript builds a reverse index from source positions to AST node IDs at
 page load, enabling efficient bidirectional lookups on hover.

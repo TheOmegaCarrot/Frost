@@ -64,6 +64,10 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: inherit;
   }
 
   .search-box {
@@ -428,7 +432,20 @@
       toggle.className = 'toggle';
       toggle.addEventListener('click', function(e) {
         e.stopPropagation();
-        li.classList.toggle('expanded');
+        if (e.altKey) {
+          // Alt+click: recursively expand or collapse
+          var expanding = !li.classList.contains('expanded');
+          if (expanding) li.classList.add('expanded');
+          else li.classList.remove('expanded');
+          li.querySelectorAll('li').forEach(function(child) {
+            if (child.querySelector('ul')) {
+              if (expanding) child.classList.add('expanded');
+              else child.classList.remove('expanded');
+            }
+          });
+        } else {
+          li.classList.toggle('expanded');
+        }
       });
       row.appendChild(toggle);
     }
