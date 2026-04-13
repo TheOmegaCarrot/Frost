@@ -183,6 +183,15 @@ int main(int argc, char** argv)
     const auto template_view =
         std::string_view{html_template, sizeof(html_template)};
 
+    // Escape </ as <\/ to prevent premature </script> closing
+    auto json_str = json::serialize(data);
+    for (std::size_t pos = 0;
+         (pos = json_str.find("</", pos)) != std::string::npos;
+         pos += 3)
+    {
+        json_str.replace(pos, 2, "<\\/");
+    }
+
     std::cout
         << "<!DOCTYPE html>\n"
            "<html lang=\"en\">\n"
@@ -194,7 +203,7 @@ int main(int argc, char** argv)
            "</head>\n"
            "<body>\n"
            "<script>\nwindow.FROST_DATA = "
-        << json::serialize(data)
+        << json_str
         << ";\n</script>\n"
         << template_view
         << "\n</body>\n</html>\n";
