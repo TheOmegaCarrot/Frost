@@ -61,6 +61,40 @@
     color: #6c7086;
     padding: 4px 16px 8px;
     user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .search-box {
+    background: #313244;
+    color: #cdd6f4;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    width: 180px;
+    outline: none;
+  }
+
+  .search-box:focus {
+    border-color: #89b4fa;
+  }
+
+  .search-box::placeholder {
+    color: #585b70;
+  }
+
+  .search-count {
+    font-weight: 400;
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: normal;
+    min-width: 3em;
   }
 
   #source-pane {
@@ -119,6 +153,11 @@
   .ch.hl-operator { color: #94e2d5; }
   .ch.hl-punctuation-bracket { color: #9399b2; }
   .ch.hl-punctuation-delimiter { color: #9399b2; }
+
+  .ch.search-match {
+    background: rgba(249, 226, 175, 0.4);
+    border-radius: 1px;
+  }
 
   .ch.hl-source {
     background: rgba(137, 180, 250, 0.45);
@@ -203,6 +242,10 @@
 
   /* --- Highlighting --- */
 
+  .node-row.search-match {
+    background: rgba(249, 226, 175, 0.2) !important;
+  }
+
   .node-row.hl-primary {
     background: rgba(137, 180, 250, 0.35) !important;
   }
@@ -279,12 +322,20 @@
 </div>
 <div id="container">
   <div id="source-pane" class="pane">
-    <div class="pane-header">Source</div>
+    <div class="pane-header">
+      Source
+      <input class="search-box" id="source-search" type="text" placeholder="Search source...">
+      <span class="search-count" id="source-search-count"></span>
+    </div>
     <div id="source-code"></div>
   </div>
   <div id="divider"></div>
   <div id="ast-pane" class="pane">
-    <div class="pane-header">AST</div>
+    <div class="pane-header">
+      AST
+      <input class="search-box" id="ast-search" type="text" placeholder="Search nodes...">
+      <span class="search-count" id="ast-search-count"></span>
+    </div>
     <div id="ast-tree"></div>
   </div>
 </div>
@@ -333,18 +384,18 @@
     sourceEl.appendChild(lineDiv);
   });
 
+  // --- Byte offset to "line:col" key mapping (used by highlighting and search) ---
+  var byteToKey = [];
+  var byteOff = 0;
+  sourceLines.forEach(function(line, idx) {
+    for (var col = 0; col < line.length; col++) {
+      byteToKey[byteOff + col] = (idx + 1) + ':' + (col + 1);
+    }
+    byteOff += line.length + 1; // +1 for newline
+  });
+
   // --- Apply syntax highlighting ---
   if (data.highlights && data.highlights.length > 0) {
-    // Map byte offsets to "line:col" keys
-    var byteToKey = [];
-    var byteOff = 0;
-    sourceLines.forEach(function(line, idx) {
-      for (var col = 0; col < line.length; col++) {
-        byteToKey[byteOff + col] = (idx + 1) + ':' + (col + 1);
-      }
-      byteOff += line.length + 1; // +1 for newline
-    });
-
     // Apply highlights in order (last capture wins per character)
     data.highlights.forEach(function(hl) {
       for (var b = hl.s; b < hl.e; b++) {
@@ -753,6 +804,156 @@
     document.querySelectorAll('#ast-tree li.expanded').forEach(function(li) {
       li.classList.remove('expanded');
     });
+  });
+
+  // --- Source search ---
+  var sourceSearchMatches = [];
+  var lowerSource = data.source.toLowerCase();
+
+  function clearSourceSearch() {
+    sourceSearchMatches.forEach(function(key) {
+      var el = charElements.get(key);
+      if (el) el.classList.remove('search-match');
+    });
+    sourceSearchMatches = [];
+    document.getElementById('source-search-count').textContent = '';
+  }
+
+  document.getElementById('source-search').addEventListener('input', function(e) {
+    clearSourceSearch();
+    var query = e.target.value;
+    if (!query) return;
+
+    var lowerQuery = query.toLowerCase();
+    var matchCount = 0;
+    var firstMatchKey = null;
+
+    // Search the raw source string using byte offsets
+    var pos = 0;
+    while ((pos = lowerSource.indexOf(lowerQuery, pos)) !== -1) {
+      matchCount++;
+      for (var i = 0; i < query.length; i++) {
+        var key = byteToKey[pos + i];
+        if (!key) continue;
+        var el = charElements.get(key);
+        if (el) {
+          el.classList.add('search-match');
+          sourceSearchMatches.push(key);
+          if (!firstMatchKey) firstMatchKey = key;
+        }
+      }
+      pos++;
+    }
+
+    var countEl = document.getElementById('source-search-count');
+    countEl.textContent = matchCount > 0 ? matchCount + ' found' : 'no matches';
+
+    // Scroll to first match
+    if (firstMatchKey) {
+      var el = charElements.get(firstMatchKey);
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  });
+
+  // --- AST search ---
+  var astSearchActive = false;
+  var savedExpandState = [];
+
+  function saveExpandState() {
+    savedExpandState = [];
+    document.querySelectorAll('#ast-tree li').forEach(function(li) {
+      if (li.querySelector('ul')) {
+        savedExpandState.push({
+          li: li,
+          expanded: li.classList.contains('expanded'),
+        });
+      }
+    });
+  }
+
+  function restoreExpandState() {
+    savedExpandState.forEach(function(entry) {
+      if (entry.expanded) entry.li.classList.add('expanded');
+      else entry.li.classList.remove('expanded');
+    });
+    savedExpandState = [];
+  }
+
+  function clearASTSearch() {
+    if (!astSearchActive) return;
+    astSearchActive = false;
+    document.querySelectorAll('#ast-tree .node-row.search-match').forEach(function(el) {
+      el.classList.remove('search-match');
+    });
+    restoreExpandState();
+    document.getElementById('ast-search-count').textContent = '';
+  }
+
+  // Returns true if this node or any descendant matches
+  function markASTSearch(node, query) {
+    var selfMatch = node.label.toLowerCase().indexOf(query) !== -1;
+    var childMatch = false;
+
+    if (node.children) {
+      node.children.forEach(function(child) {
+        if (markASTSearch(child, query)) childMatch = true;
+      });
+    }
+
+    var matches = selfMatch || childMatch;
+    var el = nodeElements.get(node.id);
+    var li = el ? el.closest('li') : null;
+
+    if (selfMatch && el) {
+      el.classList.add('search-match');
+    }
+
+    if (li && li.querySelector('ul')) {
+      if (matches) {
+        // Expand to show matches
+        li.classList.add('expanded');
+      } else {
+        // Collapse subtrees with no matches
+        li.classList.remove('expanded');
+      }
+    }
+
+    return matches;
+  }
+
+  document.getElementById('ast-search').addEventListener('input', function(e) {
+    clearASTSearch();
+    var query = e.target.value;
+    if (!query) return;
+
+    astSearchActive = true;
+    saveExpandState();
+    var lowerQuery = query.toLowerCase();
+    var matchCount = 0;
+
+    data.ast.forEach(function(stmt) { markASTSearch(stmt, lowerQuery); });
+
+    document.querySelectorAll('#ast-tree .node-row.search-match').forEach(function() {
+      matchCount++;
+    });
+
+    var countEl = document.getElementById('ast-search-count');
+    countEl.textContent = matchCount > 0 ? matchCount + ' found' : 'no matches';
+
+    // Scroll to first match
+    var first = document.querySelector('#ast-tree .node-row.search-match');
+    if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  });
+
+  // Escape to clear searches and unpin
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      clearSourceSearch();
+      clearASTSearch();
+      clearPin();
+      document.getElementById('source-search').value = '';
+      document.getElementById('ast-search').value = '';
+    }
   });
 })();
 </script>
