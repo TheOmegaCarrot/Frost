@@ -57,7 +57,8 @@ Value_Ptr call2(const Function& fn, Value_Ptr a, Value_Ptr b)
     return fn->call(args);
 }
 
-constexpr std::string_view all_algos[] = {"brotli", "deflate", "gzip", "zlib"};
+constexpr std::string_view all_algos[] = {"brotli", "deflate", "gzip", "zlib",
+                                         "zstd"};
 constexpr std::string_view zlib_algos[] = {"deflate", "gzip", "zlib"};
 
 } // namespace
@@ -176,6 +177,16 @@ TEST_CASE("ext::compression: brotli quality out of range")
         ContainsSubstring("quality must be between"));
 }
 
+TEST_CASE("ext::compression: zstd level out of range")
+{
+    auto mod = compression_module();
+    auto compress = lookup_fn(lookup_algo(mod, "zstd"), "compress");
+
+    CHECK_THROWS_WITH(
+        call2(compress, Value::create(""s), Value::create(10000_f)),
+        ContainsSubstring("level must be between"));
+}
+
 // =============================================================================
 // Round-trip (per algorithm)
 // =============================================================================
@@ -285,6 +296,23 @@ TEST_CASE("ext::compression: brotli round-trip with explicit quality")
     }
 }
 
+TEST_CASE("ext::compression: zstd round-trip with explicit level")
+{
+    auto mod = compression_module();
+    auto algo = lookup_algo(mod, "zstd");
+    auto compress = lookup_fn(algo, "compress");
+    auto decompress = lookup_fn(algo, "decompress");
+
+    auto input = Value::create("aaaaaaaaaa"s);
+
+    for (Int level : {1_f, 3_f, 10_f, 19_f})
+    {
+        auto compressed = call2(compress, input, Value::create(level));
+        auto decompressed = call1(decompress, compressed);
+        CHECK(decompressed->raw_get<String>() == "aaaaaaaaaa");
+    }
+}
+
 // =============================================================================
 // Compression actually reduces size
 // =============================================================================
@@ -323,6 +351,8 @@ TEST_CASE("ext::compression: cross-format decompression fails")
         lookup_fn(lookup_algo(mod, "zlib"), "decompress");
     auto brotli_decompress =
         lookup_fn(lookup_algo(mod, "brotli"), "decompress");
+    auto zstd_decompress =
+        lookup_fn(lookup_algo(mod, "zstd"), "decompress");
 
     auto deflated = call1(deflate_compress, Value::create("test"s));
 
@@ -332,6 +362,8 @@ TEST_CASE("ext::compression: cross-format decompression fails")
                       ContainsSubstring("decompression failed"));
     CHECK_THROWS_WITH(call1(brotli_decompress, deflated),
                       ContainsSubstring("decompression failed"));
+    CHECK_THROWS_WITH(call1(zstd_decompress, deflated),
+                      ContainsSubstring("not valid zstd data"));
 }
 
 // =============================================================================
@@ -348,9 +380,9 @@ TEST_CASE("ext::compression: corrupt input")
         {
             auto decompress =
                 lookup_fn(lookup_algo(mod, std::string{name}), "decompress");
-            CHECK_THROWS_WITH(
+            CHECK_THROWS_AS(
                 call1(decompress, Value::create("not compressed data"s)),
-                ContainsSubstring("decompression failed"));
+                Frost_User_Error);
         }
     }
 }

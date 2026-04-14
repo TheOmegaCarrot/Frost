@@ -1,7 +1,7 @@
 # Compression
 
 ```frost
-def { deflate, gzip, zlib } = import('ext.compression')
+def { brotli, deflate, gzip, zlib, zstd } = import('ext.compression')
 ```
 
 Build flag: `WITH_COMPRESSION` (default: `ON`). Requires zlib.
@@ -64,3 +64,19 @@ Compresses `s` in zlib-wrapped format (RFC 1950). Includes a 2-byte header and A
 `zlib.decompress(s)`
 
 Decompresses a zlib-wrapped string. Produces an error on corrupt or truncated input.
+
+## `zstd.compress`
+`zstd.compress(s)`
+`zstd.compress(s, level)`
+
+Compresses `s` using Zstandard (RFC 8878).
+Fast compression with high ratios.
+`level` is an optional `Int` from `-131072` to `22`.
+`0` and `3` are equivalent (default).
+Higher levels (`1`--`22`) compress better but slower.
+Negative levels are faster than `1` at the cost of compression ratio.
+
+## `zstd.decompress`
+`zstd.decompress(s)`
+
+Decompresses a Zstandard string. Produces an error on corrupt or truncated input.

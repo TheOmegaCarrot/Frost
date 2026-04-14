@@ -271,3 +271,5 @@ Each entry links to its full documentation.
 - [zip_with](collections.md#zip_with)
 - [zlib.compress](compression.md#zlibcompress)
 - [zlib.decompress](compression.md#zlibdecompress)
+- [zstd.compress](compression.md#zstdcompress)
+- [zstd.decompress](compression.md#zstddecompress)

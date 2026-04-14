@@ -7,11 +7,22 @@ CPMAddPackage(
     GIT_TAG v1.2.0
 )
 
+set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
+set(ZSTD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ZSTD_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
+CPMAddPackage(
+    NAME zstd
+    GITHUB_REPOSITORY facebook/zstd
+    GIT_TAG v1.5.7
+    SOURCE_SUBDIR build/cmake
+)
+
 add_library( frost-compression
     compression.cpp
     brotli.cpp
     deflate.cpp
     gzip.cpp
+    zstd.cpp
     zlib.cpp
     zlib-common.cpp
 )
@@ -28,6 +39,7 @@ target_link_libraries( frost-compression
     ZLIB::ZLIB
     brotlienc
     brotlidec
+    libzstd_static
 )
 
 add_subdirectory(tests)

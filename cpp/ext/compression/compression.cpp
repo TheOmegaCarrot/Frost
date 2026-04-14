@@ -1,6 +1,6 @@
 #include <frost/extensions-common.hpp>
 
-#define X_COMPRESSION_ALGOS X(brotli) X(gzip) X(deflate) X(zlib)
+#define X_COMPRESSION_ALGOS X(brotli) X(gzip) X(deflate) X(zlib) X(zstd)
 
 namespace frst
 {
