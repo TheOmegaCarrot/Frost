@@ -10,6 +10,8 @@ Each entry links to its full documentation.
 - [any](collections.md#any)
 - [assert](debug.md#assert)
 - [bcurry](functions.md#bcurry)
+- [brotli.compress](compression.md#brotlicompress)
+- [brotli.decompress](compression.md#brotlidecompress)
 - [call](functions.md#call)
 - [chunk](collections.md#chunk)
 - [chunk_by](collections.md#chunk_by)

@@ -1,7 +1,15 @@
 find_package(ZLIB REQUIRED)
 
+set(BROTLI_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+CPMAddPackage(
+    NAME brotli
+    GITHUB_REPOSITORY google/brotli
+    GIT_TAG v1.2.0
+)
+
 add_library( frost-compression
     compression.cpp
+    brotli.cpp
     deflate.cpp
     gzip.cpp
     zlib.cpp
@@ -18,6 +26,8 @@ target_link_libraries( frost-compression
     frost-functions
     frost-extensions-common
     ZLIB::ZLIB
+    brotlienc
+    brotlidec
 )
 
 add_subdirectory(tests)

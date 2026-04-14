@@ -16,6 +16,18 @@ def algo = if fast: deflate else: gzip
 algo.compress(data)
 ```
 
+## `brotli.compress`
+`brotli.compress(s)`
+`brotli.compress(s, quality)`
+
+Compresses `s` using Brotli (RFC 7932). Used by HTTP `Content-Encoding: br`.
+`quality` is an optional `Int` from `0` to `11`. Default is `11` (maximum compression).
+
+## `brotli.decompress`
+`brotli.decompress(s)`
+
+Decompresses a Brotli string. Produces an error on corrupt or truncated input.
+
 ## `deflate.compress`
 `deflate.compress(s)`
 `deflate.compress(s, level)`
