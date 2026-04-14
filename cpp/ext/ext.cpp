@@ -25,6 +25,10 @@ void register_extensions(Stdlib_Registry_Builder& builder)
     DO_REGISTER_EXTENSION(sqlite);
 #endif
 
+#ifdef FROST_ENABLE_COMPRESSION
+    DO_REGISTER_EXTENSION(compression);
+#endif
+
 #ifdef FROST_ENABLE_UNSAFE
     DO_REGISTER_EXTENSION(unsafe);
 #endif

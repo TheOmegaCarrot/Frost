@@ -16,6 +16,10 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 option(BUILD_TESTS "Build tests" YES)
 
+# Force static libraries. tree-sitter's CMakeLists.txt sets
+# BUILD_SHARED_LIBS=ON globally, which poisons every add_library() call.
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(CTest)

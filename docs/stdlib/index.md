@@ -22,6 +22,8 @@ Each entry links to its full documentation.
 - [count_by](collections.md#count_by)
 - [curry](functions.md#curry)
 - [debug_dump](debug.md#debug_dump)
+- [deflate.compress](compression.md#deflatecompress)
+- [deflate.decompress](compression.md#deflatedecompress)
 - [dig](collections.md#dig)
 - [dissoc](collections.md#dissoc)
 - [divide](operators.md#divide)
@@ -72,6 +74,8 @@ Each entry links to its full documentation.
 - [greater_than](operators.md#greater_than)
 - [greater_than_or_equal](operators.md#greater_than_or_equal)
 - [group_by](collections.md#group_by)
+- [gzip.compress](compression.md#gzipcompress)
+- [gzip.decompress](compression.md#gzipdecompress)
 - [has](collections.md#has)
 - [hash.blake2b512](hash.md#blake2b512) · `ext.hash`
 - [hash.blake2s256](hash.md#blake2s256) · `ext.hash`
@@ -263,3 +267,5 @@ Each entry links to its full documentation.
 - [xprod_with](collections.md#xprod_with)
 - [zip](collections.md#zip)
 - [zip_with](collections.md#zip_with)
+- [zlib.compress](compression.md#zlibcompress)
+- [zlib.decompress](compression.md#zlibdecompress)
