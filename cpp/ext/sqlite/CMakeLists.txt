@@ -1,5 +1,3 @@
-frost_ext_init()
-
 add_subdirectory(vendored-sqlite)
 
 add_library( frost-sqlite

@@ -1,10 +1,12 @@
-frost_ext_init()
-
 frost_ext_find("OpenSSL" OpenSSL)
 frost_ext_find("zlib" ZLIB)
 
 if(NOT OpenSSL_FOUND OR NOT ZLIB_FOUND)
-    frost_ext_bail("ext.hash requires OpenSSL and zlib")
+    if(FROST_EXT_MODE STREQUAL "ON")
+        message(FATAL_ERROR "ext.hash requires OpenSSL and zlib")
+    endif()
+    set(FROST_EXT_UNAVAILABLE TRUE PARENT_SCOPE)
+    return()
 endif()
 
 add_library( frost-hash

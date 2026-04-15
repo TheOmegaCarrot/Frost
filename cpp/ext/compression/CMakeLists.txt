@@ -1,13 +1,15 @@
-frost_ext_init()
-
 frost_ext_find("zlib (deflate, gzip, zlib)" ZLIB)
 frost_ext_pkg("brotli" BROTLI libbrotlienc libbrotlidec)
 frost_ext_pkg("zstd" ZSTD libzstd)
 
 if(NOT ZLIB_FOUND AND NOT BROTLI_FOUND AND NOT ZSTD_FOUND)
-    frost_ext_bail(
-        "ext.compression enabled but no compression libraries found.\n"
-        "Install at least one of: zlib, brotli, zstd")
+    if(FROST_EXT_MODE STREQUAL "ON")
+        message(FATAL_ERROR
+            "ext.compression enabled but no compression libraries found.\n"
+            "Install at least one of: zlib, brotli, zstd")
+    endif()
+    set(FROST_EXT_UNAVAILABLE TRUE PARENT_SCOPE)
+    return()
 endif()
 
 set(COMPRESSION_SOURCES compression.cpp)

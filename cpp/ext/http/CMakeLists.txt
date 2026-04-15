@@ -1,9 +1,11 @@
-frost_ext_init()
-
 frost_ext_find("OpenSSL" OpenSSL)
 
 if(NOT OpenSSL_FOUND)
-    frost_ext_bail("ext.http requires OpenSSL")
+    if(FROST_EXT_MODE STREQUAL "ON")
+        message(FATAL_ERROR "ext.http requires OpenSSL")
+    endif()
+    set(FROST_EXT_UNAVAILABLE TRUE PARENT_SCOPE)
+    return()
 endif()
 
 add_library( frost-http
