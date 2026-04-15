@@ -3,9 +3,10 @@ frost_ext_find("bz2" BZip2)
 frost_ext_pkg("brotli" BROTLI libbrotlienc libbrotlidec)
 frost_ext_find("xz" LibLZMA)
 frost_ext_pkg("lz4" LZ4 liblz4)
+frost_ext_pkg("snappy" SNAPPY snappy)
 frost_ext_pkg("zstd" ZSTD libzstd)
 
-if(NOT ZLIB_FOUND AND NOT BZip2_FOUND AND NOT LibLZMA_FOUND AND NOT BROTLI_FOUND AND NOT LZ4_FOUND AND NOT ZSTD_FOUND)
+if(NOT ZLIB_FOUND AND NOT BZip2_FOUND AND NOT LibLZMA_FOUND AND NOT BROTLI_FOUND AND NOT LZ4_FOUND AND NOT SNAPPY_FOUND AND NOT ZSTD_FOUND)
     if(FROST_EXT_MODE STREQUAL "ON")
         message(FATAL_ERROR
             "ext.compression enabled but no compression libraries found.\n"
@@ -47,6 +48,12 @@ if(BROTLI_FOUND)
     list(APPEND COMPRESSION_SOURCES brotli.cpp)
     list(APPEND COMPRESSION_LIBS PkgConfig::BROTLI)
     list(APPEND COMPRESSION_DEFS FROST_HAVE_BROTLI)
+endif()
+
+if(SNAPPY_FOUND)
+    list(APPEND COMPRESSION_SOURCES snappy.cpp)
+    list(APPEND COMPRESSION_LIBS PkgConfig::SNAPPY)
+    list(APPEND COMPRESSION_DEFS FROST_HAVE_SNAPPY)
 endif()
 
 if(ZSTD_FOUND)

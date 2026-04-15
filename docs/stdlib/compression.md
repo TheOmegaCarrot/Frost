@@ -1,11 +1,11 @@
 # Compression
 
 ```frost
-def { brotli, bz2, deflate, gzip, lz4, xz, zlib, zstd } = import('ext.compression')
+def { brotli, bz2, deflate, gzip, lz4, snappy, xz, zlib, zstd } = import('ext.compression')
 ```
 
 Build flag: `WITH_COMPRESSION` (default: `AUTO`).
-Requires at least one of: zlib, bz2, xz, brotli, lz4, or zstd.
+Requires at least one of: zlib, bz2, xz, brotli, lz4, snappy, or zstd.
 Each library is independently auto-detected; only algorithms with available libraries are included.
 
 Each algorithm provides `compress` and `decompress` functions operating on binary strings.
@@ -82,6 +82,17 @@ Used by HTTP `Content-Encoding: gzip`.
 `gzip.decompress(s)`
 
 Decompresses a gzip string. Produces an error on corrupt or truncated input.
+
+## `snappy.compress`
+`snappy.compress(s)`
+
+Compresses `s` using Snappy. Optimized for speed over compression ratio.
+There is no compression level parameter.
+
+## `snappy.decompress`
+`snappy.decompress(s)`
+
+Decompresses a Snappy string. Produces an error on corrupt or truncated input.
 
 ## `xz.compress`
 `xz.compress(s)`

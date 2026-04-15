@@ -73,6 +73,9 @@ constexpr std::string_view all_algos[] = {
 #ifdef FROST_HAVE_BROTLI
     "brotli",
 #endif
+#ifdef FROST_HAVE_SNAPPY
+    "snappy",
+#endif
 #ifdef FROST_HAVE_ZSTD
     "zstd",
 #endif
@@ -475,6 +478,22 @@ TEST_CASE("ext::compression: brotli round-trip with explicit quality")
         auto decompressed = call1(decompress, compressed);
         CHECK(decompressed->raw_get<String>() == "aaaaaaaaaa");
     }
+}
+#endif
+
+// =============================================================================
+// snappy
+// =============================================================================
+
+#ifdef FROST_HAVE_SNAPPY
+TEST_CASE("ext::compression: snappy rejects level argument")
+{
+    auto mod = compression_module();
+    auto compress = lookup_fn(lookup_algo(mod, "snappy"), "compress");
+
+    CHECK_THROWS_WITH(
+        call2(compress, Value::create(""s), Value::create(1_f)),
+        ContainsSubstring("too many arguments"));
 }
 #endif
 

@@ -223,6 +223,8 @@ Each entry links to its full documentation.
 - [scan](collections.md#scan)
 - [select](collections.md#select)
 - [slide](collections.md#slide)
+- [snappy.compress](compression.md#snappycompress)
+- [snappy.decompress](compression.md#snappydecompress)
 - [sort_by](collections.md#sort_by)
 - [sorted](collections.md#sorted)
 - [split](strings.md#split)
