@@ -18,6 +18,8 @@ def algo = if fast: deflate else: gzip
 algo.compress(data)
 ```
 
+For auto-detecting the format of compressed data, see [`frost-scripts/autodecompress.frst`](../../frost-scripts/autodecompress.frst), which detects gzip, zstd, bz2, xz, and lz4 by magic bytes and dispatches to the appropriate decompressor.
+
 ## `bz2.compress`
 `bz2.compress(s)`
 `bz2.compress(s, level)`
