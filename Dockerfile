@@ -1,7 +1,6 @@
 FROM gcc:15 AS builder
 
 ARG BUILD_TYPE=Release
-ARG WITH_HTTP=Yes
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -14,12 +13,18 @@ RUN apt-get update \
         libboost-dev \
         libssl-dev \
         zlib1g-dev \
+        libbz2-dev \
+        liblzma-dev \
+        libbrotli-dev \
+        liblz4-dev \
+        libsnappy-dev \
+        libzstd-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
 COPY . /src
 
-RUN cmake -S . -B /build -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_TESTS=No -DWITH_HTTP=${WITH_HTTP} \
+RUN cmake -S . -B /build -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_TESTS=No \
     && cmake --build /build -j$(nproc) \
     && if [ "${BUILD_TYPE}" = "Release" ]; then strip /build/frost; fi
 
@@ -38,6 +43,12 @@ RUN apt-get update \
         libssl3t64 \
         libstdc++6 \
         zlib1g \
+        libbz2-1.0 \
+        liblzma5 \
+        libbrotli1 \
+        liblz4-1 \
+        libsnappy1v5 \
+        libzstd1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /build/frost /usr/local/bin/frost
