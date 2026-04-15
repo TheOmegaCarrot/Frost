@@ -1,10 +1,11 @@
 frost_ext_find("zlib (deflate, gzip, zlib)" ZLIB)
 frost_ext_find("bz2" BZip2)
 frost_ext_pkg("brotli" BROTLI libbrotlienc libbrotlidec)
+frost_ext_find("xz" LibLZMA)
 frost_ext_pkg("lz4" LZ4 liblz4)
 frost_ext_pkg("zstd" ZSTD libzstd)
 
-if(NOT ZLIB_FOUND AND NOT BZip2_FOUND AND NOT BROTLI_FOUND AND NOT LZ4_FOUND AND NOT ZSTD_FOUND)
+if(NOT ZLIB_FOUND AND NOT BZip2_FOUND AND NOT LibLZMA_FOUND AND NOT BROTLI_FOUND AND NOT LZ4_FOUND AND NOT ZSTD_FOUND)
     if(FROST_EXT_MODE STREQUAL "ON")
         message(FATAL_ERROR
             "ext.compression enabled but no compression libraries found.\n"
@@ -28,6 +29,12 @@ if(BZip2_FOUND)
     list(APPEND COMPRESSION_SOURCES bz2.cpp)
     list(APPEND COMPRESSION_LIBS BZip2::BZip2)
     list(APPEND COMPRESSION_DEFS FROST_HAVE_BZ2)
+endif()
+
+if(LibLZMA_FOUND)
+    list(APPEND COMPRESSION_SOURCES xz.cpp)
+    list(APPEND COMPRESSION_LIBS LibLZMA::LibLZMA)
+    list(APPEND COMPRESSION_DEFS FROST_HAVE_XZ)
 endif()
 
 if(LZ4_FOUND)

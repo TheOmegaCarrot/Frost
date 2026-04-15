@@ -64,6 +64,9 @@ constexpr std::string_view all_algos[] = {
 #ifdef FROST_HAVE_BZ2
     "bz2",
 #endif
+#ifdef FROST_HAVE_XZ
+    "xz",
+#endif
 #ifdef FROST_HAVE_LZ4
     "lz4",
 #endif
@@ -362,6 +365,42 @@ TEST_CASE("ext::compression: bz2 round-trip with explicit level")
     auto input = Value::create("aaaaaaaaaa"s);
 
     for (Int level : {1_f, 5_f, 9_f})
+    {
+        auto compressed = call2(compress, input, Value::create(level));
+        auto decompressed = call1(decompress, compressed);
+        CHECK(decompressed->raw_get<String>() == "aaaaaaaaaa");
+    }
+}
+#endif
+
+// =============================================================================
+// xz
+// =============================================================================
+
+#ifdef FROST_HAVE_XZ
+TEST_CASE("ext::compression: xz level out of range")
+{
+    auto mod = compression_module();
+    auto compress = lookup_fn(lookup_algo(mod, "xz"), "compress");
+
+    CHECK_THROWS_WITH(
+        call2(compress, Value::create(""s), Value::create(10_f)),
+        ContainsSubstring("level must be between 0 and 9"));
+    CHECK_THROWS_WITH(
+        call2(compress, Value::create(""s), Value::create(-1_f)),
+        ContainsSubstring("level must be between 0 and 9"));
+}
+
+TEST_CASE("ext::compression: xz round-trip with explicit level")
+{
+    auto mod = compression_module();
+    auto algo = lookup_algo(mod, "xz");
+    auto compress = lookup_fn(algo, "compress");
+    auto decompress = lookup_fn(algo, "decompress");
+
+    auto input = Value::create("aaaaaaaaaa"s);
+
+    for (Int level : {0_f, 1_f, 6_f, 9_f})
     {
         auto compressed = call2(compress, input, Value::create(level));
         auto decompressed = call1(decompress, compressed);

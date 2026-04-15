@@ -271,6 +271,8 @@ Each entry links to its full documentation.
 - [values](collections.md#values)
 - [xprod](collections.md#xprod)
 - [xprod_with](collections.md#xprod_with)
+- [xz.compress](compression.md#xzcompress)
+- [xz.decompress](compression.md#xzdecompress)
 - [zip](collections.md#zip)
 - [zip_with](collections.md#zip_with)
 - [zlib.compress](compression.md#zlibcompress)
