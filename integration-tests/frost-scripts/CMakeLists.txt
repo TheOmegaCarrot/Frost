@@ -8,6 +8,7 @@ set(FROST_SCRIPTS_TESTS
     test-lazy.frst
     test-object.frst
     test-re.frst
+    test-autodecompress.frst
 )
 foreach(script ${FROST_SCRIPTS_TESTS})
     get_filename_component(name ${script} NAME_WE)

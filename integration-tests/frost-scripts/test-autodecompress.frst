@@ -1,0 +1,20 @@
+def { autodecompress } = import('autodecompress')
+def compression = import('ext.compression')
+
+def required = ["gzip", "zstd", "bz2", "xz", "lz4"]
+def missing = reject(required, fn name -> has(compression, name))
+
+if len(missing) > 0:
+    error("test-autodecompress: missing algorithms: " + to_string(missing))
+
+def original = "the quick brown fox jumps over the lazy dog"
+
+assert(autodecompress(compression.gzip.compress(original)) == original)
+assert(autodecompress(compression.zstd.compress(original)) == original)
+assert(autodecompress(compression.bz2.compress(original)) == original)
+assert(autodecompress(compression.xz.compress(original)) == original)
+assert(autodecompress(compression.lz4.compress(original)) == original)
+
+def result = try_call(autodecompress, ["not compressed"])
+assert(result.ok == false)
+assert(contains(result.error, "unrecognized"))
