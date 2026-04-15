@@ -2,21 +2,25 @@
 # Supports gzip, zstd, bz2, xz, and lz4.
 # Requires all five algorithms to be available.
 
-def { bz2, gzip, lz4, xz, zstd } = import('ext.compression')
+def c = import('ext.compression')
 def hex = import('std.encoding.hex')
 
-def magic = {
-    gzip: hex.decode("1f8b"),
-    zstd: hex.decode("28b52ffd"),
-    bz2:  hex.decode("425a68"),
-    xz:   hex.decode("fd377a585a00"),
-    lz4:  hex.decode("04224d18"),
-}
+def candidates = [
+    {magic: hex.decode("1f8b"),         name: 'gzip'},
+    {magic: hex.decode("28b52ffd"),     name: 'zstd'},
+    {magic: hex.decode("425a68"),       name: 'bz2'},
+    {magic: hex.decode("fd377a585a00"), name: 'xz'},
+    {magic: hex.decode("04224d18"),     name: 'lz4'},
+]
 
-export defn autodecompress(data) ->
-    if   data @ starts_with(magic.gzip): gzip.decompress(data)
-    elif data @ starts_with(magic.zstd): zstd.decompress(data)
-    elif data @ starts_with(magic.bz2):  bz2.decompress(data)
-    elif data @ starts_with(magic.xz):   xz.decompress(data)
-    elif data @ starts_with(magic.lz4):  lz4.decompress(data)
-    else: error("autodecompress: unrecognized compression format")
+export defn autodecompress(data) -> do {
+    def matched = filter candidates with fn entry -> data @ starts_with(entry.magic)
+    match matched {
+        [{name}, ..._] if: has(c, name) =>
+            c[name].decompress(data),
+        [{name}, ..._] =>
+            error($'autodecompress: ${name} format detected but not available'),
+        [] =>
+            error("autodecompress: unrecognized compression format"),
+    }
+}
