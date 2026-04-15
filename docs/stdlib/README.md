@@ -64,7 +64,7 @@ Each extension's documentation describes exactly how it handles its dependencies
 
 | Extension                        | Import                        | Description                         | Dependencies              |
 |----------------------------------|-------------------------------|-------------------------------------|---------------------------|
-| [Compression](./compression.md)  | `import('ext.compression')`   | Compression and decompression       | zlib, bz2, brotli, zstd   |
+| [Compression](./compression.md)  | `import('ext.compression')`   | Compression and decompression       | zlib, bz2, brotli, lz4, zstd |
 | [Hash](./hash.md)                | `import('ext.hash')`          | Hash functions, checksums, and HMAC | OpenSSL, zlib             |
 | [HTTP](./http.md)                | `import('ext.http')`          | Making HTTP requests                | OpenSSL                   |
 | [SQLite](./sqlite.md)            | `import('ext.sqlite')`        | Embedded relational database        | SQLite (vendored), zlib   |

@@ -23,9 +23,9 @@ BUILTIN(compress)
                 "bz2.compress: level must be between 1 and 9"};
     }
 
-    // bz2 worst case: input size + 1% + 600 bytes
+    // bz2 worst case: input size + 1% + 600 bytes (round up to cover truncation)
     auto output_size = static_cast<unsigned int>(
-        input.size() + input.size() / 100 + 600);
+        input.size() + (input.size() + 99) / 100 + 600);
     std::string output(output_size, '\0');
 
     int ret = BZ2_bzBuffToBuffCompress(

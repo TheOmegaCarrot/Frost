@@ -145,6 +145,8 @@ Each entry links to its full documentation.
 - [less_than](operators.md#less_than)
 - [less_than_or_equal](operators.md#less_than_or_equal)
 - [lines](strings.md#lines)
+- [lz4.compress](compression.md#lz4compress)
+- [lz4.decompress](compression.md#lz4decompress)
 - [map_into](collections.md#map_into)
 - [map_keys](collections.md#map_keys)
 - [map_values](collections.md#map_values)

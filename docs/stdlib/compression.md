@@ -1,11 +1,11 @@
 # Compression
 
 ```frost
-def { brotli, bz2, deflate, gzip, zlib, zstd } = import('ext.compression')
+def { brotli, bz2, deflate, gzip, lz4, zlib, zstd } = import('ext.compression')
 ```
 
 Build flag: `WITH_COMPRESSION` (default: `AUTO`).
-Requires at least one of: zlib, bz2, brotli, or zstd.
+Requires at least one of: zlib, bz2, brotli, lz4, or zstd.
 Each library is independently auto-detected; only algorithms with available libraries are included.
 
 Each algorithm provides `compress` and `decompress` functions operating on binary strings.
@@ -54,6 +54,21 @@ Compresses `s` using raw DEFLATE (RFC 1951). No header or checksum.
 `deflate.decompress(s)`
 
 Decompresses a raw DEFLATE string. Produces an error on corrupt or truncated input.
+
+## `lz4.compress`
+`lz4.compress(s)`
+`lz4.compress(s, level)`
+
+Compresses `s` using the LZ4 frame format.
+Optimized for very fast compression and decompression.
+`level` is an optional `Int`. `0` is the default (fast mode).
+Higher levels (`1`--`12`) compress better but slower.
+Negative levels are faster than `0` at the cost of compression ratio.
+
+## `lz4.decompress`
+`lz4.decompress(s)`
+
+Decompresses an LZ4 frame. Produces an error on corrupt or truncated input.
 
 ## `gzip.compress`
 `gzip.compress(s)`
