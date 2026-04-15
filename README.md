@@ -23,9 +23,11 @@ The following must be installed on your system:
 | C++26 compiler (GCC or Clang) | Minimum GCC 15's stdlib, Clang's stdlib does not support all necessary features. |
 | CMake 3.31.6+                 |                                                                                  |
 | mold                          | Linker                                                                           |
-| Boost                         | `regex`, `json`, `url`, `headers` components                                     |
-| OpenSSL                       | `libcrypto` (used by `ext.hash` and `ext.http`)                                  |
-| zlib                          | Used the SQLite and Hash extensions                                              |
+| Boost                         | `regex`, `json`, `url`, `filesystem` components                                  |
+
+Extensions have their own dependencies which are auto-detected at configure time.
+Missing libraries cause the dependent extension (or feature) to be silently skipped by default.
+See the [extension documentation](docs/stdlib/) for details.
 
 The following dependencies are fetched automatically by CMake:
 [lexy](https://github.com/foonathan/lexy),

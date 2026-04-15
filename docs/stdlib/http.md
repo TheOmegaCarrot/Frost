@@ -4,7 +4,7 @@
 def http = import('ext.http')
 ```
 
-HTTP support can be disabled at build time with `-DWITH_HTTP=NO`.
+Build flag: `WITH_HTTP` (default: `AUTO`). Requires OpenSSL.
 
 ## `parse_url`
 `parse_url(url)`

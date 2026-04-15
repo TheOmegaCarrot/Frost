@@ -7,7 +7,7 @@ def unsafe = import('ext.unsafe')
 The `unsafe` module provides functions that bypass Frost's usual safety guarantees.
 These are opt-in and intended for advanced use cases such as performance-critical code, debugging, and interop patterns that require unrestricted mutability or pointer-level introspection.
 
-The `unsafe` module is optional and can be disabled at build time with `-DWITH_UNSAFE=NO`.
+Build flag: `WITH_UNSAFE` (default: `AUTO`). No external dependencies.
 
 The precise behavior of these functions may change between versions.
 Internal implementation details such as value sharing and allocation are not part of Frost's stability guarantees, so results from pointer-level operations like `same` and `identity` may differ across releases.

@@ -52,13 +52,20 @@ Built-in modules accessed via `import`.
 
 ## Extensions
 
-Extensions are optional components enabled at build time.
-They are not available in all Frost builds, but are enabled by default.
+Extensions are optional components that are auto-detected at build time.
+Each extension has a `WITH_<NAME>` CMake setting with three values:
 
-| Extension                  | Import                       | Description                         | Extra Dependencies        |
-|----------------------------|------------------------------|-------------------------------------|---------------------------|
-| [Compression](./compression.md) | `import('ext.compression')` | Compression and decompression  | zlib                      |
-| [Hash](./hash.md)          | `import('ext.hash')`         | Hash functions, checksums, and HMAC | OpenSSL                   |
-| [HTTP](./http.md)          | `import('ext.http')`         | Making HTTP requests                | OpenSSL                   |
-| [SQLite](./sqlite.md)      | `import('ext.sqlite')`       | Embedded relational database        | SQLite (vendored)         |
-| [Unsafe](./unsafe.md)      | `import('ext.unsafe')`       | Bypass Frost's safety guarantees    | None                      |
+- **`AUTO`** (default) -- enabled if dependencies are found, skipped otherwise
+- **`ON`** -- enabled, hard error if dependencies are missing
+- **`OFF`** -- disabled entirely
+
+The configure output shows colored status for each extension and its dependencies.
+Each extension's documentation describes exactly how it handles its dependencies.
+
+| Extension                        | Import                        | Description                         | Dependencies              |
+|----------------------------------|-------------------------------|-------------------------------------|---------------------------|
+| [Compression](./compression.md)  | `import('ext.compression')`   | Compression and decompression       | zlib, brotli, zstd        |
+| [Hash](./hash.md)                | `import('ext.hash')`          | Hash functions, checksums, and HMAC | OpenSSL, zlib             |
+| [HTTP](./http.md)                | `import('ext.http')`          | Making HTTP requests                | OpenSSL                   |
+| [SQLite](./sqlite.md)            | `import('ext.sqlite')`        | Embedded relational database        | SQLite (vendored), zlib   |
+| [Unsafe](./unsafe.md)            | `import('ext.unsafe')`        | Bypass Frost's safety guarantees    | None                      |

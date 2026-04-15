@@ -4,7 +4,9 @@
 def { brotli, deflate, gzip, zlib, zstd } = import('ext.compression')
 ```
 
-Build flag: `WITH_COMPRESSION` (default: `ON`). Requires zlib.
+Build flag: `WITH_COMPRESSION` (default: `AUTO`).
+Requires at least one of: zlib, brotli, or zstd.
+Each library is independently auto-detected; only algorithms with available libraries are included.
 
 Each algorithm provides `compress` and `decompress` functions operating on binary strings.
 Since Frost strings are binary-safe, compressed output can be stored, concatenated, or passed to other functions without issue.
