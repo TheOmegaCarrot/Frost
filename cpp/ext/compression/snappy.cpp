@@ -14,8 +14,8 @@ BUILTIN(compress)
     size_t output_size = snappy_max_compressed_length(input.size());
     std::string output(output_size, '\0');
 
-    auto status =
-        snappy_compress(input.data(), input.size(), output.data(), &output_size);
+    auto status = snappy_compress(input.data(), input.size(), output.data(),
+                                  &output_size);
 
     if (status != SNAPPY_OK)
         throw Frost_Recoverable_Error{"snappy.compress: compression failed"};
@@ -34,14 +34,13 @@ BUILTIN(decompress)
     if (snappy_uncompressed_length(input.data(), input.size(), &output_size)
         != SNAPPY_OK)
     {
-        throw Frost_Recoverable_Error{
-            "snappy.decompress: invalid snappy data"};
+        throw Frost_Recoverable_Error{"snappy.decompress: invalid snappy data"};
     }
 
     std::string output(output_size, '\0');
 
-    auto status = snappy_uncompress(
-        input.data(), input.size(), output.data(), &output_size);
+    auto status = snappy_uncompress(input.data(), input.size(), output.data(),
+                                    &output_size);
 
     if (status != SNAPPY_OK)
         throw Frost_Recoverable_Error{

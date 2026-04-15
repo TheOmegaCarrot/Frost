@@ -21,21 +21,21 @@ BUILTIN(compress)
     {
         prefs.compressionLevel = static_cast<int>(GET(1, Int));
         if (prefs.compressionLevel > LZ4F_compressionLevel_max())
-            throw Frost_Recoverable_Error{fmt::format(
-                "lz4.compress: level must be at most {}",
-                LZ4F_compressionLevel_max())};
+            throw Frost_Recoverable_Error{
+                fmt::format("lz4.compress: level must be at most {}",
+                            LZ4F_compressionLevel_max())};
     }
 
     size_t bound = LZ4F_compressFrameBound(input.size(), &prefs);
     std::string output(bound, '\0');
 
-    size_t result = LZ4F_compressFrame(
-        output.data(), output.size(), input.data(), input.size(), &prefs);
+    size_t result = LZ4F_compressFrame(output.data(), output.size(),
+                                       input.data(), input.size(), &prefs);
 
     if (LZ4F_isError(result))
-        throw Frost_Recoverable_Error{fmt::format(
-            "lz4.compress: compression failed ({})",
-            LZ4F_getErrorName(result))};
+        throw Frost_Recoverable_Error{
+            fmt::format("lz4.compress: compression failed ({})",
+                        LZ4F_getErrorName(result))};
 
     output.resize(result);
     return Value::create(std::move(output));
@@ -64,15 +64,15 @@ BUILTIN(decompress)
         size_t dst_size = buf.size();
         size_t consumed = src_remaining;
 
-        size_t ret = LZ4F_decompress(
-            dctx, buf.data(), &dst_size, src, &consumed, nullptr);
+        size_t ret = LZ4F_decompress(dctx, buf.data(), &dst_size, src,
+                                     &consumed, nullptr);
 
         if (LZ4F_isError(ret))
         {
             LZ4F_freeDecompressionContext(dctx);
-            throw Frost_Recoverable_Error{fmt::format(
-                "lz4.decompress: decompression failed ({})",
-                LZ4F_getErrorName(ret))};
+            throw Frost_Recoverable_Error{
+                fmt::format("lz4.decompress: decompression failed ({})",
+                            LZ4F_getErrorName(ret))};
         }
 
         output.append(buf.data(), dst_size);

@@ -23,16 +23,15 @@ BUILTIN(compress)
                 "bz2.compress: level must be between 1 and 9"};
     }
 
-    // bz2 worst case: input size + 1% + 600 bytes (round up to cover truncation)
+    // bz2 worst case: input size + 1% + 600 bytes
+    // (round up to cover truncation)
     auto output_size = static_cast<unsigned int>(
         input.size() + (input.size() + 99) / 100 + 600);
     std::string output(output_size, '\0');
 
     int ret = BZ2_bzBuffToBuffCompress(
-        output.data(), &output_size,
-        const_cast<char*>(input.data()),
-        static_cast<unsigned int>(input.size()),
-        block_size, 0, 0);
+        output.data(), &output_size, const_cast<char*>(input.data()),
+        static_cast<unsigned int>(input.size()), block_size, 0, 0);
 
     if (ret != BZ_OK)
         throw Frost_Recoverable_Error{
@@ -75,8 +74,7 @@ BUILTIN(decompress)
         }
 
         output.append(buf.data(), buf.size() - stream.avail_out);
-    }
-    while (ret != BZ_STREAM_END);
+    } while (ret != BZ_STREAM_END);
 
     BZ2_bzDecompressEnd(&stream);
     return Value::create(std::move(output));

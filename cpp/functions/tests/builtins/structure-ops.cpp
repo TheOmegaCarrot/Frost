@@ -503,8 +503,7 @@ TEST_CASE("dissoc: remove multiple keys")
         {Value::create("c"s), Value::create(3_f)},
     });
 
-    auto result =
-        dissoc->call({m, Value::create("a"s), Value::create("c"s)});
+    auto result = dissoc->call({m, Value::create("a"s), Value::create("c"s)});
     REQUIRE(result->is<Map>());
     const auto& out = result->raw_get<Map>();
     REQUIRE(out.size() == 1);
@@ -561,8 +560,7 @@ TEST_CASE("dissoc: removing all keys yields empty map")
         {Value::create("y"s), Value::create(2_f)},
     });
 
-    auto result =
-        dissoc->call({m, Value::create("x"s), Value::create("y"s)});
+    auto result = dissoc->call({m, Value::create("x"s), Value::create("y"s)});
     REQUIRE(result->is<Map>());
     CHECK(result->raw_get<Map>().empty());
 }
@@ -593,8 +591,7 @@ TEST_CASE("dissoc: duplicate keys in arguments")
         {Value::create("b"s), Value::create(2_f)},
     });
 
-    auto result = dissoc->call(
-        {m, Value::create("a"s), Value::create("a"s)});
+    auto result = dissoc->call({m, Value::create("a"s), Value::create("a"s)});
     REQUIRE(result->is<Map>());
     const auto& out = result->raw_get<Map>();
     REQUIRE(out.size() == 1);
@@ -613,8 +610,7 @@ TEST_CASE("dissoc: mixed key types")
         {Value::create(true), Value::create(3_f)},
     });
 
-    auto result =
-        dissoc->call({m, Value::create("a"s), Value::create(42_f)});
+    auto result = dissoc->call({m, Value::create("a"s), Value::create(42_f)});
     REQUIRE(result->is<Map>());
     const auto& out = result->raw_get<Map>();
     REQUIRE(out.size() == 1);

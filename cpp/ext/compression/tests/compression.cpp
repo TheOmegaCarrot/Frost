@@ -162,8 +162,8 @@ TEST_CASE("ext::compression: level/quality must be Int")
         {
             auto compress =
                 lookup_fn(lookup_algo(mod, std::string{name}), "compress");
-            CHECK_THROWS(call2(compress, Value::create(""s),
-                               Value::create("fast"s)));
+            CHECK_THROWS(
+                call2(compress, Value::create(""s), Value::create("fast"s)));
         }
     }
 }
@@ -190,7 +190,8 @@ TEST_CASE("ext::compression: round-trip")
 
             auto decompressed = call1(decompress, compressed);
             REQUIRE(decompressed->is<String>());
-            CHECK(decompressed->raw_get<String>() == "hello hello hello hello hello");
+            CHECK(decompressed->raw_get<String>()
+                  == "hello hello hello hello hello");
         }
     }
 }
@@ -312,8 +313,7 @@ TEST_CASE("ext::compression: zlib round-trip with explicit level")
 
             for (Int level : {-1_f, 0_f, 1_f, 6_f, 9_f})
             {
-                auto compressed =
-                    call2(compress, input, Value::create(level));
+                auto compressed = call2(compress, input, Value::create(level));
                 auto decompressed = call1(decompress, compressed);
                 CHECK(decompressed->raw_get<String>() == "aaaaaaaaaa");
             }
@@ -324,12 +324,9 @@ TEST_CASE("ext::compression: zlib round-trip with explicit level")
 TEST_CASE("ext::compression: cross-format rejection within zlib family")
 {
     auto mod = compression_module();
-    auto deflate_compress =
-        lookup_fn(lookup_algo(mod, "deflate"), "compress");
-    auto gzip_decompress =
-        lookup_fn(lookup_algo(mod, "gzip"), "decompress");
-    auto zlib_decompress =
-        lookup_fn(lookup_algo(mod, "zlib"), "decompress");
+    auto deflate_compress = lookup_fn(lookup_algo(mod, "deflate"), "compress");
+    auto gzip_decompress = lookup_fn(lookup_algo(mod, "gzip"), "decompress");
+    auto zlib_decompress = lookup_fn(lookup_algo(mod, "zlib"), "decompress");
 
     auto deflated = call1(deflate_compress, Value::create("test"s));
 
@@ -348,8 +345,8 @@ TEST_CASE("ext::compression: concatenated gzip streams")
     auto a = call1(compress, Value::create("hello "s));
     auto b = call1(compress, Value::create("world"s));
 
-    auto concatenated = Value::create(
-        a->raw_get<String>() + b->raw_get<String>());
+    auto concatenated =
+        Value::create(a->raw_get<String>() + b->raw_get<String>());
     auto result = call1(decompress, concatenated);
 
     CHECK(result->raw_get<String>() == "hello world");
@@ -366,12 +363,10 @@ TEST_CASE("ext::compression: bz2 level out of range")
     auto mod = compression_module();
     auto compress = lookup_fn(lookup_algo(mod, "bz2"), "compress");
 
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(0_f)),
-        ContainsSubstring("level must be between 1 and 9"));
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(10_f)),
-        ContainsSubstring("level must be between 1 and 9"));
+    CHECK_THROWS_WITH(call2(compress, Value::create(""s), Value::create(0_f)),
+                      ContainsSubstring("level must be between 1 and 9"));
+    CHECK_THROWS_WITH(call2(compress, Value::create(""s), Value::create(10_f)),
+                      ContainsSubstring("level must be between 1 and 9"));
 }
 
 TEST_CASE("ext::compression: bz2 round-trip with explicit level")
@@ -402,12 +397,10 @@ TEST_CASE("ext::compression: xz level out of range")
     auto mod = compression_module();
     auto compress = lookup_fn(lookup_algo(mod, "xz"), "compress");
 
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(10_f)),
-        ContainsSubstring("level must be between 0 and 9"));
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(-1_f)),
-        ContainsSubstring("level must be between 0 and 9"));
+    CHECK_THROWS_WITH(call2(compress, Value::create(""s), Value::create(10_f)),
+                      ContainsSubstring("level must be between 0 and 9"));
+    CHECK_THROWS_WITH(call2(compress, Value::create(""s), Value::create(-1_f)),
+                      ContainsSubstring("level must be between 0 and 9"));
 }
 
 TEST_CASE("ext::compression: xz round-trip with explicit level")
@@ -436,8 +429,8 @@ TEST_CASE("ext::compression: concatenated xz streams")
     auto a = call1(compress, Value::create("hello "s));
     auto b = call1(compress, Value::create("world"s));
 
-    auto concatenated = Value::create(
-        a->raw_get<String>() + b->raw_get<String>());
+    auto concatenated =
+        Value::create(a->raw_get<String>() + b->raw_get<String>());
     auto result = call1(decompress, concatenated);
 
     CHECK(result->raw_get<String>() == "hello world");
@@ -454,9 +447,8 @@ TEST_CASE("ext::compression: lz4 level out of range")
     auto mod = compression_module();
     auto compress = lookup_fn(lookup_algo(mod, "lz4"), "compress");
 
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(99_f)),
-        ContainsSubstring("level must be at most"));
+    CHECK_THROWS_WITH(call2(compress, Value::create(""s), Value::create(99_f)),
+                      ContainsSubstring("level must be at most"));
 }
 
 TEST_CASE("ext::compression: lz4 round-trip with explicit level")
@@ -487,12 +479,10 @@ TEST_CASE("ext::compression: brotli quality out of range")
     auto mod = compression_module();
     auto compress = lookup_fn(lookup_algo(mod, "brotli"), "compress");
 
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(12_f)),
-        ContainsSubstring("quality must be between"));
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(-1_f)),
-        ContainsSubstring("quality must be between"));
+    CHECK_THROWS_WITH(call2(compress, Value::create(""s), Value::create(12_f)),
+                      ContainsSubstring("quality must be between"));
+    CHECK_THROWS_WITH(call2(compress, Value::create(""s), Value::create(-1_f)),
+                      ContainsSubstring("quality must be between"));
 }
 
 TEST_CASE("ext::compression: brotli round-trip with explicit quality")
@@ -523,9 +513,8 @@ TEST_CASE("ext::compression: snappy rejects level argument")
     auto mod = compression_module();
     auto compress = lookup_fn(lookup_algo(mod, "snappy"), "compress");
 
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(1_f)),
-        ContainsSubstring("too many arguments"));
+    CHECK_THROWS_WITH(call2(compress, Value::create(""s), Value::create(1_f)),
+                      ContainsSubstring("too many arguments"));
 }
 #endif
 

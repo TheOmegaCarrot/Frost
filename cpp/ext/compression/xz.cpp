@@ -70,15 +70,14 @@ BUILTIN(decompress)
         if (ret != LZMA_OK && ret != LZMA_STREAM_END)
         {
             lzma_end(&stream);
-            throw Frost_Recoverable_Error{fmt::format(
-                "xz.decompress: decompression failed (error {})",
-                static_cast<int>(ret))};
+            throw Frost_Recoverable_Error{
+                fmt::format("xz.decompress: decompression failed (error {})",
+                            static_cast<int>(ret))};
         }
 
         output.append(reinterpret_cast<char*>(buf.data()),
-                       buf.size() - stream.avail_out);
-    }
-    while (ret != LZMA_STREAM_END);
+                      buf.size() - stream.avail_out);
+    } while (ret != LZMA_STREAM_END);
 
     lzma_end(&stream);
     return Value::create(std::move(output));

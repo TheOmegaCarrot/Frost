@@ -17,9 +17,9 @@ BUILTIN(compress)
     {
         level = static_cast<int>(GET(1, Int));
         if (level < ZSTD_minCLevel() || level > ZSTD_maxCLevel())
-            throw Frost_Recoverable_Error{fmt::format(
-                "zstd.compress: level must be between {} and {}",
-                ZSTD_minCLevel(), ZSTD_maxCLevel())};
+            throw Frost_Recoverable_Error{
+                fmt::format("zstd.compress: level must be between {} and {}",
+                            ZSTD_minCLevel(), ZSTD_maxCLevel())};
     }
 
     std::string output(ZSTD_compressBound(input.size()), '\0');
@@ -28,9 +28,9 @@ BUILTIN(compress)
                                   input.size(), level);
 
     if (ZSTD_isError(result))
-        throw Frost_Recoverable_Error{fmt::format(
-            "zstd.compress: compression failed ({})",
-            ZSTD_getErrorName(result))};
+        throw Frost_Recoverable_Error{
+            fmt::format("zstd.compress: compression failed ({})",
+                        ZSTD_getErrorName(result))};
 
     output.resize(result);
     return Value::create(std::move(output));
@@ -42,12 +42,10 @@ BUILTIN(decompress)
 
     const auto& input = GET(0, String);
 
-    auto content_size =
-        ZSTD_getFrameContentSize(input.data(), input.size());
+    auto content_size = ZSTD_getFrameContentSize(input.data(), input.size());
 
     if (content_size == ZSTD_CONTENTSIZE_ERROR)
-        throw Frost_Recoverable_Error{
-            "zstd.decompress: not valid zstd data"};
+        throw Frost_Recoverable_Error{"zstd.decompress: not valid zstd data"};
 
     // Known size: one-shot decompress
     if (content_size != ZSTD_CONTENTSIZE_UNKNOWN)
@@ -58,9 +56,9 @@ BUILTIN(decompress)
                                         input.data(), input.size());
 
         if (ZSTD_isError(result))
-            throw Frost_Recoverable_Error{fmt::format(
-                "zstd.decompress: decompression failed ({})",
-                ZSTD_getErrorName(result))};
+            throw Frost_Recoverable_Error{
+                fmt::format("zstd.decompress: decompression failed ({})",
+                            ZSTD_getErrorName(result))};
 
         output.resize(result);
         return Value::create(std::move(output));
@@ -84,9 +82,9 @@ BUILTIN(decompress)
         if (ZSTD_isError(ret))
         {
             ZSTD_freeDStream(dstream);
-            throw Frost_Recoverable_Error{fmt::format(
-                "zstd.decompress: decompression failed ({})",
-                ZSTD_getErrorName(ret))};
+            throw Frost_Recoverable_Error{
+                fmt::format("zstd.decompress: decompression failed ({})",
+                            ZSTD_getErrorName(ret))};
         }
 
         output.append(buf.data(), out_buf.pos);

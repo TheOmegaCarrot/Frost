@@ -3153,8 +3153,8 @@ struct Defn
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
         [](auto begin_pos, std::string name, auto name_end_pos,
-           lambda_param_pack params,
-           std::vector<ast::Statement::Ptr> body, auto end_pos) {
+           lambda_param_pack params, std::vector<ast::Statement::Ptr> body,
+           auto end_pos) {
             auto lambda = std::make_unique<ast::Lambda>(
                 make_source_range(begin_pos, end_pos), std::move(params.params),
                 std::move(body), std::move(params.vararg), name);
@@ -3190,8 +3190,8 @@ struct Export_Defn
     }();
     static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
         [](auto begin_pos, std::string name, auto name_end_pos,
-           lambda_param_pack params,
-           std::vector<ast::Statement::Ptr> body, auto end_pos) {
+           lambda_param_pack params, std::vector<ast::Statement::Ptr> body,
+           auto end_pos) {
             auto lambda = std::make_unique<ast::Lambda>(
                 make_source_range(begin_pos, end_pos), std::move(params.params),
                 std::move(body), std::move(params.vararg), name);

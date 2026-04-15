@@ -14,7 +14,8 @@ BUILTIN(compress)
 
 BUILTIN(decompress)
 {
-    return zlib_common::decompress("gzip.decompress", args, MAX_WBITS + 16, true);
+    return zlib_common::decompress("gzip.decompress", args, MAX_WBITS + 16,
+                                   true);
 }
 
 } // namespace frst::compression::gzip

@@ -66,8 +66,7 @@ Value_Ptr decompress(std::string_view fn_name, builtin_args_t args,
         throw Frost_Recoverable_Error{
             fmt::format("{}: failed to initialize inflate stream", fn_name)};
 
-    stream.next_in =
-        reinterpret_cast<Bytef*>(const_cast<char*>(input.data()));
+    stream.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(input.data()));
     stream.avail_in = static_cast<uInt>(input.size());
 
     std::string output;
@@ -84,21 +83,20 @@ Value_Ptr decompress(std::string_view fn_name, builtin_args_t args,
         if (ret != Z_OK && ret != Z_STREAM_END)
         {
             ::inflateEnd(&stream);
-            throw Frost_Recoverable_Error{fmt::format(
-                "{}: decompression failed ({})", fn_name,
-                stream.msg ? stream.msg : "unknown error")};
+            throw Frost_Recoverable_Error{
+                fmt::format("{}: decompression failed ({})", fn_name,
+                            stream.msg ? stream.msg : "unknown error")};
         }
 
         output.append(reinterpret_cast<char*>(buf.data()),
-                       buf.size() - stream.avail_out);
+                      buf.size() - stream.avail_out);
 
         if (ret == Z_STREAM_END && allow_concat && stream.avail_in > 0)
         {
             ::inflateReset(&stream);
             ret = Z_OK;
         }
-    }
-    while (ret != Z_STREAM_END);
+    } while (ret != Z_STREAM_END);
 
     ::inflateEnd(&stream);
     return Value::create(std::move(output));

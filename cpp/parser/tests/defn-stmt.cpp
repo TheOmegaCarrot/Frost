@@ -473,8 +473,8 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
-        auto* binding = dynamic_cast<const frst::ast::Destructure_Binding*>(
-            nodes.back());
+        auto* binding =
+            dynamic_cast<const frst::ast::Destructure_Binding*>(nodes.back());
         REQUIRE(binding);
         auto range = binding->source_range();
         CHECK(range.begin.line == 1);
@@ -494,8 +494,8 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
-        auto* binding = dynamic_cast<const frst::ast::Destructure_Binding*>(
-            nodes.back());
+        auto* binding =
+            dynamic_cast<const frst::ast::Destructure_Binding*>(nodes.back());
         REQUIRE(binding);
         auto range = binding->source_range();
         CHECK(range.begin.line == 1);
@@ -512,8 +512,8 @@ TEST_CASE("Parser Defn Statements")
         REQUIRE(program.size() == 1);
 
         auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
-        auto* binding = dynamic_cast<const frst::ast::Destructure_Binding*>(
-            nodes.back());
+        auto* binding =
+            dynamic_cast<const frst::ast::Destructure_Binding*>(nodes.back());
         REQUIRE(binding);
         auto range = binding->source_range();
         // no_range is {0,0}-{0,0}; a valid range must have nonzero positions

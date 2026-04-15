@@ -42,7 +42,9 @@
 #define X_ZSTD_ALGOS
 #endif
 
-#define X_COMPRESSION_ALGOS X_ZLIB_ALGOS X_BZ2_ALGOS X_XZ_ALGOS X_LZ4_ALGOS X_BROTLI_ALGOS X_SNAPPY_ALGOS X_ZSTD_ALGOS
+#define X_COMPRESSION_ALGOS                                                    \
+    X_ZLIB_ALGOS X_BZ2_ALGOS X_XZ_ALGOS X_LZ4_ALGOS X_BROTLI_ALGOS             \
+        X_SNAPPY_ALGOS X_ZSTD_ALGOS
 
 namespace frst
 {
