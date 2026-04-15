@@ -15,44 +15,24 @@ target_link_libraries( frost-ext
 
 add_subdirectory(extensions-common/)
 
-option(WITH_HASH "Enable hash and HMAC functions" YES)
-option(WITH_HTTP "Enable HTTP support" YES)
-option(WITH_SQLITE "Enable SQLite support" YES)
-option(WITH_COMPRESSION "Enable compression support" YES)
-option(WITH_UNSAFE "Enable unsafe functions" YES)
+# Register a Frost extension.
+# For each NAME in the list:
+#   - declares option WITH_<UPPER_NAME> (default ON)
+#   - if enabled, adds the subdirectory, links frost-<name>, and defines FROST_ENABLE_<UPPER_NAME>
+macro(frost_extension NAME)
+    string(TOUPPER ${NAME} _UPPER)
+    option(WITH_${_UPPER} "Enable ${NAME} extension" ON)
+    if(WITH_${_UPPER})
+        message(STATUS "Enabling ${NAME}")
+        add_subdirectory(${NAME})
+        target_link_libraries(frost-ext PRIVATE frost-${NAME})
+        target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_${_UPPER})
+    endif()
+endmacro()
 
-if(WITH_HASH)
-    message("Enabling Hash")
-    add_subdirectory(hash)
-    target_link_libraries(frost-ext PRIVATE frost-hash)
-    target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_HASH)
-endif()
-
-if(WITH_HTTP)
-    message("Enabling HTTP")
-    add_subdirectory(http)
-    target_link_libraries(frost-ext PRIVATE frost-http)
-    target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_HTTP)
-endif()
-
-if(WITH_SQLITE)
-    message("Enabling SQLite")
-    add_subdirectory(sqlite)
-    target_link_libraries(frost-ext PRIVATE frost-sqlite)
-    target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_SQLITE)
-endif()
-
-if(WITH_COMPRESSION)
-    message("Enabling Compression")
-    add_subdirectory(compression)
-    target_link_libraries(frost-ext PRIVATE frost-compression)
-    target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_COMPRESSION)
-endif()
-
-if(WITH_UNSAFE)
-    message("Enabling Unsafe")
-    add_subdirectory(unsafe)
-    target_link_libraries(frost-ext PRIVATE frost-unsafe)
-    target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_UNSAFE)
-endif()
+frost_extension(hash)
+frost_extension(http)
+frost_extension(sqlite)
+frost_extension(compression)
+frost_extension(unsafe)
 
