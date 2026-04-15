@@ -10,7 +10,7 @@ if(NOT ZLIB_FOUND AND NOT BZip2_FOUND AND NOT LibLZMA_FOUND AND NOT BROTLI_FOUND
     if(FROST_EXT_MODE STREQUAL "ON")
         message(FATAL_ERROR
             "ext.compression enabled but no compression libraries found.\n"
-            "Install at least one of: zlib, bz2, brotli, lz4, zstd")
+            "Install at least one of: zlib, bz2, xz, brotli, lz4, snappy, zstd")
     endif()
     set(FROST_EXT_UNAVAILABLE TRUE PARENT_SCOPE)
     return()
