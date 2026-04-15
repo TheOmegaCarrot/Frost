@@ -15,18 +15,39 @@ target_link_libraries( frost-ext
 
 add_subdirectory(extensions-common/)
 
+# ANSI color codes for status messages
+string(ASCII 27 _ESC)
+set(FROST_GREEN "${_ESC}[32m")
+set(FROST_RED "${_ESC}[31m")
+set(FROST_YELLOW "${_ESC}[33m")
+set(FROST_RESET "${_ESC}[0m")
+
 # Register a Frost extension.
-# For each NAME in the list:
-#   - declares option WITH_<UPPER_NAME> (default ON)
-#   - if enabled, adds the subdirectory, links frost-<name>, and defines FROST_ENABLE_<UPPER_NAME>
+# WITH_<UPPER_NAME> is a three-way setting: ON, OFF, or AUTO (default).
+#   ON   -- enable, hard-error if dependencies are missing
+#   AUTO -- enable if dependencies are found, skip otherwise
+#   OFF  -- skip entirely
+# The extension's CMakeLists.txt receives FROST_EXT_MODE set to ON or AUTO.
+# If an extension cannot satisfy its dependencies under AUTO, it must set
+# FROST_EXT_UNAVAILABLE to TRUE and return() early.
 macro(frost_extension NAME)
     string(TOUPPER ${NAME} _UPPER)
-    option(WITH_${_UPPER} "Enable ${NAME} extension" ON)
-    if(WITH_${_UPPER})
-        message(STATUS "Enabling ${NAME}")
+    set(WITH_${_UPPER} "AUTO" CACHE STRING "Enable ${NAME} extension (ON/OFF/AUTO)")
+
+    if(NOT WITH_${_UPPER} STREQUAL "OFF")
+        set(FROST_EXT_MODE ${WITH_${_UPPER}})
+        set(FROST_EXT_UNAVAILABLE FALSE)
         add_subdirectory(${NAME})
-        target_link_libraries(frost-ext PRIVATE frost-${NAME})
-        target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_${_UPPER})
+
+        if(FROST_EXT_UNAVAILABLE)
+            message(STATUS "${FROST_YELLOW}ext.${NAME}: unavailable${FROST_RESET}")
+        else()
+            message(STATUS "${FROST_GREEN}ext.${NAME}: enabled${FROST_RESET}")
+            target_link_libraries(frost-ext PRIVATE frost-${NAME})
+            target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_${_UPPER})
+        endif()
+    else()
+        message(STATUS "${FROST_RED}ext.${NAME}: disabled${FROST_RESET}")
     endif()
 endmacro()
 

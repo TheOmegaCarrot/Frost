@@ -1,6 +1,24 @@
 #include <frost/extensions-common.hpp>
 
-#define X_COMPRESSION_ALGOS X(brotli) X(gzip) X(deflate) X(zlib) X(zstd)
+#ifdef FROST_HAVE_ZLIB
+#define X_ZLIB_ALGOS X(deflate) X(gzip) X(zlib)
+#else
+#define X_ZLIB_ALGOS
+#endif
+
+#ifdef FROST_HAVE_BROTLI
+#define X_BROTLI_ALGOS X(brotli)
+#else
+#define X_BROTLI_ALGOS
+#endif
+
+#ifdef FROST_HAVE_ZSTD
+#define X_ZSTD_ALGOS X(zstd)
+#else
+#define X_ZSTD_ALGOS
+#endif
+
+#define X_COMPRESSION_ALGOS X_ZLIB_ALGOS X_BROTLI_ALGOS X_ZSTD_ALGOS
 
 namespace frst
 {
