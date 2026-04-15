@@ -114,6 +114,7 @@ Each entry links to its full documentation.
 - [hash.sha512_224](hash.md#sha512_224) · `ext.hash`
 - [hash.sha512_256](hash.md#sha512_256) · `ext.hash`
 - [hash.sm3](hash.md#sm3) · `ext.hash`
+- [http.build_url](http.md#build_url) · `ext.http`
 - [http.parse_url](http.md#parse_url) · `ext.http`
 - [http.request](http.md#request) · `ext.http`
 - [id](collections.md#id)

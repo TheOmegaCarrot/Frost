@@ -481,6 +481,8 @@ std::vector<Outgoing_Request::URI::Query_Parameter> parse_query_parameters(
     return result;
 }
 
+} // namespace
+
 Outgoing_Request::URI parse_uri(const Value_Ptr& uri_spec_val)
 {
     Outgoing_Request::URI uri;
@@ -573,6 +575,9 @@ Outgoing_Request::URI parse_uri(const Value_Ptr& uri_spec_val)
 
     return uri;
 }
+
+namespace
+{
 
 std::vector<Header> parse_headers(const Value_Ptr& headers_spec)
 {

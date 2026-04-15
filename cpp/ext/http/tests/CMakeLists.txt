@@ -88,10 +88,15 @@ set(HTTP_DIRECT_SCRIPTS
     http-invalid-parse-guards-extra.frst
 )
 
-# parse_url is pure local parsing, it can run unconditionally
+# parse_url and build_url are pure local parsing, they can run unconditionally
 add_test(
     NAME Frost_Ext_HTTP_parse_url
     COMMAND $<TARGET_FILE:frost> "${HTTP_TEST_DIR}/parse-url.frst"
+)
+
+add_test(
+    NAME Frost_Ext_HTTP_build_url
+    COMMAND $<TARGET_FILE:frost> "${HTTP_TEST_DIR}/build-url.frst"
 )
 
 foreach(script ${HTTP_DIRECT_SCRIPTS})

@@ -20,6 +20,25 @@ The returned map contains `host`, `path`, and `tls`.
 `port` is included only when explicitly present in the URL.
 `query` is included only when the URL contains query parameters.
 
+## `build_url`
+`build_url(uri_map)`
+
+Constructs a URL string from a uri map (the same format returned by [`parse_url`](#parse_url) and accepted by [`request`](#request)).
+
+```frost
+http.build_url({host: "example.com", path: "/api", query: {q: "hello"}})
+# => "https://example.com/api?q=hello"
+
+http.build_url({host: "localhost", port: 8080, tls: false, path: "/health"})
+# => "http://localhost:8080/health"
+```
+
+`host` is required. All other fields are optional and use the same defaults as `request`.
+Query values are automatically percent-encoded.
+Default ports (443 for HTTPS, 80 for HTTP) are omitted from the output.
+
+`parse_url` and `build_url` are semantic inverses: `parse_url(build_url(m))` produces an equivalent uri map for any valid input.
+
 ## `request`
 `request(config)`
 

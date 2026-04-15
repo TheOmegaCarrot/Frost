@@ -1,0 +1,52 @@
+# http.build_url tests
+
+def http = import('ext.http')
+
+# Basic HTTPS
+assert(http.build_url({host: "example.com"}) == "https://example.com/")
+
+# HTTP with explicit tls: false
+assert(http.build_url({host: "example.com", tls: false}) == "http://example.com/")
+
+# Custom path
+assert(http.build_url({host: "example.com", path: "/api/v1"}) == "https://example.com/api/v1")
+
+# Non-default port included
+assert(http.build_url({host: "localhost", port: 8080, tls: false}) == "http://localhost:8080/")
+
+# Default port omitted
+assert(http.build_url({host: "example.com", port: 443}) == "https://example.com/")
+assert(http.build_url({host: "example.com", port: 80, tls: false}) == "http://example.com/")
+
+# Query parameters
+def url = http.build_url({host: "example.com", path: "/search", query: {q: "hello"}})
+assert(contains(url, "q=hello"))
+assert(starts_with(url, "https://example.com/search?"))
+
+# Value-less query parameter
+def url2 = http.build_url({host: "example.com", query: {debug: null}})
+assert(contains(url2, "debug"))
+
+# Query values are percent-encoded
+def url3 = http.build_url({host: "example.com", query: {q: "frost lang"}})
+assert(contains(url3, "q=frost%20lang"))
+
+# Round-trip: parse_url -> build_url -> parse_url
+def original_url = "https://example.com/api/v1?q=hello"
+def parsed = http.parse_url(original_url)
+def rebuilt = http.build_url(parsed)
+def reparsed = http.parse_url(rebuilt)
+assert(reparsed.host == parsed.host)
+assert(reparsed.path == parsed.path)
+assert(reparsed.tls == parsed.tls)
+assert(reparsed.query.q == parsed.query.q)
+
+# Round-trip: build_url -> parse_url -> build_url
+def original_map = {host: "example.com", path: "/test", tls: false, port: 9090}
+def built1 = http.build_url(original_map)
+def built2 = http.build_url(http.parse_url(built1))
+assert(built1 == built2)
+
+# Missing host is an error
+def bad = try_call(http.build_url, [{}])
+assert(not bad.ok)

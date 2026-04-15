@@ -70,6 +70,7 @@ struct Request_Result
     std::expected<Reply, Error> result;
 };
 
+Outgoing_Request::URI parse_uri(const Value_Ptr& uri_spec_val);
 Value_Ptr do_http_request(const Map& request_spec);
 } // namespace frst::http
 

@@ -77,8 +77,39 @@ BUILTIN(parse_url)
     return Value::create(Value::trusted, std::move(uri_map));
 }
 
+BUILTIN(build_url)
+{
+    REQUIRE_ARGS("http.build_url", TYPES(Map));
+
+    auto uri = parse_uri(args[0]);
+
+    boost::urls::url url;
+    url.set_scheme(uri.tls ? "https" : "http");
+    url.set_host(uri.host);
+
+    auto default_port = uri.tls ? 443 : 80;
+    if (uri.port != default_port)
+        url.set_port(std::to_string(uri.port));
+
+    url.set_path(uri.path);
+
+    if (not uri.query_parameters.empty())
+    {
+        auto params = url.params();
+        for (const auto& qp : uri.query_parameters)
+        {
+            if (qp.value.has_value())
+                params.append({qp.key, qp.value.value()});
+            else
+                params.append({qp.key, {}, false});
+        }
+    }
+
+    return Value::create(std::string{url.buffer()});
+}
+
 } // namespace http
 
-REGISTER_EXTENSION(http, ENTRY(request), ENTRY(parse_url));
+REGISTER_EXTENSION(http, ENTRY(request), ENTRY(parse_url), ENTRY(build_url));
 
 } // namespace frst
