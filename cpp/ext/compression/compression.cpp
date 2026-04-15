@@ -6,6 +6,12 @@
 #define X_ZLIB_ALGOS
 #endif
 
+#ifdef FROST_HAVE_BZ2
+#define X_BZ2_ALGOS X(bz2)
+#else
+#define X_BZ2_ALGOS
+#endif
+
 #ifdef FROST_HAVE_BROTLI
 #define X_BROTLI_ALGOS X(brotli)
 #else
@@ -18,7 +24,7 @@
 #define X_ZSTD_ALGOS
 #endif
 
-#define X_COMPRESSION_ALGOS X_ZLIB_ALGOS X_BROTLI_ALGOS X_ZSTD_ALGOS
+#define X_COMPRESSION_ALGOS X_ZLIB_ALGOS X_BZ2_ALGOS X_BROTLI_ALGOS X_ZSTD_ALGOS
 
 namespace frst
 {

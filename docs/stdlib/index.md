@@ -12,6 +12,8 @@ Each entry links to its full documentation.
 - [bcurry](functions.md#bcurry)
 - [brotli.compress](compression.md#brotlicompress)
 - [brotli.decompress](compression.md#brotlidecompress)
+- [bz2.compress](compression.md#bz2compress)
+- [bz2.decompress](compression.md#bz2decompress)
 - [call](functions.md#call)
 - [chunk](collections.md#chunk)
 - [chunk_by](collections.md#chunk_by)

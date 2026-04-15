@@ -1,11 +1,11 @@
 # Compression
 
 ```frost
-def { brotli, deflate, gzip, zlib, zstd } = import('ext.compression')
+def { brotli, bz2, deflate, gzip, zlib, zstd } = import('ext.compression')
 ```
 
 Build flag: `WITH_COMPRESSION` (default: `AUTO`).
-Requires at least one of: zlib, brotli, or zstd.
+Requires at least one of: zlib, bz2, brotli, or zstd.
 Each library is independently auto-detected; only algorithms with available libraries are included.
 
 Each algorithm provides `compress` and `decompress` functions operating on binary strings.
@@ -17,6 +17,19 @@ Algorithms can be swapped at runtime, as all algorithms support the same compres
 def algo = if fast: deflate else: gzip
 algo.compress(data)
 ```
+
+## `bz2.compress`
+`bz2.compress(s)`
+`bz2.compress(s, level)`
+
+Compresses `s` using bzip2.
+`level` is an optional `Int` from `1` to `9` (block size in units of 100k). Default is `9`.
+Higher levels use more memory but may compress better.
+
+## `bz2.decompress`
+`bz2.decompress(s)`
+
+Decompresses a bzip2 string. Produces an error on corrupt or truncated input.
 
 ## `brotli.compress`
 `brotli.compress(s)`

@@ -61,6 +61,9 @@ constexpr std::string_view all_algos[] = {
 #ifdef FROST_HAVE_ZLIB
     "deflate", "gzip", "zlib",
 #endif
+#ifdef FROST_HAVE_BZ2
+    "bz2",
+#endif
 #ifdef FROST_HAVE_BROTLI
     "brotli",
 #endif
@@ -325,6 +328,42 @@ TEST_CASE("ext::compression: cross-format rejection within zlib family")
                       ContainsSubstring("decompression failed"));
     CHECK_THROWS_WITH(call1(zlib_decompress, deflated),
                       ContainsSubstring("decompression failed"));
+}
+#endif
+
+// =============================================================================
+// bz2
+// =============================================================================
+
+#ifdef FROST_HAVE_BZ2
+TEST_CASE("ext::compression: bz2 level out of range")
+{
+    auto mod = compression_module();
+    auto compress = lookup_fn(lookup_algo(mod, "bz2"), "compress");
+
+    CHECK_THROWS_WITH(
+        call2(compress, Value::create(""s), Value::create(0_f)),
+        ContainsSubstring("level must be between 1 and 9"));
+    CHECK_THROWS_WITH(
+        call2(compress, Value::create(""s), Value::create(10_f)),
+        ContainsSubstring("level must be between 1 and 9"));
+}
+
+TEST_CASE("ext::compression: bz2 round-trip with explicit level")
+{
+    auto mod = compression_module();
+    auto algo = lookup_algo(mod, "bz2");
+    auto compress = lookup_fn(algo, "compress");
+    auto decompress = lookup_fn(algo, "decompress");
+
+    auto input = Value::create("aaaaaaaaaa"s);
+
+    for (Int level : {1_f, 5_f, 9_f})
+    {
+        auto compressed = call2(compress, input, Value::create(level));
+        auto decompressed = call1(decompress, compressed);
+        CHECK(decompressed->raw_get<String>() == "aaaaaaaaaa");
+    }
 }
 #endif
 
