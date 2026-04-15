@@ -25,9 +25,11 @@ std::shared_ptr<Connection> Connection::create(const String& filename,
     sqlite3_regexp_init(db, nullptr, nullptr);
     sqlite3_series_init(db, nullptr, nullptr);
     sqlite3_shathree_init(db, nullptr, nullptr);
+#ifdef FROST_SQLITE_HAVE_ZLIB
     sqlite3_sqlar_init(db, nullptr, nullptr);
-    sqlite3_uuid_init(db, nullptr, nullptr);
     sqlite3_zipfile_init(db, nullptr, nullptr);
+#endif
+    sqlite3_uuid_init(db, nullptr, nullptr);
 
     return conn;
 }

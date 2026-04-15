@@ -1,4 +1,10 @@
-find_package(OpenSSL REQUIRED)
+frost_ext_init()
+
+frost_ext_find("OpenSSL" OpenSSL)
+
+if(NOT OpenSSL_FOUND)
+    frost_ext_bail("ext.http requires OpenSSL")
+endif()
 
 add_library( frost-http
     http.cpp

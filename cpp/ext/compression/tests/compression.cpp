@@ -57,9 +57,21 @@ Value_Ptr call2(const Function& fn, Value_Ptr a, Value_Ptr b)
     return fn->call(args);
 }
 
-constexpr std::string_view all_algos[] = {"brotli", "deflate", "gzip", "zlib",
-                                         "zstd"};
+constexpr std::string_view all_algos[] = {
+#ifdef FROST_HAVE_ZLIB
+    "deflate", "gzip", "zlib",
+#endif
+#ifdef FROST_HAVE_BROTLI
+    "brotli",
+#endif
+#ifdef FROST_HAVE_ZSTD
+    "zstd",
+#endif
+};
+
+#ifdef FROST_HAVE_ZLIB
 constexpr std::string_view zlib_algos[] = {"deflate", "gzip", "zlib"};
+#endif
 
 } // namespace
 
@@ -144,51 +156,8 @@ TEST_CASE("ext::compression: level/quality must be Int")
     }
 }
 
-TEST_CASE("ext::compression: zlib level out of range")
-{
-    auto mod = compression_module();
-
-    for (auto name : zlib_algos)
-    {
-        DYNAMIC_SECTION(name)
-        {
-            auto compress =
-                lookup_fn(lookup_algo(mod, std::string{name}), "compress");
-            CHECK_THROWS_WITH(
-                call2(compress, Value::create(""s), Value::create(10_f)),
-                ContainsSubstring("level must be between -1 and 9"));
-            CHECK_THROWS_WITH(
-                call2(compress, Value::create(""s), Value::create(-2_f)),
-                ContainsSubstring("level must be between -1 and 9"));
-        }
-    }
-}
-
-TEST_CASE("ext::compression: brotli quality out of range")
-{
-    auto mod = compression_module();
-    auto compress = lookup_fn(lookup_algo(mod, "brotli"), "compress");
-
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(12_f)),
-        ContainsSubstring("quality must be between"));
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(-1_f)),
-        ContainsSubstring("quality must be between"));
-}
-
-TEST_CASE("ext::compression: zstd level out of range")
-{
-    auto mod = compression_module();
-    auto compress = lookup_fn(lookup_algo(mod, "zstd"), "compress");
-
-    CHECK_THROWS_WITH(
-        call2(compress, Value::create(""s), Value::create(10000_f)),
-        ContainsSubstring("level must be between"));
-}
-
 // =============================================================================
-// Round-trip (per algorithm)
+// Round-trip (all algorithms)
 // =============================================================================
 
 TEST_CASE("ext::compression: round-trip")
@@ -254,6 +223,67 @@ TEST_CASE("ext::compression: round-trip binary data")
     }
 }
 
+TEST_CASE("ext::compression: compresses repetitive data")
+{
+    auto mod = compression_module();
+
+    for (auto name : all_algos)
+    {
+        DYNAMIC_SECTION(name)
+        {
+            auto compress =
+                lookup_fn(lookup_algo(mod, std::string{name}), "compress");
+
+            std::string repetitive(1000, 'x');
+            auto compressed =
+                call1(compress, Value::create(String{repetitive}));
+            CHECK(compressed->raw_get<String>().size() < 100);
+        }
+    }
+}
+
+TEST_CASE("ext::compression: corrupt input")
+{
+    auto mod = compression_module();
+
+    for (auto name : all_algos)
+    {
+        DYNAMIC_SECTION(name)
+        {
+            auto decompress =
+                lookup_fn(lookup_algo(mod, std::string{name}), "decompress");
+            CHECK_THROWS_AS(
+                call1(decompress, Value::create("not compressed data"s)),
+                Frost_User_Error);
+        }
+    }
+}
+
+// =============================================================================
+// zlib-family (deflate, glib, zlib-wrapped)
+// =============================================================================
+
+#ifdef FROST_HAVE_ZLIB
+TEST_CASE("ext::compression: zlib level out of range")
+{
+    auto mod = compression_module();
+
+    for (auto name : zlib_algos)
+    {
+        DYNAMIC_SECTION(name)
+        {
+            auto compress =
+                lookup_fn(lookup_algo(mod, std::string{name}), "compress");
+            CHECK_THROWS_WITH(
+                call2(compress, Value::create(""s), Value::create(10_f)),
+                ContainsSubstring("level must be between -1 and 9"));
+            CHECK_THROWS_WITH(
+                call2(compress, Value::create(""s), Value::create(-2_f)),
+                ContainsSubstring("level must be between -1 and 9"));
+        }
+    }
+}
+
 TEST_CASE("ext::compression: zlib round-trip with explicit level")
 {
     auto mod = compression_module();
@@ -279,6 +309,43 @@ TEST_CASE("ext::compression: zlib round-trip with explicit level")
     }
 }
 
+TEST_CASE("ext::compression: cross-format rejection within zlib family")
+{
+    auto mod = compression_module();
+    auto deflate_compress =
+        lookup_fn(lookup_algo(mod, "deflate"), "compress");
+    auto gzip_decompress =
+        lookup_fn(lookup_algo(mod, "gzip"), "decompress");
+    auto zlib_decompress =
+        lookup_fn(lookup_algo(mod, "zlib"), "decompress");
+
+    auto deflated = call1(deflate_compress, Value::create("test"s));
+
+    CHECK_THROWS_WITH(call1(gzip_decompress, deflated),
+                      ContainsSubstring("decompression failed"));
+    CHECK_THROWS_WITH(call1(zlib_decompress, deflated),
+                      ContainsSubstring("decompression failed"));
+}
+#endif
+
+// =============================================================================
+// brotli
+// =============================================================================
+
+#ifdef FROST_HAVE_BROTLI
+TEST_CASE("ext::compression: brotli quality out of range")
+{
+    auto mod = compression_module();
+    auto compress = lookup_fn(lookup_algo(mod, "brotli"), "compress");
+
+    CHECK_THROWS_WITH(
+        call2(compress, Value::create(""s), Value::create(12_f)),
+        ContainsSubstring("quality must be between"));
+    CHECK_THROWS_WITH(
+        call2(compress, Value::create(""s), Value::create(-1_f)),
+        ContainsSubstring("quality must be between"));
+}
+
 TEST_CASE("ext::compression: brotli round-trip with explicit quality")
 {
     auto mod = compression_module();
@@ -294,6 +361,22 @@ TEST_CASE("ext::compression: brotli round-trip with explicit quality")
         auto decompressed = call1(decompress, compressed);
         CHECK(decompressed->raw_get<String>() == "aaaaaaaaaa");
     }
+}
+#endif
+
+// =============================================================================
+// zstd
+// =============================================================================
+
+#ifdef FROST_HAVE_ZSTD
+TEST_CASE("ext::compression: zstd level out of range")
+{
+    auto mod = compression_module();
+    auto compress = lookup_fn(lookup_algo(mod, "zstd"), "compress");
+
+    CHECK_THROWS_WITH(
+        call2(compress, Value::create(""s), Value::create(10000_f)),
+        ContainsSubstring("level must be between"));
 }
 
 TEST_CASE("ext::compression: zstd round-trip with explicit level")
@@ -312,77 +395,4 @@ TEST_CASE("ext::compression: zstd round-trip with explicit level")
         CHECK(decompressed->raw_get<String>() == "aaaaaaaaaa");
     }
 }
-
-// =============================================================================
-// Compression actually reduces size
-// =============================================================================
-
-TEST_CASE("ext::compression: compresses repetitive data")
-{
-    auto mod = compression_module();
-
-    for (auto name : all_algos)
-    {
-        DYNAMIC_SECTION(name)
-        {
-            auto compress =
-                lookup_fn(lookup_algo(mod, std::string{name}), "compress");
-
-            std::string repetitive(1000, 'x');
-            auto compressed =
-                call1(compress, Value::create(String{repetitive}));
-            CHECK(compressed->raw_get<String>().size() < 100);
-        }
-    }
-}
-
-// =============================================================================
-// Cross-format rejection
-// =============================================================================
-
-TEST_CASE("ext::compression: cross-format decompression fails")
-{
-    auto mod = compression_module();
-    auto deflate_compress =
-        lookup_fn(lookup_algo(mod, "deflate"), "compress");
-    auto gzip_decompress =
-        lookup_fn(lookup_algo(mod, "gzip"), "decompress");
-    auto zlib_decompress =
-        lookup_fn(lookup_algo(mod, "zlib"), "decompress");
-    auto brotli_decompress =
-        lookup_fn(lookup_algo(mod, "brotli"), "decompress");
-    auto zstd_decompress =
-        lookup_fn(lookup_algo(mod, "zstd"), "decompress");
-
-    auto deflated = call1(deflate_compress, Value::create("test"s));
-
-    CHECK_THROWS_WITH(call1(gzip_decompress, deflated),
-                      ContainsSubstring("decompression failed"));
-    CHECK_THROWS_WITH(call1(zlib_decompress, deflated),
-                      ContainsSubstring("decompression failed"));
-    CHECK_THROWS_WITH(call1(brotli_decompress, deflated),
-                      ContainsSubstring("decompression failed"));
-    CHECK_THROWS_WITH(call1(zstd_decompress, deflated),
-                      ContainsSubstring("not valid zstd data"));
-}
-
-// =============================================================================
-// Corrupt input
-// =============================================================================
-
-TEST_CASE("ext::compression: corrupt input")
-{
-    auto mod = compression_module();
-
-    for (auto name : all_algos)
-    {
-        DYNAMIC_SECTION(name)
-        {
-            auto decompress =
-                lookup_fn(lookup_algo(mod, std::string{name}), "decompress");
-            CHECK_THROWS_AS(
-                call1(decompress, Value::create("not compressed data"s)),
-                Frost_User_Error);
-        }
-    }
-}
+#endif

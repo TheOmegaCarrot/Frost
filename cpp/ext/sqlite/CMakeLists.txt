@@ -1,3 +1,5 @@
+frost_ext_init()
+
 add_subdirectory(vendored-sqlite)
 
 add_library( frost-sqlite
@@ -16,5 +18,9 @@ target_link_libraries( frost-sqlite
     frost-extensions-common
     sqlite3
 )
+
+if(SQLITE_HAVE_ZLIB)
+    target_compile_definitions(frost-sqlite PRIVATE FROST_SQLITE_HAVE_ZLIB)
+endif()
 
 add_subdirectory(tests)

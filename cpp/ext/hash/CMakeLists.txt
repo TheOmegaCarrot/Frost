@@ -1,5 +1,11 @@
-find_package(OpenSSL REQUIRED)
-find_package(ZLIB REQUIRED)
+frost_ext_init()
+
+frost_ext_find("OpenSSL" OpenSSL)
+frost_ext_find("zlib" ZLIB)
+
+if(NOT OpenSSL_FOUND OR NOT ZLIB_FOUND)
+    frost_ext_bail("ext.hash requires OpenSSL and zlib")
+endif()
 
 add_library( frost-hash
     hash.cpp

@@ -3,3 +3,7 @@ make_test( compression.cpp
     frost-compression
     frost-extensions-common
 )
+
+if(BUILD_TESTS)
+    target_compile_definitions(compression PRIVATE ${COMPRESSION_DEFS})
+endif()

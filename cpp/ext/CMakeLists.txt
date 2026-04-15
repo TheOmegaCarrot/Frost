@@ -22,6 +22,57 @@ set(FROST_RED "${_ESC}[31m")
 set(FROST_YELLOW "${_ESC}[33m")
 set(FROST_RESET "${_ESC}[0m")
 
+find_package(PkgConfig REQUIRED)
+
+# ---- Helpers for extension CMakeLists.txt files ----
+
+# Call at the top of an extension's CMakeLists.txt.
+# Sets _REQ to REQUIRED or QUIET based on FROST_EXT_MODE.
+macro(frost_ext_init)
+    if(FROST_EXT_MODE STREQUAL "ON")
+        set(_REQ REQUIRED)
+    else()
+        set(_REQ QUIET)
+    endif()
+endmacro()
+
+# Wraps find_package with a colored status message.
+#   frost_ext_find(LABEL package_name [extra_args...])
+# The result variable <package_name>_FOUND is set by find_package as usual.
+macro(frost_ext_find LABEL)
+    find_package(${ARGN} ${_REQ})
+    set(_FROST_EXT_FIND_ARGS ${ARGN})
+    list(GET _FROST_EXT_FIND_ARGS 0 _PKG_NAME)
+    if(${_PKG_NAME}_FOUND)
+        message(STATUS "  ${FROST_GREEN}${LABEL}: found${FROST_RESET}")
+    else()
+        message(STATUS "  ${FROST_RED}${LABEL}: not found${FROST_RESET}")
+    endif()
+endmacro()
+
+# Wraps pkg_check_modules with a colored status message.
+#   frost_ext_pkg(LABEL var_name pkg_names...)
+# The result variable <var_name>_FOUND is set by pkg_check_modules as usual.
+macro(frost_ext_pkg LABEL VAR_NAME)
+    pkg_check_modules(${VAR_NAME} ${_REQ} IMPORTED_TARGET ${ARGN})
+    if(${VAR_NAME}_FOUND)
+        message(STATUS "  ${FROST_GREEN}${LABEL}: found${FROST_RESET}")
+    else()
+        message(STATUS "  ${FROST_RED}${LABEL}: not found${FROST_RESET}")
+    endif()
+endmacro()
+
+# Bail from an extension under AUTO mode. Under ON mode, emit a fatal error.
+#   frost_ext_bail(message)
+macro(frost_ext_bail MSG)
+    if(FROST_EXT_MODE STREQUAL "ON")
+        message(FATAL_ERROR "${MSG}")
+    else()
+        set(FROST_EXT_UNAVAILABLE TRUE PARENT_SCOPE)
+        return()
+    endif()
+endmacro()
+
 # Register a Frost extension.
 # WITH_<UPPER_NAME> is a three-way setting: ON, OFF, or AUTO (default).
 #   ON   -- enable, hard-error if dependencies are missing

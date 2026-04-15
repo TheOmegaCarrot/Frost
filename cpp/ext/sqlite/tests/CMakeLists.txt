@@ -28,10 +28,15 @@ set(SQLITE_FEATURE_CHECKS
     feature-checks/regexp.frst
     feature-checks/sha3.frst
     feature-checks/soundex.frst
-    feature-checks/sqlar-compress.frst
     feature-checks/uuid.frst
-    feature-checks/zipfile.frst
 )
+
+if(SQLITE_HAVE_ZLIB)
+    list(APPEND SQLITE_FEATURE_CHECKS
+        feature-checks/sqlar-compress.frst
+        feature-checks/zipfile.frst
+    )
+endif()
 
 find_program(VALGRIND valgrind)
 

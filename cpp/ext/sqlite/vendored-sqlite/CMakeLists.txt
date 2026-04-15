@@ -1,6 +1,15 @@
 enable_language(C)
 
-add_library(sqlite3 STATIC sqlite3.c csv.c decimal.c fileio.c regexp.c series.c shathree.c sqlar.c uuid.c zipfile.c)
+set(SQLITE_SOURCES sqlite3.c csv.c decimal.c fileio.c regexp.c series.c shathree.c uuid.c)
+
+frost_ext_find("zlib (sqlar, zipfile)" ZLIB)
+
+if(ZLIB_FOUND)
+    list(APPEND SQLITE_SOURCES sqlar.c zipfile.c)
+    set(SQLITE_HAVE_ZLIB TRUE PARENT_SCOPE)
+endif()
+
+add_library(sqlite3 STATIC ${SQLITE_SOURCES})
 
 target_include_directories(sqlite3
     PUBLIC
@@ -33,5 +42,6 @@ target_compile_definitions(sqlite3
     SQLITE_OMIT_UTF16
 )
 
-find_package(ZLIB REQUIRED)
-target_link_libraries(sqlite3 PRIVATE ZLIB::ZLIB)
+if(ZLIB_FOUND)
+    target_link_libraries(sqlite3 PRIVATE ZLIB::ZLIB)
+endif()
