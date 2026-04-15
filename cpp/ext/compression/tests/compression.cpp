@@ -338,6 +338,22 @@ TEST_CASE("ext::compression: cross-format rejection within zlib family")
     CHECK_THROWS_WITH(call1(zlib_decompress, deflated),
                       ContainsSubstring("decompression failed"));
 }
+
+TEST_CASE("ext::compression: concatenated gzip streams")
+{
+    auto mod = compression_module();
+    auto compress = lookup_fn(lookup_algo(mod, "gzip"), "compress");
+    auto decompress = lookup_fn(lookup_algo(mod, "gzip"), "decompress");
+
+    auto a = call1(compress, Value::create("hello "s));
+    auto b = call1(compress, Value::create("world"s));
+
+    auto concatenated = Value::create(
+        a->raw_get<String>() + b->raw_get<String>());
+    auto result = call1(decompress, concatenated);
+
+    CHECK(result->raw_get<String>() == "hello world");
+}
 #endif
 
 // =============================================================================
@@ -409,6 +425,22 @@ TEST_CASE("ext::compression: xz round-trip with explicit level")
         auto decompressed = call1(decompress, compressed);
         CHECK(decompressed->raw_get<String>() == "aaaaaaaaaa");
     }
+}
+
+TEST_CASE("ext::compression: concatenated xz streams")
+{
+    auto mod = compression_module();
+    auto compress = lookup_fn(lookup_algo(mod, "xz"), "compress");
+    auto decompress = lookup_fn(lookup_algo(mod, "xz"), "decompress");
+
+    auto a = call1(compress, Value::create("hello "s));
+    auto b = call1(compress, Value::create("world"s));
+
+    auto concatenated = Value::create(
+        a->raw_get<String>() + b->raw_get<String>());
+    auto result = call1(decompress, concatenated);
+
+    CHECK(result->raw_get<String>() == "hello world");
 }
 #endif
 

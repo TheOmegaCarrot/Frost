@@ -81,7 +81,8 @@ Used by HTTP `Content-Encoding: gzip`.
 ## `gzip.decompress`
 `gzip.decompress(s)`
 
-Decompresses a gzip string. Produces an error on corrupt or truncated input.
+Decompresses a gzip string. Handles concatenated gzip streams (as produced by `pigz`, `cat a.gz b.gz`, etc.).
+Produces an error on corrupt or truncated input.
 
 ## `snappy.compress`
 `snappy.compress(s)`
@@ -105,7 +106,8 @@ Higher levels compress better but are significantly slower and use more memory.
 ## `xz.decompress`
 `xz.decompress(s)`
 
-Decompresses an xz string. Produces an error on corrupt or truncated input.
+Decompresses an xz or legacy LZMA string. Handles concatenated xz streams.
+Produces an error on corrupt or truncated input.
 
 ## `zlib.compress`
 `zlib.compress(s)`

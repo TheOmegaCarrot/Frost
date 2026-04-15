@@ -49,7 +49,7 @@ BUILTIN(decompress)
     const auto& input = GET(0, String);
 
     lzma_stream stream = LZMA_STREAM_INIT;
-    lzma_ret ret = lzma_stream_decoder(&stream, UINT64_MAX, 0);
+    lzma_ret ret = lzma_auto_decoder(&stream, UINT64_MAX, LZMA_CONCATENATED);
     if (ret != LZMA_OK)
         throw Frost_Recoverable_Error{
             "xz.decompress: failed to initialize decoder"};

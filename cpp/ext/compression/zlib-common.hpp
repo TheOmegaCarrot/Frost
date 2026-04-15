@@ -13,7 +13,7 @@ Value_Ptr compress(std::string_view fn_name, builtin_args_t args,
                    int window_bits);
 
 Value_Ptr decompress(std::string_view fn_name, builtin_args_t args,
-                     int window_bits);
+                     int window_bits, bool allow_concat = false);
 
 } // namespace frst::compression::zlib_common
 
