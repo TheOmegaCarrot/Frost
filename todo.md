@@ -1,5 +1,9 @@
 # To-Do
 
+## Bugs
+
+- Retry import after failed import falsly reports import cycle
+
 ## Stdlib
 
 ### Async

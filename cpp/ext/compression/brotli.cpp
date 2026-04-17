@@ -79,6 +79,13 @@ BUILTIN(decompress)
                 "brotli.decompress: decompression failed ({})", msg)};
         }
 
+        if (result == BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT)
+        {
+            BrotliDecoderDestroyInstance(state);
+            throw Frost_Recoverable_Error{
+                "brotli.decompress: truncated input"};
+        }
+
         output.append(reinterpret_cast<char*>(buf.data()),
                       buf.size() - available_out);
     } while (result != BROTLI_DECODER_RESULT_SUCCESS);

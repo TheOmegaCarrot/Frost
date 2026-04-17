@@ -94,8 +94,15 @@ There is no compression level parameter.
 
 ## `snappy.decompress`
 `snappy.decompress(s)`
+`snappy.decompress(s, max_size)`
 
 Decompresses a Snappy string. Produces an error on corrupt or truncated input.
+
+**Note:** Snappy's format embeds the uncompressed size in the frame header, and the decompressor must allocate that much memory upfront.
+A crafted input can claim an arbitrarily large size.
+To guard against this, `snappy.decompress` rejects inputs claiming more than 256 MB by default.
+Pass `max_size` to override (e.g. `snappy.decompress(data, 512 * 1024 * 1024)` for 512 MB, or `0` for no limit).
+When decompressing untrusted data, consider keeping a reasonable limit.
 
 ## `xz.compress`
 `xz.compress(s)`

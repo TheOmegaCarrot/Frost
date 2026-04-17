@@ -3,6 +3,7 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
+#include <openssl/err.h>
 #include <openssl/evp.h>
 
 #include <zlib.h>
@@ -59,8 +60,15 @@ Value_Ptr hmac_string(const std::string& algorithm, const String& key,
         OSSL_PARAM_END,
     };
 
-    EVP_MAC_init(ctx, reinterpret_cast<const unsigned char*>(key.data()),
-                 key.size(), params);
+    if (not EVP_MAC_init(ctx,
+                         reinterpret_cast<const unsigned char*>(key.data()),
+                         key.size(), params))
+    {
+        std::array<char, 256> err_buf;
+        ERR_error_string_n(ERR_get_error(), err_buf.data(), err_buf.size());
+        throw Frost_Recoverable_Error{
+            fmt::format("hmac: failed to initialize ({})", err_buf.data())};
+    }
     EVP_MAC_update(ctx, reinterpret_cast<const unsigned char*>(data.data()),
                    data.size());
 
@@ -132,15 +140,21 @@ X_HASH_ALGS
 #undef X
 } // namespace hmac
 
+const Value_Ptr& get_hmac_map()
+{
 #define X(ALG) NS_ENTRY(hmac, ALG),
-static const auto hmac_map = Value::create(Value::trusted, Map{X_HASH_ALGS});
+    static const auto hmac_map =
+        Value::create(Value::trusted, Map{X_HASH_ALGS});
 #undef X
+    return hmac_map;
+}
 
 } // namespace hash
 
 #define X(ALG) ENTRY(ALG),
 
-REGISTER_EXTENSION(hash, ENTRY(crc32), {"hmac"_s, hmac_map}, X_HASH_ALGS)
+REGISTER_EXTENSION(hash, ENTRY(crc32), {"hmac"_s, hash::get_hmac_map()},
+                   X_HASH_ALGS)
 #undef X
 
 } // namespace frst

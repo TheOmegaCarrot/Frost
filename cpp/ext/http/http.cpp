@@ -4,6 +4,8 @@
 #include <frost/symbol-table.hpp>
 #include <frost/value.hpp>
 
+#include <charconv>
+
 #include <boost/url.hpp>
 
 #include "request.hpp"
@@ -51,8 +53,16 @@ BUILTIN(parse_url)
     };
 
     if (url.has_port())
-        uri_map.emplace(strings.port,
-                        Value::create(Int{std::stoi(std::string{url.port()})}));
+    {
+        auto port_str = url.port();
+        Int port_val = 0;
+        auto [ptr, ec] = std::from_chars(
+            port_str.data(), port_str.data() + port_str.size(), port_val);
+        if (ec != std::errc{})
+            throw Frost_Recoverable_Error{
+                fmt::format("http.parse_url: invalid port: {}", port_str)};
+        uri_map.emplace(strings.port, Value::create(port_val));
+    }
 
     if (url.has_query())
     {

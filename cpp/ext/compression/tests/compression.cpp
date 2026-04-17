@@ -501,6 +501,22 @@ TEST_CASE("ext::compression: brotli round-trip with explicit quality")
         CHECK(decompressed->raw_get<String>() == "aaaaaaaaaa");
     }
 }
+
+TEST_CASE("ext::compression: brotli truncated input does not hang")
+{
+    auto mod = compression_module();
+    auto algo = lookup_algo(mod, "brotli");
+    auto compress = lookup_fn(algo, "compress");
+    auto decompress = lookup_fn(algo, "decompress");
+
+    auto compressed = call1(compress, Value::create(
+        "hello world hello world hello world"s));
+    auto& data = compressed->raw_get<String>();
+    auto truncated = Value::create(String{data.substr(0, data.size() / 2)});
+
+    CHECK_THROWS_WITH(call1(decompress, truncated),
+                      ContainsSubstring("truncated"));
+}
 #endif
 
 // =============================================================================

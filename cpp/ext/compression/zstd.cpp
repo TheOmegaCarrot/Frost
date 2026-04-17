@@ -1,3 +1,5 @@
+#include "decompress-limits.hpp"
+
 #include <frost/builtins-common.hpp>
 
 #include <zstd.h>
@@ -47,8 +49,12 @@ BUILTIN(decompress)
     if (content_size == ZSTD_CONTENTSIZE_ERROR)
         throw Frost_Recoverable_Error{"zstd.decompress: not valid zstd data"};
 
-    // Known size: one-shot decompress
-    if (content_size != ZSTD_CONTENTSIZE_UNKNOWN)
+    // One-shot decompress for small known sizes. For large claimed sizes,
+    // fall through to streaming -- this avoids a single massive allocation
+    // based on an untrusted frame header. Streaming grows the output
+    // incrementally, so only real decompressed bytes consume memory.
+    if (content_size != ZSTD_CONTENTSIZE_UNKNOWN
+        && content_size <= default_max_prealloc)
     {
         std::string output(content_size, '\0');
 
