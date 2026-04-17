@@ -509,8 +509,8 @@ TEST_CASE("ext::compression: brotli truncated input does not hang")
     auto compress = lookup_fn(algo, "compress");
     auto decompress = lookup_fn(algo, "decompress");
 
-    auto compressed = call1(compress, Value::create(
-        "hello world hello world hello world"s));
+    auto compressed =
+        call1(compress, Value::create("hello world hello world hello world"s));
     auto& data = compressed->raw_get<String>();
     auto truncated = Value::create(String{data.substr(0, data.size() / 2)});
 
