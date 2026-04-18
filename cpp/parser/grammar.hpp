@@ -681,50 +681,65 @@ struct integer_literal
     static constexpr auto name = "integer literal";
 };
 
-// Float: uses lexy::scan_production because dsl::integer only covers whole
-// numbers and there is no standard Lexy combinator for `digits.digits`. The
-// `scan` method manually captures the `NNN.NNN` lexeme as a string, then
-// uses std::from_chars for locale-independent parsing. dsl::token() makes
-// the capture atomic so that whitespace cannot appear between the digits and
-// the dot (i.e. `3 . 14` is not a float literal).
+// Shared logic: parse a captured float lexeme string via from_chars.
+template <typename Iter>
+inline Value_Ptr do_parse_float(Iter begin, Iter end)
+{
+    std::string str{begin, end};
+    Float value{};
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(),
+                                     value, std::chars_format::general);
+    if (ec == std::errc::result_out_of_range)
+        throw Frost_Recoverable_Error{"Float literal out of range"};
+    if (ec != std::errc() || ptr != str.data() + str.size())
+        throw Frost_Interpreter_Error{"Failed to parse float literal"};
+    return Value::create(auto{value});
+}
+
+// Float literal: digits . digits [e [+-] digits]
+// After capturing the decimal form atomically via dsl::token, the scanner
+// greedily consumes a trailing exponent by walking the source pointer.
+// This avoids whitespace pollution from scanner.position() and sidesteps
+// lexy's scan_production backtracking limitations.
 struct float_literal : lexy::scan_production<Value_Ptr>
 {
-    struct out_of_range
-    {
-        static constexpr auto name = "float literal out of range";
-    };
-
     template <typename context_t, typename reader_t>
     static constexpr scan_result scan(
         lexy::rule_scanner<context_t, reader_t>& scanner)
     {
-        auto lexeme = scanner.capture(
-            dsl::token(dsl::digits<> + dsl::lit_c<'.'> + dsl::digits<>));
-        if (!lexeme)
-        {
+        auto lexeme = scanner.capture(dsl::token(
+            dsl::digits<> + dsl::lit_c<'.'> + dsl::digits<>
+            + dsl::opt(dsl::lit_c<'e'>
+                       >> dsl::opt(dsl::lit_c<'+'> / dsl::lit_c<'-'>)
+                       + dsl::digits<>)));
+        if (not lexeme)
             return scan_result{};
-        }
 
         auto text = lexeme.value();
-        std::string str{text.begin(), text.end()};
-
-        Float value{};
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(),
-                                         value, std::chars_format::fixed);
-        if (ec == std::errc::result_out_of_range)
-        {
-            scanner.fatal_error(out_of_range{}, scanner.begin(),
-                                scanner.position());
-            return scan_result{};
-        }
-        if (ec != std::errc() || ptr != str.data() + str.size())
-        {
-            throw Frost_Interpreter_Error{"Failed to parse float literal"};
-        }
-
-        return Value::create(auto{value});
+        return do_parse_float(text.begin(), text.end());
     }
     static constexpr auto name = "float literal";
+};
+
+// Scientific float without decimal: digits e [+-] digits (e.g. 1e+20)
+// Scientific float without decimal point: digits e [+-]? digits (e.g. 1e+20, 3e2)
+struct scientific_float_literal : lexy::scan_production<Value_Ptr>
+{
+    template <typename context_t, typename reader_t>
+    static constexpr scan_result scan(
+        lexy::rule_scanner<context_t, reader_t>& scanner)
+    {
+        auto lexeme = scanner.capture(dsl::token(
+            dsl::digits<>
+            + dsl::lit_c<'e'>
+            + dsl::opt(dsl::lit_c<'+'> / dsl::lit_c<'-'>)
+            + dsl::digits<>));
+        if (not lexeme)
+            return scan_result{};
+        auto text = lexeme.value();
+        return do_parse_float(text.begin(), text.end());
+    }
+    static constexpr auto name = "scientific float literal";
 };
 
 // Boolean literals: LEXY_KEYWORD is essential here — without it, an identifier
@@ -941,6 +956,13 @@ struct Literal
         | dsl::p<string_literal>
         | (dsl::peek(dsl::token(dsl::digits<> + dsl::lit_c<'.'> + dsl::digit<>))
            >> dsl::p<float_literal>)
+        | (dsl::peek(dsl::token(
+               dsl::digits<> + dsl::lit_c<'e'>
+               + (dsl::lit_c<'+'> / dsl::lit_c<'-'>)))
+           >> dsl::p<scientific_float_literal>)
+        | (dsl::peek(dsl::token(
+               dsl::digits<> + dsl::lit_c<'e'> + dsl::digit<>))
+           >> dsl::p<scientific_float_literal>)
         | (dsl::peek(dsl::digit<>) >> dsl::p<integer_literal>);
     static constexpr auto value =
         lexy::callback<ast::Expression::Ptr>([](Value_Ptr val) {

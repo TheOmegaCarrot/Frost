@@ -145,17 +145,25 @@ def an_int = 42
 
 ### Float
 
-A `Float` literal must take the form of a sequence of digits, a `.`, followed by another sequence of digits.
 `Float`s are all stored as 64-bit double-precision IEEE-754 floating-point numbers.
 A `Float` may not be NaN or infinity.
+
+A `Float` literal may be written as a decimal number or in scientific notation.
 Digits before and after the decimal point may not be omitted.
 
 ```frost
-def a_float = 3.14 # ok
+def a_float = 3.14
+def precise = 1.23e-10
+def big     = 1e+20
+def not_big = 3e2      # 300.0
 
 def bad_1 = .5 # not permitted, use 0.5
 def bad_2 = 3. # not permitted, use 3.0
 ```
+
+Scientific notation uses `e` followed by an optional sign (`+` or `-`) and one or more digits.
+The decimal point is optional in scientific notation: `1e+20` and `1.0e+20` are both valid.
+No whitespace may appear within a float literal.
 
 ### Bool
 
