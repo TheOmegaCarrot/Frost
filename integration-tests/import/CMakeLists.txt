@@ -18,6 +18,7 @@ set(IMPORT_SCRIPTS
     import-imported-var.frst
     import-bad-args.frst
     import-error-recovery.frst
+    import-retry-after-error.frst
 )
 foreach(script ${IMPORT_SCRIPTS})
     get_filename_component(name ${script} NAME_WE)

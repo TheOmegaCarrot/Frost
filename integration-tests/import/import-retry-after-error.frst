@@ -1,0 +1,15 @@
+# Importing a module that errors should not prevent retrying the import.
+# The import cache must not retain the in-progress sentinel (nullopt)
+# after a failed import, otherwise the retry is falsely reported as a cycle.
+
+# First attempt: import a module that errors at runtime
+def first = try_call(import, ["runtime-error"])
+assert(not first.ok, "first import should fail")
+assert(contains(first.error, "boom"), "first import should report the runtime error")
+
+# Second attempt: same module. Should get the same runtime error,
+# not an "Import cycle" error.
+def second = try_call(import, ["runtime-error"])
+assert(not second.ok, "second import should also fail")
+assert(contains(second.error, "boom"), "second import should report the runtime error, not a cycle")
+assert(not contains(second.error, "Import cycle"), "stale cache entry caused a false cycle detection")

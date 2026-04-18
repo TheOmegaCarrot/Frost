@@ -110,7 +110,14 @@ struct Importer
             return cache_hit->second.value();
         }
 
+        // mark the import as in-progress for cycle detection
         import_cache->emplace(module_file, std::nullopt);
+        BOOST_SCOPE_EXIT_ALL(&)
+        {
+            // If the import fails, remove the import-in-progress marker
+            if (import_cache->at(module_file) == std::nullopt)
+                import_cache->erase(module_file);
+        };
 
         auto guard = make_frame_guard("Import Boundary ({})", module_spec);
 
