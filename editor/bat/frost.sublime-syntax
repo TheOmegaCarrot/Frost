@@ -105,7 +105,9 @@ contexts:
       scope: variable.other.frost
 
   numbers:
-    - match: '\b\d+\.\d+\b'
+    - match: '\b\d+\.\d+(e[+-]?\d+)?\b'
+      scope: constant.numeric.float.frost
+    - match: '\b\d+e[+-]?\d+\b'
       scope: constant.numeric.float.frost
     - match: '\b\d+\b'
       scope: constant.numeric.integer.frost

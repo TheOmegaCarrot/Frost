@@ -555,7 +555,7 @@ module.exports = grammar({
       $.format_string_single,
     ),
 
-    float: _ => token(/[0-9]+\.[0-9]+/),
+    float: _ => token(/[0-9]+\.[0-9]+(e[+-]?[0-9]+)?|[0-9]+e[+-]?[0-9]+/),
     integer: _ => token(/[0-9]+/),
 
     boolean: $ => choice($.kw_true, $.kw_false),
