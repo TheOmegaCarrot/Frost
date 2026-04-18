@@ -7,7 +7,6 @@
 #include <fmt/format.h>
 
 #include <functional>
-#include <optional>
 #include <span>
 
 namespace frst
@@ -16,7 +15,7 @@ using builtin_args_t = std::span<const Value_Ptr>;
 
 // Class wrapping a C++ function exposed to Frost
 // e.g. builtins
-class Builtin final : public Callable
+class Builtin : public Callable
 {
   private:
     using function_t = std::function<Value_Ptr(builtin_args_t)>;
@@ -29,11 +28,11 @@ class Builtin final : public Callable
     Builtin(Builtin&&) = delete;
     Builtin& operator=(const Builtin&) = delete;
     Builtin& operator=(Builtin&&) = delete;
-    ~Builtin() final = default;
+    ~Builtin() override = default;
 
     Builtin(function_t function, std::string name);
 
-    Value_Ptr call(builtin_args_t args) const final;
+    Value_Ptr call(builtin_args_t args) const override;
 
     std::string debug_dump() const final;
     std::string name() const final;
@@ -43,35 +42,7 @@ class Builtin final : public Callable
     std::string name_;
 };
 
-#define X_INJECT                                                               \
-    X(structure_ops)                                                           \
-    X(type_checks)                                                             \
-    X(type_conversions)                                                        \
-    X(call)                                                                    \
-    X(debug_helpers)                                                           \
-    X(error_handling)                                                          \
-    X(output)                                                                  \
-    X(free_operators)                                                          \
-    X(string_ops)                                                              \
-    X(mutable_cell)                                                            \
-    X(ranges)                                                                  \
-    X(and_then)                                                                \
-    X(streams)
-
-#define X(F) void inject_##F(Symbol_Table&);
-
-X_INJECT
-
-#undef X
-
-inline void inject_builtins(Symbol_Table& table)
-{
-#define X(F) inject_##F(table);
-
-    X_INJECT
-
-#undef X
-}
+void inject_builtins(Symbol_Table& table);
 
 } // namespace frst
 

@@ -1,6 +1,7 @@
 add_library( frost-functions
     builtin.cpp
     closure.cpp
+    inject-builtins.cpp
     lambda.cpp
     stdlib.cpp
     builtins/and-then.cpp
