@@ -5,35 +5,22 @@
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
 
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
+#include <frost/parser.hpp>
 
 using namespace frst::literals;
 using namespace std::literals;
 
 namespace
 {
-struct Program_Root
-{
-    static constexpr auto rule = lexy::dsl::p<frst::grammar::program>;
-    static constexpr auto value =
-        lexy::forward<std::vector<frst::ast::Statement::Ptr>>;
-};
-
 auto parse(std::string_view input)
 {
-    auto src = lexy::string_input<lexy::utf8_encoding>(input);
-    frst::grammar::reset_parse_state(src);
-    return lexy::parse<Program_Root>(src, lexy::noop);
+    return frst::parse_program(std::string{input});
 }
 
 void run(std::string_view code, frst::Symbol_Table& table)
 {
     auto result = parse(code);
-    REQUIRE(result);
+    REQUIRE(result.has_value());
     auto program = std::move(result).value();
     frst::Execution_Context ctx{.symbols = table};
     for (const auto& stmt : program)
@@ -176,12 +163,12 @@ TEST_CASE("Parser Recursive Destructuring")
 
     SECTION("Invalid: rest not at end in nested")
     {
-        CHECK_FALSE(parse("def [a, [...rest, b]] = x"));
+        CHECK(not parse("def [a, [...rest, b]] = x"));
     }
 
     SECTION("Invalid: pattern where rest name should be")
     {
-        CHECK_FALSE(parse("def [a, ...[b, c]] = x"));
+        CHECK(not parse("def [a, ...[b, c]] = x"));
     }
 
     SECTION("Backwards compatible: flat array destructure still works")
@@ -234,7 +221,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         //      ^
         //  col 5
         auto result = parse("def x = 1");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -253,7 +240,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         //      ^    ^
         //  col 5  col 10
         auto result = parse("def [a, b] = x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -272,7 +259,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         //      ^   ^
         //  col 5  col 9
         auto result = parse("def {foo} = x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -293,7 +280,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         //          ^      ^
         //      col 9  col 14
         auto result = parse("def [a, [b, c]] = x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -315,7 +302,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         //      ^   ^   ^
         //  col 6  10  13
         auto result = parse("def [a, [b, c]] = x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -335,7 +322,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         //          ^      ^
         //      col 9  col 16
         auto result = parse("def [a, {foo: b}] = x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -358,7 +345,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         //            ^      ^
         //        col 11  col 16
         auto result = parse("def {foo: [a, b]} = x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -379,7 +366,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         //       ^
         //   col 6-8
         auto result = parse("def {foo} = x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -396,7 +383,7 @@ TEST_CASE("Parser Destructure Source Ranges")
         //            ^
         //        col 11-13
         auto result = parse("def {foo: bar} = x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -411,7 +398,7 @@ TEST_CASE("Parser Destructure Source Ranges")
     {
         // "def [\n  a,\n  [b, c]\n] = x"
         auto result = parse("def [\n  a,\n  [b, c]\n] = x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 

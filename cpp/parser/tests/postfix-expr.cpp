@@ -2,35 +2,15 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
 
 using namespace frst::literals;
 
 namespace
 {
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-
 struct RecordingCallable final : frst::Callable
 {
     mutable std::vector<frst::Value_Ptr> received;
@@ -79,9 +59,7 @@ TEST_CASE("Parser Postfix Expressions")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Indexing parses and evaluates")
@@ -102,29 +80,29 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("m", frst::Value::create(std::move(map)));
 
         auto arr_result = parse("arr[1]");
-        REQUIRE(arr_result);
-        auto arr_expr = require_expression(arr_result);
+        REQUIRE(arr_result.has_value());
+        auto arr_expr = std::move(arr_result).value();
         auto arr_out = arr_expr->evaluate(ctx);
         REQUIRE(arr_out->is<frst::Int>());
         CHECK(arr_out->get<frst::Int>().value() == 2_f);
 
         auto arr_expr_result = parse("arr[1+1]");
-        REQUIRE(arr_expr_result);
-        auto arr_expr2 = require_expression(arr_expr_result);
+        REQUIRE(arr_expr_result.has_value());
+        auto arr_expr2 = std::move(arr_expr_result).value();
         auto arr_out2 = arr_expr2->evaluate(ctx);
         REQUIRE(arr_out2->is<frst::Int>());
         CHECK(arr_out2->get<frst::Int>().value() == 3_f);
 
         auto arr_neg_result = parse("arr[-1]");
-        REQUIRE(arr_neg_result);
-        auto arr_expr3 = require_expression(arr_neg_result);
+        REQUIRE(arr_neg_result.has_value());
+        auto arr_expr3 = std::move(arr_neg_result).value();
         auto arr_out3 = arr_expr3->evaluate(ctx);
         REQUIRE(arr_out3->is<frst::Int>());
         CHECK(arr_out3->get<frst::Int>().value() == 3_f);
 
         auto map_result = parse("m[\"key\"]");
-        REQUIRE(map_result);
-        auto map_expr = require_expression(map_result);
+        REQUIRE(map_result.has_value());
+        auto map_expr = std::move(map_result).value();
         auto map_out = map_expr->evaluate(ctx);
         REQUIRE(map_out->is<frst::Int>());
         CHECK(map_out->get<frst::Int>().value() == 42_f);
@@ -142,8 +120,8 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("arr", arr_val);
 
         auto result = parse("arr[\n0\n]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 11_f);
@@ -166,15 +144,15 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("obj", frst::Value::create(std::move(outer)));
 
         auto dot_result = parse("obj.key");
-        REQUIRE(dot_result);
-        auto dot_expr = require_expression(dot_result);
+        REQUIRE(dot_result.has_value());
+        auto dot_expr = std::move(dot_result).value();
         auto dot_out = dot_expr->evaluate(ctx);
         REQUIRE(dot_out->is<frst::Int>());
         CHECK(dot_out->get<frst::Int>().value() == 7_f);
 
         auto chain_result = parse("obj.inner.value");
-        REQUIRE(chain_result);
-        auto chain_expr = require_expression(chain_result);
+        REQUIRE(chain_result.has_value());
+        auto chain_expr = std::move(chain_result).value();
         auto chain_out = chain_expr->evaluate(ctx);
         REQUIRE(chain_out->is<frst::Int>());
         CHECK(chain_out->get<frst::Int>().value() == 99_f);
@@ -191,8 +169,8 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("obj", frst::Value::create(std::move(obj)));
 
         auto result = parse("obj.missing");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
     }
@@ -207,8 +185,8 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto call_result = parse("f(1, 2+3)");
-        REQUIRE(call_result);
-        auto call_expr = require_expression(call_result);
+        REQUIRE(call_result.has_value());
+        auto call_expr = std::move(call_result).value();
         auto out = call_expr->evaluate(ctx);
 
         CHECK(out == callable->result);
@@ -229,8 +207,8 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto call_result = parse("f()");
-        REQUIRE(call_result);
-        auto call_expr = require_expression(call_result);
+        REQUIRE(call_result.has_value());
+        auto call_expr = std::move(call_result).value();
         auto out = call_expr->evaluate(ctx);
 
         CHECK(out == callable->result);
@@ -247,8 +225,8 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto call_result = parse("f(\n1,\n2\n)");
-        REQUIRE(call_result);
-        auto call_expr = require_expression(call_result);
+        REQUIRE(call_result.has_value());
+        auto call_expr = std::move(call_result).value();
         auto out = call_expr->evaluate(ctx);
 
         CHECK(out == callable->result);
@@ -258,8 +236,8 @@ TEST_CASE("Parser Postfix Expressions")
 
         callable->received.clear();
         auto empty_result = parse("f(\n)");
-        REQUIRE(empty_result);
-        auto empty_expr = require_expression(empty_result);
+        REQUIRE(empty_result.has_value());
+        auto empty_expr = std::move(empty_result).value();
         auto out2 = empty_expr->evaluate(ctx);
 
         CHECK(out2 == callable->result);
@@ -268,9 +246,9 @@ TEST_CASE("Parser Postfix Expressions")
 
     SECTION("Call arguments reject trailing commas and empty slots")
     {
-        CHECK_FALSE(parse("f(1,2,)"));
-        CHECK_FALSE(parse("f(,)"));
-        CHECK_FALSE(parse("f(,1)"));
+        CHECK(not parse("f(1,2,)"));
+        CHECK(not parse("f(,)"));
+        CHECK(not parse("f(,1)"));
     }
 
     SECTION("Whitespace around postfix tokens is allowed")
@@ -293,22 +271,22 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto index_result = parse("arr [ 0 ]");
-        REQUIRE(index_result);
-        auto index_expr = require_expression(index_result);
+        REQUIRE(index_result.has_value());
+        auto index_expr = std::move(index_result).value();
         auto index_out = index_expr->evaluate(ctx);
         REQUIRE(index_out->is<frst::Int>());
         CHECK(index_out->get<frst::Int>().value() == 5_f);
 
         auto dot_result = parse("obj . key");
-        REQUIRE(dot_result);
-        auto dot_expr = require_expression(dot_result);
+        REQUIRE(dot_result.has_value());
+        auto dot_expr = std::move(dot_result).value();
         auto dot_out = dot_expr->evaluate(ctx);
         REQUIRE(dot_out->is<frst::Int>());
         CHECK(dot_out->get<frst::Int>().value() == 8_f);
 
         auto call_result = parse("f ( 1 , 2 )");
-        REQUIRE(call_result);
-        auto call_expr = require_expression(call_result);
+        REQUIRE(call_result.has_value());
+        auto call_expr = std::move(call_result).value();
         auto call_out = call_expr->evaluate(ctx);
         CHECK(call_out == callable->result);
     }
@@ -322,8 +300,8 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto result = parse("1 + f(2)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(ctx);
 
         REQUIRE(out->is<frst::Int>());
@@ -344,8 +322,8 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("obj", frst::Value::create(std::move(obj)));
 
         auto result = parse("obj.f(3)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(ctx);
 
         CHECK(out == callable->result);
@@ -367,8 +345,8 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("arr", frst::Value::create(std::move(arr)));
 
         auto result = parse("arr[0](2)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(ctx);
 
         CHECK(out == callable->result);
@@ -391,8 +369,8 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto result = parse("f()[0]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(ctx);
 
         REQUIRE(out->is<frst::Int>());
@@ -418,8 +396,8 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("obj", frst::Value::create(std::move(obj)));
 
         auto result = parse("obj.f()[0].key");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(ctx);
 
         REQUIRE(out->is<frst::Int>());
@@ -454,38 +432,33 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto index_comment = parse("arr[ # comment\n 1 ]");
-        REQUIRE(index_comment);
-        auto index_expr = require_expression(index_comment);
+        REQUIRE(index_comment.has_value());
+        auto index_expr = std::move(index_comment).value();
         auto index_out = index_expr->evaluate(ctx);
         REQUIRE(index_out->is<frst::Int>());
         CHECK(index_out->get<frst::Int>().value() == 2_f);
 
         auto index_newlines = parse("arr[\n -1 \n]");
-        REQUIRE(index_newlines);
-        auto index_expr2 = require_expression(index_newlines);
+        REQUIRE(index_newlines.has_value());
+        auto index_expr2 = std::move(index_newlines).value();
         auto index_out2 = index_expr2->evaluate(ctx);
         REQUIRE(index_out2->is<frst::Int>());
         CHECK(index_out2->get<frst::Int>().value() == 3_f);
 
-        auto dot_newlines = parse("obj.\nkey");
-        REQUIRE_FALSE(dot_newlines);
-
-        auto dot_comment = parse("obj.# comment\nkey");
-        REQUIRE_FALSE(dot_comment);
-
-        auto chain_spaced = parse("obj .\n inner \n.\n value");
-        REQUIRE_FALSE(chain_spaced);
+        CHECK(not frst::parse_program(std::string{"obj.\nkey"}));
+        CHECK(not frst::parse_program(std::string{"obj.# comment\nkey"}));
+        CHECK(not frst::parse_program(std::string{"obj .\n inner \n.\n value"}));
 
         auto call_empty = parse("f( # comment\n )");
-        REQUIRE(call_empty);
-        auto call_expr = require_expression(call_empty);
+        REQUIRE(call_empty.has_value());
+        auto call_expr = std::move(call_empty).value();
         auto call_out = call_expr->evaluate(ctx);
         CHECK(call_out == callable->result);
         CHECK(callable->received.empty());
 
         auto call_split = parse("f(\n 1 # comment\n ,\n 2\n)");
-        REQUIRE(call_split);
-        auto call_expr2 = require_expression(call_split);
+        REQUIRE(call_split.has_value());
+        auto call_expr2 = std::move(call_split).value();
         auto call_out2 = call_expr2->evaluate(ctx);
         CHECK(call_out2 == callable->result);
         REQUIRE(callable->received.size() == 2);
@@ -510,47 +483,47 @@ TEST_CASE("Parser Postfix Expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto index_result = parse("(obj).key");
-        REQUIRE(index_result);
-        auto index_expr = require_expression(index_result);
+        REQUIRE(index_result.has_value());
+        auto index_expr = std::move(index_result).value();
         auto index_out = index_expr->evaluate(ctx);
         REQUIRE(index_out->is<frst::Int>());
         CHECK(index_out->get<frst::Int>().value() == 6_f);
 
         auto call_result = parse("((f))(1)");
-        REQUIRE(call_result);
-        auto call_expr = require_expression(call_result);
+        REQUIRE(call_result.has_value());
+        auto call_expr = std::move(call_result).value();
         auto call_out = call_expr->evaluate(ctx);
         CHECK(call_out == callable->result);
     }
 
     SECTION("Invalid call syntax fails to parse")
     {
-        CHECK_FALSE(parse("f(1,)"));
-        CHECK_FALSE(parse("f(,1)"));
-        CHECK_FALSE(parse("f(1 2)"));
-        CHECK_FALSE(parse("f(1"));
-        CHECK_FALSE(parse("f(1,,2)"));
-        CHECK_FALSE(parse("f(,)"));
-        CHECK_FALSE(parse("f(,1,)"));
+        CHECK(not parse("f(1,)"));
+        CHECK(not parse("f(,1)"));
+        CHECK(not parse("f(1 2)"));
+        CHECK(not parse("f(1"));
+        CHECK(not parse("f(1,,2)"));
+        CHECK(not parse("f(,)"));
+        CHECK(not parse("f(,1,)"));
     }
 
     SECTION("Invalid index syntax fails to parse")
     {
-        CHECK_FALSE(parse("arr[]"));
-        CHECK_FALSE(parse("arr[1"));
+        CHECK(not parse("arr[]"));
+        CHECK(not parse("arr[1"));
     }
 
     SECTION("Invalid dot access fails to parse")
     {
-        CHECK_FALSE(parse("obj."));
-        CHECK_FALSE(parse("obj.if"));
-        CHECK_FALSE(parse("obj.1"));
-        CHECK_FALSE(parse("obj.true"));
-        CHECK_FALSE(parse("obj.false"));
-        CHECK_FALSE(parse("obj.and"));
-        CHECK_FALSE(parse("obj.or"));
-        CHECK_FALSE(parse("obj.not"));
-        CHECK_FALSE(parse("obj.null"));
+        CHECK(not parse("obj."));
+        CHECK(not parse("obj.if"));
+        CHECK(not parse("obj.1"));
+        CHECK(not parse("obj.true"));
+        CHECK(not parse("obj.false"));
+        CHECK(not parse("obj.and"));
+        CHECK(not parse("obj.or"));
+        CHECK(not parse("obj.not"));
+        CHECK(not parse("obj.null"));
     }
 
     SECTION("Malformed postfix chains fail to parse")
@@ -577,7 +550,7 @@ TEST_CASE("Parser Postfix Expressions")
 
         for (const auto& input : cases)
         {
-            CHECK_FALSE(parse(input));
+            CHECK(not parse(input));
         }
     }
 
@@ -585,8 +558,8 @@ TEST_CASE("Parser Postfix Expressions")
     {
         // "arr[1]" → begin at 'a' {1,1}, end at ']' {1,6}
         auto result = parse("arr[1]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -598,8 +571,8 @@ TEST_CASE("Parser Postfix Expressions")
     {
         // "obj.key" → begin at 'o' {1,1}, end at 'y' {1,7}
         auto result = parse("obj.key");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -611,8 +584,8 @@ TEST_CASE("Parser Postfix Expressions")
     {
         // "f(1, 2)" → begin at 'f' {1,1}, end at ')' {1,7}
         auto result = parse("f(1, 2)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -624,8 +597,8 @@ TEST_CASE("Parser Postfix Expressions")
     {
         // "obj.f(3)" → begin at 'o' {1,1}, end at ')' {1,8}
         auto result = parse("obj.f(3)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -637,8 +610,8 @@ TEST_CASE("Parser Postfix Expressions")
     {
         // "x[0] + 1": index expr 'x[0]' must end at 4, not 5
         auto result = parse("x[0] + 1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         REQUIRE(nodes.size() >= 2);
@@ -652,8 +625,8 @@ TEST_CASE("Parser Postfix Expressions")
     {
         // "obj.key + 1": dot access 'obj.key' must end at 7, not 8
         auto result = parse("obj.key + 1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         REQUIRE(nodes.size() >= 2);
@@ -667,8 +640,8 @@ TEST_CASE("Parser Postfix Expressions")
     {
         // "f(1) + 2": call 'f(1)' must end at 4, not 5
         auto result = parse("f(1) + 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         REQUIRE(nodes.size() >= 2);
@@ -682,8 +655,8 @@ TEST_CASE("Parser Postfix Expressions")
     {
         // "foo.bar": Index [1:1-1:7], key Literal("bar") [1:5-1:7]
         auto result = parse("foo.bar");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         CHECK(expr->source_range().begin.column == 1);
         CHECK(expr->source_range().end.column == 7);
@@ -703,8 +676,8 @@ TEST_CASE("Parser Postfix Expressions")
     {
         // "x.y + 1": key 'y' must be [1:3-1:3], not extending into the space
         auto result = parse("x.y + 1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         // walk into the Binop LHS → Index → key
         auto top_nodes = expr->walk() | std::ranges::to<std::vector>();
@@ -721,8 +694,8 @@ TEST_CASE("Parser Postfix Expressions")
     {
         // "a.b.c": each key literal gets its own range
         auto result = parse("a.b.c");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         CHECK(expr->source_range().begin.column == 1);
         CHECK(expr->source_range().end.column == 5);

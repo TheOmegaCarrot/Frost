@@ -1,35 +1,15 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
 
 using namespace frst::literals;
 
 namespace
 {
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-
 struct RecordingCallable final : frst::Callable
 {
     explicit RecordingCallable(bool return_value = false)
@@ -62,16 +42,14 @@ TEST_CASE("Parser Foreach Expressions")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Foreach over arrays calls the operation")
     {
         auto result = parse("foreach [1, 2, 3] with f");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -89,8 +67,8 @@ TEST_CASE("Parser Foreach Expressions")
     SECTION("Foreach over maps calls the operation with key and value")
     {
         auto result = parse("foreach {a: 1, b: 2} with f");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -134,8 +112,8 @@ TEST_CASE("Parser Foreach Expressions")
     {
         auto result =
             parse("foreach (filter [1, 2, 3] with fn (x) -> { x > 1 }) with f");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -154,8 +132,8 @@ TEST_CASE("Parser Foreach Expressions")
         auto result = parse(
             "foreach (map {a: 1, b: 2} with fn (k, v) -> { {[k]: v + 1} }) "
             "with f");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -195,8 +173,8 @@ TEST_CASE("Parser Foreach Expressions")
     SECTION("Foreach over arrays ignores return value")
     {
         auto result = parse("foreach [1, 2, 3] with f");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -214,8 +192,8 @@ TEST_CASE("Parser Foreach Expressions")
     SECTION("Foreach over maps ignores return value")
     {
         auto result = parse("foreach {a: 1, b: 2} with f");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -238,9 +216,7 @@ TEST_CASE("Parser Foreach Expressions")
 
         for (const auto& input : cases)
         {
-            auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not parse(input));
         }
     }
 
@@ -248,8 +224,8 @@ TEST_CASE("Parser Foreach Expressions")
     {
         // "foreach [1] with fn x -> x" → [1:1-1:26]
         auto result = parse("foreach [1] with fn x -> x");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -260,8 +236,8 @@ TEST_CASE("Parser Foreach Expressions")
     SECTION("Source range excludes trailing whitespace")
     {
         auto result = parse("foreach [1] with fn x -> x   ");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.column == 1);
         CHECK(range.end.column == 26);

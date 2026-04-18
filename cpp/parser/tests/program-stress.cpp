@@ -1,36 +1,19 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
 
 #include <ranges>
 #include <regex>
 #include <sstream>
 
-#include "../grammar.hpp"
-
 using namespace frst::literals;
 
 namespace
 {
-struct Program_Root
-{
-    static constexpr auto rule = lexy::dsl::p<frst::grammar::program>;
-    static constexpr auto value =
-        lexy::forward<std::vector<frst::ast::Statement::Ptr>>;
-};
-
-std::vector<frst::ast::Statement::Ptr> require_program(auto& result)
-{
-    auto program = std::move(result).value();
-    return program;
-}
 
 frst::Value_Ptr run_statement(const frst::ast::Statement::Ptr& statement,
                               frst::Symbol_Table& table)
@@ -65,20 +48,18 @@ TEST_CASE("Parser Program Stress Tests")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Program_Root>(src, lexy::noop);
+        return frst::parse_program(std::string{input});
     };
 
     auto require_equivalent_programs = [&](std::string_view left_src,
                                            std::string_view right_src) {
         auto left_result = parse(left_src);
         auto right_result = parse(right_src);
-        REQUIRE(left_result);
-        REQUIRE(right_result);
+        REQUIRE(left_result.has_value());
+        REQUIRE(right_result.has_value());
 
-        auto left_program = require_program(left_result);
-        auto right_program = require_program(right_result);
+        auto left_program = std::move(left_result).value();
+        auto right_program = std::move(right_result).value();
         REQUIRE(left_program.size() == right_program.size());
 
         for (auto&& [lhs, rhs] : std::views::zip(left_program, right_program))
@@ -130,8 +111,8 @@ not fn () -> { null };
 def x = 1; def y = 2;
 x; y;
 )FROST");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         CHECK(program.size() == 36);
     }
 
@@ -155,8 +136,8 @@ def idx = (1 @ wrap())[0];
 def res = pick(reduced) + idx;
 res
 )FROST");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 16);
 
         frst::Symbol_Table table;

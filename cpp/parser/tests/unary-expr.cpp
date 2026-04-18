@@ -1,44 +1,19 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
 
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
-
 using namespace frst::literals;
-
-namespace
-{
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-} // namespace
 
 TEST_CASE("Parser Unary Expressions")
 {
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Unary minus evaluates correctly")
@@ -49,8 +24,8 @@ TEST_CASE("Parser Unary Expressions")
         for (std::size_t i = 0; i < std::size(cases); ++i)
         {
             auto result = parse(cases[i]);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -76,8 +51,8 @@ TEST_CASE("Parser Unary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -93,9 +68,7 @@ TEST_CASE("Parser Unary Expressions")
 
         for (const auto& input : cases)
         {
-            auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not parse(input));
         }
     }
 
@@ -103,8 +76,8 @@ TEST_CASE("Parser Unary Expressions")
     {
         // "-1" → begin at '-' {1,1}, end at '1' {1,2}
         auto result = parse("-1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -116,8 +89,8 @@ TEST_CASE("Parser Unary Expressions")
     {
         // "not true" → begin at 'n' {1,1}, end at 'e' in true {1,8}
         auto result = parse("not true");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -129,8 +102,8 @@ TEST_CASE("Parser Unary Expressions")
     {
         // "--1" → outer '-' at {1,1}, inner operand '1' at {1,3}
         auto result = parse("--1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -142,8 +115,8 @@ TEST_CASE("Parser Unary Expressions")
     {
         // "not (1)" → begin at 'n' {1,1}, end at ')' {1,7}
         auto result = parse("not (1)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);

@@ -1,51 +1,26 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
 
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
-
 using namespace frst::literals;
-
-namespace
-{
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-} // namespace
 
 TEST_CASE("Parser Filter Expressions")
 {
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Filter array with a predicate")
     {
         auto result = parse("filter [1, 2, 3] with fn (x) -> { x > 1 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -60,8 +35,8 @@ TEST_CASE("Parser Filter Expressions")
     SECTION("Filter map with a predicate")
     {
         auto result = parse("filter {a: 1, b: 2} with fn (k, v) -> { v > 1 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -79,8 +54,8 @@ TEST_CASE("Parser Filter Expressions")
     SECTION("Filter expressions can be postfixed")
     {
         auto result = parse("(filter [1, 2, 3] with fn (x) -> { x > 1 })[0]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -93,8 +68,8 @@ TEST_CASE("Parser Filter Expressions")
     {
         auto result =
             parse("(filter [1, 2, 3] with fn (x) -> { x > 1 })[0] + 5");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -104,8 +79,8 @@ TEST_CASE("Parser Filter Expressions")
 
         auto result2 =
             parse("(filter [1, 2, 3] with fn (x) -> { x > 2 })[0] == 3");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == true);
@@ -114,8 +89,8 @@ TEST_CASE("Parser Filter Expressions")
     SECTION("Whitespace and comments are allowed around filter keywords")
     {
         auto result = parse("filter\n[1, 2]\nwith\nfn (x) -> { x > 1 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -129,8 +104,8 @@ TEST_CASE("Parser Filter Expressions")
     SECTION("Filter expressions can appear inside other constructs")
     {
         auto result = parse("[filter [1, 2] with fn (x) -> { x > 1 }]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -142,8 +117,8 @@ TEST_CASE("Parser Filter Expressions")
         CHECK(outer[0]->raw_get<frst::Array>().size() == 1);
 
         auto result2 = parse("{k: filter [1, 2] with fn (x) -> { x > 1 }}");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Map>());
         auto key = frst::Value::create(std::string{"k"});
@@ -155,8 +130,8 @@ TEST_CASE("Parser Filter Expressions")
 
         auto result3 =
             parse("if filter [1, 2] with fn (x) -> { x > 1 }: 1 else: 2");
-        REQUIRE(result3);
-        auto expr3 = require_expression(result3);
+        REQUIRE(result3.has_value());
+        auto expr3 = std::move(result3).value();
         auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Int>());
         CHECK(out3->get<frst::Int>().value() == 1_f);
@@ -164,16 +139,18 @@ TEST_CASE("Parser Filter Expressions")
 
     SECTION("Postfix does not bind across newlines after filter expressions")
     {
-        auto result = parse("(filter [1, 2, 3] with fn (x) -> { x > 1 })\n[0]");
-        REQUIRE_FALSE(result);
+        auto result = frst::parse_program(
+            std::string{"(filter [1, 2, 3] with fn (x) -> { x > 1 })\n[0]"});
+        REQUIRE(result.has_value());
+        CHECK(result.value().size() == 2);
     }
 
     SECTION("Filter expressions can nest other higher-order expressions")
     {
         auto result = parse("filter (map [1, 2, 3] with fn (x) -> { x }) "
                             "with fn (x) -> { x > 1 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -187,8 +164,8 @@ TEST_CASE("Parser Filter Expressions")
         auto result2 =
             parse("filter [1, 2, 3] with fn (x) -> { "
                   "(reduce [1, 2] with fn (acc, y) -> { acc + y }) > 2 }");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Array>());
         const auto& arr2 = out2->raw_get<frst::Array>();
@@ -199,8 +176,8 @@ TEST_CASE("Parser Filter Expressions")
 
         auto result3 = parse("filter [1, 2] with fn (x) -> { "
                              "foreach [1] with fn (y) -> { y }; true }");
-        REQUIRE(result3);
-        auto expr3 = require_expression(result3);
+        REQUIRE(result3.has_value());
+        auto expr3 = std::move(result3).value();
         auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Array>());
         const auto& arr3 = out3->raw_get<frst::Array>();
@@ -234,8 +211,8 @@ TEST_CASE("Parser Filter Expressions")
         };
 
         auto result = parse("f(filter [1, 2, 3] with fn (x) -> { x > 1 })");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -254,8 +231,8 @@ TEST_CASE("Parser Filter Expressions")
     {
         auto result = parse("filter [1, 2, 3] with fn (x) -> { "
                             "(map [x] with fn (y) -> { y + 1 })[0] > 2 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -277,9 +254,7 @@ TEST_CASE("Parser Filter Expressions")
 
         for (const auto& input : cases)
         {
-            auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not parse(input));
         }
     }
 
@@ -287,8 +262,8 @@ TEST_CASE("Parser Filter Expressions")
     {
         // "filter [1] with fn x -> true" → [1:1-1:28]
         auto result = parse("filter [1] with fn x -> true");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -299,8 +274,8 @@ TEST_CASE("Parser Filter Expressions")
     SECTION("Source range excludes trailing whitespace")
     {
         auto result = parse("filter [1] with fn x -> true   ");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.column == 1);
         CHECK(range.end.column == 28);

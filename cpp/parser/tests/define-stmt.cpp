@@ -2,34 +2,16 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
 
 using namespace frst::literals;
 using namespace std::literals;
 
 namespace
 {
-struct Program_Root
-{
-    static constexpr auto rule = lexy::dsl::p<frst::grammar::program>;
-    static constexpr auto value =
-        lexy::forward<std::vector<frst::ast::Statement::Ptr>>;
-};
-
-std::vector<frst::ast::Statement::Ptr> require_program(auto& result)
-{
-    auto program = std::move(result).value();
-    return program;
-}
-
 frst::Value_Ptr evaluate_expression(const frst::ast::Statement::Ptr& statement,
                                     frst::Symbol_Table& table)
 {
@@ -42,19 +24,15 @@ frst::Value_Ptr evaluate_expression(const frst::ast::Statement::Ptr& statement,
 
 TEST_CASE("Parser Define Statements")
 {
-    // AI-generated test by Codex (GPT-5).
-    // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Program_Root>(src, lexy::noop);
+        return frst::parse_program(std::string{input});
     };
 
     SECTION("Single definition binds a name")
     {
         auto result = parse("def x = 42");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -69,8 +47,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Exported definition binds value in symbol table")
     {
         auto result = parse("export def x = 42");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -85,8 +63,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Exported array destructure binds values in symbol table")
     {
         auto result = parse("export def [a, ...rest] = [1, 2, 3]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -112,8 +90,8 @@ TEST_CASE("Parser Define Statements")
         // All keys present: binds correctly.
         auto result = parse("def {foo: bar, [40+2]: answer} = "
                             "{foo: 'beep', [42]: 'life'}; [bar, answer]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -134,8 +112,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Map destructure throws on missing key")
     {
         auto result = parse("def {foo: bar, missing: none} = {foo: 'beep'}");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Execution_Context ctx{.symbols = table};
@@ -146,8 +124,8 @@ TEST_CASE("Parser Define Statements")
     {
         auto result = parse("export def {foo: bar, [40+2]: answer} = "
                             "{foo: 1, [42]: 2}");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -167,8 +145,8 @@ TEST_CASE("Parser Define Statements")
     {
         auto result = parse("def { foo: bar, # comment\n"
                             "      [1+1]: baz } = { foo: 1, [2]: 3 }; baz");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -188,8 +166,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Map destructure allows empty pattern")
     {
         auto result = parse("def { } = {foo: 1}");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -197,8 +175,8 @@ TEST_CASE("Parser Define Statements")
         program[0]->execute(ctx);
 
         auto result2 = parse("export def { } = {foo: 1}");
-        REQUIRE(result2);
-        auto program2 = require_program(result2);
+        REQUIRE(result2.has_value());
+        auto program2 = std::move(result2).value();
         REQUIRE(program2.size() == 1);
 
         program2[0]->execute(ctx);
@@ -207,8 +185,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Map destructure allows whitespace around colon and key expr")
     {
         auto result = parse("def { [1\n+2] : name } = { [3]: 7 }; name");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -228,8 +206,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Map destructure shorthand binds key name as binding name")
     {
         auto result = parse("def {foo} = {foo: 42}; foo");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -244,8 +222,8 @@ TEST_CASE("Parser Define Statements")
     {
         auto result =
             parse("def {foo, bar: baz} = {foo: 1, bar: 2}; [foo, baz]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -265,8 +243,8 @@ TEST_CASE("Parser Define Statements")
     {
         auto result =
             parse("def {foo, [1+1]: bar} = {foo: 7, [2]: 9}; [foo, bar]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -294,8 +272,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Map destructure accepts underscore binding")
     {
         auto result = parse("def {foo: _} = {foo: 1}");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
         auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
@@ -313,8 +291,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Whitespace and comments around def components are allowed")
     {
         auto result = parse("def   x=1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -334,8 +312,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Identifier variants are accepted")
     {
         auto result = parse("def x1 = 1; def _x = 2; def x_2 = 3; x_2");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
@@ -352,8 +330,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Definitions can be followed by expressions")
     {
         auto result = parse("def x = 1; x");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -368,8 +346,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Definitions can depend on prior definitions")
     {
         auto result = parse("def x = 1; def y = x + 2; y");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -389,8 +367,8 @@ TEST_CASE("Parser Define Statements")
                             "def c = arr[0]\n"
                             "def d = obj.key\n"
                             "d");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 5);
 
         frst::Symbol_Table table;
@@ -442,8 +420,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Multiple definitions parse as separate statements")
     {
         auto result = parse("def x = 1; def y = 2");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -462,8 +440,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Array destructure parses as a statement")
     {
         auto result = parse("def [a, b] = 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
@@ -473,8 +451,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Array destructure supports rest and discard")
     {
         auto result = parse("def [_, ...rest] = 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
@@ -484,16 +462,16 @@ TEST_CASE("Parser Define Statements")
     SECTION("Array destructure allows whitespace around rest")
     {
         auto result = parse("def [a, ...  rest] = 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
 
         auto result2 = parse("def [...   rest] = 1");
-        REQUIRE(result2);
-        auto program2 = require_program(result2);
+        REQUIRE(result2.has_value());
+        auto program2 = std::move(result2).value();
         REQUIRE(program2.size() == 1);
 
         auto* destructure2 =
@@ -504,8 +482,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Array destructure allows whitespace around commas and brackets")
     {
         auto result = parse("def [ a , b ] = 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
@@ -515,16 +493,16 @@ TEST_CASE("Parser Define Statements")
     SECTION("Array destructure allows line breaks and comments")
     {
         auto result = parse("def [a,\n b] = 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
 
         auto result2 = parse("def [a, # c\n b] = 1");
-        REQUIRE(result2);
-        auto program2 = require_program(result2);
+        REQUIRE(result2.has_value());
+        auto program2 = std::move(result2).value();
         REQUIRE(program2.size() == 1);
 
         auto* destructure2 =
@@ -535,16 +513,16 @@ TEST_CASE("Parser Define Statements")
     SECTION("Array destructure allows line breaks around rest")
     {
         auto result = parse("def [...\n rest] = 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
         REQUIRE(destructure);
 
         auto result2 = parse("def [a, ... # c\n rest] = 1");
-        REQUIRE(result2);
-        auto program2 = require_program(result2);
+        REQUIRE(result2.has_value());
+        auto program2 = std::move(result2).value();
         REQUIRE(program2.size() == 1);
 
         auto* destructure2 =
@@ -555,8 +533,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Array destructure allows rest-only discard")
     {
         auto result = parse("def [..._] = 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
@@ -566,8 +544,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Array destructure allows empty pattern")
     {
         auto result = parse("def [] = 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto* destructure = dynamic_cast<frst::ast::Define*>(program[0].get());
@@ -576,15 +554,15 @@ TEST_CASE("Parser Define Statements")
 
     SECTION("Array destructure rejects keyword bindings")
     {
-        CHECK_FALSE(parse("def [if] = 1"));
-        CHECK_FALSE(parse("def [...if] = 1"));
+        CHECK(not parse("def [if] = 1"));
+        CHECK(not parse("def [...if] = 1"));
     }
 
     SECTION("Definitions can use if expressions on the RHS")
     {
         auto result = parse("def x = if true: 1 else: 2; x");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -599,8 +577,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Definition followed by if is a separate statement")
     {
         auto result = parse("def x = 1; if true: 2 else: 3");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -648,15 +626,15 @@ TEST_CASE("Parser Define Statements")
 
         for (const auto& input : cases)
         {
-            CHECK_FALSE(parse(input));
+            CHECK(not parse(input));
         }
     }
 
     SECTION("Array destructure mixes with other statements")
     {
         auto result = parse("def [a, b] = [1, 2]; def x = 3; x");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         REQUIRE(dynamic_cast<frst::ast::Define*>(program[0].get()));
@@ -667,8 +645,8 @@ TEST_CASE("Parser Define Statements")
     SECTION("Empty destructure with non-trivial RHS still parses")
     {
         auto result = parse("def [] = [1, 2]; def x = 3");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         REQUIRE(dynamic_cast<frst::ast::Define*>(program[0].get()));
@@ -679,8 +657,8 @@ TEST_CASE("Parser Define Statements")
     {
         // "def x = 42" → begin at 'd' {1,1}, end at '2' in 42 {1,10}
         auto result = parse("def x = 42");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
         auto range = program[0]->source_range();
         CHECK(range.begin.line == 1);
@@ -693,8 +671,8 @@ TEST_CASE("Parser Define Statements")
     {
         // "export def x = 42" → begin at 'e' {1,1}, end at '2' in 42 {1,17}
         auto result = parse("export def x = 42");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
         auto range = program[0]->source_range();
         CHECK(range.begin.line == 1);
@@ -707,8 +685,8 @@ TEST_CASE("Parser Define Statements")
     {
         // "42" as a statement → begin {1,1}, end {1,2}
         auto result = parse("42");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
         auto range = program[0]->source_range();
         CHECK(range.begin.line == 1);
@@ -723,8 +701,8 @@ TEST_CASE("Parser Define Statements")
         // stmt 0: "def x = 1" {1,1} to {1,9}
         // stmt 1: "def y = 2" {1,12} to {1,20}
         auto result = parse("def x = 1; def y = 2");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         auto r0 = program[0]->source_range();
@@ -748,8 +726,8 @@ TEST_CASE("Parser Define Statements")
         // Shorthand keys produce synthetic Literal("a") and Literal("b")
         // that should carry the source range of the identifier.
         auto result = parse("def {a, b} = e");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
@@ -780,8 +758,8 @@ TEST_CASE("Parser Define Statements")
         //  col 6-8
         // Explicit "foo: bar" produces a synthetic Literal("foo")
         auto result = parse("def {foo: bar} = e");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
@@ -804,8 +782,8 @@ TEST_CASE("Parser Define Statements")
         //         ^
         //    col 8-10
         auto result = parse("def {  foo  :  bar  } = e");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         auto nodes = program[0]->walk() | std::ranges::to<std::vector>();
@@ -824,8 +802,8 @@ TEST_CASE("Parser Define Statements")
     {
         // "def [a, b] = x" → [1:1-1:14]
         auto result = parse("def [a, b] = x");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
         auto range = program[0]->source_range();
         CHECK(range.begin.line == 1);
@@ -838,8 +816,8 @@ TEST_CASE("Parser Define Statements")
     {
         // "export def [a, b] = x" → [1:1-1:21]
         auto result = parse("export def [a, b] = x");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
         auto range = program[0]->source_range();
         CHECK(range.begin.column == 1);
@@ -850,8 +828,8 @@ TEST_CASE("Parser Define Statements")
     {
         // "def {a, b: c} = x" → [1:1-1:17]
         auto result = parse("def {a, b: c} = x");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
         auto range = program[0]->source_range();
         CHECK(range.begin.line == 1);
@@ -864,8 +842,8 @@ TEST_CASE("Parser Define Statements")
     {
         // "export def {a} = x" → [1:1-1:18]
         auto result = parse("export def {a} = x");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
         auto range = program[0]->source_range();
         CHECK(range.begin.column == 1);

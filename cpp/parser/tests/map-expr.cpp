@@ -1,51 +1,26 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
 
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
-
 using namespace frst::literals;
-
-namespace
-{
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-} // namespace
 
 TEST_CASE("Parser Map Expressions")
 {
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Map array with a lambda operation")
     {
         auto result = parse("map [1, 2, 3] with fn (x) -> { x + 1 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -62,8 +37,8 @@ TEST_CASE("Parser Map Expressions")
     {
         auto result =
             parse("map {a: 1, b: 2} with fn (k, v) -> { {[k]: v + 1} }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -85,8 +60,8 @@ TEST_CASE("Parser Map Expressions")
     SECTION("Map expressions can be postfixed")
     {
         auto result = parse("(map [1, 2] with fn (x) -> { x })[0]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -98,8 +73,8 @@ TEST_CASE("Parser Map Expressions")
     SECTION("Map expressions can be used inside larger expressions")
     {
         auto result = parse("(map [1, 2] with fn (x) -> { x + 1 })[1] * 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -108,8 +83,8 @@ TEST_CASE("Parser Map Expressions")
         CHECK(out->get<frst::Int>().value() == 6_f);
 
         auto result2 = parse("(map [1] with fn (x) -> { x })[0] == 1");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == true);
@@ -118,8 +93,8 @@ TEST_CASE("Parser Map Expressions")
     SECTION("Whitespace and comments are allowed around map keywords")
     {
         auto result = parse("map\n[1]\nwith\nfn (x) -> { x }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -133,8 +108,8 @@ TEST_CASE("Parser Map Expressions")
     SECTION("Map expressions can appear inside other constructs")
     {
         auto result = parse("[map [1] with fn (x) -> { x }]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -146,8 +121,8 @@ TEST_CASE("Parser Map Expressions")
         CHECK(outer[0]->raw_get<frst::Array>().size() == 1);
 
         auto result2 = parse("{k: map [1] with fn (x) -> { x + 1 }}");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Map>());
         auto key = frst::Value::create(std::string{"k"});
@@ -158,8 +133,8 @@ TEST_CASE("Parser Map Expressions")
               == 2_f);
 
         auto result3 = parse("if map [1] with fn (x) -> { x }: 1 else: 2");
-        REQUIRE(result3);
-        auto expr3 = require_expression(result3);
+        REQUIRE(result3.has_value());
+        auto expr3 = std::move(result3).value();
         auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Int>());
         CHECK(out3->get<frst::Int>().value() == 1_f);
@@ -167,16 +142,18 @@ TEST_CASE("Parser Map Expressions")
 
     SECTION("Postfix does not bind across newlines after map expressions")
     {
-        auto result = parse("(map [1] with fn (x) -> { x })\n[0]");
-        REQUIRE_FALSE(result);
+        auto result =
+            frst::parse_program(std::string{"(map [1] with fn (x) -> { x })\n[0]"});
+        REQUIRE(result.has_value());
+        CHECK(result.value().size() == 2);
     }
 
     SECTION("Map expressions can nest other higher-order expressions")
     {
         auto result = parse(
             "map (map [1, 2] with fn (x) -> { x }) with fn (x) -> { x + 1 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -189,8 +166,8 @@ TEST_CASE("Parser Map Expressions")
 
         auto result2 = parse("map (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
                              "with fn (x) -> { x * 2 }");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Array>());
         const auto& arr2 = out2->raw_get<frst::Array>();
@@ -200,8 +177,8 @@ TEST_CASE("Parser Map Expressions")
 
         auto result3 = parse("map [1, 2] with fn (x) -> { (reduce [1, 2] with "
                              "fn (acc, y) -> { acc + y }) + x }");
-        REQUIRE(result3);
-        auto expr3 = require_expression(result3);
+        REQUIRE(result3.has_value());
+        auto expr3 = std::move(result3).value();
         auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Array>());
         const auto& arr3 = out3->raw_get<frst::Array>();
@@ -211,8 +188,8 @@ TEST_CASE("Parser Map Expressions")
 
         auto result4 = parse(
             "map [1] with fn (x) -> { foreach [1] with fn (y) -> { y }; x }");
-        REQUIRE(result4);
-        auto expr4 = require_expression(result4);
+        REQUIRE(result4.has_value());
+        auto expr4 = std::move(result4).value();
         auto out4 = expr4->evaluate(ctx);
         REQUIRE(out4->is<frst::Array>());
         const auto& arr4 = out4->raw_get<frst::Array>();
@@ -245,8 +222,8 @@ TEST_CASE("Parser Map Expressions")
         };
 
         auto result = parse("f(map [1, 2] with fn (x) -> { x + 1 })");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -286,8 +263,8 @@ TEST_CASE("Parser Map Expressions")
         };
 
         auto result = parse("map [1, 2] with fn (x) -> { (x @ f())[0] }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -312,9 +289,7 @@ TEST_CASE("Parser Map Expressions")
 
         for (const auto& input : cases)
         {
-            auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not parse(input));
         }
     }
 
@@ -322,8 +297,8 @@ TEST_CASE("Parser Map Expressions")
     {
         // "map [1] with fn x -> x" → [1:1-1:22]
         auto result = parse("map [1] with fn x -> x");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -334,8 +309,8 @@ TEST_CASE("Parser Map Expressions")
     SECTION("Source range excludes trailing whitespace")
     {
         auto result = parse("map [1] with fn x -> x   ");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.column == 1);
         CHECK(range.end.column == 22);

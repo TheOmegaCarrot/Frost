@@ -1,41 +1,23 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
-
-namespace
-{
-struct Literal_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::node::Literal> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-} // namespace
 
 TEST_CASE("Parser Keyword Literals")
 {
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Literal_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("true and false")
     {
         auto res_true = parse("true");
-        REQUIRE(res_true);
+        REQUIRE(res_true.has_value());
         auto expr_true = std::move(res_true).value();
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -44,7 +26,7 @@ TEST_CASE("Parser Keyword Literals")
         CHECK(val_true->get<frst::Bool>().value() == true);
 
         auto res_false = parse("false");
-        REQUIRE(res_false);
+        REQUIRE(res_false.has_value());
         auto expr_false = std::move(res_false).value();
         auto val_false = expr_false->evaluate(ctx);
         REQUIRE(val_false->is<frst::Bool>());
@@ -54,7 +36,7 @@ TEST_CASE("Parser Keyword Literals")
     SECTION("null")
     {
         auto res_null = parse("null");
-        REQUIRE(res_null);
+        REQUIRE(res_null.has_value());
         auto expr_null = std::move(res_null).value();
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};

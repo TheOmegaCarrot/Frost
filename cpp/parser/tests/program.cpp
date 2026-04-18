@@ -2,33 +2,15 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
 
 using namespace frst::literals;
 
 namespace
 {
-struct Program_Root
-{
-    static constexpr auto rule = lexy::dsl::p<frst::grammar::program>;
-    static constexpr auto value =
-        lexy::forward<std::vector<frst::ast::Statement::Ptr>>;
-};
-
-std::vector<frst::ast::Statement::Ptr> require_program(auto& result)
-{
-    auto program = std::move(result).value();
-    return program;
-}
-
 frst::Value_Ptr evaluate_statement(const frst::ast::Statement::Ptr& statement,
                                    frst::Symbol_Table& table)
 {
@@ -108,16 +90,14 @@ TEST_CASE("Parser Program")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Program_Root>(src, lexy::noop);
+        return frst::parse_program(std::string{input});
     };
 
     SECTION("Empty input yields empty program")
     {
         auto result = parse("");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         CHECK(program.empty());
     }
 
@@ -128,8 +108,8 @@ TEST_CASE("Parser Program")
         for (const auto& input : cases)
         {
             auto result = parse(input);
-            REQUIRE(result);
-            auto program = require_program(result);
+            REQUIRE(result.has_value());
+            auto program = std::move(result).value();
             CHECK(program.empty());
         }
     }
@@ -144,8 +124,8 @@ TEST_CASE("Parser Program")
         for (const auto& input : cases)
         {
             auto result = parse(input);
-            REQUIRE(result);
-            auto program = require_program(result);
+            REQUIRE(result.has_value());
+            auto program = std::move(result).value();
             CHECK(program.empty());
         }
     }
@@ -153,8 +133,8 @@ TEST_CASE("Parser Program")
     SECTION("Multiple statements with semicolons")
     {
         auto result = parse("1;2;3");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -173,8 +153,8 @@ TEST_CASE("Parser Program")
     SECTION("Trailing semicolon after a parenthesized expression")
     {
         auto result = parse("(1);");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -186,8 +166,8 @@ TEST_CASE("Parser Program")
     SECTION("Multiple semicolons are ignored")
     {
         auto result = parse(";1;;2;;;3;\n;;");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -206,8 +186,8 @@ TEST_CASE("Parser Program")
     SECTION("Empty statements interleaved with comments are ignored")
     {
         auto result = parse("; # comment\n; 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -218,14 +198,14 @@ TEST_CASE("Parser Program")
 
     SECTION("Statements require separators")
     {
-        CHECK_FALSE(parse("1 2 3"));
+        CHECK(not parse("1 2 3"));
     }
 
     SECTION("Newlines separate statements")
     {
         auto result = parse("some_name\n42");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -244,8 +224,8 @@ TEST_CASE("Parser Program")
     {
         auto result = parse(R"($"hi ${x}"
 42)");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -263,8 +243,8 @@ TEST_CASE("Parser Program")
     SECTION("Mixed literal types in a single program")
     {
         auto result = parse("1; \"s\"; 't'; true; null");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 5);
 
         frst::Symbol_Table table;
@@ -288,8 +268,8 @@ TEST_CASE("Parser Program")
     SECTION("Raw string literals in a program")
     {
         auto result = parse("R\"(hello)\"; R'(world)'; \"ok\"");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -308,8 +288,8 @@ TEST_CASE("Parser Program")
     SECTION("Identifier named R")
     {
         auto result = parse("def R = 7\nR");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -324,8 +304,8 @@ TEST_CASE("Parser Program")
     SECTION("Array literals in a program")
     {
         auto result = parse("[]; [1, 2]; [1, 2,]; [1, 2][0]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
@@ -350,8 +330,8 @@ TEST_CASE("Parser Program")
     SECTION("Map literals in a program")
     {
         auto result = parse("{a: 1}; {[2]: 3}; {a: 1, [2]: 3,}");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -368,8 +348,8 @@ TEST_CASE("Parser Program")
     {
         auto result =
             parse("fn () -> { 1 }(); fn (x) -> { x }(3); fn () -> { 5 }");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -386,7 +366,7 @@ TEST_CASE("Parser Program")
 
     SECTION("Statements after lambdas require separators")
     {
-        CHECK_FALSE(parse("fn () -> { 1 } 2"));
+        CHECK(not parse("fn () -> { 1 } 2"));
     }
 
     SECTION("Definitions with complex right-hand sides")
@@ -396,8 +376,8 @@ TEST_CASE("Parser Program")
                             "def c = {k: 5}.k\n"
                             "def d = fn (x) -> { x + 1 }(4)\n"
                             "a; b; c; d");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 8);
 
         frst::Symbol_Table table;
@@ -427,8 +407,8 @@ TEST_CASE("Parser Program")
     SECTION("Definitions require separators")
     {
         auto result = parse("def x = 1; def y = 2; x; y");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
@@ -448,8 +428,8 @@ TEST_CASE("Parser Program")
     {
         auto result =
             parse("if a: f(1) else: arr[0]\nif false: arr[1] else: f(2)");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -475,8 +455,8 @@ TEST_CASE("Parser Program")
     SECTION("Map literals can be postfixed in programs")
     {
         auto result = parse("{a: 1}[\"a\"]; ({b: 2}).b");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -492,8 +472,8 @@ TEST_CASE("Parser Program")
     SECTION("Threaded call expressions can appear in programs")
     {
         auto result = parse("a @ f(1); 2 @ f(); b @ obj.m()");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -526,8 +506,8 @@ TEST_CASE("Parser Program")
                             "filter [1, 2, 3] with fn (x) -> { x > 1 };"
                             "reduce [1, 2, 3] with fn (acc, x) -> { acc + x };"
                             "foreach [1, 2] with f");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
@@ -570,8 +550,8 @@ TEST_CASE("Parser Program")
                   "(map [1] with fn (x) -> { x })[0] @ g();"
                   "(filter [1, 2, 3] with fn (x) -> { x > 1 })[0] + 10;"
                   "(reduce [1, 2, 3] with fn (acc, x) -> { acc + x }) * 3");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 6);
 
         frst::Symbol_Table table;
@@ -613,8 +593,8 @@ TEST_CASE("Parser Program")
             "init: (reduce [1, 2] with fn (acc, x) -> { acc + x }) "
             "with fn (acc, x) -> { acc + x };"
             "map [1] with fn (x) -> { foreach [1] with fn (y) -> { y }; x }");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -647,8 +627,8 @@ TEST_CASE("Parser Program")
                   "(filter [1, 2, 3] with fn (x) -> { x > 1 }) @ id();\n"
                   "reduce (filter [1, 2, 3] with fn (x) -> { x > 1 }) "
                   "init: 0 with fn (acc, x) -> { acc + x }");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 5);
 
         frst::Symbol_Table table;
@@ -677,8 +657,8 @@ TEST_CASE("Parser Program")
     {
         {
             auto result = parse("map [1] with f; def x = 1");
-            REQUIRE(result);
-            auto program = require_program(result);
+            REQUIRE(result.has_value());
+            auto program = std::move(result).value();
             REQUIRE(program.size() == 2);
 
             frst::Symbol_Table table;
@@ -697,8 +677,8 @@ TEST_CASE("Parser Program")
 
         {
             auto result = parse("def y = map [1] with f; z");
-            REQUIRE(result);
-            auto program = require_program(result);
+            REQUIRE(result.has_value());
+            auto program = std::move(result).value();
             REQUIRE(program.size() == 2);
 
             frst::Symbol_Table table;
@@ -721,8 +701,8 @@ TEST_CASE("Parser Program")
     {
         {
             auto result = parse("map [1] with fn (x) -> { x }\n2");
-            REQUIRE(result);
-            auto program = require_program(result);
+            REQUIRE(result.has_value());
+            auto program = std::move(result).value();
             REQUIRE(program.size() == 2);
 
             frst::Symbol_Table table;
@@ -740,8 +720,8 @@ TEST_CASE("Parser Program")
 
         {
             auto result = parse("filter [1, 2] with fn (x) -> { x > 1 }\n3");
-            REQUIRE(result);
-            auto program = require_program(result);
+            REQUIRE(result.has_value());
+            auto program = std::move(result).value();
             REQUIRE(program.size() == 2);
 
             frst::Symbol_Table table;
@@ -759,8 +739,8 @@ TEST_CASE("Parser Program")
 
         {
             auto result = parse("foreach [1] with fn (x) -> { x }\n4");
-            REQUIRE(result);
-            auto program = require_program(result);
+            REQUIRE(result.has_value());
+            auto program = std::move(result).value();
             REQUIRE(program.size() == 2);
 
             frst::Symbol_Table table;
@@ -782,8 +762,8 @@ TEST_CASE("Parser Program")
                             "[2] with fn (v) -> { v };"
                             "foreach [1] with fn (v) -> { v };"
                             "x[0]; y[0]; z");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 8);
 
         frst::Symbol_Table table;
@@ -811,8 +791,8 @@ TEST_CASE("Parser Program")
     SECTION("Threaded call does not allow postfix after newlines")
     {
         auto result = parse("a @ f()\n[0]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -834,8 +814,8 @@ TEST_CASE("Parser Program")
     SECTION("If expressions can be followed by definitions with separators")
     {
         auto result = parse("if a: b else: c; def x = 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -859,8 +839,8 @@ TEST_CASE("Parser Program")
     SECTION("Definitions can follow expressions with separators")
     {
         auto result = parse("1; def x = 2; x");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -878,24 +858,24 @@ TEST_CASE("Parser Program")
     SECTION("Postfix does not cross newlines after lambda expressions")
     {
         auto result = parse("fn () -> { 1 }\n[0]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
     }
 
     SECTION("Postfix does not cross newlines after map literals")
     {
         auto result = parse("{a: 1}\n[\"a\"]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
     }
 
     SECTION("Newlines before call and index split statements")
     {
         auto result = parse("a\n(b)");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -910,8 +890,8 @@ TEST_CASE("Parser Program")
         CHECK(v2 == b_val);
 
         auto result2 = parse("a\n[b]");
-        REQUIRE(result2);
-        auto program2 = require_program(result2);
+        REQUIRE(result2.has_value());
+        auto program2 = std::move(result2).value();
         REQUIRE(program2.size() == 2);
 
         frst::Symbol_Table table2;
@@ -929,8 +909,8 @@ TEST_CASE("Parser Program")
     SECTION("Lambda calls can be postfixed by indexing")
     {
         auto result = parse("fn (x) -> { [x] }(3)[0]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -942,8 +922,8 @@ TEST_CASE("Parser Program")
     SECTION("Dot access can return a function which is then called")
     {
         auto result = parse("({a: fn () -> { 1 }}).a()");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -955,8 +935,8 @@ TEST_CASE("Parser Program")
     SECTION("Functions stored in array literals can be indexed and called")
     {
         auto result = parse("([fn (x) -> { x }][0])(5)");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -972,8 +952,8 @@ TEST_CASE("Parser Program")
             parse("def make = fn () -> { def y = 1; y }\n"
                   "def choose = if cond: fn () -> { 1 } else: fn () -> { 2 }\n"
                   "make(); choose()");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
@@ -1001,8 +981,8 @@ TEST_CASE("Parser Program")
                             "if true: m.a else: m.b;\n"
                             "pick(arr[1]);\n"
                             "m[\"b\"]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 6);
 
         frst::Symbol_Table table;
@@ -1026,8 +1006,8 @@ TEST_CASE("Parser Program")
     SECTION("Chained postfix expressions work across maps and calls")
     {
         auto result = parse("obj.f(1)[0].g; arr[0](3)");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -1064,8 +1044,8 @@ TEST_CASE("Parser Program")
     SECTION("Arrays and maps can appear inside larger expressions")
     {
         auto result = parse("([1, 2])[0] + 3; {a: 1}[\"a\"] == 1");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -1081,8 +1061,8 @@ TEST_CASE("Parser Program")
     SECTION("Bracketed literals do not swallow following statements")
     {
         auto result = parse("[1]; b\n{a: 1}; b");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
@@ -1106,8 +1086,8 @@ TEST_CASE("Parser Program")
                             "def y = {a: 1,\n# c\nb: 2}\n"
                             "def z = fn () -> { ; ; 3 }\n"
                             "x; y; z()");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 6);
 
         frst::Symbol_Table table;
@@ -1135,8 +1115,8 @@ TEST_CASE("Parser Program")
                             "} # wow\n"
                             "# huh?\n"
                             "def c = 2");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -1154,16 +1134,16 @@ TEST_CASE("Parser Program")
     SECTION("Adjacent map literals are separate statements")
     {
         auto result = parse("{a: 1}\n{b: 2}");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
     }
 
     SECTION("Array literals separated by semicolons are distinct statements")
     {
         auto result = parse("[1, 2]; [1]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -1179,8 +1159,8 @@ TEST_CASE("Parser Program")
     SECTION("Array literals as adjacent statements")
     {
         auto result = parse("[1][0]; 2");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -1196,16 +1176,16 @@ TEST_CASE("Parser Program")
     SECTION("Array literals followed by indexing across newlines")
     {
         auto result = parse("[]\n[1]");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
     }
 
     SECTION("Parenthesized expressions are valid statements")
     {
         auto result = parse("((2))");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
         frst::Symbol_Table table;
@@ -1217,8 +1197,8 @@ TEST_CASE("Parser Program")
     SECTION("Mixed grammar in a single program")
     {
         auto result = parse("1+2*3; not false; (1<2)==true; false or true; -5");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 5);
 
         frst::Symbol_Table table;
@@ -1243,8 +1223,8 @@ TEST_CASE("Parser Program")
     SECTION("Postfix expressions in a program")
     {
         auto result = parse("arr[0]; f(1,2); obj.key; arr[\n0\n]; obj.f(3)");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 5);
 
         frst::Symbol_Table table;
@@ -1293,8 +1273,8 @@ TEST_CASE("Parser Program")
                             "if false: 1;\n"
                             "if false: 1 elif true: 3 else: 4;\n"
                             "if false: 1 elif false: 2;\n");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
@@ -1326,8 +1306,8 @@ TEST_CASE("Parser Program")
                             "else:\n"
                             "3\n"
                             "4");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
@@ -1352,8 +1332,8 @@ TEST_CASE("Parser Program")
         auto result = parse("def x = 1;\n"
                             "def y = x + 2;\n"
                             "y\n");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -1369,8 +1349,8 @@ TEST_CASE("Parser Program")
     SECTION("Definitions separated by whitespace and semicolons")
     {
         auto result = parse("def a = 1;; def b = 2; a; b");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 4);
 
         frst::Symbol_Table table;
@@ -1391,8 +1371,8 @@ TEST_CASE("Parser Program")
         auto result = parse("if true : 1 else : 2\n"
                             "if true: 1 else: 2\n"
                             "if false: 1 else: 2\n");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 3);
 
         frst::Symbol_Table table;
@@ -1412,8 +1392,8 @@ TEST_CASE("Parser Program")
     SECTION("Statements after an if expression are separate statements")
     {
         auto result = parse("if a: b else: c\nfun()");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -1467,8 +1447,8 @@ TEST_CASE("Parser Program")
                             "f( # c\n )\n"
                             "arr[\n -1\n]\n"
                             "obj.inner.value\n");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 5);
 
         frst::Symbol_Table table;
@@ -1516,8 +1496,8 @@ TEST_CASE("Parser Program")
     SECTION("Whitespace and comments are ignored between statements")
     {
         auto result = parse("# comment\n42;\n# next\n\"hi\"");
-        REQUIRE(result);
-        auto program = require_program(result);
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
         frst::Symbol_Table table;
@@ -1537,8 +1517,7 @@ TEST_CASE("Parser Program")
         for (const auto& input : cases)
         {
             auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not result);
         }
     }
 
@@ -1564,8 +1543,7 @@ TEST_CASE("Parser Program")
         for (const auto& input : cases)
         {
             auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not result);
         }
     }
 }

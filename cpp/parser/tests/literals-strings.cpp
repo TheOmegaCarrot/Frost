@@ -1,33 +1,30 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <expected>
+
+#include <frost/ast.hpp>
+#include <frost/parser.hpp>
+#include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
-
-namespace
-{
-struct String_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::string_literal> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::Value_Ptr>;
-};
-} // namespace
 
 TEST_CASE("Parser String Literals")
 {
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<String_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
+    };
+
+    auto eval_string =
+        [](std::expected<frst::ast::Expression::Ptr, std::string>& result)
+        -> std::string {
+        auto expr = std::move(result).value();
+        frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto val = expr->evaluate(ctx);
+        REQUIRE(val->is<frst::String>());
+        return std::string{val->get<frst::String>().value()};
     };
 
     SECTION("Valid strings")
@@ -57,16 +54,12 @@ TEST_CASE("Parser String Literals")
         for (const auto& c : cases)
         {
             auto result = parse(c.double_input);
-            REQUIRE(result);
-            auto value = std::move(result).value();
-            REQUIRE(value->is<frst::String>());
-            CHECK(value->get<frst::String>().value() == c.double_expected);
+            REQUIRE(result.has_value());
+            CHECK(eval_string(result) == c.double_expected);
 
             auto result2 = parse(c.single_input);
-            REQUIRE(result2);
-            auto value2 = std::move(result2).value();
-            REQUIRE(value2->is<frst::String>());
-            CHECK(value2->get<frst::String>().value() == c.single_expected);
+            REQUIRE(result2.has_value());
+            CHECK(eval_string(result2) == c.single_expected);
         }
     }
 
@@ -91,10 +84,8 @@ TEST_CASE("Parser String Literals")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto value = std::move(result).value();
-            REQUIRE(value->is<frst::String>());
-            CHECK(value->get<frst::String>().value() == c.expected);
+            REQUIRE(result.has_value());
+            CHECK(eval_string(result) == c.expected);
         }
     }
 
@@ -103,10 +94,8 @@ TEST_CASE("Parser String Literals")
         const std::string emoji = "😀";
         const auto expect_roundtrip = [&](const std::string& input) {
             auto result = parse(input);
-            REQUIRE(result);
-            auto value = std::move(result).value();
-            REQUIRE(value->is<frst::String>());
-            CHECK(value->get<frst::String>().value() == emoji);
+            REQUIRE(result.has_value());
+            CHECK(eval_string(result) == emoji);
         };
 
         expect_roundtrip("\"" + emoji + "\"");
@@ -153,44 +142,40 @@ TEST_CASE("Parser String Literals")
         {
             INFO("double: " << c.double_input);
             auto result = parse(c.double_input);
-            REQUIRE(result);
-            auto value = std::move(result).value();
-            REQUIRE(value->is<frst::String>());
-            CHECK(value->get<frst::String>().value() == c.expected);
+            REQUIRE(result.has_value());
+            CHECK(eval_string(result) == c.expected);
 
             INFO("single: " << c.single_input);
             auto result2 = parse(c.single_input);
-            REQUIRE(result2);
-            auto value2 = std::move(result2).value();
-            REQUIRE(value2->is<frst::String>());
-            CHECK(value2->get<frst::String>().value() == c.expected);
+            REQUIRE(result2.has_value());
+            CHECK(eval_string(result2) == c.expected);
         }
     }
 
     SECTION("Hex escapes are not processed in raw strings")
     {
         auto result = parse("R\"(\\x41)\"");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == "\\x41");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == "\\x41");
 
         auto result2 = parse("R'(\\x41)'");
-        REQUIRE(result2);
-        CHECK(result2.value()->get<frst::String>().value() == "\\x41");
+        REQUIRE(result2.has_value());
+        CHECK(eval_string(result2) == "\\x41");
     }
 
     SECTION("Invalid hex escapes")
     {
         // Only one hex digit
-        CHECK_FALSE(parse("\"\\x0\""));
-        CHECK_FALSE(parse("'\\x0'"));
+        CHECK(not parse("\"\\x0\""));
+        CHECK(not parse("'\\x0'"));
 
         // Non-hex digit after \x
-        CHECK_FALSE(parse("\"\\xGG\""));
-        CHECK_FALSE(parse("'\\xGG'"));
+        CHECK(not parse("\"\\xGG\""));
+        CHECK(not parse("'\\xGG'"));
 
         // \x at end of string (no digits)
-        CHECK_FALSE(parse("\"\\x\""));
-        CHECK_FALSE(parse("'\\x'"));
+        CHECK(not parse("\"\\x\""));
+        CHECK(not parse("'\\x'"));
     }
 
     SECTION("Invalid strings")
@@ -209,11 +194,8 @@ TEST_CASE("Parser String Literals")
 
         for (const auto& c : cases)
         {
-            auto result = parse(c.double_input);
-            CHECK_FALSE(result);
-
-            auto result2 = parse(c.single_input);
-            CHECK_FALSE(result2);
+            CHECK(not parse(c.double_input));
+            CHECK(not parse(c.single_input));
         }
     }
 
@@ -228,31 +210,26 @@ TEST_CASE("Parser String Literals")
 
         for (const auto& input : cases)
         {
-            auto result = parse(input);
-            CHECK_FALSE(result);
+            CHECK(not parse(input));
         }
     }
 
     SECTION("Newlines are not allowed in strings")
     {
         std::string double_input = "\"line1\nline2\"";
-        auto result = parse(double_input);
-        CHECK_FALSE(result);
+        CHECK(not parse(double_input));
 
         std::string single_input = "'line1\nline2'";
-        auto result2 = parse(single_input);
-        CHECK_FALSE(result2);
+        CHECK(not parse(single_input));
     }
 
     SECTION("Newlines are not allowed in raw strings")
     {
         std::string raw_double = "R\"(line1\nline2)\"";
-        auto result = parse(raw_double);
-        CHECK_FALSE(result);
+        CHECK(not parse(raw_double));
 
         std::string raw_single = "R'(line1\nline2)'";
-        auto result2 = parse(raw_single);
-        CHECK_FALSE(result2);
+        CHECK(not parse(raw_single));
     }
 
     SECTION("Triple-quoted strings: basic multiline")
@@ -261,8 +238,8 @@ TEST_CASE("Parser String Literals")
     hello
     world
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == R"(hello
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == R"(hello
 world)");
     }
 
@@ -272,8 +249,8 @@ world)");
     hello
     world
     ''')");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == R"(hello
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == R"(hello
 world)");
     }
 
@@ -283,8 +260,8 @@ world)");
     if true:
       nested
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == R"(if true:
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == R"(if true:
   nested)");
     }
 
@@ -295,8 +272,8 @@ world)");
 
     line 3
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == R"(line 1
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == R"(line 1
 
 line 3)");
     }
@@ -306,8 +283,8 @@ line 3)");
         auto result = parse(R"("""
     hello\tworld
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == "hello\tworld");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == "hello\tworld");
     }
 
     SECTION("Triple-quoted strings: \\\\ escape")
@@ -315,8 +292,8 @@ line 3)");
         auto result = parse(R"("""
     back\\slash
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == "back\\slash");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == "back\\slash");
     }
 
     SECTION("Triple-quoted strings: \\0 escape")
@@ -325,8 +302,8 @@ line 3)");
         auto result = parse(R"("""
     null\0byte
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == "null\0byte"s);
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == "null\0byte"s);
     }
 
     SECTION("Triple-quoted strings: escaped delimiter quotes")
@@ -334,14 +311,14 @@ line 3)");
         auto result = parse(R"("""
     say \"hello\"
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == R"(say "hello")");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == R"(say "hello")");
 
         auto single = parse(R"('''
     it\'s escaped
     ''')");
-        REQUIRE(single);
-        CHECK(single.value()->get<frst::String>().value() == "it's escaped");
+        REQUIRE(single.has_value());
+        CHECK(eval_string(single) == "it's escaped");
     }
 
     SECTION("Triple-quoted strings: hex escapes are forbidden")
@@ -349,7 +326,7 @@ line 3)");
         auto result = parse(R"("""
     \x48\x69
     """)");
-        CHECK_FALSE(result);
+        CHECK(not result);
     }
 
     SECTION("Triple-quoted strings: no indentation on closing delimiter")
@@ -358,8 +335,8 @@ line 3)");
 hello
 world
 """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == R"(hello
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == R"(hello
 world)");
     }
 
@@ -368,8 +345,8 @@ world)");
         auto result = parse(R"("""
     hello
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == "hello");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == "hello");
     }
 
     SECTION("Triple-quoted strings: can contain double quotes")
@@ -377,9 +354,8 @@ world)");
         auto result = parse(R"("""
     she said "hi"
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value()
-              == R"(she said "hi")");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == R"(she said "hi")");
     }
 
     SECTION("Triple-quoted strings: single-quoted can contain single quotes")
@@ -387,8 +363,8 @@ world)");
         auto result = parse(R"('''
     it's fine
     ''')");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == "it's fine");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == "it's fine");
     }
 
     SECTION("Triple-quoted strings: triple-single can contain triple-double")
@@ -396,9 +372,8 @@ world)");
         auto result = parse(R"--('''
     some """quoted""" text
     ''')--");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value()
-              == R"(some """quoted""" text)");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == R"(some """quoted""" text)");
     }
 
     SECTION("Triple-quoted strings: triple-double can contain triple-single")
@@ -406,16 +381,15 @@ world)");
         auto result = parse(R"("""
     some '''quoted''' text
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value()
-              == "some '''quoted''' text");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == "some '''quoted''' text");
     }
 
     SECTION("Triple-quoted strings: tab indentation")
     {
         auto result = parse("\"\"\"\n\thello\n\tworld\n\t\"\"\"");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == R"(hello
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == R"(hello
 world)");
     }
 
@@ -426,8 +400,8 @@ world)");
         b
             c
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == R"(a
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == R"(a
     b
         c)");
     }
@@ -435,8 +409,8 @@ world)");
     SECTION("Triple-quoted strings: empty content")
     {
         auto result = parse("\"\"\"\n\"\"\"");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == "");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == "");
     }
 
     SECTION("Triple-quoted strings: whitespace-only content")
@@ -444,8 +418,8 @@ world)");
         auto result = parse(R"("""
 
     """)");
-        REQUIRE(result);
-        CHECK(result.value()->get<frst::String>().value() == "");
+        REQUIRE(result.has_value());
+        CHECK(eval_string(result) == "");
     }
 
     SECTION("Triple-quoted strings: \\n and \\r escapes are forbidden")
@@ -453,22 +427,22 @@ world)");
         auto with_n = parse(R"("""
     hello\nworld
     """)");
-        CHECK_FALSE(with_n);
+        CHECK(not with_n);
 
         auto with_r = parse(R"("""
     hello\rworld
     """)");
-        CHECK_FALSE(with_r);
+        CHECK(not with_r);
     }
 
     SECTION("Triple-quoted strings: regular strings still work")
     {
         auto regular = parse(R"("hello")");
-        REQUIRE(regular);
-        CHECK(regular.value()->get<frst::String>().value() == "hello");
+        REQUIRE(regular.has_value());
+        CHECK(eval_string(regular) == "hello");
 
         auto single = parse("'hello'");
-        REQUIRE(single);
-        CHECK(single.value()->get<frst::String>().value() == "hello");
+        REQUIRE(single.has_value());
+        CHECK(eval_string(single) == "hello");
     }
 }

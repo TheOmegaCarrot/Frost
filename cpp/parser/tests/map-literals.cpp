@@ -2,51 +2,26 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
 
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
-
 using namespace frst::literals;
-
-namespace
-{
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-} // namespace
 
 TEST_CASE("Parser Map Literals")
 {
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Empty map literal is valid")
     {
         auto result = parse("{}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -58,8 +33,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Identifier key sugar produces string keys")
     {
         auto result = parse("{foo: 1, bar: 2}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -81,8 +56,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Bracketed key expressions are supported")
     {
         auto result = parse("{[1]: 2, [1+1]: 3}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -104,8 +79,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Mixed key forms are allowed")
     {
         auto result = parse("{foo: 1, [42]: 2, bar: 3}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -118,8 +93,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Trailing commas are allowed")
     {
         auto result = parse("{foo: 1, [2]: 3,}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -130,15 +105,15 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Commas are required between entries")
     {
-        CHECK_FALSE(parse("{foo: 1 bar: 2}"));
-        CHECK_FALSE(parse("{a: 1\nb:2}"));
+        CHECK(not parse("{foo: 1 bar: 2}"));
+        CHECK(not parse("{a: 1\nb:2}"));
     }
 
     SECTION("Newlines between entries are allowed with commas")
     {
         auto result = parse("{foo: 1,\nbar: 2}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -150,8 +125,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Map value expressions can span newlines")
     {
         auto result = parse("{foo: 1 +\n 2}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -168,8 +143,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Map literals can appear inside arrays")
     {
         auto result = parse("[{a: 1}, {b: 2}]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -183,27 +158,27 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Whitespace between % and { is not allowed")
     {
-        CHECK_FALSE(parse("% {}"));
-        CHECK_FALSE(parse("% {foo: 1}"));
+        CHECK(not parse("% {}"));
+        CHECK(not parse("% {foo: 1}"));
     }
 
     SECTION("Identifier key cannot be a keyword")
     {
-        CHECK_FALSE(parse("{if: 1}"));
-        CHECK_FALSE(parse("{true: 1}"));
+        CHECK(not parse("{if: 1}"));
+        CHECK(not parse("{true: 1}"));
     }
 
     SECTION("Missing brackets for non-identifier keys is invalid")
     {
-        CHECK_FALSE(parse("{1: 2}"));
-        CHECK_FALSE(parse("{(a): 1}"));
+        CHECK(not parse("{1: 2}"));
+        CHECK(not parse("{(a): 1}"));
     }
 
     SECTION("Map literals can be used as atoms")
     {
         auto result = parse("{foo: 1}[\"foo\"]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -214,15 +189,17 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Map literals cannot be followed by postfix across newlines")
     {
-        auto result = parse("{a: 1}\n[\"a\"]");
-        REQUIRE_FALSE(result);
+        auto result =
+            frst::parse_program(std::string{"{a: 1}\n[\"a\"]"});
+        REQUIRE(result.has_value());
+        CHECK(result.value().size() == 2);
     }
 
     SECTION("Bracketed identifier keys use the expression value")
     {
         auto result = parse("{[foo]: 1}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -237,8 +214,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Key expressions can be complex")
     {
         auto result = parse("{[if true: 1 else: 2]: 3}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -253,8 +230,8 @@ TEST_CASE("Parser Map Literals")
     {
         auto result =
             parse("{a: if true: 1 else: 2, b: fn(x) -> { x }(3), c: [1,2]}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -272,8 +249,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Complex bracketed keys parse but enforce key type at eval")
     {
         auto result = parse("{[fn() -> { 1 }()]: 2, [[1,2]]: 3}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -285,8 +262,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Nested map literals are allowed")
     {
         auto result = parse("{a: {b: 1}}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -302,8 +279,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Map literals are valid in postfix and call contexts")
     {
         auto result = parse("{a: 1}[\"a\"]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
         auto out = expr->evaluate(ctx);
@@ -311,8 +288,8 @@ TEST_CASE("Parser Map Literals")
         CHECK(out->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("({a: 1}).a");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 1_f);
@@ -343,8 +320,8 @@ TEST_CASE("Parser Map Literals")
         table.define("id", frst::Value::create(frst::Function{callable}));
 
         auto result3 = parse("id({a: 1})");
-        REQUIRE(result3);
-        auto expr3 = require_expression(result3);
+        REQUIRE(result3.has_value());
+        auto expr3 = std::move(result3).value();
         auto out3 = expr3->evaluate(ctx);
         REQUIRE(out3->is<frst::Map>());
     }
@@ -352,8 +329,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Trailing comma with comments is accepted")
     {
         auto result = parse("{a: 1, # c\n}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
         auto out = expr->evaluate(ctx);
@@ -364,8 +341,8 @@ TEST_CASE("Parser Map Literals")
     SECTION("Whitespace inside empty map is allowed")
     {
         auto result = parse("{ }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
         auto out = expr->evaluate(ctx);
@@ -375,18 +352,18 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Malformed maps are rejected")
     {
-        CHECK_FALSE(parse("{"));
-        CHECK_FALSE(parse("{foo: 1"));
-        CHECK_FALSE(parse("{,}"));
-        CHECK_FALSE(parse("{foo:1,,bar:2}"));
-        CHECK_FALSE(parse("{[1: 2]}"));
-        CHECK_FALSE(parse("{[1]:}"));
-        CHECK_FALSE(parse("%"));
-        CHECK_FALSE(parse("%[]"));
-        CHECK_FALSE(parse("{a: 1; b: 2}"));
-        CHECK_FALSE(parse("{[1]: 2; [3]: 4}"));
-        CHECK_FALSE(parse("{a: 1; }"));
-        CHECK_FALSE(parse("{;a: 1}"));
+        CHECK(not parse("{"));
+        CHECK(not parse("{foo: 1"));
+        CHECK(not parse("{,}"));
+        CHECK(not parse("{foo:1,,bar:2}"));
+        CHECK(not parse("{[1: 2]}"));
+        CHECK(not parse("{[1]:}"));
+        CHECK(not parse("%"));
+        CHECK(not parse("%[]"));
+        CHECK(not parse("{a: 1; b: 2}"));
+        CHECK(not parse("{[1]: 2; [3]: 4}"));
+        CHECK(not parse("{a: 1; }"));
+        CHECK(not parse("{;a: 1}"));
     }
 
     SECTION("Identifier key sugar gets source range")
@@ -395,8 +372,8 @@ TEST_CASE("Parser Map Literals")
         //   ^       ^
         //  col 2-4  col 10-12
         auto result = parse("{foo: 1, bar: 2}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         std::vector<const frst::ast::AST_Node*> key_literals;
@@ -421,8 +398,8 @@ TEST_CASE("Parser Map Literals")
         //     ^
         //  col 4-6
         auto result = parse("{  foo  : 1}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         std::vector<const frst::ast::AST_Node*> key_literals;

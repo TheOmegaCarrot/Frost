@@ -2,33 +2,19 @@
 
 #include <frost/ast.hpp>
 #include <frost/closure.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
 
 using namespace frst::literals;
 using namespace std::literals;
 
 namespace
 {
-struct Program_Root
-{
-    static constexpr auto rule = lexy::dsl::p<frst::grammar::program>;
-    static constexpr auto value =
-        lexy::forward<std::vector<frst::ast::Statement::Ptr>>;
-};
-
 auto parse(std::string_view input)
 {
-    auto src = lexy::string_input<lexy::utf8_encoding>(input);
-    frst::grammar::reset_parse_state(src);
-    return lexy::parse<Program_Root>(src, lexy::noop);
+    return frst::parse_program(std::string{input});
 }
 
 frst::Value_Ptr call_function(const frst::Value_Ptr& value,
@@ -45,7 +31,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("defn binds name to a function")
     {
         auto result = parse("defn f(x) -> x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -63,7 +49,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("defn with multiple params")
     {
         auto result = parse("defn add(x, y) -> x + y");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -81,7 +67,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("defn with no params")
     {
         auto result = parse("defn f() -> 42");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -97,7 +83,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("defn with vararg-only")
     {
         auto result = parse("defn f(...args) -> args");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -114,7 +100,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("defn with params and vararg")
     {
         auto result = parse("defn f(x, ...rest) -> rest");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -133,7 +119,7 @@ TEST_CASE("Parser Defn Statements")
     {
         auto result =
             parse("defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -150,7 +136,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("defn self-name is the function name")
     {
         auto result = parse("defn f(x) -> x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -170,7 +156,7 @@ TEST_CASE("Parser Defn Statements")
                             "    defn double(x) -> x * 2\n"
                             "    double(5)\n"
                             "})()");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -187,7 +173,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("export defn binds and exports the name")
     {
         auto result = parse("export defn f(x) -> x * 2");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -207,7 +193,7 @@ TEST_CASE("Parser Defn Statements")
     {
         auto result =
             parse("export defn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -224,28 +210,28 @@ TEST_CASE("Parser Defn Statements")
     SECTION("export defn is rejected inside a lambda body")
     {
         auto result = parse("fn() -> { export defn f(x) -> x }");
-        CHECK_FALSE(result);
+        CHECK(not result);
     }
 
     SECTION("defn without parens is rejected")
     {
-        CHECK_FALSE(parse("defn f -> 1"));
+        CHECK(not parse("defn f -> 1"));
     }
 
     SECTION("defn with missing arrow is rejected")
     {
-        CHECK_FALSE(parse("defn f(x) { x }"));
+        CHECK(not parse("defn f(x) { x }"));
     }
 
     SECTION("defn with empty body is rejected")
     {
-        CHECK_FALSE(parse("defn f(x) ->"));
+        CHECK(not parse("defn f(x) ->"));
     }
 
     SECTION("multiple defn statements parse as separate definitions")
     {
         auto result = parse("defn f(x) -> x\ndefn g(x) -> x * 2");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
@@ -268,7 +254,7 @@ TEST_CASE("Parser Defn Statements")
                             "    def y = x + 1\n"
                             "    y * 2\n"
                             "}");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -287,7 +273,7 @@ TEST_CASE("Parser Defn Statements")
                             "    if n <= 0: 0\n"
                             "    else: n + sum(n - 1)\n"
                             "}");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -304,7 +290,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("defn captures outer variables")
     {
         auto result = parse("def base = 10\ndefn f(x) -> x + base");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
@@ -321,7 +307,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("defn captures outer variable but not its own name")
     {
         auto result = parse("def base = 10\ndefn f(x) -> x + base");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 2);
 
@@ -344,7 +330,7 @@ TEST_CASE("Parser Defn Statements")
                             "    defn double(x) -> x * 2\n"
                             "    double(6)\n"
                             "}");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -361,7 +347,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("space between name and paren is accepted")
     {
         auto result = parse("defn f (x) -> x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -377,7 +363,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("body starting on a new line is accepted")
     {
         auto result = parse("defn f(x) ->\n    x + 1");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -392,19 +378,19 @@ TEST_CASE("Parser Defn Statements")
 
     SECTION("defn is a reserved keyword and cannot be used as an identifier")
     {
-        CHECK_FALSE(parse("def defn = 1"));
-        CHECK_FALSE(parse("def x = defn"));
+        CHECK(not parse("def defn = 1"));
+        CHECK(not parse("def x = defn"));
     }
 
     SECTION("duplicate parameters are rejected")
     {
-        CHECK_THROWS(parse("defn f(x, x) -> x"));
+        CHECK(not parse("defn f(x, x) -> x"));
     }
 
     SECTION("keyword as parameter is rejected")
     {
-        CHECK_FALSE(parse("defn f(if) -> if"));
-        CHECK_FALSE(parse("defn f(fn) -> fn"));
+        CHECK(not parse("defn f(if) -> if"));
+        CHECK(not parse("defn f(fn) -> fn"));
     }
 
     SECTION("defn Lambda gets source range from name to end of body")
@@ -414,7 +400,7 @@ TEST_CASE("Parser Defn Statements")
         //  col 6            col 18
         // The Lambda spans from the name 'f' to end of body 'x + 1'
         auto result = parse("defn f(x) -> x + 1");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -434,7 +420,7 @@ TEST_CASE("Parser Defn Statements")
         //              ^           ^
         //         col 13           col 25
         auto result = parse("export defn g(x) -> x * 2");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -451,7 +437,7 @@ TEST_CASE("Parser Defn Statements")
     {
         // "defn f(x) -> x   " — trailing spaces should not inflate end
         auto result = parse("defn f(x) -> x   ");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -468,7 +454,7 @@ TEST_CASE("Parser Defn Statements")
         //       ^~~~~~
         //  col 6     col 11
         auto result = parse("defn square(x) -> x * x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -489,7 +475,7 @@ TEST_CASE("Parser Defn Statements")
         //              ^~~~~
         //         col 13   col 17
         auto result = parse("export defn greet(name) -> name");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 
@@ -507,7 +493,7 @@ TEST_CASE("Parser Defn Statements")
     SECTION("defn binding range is not no_range")
     {
         auto result = parse("defn f(x) -> x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
 

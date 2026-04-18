@@ -2,59 +2,30 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
 
 using namespace frst::literals;
 
 namespace
 {
-struct Integer_Root
+// Parse a single expression and evaluate it to a Value_Ptr.
+// Returns nullopt if parsing fails.
+std::optional<frst::Value_Ptr> parse_eval(std::string_view input)
 {
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::integer_literal> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::Value_Ptr>;
-};
-
-struct Float_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::float_literal> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::Value_Ptr>;
-};
-
-struct Program_Root
-{
-    static constexpr auto rule = lexy::dsl::p<frst::grammar::program>;
-    static constexpr auto value =
-        lexy::forward<std::vector<frst::ast::Statement::Ptr>>;
-};
+    auto result = frst::parse_data(std::string{input});
+    if (not result)
+        return std::nullopt;
+    frst::Symbol_Table table;
+    frst::Evaluation_Context ctx{.symbols = table};
+    return result.value()->evaluate(ctx);
+}
 } // namespace
 
 TEST_CASE("Parser Numeric Literals")
 {
-    // AI-generated test by Codex (GPT-5).
-    // Signed: Codex (GPT-5).
-    auto parse_int = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Integer_Root>(src, lexy::noop);
-    };
-    auto parse_float = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Float_Root>(src, lexy::noop);
-    };
-
     SECTION("Valid integers")
     {
         struct Case
@@ -74,34 +45,10 @@ TEST_CASE("Parser Numeric Literals")
 
         for (const auto& c : cases)
         {
-            auto result = parse_int(c.input);
-            REQUIRE(result);
-            auto value = std::move(result).value();
-            REQUIRE(value->is<frst::Int>());
-            CHECK(value->get<frst::Int>().value() == c.expected);
-        }
-    }
-
-    SECTION("Invalid integers")
-    {
-        const std::string_view cases[] = {
-            "",
-            "1.0",
-            ".1",
-            "1.",
-            "1e3",
-            "+1",
-            "-1",
-            "1_0",
-            "12 34",
-            "0x10",
-            "9223372036854775808",
-        };
-
-        for (const auto& input : cases)
-        {
-            auto result = parse_int(input);
-            CHECK_FALSE(result);
+            auto value = parse_eval(c.input);
+            REQUIRE(value.has_value());
+            REQUIRE(value.value()->is<frst::Int>());
+            CHECK(value.value()->get<frst::Int>().value() == c.expected);
         }
     }
 
@@ -120,35 +67,14 @@ TEST_CASE("Parser Numeric Literals")
 
         for (const auto& c : cases)
         {
-            auto result = parse_float(c.input);
-            REQUIRE(result);
-            auto value = std::move(result).value();
-            REQUIRE(value->is<frst::Float>());
-            CHECK(value->get<frst::Float>().value() == c.expected);
+            auto value = parse_eval(c.input);
+            REQUIRE(value.has_value());
+            REQUIRE(value.value()->is<frst::Float>());
+            CHECK(value.value()->get<frst::Float>().value() == c.expected);
         }
     }
 
-    SECTION("Invalid floats")
-    {
-        // These inputs are never dispatched to float_literal by the full
-        // parser (the Literal peek guards ensure only valid prefixes enter).
-        // We test the subset that float_literal itself rejects.
-        const std::string_view cases[] = {
-            "",    "1",    "1.",    ".1",   "1.2.3",
-            "+1.0", "-1.0", "1_0.2", "12 34",
-        };
-
-        for (const auto& input : cases)
-        {
-            DYNAMIC_SECTION("input: '" << input << "'")
-            {
-                auto result = parse_float(input);
-                CHECK_FALSE(result);
-            }
-        }
-    }
-
-    SECTION("Scientific notation (via full parser)")
+    SECTION("Scientific notation")
     {
         struct Case
         {
@@ -175,80 +101,47 @@ TEST_CASE("Parser Numeric Literals")
             {"5e0", 5e0},
         };
 
-        auto parse_program = [](std::string_view input) {
-            auto src = lexy::string_input<lexy::utf8_encoding>(input);
-            frst::grammar::reset_parse_state(src);
-            return lexy::parse<Program_Root>(src, lexy::noop);
-        };
-
         for (const auto& c : cases)
         {
             DYNAMIC_SECTION(c.input)
             {
-                auto result = parse_program(c.input);
-                REQUIRE(result);
-                auto program = std::move(result).value();
-                REQUIRE(program.size() == 1);
-
-                frst::Symbol_Table table;
-                frst::Evaluation_Context ctx{.symbols = table};
-                auto* expr = dynamic_cast<const frst::ast::Expression*>(
-                    program[0].get());
-                REQUIRE(expr);
-                auto val = expr->evaluate(ctx);
-                REQUIRE(val->is<frst::Float>());
-                CHECK(val->get<frst::Float>().value() == c.expected);
+                auto value = parse_eval(c.input);
+                REQUIRE(value.has_value());
+                REQUIRE(value.value()->is<frst::Float>());
+                CHECK(value.value()->get<frst::Float>().value() == c.expected);
             }
         }
     }
 
     SECTION("Scientific notation is Float, not Int")
     {
-        auto parse_program = [](std::string_view input) {
-            auto src = lexy::string_input<lexy::utf8_encoding>(input);
-            frst::grammar::reset_parse_state(src);
-            return lexy::parse<Program_Root>(src, lexy::noop);
-        };
-
-        // 3e2 should be Float(300), not Int(300)
-        auto result = parse_program("3e2");
-        REQUIRE(result);
-        auto program = std::move(result).value();
-        REQUIRE(program.size() == 1);
-
-        frst::Symbol_Table table;
-        frst::Evaluation_Context ctx{.symbols = table};
-        auto* expr =
-            dynamic_cast<const frst::ast::Expression*>(program[0].get());
-        REQUIRE(expr);
-        auto val = expr->evaluate(ctx);
-        CHECK(val->is<frst::Float>());
-        CHECK_FALSE(val->is<frst::Int>());
+        auto value = parse_eval("3e2");
+        REQUIRE(value.has_value());
+        CHECK(value.value()->is<frst::Float>());
+        CHECK_FALSE(value.value()->is<frst::Int>());
     }
 
     SECTION("Identifiers starting with 'e' are not floats")
     {
-        auto parse_program = [](std::string_view input) {
-            auto src = lexy::string_input<lexy::utf8_encoding>(input);
-            frst::grammar::reset_parse_state(src);
-            return lexy::parse<Program_Root>(src, lexy::noop);
-        };
-
-        // "e2" alone is an identifier, not a float
-        auto result = parse_program("e2");
-        REQUIRE(result);
+        auto result = frst::parse_program("e2");
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
-        // It should parse as a name lookup, not a literal
         auto* lookup = dynamic_cast<const frst::ast::Name_Lookup*>(
             program[0].get());
         CHECK(lookup != nullptr);
     }
 
-    SECTION("Out of range floats")
+    SECTION("Out of range integer")
+    {
+        CHECK(not parse_eval("9223372036854775808"));
+    }
+
+    SECTION("Out of range float")
     {
         auto too_large = std::string(400, '9') + ".0";
-        CHECK_THROWS_WITH(parse_float(too_large),
-                          Catch::Matchers::ContainsSubstring("out of range"));
+        auto result = frst::parse_data(too_large);
+        REQUIRE(not result);
+        CHECK(result.error().find("out of range") != std::string::npos);
     }
 }

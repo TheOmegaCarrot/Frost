@@ -2,43 +2,18 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
-
 using namespace frst::literals;
-
-namespace
-{
-struct Name_Lookup_Full
-{
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::node::Name_Lookup> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-template <typename Result>
-frst::ast::Expression::Ptr require_expression(Result& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-} // namespace
 
 TEST_CASE("Name Lookup")
 {
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Name_Lookup_Full>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Valid identifiers")
@@ -57,8 +32,8 @@ TEST_CASE("Name Lookup")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -79,16 +54,22 @@ TEST_CASE("Name Lookup")
         for (const auto& input : cases)
         {
             auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            // Either parse fails, or it produces something other than a
+            // Name_Lookup (e.g. "true"/"null" are valid literals, not lookups)
+            if (result.has_value())
+            {
+                auto* lookup = dynamic_cast<const frst::ast::Name_Lookup*>(
+                    result.value().get());
+                CHECK_FALSE(lookup);
+            }
         }
     }
 
     SECTION("Lookup fails when identifier is not defined")
     {
         auto result = parse("missing_name");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -99,30 +80,17 @@ TEST_CASE("Name Lookup")
     }
 }
 
-namespace
-{
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-} // namespace
-
 TEST_CASE("Name Lookup Source Ranges")
 {
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Single-character identifier")
     {
         // "x" → [1:1-1:1]
         auto result = parse("x");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto expr = std::move(result).value();
         REQUIRE(expr);
         auto range = expr->source_range();
@@ -135,7 +103,7 @@ TEST_CASE("Name Lookup Source Ranges")
     {
         // "foobar" → [1:1-1:6]
         auto result = parse("foobar");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto expr = std::move(result).value();
         REQUIRE(expr);
         auto range = expr->source_range();
@@ -147,7 +115,7 @@ TEST_CASE("Name Lookup Source Ranges")
     {
         // "my_var_2" → [1:1-1:8]
         auto result = parse("my_var_2");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
         auto expr = std::move(result).value();
         REQUIRE(expr);
         auto range = expr->source_range();

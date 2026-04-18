@@ -2,51 +2,26 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
 
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
-
 using namespace frst::literals;
-
-namespace
-{
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-} // namespace
 
 TEST_CASE("Parser If Expressions")
 {
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Basic if/else evaluates")
     {
         auto result = parse("if true: 1 else: 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -55,8 +30,8 @@ TEST_CASE("Parser If Expressions")
         CHECK(value->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("if false: 1 else: 2");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 2_f);
@@ -65,8 +40,8 @@ TEST_CASE("Parser If Expressions")
     SECTION("If without else returns Null when false")
     {
         auto result = parse("if false: 1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -77,8 +52,8 @@ TEST_CASE("Parser If Expressions")
     SECTION("If without else returns consequent when true")
     {
         auto result = parse("if true: 1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -90,8 +65,8 @@ TEST_CASE("Parser If Expressions")
     SECTION("Elif chains evaluate left-to-right")
     {
         auto result = parse("if false: 1 elif true: 2 else: 3");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -103,8 +78,8 @@ TEST_CASE("Parser If Expressions")
     SECTION("Elif chain without else can yield Null")
     {
         auto result = parse("if false: 1 elif false: 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -115,8 +90,8 @@ TEST_CASE("Parser If Expressions")
     SECTION("Nested if expressions associate correctly")
     {
         auto result = parse("if true: if false: 1 else: 2 else: 3");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -128,8 +103,8 @@ TEST_CASE("Parser If Expressions")
     SECTION("Longer elif chains evaluate correctly")
     {
         auto result = parse("if false: 1 elif false: 2 elif true: 3 else: 4");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -141,8 +116,8 @@ TEST_CASE("Parser If Expressions")
     SECTION("If expression binds as an atom in binary expressions")
     {
         auto result = parse("1 + if true: 2 else: 3");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -151,8 +126,8 @@ TEST_CASE("Parser If Expressions")
         CHECK(value->get<frst::Int>().value() == 3_f);
 
         auto result2 = parse("if false: 1 else: 2 + 3");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 5_f);
@@ -161,8 +136,8 @@ TEST_CASE("Parser If Expressions")
     SECTION("If branches preserve standard precedence")
     {
         auto result = parse("if false: 1 else: 2 + 3 * 4");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -171,8 +146,8 @@ TEST_CASE("Parser If Expressions")
         CHECK(value->get<frst::Int>().value() == 14_f);
 
         auto result2 = parse("1 + if true: 2 else: 3 * 4");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 3_f);
@@ -195,8 +170,8 @@ TEST_CASE("Parser If Expressions")
         table.define("obj", frst::Value::create(std::move(obj)));
 
         auto result = parse("if true: arr[0] else: obj.key");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 10_f);
@@ -235,8 +210,8 @@ TEST_CASE("Parser If Expressions")
         table.define("b", frst::Value::create(frst::Function{fn_b}));
 
         auto result = parse("(if true: a else: b)(1)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::Int>());
         CHECK(value->get<frst::Int>().value() == 10_f);
@@ -245,8 +220,8 @@ TEST_CASE("Parser If Expressions")
     SECTION("If condition uses boolean coercion")
     {
         auto result = parse("if 0: 1 else: 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -255,8 +230,8 @@ TEST_CASE("Parser If Expressions")
         CHECK(value->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("if null: 1 else: 2");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 2_f);
@@ -265,8 +240,8 @@ TEST_CASE("Parser If Expressions")
     SECTION("Whitespace and comments around colons and keywords")
     {
         auto result = parse("if true : 1 else : 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -275,36 +250,36 @@ TEST_CASE("Parser If Expressions")
         CHECK(value->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("if true: # c\n1 else: 2");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 1_f);
 
         auto result3 = parse("if true:\n1");
-        REQUIRE(result3);
-        auto expr3 = require_expression(result3);
+        REQUIRE(result3.has_value());
+        auto expr3 = std::move(result3).value();
         auto value3 = expr3->evaluate(ctx);
         REQUIRE(value3->is<frst::Int>());
         CHECK(value3->get<frst::Int>().value() == 1_f);
 
         auto result4 = parse("if false:\n1\nelse:\n2");
-        REQUIRE(result4);
-        auto expr4 = require_expression(result4);
+        REQUIRE(result4.has_value());
+        auto expr4 = std::move(result4).value();
         auto value4 = expr4->evaluate(ctx);
         REQUIRE(value4->is<frst::Int>());
         CHECK(value4->get<frst::Int>().value() == 2_f);
 
         auto result5 = parse("if true:\n1\nelif true:\n2 else: 3");
-        REQUIRE(result5);
-        auto expr5 = require_expression(result5);
+        REQUIRE(result5.has_value());
+        auto expr5 = std::move(result5).value();
         auto value5 = expr5->evaluate(ctx);
         REQUIRE(value5->is<frst::Int>());
         CHECK(value5->get<frst::Int>().value() == 1_f);
 
         auto result6 = parse("if true: 1 else:\n2");
-        REQUIRE(result6);
-        auto expr6 = require_expression(result6);
+        REQUIRE(result6.has_value());
+        auto expr6 = std::move(result6).value();
         auto value6 = expr6->evaluate(ctx);
         REQUIRE(value6->is<frst::Int>());
         CHECK(value6->get<frst::Int>().value() == 1_f);
@@ -321,8 +296,8 @@ TEST_CASE("Parser If Expressions")
         table.define("elsey", elsey);
 
         auto result = parse("if true: elifx else: elsey");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto value = expr->evaluate(ctx);
         CHECK(value == elifx);
     }
@@ -347,7 +322,7 @@ TEST_CASE("Parser If Expressions")
 
         for (const auto& input : cases)
         {
-            CHECK_FALSE(parse(input));
+            CHECK(not parse(input));
         }
     }
 
@@ -355,8 +330,8 @@ TEST_CASE("Parser If Expressions")
     {
         // "if true: 1 else: 2" → begin at 'i' {1,1}, end at '2' {1,18}
         auto result = parse("if true: 1 else: 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -368,8 +343,8 @@ TEST_CASE("Parser If Expressions")
     {
         // "if true: 42" → begin at 'i' {1,1}, end at '2' in 42 {1,11}
         auto result = parse("if true: 42");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -382,8 +357,8 @@ TEST_CASE("Parser If Expressions")
         // "if false: 1 elif true: 2 else: 3"
         // begin at 'i' {1,1}, end at '3' {1,32}
         auto result = parse("if false: 1 elif true: 2 else: 3");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -397,8 +372,8 @@ TEST_CASE("Parser If Expressions")
         //  ^                        ^  outer If: [1:1-1:25]
         //          ^                 ^  inner If: [1:9-1:25]
         auto result = parse("if a: b elif c: d else: e");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         // outer If -> Name_Lookup(a), Name_Lookup(b), inner If -> ...
@@ -418,8 +393,8 @@ TEST_CASE("Parser If Expressions")
         //          ^                            ^  elif1: [1:9-1:35]
         //                    ^                  ^  elif2: [1:19-1:35]
         auto result = parse("if a: b elif c: d elif e: f else: g");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         // Find the If nodes (indices 0, 3, 7 based on tree structure)
@@ -444,8 +419,8 @@ TEST_CASE("Parser If Expressions")
         // "if a: b elif c: d"
         //          ^       ^  inner If: [1:9-1:17]
         auto result = parse("if a: b elif c: d");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         std::vector<const frst::ast::AST_Node*> if_nodes;
@@ -463,8 +438,8 @@ TEST_CASE("Parser If Expressions")
         // "if a: b\nelif c: d\nelse: e"
         // outer If: [1:1-3:7], inner If (elif): [2:1-3:7]
         auto result = parse("if a: b\nelif c: d\nelse: e");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);

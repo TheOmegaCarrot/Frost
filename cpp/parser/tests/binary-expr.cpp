@@ -2,44 +2,17 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
 
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
-
 using namespace frst::literals;
-
-namespace
-{
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-} // namespace
 
 TEST_CASE("Parser Binary Expressions")
 {
-    // AI-generated test by Codex (GPT-5).
-    // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Arithmetic precedence")
@@ -59,8 +32,8 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -73,8 +46,8 @@ TEST_CASE("Parser Binary Expressions")
     SECTION("Newlines and comments inside parentheses are allowed")
     {
         auto result = parse("(1 +\n 2)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -83,8 +56,8 @@ TEST_CASE("Parser Binary Expressions")
         CHECK(value->get<frst::Int>().value() == 3_f);
 
         auto result2 = parse("(1 + # comment\n 2)");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 3_f);
@@ -106,8 +79,8 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -135,8 +108,8 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -149,8 +122,8 @@ TEST_CASE("Parser Binary Expressions")
     SECTION("Modulus parses in other expression contexts")
     {
         auto result = parse("if true: 5 % 2 else: 0");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -159,8 +132,8 @@ TEST_CASE("Parser Binary Expressions")
         CHECK(value->get<frst::Int>().value() == 1_f);
 
         auto result2 = parse("(fn(x) -> x % 3)(10)");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto value2 = expr2->evaluate(ctx);
         REQUIRE(value2->is<frst::Int>());
         CHECK(value2->get<frst::Int>().value() == 1_f);
@@ -182,8 +155,8 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -209,8 +182,8 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -237,8 +210,8 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -256,21 +229,21 @@ TEST_CASE("Parser Binary Expressions")
         table.define("value", value);
 
         auto or_result = parse("false or value");
-        REQUIRE(or_result);
-        auto or_expr = require_expression(or_result);
+        REQUIRE(or_result.has_value());
+        auto or_expr = std::move(or_result).value();
         auto or_value = or_expr->evaluate(ctx);
         CHECK(or_value == value);
 
         auto and_result = parse("false and missing");
-        REQUIRE(and_result);
-        auto and_expr = require_expression(and_result);
+        REQUIRE(and_result.has_value());
+        auto and_expr = std::move(and_result).value();
         auto and_value = and_expr->evaluate(ctx);
         REQUIRE(and_value->is<frst::Bool>());
         CHECK(and_value->get<frst::Bool>().value() == false);
 
         auto or_short = parse("true or missing");
-        REQUIRE(or_short);
-        auto or_short_expr = require_expression(or_short);
+        REQUIRE(or_short.has_value());
+        auto or_short_expr = std::move(or_short).value();
         auto or_short_value = or_short_expr->evaluate(ctx);
         REQUIRE(or_short_value->is<frst::Bool>());
         CHECK(or_short_value->get<frst::Bool>().value() == true);
@@ -286,8 +259,7 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& input : cases)
         {
             auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not result);
         }
     }
 
@@ -308,8 +280,8 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -327,8 +299,7 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& input : invalid_cases)
         {
             auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not result);
         }
     }
 
@@ -348,8 +319,8 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -379,8 +350,8 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -406,8 +377,8 @@ TEST_CASE("Parser Binary Expressions")
         for (const auto& c : cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -421,8 +392,8 @@ TEST_CASE("Parser Binary Expressions")
     {
         // "42" → begin {1,1}, end {1,2}
         auto result = parse("42");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -434,8 +405,8 @@ TEST_CASE("Parser Binary Expressions")
     {
         // "1+2" → begin {1,1} (from lhs '1'), end {1,3} (from rhs '2')
         auto result = parse("1+2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -447,8 +418,8 @@ TEST_CASE("Parser Binary Expressions")
     {
         // "1 + 2" → begin {1,1}, end {1,5}
         auto result = parse("1 + 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -462,8 +433,8 @@ TEST_CASE("Parser Binary Expressions")
         // primary_expression captures dsl::position before '(' and after ')'
         // so range is {1,1} to {1,3}
         auto result = parse("(1)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -475,8 +446,8 @@ TEST_CASE("Parser Binary Expressions")
     {
         // "1 + 2 * 3" → whole expression: begin {1,1}, end {1,9}
         auto result = parse("1 + 2 * 3");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -488,8 +459,8 @@ TEST_CASE("Parser Binary Expressions")
     {
         // "true and false" → begin {1,1}, end {1,14}
         auto result = parse("true and false");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -501,8 +472,8 @@ TEST_CASE("Parser Binary Expressions")
     {
         // "1 + 2": lhs '1' must be [1:1-1:1], not [1:1-1:2]
         auto result = parse("1 + 2");
-        REQUIRE(result);
-        auto binop = require_expression(result);
+        REQUIRE(result.has_value());
+        auto binop = std::move(result).value();
 
         auto nodes = binop->walk() | std::ranges::to<std::vector>();
         REQUIRE(nodes.size() == 3);
@@ -520,8 +491,8 @@ TEST_CASE("Parser Binary Expressions")
     {
         // "true and false": lhs 'true' must end at column 4, not 5
         auto result = parse("true and false");
-        REQUIRE(result);
-        auto binop = require_expression(result);
+        REQUIRE(result.has_value());
+        auto binop = std::move(result).value();
 
         auto nodes = binop->walk() | std::ranges::to<std::vector>();
         REQUIRE(nodes.size() == 3);
@@ -540,8 +511,8 @@ TEST_CASE("Parser Binary Expressions")
         // "(1 +\n 2)": outer range [1:1-2:3], lhs '1' [1:2-1:2], rhs '2'
         // [2:2-2:2]
         auto result = parse("(1 +\n 2)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -570,8 +541,8 @@ TEST_CASE("Parser Binary Expressions")
         // "(1 + # comment\n 2)": lhs '1' must end at column 2, not bleed into
         // comment
         auto result = parse("(1 + # comment\n 2)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto nodes = expr->walk() | std::ranges::to<std::vector>();
         REQUIRE(nodes.size() >= 3);

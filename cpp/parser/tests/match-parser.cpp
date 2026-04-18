@@ -1,15 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
 
 using namespace frst::literals;
 using namespace std::literals;
@@ -17,24 +12,15 @@ using namespace std::literals;
 namespace
 {
 
-struct Program_Root
-{
-    static constexpr auto rule = lexy::dsl::p<frst::grammar::program>;
-    static constexpr auto value =
-        lexy::forward<std::vector<frst::ast::Statement::Ptr>>;
-};
-
 auto parse(std::string_view input)
 {
-    auto src = lexy::string_input<lexy::utf8_encoding>(input);
-    frst::grammar::reset_parse_state(src);
-    return lexy::parse<Program_Root>(src, lexy::noop);
+    return frst::parse_program(std::string{input});
 }
 
 void run(std::string_view code, frst::Symbol_Table& table)
 {
     auto result = parse(code);
-    REQUIRE(result);
+    REQUIRE(result.has_value());
     auto program = std::move(result).value();
     frst::Execution_Context ctx{.symbols = table};
     for (const auto& stmt : program)
@@ -75,7 +61,7 @@ std::vector<const frst::ast::AST_Node*> find_nodes_exact(
 frst::ast::Statement::Ptr parse_one(std::string_view input)
 {
     auto result = parse(input);
-    REQUIRE(result);
+    REQUIRE(result.has_value());
     auto program = std::move(result).value();
     REQUIRE(program.size() == 1);
     return std::move(program[0]);
@@ -687,43 +673,43 @@ TEST_CASE("Parser Match Source Ranges: nested arrays have independent ranges")
 TEST_CASE("Parser Match Errors: unknown type constraint")
 {
     auto result = parse("def x = match 1 { n is FooBar => n, _ => 0 }");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match Errors: missing result expression")
 {
     auto result = parse("def x = match 1 { n => }");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match Errors: missing arrow")
 {
     auto result = parse("def x = match 1 { n 1 }");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match Errors: missing comma between arms")
 {
     auto result = parse("def x = match 1 { 1 => 'a' 2 => 'b' }");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match Errors: missing colon in guard")
 {
     auto result = parse("def x = match 1 { n if n > 0 => n }");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match Errors: missing braces")
 {
     auto result = parse("def x = match 1 n => 1");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match Errors: empty arm (missing pattern)")
 {
     auto result = parse("def x = match 1 { => 1 }");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match Errors: `is` after a value pattern is rejected")
@@ -731,28 +717,28 @@ TEST_CASE("Parser Match Errors: `is` after a value pattern is rejected")
     // `is TYPE` only attaches to a Match_Binding, not a Match_Value.
     // `(x) is Int` should be a parse error.
     auto result = parse("def x = match 1 { (x) is Int => 1, _ => 0 }");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match Errors: missing target expression")
 {
     auto result = parse("def x = match { n => n }");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match Errors: case-sensitive type constraint name")
 {
     // Type constraint names are case-sensitive: `int` is NOT `Int`.
     auto result = parse("def x = match 1 { n is int => n, _ => 0 }");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match Errors: keyword as binding name is rejected")
 {
     // `match` and `is` are global keywords; they can't be used as binding
     // names anywhere, including in match patterns.
-    CHECK_FALSE(parse("def x = match 5 { match => 1 }"));
-    CHECK_FALSE(parse("def x = match 5 { is => 1 }"));
+    CHECK(not parse("def x = match 5 { match => 1 }"));
+    CHECK(not parse("def x = match 5 { is => 1 }"));
 }
 
 TEST_CASE("Parser Match Errors: bare negative literal is not a value pattern")
@@ -762,7 +748,7 @@ TEST_CASE("Parser Match Errors: bare negative literal is not a value pattern")
     // literal), so `-1 => ...` must fail to parse. The user must wrap it:
     // `(-1) => ...`.
     auto result = parse("def x = match -1 { -1 => 'neg', _ => 'pos' }");
-    CHECK_FALSE(result);
+    CHECK(not result);
 }
 
 TEST_CASE("Parser Match: trailing comma in array pattern is accepted")
@@ -785,8 +771,8 @@ TEST_CASE(
     // Trailing commas are only allowed where another element could
     // syntactically follow. The rest clause is the syntactic terminator
     // of the array, so nothing can follow it -- including a trailing comma.
-    CHECK_FALSE(parse("def x = match [1, 2] { [a, ...rest,] => 0 }"));
-    CHECK_FALSE(parse("def x = match [1, 2] { [...rest,] => 0 }"));
+    CHECK(not parse("def x = match [1, 2] { [a, ...rest,] => 0 }"));
+    CHECK(not parse("def x = match [1, 2] { [...rest,] => 0 }"));
 }
 
 // =============================================================================

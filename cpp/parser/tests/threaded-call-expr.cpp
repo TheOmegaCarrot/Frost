@@ -2,35 +2,15 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
 
 using namespace frst::literals;
 
 namespace
 {
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-
 struct RecordingCallable final : frst::Callable
 {
     mutable std::vector<frst::Value_Ptr> received;
@@ -102,9 +82,7 @@ TEST_CASE("Parser threaded call expressions")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Threaded call inserts the left-hand side as the first argument")
@@ -118,8 +96,8 @@ TEST_CASE("Parser threaded call expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto result = parse("a @ f(1, 2)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Null>());
 
@@ -140,8 +118,8 @@ TEST_CASE("Parser threaded call expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto result = parse("a @ f()");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         (void)expr->evaluate(ctx);
 
         REQUIRE(callable->received.size() == 1);
@@ -167,13 +145,13 @@ TEST_CASE("Parser threaded call expressions")
         table.define("arr", frst::Value::create(std::move(arr)));
 
         auto result1 = parse("a @ obj.m()");
-        REQUIRE(result1);
-        auto expr1 = require_expression(result1);
+        REQUIRE(result1.has_value());
+        auto expr1 = std::move(result1).value();
         (void)expr1->evaluate(ctx);
 
         auto result2 = parse("a @ arr[0]()");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         (void)expr2->evaluate(ctx);
 
         REQUIRE(callable_dot->received.size() == 1);
@@ -190,15 +168,15 @@ TEST_CASE("Parser threaded call expressions")
         table.define("id", frst::Value::create(frst::Function{callable}));
 
         auto result1 = parse("1 + 2 @ id()");
-        REQUIRE(result1);
-        auto expr1 = require_expression(result1);
+        REQUIRE(result1.has_value());
+        auto expr1 = std::move(result1).value();
         auto out1 = expr1->evaluate(ctx);
         REQUIRE(out1->is<frst::Int>());
         CHECK(out1->get<frst::Int>().value() == 3_f);
 
         auto result2 = parse("not false @ id()");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == true);
@@ -220,15 +198,15 @@ TEST_CASE("Parser threaded call expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto result1 = parse("obj.arr[0] @ f()");
-        REQUIRE(result1);
-        auto expr1 = require_expression(result1);
+        REQUIRE(result1.has_value());
+        auto expr1 = std::move(result1).value();
         auto out1 = expr1->evaluate(ctx);
         REQUIRE(out1->is<frst::Int>());
         CHECK(out1->get<frst::Int>().value() == 4_f);
 
         auto result2 = parse("(1 + b) @ f()");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 7_f);
@@ -249,8 +227,8 @@ TEST_CASE("Parser threaded call expressions")
         table.define("g", frst::Value::create(frst::Function{callable_g}));
 
         auto result = parse("a @ f() @ g()");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         (void)expr->evaluate(ctx);
 
         REQUIRE(callable_f->received.size() == 1);
@@ -272,15 +250,15 @@ TEST_CASE("Parser threaded call expressions")
         table.define("id", frst::Value::create(frst::Function{callable}));
 
         auto result1 = parse("-a @ id()");
-        REQUIRE(result1);
-        auto expr1 = require_expression(result1);
+        REQUIRE(result1.has_value());
+        auto expr1 = std::move(result1).value();
         auto out1 = expr1->evaluate(ctx);
         REQUIRE(out1->is<frst::Int>());
         CHECK(out1->get<frst::Int>().value() == -5_f);
 
         auto result2 = parse("not a @ id()");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == false);
@@ -297,14 +275,14 @@ TEST_CASE("Parser threaded call expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto result = parse("a  @  f( )");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         (void)expr->evaluate(ctx);
 
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
 
-        CHECK_FALSE(parse("a\n @  f( )"));
+        CHECK(not frst::parse_program(std::string{"a\n @  f( )"}));
     }
 
     SECTION(
@@ -322,30 +300,30 @@ TEST_CASE("Parser threaded call expressions")
         table.define("obj", frst::Value::create(std::move(obj)));
 
         auto result = parse("a @ obj . m ( )");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         (void)expr->evaluate(ctx);
 
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
 
-        CHECK_FALSE(parse("a @ obj .\n m ( )"));
+        CHECK(not frst::parse_program(std::string{"a @ obj .\n m ( )"}));
     }
 
     SECTION("Threaded call requires a call expression on the right-hand side")
     {
-        CHECK_FALSE(parse("a @ f"));
-        CHECK_FALSE(parse("a @ obj.key"));
-        CHECK_FALSE(parse("a @ b @ f()"));
-        CHECK_FALSE(parse("a @ map [1] with f"));
+        CHECK(not parse("a @ f"));
+        CHECK(not parse("a @ obj.key"));
+        CHECK(not parse("a @ b @ f()"));
+        CHECK(not parse("a @ map [1] with f"));
     }
 
     SECTION("Threaded call rejects malformed call arguments")
     {
-        CHECK_FALSE(parse("a @ f("));
-        CHECK_FALSE(parse("a @ f(,)"));
-        CHECK_FALSE(parse("a @ f(1,)"));
-        CHECK_FALSE(parse("a @ f(1 2)"));
+        CHECK(not parse("a @ f("));
+        CHECK(not parse("a @ f(,)"));
+        CHECK(not parse("a @ f(1,)"));
+        CHECK(not parse("a @ f(1 2)"));
     }
 
     SECTION("Threaded call stops at the call and allows postfix on the result")
@@ -359,8 +337,8 @@ TEST_CASE("Parser threaded call expressions")
         table.define("f", frst::Value::create(frst::Function{callable}));
 
         auto result = parse("a @ f(1)[0]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(ctx);
         CHECK(out == a_val);
     }
@@ -380,8 +358,8 @@ TEST_CASE("Parser threaded call expressions")
         table.define("f", frst::Value::create(frst::Function{f_callable}));
 
         auto result = parse("a @ f()(b)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         (void)expr->evaluate(ctx);
 
         REQUIRE(f_callable->received.size() == 1);
@@ -404,8 +382,8 @@ TEST_CASE("Parser threaded call expressions")
         table.define("obj", frst::Value::create(std::move(obj)));
 
         auto result = parse("a @ obj.m()[0]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(ctx);
         CHECK(out == a_val);
     }
@@ -414,15 +392,15 @@ TEST_CASE("Parser threaded call expressions")
             "right-hand side")
     {
         auto result = parse("a @ (fn (x) -> { x })(1)");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
     }
 
     SECTION("Source ranges for threaded call")
     {
         // "a @ f(1)" → begin at 'a' {1,1}, end at ')' {1,8}
         auto result = parse("a @ f(1)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -434,8 +412,8 @@ TEST_CASE("Parser threaded call expressions")
     {
         // "a @ f() @ g()" → begin at 'a' {1,1}, end at ')' {1,14}
         auto result = parse("a @ f() @ g()");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);

@@ -1,51 +1,15 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
 
 using namespace frst::literals;
 
 namespace
 {
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-struct Program_Root
-{
-    static constexpr auto rule = lexy::dsl::p<frst::grammar::program>;
-    static constexpr auto value =
-        lexy::forward<std::vector<frst::ast::Statement::Ptr>>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-
-frst::Value_Ptr evaluate_expression(const frst::ast::Statement::Ptr& statement,
-                                    frst::Symbol_Table& table)
-{
-    auto* expr = dynamic_cast<const frst::ast::Expression*>(statement.get());
-    REQUIRE(expr);
-    frst::Evaluation_Context ctx{.symbols = table};
-    return expr->evaluate(ctx);
-}
-
 struct IdentityCallable final : frst::Callable
 {
     frst::Value_Ptr call(std::span<const frst::Value_Ptr> args) const override
@@ -66,6 +30,15 @@ struct IdentityCallable final : frst::Callable
         return debug_dump();
     }
 };
+
+frst::Value_Ptr evaluate_expression(const frst::ast::Statement::Ptr& statement,
+                                    frst::Symbol_Table& table)
+{
+    auto* expr = dynamic_cast<const frst::ast::Expression*>(statement.get());
+    REQUIRE(expr);
+    frst::Evaluation_Context ctx{.symbols = table};
+    return expr->evaluate(ctx);
+}
 } // namespace
 
 TEST_CASE("Parser Array Literals")
@@ -73,16 +46,14 @@ TEST_CASE("Parser Array Literals")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Empty array literal is valid")
     {
         auto result = parse("[]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -94,8 +65,8 @@ TEST_CASE("Parser Array Literals")
     SECTION("Array elements preserve order")
     {
         auto result = parse("[1, 2, 3]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -111,8 +82,8 @@ TEST_CASE("Parser Array Literals")
     SECTION("Trailing commas are accepted")
     {
         auto result = parse("[1, 2,]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -126,14 +97,14 @@ TEST_CASE("Parser Array Literals")
 
     SECTION("Commas are required between elements")
     {
-        CHECK_FALSE(parse("[1 2]"));
+        CHECK(not parse("[1 2]"));
     }
 
     SECTION("Whitespace and comments are allowed between elements")
     {
         auto result = parse("[ 1 , # comment\n 2 ,\n 3 ]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -149,8 +120,8 @@ TEST_CASE("Parser Array Literals")
     SECTION("Nested arrays parse and evaluate")
     {
         auto result = parse("[[1], [2, 3]]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -167,8 +138,8 @@ TEST_CASE("Parser Array Literals")
     SECTION("Array elements can be complex expressions")
     {
         auto result = parse("[1+2, if true: 3 else: 4, not false]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -187,8 +158,8 @@ TEST_CASE("Parser Array Literals")
     SECTION("Array element expressions can span newlines")
     {
         auto result = parse("[1 +\n 2]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -200,8 +171,8 @@ TEST_CASE("Parser Array Literals")
         CHECK(arr[0]->get<frst::Int>().value() == 3_f);
 
         auto result2 = parse("[1 + # comment\n 2]");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Array>());
         const auto& arr2 = out2->raw_get<frst::Array>();
@@ -218,8 +189,8 @@ TEST_CASE("Parser Array Literals")
         table.define("id", frst::Value::create(frst::Function{callable}));
 
         auto result = parse("id([1, 2])");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto out = expr->evaluate(ctx);
         REQUIRE(out->is<frst::Array>());
@@ -232,14 +203,14 @@ TEST_CASE("Parser Array Literals")
     SECTION("Array literals can be used as index expressions")
     {
         auto result = parse("arr[[0]]");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
     }
 
     SECTION("Array literals can participate in postfix and prefix")
     {
         auto result = parse("-[1, 2][0]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -251,8 +222,8 @@ TEST_CASE("Parser Array Literals")
     SECTION("Array literals can be used in conditions and unary ops")
     {
         auto result = parse("if [1]: 2 else: 3");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -261,8 +232,8 @@ TEST_CASE("Parser Array Literals")
         CHECK(out->get<frst::Int>().value() == 2_f);
 
         auto result2 = parse("not [1]");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == false);
@@ -270,11 +241,8 @@ TEST_CASE("Parser Array Literals")
 
     SECTION("Arrays can start statements in programs")
     {
-        auto src =
-            lexy::string_input<lexy::utf8_encoding>(std::string_view{"[]\n42"});
-        frst::grammar::reset_parse_state(src);
-        auto program_result = lexy::parse<Program_Root>(src, lexy::noop);
-        REQUIRE(program_result);
+        auto program_result = frst::parse_program(std::string{"[]\n42"});
+        REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);
 
@@ -289,8 +257,8 @@ TEST_CASE("Parser Array Literals")
     SECTION("Trailing comma with comments is accepted")
     {
         auto result = parse("[1, 2, # c\n]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -302,26 +270,26 @@ TEST_CASE("Parser Array Literals")
 
     SECTION("Malformed arrays are rejected")
     {
-        CHECK_FALSE(parse("[1,2"));
-        CHECK_FALSE(parse("[1,,2]"));
-        CHECK_FALSE(parse("[,]"));
-        CHECK_FALSE(parse("[,1]"));
-        CHECK_FALSE(parse("[1, ,2]"));
-        CHECK_FALSE(parse("[1,,]"));
-        CHECK_FALSE(parse("[1,2,,]"));
-        CHECK_FALSE(parse("[1;2]"));
-        CHECK_FALSE(parse("[1; 2, 3]"));
-        CHECK_FALSE(parse("[1, 2; 3]"));
-        CHECK_FALSE(parse("[1;]"));
-        CHECK_FALSE(parse("[;1]"));
+        CHECK(not parse("[1,2"));
+        CHECK(not parse("[1,,2]"));
+        CHECK(not parse("[,]"));
+        CHECK(not parse("[,1]"));
+        CHECK(not parse("[1, ,2]"));
+        CHECK(not parse("[1,,]"));
+        CHECK(not parse("[1,2,,]"));
+        CHECK(not parse("[1;2]"));
+        CHECK(not parse("[1; 2, 3]"));
+        CHECK(not parse("[1, 2; 3]"));
+        CHECK(not parse("[1;]"));
+        CHECK(not parse("[;1]"));
     }
 
     SECTION("Source ranges for array literals")
     {
         // "[]" → begin at '[' {1,1}, end at ']' {1,2}
         auto result = parse("[]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -333,8 +301,8 @@ TEST_CASE("Parser Array Literals")
     {
         // "[1, 2, 3]" → begin at '[' {1,1}, end at ']' {1,9}
         auto result = parse("[1, 2, 3]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);

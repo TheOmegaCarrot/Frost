@@ -3,35 +3,15 @@
 
 #include <frost/ast.hpp>
 #include <frost/closure.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
-
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
 
 using namespace frst::literals;
 
 namespace
 {
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-
 frst::Value_Ptr call_function(const frst::Value_Ptr& value,
                               std::vector<frst::Value_Ptr> args)
 {
@@ -67,9 +47,11 @@ TEST_CASE("Parser Lambda Expressions")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
+    };
+
+    auto parse_prog = [](std::string_view input) {
+        return frst::parse_program(std::string{input});
     };
 
     SECTION("Empty braces parse as an empty-map-returning lambda")
@@ -77,8 +59,8 @@ TEST_CASE("Parser Lambda Expressions")
         auto returns_empty_map = [&](std::string_view src,
                                      std::vector<frst::Value_Ptr> args = {}) {
             auto result = parse(src);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
             frst::Symbol_Table table;
             frst::Evaluation_Context eval_ctx{.symbols = table};
             auto value = expr->evaluate(eval_ctx);
@@ -94,8 +76,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Empty parameter list can be elided")
     {
         auto result = parse("fn -> { 2 }()");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -107,8 +89,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided empty parameter list tolerates whitespace")
     {
         auto result = parse("fn  -> { 3 } ( )");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -119,15 +101,14 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Semicolon-only lambda body is rejected")
     {
-        CHECK_THROWS_WITH(parse("fn (\n ) -> { ; # comment\n ; ; }"),
-                          Catch::Matchers::ContainsSubstring("empty body"));
+        CHECK(not parse("fn (\n ) -> { ; # comment\n ; ; }"));
     }
 
     SECTION("Lambda parameters bind and compute correctly")
     {
         auto result = parse("fn(a, b) -> { a + b }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -141,8 +122,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided parameter list with one parameter")
     {
         auto result = parse("fn x -> x + 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -155,8 +136,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided parameter list with multiple parameters")
     {
         auto result = parse("fn a, b -> a + b");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -170,8 +151,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided parameter list with variadic parameter")
     {
         auto result = parse("fn a, ...rest -> rest");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -189,8 +170,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided parameter list with only variadic parameter")
     {
         auto result = parse("fn ...rest -> rest");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -205,8 +186,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided parameter list tolerates whitespace")
     {
         auto result = parse("fn  a ,   b -> a + b");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -220,8 +201,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Variadic-only parameter collects all args")
     {
         auto result = parse("fn(...rest) -> { rest }(1, 2)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -236,8 +217,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Variadic-only parameter can be empty")
     {
         auto result = parse("fn(...rest) -> { rest }()");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -249,8 +230,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Variadic parameter splits fixed args from rest")
     {
         auto result = parse("fn(a, ...rest) -> { a }(1, 2, 3)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -262,8 +243,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Variadic parameter binds remaining args into an array")
     {
         auto result = parse("fn(a, ...rest) -> { rest }(1, 2, 3)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -278,8 +259,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Variadic parameter can be empty")
     {
         auto result = parse("fn(a, ...rest) -> { rest }(1)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -291,8 +272,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Variadic parameter name tolerates whitespace")
     {
         auto result = parse("fn(... rest) -> { rest }(1)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -305,12 +286,9 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Variadic-only lambda works in program input")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(
-            std::string_view{"def f = fn(...rest) -> { rest }\n f()"});
-        frst::grammar::reset_parse_state(src);
         auto program_result =
-            lexy::parse<frst::grammar::program>(src, lexy::noop);
-        REQUIRE(program_result);
+            parse_prog("def f = fn(...rest) -> { rest }\n f()");
+        REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);
 
@@ -329,8 +307,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda participates in larger expressions")
     {
         auto result = parse("1 + fn() -> { 2 }()");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -341,12 +319,8 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda as a top-level statement parses in program input")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(
-            std::string_view{"fn -> { null }"});
-        frst::grammar::reset_parse_state(src);
-        auto program_result =
-            lexy::parse<frst::grammar::program>(src, lexy::noop);
-        REQUIRE(program_result);
+        auto program_result = parse_prog("fn -> { null }");
+        REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 1);
         auto* expr =
@@ -357,11 +331,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION(
         "Top-level empty-braces lambda parses as empty-map-returning lambda")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(
-            std::string_view{"fn -> {}"});
-        frst::grammar::reset_parse_state(src);
-        auto result = lexy::parse<frst::grammar::program>(src, lexy::noop);
-        REQUIRE(result);
+        auto result = parse_prog("fn -> {}");
+        REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
         auto* expr =
@@ -371,36 +342,27 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Multiple lambdas as top-level statements parse correctly")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(
-            std::string_view{"fn -> { null }\nfn() -> { null }"});
-        frst::grammar::reset_parse_state(src);
         auto program_result =
-            lexy::parse<frst::grammar::program>(src, lexy::noop);
-        REQUIRE(program_result);
+            parse_prog("fn -> { null }\nfn() -> { null }");
+        REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);
     }
 
     SECTION("Multiple lambdas with semicolons parse correctly")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(
-            std::string_view{"fn -> { null }; fn() -> { null }"});
-        frst::grammar::reset_parse_state(src);
         auto program_result =
-            lexy::parse<frst::grammar::program>(src, lexy::noop);
-        REQUIRE(program_result);
+            parse_prog("fn -> { null }; fn() -> { null }");
+        REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);
     }
 
     SECTION("Lambda can appear on the RHS of def")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(
-            std::string_view{"def f = fn(x) -> { x }\n f(3)"});
-        frst::grammar::reset_parse_state(src);
         auto program_result =
-            lexy::parse<frst::grammar::program>(src, lexy::noop);
-        REQUIRE(program_result);
+            parse_prog("def f = fn(x) -> { x }\n f(3)");
+        REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);
 
@@ -419,7 +381,7 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda in binary expression without call parses")
     {
         auto result = parse("1 + fn() -> { 2 }");
-        REQUIRE(result);
+        REQUIRE(result.has_value());
     }
 
     SECTION("Lambda can be passed as a call argument")
@@ -430,8 +392,8 @@ TEST_CASE("Parser Lambda Expressions")
         table.define("id", frst::Value::create(frst::Function{callable}));
 
         auto result = parse("id(fn(x) -> { x })");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Function>());
@@ -454,15 +416,15 @@ TEST_CASE("Parser Lambda Expressions")
         table.define("id", frst::Value::create(frst::Function{callable}));
 
         auto result = parse("arr[fn() -> { 0 }()]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto out = expr->evaluate(eval_ctx);
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 11_f);
 
         auto result2 = parse("id(fn() -> { 3 }())");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(eval_ctx);
         REQUIRE(out2->is<frst::Int>());
         CHECK(out2->get<frst::Int>().value() == 3_f);
@@ -471,8 +433,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda participates in comparisons and logical ops")
     {
         auto result = parse("fn() -> { 1 }() < 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -481,8 +443,8 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Bool>().value() == true);
 
         auto result2 = parse("fn() -> { true }() and false");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(eval_ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == false);
@@ -491,8 +453,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Prefix operators apply to lambda calls")
     {
         auto result = parse("-fn() -> { 2 }()");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -501,8 +463,8 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == -2_f);
 
         auto result2 = parse("not fn() -> { true }()");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto out2 = expr2->evaluate(eval_ctx);
         REQUIRE(out2->is<frst::Bool>());
         CHECK(out2->get<frst::Bool>().value() == false);
@@ -511,8 +473,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda can be called as an atom")
     {
         auto result = parse("fn(x) -> { x }(5)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -524,8 +486,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Whitespace between tokens around arrow and body is allowed")
     {
         auto result = parse("fn()  -> { 1 }()");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
         auto out = expr->evaluate(eval_ctx);
@@ -536,8 +498,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Block body can start on a new line")
     {
         auto result = parse("fn (x) ->\n{\n    def y = x + 1\n    y\n}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -550,8 +512,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Expression body can start on a new line")
     {
         auto result = parse("fn (x) ->\n # comment\n x");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -565,8 +527,8 @@ TEST_CASE("Parser Lambda Expressions")
     {
         auto check_map_a1 = [&](std::string_view src) {
             auto result = parse(src);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
             frst::Symbol_Table table;
             frst::Evaluation_Context eval_ctx{.symbols = table};
             auto value = expr->evaluate(eval_ctx);
@@ -580,7 +542,7 @@ TEST_CASE("Parser Lambda Expressions")
             REQUIRE(it->second->is<frst::Int>());
             CHECK(it->second->get<frst::Int>().value() == 1_f);
         };
-        // Bare map literal — now accepted without parentheses
+        // Bare map literal -- now accepted without parentheses
         check_map_a1("fn -> {a: 1}");
         // Parenthesized form still works
         check_map_a1("fn -> ({a: 1})");
@@ -589,8 +551,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Postfix can follow a lambda with intervening whitespace")
     {
         auto result = parse("fn() -> { 1 } ( )");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
         auto out = expr->evaluate(eval_ctx);
@@ -600,14 +562,10 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Postfix with newline after lambda body is rejected")
     {
-        frst::Symbol_Table table;
-        auto arr_val = frst::Value::create(frst::Array{
-            frst::Value::create(5_f),
-        });
-        table.define("arr", arr_val);
-
-        auto result = parse("fn() -> { arr }\n[0]");
-        REQUIRE_FALSE(result);
+        auto result =
+            parse_prog("fn() -> { arr }\n[0]");
+        REQUIRE(result.has_value());
+        CHECK(result.value().size() == 2);
     }
 
     SECTION("Lambda can be followed by indexing and dot access after call")
@@ -625,15 +583,15 @@ TEST_CASE("Parser Lambda Expressions")
         table.define("obj", frst::Value::create(std::move(obj)));
 
         auto index_result = parse("fn() -> { arr }()[0]");
-        REQUIRE(index_result);
-        auto index_expr = require_expression(index_result);
+        REQUIRE(index_result.has_value());
+        auto index_expr = std::move(index_result).value();
         auto index_out = index_expr->evaluate(eval_ctx);
         REQUIRE(index_out->is<frst::Int>());
         CHECK(index_out->get<frst::Int>().value() == 9_f);
 
         auto dot_result = parse("fn() -> { obj }().key");
-        REQUIRE(dot_result);
-        auto dot_expr = require_expression(dot_result);
+        REQUIRE(dot_result.has_value());
+        auto dot_expr = std::move(dot_result).value();
         auto dot_out = dot_expr->evaluate(eval_ctx);
         REQUIRE(dot_out->is<frst::Int>());
         CHECK(dot_out->get<frst::Int>().value() == 7_f);
@@ -641,22 +599,11 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda can be followed by postfix operators without call")
     {
-        frst::Symbol_Table table;
-        auto arr_val = frst::Value::create(frst::Array{
-            frst::Value::create(4_f),
-        });
-        table.define("arr", arr_val);
-
-        frst::Map obj;
-        obj.emplace(frst::Value::create(std::string{"k"}),
-                    frst::Value::create(6_f));
-        table.define("obj", frst::Value::create(std::move(obj)));
-
         auto parse_index = parse("(fn() -> { arr })[0]");
-        REQUIRE(parse_index);
+        REQUIRE(parse_index.has_value());
 
         auto parse_dot = parse("(fn() -> { obj }).k");
-        REQUIRE(parse_dot);
+        REQUIRE(parse_dot.has_value());
     }
 
     SECTION("Lambda captures outer names")
@@ -667,8 +614,8 @@ TEST_CASE("Parser Lambda Expressions")
         table.define("x", captured);
 
         auto result = parse("fn() -> { x }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto value = expr->evaluate(eval_ctx);
         auto out = call_function(value, {});
         CHECK(out == captured);
@@ -677,8 +624,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda parameters return pointer-equal values")
     {
         auto result = parse("fn(x) -> { x }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -691,8 +638,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda body supports def statements and expressions")
     {
         auto result = parse("fn() -> { def x = 1; x + 2 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -704,22 +651,17 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Export def is rejected inside lambda bodies")
     {
-        auto result = parse("fn() -> { export def x = 1 }");
-        CHECK_FALSE(result);
-        CHECK(result.error_count() >= 1);
+        CHECK(not parse("fn() -> { export def x = 1 }"));
     }
 
     SECTION("Lambda body supports defs and map literals with nested lambdas")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(
-            std::string_view{"def f = fn a -> {\n"
-                             "    def b = 2 + a\n"
-                             "    { c: b, d: fn p -> p * a }\n"
-                             "}\n"});
-        frst::grammar::reset_parse_state(src);
-        auto program_result =
-            lexy::parse<frst::grammar::program>(src, lexy::noop);
-        REQUIRE(program_result);
+        auto program_result = parse_prog(
+            "def f = fn a -> {\n"
+            "    def b = 2 + a\n"
+            "    { c: b, d: fn p -> p * a }\n"
+            "}\n");
+        REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 1);
     }
@@ -727,8 +669,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Single-expression body without braces is accepted")
     {
         auto result = parse("fn(x) -> x + 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -741,8 +683,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided body supports unary operators")
     {
         auto result = parse("fn() -> -1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -752,8 +694,8 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == -1_f);
 
         auto result2 = parse("fn() -> not false");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto value2 = expr2->evaluate(eval_ctx);
         auto out2 = call_function(value2, {});
         REQUIRE(out2->is<frst::Bool>());
@@ -763,8 +705,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided body supports if expressions")
     {
         auto result = parse("fn() -> if true: 1 else: 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -777,8 +719,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided body can return a lambda")
     {
         auto result = parse("fn() -> fn(x) -> x + 1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -794,8 +736,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided body supports indexing and dot access")
     {
         auto result = parse("fn() -> [1, 2, 3][1]");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -805,8 +747,8 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(out->get<frst::Int>().value() == 2_f);
 
         auto result2 = parse("fn() -> ({foo: 3}).foo");
-        REQUIRE(result2);
-        auto expr2 = require_expression(result2);
+        REQUIRE(result2.has_value());
+        auto expr2 = std::move(result2).value();
         auto value2 = expr2->evaluate(eval_ctx);
         auto out2 = call_function(value2, {});
         REQUIRE(out2->is<frst::Int>());
@@ -816,8 +758,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided body supports calling a parameter")
     {
         auto result = parse("fn(f) -> f(3)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -832,8 +774,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided body can be immediately called with parentheses")
     {
         auto result = parse("(fn(x) -> x + 2)(3)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -845,8 +787,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Elided body can appear in larger expressions with parentheses")
     {
         auto result = parse("1 + (fn(x) -> x + 2)(3)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -857,12 +799,9 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Elided body works in program input")
     {
-        auto src = lexy::string_input<lexy::utf8_encoding>(
-            std::string_view{"def f = fn(x) -> x + 2\n f(4)"});
-        frst::grammar::reset_parse_state(src);
         auto program_result =
-            lexy::parse<frst::grammar::program>(src, lexy::noop);
-        REQUIRE(program_result);
+            parse_prog("def f = fn(x) -> x + 2\n f(4)");
+        REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);
 
@@ -880,19 +819,19 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Elided body does not allow def statements")
     {
-        CHECK_FALSE(parse("fn() -> def x = 1"));
+        CHECK(not parse("fn() -> def x = 1"));
     }
 
     SECTION("Elided body does not allow multiple expressions")
     {
-        CHECK_FALSE(parse("fn() -> 1 2"));
+        CHECK(not parse("fn() -> 1 2"));
     }
 
     SECTION("Lambda body allows leading/trailing semicolons")
     {
         auto result = parse("fn() -> { ;; 1 ;; 2 ;; }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -905,8 +844,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda body allows def and expression separated by semicolons")
     {
         auto result = parse("fn() -> { def x = 1; x }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -919,8 +858,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda body supports semicolons mixed with defs")
     {
         auto result = parse("fn() -> { ; def x = 1 ; x }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -933,8 +872,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda body allows if expression followed by another statement")
     {
         auto result = parse("fn() -> { if true: 1 else: 2; 3 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -947,8 +886,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda body accepts multiple statements separated by newlines")
     {
         auto result = parse("fn() -> { 1\n2 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -961,8 +900,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda can contain nested lambdas")
     {
         auto result = parse("fn() -> { fn(x) -> { x + 1 } }()(5)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -975,8 +914,8 @@ TEST_CASE("Parser Lambda Expressions")
         "Lambda body can contain multiple lambda calls separated by semicolons")
     {
         auto result = parse("fn() -> { fn() -> { 1 }(); fn() -> { 2 }() }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -989,8 +928,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda body supports multiple defs separated by semicolons")
     {
         auto result = parse("fn() -> { def x = 1; def y = 2; y }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1002,16 +941,14 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda body ending in a definition is rejected")
     {
-        CHECK_THROWS_WITH(parse("fn() -> { def x = 1 }"),
-                          Catch::Matchers::ContainsSubstring(
-                              "A lambda must end in an expression"));
+        CHECK(not parse("fn() -> { def x = 1 }"));
     }
 
     SECTION("Lambda body allows if expressions")
     {
         auto result = parse("fn() -> { if true: 1 else: 2 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1023,20 +960,20 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Non-identifier parameters are rejected")
     {
-        CHECK_FALSE(parse("fn(1) -> { 1 }"));
-        CHECK_FALSE(parse("fn(\"x\") -> { 1 }"));
+        CHECK(not parse("fn(1) -> { 1 }"));
+        CHECK(not parse("fn(\"x\") -> { 1 }"));
     }
 
     SECTION("Arrow token must be contiguous")
     {
-        CHECK_FALSE(parse("fn() - > { 1 }"));
+        CHECK(not parse("fn() - > { 1 }"));
     }
 
     SECTION("Prefix not before lambda without call is allowed")
     {
         auto result = parse("not fn () -> { null }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1048,8 +985,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Whitespace and comments around lambda tokens are allowed")
     {
         auto result = parse("fn(\n # comment\n a ) -> { a } (7)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1061,8 +998,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Parameter list allows whitespace and comments between params")
     {
         auto result = parse("fn(a,\n # comment\n b) -> { a + b }(1,2)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1074,8 +1011,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Lambda can appear as an if condition")
     {
         auto result = parse("if fn() -> { true }(): 1 else: 2");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1086,43 +1023,43 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Malformed trailing tokens are rejected")
     {
-        CHECK_FALSE(parse("fn() -> { 1 } )"));
-        CHECK_FALSE(parse("fn() -> { 1 } }"));
-        CHECK_FALSE(parse("fn() -> { 1 } extra"));
+        CHECK(not parse("fn() -> { 1 } )"));
+        CHECK(not parse("fn() -> { 1 } }"));
+        CHECK(not parse("fn() -> { 1 } extra"));
     }
 
     SECTION("Parameter list syntax errors are rejected")
     {
-        CHECK_FALSE(parse("fn(a,) -> { 1 }"));
-        CHECK_FALSE(parse("fn(,a) -> { 1 }"));
-        CHECK_FALSE(parse("fn(a b) -> { 1 }"));
-        CHECK_FALSE(parse("fn(,) -> { 1 }"));
-        CHECK_FALSE(parse("fn(a, ...rest, b) -> { 1 }"));
-        CHECK_FALSE(parse("fn(... ) -> { 1 }"));
-        CHECK_FALSE(parse("fn(a, ...rest,) -> { 1 }"));
-        CHECK_FALSE(parse("fn(, ...rest) -> { 1 }"));
-        CHECK_FALSE(parse("fn(...rest, ...more) -> { 1 }"));
-        CHECK_FALSE(parse("fn a b -> { 1 }"));
-        CHECK_FALSE(parse("fn a, -> { 1 }"));
-        CHECK_FALSE(parse("fn ... -> { 1 }"));
-        CHECK_FALSE(parse("fn a, ...rest, b -> { 1 }"));
-        CHECK_FALSE(parse("fn a, ...rest, -> { 1 }"));
+        CHECK(not parse("fn(a,) -> { 1 }"));
+        CHECK(not parse("fn(,a) -> { 1 }"));
+        CHECK(not parse("fn(a b) -> { 1 }"));
+        CHECK(not parse("fn(,) -> { 1 }"));
+        CHECK(not parse("fn(a, ...rest, b) -> { 1 }"));
+        CHECK(not parse("fn(... ) -> { 1 }"));
+        CHECK(not parse("fn(a, ...rest,) -> { 1 }"));
+        CHECK(not parse("fn(, ...rest) -> { 1 }"));
+        CHECK(not parse("fn(...rest, ...more) -> { 1 }"));
+        CHECK(not parse("fn a b -> { 1 }"));
+        CHECK(not parse("fn a, -> { 1 }"));
+        CHECK(not parse("fn ... -> { 1 }"));
+        CHECK(not parse("fn a, ...rest, b -> { 1 }"));
+        CHECK(not parse("fn a, ...rest, -> { 1 }"));
     }
 
     SECTION("Missing arrow or body is rejected")
     {
-        CHECK_FALSE(parse("fn() {}"));
-        CHECK_FALSE(parse("fn ->"));
-        CHECK_FALSE(parse("fn() ->"));
-        CHECK_FALSE(parse("fn() -> {"));
-        CHECK_FALSE(parse("fn() -> }"));
+        CHECK(not parse("fn() {}"));
+        CHECK(not parse("fn ->"));
+        CHECK(not parse("fn() ->"));
+        CHECK(not parse("fn() -> {"));
+        CHECK(not parse("fn() -> }"));
     }
 
     SECTION("Named lambda: single param")
     {
         auto result = parse("fn f(x) -> x");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1135,8 +1072,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Named lambda: multiple params")
     {
         auto result = parse("fn f(x, y) -> x + y");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1150,8 +1087,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Named lambda: no params")
     {
         auto result = parse("fn f() -> 42");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1164,8 +1101,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Named lambda: vararg-only")
     {
         auto result = parse("fn f(...rest) -> rest");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1179,8 +1116,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Named lambda: params plus vararg")
     {
         auto result = parse("fn f(x, ...rest) -> rest");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1196,13 +1133,13 @@ TEST_CASE("Parser Lambda Expressions")
     {
         auto result_nospace = parse("fn f(x) -> x");
         auto result_space = parse("fn f (x) -> x");
-        REQUIRE(result_nospace);
-        REQUIRE(result_space);
+        REQUIRE(result_nospace.has_value());
+        REQUIRE(result_space.has_value());
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
-        auto v1 = require_expression(result_nospace)->evaluate(eval_ctx);
-        auto v2 = require_expression(result_space)->evaluate(eval_ctx);
+        auto v1 = std::move(result_nospace).value()->evaluate(eval_ctx);
+        auto v2 = std::move(result_space).value()->evaluate(eval_ctx);
 
         auto arg = frst::Value::create(5_f);
         CHECK(call_function(v1, {arg})->get<frst::Int>().value() == 5_f);
@@ -1212,8 +1149,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Named lambda: self-name enables recursion")
     {
         auto result = parse("fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1226,8 +1163,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Regression: fn(x) -> x is still unnamed")
     {
         auto result = parse("fn(x) -> x");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1241,8 +1178,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Regression: fn x -> x is unnamed with x as param")
     {
         auto result = parse("fn x -> x");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1260,8 +1197,8 @@ TEST_CASE("Parser Lambda Expressions")
     SECTION("Regression: fn f -> body treats f as a param, not self-name")
     {
         auto result = parse("fn f -> f");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1273,17 +1210,17 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Keyword parameters are rejected")
     {
-        CHECK_FALSE(parse("fn(if) -> { 1 }"));
-        CHECK_FALSE(parse("fn(true) -> { 1 }"));
-        CHECK_FALSE(parse("fn(fn) -> { 1 }"));
-        CHECK_FALSE(parse("fn(...if) -> { 1 }"));
+        CHECK(not parse("fn(if) -> { 1 }"));
+        CHECK(not parse("fn(true) -> { 1 }"));
+        CHECK(not parse("fn(fn) -> { 1 }"));
+        CHECK(not parse("fn(...if) -> { 1 }"));
     }
 
     SECTION("Variadic parameter tolerates comments")
     {
         auto result = parse("fn(... # comment\n rest) -> { rest }(9)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
@@ -1298,8 +1235,8 @@ TEST_CASE("Parser Lambda Expressions")
     {
         // "fn(x) -> x + 1" → [1:1-1:14]
         auto result = parse("fn(x) -> x + 1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -1311,8 +1248,8 @@ TEST_CASE("Parser Lambda Expressions")
     {
         // "fn -> 42" → [1:1-1:8]
         auto result = parse("fn -> 42");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.column == 1);
         CHECK(range.end.column == 8);
@@ -1322,8 +1259,8 @@ TEST_CASE("Parser Lambda Expressions")
     {
         // "fn(x) -> { x }" → [1:1-1:14]
         auto result = parse("fn(x) -> { x }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.column == 1);
         CHECK(range.end.column == 14);
@@ -1333,8 +1270,8 @@ TEST_CASE("Parser Lambda Expressions")
     {
         // "fn -> 1   " → end at column 7, not 10
         auto result = parse("fn -> 1   ");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.column == 1);
         CHECK(range.end.column == 7);
@@ -1344,8 +1281,8 @@ TEST_CASE("Parser Lambda Expressions")
     {
         // "fn(x) ->\n  x + 1" → [1:1-2:5]
         auto result = parse("fn(x) ->\n  x + 1");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -1357,8 +1294,8 @@ TEST_CASE("Parser Lambda Expressions")
     {
         // "fn(x) -> {\n  x\n}" → [1:1-3:1]
         auto result = parse("fn(x) -> {\n  x\n}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);

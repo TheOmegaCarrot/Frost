@@ -2,44 +2,19 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
 #include <frost/value.hpp>
 
-#include <lexy/action/parse.hpp>
-#include <lexy/callback.hpp>
-#include <lexy/input/string_input.hpp>
-
-#include "../grammar.hpp"
-
 using namespace frst::literals;
-
-namespace
-{
-struct Expression_Root
-{
-    static constexpr auto whitespace = frst::grammar::ws;
-    static constexpr auto rule =
-        lexy::dsl::p<frst::grammar::expression> + lexy::dsl::eof;
-    static constexpr auto value = lexy::forward<frst::ast::Expression::Ptr>;
-};
-
-frst::ast::Expression::Ptr require_expression(auto& result)
-{
-    auto expr = std::move(result).value();
-    REQUIRE(expr);
-    return expr;
-}
-} // namespace
 
 TEST_CASE("Parser Primary Expressions")
 {
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        auto src = lexy::string_input<lexy::utf8_encoding>(input);
-        frst::grammar::reset_parse_state(src);
-        return lexy::parse<Expression_Root>(src, lexy::noop);
+        return frst::parse_data(std::string{input});
     };
 
     SECTION("Literals evaluate correctly")
@@ -58,8 +33,8 @@ TEST_CASE("Parser Primary Expressions")
         for (const auto& c : int_cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -82,8 +57,8 @@ TEST_CASE("Parser Primary Expressions")
         for (const auto& c : float_cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -106,8 +81,8 @@ TEST_CASE("Parser Primary Expressions")
         for (const auto& c : string_cases)
         {
             auto result = parse(c.input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -122,8 +97,8 @@ TEST_CASE("Parser Primary Expressions")
         for (std::size_t i = 0; i < std::size(bool_cases); ++i)
         {
             auto result = parse(bool_cases[i]);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -133,8 +108,8 @@ TEST_CASE("Parser Primary Expressions")
         }
 
         auto null_result = parse("null");
-        REQUIRE(null_result);
-        auto null_expr = require_expression(null_result);
+        REQUIRE(null_result.has_value());
+        auto null_expr = std::move(null_result).value();
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
         auto null_value = null_expr->evaluate(ctx);
@@ -144,8 +119,8 @@ TEST_CASE("Parser Primary Expressions")
     SECTION("Name lookup evaluates against the symbol table")
     {
         auto result = parse("foo");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -159,8 +134,8 @@ TEST_CASE("Parser Primary Expressions")
     SECTION("Parenthesized expressions parse and evaluate")
     {
         auto int_result = parse("(  7 )");
-        REQUIRE(int_result);
-        auto int_expr = require_expression(int_result);
+        REQUIRE(int_result.has_value());
+        auto int_expr = std::move(int_result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -169,8 +144,8 @@ TEST_CASE("Parser Primary Expressions")
         CHECK(int_value->get<frst::Int>().value() == 7_f);
 
         auto nested_result = parse("((name))");
-        REQUIRE(nested_result);
-        auto nested_expr = require_expression(nested_result);
+        REQUIRE(nested_result.has_value());
+        auto nested_expr = std::move(nested_result).value();
 
         auto stored = frst::Value::create(123_f);
         table.define("name", stored);
@@ -178,8 +153,8 @@ TEST_CASE("Parser Primary Expressions")
         CHECK(nested_value == stored);
 
         auto comment_result = parse("(# comment\nname)");
-        REQUIRE(comment_result);
-        auto comment_expr = require_expression(comment_result);
+        REQUIRE(comment_result.has_value());
+        auto comment_expr = std::move(comment_result).value();
         auto comment_value = comment_expr->evaluate(ctx);
         CHECK(comment_value == stored);
     }
@@ -192,17 +167,15 @@ TEST_CASE("Parser Primary Expressions")
 
         for (const auto& input : cases)
         {
-            auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not parse(input));
         }
     }
 
     SECTION("Name lookup failure propagates as an error")
     {
         auto result = parse("missing");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -221,9 +194,7 @@ TEST_CASE("Parser Primary Expressions")
 
         for (const auto& input : cases)
         {
-            auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not parse(input));
         }
     }
 
@@ -238,17 +209,15 @@ TEST_CASE("Parser Primary Expressions")
 
         for (const auto& input : cases)
         {
-            auto result = parse(input);
-            CHECK_FALSE(result);
-            CHECK(result.error_count() >= 1);
+            CHECK(not parse(input));
         }
     }
 
     SECTION("Parenthesized lookup failure propagates")
     {
         auto result = parse("(missing)");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -265,8 +234,8 @@ TEST_CASE("Parser Primary Expressions")
         for (const auto& input : cases)
         {
             auto result = parse(input);
-            REQUIRE(result);
-            auto expr = require_expression(result);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
 
             frst::Symbol_Table table;
             frst::Evaluation_Context ctx{.symbols = table};
@@ -280,8 +249,8 @@ TEST_CASE("Parser Primary Expressions")
     SECTION("Null literal returns the singleton")
     {
         auto result = parse("null");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
@@ -293,8 +262,8 @@ TEST_CASE("Parser Primary Expressions")
     {
         // "do { 1 }" → [1:1-1:8]
         auto result = parse("do { 1 }");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -306,8 +275,8 @@ TEST_CASE("Parser Primary Expressions")
     {
         // "do {\n  1\n}" → [1:1-3:1]
         auto result = parse("do {\n  1\n}");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.line == 1);
         CHECK(range.begin.column == 1);
@@ -318,8 +287,8 @@ TEST_CASE("Parser Primary Expressions")
     SECTION("Source range for do block excludes trailing whitespace")
     {
         auto result = parse("do { 1 }   ");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         auto range = expr->source_range();
         CHECK(range.begin.column == 1);
         CHECK(range.end.column == 8);
@@ -329,22 +298,22 @@ TEST_CASE("Parser Primary Expressions")
     {
         // "true" → [1:1-1:4]
         auto r_true = parse("true");
-        REQUIRE(r_true);
-        auto e_true = require_expression(r_true);
+        REQUIRE(r_true.has_value());
+        auto e_true = std::move(r_true).value();
         CHECK(e_true->source_range().begin.column == 1);
         CHECK(e_true->source_range().end.column == 4);
 
         // "false" → [1:1-1:5]
         auto r_false = parse("false");
-        REQUIRE(r_false);
-        auto e_false = require_expression(r_false);
+        REQUIRE(r_false.has_value());
+        auto e_false = std::move(r_false).value();
         CHECK(e_false->source_range().begin.column == 1);
         CHECK(e_false->source_range().end.column == 5);
 
         // "null" → [1:1-1:4]
         auto r_null = parse("null");
-        REQUIRE(r_null);
-        auto e_null = require_expression(r_null);
+        REQUIRE(r_null.has_value());
+        auto e_null = std::move(r_null).value();
         CHECK(e_null->source_range().begin.column == 1);
         CHECK(e_null->source_range().end.column == 4);
     }
@@ -353,8 +322,8 @@ TEST_CASE("Parser Primary Expressions")
     {
         // "12345" → [1:1-1:5]
         auto result = parse("12345");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         CHECK(expr->source_range().begin.column == 1);
         CHECK(expr->source_range().end.column == 5);
     }
@@ -363,8 +332,8 @@ TEST_CASE("Parser Primary Expressions")
     {
         // "3.14" → [1:1-1:4]
         auto result = parse("3.14");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         CHECK(expr->source_range().begin.column == 1);
         CHECK(expr->source_range().end.column == 4);
     }
@@ -373,15 +342,15 @@ TEST_CASE("Parser Primary Expressions")
     {
         // "'hello'" → [1:1-1:7]
         auto r_single = parse("'hello'");
-        REQUIRE(r_single);
-        auto e_single = require_expression(r_single);
+        REQUIRE(r_single.has_value());
+        auto e_single = std::move(r_single).value();
         CHECK(e_single->source_range().begin.column == 1);
         CHECK(e_single->source_range().end.column == 7);
 
         // R"("world")" → [1:1-1:7]
         auto r_double = parse("\"world\"");
-        REQUIRE(r_double);
-        auto e_double = require_expression(r_double);
+        REQUIRE(r_double.has_value());
+        auto e_double = std::move(r_double).value();
         CHECK(e_double->source_range().begin.column == 1);
         CHECK(e_double->source_range().end.column == 7);
     }
@@ -390,8 +359,8 @@ TEST_CASE("Parser Primary Expressions")
     {
         // "''" → [1:1-1:2]
         auto result = parse("''");
-        REQUIRE(result);
-        auto expr = require_expression(result);
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
         CHECK(expr->source_range().begin.column == 1);
         CHECK(expr->source_range().end.column == 2);
     }
