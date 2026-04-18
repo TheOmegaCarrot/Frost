@@ -70,7 +70,7 @@ END_COERCIONS
 COERCIONS_TO(Int)
 NO_COERCE(Null)
 VALUE_COERCE(Int)
-static std::optional<target_t> operator()([[maybe_unused]] const Float& value)
+COERCE(Float)
 {
     if ((value < std::numeric_limits<Int>::lowest())
         || (value > static_cast<Float>(std::numeric_limits<Int>::max())))
