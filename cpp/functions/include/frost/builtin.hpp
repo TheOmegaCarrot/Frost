@@ -17,7 +17,7 @@ using builtin_args_t = std::span<const Value_Ptr>;
 // e.g. builtins
 class Builtin : public Callable
 {
-  private:
+  protected:
     using function_t = std::function<Value_Ptr(builtin_args_t)>;
 
   public:
@@ -32,7 +32,7 @@ class Builtin : public Callable
 
     Builtin(function_t function, std::string name);
 
-    Value_Ptr call(builtin_args_t args) const override;
+    Value_Ptr call(builtin_args_t args) const final;
 
     std::string debug_dump() const final;
     std::string name() const final;
