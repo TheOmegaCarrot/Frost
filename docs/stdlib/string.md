@@ -6,7 +6,7 @@ def str = import('std.string')
 
 Additional string operations beyond the [global string builtins](./strings.md).
 
-**Substring operations**
+## Substring operations
 
 ## `index_of`
 
@@ -52,7 +52,7 @@ str.chars("abc")  # => ["a", "b", "c"]
 str.chars("")     # => []
 ```
 
-**Character classification**
+## Character classification
 
 All classification functions take a `String` and return `Bool`.
 An empty string returns `true` (vacuous truth).
