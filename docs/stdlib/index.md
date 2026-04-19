@@ -10,10 +10,6 @@ Each entry links to its full documentation.
 - [any](collections.md#any)
 - [assert](debug.md#assert)
 - [bcurry](functions.md#bcurry)
-- [brotli.compress](compression.md#brotlicompress)
-- [brotli.decompress](compression.md#brotlidecompress)
-- [bz2.compress](compression.md#bz2compress)
-- [bz2.decompress](compression.md#bz2decompress)
 - [call](functions.md#call)
 - [chunk](collections.md#chunk)
 - [chunk_by](collections.md#chunk_by)
@@ -21,13 +17,29 @@ Each entry links to its full documentation.
 - [cli.prompt](cli.md#prompt) · `std.cli`
 - [collect](functions.md#collect)
 - [compose](functions.md#compose)
+- [compression.brotli.compress](compression.md#brotlicompress) · `ext.compression`
+- [compression.brotli.decompress](compression.md#brotlidecompress) · `ext.compression`
+- [compression.bz2.compress](compression.md#bz2compress) · `ext.compression`
+- [compression.bz2.decompress](compression.md#bz2decompress) · `ext.compression`
+- [compression.deflate.compress](compression.md#deflatecompress) · `ext.compression`
+- [compression.deflate.decompress](compression.md#deflatedecompress) · `ext.compression`
+- [compression.gzip.compress](compression.md#gzipcompress) · `ext.compression`
+- [compression.gzip.decompress](compression.md#gzipdecompress) · `ext.compression`
+- [compression.lz4.compress](compression.md#lz4compress) · `ext.compression`
+- [compression.lz4.decompress](compression.md#lz4decompress) · `ext.compression`
+- [compression.snappy.compress](compression.md#snappycompress) · `ext.compression`
+- [compression.snappy.decompress](compression.md#snappydecompress) · `ext.compression`
+- [compression.xz.compress](compression.md#xzcompress) · `ext.compression`
+- [compression.xz.decompress](compression.md#xzdecompress) · `ext.compression`
+- [compression.zlib.compress](compression.md#zlibcompress) · `ext.compression`
+- [compression.zlib.decompress](compression.md#zlibdecompress) · `ext.compression`
+- [compression.zstd.compress](compression.md#zstdcompress) · `ext.compression`
+- [compression.zstd.decompress](compression.md#zstddecompress) · `ext.compression`
 - [const](functions.md#const)
 - [contains](strings.md#contains)
 - [count_by](collections.md#count_by)
 - [curry](functions.md#curry)
 - [debug_dump](debug.md#debug_dump)
-- [deflate.compress](compression.md#deflatecompress)
-- [deflate.decompress](compression.md#deflatedecompress)
 - [dig](collections.md#dig)
 - [dissoc](collections.md#dissoc)
 - [divide](operators.md#divide)
@@ -78,8 +90,6 @@ Each entry links to its full documentation.
 - [greater_than](operators.md#greater_than)
 - [greater_than_or_equal](operators.md#greater_than_or_equal)
 - [group_by](collections.md#group_by)
-- [gzip.compress](compression.md#gzipcompress)
-- [gzip.decompress](compression.md#gzipdecompress)
 - [has](collections.md#has)
 - [hash.blake2b512](hash.md#blake2b512) · `ext.hash`
 - [hash.blake2s256](hash.md#blake2s256) · `ext.hash`
@@ -146,8 +156,6 @@ Each entry links to its full documentation.
 - [less_than](operators.md#less_than)
 - [less_than_or_equal](operators.md#less_than_or_equal)
 - [lines](strings.md#lines)
-- [lz4.compress](compression.md#lz4compress)
-- [lz4.decompress](compression.md#lz4decompress)
 - [map_into](collections.md#map_into)
 - [map_keys](collections.md#map_keys)
 - [map_values](collections.md#map_values)
@@ -189,6 +197,10 @@ Each entry links to its full documentation.
 - [minus](operators.md#minus)
 - [mod](operators.md#mod)
 - [mprint](output.md#mprint)
+- [msgpack.binary](msgpack.md#binary) · `ext.msgpack`
+- [msgpack.decode](msgpack.md#decode) · `ext.msgpack`
+- [msgpack.encode](msgpack.md#encode) · `ext.msgpack`
+- [msgpack.special_float](msgpack.md#special_float) · `ext.msgpack`
 - [mutable_cell](mutable-cell.md#mutable_cell)
 - [none](collections.md#none)
 - [not_equal](operators.md#not_equal)
@@ -223,13 +235,13 @@ Each entry links to its full documentation.
 - [reverse](collections.md#reverse)
 - [scan](collections.md#scan)
 - [select](collections.md#select)
+- [slice](collections.md#slice)
 - [slide](collections.md#slide)
-- [snappy.compress](compression.md#snappycompress)
-- [snappy.decompress](compression.md#snappydecompress)
 - [sort_by](collections.md#sort_by)
 - [sorted](collections.md#sorted)
 - [split](strings.md#split)
 - [spread](functions.md#spread)
+- [sqlite.blob](sqlite.md#blob) · `ext.sqlite`
 - [sqlite.db.close](sqlite.md#dbclose) · `ext.sqlite`
 - [sqlite.db.collect](sqlite.md#dbcollect) · `ext.sqlite`
 - [sqlite.db.create_aggregate](sqlite.md#dbcreate_aggregate) · `ext.sqlite`
@@ -250,6 +262,22 @@ Each entry links to its full documentation.
 - [stdin](streams.md#stdin)
 - [stdout](streams.md#stdout)
 - [stride](collections.md#stride)
+- [string.center](string.md#center) · `std.string`
+- [string.chars](string.md#chars) · `std.string`
+- [string.count](string.md#count) · `std.string`
+- [string.index_of](string.md#index_of) · `std.string`
+- [string.is_alpha](string.md#is_alpha) · `std.string`
+- [string.is_alphanumeric](string.md#is_alphanumeric) · `std.string`
+- [string.is_ascii](string.md#is_ascii) · `std.string`
+- [string.is_digit](string.md#is_digit) · `std.string`
+- [string.is_empty](string.md#is_empty) · `std.string`
+- [string.is_lowercase](string.md#is_lowercase) · `std.string`
+- [string.is_uppercase](string.md#is_uppercase) · `std.string`
+- [string.is_whitespace](string.md#is_whitespace) · `std.string`
+- [string.last_index_of](string.md#last_index_of) · `std.string`
+- [string.pad_left](string.md#pad_left) · `std.string`
+- [string.pad_right](string.md#pad_right) · `std.string`
+- [string.repeat](string.md#repeat) · `std.string`
 - [tail](collections.md#tail)
 - [take](collections.md#take)
 - [take_while](collections.md#take_while)
@@ -280,11 +308,5 @@ Each entry links to its full documentation.
 - [values](collections.md#values)
 - [xprod](collections.md#xprod)
 - [xprod_with](collections.md#xprod_with)
-- [xz.compress](compression.md#xzcompress)
-- [xz.decompress](compression.md#xzdecompress)
 - [zip](collections.md#zip)
 - [zip_with](collections.md#zip_with)
-- [zlib.compress](compression.md#zlibcompress)
-- [zlib.decompress](compression.md#zlibdecompress)
-- [zstd.compress](compression.md#zstdcompress)
-- [zstd.decompress](compression.md#zstddecompress)

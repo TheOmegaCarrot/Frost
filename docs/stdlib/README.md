@@ -69,6 +69,7 @@ Each extension's documentation describes exactly how it handles its system depen
 | [Compression](./compression.md)  | `import('ext.compression')`   | Compression and decompression       | zlib, bz2, xz, brotli, lz4, snappy, zstd |
 | [Hash](./hash.md)                | `import('ext.hash')`          | Hash functions, checksums, and HMAC | OpenSSL, zlib             |
 | [HTTP](./http.md)                | `import('ext.http')`          | Making HTTP requests                | OpenSSL                   |
+| [MessagePack](./msgpack.md)      | `import('ext.msgpack')`       | Binary serialization                | None                      |
 | [SQLite](./sqlite.md)            | `import('ext.sqlite')`        | Embedded relational database        |  zlib   |
 | [TOML](./toml.md)                | `import('ext.toml')`          | Encoding and decoding TOML          | None                      |
 | [Unsafe](./unsafe.md)            | `import('ext.unsafe')`        | Bypass Frost's safety guarantees    | None                      |

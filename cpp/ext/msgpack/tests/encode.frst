@@ -1,0 +1,95 @@
+# MessagePack encode/decode round-trip tests
+
+def mp = import('ext.msgpack')
+
+# --- Primitives ---
+
+assert(mp.decode(mp.encode(null)) == null, "null round-trips")
+assert(mp.decode(mp.encode(true)) == true, "true round-trips")
+assert(mp.decode(mp.encode(false)) == false, "false round-trips")
+assert(mp.decode(mp.encode(42)) == 42, "int round-trips")
+assert(mp.decode(mp.encode(-999)) == -999, "negative int round-trips")
+assert(mp.decode(mp.encode(0)) == 0, "zero round-trips")
+assert(mp.decode(mp.encode(3.14)) == 3.14, "float round-trips")
+assert(mp.decode(mp.encode("hello")) == "hello", "string round-trips")
+assert(mp.decode(mp.encode("")) == "", "empty string round-trips")
+
+# --- Structures ---
+
+def arr = [1, 2, 3]
+assert(mp.decode(mp.encode(arr)) == arr, "array round-trips")
+
+assert(mp.decode(mp.encode([])) == [], "empty array round-trips")
+
+def nested = [1, [2, [3]]]
+assert(mp.decode(mp.encode(nested)) == nested, "nested array round-trips")
+
+# Map round-trip
+def doc = {a: 1, b: "two", c: true, d: null}
+def rt = mp.decode(mp.encode(doc))
+assert(rt.a == 1, "map int value round-trips")
+assert(rt.b == "two", "map string value round-trips")
+assert(rt.c == true, "map bool value round-trips")
+assert(rt.d == null, "map null value round-trips")
+
+# --- Binary foreign values ---
+
+def bin = mp.binary("raw bytes")
+assert(is_function(bin), "binary is a foreign value")
+assert(bin() == "raw bytes", "binary callable returns string")
+
+# Binary round-trips as binary (not string)
+def encoded = mp.encode(bin)
+def decoded = mp.decode(encoded)
+assert(is_function(decoded), "binary round-trips as foreign value")
+assert(decoded() == "raw bytes", "binary data preserved")
+
+# String does NOT become binary
+def str_encoded = mp.encode("text")
+def str_decoded = mp.decode(str_encoded)
+assert(is_string(str_decoded), "string stays string")
+
+# --- Special floats ---
+
+def nan = mp.special_float("nan")
+assert(is_function(nan), "nan is a foreign value")
+assert(nan() == "nan", "nan callable returns string")
+
+def nan_rt = mp.decode(mp.encode(nan))
+assert(is_function(nan_rt), "nan round-trips as foreign value")
+assert(nan_rt() == "nan", "nan round-trips")
+
+def inf = mp.special_float("inf")
+def inf_rt = mp.decode(mp.encode(inf))
+assert(inf_rt() == "inf", "inf round-trips")
+
+def neg_inf = mp.special_float("-inf")
+def neg_inf_rt = mp.decode(mp.encode(neg_inf))
+assert(neg_inf_rt() == "-inf", "-inf round-trips")
+
+# --- Complex document ---
+
+def complex = {
+    name: "test",
+    version: 1,
+    data: mp.binary("blob"),
+    tags: ["a", "b"],
+    nested: {x: 3.14, y: null}
+}
+def complex_rt = mp.decode(mp.encode(complex))
+assert(complex_rt.name == "test", "complex string field")
+assert(complex_rt.version == 1, "complex int field")
+assert(is_function(complex_rt.data), "complex binary field is foreign value")
+assert(complex_rt.data() == "blob", "complex binary data preserved")
+assert(complex_rt.tags == ["a", "b"], "complex array field")
+assert(complex_rt.nested.x == 3.14, "complex nested float")
+assert(complex_rt.nested.y == null, "complex nested null")
+
+# --- Error paths ---
+
+def fn_err = try_call(mp.encode, [fn -> 1])
+assert(not fn_err.ok, "plain function rejected")
+assert(fn_err.error @ contains("Function"), "error mentions Function")
+
+def bad_data = try_call(mp.decode, ["\xc1"])
+assert(not bad_data.ok, "invalid msgpack rejected")

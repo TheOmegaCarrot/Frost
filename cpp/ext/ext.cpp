@@ -29,6 +29,10 @@ void register_extensions(Stdlib_Registry_Builder& builder)
     DO_REGISTER_EXTENSION(compression);
 #endif
 
+#ifdef FROST_ENABLE_MSGPACK
+    DO_REGISTER_EXTENSION(msgpack);
+#endif
+
 #ifdef FROST_ENABLE_TOML
     DO_REGISTER_EXTENSION(toml);
 #endif

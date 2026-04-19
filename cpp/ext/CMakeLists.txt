@@ -95,6 +95,7 @@ frost_extension(hash)
 frost_extension(http)
 frost_extension(sqlite)
 frost_extension(compression)
+frost_extension(msgpack)
 frost_extension(toml)
 frost_extension(unsafe)
 
