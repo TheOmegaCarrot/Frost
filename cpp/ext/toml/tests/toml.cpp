@@ -256,37 +256,22 @@ TEST_CASE("toml.decode: special floats")
         auto val = result->raw_get<Map>().at(Value::create("v"s));
         REQUIRE(val->is<Function>());
         CHECK(val->raw_get<Function>()->call({})->raw_get<String>() == "nan");
-
-        auto* db = dynamic_cast<const Data_Builtin<double>*>(
-            val->raw_get<Function>().get());
-        REQUIRE(db != nullptr);
-        CHECK(std::isnan(db->data()));
     }
 
     SECTION("inf")
     {
         auto result = decode->call({Value::create("v = inf"s)});
         auto val = result->raw_get<Map>().at(Value::create("v"s));
+        REQUIRE(val->is<Function>());
         CHECK(val->raw_get<Function>()->call({})->raw_get<String>() == "inf");
-
-        auto* db = dynamic_cast<const Data_Builtin<double>*>(
-            val->raw_get<Function>().get());
-        REQUIRE(db != nullptr);
-        CHECK(std::isinf(db->data()));
-        CHECK(db->data() > 0);
     }
 
     SECTION("-inf")
     {
         auto result = decode->call({Value::create("v = -inf"s)});
         auto val = result->raw_get<Map>().at(Value::create("v"s));
+        REQUIRE(val->is<Function>());
         CHECK(val->raw_get<Function>()->call({})->raw_get<String>() == "-inf");
-
-        auto* db = dynamic_cast<const Data_Builtin<double>*>(
-            val->raw_get<Function>().get());
-        REQUIRE(db != nullptr);
-        CHECK(std::isinf(db->data()));
-        CHECK(db->data() < 0);
     }
 }
 
@@ -504,36 +489,21 @@ TEST_CASE("toml.special_float: constructor")
         auto result = special_float_fn->call({Value::create("nan"s)});
         REQUIRE(result->is<Function>());
         CHECK(result->raw_get<Function>()->call({})->raw_get<String>() == "nan");
-
-        auto* db = dynamic_cast<const Data_Builtin<double>*>(
-            result->raw_get<Function>().get());
-        REQUIRE(db != nullptr);
-        CHECK(std::isnan(db->data()));
     }
 
     SECTION("inf")
     {
         auto result = special_float_fn->call({Value::create("inf"s)});
+        REQUIRE(result->is<Function>());
         CHECK(result->raw_get<Function>()->call({})->raw_get<String>() == "inf");
-
-        auto* db = dynamic_cast<const Data_Builtin<double>*>(
-            result->raw_get<Function>().get());
-        REQUIRE(db != nullptr);
-        CHECK(std::isinf(db->data()));
-        CHECK(db->data() > 0);
     }
 
     SECTION("-inf")
     {
         auto result = special_float_fn->call({Value::create("-inf"s)});
+        REQUIRE(result->is<Function>());
         CHECK(result->raw_get<Function>()->call({})->raw_get<String>()
               == "-inf");
-
-        auto* db = dynamic_cast<const Data_Builtin<double>*>(
-            result->raw_get<Function>().get());
-        REQUIRE(db != nullptr);
-        CHECK(std::isinf(db->data()));
-        CHECK(db->data() < 0);
     }
 
     SECTION("invalid string")

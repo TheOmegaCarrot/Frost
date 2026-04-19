@@ -90,6 +90,9 @@ namespace toml
 namespace
 {
 
+// TODO later: make a helper function to make it less verbose to make a
+// Data_Builtin for simple cases
+// (needs more use cases to see the best helper shape)
 Function make_date(const tomlpp::date& date)
 {
     auto repr = Value::create(fmt::format("{}", date));
@@ -126,6 +129,11 @@ Function make_datetime(const tomlpp::date_time& datetime)
         "toml.date_time", datetime);
 }
 
+struct TOML_Special_Float
+{
+    double d;
+};
+
 Function make_special_float(const double& d)
 {
     // precondition: d is NaN, +Inf, or -Inf
@@ -145,7 +153,7 @@ Function make_special_float(const double& d)
         THROW_UNREACHABLE;
     }());
 
-    return std::make_shared<Data_Builtin<double>>(
+    return std::make_shared<Data_Builtin<TOML_Special_Float>>(
         [repr = std::move(repr)](builtin_args_t args) {
             REQUIRE_NULLARY("toml.special_float");
             return repr;
@@ -225,7 +233,8 @@ BUILTIN(special_float)
         return Value::create(make_special_float(-lim::infinity()));
 
     throw Frost_Recoverable_Error(fmt::format(
-        "toml.special_float: Input must be 'nan', 'inf', or '-inf', got: {}", str));
+        "toml.special_float: Input must be 'nan', 'inf', or '-inf', got: {}",
+        str));
 }
 
 void append_to(tomlpp::array& parent, const Value_Ptr& val);
@@ -297,8 +306,10 @@ struct Encode_Toml
                      dynamic_cast<const Data_Builtin<tomlpp::date_time>*>(
                          fn.get()))
             insert(db->data());
-        else if (auto* db = dynamic_cast<const Data_Builtin<double>*>(fn.get()))
-            insert(db->data());
+        else if (auto* db =
+                     dynamic_cast<const Data_Builtin<TOML_Special_Float>*>(
+                         fn.get()))
+            insert(db->data().d);
         else
             throw Frost_Recoverable_Error{
                 "toml.encode: cannot serialize Function to TOML"};
