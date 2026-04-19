@@ -11,12 +11,8 @@ Encode and decode [TOML v1.0.0](https://toml.io/en/v1.0.0) documents with full s
 ## Foreign values
 
 TOML has types that Frost does not: dates, times, datetimes, and the special floats `nan`/`inf`/`-inf`.
-When `decode` encounters one of these, it produces a **foreign value**: a `Function` that carries the original TOML data.
-
-Foreign values have two uses:
-
-- **Call it** to get a `String` representation suitable for display or further processing.
-- **Pass it through** to `encode` unchanged to preserve the original TOML type.
+When `decode` encounters one of these, it produces a [**foreign value**](./foreign-values.md).
+Call it to get a `String` representation, or pass it through to `encode` to preserve the original TOML type.
 
 ```frost
 def doc = toml.decode('created = 2024-03-16')
@@ -36,9 +32,6 @@ def doc = {
 }
 toml.encode(doc)
 ```
-
-Note that user-created functions, such as `fn -> '2024-03-16'`, may not be used in place of a foreign value.
-The only valid foreign values come from the sources described above.
 
 ## `decode`
 

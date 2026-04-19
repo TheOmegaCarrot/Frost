@@ -43,8 +43,9 @@ SQLite types map to Frost types as follows: `INTEGER` → `Int`, `REAL` → `Flo
 
 ### BLOB handling
 
-SQLite BLOBs are returned as foreign values, following the same pattern as [TOML foreign values](./toml.md#foreign-values).
-Call the foreign value to get the raw bytes as a `String`. Pass it through unchanged to preserve the BLOB type when binding.
+SQLite BLOBs are returned as [foreign values](./foreign-values.md).
+Call the foreign value to get the raw bytes as a `String`.
+Pass it through unchanged to preserve the BLOB type when binding.
 
 ```frost
 def [row, ..._] = db.query('SELECT blob_col FROM t')
