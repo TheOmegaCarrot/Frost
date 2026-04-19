@@ -52,7 +52,8 @@ class Stdlib_Registry
     X(math)                                                                    \
     X(os)                                                                      \
     X(random)                                                                  \
-    X(regex)
+    X(regex)                                                                   \
+    X(string)
 
 #define X(module) void register_module_##module(Stdlib_Registry_Builder&);
 

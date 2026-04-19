@@ -26,6 +26,7 @@ add_library( frost-functions
     stdlib/os.cpp
     stdlib/random.cpp
     stdlib/regex.cpp
+    stdlib/string.cpp
 )
 
 target_include_directories( frost-functions
@@ -89,6 +90,7 @@ set(FUNCTIONS_STDLIB_TEST_FILES
     os
     random
     regex
+    string
 )
 
 foreach(test_file IN LISTS FUNCTIONS_TEST_FILES)

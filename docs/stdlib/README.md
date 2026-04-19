@@ -49,6 +49,7 @@ Built-in modules accessed via `import`.
 | [OS](./os.md)                    | `import('std.os')`           | Environment variables, process control   |
 | [Random](./random.md)            | `import('std.random')`       | Pseudo-random numbers, shuffling |
 | [Regex](./regex.md)              | `import('std.regex')`        | Pattern matching, searching, replacement |
+| [String](./string.md)            | `import('std.string')`       | Additional string operations             |
 
 ## Extensions
 
