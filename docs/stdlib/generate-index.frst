@@ -30,6 +30,7 @@ def fn_to_anchor_suffix = re.replace @ bcurry(R'([^a-z0-9_-])', '')
 def module_prefixes = {
     ['cli.md']: {module: 'cli', ns: 'std'},
     ['compression.md']: {module: 'compression', ns: 'ext'},
+    ['datetime.md']: {module: 'datetime', ns: 'std'},
     ['encoding.md']: {module: 'encoding', ns: 'std'},
     ['fs.md']: {module: 'fs', ns: 'std'},
     ['hash.md']: {module: 'hash', ns: 'ext'},

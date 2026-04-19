@@ -18,6 +18,7 @@ add_library( frost-functions
     builtins/type-conversions.cpp
     builtins/type-tests.cpp
     stdlib/cli.cpp
+    stdlib/datetime.cpp
     stdlib/encoding.cpp
     stdlib/fs.cpp
     stdlib/io.cpp
@@ -82,6 +83,7 @@ set(FUNCTIONS_BUILTINS_TEST_FILES
 
 set(FUNCTIONS_STDLIB_TEST_FILES
     cli
+    datetime
     encoding
     fs
     io

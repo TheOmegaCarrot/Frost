@@ -41,6 +41,7 @@ Built-in modules accessed via `import`.
 | Module                           | Import                       | Description                              |
 |----------------------------------|------------------------------|------------------------------------------|
 | [CLI](./cli.md)                  | `import('std.cli')`          | Building command-line tools              |
+| [Datetime](./datetime.md)        | `import('std.datetime')`     | Timestamps, formatting, calendar math    |
 | [Encoding](./encoding.md)        | `import('std.encoding')`     | Binary and text encoding utilities        |
 | [Filesystem](./fs.md)            | `import('std.fs')`           | Reading, writing, and navigating the filesystem |
 | [IO](./io.md)                    | `import('std.io')`           | Reading and writing files and streams    |

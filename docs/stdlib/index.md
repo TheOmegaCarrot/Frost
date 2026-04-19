@@ -39,6 +39,13 @@ Each entry links to its full documentation.
 - [contains](strings.md#contains)
 - [count_by](collections.md#count_by)
 - [curry](functions.md#curry)
+- [datetime.components](datetime.md#components) · `std.datetime`
+- [datetime.epoch](datetime.md#epoch) · `std.datetime`
+- [datetime.format](datetime.md#format) · `std.datetime`
+- [datetime.from_components](datetime.md#from_components) · `std.datetime`
+- [datetime.ms](datetime.md#ms) · `std.datetime`
+- [datetime.now](datetime.md#now) · `std.datetime`
+- [datetime.parse](datetime.md#parse) · `std.datetime`
 - [debug_dump](debug.md#debug_dump)
 - [dig](collections.md#dig)
 - [dissoc](collections.md#dissoc)
@@ -124,6 +131,10 @@ Each entry links to its full documentation.
 - [hash.sha512_224](hash.md#sha512_224) · `ext.hash`
 - [hash.sha512_256](hash.md#sha512_256) · `ext.hash`
 - [hash.sm3](hash.md#sm3) · `ext.hash`
+- [hash.xxh32](hash.md#xxh32) · `ext.hash`
+- [hash.xxh3_128](hash.md#xxh3_128) · `ext.hash`
+- [hash.xxh3_64](hash.md#xxh3_64) · `ext.hash`
+- [hash.xxh64](hash.md#xxh64) · `ext.hash`
 - [http.build_url](http.md#build_url) · `ext.http`
 - [http.parse_url](http.md#parse_url) · `ext.http`
 - [http.request](http.md#request) · `ext.http`
@@ -208,6 +219,8 @@ Each entry links to its full documentation.
 - [or_else](functions.md#or_else)
 - [os.exit](os.md#exit) · `std.os`
 - [os.getenv](os.md#getenv) · `std.os`
+- [os.hostname](os.md#hostname) · `std.os`
+- [os.pid](os.md#pid) · `std.os`
 - [os.run](os.md#run) · `std.os`
 - [os.sleep](os.md#sleep) · `std.os`
 - [partition](collections.md#partition)
