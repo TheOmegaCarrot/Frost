@@ -197,3 +197,105 @@ TEST_CASE("string.chars")
                           ContainsSubstring("String"));
     }
 }
+
+TEST_CASE("string.is_empty")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "is_empty");
+
+    CHECK(fn->call({Value::create(""s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("x"s)})->raw_get<Bool>() == false);
+    CHECK(fn->call({Value::create(" "s)})->raw_get<Bool>() == false);
+}
+
+TEST_CASE("string.is_ascii")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "is_ascii");
+
+    CHECK(fn->call({Value::create("hello"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create(""s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("abc123"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("\t\n"s)})->raw_get<Bool>() == true);
+
+    // non-ASCII byte
+    CHECK(fn->call({Value::create(std::string{"\x80"})})->raw_get<Bool>()
+          == false);
+    CHECK(fn->call({Value::create(std::string{"caf\xc3\xa9"})})->raw_get<Bool>()
+          == false);
+}
+
+TEST_CASE("string.is_digit")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "is_digit");
+
+    CHECK(fn->call({Value::create("12345"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("0"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create(""s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("12a"s)})->raw_get<Bool>() == false);
+    CHECK(fn->call({Value::create("abc"s)})->raw_get<Bool>() == false);
+    CHECK(fn->call({Value::create(" "s)})->raw_get<Bool>() == false);
+}
+
+TEST_CASE("string.is_alpha")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "is_alpha");
+
+    CHECK(fn->call({Value::create("hello"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create(""s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("abc123"s)})->raw_get<Bool>() == false);
+    CHECK(fn->call({Value::create("hello world"s)})->raw_get<Bool>() == false);
+}
+
+TEST_CASE("string.is_alphanumeric")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "is_alphanumeric");
+
+    CHECK(fn->call({Value::create("abc123"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("hello"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("42"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create(""s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("hello world"s)})->raw_get<Bool>() == false);
+    CHECK(fn->call({Value::create("a-b"s)})->raw_get<Bool>() == false);
+}
+
+TEST_CASE("string.is_whitespace")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "is_whitespace");
+
+    CHECK(fn->call({Value::create(" "s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("\t\n\r "s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create(""s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("hello"s)})->raw_get<Bool>() == false);
+    CHECK(fn->call({Value::create(" a "s)})->raw_get<Bool>() == false);
+}
+
+TEST_CASE("string.is_uppercase")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "is_uppercase");
+
+    CHECK(fn->call({Value::create("HELLO"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("HELLO123"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("123"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create(""s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("Hello"s)})->raw_get<Bool>() == false);
+    CHECK(fn->call({Value::create("hello"s)})->raw_get<Bool>() == false);
+}
+
+TEST_CASE("string.is_lowercase")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "is_lowercase");
+
+    CHECK(fn->call({Value::create("hello"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("hello123"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("123"s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create(""s)})->raw_get<Bool>() == true);
+    CHECK(fn->call({Value::create("Hello"s)})->raw_get<Bool>() == false);
+    CHECK(fn->call({Value::create("HELLO"s)})->raw_get<Bool>() == false);
+}

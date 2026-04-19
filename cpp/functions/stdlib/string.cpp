@@ -65,9 +65,75 @@ BUILTIN(chars)
                          | std::ranges::to<Array>());
 }
 
+// -- Character classification --
+
+BUILTIN(is_empty)
+{
+    REQUIRE_ARGS("string.is_empty", PARAM("s", TYPES(String)));
+    return Value::create(Bool{GET(0, String).empty()});
+}
+
+BUILTIN(is_ascii)
+{
+    REQUIRE_ARGS("string.is_ascii", PARAM("s", TYPES(String)));
+    return Value::create(Bool{std::ranges::all_of(
+        GET(0, String),
+        [](unsigned char c) { return c < 128; })});
+}
+
+BUILTIN(is_digit)
+{
+    REQUIRE_ARGS("string.is_digit", PARAM("s", TYPES(String)));
+    return Value::create(Bool{std::ranges::all_of(
+        GET(0, String),
+        [](unsigned char c) { return std::isdigit(c); })});
+}
+
+BUILTIN(is_alpha)
+{
+    REQUIRE_ARGS("string.is_alpha", PARAM("s", TYPES(String)));
+    return Value::create(Bool{std::ranges::all_of(
+        GET(0, String),
+        [](unsigned char c) { return std::isalpha(c); })});
+}
+
+BUILTIN(is_alphanumeric)
+{
+    REQUIRE_ARGS("string.is_alphanumeric", PARAM("s", TYPES(String)));
+    return Value::create(Bool{std::ranges::all_of(
+        GET(0, String),
+        [](unsigned char c) { return std::isalnum(c); })});
+}
+
+BUILTIN(is_whitespace)
+{
+    REQUIRE_ARGS("string.is_whitespace", PARAM("s", TYPES(String)));
+    return Value::create(Bool{std::ranges::all_of(
+        GET(0, String),
+        [](unsigned char c) { return std::isspace(c); })});
+}
+
+BUILTIN(is_uppercase)
+{
+    REQUIRE_ARGS("string.is_uppercase", PARAM("s", TYPES(String)));
+    return Value::create(Bool{std::ranges::all_of(
+        GET(0, String),
+        [](unsigned char c) { return not std::isalpha(c) || std::isupper(c); })});
+}
+
+BUILTIN(is_lowercase)
+{
+    REQUIRE_ARGS("string.is_lowercase", PARAM("s", TYPES(String)));
+    return Value::create(Bool{std::ranges::all_of(
+        GET(0, String),
+        [](unsigned char c) { return not std::isalpha(c) || std::islower(c); })});
+}
+
 } // namespace string
 
 STDLIB_MODULE(string, ENTRY(index_of), ENTRY(last_index_of), ENTRY(count),
-              ENTRY(chars))
+              ENTRY(chars), ENTRY(is_empty), ENTRY(is_ascii), ENTRY(is_digit),
+              ENTRY(is_alpha), ENTRY(is_alphanumeric), ENTRY(is_whitespace),
+              ENTRY(is_uppercase), ENTRY(is_lowercase))
 
 } // namespace frst
