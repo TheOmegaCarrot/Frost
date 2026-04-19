@@ -25,10 +25,6 @@
 
 - formatted datetime, arithmetic, constants, backed by `std::chrono`
 
-### Strings
-
-- Still missing a lot of string operations (substr, find, etc)
-
 ## Extensions
 
 ### HTTP enhancements
@@ -36,14 +32,6 @@
 - redirects, cancellation
 - running as a server (blocked by async)
 - websockets (maybe separate extension? maybe together if server supports them)
-
-### MessagePack
-
-- JSON-like binary format, should be straightforward
-
-### TOML
-
-- Datetime handling ambiguity (no clear type mapping)
 
 ### Postgres
 
