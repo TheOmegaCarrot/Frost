@@ -15,7 +15,7 @@ def db = sqlite.open(path)
 
 db.exec('SELECT writefile(?, ?)', [tmp, 'hello from fileio'])
 def content = db.query('SELECT readfile(?) as f', [tmp])[0].f
-assert(content == 'hello from fileio')
+assert(content() == 'hello from fileio')
 
 fs.remove(tmp)
 db.close()

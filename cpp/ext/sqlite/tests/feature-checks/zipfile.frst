@@ -18,8 +18,8 @@ def zip_blob = db.query('''
     )
     ''')[0].z
 
-assert(is_string(zip_blob), 'zipfile() should produce a blob')
-assert(len(zip_blob) > 0, 'zip blob should not be empty')
+assert(is_function(zip_blob), 'zipfile() should produce a blob (foreign value)')
+assert(len(zip_blob()) > 0, 'zip blob should not be empty')
 
 # Write the zip to a temp file and read it back via zipfile() table-valued function
 def zip_path = path + '.test.zip'

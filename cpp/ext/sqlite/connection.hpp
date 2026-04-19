@@ -2,12 +2,21 @@
 #define FROST_EXT_SQLITE_CONNECTION_HPP
 
 #include <frost/builtins-common.hpp>
+#include <frost/data-builtin.hpp>
 
 #include <mutex>
 #include <sqlite3.h>
 
 namespace frst::sqlite
 {
+
+struct SQLite_Blob
+{
+    Value_Ptr data;
+};
+
+Function make_blob(Value_Ptr data);
+
 // Connection wraps a SQLite database handle with RAII lifetime.
 //
 // All methods except in_transaction() require an open connection and will

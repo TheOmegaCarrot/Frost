@@ -328,6 +328,12 @@ BUILTIN(open_memory)
     return database_to_closuremap(std::move(conn));
 }
 
+BUILTIN(blob)
+{
+    REQUIRE_ARGS("sqlite.blob", PARAM("data", TYPES(String)));
+    return Value::create(make_blob(args.at(0)));
+}
+
 } // namespace sqlite
 
 REGISTER_EXTENSION(sqlite,
@@ -335,6 +341,7 @@ REGISTER_EXTENSION(sqlite,
                        "version"_s,
                        Value::create(String{sqlite3_version}),
                    },
-                   ENTRY(open), ENTRY(open_readonly), ENTRY(open_memory))
+                   ENTRY(open), ENTRY(open_readonly), ENTRY(open_memory),
+                   ENTRY(blob))
 
 } // namespace frst

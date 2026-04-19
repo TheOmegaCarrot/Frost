@@ -26,10 +26,36 @@ assert(type(row.f) == 'Float', 'REAL maps to Float')
 assert(row.t == 'hello', 'TEXT column')
 assert(type(row.t) == 'String', 'TEXT maps to String')
 
-assert(type(row.b) == 'String', 'BLOB maps to String')
+assert(type(row.b) == 'Function', 'BLOB maps to Function (foreign value)')
+assert(type(row.b()) == 'String', 'calling BLOB returns String')
 
 assert(row.n == null, 'NULL column')
 assert(type(row.n) == 'Null', 'NULL maps to Null')
+
+# --- BLOB round-trip ---
+
+db.exec('CREATE TABLE blob_rt (data BLOB)')
+db.exec('INSERT INTO blob_rt VALUES (?)', [row.b])
+def blob_row = db.query('SELECT * FROM blob_rt')[0]
+assert(type(blob_row.data) == 'Function', 'BLOB round-trips as BLOB')
+assert(blob_row.data() == row.b(), 'BLOB data preserved')
+
+# BLOB via sqlite.blob() constructor
+def custom_blob = sqlite.blob('hello bytes')
+db.exec('INSERT INTO blob_rt VALUES (?)', [custom_blob])
+def custom_row = db.query('SELECT * FROM blob_rt ORDER BY rowid DESC')[0]
+assert(type(custom_row.data) == 'Function', 'sqlite.blob() round-trips as BLOB')
+assert(custom_row.data() == 'hello bytes', 'sqlite.blob() data preserved')
+
+# Plain String binds as TEXT, not BLOB
+db.exec('CREATE TABLE text_vs_blob (val)')
+db.exec('INSERT INTO text_vs_blob VALUES (?)', ['plain text'])
+def tvb = db.query("SELECT typeof(val) as t FROM text_vs_blob")[0]
+assert(tvb.t == 'text', 'String binds as TEXT')
+
+db.exec('INSERT INTO text_vs_blob VALUES (?)', [sqlite.blob('blob data')])
+def tvb2 = db.query("SELECT typeof(val) as t FROM text_vs_blob ORDER BY rowid DESC")[0]
+assert(tvb2.t == 'blob', 'sqlite.blob() binds as BLOB')
 
 # --- Binding path: all supported Frost types ---
 

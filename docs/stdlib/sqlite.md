@@ -36,8 +36,33 @@ The vendored build also enables the following extensions:
 - [**Zipfile**](https://www.sqlite.org/zipfile.html) — virtual table for reading and writing ZIP archives
 
 The `sqlite` module provides access to SQLite databases.
-Supported binding types are `Null`, `Int`, `Float`, `Bool`, and `String`.
+Supported binding types are `Null`, `Int`, `Float`, `Bool`, `String`, and BLOB foreign values.
 `Bool` values are stored as integers (`true` → `1`, `false` → `0`).
+
+SQLite types map to Frost types as follows: `INTEGER` → `Int`, `REAL` → `Float`, `TEXT` → `String`, `NULL` → `null`, and `BLOB` → foreign value (see below).
+
+### BLOB handling
+
+SQLite BLOBs are returned as foreign values, following the same pattern as [TOML foreign values](./toml.md#foreign-values).
+Call the foreign value to get the raw bytes as a `String`. Pass it through unchanged to preserve the BLOB type when binding.
+
+```frost
+def [row, ..._] = db.query('SELECT blob_col FROM t')
+row.blob_col     # => <Function>
+row.blob_col()   # => the raw bytes as a String
+
+# Round-trip: re-inserting preserves the BLOB type
+db.exec('INSERT INTO t2 VALUES (?)', [row.blob_col])
+```
+
+To create a BLOB from scratch, use `sqlite.blob()`:
+
+```frost
+def b = sqlite.blob('raw bytes here')
+db.exec('INSERT INTO t VALUES (?)', [b])
+```
+
+A plain `String` always binds as TEXT. Use `sqlite.blob()` when you need BLOB binding specifically.
 
 ### Positional bindings
 
@@ -72,6 +97,19 @@ insert_user(db, 2, 'bob')
 ## `version`
 
 A `String` containing the SQLite library version (e.g. `"3.51.3"`).
+
+## `blob`
+
+`blob(data)`
+
+Creates a BLOB foreign value from a `String`.
+When bound as a parameter, this value uses `BLOB` affinity rather than `TEXT`.
+Calling this does not copy the underlying string data.
+
+```frost
+def b = sqlite.blob('binary data')
+db.exec('INSERT INTO t VALUES (?)', [b])
+```
 
 ## `open`
 `open(path)`

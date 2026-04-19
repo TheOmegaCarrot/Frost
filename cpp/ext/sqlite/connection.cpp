@@ -5,6 +5,16 @@
 namespace frst::sqlite
 {
 
+Function make_blob(Value_Ptr data)
+{
+    return std::make_shared<Data_Builtin<SQLite_Blob>>(
+        [data](builtin_args_t args) {
+            REQUIRE_NULLARY("sqlite.blob");
+            return data;
+        },
+        "sqlite.blob", SQLite_Blob{data});
+}
+
 std::shared_ptr<Connection> Connection::create(const String& filename,
                                                int openmode)
 {
@@ -58,9 +68,9 @@ Value_Ptr value_to_frost(sqlite3_value* val)
             String{reinterpret_cast<const char*>(sqlite3_value_text(val)),
                    static_cast<std::size_t>(sqlite3_value_bytes(val))});
     case SQLITE_BLOB:
-        return Value::create(
+        return Value::create(make_blob(Value::create(
             String{static_cast<const char*>(sqlite3_value_blob(val)),
-                   static_cast<std::size_t>(sqlite3_value_bytes(val))});
+                   static_cast<std::size_t>(sqlite3_value_bytes(val))})));
     case SQLITE_NULL:
     default:
         return Value::null();
@@ -85,6 +95,20 @@ void result_to_sqlite(sqlite3_context* ctx, const Value_Ptr& val)
         [&](const String& v) {
             sqlite3_result_text(ctx, v.c_str(), static_cast<int>(v.size()),
                                 SQLITE_TRANSIENT);
+        },
+        [&](const Function& fn) {
+            if (auto* db = dynamic_cast<const Data_Builtin<SQLite_Blob>*>(
+                    fn.get()))
+            {
+                const auto& bytes = db->data().data->raw_get<String>();
+                sqlite3_result_blob(ctx, bytes.data(),
+                                    static_cast<int>(bytes.size()),
+                                    SQLITE_TRANSIENT);
+            }
+            else
+            {
+                sqlite3_result_error(ctx, "unsupported return type", -1);
+            }
         },
         [&](const auto&) {
             sqlite3_result_error(ctx, "unsupported return type", -1);
@@ -473,6 +497,18 @@ void Connection::bind_value_(const Stmt_Ptr& stmt, int pos,
                                      static_cast<int>(v.size()),
                                      SQLITE_TRANSIENT);
         },
+        [&](const Function& fn) -> int {
+            if (auto* db = dynamic_cast<const Data_Builtin<SQLite_Blob>*>(
+                    fn.get()))
+            {
+                const auto& bytes = db->data().data->raw_get<String>();
+                return sqlite3_bind_blob(s, pos, bytes.data(),
+                                         static_cast<int>(bytes.size()),
+                                         SQLITE_TRANSIENT);
+            }
+            throw Frost_Recoverable_Error{"unsupported binding type at "
+                                          + location};
+        },
         [&](const auto&) -> int {
             throw Frost_Recoverable_Error{"unsupported binding type at "
                                           + location};
@@ -573,10 +609,10 @@ Value_Ptr Connection::read_row_(const Stmt_Ptr& stmt, int num_cols)
         case SQLITE_BLOB:
             row.insert_or_assign(
                 col_name,
-                Value::create(String{
+                Value::create(make_blob(Value::create(String{
                     static_cast<const char*>(sqlite3_column_blob(s, i)),
                     static_cast<std::size_t>(sqlite3_column_bytes(s, i)),
-                }));
+                }))));
             break;
         case SQLITE_NULL:
             row.insert_or_assign(col_name, Value::null());
