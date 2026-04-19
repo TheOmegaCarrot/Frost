@@ -345,7 +345,8 @@ BUILTIN(encode)
     }
 
     std::ostringstream oss;
-    oss << root;
+    oss << tomlpp::toml_formatter{
+        root, tomlpp::toml_formatter::default_flags & ~tomlpp::format_flags::indent_sub_tables};
     return Value::create(String{oss.str()});
 }
 

@@ -67,6 +67,9 @@ Only string keys are permitted, as required by TOML.
 `null` values and plain `Function` values are rejected as TOML has no representation for them.
 Foreign values produced by `decode` or the constructor functions below are serialized with their original TOML types.
 
+The output is valid TOML, but may not be ideally formatted for all use cases.
+TOML allows many textual representations of the same data, and `encode` does not currently offer formatting options.
+
 ```frost
 def s = toml.encode({
     title: "My Config",
