@@ -643,8 +643,34 @@ BUILTIN(partition)
                          });
 }
 
+BUILTIN(slice)
+{
+    REQUIRE_ARGS("slice", PARAM("arr", TYPES(Array)), PARAM("start", TYPES(Int)),
+                 OPTIONAL(PARAM("end", TYPES(Int))));
+
+    const auto& arr = GET(0, Array);
+    auto len = static_cast<Int>(arr.size());
+
+    auto clamp = [len](Int idx) -> std::size_t {
+        if (idx < 0)
+            idx += len;
+        return static_cast<std::size_t>(std::clamp(idx, Int{0}, len));
+    };
+
+    auto start = clamp(GET(1, Int));
+    auto end = HAS(2) ? clamp(GET(2, Int)) : static_cast<std::size_t>(len);
+
+    if (start >= end)
+        return Value::create(Array{});
+
+    return Value::create(
+        Array{arr.begin() + static_cast<Int>(start),
+              arr.begin() + static_cast<Int>(end)});
+}
+
 void inject_ranges(Symbol_Table& table)
 {
+    INJECT(slice);
     INJECT(stride);
     INJECT(take);
     INJECT(drop);

@@ -107,6 +107,23 @@ nested @ dig('items', 0, 'name')   # => 'alice'
 nested @ dig('items', 5, 'name')   # => null (out of bounds)
 ```
 
+## `slice`
+
+`slice(arr, start)`
+`slice(arr, start, end)`
+
+Returns a sub-array from `start` (inclusive) to `end` (exclusive).
+If `end` is omitted, slices to the end of the array.
+Negative indices count from the end.
+Out-of-bounds indices are clamped.
+
+```frost
+slice([1, 2, 3, 4, 5], 1, 3)   # => [2, 3]
+slice([1, 2, 3, 4, 5], 2)      # => [3, 4, 5]
+slice([1, 2, 3, 4, 5], -2)     # => [4, 5]
+slice([1, 2, 3, 4, 5], 1, -1)  # => [2, 3, 4]
+```
+
 ## `stride`
 `stride(arr, n)`
 

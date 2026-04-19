@@ -468,6 +468,87 @@ TEST_CASE("Builtin ranges")
         }
     }
 
+    SECTION("slice semantics")
+    {
+        auto fn = lookup(table, "slice");
+        auto a = Value::create(0_f);
+        auto b = Value::create(1_f);
+        auto c = Value::create(2_f);
+        auto d = Value::create(3_f);
+        auto e = Value::create(4_f);
+        auto arr = Value::create(Array{a, b, c, d, e});
+
+        // basic slice
+        require_array_eq(fn->call({arr, Value::create(1_f), Value::create(3_f)}),
+                         {b, c});
+
+        // from start
+        require_array_eq(fn->call({arr, Value::create(0_f), Value::create(2_f)}),
+                         {a, b});
+
+        // to end (omit end)
+        require_array_eq(fn->call({arr, Value::create(2_f)}), {c, d, e});
+
+        // full array
+        require_array_eq(fn->call({arr, Value::create(0_f)}), {a, b, c, d, e});
+
+        // negative start
+        require_array_eq(fn->call({arr, Value::create(-2_f)}), {d, e});
+
+        // negative end
+        require_array_eq(
+            fn->call({arr, Value::create(1_f), Value::create(-1_f)}), {b, c, d});
+
+        // both negative
+        require_array_eq(
+            fn->call({arr, Value::create(-3_f), Value::create(-1_f)}),
+            {c, d});
+
+        // start >= end gives empty
+        require_array_eq(
+            fn->call({arr, Value::create(3_f), Value::create(1_f)}), {});
+
+        // out-of-bounds clamped
+        require_array_eq(
+            fn->call({arr, Value::create(0_f), Value::create(100_f)}),
+            {a, b, c, d, e});
+        require_array_eq(
+            fn->call({arr, Value::create(-100_f), Value::create(3_f)}),
+            {a, b, c});
+
+        // negative end clamped below start gives empty
+        require_array_eq(
+            fn->call({arr, Value::create(2_f), Value::create(-9001_f)}), {});
+
+        // empty array
+        auto empty = Value::create(Array{});
+        require_array_eq(fn->call({empty, Value::create(0_f)}), {});
+    }
+
+    SECTION("slice arity")
+    {
+        auto fn = lookup(table, "slice");
+        auto arr = Value::create(Array{Value::create(1_f)});
+
+        CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(fn->call({arr}), ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(
+            fn->call({arr, Value::create(0_f), Value::create(1_f),
+                      Value::create(2_f)}),
+            ContainsSubstring("too many"));
+    }
+
+    SECTION("slice type constraints")
+    {
+        auto fn = lookup(table, "slice");
+        auto arr = Value::create(Array{Value::create(1_f)});
+
+        CHECK_THROWS_WITH(fn->call({Value::create("x"s), Value::create(0_f)}),
+                          ContainsSubstring("Array"));
+        CHECK_THROWS_WITH(fn->call({arr, Value::create("x"s)}),
+                          ContainsSubstring("Int"));
+    }
+
     SECTION("stride semantics")
     {
         auto fn = lookup(table, "stride");
