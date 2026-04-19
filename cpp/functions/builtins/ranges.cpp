@@ -645,7 +645,8 @@ BUILTIN(partition)
 
 BUILTIN(slice)
 {
-    REQUIRE_ARGS("slice", PARAM("arr", TYPES(Array)), PARAM("start", TYPES(Int)),
+    REQUIRE_ARGS("slice", PARAM("arr", TYPES(Array)),
+                 PARAM("start", TYPES(Int)),
                  OPTIONAL(PARAM("end", TYPES(Int))));
 
     const auto& arr = GET(0, Array);
@@ -663,9 +664,8 @@ BUILTIN(slice)
     if (start >= end)
         return Value::create(Array{});
 
-    return Value::create(
-        Array{arr.begin() + static_cast<Int>(start),
-              arr.begin() + static_cast<Int>(end)});
+    return Value::create(Array{arr.begin() + static_cast<Int>(start),
+                               arr.begin() + static_cast<Int>(end)});
 }
 
 void inject_ranges(Symbol_Table& table)

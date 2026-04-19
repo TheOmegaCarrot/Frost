@@ -56,35 +56,45 @@ TEST_CASE("msgpack.decode: primitives")
 
     SECTION("nil")
     {
-        auto data = pack_value([](auto& pk) { pk.pack_nil(); });
+        auto data = pack_value([](auto& pk) {
+            pk.pack_nil();
+        });
         auto result = decode->call({Value::create(String{data})});
         CHECK(result == Value::null());
     }
 
     SECTION("true")
     {
-        auto data = pack_value([](auto& pk) { pk.pack_true(); });
+        auto data = pack_value([](auto& pk) {
+            pk.pack_true();
+        });
         auto result = decode->call({Value::create(String{data})});
         CHECK(result->raw_get<Bool>() == true);
     }
 
     SECTION("false")
     {
-        auto data = pack_value([](auto& pk) { pk.pack_false(); });
+        auto data = pack_value([](auto& pk) {
+            pk.pack_false();
+        });
         auto result = decode->call({Value::create(String{data})});
         CHECK(result->raw_get<Bool>() == false);
     }
 
     SECTION("positive integer")
     {
-        auto data = pack_value([](auto& pk) { pk.pack_int64(42); });
+        auto data = pack_value([](auto& pk) {
+            pk.pack_int64(42);
+        });
         auto result = decode->call({Value::create(String{data})});
         CHECK(result->raw_get<Int>() == 42);
     }
 
     SECTION("negative integer")
     {
-        auto data = pack_value([](auto& pk) { pk.pack_int64(-100); });
+        auto data = pack_value([](auto& pk) {
+            pk.pack_int64(-100);
+        });
         auto result = decode->call({Value::create(String{data})});
         CHECK(result->raw_get<Int>() == -100);
     }
@@ -92,8 +102,8 @@ TEST_CASE("msgpack.decode: primitives")
     SECTION("uint64 overflow rejected")
     {
         auto data = pack_value([](auto& pk) {
-            pk.pack_uint64(static_cast<uint64_t>(
-                std::numeric_limits<int64_t>::max()) + 1);
+            pk.pack_uint64(
+                static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1);
         });
         CHECK_THROWS_WITH(decode->call({Value::create(String{data})}),
                           ContainsSubstring("exceeds Int range"));
@@ -101,7 +111,9 @@ TEST_CASE("msgpack.decode: primitives")
 
     SECTION("float")
     {
-        auto data = pack_value([](auto& pk) { pk.pack_double(3.14); });
+        auto data = pack_value([](auto& pk) {
+            pk.pack_double(3.14);
+        });
         auto result = decode->call({Value::create(String{data})});
         CHECK(result->raw_get<Float>() == Catch::Approx(3.14));
     }
@@ -181,8 +193,7 @@ TEST_CASE("msgpack.decode: structures")
         });
         auto result = decode->call({Value::create(String{data})});
         REQUIRE(result->is<Map>());
-        auto inner =
-            result->raw_get<Map>().at(Value::create("data"s));
+        auto inner = result->raw_get<Map>().at(Value::create("data"s));
         REQUIRE(inner->is<Array>());
         CHECK(inner->raw_get<Array>()[0]->raw_get<Int>() == 1);
         CHECK(inner->raw_get<Array>()[1]->raw_get<Bool>() == true);
@@ -196,26 +207,31 @@ TEST_CASE("msgpack.decode: special floats")
 
     SECTION("nan")
     {
-        auto data = pack_value(
-            [](auto& pk) { pk.pack_double(std::numeric_limits<double>::quiet_NaN()); });
+        auto data = pack_value([](auto& pk) {
+            pk.pack_double(std::numeric_limits<double>::quiet_NaN());
+        });
         auto result = decode->call({Value::create(String{data})});
         REQUIRE(result->is<Function>());
-        CHECK(result->raw_get<Function>()->call({})->raw_get<String>() == "nan");
+        CHECK(result->raw_get<Function>()->call({})->raw_get<String>()
+              == "nan");
     }
 
     SECTION("inf")
     {
-        auto data = pack_value(
-            [](auto& pk) { pk.pack_double(std::numeric_limits<double>::infinity()); });
+        auto data = pack_value([](auto& pk) {
+            pk.pack_double(std::numeric_limits<double>::infinity());
+        });
         auto result = decode->call({Value::create(String{data})});
         REQUIRE(result->is<Function>());
-        CHECK(result->raw_get<Function>()->call({})->raw_get<String>() == "inf");
+        CHECK(result->raw_get<Function>()->call({})->raw_get<String>()
+              == "inf");
     }
 
     SECTION("-inf")
     {
-        auto data = pack_value(
-            [](auto& pk) { pk.pack_double(-std::numeric_limits<double>::infinity()); });
+        auto data = pack_value([](auto& pk) {
+            pk.pack_double(-std::numeric_limits<double>::infinity());
+        });
         auto result = decode->call({Value::create(String{data})});
         REQUIRE(result->is<Function>());
         CHECK(result->raw_get<Function>()->call({})->raw_get<String>()
@@ -268,8 +284,7 @@ TEST_CASE("msgpack.decode: error handling")
 
     SECTION("arity")
     {
-        CHECK_THROWS_WITH(decode->call({}),
-                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(decode->call({}), ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(
             decode->call({Value::create("a"s), Value::create("b"s)}),
             ContainsSubstring("too many"));
@@ -352,9 +367,9 @@ TEST_CASE("msgpack.encode: structures")
 
     SECTION("map round-trips")
     {
-        auto map = Value::create(Value::trusted,
-                                 Map{{Value::create("x"s), Value::create(1_f)},
-                                     {Value::create("y"s), Value::create(2_f)}});
+        auto map = Value::create(
+            Value::trusted, Map{{Value::create("x"s), Value::create(1_f)},
+                                {Value::create("y"s), Value::create(2_f)}});
         auto decoded = decode->call({encode->call({map})});
         REQUIRE(decoded->is<Map>());
         CHECK(decoded->raw_get<Map>().at(Value::create("x"s))->raw_get<Int>()
@@ -369,9 +384,11 @@ TEST_CASE("msgpack.encode: cannot serialize plain Function")
     auto mod = msgpack_module();
     auto encode = lookup(mod, "encode");
 
-    auto fn = Value::create(
-        Function{std::make_shared<Builtin>(
-            [](builtin_args_t) { return Value::null(); }, "dummy")});
+    auto fn = Value::create(Function{std::make_shared<Builtin>(
+        [](builtin_args_t) {
+            return Value::null();
+        },
+        "dummy")});
     CHECK_THROWS_WITH(encode->call({fn}),
                       ContainsSubstring("cannot serialize Function"));
 }
@@ -414,14 +431,16 @@ TEST_CASE("msgpack.special_float: constructor")
     {
         auto result = sf_fn->call({Value::create("nan"s)});
         REQUIRE(result->is<Function>());
-        CHECK(result->raw_get<Function>()->call({})->raw_get<String>() == "nan");
+        CHECK(result->raw_get<Function>()->call({})->raw_get<String>()
+              == "nan");
     }
 
     SECTION("inf")
     {
         auto result = sf_fn->call({Value::create("inf"s)});
         REQUIRE(result->is<Function>());
-        CHECK(result->raw_get<Function>()->call({})->raw_get<String>() == "inf");
+        CHECK(result->raw_get<Function>()->call({})->raw_get<String>()
+              == "inf");
     }
 
     SECTION("-inf")
@@ -440,7 +459,6 @@ TEST_CASE("msgpack.special_float: constructor")
 
     SECTION("arity")
     {
-        CHECK_THROWS_WITH(sf_fn->call({}),
-                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(sf_fn->call({}), ContainsSubstring("insufficient"));
     }
 }

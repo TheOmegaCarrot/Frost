@@ -479,12 +479,12 @@ TEST_CASE("Builtin ranges")
         auto arr = Value::create(Array{a, b, c, d, e});
 
         // basic slice
-        require_array_eq(fn->call({arr, Value::create(1_f), Value::create(3_f)}),
-                         {b, c});
+        require_array_eq(
+            fn->call({arr, Value::create(1_f), Value::create(3_f)}), {b, c});
 
         // from start
-        require_array_eq(fn->call({arr, Value::create(0_f), Value::create(2_f)}),
-                         {a, b});
+        require_array_eq(
+            fn->call({arr, Value::create(0_f), Value::create(2_f)}), {a, b});
 
         // to end (omit end)
         require_array_eq(fn->call({arr, Value::create(2_f)}), {c, d, e});
@@ -497,12 +497,12 @@ TEST_CASE("Builtin ranges")
 
         // negative end
         require_array_eq(
-            fn->call({arr, Value::create(1_f), Value::create(-1_f)}), {b, c, d});
+            fn->call({arr, Value::create(1_f), Value::create(-1_f)}),
+            {b, c, d});
 
         // both negative
         require_array_eq(
-            fn->call({arr, Value::create(-3_f), Value::create(-1_f)}),
-            {c, d});
+            fn->call({arr, Value::create(-3_f), Value::create(-1_f)}), {c, d});
 
         // start >= end gives empty
         require_array_eq(
@@ -532,10 +532,9 @@ TEST_CASE("Builtin ranges")
 
         CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(fn->call({arr}), ContainsSubstring("insufficient"));
-        CHECK_THROWS_WITH(
-            fn->call({arr, Value::create(0_f), Value::create(1_f),
-                      Value::create(2_f)}),
-            ContainsSubstring("too many"));
+        CHECK_THROWS_WITH(fn->call({arr, Value::create(0_f), Value::create(1_f),
+                                    Value::create(2_f)}),
+                          ContainsSubstring("too many"));
     }
 
     SECTION("slice type constraints")

@@ -92,15 +92,15 @@ TEST_CASE("datetime.format")
     {
         // 2024-03-16 14:30:00 UTC
         auto millis = 1710547200000_f + 14 * 3600000 + 30 * 60000;
-        auto result = format->call(
-            {Value::create(millis), Value::create("%H:%M"s)});
+        auto result =
+            format->call({Value::create(millis), Value::create("%H:%M"s)});
         CHECK(result->raw_get<String>() == "14:30");
     }
 
     SECTION("epoch formats correctly")
     {
-        auto result = format->call(
-            {Value::create(0_f), Value::create("%Y-%m-%d"s)});
+        auto result =
+            format->call({Value::create(0_f), Value::create("%Y-%m-%d"s)});
         CHECK(result->raw_get<String>() == "1970-01-01");
     }
 
@@ -113,8 +113,7 @@ TEST_CASE("datetime.format")
 
     SECTION("arity")
     {
-        CHECK_THROWS_WITH(format->call({}),
-                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(format->call({}), ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(format->call({Value::create(0_f)}),
                           ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(
@@ -148,9 +147,8 @@ TEST_CASE("datetime.parse")
 
     SECTION("parses date and time")
     {
-        auto result = parse->call(
-            {Value::create("2024-03-16 14:30:00"s),
-             Value::create("%Y-%m-%d %H:%M:%S"s)});
+        auto result = parse->call({Value::create("2024-03-16 14:30:00"s),
+                                   Value::create("%Y-%m-%d %H:%M:%S"s)});
         auto expected = 1710547200000_f + 14 * 3600000 + 30 * 60000;
         CHECK(result->raw_get<Int>() == expected);
     }
@@ -167,16 +165,14 @@ TEST_CASE("datetime.parse")
 
     SECTION("invalid input")
     {
-        CHECK_THROWS_WITH(
-            parse->call({Value::create("not-a-date"s),
-                         Value::create("%Y-%m-%d"s)}),
-            ContainsSubstring("does not match"));
+        CHECK_THROWS_WITH(parse->call({Value::create("not-a-date"s),
+                                       Value::create("%Y-%m-%d"s)}),
+                          ContainsSubstring("does not match"));
     }
 
     SECTION("arity")
     {
-        CHECK_THROWS_WITH(parse->call({}),
-                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(parse->call({}), ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(parse->call({Value::create("x"s)}),
                           ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(
@@ -260,29 +256,29 @@ TEST_CASE("datetime.from_components")
 
     SECTION("full date")
     {
-        auto result = from->call({Value::create(Value::trusted,
-            Map{{"year"_s, Value::create(2024_f)},
-                {"month"_s, Value::create(3_f)},
-                {"day"_s, Value::create(16_f)}})});
+        auto result = from->call({Value::create(
+            Value::trusted, Map{{"year"_s, Value::create(2024_f)},
+                                {"month"_s, Value::create(3_f)},
+                                {"day"_s, Value::create(16_f)}})});
         CHECK(result->raw_get<Int>() == 1710547200000);
     }
 
     SECTION("with time")
     {
-        auto result = from->call({Value::create(Value::trusted,
-            Map{{"year"_s, Value::create(2024_f)},
-                {"month"_s, Value::create(3_f)},
-                {"day"_s, Value::create(16_f)},
-                {"hour"_s, Value::create(14_f)},
-                {"minute"_s, Value::create(30_f)}})});
+        auto result = from->call({Value::create(
+            Value::trusted, Map{{"year"_s, Value::create(2024_f)},
+                                {"month"_s, Value::create(3_f)},
+                                {"day"_s, Value::create(16_f)},
+                                {"hour"_s, Value::create(14_f)},
+                                {"minute"_s, Value::create(30_f)}})});
         auto expected = 1710547200000_f + 14 * 3600000 + 30 * 60000;
         CHECK(result->raw_get<Int>() == expected);
     }
 
     SECTION("missing fields default to minimum")
     {
-        auto result = from->call({Value::create(Value::trusted,
-            Map{{"year"_s, Value::create(1970_f)}})});
+        auto result = from->call({Value::create(
+            Value::trusted, Map{{"year"_s, Value::create(1970_f)}})});
         CHECK(result->raw_get<Int>() == 0);
     }
 
@@ -299,9 +295,9 @@ TEST_CASE("datetime.from_components")
     {
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create(2024_f)},
-                    {"month"_s, Value::create(2_f)},
-                    {"day"_s, Value::create(30_f)}})}),
+                                      Map{{"year"_s, Value::create(2024_f)},
+                                          {"month"_s, Value::create(2_f)},
+                                          {"day"_s, Value::create(30_f)}})}),
             ContainsSubstring("invalid date"));
     }
 
@@ -309,26 +305,25 @@ TEST_CASE("datetime.from_components")
     {
         // components output includes weekday, but from_components should
         // ignore it (weekday is derived, not an input)
-        auto result = from->call({Value::create(Value::trusted,
-            Map{{"year"_s, Value::create(2024_f)},
-                {"month"_s, Value::create(3_f)},
-                {"day"_s, Value::create(16_f)},
-                {"weekday"_s, Value::create("bogus"s)}})});
+        auto result = from->call({Value::create(
+            Value::trusted, Map{{"year"_s, Value::create(2024_f)},
+                                {"month"_s, Value::create(3_f)},
+                                {"day"_s, Value::create(16_f)},
+                                {"weekday"_s, Value::create("bogus"s)}})});
         CHECK(result->raw_get<Int>() == 1710547200000);
     }
 
     SECTION("non-Int field value rejected")
     {
         CHECK_THROWS_WITH(
-            from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create("2024"s)}})}),
+            from->call({Value::create(
+                Value::trusted, Map{{"year"_s, Value::create("2024"s)}})}),
             ContainsSubstring("must be Int"));
     }
 
     SECTION("arity")
     {
-        CHECK_THROWS_WITH(from->call({}),
-                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(from->call({}), ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted, Map{}),
                         Value::create("UTC"s), Value::create(0_f)}),
@@ -390,10 +385,10 @@ TEST_CASE("datetime: edge cases")
 
     SECTION("pre-epoch from_components")
     {
-        auto result = from->call({Value::create(Value::trusted,
-            Map{{"year"_s, Value::create(1969_f)},
-                {"month"_s, Value::create(12_f)},
-                {"day"_s, Value::create(31_f)}})});
+        auto result = from->call({Value::create(
+            Value::trusted, Map{{"year"_s, Value::create(1969_f)},
+                                {"month"_s, Value::create(12_f)},
+                                {"day"_s, Value::create(31_f)}})});
         CHECK(result->raw_get<Int>() == -86'400'000);
     }
 
@@ -406,10 +401,10 @@ TEST_CASE("datetime: edge cases")
 
     SECTION("leap year: Feb 29 on leap year")
     {
-        auto result = from->call({Value::create(Value::trusted,
-            Map{{"year"_s, Value::create(2024_f)},
-                {"month"_s, Value::create(2_f)},
-                {"day"_s, Value::create(29_f)}})});
+        auto result = from->call({Value::create(
+            Value::trusted, Map{{"year"_s, Value::create(2024_f)},
+                                {"month"_s, Value::create(2_f)},
+                                {"day"_s, Value::create(29_f)}})});
         auto comp = components->call({result});
         CHECK(get_field(comp, "month")->raw_get<Int>() == 2);
         CHECK(get_field(comp, "day")->raw_get<Int>() == 29);
@@ -419,9 +414,9 @@ TEST_CASE("datetime: edge cases")
     {
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create(2023_f)},
-                    {"month"_s, Value::create(2_f)},
-                    {"day"_s, Value::create(29_f)}})}),
+                                      Map{{"year"_s, Value::create(2023_f)},
+                                          {"month"_s, Value::create(2_f)},
+                                          {"day"_s, Value::create(29_f)}})}),
             ContainsSubstring("invalid date"));
     }
 
@@ -429,8 +424,8 @@ TEST_CASE("datetime: edge cases")
     {
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create(2024_f)},
-                    {"month"_s, Value::create(0_f)}})}),
+                                      Map{{"year"_s, Value::create(2024_f)},
+                                          {"month"_s, Value::create(0_f)}})}),
             ContainsSubstring("invalid date"));
     }
 
@@ -438,8 +433,8 @@ TEST_CASE("datetime: edge cases")
     {
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create(2024_f)},
-                    {"month"_s, Value::create(13_f)}})}),
+                                      Map{{"year"_s, Value::create(2024_f)},
+                                          {"month"_s, Value::create(13_f)}})}),
             ContainsSubstring("invalid date"));
     }
 
@@ -447,25 +442,24 @@ TEST_CASE("datetime: edge cases")
     {
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create(2024_f)},
-                    {"month"_s, Value::create(1_f)},
-                    {"day"_s, Value::create(0_f)}})}),
+                                      Map{{"year"_s, Value::create(2024_f)},
+                                          {"month"_s, Value::create(1_f)},
+                                          {"day"_s, Value::create(0_f)}})}),
             ContainsSubstring("invalid date"));
     }
 
     SECTION("empty map gives epoch")
     {
-        auto result = from->call(
-            {Value::create(Value::trusted, Map{})});
+        auto result = from->call({Value::create(Value::trusted, Map{})});
         CHECK(result->raw_get<Int>() == 0);
     }
 
     SECTION("far future: year 3000")
     {
-        auto millis = from->call({Value::create(Value::trusted,
-            Map{{"year"_s, Value::create(3000_f)},
-                {"month"_s, Value::create(1_f)},
-                {"day"_s, Value::create(1_f)}})});
+        auto millis = from->call({Value::create(
+            Value::trusted, Map{{"year"_s, Value::create(3000_f)},
+                                {"month"_s, Value::create(1_f)},
+                                {"day"_s, Value::create(1_f)}})});
         auto comp = components->call({millis});
         CHECK(get_field(comp, "year")->raw_get<Int>() == 3000);
         CHECK(get_field(comp, "month")->raw_get<Int>() == 1);
@@ -474,14 +468,14 @@ TEST_CASE("datetime: edge cases")
 
     SECTION("millisecond precision round-trip")
     {
-        auto millis = from->call({Value::create(Value::trusted,
-            Map{{"year"_s, Value::create(2024_f)},
-                {"month"_s, Value::create(6_f)},
-                {"day"_s, Value::create(15_f)},
-                {"hour"_s, Value::create(12_f)},
-                {"minute"_s, Value::create(30_f)},
-                {"second"_s, Value::create(45_f)},
-                {"ms"_s, Value::create(123_f)}})});
+        auto millis = from->call({Value::create(
+            Value::trusted, Map{{"year"_s, Value::create(2024_f)},
+                                {"month"_s, Value::create(6_f)},
+                                {"day"_s, Value::create(15_f)},
+                                {"hour"_s, Value::create(12_f)},
+                                {"minute"_s, Value::create(30_f)},
+                                {"second"_s, Value::create(45_f)},
+                                {"ms"_s, Value::create(123_f)}})});
         auto comp = components->call({millis});
         CHECK(get_field(comp, "ms")->raw_get<Int>() == 123);
     }
@@ -495,8 +489,7 @@ TEST_CASE("datetime: edge cases")
 
     SECTION("format with empty pattern gives default representation")
     {
-        auto result = format->call(
-            {Value::create(0_f), Value::create(""s)});
+        auto result = format->call({Value::create(0_f), Value::create(""s)});
         CHECK(result->raw_get<String>() == "1970-01-01 00:00:00.000");
     }
 
@@ -504,8 +497,8 @@ TEST_CASE("datetime: edge cases")
     {
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create(2024_f)},
-                    {"hour"_s, Value::create(24_f)}})}),
+                                      Map{{"year"_s, Value::create(2024_f)},
+                                          {"hour"_s, Value::create(24_f)}})}),
             ContainsSubstring("hour"));
     }
 
@@ -513,8 +506,8 @@ TEST_CASE("datetime: edge cases")
     {
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create(2024_f)},
-                    {"hour"_s, Value::create(-1_f)}})}),
+                                      Map{{"year"_s, Value::create(2024_f)},
+                                          {"hour"_s, Value::create(-1_f)}})}),
             ContainsSubstring("hour"));
     }
 
@@ -522,8 +515,8 @@ TEST_CASE("datetime: edge cases")
     {
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create(2024_f)},
-                    {"minute"_s, Value::create(60_f)}})}),
+                                      Map{{"year"_s, Value::create(2024_f)},
+                                          {"minute"_s, Value::create(60_f)}})}),
             ContainsSubstring("minute"));
     }
 
@@ -531,8 +524,8 @@ TEST_CASE("datetime: edge cases")
     {
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create(2024_f)},
-                    {"second"_s, Value::create(60_f)}})}),
+                                      Map{{"year"_s, Value::create(2024_f)},
+                                          {"second"_s, Value::create(60_f)}})}),
             ContainsSubstring("second"));
     }
 
@@ -540,20 +533,20 @@ TEST_CASE("datetime: edge cases")
     {
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted,
-                Map{{"year"_s, Value::create(2024_f)},
-                    {"ms"_s, Value::create(1000_f)}})}),
+                                      Map{{"year"_s, Value::create(2024_f)},
+                                          {"ms"_s, Value::create(1000_f)}})}),
             ContainsSubstring("ms"));
     }
 
     SECTION("boundary values accepted")
     {
         // 23:59:59.999 should be valid
-        auto result = from->call({Value::create(Value::trusted,
-            Map{{"year"_s, Value::create(2024_f)},
-                {"hour"_s, Value::create(23_f)},
-                {"minute"_s, Value::create(59_f)},
-                {"second"_s, Value::create(59_f)},
-                {"ms"_s, Value::create(999_f)}})});
+        auto result = from->call({Value::create(
+            Value::trusted, Map{{"year"_s, Value::create(2024_f)},
+                                {"hour"_s, Value::create(23_f)},
+                                {"minute"_s, Value::create(59_f)},
+                                {"second"_s, Value::create(59_f)},
+                                {"ms"_s, Value::create(999_f)}})});
         auto comp = components->call({result});
         CHECK(get_field(comp, "hour")->raw_get<Int>() == 23);
         CHECK(get_field(comp, "minute")->raw_get<Int>() == 59);
@@ -563,11 +556,11 @@ TEST_CASE("datetime: edge cases")
 
     SECTION("unknown keys in from_components are ignored")
     {
-        auto result = from->call({Value::create(Value::trusted,
-            Map{{"year"_s, Value::create(2024_f)},
-                {"month"_s, Value::create(3_f)},
-                {"day"_s, Value::create(16_f)},
-                {"foo"_s, Value::create("bar"s)}})});
+        auto result = from->call({Value::create(
+            Value::trusted, Map{{"year"_s, Value::create(2024_f)},
+                                {"month"_s, Value::create(3_f)},
+                                {"day"_s, Value::create(16_f)},
+                                {"foo"_s, Value::create("bar"s)}})});
         CHECK(result->raw_get<Int>() == 1710547200000);
     }
 }
@@ -586,25 +579,25 @@ TEST_CASE("datetime: timezone support")
     SECTION("format with timezone")
     {
         // UTC midnight = 2024-03-15 20:00 in NYC (UTC-4 in March, DST)
-        auto result = format->call(
-            {utc_midnight, Value::create("%Y-%m-%d %H:%M"s),
-             Value::create("America/New_York"s)});
+        auto result =
+            format->call({utc_midnight, Value::create("%Y-%m-%d %H:%M"s),
+                          Value::create("America/New_York"s)});
         CHECK(result->raw_get<String>() == "2024-03-15 20:00");
     }
 
     SECTION("format with Tokyo timezone")
     {
         // UTC midnight = 2024-03-16 09:00 in Tokyo (UTC+9)
-        auto result = format->call(
-            {utc_midnight, Value::create("%Y-%m-%d %H:%M"s),
-             Value::create("Asia/Tokyo"s)});
+        auto result =
+            format->call({utc_midnight, Value::create("%Y-%m-%d %H:%M"s),
+                          Value::create("Asia/Tokyo"s)});
         CHECK(result->raw_get<String>() == "2024-03-16 09:00");
     }
 
     SECTION("format without timezone is UTC")
     {
-        auto result = format->call(
-            {utc_midnight, Value::create("%Y-%m-%d %H:%M"s)});
+        auto result =
+            format->call({utc_midnight, Value::create("%Y-%m-%d %H:%M"s)});
         CHECK(result->raw_get<String>() == "2024-03-16 00:00");
     }
 
@@ -622,23 +615,22 @@ TEST_CASE("datetime: timezone support")
     SECTION("from_components with timezone")
     {
         // "2024-03-15 20:00 NYC" should equal UTC midnight
-        auto result = from->call(
-            {Value::create(Value::trusted,
-                 Map{{"year"_s, Value::create(2024_f)},
-                     {"month"_s, Value::create(3_f)},
-                     {"day"_s, Value::create(15_f)},
-                     {"hour"_s, Value::create(20_f)}}),
-             Value::create("America/New_York"s)});
+        auto result =
+            from->call({Value::create(Value::trusted,
+                                      Map{{"year"_s, Value::create(2024_f)},
+                                          {"month"_s, Value::create(3_f)},
+                                          {"day"_s, Value::create(15_f)},
+                                          {"hour"_s, Value::create(20_f)}}),
+                        Value::create("America/New_York"s)});
         CHECK(result->raw_get<Int>() == 1710547200000);
     }
 
     SECTION("parse with timezone")
     {
         // "2024-03-15 20:00:00" in NYC = UTC midnight
-        auto result = parse->call(
-            {Value::create("2024-03-15 20:00:00"s),
-             Value::create("%Y-%m-%d %H:%M:%S"s),
-             Value::create("America/New_York"s)});
+        auto result = parse->call({Value::create("2024-03-15 20:00:00"s),
+                                   Value::create("%Y-%m-%d %H:%M:%S"s),
+                                   Value::create("America/New_York"s)});
         CHECK(result->raw_get<Int>() == 1710547200000);
     }
 
@@ -653,9 +645,8 @@ TEST_CASE("datetime: timezone support")
 
     SECTION("invalid timezone")
     {
-        CHECK_THROWS_WITH(
-            format->call({utc_midnight, Value::create("%Y"s),
-                          Value::create("Not/A/Zone"s)}),
-            ContainsSubstring("unknown timezone"));
+        CHECK_THROWS_WITH(format->call({utc_midnight, Value::create("%Y"s),
+                                        Value::create("Not/A/Zone"s)}),
+                          ContainsSubstring("unknown timezone"));
     }
 }

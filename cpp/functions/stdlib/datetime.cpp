@@ -77,13 +77,12 @@ BUILTIN(format)
     {
         if (HAS(2))
         {
-            auto zt = std::chrono::zoned_time{
-                locate_tz(GET(2, String)), tp};
-            return Value::create(String{
-                std::vformat(fmt_str, std::make_format_args(zt))});
+            auto zt = std::chrono::zoned_time{locate_tz(GET(2, String)), tp};
+            return Value::create(
+                String{std::vformat(fmt_str, std::make_format_args(zt))});
         }
-        return Value::create(String{
-            std::vformat(fmt_str, std::make_format_args(tp))});
+        return Value::create(
+            String{std::vformat(fmt_str, std::make_format_args(tp))});
     }
     catch (const std::format_error& e)
     {
@@ -108,9 +107,9 @@ BUILTIN(parse)
         std::istringstream iss{input};
         iss >> std::chrono::parse(pattern, local_tp);
         if (iss.fail())
-            throw Frost_Recoverable_Error{fmt::format(
-                "datetime.parse: '{}' does not match pattern '{}'", input,
-                pattern)};
+            throw Frost_Recoverable_Error{
+                fmt::format("datetime.parse: '{}' does not match pattern '{}'",
+                            input, pattern)};
 
         auto zt = std::chrono::zoned_time{tz, local_tp};
         return Value::create(tp_to_millis(
@@ -219,14 +218,15 @@ BUILTIN(from_components)
     require_range("second", s, 0, 59);
     require_range("ms", ms, 0, 999);
 
-    auto dur = std::chrono::hours{h} + std::chrono::minutes{min}
-               + std::chrono::seconds{s} + std::chrono::milliseconds{ms};
+    auto dur = std::chrono::hours{h}
+               + std::chrono::minutes{min}
+               + std::chrono::seconds{s}
+               + std::chrono::milliseconds{ms};
 
     if (HAS(1))
     {
         auto local_tp = std::chrono::local_days{ymd} + dur;
-        auto zt = std::chrono::zoned_time{
-            locate_tz(GET(1, String)), local_tp};
+        auto zt = std::chrono::zoned_time{locate_tz(GET(1, String)), local_tp};
         return Value::create(tp_to_millis(
             std::chrono::time_point_cast<std::chrono::milliseconds>(
                 zt.get_sys_time())));

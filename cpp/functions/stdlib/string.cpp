@@ -76,57 +76,64 @@ BUILTIN(is_empty)
 BUILTIN(is_ascii)
 {
     REQUIRE_ARGS("string.is_ascii", PARAM("s", TYPES(String)));
-    return Value::create(Bool{std::ranges::all_of(
-        GET(0, String),
-        [](unsigned char c) { return c < 128; })});
+    return Value::create(
+        Bool{std::ranges::all_of(GET(0, String), [](unsigned char c) {
+            return c < 128;
+        })});
 }
 
 BUILTIN(is_digit)
 {
     REQUIRE_ARGS("string.is_digit", PARAM("s", TYPES(String)));
-    return Value::create(Bool{std::ranges::all_of(
-        GET(0, String),
-        [](unsigned char c) { return std::isdigit(c); })});
+    return Value::create(
+        Bool{std::ranges::all_of(GET(0, String), [](unsigned char c) {
+            return std::isdigit(c);
+        })});
 }
 
 BUILTIN(is_alpha)
 {
     REQUIRE_ARGS("string.is_alpha", PARAM("s", TYPES(String)));
-    return Value::create(Bool{std::ranges::all_of(
-        GET(0, String),
-        [](unsigned char c) { return std::isalpha(c); })});
+    return Value::create(
+        Bool{std::ranges::all_of(GET(0, String), [](unsigned char c) {
+            return std::isalpha(c);
+        })});
 }
 
 BUILTIN(is_alphanumeric)
 {
     REQUIRE_ARGS("string.is_alphanumeric", PARAM("s", TYPES(String)));
-    return Value::create(Bool{std::ranges::all_of(
-        GET(0, String),
-        [](unsigned char c) { return std::isalnum(c); })});
+    return Value::create(
+        Bool{std::ranges::all_of(GET(0, String), [](unsigned char c) {
+            return std::isalnum(c);
+        })});
 }
 
 BUILTIN(is_whitespace)
 {
     REQUIRE_ARGS("string.is_whitespace", PARAM("s", TYPES(String)));
-    return Value::create(Bool{std::ranges::all_of(
-        GET(0, String),
-        [](unsigned char c) { return std::isspace(c); })});
+    return Value::create(
+        Bool{std::ranges::all_of(GET(0, String), [](unsigned char c) {
+            return std::isspace(c);
+        })});
 }
 
 BUILTIN(is_uppercase)
 {
     REQUIRE_ARGS("string.is_uppercase", PARAM("s", TYPES(String)));
-    return Value::create(Bool{std::ranges::all_of(
-        GET(0, String),
-        [](unsigned char c) { return not std::isalpha(c) || std::isupper(c); })});
+    return Value::create(
+        Bool{std::ranges::all_of(GET(0, String), [](unsigned char c) {
+            return not std::isalpha(c) || std::isupper(c);
+        })});
 }
 
 BUILTIN(is_lowercase)
 {
     REQUIRE_ARGS("string.is_lowercase", PARAM("s", TYPES(String)));
-    return Value::create(Bool{std::ranges::all_of(
-        GET(0, String),
-        [](unsigned char c) { return not std::isalpha(c) || std::islower(c); })});
+    return Value::create(
+        Bool{std::ranges::all_of(GET(0, String), [](unsigned char c) {
+            return not std::isalpha(c) || std::islower(c);
+        })});
 }
 
 // -- Padding --

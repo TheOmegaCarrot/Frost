@@ -150,9 +150,9 @@ TEST_CASE("std.os")
 
         SECTION("arity")
         {
-            CHECK_THROWS_MATCHES(
-                pid->call({Value::create(1_f)}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("too many")));
+            CHECK_THROWS_MATCHES(pid->call({Value::create(1_f)}),
+                                 Frost_User_Error,
+                                 MessageMatches(ContainsSubstring("too many")));
         }
     }
 
@@ -169,9 +169,9 @@ TEST_CASE("std.os")
 
         SECTION("arity")
         {
-            CHECK_THROWS_MATCHES(
-                hostname->call({Value::create(1_f)}), Frost_User_Error,
-                MessageMatches(ContainsSubstring("too many")));
+            CHECK_THROWS_MATCHES(hostname->call({Value::create(1_f)}),
+                                 Frost_User_Error,
+                                 MessageMatches(ContainsSubstring("too many")));
         }
     }
 }

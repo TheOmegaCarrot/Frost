@@ -97,8 +97,8 @@ void result_to_sqlite(sqlite3_context* ctx, const Value_Ptr& val)
                                 SQLITE_TRANSIENT);
         },
         [&](const Function& fn) {
-            if (auto* db = dynamic_cast<const Data_Builtin<SQLite_Blob>*>(
-                    fn.get()))
+            if (auto* db =
+                    dynamic_cast<const Data_Builtin<SQLite_Blob>*>(fn.get()))
             {
                 const auto& bytes = db->data().data->raw_get<String>();
                 sqlite3_result_blob(ctx, bytes.data(),
@@ -498,8 +498,8 @@ void Connection::bind_value_(const Stmt_Ptr& stmt, int pos,
                                      SQLITE_TRANSIENT);
         },
         [&](const Function& fn) -> int {
-            if (auto* db = dynamic_cast<const Data_Builtin<SQLite_Blob>*>(
-                    fn.get()))
+            if (auto* db =
+                    dynamic_cast<const Data_Builtin<SQLite_Blob>*>(fn.get()))
             {
                 const auto& bytes = db->data().data->raw_get<String>();
                 return sqlite3_bind_blob(s, pos, bytes.data(),
