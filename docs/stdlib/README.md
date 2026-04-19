@@ -59,13 +59,15 @@ Each extension has a `WITH_<NAME>` CMake setting with three values:
 - **`ON`** -- enabled, hard error if dependencies are missing
 - **`OFF`** -- disabled entirely
 
-The configure output shows colored status for each extension and its dependencies.
-Each extension's documentation describes exactly how it handles its dependencies.
+The configure output shows the status for each extension and its dependencies.
 
-| Extension                        | Import                        | Description                         | Dependencies              |
+Each extension's documentation describes exactly how it handles its system dependencies (dependencies which must be installed on the system).
+
+| Extension                        | Import                        | Description                         | System Dependencies              |
 |----------------------------------|-------------------------------|-------------------------------------|---------------------------|
 | [Compression](./compression.md)  | `import('ext.compression')`   | Compression and decompression       | zlib, bz2, xz, brotli, lz4, snappy, zstd |
 | [Hash](./hash.md)                | `import('ext.hash')`          | Hash functions, checksums, and HMAC | OpenSSL, zlib             |
 | [HTTP](./http.md)                | `import('ext.http')`          | Making HTTP requests                | OpenSSL                   |
-| [SQLite](./sqlite.md)            | `import('ext.sqlite')`        | Embedded relational database        | SQLite (vendored), zlib   |
+| [SQLite](./sqlite.md)            | `import('ext.sqlite')`        | Embedded relational database        |  zlib   |
+| [TOML](./toml.md)                | `import('ext.toml')`          | Encoding and decoding TOML          | None                      |
 | [Unsafe](./unsafe.md)            | `import('ext.unsafe')`        | Bypass Frost's safety guarantees    | None                      |

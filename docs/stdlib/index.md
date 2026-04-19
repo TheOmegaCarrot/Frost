@@ -261,6 +261,12 @@ Each entry links to its full documentation.
 - [to_lower](strings.md#to_lower)
 - [to_string](types.md#to_string)
 - [to_upper](strings.md#to_upper)
+- [toml.bad_float](toml.md#bad_float) · `ext.toml`
+- [toml.date](toml.md#date) · `ext.toml`
+- [toml.date_time](toml.md#date_time) · `ext.toml`
+- [toml.decode](toml.md#decode) · `ext.toml`
+- [toml.encode](toml.md#encode) · `ext.toml`
+- [toml.time](toml.md#time) · `ext.toml`
 - [transform](collections.md#transform)
 - [trim](strings.md#trim)
 - [trim_left](strings.md#trim_left)

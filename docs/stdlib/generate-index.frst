@@ -40,6 +40,7 @@ def module_prefixes = {
     ['random.md']: {module: 'random', ns: 'std'},
     ['regex.md']: {module: 'regex', ns: 'std'},
     ['sqlite.md']: {module: 'sqlite', ns: 'ext'},
+    ['toml.md']: {module: 'toml', ns: 'ext'},
     ['unsafe.md']: {module: 'unsafe', ns: 'ext'},
 }
 
