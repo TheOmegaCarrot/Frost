@@ -127,8 +127,8 @@ TEST_CASE("Parser Numeric Literals")
         REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);
-        auto* lookup = dynamic_cast<const frst::ast::Name_Lookup*>(
-            program[0].get());
+        auto* lookup =
+            dynamic_cast<const frst::ast::Name_Lookup*>(program[0].get());
         CHECK(lookup != nullptr);
     }
 

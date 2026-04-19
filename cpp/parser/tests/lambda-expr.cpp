@@ -342,8 +342,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Multiple lambdas as top-level statements parse correctly")
     {
-        auto program_result =
-            parse_prog("fn -> { null }\nfn() -> { null }");
+        auto program_result = parse_prog("fn -> { null }\nfn() -> { null }");
         REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);
@@ -351,8 +350,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Multiple lambdas with semicolons parse correctly")
     {
-        auto program_result =
-            parse_prog("fn -> { null }; fn() -> { null }");
+        auto program_result = parse_prog("fn -> { null }; fn() -> { null }");
         REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);
@@ -360,8 +358,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda can appear on the RHS of def")
     {
-        auto program_result =
-            parse_prog("def f = fn(x) -> { x }\n f(3)");
+        auto program_result = parse_prog("def f = fn(x) -> { x }\n f(3)");
         REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);
@@ -562,8 +559,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Postfix with newline after lambda body is rejected")
     {
-        auto result =
-            parse_prog("fn() -> { arr }\n[0]");
+        auto result = parse_prog("fn() -> { arr }\n[0]");
         REQUIRE(result.has_value());
         CHECK(result.value().size() == 2);
     }
@@ -656,11 +652,10 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Lambda body supports defs and map literals with nested lambdas")
     {
-        auto program_result = parse_prog(
-            "def f = fn a -> {\n"
-            "    def b = 2 + a\n"
-            "    { c: b, d: fn p -> p * a }\n"
-            "}\n");
+        auto program_result = parse_prog("def f = fn a -> {\n"
+                                         "    def b = 2 + a\n"
+                                         "    { c: b, d: fn p -> p * a }\n"
+                                         "}\n");
         REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 1);
@@ -799,8 +794,7 @@ TEST_CASE("Parser Lambda Expressions")
 
     SECTION("Elided body works in program input")
     {
-        auto program_result =
-            parse_prog("def f = fn(x) -> x + 2\n f(4)");
+        auto program_result = parse_prog("def f = fn(x) -> x + 2\n f(4)");
         REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);

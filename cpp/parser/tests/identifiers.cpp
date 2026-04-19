@@ -15,8 +15,8 @@ TEST_CASE("Parser Identifiers")
     SECTION("Valid identifiers")
     {
         const std::string_view cases[] = {
-            "a",      "A",    "_foo",    "foo_",  "foo_bar",
-            "foo123", "a1_b2", "if1", "trueish", "null_",
+            "a",      "A",     "_foo", "foo_",    "foo_bar",
+            "foo123", "a1_b2", "if1",  "trueish", "null_",
         };
 
         for (const auto& input : cases)

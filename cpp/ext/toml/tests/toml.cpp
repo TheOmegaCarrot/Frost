@@ -119,8 +119,9 @@ port = 8080
 )"s)});
         auto server = result->raw_get<Map>().at(Value::create("server"s));
         REQUIRE(server->is<Map>());
-        CHECK(server->raw_get<Map>().at(Value::create("host"s))->raw_get<String>()
-              == "localhost");
+        CHECK(
+            server->raw_get<Map>().at(Value::create("host"s))->raw_get<String>()
+            == "localhost");
         CHECK(server->raw_get<Map>().at(Value::create("port"s))->raw_get<Int>()
               == 8080);
     }
@@ -138,10 +139,12 @@ name = "b"
         REQUIRE(items->is<Array>());
         const auto& arr = items->raw_get<Array>();
         REQUIRE(arr.size() == 2);
-        CHECK(arr[0]->raw_get<Map>().at(Value::create("name"s))->raw_get<String>()
-              == "a");
-        CHECK(arr[1]->raw_get<Map>().at(Value::create("name"s))->raw_get<String>()
-              == "b");
+        CHECK(
+            arr[0]->raw_get<Map>().at(Value::create("name"s))->raw_get<String>()
+            == "a");
+        CHECK(
+            arr[1]->raw_get<Map>().at(Value::create("name"s))->raw_get<String>()
+            == "b");
     }
 }
 
@@ -488,14 +491,16 @@ TEST_CASE("toml.special_float: constructor")
     {
         auto result = special_float_fn->call({Value::create("nan"s)});
         REQUIRE(result->is<Function>());
-        CHECK(result->raw_get<Function>()->call({})->raw_get<String>() == "nan");
+        CHECK(result->raw_get<Function>()->call({})->raw_get<String>()
+              == "nan");
     }
 
     SECTION("inf")
     {
         auto result = special_float_fn->call({Value::create("inf"s)});
         REQUIRE(result->is<Function>());
-        CHECK(result->raw_get<Function>()->call({})->raw_get<String>() == "inf");
+        CHECK(result->raw_get<Function>()->call({})->raw_get<String>()
+              == "inf");
     }
 
     SECTION("-inf")

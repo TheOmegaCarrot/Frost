@@ -687,8 +687,8 @@ inline Value_Ptr do_parse_float(Iter begin, Iter end)
 {
     std::string str{begin, end};
     Float value{};
-    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(),
-                                     value, std::chars_format::general);
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value,
+                                     std::chars_format::general);
     if (ec == std::errc::result_out_of_range)
         throw Frost_Recoverable_Error{"Float literal out of range"};
     if (ec != std::errc() || ptr != str.data() + str.size())
@@ -707,11 +707,13 @@ struct float_literal : lexy::scan_production<Value_Ptr>
     static constexpr scan_result scan(
         lexy::rule_scanner<context_t, reader_t>& scanner)
     {
-        auto lexeme = scanner.capture(dsl::token(
-            dsl::digits<> + dsl::lit_c<'.'> + dsl::digits<>
-            + dsl::opt(dsl::lit_c<'e'>
-                       >> dsl::opt(dsl::lit_c<'+'> / dsl::lit_c<'-'>)
-                       + dsl::digits<>)));
+        auto lexeme = scanner.capture(
+            dsl::token(dsl::digits<>
+                       + dsl::lit_c<'.'>
+                       + dsl::digits<>
+                       + dsl::opt(dsl::lit_c<'e'> >> dsl::opt(dsl::lit_c<'+'>
+                                                              / dsl::lit_c<'-'>)
+                                  + dsl::digits<>)));
         if (not lexeme)
             return scan_result{};
 
@@ -722,18 +724,19 @@ struct float_literal : lexy::scan_production<Value_Ptr>
 };
 
 // Scientific float without decimal: digits e [+-] digits (e.g. 1e+20)
-// Scientific float without decimal point: digits e [+-]? digits (e.g. 1e+20, 3e2)
+// Scientific float without decimal point: digits e [+-]? digits (e.g. 1e+20,
+// 3e2)
 struct scientific_float_literal : lexy::scan_production<Value_Ptr>
 {
     template <typename context_t, typename reader_t>
     static constexpr scan_result scan(
         lexy::rule_scanner<context_t, reader_t>& scanner)
     {
-        auto lexeme = scanner.capture(dsl::token(
-            dsl::digits<>
-            + dsl::lit_c<'e'>
-            + dsl::opt(dsl::lit_c<'+'> / dsl::lit_c<'-'>)
-            + dsl::digits<>));
+        auto lexeme = scanner.capture(
+            dsl::token(dsl::digits<>
+                       + dsl::lit_c<'e'>
+                       + dsl::opt(dsl::lit_c<'+'> / dsl::lit_c<'-'>)
+                       + dsl::digits<>));
         if (not lexeme)
             return scan_result{};
         auto text = lexeme.value();
@@ -956,12 +959,11 @@ struct Literal
         | dsl::p<string_literal>
         | (dsl::peek(dsl::token(dsl::digits<> + dsl::lit_c<'.'> + dsl::digit<>))
            >> dsl::p<float_literal>)
-        | (dsl::peek(dsl::token(
-               dsl::digits<> + dsl::lit_c<'e'>
-               + (dsl::lit_c<'+'> / dsl::lit_c<'-'>)))
+        | (dsl::peek(dsl::token(dsl::digits<>
+                                + dsl::lit_c<'e'>
+                                + (dsl::lit_c<'+'> / dsl::lit_c<'-'>)))
            >> dsl::p<scientific_float_literal>)
-        | (dsl::peek(dsl::token(
-               dsl::digits<> + dsl::lit_c<'e'> + dsl::digit<>))
+        | (dsl::peek(dsl::token(dsl::digits<> + dsl::lit_c<'e'> + dsl::digit<>))
            >> dsl::p<scientific_float_literal>)
         | (dsl::peek(dsl::digit<>) >> dsl::p<integer_literal>);
     static constexpr auto value =
