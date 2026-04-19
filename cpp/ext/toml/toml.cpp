@@ -126,7 +126,7 @@ Function make_datetime(const tomlpp::date_time& datetime)
         "toml.date_time", datetime);
 }
 
-Function make_bad_float(const double& d)
+Function make_special_float(const double& d)
 {
     // precondition: d is NaN, +Inf, or -Inf
 
@@ -147,10 +147,10 @@ Function make_bad_float(const double& d)
 
     return std::make_shared<Data_Builtin<double>>(
         [repr = std::move(repr)](builtin_args_t args) {
-            REQUIRE_NULLARY("toml.bad_float");
+            REQUIRE_NULLARY("toml.special_float");
             return repr;
         },
-        "toml.bad_float", d);
+        "toml.special_float", d);
 }
 
 } // namespace
@@ -210,22 +210,22 @@ BUILTIN(date_time)
     return Value::create(make_datetime(val->get()));
 }
 
-BUILTIN(bad_float)
+BUILTIN(special_float)
 {
-    REQUIRE_ARGS("toml.bad_float", TYPES(String));
+    REQUIRE_ARGS("toml.special_float", TYPES(String));
 
     using lim = std::numeric_limits<double>;
 
     const auto& str = GET(0, String);
     if (str == "nan")
-        return Value::create(make_bad_float(lim::quiet_NaN()));
+        return Value::create(make_special_float(lim::quiet_NaN()));
     else if (str == "inf")
-        return Value::create(make_bad_float(lim::infinity()));
+        return Value::create(make_special_float(lim::infinity()));
     else if (str == "-inf")
-        return Value::create(make_bad_float(-lim::infinity()));
+        return Value::create(make_special_float(-lim::infinity()));
 
     throw Frost_Recoverable_Error(fmt::format(
-        "toml.bad_float: Input must be 'nan', 'inf', or '-inf', got: {}", str));
+        "toml.special_float: Input must be 'nan', 'inf', or '-inf', got: {}", str));
 }
 
 void append_to(tomlpp::array& parent, const Value_Ptr& val);
@@ -354,7 +354,7 @@ struct Decode_Toml
     {
         double d = value.get();
         if (std::isnan(d) || std::isinf(d))
-            return Value::create(make_bad_float(d));
+            return Value::create(make_special_float(d));
         return Value::create(d);
     }
 
@@ -411,6 +411,6 @@ BUILTIN(decode)
 } // namespace toml
 
 REGISTER_EXTENSION(toml, ENTRY(decode), ENTRY(encode), ENTRY(date), ENTRY(time),
-                   ENTRY(date_time), ENTRY(bad_float));
+                   ENTRY(date_time), ENTRY(special_float));
 
 } // namespace frst

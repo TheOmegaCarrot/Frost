@@ -70,15 +70,15 @@ assert(dt_loc.dt() == "1979-05-27T07:32:00", "local datetime round-trips")
 
 # --- Bad floats round-trip ---
 
-def with_nan = toml.encode({v: toml.bad_float("nan")})
+def with_nan = toml.encode({v: toml.special_float("nan")})
 def nan_rt = toml.decode(with_nan)
 assert(nan_rt.v() == "nan", "nan round-trips")
 
-def with_inf = toml.encode({v: toml.bad_float("inf")})
+def with_inf = toml.encode({v: toml.special_float("inf")})
 def inf_rt = toml.decode(with_inf)
 assert(inf_rt.v() == "inf", "inf round-trips")
 
-def with_neg_inf = toml.encode({v: toml.bad_float("-inf")})
+def with_neg_inf = toml.encode({v: toml.special_float("-inf")})
 def neg_inf_rt = toml.decode(with_neg_inf)
 assert(neg_inf_rt.v() == "-inf", "-inf round-trips")
 

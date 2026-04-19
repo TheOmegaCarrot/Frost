@@ -494,14 +494,14 @@ TEST_CASE("toml.date_time: constructor")
     }
 }
 
-TEST_CASE("toml.bad_float: constructor")
+TEST_CASE("toml.special_float: constructor")
 {
     auto mod = toml_module();
-    auto bad_float_fn = lookup(mod, "bad_float");
+    auto special_float_fn = lookup(mod, "special_float");
 
     SECTION("nan")
     {
-        auto result = bad_float_fn->call({Value::create("nan"s)});
+        auto result = special_float_fn->call({Value::create("nan"s)});
         REQUIRE(result->is<Function>());
         CHECK(result->raw_get<Function>()->call({})->raw_get<String>() == "nan");
 
@@ -513,7 +513,7 @@ TEST_CASE("toml.bad_float: constructor")
 
     SECTION("inf")
     {
-        auto result = bad_float_fn->call({Value::create("inf"s)});
+        auto result = special_float_fn->call({Value::create("inf"s)});
         CHECK(result->raw_get<Function>()->call({})->raw_get<String>() == "inf");
 
         auto* db = dynamic_cast<const Data_Builtin<double>*>(
@@ -525,7 +525,7 @@ TEST_CASE("toml.bad_float: constructor")
 
     SECTION("-inf")
     {
-        auto result = bad_float_fn->call({Value::create("-inf"s)});
+        auto result = special_float_fn->call({Value::create("-inf"s)});
         CHECK(result->raw_get<Function>()->call({})->raw_get<String>()
               == "-inf");
 
@@ -538,7 +538,7 @@ TEST_CASE("toml.bad_float: constructor")
 
     SECTION("invalid string")
     {
-        CHECK_THROWS_WITH(bad_float_fn->call({Value::create("NaN"s)}),
+        CHECK_THROWS_WITH(special_float_fn->call({Value::create("NaN"s)}),
                           ContainsSubstring("nan"));
     }
 }

@@ -25,14 +25,14 @@ doc.created()     # => "2024-03-16"
 toml.encode(doc)  # round-trips as a TOML date, not a string
 ```
 
-You can also construct foreign values directly using `toml.date`, `toml.time`, `toml.date_time`, and `toml.bad_float`.
+You can also construct foreign values directly using `toml.date`, `toml.time`, `toml.date_time`, and `toml.special_float`.
 This lets you build TOML documents from scratch that include these types.
 
 ```frost
 def doc = {
     created: toml.date("2024-03-16"),
     updated: toml.date_time("2024-03-16T10:30:00Z"),
-    threshold: toml.bad_float("inf")
+    threshold: toml.special_float("inf")
 }
 toml.encode(doc)
 ```
@@ -119,18 +119,18 @@ local()  # => "1979-05-27T07:32:00"
 east()  # => "1979-05-27T07:32:00+09:00"
 ```
 
-## `bad_float`
+## `special_float`
 
-`bad_float(s)`
+`special_float(s)`
 
 Creates a TOML special float foreign value.
 `s` must be one of `"nan"`, `"inf"`, or `"-inf"` (lowercase, matching TOML syntax).
 Frost normally rejects these values at construction, but foreign values can carry them safely for round-tripping.
 
 ```frost
-def nan = toml.bad_float("nan")
+def nan = toml.special_float("nan")
 nan()  # => "nan"
 
-def inf = toml.bad_float("inf")
+def inf = toml.special_float("inf")
 inf()  # => "inf"
 ```
