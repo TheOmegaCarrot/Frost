@@ -7,8 +7,8 @@
 
 ## Perf
 
-- Probe: immutable maps for symbol tables
-- Probe: immutable arrays
+- Probe: immutable maps for symbol tables (immer)
+- Probe: immutable arrays (immer)
 
 ## Stdlib
 
@@ -30,15 +30,14 @@
 ### HTTP enhancements
 
 - redirects, cancellation
-- running as a server (blocked by async)
-- websockets (maybe separate extension? maybe together if server supports them)
+- running as a server
+    - blocked by async
+- websockets
+    - blocked by async
+    - maybe separate extension
+        - maybe together if server supports them
 
 ### Postgres
 
 - Mimic SQLite API as close as possible
 - Add pub/sub (blocked by async)
-
-### Hash
-
-- xxhash
-- File hashing (without having to load full file contents)
