@@ -118,8 +118,8 @@ TEST_CASE("datetime.format")
         CHECK_THROWS_WITH(format->call({Value::create(0_f)}),
                           ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(
-            format->call(
-                {Value::create(0_f), Value::create("%Y"s), Value::create(0_f)}),
+            format->call({Value::create(0_f), Value::create("%Y"s),
+                          Value::create("UTC"s), Value::create(0_f)}),
             ContainsSubstring("too many"));
     }
 
@@ -181,7 +181,7 @@ TEST_CASE("datetime.parse")
                           ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(
             parse->call({Value::create("x"s), Value::create("%Y"s),
-                         Value::create(0_f)}),
+                         Value::create("UTC"s), Value::create(0_f)}),
             ContainsSubstring("too many"));
     }
 
@@ -241,7 +241,8 @@ TEST_CASE("datetime.components")
         CHECK_THROWS_WITH(components->call({}),
                           ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(
-            components->call({Value::create(0_f), Value::create(0_f)}),
+            components->call({Value::create(0_f), Value::create("UTC"s),
+                              Value::create(0_f)}),
             ContainsSubstring("too many"));
     }
 
@@ -330,7 +331,7 @@ TEST_CASE("datetime.from_components")
                           ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(
             from->call({Value::create(Value::trusted, Map{}),
-                        Value::create(0_f)}),
+                        Value::create("UTC"s), Value::create(0_f)}),
             ContainsSubstring("too many"));
     }
 
@@ -568,5 +569,93 @@ TEST_CASE("datetime: edge cases")
                 {"day"_s, Value::create(16_f)},
                 {"foo"_s, Value::create("bar"s)}})});
         CHECK(result->raw_get<Int>() == 1710547200000);
+    }
+}
+
+TEST_CASE("datetime: timezone support")
+{
+    auto mod = datetime_module();
+    auto format = lookup(mod, "format");
+    auto parse = lookup(mod, "parse");
+    auto components = lookup(mod, "components");
+    auto from = lookup(mod, "from_components");
+
+    // 2024-03-16 00:00:00 UTC = 1710547200000 ms
+    auto utc_midnight = Value::create(1710547200000_f);
+
+    SECTION("format with timezone")
+    {
+        // UTC midnight = 2024-03-15 20:00 in NYC (UTC-4 in March, DST)
+        auto result = format->call(
+            {utc_midnight, Value::create("%Y-%m-%d %H:%M"s),
+             Value::create("America/New_York"s)});
+        CHECK(result->raw_get<String>() == "2024-03-15 20:00");
+    }
+
+    SECTION("format with Tokyo timezone")
+    {
+        // UTC midnight = 2024-03-16 09:00 in Tokyo (UTC+9)
+        auto result = format->call(
+            {utc_midnight, Value::create("%Y-%m-%d %H:%M"s),
+             Value::create("Asia/Tokyo"s)});
+        CHECK(result->raw_get<String>() == "2024-03-16 09:00");
+    }
+
+    SECTION("format without timezone is UTC")
+    {
+        auto result = format->call(
+            {utc_midnight, Value::create("%Y-%m-%d %H:%M"s)});
+        CHECK(result->raw_get<String>() == "2024-03-16 00:00");
+    }
+
+    SECTION("components with timezone")
+    {
+        auto result = components->call(
+            {utc_midnight, Value::create("America/New_York"s)});
+        CHECK(get_field(result, "year")->raw_get<Int>() == 2024);
+        CHECK(get_field(result, "month")->raw_get<Int>() == 3);
+        CHECK(get_field(result, "day")->raw_get<Int>() == 15);
+        CHECK(get_field(result, "hour")->raw_get<Int>() == 20);
+        CHECK(get_field(result, "weekday")->raw_get<String>() == "Friday");
+    }
+
+    SECTION("from_components with timezone")
+    {
+        // "2024-03-15 20:00 NYC" should equal UTC midnight
+        auto result = from->call(
+            {Value::create(Value::trusted,
+                 Map{{"year"_s, Value::create(2024_f)},
+                     {"month"_s, Value::create(3_f)},
+                     {"day"_s, Value::create(15_f)},
+                     {"hour"_s, Value::create(20_f)}}),
+             Value::create("America/New_York"s)});
+        CHECK(result->raw_get<Int>() == 1710547200000);
+    }
+
+    SECTION("parse with timezone")
+    {
+        // "2024-03-15 20:00:00" in NYC = UTC midnight
+        auto result = parse->call(
+            {Value::create("2024-03-15 20:00:00"s),
+             Value::create("%Y-%m-%d %H:%M:%S"s),
+             Value::create("America/New_York"s)});
+        CHECK(result->raw_get<Int>() == 1710547200000);
+    }
+
+    SECTION("round-trip through timezone")
+    {
+        auto tz = Value::create("Europe/London"s);
+        auto pattern = Value::create("%Y-%m-%d %H:%M:%S"s);
+        auto formatted = format->call({utc_midnight, pattern, tz});
+        auto parsed = parse->call({formatted, pattern, tz});
+        CHECK(parsed->raw_get<Int>() == 1710547200000);
+    }
+
+    SECTION("invalid timezone")
+    {
+        CHECK_THROWS_WITH(
+            format->call({utc_midnight, Value::create("%Y"s),
+                          Value::create("Not/A/Zone"s)}),
+            ContainsSubstring("unknown timezone"));
     }
 }

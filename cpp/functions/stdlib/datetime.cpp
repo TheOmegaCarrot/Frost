@@ -39,6 +39,19 @@ constexpr std::array weekday_names{
     &strings.Thursday, &strings.Friday, &strings.Saturday,
 };
 
+const std::chrono::time_zone* locate_tz(const String& name)
+{
+    try
+    {
+        return std::chrono::locate_zone(name);
+    }
+    catch (const std::runtime_error&)
+    {
+        throw Frost_Recoverable_Error{
+            fmt::format("datetime: unknown timezone '{}'", name)};
+    }
+}
+
 } // namespace
 
 BUILTIN(now)
@@ -53,15 +66,24 @@ BUILTIN(now)
 BUILTIN(format)
 {
     REQUIRE_ARGS("datetime.format", PARAM("millis", TYPES(Int)),
-                 PARAM("pattern", TYPES(String)));
+                 PARAM("pattern", TYPES(String)),
+                 OPTIONAL(PARAM("timezone", TYPES(String))));
 
     auto tp = millis_to_tp(GET(0, Int));
     const auto& pattern = GET(1, String);
+    auto fmt_str = "{:" + pattern + "}";
 
     try
     {
+        if (HAS(2))
+        {
+            auto zt = std::chrono::zoned_time{
+                locate_tz(GET(2, String)), tp};
+            return Value::create(String{
+                std::vformat(fmt_str, std::make_format_args(zt))});
+        }
         return Value::create(String{
-            std::vformat("{:" + pattern + "}", std::make_format_args(tp))});
+            std::vformat(fmt_str, std::make_format_args(tp))});
     }
     catch (const std::format_error& e)
     {
@@ -73,10 +95,28 @@ BUILTIN(format)
 BUILTIN(parse)
 {
     REQUIRE_ARGS("datetime.parse", PARAM("s", TYPES(String)),
-                 PARAM("pattern", TYPES(String)));
+                 PARAM("pattern", TYPES(String)),
+                 OPTIONAL(PARAM("timezone", TYPES(String))));
 
     const auto& input = GET(0, String);
     const auto& pattern = GET(1, String);
+
+    if (HAS(2))
+    {
+        const auto* tz = locate_tz(GET(2, String));
+        std::chrono::local_time<std::chrono::milliseconds> local_tp{};
+        std::istringstream iss{input};
+        iss >> std::chrono::parse(pattern, local_tp);
+        if (iss.fail())
+            throw Frost_Recoverable_Error{fmt::format(
+                "datetime.parse: '{}' does not match pattern '{}'", input,
+                pattern)};
+
+        auto zt = std::chrono::zoned_time{tz, local_tp};
+        return Value::create(tp_to_millis(
+            std::chrono::time_point_cast<std::chrono::milliseconds>(
+                zt.get_sys_time())));
+    }
 
     Sys_Millis tp{};
     std::istringstream iss{input};
@@ -91,36 +131,52 @@ BUILTIN(parse)
 
 BUILTIN(components)
 {
-    REQUIRE_ARGS("datetime.components", PARAM("millis", TYPES(Int)));
+    REQUIRE_ARGS("datetime.components", PARAM("millis", TYPES(Int)),
+                 OPTIONAL(PARAM("timezone", TYPES(String))));
 
     auto tp = millis_to_tp(GET(0, Int));
-    auto dp = std::chrono::floor<std::chrono::days>(tp);
-    std::chrono::year_month_day ymd{dp};
-    std::chrono::hh_mm_ss hms{tp - dp};
-    std::chrono::weekday wd{dp};
 
-    auto remainder_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(hms.subseconds())
-            .count();
+    // Get the time point to decompose — either UTC or local
+    auto decompose = [](auto time_point) -> Value_Ptr {
+        auto dp = std::chrono::floor<std::chrono::days>(time_point);
+        std::chrono::year_month_day ymd{dp};
+        std::chrono::hh_mm_ss hms{time_point - dp};
+        std::chrono::weekday wd{dp};
 
-    return Value::create(
-        Value::trusted,
-        Map{
-            {strings.year, Value::create(Int{static_cast<int>(ymd.year())})},
-            {strings.month,
-             Value::create(Int{static_cast<unsigned>(ymd.month())})},
-            {strings.day, Value::create(Int{static_cast<unsigned>(ymd.day())})},
-            {strings.hour, Value::create(Int{hms.hours().count()})},
-            {strings.minute, Value::create(Int{hms.minutes().count()})},
-            {strings.second, Value::create(Int{hms.seconds().count()})},
-            {strings.ms, Value::create(Int{remainder_ms})},
-            {strings.weekday, *weekday_names.at(wd.c_encoding())},
-        });
+        auto remainder_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                hms.subseconds())
+                .count();
+
+        return Value::create(
+            Value::trusted,
+            Map{
+                {strings.year,
+                 Value::create(Int{static_cast<int>(ymd.year())})},
+                {strings.month,
+                 Value::create(Int{static_cast<unsigned>(ymd.month())})},
+                {strings.day,
+                 Value::create(Int{static_cast<unsigned>(ymd.day())})},
+                {strings.hour, Value::create(Int{hms.hours().count()})},
+                {strings.minute, Value::create(Int{hms.minutes().count()})},
+                {strings.second, Value::create(Int{hms.seconds().count()})},
+                {strings.ms, Value::create(Int{remainder_ms})},
+                {strings.weekday, *weekday_names.at(wd.c_encoding())},
+            });
+    };
+
+    if (HAS(1))
+    {
+        auto zt = std::chrono::zoned_time{locate_tz(GET(1, String)), tp};
+        return decompose(zt.get_local_time());
+    }
+    return decompose(tp);
 }
 
 BUILTIN(from_components)
 {
-    REQUIRE_ARGS("datetime.from_components", PARAM("map", TYPES(Map)));
+    REQUIRE_ARGS("datetime.from_components", PARAM("map", TYPES(Map)),
+                 OPTIONAL(PARAM("timezone", TYPES(String))));
 
     const auto& map = GET(0, Map);
 
@@ -163,12 +219,20 @@ BUILTIN(from_components)
     require_range("second", s, 0, 59);
     require_range("ms", ms, 0, 999);
 
-    auto tp = std::chrono::sys_days{ymd}
-              + std::chrono::hours{h}
-              + std::chrono::minutes{min}
-              + std::chrono::seconds{s}
-              + std::chrono::milliseconds{ms};
+    auto dur = std::chrono::hours{h} + std::chrono::minutes{min}
+               + std::chrono::seconds{s} + std::chrono::milliseconds{ms};
 
+    if (HAS(1))
+    {
+        auto local_tp = std::chrono::local_days{ymd} + dur;
+        auto zt = std::chrono::zoned_time{
+            locate_tz(GET(1, String)), local_tp};
+        return Value::create(tp_to_millis(
+            std::chrono::time_point_cast<std::chrono::milliseconds>(
+                zt.get_sys_time())));
+    }
+
+    auto tp = std::chrono::sys_days{ymd} + dur;
     return Value::create(tp_to_millis(
         std::chrono::time_point_cast<std::chrono::milliseconds>(tp)));
 }
