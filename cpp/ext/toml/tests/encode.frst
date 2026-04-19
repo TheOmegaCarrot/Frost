@@ -1,0 +1,116 @@
+# TOML encode tests
+
+def toml = import('ext.toml')
+
+# --- Primitives ---
+
+def primitives = toml.encode({
+    s: "hello",
+    i: 42,
+    f: 3.14,
+    b: true
+})
+
+def p = toml.decode(primitives)
+assert(p.s == "hello", "string round-trips")
+assert(p.i == 42, "integer round-trips")
+assert(p.f == 3.14, "float round-trips")
+assert(p.b == true, "bool round-trips")
+
+# --- Nested table ---
+
+def nested = toml.encode({
+    server: {
+        host: "localhost",
+        port: 8080
+    }
+})
+
+def n = toml.decode(nested)
+assert(n.server.host == "localhost", "nested table string round-trips")
+assert(n.server.port == 8080, "nested table int round-trips")
+
+# --- Array ---
+
+def with_arr = toml.encode({tags: ["a", "b", "c"]})
+def a = toml.decode(with_arr)
+assert(a.tags == ["a", "b", "c"], "array round-trips")
+
+# --- Date round-trip ---
+
+def with_date = toml.encode({d: toml.date("2024-03-16")})
+def d = toml.decode(with_date)
+assert(d.d() == "2024-03-16", "date round-trips through encode/decode")
+
+# --- Time round-trip ---
+
+def with_time = toml.encode({t: toml.time("14:30:00")})
+def t = toml.decode(with_time)
+assert(t.t() == "14:30:00", "time round-trips through encode/decode")
+
+# --- Time with fractional seconds ---
+
+def with_frac = toml.encode({t: toml.time("08:23:22.000523000")})
+def tf = toml.decode(with_frac)
+assert(tf.t() == "08:23:22.000523000", "fractional time round-trips")
+
+# --- DateTime round-trips ---
+
+def with_dt_utc = toml.encode({dt: toml.date_time("1979-05-27T07:32:00Z")})
+def dt_utc = toml.decode(with_dt_utc)
+assert(dt_utc.dt() == "1979-05-27T07:32:00Z", "UTC datetime round-trips")
+
+def with_dt_offset = toml.encode({dt: toml.date_time("1979-05-27T07:32:00-05:00")})
+def dt_off = toml.decode(with_dt_offset)
+assert(dt_off.dt() == "1979-05-27T07:32:00-05:00", "offset datetime round-trips")
+
+def with_dt_local = toml.encode({dt: toml.date_time("1979-05-27T07:32:00")})
+def dt_loc = toml.decode(with_dt_local)
+assert(dt_loc.dt() == "1979-05-27T07:32:00", "local datetime round-trips")
+
+# --- Bad floats round-trip ---
+
+def with_nan = toml.encode({v: toml.bad_float("nan")})
+def nan_rt = toml.decode(with_nan)
+assert(nan_rt.v() == "nan", "nan round-trips")
+
+def with_inf = toml.encode({v: toml.bad_float("inf")})
+def inf_rt = toml.decode(with_inf)
+assert(inf_rt.v() == "inf", "inf round-trips")
+
+def with_neg_inf = toml.encode({v: toml.bad_float("-inf")})
+def neg_inf_rt = toml.decode(with_neg_inf)
+assert(neg_inf_rt.v() == "-inf", "-inf round-trips")
+
+# --- Complex document round-trip ---
+
+def doc = {
+    title: "TOML Example",
+    database: {
+        enabled: true,
+        ports: [8001, 8002, 8003],
+        connection_max: 5000
+    },
+    created: toml.date_time("2024-01-15T10:30:00Z")
+}
+
+def doc_rt = toml.decode(toml.encode(doc))
+assert(doc_rt.title == "TOML Example", "complex doc title round-trips")
+assert(doc_rt.database.enabled == true, "complex doc nested bool round-trips")
+assert(doc_rt.database.ports == [8001, 8002, 8003], "complex doc array round-trips")
+assert(doc_rt.database.connection_max == 5000, "complex doc nested int round-trips")
+assert(doc_rt.created() == "2024-01-15T10:30:00Z", "complex doc datetime round-trips")
+
+# --- Error paths ---
+
+def null_err = try_call(toml.encode, [{x: null}])
+assert(not null_err.ok, "null value should fail")
+assert(null_err.error @ contains("null"), "should mention null")
+
+def fn_err = try_call(toml.encode, [{x: fn -> 1}])
+assert(not fn_err.ok, "plain function should fail")
+assert(fn_err.error @ contains("Function"), "should mention Function")
+
+def key_err = try_call(toml.encode, [{[1]: "bad"}])
+assert(not key_err.ok, "non-string key should fail")
+assert(key_err.error @ contains("String"), "should mention String")

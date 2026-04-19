@@ -26,3 +26,16 @@ make_test( tests/toml.cpp
     frost-extensions-common
     tomlplusplus::tomlplusplus
 )
+
+set(TOML_SCRIPTS
+    encode.frst
+)
+
+foreach(script ${TOML_SCRIPTS})
+    get_filename_component(name ${script} NAME_WE)
+    add_test(
+        NAME Frost_Ext_Toml_${name}
+        COMMAND $<TARGET_FILE:frost>
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/${script}"
+    )
+endforeach()

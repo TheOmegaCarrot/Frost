@@ -228,6 +228,116 @@ BUILTIN(bad_float)
         "toml.bad_float: Input must be 'nan', 'inf', or '-inf', got: {}", str));
 }
 
+void append_to(tomlpp::array& parent, const Value_Ptr& val);
+void encode_into(tomlpp::table& parent, std::string_view key,
+                 const Value_Ptr& val);
+
+template <typename Inserter>
+struct Encode_Toml
+{
+    Inserter insert;
+
+    void operator()(const String& s) const
+    {
+        insert(s);
+    }
+
+    void operator()(const Int& i) const
+    {
+        insert(i);
+    }
+
+    void operator()(const Float& f) const
+    {
+        insert(f);
+    }
+
+    void operator()(const Bool& b) const
+    {
+        insert(auto{b});
+    }
+
+    void operator()(const Null&) const
+    {
+        throw Frost_Recoverable_Error{
+            "toml.encode: TOML does not support null values"};
+    }
+
+    void operator()(const Array& arr) const
+    {
+        tomlpp::array out;
+        for (const auto& elem : arr)
+            append_to(out, elem);
+        insert(std::move(out));
+    }
+
+    void operator()(const Map& map) const
+    {
+        tomlpp::table out;
+        for (const auto& [k, v] : map)
+        {
+            if (not k->is<String>())
+                throw Frost_Recoverable_Error{
+                    fmt::format("toml.encode: Map key must be String, got {}",
+                                k->type_name())};
+            encode_into(out, k->raw_get<String>(), v);
+        }
+        insert(std::move(out));
+    }
+
+    void operator()(const Function& fn) const
+    {
+        if (auto* db =
+                dynamic_cast<const Data_Builtin<tomlpp::date>*>(fn.get()))
+            insert(db->data());
+        else if (auto* db =
+                     dynamic_cast<const Data_Builtin<tomlpp::time>*>(fn.get()))
+            insert(db->data());
+        else if (auto* db =
+                     dynamic_cast<const Data_Builtin<tomlpp::date_time>*>(
+                         fn.get()))
+            insert(db->data());
+        else if (auto* db = dynamic_cast<const Data_Builtin<double>*>(fn.get()))
+            insert(db->data());
+        else
+            throw Frost_Recoverable_Error{
+                "toml.encode: cannot serialize Function to TOML"};
+    }
+};
+
+void encode_into(tomlpp::table& parent, std::string_view key,
+                 const Value_Ptr& val)
+{
+    val->visit(Encode_Toml{[&](auto&& v) {
+        parent.insert_or_assign(key, std::forward<decltype(v)>(v));
+    }});
+}
+
+void append_to(tomlpp::array& parent, const Value_Ptr& val)
+{
+    val->visit(Encode_Toml{[&](auto&& v) {
+        parent.push_back(std::forward<decltype(v)>(v));
+    }});
+}
+
+BUILTIN(encode)
+{
+    REQUIRE_ARGS("toml.encode", TYPES(Map));
+
+    tomlpp::table root;
+    for (const auto& [k, v] : GET(0, Map))
+    {
+        if (not k->is<String>())
+            throw Frost_Recoverable_Error{fmt::format(
+                "toml.encode: Map key must be String, got {}", k->type_name())};
+        encode_into(root, k->raw_get<String>(), v);
+    }
+
+    std::ostringstream oss;
+    oss << root;
+    return Value::create(String{oss.str()});
+}
+
 struct Decode_Toml
 {
 
@@ -235,12 +345,12 @@ struct Decode_Toml
         requires std::same_as<T, std::string>
                  || std::same_as<T, std::int64_t>
                  || std::same_as<T, bool>
-    Value_Ptr operator()(this const auto, const tomlpp::value<T>& value)
+    static Value_Ptr operator()(const tomlpp::value<T>& value)
     {
         return Value::create(auto{value.get()});
     }
 
-    Value_Ptr operator()(this const auto, const tomlpp::value<double>& value)
+    static Value_Ptr operator()(const tomlpp::value<double>& value)
     {
         double d = value.get();
         if (std::isnan(d) || std::isinf(d))
@@ -248,39 +358,38 @@ struct Decode_Toml
         return Value::create(d);
     }
 
-    Value_Ptr operator()(this const auto self, const tomlpp::array& arr)
+    static Value_Ptr operator()(const tomlpp::array& arr)
     {
         return Value::create(arr
                              | std::views::transform([&](const auto& elem) {
-                                   return elem.visit(self);
+                                   return elem.visit(Decode_Toml{});
                                })
                              | std::ranges::to<Array>());
     }
 
-    Value_Ptr operator()(this const auto self, const tomlpp::table& table)
+    static Value_Ptr operator()(const tomlpp::table& table)
     {
         Map result;
         for (const auto& [k, v] : table)
         {
-            result.try_emplace(Value::create(String{k}), v.visit(self));
+            result.try_emplace(Value::create(String{k}),
+                               v.visit(Decode_Toml{}));
         }
         return Value::create(Value::trusted, std::move(result));
     }
 
-    Value_Ptr operator()(this const auto,
-                         const tomlpp::value<tomlpp::date>& date)
+    static Value_Ptr operator()(const tomlpp::value<tomlpp::date>& date)
     {
         return Value::create(make_date(date.get()));
     }
 
-    Value_Ptr operator()(this const auto,
-                         const tomlpp::value<tomlpp::time>& time)
+    static Value_Ptr operator()(const tomlpp::value<tomlpp::time>& time)
     {
         return Value::create(make_time(time.get()));
     }
 
-    Value_Ptr operator()(this const auto,
-                         const tomlpp::value<tomlpp::date_time>& datetime)
+    static Value_Ptr operator()(
+        const tomlpp::value<tomlpp::date_time>& datetime)
     {
         return Value::create(make_datetime(datetime.get()));
     }
@@ -301,7 +410,7 @@ BUILTIN(decode)
 
 } // namespace toml
 
-REGISTER_EXTENSION(toml, ENTRY(decode), ENTRY(date), ENTRY(time),
+REGISTER_EXTENSION(toml, ENTRY(decode), ENTRY(encode), ENTRY(date), ENTRY(time),
                    ENTRY(date_time), ENTRY(bad_float));
 
 } // namespace frst
