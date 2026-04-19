@@ -19,3 +19,10 @@ target_link_libraries( frost-toml
     frost-extensions-common
     tomlplusplus::tomlplusplus
 )
+
+make_test( tests/toml.cpp
+    LIBS
+    frost-toml
+    frost-extensions-common
+    tomlplusplus::tomlplusplus
+)
