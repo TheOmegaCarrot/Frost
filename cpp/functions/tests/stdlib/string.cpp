@@ -76,11 +76,17 @@ TEST_CASE("string.index_of")
         CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
         CHECK_THROWS_WITH(fn->call({Value::create("a"s)}),
                           ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create("b"s),
+                      Value::create("c"s)}),
+            ContainsSubstring("too many"));
     }
 
-    SECTION("type constraint")
+    SECTION("type constraints")
     {
         CHECK_THROWS_WITH(fn->call({Value::create(42_f), Value::create("x"s)}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(fn->call({Value::create("x"s), Value::create(42_f)}),
                           ContainsSubstring("String"));
     }
 }
@@ -111,6 +117,20 @@ TEST_CASE("string.last_index_of")
     SECTION("arity")
     {
         CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s)}),
+                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create("b"s),
+                      Value::create("c"s)}),
+            ContainsSubstring("too many"));
+    }
+
+    SECTION("type constraints")
+    {
+        CHECK_THROWS_WITH(fn->call({Value::create(42_f), Value::create("x"s)}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(fn->call({Value::create("x"s), Value::create(42_f)}),
+                          ContainsSubstring("String"));
     }
 }
 
@@ -153,6 +173,20 @@ TEST_CASE("string.count")
     SECTION("arity")
     {
         CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s)}),
+                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create("b"s),
+                      Value::create("c"s)}),
+            ContainsSubstring("too many"));
+    }
+
+    SECTION("type constraints")
+    {
+        CHECK_THROWS_WITH(fn->call({Value::create(42_f), Value::create("x"s)}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(fn->call({Value::create("x"s), Value::create(42_f)}),
+                          ContainsSubstring("String"));
     }
 }
 
@@ -189,6 +223,9 @@ TEST_CASE("string.chars")
     SECTION("arity")
     {
         CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create("b"s)}),
+            ContainsSubstring("too many"));
     }
 
     SECTION("type constraint")
@@ -298,4 +335,266 @@ TEST_CASE("string.is_lowercase")
     CHECK(fn->call({Value::create(""s)})->raw_get<Bool>() == true);
     CHECK(fn->call({Value::create("Hello"s)})->raw_get<Bool>() == false);
     CHECK(fn->call({Value::create("HELLO"s)})->raw_get<Bool>() == false);
+}
+
+TEST_CASE("string.is_*: arity and type constraints")
+{
+    auto mod = string_module();
+
+    for (const auto& name :
+         {"is_empty"s, "is_ascii"s, "is_digit"s, "is_alpha"s,
+          "is_alphanumeric"s, "is_whitespace"s, "is_uppercase"s,
+          "is_lowercase"s})
+    {
+        DYNAMIC_SECTION(name)
+        {
+            auto fn = lookup(mod, name);
+
+            CHECK_THROWS_WITH(fn->call({}),
+                              ContainsSubstring("insufficient"));
+            CHECK_THROWS_WITH(
+                fn->call({Value::create("a"s), Value::create("b"s)}),
+                ContainsSubstring("too many"));
+            CHECK_THROWS_WITH(fn->call({Value::create(42_f)}),
+                              ContainsSubstring("String"));
+        }
+    }
+}
+
+TEST_CASE("string.pad_left")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "pad_left");
+
+    SECTION("pads with spaces by default")
+    {
+        auto result = fn->call({Value::create("hi"s), Value::create(5_f)});
+        CHECK(result->raw_get<String>() == "   hi");
+    }
+
+    SECTION("custom fill character")
+    {
+        auto result = fn->call(
+            {Value::create("42"s), Value::create(5_f), Value::create("0"s)});
+        CHECK(result->raw_get<String>() == "00042");
+    }
+
+    SECTION("string already at width")
+    {
+        auto result = fn->call({Value::create("hello"s), Value::create(5_f)});
+        CHECK(result->raw_get<String>() == "hello");
+    }
+
+    SECTION("string longer than width")
+    {
+        auto result = fn->call({Value::create("hello"s), Value::create(3_f)});
+        CHECK(result->raw_get<String>() == "hello");
+    }
+
+    SECTION("width zero")
+    {
+        auto result = fn->call({Value::create("hi"s), Value::create(0_f)});
+        CHECK(result->raw_get<String>() == "hi");
+    }
+
+    SECTION("fill must be single byte")
+    {
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("x"s), Value::create(5_f),
+                      Value::create("ab"s)}),
+            ContainsSubstring("single byte"));
+    }
+
+    SECTION("arity")
+    {
+        CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s)}),
+                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create(5_f),
+                      Value::create("x"s), Value::create("y"s)}),
+            ContainsSubstring("too many"));
+    }
+
+    SECTION("type constraints")
+    {
+        CHECK_THROWS_WITH(fn->call({Value::create(42_f), Value::create(5_f)}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("x"s), Value::create("y"s)}),
+            ContainsSubstring("Int"));
+    }
+}
+
+TEST_CASE("string.pad_right")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "pad_right");
+
+    SECTION("pads with spaces by default")
+    {
+        auto result = fn->call({Value::create("hi"s), Value::create(5_f)});
+        CHECK(result->raw_get<String>() == "hi   ");
+    }
+
+    SECTION("custom fill character")
+    {
+        auto result = fn->call(
+            {Value::create("hi"s), Value::create(5_f), Value::create("."s)});
+        CHECK(result->raw_get<String>() == "hi...");
+    }
+
+    SECTION("string already at width")
+    {
+        auto result = fn->call({Value::create("hello"s), Value::create(5_f)});
+        CHECK(result->raw_get<String>() == "hello");
+    }
+
+    SECTION("string longer than width")
+    {
+        auto result = fn->call({Value::create("hello"s), Value::create(3_f)});
+        CHECK(result->raw_get<String>() == "hello");
+    }
+
+    SECTION("arity")
+    {
+        CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s)}),
+                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create(5_f),
+                      Value::create("x"s), Value::create("y"s)}),
+            ContainsSubstring("too many"));
+    }
+
+    SECTION("type constraints")
+    {
+        CHECK_THROWS_WITH(fn->call({Value::create(42_f), Value::create(5_f)}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("x"s), Value::create("y"s)}),
+            ContainsSubstring("Int"));
+    }
+}
+
+TEST_CASE("string.center")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "center");
+
+    SECTION("centers with spaces by default")
+    {
+        auto result = fn->call({Value::create("hi"s), Value::create(6_f)});
+        CHECK(result->raw_get<String>() == "  hi  ");
+    }
+
+    SECTION("odd padding favors right")
+    {
+        auto result = fn->call({Value::create("hi"s), Value::create(5_f)});
+        CHECK(result->raw_get<String>() == " hi  ");
+    }
+
+    SECTION("custom fill character")
+    {
+        auto result = fn->call(
+            {Value::create("hi"s), Value::create(6_f), Value::create("-"s)});
+        CHECK(result->raw_get<String>() == "--hi--");
+    }
+
+    SECTION("string already at width")
+    {
+        auto result = fn->call({Value::create("hello"s), Value::create(5_f)});
+        CHECK(result->raw_get<String>() == "hello");
+    }
+
+    SECTION("string longer than width")
+    {
+        auto result = fn->call({Value::create("hello"s), Value::create(3_f)});
+        CHECK(result->raw_get<String>() == "hello");
+    }
+
+    SECTION("fill must be single byte")
+    {
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("x"s), Value::create(5_f),
+                      Value::create("ab"s)}),
+            ContainsSubstring("single byte"));
+    }
+
+    SECTION("arity")
+    {
+        CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s)}),
+                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create(5_f),
+                      Value::create("x"s), Value::create("y"s)}),
+            ContainsSubstring("too many"));
+    }
+
+    SECTION("type constraints")
+    {
+        CHECK_THROWS_WITH(fn->call({Value::create(42_f), Value::create(5_f)}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("x"s), Value::create("y"s)}),
+            ContainsSubstring("Int"));
+    }
+}
+
+TEST_CASE("string.repeat")
+{
+    auto mod = string_module();
+    auto fn = lookup(mod, "repeat");
+
+    SECTION("basic repeat")
+    {
+        auto result = fn->call({Value::create("ab"s), Value::create(3_f)});
+        CHECK(result->raw_get<String>() == "ababab");
+    }
+
+    SECTION("repeat once")
+    {
+        auto result = fn->call({Value::create("hi"s), Value::create(1_f)});
+        CHECK(result->raw_get<String>() == "hi");
+    }
+
+    SECTION("repeat zero times")
+    {
+        auto result = fn->call({Value::create("hi"s), Value::create(0_f)});
+        CHECK(result->raw_get<String>() == "");
+    }
+
+    SECTION("empty string repeated")
+    {
+        auto result = fn->call({Value::create(""s), Value::create(5_f)});
+        CHECK(result->raw_get<String>() == "");
+    }
+
+    SECTION("negative count rejected")
+    {
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("x"s), Value::create(-1_f)}),
+            ContainsSubstring("negative"));
+    }
+
+    SECTION("arity")
+    {
+        CHECK_THROWS_WITH(fn->call({}), ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s)}),
+                          ContainsSubstring("insufficient"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create(3_f),
+                      Value::create("x"s)}),
+            ContainsSubstring("too many"));
+    }
+
+    SECTION("type constraints")
+    {
+        CHECK_THROWS_WITH(fn->call({Value::create(42_f), Value::create(3_f)}),
+                          ContainsSubstring("String"));
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("x"s), Value::create("y"s)}),
+            ContainsSubstring("Int"));
+    }
 }

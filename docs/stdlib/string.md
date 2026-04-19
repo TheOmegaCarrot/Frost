@@ -118,3 +118,59 @@ str.is_lowercase("hello")     # => true
 str.is_lowercase("hello123")  # => true
 str.is_lowercase("Hello")     # => false
 ```
+
+## Padding
+
+All padding functions default to space fill if `fill` is omitted.
+`fill` must be a single-byte string.
+If `s` is already at or beyond `width`, it is returned unchanged.
+
+## `pad_left`
+
+`pad_left(s, width)`
+`pad_left(s, width, fill)`
+
+Pads `s` on the left to the given `width`.
+
+```frost
+str.pad_left("42", 5, "0")  # => "00042"
+str.pad_left("hi", 5)       # => "   hi"
+```
+
+## `pad_right`
+
+`pad_right(s, width)`
+`pad_right(s, width, fill)`
+
+Pads `s` on the right to the given `width`.
+
+```frost
+str.pad_right("hi", 5)       # => "hi   "
+str.pad_right("hi", 5, ".")  # => "hi..."
+```
+
+## `center`
+
+`center(s, width)`
+`center(s, width, fill)`
+
+Centers `s` within the given `width`.
+When the padding is odd, the extra byte goes on the right.
+
+```frost
+str.center("hi", 6)       # => "  hi  "
+str.center("hi", 6, "-")  # => "--hi--"
+```
+
+## Transforms
+
+## `repeat`
+
+`repeat(s, n)`
+
+Returns `s` repeated `n` times. `n` must not be negative.
+
+```frost
+str.repeat("ab", 3)  # => "ababab"
+str.repeat("ha", 0)  # => ""
+```

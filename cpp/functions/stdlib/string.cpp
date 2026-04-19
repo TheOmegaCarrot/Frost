@@ -129,11 +129,116 @@ BUILTIN(is_lowercase)
         [](unsigned char c) { return not std::isalpha(c) || std::islower(c); })});
 }
 
+// -- Padding --
+
+BUILTIN(pad_left)
+{
+    REQUIRE_ARGS("string.pad_left", PARAM("s", TYPES(String)),
+                 PARAM("width", TYPES(Int)),
+                 OPTIONAL(PARAM("fill", TYPES(String))));
+
+    const auto& s = GET(0, String);
+    auto width = GET(1, Int);
+
+    char fill = ' ';
+    if (HAS(2))
+    {
+        const auto& fill_str = GET(2, String);
+        if (fill_str.size() != 1)
+            throw Frost_Recoverable_Error{
+                "string.pad_left: fill must be a single byte"};
+        fill = fill_str[0];
+    }
+
+    if (static_cast<Int>(s.size()) >= width)
+        return Value::create(String{s});
+
+    return Value::create(
+        String(static_cast<std::size_t>(width) - s.size(), fill) + s);
+}
+
+BUILTIN(pad_right)
+{
+    REQUIRE_ARGS("string.pad_right", PARAM("s", TYPES(String)),
+                 PARAM("width", TYPES(Int)),
+                 OPTIONAL(PARAM("fill", TYPES(String))));
+
+    const auto& s = GET(0, String);
+    auto width = GET(1, Int);
+
+    char fill = ' ';
+    if (HAS(2))
+    {
+        const auto& fill_str = GET(2, String);
+        if (fill_str.size() != 1)
+            throw Frost_Recoverable_Error{
+                "string.pad_right: fill must be a single byte"};
+        fill = fill_str[0];
+    }
+
+    if (static_cast<Int>(s.size()) >= width)
+        return Value::create(String{s});
+
+    return Value::create(
+        s + String(static_cast<std::size_t>(width) - s.size(), fill));
+}
+
+BUILTIN(center)
+{
+    REQUIRE_ARGS("string.center", PARAM("s", TYPES(String)),
+                 PARAM("width", TYPES(Int)),
+                 OPTIONAL(PARAM("fill", TYPES(String))));
+
+    const auto& s = GET(0, String);
+    auto width = GET(1, Int);
+
+    char fill = ' ';
+    if (HAS(2))
+    {
+        const auto& fill_str = GET(2, String);
+        if (fill_str.size() != 1)
+            throw Frost_Recoverable_Error{
+                "string.center: fill must be a single byte"};
+        fill = fill_str[0];
+    }
+
+    if (static_cast<Int>(s.size()) >= width)
+        return Value::create(String{s});
+
+    auto total_pad = static_cast<std::size_t>(width) - s.size();
+    auto left_pad = total_pad / 2;
+    auto right_pad = total_pad - left_pad;
+
+    return Value::create(String(left_pad, fill) + s + String(right_pad, fill));
+}
+
+// -- Transforms --
+
+BUILTIN(repeat)
+{
+    REQUIRE_ARGS("string.repeat", PARAM("s", TYPES(String)),
+                 PARAM("n", TYPES(Int)));
+
+    const auto& s = GET(0, String);
+    auto n = GET(1, Int);
+
+    if (n < 0)
+        throw Frost_Recoverable_Error{
+            "string.repeat: count must not be negative"};
+
+    String result;
+    result.reserve(s.size() * static_cast<std::size_t>(n));
+    for (Int i = 0; i < n; ++i)
+        result += s;
+    return Value::create(std::move(result));
+}
+
 } // namespace string
 
 STDLIB_MODULE(string, ENTRY(index_of), ENTRY(last_index_of), ENTRY(count),
               ENTRY(chars), ENTRY(is_empty), ENTRY(is_ascii), ENTRY(is_digit),
               ENTRY(is_alpha), ENTRY(is_alphanumeric), ENTRY(is_whitespace),
-              ENTRY(is_uppercase), ENTRY(is_lowercase))
+              ENTRY(is_uppercase), ENTRY(is_lowercase), ENTRY(pad_left),
+              ENTRY(pad_right), ENTRY(center), ENTRY(repeat))
 
 } // namespace frst
