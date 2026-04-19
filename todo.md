@@ -40,10 +40,6 @@ Design notes:
 
 - **`unique` / `deduplicate`** — remove duplicates (achievable with `group_by` but awkward)
 
-### Datetime
-
-- formatted datetime, arithmetic, constants, backed by `std::chrono`
-
 ## Extensions
 
 ### HTTP enhancements
