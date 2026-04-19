@@ -12,6 +12,8 @@
 
 #include <replxx.hxx>
 
+#include <cstdlib>
+#include <filesystem>
 #include <stack>
 
 using replxx::Replxx;
@@ -450,9 +452,20 @@ std::optional<std::string> read_input_segment(Replxx& rx,
     return acc;
 }
 
+std::string history_path()
+{
+    if (const char* home = std::getenv("HOME"))
+        return (std::filesystem::path{home} / ".frost_history").native();
+    return {};
+}
+
 void repl(frst::Symbol_Table& symbols)
 {
     Replxx rx;
+
+    auto hist_path = history_path();
+    if (not hist_path.empty())
+        rx.history_load(hist_path);
 
     rx.set_unique_history(true);
     rx.enable_bracketed_paste();
@@ -492,4 +505,7 @@ void repl(frst::Symbol_Table& symbols)
         repl_exec(parse_result.value(), symbols, rx);
         highlight_callback.reset();
     }
+
+    if (not hist_path.empty())
+        rx.history_save(hist_path);
 }
