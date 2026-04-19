@@ -23,7 +23,13 @@ Each HMAC function takes a key and a message, both `String`, and returns a lower
 hash.hmac.sha256('my-secret-key', 'message to authenticate')
 ```
 
-## Available algorithms
+Some algorithms in this module (notably MD5 and SHA-1) are considered weak and should not be used for security-sensitive purposes.
+They are included for interoperability with existing systems.
+When security matters, research current best practices.
+
+## Hash algorithms
+
+Each of these also has an [HMAC](#hmac) variant.
 
 | Function | Algorithm | Digest size |
 |---|---|---|
@@ -43,6 +49,16 @@ hash.hmac.sha256('my-secret-key', 'message to authenticate')
 | `blake2b512` | BLAKE2b | 512-bit |
 | `ripemd160` | RIPEMD-160 | 160-bit |
 | `sm3` | SM3 | 256-bit |
+
+## Checksums and fast hashes
+
+| Function | Algorithm | Digest size |
+|---|---|---|
+| `crc32` | CRC-32 | 32-bit |
+| `xxh32` | xxHash32 | 32-bit |
+| `xxh64` | xxHash64 | 64-bit |
+| `xxh3_64` | XXH3 (64-bit) | 64-bit |
+| `xxh3_128` | XXH3 (128-bit) | 128-bit |
 
 ## `crc32`
 `crc32(input)`
@@ -128,6 +144,28 @@ Returns the RIPEMD-160 digest (160-bit) of `input`.
 `sm3(input)`
 
 Returns the SM3 digest (256-bit) of `input`.
+
+## `xxh32`
+`xxh32(input)`
+
+Returns the [xxHash32](https://xxhash.com/) digest (32-bit) of `input` as an 8-character hexadecimal string.
+xxHash is a non-cryptographic hash optimized for speed.
+
+## `xxh64`
+`xxh64(input)`
+
+Returns the xxHash64 digest (64-bit) of `input`.
+
+## `xxh3_64`
+`xxh3_64(input)`
+
+Returns the XXH3 digest (64-bit) of `input`.
+XXH3 is the latest xxHash algorithm and is faster than xxh32/xxh64 on most inputs.
+
+## `xxh3_128`
+`xxh3_128(input)`
+
+Returns the XXH3 digest (128-bit) of `input`.
 
 ## HMAC
 

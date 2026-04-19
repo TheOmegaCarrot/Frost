@@ -9,6 +9,13 @@ if(NOT OpenSSL_FOUND OR NOT ZLIB_FOUND)
     return()
 endif()
 
+CPMAddPackage(
+    NAME xxHash
+    GITHUB_REPOSITORY Cyan4973/xxHash
+    GIT_TAG v0.8.3
+    DOWNLOAD_ONLY YES
+)
+
 add_library( frost-hash
     hash.cpp
 )
@@ -24,6 +31,11 @@ target_link_libraries( frost-hash
     frost-extensions-common
     OpenSSL::Crypto
     ZLIB::ZLIB
+)
+
+target_include_directories( frost-hash
+    PRIVATE
+    ${xxHash_SOURCE_DIR}
 )
 
 add_subdirectory(tests)

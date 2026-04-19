@@ -8,6 +8,9 @@
 
 #include <zlib.h>
 
+#define XXH_INLINE_ALL
+#include <xxhash.h>
+
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/scope_exit.hpp>
 
@@ -140,6 +143,38 @@ X_HASH_ALGS
 #undef X
 } // namespace hmac
 
+BUILTIN(xxh32)
+{
+    REQUIRE_ARGS("hash.xxh32", PARAM("input", TYPES(String)));
+    const auto& input = GET(0, String);
+    auto h = XXH32(input.data(), input.size(), 0);
+    return Value::create(fmt::format("{:08x}", h));
+}
+
+BUILTIN(xxh64)
+{
+    REQUIRE_ARGS("hash.xxh64", PARAM("input", TYPES(String)));
+    const auto& input = GET(0, String);
+    auto h = XXH64(input.data(), input.size(), 0);
+    return Value::create(fmt::format("{:016x}", h));
+}
+
+BUILTIN(xxh3_64)
+{
+    REQUIRE_ARGS("hash.xxh3_64", PARAM("input", TYPES(String)));
+    const auto& input = GET(0, String);
+    auto h = XXH3_64bits(input.data(), input.size());
+    return Value::create(fmt::format("{:016x}", h));
+}
+
+BUILTIN(xxh3_128)
+{
+    REQUIRE_ARGS("hash.xxh3_128", PARAM("input", TYPES(String)));
+    const auto& input = GET(0, String);
+    auto h = XXH3_128bits(input.data(), input.size());
+    return Value::create(fmt::format("{:016x}{:016x}", h.high64, h.low64));
+}
+
 const Value_Ptr& get_hmac_map()
 {
 #define X(ALG) NS_ENTRY(hmac, ALG),
@@ -153,8 +188,9 @@ const Value_Ptr& get_hmac_map()
 
 #define X(ALG) ENTRY(ALG),
 
-REGISTER_EXTENSION(hash, ENTRY(crc32), {"hmac"_s, hash::get_hmac_map()},
-                   X_HASH_ALGS)
+REGISTER_EXTENSION(hash, ENTRY(crc32), ENTRY(xxh32), ENTRY(xxh64),
+                   ENTRY(xxh3_64), ENTRY(xxh3_128),
+                   {"hmac"_s, hash::get_hmac_map()}, X_HASH_ALGS)
 #undef X
 
 } // namespace frst

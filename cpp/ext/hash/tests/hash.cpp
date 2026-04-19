@@ -58,6 +58,7 @@ TEST_CASE("ext::hash")
             "sha384",    "sha512",     "sha3_224",   "sha3_256",
             "sha3_384",  "sha3_512",   "blake2s256", "blake2b512",
             "ripemd160", "sha512_224", "sha512_256", "sm3",
+            "xxh32",     "xxh64",      "xxh3_64",    "xxh3_128",
         };
 
         for (auto name : expected)
@@ -166,6 +167,11 @@ TEST_CASE("ext::hash")
                            "d0accb698f13a"},
             {"sm3", "becbbfaae6548b8bf0cfcad5a27183cd1be6093b1cceccc303d9c61d0a"
                     "645268"},
+            {"xxh32", "fb0077f9"},
+            {"xxh64", "26c7827d889f6da3"},
+            {"xxh3_64", "9555e8555c62dcfd"},
+            {"xxh3_128",
+             "b5e9c1ad071b3e7fc779cfaa5e523818"},
         };
 
         for (const auto& c : cases)
