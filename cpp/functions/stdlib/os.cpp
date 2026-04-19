@@ -19,6 +19,11 @@ namespace bp = boost::process::v1;
 namespace bp = boost::process;
 #endif
 
+// TODO: Windows portability: replace <unistd.h> with _getpid/_gethostname
+// pid and hostname are going to need to be updated for a Windows build once
+// MSVC catches up to the C++ features used in Frost
+#include <unistd.h>
+
 #include <thread>
 
 namespace frst
@@ -260,8 +265,26 @@ BUILTIN(run)
     return run_process(cmd, std::move(args_vec), opts);
 }
 
+BUILTIN(pid)
+{
+    REQUIRE_NULLARY("os.pid");
+    return Value::create(Int{getpid()});
+}
+
+BUILTIN(hostname)
+{
+    REQUIRE_NULLARY("os.hostname");
+
+    char buf[256];
+    if (gethostname(buf, sizeof(buf)) != 0)
+        throw Frost_Recoverable_Error{"os.hostname: failed to get hostname"};
+
+    return Value::create(String{buf});
+}
+
 } // namespace os
 
-STDLIB_MODULE(os, ENTRY(getenv), ENTRY(exit), ENTRY(sleep), ENTRY(run))
+STDLIB_MODULE(os, ENTRY(getenv), ENTRY(exit), ENTRY(sleep), ENTRY(run),
+              ENTRY(pid), ENTRY(hostname))
 
 } // namespace frst

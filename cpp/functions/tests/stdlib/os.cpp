@@ -42,11 +42,13 @@ TEST_CASE("std.os")
 
     SECTION("Registered")
     {
-        CHECK(mod.size() == 4);
+        CHECK(mod.size() == 6);
         lookup(mod, "getenv");
         lookup(mod, "exit");
         lookup(mod, "sleep");
         lookup(mod, "run");
+        lookup(mod, "pid");
+        lookup(mod, "hostname");
     }
 
     SECTION("getenv")
@@ -132,6 +134,44 @@ TEST_CASE("std.os")
                 MessageMatches(ContainsSubstring("os.exit")
                                && ContainsSubstring("Int")
                                && ContainsSubstring("String")));
+        }
+    }
+
+    SECTION("pid")
+    {
+        auto pid = lookup(mod, "pid");
+
+        SECTION("returns a positive Int")
+        {
+            auto result = pid->call({});
+            REQUIRE(result->is<Int>());
+            CHECK(result->raw_get<Int>() > 0);
+        }
+
+        SECTION("arity")
+        {
+            CHECK_THROWS_MATCHES(
+                pid->call({Value::create(1_f)}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("too many")));
+        }
+    }
+
+    SECTION("hostname")
+    {
+        auto hostname = lookup(mod, "hostname");
+
+        SECTION("returns a non-empty String")
+        {
+            auto result = hostname->call({});
+            REQUIRE(result->is<String>());
+            CHECK(not result->raw_get<String>().empty());
+        }
+
+        SECTION("arity")
+        {
+            CHECK_THROWS_MATCHES(
+                hostname->call({Value::create(1_f)}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("too many")));
         }
     }
 }

@@ -10,6 +10,16 @@ def os = import('std.os')
 Returns the value of the environment variable `name` as a `String`, or `null`
 if it is not set.
 
+## `pid`
+`pid()`
+
+Returns the process ID of the current process as an `Int`.
+
+## `hostname`
+`hostname()`
+
+Returns the hostname of the current machine as a `String`.
+
 ## `exit`
 `exit(code)`
 
