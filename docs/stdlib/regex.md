@@ -31,6 +31,25 @@ The replacement string supports the following substitutions:
 | `$'`        | The substring following the match    |
 | `$$`        | A literal `$`                        |
 
+## `replace_first`
+`replace_first(string, regex, replacement)`
+
+Replaces the first match of `regex` in `string` with `replacement`.
+Supports the same substitution syntax as `replace`.
+
+## `split`
+`split(string, regex)`
+
+Splits `string` around matches of `regex` and returns an `Array` of the substrings between matches.
+Returns an empty array for an empty input string.
+
+```frost
+regex.split('one,two,three', ',')     # => ['one', 'two', 'three']
+regex.split('a1b2c3', R'(\d)')        # => ['a', 'b', 'c']
+regex.split('a,,b,,,c', ',+')         # => ['a', 'b', 'c']
+regex.split('hello', 'x')             # => ['hello']
+```
+
 ## `scan_matches`
 `scan_matches(string, regex)`
 

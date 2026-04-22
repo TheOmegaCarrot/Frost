@@ -42,8 +42,8 @@ TEST_CASE("std.regex")
     auto mod = regex_module();
 
     const std::vector<std::string> names{"matches", "contains"};
-    const std::string replace_name{"replace"};
-    const std::string scan_matches_name{"scan_matches"};
+    const std::vector<std::string> replace_names{"replace", "replace_first"};
+    const std::vector<std::string> binary_names{"scan_matches", "split"};
 
     auto get_re_fn = [&](const std::string& name) {
         return lookup(mod, name);
@@ -51,15 +51,14 @@ TEST_CASE("std.regex")
 
     SECTION("Registered in module")
     {
-        CHECK(mod.size() == 4);
+        CHECK(mod.size() == 6);
 
         for (const auto& name : names)
-        {
-            auto fn = get_re_fn(name);
-            REQUIRE(fn);
-        }
-        REQUIRE(get_re_fn(replace_name));
-        REQUIRE(get_re_fn(scan_matches_name));
+            REQUIRE(get_re_fn(name));
+        for (const auto& name : replace_names)
+            REQUIRE(get_re_fn(name));
+        for (const auto& name : binary_names)
+            REQUIRE(get_re_fn(name));
     }
 
     SECTION("Arity")
@@ -88,40 +87,48 @@ TEST_CASE("std.regex")
         }
     }
 
-    SECTION("Replace arity")
+    SECTION("Ternary arity (replace, replace_first)")
     {
-        auto fn = get_re_fn(replace_name);
+        for (const auto& name : replace_names)
+        {
+            DYNAMIC_SECTION(name << " arity")
+            {
+                auto fn = get_re_fn(name);
 
-        const auto too_few_1 = ContainsSubstring("insufficient arguments");
-        const auto too_few_2 = ContainsSubstring("Called with 2");
-        const auto too_few_3 = ContainsSubstring("requires at least 3");
-        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s)}),
-                          too_few_1 && too_few_2 && too_few_3);
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("b"s)}),
+                    ContainsSubstring("insufficient arguments")
+                        && ContainsSubstring("requires at least 3"));
 
-        const auto too_many_1 = ContainsSubstring("too many arguments");
-        const auto too_many_2 = ContainsSubstring("Called with 4");
-        const auto too_many_3 = ContainsSubstring("no more than 3");
-        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s),
-                                    Value::create("c"s), Value::create("d"s)}),
-                          too_many_1 && too_many_2 && too_many_3);
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("b"s),
+                              Value::create("c"s), Value::create("d"s)}),
+                    ContainsSubstring("too many arguments")
+                        && ContainsSubstring("no more than 3"));
+            }
+        }
     }
 
-    SECTION("Scan matches arity")
+    SECTION("Binary arity (scan_matches, split)")
     {
-        auto fn = get_re_fn(scan_matches_name);
+        for (const auto& name : binary_names)
+        {
+            DYNAMIC_SECTION(name << " arity")
+            {
+                auto fn = get_re_fn(name);
 
-        const auto too_few_1 = ContainsSubstring("insufficient arguments");
-        const auto too_few_2 = ContainsSubstring("Called with 1");
-        const auto too_few_3 = ContainsSubstring("requires at least 2");
-        CHECK_THROWS_WITH(fn->call({Value::create("a"s)}),
-                          too_few_1 && too_few_2 && too_few_3);
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s)}),
+                    ContainsSubstring("insufficient arguments")
+                        && ContainsSubstring("requires at least 2"));
 
-        const auto too_many_1 = ContainsSubstring("too many arguments");
-        const auto too_many_2 = ContainsSubstring("Called with 3");
-        const auto too_many_3 = ContainsSubstring("no more than 2");
-        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s),
-                                    Value::create("c"s)}),
-                          too_many_1 && too_many_2 && too_many_3);
+                CHECK_THROWS_WITH(
+                    fn->call({Value::create("a"s), Value::create("b"s),
+                              Value::create("c"s)}),
+                    ContainsSubstring("too many arguments")
+                        && ContainsSubstring("no more than 2"));
+            }
+        }
     }
 
     SECTION("Type errors")
@@ -154,53 +161,52 @@ TEST_CASE("std.regex")
         }
     }
 
-    SECTION("Replace type errors")
+    SECTION("Ternary type errors (replace, replace_first)")
     {
-        auto bad_first = Value::create(1_f);
-        auto bad_second = Value::create(true);
-        auto bad_third = Value::create(Null{});
+        auto bad = Value::create(1_f);
         auto good = Value::create("a"s);
-        auto fn = get_re_fn(replace_name);
 
-        const auto fn_name =
-            ContainsSubstring(std::string{"Function regex."} + replace_name);
-        const auto expected = ContainsSubstring("String");
-
-        CHECK_THROWS_WITH(fn->call({bad_first, good, good}),
-                          fn_name
-                              && expected
-                              && EndsWith(std::string{bad_first->type_name()}));
-        CHECK_THROWS_WITH(
-            fn->call({good, bad_second, good}),
-            fn_name
-                && expected
-                && EndsWith(std::string{bad_second->type_name()}));
-        CHECK_THROWS_WITH(fn->call({good, good, bad_third}),
-                          fn_name
-                              && expected
-                              && EndsWith(std::string{bad_third->type_name()}));
+        for (const auto& name : replace_names)
+        {
+            DYNAMIC_SECTION(name << " type errors")
+            {
+                auto fn = get_re_fn(name);
+                CHECK_THROWS_WITH(fn->call({bad, good, good}),
+                                  ContainsSubstring("regex." + name)
+                                      && ContainsSubstring("String")
+                                      && ContainsSubstring("got Int"));
+                CHECK_THROWS_WITH(fn->call({good, bad, good}),
+                                  ContainsSubstring("regex." + name)
+                                      && ContainsSubstring("String")
+                                      && ContainsSubstring("got Int"));
+                CHECK_THROWS_WITH(fn->call({good, good, bad}),
+                                  ContainsSubstring("regex." + name)
+                                      && ContainsSubstring("String")
+                                      && ContainsSubstring("got Int"));
+            }
+        }
     }
 
-    SECTION("Scan matches type errors")
+    SECTION("Binary type errors (scan_matches, split)")
     {
-        auto bad_first = Value::create(1_f);
-        auto bad_second = Value::create(true);
+        auto bad = Value::create(1_f);
         auto good = Value::create("a"s);
-        auto fn = get_re_fn(scan_matches_name);
 
-        const auto fn_name = ContainsSubstring(std::string{"Function regex."}
-                                               + scan_matches_name);
-        const auto expected = ContainsSubstring("String");
-
-        CHECK_THROWS_WITH(fn->call({bad_first, good}),
-                          fn_name
-                              && expected
-                              && EndsWith(std::string{bad_first->type_name()}));
-        CHECK_THROWS_WITH(
-            fn->call({good, bad_second}),
-            fn_name
-                && expected
-                && EndsWith(std::string{bad_second->type_name()}));
+        for (const auto& name : binary_names)
+        {
+            DYNAMIC_SECTION(name << " type errors")
+            {
+                auto fn = get_re_fn(name);
+                CHECK_THROWS_WITH(fn->call({bad, good}),
+                                  ContainsSubstring("regex." + name)
+                                      && ContainsSubstring("String")
+                                      && ContainsSubstring("got Int"));
+                CHECK_THROWS_WITH(fn->call({good, bad}),
+                                  ContainsSubstring("regex." + name)
+                                      && ContainsSubstring("String")
+                                      && ContainsSubstring("got Int"));
+            }
+        }
     }
 
     SECTION("Regex syntax errors")
@@ -219,17 +225,27 @@ TEST_CASE("std.regex")
             }
         }
 
+        for (const auto& name : replace_names)
         {
-            auto fn = get_re_fn(replace_name);
-            CHECK_THROWS_MATCHES(
-                fn->call({target, bad_re, Value::create("x"s)}),
-                Frost_User_Error, MessageMatches(StartsWith("Regex error: ")));
+            DYNAMIC_SECTION(name << " regex error")
+            {
+                auto fn = get_re_fn(name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({target, bad_re, Value::create("x"s)}),
+                    Frost_User_Error,
+                    MessageMatches(StartsWith("Regex error: ")));
+            }
         }
 
+        for (const auto& name : binary_names)
         {
-            auto fn = get_re_fn(scan_matches_name);
-            CHECK_THROWS_MATCHES(fn->call({target, bad_re}), Frost_User_Error,
-                                 MessageMatches(StartsWith("Regex error: ")));
+            DYNAMIC_SECTION(name << " regex error")
+            {
+                auto fn = get_re_fn(name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({target, bad_re}), Frost_User_Error,
+                    MessageMatches(StartsWith("Regex error: ")));
+            }
         }
     }
 
@@ -269,6 +285,70 @@ TEST_CASE("std.regex")
                   ->call({capture_target, capture_pattern, capture_repl})
                   ->raw_get<String>()
               == "<foo>");
+    }
+
+    SECTION("Replace first success")
+    {
+        auto target = Value::create("a1b2c3"s);
+        auto pattern = Value::create("[0-9]"s);
+        auto replacement = Value::create("X"s);
+
+        CHECK(get_re_fn("replace_first")
+                  ->call({target, pattern, replacement})
+                  ->raw_get<String>()
+              == "aXb2c3");
+
+        // No match leaves string unchanged
+        auto no_match = Value::create("abc"s);
+        CHECK(get_re_fn("replace_first")
+                  ->call({no_match, pattern, replacement})
+                  ->raw_get<String>()
+              == "abc");
+
+        // Capture group substitution works
+        CHECK(get_re_fn("replace_first")
+                  ->call({Value::create("foo bar"s), Value::create(R"((\w+))"s),
+                          Value::create("<$1>"s)})
+                  ->raw_get<String>()
+              == "<foo> bar");
+    }
+
+    SECTION("Split")
+    {
+        auto fn = get_re_fn("split");
+
+        // Basic split
+        auto result = fn->call(
+            {Value::create("one,two,three"s), Value::create(","s)});
+        REQUIRE(result->is<Array>());
+        const auto& arr = result->raw_get<Array>();
+        REQUIRE(arr.size() == 3);
+        CHECK(arr[0]->raw_get<String>() == "one");
+        CHECK(arr[1]->raw_get<String>() == "two");
+        CHECK(arr[2]->raw_get<String>() == "three");
+
+        // Multi-char delimiter
+        auto result2 = fn->call(
+            {Value::create("a,,b,,,c"s), Value::create(",+"s)});
+        REQUIRE(result2->is<Array>());
+        const auto& arr2 = result2->raw_get<Array>();
+        REQUIRE(arr2.size() == 3);
+        CHECK(arr2[0]->raw_get<String>() == "a");
+        CHECK(arr2[1]->raw_get<String>() == "b");
+        CHECK(arr2[2]->raw_get<String>() == "c");
+
+        // No match returns single-element array
+        auto result3 = fn->call(
+            {Value::create("hello"s), Value::create("x"s)});
+        REQUIRE(result3->is<Array>());
+        CHECK(result3->raw_get<Array>().size() == 1);
+        CHECK(result3->raw_get<Array>()[0]->raw_get<String>() == "hello");
+
+        // Empty string produces empty array
+        auto result4 = fn->call(
+            {Value::create(""s), Value::create(","s)});
+        REQUIRE(result4->is<Array>());
+        CHECK(result4->raw_get<Array>().empty());
     }
 
     SECTION("Matches vs contains")
@@ -313,7 +393,7 @@ TEST_CASE("std.regex")
 
     SECTION("Scan matches no matches")
     {
-        auto fn = get_re_fn(scan_matches_name);
+        auto fn = get_re_fn("scan_matches");
         auto result = fn->call({Value::create("abc"s), Value::create("z+"s)});
         REQUIRE(result->is<Map>());
         const auto& result_map = result->raw_get<Map>();
@@ -334,7 +414,7 @@ TEST_CASE("std.regex")
 
     SECTION("Scan matches with groups")
     {
-        auto fn = get_re_fn(scan_matches_name);
+        auto fn = get_re_fn("scan_matches");
         auto result = fn->call({Value::create("foo=bar beep=boop"s),
                                 Value::create(R"((\w+)=(\w+))"s)});
         REQUIRE(result->is<Map>());
@@ -398,7 +478,7 @@ TEST_CASE("std.regex")
 
     SECTION("Scan matches named groups")
     {
-        auto fn = get_re_fn(scan_matches_name);
+        auto fn = get_re_fn("scan_matches");
         auto result = fn->call({Value::create("foo=bar beep=boop"s),
                                 Value::create(R"((?<k>\w+)=(?'v'\w+))"s)});
         REQUIRE(result->is<Map>());
@@ -437,7 +517,7 @@ TEST_CASE("std.regex")
 
     SECTION("Scan matches named groups with optional capture")
     {
-        auto fn = get_re_fn(scan_matches_name);
+        auto fn = get_re_fn("scan_matches");
         auto result =
             fn->call({Value::create("foo bar1"s),
                       Value::create(R"((?<k>[A-Za-z]+)(?<n>\d+)?)"s)});

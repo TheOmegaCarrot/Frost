@@ -66,6 +66,36 @@ BUILTIN(replace)
         boost::regex_replace(GET(0, String), re, GET(2, String)));
 }
 
+BUILTIN(replace_first)
+{
+    REQUIRE_ARGS("regex.replace_first", PARAM("string", TYPES(String)),
+                 PARAM("regex", TYPES(String)),
+                 PARAM("replacement", TYPES(String)));
+
+    auto re = regex(GET(1, String));
+
+    return Value::create(boost::regex_replace(
+        GET(0, String), re, GET(2, String),
+        boost::regex_constants::format_first_only));
+}
+
+BUILTIN(split)
+{
+    REQUIRE_ARGS("regex.split", PARAM("string", TYPES(String)),
+                 PARAM("regex", TYPES(String)));
+
+    auto re = regex(GET(1, String));
+    const auto& input = GET(0, String);
+
+    using itr = boost::regex_token_iterator<String::const_iterator>;
+    return Value::create(
+        std::ranges::subrange(itr{input.begin(), input.end(), re, -1}, itr{})
+        | std::views::transform([](const auto& m) {
+              return Value::create(String{m.first, m.second});
+          })
+        | std::ranges::to<Array>());
+}
+
 namespace
 {
 
@@ -177,5 +207,5 @@ BUILTIN(scan_matches)
 } // namespace regex
 
 STDLIB_MODULE(regex, ENTRY(matches), ENTRY(contains), ENTRY(replace),
-              ENTRY(scan_matches))
+              ENTRY(replace_first), ENTRY(split), ENTRY(scan_matches))
 } // namespace frst
