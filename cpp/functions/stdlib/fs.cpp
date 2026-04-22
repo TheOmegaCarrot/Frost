@@ -104,6 +104,25 @@ BUILTIN(exists)
 {
     return fs_unary<BOOST_HOF_LIFT(stdf::exists), Bool>("fs.exists", args);
 }
+#define X_FS_IS_PREDICATES                                                     \
+    X(is_file, is_regular_file)                                                \
+    X(is_directory, is_directory)                                              \
+    X(is_symlink, is_symlink)                                                  \
+    X(is_block, is_block_file)                                                 \
+    X(is_character, is_character_file)                                         \
+    X(is_fifo, is_fifo)                                                        \
+    X(is_socket, is_socket)
+
+#define X(FROST_NAME, STD_NAME)                                                \
+    BUILTIN(FROST_NAME)                                                        \
+    {                                                                          \
+        REQUIRE_ARGS("fs." #FROST_NAME, PARAM("path", TYPES(String)));         \
+        return Value::create(stdf::STD_NAME(GET(0, String)));                  \
+    }
+
+X_FS_IS_PREDICATES
+
+#undef X
 BUILTIN(remove)
 {
     return fs_unary<BOOST_HOF_LIFT(stdf::remove), Bool>("fs.remove", args);
@@ -286,9 +305,11 @@ BUILTIN(concat)
 
 STDLIB_MODULE(fs, ENTRY(move), ENTRY(symlink), ENTRY(copy), ENTRY(absolute),
               ENTRY(canonical), ENTRY(cd), ENTRY(cwd), ENTRY(exists),
-              ENTRY(remove), ENTRY(remove_recursively), ENTRY(mkdir),
-              ENTRY(size), ENTRY(stat), ENTRY(list), ENTRY(list_recursively),
-              ENTRY(concat), ENTRY(stem), ENTRY(parent), ENTRY(filename),
-              ENTRY(extension))
+              ENTRY(is_file), ENTRY(is_directory), ENTRY(is_symlink),
+              ENTRY(is_block), ENTRY(is_character), ENTRY(is_fifo),
+              ENTRY(is_socket), ENTRY(remove), ENTRY(remove_recursively),
+              ENTRY(mkdir), ENTRY(size), ENTRY(stat), ENTRY(list),
+              ENTRY(list_recursively), ENTRY(concat), ENTRY(stem),
+              ENTRY(parent), ENTRY(filename), ENTRY(extension))
 
 } // namespace frst

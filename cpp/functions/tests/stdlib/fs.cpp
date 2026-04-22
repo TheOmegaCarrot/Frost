@@ -102,10 +102,15 @@ TEST_CASE("std.fs")
     auto mod = fs_module();
 
     const std::vector<std::string> names{
-        "move",   "symlink", "copy",      "absolute", "canonical",
-        "cd",     "cwd",     "exists",    "remove",   "remove_recursively",
-        "mkdir",  "size",    "stat",      "list",     "list_recursively",
-        "concat", "stem",    "extension", "filename", "parent",
+        "move",         "symlink",  "copy",      "absolute",
+        "canonical",    "cd",       "cwd",       "exists",
+        "is_file",      "is_directory", "is_symlink",
+        "is_block",     "is_character", "is_fifo",
+        "is_socket",    "remove",
+        "remove_recursively",       "mkdir",     "size",
+        "stat",         "list",     "list_recursively",
+        "concat",       "stem",     "extension", "filename",
+        "parent",
     };
 
     SECTION("Registered")
@@ -136,6 +141,13 @@ TEST_CASE("std.fs")
             {"cd", 1, 1},
             {"cwd", 0, 0},
             {"exists", 1, 1},
+            {"is_file", 1, 1},
+            {"is_directory", 1, 1},
+            {"is_symlink", 1, 1},
+            {"is_block", 1, 1},
+            {"is_character", 1, 1},
+            {"is_fifo", 1, 1},
+            {"is_socket", 1, 1},
             {"remove", 1, 1},
             {"remove_recursively", 1, 1},
             {"mkdir", 1, 1},
@@ -223,6 +235,13 @@ TEST_CASE("std.fs")
             {"canonical", 1},
             {"cd", 1},
             {"exists", 1},
+            {"is_file", 1},
+            {"is_directory", 1},
+            {"is_symlink", 1},
+            {"is_block", 1},
+            {"is_character", 1},
+            {"is_fifo", 1},
+            {"is_socket", 1},
             {"remove", 1},
             {"remove_recursively", 1},
             {"mkdir", 1},
@@ -265,6 +284,13 @@ TEST_CASE("std.fs")
             "canonical",
             "cd",
             "exists",
+            "is_file",
+            "is_directory",
+            "is_symlink",
+            "is_block",
+            "is_character",
+            "is_fifo",
+            "is_socket",
             "remove",
             "remove_recursively",
             "mkdir",
@@ -402,6 +428,54 @@ TEST_CASE("std.fs operations")
             {Value::create((dir / "missing_tree").string())});
         REQUIRE(removed_missing->is<Int>());
         CHECK(removed_missing->get<Int>().value() == 0_f);
+    }
+
+    SECTION("is_* predicates")
+    {
+        auto dir = make_temp_dir("fs_is_predicates");
+        BOOST_SCOPE_EXIT_ALL(&dir)
+        {
+            std::error_code ec;
+            std::filesystem::remove_all(dir, ec);
+        };
+
+        auto file = dir / "test.txt";
+        std::ofstream(file) << "hello";
+        auto file_val = Value::create(file.string());
+        auto dir_val = Value::create(dir.string());
+        auto missing = Value::create((dir / "nonexistent").string());
+
+        const std::vector<std::string> all_predicates{
+            "is_file",    "is_directory", "is_symlink",  "is_block",
+            "is_character", "is_fifo",   "is_socket",
+        };
+
+        // A regular file: only is_file returns true
+        for (const auto& name : all_predicates)
+        {
+            auto fn = lookup(mod, name);
+            if (name == "is_file")
+                CHECK(fn->call({file_val})->raw_get<Bool>());
+            else
+                CHECK_FALSE(fn->call({file_val})->raw_get<Bool>());
+        }
+
+        // A directory: only is_directory returns true
+        for (const auto& name : all_predicates)
+        {
+            auto fn = lookup(mod, name);
+            if (name == "is_directory")
+                CHECK(fn->call({dir_val})->raw_get<Bool>());
+            else
+                CHECK_FALSE(fn->call({dir_val})->raw_get<Bool>());
+        }
+
+        // Nonexistent path: all return false
+        for (const auto& name : all_predicates)
+        {
+            auto fn = lookup(mod, name);
+            CHECK_FALSE(fn->call({missing})->raw_get<Bool>());
+        }
     }
 
     SECTION("size, absolute, canonical, concat")

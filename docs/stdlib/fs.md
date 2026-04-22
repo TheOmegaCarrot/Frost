@@ -20,6 +20,43 @@ Produces an error if `path` does not exist.
 
 Returns `true` if `path` exists on the filesystem.
 
+## `is_file`
+`is_file(path)`
+
+Returns `true` if `path` exists and is a regular file.
+
+## `is_directory`
+`is_directory(path)`
+
+Returns `true` if `path` exists and is a directory.
+
+## `is_symlink`
+`is_symlink(path)`
+
+Returns `true` if `path` exists and is a symbolic link.
+
+## `is_block`
+`is_block(path)`
+
+Returns `true` if `path` exists and is a block device.
+
+## `is_character`
+`is_character(path)`
+
+Returns `true` if `path` exists and is a character device.
+
+## `is_fifo`
+`is_fifo(path)`
+
+Returns `true` if `path` exists and is a named pipe (FIFO).
+
+## `is_socket`
+`is_socket(path)`
+
+Returns `true` if `path` exists and is a Unix domain socket.
+
+All `is_*` predicates return `false` for nonexistent paths.
+
 ## `stat`
 `stat(path)`
 
