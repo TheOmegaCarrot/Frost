@@ -134,9 +134,55 @@ BUILTIN(stringwriter)
              })}});
 }
 
+BUILTIN(read)
+{
+    REQUIRE_ARGS("io.read", PARAM("path", TYPES(String)));
+
+    const auto& filename = GET(0, String);
+    std::ifstream file{filename};
+
+    if (not file.is_open())
+        open_error(filename);
+
+    std::ostringstream buf;
+    buf << file.rdbuf();
+    return Value::create(std::move(buf).str());
+}
+
+BUILTIN(write)
+{
+    REQUIRE_ARGS("io.write", PARAM("path", TYPES(String)),
+                 PARAM("content", TYPES(String)));
+
+    const auto& filename = GET(0, String);
+    std::ofstream file{filename, std::ios::trunc};
+
+    if (not file.is_open())
+        open_error(filename);
+
+    file << GET(1, String);
+    return Value::null();
+}
+
+BUILTIN(append)
+{
+    REQUIRE_ARGS("io.append", PARAM("path", TYPES(String)),
+                 PARAM("content", TYPES(String)));
+
+    const auto& filename = GET(0, String);
+    std::ofstream file{filename, std::ios::app};
+
+    if (not file.is_open())
+        open_error(filename);
+
+    file << GET(1, String);
+    return Value::null();
+}
+
 } // namespace io
 
-STDLIB_MODULE(io, ENTRY(open_read), ENTRY(open_trunc), ENTRY(open_append),
-              ENTRY(stringreader), ENTRY(stringwriter))
+STDLIB_MODULE(io, NS_ENTRY(io, append), ENTRY(open_append), ENTRY(open_read),
+              ENTRY(open_trunc), NS_ENTRY(io, read), ENTRY(stringreader),
+              ENTRY(stringwriter), NS_ENTRY(io, write))
 
 } // namespace frst

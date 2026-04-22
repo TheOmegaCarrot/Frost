@@ -4,7 +4,31 @@
 def io = import('std.io')
 ```
 
-Streams for reading and writing files and strings.
+Provides convenience functions for simple file IO and stream-based readers/writers for more complex use cases.
+
+## `read`
+`read(path)`
+
+Reads the entire file at `path` and returns its contents as a `String`.
+Produces an error if the file cannot be opened.
+
+## `write`
+`write(path, content)`
+
+Writes `content` to the file at `path`, replacing any existing content.
+Creates the file if it does not exist.
+Returns `null`.
+Produces an error if the file cannot be opened.
+
+## `append`
+`append(path, content)`
+
+Appends `content` to the end of the file at `path`.
+Creates the file if it does not exist.
+Returns `null`.
+Produces an error if the file cannot be opened.
+
+---
 
 ## Reader
 

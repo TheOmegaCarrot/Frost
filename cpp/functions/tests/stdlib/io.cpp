@@ -90,12 +90,15 @@ TEST_CASE("std.io")
 
     SECTION("Registered")
     {
-        CHECK(mod.size() == 5);
+        CHECK(mod.size() == 8);
+        lookup(mod, "append");
+        lookup(mod, "open_append");
         lookup(mod, "open_read");
         lookup(mod, "open_trunc");
-        lookup(mod, "open_append");
+        lookup(mod, "read");
         lookup(mod, "stringreader");
         lookup(mod, "stringwriter");
+        lookup(mod, "write");
     }
 }
 
@@ -218,6 +221,211 @@ TEST_CASE("std.io stringwriter")
         auto result = get->call({});
         REQUIRE(result->is<String>());
         CHECK(result->get<String>() == "helloworld\n");
+    }
+}
+
+TEST_CASE("std.io read")
+{
+    auto mod = io_module();
+    auto read_fn = lookup(mod, "read");
+    auto write_fn = lookup(mod, "write");
+
+    SECTION("Arity and type errors")
+    {
+        CHECK_THROWS_MATCHES(
+            read_fn->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")
+                           && ContainsSubstring("requires at least 1")));
+        CHECK_THROWS_MATCHES(
+            read_fn->call({Value::create(1_f), Value::create(2_f)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("too many arguments")));
+        CHECK_THROWS_MATCHES(
+            read_fn->call({Value::create(1_f)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("io.read")
+                           && ContainsSubstring("String")
+                           && ContainsSubstring("Int")));
+    }
+
+    SECTION("Nonexistent file throws")
+    {
+        const std::string missing =
+            "./build/streams/read_nonexistent_" + std::to_string(__LINE__);
+        std::filesystem::remove(missing);
+        CHECK_THROWS_MATCHES(
+            read_fn->call({Value::create(String{missing})}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("Failed to open")
+                           && ContainsSubstring(missing)));
+    }
+
+    SECTION("Reads full file contents")
+    {
+        auto dir = make_test_dir("std_io_read");
+        auto path = unique_path(dir, "read");
+
+        write_fn->call(
+            {Value::create(path.string()), Value::create("hello\nworld"s)});
+
+        auto result = read_fn->call({Value::create(path.string())});
+        REQUIRE(result->is<String>());
+        CHECK(result->get<String>() == "hello\nworld");
+    }
+
+    SECTION("Reads empty file")
+    {
+        auto dir = make_test_dir("std_io_read_empty");
+        auto path = unique_path(dir, "read_empty");
+
+        write_fn->call({Value::create(path.string()), Value::create(""s)});
+
+        auto result = read_fn->call({Value::create(path.string())});
+        REQUIRE(result->is<String>());
+        CHECK(result->get<String>() == "");
+    }
+}
+
+TEST_CASE("std.io write")
+{
+    auto mod = io_module();
+    auto read_fn = lookup(mod, "read");
+    auto write_fn = lookup(mod, "write");
+
+    SECTION("Arity and type errors")
+    {
+        CHECK_THROWS_MATCHES(
+            write_fn->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")
+                           && ContainsSubstring("requires at least 2")));
+        CHECK_THROWS_MATCHES(
+            write_fn->call({Value::create("x"s)}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")));
+        CHECK_THROWS_MATCHES(
+            write_fn->call({Value::create(1_f), Value::create("x"s)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("io.write")
+                           && ContainsSubstring("path")
+                           && ContainsSubstring("got Int")));
+        CHECK_THROWS_MATCHES(
+            write_fn->call({Value::create("x"s), Value::create(1_f)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("io.write")
+                           && ContainsSubstring("content")
+                           && ContainsSubstring("got Int")));
+    }
+
+    SECTION("Returns null")
+    {
+        auto dir = make_test_dir("std_io_write_null");
+        auto path = unique_path(dir, "write_null");
+
+        auto result = write_fn->call(
+            {Value::create(path.string()), Value::create("x"s)});
+        CHECK(result->is<Null>());
+    }
+
+    SECTION("Overwrites existing content")
+    {
+        auto dir = make_test_dir("std_io_write_overwrite");
+        auto path = unique_path(dir, "write_overwrite");
+
+        write_fn->call({Value::create(path.string()),
+                        Value::create("original long content"s)});
+        write_fn->call(
+            {Value::create(path.string()), Value::create("short"s)});
+
+        auto result = read_fn->call({Value::create(path.string())});
+        REQUIRE(result->is<String>());
+        CHECK(result->get<String>() == "short");
+    }
+
+    SECTION("Open failure throws")
+    {
+        auto dir = make_test_dir("std_io_write_fail");
+        CHECK_THROWS_MATCHES(
+            write_fn->call(
+                {Value::create(dir.string()), Value::create("x"s)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("Failed to open")));
+    }
+}
+
+TEST_CASE("std.io append")
+{
+    auto mod = io_module();
+    auto read_fn = lookup(mod, "read");
+    auto write_fn = lookup(mod, "write");
+    auto append_fn = lookup(mod, "append");
+
+    SECTION("Arity and type errors")
+    {
+        CHECK_THROWS_MATCHES(
+            append_fn->call({}), Frost_User_Error,
+            MessageMatches(ContainsSubstring("insufficient arguments")
+                           && ContainsSubstring("requires at least 2")));
+        CHECK_THROWS_MATCHES(
+            append_fn->call({Value::create(1_f), Value::create("x"s)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("io.append")
+                           && ContainsSubstring("path")
+                           && ContainsSubstring("got Int")));
+        CHECK_THROWS_MATCHES(
+            append_fn->call({Value::create("x"s), Value::create(1_f)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("io.append")
+                           && ContainsSubstring("content")
+                           && ContainsSubstring("got Int")));
+    }
+
+    SECTION("Returns null")
+    {
+        auto dir = make_test_dir("std_io_append_null");
+        auto path = unique_path(dir, "append_null");
+
+        write_fn->call(
+            {Value::create(path.string()), Value::create(""s)});
+
+        auto result = append_fn->call(
+            {Value::create(path.string()), Value::create("x"s)});
+        CHECK(result->is<Null>());
+    }
+
+    SECTION("Appends to existing content")
+    {
+        auto dir = make_test_dir("std_io_append_content");
+        auto path = unique_path(dir, "append_content");
+
+        write_fn->call(
+            {Value::create(path.string()), Value::create("hello"s)});
+        append_fn->call(
+            {Value::create(path.string()), Value::create(" world"s)});
+
+        auto result = read_fn->call({Value::create(path.string())});
+        REQUIRE(result->is<String>());
+        CHECK(result->get<String>() == "hello world");
+    }
+
+    SECTION("Creates file if it does not exist")
+    {
+        auto dir = make_test_dir("std_io_append_create");
+        auto path = unique_path(dir, "append_create");
+
+        std::filesystem::remove(path);
+        append_fn->call(
+            {Value::create(path.string()), Value::create("new"s)});
+
+        auto result = read_fn->call({Value::create(path.string())});
+        REQUIRE(result->is<String>());
+        CHECK(result->get<String>() == "new");
+    }
+
+    SECTION("Open failure throws")
+    {
+        auto dir = make_test_dir("std_io_append_fail");
+        CHECK_THROWS_MATCHES(
+            append_fn->call(
+                {Value::create(dir.string()), Value::create("x"s)}),
+            Frost_User_Error,
+            MessageMatches(ContainsSubstring("Failed to open")));
     }
 }
 
