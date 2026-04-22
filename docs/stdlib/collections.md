@@ -307,6 +307,32 @@ Reduces `structure` to a single value by repeatedly applying `f`.
 Without `init`, the first element is used as the initial accumulator.
 For maps, `f` receives `(accumulator, key, value)`.
 
+## `sum`
+`sum(arr)`
+
+Returns the sum of all elements in `arr` using `+`.
+Equivalent to `reduce arr with plus`.
+Returns `null` for an empty array.
+
+```frost
+sum([1, 2, 3, 4])   # => 10
+sum([1.5, 2.5])      # => 4.0
+sum([])              # => null
+```
+
+## `product`
+`product(arr)`
+
+Returns the product of all elements in `arr` using `*`.
+Equivalent to `reduce arr with times`.
+Returns `null` for an empty array.
+
+```frost
+product([1, 2, 3, 4])   # => 24
+product([2, 3.0])        # => 6.0
+product([])              # => null
+```
+
 ## `sorted`
 `sorted(arr)`
 `sorted(arr, f)`

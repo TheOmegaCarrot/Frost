@@ -227,6 +227,7 @@ Each entry links to its full documentation.
 - [plus](operators.md#plus)
 - [pretty](types.md#pretty)
 - [print](output.md#print)
+- [product](collections.md#product)
 - [random.rng](random.md#rng) · `std.random`
 - [random.rng.bool](random.md#rngbool) · `std.random`
 - [random.rng.choice](random.md#rngchoice) · `std.random`
@@ -291,6 +292,7 @@ Each entry links to its full documentation.
 - [string.pad_left](string.md#pad_left) · `std.string`
 - [string.pad_right](string.md#pad_right) · `std.string`
 - [string.repeat](string.md#repeat) · `std.string`
+- [sum](collections.md#sum)
 - [tail](collections.md#tail)
 - [take](collections.md#take)
 - [take_while](collections.md#take_while)
