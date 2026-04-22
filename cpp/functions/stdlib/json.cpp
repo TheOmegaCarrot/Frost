@@ -141,8 +141,88 @@ BUILTIN(encode)
     REQUIRE_ARGS("json.encode", ANY);
     return Value::create(serialize(args.at(0)->visit(encode_json_impl)));
 }
+
+void pretty_format(std::string& out, const boost::json::value& val,
+                   std::size_t indent, std::size_t depth)
+{
+    if (val.is_null()
+        || val.is_bool()
+        || val.is_int64()
+        || val.is_uint64()
+        || val.is_double()
+        || val.is_string())
+    {
+        out += serialize(val);
+        return;
+    }
+
+    std::string inner_pad(indent * (depth + 1), ' ');
+    std::string outer_pad(indent * depth, ' ');
+
+    if (val.is_array())
+    {
+        const auto& arr = val.get_array();
+        if (arr.empty())
+        {
+            out += "[]";
+            return;
+        }
+
+        out += "[\n";
+        for (std::size_t i = 0; i < arr.size(); ++i)
+        {
+            out += inner_pad;
+            pretty_format(out, arr[i], indent, depth + 1);
+            if (i + 1 < arr.size())
+                out += ',';
+            out += '\n';
+        }
+        out += outer_pad;
+        out += ']';
+        return;
+    }
+
+    const auto& obj = val.get_object();
+    if (obj.empty())
+    {
+        out += "{}";
+        return;
+    }
+
+    out += "{\n";
+    std::size_t i = 0;
+    for (const auto& [k, v] : obj)
+    {
+        out += inner_pad;
+        out += serialize(boost::json::value{k});
+        out += ": ";
+        pretty_format(out, v, indent, depth + 1);
+        if (++i < obj.size())
+            out += ',';
+        out += '\n';
+    }
+    out += outer_pad;
+    out += '}';
+}
+
+BUILTIN(encode_pretty)
+{
+    REQUIRE_ARGS("json.encode_pretty", ANY, PARAM("indent", TYPES(Int)));
+
+    auto indent = args.at(1)->raw_get<Int>();
+    if (indent < 0)
+        throw Frost_Recoverable_Error{
+            "json.encode_pretty requires a non-negative indent"};
+
+    auto json = args.at(0)->visit(encode_json_impl);
+
+    std::string result;
+    pretty_format(result, json, static_cast<std::size_t>(indent), 0);
+    return Value::create(std::move(result));
+}
+
 } // namespace json
 
-STDLIB_MODULE(json, ENTRY(decode), ENTRY(encode))
+STDLIB_MODULE(json, ENTRY(decode), ENTRY(encode), ENTRY(encode_pretty))
 
 } // namespace frst
