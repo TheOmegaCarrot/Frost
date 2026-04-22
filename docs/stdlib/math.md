@@ -160,12 +160,14 @@ Returns the inverse hyperbolic tangent of `n`. Input must be in `(-1, 1)`.
 ## `min`
 `min(a, b)`
 
-Returns the smaller of `a` and `b` as a `Float`.
+Returns the smaller of `a` and `b`.
+Returns an `Int` if both arguments are `Int`; otherwise returns a `Float`.
 
 ## `max`
 `max(a, b)`
 
-Returns the larger of `a` and `b` as a `Float`.
+Returns the larger of `a` and `b`.
+Returns an `Int` if both arguments are `Int`; otherwise returns a `Float`.
 
 ## `hypot`
 `hypot(a, b)`

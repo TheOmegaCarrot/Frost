@@ -109,49 +109,59 @@ nested @ dig('items', 5, 'name')   # => null (out of bounds)
 
 ## `slice`
 
-`slice(arr, start)`
-`slice(arr, start, end)`
+`slice(seq, start)`
+`slice(seq, start, end)`
 
-Returns a sub-array from `start` (inclusive) to `end` (exclusive).
-If `end` is omitted, slices to the end of the array.
+Returns a sub-array or substring from `start` (inclusive) to `end` (exclusive).
+If `end` is omitted, slices to the end.
 Negative indices count from the end.
 Out-of-bounds indices are clamped.
+Works on both `Array` and `String`.
 
 ```frost
 slice([1, 2, 3, 4, 5], 1, 3)   # => [2, 3]
 slice([1, 2, 3, 4, 5], 2)      # => [3, 4, 5]
 slice([1, 2, 3, 4, 5], -2)     # => [4, 5]
 slice([1, 2, 3, 4, 5], 1, -1)  # => [2, 3, 4]
+
+slice('hello', 1, 4)            # => "ell"
+slice('hello', -3)              # => "llo"
 ```
 
 ## `stride`
-`stride(arr, n)`
+`stride(seq, n)`
 
-Returns every `n`th element of `arr` starting from index 0. `n` must be `> 0`.
+Returns every `n`th element of `seq` starting from index 0. `n` must be `> 0`.
+Works on both `Array` and `String`.
 
 ```frost
 stride([1, 2, 3, 4, 5, 6], 2)  # => [1, 3, 5]
+stride('abcdef', 2)             # => "ace"
 ```
 
 ## `take`
-`take(arr, n)`
+`take(seq, n)`
 
-Returns the first `n` elements of `arr`. `n` must be `>= 0`.
+Returns the first `n` elements of `seq`. `n` must be `>= 0`.
+Works on both `Array` and `String`.
 
 ## `drop`
-`drop(arr, n)`
+`drop(seq, n)`
 
-Returns all but the first `n` elements of `arr`. `n` must be `>= 0`.
+Returns all but the first `n` elements of `seq`. `n` must be `>= 0`.
+Works on both `Array` and `String`.
 
 ## `tail`
-`tail(arr, n)`
+`tail(seq, n)`
 
-Returns the last `n` elements of `arr`. `n` must be `>= 0`.
+Returns the last `n` elements of `seq`. `n` must be `>= 0`.
+Works on both `Array` and `String`.
 
 ## `drop_tail`
-`drop_tail(arr, n)`
+`drop_tail(seq, n)`
 
-Returns all but the last `n` elements of `arr`. `n` must be `>= 0`.
+Returns all but the last `n` elements of `seq`. `n` must be `>= 0`.
+Works on both `Array` and `String`.
 
 ## `slide`
 `slide(arr, n)`
@@ -174,9 +184,10 @@ chunk([1, 2, 3, 4, 5], 2)  # => [[1, 2], [3, 4], [5]]
 ```
 
 ## `reverse`
-`reverse(arr)`
+`reverse(seq)`
 
-Returns `arr` in reverse order.
+Returns `seq` in reverse order.
+Works on both `Array` and `String`.
 
 ## `take_while`
 `take_while(arr, f)`

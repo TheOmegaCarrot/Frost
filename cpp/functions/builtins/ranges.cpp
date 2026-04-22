@@ -32,20 +32,27 @@ void require_nonnegative(std::string_view name, Int num)
             "Function {} requires its numeric argument to be >=0", name)};
 }
 
-template <auto adaptor>
-Value_Ptr apply_view(const Array& arr, Int num)
+Value_Ptr dispatch_sequence(const Value_Ptr& val, auto&& fn)
 {
-    return Value::create(arr | adaptor(num) | std::ranges::to<Array>());
+    if (val->is<String>())
+        return fn(val->raw_get<String>());
+    return fn(val->raw_get<Array>());
 }
 
-template <auto adaptor>
-Value_Ptr apply_rev_view(const Array& arr, Int num)
+template <auto adaptor, typename Seq>
+Value_Ptr apply_view(const Seq& seq, Int num)
 {
-    return Value::create(arr
+    return Value::create(seq | adaptor(num) | std::ranges::to<Seq>());
+}
+
+template <auto adaptor, typename Seq>
+Value_Ptr apply_rev_view(const Seq& seq, Int num)
+{
+    return Value::create(seq
                          | std::views::reverse
                          | adaptor(num)
                          | std::views::reverse
-                         | std::ranges::to<Array>());
+                         | std::ranges::to<Seq>());
 }
 
 template <auto adaptor>
@@ -88,57 +95,62 @@ Value_Ptr quantifier_impl(std::string_view name, builtin_args_t args)
 
 BUILTIN(stride)
 {
-    REQUIRE_ARGS("stride", TYPES(Array), TYPES(Int));
+    REQUIRE_ARGS("stride", TYPES(Array, String), TYPES(Int));
 
-    const auto& arr = GET(0, Array);
     auto num = GET(1, Int);
     require_positive("stride", num);
 
-    return apply_view<std::views::stride>(arr, num);
+    return dispatch_sequence(args.at(0), [&](const auto& seq) {
+        return apply_view<std::views::stride>(seq, num);
+    });
 }
 
 BUILTIN(take)
 {
-    REQUIRE_ARGS("take", TYPES(Array), TYPES(Int));
+    REQUIRE_ARGS("take", TYPES(Array, String), TYPES(Int));
 
-    const auto& arr = GET(0, Array);
     auto num = GET(1, Int);
     require_nonnegative("take", num);
 
-    return apply_view<std::views::take>(arr, num);
+    return dispatch_sequence(args.at(0), [&](const auto& seq) {
+        return apply_view<std::views::take>(seq, num);
+    });
 }
 
 BUILTIN(drop)
 {
-    REQUIRE_ARGS("drop", TYPES(Array), TYPES(Int));
+    REQUIRE_ARGS("drop", TYPES(Array, String), TYPES(Int));
 
-    const auto& arr = GET(0, Array);
     auto num = GET(1, Int);
     require_nonnegative("drop", num);
 
-    return apply_view<std::views::drop>(arr, num);
+    return dispatch_sequence(args.at(0), [&](const auto& seq) {
+        return apply_view<std::views::drop>(seq, num);
+    });
 }
 
 BUILTIN(tail)
 {
-    REQUIRE_ARGS("tail", TYPES(Array), TYPES(Int));
+    REQUIRE_ARGS("tail", TYPES(Array, String), TYPES(Int));
 
-    const auto& arr = GET(0, Array);
     auto num = GET(1, Int);
     require_nonnegative("tail", num);
 
-    return apply_rev_view<std::views::take>(arr, num);
+    return dispatch_sequence(args.at(0), [&](const auto& seq) {
+        return apply_rev_view<std::views::take>(seq, num);
+    });
 }
 
 BUILTIN(drop_tail)
 {
-    REQUIRE_ARGS("drop_tail", TYPES(Array), TYPES(Int));
+    REQUIRE_ARGS("drop_tail", TYPES(Array, String), TYPES(Int));
 
-    const auto& arr = GET(0, Array);
     auto num = GET(1, Int);
     require_nonnegative("drop_tail", num);
 
-    return apply_rev_view<std::views::drop>(arr, num);
+    return dispatch_sequence(args.at(0), [&](const auto& seq) {
+        return apply_rev_view<std::views::drop>(seq, num);
+    });
 }
 
 BUILTIN(slide)
@@ -165,11 +177,12 @@ BUILTIN(chunk)
 
 BUILTIN(reverse)
 {
-    REQUIRE_ARGS("reverse", TYPES(Array));
+    REQUIRE_ARGS("reverse", TYPES(Array, String));
 
-    const auto& arr = GET(0, Array);
-
-    return Value::create(arr | std::views::reverse | std::ranges::to<Array>());
+    return dispatch_sequence(args.at(0), []<typename Seq>(const Seq& seq) {
+        return Value::create(
+            seq | std::views::reverse | std::ranges::to<Seq>());
+    });
 }
 
 // TODO: {take,drop}_while can evaluate the predicate multiple times
@@ -645,27 +658,28 @@ BUILTIN(partition)
 
 BUILTIN(slice)
 {
-    REQUIRE_ARGS("slice", PARAM("arr", TYPES(Array)),
+    REQUIRE_ARGS("slice", PARAM("seq", TYPES(Array, String)),
                  PARAM("start", TYPES(Int)),
                  OPTIONAL(PARAM("end", TYPES(Int))));
 
-    const auto& arr = GET(0, Array);
-    auto len = static_cast<Int>(arr.size());
+    return dispatch_sequence(args.at(0), [&]<typename Seq>(const Seq& seq) {
+        auto len = static_cast<Int>(seq.size());
 
-    auto clamp = [len](Int idx) -> std::size_t {
-        if (idx < 0)
-            idx += len;
-        return static_cast<std::size_t>(std::clamp(idx, Int{0}, len));
-    };
+        auto clamp = [len](Int idx) -> std::size_t {
+            if (idx < 0)
+                idx += len;
+            return static_cast<std::size_t>(std::clamp(idx, Int{0}, len));
+        };
 
-    auto start = clamp(GET(1, Int));
-    auto end = HAS(2) ? clamp(GET(2, Int)) : static_cast<std::size_t>(len);
+        auto start = clamp(GET(1, Int));
+        auto end = HAS(2) ? clamp(GET(2, Int)) : static_cast<std::size_t>(len);
 
-    if (start >= end)
-        return Value::create(Array{});
+        if (start >= end)
+            return Value::create(Seq{});
 
-    return Value::create(Array{arr.begin() + static_cast<Int>(start),
-                               arr.begin() + static_cast<Int>(end)});
+        return Value::create(Seq{seq.begin() + static_cast<Int>(start),
+                                 seq.begin() + static_cast<Int>(end)});
+    });
 }
 
 void inject_ranges(Symbol_Table& table)

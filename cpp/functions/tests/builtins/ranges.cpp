@@ -60,9 +60,13 @@ TEST_CASE("Builtin ranges")
     inject_builtins(table);
 
     const std::vector<std::string> names{
-        "stride", "take", "drop", "tail", "drop_tail", "slide", "chunk",
+        "slide", "chunk",
     };
-    const std::vector<std::string> unary_names{
+    const std::vector<std::string> seq_names{
+        "stride", "take", "drop", "tail", "drop_tail",
+    };
+    const std::vector<std::string> unary_names{};
+    const std::vector<std::string> unary_seq_names{
         "reverse",
     };
     const std::vector<std::string> variadic_names{
@@ -93,7 +97,17 @@ TEST_CASE("Builtin ranges")
             auto val = table.lookup(name);
             REQUIRE(val->is<Function>());
         }
+        for (const auto& name : seq_names)
+        {
+            auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
         for (const auto& name : unary_names)
+        {
+            auto val = table.lookup(name);
+            REQUIRE(val->is<Function>());
+        }
+        for (const auto& name : unary_seq_names)
         {
             auto val = table.lookup(name);
             REQUIRE(val->is<Function>());
@@ -158,7 +172,48 @@ TEST_CASE("Builtin ranges")
             }
         }
 
+        for (const auto& name : seq_names)
+        {
+            DYNAMIC_SECTION("Arity " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 2")
+                                   && ContainsSubstring("Called with 0")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({arr}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 2")
+                                   && ContainsSubstring("Called with 1")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({arr, n, extra}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("too many arguments")
+                                   && ContainsSubstring("no more than 2")
+                                   && ContainsSubstring("Called with 3")));
+            }
+        }
+
         for (const auto& name : unary_names)
+        {
+            DYNAMIC_SECTION("Arity " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("insufficient arguments")
+                                   && ContainsSubstring("requires at least 1")
+                                   && ContainsSubstring("Called with 0")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({arr, n}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("too many arguments")
+                                   && ContainsSubstring("no more than 1")
+                                   && ContainsSubstring("Called with 2")));
+            }
+        }
+
+        for (const auto& name : unary_seq_names)
         {
             DYNAMIC_SECTION("Arity " << name)
             {
@@ -325,6 +380,23 @@ TEST_CASE("Builtin ranges")
             }
         }
 
+        for (const auto& name : seq_names)
+        {
+            DYNAMIC_SECTION("Type " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({Value::create(42), good_int}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("got Int")));
+                CHECK_THROWS_MATCHES(
+                    fn->call({good_arr, bad}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("Int")
+                                   && ContainsSubstring("got String")));
+            }
+        }
+
         for (const auto& name : unary_names)
         {
             DYNAMIC_SECTION("Type " << name)
@@ -340,6 +412,18 @@ TEST_CASE("Builtin ranges")
                     MessageMatches(ContainsSubstring("Function " + name)
                                    && ContainsSubstring("Array")
                                    && ContainsSubstring("got Float")));
+            }
+        }
+
+        for (const auto& name : unary_seq_names)
+        {
+            DYNAMIC_SECTION("Type " << name)
+            {
+                auto fn = lookup(table, name);
+                CHECK_THROWS_MATCHES(
+                    fn->call({Value::create(42)}), Frost_User_Error,
+                    MessageMatches(ContainsSubstring("Function " + name)
+                                   && ContainsSubstring("got Int")));
             }
         }
 
@@ -542,10 +626,94 @@ TEST_CASE("Builtin ranges")
         auto fn = lookup(table, "slice");
         auto arr = Value::create(Array{Value::create(1_f)});
 
-        CHECK_THROWS_WITH(fn->call({Value::create("x"s), Value::create(0_f)}),
-                          ContainsSubstring("Array"));
+        CHECK_THROWS_WITH(fn->call({Value::create(42), Value::create(0_f)}),
+                          ContainsSubstring("Array or String"));
         CHECK_THROWS_WITH(fn->call({arr, Value::create("x"s)}),
                           ContainsSubstring("Int"));
+    }
+
+    SECTION("String support")
+    {
+        auto hello = Value::create("hello"s);
+        auto abcde = Value::create("abcde"s);
+        auto empty = Value::create(""s);
+
+        SECTION("take")
+        {
+            auto fn = lookup(table, "take");
+            CHECK(fn->call({hello, Value::create(3_f)})->raw_get<String>()
+                  == "hel");
+            CHECK(fn->call({hello, Value::create(0_f)})->raw_get<String>()
+                  == "");
+            CHECK(fn->call({hello, Value::create(100_f)})->raw_get<String>()
+                  == "hello");
+            CHECK(fn->call({empty, Value::create(5_f)})->raw_get<String>()
+                  == "");
+        }
+
+        SECTION("drop")
+        {
+            auto fn = lookup(table, "drop");
+            CHECK(fn->call({hello, Value::create(3_f)})->raw_get<String>()
+                  == "lo");
+            CHECK(fn->call({hello, Value::create(0_f)})->raw_get<String>()
+                  == "hello");
+            CHECK(fn->call({hello, Value::create(100_f)})->raw_get<String>()
+                  == "");
+        }
+
+        SECTION("tail")
+        {
+            auto fn = lookup(table, "tail");
+            CHECK(fn->call({hello, Value::create(3_f)})->raw_get<String>()
+                  == "llo");
+            CHECK(fn->call({hello, Value::create(0_f)})->raw_get<String>()
+                  == "");
+            CHECK(fn->call({hello, Value::create(100_f)})->raw_get<String>()
+                  == "hello");
+        }
+
+        SECTION("drop_tail")
+        {
+            auto fn = lookup(table, "drop_tail");
+            CHECK(fn->call({hello, Value::create(3_f)})->raw_get<String>()
+                  == "he");
+            CHECK(fn->call({hello, Value::create(0_f)})->raw_get<String>()
+                  == "hello");
+        }
+
+        SECTION("reverse")
+        {
+            auto fn = lookup(table, "reverse");
+            CHECK(fn->call({hello})->raw_get<String>() == "olleh");
+            CHECK(fn->call({empty})->raw_get<String>() == "");
+        }
+
+        SECTION("stride")
+        {
+            auto fn = lookup(table, "stride");
+            CHECK(fn->call({abcde, Value::create(2_f)})->raw_get<String>()
+                  == "ace");
+            CHECK(fn->call({abcde, Value::create(1_f)})->raw_get<String>()
+                  == "abcde");
+            CHECK(fn->call({abcde, Value::create(3_f)})->raw_get<String>()
+                  == "ad");
+        }
+
+        SECTION("slice")
+        {
+            auto fn = lookup(table, "slice");
+            CHECK(fn->call({hello, Value::create(1_f), Value::create(4_f)})
+                      ->raw_get<String>()
+                  == "ell");
+            CHECK(fn->call({hello, Value::create(-3_f)})->raw_get<String>()
+                  == "llo");
+            CHECK(fn->call({hello, Value::create(2_f)})->raw_get<String>()
+                  == "llo");
+            CHECK(fn->call({hello, Value::create(3_f), Value::create(1_f)})
+                      ->raw_get<String>()
+                  == "");
+        }
     }
 
     SECTION("stride semantics")

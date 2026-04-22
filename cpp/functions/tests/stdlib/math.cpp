@@ -483,22 +483,6 @@ TEST_CASE("std.math")
                 .b_float = 3.0,
             },
             {
-                .name = "min",
-                .fn = std::fmin,
-                .a_int = 2,
-                .b_int = 3,
-                .a_float = 2.5,
-                .b_float = -1.0,
-            },
-            {
-                .name = "max",
-                .fn = std::fmax,
-                .a_int = 2,
-                .b_int = 3,
-                .a_float = 2.5,
-                .b_float = -1.0,
-            },
-            {
                 .name = "atan2",
                 .fn = std::atan2,
                 .a_int = 1,
@@ -532,6 +516,40 @@ TEST_CASE("std.math")
                                   static_cast<double>(test.b_float))));
             }
         }
+    }
+
+    SECTION("min")
+    {
+        auto fn = get_fn("min");
+
+        auto ii = fn->call({Value::create(2_f), Value::create(3_f)});
+        REQUIRE(ii->is<Int>());
+        CHECK(ii->get<Int>() == 2);
+
+        auto ff = fn->call({Value::create(2.5), Value::create(-1.0)});
+        REQUIRE(ff->is<Float>());
+        CHECK(ff->get<Float>().value() == Catch::Approx(-1.0));
+
+        auto mixed = fn->call({Value::create(2_f), Value::create(3.0)});
+        REQUIRE(mixed->is<Float>());
+        CHECK(mixed->get<Float>().value() == Catch::Approx(2.0));
+    }
+
+    SECTION("max")
+    {
+        auto fn = get_fn("max");
+
+        auto ii = fn->call({Value::create(2_f), Value::create(3_f)});
+        REQUIRE(ii->is<Int>());
+        CHECK(ii->get<Int>() == 3);
+
+        auto ff = fn->call({Value::create(2.5), Value::create(-1.0)});
+        REQUIRE(ff->is<Float>());
+        CHECK(ff->get<Float>().value() == Catch::Approx(2.5));
+
+        auto mixed = fn->call({Value::create(2_f), Value::create(3.0)});
+        REQUIRE(mixed->is<Float>());
+        CHECK(mixed->get<Float>().value() == Catch::Approx(3.0));
     }
 
     SECTION("abs")

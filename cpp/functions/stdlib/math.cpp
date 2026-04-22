@@ -49,7 +49,7 @@ X_UNARY_MATH_FLOAT
 
 #undef X
 
-#define X_BINARY_MATH_FLOAT                                                    \
+#define X_BINARY_MATH_NUMERIC                                                  \
     X(min)                                                                     \
     X(max)
 
@@ -57,11 +57,12 @@ X_UNARY_MATH_FLOAT
     BUILTIN(FN)                                                                \
     {                                                                          \
         REQUIRE_ARGS("math." #FN, TYPES(Int, Float), TYPES(Int, Float));       \
-        return Value::create(                                                  \
-            auto{std::FN(COERCE(0, Float), COERCE(1, Float))});                \
+        if (IS(0, Int) && IS(1, Int))                                          \
+            return Value::create(std::FN(GET(0, Int), GET(1, Int)));           \
+        return Value::create(std::FN(COERCE(0, Float), COERCE(1, Float)));     \
     }
 
-X_BINARY_MATH_FLOAT
+X_BINARY_MATH_NUMERIC
 
 #undef X
 
@@ -108,12 +109,12 @@ BUILTIN(round)
     if (arg->is<Int>())
         return arg;
 
+    using int_lim = std::numeric_limits<Int>;
+
     const auto value = arg->raw_get<Float>();
     const auto rounded = std::round(static_cast<long double>(value));
-    if (rounded
-        < static_cast<long double>(std::numeric_limits<Int>::min())
-        || rounded
-        > static_cast<long double>(std::numeric_limits<Int>::max()))
+    if ((rounded < static_cast<long double>(int_lim::min()))
+        || (rounded > static_cast<long double>(int_lim::max())))
     {
         throw Frost_Recoverable_Error{
             fmt::format("Value {} is out of range of Int", value)};
