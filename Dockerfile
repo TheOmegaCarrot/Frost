@@ -28,7 +28,7 @@ RUN cmake -S . -B /build -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_TESTS=No \
     && cmake --build /build -j$(nproc) \
     && if [ "${BUILD_TYPE}" = "Release" ]; then strip /build/frost; fi
 
-FROM debian:trixie-slim AS runtime
+FROM gcc:15 AS runtime
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -39,9 +39,7 @@ RUN apt-get update \
         libboost-url1.83.0 \
         libboost-filesystem1.83.0 \
         libboost-atomic1.83.0 \
-        libgcc-s1 \
         libssl3t64 \
-        libstdc++6 \
         zlib1g \
         libbz2-1.0 \
         liblzma5 \
