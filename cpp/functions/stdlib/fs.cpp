@@ -117,7 +117,11 @@ BUILTIN(exists)
     BUILTIN(FROST_NAME)                                                        \
     {                                                                          \
         REQUIRE_ARGS("fs." #FROST_NAME, PARAM("path", TYPES(String)));         \
-        return Value::create(stdf::STD_NAME(GET(0, String)));                  \
+        std::error_code ec;                                                    \
+        bool result = stdf::STD_NAME(GET(0, String), ec);                      \
+        if (ec && ec != std::errc::no_such_file_or_directory)                  \
+            throw Frost_Recoverable_Error{ec.message()};                       \
+        return Value::create(result);                                          \
     }
 
 X_FS_IS_PREDICATES
