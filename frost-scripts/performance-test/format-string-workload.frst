@@ -1,0 +1,12 @@
+def n = 200000
+
+def strings = map range(n) with fn (i) -> {
+    do {
+        def v = i * i
+        $'item_${i}_val_${v}'
+    }
+}
+
+def result = reduce strings init: 0 with fn (acc, s) -> { acc + len(s) }
+assert(result == 5142641, 'format string length sum')
+print(result)

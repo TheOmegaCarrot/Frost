@@ -1,0 +1,7 @@
+def n = 100000
+def chunks = map range(n) with fn (i) -> { [i, i + 1] }
+def merged = chunks @ flatten(1)
+
+def result = reduce merged init: 0 with fn (acc, x) -> { acc + x }
+assert(result == 10000000000, 'flatten and reduce sum')
+print(result)

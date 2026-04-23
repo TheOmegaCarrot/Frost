@@ -8,4 +8,5 @@ def fib(n: int) -> int:
 
 
 total = sum(fib(i) for i in range(30))
+assert total == 1_346_268
 print(total)

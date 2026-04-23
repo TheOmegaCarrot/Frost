@@ -1,0 +1,11 @@
+def n = 200000
+def pairs = map range(n) with fn (i) -> { [i, i * i] }
+
+def result = reduce pairs init: 0 with fn (acc, pair) -> {
+    do {
+        def [a, b] = pair
+        acc + a + b
+    }
+}
+assert(result == 2666666666600000, 'destructure accumulation')
+print(result)

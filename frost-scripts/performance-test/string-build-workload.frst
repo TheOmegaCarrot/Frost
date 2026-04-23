@@ -1,0 +1,7 @@
+def n = 500000
+def parts = repeat('a', n)
+def text = join(parts, '')
+def result = len(text)
+
+assert(result == 500000, 'string build length')
+print(result)

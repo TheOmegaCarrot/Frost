@@ -1,0 +1,21 @@
+def n = 300000
+
+def items = map range(n) with fn (i) -> {
+    match i % 4 {
+        0 => i,
+        1 => to_float(i),
+        2 => to_string(i),
+        _ => i % 2 == 0
+    }
+}
+
+defn classify(v) -> match v {
+    x is Int    => x,
+    x is Float  => 2,
+    x is String => len(x),
+    x is Bool   => 1
+}
+
+def result = reduce items init: 0 with fn (acc, v) -> { acc + classify(v) }
+assert(result == 11250497223, 'match expression classify sum')
+print(result)

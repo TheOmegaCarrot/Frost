@@ -12,18 +12,23 @@ set(FROST_PERF_STAT_REPEATS 7 CACHE STRING
 
 set(
     PROFILING_TEST_SCRIPTS
-    "${CMAKE_CURRENT_LIST_DIR}/array-concat-reduce-workload.frst"
     "${CMAKE_CURRENT_LIST_DIR}/closure-arg-bind-workload.frst"
-    "${CMAKE_CURRENT_LIST_DIR}/closure-call-workload.frst"
     "${CMAKE_CURRENT_LIST_DIR}/closure-capture-workload.frst"
+    "${CMAKE_CURRENT_LIST_DIR}/destructure-workload.frst"
     "${CMAKE_CURRENT_LIST_DIR}/fib-map-reduce.frst"
+    "${CMAKE_CURRENT_LIST_DIR}/flatten-reduce-workload.frst"
+    "${CMAKE_CURRENT_LIST_DIR}/float-arithmetic-workload.frst"
+    "${CMAKE_CURRENT_LIST_DIR}/format-string-workload.frst"
+    "${CMAKE_CURRENT_LIST_DIR}/function-call-workload.frst"
+    "${CMAKE_CURRENT_LIST_DIR}/large-map-access-workload.frst"
     "${CMAKE_CURRENT_LIST_DIR}/map-filter-reduce.frst"
     "${CMAKE_CURRENT_LIST_DIR}/map-key-heavy-workload.frst"
     "${CMAKE_CURRENT_LIST_DIR}/map-union-workload.frst"
+    "${CMAKE_CURRENT_LIST_DIR}/match-expression-workload.frst"
     "${CMAKE_CURRENT_LIST_DIR}/mixed-pipeline-workload.frst"
-    "${CMAKE_CURRENT_LIST_DIR}/parse-stress-generated-literals.frst"
+    "${CMAKE_CURRENT_LIST_DIR}/nested-data-workload.frst"
     "${CMAKE_CURRENT_LIST_DIR}/recursive-tailish-workload.frst"
-    "${CMAKE_CURRENT_LIST_DIR}/string-accumulate-workload.frst"
+    "${CMAKE_CURRENT_LIST_DIR}/string-build-workload.frst"
     "${CMAKE_CURRENT_LIST_DIR}/string-transform-workload.frst"
     "${CMAKE_CURRENT_LIST_DIR}/symbol-lookup-workload.frst"
 )

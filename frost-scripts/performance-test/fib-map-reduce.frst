@@ -1,6 +1,3 @@
-# AI-generated performance test by Codex (GPT-5).
-# Signed: Codex (GPT-5).
-
 defn fib(n) -> {
     if n < 2: n
     else: fib(n-1) + fib(n-2)
@@ -10,4 +7,5 @@ def input = range(30)
 def fibs = map input with fib
 def total = reduce fibs init: 0 with fn (acc, x) -> { acc + x }
 
+assert(total == 1346268, 'fibonacci map reduce sum')
 print(total)

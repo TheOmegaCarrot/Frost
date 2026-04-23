@@ -1,6 +1,3 @@
-# AI-generated performance test by Codex (GPT-5).
-# Signed: Codex (GPT-5).
-
 def n = 1800000
 def input = range(n)
 
@@ -8,4 +5,5 @@ def squares = map input with fn (x) -> { x * x }
 def filtered = filter squares with fn (x) -> { x < 1000000000 }
 def total = reduce filtered init: 0 with fn (acc, x) -> { acc + x }
 
+assert(total == 10540648931995, 'map filter reduce sum')
 print(total)

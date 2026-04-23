@@ -1,0 +1,10 @@
+def n_keys = 5000
+def n_lookups = 500000
+
+def m = map_into(range(n_keys), fn (i) -> { { [to_string(i)]: i * i } })
+
+def result = reduce range(n_lookups) init: 0 with fn (acc, j) -> {
+    acc + m[to_string(j % n_keys)]
+}
+assert(result == 4165416750000, 'large map access sum')
+print(result)
