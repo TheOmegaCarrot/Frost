@@ -42,8 +42,9 @@ TEST_CASE("std.os")
 
     SECTION("Registered")
     {
-        CHECK(mod.size() == 6);
+        CHECK(mod.size() == 7);
         lookup(mod, "getenv");
+        lookup(mod, "setenv");
         lookup(mod, "exit");
         lookup(mod, "sleep");
         lookup(mod, "run");
@@ -84,6 +85,63 @@ TEST_CASE("std.os")
             auto result = getenv->call({Value::create("PATH"s)});
             REQUIRE(result->is<String>());
             CHECK(not result->raw_get<String>().empty());
+        }
+    }
+
+    SECTION("setenv")
+    {
+        auto setenv_fn = lookup(mod, "setenv");
+        auto getenv_fn = lookup(mod, "getenv");
+
+        SECTION("Arity")
+        {
+            CHECK_THROWS_MATCHES(
+                setenv_fn->call({}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("insufficient arguments")
+                               && ContainsSubstring("requires at least 2")));
+            CHECK_THROWS_MATCHES(
+                setenv_fn->call({Value::create("X"s)}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("insufficient arguments")));
+        }
+
+        SECTION("Type errors")
+        {
+            CHECK_THROWS_MATCHES(
+                setenv_fn->call({Value::create(1_f), Value::create("v"s)}),
+                Frost_User_Error,
+                MessageMatches(ContainsSubstring("os.setenv")
+                               && ContainsSubstring("variable")
+                               && ContainsSubstring("got Int")));
+            CHECK_THROWS_MATCHES(
+                setenv_fn->call({Value::create("k"s), Value::create(1_f)}),
+                Frost_User_Error,
+                MessageMatches(ContainsSubstring("os.setenv")
+                               && ContainsSubstring("value")
+                               && ContainsSubstring("got Int")));
+        }
+
+        SECTION("Sets and overwrites environment variable")
+        {
+            auto name = "FROST_TEST_SETENV_42"s;
+            setenv_fn->call(
+                {Value::create(String{name}), Value::create("first"s)});
+            auto result = getenv_fn->call({Value::create(String{name})});
+            REQUIRE(result->is<String>());
+            CHECK(result->raw_get<String>() == "first");
+
+            setenv_fn->call(
+                {Value::create(String{name}), Value::create("second"s)});
+            auto result2 = getenv_fn->call({Value::create(String{name})});
+            REQUIRE(result2->is<String>());
+            CHECK(result2->raw_get<String>() == "second");
+        }
+
+        SECTION("Returns null")
+        {
+            auto result = setenv_fn->call(
+                {Value::create("FROST_TEST_SETENV_NULL"s),
+                 Value::create("x"s)});
+            CHECK(result->is<Null>());
         }
     }
 

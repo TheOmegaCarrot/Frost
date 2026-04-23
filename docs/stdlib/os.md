@@ -10,6 +10,13 @@ def os = import('std.os')
 Returns the value of the environment variable `name` as a `String`, or `null`
 if it is not set.
 
+## `setenv`
+`setenv(variable, value)`
+
+Sets the environment variable `variable` to `value`, overwriting any existing value.
+Returns `null`.
+Produces an error if the operating system rejects the variable name (the exact conditions are platform-dependent).
+
 ## `pid`
 `pid()`
 

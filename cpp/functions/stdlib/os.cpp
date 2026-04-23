@@ -60,6 +60,33 @@ BUILTIN(sleep)
     return Value::null();
 }
 
+BUILTIN(pid)
+{
+    REQUIRE_NULLARY("os.pid");
+    return Value::create(Int{getpid()});
+}
+
+BUILTIN(hostname)
+{
+    REQUIRE_NULLARY("os.hostname");
+
+    char buf[256];
+    if (gethostname(buf, sizeof(buf)) != 0)
+        throw Frost_Recoverable_Error{"os.hostname: failed to get hostname"};
+
+    return Value::create(String{buf});
+}
+
+BUILTIN(setenv)
+{
+    REQUIRE_ARGS("os.setenv", PARAM("variable", TYPES(String)),
+                 PARAM("value", TYPES(String)));
+    if (::setenv(GET(0, String).c_str(), GET(1, String).c_str(), 1) != 0)
+        throw Frost_Recoverable_Error(
+            fmt::format("os.setenv: {}", std::strerror(errno)));
+    return Value::null();
+}
+
 namespace
 {
 
@@ -265,26 +292,9 @@ BUILTIN(run)
     return run_process(cmd, std::move(args_vec), opts);
 }
 
-BUILTIN(pid)
-{
-    REQUIRE_NULLARY("os.pid");
-    return Value::create(Int{getpid()});
-}
-
-BUILTIN(hostname)
-{
-    REQUIRE_NULLARY("os.hostname");
-
-    char buf[256];
-    if (gethostname(buf, sizeof(buf)) != 0)
-        throw Frost_Recoverable_Error{"os.hostname: failed to get hostname"};
-
-    return Value::create(String{buf});
-}
-
 } // namespace os
 
-STDLIB_MODULE(os, ENTRY(getenv), ENTRY(exit), ENTRY(sleep), ENTRY(run),
-              ENTRY(pid), ENTRY(hostname))
+STDLIB_MODULE(os, ENTRY(getenv), ENTRY(setenv), ENTRY(exit), ENTRY(sleep),
+              ENTRY(run), ENTRY(pid), ENTRY(hostname))
 
 } // namespace frst
