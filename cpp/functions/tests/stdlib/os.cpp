@@ -42,9 +42,10 @@ TEST_CASE("std.os")
 
     SECTION("Registered")
     {
-        CHECK(mod.size() == 7);
+        CHECK(mod.size() == 8);
         lookup(mod, "getenv");
         lookup(mod, "setenv");
+        lookup(mod, "unsetenv");
         lookup(mod, "exit");
         lookup(mod, "sleep");
         lookup(mod, "run");
@@ -141,6 +142,58 @@ TEST_CASE("std.os")
             auto result = setenv_fn->call(
                 {Value::create("FROST_TEST_SETENV_NULL"s),
                  Value::create("x"s)});
+            CHECK(result->is<Null>());
+        }
+    }
+
+    SECTION("unsetenv")
+    {
+        auto setenv_fn = lookup(mod, "setenv");
+        auto unsetenv_fn = lookup(mod, "unsetenv");
+        auto getenv_fn = lookup(mod, "getenv");
+
+        SECTION("Arity")
+        {
+            CHECK_THROWS_MATCHES(
+                unsetenv_fn->call({}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("insufficient arguments")
+                               && ContainsSubstring("requires at least 1")));
+            CHECK_THROWS_MATCHES(
+                unsetenv_fn->call(
+                    {Value::create("a"s), Value::create("b"s)}),
+                Frost_User_Error,
+                MessageMatches(ContainsSubstring("too many arguments")));
+        }
+
+        SECTION("Type error")
+        {
+            CHECK_THROWS_MATCHES(
+                unsetenv_fn->call({Value::create(1_f)}), Frost_User_Error,
+                MessageMatches(ContainsSubstring("os.unsetenv")
+                               && ContainsSubstring("variable")
+                               && ContainsSubstring("got Int")));
+        }
+
+        SECTION("Removes a set variable")
+        {
+            auto name = Value::create("FROST_TEST_UNSETENV_99"s);
+            setenv_fn->call({name, Value::create("present"s)});
+            REQUIRE(getenv_fn->call({name})->is<String>());
+
+            unsetenv_fn->call({name});
+            CHECK(getenv_fn->call({name})->is<Null>());
+        }
+
+        SECTION("Unsetting an unset variable is not an error")
+        {
+            auto name = Value::create("FROST_TEST_UNSETENV_ABSENT"s);
+            CHECK_NOTHROW(unsetenv_fn->call({name}));
+        }
+
+        SECTION("Returns null")
+        {
+            auto result = unsetenv_fn->call(
+                {Value::create("FROST_TEST_UNSETENV_RET"s)});
             CHECK(result->is<Null>());
         }
     }

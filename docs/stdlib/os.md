@@ -17,6 +17,14 @@ Sets the environment variable `variable` to `value`, overwriting any existing va
 Returns `null`.
 Produces an error if the operating system rejects the variable name (the exact conditions are platform-dependent).
 
+## `unsetenv`
+`unsetenv(variable)`
+
+Removes the environment variable `variable`.
+Unsetting a variable that is not set is not an error.
+Returns `null`.
+Produces an error if the operating system rejects the variable name (the exact conditions are platform-dependent).
+
 ## `pid`
 `pid()`
 

@@ -87,6 +87,17 @@ BUILTIN(setenv)
     return Value::null();
 }
 
+BUILTIN(unsetenv)
+{
+    REQUIRE_ARGS("os.unsetenv", PARAM("variable", TYPES(String)));
+
+    if (::unsetenv(GET(0, String).c_str()) != 0)
+        throw Frost_Recoverable_Error(
+            fmt::format("os.unsetenv: {}", std::strerror(errno)));
+
+    return Value::null();
+}
+
 namespace
 {
 
@@ -294,7 +305,7 @@ BUILTIN(run)
 
 } // namespace os
 
-STDLIB_MODULE(os, ENTRY(getenv), ENTRY(setenv), ENTRY(exit), ENTRY(sleep),
-              ENTRY(run), ENTRY(pid), ENTRY(hostname))
+STDLIB_MODULE(os, ENTRY(getenv), ENTRY(setenv), ENTRY(unsetenv), ENTRY(exit),
+              ENTRY(sleep), ENTRY(run), ENTRY(pid), ENTRY(hostname))
 
 } // namespace frst
