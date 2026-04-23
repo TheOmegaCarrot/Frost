@@ -37,6 +37,20 @@ The replacement string supports the following substitutions:
 Replaces the first match of `regex` in `string` with `replacement`.
 Supports the same substitution syntax as `replace`.
 
+## `replace_with`
+`replace_with(string, regex, callback)`
+
+Replaces all full matches of `regex` in `string` by calling `callback` with each match.
+The callback receives the full match as a `String` and its return value is converted to a string with `to_string`.
+
+```frost
+regex.replace_with('hello world', R'(\w+)', to_upper) # callback called twice
+# => "HELLO WORLD"
+
+regex.replace_with('a1b2', R'(\d)', fn d -> to_int(d) * 10) # callback called twice
+# => "a10b20"
+```
+
 ## `split`
 `split(string, regex)`
 

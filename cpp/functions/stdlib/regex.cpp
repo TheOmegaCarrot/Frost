@@ -74,9 +74,37 @@ BUILTIN(replace_first)
 
     auto re = regex(GET(1, String));
 
-    return Value::create(boost::regex_replace(
-        GET(0, String), re, GET(2, String),
-        boost::regex_constants::format_first_only));
+    return Value::create(
+        boost::regex_replace(GET(0, String), re, GET(2, String),
+                             boost::regex_constants::format_first_only));
+}
+
+BUILTIN(replace_with)
+{
+    REQUIRE_ARGS("regex.replace_with", PARAM("string", TYPES(String)),
+                 PARAM("regex", TYPES(String)),
+                 PARAM("callback", TYPES(Function)));
+
+    auto re = regex(GET(1, String));
+    const auto& input = GET(0, String);
+    const auto& fn = GET(2, Function);
+
+    using itr = boost::regex_iterator<String::const_iterator>;
+
+    std::string result;
+    auto tail = input.cbegin();
+
+    for (itr it{input.cbegin(), input.cend(), re}, end; it != end; ++it)
+    {
+        const auto& match = *it;
+        result.append(tail, match[0].first);
+        auto replacement = fn->call({Value::create(match.str())});
+        result += replacement->to_internal_string();
+        tail = match[0].second;
+    }
+
+    result.append(tail, input.cend());
+    return Value::create(std::move(result));
 }
 
 BUILTIN(split)
@@ -207,5 +235,6 @@ BUILTIN(scan_matches)
 } // namespace regex
 
 STDLIB_MODULE(regex, ENTRY(matches), ENTRY(contains), ENTRY(replace),
-              ENTRY(replace_first), ENTRY(split), ENTRY(scan_matches))
+              ENTRY(replace_first), ENTRY(replace_with), ENTRY(split),
+              ENTRY(scan_matches))
 } // namespace frst

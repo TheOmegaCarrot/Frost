@@ -3,6 +3,7 @@
 
 #include <frost/testing/stringmaker-specializations.hpp>
 
+#include <frost/builtins-common.hpp>
 #include <frost/stdlib.hpp>
 #include <frost/value.hpp>
 
@@ -51,7 +52,7 @@ TEST_CASE("std.regex")
 
     SECTION("Registered in module")
     {
-        CHECK(mod.size() == 6);
+        CHECK(mod.size() == 7);
 
         for (const auto& name : names)
             REQUIRE(get_re_fn(name));
@@ -311,6 +312,63 @@ TEST_CASE("std.regex")
                           Value::create("<$1>"s)})
                   ->raw_get<String>()
               == "<foo> bar");
+    }
+
+    SECTION("Replace with callback")
+    {
+        auto fn = get_re_fn("replace_with");
+
+        // Arity
+        CHECK_THROWS_WITH(
+            fn->call({Value::create("a"s), Value::create("b"s)}),
+            ContainsSubstring("insufficient arguments")
+                && ContainsSubstring("requires at least 3"));
+
+        // Type errors
+        CHECK_THROWS_WITH(
+            fn->call({Value::create(1_f), Value::create("."s),
+                      Value::create(Function{
+                          std::make_shared<Builtin>(
+                              [](builtin_args_t) { return Value::null(); },
+                              "dummy")})}),
+            ContainsSubstring("regex.replace_with")
+                && ContainsSubstring("got Int"));
+
+        // Basic callback
+        auto upper = system_closure([](builtin_args_t args) {
+            const auto& s = args.at(0)->raw_get<String>();
+            std::string result;
+            for (char c : s)
+                result += static_cast<char>(
+                    std::toupper(static_cast<unsigned char>(c)));
+            return Value::create(std::move(result));
+        });
+
+        CHECK(fn->call({Value::create("hello world"s),
+                        Value::create(R"(\w+)"s), upper})
+                  ->raw_get<String>()
+              == "HELLO WORLD");
+
+        // Callback return value is to_string-ed
+        auto times_ten = system_closure([](builtin_args_t args) {
+            auto n = std::stoll(args.at(0)->raw_get<String>());
+            return Value::create(Int{n * 10});
+        });
+
+        CHECK(fn->call({Value::create("a1b2"s), Value::create(R"(\d)"s),
+                        times_ten})
+                  ->raw_get<String>()
+              == "a10b20");
+
+        // No match leaves string unchanged
+        CHECK(fn->call({Value::create("hello"s), Value::create("z+"s), upper})
+                  ->raw_get<String>()
+              == "hello");
+
+        // Regex error
+        CHECK_THROWS_MATCHES(
+            fn->call({Value::create("x"s), Value::create("("s), upper}),
+            Frost_User_Error, MessageMatches(StartsWith("Regex error: ")));
     }
 
     SECTION("Split")
