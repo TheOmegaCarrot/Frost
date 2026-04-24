@@ -3,6 +3,7 @@
 
 #include <frost/value.hpp>
 
+#include <ranges>
 #include <string>
 
 #include <ankerl/unordered_dense.h>
@@ -37,7 +38,8 @@ class Symbol_Table
 
     virtual void reserve(std::size_t size);
 
-    const map_type& debug_table() const;
+    bool empty() const;
+    auto names() const { return table_ | std::views::keys; }
 
     const Symbol_Table* debug_failover() const;
 

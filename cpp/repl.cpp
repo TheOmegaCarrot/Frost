@@ -320,7 +320,7 @@ struct Completion_Callbacks
 
         for (const auto& candidates :
              std::views::concat(frst::utils::reserved_keywords,
-                                std::views::keys(symbols->debug_table())))
+                                symbols->names()))
         {
             if (candidates.starts_with(token))
             {
@@ -370,7 +370,7 @@ struct Completion_Callbacks
             out.emplace_back(std::string{kw}, Replxx::Color::RED);
 
         std::vector<std::string> completion_syms;
-        for (const auto& symbol : std::views::keys(symbols->debug_table()))
+        for (const auto& symbol : symbols->names())
         {
             if (symbol.starts_with(token))
                 completion_syms.push_back(symbol);

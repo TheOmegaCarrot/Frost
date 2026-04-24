@@ -109,12 +109,11 @@ std::string Closure::debug_dump() const
     std::ostringstream os;
     os << "<Closure>";
 
-    if (not captures_.debug_table().empty())
+    if (not captures_.empty())
     {
         os
             << " (capturing: "
-            << (captures_.debug_table()
-                | std::views::keys
+            << (captures_.names()
                 | std::views::join_with(',')
                 | std::ranges::to<std::string>())
             << ")";

@@ -28,8 +28,8 @@ namespace
 std::set<std::string> capture_names(const Closure& closure)
 {
     std::set<std::string> names;
-    for (const auto& entry : closure.debug_capture_table().debug_table())
-        names.insert(entry.first);
+    for (const auto& name : closure.debug_capture_table().names())
+        names.insert(name);
     return names;
 }
 

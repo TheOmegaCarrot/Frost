@@ -49,9 +49,9 @@ void Symbol_Table::reserve(std::size_t size)
     table_.reserve(size);
 }
 
-const Symbol_Table::map_type& Symbol_Table::debug_table() const
+bool Symbol_Table::empty() const
 {
-    return table_;
+    return table_.empty();
 }
 
 const Symbol_Table* Symbol_Table::debug_failover() const
