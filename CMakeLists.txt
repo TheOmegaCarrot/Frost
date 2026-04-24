@@ -26,6 +26,7 @@ include(CTest)
 include(CPM)
 include(get-lexy)
 include(get-fmt)
+include(get-mimalloc)
 include(get-replxx)
 include(cppcodec)
 include(clang-tidy-targets)
@@ -62,6 +63,7 @@ target_compile_options( frost-common
 target_link_libraries( frost-common
     INTERFACE
     fmt::fmt
+    mimalloc-static
 )
 
 target_compile_definitions( frost-common

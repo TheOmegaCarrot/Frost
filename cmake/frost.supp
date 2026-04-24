@@ -1,0 +1,15 @@
+# Valgrind suppression file for known false positives
+#
+# replxx uses operator new[] in a global constructor for UnicodeString,
+# but mimalloc's global allocator override routes the matching deallocation
+# through free() at exit time. This is a benign mismatch -- the memory is
+# correctly freed (Valgrind confirms no leaks).
+{
+   replxx-static-unicode-string-mismatch
+   Memcheck:Free
+   fun:free
+   ...
+   fun:*UnicodeString*
+   ...
+   fun:__run_exit_handlers
+}

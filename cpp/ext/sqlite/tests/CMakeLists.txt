@@ -39,6 +39,7 @@ if(SQLITE_HAVE_ZLIB)
 endif()
 
 find_program(VALGRIND valgrind)
+set(FROST_VALGRIND_SUPP "${CMAKE_SOURCE_DIR}/cmake/frost.supp")
 
 foreach(script ${SQLITE_TESTS} ${SQLITE_FEATURE_CHECKS})
     get_filename_component(name ${script} NAME_WE)
@@ -61,7 +62,7 @@ foreach(script ${SQLITE_TESTS} ${SQLITE_FEATURE_CHECKS})
         # In-memory under Valgrind
         add_test(
             NAME Frost_Ext_SQLite_Valgrind_${name}_memory
-            COMMAND ${VALGRIND} --error-exitcode=1 --leak-check=full
+            COMMAND ${VALGRIND} --error-exitcode=1 --leak-check=full --suppressions=${FROST_VALGRIND_SUPP}
                     $<TARGET_FILE:frost>
                     "${SQLITE_TEST_DIR}/${script}" :memory:
         )
@@ -69,7 +70,7 @@ foreach(script ${SQLITE_TESTS} ${SQLITE_FEATURE_CHECKS})
         # Filesystem under Valgrind (separate db file from the non-Valgrind variant)
         add_test(
             NAME Frost_Ext_SQLite_Valgrind_${name}_file
-            COMMAND ${VALGRIND} --error-exitcode=1 --leak-check=full
+            COMMAND ${VALGRIND} --error-exitcode=1 --leak-check=full --suppressions=${FROST_VALGRIND_SUPP}
                     $<TARGET_FILE:frost>
                     "${SQLITE_TEST_DIR}/${script}" "${CMAKE_CURRENT_BINARY_DIR}/${name}-valgrind.db"
         )
