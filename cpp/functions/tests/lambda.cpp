@@ -51,10 +51,8 @@ Destructure::Ptr binding(std::string n, bool exported = false)
 
 std::set<std::string> capture_names(const Closure& closure)
 {
-    std::set<std::string> names;
-    for (const auto& name : closure.debug_capture_table().names())
-        names.insert(name);
-    return names;
+    return closure.debug_capture_table().names()
+           | std::ranges::to<std::set<std::string>>();
 }
 
 std::shared_ptr<const Closure> eval_to_closure(const Lambda& node,

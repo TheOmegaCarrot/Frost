@@ -373,7 +373,7 @@ struct Completion_Callbacks
         for (const auto& symbol : symbols->names())
         {
             if (symbol.starts_with(token))
-                completion_syms.push_back(symbol);
+                completion_syms.emplace_back(symbol);
         }
         std::ranges::sort(completion_syms);
         for (const auto& sym : completion_syms)

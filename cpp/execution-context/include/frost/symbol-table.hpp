@@ -3,8 +3,10 @@
 
 #include <frost/value.hpp>
 
-#include <ranges>
 #include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 #include <ankerl/unordered_dense.h>
 
@@ -14,13 +16,14 @@ namespace frst
 class Symbol_Table
 {
   public:
-    using map_type = ankerl::unordered_dense::map<std::string, Value_Ptr>;
+    static constexpr std::size_t small_capacity = 8;
+
     Symbol_Table() = default;
     Symbol_Table(const Symbol_Table* failover_table);
-    Symbol_Table(const Symbol_Table&) = default;
-    Symbol_Table(Symbol_Table&&) = default;
-    Symbol_Table& operator=(const Symbol_Table&) = default;
-    Symbol_Table& operator=(Symbol_Table&&) = default;
+    Symbol_Table(const Symbol_Table&);
+    Symbol_Table(Symbol_Table&&) noexcept;
+    Symbol_Table& operator=(const Symbol_Table&);
+    Symbol_Table& operator=(Symbol_Table&&) noexcept;
     virtual ~Symbol_Table() = default;
 
     // Bind a value to a name within this symbol table
@@ -28,7 +31,7 @@ class Symbol_Table
     virtual void define(const std::string& name, Value_Ptr value);
 
     // Looks up a value by name within the symbol table
-    // If not found in this table, attempty to lookup
+    // If not found in this table, attempts to lookup
     //      in the failover table, if present
     // Throws on failed lookup
     virtual Value_Ptr lookup(const std::string& name) const;
@@ -39,13 +42,26 @@ class Symbol_Table
     virtual void reserve(std::size_t size);
 
     bool empty() const;
-    auto names() const { return table_ | std::views::keys; }
+    std::vector<std::string_view> names() const;
 
     const Symbol_Table* debug_failover() const;
 
   private:
-    map_type table_;
+    using entry_t = std::pair<std::string, Value_Ptr>;
+    using small_storage_t = std::array<entry_t, small_capacity>;
+    using map_t =
+        ankerl::unordered_dense::map<std::string, Value_Ptr>;
+
+    small_storage_t small_{};
+    std::size_t small_size_ = 0;
+    map_t* map_ = nullptr;
     const Symbol_Table* failover_table_ = nullptr;
+
+    bool is_small_() const { return map_ == nullptr; }
+    void promote_();
+
+    Value_Ptr local_lookup_(const std::string& name) const;
+    bool local_has_(const std::string& name) const;
 };
 
 } // namespace frst
