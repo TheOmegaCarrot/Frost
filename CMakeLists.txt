@@ -26,6 +26,7 @@ include(CTest)
 include(CPM)
 include(get-lexy)
 include(get-fmt)
+include(get-ankerl)
 include(get-mimalloc)
 include(get-replxx)
 include(cppcodec)
@@ -64,6 +65,7 @@ target_link_libraries( frost-common
     INTERFACE
     fmt::fmt
     mimalloc-static
+    unordered_dense
 )
 
 target_compile_definitions( frost-common

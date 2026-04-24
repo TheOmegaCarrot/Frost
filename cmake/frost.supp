@@ -1,9 +1,11 @@
 # Valgrind suppression file for known false positives
 #
-# replxx uses operator new[] in a global constructor for UnicodeString,
-# but mimalloc's global allocator override routes the matching deallocation
-# through free() at exit time. This is a benign mismatch -- the memory is
-# correctly freed (Valgrind confirms no leaks).
+# mimalloc's global allocator override replaces operator new/delete, but
+# some allocations in third-party code or libstdc++ internals are paired
+# with the system free(). Valgrind sees this as a mismatch even though
+# mimalloc handles it correctly. These suppressions cover the known cases.
+
+# replxx global constructor allocates UnicodeString with new[], freed at exit
 {
    replxx-static-unicode-string-mismatch
    Memcheck:Free
@@ -12,4 +14,21 @@
    fun:*UnicodeString*
    ...
    fun:__run_exit_handlers
+}
+
+# std::runtime_error (base of Frost_Error) internal string deallocation
+{
+   mimalloc-runtime-error-string-mismatch
+   Memcheck:Free
+   fun:free
+   fun:*runtime_error*
+}
+
+# General mimalloc new/free mismatch in libstdc++ exception handling
+{
+   mimalloc-exception-cleanup-mismatch
+   Memcheck:Free
+   fun:free
+   ...
+   fun:*Frost_Error*
 }

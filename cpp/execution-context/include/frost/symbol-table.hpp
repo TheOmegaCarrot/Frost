@@ -4,7 +4,8 @@
 #include <frost/value.hpp>
 
 #include <string>
-#include <unordered_map>
+
+#include <ankerl/unordered_dense.h>
 
 namespace frst
 {
@@ -12,6 +13,7 @@ namespace frst
 class Symbol_Table
 {
   public:
+    using map_type = ankerl::unordered_dense::map<std::string, Value_Ptr>;
     Symbol_Table() = default;
     Symbol_Table(const Symbol_Table* failover_table);
     Symbol_Table(const Symbol_Table&) = default;
@@ -35,12 +37,12 @@ class Symbol_Table
 
     virtual void reserve(std::size_t size);
 
-    const std::unordered_map<std::string, Value_Ptr>& debug_table() const;
+    const map_type& debug_table() const;
 
     const Symbol_Table* debug_failover() const;
 
   private:
-    std::unordered_map<std::string, Value_Ptr> table_;
+    map_type table_;
     const Symbol_Table* failover_table_ = nullptr;
 };
 
