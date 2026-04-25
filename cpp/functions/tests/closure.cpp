@@ -209,7 +209,8 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p", "q"}, body_ptr, null_expr(), std::move(captures), 0};
+        Closure closure{
+            {"p", "q"}, body_ptr, null_expr(), std::move(captures), 0};
 
         CHECK_THROWS_WITH(closure.call({Value::create(1_f)}),
                           ContainsSubstring("wrong number of arguments")
@@ -279,9 +280,12 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{
-            {"p"},    body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
-            std::move(captures), 0,        "rest"};
+        Closure closure{{"p"},
+                        body_ptr,
+                        expr<Name_Lookup>(AST_Node::no_range, "rest"),
+                        std::move(captures),
+                        0,
+                        "rest"};
 
         auto result = closure.call({Value::create(1_f)});
         REQUIRE(result->is<Array>());
@@ -298,9 +302,12 @@ TEST_CASE("Call Closure")
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);
 
-        Closure closure{
-            {"p"},    body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
-            std::move(captures), 0,        "rest"};
+        Closure closure{{"p"},
+                        body_ptr,
+                        expr<Name_Lookup>(AST_Node::no_range, "rest"),
+                        std::move(captures),
+                        0,
+                        "rest"};
 
         auto result = closure.call({a, b, c});
         REQUIRE(result->is<Array>());
@@ -320,8 +327,12 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"},    body_ptr, lookup_array_expr({"p", "rest"}),
-                        std::move(captures), 0,        "rest"};
+        Closure closure{{"p"},
+                        body_ptr,
+                        lookup_array_expr({"p", "rest"}),
+                        std::move(captures),
+                        0,
+                        "rest"};
 
         CHECK_THROWS_WITH(
             closure.call({}),
@@ -343,8 +354,12 @@ TEST_CASE("Call Closure")
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);
 
-        Closure closure{{"p"},    body_ptr, lookup_array_expr({"p", "rest"}),
-                        std::move(captures), 0,        "rest"};
+        Closure closure{{"p"},
+                        body_ptr,
+                        lookup_array_expr({"p", "rest"}),
+                        std::move(captures),
+                        0,
+                        "rest"};
 
         auto result = closure.call({a, b, c});
         REQUIRE(result->is<Array>());
@@ -367,9 +382,12 @@ TEST_CASE("Call Closure")
         auto a = Value::create(1_f);
         auto b = Value::create(2_f);
 
-        Closure closure{
-            {"a", "b"}, body_ptr, lookup_array_expr({"a", "b", "rest"}),
-            std::move(captures),   0,        "rest"};
+        Closure closure{{"a", "b"},
+                        body_ptr,
+                        lookup_array_expr({"a", "b", "rest"}),
+                        std::move(captures),
+                        0,
+                        "rest"};
 
         auto result = closure.call({a, b});
         REQUIRE(result->is<Array>());
@@ -387,9 +405,12 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{
-            {"a", "b"}, body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
-            std::move(captures),   0,        "rest"};
+        Closure closure{{"a", "b"},
+                        body_ptr,
+                        expr<Name_Lookup>(AST_Node::no_range, "rest"),
+                        std::move(captures),
+                        0,
+                        "rest"};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f)}),
@@ -403,9 +424,12 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{
-            {},       body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
-            std::move(captures), 0,        "rest"};
+        Closure closure{{},
+                        body_ptr,
+                        expr<Name_Lookup>(AST_Node::no_range, "rest"),
+                        std::move(captures),
+                        0,
+                        "rest"};
 
         auto result = closure.call({});
         REQUIRE(result->is<Array>());
@@ -422,9 +446,12 @@ TEST_CASE("Call Closure")
         auto b = Value::create(2_f);
         auto c = Value::create(3_f);
 
-        Closure closure{
-            {},       body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
-            std::move(captures), 0,        "rest"};
+        Closure closure{{},
+                        body_ptr,
+                        expr<Name_Lookup>(AST_Node::no_range, "rest"),
+                        std::move(captures),
+                        0,
+                        "rest"};
 
         auto result = closure.call({a, b, c});
         REQUIRE(result->is<Array>());
@@ -444,7 +471,8 @@ TEST_CASE("Call Closure")
         body.push_back(node<Name_Lookup>(AST_Node::no_range, "x"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p"}, body_ptr, null_expr(), std::move(captures), 0, "rest"};
+        Closure closure{{"p"}, body_ptr, null_expr(), std::move(captures),
+                        0,     "rest"};
 
         const auto names = capture_names(closure);
         CHECK(names.contains("x"));
@@ -457,9 +485,12 @@ TEST_CASE("Call Closure")
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{
-            {"p"},    body_ptr, expr<Name_Lookup>(AST_Node::no_range, "p"),
-            std::move(captures), 0,        "rest"};
+        Closure closure{{"p"},
+                        body_ptr,
+                        expr<Name_Lookup>(AST_Node::no_range, "p"),
+                        std::move(captures),
+                        0,
+                        "rest"};
 
         auto a = Value::create(1_f);
         auto b = Value::create(2_f);
@@ -499,9 +530,12 @@ Literal(42) [0:0-0:0]
         body.push_back(node<Name_Lookup>(AST_Node::no_range, "rest"));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{
-            {},       body_ptr, expr<Name_Lookup>(AST_Node::no_range, "rest"),
-            std::move(captures), 0,        "rest"};
+        Closure closure{{},
+                        body_ptr,
+                        expr<Name_Lookup>(AST_Node::no_range, "rest"),
+                        std::move(captures),
+                        0,
+                        "rest"};
 
         CHECK_THROWS_WITH(closure.call({}),
                           "Cannot define rest as it is already defined");
@@ -818,7 +852,8 @@ Literal(42) [0:0-0:0]
         body.push_back(std::move(expr));
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p", "q"}, body_ptr, null_expr(), std::move(captures), 0, "rest"};
+        Closure closure{{"p", "q"},          body_ptr, null_expr(),
+                        std::move(captures), 0,        "rest"};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f)}),
@@ -837,7 +872,8 @@ Literal(42) [0:0-0:0]
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{{"p", "q"}, body_ptr, return_expr, std::move(captures), 0, "rest"};
+        Closure closure{{"p", "q"},          body_ptr, return_expr,
+                        std::move(captures), 0,        "rest"};
 
         CHECK_THROWS_WITH(
             closure.call({Value::create(1_f)}),
@@ -890,8 +926,11 @@ Literal(42) [0:0-0:0]
         std::vector<Statement::Ptr> body;
         auto body_ptr = make_body(std::move(body));
 
-        Closure closure{
-            {}, body_ptr, expr<Uncaptured_Lookup>("missing"), std::move(captures), 0};
+        Closure closure{{},
+                        body_ptr,
+                        expr<Uncaptured_Lookup>("missing"),
+                        std::move(captures),
+                        0};
 
         CHECK_THROWS_WITH(closure.call({}),
                           ContainsSubstring("Symbol")

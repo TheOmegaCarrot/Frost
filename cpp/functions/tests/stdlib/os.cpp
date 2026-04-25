@@ -139,9 +139,9 @@ TEST_CASE("std.os")
 
         SECTION("Returns null")
         {
-            auto result = setenv_fn->call(
-                {Value::create("FROST_TEST_SETENV_NULL"s),
-                 Value::create("x"s)});
+            auto result =
+                setenv_fn->call({Value::create("FROST_TEST_SETENV_NULL"s),
+                                 Value::create("x"s)});
             CHECK(result->is<Null>());
         }
     }
@@ -159,8 +159,7 @@ TEST_CASE("std.os")
                 MessageMatches(ContainsSubstring("insufficient arguments")
                                && ContainsSubstring("requires at least 1")));
             CHECK_THROWS_MATCHES(
-                unsetenv_fn->call(
-                    {Value::create("a"s), Value::create("b"s)}),
+                unsetenv_fn->call({Value::create("a"s), Value::create("b"s)}),
                 Frost_User_Error,
                 MessageMatches(ContainsSubstring("too many arguments")));
         }
@@ -192,8 +191,8 @@ TEST_CASE("std.os")
 
         SECTION("Returns null")
         {
-            auto result = unsetenv_fn->call(
-                {Value::create("FROST_TEST_UNSETENV_RET"s)});
+            auto result =
+                unsetenv_fn->call({Value::create("FROST_TEST_UNSETENV_RET"s)});
             CHECK(result->is<Null>());
         }
     }

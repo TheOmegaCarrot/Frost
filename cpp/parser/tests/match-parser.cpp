@@ -399,8 +399,8 @@ TEST_CASE("Parser Match: shorthand with constraint `{key is Int}`")
 
 TEST_CASE("Parser Match: map pattern with `as` binds whole map")
 {
-    auto stmt = parse_one(
-        "def x = match {a: 1, b: 2} { {a} as m => m, _ => null }");
+    auto stmt =
+        parse_one("def x = match {a: 1, b: 2} { {a} as m => m, _ => null }");
     auto maps = find_nodes(stmt, "Match_Map");
     REQUIRE(maps.size() == 1);
     CHECK(maps[0]->node_label() == "Match_Map(as m)");

@@ -318,9 +318,8 @@ struct Completion_Callbacks
 
         std::optional<std::string_view> completion;
 
-        for (const auto& candidates :
-             std::views::concat(frst::utils::reserved_keywords,
-                                symbols->deep_names()))
+        for (const auto& candidates : std::views::concat(
+                 frst::utils::reserved_keywords, symbols->deep_names()))
         {
             if (candidates.starts_with(token))
             {

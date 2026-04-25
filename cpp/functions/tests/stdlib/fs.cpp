@@ -102,14 +102,32 @@ TEST_CASE("std.fs")
     auto mod = fs_module();
 
     const std::vector<std::string> names{
-        "move",         "symlink",  "copy",      "absolute",
-        "canonical",    "cd",       "cwd",       "exists",
-        "is_file",      "is_directory", "is_symlink",
-        "is_block",     "is_character", "is_fifo",
-        "is_socket",    "remove",
-        "remove_recursively",       "mkdir",     "size",
-        "stat",         "list",     "list_recursively",
-        "concat",       "stem",     "extension", "filename",
+        "move",
+        "symlink",
+        "copy",
+        "absolute",
+        "canonical",
+        "cd",
+        "cwd",
+        "exists",
+        "is_file",
+        "is_directory",
+        "is_symlink",
+        "is_block",
+        "is_character",
+        "is_fifo",
+        "is_socket",
+        "remove",
+        "remove_recursively",
+        "mkdir",
+        "size",
+        "stat",
+        "list",
+        "list_recursively",
+        "concat",
+        "stem",
+        "extension",
+        "filename",
         "parent",
     };
 
@@ -446,8 +464,8 @@ TEST_CASE("std.fs operations")
         auto missing = Value::create((dir / "nonexistent").string());
 
         const std::vector<std::string> all_predicates{
-            "is_file",    "is_directory", "is_symlink",  "is_block",
-            "is_character", "is_fifo",   "is_socket",
+            "is_file",      "is_directory", "is_symlink", "is_block",
+            "is_character", "is_fifo",      "is_socket",
         };
 
         // A regular file: only is_file returns true

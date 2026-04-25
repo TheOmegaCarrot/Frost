@@ -60,7 +60,8 @@ TEST_CASE("Builtin ranges")
     inject_builtins(table);
 
     const std::vector<std::string> names{
-        "slide", "chunk",
+        "slide",
+        "chunk",
     };
     const std::vector<std::string> seq_names{
         "stride", "take", "drop", "tail", "drop_tail",

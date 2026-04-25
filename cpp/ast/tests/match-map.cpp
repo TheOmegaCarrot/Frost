@@ -568,8 +568,8 @@ TEST_CASE("Match_Map: as symbol_sequence yields Definition for bind_whole_name")
     CHECK(def->exported == false);
 }
 
-TEST_CASE(
-    "Match_Map: as Definition appears after subpattern actions in symbol_sequence")
+TEST_CASE("Match_Map: as Definition appears after subpattern actions in "
+          "symbol_sequence")
 {
     // The as-binding's Definition should come after the element patterns'
     // actions, so that Match's suppression logic can see it in the correct

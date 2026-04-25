@@ -245,9 +245,8 @@ TEST_CASE("std.json encode_pretty")
               == "42");
         CHECK(encode_pretty->call({Value::create(true), two})->raw_get<String>()
               == "true");
-        CHECK(
-            encode_pretty->call({Value::create(1.5), two})->raw_get<String>()
-            == "1.5E0");
+        CHECK(encode_pretty->call({Value::create(1.5), two})->raw_get<String>()
+              == "1.5E0");
         CHECK(
             encode_pretty->call({Value::create("hi"s), two})->raw_get<String>()
             == "\"hi\"");
@@ -259,8 +258,7 @@ TEST_CASE("std.json encode_pretty")
         CHECK(encode_pretty->call({Value::create(Array{}), two})
                   ->raw_get<String>()
               == "[]");
-        CHECK(encode_pretty
-                  ->call({Value::create(Value::trusted, Map{}), two})
+        CHECK(encode_pretty->call({Value::create(Value::trusted, Map{}), two})
                   ->raw_get<String>()
               == "{}");
     }
@@ -276,9 +274,9 @@ TEST_CASE("std.json encode_pretty")
 
     SECTION("Object with indent 4")
     {
-        auto map = Value::create(
-            Map{{Value::create("a"s), Value::create(1_f)},
-                {Value::create("b"s), Value::create(2_f)}});
+        auto map =
+            Value::create(Map{{Value::create("a"s), Value::create(1_f)},
+                              {Value::create("b"s), Value::create(2_f)}});
         auto result =
             encode_pretty->call({map, Value::create(4_f)})->raw_get<String>();
         CHECK(result == "{\n    \"a\": 1,\n    \"b\": 2\n}");
@@ -286,10 +284,9 @@ TEST_CASE("std.json encode_pretty")
 
     SECTION("Nested structures")
     {
-        auto inner = Value::create(
-            Array{Value::create(1_f), Value::create(2_f)});
-        auto map = Value::create(
-            Map{{Value::create("x"s), inner}});
+        auto inner =
+            Value::create(Array{Value::create(1_f), Value::create(2_f)});
+        auto map = Value::create(Map{{Value::create("x"s), inner}});
         auto result =
             encode_pretty->call({map, Value::create(2_f)})->raw_get<String>();
         CHECK(result == "{\n  \"x\": [\n    1,\n    2\n  ]\n}");
@@ -297,8 +294,7 @@ TEST_CASE("std.json encode_pretty")
 
     SECTION("Indent 0 uses newlines but no padding")
     {
-        auto arr = Value::create(
-            Array{Value::create(1_f), Value::create(2_f)});
+        auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
         auto result =
             encode_pretty->call({arr, Value::create(0_f)})->raw_get<String>();
         CHECK(result == "[\n1,\n2\n]");
@@ -307,12 +303,12 @@ TEST_CASE("std.json encode_pretty")
     SECTION("Round-trip through decode preserves values")
     {
         auto decode = lookup(mod, "decode");
-        auto map = Value::create(
-            Map{{Value::create("a"s), Value::create(Array{
-                                          Value::create(1_f),
-                                          Value::create("two"s),
-                                          Value::null(),
-                                      })}});
+        auto map =
+            Value::create(Map{{Value::create("a"s), Value::create(Array{
+                                                        Value::create(1_f),
+                                                        Value::create("two"s),
+                                                        Value::null(),
+                                                    })}});
         auto json = encode_pretty->call({map, Value::create(2_f)});
         auto round = decode->call({json});
         CHECK(Value::equal(map, round)->raw_get<Bool>());
@@ -321,9 +317,8 @@ TEST_CASE("std.json encode_pretty")
     SECTION("Non-String Map keys are rejected")
     {
         auto map = Value::create(Map{{Value::create(1_f), Value::create(2_f)}});
-        CHECK_THROWS_AS(
-            encode_pretty->call({map, Value::create(2_f)}),
-            Frost_Recoverable_Error);
+        CHECK_THROWS_AS(encode_pretty->call({map, Value::create(2_f)}),
+                        Frost_Recoverable_Error);
     }
 
     SECTION("Functions are rejected")
@@ -331,8 +326,7 @@ TEST_CASE("std.json encode_pretty")
         Symbol_Table table;
         inject_builtins(table);
         auto fn = table.lookup("len");
-        CHECK_THROWS_AS(
-            encode_pretty->call({fn, Value::create(2_f)}),
-            Frost_Recoverable_Error);
+        CHECK_THROWS_AS(encode_pretty->call({fn, Value::create(2_f)}),
+                        Frost_Recoverable_Error);
     }
 }

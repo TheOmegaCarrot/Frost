@@ -1134,9 +1134,9 @@ struct map_destructure_entries_impl;
 // patterns. Produces a std::string (the bound name) or lexy::nullopt.
 constexpr auto as_clause = [] {
     auto kw_as = LEXY_KEYWORD("as", identifier::base);
-    return dsl::opt(dsl::peek(param_ws + kw_as)
-                    >> (param_ws + kw_as + param_ws
-                        + dsl::p<identifier_required>));
+    return dsl::opt(
+        dsl::peek(param_ws + kw_as)
+        >> (param_ws + kw_as + param_ws + dsl::p<identifier_required>));
 }();
 
 // A single destructure pattern element. Recursively allows nested
@@ -1168,8 +1168,8 @@ struct destructure_pattern_impl
         [](auto begin, std::vector<ast::Destructure_Map::Element> elems,
            lexy::nullopt, auto end) {
             return std::make_unique<ast::Destructure_Map>(
-                make_source_range(begin, end), std::move(elems),
-                std::nullopt, exported);
+                make_source_range(begin, end), std::move(elems), std::nullopt,
+                exported);
         },
         // From map destructure, with `as name`
         [](auto begin, std::vector<ast::Destructure_Map::Element> elems,
@@ -2518,8 +2518,7 @@ struct match_map_pattern
         [](auto begin, std::vector<ast::Match_Map::Element> elems,
            lexy::nullopt, auto end) {
             return std::make_unique<ast::Match_Map>(
-                make_source_range(begin, end), std::move(elems),
-                std::nullopt);
+                make_source_range(begin, end), std::move(elems), std::nullopt);
         },
         // With `as name`
         [](auto begin, std::vector<ast::Match_Map::Element> elems,

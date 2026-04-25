@@ -215,15 +215,13 @@ void inject_import(Symbol_Table& table,
                    import::import_mutex_t import_mutex,
                    const import::import_stack_t& import_stack)
 {
-    table.define(
-        "import",
-        Value::create(Function{std::make_shared<Builtin>(
-            Importer{.search_path = std::move(search_path),
-                     .root_table = &root_table,
-                     .import_cache = import_cache,
-                     .import_mutex = import_mutex,
-                     .import_stack = import_stack,
-                     .stdlib = std::move(stdlib)},
-            "import")}));
+    table.define("import", Value::create(Function{std::make_shared<Builtin>(
+                               Importer{.search_path = std::move(search_path),
+                                        .root_table = &root_table,
+                                        .import_cache = import_cache,
+                                        .import_mutex = import_mutex,
+                                        .import_stack = import_stack,
+                                        .stdlib = std::move(stdlib)},
+                               "import")}));
 }
 } // namespace frst

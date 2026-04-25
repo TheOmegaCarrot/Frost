@@ -319,18 +319,18 @@ TEST_CASE("std.regex")
         auto fn = get_re_fn("replace_with");
 
         // Arity
-        CHECK_THROWS_WITH(
-            fn->call({Value::create("a"s), Value::create("b"s)}),
-            ContainsSubstring("insufficient arguments")
-                && ContainsSubstring("requires at least 3"));
+        CHECK_THROWS_WITH(fn->call({Value::create("a"s), Value::create("b"s)}),
+                          ContainsSubstring("insufficient arguments")
+                              && ContainsSubstring("requires at least 3"));
 
         // Type errors
         CHECK_THROWS_WITH(
             fn->call({Value::create(1_f), Value::create("."s),
-                      Value::create(Function{
-                          std::make_shared<Builtin>(
-                              [](builtin_args_t) { return Value::null(); },
-                              "dummy")})}),
+                      Value::create(Function{std::make_shared<Builtin>(
+                          [](builtin_args_t) {
+                              return Value::null();
+                          },
+                          "dummy")})}),
             ContainsSubstring("regex.replace_with")
                 && ContainsSubstring("got Int"));
 
@@ -344,8 +344,8 @@ TEST_CASE("std.regex")
             return Value::create(std::move(result));
         });
 
-        CHECK(fn->call({Value::create("hello world"s),
-                        Value::create(R"(\w+)"s), upper})
+        CHECK(fn->call({Value::create("hello world"s), Value::create(R"(\w+)"s),
+                        upper})
                   ->raw_get<String>()
               == "HELLO WORLD");
 
@@ -376,8 +376,8 @@ TEST_CASE("std.regex")
         auto fn = get_re_fn("split");
 
         // Basic split
-        auto result = fn->call(
-            {Value::create("one,two,three"s), Value::create(","s)});
+        auto result =
+            fn->call({Value::create("one,two,three"s), Value::create(","s)});
         REQUIRE(result->is<Array>());
         const auto& arr = result->raw_get<Array>();
         REQUIRE(arr.size() == 3);
@@ -386,8 +386,8 @@ TEST_CASE("std.regex")
         CHECK(arr[2]->raw_get<String>() == "three");
 
         // Multi-char delimiter
-        auto result2 = fn->call(
-            {Value::create("a,,b,,,c"s), Value::create(",+"s)});
+        auto result2 =
+            fn->call({Value::create("a,,b,,,c"s), Value::create(",+"s)});
         REQUIRE(result2->is<Array>());
         const auto& arr2 = result2->raw_get<Array>();
         REQUIRE(arr2.size() == 3);
@@ -396,15 +396,13 @@ TEST_CASE("std.regex")
         CHECK(arr2[2]->raw_get<String>() == "c");
 
         // No match returns single-element array
-        auto result3 = fn->call(
-            {Value::create("hello"s), Value::create("x"s)});
+        auto result3 = fn->call({Value::create("hello"s), Value::create("x"s)});
         REQUIRE(result3->is<Array>());
         CHECK(result3->raw_get<Array>().size() == 1);
         CHECK(result3->raw_get<Array>()[0]->raw_get<String>() == "hello");
 
         // Empty string produces empty array
-        auto result4 = fn->call(
-            {Value::create(""s), Value::create(","s)});
+        auto result4 = fn->call({Value::create(""s), Value::create(","s)});
         REQUIRE(result4->is<Array>());
         CHECK(result4->raw_get<Array>().empty());
     }

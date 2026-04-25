@@ -240,11 +240,11 @@ TEST_CASE("std.io read")
             read_fn->call({Value::create(1_f), Value::create(2_f)}),
             Frost_User_Error,
             MessageMatches(ContainsSubstring("too many arguments")));
-        CHECK_THROWS_MATCHES(
-            read_fn->call({Value::create(1_f)}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("io.read")
-                           && ContainsSubstring("String")
-                           && ContainsSubstring("Int")));
+        CHECK_THROWS_MATCHES(read_fn->call({Value::create(1_f)}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("io.read")
+                                            && ContainsSubstring("String")
+                                            && ContainsSubstring("Int")));
     }
 
     SECTION("Nonexistent file throws")
@@ -252,10 +252,10 @@ TEST_CASE("std.io read")
         const std::string missing =
             "./build/streams/read_nonexistent_" + std::to_string(__LINE__);
         std::filesystem::remove(missing);
-        CHECK_THROWS_MATCHES(
-            read_fn->call({Value::create(String{missing})}), Frost_User_Error,
-            MessageMatches(ContainsSubstring("Failed to open")
-                           && ContainsSubstring(missing)));
+        CHECK_THROWS_MATCHES(read_fn->call({Value::create(String{missing})}),
+                             Frost_User_Error,
+                             MessageMatches(ContainsSubstring("Failed to open")
+                                            && ContainsSubstring(missing)));
     }
 
     SECTION("Reads full file contents")
@@ -318,8 +318,8 @@ TEST_CASE("std.io write")
         auto dir = make_test_dir("std_io_write_null");
         auto path = unique_path(dir, "write_null");
 
-        auto result = write_fn->call(
-            {Value::create(path.string()), Value::create("x"s)});
+        auto result =
+            write_fn->call({Value::create(path.string()), Value::create("x"s)});
         CHECK(result->is<Null>());
     }
 
@@ -330,8 +330,7 @@ TEST_CASE("std.io write")
 
         write_fn->call({Value::create(path.string()),
                         Value::create("original long content"s)});
-        write_fn->call(
-            {Value::create(path.string()), Value::create("short"s)});
+        write_fn->call({Value::create(path.string()), Value::create("short"s)});
 
         auto result = read_fn->call({Value::create(path.string())});
         REQUIRE(result->is<String>());
@@ -342,8 +341,7 @@ TEST_CASE("std.io write")
     {
         auto dir = make_test_dir("std_io_write_fail");
         CHECK_THROWS_MATCHES(
-            write_fn->call(
-                {Value::create(dir.string()), Value::create("x"s)}),
+            write_fn->call({Value::create(dir.string()), Value::create("x"s)}),
             Frost_User_Error,
             MessageMatches(ContainsSubstring("Failed to open")));
     }
@@ -381,8 +379,7 @@ TEST_CASE("std.io append")
         auto dir = make_test_dir("std_io_append_null");
         auto path = unique_path(dir, "append_null");
 
-        write_fn->call(
-            {Value::create(path.string()), Value::create(""s)});
+        write_fn->call({Value::create(path.string()), Value::create(""s)});
 
         auto result = append_fn->call(
             {Value::create(path.string()), Value::create("x"s)});
@@ -394,8 +391,7 @@ TEST_CASE("std.io append")
         auto dir = make_test_dir("std_io_append_content");
         auto path = unique_path(dir, "append_content");
 
-        write_fn->call(
-            {Value::create(path.string()), Value::create("hello"s)});
+        write_fn->call({Value::create(path.string()), Value::create("hello"s)});
         append_fn->call(
             {Value::create(path.string()), Value::create(" world"s)});
 
@@ -410,8 +406,7 @@ TEST_CASE("std.io append")
         auto path = unique_path(dir, "append_create");
 
         std::filesystem::remove(path);
-        append_fn->call(
-            {Value::create(path.string()), Value::create("new"s)});
+        append_fn->call({Value::create(path.string()), Value::create("new"s)});
 
         auto result = read_fn->call({Value::create(path.string())});
         REQUIRE(result->is<String>());
@@ -422,8 +417,7 @@ TEST_CASE("std.io append")
     {
         auto dir = make_test_dir("std_io_append_fail");
         CHECK_THROWS_MATCHES(
-            append_fn->call(
-                {Value::create(dir.string()), Value::create("x"s)}),
+            append_fn->call({Value::create(dir.string()), Value::create("x"s)}),
             Frost_User_Error,
             MessageMatches(ContainsSubstring("Failed to open")));
     }
