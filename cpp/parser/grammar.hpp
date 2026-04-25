@@ -1130,6 +1130,15 @@ struct array_destructure_pattern_impl;
 template <bool exported>
 struct map_destructure_entries_impl;
 
+// Optional `as identifier` clause, shared by map destructure and match map
+// patterns. Produces a std::string (the bound name) or lexy::nullopt.
+constexpr auto as_clause = [] {
+    auto kw_as = LEXY_KEYWORD("as", identifier::base);
+    return dsl::opt(dsl::peek(param_ws + kw_as)
+                    >> (param_ws + kw_as + param_ws
+                        + dsl::p<identifier_required>));
+}();
+
 // A single destructure pattern element. Recursively allows nested
 // array/map destructuring, or an identifier binding.
 template <bool exported>
@@ -1143,6 +1152,7 @@ struct destructure_pattern_impl
         | dsl::peek(dsl::lit_c<'{'>)
         >> (dsl::position
             + dsl::recurse<map_destructure_entries_impl<exported>>
+            + as_clause
             + dsl::position)
         | dsl::else_
         >> (dsl::position + dsl::p<identifier_required> + dsl::position);
@@ -1154,11 +1164,19 @@ struct destructure_pattern_impl
                 make_source_range(begin, end), std::move(pack.elements),
                 std::move(pack.rest_name), exported);
         },
-        // From map destructure
+        // From map destructure, without `as`
         [](auto begin, std::vector<ast::Destructure_Map::Element> elems,
-           auto end) {
+           lexy::nullopt, auto end) {
             return std::make_unique<ast::Destructure_Map>(
-                make_source_range(begin, end), std::move(elems));
+                make_source_range(begin, end), std::move(elems),
+                std::nullopt, exported);
+        },
+        // From map destructure, with `as name`
+        [](auto begin, std::vector<ast::Destructure_Map::Element> elems,
+           std::string as_name, auto end) {
+            return std::make_unique<ast::Destructure_Map>(
+                make_source_range(begin, end), std::move(elems),
+                std::move(as_name), exported);
         },
         // Leaf identifier
         [](auto begin, std::string name, auto end) -> ast::Destructure::Ptr {
@@ -2494,11 +2512,21 @@ struct match_map_pattern
     };
 
     static constexpr auto rule =
-        dsl::position + dsl::p<entries> + dsl::position;
+        dsl::position + dsl::p<entries> + as_clause + dsl::position;
     static constexpr auto value = lexy::callback<ast::Match_Pattern::Ptr>(
-        [](auto begin, std::vector<ast::Match_Map::Element> elems, auto end) {
+        // Without `as`
+        [](auto begin, std::vector<ast::Match_Map::Element> elems,
+           lexy::nullopt, auto end) {
             return std::make_unique<ast::Match_Map>(
-                make_source_range(begin, end), std::move(elems));
+                make_source_range(begin, end), std::move(elems),
+                std::nullopt);
+        },
+        // With `as name`
+        [](auto begin, std::vector<ast::Match_Map::Element> elems,
+           std::string as_name, auto end) {
+            return std::make_unique<ast::Match_Map>(
+                make_source_range(begin, end), std::move(elems),
+                std::move(as_name));
         });
     static constexpr auto name = "match map pattern";
 };

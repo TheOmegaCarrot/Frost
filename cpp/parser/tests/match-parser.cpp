@@ -397,6 +397,81 @@ TEST_CASE("Parser Match: shorthand with constraint `{key is Int}`")
     CHECK(lookup(table, "y")->raw_get<frst::String>() == "no");
 }
 
+TEST_CASE("Parser Match: map pattern with `as` binds whole map")
+{
+    auto stmt = parse_one(
+        "def x = match {a: 1, b: 2} { {a} as m => m, _ => null }");
+    auto maps = find_nodes(stmt, "Match_Map");
+    REQUIRE(maps.size() == 1);
+    CHECK(maps[0]->node_label() == "Match_Map(as m)");
+
+    frst::Symbol_Table table;
+    run("def x = match {a: 1, b: 2} { {a} as m => m, _ => null }", table);
+    auto& result = lookup(table, "x")->raw_get<frst::Map>();
+    CHECK(result.size() == 2);
+}
+
+TEST_CASE("Parser Match: `as` binding coexists with subpattern bindings")
+{
+    frst::Symbol_Table table;
+    run("def x = match {name: 'alice', age: 30} {"
+        "    {name} as person => person.age"
+        "}",
+        table);
+    CHECK(lookup(table, "x")->get<frst::Int>().value() == 30_f);
+}
+
+TEST_CASE("Parser Match: `as` with empty map pattern")
+{
+    frst::Symbol_Table table;
+    run("def x = match {a: 1} { {} as m => m, _ => null }", table);
+    auto& result = lookup(table, "x")->raw_get<frst::Map>();
+    CHECK(result.size() == 1);
+}
+
+TEST_CASE("Parser Match: `as` in nested map-inside-array pattern")
+{
+    frst::Symbol_Table table;
+    run("def x = match [{a: 1}, {b: 2}] {"
+        "    [{a} as m1, {b} as m2] => m1.a + m2.b"
+        "}",
+        table);
+    CHECK(lookup(table, "x")->get<frst::Int>().value() == 3_f);
+}
+
+TEST_CASE("Parser Match: `as` in nested map-inside-map pattern")
+{
+    frst::Symbol_Table table;
+    run("def x = match {outer: {inner: 42}} {"
+        "    {outer: {inner} as sub} => sub.inner"
+        "}",
+        table);
+    CHECK(lookup(table, "x")->get<frst::Int>().value() == 42_f);
+}
+
+TEST_CASE("Parser Match: `as` with guard uses bound name")
+{
+    frst::Symbol_Table table;
+    run("def x = match {a: 1, b: 2, c: 3} {"
+        "    {a} as m if: a == 1 => m,"
+        "    _ => null"
+        "}",
+        table);
+    auto& result = lookup(table, "x")->raw_get<frst::Map>();
+    CHECK(result.size() == 3);
+}
+
+TEST_CASE("Parser Match: `as` without match (map pattern fails)")
+{
+    frst::Symbol_Table table;
+    run("def x = match {a: 1} {"
+        "    {missing} as m => m,"
+        "    _ => 'fallback'"
+        "}",
+        table);
+    CHECK(lookup(table, "x")->raw_get<frst::String>() == "fallback");
+}
+
 TEST_CASE("Parser Match: empty map pattern matches any map")
 {
     auto stmt = parse_one("def x = match {a: 1} { {} => 'any', _ => 'no' }");
@@ -642,6 +717,19 @@ TEST_CASE("Parser Match Source Ranges: map pattern spans braces")
     auto range = maps[0]->source_range();
     CHECK(range.begin.column == 24);
     CHECK(range.end.column == 26);
+}
+
+TEST_CASE("Parser Match Source Ranges: map pattern with `as` spans to name")
+{
+    // "def x = match {a: 1} { {a} as m => 0 }"
+    //                         ^       ^
+    //                     col 24    col 31
+    auto stmt = parse_one("def x = match {a: 1} { {a} as m => 0 }");
+    auto maps = find_nodes(stmt, "Match_Map");
+    REQUIRE(maps.size() == 1);
+    auto range = maps[0]->source_range();
+    CHECK(range.begin.column == 24);
+    CHECK(range.end.column == 31);
 }
 
 TEST_CASE("Parser Match Source Ranges: nested arrays have independent ranges")

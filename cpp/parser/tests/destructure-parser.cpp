@@ -181,6 +181,54 @@ TEST_CASE("Parser Recursive Destructuring")
         CHECK(lookup(table, "c")->get<frst::Int>().value() == 3_f);
     }
 
+    SECTION("Map destructure with `as` binds whole map")
+    {
+        frst::Symbol_Table table;
+        run("def {foo} as m = {foo: 1, bar: 2}", table);
+
+        CHECK(lookup(table, "foo")->get<frst::Int>().value() == 1_f);
+        auto& whole = lookup(table, "m")->raw_get<frst::Map>();
+        CHECK(whole.size() == 2);
+    }
+
+    SECTION("Map destructure with `as` and empty entries")
+    {
+        frst::Symbol_Table table;
+        run("def {} as m = {foo: 1}", table);
+
+        auto& whole = lookup(table, "m")->raw_get<frst::Map>();
+        CHECK(whole.size() == 1);
+    }
+
+    SECTION("Nested map `as` in array destructure")
+    {
+        frst::Symbol_Table table;
+        run("def [{a} as m1, {b} as m2] = [{a: 1}, {b: 2}]", table);
+
+        CHECK(lookup(table, "a")->get<frst::Int>().value() == 1_f);
+        CHECK(lookup(table, "b")->get<frst::Int>().value() == 2_f);
+        CHECK(lookup(table, "m1")->raw_get<frst::Map>().size() == 1);
+        CHECK(lookup(table, "m2")->raw_get<frst::Map>().size() == 1);
+    }
+
+    SECTION("Nested map `as` in map destructure")
+    {
+        frst::Symbol_Table table;
+        run("def {outer: {inner} as sub} = {outer: {inner: 42}}", table);
+
+        CHECK(lookup(table, "inner")->get<frst::Int>().value() == 42_f);
+        CHECK(lookup(table, "sub")->raw_get<frst::Map>().size() == 1);
+    }
+
+    SECTION("Map destructure with `as` and computed key")
+    {
+        frst::Symbol_Table table;
+        run("def {[1+1]: v} as m = {[2]: 'two'}", table);
+
+        CHECK(lookup(table, "v")->raw_get<frst::String>() == "two");
+        CHECK(lookup(table, "m")->raw_get<frst::Map>().size() == 1);
+    }
+
     SECTION("Backwards compatible: flat map destructure still works")
     {
         frst::Symbol_Table table;
@@ -270,6 +318,25 @@ TEST_CASE("Parser Destructure Source Ranges")
         CHECK(range.begin.column == 5);
         CHECK(range.end.line == 1);
         CHECK(range.end.column == 9);
+    }
+
+    SECTION("Map destructure with `as` range spans to name")
+    {
+        // "def {foo} as m = x"
+        //      ^        ^
+        //  col 5     col 14
+        auto result = parse("def {foo} as m = x");
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
+        REQUIRE(program.size() == 1);
+
+        auto maps = find_nodes(program[0], "Destructure_Map");
+        REQUIRE(maps.size() == 1);
+        auto range = maps[0]->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 5);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 14);
     }
 
     SECTION("Nested array ranges are independent")
