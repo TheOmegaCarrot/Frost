@@ -112,3 +112,46 @@ def computed_fn = fn -> {
     val
 }
 assert(computed_fn() == 99)
+
+# --- Map destructure with `as` (whole-map binding) ---
+
+# Basic: pull out fields and keep the whole map
+def {name: as_name, age: as_age} as as_person = {name: 'Alice', age: 30, role: 'admin'}
+assert(as_name == 'Alice')
+assert(as_age == 30)
+assert(as_person == {name: 'Alice', age: 30, role: 'admin'})
+
+# Empty pattern with `as` binds the whole map
+def {} as as_whole = {x: 1, y: 2}
+assert(as_whole == {x: 1, y: 2})
+
+# Shorthand entries with `as`
+def {foo: as_foo} as as_m = {foo: 42, bar: 10}
+assert(as_foo == 42)
+assert(as_m.bar == 10)
+
+# Nested: map `as` inside array destructure
+def [{a: as_a} as as_m1, {b: as_b} as as_m2] = [{a: 1}, {b: 2}]
+assert(as_a == 1)
+assert(as_b == 2)
+assert(as_m1 == {a: 1})
+assert(as_m2 == {b: 2})
+
+# Nested: map `as` inside map destructure
+def {outer: {inner: as_inner} as as_sub} = {outer: {inner: 42, extra: 99}}
+assert(as_inner == 42)
+assert(as_sub.extra == 99)
+
+# `as` binding captured by closure
+def make_lookup = fn -> {
+    def {key: as_k} as as_full = {key: 'found', other: 'also'}
+    fn -> as_full.other
+}
+assert(make_lookup()() == 'also')
+
+# `as` inside a do block
+def as_do_result = do {
+    def {x: as_x} as as_do_m = {x: 10, y: 20}
+    as_x + as_do_m.y
+}
+assert(as_do_result == 30)

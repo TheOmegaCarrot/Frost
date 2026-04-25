@@ -117,6 +117,8 @@ contexts:
       scope: keyword.operator.variadic.frost
     - match: '->'
       scope: storage.type.function.arrow.frost
+    - match: '=>'
+      scope: storage.type.function.arrow.frost
     - match: '@'
       scope: keyword.operator.threaded-call.frost
     - match: '==|!=|<=|>=|<|>'

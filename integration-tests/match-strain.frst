@@ -414,3 +414,80 @@ assert(classify_pair(['a', 'b']) == 'both-string')
 assert(classify_pair([true, false]) == 'same-type')
 assert(classify_pair([1, 'x']) == 'mixed')
 assert(classify_pair([1, 2, 3]) == 'not-a-pair')
+
+# ==========================================================================
+# 18. Map pattern with `as` (whole-map binding)
+# ==========================================================================
+
+# Basic: subpattern bindings + whole-map binding
+def as_basic = match {name: 'alice', age: 30} {
+    {name} as person => [name, person],
+    _ => null
+}
+assert(as_basic[0] == 'alice')
+assert(as_basic[1] == {name: 'alice', age: 30})
+
+# `as` binding receives the full original map, not a subset
+def as_full = match {a: 1, b: 2, c: 3} {
+    {a} as m => m,
+    _ => null
+}
+assert(as_full == {a: 1, b: 2, c: 3})
+
+# Empty map pattern with `as` matches any map
+def as_empty = match {x: 42} {
+    {} as m => m,
+    _ => null
+}
+assert(as_empty == {x: 42})
+
+# `as` does not bind when the map pattern fails
+def as_fail = match {a: 1} {
+    {missing} as m => m,
+    _ => 'fallback'
+}
+assert(as_fail == 'fallback')
+
+# `as` does not bind when target is not a map
+def as_nonmap = match [1, 2] {
+    {} as m => m,
+    _ => 'not-map'
+}
+assert(as_nonmap == 'not-map')
+
+# `as` with guard: guard sees both subpattern bindings and as-binding
+def as_guard = match {role: 'admin', perms: 5} {
+    {role} as cfg if: role == 'admin' => cfg.perms,
+    _ => 0
+}
+assert(as_guard == 5)
+
+# `as` in nested position: map inside array
+def as_nested_arr = match [{a: 1}, {b: 2}] {
+    [{a} as m1, {b} as m2] => m1.a + m2.b,
+    _ => 0
+}
+assert(as_nested_arr == 3)
+
+# `as` in nested position: map inside map
+def as_nested_map = match {outer: {inner: 42, extra: 99}} {
+    {outer: {inner} as sub} => sub.extra,
+    _ => 0
+}
+assert(as_nested_map == 99)
+
+# `as` with type constraint on subpattern
+def as_typed = match {count: 5, label: 'hi'} {
+    {count is Int, label is String} as m => m,
+    _ => null
+}
+assert(as_typed == {count: 5, label: 'hi'})
+
+# `as` with computed key
+def as_key = 'dynamic'
+def as_computed = match {dynamic: 42} {
+    {[as_key]: v} as m => [v, m],
+    _ => null
+}
+assert(as_computed[0] == 42)
+assert(as_computed[1] == {dynamic: 42})
