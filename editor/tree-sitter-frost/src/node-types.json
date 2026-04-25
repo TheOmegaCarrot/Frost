@@ -1067,6 +1067,16 @@
     "type": "map_destructure_pattern",
     "named": true,
     "fields": {
+      "as": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
       "entries": {
         "multiple": false,
         "required": false,
@@ -1077,6 +1087,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "kw_as",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1429,6 +1449,16 @@
     "type": "match_map_pattern",
     "named": true,
     "fields": {
+      "as": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
       "entries": {
         "multiple": false,
         "required": false,
@@ -1439,6 +1469,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "kw_as",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -2317,6 +2357,10 @@
   },
   {
     "type": "kw_and",
+    "named": true
+  },
+  {
+    "type": "kw_as",
     "named": true
   },
   {

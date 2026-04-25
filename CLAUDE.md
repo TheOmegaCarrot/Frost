@@ -193,6 +193,7 @@ match value {
     (some_var)      => 'matched var',      # parenthesized: compares against existing variable
     [a, b, ...rest] => a + b,              # array pattern with rest
     {name, age: a}  => a,                  # map pattern (shorthand + explicit)
+    {name} as person => person.age,        # map pattern with whole-map binding
     _ if: guard     => 'guarded',          # guard with `if:` (note the colon)
     _               => 'catch-all'         # discard binding
 }

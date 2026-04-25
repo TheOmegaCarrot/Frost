@@ -17,6 +17,7 @@
   (kw_init)
   (kw_match)
   (kw_is)
+  (kw_as)
   (kw_and)
   (kw_or)
   (kw_not)
@@ -94,6 +95,7 @@
 [
   "..."
   "->"
+  "=>"
   "@"
   "=="
   "!="

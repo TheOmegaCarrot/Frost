@@ -31,6 +31,7 @@ module.exports = grammar({
       $.kw_init,
       $.kw_match,
       $.kw_is,
+      $.kw_as,
       $.kw_true,
       $.kw_false,
       $.kw_and,
@@ -131,6 +132,7 @@ module.exports = grammar({
       '{',
       optional(field('entries', $.map_destructure_entry_list)),
       '}',
+      optional(seq($.kw_as, field('as', $.identifier))),
     ),
 
     map_destructure_entry_list: $ => commaSep1NoTrailing($.map_destructure_entry),
@@ -495,6 +497,7 @@ module.exports = grammar({
       '{',
       optional(field('entries', $.match_map_entry_list)),
       '}',
+      optional(seq($.kw_as, field('as', $.identifier))),
     ),
 
     match_map_entry_list: $ => seq(
@@ -644,6 +647,7 @@ module.exports = grammar({
     kw_init: _ => token('init'),
     kw_match: _ => token('match'),
     kw_is: _ => token('is'),
+    kw_as: _ => token('as'),
     kw_true: _ => token('true'),
     kw_false: _ => token('false'),
     kw_and: _ => token('and'),

@@ -3,6 +3,8 @@
 This document is a full explanation of the core Frost language, starting from the basics and building up to the more complex elements.
 For most readers, this is not the place to start learning the language; for that, see the [introduction](./introduction.md).
 
+<!-- automatically-generated TOC with `npx markdown-toc -i language.md` -->
+
 <!-- toc -->
 
 - [Lexical Elements](#lexical-elements)
@@ -96,6 +98,7 @@ Reserved words may not be used as identifiers.
 Below is a list of reserved words.
 
 - `and`
+- `as`
 - `def`
 - `defn`
 - `do`
@@ -659,6 +662,7 @@ A pattern can be one of the following forms:
 | `[p1, p2, ...rest]` | Array with rest: matches leading elements, binds the tail |
 | `[p1, p2, ..._]` | Array with discard rest: matches leading elements, drops the tail |
 | `{key: pattern, ...}` | Map: matches a map by key, applying sub-patterns to each value |
+| `{key: pattern, ...} as name` | Map with whole binding: matches by key and also binds the entire map |
 
 Anywhere a pattern appears, any of these forms can be used.
 This means array and map patterns nest to arbitrary depth (see [Nesting](#nesting)).
@@ -716,6 +720,22 @@ match {name: 'alice', age: 30, role: 'admin'} {
 The shorthand form `{key}` is equivalent to `{key: key}`, and `{key is Type}` is equivalent to `{key: key is Type}`.
 
 Map keys can also be computed with bracket syntax: `{[expr]: pattern}`.
+
+A map pattern can also bind the entire matched map using `as`:
+
+```frost
+match {name: 'alice', age: 30, role: 'admin'} {
+    {name: n, role: 'admin'} as person => $'admin ${n} is ${person.age}',
+    {name: n}                          => n,
+    _                                  => 'unknown'
+}
+# "admin alice is 30"
+```
+
+The `as` binding receives the original map, not a subset.
+It is bound only when the map pattern succeeds (all named keys are present and all sub-patterns match).
+The `as` name is visible in guards and arm results alongside any names bound by the sub-patterns.
+`as` works in nested positions: `[{name} as person, ...rest]` binds the inner map while destructuring the outer array.
 
 #### Nesting
 
@@ -953,6 +973,22 @@ def { foo, bar } = # something
 ```
 
 The above two examples are identical in meaning.
+
+A map destructure can also bind the entire map using `as`:
+
+```frost
+def { name, age } as person = { name: 'Alice', age: 30, role: 'admin' }
+# name == "Alice" and age == 30 and person == { name: "Alice", age: 30, role: "admin" }
+```
+
+The `as` name receives the full original map.
+This is useful when you want a few fields pulled out for convenience but also need the whole map, such as when importing a module:
+
+```frost
+export def { encode, decode } as json = import('std.json')
+```
+
+`as` works in nested positions: `def [{name} as first, ...rest] = items` binds the inner map while destructuring the outer array.
 
 #### Recursive Destructuring
 
