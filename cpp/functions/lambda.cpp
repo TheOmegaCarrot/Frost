@@ -104,13 +104,11 @@ Value_Ptr Lambda::do_evaluate(Evaluation_Context ctx) const
     captures.reserve(names_to_capture_.size());
     for (const std::string& name : names_to_capture_)
     {
-        if (not ctx.symbols.has(name))
-        {
+        if (const auto val = ctx.symbols.soft_lookup(name); val)
+            captures.define(name, std::move(val).value());
+        else
             throw Frost_Unrecoverable_Error{fmt::format(
                 "No definition found for captured symbol: {}", name)};
-        }
-
-        captures.define(name, ctx.symbols.lookup(name));
     }
 
     return Value::create(Function{Closure::create(

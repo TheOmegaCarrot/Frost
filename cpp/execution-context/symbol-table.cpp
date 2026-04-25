@@ -12,60 +12,16 @@ Symbol_Table::Symbol_Table(const Symbol_Table* failover_table)
 {
 }
 
-Symbol_Table::Symbol_Table(const Symbol_Table& other)
-    : small_{other.small_}
-    , small_size_{other.small_size_}
-    , map_{other.map_ ? new map_t{*other.map_} : nullptr}
-    , failover_table_{other.failover_table_}
-{
-}
-
-Symbol_Table::Symbol_Table(Symbol_Table&& other) noexcept
-    : small_{std::move(other.small_)}
-    , small_size_{other.small_size_}
-    , map_{other.map_}
-    , failover_table_{other.failover_table_}
-{
-    other.map_ = nullptr;
-    other.small_size_ = 0;
-}
-
-Symbol_Table& Symbol_Table::operator=(const Symbol_Table& other)
-{
-    if (this != &other)
-    {
-        delete map_;
-        small_ = other.small_;
-        small_size_ = other.small_size_;
-        map_ = other.map_ ? new map_t{*other.map_} : nullptr;
-        failover_table_ = other.failover_table_;
-    }
-    return *this;
-}
-
-Symbol_Table& Symbol_Table::operator=(Symbol_Table&& other) noexcept
-{
-    if (this != &other)
-    {
-        delete map_;
-        small_ = std::move(other.small_);
-        small_size_ = other.small_size_;
-        map_ = other.map_;
-        failover_table_ = other.failover_table_;
-        other.map_ = nullptr;
-        other.small_size_ = 0;
-    }
-    return *this;
-}
+Symbol_Table::Symbol_Table(Symbol_Table&& other) noexcept = default;
+Symbol_Table& Symbol_Table::operator=(Symbol_Table&& other) noexcept = default;
 
 void Symbol_Table::promote_()
 {
-    auto* m = new map_t{};
+    auto m = std::make_unique<map_t>();
     m->reserve(small_size_ * 2);
     for (std::size_t i = 0; i < small_size_; ++i)
-        m->try_emplace(std::move(small_[i].first),
-                       std::move(small_[i].second));
-    map_ = m;
+        m->try_emplace(std::move(small_[i].first), std::move(small_[i].second));
+    map_ = std::move(m);
 }
 
 void Symbol_Table::define(const std::string& name, Value_Ptr value)
@@ -75,9 +31,8 @@ void Symbol_Table::define(const std::string& name, Value_Ptr value)
         for (std::size_t i = 0; i < small_size_; ++i)
         {
             if (small_[i].first == name)
-                throw Frost_Unrecoverable_Error{
-                    fmt::format("Cannot define {} as it is already defined",
-                                name)};
+                throw Frost_Unrecoverable_Error{fmt::format(
+                    "Cannot define {} as it is already defined", name)};
         }
 
         if (small_size_ < small_capacity)
@@ -95,7 +50,8 @@ void Symbol_Table::define(const std::string& name, Value_Ptr value)
             fmt::format("Cannot define {} as it is already defined", name)};
 }
 
-frst::Value_Ptr Symbol_Table::local_lookup_(const std::string& name) const
+std::optional<frst::Value_Ptr> Symbol_Table::local_lookup_(
+    const std::string& name) const
 {
     if (is_small_())
     {
@@ -104,24 +60,32 @@ frst::Value_Ptr Symbol_Table::local_lookup_(const std::string& name) const
             if (small_[i].first == name)
                 return small_[i].second;
         }
-        return nullptr;
+        return std::nullopt;
     }
 
     if (const auto itr = map_->find(name); itr != map_->end())
         return itr->second;
-    return nullptr;
+    return std::nullopt;
 }
 
 frst::Value_Ptr Symbol_Table::lookup(const std::string& name) const
+{
+    if (auto result = soft_lookup(name))
+        return std::move(result).value();
+
+    throw Frost_Unrecoverable_Error{
+        fmt::format("Symbol {} is not defined", name)};
+}
+
+std::optional<frst::Value_Ptr> Symbol_Table::soft_lookup(
+    const std::string& name) const
 {
     for (const auto* table = this; table; table = table->failover_table_)
     {
         if (auto result = table->local_lookup_(name))
             return result;
     }
-
-    throw Frost_Unrecoverable_Error{
-        fmt::format("Symbol {} is not defined", name)};
+    return std::nullopt;
 }
 
 bool Symbol_Table::local_has_(const std::string& name) const

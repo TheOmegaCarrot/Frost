@@ -3,6 +3,7 @@
 
 #include <frost/value.hpp>
 
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -20,9 +21,9 @@ class Symbol_Table
 
     Symbol_Table() = default;
     Symbol_Table(const Symbol_Table* failover_table);
-    Symbol_Table(const Symbol_Table&);
+    Symbol_Table(const Symbol_Table&) = delete;
     Symbol_Table(Symbol_Table&&) noexcept;
-    Symbol_Table& operator=(const Symbol_Table&);
+    Symbol_Table& operator=(const Symbol_Table&) = delete;
     Symbol_Table& operator=(Symbol_Table&&) noexcept;
     virtual ~Symbol_Table() = default;
 
@@ -39,6 +40,9 @@ class Symbol_Table
     // Check if a name is defined within the symbol table
     virtual bool has(const std::string& name) const;
 
+    // Lookup, but doesn't throw
+    virtual std::optional<Value_Ptr> soft_lookup(const std::string& name) const;
+
     virtual void reserve(std::size_t size);
 
     bool empty() const;
@@ -48,18 +52,20 @@ class Symbol_Table
   private:
     using entry_t = std::pair<std::string, Value_Ptr>;
     using small_storage_t = std::array<entry_t, small_capacity>;
-    using map_t =
-        ankerl::unordered_dense::map<std::string, Value_Ptr>;
+    using map_t = ankerl::unordered_dense::map<std::string, Value_Ptr>;
 
     small_storage_t small_{};
     std::size_t small_size_ = 0;
-    map_t* map_ = nullptr;
+    std::unique_ptr<map_t> map_;
     const Symbol_Table* failover_table_ = nullptr;
 
-    bool is_small_() const { return map_ == nullptr; }
+    bool is_small_() const
+    {
+        return not map_;
+    }
     void promote_();
 
-    Value_Ptr local_lookup_(const std::string& name) const;
+    std::optional<Value_Ptr> local_lookup_(const std::string& name) const;
     bool local_has_(const std::string& name) const;
 };
 
