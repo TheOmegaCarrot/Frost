@@ -649,20 +649,20 @@ If no arm matches, the expression produces an error.
 
 A pattern can be one of the following forms:
 
-| Pattern | Meaning |
-|---|---|
-| `name` | Binding: matches anything, binds the value to `name` |
-| `_` | Discard: matches anything, binds nothing |
-| `name is Type` | Constrained binding: matches if the value satisfies the type constraint |
-| `_ is Type` | Constrained discard: matches if the type constraint is satisfied |
-| `42`, `'hi'`, `true`, `null` | Literal value: matches if the value is equal |
-| `(expr)` | Parenthesized expression: evaluates `expr` and matches if equal |
-| `$'...'` | Format string: evaluates the format string and matches if equal |
-| `[p1, p2, ...]` | Array: matches an array element-wise |
-| `[p1, p2, ...rest]` | Array with rest: matches leading elements, binds the tail |
-| `[p1, p2, ..._]` | Array with discard rest: matches leading elements, drops the tail |
-| `{key: pattern, ...}` | Map: matches a map by key, applying sub-patterns to each value |
-| `{key: pattern, ...} as name` | Map with whole binding: matches by key and also binds the entire map |
+| Pattern                       | Meaning                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------- |
+| `name`                        | Binding: matches anything, binds the value to `name`                    |
+| `_`                           | Discard: matches anything, binds nothing                                |
+| `name is Type`                | Constrained binding: matches if the value satisfies the type constraint |
+| `_ is Type`                   | Constrained discard: matches if the type constraint is satisfied        |
+| `42`, `'hi'`, `true`, `null`  | Literal value: matches if the value is equal                            |
+| `(expr)`                      | Parenthesized expression: evaluates `expr` and matches if equal         |
+| `$'...'`                      | Format string: evaluates the format string and matches if equal         |
+| `[p1, p2, ...]`               | Array: matches an array element-wise                                    |
+| `[p1, p2, ...rest]`           | Array with rest: matches leading elements, binds the tail               |
+| `[p1, p2, ..._]`              | Array with discard rest: matches leading elements, drops the tail       |
+| `{key: pattern, ...}`         | Map: matches a map by key, applying sub-patterns to each value          |
+| `{key: pattern, ...} as name` | Map with whole binding: matches by key and also binds the entire map    |
 
 Anywhere a pattern appears, any of these forms can be used.
 This means array and map patterns nest to arbitrary depth (see [Nesting](#nesting)).
