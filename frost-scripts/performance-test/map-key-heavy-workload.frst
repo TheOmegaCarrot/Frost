@@ -1,6 +1,6 @@
-def n = 100000
+def n = 400000
 def rows = map range(n) with fn (i) -> { { ['k']: i, ['v']: i * i } }
 
 def result = reduce rows init: 0 with fn (acc, m) -> { acc + m.k + m.v }
-assert(result == 333333333300000, 'map key lookup sum')
+assert(result == 21333333333200000, 'map key lookup sum')
 print(result)

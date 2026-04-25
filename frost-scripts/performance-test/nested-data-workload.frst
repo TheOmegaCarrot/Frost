@@ -1,4 +1,4 @@
-def n = 50000
+def n = 200000
 
 def data = map range(n) with fn (i) -> {
     { a: { b: { c: { d: { e: i } } } } }
@@ -7,5 +7,5 @@ def data = map range(n) with fn (i) -> {
 def result = reduce data init: 0 with fn (acc, entry) -> {
     acc + entry.a.b.c.d.e
 }
-assert(result == 1249975000, 'nested data traversal sum')
+assert(result == 19999900000, 'nested data traversal sum')
 print(result)

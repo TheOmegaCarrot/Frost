@@ -1,0 +1,17 @@
+def n = 200000
+
+defn double(x) -> x * 2
+defn add_one(x) -> x + 1
+defn is_even(x) -> x % 2 == 0
+
+def double_then_add = compose(double, add_one)
+def process = compose(double_then_add, double_then_add)
+
+def result = (
+    range(n)
+        @ transform(process)
+        @ select(is_even @ inv())
+        @ fold(fn (acc, x) -> acc + x, 0)
+)
+assert(result == 80000200000, 'hof composition sum')
+print(result)
