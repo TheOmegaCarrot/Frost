@@ -170,14 +170,20 @@ int main(int argc, const char** argv)
     frst::Backtrace_State trace;
     frst::Backtrace_State::set_current(do_backtrace ? &trace : nullptr);
 
-    frst::Symbol_Table symbols;
-    frst::inject_builtins(symbols);
-    frst::inject_meta(symbols);
+    // Build the root table: builtins + meta + prelude.
+    // Shared with all imports (each import gets a child scope via failover).
+    frst::Symbol_Table root_table;
+    frst::inject_builtins(root_table);
+    frst::inject_meta(root_table);
 
-    frst::Execution_Context setup_ctx{.symbols = symbols};
+    {
+        frst::Execution_Context setup_ctx{.symbols = root_table};
+        if (not skip_prelude)
+            frst::inject_prelude(setup_ctx);
+    }
 
-    if (not skip_prelude)
-        frst::inject_prelude(setup_ctx);
+    // The main script's table is a child of the root.
+    frst::Symbol_Table symbols(&root_table);
 
     std::vector<std::filesystem::path> module_search_path;
     if (file_to_evaluate)
@@ -190,7 +196,7 @@ int main(int argc, const char** argv)
     frst::register_stdlib(builder);
     frst::register_extensions(builder);
     frst::inject_import(
-        symbols, module_search_path,
+        symbols, module_search_path, root_table,
         std::make_shared<frst::Stdlib_Registry>(std::move(builder).build()));
 
     symbols.define("args", frst::Value::create(
@@ -202,6 +208,8 @@ int main(int argc, const char** argv)
 
     symbols.define("imported", frst::Value::create(false));
 
+    frst::Execution_Context main_ctx{.symbols = symbols};
+
     for (const auto& cli_program : strings_to_evaluate)
     {
         auto results = frst::parse_program(cli_program);
@@ -210,7 +218,7 @@ int main(int argc, const char** argv)
             fmt::println(stderr, "{}", results.error());
             return 1;
         }
-        exec_program(results.value(), setup_ctx, do_dump);
+        exec_program(results.value(), main_ctx, do_dump);
     }
 
     if (file_to_evaluate)
@@ -221,7 +229,7 @@ int main(int argc, const char** argv)
             fmt::println(stderr, "{}", results.error());
             return 1;
         }
-        exec_program(results.value(), setup_ctx, do_dump);
+        exec_program(results.value(), main_ctx, do_dump);
     }
 
     if (not file_to_evaluate && strings_to_evaluate.empty())

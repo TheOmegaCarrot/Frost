@@ -114,11 +114,11 @@ frst::Value_Ptr Symbol_Table::local_lookup_(const std::string& name) const
 
 frst::Value_Ptr Symbol_Table::lookup(const std::string& name) const
 {
-    if (auto result = local_lookup_(name))
-        return result;
-
-    if (failover_table_)
-        return failover_table_->lookup(name);
+    for (const auto* table = this; table; table = table->failover_table_)
+    {
+        if (auto result = table->local_lookup_(name))
+            return result;
+    }
 
     throw Frost_Unrecoverable_Error{
         fmt::format("Symbol {} is not defined", name)};
@@ -141,10 +141,11 @@ bool Symbol_Table::local_has_(const std::string& name) const
 
 bool Symbol_Table::has(const std::string& name) const
 {
-    if (local_has_(name))
-        return true;
-    if (failover_table_)
-        return failover_table_->has(name);
+    for (const auto* table = this; table; table = table->failover_table_)
+    {
+        if (table->local_has_(name))
+            return true;
+    }
     return false;
 }
 
@@ -183,7 +184,21 @@ std::vector<std::string_view> Symbol_Table::names() const
     return result;
 }
 
-const Symbol_Table* Symbol_Table::debug_failover() const
+std::vector<std::string_view> Symbol_Table::deep_names() const
 {
-    return failover_table_;
+    std::vector<std::string_view> result;
+    for (const auto* table = this; table; table = table->failover_table_)
+    {
+        if (table->is_small_())
+        {
+            for (std::size_t i = 0; i < table->small_size_; ++i)
+                result.push_back(table->small_[i].first);
+        }
+        else
+        {
+            for (const auto& [k, _] : *table->map_)
+                result.push_back(k);
+        }
+    }
+    return result;
 }

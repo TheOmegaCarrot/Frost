@@ -43,8 +43,7 @@ class Symbol_Table
 
     bool empty() const;
     std::vector<std::string_view> names() const;
-
-    const Symbol_Table* debug_failover() const;
+    std::vector<std::string_view> deep_names() const;
 
   private:
     using entry_t = std::pair<std::string, Value_Ptr>;

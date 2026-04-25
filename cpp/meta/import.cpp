@@ -40,6 +40,11 @@ struct Importer
 {
     import::search_path_t search_path;
 
+    // Pre-built table with builtins, meta, and prelude.
+    // Each import gets a child scope (via failover pointer) rather than
+    // rebuilding from scratch.
+    const Symbol_Table* root_table;
+
     // key: resolved filepath
     // value: cached import result (nullopt while import is in-progress (for
     // cycle detection))
@@ -130,13 +135,10 @@ struct Importer
                 module_file.native(), parse_result.error())};
         }
 
-        Symbol_Table isolated_table;
-        inject_builtins(isolated_table);
+        Symbol_Table isolated_table(root_table);
         isolated_table.define("imported", Value::create(true));
 
         Execution_Context isolated_ctx{.symbols = isolated_table};
-
-        inject_prelude(isolated_ctx);
 
         std::vector<std::filesystem::path> child_search_path{
             module_file.parent_path(),
@@ -144,8 +146,8 @@ struct Importer
 
         child_search_path.append_range(env_module_path());
 
-        inject_import(isolated_table, child_search_path, stdlib, import_cache,
-                      import_mutex, import_stack);
+        inject_import(isolated_table, child_search_path, *root_table, stdlib,
+                      import_cache, import_mutex, import_stack);
 
         for (const auto& statement : parse_result.value())
         {
@@ -207,17 +209,21 @@ struct Importer
 
 void inject_import(Symbol_Table& table,
                    const import::search_path_t& search_path,
+                   const Symbol_Table& root_table,
                    std::shared_ptr<Stdlib_Registry> stdlib,
                    import::import_cache_t import_cache,
                    import::import_mutex_t import_mutex,
                    const import::import_stack_t& import_stack)
 {
-    table.define("import", Value::create(Function{std::make_shared<Builtin>(
-                               Importer{.search_path = std::move(search_path),
-                                        .import_cache = import_cache,
-                                        .import_mutex = import_mutex,
-                                        .import_stack = import_stack,
-                                        .stdlib = std::move(stdlib)},
-                               "import")}));
+    table.define(
+        "import",
+        Value::create(Function{std::make_shared<Builtin>(
+            Importer{.search_path = std::move(search_path),
+                     .root_table = &root_table,
+                     .import_cache = import_cache,
+                     .import_mutex = import_mutex,
+                     .import_stack = import_stack,
+                     .stdlib = std::move(stdlib)},
+            "import")}));
 }
 } // namespace frst
