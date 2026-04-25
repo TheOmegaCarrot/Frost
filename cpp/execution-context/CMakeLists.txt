@@ -11,6 +11,7 @@ target_link_libraries( frost-execution-context
     PUBLIC
     frost-common
     frost-value
+    unordered_dense
 )
 
 set(SYMBOL_TABLE_TEST_FILES

@@ -27,7 +27,6 @@ include(CPM)
 include(get-lexy)
 include(get-fmt)
 include(get-ankerl)
-include(get-immer)
 include(get-mimalloc)
 include(get-replxx)
 include(cppcodec)
@@ -65,9 +64,7 @@ target_compile_options( frost-common
 target_link_libraries( frost-common
     INTERFACE
     fmt::fmt
-    immer
     mimalloc-static
-    unordered_dense
 )
 
 target_compile_definitions( frost-common
