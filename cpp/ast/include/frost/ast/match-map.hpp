@@ -43,9 +43,11 @@ class Match_Map final : public Match_Pattern
     Match_Map& operator=(Match_Map&&) = delete;
     ~Match_Map() final = default;
 
-    Match_Map(const Source_Range& source_range, std::vector<Element> elements)
+    Match_Map(const Source_Range& source_range, std::vector<Element> elements,
+              std::optional<std::string> bind_whole_name)
         : Match_Pattern{source_range}
         , elements_{std::move(elements)}
+        , bind_whole_name_{std::move(bind_whole_name)}
     {
     }
 
@@ -59,6 +61,7 @@ class Match_Map final : public Match_Pattern
 
   private:
     std::vector<Element> elements_;
+    std::optional<std::string> bind_whole_name_;
 };
 
 } // namespace frst::ast

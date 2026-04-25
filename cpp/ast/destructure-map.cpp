@@ -36,6 +36,9 @@ void Destructure_Map::do_destructure(Execution_Context ctx,
                 key->to_internal_string())};
         }
     }
+
+    if (bind_whole_name_)
+        ctx.symbols.define(bind_whole_name_.value(), value);
 }
 
 } // namespace frst::ast

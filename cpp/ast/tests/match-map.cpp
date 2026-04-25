@@ -33,7 +33,15 @@ Expression::Ptr literal_key(Value_Ptr v)
 
 Match_Map::Ptr make_map(std::vector<Match_Map::Element> elements)
 {
-    return std::make_unique<Match_Map>(AST_Node::no_range, std::move(elements));
+    return std::make_unique<Match_Map>(AST_Node::no_range, std::move(elements),
+                                       std::nullopt);
+}
+
+Match_Map::Ptr make_map_as(std::vector<Match_Map::Element> elements,
+                           std::string bind_whole_name)
+{
+    return std::make_unique<Match_Map>(AST_Node::no_range, std::move(elements),
+                                       std::move(bind_whole_name));
 }
 
 // Build a Frost Map value from a list of (string key, value) pairs. Mirrors
@@ -430,6 +438,157 @@ TEST_CASE(
 
 TEST_CASE("Match_Map: node_label")
 {
-    auto pat = make_map({});
-    CHECK(pat->node_label() == "Match_Map");
+    SECTION("Without bind_whole_name")
+    {
+        auto pat = make_map({});
+        CHECK(pat->node_label() == "Match_Map");
+    }
+
+    SECTION("With bind_whole_name")
+    {
+        auto pat = make_map_as({}, "m"s);
+        CHECK(pat->node_label() == "Match_Map(as m)");
+    }
+}
+
+// =============================================================================
+// bind_whole_name (the `as` clause)
+// =============================================================================
+
+TEST_CASE("Match_Map: as binds the whole map on successful match")
+{
+    Symbol_Table syms;
+    Execution_Context ctx{.symbols = syms};
+
+    auto inner = mock::Mock_Match_Pattern::make();
+    REQUIRE_CALL(*inner, do_try_match(_, _)).RETURN(true);
+
+    std::vector<Match_Map::Element> elements;
+    elements.push_back({literal_key(Value::create("a"s)), std::move(inner)});
+    auto pat = make_map_as(std::move(elements), "m"s);
+
+    auto m = make_string_keyed_map({{"a", Value::create(1_f)}});
+    CHECK(pat->try_match(ctx, m));
+    REQUIRE(syms.has("m"));
+    CHECK(syms.lookup("m").get() == m.get());
+}
+
+TEST_CASE("Match_Map: as does not bind when a subpattern fails")
+{
+    Symbol_Table syms;
+    Execution_Context ctx{.symbols = syms};
+
+    auto inner = mock::Mock_Match_Pattern::make();
+    REQUIRE_CALL(*inner, do_try_match(_, _)).RETURN(false);
+
+    std::vector<Match_Map::Element> elements;
+    elements.push_back({literal_key(Value::create("a"s)), std::move(inner)});
+    auto pat = make_map_as(std::move(elements), "m"s);
+
+    auto m = make_string_keyed_map({{"a", Value::create(1_f)}});
+    CHECK_FALSE(pat->try_match(ctx, m));
+    CHECK_FALSE(syms.has("m"));
+}
+
+TEST_CASE("Match_Map: as does not bind when a key is missing")
+{
+    Symbol_Table syms;
+    Execution_Context ctx{.symbols = syms};
+
+    auto inner = mock::Mock_Match_Pattern::make();
+    FORBID_CALL(*inner, do_try_match(_, _));
+
+    std::vector<Match_Map::Element> elements;
+    elements.push_back(
+        {literal_key(Value::create("missing"s)), std::move(inner)});
+    auto pat = make_map_as(std::move(elements), "m"s);
+
+    auto m = make_string_keyed_map({{"other", Value::create(1_f)}});
+    CHECK_FALSE(pat->try_match(ctx, m));
+    CHECK_FALSE(syms.has("m"));
+}
+
+TEST_CASE("Match_Map: as does not bind when match target is not a map")
+{
+    Symbol_Table syms;
+    Execution_Context ctx{.symbols = syms};
+
+    auto pat = make_map_as({}, "m"s);
+    CHECK_FALSE(pat->try_match(ctx, Value::create(42_f)));
+    CHECK_FALSE(syms.has("m"));
+}
+
+TEST_CASE("Match_Map: as with empty pattern binds the whole map")
+{
+    // An empty map pattern with `as` matches any map and binds it.
+    Symbol_Table syms;
+    Execution_Context ctx{.symbols = syms};
+
+    auto pat = make_map_as({}, "m"s);
+
+    auto m = make_string_keyed_map({
+        {"a", Value::create(1_f)},
+        {"b", Value::create(2_f)},
+    });
+    CHECK(pat->try_match(ctx, m));
+    REQUIRE(syms.has("m"));
+    CHECK(syms.lookup("m").get() == m.get());
+}
+
+TEST_CASE("Match_Map: as binding coexists with subpattern bindings")
+{
+    // Both the subpattern's binding and the as-binding should be
+    // present in the symbol table after a successful match.
+    Symbol_Table syms;
+    Execution_Context ctx{.symbols = syms};
+
+    auto inner = mock::Mock_Match_Pattern::make();
+    REQUIRE_CALL(*inner, do_try_match(_, _))
+        .SIDE_EFFECT(_1.symbols.define("a", Value::create(1_f)))
+        .RETURN(true);
+
+    std::vector<Match_Map::Element> elements;
+    elements.push_back({literal_key(Value::create("a"s)), std::move(inner)});
+    auto pat = make_map_as(std::move(elements), "whole"s);
+
+    auto m = make_string_keyed_map({{"a", Value::create(1_f)}});
+    CHECK(pat->try_match(ctx, m));
+    CHECK(syms.has("a"));
+    CHECK(syms.has("whole"));
+}
+
+TEST_CASE("Match_Map: as symbol_sequence yields Definition for bind_whole_name")
+{
+    auto pat = make_map_as({}, "m"s);
+    auto actions = pat->symbol_sequence() | std::ranges::to<std::vector>();
+    REQUIRE(actions.size() == 1);
+    auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
+    REQUIRE(def);
+    CHECK(def->name == "m");
+    CHECK(def->exported == false);
+}
+
+TEST_CASE(
+    "Match_Map: as Definition appears after subpattern actions in symbol_sequence")
+{
+    // The as-binding's Definition should come after the element patterns'
+    // actions, so that Match's suppression logic can see it in the correct
+    // position.
+    auto inner = std::make_unique<Match_Binding>(
+        AST_Node::no_range, std::optional<std::string>{"x"}, std::nullopt);
+
+    std::vector<Match_Map::Element> elements;
+    elements.push_back({literal_key(Value::create("a"s)), std::move(inner)});
+    auto pat = make_map_as(std::move(elements), "m"s);
+
+    auto actions = pat->symbol_sequence() | std::ranges::to<std::vector>();
+    REQUIRE(actions.size() == 2);
+
+    auto* def_x = std::get_if<AST_Node::Definition>(&actions[0]);
+    REQUIRE(def_x);
+    CHECK(def_x->name == "x");
+
+    auto* def_m = std::get_if<AST_Node::Definition>(&actions[1]);
+    REQUIRE(def_m);
+    CHECK(def_m->name == "m");
 }

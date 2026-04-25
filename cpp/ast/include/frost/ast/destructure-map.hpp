@@ -26,9 +26,12 @@ class Destructure_Map final : public Destructure
     ~Destructure_Map() final = default;
 
     Destructure_Map(const Source_Range& source_range,
-                    std::vector<Element> destructure_elems)
+                    std::vector<Element> destructure_elems,
+                    std::optional<std::string> bind_whole_name, bool exported)
         : Destructure(source_range)
         , destructure_elems_{std::move(destructure_elems)}
+        , bind_whole_name_{std::move(bind_whole_name)}
+        , exported_{exported}
     {
     }
 
@@ -39,6 +42,10 @@ class Destructure_Map final : public Destructure
             co_yield std::ranges::elements_of(key_expr->symbol_sequence());
             co_yield std::ranges::elements_of(child->symbol_sequence());
         }
+
+        if (bind_whole_name_)
+            co_yield Definition{.name = bind_whole_name_.value(),
+                                .exported = exported_};
     }
 
     std::generator<Child_Info> children() const final
@@ -56,7 +63,10 @@ class Destructure_Map final : public Destructure
   protected:
     std::string do_node_label() const final
     {
-        return "Destructure_Map";
+        return fmt::format(
+            "Destructure_Map{}",
+            bind_whole_name_ ? fmt::format("(as {})", bind_whole_name_.value())
+                             : "");
     }
 
     void do_destructure(Execution_Context ctx,
@@ -64,6 +74,8 @@ class Destructure_Map final : public Destructure
 
   private:
     std::vector<Element> destructure_elems_;
+    std::optional<std::string> bind_whole_name_;
+    bool exported_;
 };
 
 } // namespace frst::ast
