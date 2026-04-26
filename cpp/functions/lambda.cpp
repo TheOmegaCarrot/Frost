@@ -138,6 +138,14 @@ std::generator<AST_Node::Symbol_Action> Lambda::symbol_sequence() const
     };
 
     std::flat_set<std::string> defns{std::from_range, params_};
+
+    // Mirror the abbreviated lambda alias/suppression from the constructor:
+    // `$` is a runtime alias for `$1`
+    if (defns.contains("$1"))
+    {
+        defns.insert("$");
+    }
+
     if (self_name_)
         defns.insert(self_name_.value());
 

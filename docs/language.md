@@ -442,6 +442,7 @@ defn fib(n) -> {
 
 For short inline functions, Frost provides an abbreviated lambda syntax using `$(...)`.
 Instead of naming parameters, you use placeholder identifiers: `$` (or `$1`) for the first argument, `$2` for the second, and so on up to `$9`.
+`$0` is not a valid placeholder.
 `$$` captures variadic (rest) arguments as an array.
 
 ```frost

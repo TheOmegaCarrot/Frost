@@ -1571,4 +1571,21 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(arr[1]->get<frst::Int>().value() == 2_f);
         CHECK(arr[2]->get<frst::Int>().value() == 3_f);
     }
+
+    SECTION("Abbreviated lambda nested inside regular lambda")
+    {
+        // The outer lambda's capture analysis must not try to capture `$`
+        // from the enclosing scope -- it's satisfied at call time by the
+        // inner abbreviated lambda, not via capture.
+        frst::Symbol_Table table;
+        frst::Execution_Context exec_ctx{.symbols = table};
+
+        run("def f = fn x -> $($ + x)\n"
+            "def result = f(100)(5)",
+            exec_ctx);
+
+        auto result = table.lookup("result");
+        REQUIRE(result->is<frst::Int>());
+        CHECK(result->get<frst::Int>().value() == 105_f);
+    }
 }
