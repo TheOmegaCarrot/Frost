@@ -560,6 +560,28 @@ struct unexpected_else
     static constexpr auto name = "unexpected 'else' (missing 'if')";
 };
 
+struct use_frost_not_for
+{
+    static constexpr auto name =
+        "unexpected 'for' (use 'map', 'filter', 'reduce', or 'foreach')";
+};
+
+struct use_frost_not_while
+{
+    static constexpr auto name =
+        "unexpected 'while' (use recursion or 'reduce')";
+};
+
+struct use_def_not_let
+{
+    static constexpr auto name = "use 'def' instead of 'let'";
+};
+
+struct use_def_not_var
+{
+    static constexpr auto name = "use 'def' instead of 'var'";
+};
+
 struct expected_vararg
 {
     static constexpr auto name = "variadic parameter after ','";
@@ -1593,11 +1615,13 @@ struct lambda_body
                >> expr_body
                | dsl::peek(param_ws_nl + dsl::lit_c<'{'>)
                >> param_ws_nl
-               >> dsl::curly_bracketed(
-                   statement_ws
+               >> (dsl::lit_c<'{'>
+                   + statement_ws
                    + dsl::opt(dsl::peek(expression_start_no_nl)
                               >> dsl::recurse<statement_list>)
-                   + statement_ws)
+                   + statement_ws
+                   + (dsl::peek(dsl::lit_c<'='>) >> dsl::error<use_def_for_assignment>
+                      | dsl::lit_c<'}'>))
                | dsl::else_
                >> (require_expr_start_nl<expected_lambda_body>()
                    >> param_ws_nl
@@ -1804,11 +1828,13 @@ struct Do_Block_Expr
     static constexpr auto rule = [] {
         auto kw_do = LEXY_KEYWORD("do", identifier::base);
         return kw_do
-               >> dsl::curly_bracketed(
-                   statement_ws
+               >> (dsl::lit_c<'{'>
+                   + statement_ws
                    + dsl::opt(dsl::peek(expression_start_no_nl)
                               >> dsl::recurse<statement_list>)
-                   + statement_ws);
+                   + statement_ws
+                   + (dsl::peek(dsl::lit_c<'='>) >> dsl::error<use_def_for_assignment>
+                      | dsl::lit_c<'}'>));
     }();
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
         [](lexy::nullopt) -> ast::Expression::Ptr {
@@ -2829,6 +2855,14 @@ struct primary_expression
            >> dsl::error<unexpected_elif>
            | dsl::peek(LEXY_KEYWORD("else", identifier::base))
            >> dsl::error<unexpected_else>
+           | dsl::peek(LEXY_KEYWORD("for", identifier::base))
+           >> dsl::error<use_frost_not_for>
+           | dsl::peek(LEXY_KEYWORD("while", identifier::base))
+           >> dsl::error<use_frost_not_while>
+           | dsl::peek(LEXY_KEYWORD("let", identifier::base))
+           >> dsl::error<use_def_not_let>
+           | dsl::peek(LEXY_KEYWORD("var", identifier::base))
+           >> dsl::error<use_def_not_var>
            | dsl::p<node::Name_Lookup>
            | dsl::error<expected_expression>)+dsl::position;
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(

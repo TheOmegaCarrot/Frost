@@ -122,3 +122,75 @@ TEST_CASE("Parser error messages - closing delimiter labels")
         CHECK_THAT(err, ContainsSubstring("expected ')'"));
     }
 }
+
+TEST_CASE("Parser error messages - foreign language keywords")
+{
+    SECTION("for loop")
+    {
+        auto err = parse_error("for x in items { print(x) }");
+        CHECK_THAT(err, ContainsSubstring("unexpected 'for'"));
+    }
+
+    SECTION("while loop")
+    {
+        auto err = parse_error("while true: print(1)");
+        CHECK_THAT(err, ContainsSubstring("unexpected 'while'"));
+    }
+
+    SECTION("let binding")
+    {
+        auto err = parse_error("let x = 5");
+        CHECK_THAT(err, ContainsSubstring("'def' instead of 'let'"));
+    }
+
+    SECTION("var binding")
+    {
+        auto err = parse_error("var x = 5");
+        CHECK_THAT(err, ContainsSubstring("'def' instead of 'var'"));
+    }
+
+    SECTION("identifiers starting with foreign keywords still work")
+    {
+        // `format`, `formula`, `letter`, `variable` must NOT trigger errors.
+        auto ok = [](const std::string& input) {
+            return frst::parse_program(input).has_value();
+        };
+        CHECK(ok("def format = 1"));
+        CHECK(ok("def formula = 2"));
+        CHECK(ok("def letter = 3"));
+        CHECK(ok("def variable = 4"));
+        CHECK(ok("def whileloop = 5"));
+        CHECK(ok("def foreach_item = 6"));
+    }
+}
+
+TEST_CASE("Parser error messages - reassignment inside blocks")
+{
+    SECTION("reassignment in lambda body")
+    {
+        auto err = parse_error("def f = fn x -> { x = 10; x }");
+        CHECK_THAT(err, ContainsSubstring("'def name = value'"));
+    }
+
+    SECTION("reassignment in do block")
+    {
+        auto err = parse_error("do { x = 10; x }");
+        CHECK_THAT(err, ContainsSubstring("'def name = value'"));
+    }
+
+    SECTION("reassignment at top level still works")
+    {
+        auto err = parse_error("x = 10");
+        CHECK_THAT(err, ContainsSubstring("'def name = value'"));
+    }
+
+    SECTION("valid assignment-like code still parses")
+    {
+        // `def x = 10` inside blocks is fine
+        auto ok = [](const std::string& input) {
+            return frst::parse_program(input).has_value();
+        };
+        CHECK(ok("def f = fn x -> { def y = x + 1; y }"));
+        CHECK(ok("do { def x = 10; x }"));
+    }
+}
