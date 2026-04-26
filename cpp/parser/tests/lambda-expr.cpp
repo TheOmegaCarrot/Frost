@@ -1440,6 +1440,40 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(not parse("fn($1) -> $1 + 1"));
     }
 
+    SECTION("Dollar identifiers cannot be used in destructure array rest")
+    {
+        CHECK(not parse_prog("def [a, ...$1] = [1, 2]"));
+        CHECK(not parse_prog("def [a, ...$$] = [1, 2]"));
+        CHECK(not parse_prog("def [a, ...$] = [1, 2]"));
+    }
+
+    SECTION("Dollar identifiers cannot be used in destructure map `as`")
+    {
+        CHECK(not parse_prog("def {foo} as $ = {foo: 1}"));
+        CHECK(not parse_prog("def {foo} as $1 = {foo: 1}"));
+        CHECK(not parse_prog("def {foo} as $$ = {foo: 1}"));
+    }
+
+    SECTION("Dollar identifiers cannot be used in match array rest")
+    {
+        CHECK(not parse_prog("def x = match [1, 2] { [a, ...$1] => a }"));
+        CHECK(not parse_prog("def x = match [1, 2] { [a, ...$$] => a }"));
+    }
+
+    SECTION("Dollar identifiers cannot be used in match map `as`")
+    {
+        CHECK(not parse_prog("def x = match {a: 1} { {a} as $1 => a }"));
+        CHECK(not parse_prog("def x = match {a: 1} { {a} as $$ => a }"));
+    }
+
+    SECTION("Dollar identifiers cannot be used in match bindings")
+    {
+        // `$1` in match pattern position goes through the literal/value
+        // dispatch (not the binding branch), so it fails to parse.
+        CHECK(not parse_prog("def x = match 1 { $1 => 'hit' }"));
+        CHECK(not parse_prog("def x = match 1 { $$ => 'hit' }"));
+    }
+
     SECTION("Abbreviated lambda: $ and $1 mixed refer to same argument")
     {
         // Both `$` and `$1` should resolve to the first argument.

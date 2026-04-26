@@ -175,6 +175,8 @@ $($1 + $2)                            # fn $1, $2 -> $1 + $2
 $($$)                                  # fn ...$$ -> $$
 ```
 
+Nesting is syntactically valid, but is considered poor practice.
+
 ### Truthiness
 
 Only `null` and `false` are falsy. `0`, `""`, `[]`, `{}` are all truthy.
