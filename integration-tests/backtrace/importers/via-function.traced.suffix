@@ -1,5 +1,5 @@
 Import Boundary (
-Call (<builtin:import>)
+In <builtin:import>
 Function_Call [1:
-Call (lambda (go))
+In go
 Function_Call [2:

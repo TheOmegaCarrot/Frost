@@ -1,5 +1,5 @@
 Error: Cannot add incompatible types: Int + Array
 Traceback:
 Binary(+) [11:
-Call (lambda (crash))
+In crash
 Function_Call [12:

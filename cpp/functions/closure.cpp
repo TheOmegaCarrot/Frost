@@ -103,8 +103,8 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
 std::string Closure::name() const
 {
     if (self_name_)
-        return fmt::format("lambda ({})", self_name_.value());
-    return "anonymous lambda";
+        return self_name_.value();
+    return "<anonymous>";
 }
 
 std::string Closure::debug_dump() const

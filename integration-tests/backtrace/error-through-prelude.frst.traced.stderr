@@ -1,7 +1,7 @@
 Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [1:
-Call (lambda (fails))
+In fails
 Function_Call [13:
-Call (lambda (tap))
+In tap
 Function_Call [2:

@@ -2,5 +2,5 @@ Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [1:
 If [1:
-Reduce (anonymous lambda)
+Reduce (<anonymous>)
 Reduce_Expr [1:

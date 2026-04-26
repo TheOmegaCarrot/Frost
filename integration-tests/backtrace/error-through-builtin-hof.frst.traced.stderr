@@ -1,5 +1,5 @@
 Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [1:
-Call (<builtin:transform>)
+In <builtin:transform>
 Function_Call [2:

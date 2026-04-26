@@ -1,5 +1,5 @@
 Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [1:
-Filter (anonymous lambda)
+Filter (<anonymous>)
 Filter_Expr [1:

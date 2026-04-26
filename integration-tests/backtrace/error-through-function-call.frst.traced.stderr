@@ -1,9 +1,9 @@
 Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [1:
-Call (lambda (inner))
+In inner
 Function_Call [2:
-Call (lambda (middle))
+In middle
 Function_Call [3:
-Call (lambda (outer))
+In outer
 Function_Call [4:

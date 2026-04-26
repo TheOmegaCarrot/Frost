@@ -1,5 +1,5 @@
 Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [18:
-Call (lambda (shallow_crash))
+In shallow_crash
 Function_Call [19:

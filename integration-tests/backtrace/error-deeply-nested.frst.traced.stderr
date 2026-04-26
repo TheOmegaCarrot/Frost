@@ -1,11 +1,11 @@
 Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [1:
-Call (lambda (crashes))
+In crashes
 Function_Call [4:
-Filter (anonymous lambda)
+Filter (<anonymous>)
 Filter_Expr [4:
 Do_Block [3:
-Map (anonymous lambda)
+Map (<anonymous>)
 Map_Expr [3:
 Do_Block [2:

@@ -33,7 +33,7 @@ Value_Ptr ast::Function_Call::do_evaluate(Evaluation_Context ctx) const
 
     const auto& callable = fn->raw_get<Function>();
 
-    auto guard = make_frame_guard("Call ({})", callable->name());
+    auto guard = make_frame_guard("In {}", callable->name());
 
     return callable->call(std::move(args));
 }

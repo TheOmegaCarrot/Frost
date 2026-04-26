@@ -1,8 +1,8 @@
 Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [1:
-Call (lambda (fails))
+In fails
 Function_Call [3:
-Map (anonymous lambda)
+Map (<anonymous>)
 Map_Expr [3:
 Do_Block [2:

@@ -2,14 +2,14 @@ Error: Cannot add incompatible types: Int + String
 Traceback:
 Binary(+) [1:
 If [1:
-Call (lambda (boom))
+In boom
 Function_Call [1:
 If [1:
-Call (lambda (boom))
+In boom
 Function_Call [1:
 If [1:
-Call (lambda (boom))
+In boom
 Function_Call [1:
 If [1:
-Call (lambda (boom))
+In boom
 Function_Call [2:
