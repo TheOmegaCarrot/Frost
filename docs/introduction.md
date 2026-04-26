@@ -30,6 +30,15 @@ You can also optionally add an `init` clause:
 reduce [1, 2, 3] init: 10 with plus
 # 16
 ```
+
+Note: reducing an empty array without an `init:` clause returns `null`, not zero.
+If your data might be empty, always provide `init:`.
+
+```frost
+reduce [] with plus          # null
+reduce [] init: 0 with plus  # 0
+```
+
 ## Functions
 
 The earlier example could also be written another way.
@@ -49,6 +58,42 @@ Above, we're using it to chain a sequence of operations.
 The left-hand side is just inserted as the first argument to the function call on the right-hand side.
 That threading "pipeline" is effectively rewritten to `transform(select(split('...', ' '), fn w -> len(w) > 3), to_upper)`.
 The threaded form is certainly nicer, eh?
+
+Because `map`, `filter`, and `reduce` are keywords, they can't be used in `@` pipelines.
+Use their functional equivalents instead: [`transform`](./stdlib/collections.md#transform), [`select`](./stdlib/collections.md#select), and [`fold`](./stdlib/collections.md#fold).
+
+```frost
+# These are equivalent:
+map items with fn x -> x * 2
+items @ transform(fn x -> x * 2)
+```
+
+When a threading chain gets long, you'll want to break it across lines.
+Outside of parentheses, `@` must start on the same line as its left operand: wrap the chain in `()` to break freely:
+
+```frost
+# ok
+def result = 'some text here' @ split(' ')
+```
+
+```frost
+# ok
+def result = (
+    'the quick brown fox jumps over the lazy dog'
+        @ split(' ')
+        @ select(fn w -> len(w) > 3)
+        @ transform(to_upper)
+        @ join(', '))
+```
+
+```frost
+# syntax error
+def result = 'the quick brown fox jumps over the lazy dog'
+                @ split(' ')
+                @ select(fn w -> len(w) > 3)
+                @ transform(to_upper)
+                @ join(', ')
+```
 
 Functions are also just lambdas bound to a name. The `defn` keyword is shorthand for this pattern.
 A multi-line lambda implicitly returns the last expression.
@@ -94,6 +139,27 @@ def max_retries = config["max_retries"] or 3
 def should_log = config["verbose"] and not config["quiet"]
 ```
 
+### Do Blocks
+
+Each branch of an `if` takes a single expression.
+If you need multiple statements in a branch, use a `do` block:
+
+```frost
+defn process(x) -> {
+    if x > 0: do {
+        def doubled = x * 2
+        def label = 'positive'
+        $'${label}: ${doubled}'
+    }
+    else: 'non-positive'
+}
+```
+
+A `do` block opens a new scope, allows `def` and `defn` statements, and evaluates to its final expression.
+
+Note: bare `{ ... }` is a _map literal_ outside of function bodies or `do` blocks.
+Writing `if cond: { def x = ... }` is not valid: use `do { ... }` instead.
+
 ## Pattern Matching
 
 Frost has `match` expressions for branching on the shape and contents of a value.
@@ -113,6 +179,21 @@ Arms are tried top-to-bottom; the first match wins.
 `_` is the catch-all.
 Bindings like `n`, `s`, `first`, and `name` are scoped to their arm.
 Guards (`if:`) add extra conditions after a pattern matches.
+
+Match arms take a single expression, just like `if` branches.
+Use `do` blocks when you need multiple statements:
+
+```frost
+defn describe(v) -> match v {
+    n is Int if: n > 0 => do {
+        def doubled = n * 2
+        $'positive int, doubled: ${doubled}'
+    },
+    s is String => $'string: ${s}',
+    _           => 'something else'
+}
+```
+
 See the [language reference](./language.md#match-expressions) for the full details.
 
 ## Maps
@@ -209,16 +290,21 @@ Internally, the function [`curry`](./stdlib/functions.md#curry), which partially
 def curry = fn f, ...outer -> fn ...inner -> call(f, outer + inner)
 ```
 
-`try_call` is similar in that it takes a function and an array of arguments,
-however, `try_call` provides a method of error recovery.
-If the evaluation of the function encounters an error, `try_call` will return error information.
+[`error`](./stdlib/functions.md#error) produces a recoverable error with a message.
+[`try_call`](./stdlib/functions.md#try_call) can be used to catch those errors (and any other runtime error).
+It takes a function and an array of arguments; if the call succeeds, it returns `{ ok: true, value: result }`, and if it fails, `{ ok: false, error: message }`.
 
 ```frost
-try_call(plus, [10, 'oops'])
-# { ok: false, error: "Cannot add incompatible types: Int + String" }
+# Frost catches divisions by 0, but this is illustrative
+defn safe_divide(a, b) ->
+    if b == 0: error('division by zero')
+    else: a / b
 
-try_call(plus, [3, 5])
-# { ok: true, value: 8 }
+try_call(safe_divide, [10, 0])
+# { ok: false, error: "division by zero" }
+
+try_call(safe_divide, [10, 2])
+# { ok: true, value: 5 }
 ```
 
 ## Modules
