@@ -40,7 +40,7 @@ struct Decode_Json_Impl
     Value_Ptr operator()(this const auto, const std::uint64_t& u)
     {
         throw Frost_Recoverable_Error{
-            fmt::format("Value {} is out of range", u)};
+            fmt::format("json.decode: Value {} is out of range", u)};
     }
 
     Value_Ptr operator()(this const auto self, const boost::json::array& arr)
@@ -76,7 +76,8 @@ BUILTIN(decode)
     };
     auto json = boost::json::parse(GET(0, String), ec, {}, opts);
     if (ec)
-        throw Frost_Recoverable_Error{ec.message()};
+        throw Frost_Recoverable_Error{
+            fmt::format("json.decode: {}", ec.message())};
 
     return boost::json::visit(decode_json_impl, json);
 }
@@ -117,10 +118,10 @@ struct Encode_Json_Impl
         {
             if (not k->is<String>())
             {
-                throw Frost_Recoverable_Error{
-                    fmt::format("Map with non-String key: \"{}\" cannot be "
-                                "serialized to JSON",
-                                k->to_internal_string())};
+                throw Frost_Recoverable_Error{fmt::format(
+                    "json.encode: Map with non-String key: \"{}\" cannot be "
+                    "serialized to JSON",
+                    k->to_internal_string())};
             }
 
             result.emplace(k->raw_get<String>(), v->visit(self));
@@ -131,7 +132,8 @@ struct Encode_Json_Impl
 
     boost::json::value operator()(this const auto, const Function&)
     {
-        throw Frost_Recoverable_Error{"Cannot serialize Function to JSON"};
+        throw Frost_Recoverable_Error{
+            "json.encode: Cannot serialize Function to JSON"};
     }
 
 } constexpr static encode_json_impl;
@@ -212,7 +214,7 @@ BUILTIN(encode_pretty)
     auto indent = args.at(1)->raw_get<Int>();
     if (indent < 0)
         throw Frost_Recoverable_Error{
-            "json.encode_pretty requires a non-negative indent"};
+            "json.encode_pretty: requires a non-negative indent"};
 
     auto json = args.at(0)->visit(encode_json_impl);
 
