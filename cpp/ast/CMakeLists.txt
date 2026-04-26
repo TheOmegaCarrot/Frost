@@ -14,6 +14,7 @@ add_library( frost-ast
     literal.cpp
     map.cpp
     map-constructor.cpp
+    match-alternative.cpp
     match-array.cpp
     match-binding.cpp
     match-map.cpp
@@ -61,6 +62,7 @@ set(AST_TEST_FILES
     destructure-array-node
     destructure-map-node
     match
+    match-alternative
     match-array
     match-binding
     match-map
