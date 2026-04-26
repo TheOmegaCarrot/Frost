@@ -22,6 +22,7 @@ For most readers, this is not the place to start learning the language; for that
   * [Array](#array)
   * [Map](#map)
   * [Functions](#functions)
+    + [Abbreviated Lambdas](#abbreviated-lambdas)
 - [Expressions](#expressions)
   * [Operators](#operators)
     + [Call Threading](#call-threading)
@@ -33,6 +34,7 @@ For most readers, this is not the place to start learning the language; for that
   * [Match Expressions](#match-expressions)
     + [Patterns](#patterns)
     + [Type Constraints](#type-constraints)
+    + [Alternatives](#alternatives)
     + [Array Patterns](#array-patterns)
     + [Map Patterns](#map-patterns)
     + [Nesting](#nesting)
@@ -435,6 +437,44 @@ defn fib(n) -> {
     else: fib(n-1) + fib(n-2)
 }
 ```
+
+#### Abbreviated Lambdas
+
+For short inline functions, Frost provides an abbreviated lambda syntax using `$(...)`.
+Instead of naming parameters, you use placeholder identifiers: `$` (or `$1`) for the first argument, `$2` for the second, and so on up to `$9`.
+`$$` captures variadic (rest) arguments as an array.
+
+```frost
+map [1, 2, 3] with $($ * 2)           # [2, 4, 6]
+filter [1, 2, 3, 4] with $($ > 2)     # [3, 4]
+[10, 20, 30] @ transform($($1 + 5))   # [15, 25, 35]
+```
+
+`$` and `$1` are interchangeable -- both refer to the first argument.
+Unused parameters between `$1` and the highest used `$N` are filled automatically:
+
+```frost
+$($3 + 1)   # equivalent to: fn $1, $2, $3 -> $3 + 1
+```
+
+`$$` works like `...rest` in a regular lambda:
+
+```frost
+def f = $($$)
+f(1, 2, 3)   # [1, 2, 3]
+```
+
+A `$(...)` with no placeholder references produces a zero-parameter function:
+
+```frost
+def thunk = $(42)
+thunk()   # 42
+```
+
+The `$` and `(` must be adjacent -- `$ (expr)` is not an abbreviated lambda.
+
+Abbreviated lambdas can be nested, though this is not recommended.
+Each `$(...)` creates its own scope: inner placeholders refer to the inner function's arguments, not the outer's.
 
 ## Expressions
 

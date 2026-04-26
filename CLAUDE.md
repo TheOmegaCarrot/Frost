@@ -167,6 +167,14 @@ defn add(x, y) -> x + y
 export defn greet(name) -> $'hello, ${name}'
 ```
 
+Abbreviated lambdas: `$(expr)` with `$`/`$1`-`$9` placeholders, `$$` for rest args.
+
+```frost
+map [1, 2, 3] with $($ * 2)           # [2, 4, 6]
+$($1 + $2)                            # fn $1, $2 -> $1 + $2
+$($$)                                  # fn ...$$ -> $$
+```
+
 ### Truthiness
 
 Only `null` and `false` are falsy. `0`, `""`, `[]`, `{}` are all truthy.
