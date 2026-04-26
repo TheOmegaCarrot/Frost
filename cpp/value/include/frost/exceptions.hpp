@@ -107,7 +107,8 @@ inline void forbid_dollar_identifier(std::string_view name)
 {
     if (utils::is_dollar_identifier(name))
         throw Frost_Unrecoverable_Error{
-            "Cannot bind to placeholder name '" + std::string{name}
+            "Cannot bind to placeholder name '"
+            + std::string{name}
             + "' (use inside '$( )' for abbreviated lambdas)"};
 }
 

@@ -1500,11 +1500,10 @@ TEST_CASE("Parser Lambda Expressions")
         frst::Symbol_Table table;
         frst::Evaluation_Context eval_ctx{.symbols = table};
         auto value = expr->evaluate(eval_ctx);
-        auto out = call_function(
-            value,
-            {frst::Value::create(0_f),    // $1 (unused)
-             frst::Value::create(0_f),    // $2 (unused)
-             frst::Value::create(7_f)});  // $3
+        auto out = call_function(value,
+                                 {frst::Value::create(0_f),   // $1 (unused)
+                                  frst::Value::create(0_f),   // $2 (unused)
+                                  frst::Value::create(7_f)}); // $3
         REQUIRE(out->is<frst::Int>());
         CHECK(out->get<frst::Int>().value() == 70_f);
     }

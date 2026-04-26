@@ -1045,8 +1045,8 @@ struct Dollar_Name_Lookup
 // must be adjacent (no whitespace).
 struct Abbreviated_Lambda
 {
-    static constexpr auto rule = dsl::no_whitespace(
-        dsl::lit_c<'$'> + dsl::lit_c<'('>)
+    static constexpr auto rule =
+        dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<'('>)
         + param_ws_nl
         + dsl::recurse<expression_nl>
         + param_ws_nl
@@ -1062,8 +1062,7 @@ struct Abbreviated_Lambda
 
             for (const auto& action : body->symbol_sequence())
             {
-                const auto* usage =
-                    std::get_if<ast::AST_Node::Usage>(&action);
+                const auto* usage = std::get_if<ast::AST_Node::Usage>(&action);
                 if (not usage)
                     continue;
                 const auto& name = usage->name;
@@ -1071,9 +1070,12 @@ struct Abbreviated_Lambda
                     max_n = std::max(max_n, 1);
                 else if (name == "$$")
                     has_rest = true;
-                else if (name.size() == 2
-                         && name[0] == '$'
-                         && (name[1] >= '2') && (name[1] <= '9'))
+                else if (name.size()
+                         == 2
+                         && name[0]
+                         == '$'
+                         && (name[1] >= '2')
+                         && (name[1] <= '9'))
                     max_n = std::max(max_n, name[1] - '0');
             }
 
@@ -1088,8 +1090,8 @@ struct Abbreviated_Lambda
             std::vector<ast::Statement::Ptr> body_vec;
             body_vec.push_back(std::move(body));
             return std::make_unique<ast::Lambda>(
-                ast::AST_Node::no_range, std::move(params),
-                std::move(body_vec), std::move(vararg), std::nullopt, true);
+                ast::AST_Node::no_range, std::move(params), std::move(body_vec),
+                std::move(vararg), std::nullopt, true);
         });
     static constexpr auto name = "abbreviated lambda";
 };
@@ -2401,24 +2403,25 @@ struct match_pattern
     struct alternatives
     {
         static constexpr auto rule = [] {
-            auto pipe_sep =
-                dsl::peek(param_ws_nl + dsl::lit_c<'|'>
-                          + param_ws_nl + match_pattern_start_char)
-                >> (param_ws_nl + dsl::lit_c<'|'> + param_ws_nl);
+            auto pipe_sep = dsl::peek(param_ws_nl
+                                      + dsl::lit_c<'|'>
+                                      + param_ws_nl
+                                      + match_pattern_start_char)
+                            >> (param_ws_nl + dsl::lit_c<'|'> + param_ws_nl);
             auto atom = dsl::peek(match_pattern_start_char)
                         >> dsl::recurse<match_pattern_atom>;
             return dsl::list(atom, dsl::sep(pipe_sep));
         }();
         static constexpr auto value =
-            lexy::as_list<std::vector<ast::Match_Pattern::Ptr>>
-            >> lexy::callback<ast::Match_Pattern::Ptr>(
-                [](std::vector<ast::Match_Pattern::Ptr> alts)
-                    -> ast::Match_Pattern::Ptr {
-                    if (alts.size() == 1)
-                        return std::move(alts[0]);
-                    return std::make_unique<ast::Match_Alternative>(
-                        ast::AST_Node::no_range, std::move(alts));
-                });
+            lexy::as_list<std::vector<ast::Match_Pattern::Ptr>> >> lexy::
+                callback<ast::Match_Pattern::Ptr>(
+                    [](std::vector<ast::Match_Pattern::Ptr> alts)
+                        -> ast::Match_Pattern::Ptr {
+                        if (alts.size() == 1)
+                            return std::move(alts[0]);
+                        return std::make_unique<ast::Match_Alternative>(
+                            ast::AST_Node::no_range, std::move(alts));
+                    });
         static constexpr auto name = "match pattern";
     };
 
@@ -2815,11 +2818,9 @@ struct primary_expression
            | dsl::peek(dsl::lit_c<'{'>)
            >> dsl::p<node::Map>
            | dsl::peek(dsl::no_whitespace(
-                 dsl::lit_c<'$'>
-                 + (dsl::lit_c<'\''> | dsl::lit_c<'"'>)))
+               dsl::lit_c<'$'> + (dsl::lit_c<'\''> | dsl::lit_c<'"'>)))
            >> dsl::p<node::Format_String>
-           | dsl::peek(dsl::no_whitespace(
-                 dsl::lit_c<'$'> + dsl::lit_c<'('>))
+           | dsl::peek(dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<'('>))
            >> dsl::p<node::Abbreviated_Lambda>
            | dsl::peek(dsl::lit_c<'$'>)
            >> dsl::p<node::Dollar_Name_Lookup>

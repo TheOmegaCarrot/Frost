@@ -1133,12 +1133,10 @@ TEST_CASE("Parser Match: single pattern does not produce Match_Alternative")
 TEST_CASE("Parser Match: alternative nested inside array pattern")
 {
     frst::Symbol_Table table;
-    run("def x = match [1, 3] { [1 | 2, 3 | 4] => 'hit', _ => 'miss' }",
-        table);
+    run("def x = match [1, 3] { [1 | 2, 3 | 4] => 'hit', _ => 'miss' }", table);
     CHECK(lookup(table, "x")->raw_get<frst::String>() == "hit");
 
-    run("def y = match [1, 5] { [1 | 2, 3 | 4] => 'hit', _ => 'miss' }",
-        table);
+    run("def y = match [1, 5] { [1 | 2, 3 | 4] => 'hit', _ => 'miss' }", table);
     CHECK(lookup(table, "y")->raw_get<frst::String>() == "miss");
 }
 
@@ -1155,7 +1153,8 @@ TEST_CASE("Parser Match: alternative nested inside map pattern")
 TEST_CASE("Parser Match: alternative with guard")
 {
     frst::Symbol_Table table;
-    run("def x = match 5 { n is Int | n is Float if: n > 3 => 'big', _ => 'small' }",
+    run("def x = match 5 { n is Int | n is Float if: n > 3 => 'big', _ => "
+        "'small' }",
         table);
     CHECK(lookup(table, "x")->raw_get<frst::String>() == "big");
 }
