@@ -125,6 +125,8 @@ contexts:
       scope: keyword.operator.comparison.frost
     - match: '[+\-*/%]'
       scope: keyword.operator.arithmetic.frost
+    - match: '\|'
+      scope: keyword.operator.alternative.frost
     - match: '='
       scope: keyword.operator.assignment.frost
 

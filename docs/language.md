@@ -663,6 +663,7 @@ A pattern can be one of the following forms:
 | `[p1, p2, ..._]`              | Array with discard rest: matches leading elements, drops the tail       |
 | `{key: pattern, ...}`         | Map: matches a map by key, applying sub-patterns to each value          |
 | `{key: pattern, ...} as name` | Map with whole binding: matches by key and also binds the entire map    |
+| `pattern \| pattern`          | Alternative: tries each pattern left-to-right, first match wins         |
 
 Anywhere a pattern appears, any of these forms can be used.
 This means array and map patterns nest to arbitrary depth (see [Nesting](#nesting)).
@@ -688,6 +689,55 @@ match value {
 
 The `if` denotes a guard clause.
 See [Guards](#guards) for a full explanation of that syntax.
+
+#### Alternatives
+
+Patterns can be combined with `|` to try multiple patterns for the same arm.
+The patterns are tried left-to-right; the first one that matches wins.
+
+```frost
+match http_code {
+    200 | 201 | 204 => 'success',
+    301 | 302       => 'redirect',
+    _               => 'other'
+}
+```
+
+Alternatives work anywhere a pattern can appear, including nested inside array and map patterns:
+
+```frost
+match [method, status] {
+    ['GET' | 'HEAD', 200 | 304] => 'cacheable',
+    _                           => 'not cacheable'
+}
+```
+
+When alternatives include bindings, every alternative must bind the same set of names.
+This ensures the result expression can use the bindings regardless of which alternative matched.
+
+```frost
+match value {
+    [first, ..._] | {first} => first,   # both bind `first`
+    _                       => null
+}
+```
+
+Alternatives with mismatched bindings are an error:
+
+```frost
+match value {
+    a | [b, c] => a   # error: alternative 1 binds {a}, alternative 2 binds {b, c}
+}
+```
+
+Guards apply to the whole top-level pattern: the guard runs after whichever branch matched:
+
+```frost
+match value {
+    n is Int | n is Float if: n > 0 => 'positive number',
+    _                               => 'other'
+}
+```
 
 #### Array Patterns
 

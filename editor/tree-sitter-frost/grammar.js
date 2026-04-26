@@ -448,7 +448,12 @@ module.exports = grammar({
       field('condition', $.expression),
     ),
 
-    match_pattern: $ => choice(
+    match_pattern: $ => seq(
+      $.match_pattern_atom,
+      repeat(seq('|', $.match_pattern_atom)),
+    ),
+
+    match_pattern_atom: $ => choice(
       $.match_binding_pattern,
       $.match_value_pattern,
       $.match_array_pattern,

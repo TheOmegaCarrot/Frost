@@ -1486,6 +1486,21 @@
     "named": true,
     "fields": {},
     "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "match_pattern_atom",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "match_pattern_atom",
+    "named": true,
+    "fields": {},
+    "children": {
       "multiple": false,
       "required": true,
       "types": [
@@ -2481,6 +2496,10 @@
   },
   {
     "type": "{",
+    "named": false
+  },
+  {
+    "type": "|",
     "named": false
   },
   {

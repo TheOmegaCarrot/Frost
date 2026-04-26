@@ -139,9 +139,6 @@ else: 0
 value @ tap(print)                       # tap(value, print)
 ```
 
-There is no `|` pipe operator.
-`|` is not a valid token.
-
 ### Format strings
 
 `${}` interpolation accepts **identifiers only** — no expressions.
@@ -194,6 +191,7 @@ match value {
     [a, b, ...rest] => a + b,              # array pattern with rest
     {name, age: a}  => a,                  # map pattern (shorthand + explicit)
     {name} as person => person.age,        # map pattern with whole-map binding
+    1 | 2 | 3       => 'low',               # alternatives: first match wins
     _ if: guard     => 'guarded',          # guard with `if:` (note the colon)
     _               => 'catch-all'         # discard binding
 }
@@ -203,6 +201,7 @@ match value {
 - No match is a **runtime error** (not null).
 - Bare identifier = binding. `(expr)` = value comparison. Literal = value comparison.
 - Map patterns require keys to be **present**; missing key = no match.
+- Alternatives (`|`): all branches must bind the **same set of names**. Works at any nesting level.
 - Type constraints: `Null`, `Int`, `Float`, `Bool`, `String`, `Array`, `Map`, `Function`, `Primitive`, `Numeric`, `Structured`, `Nonnull`.
 
 ### Map / filter / reduce expressions

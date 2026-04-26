@@ -1934,6 +1934,31 @@
       ]
     },
     "match_pattern": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "match_pattern_atom"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "|"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "match_pattern_atom"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "match_pattern_atom": {
       "type": "CHOICE",
       "members": [
         {
