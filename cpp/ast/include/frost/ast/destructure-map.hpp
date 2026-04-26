@@ -33,6 +33,8 @@ class Destructure_Map final : public Destructure
         , bind_whole_name_{std::move(bind_whole_name)}
         , exported_{exported}
     {
+        if (bind_whole_name_.has_value())
+            forbid_dollar_identifier(bind_whole_name_.value());
     }
 
     std::generator<Symbol_Action> symbol_sequence() const final

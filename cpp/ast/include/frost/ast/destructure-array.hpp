@@ -26,6 +26,8 @@ class Destructure_Array final : public Destructure
         , rest_name_{std::move(rest_name)}
         , exported_{exported}
     {
+        if (rest_name_.has_value() && rest_name_.value() != "_")
+            forbid_dollar_identifier(rest_name_.value());
     }
 
     std::generator<Symbol_Action> symbol_sequence() const final

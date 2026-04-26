@@ -96,7 +96,8 @@ std::expected<std::vector<Fmt_Segment>, std::string> parse_fmt_string(
         }
 
         std::string content = str.substr(i + 2, end - (i + 2));
-        if (!is_identifier_like(content))
+        if (not is_identifier_like(content)
+            && not is_dollar_identifier(content))
         {
             if (content.empty())
             {

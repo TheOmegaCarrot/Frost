@@ -95,6 +95,8 @@ class Match_Binding final : public Match_Pattern
         , name_{std::move(name)}
         , type_constraint_{type_constraint}
     {
+        if (name_.has_value())
+            forbid_dollar_identifier(name_.value());
     }
 
     Match_Binding() = delete;

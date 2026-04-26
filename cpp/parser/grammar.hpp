@@ -945,6 +945,10 @@ struct format_string_literal
 // This separation keeps the grammar logic (how to parse) distinct from the
 // AST construction logic (what to build).
 
+// Forward-declare expression_nl for use by Abbreviated_Lambda below.
+// The full definition appears later with the expression_impl template.
+struct expression_nl;
+
 namespace node
 {
 // Literal: tries null, bool, string, float, then integer. The float/integer
@@ -1002,6 +1006,60 @@ struct Name_Lookup
                                                       std::move(name));
         });
     static constexpr auto name = "name";
+};
+
+// Dollar name lookup: `$`, `$N` (single digit), or `$$`.
+// Placeholder parameter names for abbreviated lambdas `$(...)`. Valid as
+// name lookups; cannot be definition targets (AST enforces).
+//
+// `dsl::token` makes the match atomic (no whitespace inside) but does not
+// produce a value. We capture the start position before the token, then
+// reconstruct the 1-or-2-character name by inspecting the input directly.
+// This is safe because `dsl::opt` already validated whether the trailing
+// character was consumed. `primary_expression` guarantees we only reach
+// here when `$` is NOT followed by `'`, `"`, or `(`.
+struct Dollar_Name_Lookup
+{
+    static constexpr auto rule =
+        dsl::position
+        + dsl::token(dsl::lit_c<'$'>
+                     + dsl::opt(dsl::lit_c<'$'> | dsl::digit<>));
+    static constexpr auto value =
+        lexy::callback<ast::Expression::Ptr>([](auto begin_pos) {
+            // The token matched 1 or 2 characters starting at begin_pos.
+            // Read the character(s) directly from the input.
+            auto p = reinterpret_cast<const char*>(&*begin_pos);
+            std::string name;
+            name += *p; // '$'
+            char next = *(p + 1);
+            if (next == '$' || (next >= '0' && next <= '9'))
+                name += next;
+            return std::make_unique<ast::Name_Lookup>(ast::AST_Node::no_range,
+                                                      std::move(name));
+        });
+    static constexpr auto name = "dollar name";
+};
+
+// Abbreviated lambda: `$(expr)`. Desugars to a Lambda whose parameters are
+// derived from the `$`-identifier usages within the body. The `$` and `(`
+// must be adjacent (no whitespace).
+struct Abbreviated_Lambda
+{
+    static constexpr auto rule = dsl::no_whitespace(
+        dsl::lit_c<'$'> + dsl::lit_c<'('>)
+        + param_ws_nl
+        + dsl::recurse<expression_nl>
+        + param_ws_nl
+        + dsl::lit_c<')'>;
+    static constexpr auto value =
+        lexy::callback<ast::Expression::Ptr>([](ast::Expression::Ptr body) {
+            std::vector<ast::Statement::Ptr> body_vec;
+            body_vec.push_back(std::move(body));
+            return std::make_unique<ast::Lambda>(
+                ast::AST_Node::no_range, std::vector<std::string>{},
+                std::move(body_vec), std::nullopt, std::nullopt, true);
+        });
+    static constexpr auto name = "abbreviated lambda";
 };
 } // namespace node
 
@@ -2724,8 +2782,15 @@ struct primary_expression
            >> dsl::p<node::Array>
            | dsl::peek(dsl::lit_c<'{'>)
            >> dsl::p<node::Map>
-           | dsl::peek(dsl::lit_c<'$'>)
+           | dsl::peek(dsl::no_whitespace(
+                 dsl::lit_c<'$'>
+                 + (dsl::lit_c<'\''> | dsl::lit_c<'"'>)))
            >> dsl::p<node::Format_String>
+           | dsl::peek(dsl::no_whitespace(
+                 dsl::lit_c<'$'> + dsl::lit_c<'('>))
+           >> dsl::p<node::Abbreviated_Lambda>
+           | dsl::peek(dsl::lit_c<'$'>)
+           >> dsl::p<node::Dollar_Name_Lookup>
            | dsl::p<node::Literal>
            | dsl::peek(LEXY_KEYWORD("elif", identifier::base))
            >> dsl::error<unexpected_elif>

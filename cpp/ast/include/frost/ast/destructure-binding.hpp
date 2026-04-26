@@ -20,6 +20,8 @@ class Destructure_Binding final : public Destructure
     {
         if (name_.has_value() && name_.value().empty())
             throw Frost_Interpreter_Error{"Attempting to bind an empty name!"};
+        if (name_.has_value())
+            forbid_dollar_identifier(name_.value());
     }
 
     Destructure_Binding() = delete;

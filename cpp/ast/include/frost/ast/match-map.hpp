@@ -49,6 +49,8 @@ class Match_Map final : public Match_Pattern
         , elements_{std::move(elements)}
         , bind_whole_name_{std::move(bind_whole_name)}
     {
+        if (bind_whole_name_.has_value())
+            forbid_dollar_identifier(bind_whole_name_.value());
     }
 
     std::generator<Symbol_Action> symbol_sequence() const final;

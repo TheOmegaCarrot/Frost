@@ -1296,4 +1296,140 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(range.end.line == 3);
         CHECK(range.end.column == 1);
     }
+
+    // =================================================================
+    // Abbreviated lambdas: $(...)
+    // =================================================================
+
+    SECTION("Abbreviated lambda with bare $ (shorthand for $1)")
+    {
+        auto result = parse("$($ + 1)");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
+        auto out = call_function(value, {frst::Value::create(10_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 11_f);
+    }
+
+    SECTION("Abbreviated lambda with $1")
+    {
+        auto result = parse("$($1 * 2)");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
+        auto out = call_function(value, {frst::Value::create(5_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 10_f);
+    }
+
+    SECTION("Abbreviated lambda with $1 and $2")
+    {
+        auto result = parse("$($1 + $2)");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
+        auto out = call_function(
+            value, {frst::Value::create(3_f), frst::Value::create(4_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 7_f);
+    }
+
+    SECTION("Abbreviated lambda produces a Lambda AST node")
+    {
+        auto result = parse("$($ > 0)");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+        CHECK(expr->node_label().starts_with("Lambda"));
+    }
+
+    SECTION("Abbreviated lambda source range spans $( to )")
+    {
+        // "$($ + 1)" → [1:1-1:8]
+        auto result = parse("$($ + 1)");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+        auto range = expr->source_range();
+        CHECK(range.begin.line == 1);
+        CHECK(range.begin.column == 1);
+        CHECK(range.end.line == 1);
+        CHECK(range.end.column == 8);
+    }
+
+    SECTION("Abbreviated lambda: $$ as rest parameter")
+    {
+        auto result = parse("$($$ + $1)");
+        REQUIRE(result.has_value());
+    }
+
+    SECTION("Abbreviated lambda: whitespace inside is fine")
+    {
+        auto result = parse("$( $ + 1 )");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
+        auto out = call_function(value, {frst::Value::create(10_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 11_f);
+    }
+
+    SECTION("Abbreviated lambda: no whitespace between $ and (")
+    {
+        // "$ (1 + 2)" is a dollar name lookup followed by parenthesized
+        // expr, not an abbreviated lambda.
+        auto result = parse("$ (1 + 2)");
+        if (result.has_value())
+            CHECK_FALSE(result.value()->node_label().starts_with("Lambda"));
+    }
+
+    SECTION("Dollar identifiers in existing format strings still work")
+    {
+        auto result = parse_prog("def name = 'world'\n"
+                                 "def x = $'hello, ${name}'");
+        REQUIRE(result.has_value());
+    }
+
+    SECTION("Dollar identifier as a regular name lookup")
+    {
+        auto result = parse("$1");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+        CHECK(expr->node_label() == "Name_Lookup($1)");
+    }
+
+    SECTION("Dollar identifiers: all forms parse")
+    {
+        for (auto id : {"$", "$1", "$9", "$$"})
+        {
+            auto result = parse(id);
+            REQUIRE(result.has_value());
+            CHECK(result.value()->node_label().starts_with("Name_Lookup($"));
+        }
+    }
+
+    SECTION("Dollar identifiers cannot be used in def bindings")
+    {
+        CHECK(not parse_prog("def $ = 1"));
+        CHECK(not parse_prog("def $1 = 1"));
+        CHECK(not parse_prog("def $$ = 1"));
+    }
+
+    SECTION("Dollar identifiers cannot be used as lambda parameters")
+    {
+        CHECK(not parse("fn $ -> $ + 1"));
+        CHECK(not parse("fn $1 -> $1 + 1"));
+        CHECK(not parse("fn($1) -> $1 + 1"));
+    }
 }

@@ -29,7 +29,7 @@ class Lambda final : public Expression
     Lambda(Source_Range source_range, std::vector<std::string> params,
            std::vector<Statement::Ptr> body,
            std::optional<std::string> vararg_param = {},
-           std::optional<std::string> self_name = {});
+           std::optional<std::string> self_name = {}, bool abbreviated = false);
 
     std::generator<Symbol_Action> symbol_sequence() const final;
 

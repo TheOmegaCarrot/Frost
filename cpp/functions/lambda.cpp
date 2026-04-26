@@ -18,7 +18,7 @@ namespace
 Lambda::Lambda(Source_Range source_range, std::vector<std::string> params,
                std::vector<Statement::Ptr> body_prefix,
                std::optional<std::string> vararg_param,
-               std::optional<std::string> self_name)
+               std::optional<std::string> self_name, bool abbreviated)
     : Expression(source_range)
     , params_{std::move(params)}
     , body_prefix_{std::make_shared<std::vector<Statement::Ptr>>(
@@ -26,6 +26,14 @@ Lambda::Lambda(Source_Range source_range, std::vector<std::string> params,
     , vararg_param_{std::move(vararg_param)}
     , self_name_{std::move(self_name)}
 {
+    if (not abbreviated)
+    {
+        for (const auto& p : params_)
+            forbid_dollar_identifier(p);
+        if (vararg_param_)
+            forbid_dollar_identifier(vararg_param_.value());
+    }
+
     std::flat_set<std::string> param_set{std::from_range, params_};
 
     if (vararg_param_)

@@ -51,6 +51,8 @@ class Match_Array final : public Match_Pattern
         , subpatterns_{std::move(subpatterns)}
         , rest_{std::move(rest)}
     {
+        if (rest_.has_value() && rest_->name.has_value())
+            forbid_dollar_identifier(rest_->name.value());
     }
 
     std::generator<Symbol_Action> symbol_sequence() const final;

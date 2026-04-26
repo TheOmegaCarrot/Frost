@@ -2,6 +2,7 @@
 #define FROST_EXCEPTIONS_HPP
 
 #include <frost/backtrace.hpp>
+#include <frost/utils.hpp>
 
 #include <stdexcept>
 #include <string>
@@ -99,6 +100,16 @@ struct Frost_Unrecoverable_Error : Frost_User_Error
         "Hit point which should be unreachable at: " __FILE__                  \
         ":" BOOST_PP_STRINGIZE(__LINE__)                                                 \
     }
+
+// Throws Frost_Unrecoverable_Error if `name` is a `$`-identifier.
+// Call from any AST node constructor that accepts a binding/parameter name.
+inline void forbid_dollar_identifier(std::string_view name)
+{
+    if (utils::is_dollar_identifier(name))
+        throw Frost_Unrecoverable_Error{
+            "Cannot bind to placeholder name '" + std::string{name}
+            + "' (use inside '$( )' for abbreviated lambdas)"};
+}
 
 } // namespace frst
 

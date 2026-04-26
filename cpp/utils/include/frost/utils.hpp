@@ -65,6 +65,24 @@ const inline std::flat_set<std::string_view> reserved_keywords{
 {
     return reserved_keywords.contains(value);
 }
+
+// `$`, `$1`-`$9`, `$$` -- placeholder parameter names for abbreviated lambdas.
+// These may only appear as name lookups inside `$(...)`, never as definition
+// targets.
+[[nodiscard]] inline bool is_dollar_identifier(std::string_view value)
+{
+    if (not value.starts_with('$'))
+        return false;
+    // "$"
+    if (value.size() == 1)
+        return true;
+    // "$$"
+    if (value == "$$")
+        return true;
+    // "$N" (single digit)
+    return (value.size() == 2) && (value[1] >= '0') && (value[1] <= '9');
+}
+
 } // namespace frst::utils
 
 #endif
