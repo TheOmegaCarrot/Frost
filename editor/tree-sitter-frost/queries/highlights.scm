@@ -63,6 +63,8 @@
 
 (identifier) @variable
 
+(dollar_identifier) @variable.parameter
+
 (postfix_expression
   function: (postfix_expression
     (primary_expression
@@ -125,6 +127,9 @@
   (no_nl_call_open)
   (no_nl_index_open)
 ] @punctuation.bracket
+
+(abbreviated_lambda "$(" @punctuation.bracket)
+(abbreviated_lambda ")" @punctuation.bracket)
 
 [
   ":"

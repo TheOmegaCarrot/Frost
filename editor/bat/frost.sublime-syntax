@@ -15,6 +15,7 @@ contexts:
   main:
     - include: comments
     - include: format-strings
+    - include: dollar-identifiers
     - include: raw-strings
     - include: strings
     - include: numbers
@@ -99,6 +100,10 @@ contexts:
       captures:
         1: punctuation.accessor.dot.frost
         3: variable.other.member.frost
+
+  dollar-identifiers:
+    - match: '\$\$|\$[0-9]|\$'
+      scope: variable.parameter.frost
 
   identifiers:
     - match: '\b{{ident}}\b'

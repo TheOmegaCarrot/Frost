@@ -1086,6 +1086,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "dollar_identifier"
+        },
+        {
+          "type": "SYMBOL",
           "name": "literal"
         },
         {
@@ -1107,6 +1111,10 @@
         {
           "type": "SYMBOL",
           "name": "lambda_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "abbreviated_lambda"
         },
         {
           "type": "SYMBOL",
@@ -1201,6 +1209,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "abbreviated_lambda"
+        },
+        {
+          "type": "SYMBOL",
           "name": "do_block"
         },
         {
@@ -1226,6 +1238,10 @@
         {
           "type": "SYMBOL",
           "name": "identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "dollar_identifier"
         },
         {
           "type": "SYMBOL",
@@ -2922,6 +2938,45 @@
         "type": "PATTERN",
         "value": "[A-Za-z_][A-Za-z0-9_]*"
       }
+    },
+    "dollar_identifier": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "\\$\\$|\\$[0-9]|\\$"
+        }
+      }
+    },
+    "abbreviated_lambda": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "PREC",
+            "value": 2,
+            "content": {
+              "type": "STRING",
+              "value": "$("
+            }
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "SYMBOL",
+            "name": "expression"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
     },
     "no_nl_call_open": {
       "type": "IMMEDIATE_TOKEN",

@@ -108,6 +108,22 @@
     ]
   },
   {
+    "type": "abbreviated_lambda",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "and_expression",
     "named": true,
     "fields": {
@@ -1786,11 +1802,19 @@
       "required": true,
       "types": [
         {
+          "type": "abbreviated_lambda",
+          "named": true
+        },
+        {
           "type": "array_literal",
           "named": true
         },
         {
           "type": "do_block",
+          "named": true
+        },
+        {
+          "type": "dollar_identifier",
           "named": true
         },
         {
@@ -2119,11 +2143,19 @@
       "required": true,
       "types": [
         {
+          "type": "abbreviated_lambda",
+          "named": true
+        },
+        {
           "type": "array_literal",
           "named": true
         },
         {
           "type": "do_block",
+          "named": true
+        },
+        {
+          "type": "dollar_identifier",
           "named": true
         },
         {
@@ -2230,6 +2262,10 @@
     "named": false
   },
   {
+    "type": "$(",
+    "named": false
+  },
+  {
     "type": "${",
     "named": false
   },
@@ -2329,6 +2365,10 @@
     "type": "comment",
     "named": true,
     "extra": true
+  },
+  {
+    "type": "dollar_identifier",
+    "named": true
   },
   {
     "type": "double_string",

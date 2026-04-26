@@ -275,12 +275,14 @@ module.exports = grammar({
 
     threaded_callee_primary: $ => choice(
       $.identifier,
+      $.dollar_identifier,
       $.literal,
       $.array_literal,
       $.map_literal,
       $.parenthesized_expression,
       $.if_expression,
       $.lambda_expression,
+      $.abbreviated_lambda,
       $.do_block,
       $.map_expression,
       $.filter_expression,
@@ -300,6 +302,7 @@ module.exports = grammar({
     primary_expression: $ => choice(
       $.if_expression,
       $.lambda_expression,
+      $.abbreviated_lambda,
       $.do_block,
       $.map_expression,
       $.filter_expression,
@@ -307,6 +310,7 @@ module.exports = grammar({
       $.foreach_expression,
       $.match_expression,
       $.identifier,
+      $.dollar_identifier,
       $.literal,
       $.array_literal,
       $.map_literal,
@@ -631,6 +635,18 @@ module.exports = grammar({
     format_placeholder_content: _ => token.immediate(prec(-1, /[^}\n]+/)),
 
     identifier: _ => token(/[A-Za-z_][A-Za-z0-9_]*/),
+
+    // `$`, `$N` (single digit), or `$$`. Placeholder parameter names for
+    // abbreviated lambdas. Higher precedence than format strings so `$1`
+    // is not confused with `$` + integer `1`.
+    dollar_identifier: _ => token(prec(1, /\$\$|\$[0-9]|\$/)),
+
+    // `$(expr)` -- abbreviated lambda. The `$` and `(` must be adjacent.
+    abbreviated_lambda: $ => seq(
+      token(prec(2, '$(')),
+      field('body', $.expression),
+      ')',
+    ),
 
     no_nl_call_open: _ => token.immediate(prec(1, /[ \t\r\f\v]*\(/)),
     no_nl_index_open: _ => token.immediate(prec(1, /[ \t\r\f\v]*\[/)),
