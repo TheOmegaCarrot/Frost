@@ -1053,11 +1053,43 @@ struct Abbreviated_Lambda
         + dsl::lit_c<')'>;
     static constexpr auto value =
         lexy::callback<ast::Expression::Ptr>([](ast::Expression::Ptr body) {
+            // Scan the body for $-identifier usages to derive params.
+            // Inner abbreviated lambdas are already constructed, so their
+            // symbol_sequence suppresses their own $-params -- only this
+            // level's dollar refs are visible.
+            int max_n = 0;
+            bool has_rest = false;
+
+            for (const auto& action : body->symbol_sequence())
+            {
+                const auto* usage =
+                    std::get_if<ast::AST_Node::Usage>(&action);
+                if (not usage)
+                    continue;
+                const auto& name = usage->name;
+                if (name == "$" || name == "$1")
+                    max_n = std::max(max_n, 1);
+                else if (name == "$$")
+                    has_rest = true;
+                else if (name.size() == 2
+                         && name[0] == '$'
+                         && (name[1] >= '2') && (name[1] <= '9'))
+                    max_n = std::max(max_n, name[1] - '0');
+            }
+
+            std::vector<std::string> params;
+            for (int i = 1; i <= max_n; ++i)
+                params.push_back("$" + std::to_string(i));
+
+            std::optional<std::string> vararg;
+            if (has_rest)
+                vararg = "$$";
+
             std::vector<ast::Statement::Ptr> body_vec;
             body_vec.push_back(std::move(body));
             return std::make_unique<ast::Lambda>(
-                ast::AST_Node::no_range, std::vector<std::string>{},
-                std::move(body_vec), std::nullopt, std::nullopt, true);
+                ast::AST_Node::no_range, std::move(params),
+                std::move(body_vec), std::move(vararg), std::nullopt, true);
         });
     static constexpr auto name = "abbreviated lambda";
 };

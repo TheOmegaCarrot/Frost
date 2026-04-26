@@ -53,6 +53,12 @@ Lambda::Lambda(Source_Range source_range, std::vector<std::string> params,
         throw Frost_Unrecoverable_Error{"Closure has duplicate parameters"};
     }
 
+    // In abbreviated lambdas, `$` is a runtime alias for `$1` (set up in
+    // Closure::call). Add it to param_set AFTER the duplicate check so the
+    // capture analysis knows it's locally defined.
+    if (abbreviated && param_set.contains("$1"))
+        param_set.insert("$");
+
     if (body_prefix_->size() == 0)
         throw Frost_Unrecoverable_Error("Closure may not have an empty body");
 

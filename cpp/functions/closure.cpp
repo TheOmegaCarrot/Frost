@@ -89,6 +89,9 @@ Value_Ptr Closure::call(std::span<const Value_Ptr> args) const
         scope_ctx.symbols.define(self_name_.value(),
                                  Value::create(self_function()));
 
+    if (parameters_.size() != 0 && parameters_.front() == "$1")
+        scope_ctx.symbols.define("$", args.front());
+
     for (const ast::Statement::Ptr& node : *body_prefix_)
     {
         node->execute(scope_ctx);

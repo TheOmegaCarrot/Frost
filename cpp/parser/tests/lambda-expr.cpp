@@ -54,6 +54,13 @@ TEST_CASE("Parser Lambda Expressions")
         return frst::parse_program(std::string{input});
     };
 
+    auto run = [&](std::string_view code, frst::Execution_Context& ctx) {
+        auto result = parse_prog(code);
+        REQUIRE(result.has_value());
+        for (const auto& stmt : result.value())
+            stmt->execute(ctx);
+    };
+
     SECTION("Empty braces parse as an empty-map-returning lambda")
     {
         auto returns_empty_map = [&](std::string_view src,
@@ -1431,5 +1438,104 @@ TEST_CASE("Parser Lambda Expressions")
         CHECK(not parse("fn $ -> $ + 1"));
         CHECK(not parse("fn $1 -> $1 + 1"));
         CHECK(not parse("fn($1) -> $1 + 1"));
+    }
+
+    SECTION("Abbreviated lambda: $ and $1 mixed refer to same argument")
+    {
+        // Both `$` and `$1` should resolve to the first argument.
+        auto result = parse("$($ + $1)");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
+        auto out = call_function(value, {frst::Value::create(5_f)});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 10_f); // 5 + 5
+    }
+
+    SECTION("Abbreviated lambda: gap filling ($3 implies $1 and $2 exist)")
+    {
+        // Using $3 should produce a 3-param lambda.
+        // $1 and $2 are unused but must be accepted as arguments.
+        auto result = parse("$($3 * 10)");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
+        auto out = call_function(
+            value,
+            {frst::Value::create(0_f),    // $1 (unused)
+             frst::Value::create(0_f),    // $2 (unused)
+             frst::Value::create(7_f)});  // $3
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 70_f);
+    }
+
+    SECTION("Abbreviated lambda: captures from outer scope")
+    {
+        frst::Symbol_Table table;
+        frst::Execution_Context exec_ctx{.symbols = table};
+
+        run("def offset = 100\n"
+            "def f = $($ + offset)\n"
+            "def result = f(5)",
+            exec_ctx);
+
+        auto result = table.lookup("result");
+        REQUIRE(result->is<frst::Int>());
+        CHECK(result->get<frst::Int>().value() == 105_f);
+    }
+
+    SECTION("Abbreviated lambda: zero-param thunk")
+    {
+        auto result = parse("$(42)");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context eval_ctx{.symbols = table};
+        auto value = expr->evaluate(eval_ctx);
+        auto out = call_function(value, {});
+        REQUIRE(out->is<frst::Int>());
+        CHECK(out->get<frst::Int>().value() == 42_f);
+    }
+
+    SECTION("Abbreviated lambda: nesting (inner $1 shadows outer)")
+    {
+        frst::Symbol_Table table;
+        frst::Execution_Context exec_ctx{.symbols = table};
+
+        // Inner: $($1 + 1) is fn $1 -> $1 + 1
+        // Outer: $( $($1 + 1)($1) ) is fn $1 -> (fn $1 -> $1 + 1)($1)
+        // f(10) -> (fn $1 -> $1 + 1)(10) -> 11
+        run("def f = $($($1 + 1)($1))\n"
+            "def result = f(10)",
+            exec_ctx);
+
+        auto result = table.lookup("result");
+        REQUIRE(result->is<frst::Int>());
+        CHECK(result->get<frst::Int>().value() == 11_f);
+    }
+
+    SECTION("Abbreviated lambda: $$ collects rest arguments")
+    {
+        frst::Symbol_Table table;
+        frst::Execution_Context exec_ctx{.symbols = table};
+
+        run("def f = $($$)\n"
+            "def result = f(1, 2, 3)",
+            exec_ctx);
+
+        auto result = table.lookup("result");
+        REQUIRE(result->is<frst::Array>());
+        auto& arr = result->raw_get<frst::Array>();
+        REQUIRE(arr.size() == 3);
+        CHECK(arr[0]->get<frst::Int>().value() == 1_f);
+        CHECK(arr[1]->get<frst::Int>().value() == 2_f);
+        CHECK(arr[2]->get<frst::Int>().value() == 3_f);
     }
 }
