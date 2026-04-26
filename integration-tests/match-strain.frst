@@ -491,3 +491,120 @@ def as_computed = match {dynamic: 42} {
 }
 assert(as_computed[0] == 42)
 assert(as_computed[1] == {dynamic: 42})
+
+# ==========================================================================
+# 19. Pattern alternatives (`|`)
+# ==========================================================================
+
+# Basic literal alternatives
+assert(match 2 { 1 | 2 | 3 => 'low', _ => 'high' } == 'low')
+assert(match 5 { 1 | 2 | 3 => 'low', _ => 'high' } == 'high')
+
+# Each alternative is tried in order, first match wins
+assert(match 'b' { 'a' | 'b' | 'c' => 'found', _ => 'no' } == 'found')
+assert(match 'a' { 'a' | 'b' | 'c' => 'found', _ => 'no' } == 'found')
+assert(match 'c' { 'a' | 'b' | 'c' => 'found', _ => 'no' } == 'found')
+assert(match 'd' { 'a' | 'b' | 'c' => 'found', _ => 'no' } == 'no')
+
+# Alternatives with bindings: both branches bind the same name
+assert(match [1, 2] { [a, ..._] | {foo: a} => a } == 1)
+assert(match {foo: 42} { [a, ..._] | {foo: a} => a } == 42)
+
+# Alternatives with type constraints
+defn numeric_or_null(v) -> match v {
+    n is Int | n is Float => $'numeric',
+    _ is Null => 'null',
+    _ => 'other'
+}
+assert(numeric_or_null(42) == 'numeric')
+assert(numeric_or_null(3.14) == 'numeric')
+assert(numeric_or_null(null) == 'null')
+assert(numeric_or_null('hi') == 'other')
+
+# Alternatives nested inside array patterns
+assert(match [1, 4] { [1 | 2, 3 | 4] => 'hit', _ => 'miss' } == 'hit')
+assert(match [2, 3] { [1 | 2, 3 | 4] => 'hit', _ => 'miss' } == 'hit')
+assert(match [3, 3] { [1 | 2, 3 | 4] => 'hit', _ => 'miss' } == 'miss')
+assert(match [1, 5] { [1 | 2, 3 | 4] => 'hit', _ => 'miss' } == 'miss')
+
+# Alternatives nested inside map patterns
+assert(match {x: 1} { {x: 1 | 2 | 3} => 'hit', _ => 'miss' } == 'hit')
+assert(match {x: 4} { {x: 1 | 2 | 3} => 'hit', _ => 'miss' } == 'miss')
+
+# Alternatives with guards
+defn clamp_or_null(v) -> match v {
+    n is Int | n is Float if: n < 0 => 0,
+    n is Int | n is Float if: n > 100 => 100,
+    n is Int | n is Float => n,
+    _ => null
+}
+assert(clamp_or_null(-5) == 0)
+assert(clamp_or_null(50) == 50)
+assert(clamp_or_null(200) == 100)
+assert(clamp_or_null(3.14) == 3.14)
+assert(clamp_or_null('nope') == null)
+
+# Alternative combined with `as`
+def alt_as = match {bar: 7} {
+    {foo} as m | {bar: foo} as m => [foo, m],
+    _ => null
+}
+assert(alt_as[0] == 7)
+assert(alt_as[1] == {bar: 7})
+
+# Parenthesized value pattern in alternatives
+def sentinel = 999
+assert(match 999 { (sentinel) | null => 'special', _ => 'normal' } == 'special')
+assert(match null { (sentinel) | null => 'special', _ => 'normal' } == 'special')
+assert(match 1 { (sentinel) | null => 'special', _ => 'normal' } == 'normal')
+
+# Deeply nested alternatives (ugly but valid)
+assert(match [[1, 2]] {
+    [[1 | 2, 2 | 3]] => 'hit',
+    _ => 'miss'
+} == 'hit')
+
+# Many alternatives in a single pattern
+assert(match 7 {
+    1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 => 'single-digit-ish',
+    _ => 'nope'
+} == 'single-digit-ish')
+
+# Alternative where every branch is a different structural kind
+# (inadvisable, but valid -- all branches bind nothing)
+defn kitchen_sink(v) -> match v {
+    [] | {} | null | true | false | 0 | '' => 'degenerate',
+    _ => 'normal'
+}
+assert(kitchen_sink([]) == 'degenerate')
+assert(kitchen_sink({}) == 'degenerate')
+assert(kitchen_sink(null) == 'degenerate')
+assert(kitchen_sink(true) == 'degenerate')
+assert(kitchen_sink(false) == 'degenerate')
+assert(kitchen_sink(0) == 'degenerate')
+assert(kitchen_sink('') == 'degenerate')
+assert(kitchen_sink(1) == 'normal')
+assert(kitchen_sink([1]) == 'normal')       # [] only matches empty arrays
+assert(kitchen_sink({a: 1}) == 'degenerate') # {} matches any map (extra keys ignored)
+
+# Alternative inside a match function used for dispatch
+defn categorize(tree) -> match tree {
+    {value: _, left: _, right: _} => 'branch',
+    {value: _} | _ is Int => 'leaf',
+    _ => 'unknown'
+}
+assert(categorize({value: 1, left: {value: 2}, right: {value: 3}}) == 'branch')
+assert(categorize({value: 42}) == 'leaf')
+assert(categorize(42) == 'leaf')
+assert(categorize('nope') == 'unknown')
+
+# Alternative with format string value pattern
+def greet_prefix = 'hello'
+assert(match 'hello world' {
+    $'${greet_prefix} world' | 'hi world' => 'greeting',
+    _ => 'other'
+} == 'greeting')
+assert(match 'hi world' {
+    $'${greet_prefix} world' | 'hi world' => 'greeting',
+    _ => 'other'
+} == 'greeting')

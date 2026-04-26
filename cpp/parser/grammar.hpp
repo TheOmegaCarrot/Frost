@@ -12,6 +12,7 @@
 #include <frost/ast/destructure-binding.hpp>
 #include <frost/ast/destructure-map.hpp>
 #include <frost/ast/lambda.hpp>
+#include <frost/ast/match-alternative.hpp>
 #include <frost/ast/match-array.hpp>
 #include <frost/ast/match-binding.hpp>
 #include <frost/ast/match-map.hpp>
@@ -2115,6 +2116,7 @@ struct Map
 // Forward declarations: match patterns are mutually recursive (a Match_Array
 // can contain other patterns, etc.).
 struct match_pattern;
+struct match_pattern_atom;
 struct match_array_pattern;
 struct match_map_pattern;
 
@@ -2238,13 +2240,26 @@ struct match_value_pattern
     static constexpr auto name = "match value pattern";
 };
 
-// Top-level pattern dispatch. Order matters:
+// Pattern-start lookahead used by `match_pattern` (for `|` alternatives),
+// `match_pattern_list`, and the surrounding array payload. Includes everything
+// that can begin a pattern; crucially excludes `...` and `|` so the rest
+// clause and alternative separator stop their respective lists cleanly.
+constexpr auto match_pattern_start_char = dsl::ascii::alpha_underscore
+                                          | dsl::lit_c<'['>
+                                          | dsl::lit_c<'{'>
+                                          | dsl::lit_c<'('>
+                                          | dsl::digit<>
+                                          | dsl::lit_c<'"'>
+                                          | dsl::lit_c<'\''>
+                                          | dsl::lit_c<'$'>;
+
+// Pattern atom dispatch. Order matters:
 //   1. `[` -> array pattern
 //   2. `{` -> map pattern
 //   3. `(` -> parenthesized value pattern
 //   4. literal-starting tokens (digit, quote, $, true/false/null kw) -> value
 //   5. identifier or `_` -> binding pattern
-struct match_pattern
+struct match_pattern_atom
 {
     static constexpr auto rule = [] {
         auto kw_true = LEXY_KEYWORD("true", identifier::base);
@@ -2280,6 +2295,48 @@ struct match_pattern
     static constexpr auto name = "match pattern";
 };
 
+// Top-level pattern: one or more atoms separated by `|`.
+// A single atom passes through unchanged; multiple atoms are wrapped in a
+// Match_Alternative node. Because all `dsl::recurse<match_pattern>` sites
+// (array elements, map values, arm patterns) point here, alternatives work
+// at every nesting level automatically.
+//
+// Implementation note: `dsl::list` requires a sink (`lexy::as_list`), which
+// cannot be composed with `+` in another production's rule. To keep
+// `match_pattern` usable as a regular `dsl::p<>` / `dsl::recurse<>` target,
+// the list lives in a sub-production whose sink resolves at the production
+// boundary. `match_pattern` then forwards the result.
+struct match_pattern
+{
+    struct alternatives
+    {
+        static constexpr auto rule = [] {
+            auto pipe_sep =
+                dsl::peek(param_ws_nl + dsl::lit_c<'|'>
+                          + param_ws_nl + match_pattern_start_char)
+                >> (param_ws_nl + dsl::lit_c<'|'> + param_ws_nl);
+            auto atom = dsl::peek(match_pattern_start_char)
+                        >> dsl::recurse<match_pattern_atom>;
+            return dsl::list(atom, dsl::sep(pipe_sep));
+        }();
+        static constexpr auto value =
+            lexy::as_list<std::vector<ast::Match_Pattern::Ptr>>
+            >> lexy::callback<ast::Match_Pattern::Ptr>(
+                [](std::vector<ast::Match_Pattern::Ptr> alts)
+                    -> ast::Match_Pattern::Ptr {
+                    if (alts.size() == 1)
+                        return std::move(alts[0]);
+                    return std::make_unique<ast::Match_Alternative>(
+                        ast::AST_Node::no_range, std::move(alts));
+                });
+        static constexpr auto name = "match pattern";
+    };
+
+    static constexpr auto rule = dsl::p<alternatives>;
+    static constexpr auto value = lexy::forward<ast::Match_Pattern::Ptr>;
+    static constexpr auto name = "match pattern";
+};
+
 // Rest clause for array patterns: `...identifier` or `..._`. Lives as its
 // own production so it can be referenced from `dsl::p<...>`.
 struct match_rest_clause
@@ -2294,18 +2351,6 @@ struct match_rest_clause
         });
     static constexpr auto name = "rest clause";
 };
-
-// Pattern-start lookahead used by both `match_pattern_list` and the
-// surrounding array payload. Includes everything that can begin a pattern;
-// crucially excludes `...` so the rest clause stops the list cleanly.
-constexpr auto match_pattern_start_char = dsl::ascii::alpha_underscore
-                                          | dsl::lit_c<'['>
-                                          | dsl::lit_c<'{'>
-                                          | dsl::lit_c<'('>
-                                          | dsl::digit<>
-                                          | dsl::lit_c<'"'>
-                                          | dsl::lit_c<'\''>
-                                          | dsl::lit_c<'$'>;
 
 // Pattern list for array patterns. Separate production so its value is a
 // `lexy::as_list` sink, which the array payload consumes as a vector.

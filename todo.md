@@ -1,5 +1,14 @@
 # To-Do
 
+## Language
+
+### Comparison Chaining
+
+- P3239-like comparison chaining
+    - https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/p3439r3.pdf
+
+## Stdlib
+
 ### Async
 
 - User-created thread pool objects with `spawn` method, returns a future (like HTTP now)

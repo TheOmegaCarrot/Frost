@@ -1084,6 +1084,169 @@ TEST_CASE("Parser Match: newline immediately after opening brace")
 }
 
 // =============================================================================
+// Alternatives (`|`)
+// =============================================================================
+
+TEST_CASE("Parser Match: two-way literal alternative")
+{
+    frst::Symbol_Table table;
+    run("def x = match 5 { 4 | 5 => 'hit', _ => 'miss' }", table);
+    CHECK(lookup(table, "x")->raw_get<frst::String>() == "hit");
+
+    run("def y = match 3 { 4 | 5 => 'hit', _ => 'miss' }", table);
+    CHECK(lookup(table, "y")->raw_get<frst::String>() == "miss");
+}
+
+TEST_CASE("Parser Match: three-way alternative")
+{
+    frst::Symbol_Table table;
+    run("def x = match 2 { 1 | 2 | 3 => 'low', _ => 'high' }", table);
+    CHECK(lookup(table, "x")->raw_get<frst::String>() == "low");
+}
+
+TEST_CASE("Parser Match: alternative with bindings")
+{
+    frst::Symbol_Table table;
+    run("def x = match [1, 2] { [a, ..._] | {foo: a} => a }", table);
+    CHECK(lookup(table, "x")->get<frst::Int>().value() == 1_f);
+
+    run("def y = match {foo: 42} { [a, ..._] | {foo: a} => a }", table);
+    CHECK(lookup(table, "y")->get<frst::Int>().value() == 42_f);
+}
+
+TEST_CASE("Parser Match: alternative produces Match_Alternative AST node")
+{
+    auto stmt = parse_one("def x = match 1 { 1 | 2 => 'a', _ => 'b' }");
+    auto alts = find_nodes(stmt, "Match_Alternative");
+    REQUIRE(alts.size() == 1);
+    auto kids = alts[0]->children() | std::ranges::to<std::vector>();
+    CHECK(kids.size() == 2);
+}
+
+TEST_CASE("Parser Match: single pattern does not produce Match_Alternative")
+{
+    auto stmt = parse_one("def x = match 1 { 1 => 'a', _ => 'b' }");
+    auto alts = find_nodes(stmt, "Match_Alternative");
+    CHECK(alts.empty());
+}
+
+TEST_CASE("Parser Match: alternative nested inside array pattern")
+{
+    frst::Symbol_Table table;
+    run("def x = match [1, 3] { [1 | 2, 3 | 4] => 'hit', _ => 'miss' }",
+        table);
+    CHECK(lookup(table, "x")->raw_get<frst::String>() == "hit");
+
+    run("def y = match [1, 5] { [1 | 2, 3 | 4] => 'hit', _ => 'miss' }",
+        table);
+    CHECK(lookup(table, "y")->raw_get<frst::String>() == "miss");
+}
+
+TEST_CASE("Parser Match: alternative nested inside map pattern")
+{
+    frst::Symbol_Table table;
+    run("def x = match {a: 1} { {a: 1 | 2} => 'hit', _ => 'miss' }", table);
+    CHECK(lookup(table, "x")->raw_get<frst::String>() == "hit");
+
+    run("def y = match {a: 3} { {a: 1 | 2} => 'hit', _ => 'miss' }", table);
+    CHECK(lookup(table, "y")->raw_get<frst::String>() == "miss");
+}
+
+TEST_CASE("Parser Match: alternative with guard")
+{
+    frst::Symbol_Table table;
+    run("def x = match 5 { n is Int | n is Float if: n > 3 => 'big', _ => 'small' }",
+        table);
+    CHECK(lookup(table, "x")->raw_get<frst::String>() == "big");
+}
+
+TEST_CASE("Parser Match: alternative with discards")
+{
+    frst::Symbol_Table table;
+    run("def x = match 42 { _ is Int | _ is Float => 'numeric', _ => 'other' }",
+        table);
+    CHECK(lookup(table, "x")->raw_get<frst::String>() == "numeric");
+}
+
+TEST_CASE("Parser Match: alternative with mixed pattern kinds")
+{
+    // Array pattern | map pattern | literal -- all binding `_`
+    frst::Symbol_Table table;
+    run("def x = match 'hello' {"
+        "    [_, ..._] | {} | _ is String => 'structured-or-string',"
+        "    _ => 'other'"
+        "}",
+        table);
+    CHECK(lookup(table, "x")->raw_get<frst::String>()
+          == "structured-or-string");
+}
+
+TEST_CASE("Parser Match: alternative with `as` on both branches")
+{
+    frst::Symbol_Table table;
+    run("def x = match {foo: 42, extra: 99} {"
+        "    {foo} as m | {bar: foo} as m => m,"
+        "    _ => null"
+        "}",
+        table);
+    // First alt matches: foo=42, m=whole map
+    auto& result = lookup(table, "x")->raw_get<frst::Map>();
+    CHECK(result.size() == 2);
+}
+
+TEST_CASE("Parser Match: alternative with `as`, second branch matches")
+{
+    frst::Symbol_Table table;
+    run("def x = match {bar: 7} {"
+        "    {foo} as m | {bar: foo} as m => foo,"
+        "    _ => 0"
+        "}",
+        table);
+    // First alt fails (no 'foo' key), second matches: foo=7
+    CHECK(lookup(table, "x")->get<frst::Int>().value() == 7_f);
+}
+
+TEST_CASE("Parser Match: parenthesized value pattern in alternative")
+{
+    frst::Symbol_Table table;
+    run("def target = 42\n"
+        "def x = match 42 { (target) | 99 => 'hit', _ => 'miss' }",
+        table);
+    CHECK(lookup(table, "x")->raw_get<frst::String>() == "hit");
+
+    run("def y = match 99 { (target) | 99 => 'hit', _ => 'miss' }", table);
+    CHECK(lookup(table, "y")->raw_get<frst::String>() == "hit");
+
+    run("def z = match 0 { (target) | 99 => 'hit', _ => 'miss' }", table);
+    CHECK(lookup(table, "z")->raw_get<frst::String>() == "miss");
+}
+
+TEST_CASE("Parser Match Errors: trailing `|` without a following pattern")
+{
+    CHECK(not parse("def x = match 1 { 1 | => 'a' }"));
+}
+
+TEST_CASE("Parser Match: mismatched alternative bindings rejected")
+{
+    // Alt 1 binds {a}, alt 2 binds {b} -- the Match_Alternative constructor
+    // rejects this during parsing, so parse itself fails.
+    CHECK(not parse("def x = match 1 { a | b => a }"));
+}
+
+TEST_CASE("Parser Match: alternative with newlines around `|`")
+{
+    frst::Symbol_Table table;
+    run("def x = match 2 {\n"
+        "    1\n"
+        "    | 2\n"
+        "    | 3 => 'low',\n"
+        "    _ => 'high'\n"
+        "}",
+        table);
+    CHECK(lookup(table, "x")->raw_get<frst::String>() == "low");
+}
+
+// =============================================================================
 // Stress: weird-but-valid combinations all evaluated end-to-end
 // =============================================================================
 
