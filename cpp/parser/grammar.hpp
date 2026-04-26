@@ -582,6 +582,12 @@ struct use_def_not_var
     static constexpr auto name = "use 'def' instead of 'var'";
 };
 
+struct use_do_for_block
+{
+    static constexpr auto name =
+        "'{ ... }' is a map literal here, use 'do { ... }' for a block";
+};
+
 struct expected_vararg
 {
     static constexpr auto name = "variadic parameter after ','";
@@ -1620,7 +1626,8 @@ struct lambda_body
                    + dsl::opt(dsl::peek(expression_start_no_nl)
                               >> dsl::recurse<statement_list>)
                    + statement_ws
-                   + (dsl::peek(dsl::lit_c<'='>) >> dsl::error<use_def_for_assignment>
+                   + (dsl::peek(dsl::lit_c<'='>)
+                      >> dsl::error<use_def_for_assignment>
                       | dsl::lit_c<'}'>))
                | dsl::else_
                >> (require_expr_start_nl<expected_lambda_body>()
@@ -1833,7 +1840,8 @@ struct Do_Block_Expr
                    + dsl::opt(dsl::peek(expression_start_no_nl)
                               >> dsl::recurse<statement_list>)
                    + statement_ws
-                   + (dsl::peek(dsl::lit_c<'='>) >> dsl::error<use_def_for_assignment>
+                   + (dsl::peek(dsl::lit_c<'='>)
+                      >> dsl::error<use_def_for_assignment>
                       | dsl::lit_c<'}'>));
     }();
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
@@ -2151,13 +2159,32 @@ struct map_destructure_entry_impl
 
 // `map_entries`: the full `{key: value, ...}` literal.
 // `map_entry_start` gates the list so an empty `{}` produces an empty vector.
+//
+// After the opening `{`, we peek for reserved words (`def`, `defn`,
+// `export`) that indicate the user intended a block, not a map. These
+// words can never start a valid map entry (they are reserved identifiers),
+// so the peek is safe -- it only fires on code that would fail anyway,
+// and replaces an opaque "reserved identifier" error with an actionable
+// suggestion to use `do { ... }`.
 struct map_entries
 {
     static constexpr auto rule = [] {
         auto entry_start = dsl::peek(map_entry_start);
         auto item = entry_start >> dsl::p<map_entry>;
         auto list = dsl::list(item, dsl::trailing_sep(comma_sep_nl));
-        return braced_list(map_entry_start, list);
+
+        auto block_keyword = LEXY_KEYWORD("def", identifier::base)
+                             | LEXY_KEYWORD("defn", identifier::base)
+                             | LEXY_KEYWORD("export", identifier::base);
+
+        return LEXY_LIT("{")
+               + param_ws_nl
+               + (dsl::peek(block_keyword)
+                  >> dsl::error<use_do_for_block>
+                  | dsl::else_
+                  >> (dsl::opt(dsl::peek(map_entry_start) >> list)
+                      + param_ws_nl
+                      + dsl::lit_c<'}'>));
     }();
     static constexpr auto value =
         list_or_empty<ast::Map_Constructor::KV_Pair>();

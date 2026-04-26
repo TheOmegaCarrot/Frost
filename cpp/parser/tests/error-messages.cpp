@@ -194,3 +194,67 @@ TEST_CASE("Parser error messages - reassignment inside blocks")
         CHECK(ok("do { def x = 10; x }"));
     }
 }
+
+TEST_CASE("Parser error messages - do block suggestion")
+{
+    SECTION("def in if branch suggests do")
+    {
+        auto err = parse_error("if true: { def x = 1; x }");
+        CHECK_THAT(err, ContainsSubstring("use 'do { ... }' for a block"));
+    }
+
+    SECTION("def in else branch suggests do")
+    {
+        auto err = parse_error("if false: 0 else: { def x = 1; x }");
+        CHECK_THAT(err, ContainsSubstring("use 'do { ... }' for a block"));
+    }
+
+    SECTION("def in match arm suggests do")
+    {
+        auto err = parse_error("match 1 { n => { def x = n; x } }");
+        CHECK_THAT(err, ContainsSubstring("use 'do { ... }' for a block"));
+    }
+
+    SECTION("defn in map position suggests do")
+    {
+        auto err = parse_error("{ defn foo() -> 1 }");
+        CHECK_THAT(err, ContainsSubstring("use 'do { ... }' for a block"));
+    }
+
+    SECTION("export in map position suggests do")
+    {
+        auto err = parse_error("{ export def x = 1 }");
+        CHECK_THAT(err, ContainsSubstring("use 'do { ... }' for a block"));
+    }
+
+    SECTION("does not fire for valid map literals")
+    {
+        auto ok = [](const std::string& input) {
+            return frst::parse_program(input).has_value();
+        };
+        CHECK(ok("def m = {}"));
+        CHECK(ok("def m = { foo: 42 }"));
+        CHECK(ok("def m = { [1]: 'one' }"));
+        CHECK(ok("def m = { default: 1, definition: 2 }"));
+        CHECK(ok("def m = { exported: true }"));
+        CHECK(ok(R"(def m = { ["def"]: 42 })"));
+    }
+
+    SECTION("does not fire in lambda block bodies")
+    {
+        auto ok = [](const std::string& input) {
+            return frst::parse_program(input).has_value();
+        };
+        CHECK(ok("def f = fn -> { def x = 1; x }"));
+        CHECK(ok("def f = fn x -> { def y = x + 1; y }"));
+    }
+
+    SECTION("does not fire in do blocks")
+    {
+        auto ok = [](const std::string& input) {
+            return frst::parse_program(input).has_value();
+        };
+        CHECK(ok("do { def x = 1; x }"));
+        CHECK(ok("if true: do { def x = 1; x }"));
+    }
+}
