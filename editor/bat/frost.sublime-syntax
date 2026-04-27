@@ -250,12 +250,16 @@ contexts:
       push: format-string-single
 
   format-placeholders:
-    - match: '(?<!\\)\$\{({{ident}})\}'
-      captures:
-        0: meta.interpolation.frost
-        1: variable.parameter.interpolation.frost
-    - match: '(?<!\\)\$\{[^}]*\}'
-      scope: invalid.illegal.interpolation.frost
+    - match: '(?<!\\)\$\{'
+      scope: punctuation.section.interpolation.begin.frost
+      push: format-interpolation
+
+  format-interpolation:
+    - meta_scope: meta.interpolation.frost
+    - match: '\}'
+      scope: punctuation.section.interpolation.end.frost
+      pop: true
+    - include: main
 
   format-string-double:
     - meta_scope: string.quoted.double.interpolated.frost

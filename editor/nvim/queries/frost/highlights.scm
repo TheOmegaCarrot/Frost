@@ -55,11 +55,10 @@
 [
   (format_invalid_escape_sequence)
   (format_single_invalid_escape_sequence)
-  (format_invalid_placeholder)
 ] @error
 
-(format_placeholder
-  name: (identifier) @variable.parameter)
+(format_placeholder "${" @punctuation.special)
+(format_placeholder "}" @punctuation.special)
 
 (identifier) @variable
 

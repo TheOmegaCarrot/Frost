@@ -106,7 +106,7 @@ defn describe(n) -> {
 # describe(42) == "42 is positive"
 ```
 
-Format strings are prepended with a `$`, and the format specifiers (`${...}`) must exactly contain names.
+Format strings are prepended with a `$`, and the format specifiers (`${...}`) can contain any expression.
 
 Any lambda can be recursive, and the `{}` are optional if the body is just a single expression.
 `defn` makes the function name available inside the body:

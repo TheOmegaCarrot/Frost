@@ -761,31 +761,15 @@
     "fields": {}
   },
   {
-    "type": "format_invalid_placeholder",
-    "named": true,
-    "fields": {
-      "content": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "format_placeholder_content",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "format_placeholder",
     "named": true,
     "fields": {
-      "name": {
+      "expression": {
         "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "expression",
             "named": true
           }
         ]
@@ -822,10 +806,6 @@
           "named": true
         },
         {
-          "type": "format_invalid_placeholder",
-          "named": true
-        },
-        {
           "type": "format_placeholder",
           "named": true
         }
@@ -846,10 +826,6 @@
         },
         {
           "type": "format_dollar",
-          "named": true
-        },
-        {
-          "type": "format_invalid_placeholder",
           "named": true
         },
         {
@@ -2392,10 +2368,6 @@
   },
   {
     "type": "format_escape_sequence",
-    "named": true
-  },
-  {
-    "type": "format_placeholder_content",
     "named": true
   },
   {

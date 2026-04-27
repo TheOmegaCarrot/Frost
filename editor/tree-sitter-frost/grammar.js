@@ -583,10 +583,9 @@ module.exports = grammar({
     raw_string_single: _ => token(/R'\([^\n]*\)'/),
 
     format_string_double: $ => seq(
-      token('$"'),
+      token(prec(2, '$"')),
       repeat(choice(
         $.format_placeholder,
-        $.format_invalid_placeholder,
         $.format_escape_sequence,
         $.format_invalid_escape_sequence,
         $.format_content_double,
@@ -596,10 +595,9 @@ module.exports = grammar({
     ),
 
     format_string_single: $ => seq(
-      token("$'"),
+      token(prec(2, "$'")),
       repeat(choice(
         $.format_placeholder,
-        $.format_invalid_placeholder,
         $.format_single_escape_sequence,
         $.format_single_invalid_escape_sequence,
         $.format_content_single,
@@ -618,21 +616,13 @@ module.exports = grammar({
     format_single_escape_sequence: _ => token.immediate(/\\[ntr'\\0$]/),
     format_single_invalid_escape_sequence: _ => token.immediate(/\\./),
 
-    format_placeholder: $ => prec(2, seq(
+    // `${expr}` -- expression interpolation. The expression is a full
+    // Frost expression; `}` terminates it naturally.
+    format_placeholder: $ => seq(
       token.immediate('${'),
-      field('name', $.identifier),
-      token.immediate('}'),
-    )),
-
-    format_invalid_placeholder: $ => prec(1, seq(
-      token.immediate('${'),
-      optional(field('content', $.format_placeholder_content)),
-      token.immediate('}'),
-    )),
-
-    // Keep invalid placeholder content at lower lexical precedence so
-    // `${ident}` matches `format_placeholder` first.
-    format_placeholder_content: _ => token.immediate(prec(-1, /[^}\n]+/)),
+      field('expression', $.expression),
+      '}',
+    ),
 
     identifier: _ => token(/[A-Za-z_][A-Za-z0-9_]*/),
 

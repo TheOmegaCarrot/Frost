@@ -141,13 +141,14 @@ value @ tap(print)                       # tap(value, print)
 
 ### Format strings
 
-`${}` interpolation accepts **identifiers only** — no expressions.
+`${}` interpolation accepts any expression. `\$` escapes interpolation.
 
 ```frost
 def name = "world"
-$'hello, ${name}'    # ok
-$'hello, ${"world"}' # syntax error — string literal is not an identifier
-$'result: ${x + 1}'  # syntax error — expressions not allowed
+$'hello, ${name}'          # "hello, world"
+$'result: ${1 + 2}'       # "result: 3"
+$'upper: ${to_upper(name)}' # "upper: WORLD"
+$'literal: \${name}'      # "literal: ${name}"
 ```
 
 ### Functions

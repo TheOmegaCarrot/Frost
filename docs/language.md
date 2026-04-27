@@ -237,14 +237,26 @@ The remaining escape sequences (`\\`, `\t`, `\0`, `\"`, `\'`) are supported.
 Format strings are prepended with a `$`, and may be `'`-style or `"`-style strings.
 Raw string literals may not be used as format strings.
 Format strings are evaluated immediately.
-Each `${}` replacement specifier must contain exactly an identifier which is in-scope.
-Arbitrary expressions are not supported.
-Normal escape sequences are processed before replacement of `${}` specifiers, thus a `${}` specifier may be escaped with `\\`.
+
+Each `${}` specifier contains an expression which is evaluated and converted to a string:
 
 ```frost
-def fmt = $'${an_int} is 42' # 42 is 42
-def escaped = $'${an_int} vs \\${an_int} vs \\\\${an_int}' # R"(42 vs ${an_int} vs \42)"
+def name = 'world'
+$'hello, ${name}'                     # "hello, world"
+$'1 + 2 = ${1 + 2}'                   # "1 + 2 = 3"
+$'upper: ${to_upper(name)}'           # "upper: WORLD"
+$'cond: ${if true: "yes" else: "no"}' # "cond: yes"
 ```
+
+A bare `$` not followed by `{` is literal text.
+`\$` produces a literal `$`, preventing interpolation:
+
+```frost
+$'price: $5'       # "price: $5" (bare $ is literal)
+$'literal: \${x}'  # "literal: ${x}" (\$ escapes the interpolation)
+```
+
+All other escape sequences (`\n`, `\t`, `\\`, `\0`, `\"`, `\'`, `\xNN`) work the same as in regular strings.
 
 ### Array
 
