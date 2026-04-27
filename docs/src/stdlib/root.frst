@@ -1,0 +1,10 @@
+export def placeholder_name = {
+    # serializes to README content
+}
+
+export def std = (
+    import('encoding')
+    # + import('collections')
+)
+
+# export def ext = {  }

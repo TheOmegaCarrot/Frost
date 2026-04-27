@@ -1,0 +1,5 @@
+export def docs = {
+    intro: import('intro'),
+    lang: import('lang.root'),
+    stdlib: import('stdlib.root')
+}
