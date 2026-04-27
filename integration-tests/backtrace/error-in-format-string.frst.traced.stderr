@@ -1,3 +1,4 @@
 Error: Symbol undefined_var is not defined
 Traceback:
-Format_String(hello ${undefined_var}) [1:
+Name_Lookup(undefined_var) [1:24-1:36]
+Format_String [1:14-1:38]

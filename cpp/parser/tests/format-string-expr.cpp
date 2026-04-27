@@ -3,6 +3,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <frost/ast.hpp>
+#include <frost/builtin.hpp>
 #include <frost/parser.hpp>
 #include <frost/symbol-table.hpp>
 #include <frost/testing/stringmaker-specializations.hpp>
@@ -19,6 +20,10 @@ TEST_CASE("Parser Format Strings")
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
         return frst::parse_data(std::string{input});
+    };
+
+    auto parse_prog = [](std::string_view input) {
+        return frst::parse_program(std::string{input});
     };
 
     SECTION("Double- and single-quoted format strings parse")
@@ -72,15 +77,16 @@ TEST_CASE("Parser Format Strings")
         CHECK(value->get<frst::String>().value() == "Hi world!");
     }
 
-    SECTION("Escaped placeholder is treated as literal")
+    SECTION("Escaped dollar prevents interpolation")
     {
-        auto result = parse(R"($"\\${x}")");
+        // `\$` produces a literal `$`, preventing `${x}` from being
+        // treated as an interpolation.
+        auto result = parse(R"($"\${x}")");
         REQUIRE(result.has_value());
         auto expr = std::move(result).value();
 
         frst::Symbol_Table table;
         frst::Evaluation_Context ctx{.symbols = table};
-        table.define("x", frst::Value::create(1_f));
 
         auto value = expr->evaluate(ctx);
         REQUIRE(value->is<frst::String>());
@@ -115,11 +121,17 @@ TEST_CASE("Parser Format Strings")
         CHECK(not parse(R"($"x"y)"));
     }
 
-    SECTION("Malformed placeholders are rejected")
+    SECTION("Empty placeholder is rejected")
     {
         CHECK(not parse(R"($"${}")"));
-        CHECK(not parse(R"($"${1}")"));
-        CHECK(not parse(R"($"${foo${bar}}")"));
+    }
+
+    SECTION("Expression placeholders are accepted")
+    {
+        // These were rejected by the old identifier-only format strings
+        CHECK(parse(R"($"${1}")"));
+        CHECK(parse(R"($"${1 + 2}")"));
+        CHECK(parse(R"($"${fn x -> x}")"));
     }
 
     SECTION("Missing name lookup propagates as an error")
@@ -186,5 +198,181 @@ TEST_CASE("Parser Format Strings")
         auto range = expr->source_range();
         CHECK(range.begin.column == 1);
         CHECK(range.end.column == 5);
+    }
+
+    // =================================================================
+    // Expression interpolation: end-to-end evaluation
+    // =================================================================
+
+    SECTION("Arithmetic expression in interpolation")
+    {
+        auto result = parse(R"($"${1 + 2}")");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
+        REQUIRE(value->is<frst::String>());
+        CHECK(value->get<frst::String>().value() == "3");
+    }
+
+    SECTION("Function call in interpolation")
+    {
+        auto result = parse_prog(
+            "def name = 'hello'\n"
+            "def x = $\"${to_upper(name)}\"");
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::inject_builtins(table);
+        frst::Execution_Context ctx{.symbols = table};
+        for (const auto& stmt : program)
+            stmt->execute(ctx);
+        CHECK(table.lookup("x")->raw_get<frst::String>() == "HELLO");
+    }
+
+    SECTION("Spaces preserved around interpolations")
+    {
+        auto result = parse_prog(
+            "def x = 1\n"
+            "def s = $'a ${x} b'");
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Execution_Context ctx{.symbols = table};
+        for (const auto& stmt : program)
+            stmt->execute(ctx);
+        CHECK(table.lookup("s")->raw_get<frst::String>() == "a 1 b");
+    }
+
+    SECTION("No spaces: chars directly adjacent to interpolation")
+    {
+        auto result = parse_prog(
+            "def x = 1\n"
+            "def s = $'a${x}b'");
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Execution_Context ctx{.symbols = table};
+        for (const auto& stmt : program)
+            stmt->execute(ctx);
+        CHECK(table.lookup("s")->raw_get<frst::String>() == "a1b");
+    }
+
+    SECTION("Map literal inside interpolation (balanced braces)")
+    {
+        auto result = parse(R"($"${{}}")");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
+        REQUIRE(value->is<frst::String>());
+        CHECK(value->get<frst::String>().value() == "{}");
+    }
+
+    SECTION("Do block inside interpolation (balanced braces)")
+    {
+        auto result = parse(R"($"${do { def x = 42; x }}")");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
+        REQUIRE(value->is<frst::String>());
+        CHECK(value->get<frst::String>().value() == "42");
+    }
+
+    SECTION("Closure captures through format string interpolation")
+    {
+        auto result = parse_prog(
+            "def make = fn name -> $'hello ${name}'\n"
+            "def x = make('world')");
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Execution_Context ctx{.symbols = table};
+        for (const auto& stmt : program)
+            stmt->execute(ctx);
+        CHECK(table.lookup("x")->raw_get<frst::String>() == "hello world");
+    }
+
+    SECTION("Escaped dollar not followed by brace")
+    {
+        auto result = parse(R"($"price \$5")");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
+        REQUIRE(value->is<frst::String>());
+        CHECK(value->get<frst::String>().value() == "price $5");
+    }
+
+    SECTION("Multiple expressions with mixed types")
+    {
+        auto result = parse_prog(
+            "def n = 42\n"
+            "def b = true\n"
+            "def s = $'n=${n}, b=${b}, null=${null}'");
+        REQUIRE(result.has_value());
+        auto program = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Execution_Context ctx{.symbols = table};
+        for (const auto& stmt : program)
+            stmt->execute(ctx);
+        CHECK(table.lookup("s")->raw_get<frst::String>()
+              == "n=42, b=true, null=null");
+    }
+
+    SECTION("Conditional expression inside interpolation")
+    {
+        auto result = parse(R"($"${if true: 'yes' else: 'no'}")");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
+        REQUIRE(value->is<frst::String>());
+        CHECK(value->get<frst::String>().value() == "yes");
+    }
+
+    SECTION("Empty format string")
+    {
+        for (auto input : {R"($"")", R"($'')"})
+        {
+            auto result = parse(input);
+            REQUIRE(result.has_value());
+            auto expr = std::move(result).value();
+
+            frst::Symbol_Table table;
+            frst::Evaluation_Context ctx{.symbols = table};
+            auto value = expr->evaluate(ctx);
+            REQUIRE(value->is<frst::String>());
+            CHECK(value->get<frst::String>().value().empty());
+        }
+    }
+
+    SECTION("Bare dollar in format string is literal")
+    {
+        auto result = parse(R"($"cost: $5")");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
+        REQUIRE(value->is<frst::String>());
+        CHECK(value->get<frst::String>().value() == "cost: $5");
     }
 }

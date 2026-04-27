@@ -246,7 +246,7 @@ TEST_CASE("Parser Match: format string as value pattern")
     REQUIRE(values.size() == 1);
     auto kids = values[0]->children() | std::ranges::to<std::vector>();
     REQUIRE(kids.size() == 1);
-    CHECK(kids[0].node->node_label() == "Format_String(h${suffix})");
+    CHECK(kids[0].node->node_label() == "Format_String");
     // The inner Format_String must have a real source range.
     auto inner = kids[0].node->source_range();
     CHECK(inner.begin.line != 0);

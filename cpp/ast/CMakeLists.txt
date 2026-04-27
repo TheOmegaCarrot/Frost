@@ -7,7 +7,6 @@ add_library( frost-ast
     do.cpp
     filter.cpp
     foreach.cpp
-    format-string.cpp
     function-call.cpp
     if.cpp
     index.cpp
