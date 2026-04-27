@@ -595,6 +595,13 @@ struct use_do_for_block
         "'{ ... }' is a map literal here, use 'do { ... }' for a block";
 };
 
+struct use_match_for_is
+{
+    static constexpr auto name =
+        "'is' type checks are only available in match patterns"
+        " (use is_array(), is_string(), etc.)";
+};
+
 struct expected_vararg
 {
     static constexpr auto name = "variadic parameter after ','";
@@ -1910,11 +1917,15 @@ struct If
                                  >> param_ws_nl
                                  >> dsl::recurse<Tail>);
 
+            auto elif_colon_or_is_error =
+                dsl::peek(LEXY_KEYWORD("is", identifier::base))
+                >> dsl::error<use_match_for_is>
+                | dsl::else_ >> dsl::lit_c<':'>;
             auto elif_branch =
                 kw_elif
                 >> (dsl::position
                     + dsl::recurse<expression>
-                    + dsl::lit_c<':'>
+                    + elif_colon_or_is_error
                     + param_ws_nl
                     + (require_expr_start_no_nl<expected_if_consequent>()
                        >> dsl::recurse<expression>)+tail);
@@ -1982,9 +1993,13 @@ struct If
         auto tail = dsl::opt(dsl::peek(param_ws_nl + (kw_elif | kw_else))
                              >> param_ws_nl
                              >> dsl::p<Tail>);
+        auto colon_or_is_error =
+            dsl::peek(LEXY_KEYWORD("is", identifier::base))
+            >> dsl::error<use_match_for_is>
+            | dsl::else_ >> dsl::lit_c<':'>;
         return kw_if
                >> (dsl::recurse<expression>
-                   + dsl::lit_c<':'>
+                   + colon_or_is_error
                    + param_ws_nl
                    + (require_expr_start_no_nl<expected_if_consequent>()
                       >> dsl::recurse<expression>)+tail);

@@ -149,6 +149,19 @@ TEST_CASE("Parser error messages - foreign language keywords")
         CHECK_THAT(err, ContainsSubstring("'def' instead of 'var'"));
     }
 
+    SECTION("is in if condition suggests match")
+    {
+        auto err = parse_error("if x is Array: 1");
+        CHECK_THAT(err, ContainsSubstring("match patterns"));
+        CHECK_THAT(err, ContainsSubstring("is_array()"));
+    }
+
+    SECTION("is in elif condition suggests match")
+    {
+        auto err = parse_error("if false: 0 elif x is Int: 1");
+        CHECK_THAT(err, ContainsSubstring("match patterns"));
+    }
+
     SECTION("identifiers starting with foreign keywords still work")
     {
         // `format`, `formula`, `letter`, `variable` must NOT trigger errors.
