@@ -803,6 +803,7 @@ struct false_literal
 
 struct bool_literal
 {
+    // EXHAUSTIBLE_CHOICE (unreachable: node::Literal peeks for kw_true/kw_false)
     static constexpr auto rule = dsl::p<true_literal> | dsl::p<false_literal>;
     static constexpr auto value = lexy::forward<Value_Ptr>;
 };
@@ -941,6 +942,7 @@ struct string_literal
             });
     };
 
+    // EXHAUSTIBLE_CHOICE (unreachable: node::Literal peeks for quote chars)
     static constexpr auto rule = dsl::p<raw_r_double>
                                  | dsl::p<raw_r_single>
                                  | dsl::p<triple_double>
@@ -965,6 +967,7 @@ struct string_literal
 // the `$` sigil and opening quote are adjacent.
 struct format_string_literal
 {
+    // EXHAUSTIBLE_CHOICE (unreachable: node::Format_String peeks for $' or $")
     static constexpr auto rule =
         dsl::p<string_literal::raw_double> | dsl::p<string_literal::raw_single>;
     static constexpr auto value = lexy::forward<std::string>;
@@ -993,6 +996,8 @@ namespace node
 // Both peeks prevent committing to a parse that will fail.
 struct Literal
 {
+    // EXHAUSTIBLE_CHOICE (reachable: used as unguarded fallback in
+    // primary_expression and match_value_pattern)
     static constexpr auto rule =
         dsl::p<null_literal>
         | dsl::p<bool_literal>
@@ -1927,6 +1932,7 @@ struct If
                         + (require_expr_start_no_nl<expected_if_consequent>()
                            >> dsl::recurse<expression>)));
 
+            // EXHAUSTIBLE_CHOICE (unreachable: parent peeks for kw_elif | kw_else)
             return elif_branch | else_branch;
         }();
 
@@ -2371,6 +2377,8 @@ struct match_value_pattern
         auto format_value =
             dsl::peek(dsl::lit_c<'$'>) >> dsl::p<node::Format_String>;
         auto literal_value = dsl::p<node::Literal>;
+        // EXHAUSTIBLE_CHOICE (unreachable: match_pattern_atom peeks for
+        // literal_lookahead or '(' before entering)
         return dsl::position
                + (paren_value | format_value | literal_value)
                + dsl::position;
@@ -3508,6 +3516,7 @@ struct statement_impl
                       | (dsl::peek(kw_export) >> dsl::p<node::Export_Def>)
                       | (dsl::peek(kw_defn) >> dsl::p<node::Defn>)
                       | dsl::p<node::Define>
+                      // EXHAUSTIBLE_CHOICE (unreachable: statement_list peeks expression_start)
                       | dsl::p<expression_statement>)+dsl::position;
         }
         else
@@ -3516,6 +3525,7 @@ struct statement_impl
                    + dsl::position
                    + ((dsl::peek(kw_defn) >> dsl::p<node::Defn>)
                       | dsl::p<node::Define>
+                      // EXHAUSTIBLE_CHOICE (unreachable: statement_list peeks expression_start)
                       | dsl::p<expression_statement>)+dsl::position;
         }
     }();
