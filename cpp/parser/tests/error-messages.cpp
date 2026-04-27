@@ -218,8 +218,8 @@ TEST_CASE("Parser error messages - unicode in comments")
 
     SECTION("curly quotes in comment")
     {
-        auto result = frst::parse_program(
-            "# \xe2\x80\x9chello\xe2\x80\x9d\nprint(1)");
+        auto result =
+            frst::parse_program("# \xe2\x80\x9chello\xe2\x80\x9d\nprint(1)");
         CHECK(result.has_value());
     }
 }

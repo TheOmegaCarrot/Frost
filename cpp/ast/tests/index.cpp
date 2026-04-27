@@ -95,8 +95,9 @@ TEST_CASE("Array Index Type Error")
     ast::Index node{ast::AST_Node::no_range, std::move(struct_expr),
                     std::move(idx_expr)};
 
-    CHECK_THROWS_WITH(node.evaluate({.symbols = syms}),
-                      ContainsSubstring("Array index requires Int, got: String"));
+    CHECK_THROWS_WITH(
+        node.evaluate({.symbols = syms}),
+        ContainsSubstring("Array index requires Int, got: String"));
 }
 
 TEST_CASE("Array Index with .length suggests len()")
@@ -107,9 +108,7 @@ TEST_CASE("Array Index with .length suggests len()")
     auto syms = mock::Mock_Symbol_Table{};
     trompeloeil::sequence seq;
 
-    REQUIRE_CALL(*struct_expr, do_evaluate(_))
-        .IN_SEQUENCE(seq)
-        .RETURN(arr);
+    REQUIRE_CALL(*struct_expr, do_evaluate(_)).IN_SEQUENCE(seq).RETURN(arr);
 
     REQUIRE_CALL(*idx_expr, do_evaluate(_))
         .IN_SEQUENCE(seq)

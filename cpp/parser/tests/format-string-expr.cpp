@@ -219,9 +219,8 @@ TEST_CASE("Parser Format Strings")
 
     SECTION("Function call in interpolation")
     {
-        auto result = parse_prog(
-            "def name = 'hello'\n"
-            "def x = $\"${to_upper(name)}\"");
+        auto result = parse_prog("def name = 'hello'\n"
+                                 "def x = $\"${to_upper(name)}\"");
         REQUIRE(result.has_value());
         auto program = std::move(result).value();
 
@@ -235,9 +234,8 @@ TEST_CASE("Parser Format Strings")
 
     SECTION("Spaces preserved around interpolations")
     {
-        auto result = parse_prog(
-            "def x = 1\n"
-            "def s = $'a ${x} b'");
+        auto result = parse_prog("def x = 1\n"
+                                 "def s = $'a ${x} b'");
         REQUIRE(result.has_value());
         auto program = std::move(result).value();
 
@@ -250,9 +248,8 @@ TEST_CASE("Parser Format Strings")
 
     SECTION("No spaces: chars directly adjacent to interpolation")
     {
-        auto result = parse_prog(
-            "def x = 1\n"
-            "def s = $'a${x}b'");
+        auto result = parse_prog("def x = 1\n"
+                                 "def s = $'a${x}b'");
         REQUIRE(result.has_value());
         auto program = std::move(result).value();
 
@@ -291,9 +288,8 @@ TEST_CASE("Parser Format Strings")
 
     SECTION("Closure captures through format string interpolation")
     {
-        auto result = parse_prog(
-            "def make = fn name -> $'hello ${name}'\n"
-            "def x = make('world')");
+        auto result = parse_prog("def make = fn name -> $'hello ${name}'\n"
+                                 "def x = make('world')");
         REQUIRE(result.has_value());
         auto program = std::move(result).value();
 
@@ -319,10 +315,9 @@ TEST_CASE("Parser Format Strings")
 
     SECTION("Multiple expressions with mixed types")
     {
-        auto result = parse_prog(
-            "def n = 42\n"
-            "def b = true\n"
-            "def s = $'n=${n}, b=${b}, null=${null}'");
+        auto result = parse_prog("def n = 42\n"
+                                 "def b = true\n"
+                                 "def s = $'n=${n}, b=${b}, null=${null}'");
         REQUIRE(result.has_value());
         auto program = std::move(result).value();
 

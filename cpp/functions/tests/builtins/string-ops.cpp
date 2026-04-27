@@ -780,8 +780,8 @@ TEST_CASE("Builtin contains: suggests includes for arrays")
     SECTION("Array as first arg suggests includes")
     {
         CHECK_THROWS_WITH(
-            contains->call({Value::create(Array{Value::create(1_f)}),
-                            Value::create(1_f)}),
+            contains->call(
+                {Value::create(Array{Value::create(1_f)}), Value::create(1_f)}),
             ContainsSubstring("includes"));
     }
 }

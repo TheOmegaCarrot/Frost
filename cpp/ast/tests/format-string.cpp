@@ -27,8 +27,8 @@ Seg lit(std::string text)
 
 Seg interp(std::string name)
 {
-    return Seg{std::make_unique<Name_Lookup>(AST_Node::no_range,
-                                             std::move(name))};
+    return Seg{
+        std::make_unique<Name_Lookup>(AST_Node::no_range, std::move(name))};
 }
 
 // Can't use initializer_list with move-only variant, so build vectors manually.

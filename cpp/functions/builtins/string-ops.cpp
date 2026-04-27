@@ -117,9 +117,8 @@ X_BINARY_PASSTHROUGH
 BUILTIN(contains)
 {
     if (not args.empty() && args[0]->is<Array>())
-        throw Frost_Recoverable_Error{
-            "Function contains is for strings"
-            " (use 'includes' to search arrays)"};
+        throw Frost_Recoverable_Error{"Function contains is for strings"
+                                      " (use 'includes' to search arrays)"};
     REQUIRE_ARGS("contains", TYPES(String), TYPES(String));
     return Value::create(GET(0, String).contains(GET(1, String)));
 }
