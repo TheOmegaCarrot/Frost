@@ -364,7 +364,6 @@ constexpr auto no_nl_chars =
     dsl::ascii::blank | dsl::lit_c<'\r'> | dsl::lit_c<'\f'> | dsl::lit_c<'\v'>;
 constexpr auto ws_no_nl = dsl::whitespace(no_nl_chars | line_comment);
 constexpr auto ws_nl = dsl::whitespace(dsl::ascii::space | line_comment);
-constexpr auto ws = ws_nl;
 constexpr auto statement_ws = dsl::while_(
     no_nl_chars | line_comment | dsl::lit_c<';'> | dsl::lit_c<'\n'>);
 constexpr auto param_ws = dsl::while_(no_nl_chars | line_comment);
@@ -394,7 +393,6 @@ constexpr auto comma_sep_ws(ws_t ws)
 }
 
 constexpr auto comma_sep_nl = comma_sep_ws(param_ws_nl);
-constexpr auto comma_sep = comma_sep_ws(param_ws);
 
 template <typename after_t>
 constexpr auto comma_sep_after(after_t after)
@@ -454,7 +452,6 @@ constexpr auto expression_start_impl()
 
 constexpr auto expression_start_no_nl = expression_start_impl<false>();
 constexpr auto expression_start_nl = expression_start_impl<true>();
-constexpr auto expression_start = expression_start_no_nl;
 
 // =============================================================================
 // Error tag structs
@@ -465,52 +462,183 @@ constexpr auto expression_start = expression_start_no_nl;
 // to dsl::error<E> (unconditional error emission) or dsl::must(...).error<E>
 // (conditional error assertion).
 //
-// The naming convention is:
+// Naming convention:
 //   expected_*   — "I expected to see X here but it was missing"
 //   use_*        — "this construct is wrong; use Y instead"
 //   unexpected_* — "this token appeared without its required context"
+
+// -- Missing required tokens --
 
 struct expected_expression
 {
     static constexpr auto name = "expression";
 };
-
 struct expected_lambda_body
 {
     static constexpr auto name = "lambda body";
 };
-
 struct expected_with_expression
 {
     static constexpr auto name = "expression after 'with'";
 };
-
 struct expected_if_consequent
 {
     static constexpr auto name = "expression after ':'";
 };
-
 struct expected_map_value
 {
     static constexpr auto name = "map entry value";
 };
-
 struct expected_init_expression
 {
     static constexpr auto name = "expression after 'init:'";
 };
-
 struct expected_call_arguments
 {
     static constexpr auto name = "closing ')'";
+};
+struct expected_index_expression
+{
+    static constexpr auto name = "closing ']'";
+};
+struct expected_identifier
+{
+    static constexpr auto name = "identifier";
+};
+struct expected_vararg
+{
+    static constexpr auto name = "variadic parameter after ','";
+};
+struct expected_vararg_last
+{
+    static constexpr auto name = "variadic parameter must be last";
+};
+struct expected_destructure_binding
+{
+    static constexpr auto name = "destructure binding";
+};
+struct expected_destructure_rest
+{
+    static constexpr auto name = "rest binding after ','";
+};
+
+// -- Match-specific expected tokens --
+
+struct expected_match_pattern
+{
+    static constexpr auto name = "match pattern";
+};
+struct expected_type_constraint
+{
+    static constexpr auto name = "type constraint name (after `is`)";
+};
+struct expected_match_arrow
+{
+    static constexpr auto name = "`=>` after match pattern (or guard)";
+};
+struct expected_match_arm_result
+{
+    static constexpr auto name = "expression after `=>`";
+};
+struct expected_match_guard_expression
+{
+    static constexpr auto name = "expression after `if:`";
+};
+struct expected_match_target
+{
+    static constexpr auto name = "expression after `match`";
+};
+
+// -- Syntax corrections (detected-but-wrong constructs from other languages) --
+
+struct use_elif_not_else_if
+{
+    static constexpr auto name = "use 'elif' instead of 'else if'";
+};
+struct use_and_not_double_ampersand
+{
+    static constexpr auto name = "use 'and' instead of '&&'";
+};
+struct use_or_not_double_pipe
+{
+    static constexpr auto name = "use 'or' instead of '||'";
+};
+struct use_def_for_assignment
+{
+    static constexpr auto name = "use 'def name = value' to define a variable";
+};
+struct use_def_not_let
+{
+    static constexpr auto name = "use 'def' instead of 'let'";
+};
+struct use_def_not_var
+{
+    static constexpr auto name = "use 'def' instead of 'var'";
+};
+struct use_do_for_block
+{
+    static constexpr auto name =
+        "'{ ... }' is a map literal here, use 'do { ... }' for a block";
+};
+
+// -- Unexpected keywords from other languages --
+
+struct unexpected_elif
+{
+    static constexpr auto name = "unexpected 'elif' (missing 'if')";
+};
+struct unexpected_else
+{
+    static constexpr auto name = "unexpected 'else' (missing 'if')";
+};
+struct unexpected_return
+{
+    static constexpr auto name =
+        "unexpected 'return' (functions implicitly return their last "
+        "expression: try using 'if')";
+};
+struct use_frost_not_for
+{
+    static constexpr auto name =
+        "unexpected 'for' (use 'map', 'filter', 'reduce', or 'foreach')";
+};
+struct use_frost_not_while
+{
+    static constexpr auto name =
+        "unexpected 'while' (use recursion or 'reduce')";
+};
+
+// -- Context-specific suggestions --
+
+struct use_match_for_is
+{
+    static constexpr auto name = "'is' type checks are only available in match "
+                                 "patterns (use is_array(), is_string(), etc.)";
+};
+struct use_transform_not_map
+{
+    static constexpr auto name =
+        "use 'transform' instead of 'map' in @ pipelines";
+};
+struct use_select_not_filter
+{
+    static constexpr auto name =
+        "use 'select' instead of 'filter' in @ pipelines";
+};
+struct use_fold_not_reduce
+{
+    static constexpr auto name =
+        "use 'fold' instead of 'reduce' in @ pipelines";
+};
+struct use_transform_not_foreach
+{
+    static constexpr auto name =
+        "'foreach' cannot be used in @ pipelines (use 'transform' or 'select')";
 };
 
 // Helpers that combine dsl::must with a specific expected_expression error.
 // `require_expr_start_no_nl()` asserts that an expression starts here
 // (no newline allowed before it); `require_expr_start_nl()` allows newlines.
-// These are used after a keyword or colon where an expression is mandatory,
-// so that "missing expression" produces a clear error rather than a confusing
-// one about the next unrelated token.
 template <typename expected_t>
 constexpr auto require_expr_start_no_nl()
 {
@@ -522,165 +650,6 @@ constexpr auto require_expr_start_nl()
 {
     return dsl::must(expression_start_nl).template error<expected_t>;
 }
-
-struct expected_index_expression
-{
-    static constexpr auto name = "closing ']'";
-};
-
-// "Helpful mistake" errors: the parser detects a common error pattern and
-// emits a message that tells the user exactly what to do instead.
-struct use_elif_not_else_if
-{
-    static constexpr auto name = "use 'elif' instead of 'else if'";
-};
-
-struct use_and_not_double_ampersand
-{
-    static constexpr auto name = "use 'and' instead of '&&'";
-};
-
-struct use_or_not_double_pipe
-{
-    static constexpr auto name = "use 'or' instead of '||'";
-};
-
-struct use_def_for_assignment
-{
-    static constexpr auto name = "use 'def name = value' to define a variable";
-};
-
-struct unexpected_elif
-{
-    static constexpr auto name = "unexpected 'elif' (missing 'if')";
-};
-
-struct unexpected_else
-{
-    static constexpr auto name = "unexpected 'else' (missing 'if')";
-};
-
-struct use_frost_not_for
-{
-    static constexpr auto name =
-        "unexpected 'for' (use 'map', 'filter', 'reduce', or 'foreach')";
-};
-
-struct use_frost_not_while
-{
-    static constexpr auto name =
-        "unexpected 'while' (use recursion or 'reduce')";
-};
-
-struct use_def_not_let
-{
-    static constexpr auto name = "use 'def' instead of 'let'";
-};
-
-struct use_def_not_var
-{
-    static constexpr auto name = "use 'def' instead of 'var'";
-};
-
-struct unexpected_return
-{
-    static constexpr auto name =
-        "unexpected 'return' (functions implicitly return their last "
-        "expression: try using 'if')";
-};
-
-struct use_do_for_block
-{
-    static constexpr auto name =
-        "'{ ... }' is a map literal here, use 'do { ... }' for a block";
-};
-
-struct use_transform_not_map
-{
-    static constexpr auto name =
-        "use 'transform' instead of 'map' in @ pipelines";
-};
-
-struct use_select_not_filter
-{
-    static constexpr auto name =
-        "use 'select' instead of 'filter' in @ pipelines";
-};
-
-struct use_fold_not_reduce
-{
-    static constexpr auto name =
-        "use 'fold' instead of 'reduce' in @ pipelines";
-};
-
-struct use_transform_not_foreach
-{
-    static constexpr auto name =
-        "'foreach' cannot be used in @ pipelines"
-        " (use 'transform' or 'select')";
-};
-
-struct use_match_for_is
-{
-    static constexpr auto name =
-        "'is' type checks are only available in match patterns"
-        " (use is_array(), is_string(), etc.)";
-};
-
-struct expected_vararg
-{
-    static constexpr auto name = "variadic parameter after ','";
-};
-
-struct expected_vararg_last
-{
-    static constexpr auto name = "variadic parameter must be last";
-};
-
-struct expected_destructure_binding
-{
-    static constexpr auto name = "destructure binding";
-};
-
-struct expected_destructure_rest
-{
-    static constexpr auto name = "rest binding after ','";
-};
-
-struct expected_identifier
-{
-    static constexpr auto name = "identifier";
-};
-
-struct expected_match_pattern
-{
-    static constexpr auto name = "match pattern";
-};
-
-struct expected_type_constraint
-{
-    static constexpr auto name = "type constraint name (after `is`)";
-};
-
-struct expected_match_arrow
-{
-    static constexpr auto name = "`=>` after match pattern (or guard)";
-};
-
-struct expected_match_arm_result
-{
-    static constexpr auto name = "expression after `=>`";
-};
-
-struct expected_match_guard_expression
-{
-    static constexpr auto name = "expression after `if:`";
-};
-
-struct expected_match_target
-{
-    static constexpr auto name = "expression after `match`";
-};
 
 // =============================================================================
 // Identifiers
@@ -835,7 +804,8 @@ struct false_literal
 
 struct bool_literal
 {
-    // EXHAUSTIBLE_CHOICE (unreachable: node::Literal peeks for kw_true/kw_false)
+    // EXHAUSTIBLE_CHOICE (unreachable: node::Literal peeks for
+    // kw_true/kw_false)
     static constexpr auto rule = dsl::p<true_literal> | dsl::p<false_literal>;
     static constexpr auto value = lexy::forward<Value_Ptr>;
 };
@@ -1006,8 +976,12 @@ struct format_string_literal
     static constexpr auto name = "format string literal";
 };
 
-// Forward-declare expression for use by expr_fmt_interpolation below.
+// Forward declarations: expressions and statement_list are mutually
+// recursive with many productions below. Declared once here, before the
+// earliest use (expr_fmt_interpolation).
 struct expression;
+struct expression_nl;
+struct statement_list;
 
 // =============================================================================
 // Expression format strings (format strings with arbitrary interpolation)
@@ -1077,13 +1051,12 @@ struct expr_fmt_segment
 
     static constexpr auto rule = [] {
         auto bare_dollar =
-            dsl::peek(dsl::no_whitespace(
-                dsl::lit_c<'$'> + (dsl::code_point - dsl::lit_c<'{'>)))
+            dsl::peek(dsl::no_whitespace(dsl::lit_c<'$'>
+                                         + (dsl::code_point - dsl::lit_c<'{'>)))
             >> dsl::lit_c<'$'>;
 
-        auto escape = dsl::lit_c<'\\'>
-                       >> (dsl::symbol<escapes>
-                           | string_literal::hex_escape);
+        auto escape = dsl::lit_c<'\\'> >> (dsl::symbol<escapes>
+                                           | string_literal::hex_escape);
 
         auto not_special = dsl::code_point
                            - dsl::lit_c<'\\'>
@@ -1092,13 +1065,19 @@ struct expr_fmt_segment
                            - dsl::ascii::newline;
         auto literal_char = dsl::position + not_special + dsl::position;
 
-        return dsl::peek(LEXY_LIT("${")) >> dsl::p<expr_fmt_interpolation>
-               | dsl::peek(dsl::lit_c<'\\'>) >> escape
-               | dsl::peek(dsl::lit_c<'$'>) >> bare_dollar
-               | dsl::else_ >> literal_char;
+        return dsl::peek(LEXY_LIT("${"))
+               >> dsl::p<expr_fmt_interpolation>
+               | dsl::peek(dsl::lit_c<'\\'>)
+               >> escape
+               | dsl::peek(dsl::lit_c<'$'>)
+               >> bare_dollar
+               | dsl::else_
+               >> literal_char;
     }();
     static constexpr auto value = lexy::callback<EFS::Segment>(
-        [](EFS::Segment seg) { return seg; },
+        [](EFS::Segment seg) {
+            return seg;
+        },
         [](char c) {
             return EFS::Segment{EFS::Literal_Segment{std::string{c}}};
         },
@@ -1129,13 +1108,12 @@ struct expr_fmt_content
     static constexpr auto whitespace = dsl::whitespace(dsl::lit_c<'\0'>);
 
     static constexpr auto rule = [] {
-        auto not_closing = dsl::code_point - dsl::lit_c<quote>
-                           - dsl::ascii::newline;
+        auto not_closing =
+            dsl::code_point - dsl::lit_c<quote> - dsl::ascii::newline;
         auto item = dsl::peek(not_closing) >> dsl::p<expr_fmt_segment<quote>>;
         return dsl::list(item);
     }();
-    static constexpr auto value =
-        lexy::as_list<std::vector<EFS::Segment>>;
+    static constexpr auto value = lexy::as_list<std::vector<EFS::Segment>>;
     static constexpr auto name = "format string content";
 };
 
@@ -1148,9 +1126,7 @@ struct expr_fmt_content
 // This separation keeps the grammar logic (how to parse) distinct from the
 // AST construction logic (what to build).
 
-// Forward-declare expression_nl for use by Abbreviated_Lambda below.
-// (expression is already forward-declared above for expr_fmt_interpolation.)
-struct expression_nl;
+// (expression, expression_nl, statement_list forward-declared above)
 
 namespace node
 {
@@ -1195,18 +1171,18 @@ struct Format_String
         //   peek($Q) >> no_ws($Q) + opt(content) + Q
         // Duplicated because Lexy constexpr rules can't use template helpers.
         auto double_q =
-            dsl::peek(dsl::no_whitespace(
-                dsl::lit_c<'$'> + dsl::lit_c<'"'>))
+            dsl::peek(dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<'"'>))
             >> (dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<'"'>)
-                + dsl::opt(dsl::peek(dsl::code_point - dsl::lit_c<'"'>
+                + dsl::opt(dsl::peek(dsl::code_point
+                                     - dsl::lit_c<'"'>
                                      - dsl::ascii::newline)
                            >> dsl::p<expr_fmt_content<'"'>>)
                 + dsl::lit_c<'"'>);
         auto single_q =
-            dsl::peek(dsl::no_whitespace(
-                dsl::lit_c<'$'> + dsl::lit_c<'\''>))
+            dsl::peek(dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<'\''>))
             >> (dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<'\''>)
-                + dsl::opt(dsl::peek(dsl::code_point - dsl::lit_c<'\''>
+                + dsl::opt(dsl::peek(dsl::code_point
+                                     - dsl::lit_c<'\''>
                                      - dsl::ascii::newline)
                            >> dsl::p<expr_fmt_content<'\''>>)
                 + dsl::lit_c<'\''>);
@@ -1326,20 +1302,6 @@ struct Abbreviated_Lambda
     static constexpr auto name = "abbreviated lambda";
 };
 } // namespace node
-
-// =============================================================================
-// Forward declarations (required by recursive rules)
-// =============================================================================
-//
-// `expression` and `expression_nl` appear in many sub-rules. Since C++
-// requires declarations before use and the grammar is mutually recursive,
-// we forward-declare them here. The actual definitions appear later.
-// `statement_list` is forward-declared for the same reason (lambda bodies
-// reference it).
-
-struct expression;
-struct expression_nl;
-struct statement_list;
 
 // =============================================================================
 // List helpers
@@ -2103,7 +2065,8 @@ struct If
             auto elif_colon_or_is_error =
                 dsl::peek(LEXY_KEYWORD("is", identifier::base))
                 >> dsl::error<use_match_for_is>
-                | dsl::else_ >> dsl::lit_c<':'>;
+                | dsl::else_
+                >> dsl::lit_c<':'>;
             auto elif_branch =
                 kw_elif
                 >> (dsl::position
@@ -2126,7 +2089,8 @@ struct If
                         + (require_expr_start_no_nl<expected_if_consequent>()
                            >> dsl::recurse<expression>)));
 
-            // EXHAUSTIBLE_CHOICE (unreachable: parent peeks for kw_elif | kw_else)
+            // EXHAUSTIBLE_CHOICE (unreachable: parent peeks for kw_elif |
+            // kw_else)
             return elif_branch | else_branch;
         }();
 
@@ -2176,10 +2140,10 @@ struct If
         auto tail = dsl::opt(dsl::peek(param_ws_nl + (kw_elif | kw_else))
                              >> param_ws_nl
                              >> dsl::p<Tail>);
-        auto colon_or_is_error =
-            dsl::peek(LEXY_KEYWORD("is", identifier::base))
-            >> dsl::error<use_match_for_is>
-            | dsl::else_ >> dsl::lit_c<':'>;
+        auto colon_or_is_error = dsl::peek(LEXY_KEYWORD("is", identifier::base))
+                                 >> dsl::error<use_match_for_is>
+                                 | dsl::else_
+                                 >> dsl::lit_c<':'>;
         return kw_if
                >> (dsl::recurse<expression>
                    + colon_or_is_error
@@ -3736,7 +3700,8 @@ struct statement_impl
                       | (dsl::peek(kw_export) >> dsl::p<node::Export_Def>)
                       | (dsl::peek(kw_defn) >> dsl::p<node::Defn>)
                       | dsl::p<node::Define>
-                      // EXHAUSTIBLE_CHOICE (unreachable: statement_list peeks expression_start)
+                      // EXHAUSTIBLE_CHOICE (unreachable: statement_list peeks
+                      // expression_start)
                       | dsl::p<expression_statement>)+dsl::position;
         }
         else
@@ -3745,7 +3710,8 @@ struct statement_impl
                    + dsl::position
                    + ((dsl::peek(kw_defn) >> dsl::p<node::Defn>)
                       | dsl::p<node::Define>
-                      // EXHAUSTIBLE_CHOICE (unreachable: statement_list peeks expression_start)
+                      // EXHAUSTIBLE_CHOICE (unreachable: statement_list peeks
+                      // expression_start)
                       | dsl::p<expression_statement>)+dsl::position;
         }
     }();
