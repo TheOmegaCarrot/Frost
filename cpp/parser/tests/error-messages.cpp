@@ -162,6 +162,21 @@ TEST_CASE("Parser error messages - foreign language keywords")
         CHECK_THAT(err, ContainsSubstring("match patterns"));
     }
 
+    SECTION("iterative keywords in @ pipelines suggest functional equivalents")
+    {
+        auto err_map = parse_error("[1] @ map(fn n -> n)");
+        CHECK_THAT(err_map, ContainsSubstring("'transform'"));
+
+        auto err_filter = parse_error("[1] @ filter(fn n -> true)");
+        CHECK_THAT(err_filter, ContainsSubstring("'select'"));
+
+        auto err_reduce = parse_error("[1] @ reduce(fn a, b -> a)");
+        CHECK_THAT(err_reduce, ContainsSubstring("'fold'"));
+
+        auto err_foreach = parse_error("[1] @ foreach(print)");
+        CHECK_THAT(err_foreach, ContainsSubstring("'foreach' cannot"));
+    }
+
     SECTION("identifiers starting with foreign keywords still work")
     {
         // `format`, `formula`, `letter`, `variable` must NOT trigger errors.

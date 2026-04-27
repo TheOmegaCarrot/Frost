@@ -595,6 +595,31 @@ struct use_do_for_block
         "'{ ... }' is a map literal here, use 'do { ... }' for a block";
 };
 
+struct use_transform_not_map
+{
+    static constexpr auto name =
+        "use 'transform' instead of 'map' in @ pipelines";
+};
+
+struct use_select_not_filter
+{
+    static constexpr auto name =
+        "use 'select' instead of 'filter' in @ pipelines";
+};
+
+struct use_fold_not_reduce
+{
+    static constexpr auto name =
+        "use 'fold' instead of 'reduce' in @ pipelines";
+};
+
+struct use_transform_not_foreach
+{
+    static constexpr auto name =
+        "'foreach' cannot be used in @ pipelines"
+        " (use 'transform' or 'select')";
+};
+
 struct use_match_for_is
 {
     static constexpr auto name =
@@ -2933,6 +2958,28 @@ struct primary_expression
     static constexpr auto name = "expression";
 };
 
+// Atom for the threaded call callee expression. Intercepts iterative
+// keywords (`map`, `filter`, `reduce`, `foreach`) before they dispatch to
+// their keyword-expression parsers, emitting a targeted error that suggests
+// the functional equivalents (`transform`, `select`, `fold`). Everything
+// else falls through to `primary_expression`.
+struct threaded_callee_atom
+{
+    static constexpr auto rule =
+        dsl::peek(LEXY_KEYWORD("map", identifier::base))
+        >> dsl::error<use_transform_not_map>
+        | dsl::peek(LEXY_KEYWORD("filter", identifier::base))
+        >> dsl::error<use_select_not_filter>
+        | dsl::peek(LEXY_KEYWORD("reduce", identifier::base))
+        >> dsl::error<use_fold_not_reduce>
+        | dsl::peek(LEXY_KEYWORD("foreach", identifier::base))
+        >> dsl::error<use_transform_not_foreach>
+        | dsl::else_
+        >> dsl::p<primary_expression>;
+    static constexpr auto value = lexy::forward<ast::Expression::Ptr>;
+    static constexpr auto name = "threaded call target";
+};
+
 // Call argument list: the contents of `(args...)` after a function call `f(`.
 // The opening `(` has already been consumed by the call operator. The rule
 // handles both empty `()` (zero args) and non-empty arg lists with comma
@@ -3105,7 +3152,7 @@ struct expression_impl : lexy::expression_production
                 else
                     return ws_no_nl;
             }();
-            static constexpr auto atom = dsl::p<primary_expression>;
+            static constexpr auto atom = dsl::p<threaded_callee_atom>;
 
             struct postfix : dsl::postfix_op
             {
