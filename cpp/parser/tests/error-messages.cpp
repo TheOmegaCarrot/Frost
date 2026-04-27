@@ -164,6 +164,38 @@ TEST_CASE("Parser error messages - foreign language keywords")
     }
 }
 
+TEST_CASE("Parser error messages - return keyword")
+{
+    SECTION("return suggests implicit return")
+    {
+        auto err = parse_error("return 42");
+        CHECK_THAT(err, ContainsSubstring("unexpected 'return'"));
+    }
+
+    SECTION("return inside a lambda body")
+    {
+        auto err = parse_error("def f = fn x -> { return x }");
+        CHECK_THAT(err, ContainsSubstring("unexpected 'return'"));
+    }
+}
+
+TEST_CASE("Parser error messages - unicode in comments")
+{
+    SECTION("em dash in comment")
+    {
+        auto result = frst::parse_program(
+            "# this is a comment \xe2\x80\x94 with an em dash\nprint(1)");
+        CHECK(result.has_value());
+    }
+
+    SECTION("curly quotes in comment")
+    {
+        auto result = frst::parse_program(
+            "# \xe2\x80\x9chello\xe2\x80\x9d\nprint(1)");
+        CHECK(result.has_value());
+    }
+}
+
 TEST_CASE("Parser error messages - reassignment inside blocks")
 {
     SECTION("reassignment in lambda body")

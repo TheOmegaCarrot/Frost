@@ -359,7 +359,7 @@ inline ast::AST_Node::Source_Location prefix_op_begin(const auto& after_ws_pos,
 // between statements in a block.
 
 constexpr auto line_comment = dsl::token(
-    dsl::lit_c<'#'> >> dsl::while_(dsl::ascii::character - dsl::lit_c<'\n'>));
+    dsl::lit_c<'#'> >> dsl::while_(dsl::code_point - dsl::lit_c<'\n'>));
 constexpr auto no_nl_chars =
     dsl::ascii::blank | dsl::lit_c<'\r'> | dsl::lit_c<'\f'> | dsl::lit_c<'\v'>;
 constexpr auto ws_no_nl = dsl::whitespace(no_nl_chars | line_comment);
@@ -580,6 +580,13 @@ struct use_def_not_let
 struct use_def_not_var
 {
     static constexpr auto name = "use 'def' instead of 'var'";
+};
+
+struct unexpected_return
+{
+    static constexpr auto name =
+        "unexpected 'return' (functions implicitly return their last "
+        "expression: try using 'if')";
 };
 
 struct use_do_for_block
@@ -2890,6 +2897,8 @@ struct primary_expression
            >> dsl::error<use_def_not_let>
            | dsl::peek(LEXY_KEYWORD("var", identifier::base))
            >> dsl::error<use_def_not_var>
+           | dsl::peek(LEXY_KEYWORD("return", identifier::base))
+           >> dsl::error<unexpected_return>
            | dsl::p<node::Name_Lookup>
            | dsl::error<expected_expression>)+dsl::position;
     static constexpr auto value = lexy::callback<ast::Expression::Ptr>(

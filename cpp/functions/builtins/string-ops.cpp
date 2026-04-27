@@ -99,7 +99,6 @@ X_UPPER_LOWER
 #undef X
 
 #define X_BINARY_PASSTHROUGH                                                   \
-    X(contains)                                                                \
     X(starts_with)                                                             \
     X(ends_with)
 
@@ -115,12 +114,23 @@ X_BINARY_PASSTHROUGH
 
 #undef X
 
+BUILTIN(contains)
+{
+    if (not args.empty() && args[0]->is<Array>())
+        throw Frost_Recoverable_Error{
+            "Function contains is for strings"
+            " (use 'includes' to search arrays)"};
+    REQUIRE_ARGS("contains", TYPES(String), TYPES(String));
+    return Value::create(GET(0, String).contains(GET(1, String)));
+}
+
 void inject_string_ops(Symbol_Table& table)
 {
     INJECT(split);
     INJECT(lines);
     INJECT(replace);
     INJECT(join);
+    INJECT(contains);
 #define X(fn) INJECT(fn);
 
     X_BINARY_PASSTHROUGH

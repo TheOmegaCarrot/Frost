@@ -96,7 +96,30 @@ TEST_CASE("Array Index Type Error")
                     std::move(idx_expr)};
 
     CHECK_THROWS_WITH(node.evaluate({.symbols = syms}),
-                      Equals("Array index requires Int, got: String"));
+                      ContainsSubstring("Array index requires Int, got: String"));
+}
+
+TEST_CASE("Array Index with .length suggests len()")
+{
+    auto arr = Value::create(Array{Value::create(10_f)});
+    auto struct_expr = mock::Mock_Expression::make();
+    auto idx_expr = mock::Mock_Expression::make();
+    auto syms = mock::Mock_Symbol_Table{};
+    trompeloeil::sequence seq;
+
+    REQUIRE_CALL(*struct_expr, do_evaluate(_))
+        .IN_SEQUENCE(seq)
+        .RETURN(arr);
+
+    REQUIRE_CALL(*idx_expr, do_evaluate(_))
+        .IN_SEQUENCE(seq)
+        .RETURN(Value::create("length"s));
+
+    ast::Index node{ast::AST_Node::no_range, std::move(struct_expr),
+                    std::move(idx_expr)};
+
+    CHECK_THROWS_WITH(node.evaluate({.symbols = syms}),
+                      ContainsSubstring("len(array)"));
 }
 
 TEST_CASE("Map Index Primitive Key")

@@ -49,8 +49,17 @@ Value_Ptr Index::do_evaluate(Evaluation_Context ctx) const
     if (struct_val->is<Array>())
     {
         if (not index_val->is<Int>())
-            throw Frost_Recoverable_Error{fmt::format(
-                "Array index requires Int, got: {}", index_val->type_name())};
+        {
+            auto msg = fmt::format("Array index requires Int, got: {}",
+                                   index_val->type_name());
+            if (index_val->is<String>())
+            {
+                const auto& key = index_val->raw_get<String>();
+                if (key == "length" || key == "size")
+                    msg += " (use 'len(array)' for array length)";
+            }
+            throw Frost_Recoverable_Error{std::move(msg)};
+        }
 
         return Value::index_array(struct_val->raw_get<Array>(),
                                   index_val->raw_get<Int>())

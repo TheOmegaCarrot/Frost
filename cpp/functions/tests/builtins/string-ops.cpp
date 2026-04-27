@@ -763,3 +763,25 @@ TEST_CASE("Builtin lines")
         CHECK(strs[2] == "b");
     }
 }
+
+TEST_CASE("Builtin contains: suggests includes for arrays")
+{
+    Symbol_Table table;
+    inject_builtins(table);
+    auto contains = table.lookup("contains")->get<Function>().value();
+
+    SECTION("String usage still works")
+    {
+        auto result = contains->call(
+            {Value::create("hello world"s), Value::create("world"s)});
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("Array as first arg suggests includes")
+    {
+        CHECK_THROWS_WITH(
+            contains->call({Value::create(Array{Value::create(1_f)}),
+                            Value::create(1_f)}),
+            ContainsSubstring("includes"));
+    }
+}
