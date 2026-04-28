@@ -1117,6 +1117,31 @@ struct expr_fmt_content
     static constexpr auto name = "format string content";
 };
 
+// Parses the opener (`$Q`) and optional content inside a whitespace-free
+// context.  The closing quote is deliberately NOT consumed here -- it stays
+// in node::Format_String's rule where `no_nl_chars` whitespace governs
+// trailing consumption, allowing the expression tower to see spaces between
+// a format string and the next operator.
+template <char quote>
+struct expr_fmt_inner
+{
+    static constexpr auto whitespace = dsl::whitespace(dsl::lit_c<'\0'>);
+
+    static constexpr auto rule = [] {
+        auto opener =
+            dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<quote>);
+        auto not_closing =
+            dsl::code_point - dsl::lit_c<quote> - dsl::ascii::newline;
+        return opener
+               + dsl::opt(dsl::peek(not_closing)
+                          >> dsl::p<expr_fmt_content<quote>>);
+    }();
+    static constexpr auto value = lexy::callback<std::vector<EFS::Segment>>(
+        [](std::vector<EFS::Segment> segs) { return std::move(segs); },
+        [](lexy::nullopt) { return std::vector<EFS::Segment>{}; });
+    static constexpr auto name = "format string inner";
+};
+
 // =============================================================================
 // AST-wrapping nodes (namespace node::)
 // =============================================================================
@@ -1163,48 +1188,30 @@ struct Literal
 // Top-level format string: `$"..."` or `$'...'`.
 // `$` and the opening quote must be adjacent (no_whitespace). An empty
 // format string (`$""`) produces an empty segment list. Non-empty content
-// is parsed by `expr_fmt_content<Q>`.
+// is parsed by `expr_fmt_inner<Q>`, which uses empty whitespace to
+// preserve literal spaces and ignore `#`. The closing quote stays HERE
+// so that `no_nl_chars` governs its trailing whitespace -- this lets the
+// expression tower see the space between a format string and the next
+// operator (e.g. `$"a" == $"b"`).
 struct Format_String
 {
-    // Override the inherited expression-level whitespace (which includes
-    // line comments) with comment-free horizontal whitespace. Without this,
-    // `#` in format string content is consumed as a comment by the `+`
-    // sequences between the opening sigil, content, and closing quote.
-    // expr_fmt_content declares empty whitespace internally, so literal
-    // spaces inside the format string are still preserved.
     static constexpr auto whitespace = dsl::whitespace(no_nl_chars);
 
     static constexpr auto rule = [] {
-        // Both quote variants have the same structure:
-        //   peek($Q) >> no_ws($Q) + opt(content) + Q
-        // Duplicated because Lexy constexpr rules can't use template helpers.
         auto double_q =
             dsl::peek(dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<'"'>))
-            >> (dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<'"'>)
-                + dsl::opt(dsl::peek(dsl::code_point
-                                     - dsl::lit_c<'"'>
-                                     - dsl::ascii::newline)
-                           >> dsl::p<expr_fmt_content<'"'>>)
-                + dsl::lit_c<'"'>);
+            >> (dsl::p<expr_fmt_inner<'"'>> + dsl::lit_c<'"'>);
         auto single_q =
             dsl::peek(dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<'\''>))
-            >> (dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<'\''>)
-                + dsl::opt(dsl::peek(dsl::code_point
-                                     - dsl::lit_c<'\''>
-                                     - dsl::ascii::newline)
-                           >> dsl::p<expr_fmt_content<'\''>>)
-                + dsl::lit_c<'\''>);
+            >> (dsl::p<expr_fmt_inner<'\''>> + dsl::lit_c<'\''>);
         return double_q | single_q;
     }();
-    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
-        [](std::vector<EFS::Segment> segments) {
-            return std::make_unique<EFS>(ast::AST_Node::no_range,
-                                         std::move(segments));
-        },
-        [](lexy::nullopt) {
-            return std::make_unique<EFS>(ast::AST_Node::no_range,
-                                         std::vector<EFS::Segment>{});
-        });
+    static constexpr auto value =
+        lexy::callback<ast::Expression::Ptr>(
+            [](std::vector<EFS::Segment> segments) {
+                return std::make_unique<EFS>(ast::AST_Node::no_range,
+                                             std::move(segments));
+            });
     static constexpr auto name = "format string";
 };
 
