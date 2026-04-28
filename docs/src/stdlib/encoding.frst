@@ -1,5 +1,6 @@
 export def encoding = {
     name: 'encoding',
+    title: 'Encoding',
     module_path: 'std.encoding',
     import_as: 'enc',
     description: [

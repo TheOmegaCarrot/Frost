@@ -1,5 +1,6 @@
 export def sqlite = {
     name: 'sqlite',
+    title: 'SQLite',
     module_path: 'ext.sqlite',
     import_as: 'sqlite',
     description: [

@@ -70,17 +70,21 @@ defn render_entry(res, entry, depth, prefix) -> {
 # --- Children and types ---
 
 defn render_child(res, child, depth) -> {
+    def title = child.title or child.name
+    backend.write_heading(res, title, depth)
     if has(child, 'description'):
-        render_content(res, child.description, depth)
+        render_content(res, child.description, depth + 1)
     foreach child.entries with fn entry ->
-        render_entry(res, entry, depth, $'${child.name}.')
+        render_entry(res, entry, depth + 1, $'${child.name}.')
 }
 
 defn render_type(res, type_def, depth) -> {
+    def title = if has(type_def, 'title'): type_def.title else: type_def.name
+    backend.write_heading(res, title, depth)
     if has(type_def, 'description'):
-        render_content(res, type_def.description, depth)
+        render_content(res, type_def.description, depth + 1)
     foreach type_def.entries with fn entry ->
-        render_entry(res, entry, depth, $'${type_def.name}.')
+        render_entry(res, entry, depth + 1, $'${type_def.name}.')
 }
 
 # --- Module rendering ---
@@ -88,7 +92,8 @@ defn render_type(res, type_def, depth) -> {
 defn render_module(module) -> {
     def res = backend.begin_module(module, output_to)
 
-    backend.write_heading(res, module.name, 1)
+    def title = module.title or module.name
+    backend.write_heading(res, title, 1)
 
     if has(module, 'import_as'):
         backend.write_code_block(res, {
