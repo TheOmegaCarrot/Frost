@@ -11,7 +11,7 @@ defn heading_prefix(depth) -> match depth {
 
 # --- Resource lifecycle ---
 
-export defn begin_module(module, output_dir) -> do {
+export defn begin_module(module, output_dir) -> {
     fs.mkdir(output_dir)
     def path = fs.concat(output_dir, $'${module.name}.md')
     io.open_trunc(path)
@@ -21,12 +21,12 @@ export defn end_module(res) -> res.close()
 
 # --- Primitives ---
 
-export defn write_heading(res, text, depth) -> do {
+export defn write_heading(res, text, depth) -> {
     res.writeln($'${heading_prefix(depth)} ${text}')
     res.writeln('')
 }
 
-export defn write_paragraph(res, text) -> do {
+export defn write_paragraph(res, text) -> {
     res.writeln(text)
     res.writeln('')
 }
@@ -38,15 +38,14 @@ export defn write_signature(res, sig) -> res.writeln($'`${sig}`')
 # [IANA database](https://...)
 export defn format_external_link(text, url) -> $'[${text}](${url})'
 
-export defn write_code_block(res, example) -> do {
+export defn write_code_block(res, example) -> {
     res.writeln('```frost')
     res.writeln(example.code)
 
-    def s = '#' # stopgap
     match example {
-        { result } => res.writeln($'${s} => ${result}'),
-        { output } => res.writeln($'${s} prints: ${output}'),
-        { error } => res.writeln($'${s} error: ${error}'),
+        { result } => res.writeln($'# => ${result}'),
+        { output } => res.writeln($'# prints: ${output}'),
+        { error } => res.writeln($'# error: ${error}'),
         { illustrative } => null,
         # if this match is missing a case, then that's a bug
         _ => fatal($'Unable to handle code block: ${example}')
@@ -56,13 +55,13 @@ export defn write_code_block(res, example) -> do {
     res.writeln('')
 }
 
-export defn write_list(res, items) -> do {
+export defn write_list(res, items) -> {
     foreach items with fn item -> res.writeln($'- ${item}')
     res.writeln('')
 }
 
-export defn write_params(res, params) -> do {
-    foreach params with fn p -> do {
+export defn write_params(res, params) -> {
+    foreach params with fn p -> {
         def desc = match p {
             { desc } => $' -- ${desc}',
             _ => '' # valid for decription to be absent
@@ -95,7 +94,7 @@ defn ref_to_link(ref) -> {
     }
 }
 
-export defn write_see_also(res, refs) -> do {
+export defn write_see_also(res, refs) -> {
     res.writeln($'See also:')
     foreach refs with $( $ @ ref_to_link() @ res.writeln() )
     res.writeln('')

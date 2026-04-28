@@ -39,7 +39,7 @@ defn render_content(res, items, depth) ->
 
 # --- Entry rendering ---
 
-defn render_entry(res, entry, depth, prefix) -> do {
+defn render_entry(res, entry, depth, prefix) -> {
     backend.write_heading(res, $'`${prefix}${entry.name}`', depth)
 
     if not has(entry, 'kind'): do {
@@ -69,14 +69,14 @@ defn render_entry(res, entry, depth, prefix) -> do {
 
 # --- Children and types ---
 
-defn render_child(res, child, depth) -> do {
+defn render_child(res, child, depth) -> {
     if has(child, 'description'):
         render_content(res, child.description, depth)
     foreach child.entries with fn entry ->
         render_entry(res, entry, depth, $'${child.name}.')
 }
 
-defn render_type(res, type_def, depth) -> do {
+defn render_type(res, type_def, depth) -> {
     if has(type_def, 'description'):
         render_content(res, type_def.description, depth)
     foreach type_def.entries with fn entry ->
@@ -85,7 +85,7 @@ defn render_type(res, type_def, depth) -> do {
 
 # --- Module rendering ---
 
-defn render_module(module) -> do {
+defn render_module(module) -> {
     def res = backend.begin_module(module, output_to)
 
     backend.write_heading(res, module.name, 1)
@@ -105,19 +105,19 @@ defn render_module(module) -> do {
         render_entry(res, entry, 2, '')
 
     if has(module, 'children'):
-        foreach keys(module.children) with fn name ->
-            render_child(res, module.children[name], 2)
+        foreach module.children @ values() @ sort_by(index('name')) with fn child ->
+            render_child(res, child, 2)
 
     if has(module, 'types'):
-        foreach keys(module.types) with fn name ->
-            render_type(res, module.types[name], 2)
+        foreach module.types @ values() @ sort_by(index('name')) with fn type ->
+            render_type(res, type, 2)
 
     backend.end_module(res)
 }
 
 # --- Main ---
 
-defn generate() -> do {
+defn generate() -> {
     def stdlib = docs.stdlib
 
     if has(stdlib, 'std'):
