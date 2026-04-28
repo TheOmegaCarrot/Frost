@@ -606,8 +606,8 @@ module.exports = grammar({
       token.immediate("'"),
     ),
 
-    format_content_double: _ => token.immediate(/[^"\\$\n]+/),
-    format_content_single: _ => token.immediate(/[^'\\$\n]+/),
+    format_content_double: _ => token.immediate(prec(1, /[^"\\$\n]+/)),
+    format_content_single: _ => token.immediate(prec(1, /[^'\\$\n]+/)),
 
     format_dollar: _ => token.immediate('$'),
 
