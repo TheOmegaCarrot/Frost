@@ -370,4 +370,30 @@ TEST_CASE("Parser Format Strings")
         REQUIRE(value->is<frst::String>());
         CHECK(value->get<frst::String>().value() == "cost: $5");
     }
+
+    SECTION("Hash character in format string is literal, not a comment")
+    {
+        auto result = parse(R"($"# => ${1 + 2}")");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
+        REQUIRE(value->is<frst::String>());
+        CHECK(value->get<frst::String>().value() == "# => 3");
+    }
+
+    SECTION("Hash after interpolation is literal")
+    {
+        auto result = parse(R"($"${42}# end")");
+        REQUIRE(result.has_value());
+        auto expr = std::move(result).value();
+
+        frst::Symbol_Table table;
+        frst::Evaluation_Context ctx{.symbols = table};
+        auto value = expr->evaluate(ctx);
+        REQUIRE(value->is<frst::String>());
+        CHECK(value->get<frst::String>().value() == "42# end");
+    }
 }

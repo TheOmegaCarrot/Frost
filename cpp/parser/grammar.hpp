@@ -1166,6 +1166,14 @@ struct Literal
 // is parsed by `expr_fmt_content<Q>`.
 struct Format_String
 {
+    // Override the inherited expression-level whitespace (which includes
+    // line comments) with comment-free horizontal whitespace. Without this,
+    // `#` in format string content is consumed as a comment by the `+`
+    // sequences between the opening sigil, content, and closing quote.
+    // expr_fmt_content declares empty whitespace internally, so literal
+    // spaces inside the format string are still preserved.
+    static constexpr auto whitespace = dsl::whitespace(no_nl_chars);
+
     static constexpr auto rule = [] {
         // Both quote variants have the same structure:
         //   peek($Q) >> no_ws($Q) + opt(content) + Q
