@@ -111,7 +111,7 @@ export def sqlite = {
         },
         {
             name: 'blob',
-            signatures: ['blob(data)'],
+            signatures: ['sqlite.blob(data)'],
             description: [
                 'Creates a BLOB foreign value from a `String`. When bound as a parameter, this value uses `BLOB` affinity rather than `TEXT`. Calling this does not copy the underlying string data.',
             ],
@@ -127,7 +127,7 @@ export def sqlite = {
         },
         {
             name: 'open',
-            signatures: ['open(path)'],
+            signatures: ['sqlite.open(path)'],
             description: [
                 'Opens a read-write SQLite database at `path`, or creates one if it does not exist. Returns a database object. Produces an error if the database cannot be opened.',
             ],
@@ -135,7 +135,7 @@ export def sqlite = {
         },
         {
             name: 'open_readonly',
-            signatures: ['open_readonly(path)'],
+            signatures: ['sqlite.open_readonly(path)'],
             description: [
                 'Opens an existing SQLite database at `path` in read-only mode. Returns a database object. Produces an error if the file does not exist. Write operations (`INSERT`, `UPDATE`, `DELETE`, DDL) will fail.',
             ],
@@ -143,7 +143,7 @@ export def sqlite = {
         },
         {
             name: 'open_memory',
-            signatures: ['open_memory()'],
+            signatures: ['sqlite.open_memory()'],
             description: [
                 'Opens a private in-memory database. Returns a database object. The database exists only for the lifetime of the returned object.',
             ],
@@ -154,8 +154,10 @@ export def sqlite = {
     types: {
         db: {
             name: 'db',
+            title: 'Database Connection',
             description: [
-                'Database connection object returned by `open`, `open_readonly`, or `open_memory`.',
+                'A database connection object, returned by `open`, `open_readonly`, or `open_memory`. All database operations go through this object: executing statements, querying rows, managing transactions, and registering custom SQL functions.',
+                'The connection is automatically closed when there are no remaining references to it. Use `db.close()` for explicit lifecycle control.',
             ],
             entries: [
                 {

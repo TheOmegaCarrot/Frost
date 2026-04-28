@@ -23,7 +23,7 @@ MessagePack has types that Frost does not natively support:
 `decode(data)`
 
 Parses a MessagePack-encoded `String` and returns the corresponding Frost value.
-The top-level value can be any type (not restricted to maps, unlike TOML).
+The top-level value can be any valid MessagePack type.
 
 Unsigned integers that exceed `Int` range are rejected.
 Extension types are not supported.

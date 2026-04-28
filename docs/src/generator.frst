@@ -79,7 +79,7 @@ defn render_child(res, child, depth) -> {
 }
 
 defn render_type(res, type_def, depth) -> {
-    def title = if has(type_def, 'title'): type_def.title else: type_def.name
+    def title = type_def.title or type_def.name
     backend.write_heading(res, title, depth)
     if has(type_def, 'description'):
         render_content(res, type_def.description, depth + 1)
@@ -106,16 +106,16 @@ defn render_module(module) -> {
     if has(module, 'content'):
         render_content(res, module.content, 2)
 
+    if has(module, 'types'):
+        foreach module.types @ values() @ sort_by(index('name')) with fn type ->
+            render_type(res, type, 2)
+
     foreach module.entries with fn entry ->
         render_entry(res, entry, 2, '')
 
     if has(module, 'children'):
         foreach module.children @ values() @ sort_by(index('name')) with fn child ->
             render_child(res, child, 2)
-
-    if has(module, 'types'):
-        foreach module.types @ values() @ sort_by(index('name')) with fn type ->
-            render_type(res, type, 2)
 
     backend.end_module(res)
 }
