@@ -6,7 +6,7 @@ def parsed = cli.parse(args, {
     description: 'Generate Frost documentation from structured sources',
     options: {
         format: { short: 'f', default: 'markdown', description: 'Output format' },
-        output: { short: 'o', required: true, description: 'Output directory' },
+        output: { short: 'o', required: true, description: 'Output location (directory or file, depending on format)' },
     },
     flags: {
         help: { short: 'h', description: 'Show help' },
@@ -18,7 +18,7 @@ if parsed.flags.help: do {
     os.exit(0)
 }
 
-def output_dir = parsed.options.output
+def output_to = parsed.options.output
 def backend = match parsed.options.format {
     'markdown' => import('backends.markdown'),
     fmt => fatal($'Unknown format: ${fmt}'),
@@ -50,13 +50,19 @@ defn render_entry(res, entry, depth, prefix) -> do {
 
     render_content(res, entry.description, depth + 1)
 
+    # these branches are all independently optional
+    # can't become a match
+
     if has(entry, 'params'):
         backend.write_params(res, entry.params)
+
     if has(entry, 'examples'):
         foreach entry.examples with fn ex ->
             backend.write_code_block(res, ex)
+
     if has(entry, 'content'):
         render_content(res, entry.content, depth + 1)
+
     if has(entry, 'see_also'):
         backend.write_see_also(res, entry.see_also)
 }
@@ -80,7 +86,7 @@ defn render_type(res, type_def, depth) -> do {
 # --- Module rendering ---
 
 defn render_module(module) -> do {
-    def res = backend.begin_module(module, output_dir)
+    def res = backend.begin_module(module, output_to)
 
     backend.write_heading(res, module.name, 1)
 

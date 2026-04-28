@@ -12,6 +12,7 @@ defn heading_prefix(depth) -> match depth {
 # --- Resource lifecycle ---
 
 export defn begin_module(module, output_dir) -> do {
+    fs.mkdir(output_dir)
     def path = fs.concat(output_dir, $'${module.name}.md')
     io.open_trunc(path)
 }
@@ -41,10 +42,12 @@ export defn write_code_block(res, example) -> do {
     res.writeln('```frost')
     res.writeln(example.code)
 
+    def s = '#' # stopgap
     match example {
-        { result } => res.writeln($'# => ${result}'),
-        { output } => res.writeln($'# prints: ${output}'),
-        { error } => res.writeln($'# error: ${error}'),
+        { result } => res.writeln($'${s} => ${result}'),
+        { output } => res.writeln($'${s} prints: ${output}'),
+        { error } => res.writeln($'${s} error: ${error}'),
+        { illustrative } => null,
         # if this match is missing a case, then that's a bug
         _ => fatal($'Unable to handle code block: ${example}')
     }
@@ -93,7 +96,6 @@ defn ref_to_link(ref) -> {
 }
 
 export defn write_see_also(res, refs) -> do {
-    def links = refs @ transform(fn ref -> $'`${ref}`') @ join(', ')
     res.writeln($'See also:')
     foreach refs with $( $ @ ref_to_link() @ res.writeln() )
     res.writeln('')
