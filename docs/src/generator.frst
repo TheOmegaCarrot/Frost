@@ -1,8 +1,126 @@
-def { cli, fs, io } = import('std')
-
+def { cli, fs, io, os } = import('std')
 def { docs } = import('docroot')
 
-# parse cli args (format, output directory, etc), import a backend
+def parsed = cli.parse(args, {
+    name: 'frost-docs',
+    description: 'Generate Frost documentation from structured sources',
+    options: {
+        format: { short: 'f', default: 'markdown', description: 'Output format' },
+        output: { short: 'o', required: true, description: 'Output directory' },
+    },
+    flags: {
+        help: { short: 'h', description: 'Show help' },
+    },
+})
 
-# walk the structure (lots of `match`), and call the backend (all backends expose the same uniform interface)
-# (polymorphic backends)
+if parsed.flags.help: do {
+    print(parsed.help)
+    os.exit(0)
+}
+
+def output_dir = parsed.options.output
+def backend = match parsed.options.format {
+    'markdown' => import('backends.markdown'),
+    fmt => fatal($'Unknown format: ${fmt}'),
+}
+
+# --- Content rendering ---
+
+defn render_content(res, items, depth) ->
+    foreach items with fn item -> match item {
+        s is String => backend.write_paragraph(res, s),
+        { title, content: inner } => do {
+            backend.write_heading(res, title, depth)
+            render_content(res, inner, depth + 1)
+        },
+        { list: items } => backend.write_list(res, items),
+        { code: _ } as example => backend.write_code_block(res, example),
+    }
+
+# --- Entry rendering ---
+
+defn render_entry(res, entry, depth, prefix) -> do {
+    backend.write_heading(res, $'`${prefix}${entry.name}`', depth)
+
+    if not has(entry, 'kind'): do {
+        foreach entry.signatures with fn sig ->
+            backend.write_signature(res, sig)
+        backend.write_break(res)
+    }
+
+    render_content(res, entry.description, depth + 1)
+
+    if has(entry, 'params'):
+        backend.write_params(res, entry.params)
+    if has(entry, 'examples'):
+        foreach entry.examples with fn ex ->
+            backend.write_code_block(res, ex)
+    if has(entry, 'content'):
+        render_content(res, entry.content, depth + 1)
+    if has(entry, 'see_also'):
+        backend.write_see_also(res, entry.see_also)
+}
+
+# --- Children and types ---
+
+defn render_child(res, child, depth) -> do {
+    if has(child, 'description'):
+        render_content(res, child.description, depth)
+    foreach child.entries with fn entry ->
+        render_entry(res, entry, depth, $'${child.name}.')
+}
+
+defn render_type(res, type_def, depth) -> do {
+    if has(type_def, 'description'):
+        render_content(res, type_def.description, depth)
+    foreach type_def.entries with fn entry ->
+        render_entry(res, entry, depth, $'${type_def.name}.')
+}
+
+# --- Module rendering ---
+
+defn render_module(module) -> do {
+    def res = backend.begin_module(module, output_dir)
+
+    backend.write_heading(res, module.name, 1)
+
+    if has(module, 'import_as'):
+        backend.write_code_block(res, {
+            code: $"def ${module.import_as} = import('${module.module_path}')",
+            illustrative: true,
+        })
+
+    render_content(res, module.description, 2)
+
+    if has(module, 'content'):
+        render_content(res, module.content, 2)
+
+    foreach module.entries with fn entry ->
+        render_entry(res, entry, 2, '')
+
+    if has(module, 'children'):
+        foreach keys(module.children) with fn name ->
+            render_child(res, module.children[name], 2)
+
+    if has(module, 'types'):
+        foreach keys(module.types) with fn name ->
+            render_type(res, module.types[name], 2)
+
+    backend.end_module(res)
+}
+
+# --- Main ---
+
+defn generate() -> do {
+    def stdlib = docs.stdlib
+
+    if has(stdlib, 'std'):
+        foreach keys(stdlib.std) with fn name ->
+            render_module(stdlib.std[name])
+
+    if has(stdlib, 'ext'):
+        foreach keys(stdlib.ext) with fn name ->
+            render_module(stdlib.ext[name])
+}
+
+generate()

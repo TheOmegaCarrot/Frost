@@ -1,5 +1,100 @@
-export defn write_header(writer, content) -> {
+def { fs, io, string } = import('std')
 
+defn heading_prefix(depth) -> match depth {
+    1 => '#',
+    2 => '##',
+    3 => '###',
+    4 => '####',
+    5 => '#####',
+    _ => '######',
 }
 
-# markdown-backend-specifc logic
+# --- Resource lifecycle ---
+
+export defn begin_module(module, output_dir) -> do {
+    def path = fs.concat(output_dir, $'${module.name}.md')
+    io.open_trunc(path)
+}
+
+export defn end_module(res) -> res.close()
+
+# --- Primitives ---
+
+export defn write_heading(res, text, depth) -> do {
+    res.writeln($'${heading_prefix(depth)} ${text}')
+    res.writeln('')
+}
+
+export defn write_paragraph(res, text) -> do {
+    res.writeln(text)
+    res.writeln('')
+}
+
+export defn write_break(res) -> res.writeln('')
+
+export defn write_signature(res, sig) -> res.writeln($'`${sig}`')
+
+# [IANA database](https://...)
+export defn format_external_link(text, url) -> $'[${text}](${url})'
+
+export defn write_code_block(res, example) -> do {
+    res.writeln('```frost')
+    res.writeln(example.code)
+
+    match example {
+        { result } => res.writeln($'# => ${result}'),
+        { output } => res.writeln($'# prints: ${output}'),
+        { error } => res.writeln($'# error: ${error}'),
+        # if this match is missing a case, then that's a bug
+        _ => fatal($'Unable to handle code block: ${example}')
+    }
+
+    res.writeln('```')
+    res.writeln('')
+}
+
+export defn write_list(res, items) -> do {
+    foreach items with fn item -> res.writeln($'- ${item}')
+    res.writeln('')
+}
+
+export defn write_params(res, params) -> do {
+    foreach params with fn p -> do {
+        def desc = match p {
+            { desc } => $' -- ${desc}',
+            _ => '' # valid for decription to be absent
+        }
+        res.writeln($'- `${p.name}`${desc}')
+    }
+    res.writeln('')
+}
+
+defn stdlib_ref(fragments) -> {
+    def [ module, ...name_pieces ] = fragments
+    def name = name_pieces @ join('.')
+
+    # TODO: be robust
+    def linkname = name_pieces @ join('')
+
+    # TODO: doesn't seem like it'll handle all cases right
+    $'[`${name}`](${module}.md#${linkname})'
+}
+
+# std.encoding.parse_int -> [encoding.parse_int](encoding.md#parse_int)
+defn ref_to_link(ref) -> {
+
+    def [ section, ...rest ] = ref @ split('.')
+    
+    match section {
+        'std' | 'ext' => stdlib_ref(rest)
+        # TODO: lang
+        # TODO: standalone pieces (like foreign values)
+    }
+}
+
+export defn write_see_also(res, refs) -> do {
+    def links = refs @ transform(fn ref -> $'`${ref}`') @ join(', ')
+    res.writeln($'See also:')
+    foreach refs with $( $ @ ref_to_link() @ res.writeln() )
+    res.writeln('')
+}
