@@ -126,7 +126,6 @@ export def encoding = {
                     description: [
                         'Encodes `s` using URL-safe Base64 and returns the result as a string.',
                     ],
-                    examples: [],
                     see_also: ['std.encoding.b64.urldecode'],
                 },
                 {
@@ -136,7 +135,6 @@ export def encoding = {
                         'Decodes a URL-safe Base64 string and returns the raw bytes as a string.',
                         'Produces an error on invalid input.',
                     ],
-                    examples: [],
                     see_also: ['std.encoding.b64.urlencode'],
                 },
             ],
