@@ -1,0 +1,8 @@
+def { cli, fs, io } = import('std')
+
+def { docs } = import('docroot')
+
+# parse cli args (format, output directory, etc), import a backend
+
+# walk the structure (lots of `match`), and call the backend (all backends expose the same uniform interface)
+# (polymorphic backends)

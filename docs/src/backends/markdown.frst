@@ -1,0 +1,5 @@
+export defn write_header(writer, content) -> {
+
+}
+
+# markdown-backend-specifc logic
