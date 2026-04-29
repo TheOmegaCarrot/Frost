@@ -9,6 +9,7 @@ export def std = (
 
 export def ext = (
     import('compression')
+    + import('http')
     + import('sqlite')
 )
 

@@ -30,7 +30,7 @@ Track progress migrating from hand-written markdown (`docs/stdlib/`) to structur
 - [x] sqlite
 - [X] compression
 - [ ] hash
-- [ ] http
+- [x] http
 - [ ] msgpack
 - [ ] toml
 

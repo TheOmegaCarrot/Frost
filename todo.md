@@ -2,6 +2,10 @@
 
 ## Language
 
+### Abbreviated Lambda Parse Error
+
+- `$($'|${$}|')` fails to parse — abbreviated lambda containing a format string that interpolates `$` (the lambda parameter). Likely a parser ambiguity with nested `$` contexts. Investigate what happened here.
+
 ### Comparison Chaining
 
 - P3239-like comparison chaining
@@ -10,9 +14,9 @@
 
 ## Stdlib
 
-### CLI
+### CLI Design Error
 
-- `cli.parse` should not directly error when parsing the args. Directly return ok+value+help or ok+error+help so the user script can deal with it. (value being parse result, error being existing error messages)
+- `cli.parse` should not directly error when parsing the args. Directly return ok+value+help or ok+error+help so the user script can deal with it. (value being parse result, error being existing error messages?)
 
 ### Async
 

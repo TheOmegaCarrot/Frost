@@ -34,6 +34,7 @@ defn render_content(res, items, depth) ->
             render_content(res, inner, depth + 1)
         },
         { list: items } => backend.write_list(res, items),
+        { table } => backend.write_table(res, table),
         { code: _ } as example => backend.write_code_block(res, example),
     }
 

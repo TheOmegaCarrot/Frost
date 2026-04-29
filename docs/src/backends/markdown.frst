@@ -60,6 +60,18 @@ export defn write_list(res, items) -> {
     res.writeln('')
 }
 
+export defn write_table(res, table) -> {
+    def cols = table.columns
+    def rows = table.rows
+    defn wrap(s) -> $'| ${s} |'
+
+    res.writeln(cols @ transform(fn c -> $' ${c} ') @ join('|') @ wrap())
+    res.writeln(cols @ transform(fn _ -> '---') @ join('|') @ wrap())
+    foreach rows with fn row ->
+        res.writeln(row @ transform(fn c -> $' ${c} ') @ join('|') @ wrap())
+    res.writeln('')
+}
+
 export defn write_params(res, params) -> {
     foreach params with fn p -> {
         def desc = match p {

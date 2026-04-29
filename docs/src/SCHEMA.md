@@ -45,6 +45,7 @@ Many fields in the schema (`description`, `content`, type/child `description`) a
 | `{ code, illustrative: true }` | Not tested. Shows a pattern or usage that can't be reduced to a simple assertion. |
 | `{ title, content }` | A titled sub-section. `content` is a nested content array. |
 | `{ list: [...] }` | A bulleted list. Each item is a string. |
+| `{ table: { columns, rows } }` | A table. `columns` is an array of header strings, `rows` is an array of arrays (one per row, each element a cell string). |
 
 All of these can appear in any content array. A description that needs an inline example can have one:
 
