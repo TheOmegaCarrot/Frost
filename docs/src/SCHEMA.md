@@ -34,7 +34,7 @@ Export the module under a name matching `name`. The file goes in `docs/src/stdli
 
 ## Content Array
 
-Many fields in the schema (`description`, `content`, type/child `description`) are **content arrays** -- polymorphic arrays where each element is one of:
+Many fields in the schema (`description`, `content`, type/child `description`) are **content arrays**: polymorphic arrays where each element is one of:
 
 | Shape | Description |
 |-------|-------------|
@@ -67,10 +67,11 @@ External and internal links use the same `[text](target)` syntax. Internal cross
 
 ### Code examples
 
-`code` is a string -- single-line or multiline. Multiline strings use Frost's triple-quote syntax with Swift-style indentation trimming. The following example results in a string with no leading whitespace in the content:
+`code` is a string: single-line or multiline. Multiline strings use Frost's triple-quote syntax with Swift-style indentation trimming. The following example results in a string with no leading whitespace in the content:
 
 ```frost
-examples: [
+body: [
+    'some prose',
     {
         code: '''
             def db = sqlite.open_memory()
@@ -79,6 +80,7 @@ examples: [
             ''',
         result: '1',
     },
+    'more prose',
 ],
 ```
 
@@ -118,7 +120,7 @@ A function or constant within a module, type, or child.
 | `kind` | String | no | Set to `'constant'` for non-callable entries (no signatures). Omit for functions. |
 | `signatures` | Array | yes* | How to call the function, with the full qualified path as the user would type it (e.g. `'encoding.fmt_int(number, base)'`). Multiple entries for overloaded signatures. *Omit for constants. |
 | `description` | Content Array | yes | Brief description of what the function does. Used as the summary for machine consumers (REPL help, search indexing). |
-| `body` | Content Array | no | Everything after the description: examples, extended narrative, sub-sections, caveats. Author controls the flow -- examples can be interspersed with prose wherever they read best. |
+| `body` | Content Array | no | Everything after the description: examples, extended narrative, sub-sections, caveats. Author controls the flow: examples can be interspersed with prose wherever they read best. |
 | `params` | Array | no | Parameter documentation. Omit when self-evident from the signature and description. See [Param](#param). |
 | `see_also` | Array | no | Cross-reference paths. See [Cross-References](#cross-references). |
 
@@ -126,7 +128,7 @@ All optional fields should be omitted entirely when empty (not set to `[]` or `n
 
 ### Heading conventions
 
-- **Module entries**: heading shows just `name` (e.g. `open`). No module prefix -- the page context makes it clear.
+- **Module entries**: heading shows just `name` (e.g. `open`). No module prefix: the page context makes it clear.
 - **Child entries**: heading shows `childname.entryname` (e.g. `hex.encode`).
 - **Type entries**: heading shows `typename.entryname` (e.g. `db.exec`).
 - **Signatures**: always show the full qualified path as the user would type it (e.g. `encoding.hex.encode(s)`, `db.exec(sql)`).
@@ -180,7 +182,8 @@ Documents a single function parameter.
 | `name` | String | yes | Parameter name, matching the signature. |
 | `desc` | String | no | Short description. |
 
-Omit the entire `params` array when the parameters are self-evident from the signature and description. Include it when parameters have non-obvious constraints (e.g. valid ranges, type requirements) or when the function takes many parameters.
+Omit the entire `params` array when the parameters are self-evident from the signature and description. Include it when parameters have non-obvious constraints (e.g. valid ranges, type requirements), when the function takes many parameters, or if the parameter can be given a useful name that is not redundant.
+The params should agree with the signatures.
 
 ## Cross-References
 
