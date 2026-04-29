@@ -1,4 +1,4 @@
-def { cli, fs, io, os } = import('std')
+def { cli, fs, io, os, regex } = import('std')
 def { docs } = import('docroot')
 
 def parsed = cli.parse(args, {
@@ -24,16 +24,30 @@ def backend = match parsed.options.format {
     fmt => fatal($'Unknown format: ${fmt}'),
 }
 
+# --- Ref resolution ---
+
+def ref_pattern = R"(\[([^\]]+)\]\(@ref ([^)]+)\))"
+
+defn resolve_refs(s) -> {
+    def matches = regex.scan_matches(s, ref_pattern)
+    if not matches.found: s
+    else: reduce matches.matches init: s with fn (acc, m) -> {
+        def text = m.groups[1].value
+        def path = m.groups[2].value
+        acc @ replace(m.full, backend.resolve_ref(text, path))
+    }
+}
+
 # --- Content rendering ---
 
 defn render_content(res, items, depth) ->
     foreach items with fn item -> match item {
-        s is String => backend.write_paragraph(res, s),
+        s is String => backend.write_paragraph(res, resolve_refs(s)),
         { title, content: inner } => do {
             backend.write_heading(res, title, depth)
             render_content(res, inner, depth + 1)
         },
-        { list: items } => backend.write_list(res, items),
+        { list: items } => backend.write_list(res, items @ transform(resolve_refs)),
         { table } => backend.write_table(res, table),
         { code: _ } as example => backend.write_code_block(res, example),
     }
