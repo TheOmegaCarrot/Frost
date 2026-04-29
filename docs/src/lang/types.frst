@@ -1,0 +1,292 @@
+export def types = {
+    title: 'Types and Literals',
+    content: [
+        'There are only 8 types: `Null`, `Int`, `Float`, `Bool`, `String`, `Array`, `Map`, and `Function`. The types can be grouped into type categories: `Numeric` types are `Int` and `Float`. `Primitive` types are `Numeric`, `Null`, `Bool`, and `String`. `Structured` types are `Array` and `Map`.',
+        {
+            title: 'Null',
+            content: [
+                'The keyword `null` is used to refer to the `Null` value.',
+                { code: 'def null_value = null', illustrative: true },
+            ],
+        },
+        {
+            title: 'Int',
+            content: [
+                'An `Int` literal is simply a sequence of digits. `Int`s are all stored as signed 64-bit integers.',
+                { code: 'def an_int = 42', illustrative: true },
+            ],
+        },
+        {
+            title: 'Float',
+            content: [
+                '`Float`s are all stored as 64-bit double-precision IEEE-754 floating-point numbers. A `Float` may not be NaN or infinity.',
+                'A `Float` literal may be written as a decimal number or in scientific notation. Digits before and after the decimal point may not be omitted.',
+                {
+                    code: """
+                        def a_float = 3.14
+                        def precise = 1.23e-10
+                        def big     = 1e+20
+                        def not_big = 3e2      # 300.0
+
+                        def bad_1 = .5 # not permitted, use 0.5
+                        def bad_2 = 3. # not permitted, use 3.0
+                        """,
+                    illustrative: true,
+                },
+                'Scientific notation uses `e` followed by an optional sign (`+` or `-`) and one or more digits. The decimal point is optional in scientific notation: `1e+20` and `1.0e+20` are both valid. No whitespace may appear within a float literal.',
+            ],
+        },
+        {
+            title: 'Bool',
+            content: [
+                'A `Bool` is just `true` or `false`.',
+                { code: "def yes = true\ndef no  = false", illustrative: true },
+            ],
+        },
+        {
+            title: 'String',
+            content: [
+                '`String` literals may take a few forms: they may use single-quotes or double-quotes. There is no semantic difference between the two forms. All strings are binary-safe, and represent arbitrary sequences of bytes. String literals may also be raw string literals, which do not process escape sequences. Multi-line strings are not supported, this includes raw string literals.',
+                "Raw string literals begin with `R'(` or `R\"(` and end with `')` or `\")`. The opening and closing quotes must match.",
+                {
+                    code: """
+                        def foo = 'foo'
+                        def bar = "bar"
+                        """,
+                    illustrative: true,
+                },
+                'The supported escape sequences are:',
+                { list: [
+                    '`\\n`: newline',
+                    '`\\t`: tab',
+                    '`\\r`: carriage return',
+                    '`\\\\`: literal backslash',
+                    '`\\"`: double quote (only in `"`-style string)',
+                    "`\\'`: single quote (only in `'`-style string)",
+                    '`\\0`: null byte',
+                    '`\\xNN`: arbitrary byte, where `NN` is exactly two hexadecimal digits',
+                ] },
+                {
+                    title: 'Multiline Strings',
+                    content: [
+                        "Triple-quoted strings (`\"\"\"...\"\"\"` or `'''...'''`) may span multiple lines. The opening delimiter must be immediately followed by a newline. Indentation is trimmed based on the closing delimiter's position: each content line has the closing delimiter's leading whitespace stripped. Lines indented further than the closing delimiter retain their extra indentation. Empty lines are preserved.",
+                        {
+                            code: '''
+                                def sql = """
+                                    SELECT *
+                                    FROM users
+                                    WHERE active = 1
+                                    """
+                                # sql == "SELECT *\\nFROM users\\nWHERE active = 1"
+                                ''',
+                            illustrative: true,
+                        },
+                        'The `\\n`, `\\r`, and `\\xNN` escape sequences are not available in multiline strings. Newlines are written directly, and byte escapes are restricted because they can produce newline bytes that interfere with indentation trimming. The remaining escape sequences (`\\\\`, `\\t`, `\\0`, `\\"`, `\\\'`) are supported.',
+                    ],
+                },
+                {
+                    title: 'Format Strings',
+                    content: [
+                        'Format strings are prepended with a `$`, and may be single- or double-quoted. Raw string literals may not be used as format strings. Format strings are evaluated immediately.',
+                        'Each `${}` specifier contains an expression which is evaluated and converted to a string:',
+                        {
+                            code: """
+                                def name = 'world'
+                                $'hello, ${name}'                     # "hello, world"
+                                $'1 + 2 = ${1 + 2}'                   # "1 + 2 = 3"
+                                $'upper: ${to_upper(name)}'           # "upper: WORLD"
+                                """,
+                            illustrative: true,
+                        },
+                        'A bare `$` not followed by `{` is literal text. `\\$` produces a literal `$`, preventing interpolation:',
+                        {
+                            code: """
+                                $'price: $5'       # "price: $5" (bare $ is literal)
+                                """,
+                            illustrative: true,
+                        },
+                        'All other escape sequences (`\\n`, `\\t`, `\\\\`, `\\0`, `\\"`, `\\\'`, `\\xNN`) work the same as in regular strings.',
+                    ],
+                },
+            ],
+        },
+        {
+            title: 'Array',
+            content: [
+                'An `Array` is a heterogenous sequence of values. Any value may appear in an array. Arrays may be empty. An `Array` literal is a `,`-separated list of arbitrary expressions enclosed in `[]` brackets. Trailing commas are permitted, and newlines may appear within the array literal.',
+                {
+                    code: """
+                        def an_array = [
+                            'foo',
+                            40 + 2,
+                            [],
+                        ] # [ 'foo', 42, [] ]
+                        """,
+                    illustrative: true,
+                },
+                'Arrays may be indexed directly using familiar postfix `[]` syntax. Arrays use zero-based indexing, and also support reverse indexing, which should be familiar to Python developers. Out-of-bounds indexes evaluate to `null`.',
+                {
+                    code: """
+                        an_array[1] # 42
+                        an_array[-1] # []
+                        an_array[5000] # null
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            title: 'Map',
+            content: [
+                'A `Map` is a key-value structure. `Null`, `Array`, `Map`, and `Function` may not be map keys, but any value may be a map value. Maps may be empty. A `Map` literal consists of `,`-separated key-value pairs enclosed in `{}` braces. Trailing commas are permitted, and newlines may appear within the map literal.',
+                'A key-value pair is an expression enclosed in `[]` brackets (which is the key), followed by a `:`, followed by an expression which is used as the corresponding value.',
+                {
+                    code: """
+                        def a_map = {
+                            ['foo']: 42,
+                            ['bar']: 10,
+                            [40 + 2]: '42',
+                        }
+                        """,
+                    illustrative: true,
+                },
+                'Alternately, if a key is a string which conforms to identifier rules, the brackets and quotes may be omitted:',
+                {
+                    code: """
+                        def a_map = {
+                            foo: 42,
+                            bar: 10,
+                            [42]: '42',
+                        }
+                        """,
+                    illustrative: true,
+                },
+                'Just like with identifiers, reserved words may not be used in this way:',
+                {
+                    code: """
+                        { ['if']: true } # ok
+
+                        { if: true } # syntax error
+                        """,
+                    illustrative: true,
+                },
+                'To access a value in a map, you may use indexing similar to arrays. If a key does not exist, `null` will be returned.',
+                {
+                    code: """
+                        a_map['foo'] # 42
+                        a_map['missing'] # null
+                        """,
+                    illustrative: true,
+                },
+                'Similar to map literals, if a key is a string which conforms to identifier rules, dot map access may be used:',
+                {
+                    code: """
+                        a_map.foo # 42
+                        a_map.missing # null
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            title: 'Functions',
+            content: [
+                'All function definitions are lambda expressions. To bind a function to a name, simply use the same `def` syntax with a lambda on the right-hand side of the `=`.',
+                'A function definition consists of the keyword `fn`, followed by an optional list of arguments, followed by `->`, followed by a body. The list of arguments may optionally be enclosed in parentheses. The body is enclosed in `{}` braces, and may consist of multiple statements. If the body consists of only a single expression, then the enclosing `{}` may be omitted. This is even true when the single expression appears on the following line.',
+                'When a function is called, the final expression is used as the return value. All functions return exactly one value. It is typical for side-effect functions (such as `print`) to return `null`.',
+                {
+                    code: """
+                        def f1 = fn ( a, b ) -> { a + ( b * 2 ) }
+                        def f2 = fn (a, b) -> a + ( b * 2 )
+                        def f3 = fn a, b -> { a + ( b * 2 ) }
+                        def f4 = fn a, b -> a + ( b * 2 )
+                        def f5 = fn a, b ->
+                            a + ( b * 2 ) # indentation is not required
+
+                        f5(2, 4) # 10
+                        """,
+                    illustrative: true,
+                },
+                'Map literals can appear directly as a function body, with one exception: when the first entry uses a computed key (`[...]`), the parser cannot distinguish it from a block. Wrap the map in parentheses, or put an identifier-keyed entry first.',
+                {
+                    code: """
+                        def f1 = fn -> { foo: 42 }           # ok
+                        def f2 = fn -> {}                    # ok
+                        def f3 = fn -> { [k]: 42 }           # syntax error
+                        def f4 = fn -> ({ [k]: 42 })         # ok
+                        def f5 = fn -> { foo: 1, [k]: 42 }   # ok
+                        """,
+                    illustrative: true,
+                },
+                'A function may contain local `def` and `defn` statements, but neither may end a function body. The body of a function may not `export` any definitions.',
+                {
+                    code: """
+                        def f5 = fn a, b -> {
+                            def c = b * 2
+                            a + c
+                        } # ok
+
+                        def f6 = fn a, b -> {
+                            def c = a * b
+                        } # syntax error
+
+                        def f7 = fn a, b -> {
+                            export def c = a * b
+                            c
+                        } # syntax error
+                        """,
+                    illustrative: true,
+                },
+                'A function may capture definitions which appear prior to its own definition. A function argument may be captured.',
+                {
+                    code: """
+                        def make_adder = fn a -> {
+                            fn b -> a + b # a is captured
+                        }
+                        make_adder(5)(3) # 8
+
+                        # braces can also be omitted when returning a new function:
+                        def also_make_adder = fn a -> fn b -> a + b
+                        """,
+                    illustrative: true,
+                },
+                'Functions may also be variadic. A variadic parameter is preceded by `...`, and must appear as the final parameter. Any extra arguments will be collected into an array which is the variadic argument. The variadic argument array may be empty.',
+                { code: 'def add_things = fn i, ...rest -> reduce rest init: i with plus\n\nadd_things(1, 2, 3, 4) # 10 (rest was [2, 3, 4])', illustrative: true },
+                'For a function to be able to recurse, it must capture itself. For a lambda to capture itself, the closure\'s own name appears before its parameter list. Note that parentheses are required in this form.',
+                { code: 'map [1, 2, 3, 4] with fn fib(n) -> if n <= 1: n else: fib(n-1) + fib(n-2)', illustrative: true },
+                'For a function being bound to a definition, `defn` is a shortened form:',
+                {
+                    code: """
+                        defn fib(n) -> {
+                            if n <= 1: n
+                            else: fib(n-1) + fib(n-2)
+                        }
+                        """,
+                    illustrative: true,
+                },
+                {
+                    title: 'Abbreviated Lambdas',
+                    content: [
+                        'For short inline functions, Frost provides an abbreviated lambda syntax using `$(...)`. Instead of naming parameters, you use placeholder identifiers: `$` (or `$1`) for the first argument, `$2` for the second, and so on up to `$9`. `$0` is not a valid placeholder. `$$` captures variadic (rest) arguments as an array.',
+                        {
+                            code: """
+                                map [1, 2, 3] with $($ * 2)           # [2, 4, 6]
+                                filter [1, 2, 3, 4] with $($ > 2)     # [3, 4]
+                                [10, 20, 30] @ transform($($1 + 5))   # [15, 25, 35]
+                                """,
+                            illustrative: true,
+                        },
+                        '`$` and `$1` are interchangeable -- both refer to the first argument. Unused parameters between `$1` and the highest used `$N` are filled automatically:',
+                        { code: '$($3 + 1)   # equivalent to: fn $1, $2, $3 -> $3 + 1', illustrative: true },
+                        '`$$` works like `...rest` in a regular lambda:',
+                        { code: "def f = $($$)\nf(1, 2, 3)   # [1, 2, 3]", illustrative: true },
+                        'A `$(...)` with no placeholder references produces a zero-parameter function:',
+                        { code: "def thunk = $(42)\nthunk()   # 42", illustrative: true },
+                        'The `$` and `(` must be adjacent -- `$ (expr)` is not an abbreviated lambda.',
+                        'Abbreviated lambdas can be nested, though this is not recommended. Each `$(...)` creates its own scope: inner placeholders refer to the inner function\'s arguments, not the outer\'s.',
+                    ],
+                },
+            ],
+        },
+    ],
+}

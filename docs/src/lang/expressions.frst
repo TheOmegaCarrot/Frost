@@ -1,0 +1,69 @@
+def { operators } = import('operators')
+def { match_expr } = import('match')
+def { iterative } = import('iterative')
+
+export def expressions = {
+    title: 'Expressions',
+    content: [
+        operators,
+        {
+            title: 'If Expressions',
+            content: [
+                '`if` is an expression, and evaluates to a value. This is similar to the ternary operator (`? :`) in C or C++.',
+                {
+                    code: """
+                        def x = if condition(): 42
+                                elif something_else(): 81
+                                else: 10
+                        """,
+                    illustrative: true,
+                },
+                'Note that the line breaks and indentation are not necessary. It would be syntactically equivalent to write it all on one line.',
+                'As one would expect from an `if`, the branch not taken is not evaluated.',
+                { code: 'if false: assert(false) # assert is not evaluated', illustrative: true },
+                'If an `if` does not have an `else` clause, it implicitly has an `else: null`.',
+                'Each branch of an `if` must be a single expression. If a multi-statement branch is desired, use a `do` block:',
+                {
+                    code: """
+                        if foo: do {
+                            def x = 10
+                            x
+                        }
+                        else: 42
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            title: 'Do',
+            content: [
+                'A `do` block is a single expression that begins a new scope, allows `def` and `defn` statements within, and evaluates to its final expression. This was developed in response to a growing pattern of immediately-invoked functions (`fn -> { ... }()`) being used to scope local definitions.',
+                'Any `def` or `defn` statements are entirely scoped to the block itself:',
+                {
+                    code: """
+                        do {
+                            def x = 5
+                            x
+                        }
+                        x # error: Symbol x is not defined
+                        """,
+                    illustrative: true,
+                },
+                'A `do` block evaluates to its final expression:',
+                {
+                    code: """
+                        assert(do {
+                            def x = 5
+                            x
+                        } == 5)
+                        """,
+                    illustrative: true,
+                },
+                'Similarly to block-style functions, a `do` block may not end with a `def` or `defn` statement.',
+            ],
+        },
+        match_expr,
+        iterative,
+    ],
+}

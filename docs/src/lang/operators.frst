@@ -1,0 +1,76 @@
+export def operators = {
+    title: 'Operators',
+    content: [
+        'Frost provides the typical set of arithmetic, comparison, logical, and postfix operators. The table below lists all operators from lowest precedence (loosest binding) to highest (tightest binding).',
+        {
+            table: {
+                columns: ['Precedence', 'Operators', 'Associativity'],
+                rows: [
+                    ['1 (lowest)', '`or`', 'left'],
+                    ['2', '`and`', 'left'],
+                    ['3', '`==` `!=`', 'non-chainable'],
+                    ['4', '`<` `<=` `>` `>=`', 'non-chainable'],
+                    ['5', '`+` `-`', 'left'],
+                    ['6', '`*` `/` `%`', 'left'],
+                    ['7', '`-` (unary) `not`', 'prefix'],
+                    ['8 (highest)', '`()` `[]` `.` `@`', 'postfix (left)'],
+                ],
+            },
+        },
+        'Equality and comparison operators are non-chainable; expressions like `1 < 2 < 3` or `a == b == c` are syntax errors.',
+        {
+            code: """
+                # These are all true:
+                1 + 2 * 3 == 1 + (2 * 3)
+                not true or false == (not true) or false
+                -2 + 3 == (-2) + 3
+
+                # Left-associative operators group left to right:
+                10 - 3 - 2 == (10 - 3) - 2
+
+                # Postfix operators bind tighter than prefix:
+                -[1, 2, 3][0] == -(([1, 2, 3])[0])
+                """,
+            illustrative: true,
+        },
+        {
+            title: 'Call Threading',
+            content: [
+                'One notable operator which would be unfamiliar is the threading operator (`@`). Some languages with a similar feature may call this a pipeline operator.',
+                'In Frost, `a @ f(b)` is exactly equivalent to `f(a, b)`. This also allows for postfix chaining, such that `a @ f(b) @ g(c)` is identical to `g(f(a, b), c)`.',
+            ],
+        },
+        {
+            title: 'Logical Operators',
+            content: [
+                '`or` will return its first "truthy" argument, or the final argument if all are "falsy". `and` will return its first "falsy" argument, or the final argument if all are "truthy". `not` will always return a boolean which is the inverse of the "truthiness" of its operand.',
+                'Evaluation of `and` and `or` short-circuits.',
+                { code: "42 or assert(false) # 42, and assert is not evaluated\nfalse and assert(false) # false, and assert is not evaluated", illustrative: true },
+                'All values are truthy, except for an actual `false` and `null`.',
+            ],
+        },
+        {
+            title: 'Logical Comparisons',
+            content: [
+                'The ordering operators (`<`, `>`, etc) compare numeric types as expected, permitting mixing of Int and Float. (`3 < 3.14` is well-defined.)',
+                'The ordering operators also compare String values lexicographically. (`\'foo\' > \'bar\'` is `true`.)',
+                'Equality comparisons (`==` or `!=`) will never cause a type error. Primitive types, arrays, and maps are compared by value. Functions are compared by identity.',
+            ],
+        },
+        {
+            title: 'Arithmetic Operators',
+            content: [
+                '`+`, `-`, `*`, `/`, and `%` all work as one would expect. When mixing `Int` and `Float`, operands are implicitly converted to `Float`. `%` only supports `Int` operands. `/` will perform truncating integer division when both operands are `Int`.',
+                '`+` has some additional functionality when used with `String`, `Array`, and `Map` operands: `String` concatenation, `Array` concatenation, and `Map` merge operations. Note that the `Map` merge is not recursive.',
+                {
+                    code: """
+                        [1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
+                        'foo' + 'bar' # 'foobar'
+                        { foo: 42, bar: 10 } + { bar: 1024, baz: true } # { foo: 42, bar: 1024, baz: true }
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+    ],
+}

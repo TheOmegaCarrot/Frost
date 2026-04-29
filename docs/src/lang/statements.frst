@@ -1,0 +1,121 @@
+export def statements = {
+    title: 'Statements',
+    content: [
+        'Most of Frost consists of expressions, but there are a few proper statements. The distinction is that an expression evaluates to a value, whereas a statement does not.',
+        {
+            title: 'Definitions',
+            content: [
+                'A value may be bound to a name using a `def` statement.',
+                { code: 'def a_name = any_expression', illustrative: true },
+                'A name may not be redefined within the same scope:',
+                { code: "def x = 42\ndef x = 10 # error", illustrative: true },
+                'A function introduces a new scope:',
+                {
+                    code: """
+                        def x = 42
+                        def f = fn a -> {
+                            def x = 10
+                            x + a
+                        }
+                        f(5) # 15
+                        """,
+                    illustrative: true,
+                },
+                {
+                    title: 'Array Destructuring',
+                    content: [
+                        'A `def` statement can destructure an `Array`. The right-hand side may be any expression which evaluates to an `Array`.',
+                        {
+                            code: """
+                                def [a, b, c] = [1, 2, 3]
+                                # a == 1 and b == 2 and c == 3
+                                """,
+                            illustrative: true,
+                        },
+                        'The number of names on the left must exactly equal the number of elements in the array on the right.',
+                        'Array destructuring can also bind an unknown number of elements to an array:',
+                        {
+                            code: """
+                                def [a, b, ...rest] = [1, 2, 3, 4]
+                                # a == 1 and b == 2 and rest == [3, 4]
+                                """,
+                            illustrative: true,
+                        },
+                        'In this form, all of the names before the `...` must match an element, and the `...` name may bind an empty array.',
+                    ],
+                },
+                {
+                    title: 'Map Destructuring',
+                    content: [
+                        'A `def` statement can destructure a `Map`. Every key named in the pattern must be present in the map; a missing key is an error. The matching does not need to be exhaustive.',
+                        {
+                            code: """
+                                def { foo: bar, beep: boop } = { foo: 42, beep: 10, dropped: 128 }
+                                # bar == 42 and boop == 10
+                                """,
+                            illustrative: true,
+                        },
+                        'The keys on the left do not necessarily need to be string keys:',
+                        {
+                            code: """
+                                def { [42]: foo, [false]: bar } = { [42]: 'wow', [false]: 'neat' }
+                                # foo == 'wow' and bar == 'neat'
+                                """,
+                            illustrative: true,
+                        },
+                        'A shortened form is available when the binding name matches the key: `def { foo, bar }` is equivalent to `def { foo: foo, bar: bar }`.',
+                        'A map destructure can also bind the entire map using `as`:',
+                        {
+                            code: """
+                                def { name, age } as person = { name: 'Alice', age: 30, role: 'admin' }
+                                # name == "Alice" and age == 30 and person == the full map
+                                """,
+                            illustrative: true,
+                        },
+                        'The `as` name receives the full original map. This is useful when you want a few fields pulled out for convenience but also need the whole map:',
+                        { code: "export def { encode, decode } as json = import('std.json')", illustrative: true },
+                        '`as` works in nested positions: `def [{name} as first, ...rest] = items` binds the inner map while destructuring the outer array.',
+                    ],
+                },
+                {
+                    title: 'Recursive Destructuring',
+                    content: [
+                        'Array and map destructuring patterns can be nested arbitrarily. Anywhere a name can appear in a destructure pattern, a nested array or map pattern can appear instead.',
+                        {
+                            code: """
+                                def [a, [b, c]] = [1, [2, 3]]
+                                # a == 1 and b == 2 and c == 3
+
+                                def {foo: [x, y]} = {foo: [10, 20]}
+                                # x == 10 and y == 20
+
+                                def [{alpha}, beta] = [{alpha: 'a'}, 'b']
+                                # alpha == 'a' and beta == 'b'
+
+                                def {outer: {inner: val}} = {outer: {inner: 42}}
+                                # val == 42
+                                """,
+                            illustrative: true,
+                        },
+                        'Rest bindings can appear inside nested array patterns:',
+                        {
+                            code: """
+                                def [head, [first, ...tail]] = [0, [1, 2, 3]]
+                                # head == 0 and first == 1 and tail == [2, 3]
+                                """,
+                            illustrative: true,
+                        },
+                        'The discard binding `_` works at any nesting level:',
+                        {
+                            code: """
+                                def [_, [_, x]] = [1, [2, 3]]
+                                # x == 3
+                                """,
+                            illustrative: true,
+                        },
+                    ],
+                },
+            ],
+        },
+    ],
+}

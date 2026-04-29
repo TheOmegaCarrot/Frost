@@ -1,0 +1,107 @@
+export def modules = {
+    title: 'Modules',
+    content: [
+        'Frost provides a mechanism for using code across separate files. One file may use the `import` function to import what is `export`-ed by another file.',
+        {
+            title: 'Export',
+            content: [
+                'Any `def` or `defn` statement at file scope may be prepended with the `export` keyword. Any definition marked as `export` will be made available when a script is imported. This does not change the meaning within that script file, and the name(s) can be used normally. The rules for an exported definition are the same as described in previous sections.',
+                {
+                    code: """
+                        export def foo = 42
+                        # foo == 42
+                        # if this file is imported, then foo will be exported
+                        """,
+                    illustrative: true,
+                },
+                '`export defn` is the shorthand form for exporting a named function:',
+                { code: "export defn greet(name) -> $'hello, ${name}'", illustrative: true },
+                'It is an error for an `export def` or `export defn` to appear within a function:',
+                {
+                    code: """
+                        def f = fn -> {
+                            export def foo = 10 # error
+                            foo
+                        }
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            title: 'Import',
+            content: [
+                'The function `import` takes a module specification and returns a value. The module specification must be a non-empty `String`.',
+                {
+                    title: 'Built-in Modules',
+                    content: [
+                        'Frost ships with built-in modules under the `std` and `ext` namespaces. These are available without any files on disk.',
+                        { code: "def fs = import('std.fs')\ndef http = import('ext.http')", illustrative: true },
+                        'The built-in module registry is a nested `Map`. `import` walks the `.`-separated path segments through this structure and returns whatever value it reaches. This means you can import at any level of granularity:',
+                        {
+                            code: """
+                                def std = import('std')           # the entire standard library (a Map of Maps)
+                                def b64 = import('std.encoding.b64')  # a specific sub-map
+                                def encode = import('std.encoding.b64.encode')  # a single function
+                                """,
+                            illustrative: true,
+                        },
+                        'Because `import` returns a `Map`, you can even apply destructuring to it:',
+                        {
+                            code: """
+                                def { fs, io, json } = import('std') # imports fs, io, and json in one line
+                                def { http, sqlite } = import('ext')
+                                """,
+                            illustrative: true,
+                        },
+                    ],
+                },
+                {
+                    title: 'File-based Modules',
+                    content: [
+                        'If no built-in module matches, `import` treats the specification as a relative path using `.` as a path separator. The `.frst` file extension is added automatically. For example: `\'foo.bar.baz\'` specifies a relative path `foo/bar/baz.frst`.',
+                        'The result is a `Map` with keys being the exported names, and values being the values bound to those names.',
+                        '`import` will first check relative to the importing file. If no file can be found relative to the importing file, the interpreter will then look relative to the current working directory. It is an error if a module import cannot be resolved.',
+                        'If no file is found, then a list of paths will be looked up in the environment variable `FROST_MODULE_PATH`. This environment variable consists of a colon-separated list of paths (relative or absolute). Each path in the list is tried as a base directory for the module specification.',
+                        {
+                            code: """
+                                # utils.frst
+                                export def greet = fn name -> $'hello, ${name}'
+
+                                # main.frst
+                                def utils = import('utils')
+                                utils.greet('world') # "hello, world"
+                                """,
+                            illustrative: true,
+                        },
+                        'Dots in the module specification correspond to directory separators:',
+                        { code: "def vec = import('lib.math.vectors') # resolves to lib/math/vectors.frst", illustrative: true },
+                        'Because `import` resolves relative to the importing file, not the current working directory, two files can import different modules with the same specification.',
+                    ],
+                },
+            ],
+        },
+        {
+            title: 'The `imported` Variable',
+            content: [
+                'Every Frost file has access to a predefined `Bool` named `imported`. It is `false` when the file is run directly, and `true` when it is loaded via `import`.',
+                'This allows a file to act as both a reusable module and a runnable script:',
+                {
+                    code: """
+                        export def greet = fn name -> $'hello, ${name}'
+
+                        if not imported: print(greet('world'))
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            title: 'The `args` Variable',
+            content: [
+                'When running a file, `args` is predefined as an `Array` of `String` values containing the command-line arguments passed to the program. `args[0]` is the path to the main script file, and any subsequent elements are any additional arguments.',
+                { code: 'frost script.frst foo bar   # args == ["script.frst", "foo", "bar"]', illustrative: true },
+            ],
+        },
+    ],
+}

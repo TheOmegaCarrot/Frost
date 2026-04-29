@@ -1,0 +1,47 @@
+export def lexical = {
+    title: 'Lexical Elements',
+    content: [
+        {
+            title: 'Comments',
+            content: [
+                'Comments begin with `#` and continue to the end of the line. There are no multi-line comments.',
+            ],
+        },
+        {
+            title: 'Whitespace',
+            content: [
+                'Space characters are not significant in Frost; indentation is also not significant. Line breaks are used to separate statements and expressions.',
+                'Semicolons may be used in place of line breaks to separate statements on the same line.',
+                { code: 'def a = 1; def b = 2; print(a + b)', illustrative: true },
+                'Inside paired delimiters (`()`, `[]`, and `{}`), line breaks are ignored, since the closing delimiter is unambiguous. Function calls, indexing, dot map accesses, and the threading operator must begin on the same line as the left operand, unless enclosed in `()`.',
+                {
+                    code: """
+                        # two expressions
+                        foo
+                        (bar)
+
+                        # function call
+                        foo(bar)
+
+                        # function call
+                        ( foo
+                            (bar) )
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            title: 'Identifiers',
+            content: [
+                "Frost's identifier rules mirror those of C, and thus should be familiar to most programmers. Reserved words may not be used as identifiers. Below is a list of reserved words.",
+                { list: [
+                    '`and`', '`as`', '`def`', '`defn`', '`do`', '`elif`', '`else`',
+                    '`export`', '`false`', '`filter`', '`fn`', '`foreach`', '`if`',
+                    '`init`', '`is`', '`map`', '`match`', '`not`', '`null`', '`or`',
+                    '`reduce`', '`true`', '`with`',
+                ] },
+            ],
+        },
+    ],
+}

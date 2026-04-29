@@ -1,0 +1,56 @@
+export def iterative = {
+    title: 'Iterative Expressions',
+    content: [
+        'There are 4 iterative expressions built into the language itself: `map`, `filter`, `reduce` and `foreach`. Each is defined for `Array` and `Map` inputs.',
+        {
+            title: 'Map',
+            content: [
+                'The `Array` form of a map expression calls a function with each element, in order, and creates a new array with the results of those function calls.',
+                { code: 'map [1, 2, 3] with fn x -> x * 2 # [2, 4, 6]', illustrative: true },
+                'The `Map` form calls a function with each key-value pair, in an unspecified order, and merges the resulting maps. The function must return a map.',
+                {
+                    code: """
+                        map {foo: 42, bar: 10} with fn k, v -> ({ [k]: v, [k + k]: v + v })
+                        # { foo: 42, bar: 10, foofoo: 84, barbar: 20 }
+                        """,
+                    illustrative: true,
+                },
+                'See also [`transform`](@ref std.collections.transform), the functional form for use in `@` pipelines.',
+            ],
+        },
+        {
+            title: 'Filter',
+            content: [
+                'In both forms, the function is called with each element or key-value pair. If the function returns a truthy value, then that element or key-value pair will be preserved in the result. As with `map`, the iteration order over a `Map` is unspecified.',
+                {
+                    code: """
+                        filter [1, 2, 3, 4] with fn n -> n % 2 == 0 # [2, 4]
+                        filter {foo: 42, bar: 11} with fn k, v -> v % 2 == 0 # { foo: 42 }
+                        """,
+                    illustrative: true,
+                },
+                'See also [`select`](@ref std.collections.select), the functional form for use in `@` pipelines.',
+            ],
+        },
+        {
+            title: 'Reduce',
+            content: [
+                'In the first form, the function is first called with the first two elements. The result is used as the first argument to the next call, whose second argument is the third element. In other words, the first argument to the function is an accumulator, and each call returns a new accumulator value.',
+                { code: 'reduce [1, 2, 3, 4] with fn a, b -> a + b # 10', illustrative: true },
+                'Reducing an empty array without an `init:` clause will return `null`.',
+                'In the second form, the value after `init:` is used as the initial accumulator value.',
+                { code: 'reduce [1, 2, 3, 4] init: 0 with fn a, b -> a + b # 10', illustrative: true },
+                'In the third form, a `Map` is being iterated over. The function is called with the accumulator, a map key, and the corresponding map value. The `init:` clause is required for the `Map` form. The iteration order over a `Map` is unspecified.',
+                { code: 'reduce {foo: 42, bar: 10} init: 0 with fn acc, k, v -> acc + v # 52', illustrative: true },
+                'See also [`fold`](@ref std.collections.fold), the functional form for use in `@` pipelines.',
+            ],
+        },
+        {
+            title: 'Foreach',
+            content: [
+                'In the `Array` form, the function is called with each array element in order. In the `Map` form, the function is called with each key-value pair in an unspecified order.',
+                'The return value of the function is ignored. A foreach expression always returns `null`.',
+            ],
+        },
+    ],
+}

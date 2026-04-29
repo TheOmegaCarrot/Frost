@@ -64,7 +64,7 @@ Track progress migrating from hand-written markdown (`docs/stdlib/`) to structur
 
 ## Not Yet Planned
 
-- Language reference (`docs/src/lang/`)
+- [x] Language reference (`docs/src/lang/`) -- 7 files: root, lexical, types, expressions (+ operators, match, iterative), statements, modules
 - Introduction (`docs/src/intro.frst`)
 - REPL `help()` integration
 - HTML backend
