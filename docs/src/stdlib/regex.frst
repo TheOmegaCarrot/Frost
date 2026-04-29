@@ -1,0 +1,98 @@
+export def regex = {
+    name: 'regex',
+    title: 'Regex',
+    module_path: 'std.regex',
+    import_as: 'regex',
+    description: [
+        'Regular expression matching, replacement, and splitting. Regex syntax follows the Boost.Regex Perl-compatible dialect.',
+    ],
+    entries: [
+        { name: 'matches', signatures: ['regex.matches(string, regex)'], description: ['Returns `true` if `regex` matches the entire `string`.'] },
+        { name: 'contains', signatures: ['regex.contains(string, regex)'], description: ['Returns `true` if `regex` matches any substring of `string`.'] },
+        {
+            name: 'replace',
+            signatures: ['regex.replace(string, regex, replacement)'],
+            description: ['Replaces all non-overlapping matches of `regex` in `string` with `replacement`.'],
+            body: [
+                'The replacement string supports the following substitutions:',
+                {
+                    table: {
+                        columns: ['Syntax', 'Replaced with'],
+                        rows: [
+                            ['`$1`, `$2`', 'Numbered capture group'],
+                            ['`$+{name}`', 'Named capture group'],
+                            ['`$&`', 'The entire match'],
+                            ['`` $` ``', 'The substring preceding the match'],
+                            ["`$'`", 'The substring following the match'],
+                            ['`$$`', 'A literal `$`'],
+                        ],
+                    },
+                },
+            ],
+        },
+        {
+            name: 'replace_first',
+            signatures: ['regex.replace_first(string, regex, replacement)'],
+            description: ['Replaces the first match of `regex` in `string` with `replacement`. Supports the same substitution syntax as `replace`.'],
+            see_also: ['std.regex.replace'],
+        },
+        {
+            name: 'replace_with',
+            signatures: ['regex.replace_with(string, regex, callback)'],
+            description: ['Replaces all full matches of `regex` in `string` by calling `callback` with each match. The callback receives the full match as a `String` and its return value is converted to a string with `to_string`.'],
+            body: [
+                {
+                    code: """
+                        regex.replace_with('hello world', R'(\\w+)', to_upper)
+                        # => "HELLO WORLD"
+
+                        regex.replace_with('a1b2', R'(\\d)', fn d -> to_int(d) * 10)
+                        # => "a10b20"
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'split',
+            signatures: ['regex.split(string, regex)'],
+            description: ['Splits `string` around matches of `regex` and returns an `Array` of the substrings between matches. Returns an empty array for an empty input string.'],
+            body: [
+                {
+                    code: """
+                        regex.split('one,two,three', ',')     # => ['one', 'two', 'three']
+                        regex.split('a1b2c3', R'(\\d)')       # => ['a', 'b', 'c']
+                        regex.split('a,,b,,,c', ',+')         # => ['a', 'b', 'c']
+                        regex.split('hello', 'x')             # => ['hello']
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'scan_matches',
+            signatures: ['regex.scan_matches(string, regex)'],
+            description: ['Returns a map describing all matches of `regex` in `string`.'],
+            body: [
+                {
+                    code: """
+                        {
+                            found:   Bool,
+                            count:   Int,
+                            matches: [
+                                {
+                                    full:   String,
+                                    groups: [
+                                        { matched: Bool, value: String or null, index: Int },
+                                    ],
+                                    named: { name: { matched: Bool, value: String or null } },
+                                },
+                            ]
+                        }
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+    ],
+}

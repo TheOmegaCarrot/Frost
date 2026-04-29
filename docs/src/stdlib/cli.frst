@@ -1,0 +1,233 @@
+export def cli = {
+    name: 'cli',
+    title: 'CLI',
+    module_path: 'std.cli',
+    import_as: 'cli',
+    description: [
+        '`std.cli` parses command-line arguments against a declarative spec. Describe your tool\'s flags, options, and positional arguments in a Map; `cli.parse` validates `args` against that spec and returns a structured result.',
+    ],
+    entries: [
+        {
+            name: 'parse',
+            signatures: ['cli.parse(args, spec)'],
+            description: [
+                'Parses `args` according to `spec`. Returns a Map with four keys: `flags` (`Map` of `Bool`), `options` (`Map` of `String`, `Array`, or `null`), `positional` (`Array` of `String`), and `help` (`String`).',
+            ],
+            body: [
+                '`args` is typically the predefined `args` variable. `args[0]` is treated as the script path and is consumed internally (used as the default tool name in error messages and help output). Everything after `args[0]` is parsed against the spec.',
+                {
+                    code: """
+                        def cli = import('std.cli')
+
+                        def parsed = cli.parse(args, {
+                            name: 'deploy',
+                            description: 'Deploy a service to a target environment',
+                            flags: {
+                                verbose: { short: 'v', description: 'Enable verbose output' },
+                                dry_run: { short: 'd', description: 'Show what would happen' },
+                            },
+                            options: {
+                                env: { short: 'e', required: true, description: 'Target environment' },
+                                retries: { short: 'r', default: '3', description: 'Number of retries' },
+                                tag: { short: 't', repeatable: true, description: 'Image tags' },
+                            },
+                            positional: [
+                                { name: 'service', description: 'Service to deploy' },
+                            ],
+                        })
+
+                        if parsed.flags.verbose: print('verbose mode')
+                        def retries = parsed.options.retries @ to_int() or 3
+                        def service = parsed.positional[0]
+                        """,
+                    illustrative: true,
+                },
+                {
+                    title: 'Spec Shape',
+                    content: [
+                        'The spec is a Map with the following keys. All are optional.',
+                        {
+                            table: {
+                                columns: ['Key', 'Type', 'Description'],
+                                rows: [
+                                    ['`name`', '`String`', 'Tool name for help output and error messages. Defaults to `args[0]`.'],
+                                    ['`description`', '`String`', 'A short description shown in the auto-generated help.'],
+                                    ['`help`', '`String`', 'Custom help text. When present, this replaces the auto-generated help entirely.'],
+                                    ['`flags`', '`Map`', 'Boolean toggles. See Flags below.'],
+                                    ['`options`', '`Map`', 'Value-taking options. See Options below.'],
+                                    ['`positional`', '`Array` or `Bool`', 'Positional arguments. See Positional Arguments below.'],
+                                ],
+                            },
+                        },
+                    ],
+                },
+                {
+                    title: 'Flags',
+                    content: [
+                        'Flags are boolean toggles. The `flags` key is a Map where each key is the flag\'s long name and each value is a sub-spec Map:',
+                        {
+                            table: {
+                                columns: ['Sub-spec key', 'Type', 'Description'],
+                                rows: [
+                                    ['`short`', '`String`', 'Single-character short form (used with `-`).'],
+                                    ['`description`', '`String`', 'Shown in the auto-generated help.'],
+                                ],
+                            },
+                        },
+                        'In the result, every declared flag appears under `result.flags` as a `Bool`: `true` if it was present in `args`, `false` otherwise.',
+                        {
+                            code: """
+                                flags: {
+                                    verbose: { short: 'v', description: 'Verbose output' },
+                                    ['dry-run']: { description: 'Dry-run mode' },
+                                }
+                                """,
+                            illustrative: true,
+                        },
+                    ],
+                },
+                {
+                    title: 'Options',
+                    content: [
+                        'Options take a value from the following argument. The `options` key is a Map where each key is the option\'s long name and each value is a sub-spec Map:',
+                        {
+                            table: {
+                                columns: ['Sub-spec key', 'Type', 'Description'],
+                                rows: [
+                                    ['`short`', '`String`', 'Single-character short form.'],
+                                    ['`required`', '`Bool`', 'When true, the option must be provided.'],
+                                    ['`default`', '`String`', 'Default value when not provided. Mutually exclusive with `required`.'],
+                                    ['`repeatable`', '`Bool`', 'When true, the option can be specified multiple times.'],
+                                    ['`description`', '`String`', 'Shown in the auto-generated help.'],
+                                ],
+                            },
+                        },
+                        'In the result, every declared option appears under `result.options`: non-repeatable options are `String` if provided or defaulted, `null` otherwise. Repeatable options are always an `Array` of `String`, possibly empty.',
+                        'Option values are always Strings. `cli.parse` does not perform any type coercion; for other types, apply a conversion like `to_int` on the parsed value.',
+                        {
+                            code: """
+                                options: {
+                                    env:     { short: 'e', required: true },
+                                    retries: { short: 'r', default: '3' },
+                                    tag:     { short: 't', repeatable: true },
+                                }
+                                """,
+                            illustrative: true,
+                        },
+                    ],
+                },
+                {
+                    title: 'Positional Arguments',
+                    content: [
+                        'The `positional` key has three forms:',
+                        { list: [
+                            'Absent, `[]`, or `false` -- no positional arguments are allowed. Any positional produces an error.',
+                            'Array of specs -- each entry declares a named positional. All are required. Exact count must match.',
+                            '`true` -- raw-collect mode. All positional arguments are gathered into `result.positional` without validation.',
+                        ] },
+                        'Each positional spec entry is a Map with `name` (`String`, required, used in help output) and `description` (`String`, shown in help).',
+                        'Or for scripts that want to handle positionals themselves:',
+                        { code: 'positional: true', illustrative: true },
+                        'Array destructuring pairs nicely with declared positionals when you want to bind them by name:',
+                        {
+                            code: 'def [source, dest] = parsed.positional',
+                            illustrative: true,
+                        },
+                    ],
+                },
+                {
+                    title: 'Parsing Rules',
+                    content: [
+                        { list: [
+                            '`--name` for flags, `--name value` for options (long form).',
+                            '`-n` for flags, `-n value` for options (short form).',
+                            '`-abc` is equivalent to `-a -b -c` (short bundling). The last character in a bundle may be a value-taking option that consumes the next argument. A value-taking option that is not the last character in a bundle is an error.',
+                            '`--` terminates option parsing. Everything after a bare `--` is treated as positional.',
+                            'Bare `-` is treated as a positional argument (Unix convention for stdin/stdout).',
+                            'Specifying a non-repeatable option more than once is an error.',
+                            'Required options must be provided or the parse fails.',
+                            'Defaults are applied to non-repeatable, non-required options that were not provided.',
+                        ] },
+                    ],
+                },
+                {
+                    title: 'Help Text',
+                    content: [
+                        '`result.help` always contains a help string. If the spec provides a `help` key, that string is returned verbatim. Otherwise, help is auto-generated from `name`, `description`, and the declared flags, options, and positionals.',
+                        '`cli.parse` does not handle `--help` or `-h` automatically. The typical pattern is to add a `help` flag to the spec and check it:',
+                        {
+                            code: """
+                                def parsed = cli.parse(args, {
+                                    flags: {
+                                        help: { short: 'h', description: 'Show help' },
+                                    },
+                                })
+
+                                if parsed.flags.help: do {
+                                    print(parsed.help)
+                                    os.exit(0)
+                                }
+                                """,
+                            illustrative: true,
+                        },
+                        'Note that `parsed.help` (the auto-generated text) and `parsed.flags.help` (the user-declared flag) are distinct keys in the result.',
+                    ],
+                },
+                {
+                    title: 'Errors',
+                    content: [
+                        '`cli.parse` produces errors in two categories, both as normal errors that can be caught by `try_call`:',
+                        { list: [
+                            'Spec errors are prefixed with `cli.parse:` and indicate a malformed spec. These are bugs in the script, not the user\'s invocation.',
+                            'Parse errors are prefixed with the tool name and indicate a problem with the user\'s invocation (unknown flag, missing required option, etc.).',
+                        ] },
+                        {
+                            code: '''
+                                # Spec error
+                                cli.parse: option 'env': required and default are mutually exclusive
+
+                                # Parse error
+                                deploy: missing required option '--env'
+                                ''',
+                            illustrative: true,
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            name: 'prompt',
+            signatures: ['cli.prompt(message)'],
+            description: [
+                'Prints `message` followed by a space to stderr (no newline) and reads a line from stdin. Returns the line as a `String`, or `null` if the user aborts with end-of-file. Only the trailing newline is stripped; any other whitespace the user typed is preserved.',
+            ],
+            body: [
+                {
+                    code: """
+                        def name = cli.prompt('What is your name?')
+                        if name != null: print($'Hello, ${name}')
+                        """,
+                    illustrative: true,
+                },
+                'stderr is used so that the prompt is visible even when stdout is redirected (`frost script.frst > out.txt`).',
+                {
+                    title: 'Building a Yes/No Confirmation',
+                    content: [
+                        '`std.cli` does not provide a dedicated confirmation helper because the right behavior on end-of-file or unrecognized input depends on the script. A few lines using `prompt` cover most needs:',
+                        {
+                            code: """
+                                def ans = cli.prompt('Delete all files? [y/N]')
+                                def confirmed = ans and ( ans @ to_lower() @ trim() @ starts_with('y') )
+                                if confirmed: do {
+                                    # ...
+                                }
+                                """,
+                            illustrative: true,
+                        },
+                        'This pattern treats end-of-file as "no" (the safe default), which is usually what you want for destructive actions. Invert the logic for prompts where the safe default is "yes".',
+                    ],
+                },
+            ],
+        },
+    ],
+}

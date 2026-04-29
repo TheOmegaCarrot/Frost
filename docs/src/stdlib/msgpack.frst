@@ -1,0 +1,77 @@
+export def msgpack = {
+    name: 'msgpack',
+    title: 'MessagePack',
+    module_path: 'ext.msgpack',
+    import_as: 'mp',
+    description: [
+        'Encode and decode [MessagePack](https://msgpack.org/) binary data with full type round-tripping.',
+        'MessagePack is a compact binary serialization format. Unlike JSON, it distinguishes binary data from strings and supports `null` as a first-class type.',
+    ],
+    content: [
+        'Build flag: `WITH_MSGPACK` (default: `AUTO`). No system dependencies.',
+        {
+            title: 'Foreign Values',
+            content: [
+                'MessagePack has types that Frost does not natively support:',
+                { list: [
+                    'Binary data: MessagePack distinguishes binary bytes from UTF-8 strings. Both are Frost Strings, so binary data is wrapped as a [`foreign value`](@ref stdlib.foreign-values) to preserve the distinction.',
+                    'Special floats: `nan`, `inf`, and `-inf` are valid MessagePack floats but rejected by Frost\'s `Float` type.',
+                ] },
+            ],
+        },
+    ],
+    entries: [
+        {
+            name: 'decode',
+            signatures: ['mp.decode(data)'],
+            description: [
+                'Parses a MessagePack-encoded `String` and returns the corresponding Frost value. The top-level value can be any valid MessagePack type. Unsigned integers that exceed `Int` range are rejected. Extension types are not supported.',
+            ],
+            body: [
+                { code: "mp.decode(mp.encode(42))", result: '42' },
+                { code: "mp.decode(mp.encode('hi'))", result: 'hi' },
+            ],
+        },
+        {
+            name: 'encode',
+            signatures: ['mp.encode(value)'],
+            description: [
+                'Serializes any Frost value to a MessagePack-encoded `String`. Maps may use any key type (MessagePack does not restrict map keys to strings). Plain `Function` values are rejected. Foreign values (binary, special floats) are serialized with their original MessagePack types.',
+            ],
+            body: [
+                {
+                    code: "mp.encode({name: 'alice', age: 30})\nmp.encode([1, 2, 3])\nmp.encode(null)",
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'binary',
+            signatures: ['mp.binary(data)'],
+            description: [
+                'Creates a binary foreign value from a `String`. When encoded, this value uses the MessagePack binary type rather than string.',
+            ],
+            body: [
+                { code: "mp.binary('raw bytes')()", result: 'raw bytes' },
+                {
+                    code: """
+                        def b = mp.binary('raw bytes')
+                        def rt = mp.decode(mp.encode(b))
+                        rt()  # round-trips as binary, not string
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'special_float',
+            signatures: ['mp.special_float(s)'],
+            description: [
+                'Creates a special float foreign value. `s` must be one of `"nan"`, `"inf"`, or `"-inf"`.',
+            ],
+            body: [
+                { code: "mp.special_float('nan')()", result: 'nan' },
+            ],
+        },
+    ],
+}

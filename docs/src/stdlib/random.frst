@@ -1,0 +1,153 @@
+export def random = {
+    name: 'random',
+    title: 'Random',
+    module_path: 'std.random',
+    import_as: 'random',
+    description: [
+        'Pseudo-random number generation, sampling, and shuffling.',
+        'Not for cryptography. `std.random` is designed for simulation, sampling, and games. Its output is fully predictable from a seed value. Do not use `std.random` for tokens, keys, initialization vectors, salts, passwords, or anything else where predictability would be a vulnerability.',
+    ],
+    content: [
+        {
+            title: 'Engines',
+            content: [
+                '`std.random` exposes randomness via engines: Map "closure bundles" that hold a private random state and expose draw methods. Each call advances the engine\'s internal state.',
+                'There are two ways to obtain an engine:',
+                {
+                    table: {
+                        columns: ['Engine', 'Description'],
+                        rows: [
+                            ['`random.rng`', 'A default engine, seeded from the operating system at startup. Use this when you don\'t care about reproducibility.'],
+                            ['`random.seed(n)`', 'A fresh engine seeded with the integer `n`. Same `n` always produces the same sequence. Use this for reproducible tests, replays, and simulations.'],
+                        ],
+                    },
+                },
+                {
+                    code: """
+                        def random = import('std.random')
+
+                        # Convenient default
+                        def roll = random.rng.int(1, 6)
+
+                        # Reproducible
+                        def rng = random.seed(42)
+                        def first = rng.int(1, 6)
+                        def second = rng.int(1, 6)
+                        """,
+                    illustrative: true,
+                },
+                'Engines are stateful. Two references to the same engine share state: binding an engine to a new name does not fork it.',
+                {
+                    code: """
+                        def a = random.seed(42)
+                        def b = a               # same engine, not a copy
+                        a.int(0, 100)           # advances the engine
+                        b.int(0, 100)           # sees the *next* draw, not a fresh start
+                        """,
+                    illustrative: true,
+                },
+                'Each call to `random.seed(n)` returns an independent engine, even with the same seed.',
+                {
+                    code: """
+                        def x = random.seed(42)
+                        def y = random.seed(42) # different engine, same starting state
+                        x.int(0, 100) == y.int(0, 100)   # true -- both at their first draw
+                        """,
+                    illustrative: true,
+                },
+                'The import system allows for some more convenient forms:',
+                { code: "def rng = import('std.random.rng')\ndef first = rng.int(1, 5) # OS-seeded", illustrative: true },
+                { code: "def rng = import('std.random').seed(1234)\ndef first = rng.int(1, 5) # reproducible", illustrative: true },
+                'The draw methods are documented below as `rng.METHOD` since `random.rng` is the most common access path.',
+            ],
+        },
+    ],
+    entries: [
+        {
+            name: 'seed',
+            signatures: ['random.seed(n)'],
+            description: [
+                'Returns a new engine seeded with the `Int` value `n`. Two engines created with the same seed produce identical sequences across all methods, including the collection operations.',
+            ],
+            body: [
+                {
+                    code: """
+                        def a = random.seed(2024)
+                        def b = random.seed(2024)
+                        a.int(1, 100) == b.int(1, 100)                  # true
+                        a.shuffle([1, 2, 3]) == b.shuffle([1, 2, 3])    # true
+                        """,
+                    illustrative: true,
+                },
+                'Any `Int` is a valid seed, including `0` and negative values. Seeded engines are well-suited for reproducible test fixtures, deterministic simulations, and replaying scenarios with known seeds.',
+            ],
+        },
+        {
+            name: 'rng',
+            kind: 'constant',
+            description: [
+                'A default engine pre-seeded from the operating system at startup. Use this for casual non-reproducible randomness.',
+                { code: "random.rng.int(1, 6)\nrandom.rng.choice(['a', 'b', 'c'])", illustrative: true },
+            ],
+        },
+    ],
+    types: {
+        rng: {
+            name: 'rng',
+            title: 'Engine Methods',
+            description: [
+                'Draw methods available on any engine (both `random.rng` and engines returned by `random.seed`).',
+            ],
+            entries: [
+                {
+                    name: 'int',
+                    signatures: ['rng.int(low, high)'],
+                    description: ['Returns a uniformly-distributed `Int` in `[low, high]` (inclusive on both ends). Produces an error if `low > high`. `low == high` is allowed and always returns that value.'],
+                    body: [
+                        { code: "def rng = random.seed(0)\nrng.int(1, 6)        # 1 through 6 inclusive\nrng.int(-10, 10)     # any int in [-10, 10]\nrng.int(5, 5)        # always 5", illustrative: true },
+                    ],
+                },
+                {
+                    name: 'float',
+                    signatures: ['rng.float(low, high)'],
+                    description: ['Returns a uniformly-distributed `Float` in `[low, high]`. Produces an error if `low > high`. `low == high` is allowed and always returns that value.'],
+                    body: [
+                        { code: "random.rng.float(0.0, 1.0)\nrandom.rng.float(-1.0, 1.0)", illustrative: true },
+                    ],
+                },
+                {
+                    name: 'bool',
+                    signatures: ['rng.bool()', 'rng.bool(probability)'],
+                    description: ['Returns a `Bool`. Without arguments, behaves like a fair coin. With a `Float` `probability` in `[0.0, 1.0]`, returns `true` with that probability. Produces an error if `probability` is outside `[0.0, 1.0]`.'],
+                    body: [
+                        { code: "random.rng.bool()        # 50/50\nrandom.rng.bool(0.7)     # 70% true\nrandom.rng.bool(0.0)     # always false\nrandom.rng.bool(1.0)     # always true", illustrative: true },
+                    ],
+                },
+                {
+                    name: 'choice',
+                    signatures: ['rng.choice(arr)'],
+                    description: ['Returns one uniformly-randomly-selected element from `arr`. Produces an error if `arr` is empty.'],
+                    body: [
+                        { code: "random.rng.choice(['rock', 'paper', 'scissors'])", illustrative: true },
+                    ],
+                },
+                {
+                    name: 'sample',
+                    signatures: ['rng.sample(arr, n)'],
+                    description: ['Returns a new `Array` containing `n` distinct elements drawn from `arr` without replacement. Produces an error if `n` is negative or greater than `len(arr)`. `n == 0` returns an empty array; `n == len(arr)` returns a permutation of the input.'],
+                    body: [
+                        { code: "def deck = range(52)\ndef hand = random.rng.sample(deck, 5)   # 5 distinct cards", illustrative: true },
+                    ],
+                },
+                {
+                    name: 'shuffle',
+                    signatures: ['rng.shuffle(arr)'],
+                    description: ['Returns a new `Array` containing the same elements as `arr` in a uniformly-random order. The input is not modified.'],
+                    body: [
+                        { code: "random.rng.shuffle(range(52))\nrandom.rng.shuffle(['a', 'b', 'c'])", illustrative: true },
+                    ],
+                },
+            ],
+        },
+    },
+}

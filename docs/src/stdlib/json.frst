@@ -1,0 +1,50 @@
+export def json = {
+    name: 'json',
+    title: 'JSON',
+    module_path: 'std.json',
+    import_as: 'json',
+    description: [
+        'Encode and decode JSON.',
+    ],
+    entries: [
+        {
+            name: 'decode',
+            signatures: ['json.decode(s)'],
+            description: [
+                'Parses a JSON string and returns the corresponding Frost value. `//` and `/* */` comments and trailing commas are accepted as an extension.',
+            ],
+            body: [
+                'Type mapping: `null` -> `null`, booleans -> `Bool`, integers -> `Int`, floats -> `Float`, strings -> `String`, arrays -> `Array`, objects -> `Map` with `String` keys. Produces an error on malformed input or integer values out of `Int` range.',
+            ],
+        },
+        {
+            name: 'encode',
+            signatures: ['json.encode(value)'],
+            description: [
+                'Serializes `value` to a compact JSON string. `Map` keys must be `String`. `Function` values cannot be serialized. Produces an error on unsupported values.',
+            ],
+        },
+        {
+            name: 'encode_pretty',
+            signatures: ['json.encode_pretty(value, indent)'],
+            description: [
+                'Serializes `value` to a pretty-printed JSON string with the given `indent` level (number of spaces per nesting level). `indent` must be a non-negative `Int`. Carries the same value restrictions as `encode`.',
+            ],
+            body: [
+                {
+                    code: """
+                        json.encode_pretty({name: 'Alice', scores: [10, 20]}, 2)
+                        # {
+                        #   "name": "Alice",
+                        #   "scores": [
+                        #     10,
+                        #     20
+                        #   ]
+                        # }
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+    ],
+}

@@ -4,55 +4,55 @@ Track progress migrating from hand-written markdown (`docs/stdlib/`) to structur
 
 ## Stdlib Modules (std)
 
+- [x] cli
+- [x] datetime
 - [x] encoding
+- [x] fs
 - [x] io
-- [ ] cli
-- [X] collections
-- [ ] datetime
-- [ ] debug
-- [ ] fs
-- [ ] functions (core HOFs: `tap`, `identity`, `try_call`, etc.)
-- [ ] json
-- [ ] math
-- [ ] mutable-cell
-- [ ] operators (predefined operator functions: `plus`, `minus`, etc.)
-- [ ] os
-- [ ] output (print, mprint, etc.)
-- [ ] random
-- [ ] regex
-- [ ] string
-- [ ] strings
-- [ ] types (type-checking functions: `is_string`, `to_int`, etc.)
-- [ ] unsafe
+- [x] json
+- [x] math
+- [x] os
+- [x] random
+- [x] regex
+- [x] string
 
 ## Extension Modules (ext)
 
-- [x] sqlite
-- [X] compression
-- [ ] hash
+- [x] compression
+- [x] hash
 - [x] http
-- [ ] msgpack
-- [ ] toml
+- [x] msgpack
+- [x] sqlite
+- [x] toml
+- [x] unsafe
 
-## Standalone Pages
+## Standalone Pages / Builtins
 
-- [x] streams
+- [x] collections
+- [x] debug
 - [x] foreign-values
+- [x] functions
+- [x] mutable-cell
+- [x] operators
+- [x] output
+- [x] streams
+- [x] strings
+- [x] types
 - [ ] README / index (stdlib landing page)
 
 ## Generator / Backend
 
 - [x] Generator: tree walker with CLI
-- [ ] Generator: parse @ref links into a single format for backends
+- [ ] Generator: resolve @ref links in prose strings
 - [x] Markdown backend: core primitives
+- [x] Markdown backend: tables
 - [ ] Markdown backend: robust ref-to-link resolution
-- [ ] Markdown backend: module heading capitalization via `title` field (done for migrated modules)
 - [ ] Test harness: walk doc tree, execute testable examples, assert results
 - [ ] Ref validation: check that all `see_also` and `@ref` paths resolve
 
 ## Schema
 
-- [x] SCHEMA.md: module, entry, type, child, param, content array, page
+- [x] SCHEMA.md: module, entry, type, child, param, content array, page, table
 
 ## Post-Migration
 

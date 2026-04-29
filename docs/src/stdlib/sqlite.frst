@@ -129,7 +129,7 @@ export def sqlite = {
             name: 'open',
             signatures: ['sqlite.open(path)'],
             description: [
-                'Opens a read-write SQLite database at `path`, or creates one if it does not exist. Returns a database object. Produces an error if the database cannot be opened.',
+                'Opens a read-write SQLite database at `path`, or creates one if it does not exist. Returns a database object; the methods of which are documented below as `db.*`. Produces an error if the database cannot be opened.',
             ],
             see_also: ['ext.sqlite.open_readonly', 'ext.sqlite.open_memory'],
         },
@@ -328,7 +328,7 @@ export def sqlite = {
                     signatures: ['db.create_function(name, function)'],
                     description: [
                         'Registers a Frost function as a scalar SQL function with the given name. The function can accept any number of arguments.',
-                        'SQLite values are converted to Frost types, and the return value is converted back. If the Frost function produces an error, it becomes a SQL error.',
+                        'SQLite values are converted to Frost types, and the return value is converted back. If the Frost function produces an error, it becomes a SQL error, which is then propagated back to the calling Frost code as a recoverable error.',
                         'Registering a function with the same name as an existing one replaces it. Functions that return `Array`, `Map`, or `Function` values are not supported and will produce a SQL error.',
                     ],
                     body: [
@@ -393,7 +393,7 @@ export def sqlite = {
                     name: 'trace',
                     signatures: ['db.trace(callback)', 'db.trace(null)'],
                     description: [
-                        'Registers a callback that is called with the SQL text of each statement before it executes. Bound parameter values are expanded into the SQL string. Pass `null` to disable tracing.',
+                        'Registers a callback that is called with the SQL text of each statement before it executes. Bound parameter values are expanded into the SQL string (e.g., `INSERT INTO t VALUES (42)` rather than `INSERT INTO t VALUES (?)`). Pass `null` to disable tracing.',
                         'Only one trace callback can be active at a time. Registering a new one replaces the previous.',
                         'Errors produced by the callback are reported to stderr but do not interrupt SQL execution. Fatal errors terminate the program.',
                     ],

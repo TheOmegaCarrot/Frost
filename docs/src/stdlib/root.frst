@@ -3,18 +3,38 @@ export def placeholder_name = {
 }
 
 export def std = (
-    import('encoding')
+    import('cli')
+    + import('datetime')
+    + import('encoding')
+    + import('fs')
     + import('io')
+    + import('json')
+    + import('math')
+    + import('os')
+    + import('random')
+    + import('regex')
+    + import('string')
 )
 
 export def ext = (
     import('compression')
+    + import('hash')
     + import('http')
+    + import('msgpack')
     + import('sqlite')
+    + import('toml')
+    + import('unsafe')
 )
 
 export def pages = (
     import('collections')
+    + import('debug')
+    + import('functions')
+    + import('mutable-cell')
+    + import('operators')
+    + import('output')
     + import('streams')
+    + import('strings')
+    + import('types')
     + import('foreign-values')
 )

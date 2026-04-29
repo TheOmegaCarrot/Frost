@@ -1,0 +1,23 @@
+export def debug = {
+    name: 'debug',
+    title: 'Debug',
+    description: [
+        'Assertion and debugging utilities. Available without importing.',
+    ],
+    entries: [
+        {
+            name: 'assert',
+            signatures: ['assert(condition)', 'assert(condition, message)'],
+            description: [
+                'Produces a recoverable error if `condition` is falsy. The optional `message` is included in the error. Returns `condition` unchanged if the assertion passes.',
+            ],
+        },
+        {
+            name: 'debug_dump',
+            signatures: ['debug_dump(value)'],
+            description: [
+                'Returns a string representation of `value` for debugging. For non-function values, this is similar to `to_string`, except that strings are quoted. For functions, returns an AST dump of the function body.',
+            ],
+        },
+    ],
+}

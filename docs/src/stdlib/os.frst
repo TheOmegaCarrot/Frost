@@ -1,0 +1,74 @@
+export def os = {
+    name: 'os',
+    title: 'OS',
+    module_path: 'std.os',
+    import_as: 'os',
+    description: [
+        'Environment variables, process management, and subprocess execution.',
+    ],
+    entries: [
+        { name: 'getenv', signatures: ['os.getenv(name)'], description: ['Returns the value of the environment variable `name` as a `String`, or `null` if it is not set.'] },
+        { name: 'setenv', signatures: ['os.setenv(variable, value)'], description: ['Sets the environment variable `variable` to `value`, overwriting any existing value. Returns `null`. Produces an error if the operating system rejects the variable name (the exact conditions are platform-dependent).'] },
+        { name: 'unsetenv', signatures: ['os.unsetenv(variable)'], description: ['Removes the environment variable `variable`. Unsetting a variable that is not set is not an error. Returns `null`. Produces an error if the operating system rejects the variable name (the exact conditions are platform-dependent).'] },
+        { name: 'pid', signatures: ['os.pid()'], description: ['Returns the process ID of the current process as an `Int`.'] },
+        { name: 'hostname', signatures: ['os.hostname()'], description: ['Returns the hostname of the current machine as a `String`.'] },
+        { name: 'exit', signatures: ['os.exit(code)'], description: ['Terminates the process with the given integer exit code. Does not return.'] },
+        { name: 'sleep', signatures: ['os.sleep(ms)'], description: ['Pauses execution for `ms` milliseconds.'] },
+        {
+            name: 'run',
+            signatures: ['os.run(command, args)', 'os.run(command, args, options)'],
+            description: [
+                'Runs an executable and waits for it to complete. Returns a Map with `stdout` (`String`), `stderr` (`String`), and `exit_code` (`Int`).',
+            ],
+            body: [
+                '`command` is the executable to run (absolute path or program name looked up in `PATH`). `args` is an Array of Strings passed as command-line arguments. Each element is passed as a single argument with no word splitting -- `os.run(\'foo\', [\'bar baz\'])` is equivalent to `foo \'bar baz\'`, not `foo bar baz`.',
+                {
+                    code: '''
+                        def r = os.run('/bin/echo', ['hello', 'world'])
+                        # r.stdout == "hello world\\n"
+                        # r.exit_code == 0
+                        ''',
+                    illustrative: true,
+                },
+                {
+                    title: 'Options',
+                    content: [
+                        'The optional third argument is a Map that may contain:',
+                        {
+                            table: {
+                                columns: ['Key', 'Type', 'Description'],
+                                rows: [
+                                    ['`stdin`', '`String`', 'Data piped to the process\'s standard input'],
+                                    ['`cwd`', '`String`', 'Working directory for the process'],
+                                    ['`env`', '`Map`', 'Environment variables to add to or override in the inherited environment'],
+                                    ['`replace_env`', '`Map`', 'Environment variables that completely replace the inherited environment'],
+                                ],
+                            },
+                        },
+                        '`env` and `replace_env` are mutually exclusive. Both expect a Map with String keys and String values.',
+                        {
+                            code: '''
+                                # Pipe data to stdin
+                                def r = os.run('/usr/bin/cat', [], {stdin: 'hello'})
+                                # r.stdout == "hello"
+
+                                # Set working directory
+                                def r = os.run('/bin/pwd', [], {cwd: '/tmp'})
+                                # r.stdout == "/tmp\\n"
+                                ''',
+                            illustrative: true,
+                        },
+                    ],
+                },
+                {
+                    title: 'Notes',
+                    content: [
+                        '`run` always waits for the child process to exit before returning. Both stdout and stderr are captured in full; this is not a streaming interface.',
+                        'If the child process is killed by a signal (e.g., SIGSEGV), `exit_code` will be non-zero. Any output the child flushed before the signal is still captured.',
+                        'If the command cannot be found or fails to launch, `run` produces an error.',
+                    ],
+                },
+            ],
+        },
+    ],
+}

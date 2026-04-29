@@ -1,0 +1,181 @@
+export def fs = {
+    name: 'fs',
+    title: 'Filesystem',
+    module_path: 'std.fs',
+    import_as: 'fs',
+    description: [
+        'Filesystem operations: path manipulation, file metadata, directory listing, and file management.',
+    ],
+    entries: [
+        {
+            name: 'absolute',
+            signatures: ['fs.absolute(path)'],
+            description: ['Returns the absolute form of `path` without resolving symlinks.'],
+        },
+        {
+            name: 'canonical',
+            signatures: ['fs.canonical(path)'],
+            description: ['Returns the canonical absolute path, resolving symlinks and `.`/`..` components. Produces an error if `path` does not exist.'],
+        },
+        {
+            name: 'exists',
+            signatures: ['fs.exists(path)'],
+            description: ['Returns `true` if `path` exists on the filesystem.'],
+        },
+        {
+            name: 'is_file',
+            signatures: ['fs.is_file(path)'],
+            description: ['Returns `true` if `path` exists and is a regular file.'],
+        },
+        {
+            name: 'is_directory',
+            signatures: ['fs.is_directory(path)'],
+            description: ['Returns `true` if `path` exists and is a directory.'],
+        },
+        {
+            name: 'is_symlink',
+            signatures: ['fs.is_symlink(path)'],
+            description: ['Returns `true` if `path` exists and is a symbolic link.'],
+        },
+        {
+            name: 'is_block',
+            signatures: ['fs.is_block(path)'],
+            description: ['Returns `true` if `path` exists and is a block device.'],
+        },
+        {
+            name: 'is_character',
+            signatures: ['fs.is_character(path)'],
+            description: ['Returns `true` if `path` exists and is a character device.'],
+        },
+        {
+            name: 'is_fifo',
+            signatures: ['fs.is_fifo(path)'],
+            description: ['Returns `true` if `path` exists and is a named pipe (FIFO).'],
+        },
+        {
+            name: 'is_socket',
+            signatures: ['fs.is_socket(path)'],
+            description: ['Returns `true` if `path` exists and is a Unix domain socket. All `is_*` predicates return `false` for nonexistent paths.'],
+        },
+        {
+            name: 'stat',
+            signatures: ['fs.stat(path)'],
+            description: ['Returns a map describing the file at `path`. Produces an error if the stat call fails.'],
+            body: [
+                {
+                    code: """
+                        {
+                            type:  String,   # "regular", "directory", "symlink", "block",
+                                             # "character", "fifo", "socket", "none",
+                                             # "not_found", or "unknown"
+                            perms: {
+                                owner:  { read: Bool, write: Bool, exec: Bool },
+                                group:  { read: Bool, write: Bool, exec: Bool },
+                                others: { read: Bool, write: Bool, exec: Bool },
+                            }
+                        }
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'size',
+            signatures: ['fs.size(path)'],
+            description: ['Returns the size of the file at `path` in bytes as an `Int`. Produces an error if `path` does not exist or is not a regular file.'],
+        },
+        {
+            name: 'cwd',
+            signatures: ['fs.cwd()'],
+            description: ['Returns the current working directory as a string.'],
+        },
+        {
+            name: 'cd',
+            signatures: ['fs.cd(path)'],
+            description: ['Changes the current working directory to `path`. Produces an error if `path` does not exist or is not accessible.'],
+        },
+        {
+            name: 'list',
+            signatures: ['fs.list(path)'],
+            description: ['Returns an array of path strings for all entries in the directory at `path`. Produces an error if `path` does not exist or is not a directory.'],
+        },
+        {
+            name: 'list_recursively',
+            signatures: ['fs.list_recursively(path)'],
+            description: ['Recursively lists all entries under `path`. Entries in directories where permission is denied are silently skipped. Produces an error if `path` itself does not exist or is not a directory.'],
+        },
+        {
+            name: 'mkdir',
+            signatures: ['fs.mkdir(path)'],
+            description: ['Creates `path` and any missing parent directories. Returns `true` if the directory was created, `false` if it already existed.'],
+        },
+        {
+            name: 'move',
+            signatures: ['fs.move(src, dest)'],
+            description: ['Moves or renames `src` to `dest`. Produces an error on failure.'],
+        },
+        {
+            name: 'copy',
+            signatures: ['fs.copy(src, dest)'],
+            description: ['Recursively copies `src` to `dest`. Produces an error on failure.'],
+        },
+        {
+            name: 'symlink',
+            signatures: ['fs.symlink(to, link)'],
+            description: ['Creates a symbolic link at `link` pointing to `to`. Produces an error on failure.'],
+        },
+        {
+            name: 'remove',
+            signatures: ['fs.remove(path)'],
+            description: ['Removes the file or empty directory at `path`. Returns `true` if something was removed, `false` if `path` did not exist.'],
+        },
+        {
+            name: 'remove_recursively',
+            signatures: ['fs.remove_recursively(path)'],
+            description: ['Recursively removes `path` and all its contents. Returns the number of entries removed as an `Int`. Returns `0` if `path` did not exist.'],
+        },
+        {
+            name: 'concat',
+            signatures: ['fs.concat(base, path)'],
+            description: ['Joins `base` and `path` using the platform path separator. Equivalent to `base / path` in filesystem terms.'],
+        },
+        {
+            name: 'stem',
+            signatures: ['fs.stem(path)'],
+            description: ['Returns the filename component of `path` with the last extension removed.'],
+            body: [
+                { code: "fs.stem('/a/b/file.txt')", result: 'file' },
+                { code: "fs.stem('archive.tar.gz')", result: 'archive.tar' },
+                { code: "fs.stem('/a/b/file')", result: 'file' },
+            ],
+        },
+        {
+            name: 'extension',
+            signatures: ['fs.extension(path)'],
+            description: ['Returns the last extension of the filename component of `path`, including the leading dot. Returns an empty string if there is no extension.'],
+            body: [
+                { code: "fs.extension('/a/b/file.txt')", result: '.txt' },
+                { code: "fs.extension('archive.tar.gz')", result: '.gz' },
+                { code: "fs.extension('/a/b/file')", result: '' },
+            ],
+        },
+        {
+            name: 'filename',
+            signatures: ['fs.filename(path)'],
+            description: ['Returns the final component of `path` (the filename), including any extension.'],
+            body: [
+                { code: "fs.filename('/a/b/file.txt')", result: 'file.txt' },
+            ],
+        },
+        {
+            name: 'parent',
+            signatures: ['fs.parent(path)'],
+            description: ['Returns the parent directory of `path`. Returns an empty string if `path` contains no directory component.'],
+            body: [
+                { code: "fs.parent('/a/b/file.txt')", result: '/a/b' },
+                { code: "fs.parent('/a/b')", result: '/a' },
+                { code: "fs.parent('file.txt')", result: '' },
+            ],
+        },
+    ],
+}

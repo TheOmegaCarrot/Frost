@@ -1,0 +1,20 @@
+export def operators = {
+    name: 'operators',
+    title: 'Operators',
+    description: [
+        'Functional forms of the built-in infix operators. Useful for passing operators as first-class values, e.g. to `fold` or `sorted`. Available without importing.',
+    ],
+    entries: [
+        { name: 'plus', signatures: ['plus(a, b)'], description: ['Equivalent to `a + b`.'] },
+        { name: 'minus', signatures: ['minus(a, b)'], description: ['Equivalent to `a - b`.'] },
+        { name: 'times', signatures: ['times(a, b)'], description: ['Equivalent to `a * b`.'] },
+        { name: 'divide', signatures: ['divide(a, b)'], description: ['Equivalent to `a / b`.'] },
+        { name: 'mod', signatures: ['mod(a, b)'], description: ['Equivalent to `a % b`.'] },
+        { name: 'equal', signatures: ['equal(a, b)'], description: ['Equivalent to `a == b`.'] },
+        { name: 'not_equal', signatures: ['not_equal(a, b)'], description: ['Equivalent to `a != b`.'] },
+        { name: 'less_than', signatures: ['less_than(a, b)'], description: ['Equivalent to `a < b`.'] },
+        { name: 'less_than_or_equal', signatures: ['less_than_or_equal(a, b)'], description: ['Equivalent to `a <= b`.'] },
+        { name: 'greater_than', signatures: ['greater_than(a, b)'], description: ['Equivalent to `a > b`.'] },
+        { name: 'greater_than_or_equal', signatures: ['greater_than_or_equal(a, b)'], description: ['Equivalent to `a >= b`.'] },
+    ],
+}

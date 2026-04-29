@@ -1,0 +1,21 @@
+export def strings = {
+    name: 'strings',
+    title: 'Strings',
+    description: [
+        'Global string functions available without importing.',
+    ],
+    entries: [
+        { name: 'split', signatures: ['split(s, delimiter)'], description: ['Splits `s` on each occurrence of `delimiter` and returns an array of strings. If `delimiter` is not found, returns a single-element array containing `s`. An empty `delimiter` splits into individual bytes.'] },
+        { name: 'lines', signatures: ['lines(s)'], description: ['Splits `s` on each newline (`\\n`) and returns an array of strings. Equivalent to `split(s, "\\n")`.'] },
+        { name: 'join', signatures: ['join(arr, separator)'], description: ['Joins an array of strings into a single string, with `separator` inserted between each element. Returns an empty string for an empty array.'] },
+        { name: 'replace', signatures: ['replace(s, find, replacement)'], description: ['Returns `s` with every non-overlapping occurrence of `find` replaced by `replacement`. Returns `s` unchanged if `find` is not present.'] },
+        { name: 'trim', signatures: ['trim(s)'], description: ['Returns `s` with leading and trailing whitespace removed.'] },
+        { name: 'trim_left', signatures: ['trim_left(s)'], description: ['Returns `s` with leading whitespace removed.'] },
+        { name: 'trim_right', signatures: ['trim_right(s)'], description: ['Returns `s` with trailing whitespace removed.'] },
+        { name: 'to_upper', signatures: ['to_upper(s)'], description: ['Returns `s` with all characters converted to uppercase.'] },
+        { name: 'to_lower', signatures: ['to_lower(s)'], description: ['Returns `s` with all characters converted to lowercase.'] },
+        { name: 'contains', signatures: ['contains(s, substring)'], description: ['Returns `true` if `substring` appears anywhere in `s`.'] },
+        { name: 'starts_with', signatures: ['starts_with(s, prefix)'], description: ['Returns `true` if `s` begins with `prefix`.'] },
+        { name: 'ends_with', signatures: ['ends_with(s, suffix)'], description: ['Returns `true` if `s` ends with `suffix`.'] },
+    ],
+}

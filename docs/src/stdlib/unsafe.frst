@@ -1,0 +1,81 @@
+export def unsafe = {
+    name: 'unsafe',
+    title: 'Unsafe',
+    module_path: 'ext.unsafe',
+    import_as: 'unsafe',
+    description: [
+        'Functions that bypass Frost\'s usual safety guarantees. Opt-in and intended for advanced use cases such as performance-critical code, debugging, and interop patterns that require unrestricted mutability or pointer-level introspection.',
+    ],
+    content: [
+        'Build flag: `WITH_UNSAFE` (default: `AUTO`). No external dependencies.',
+        'The precise behavior of these functions may change between versions. Internal implementation details such as value sharing and allocation are not part of Frost\'s stability guarantees, so results from pointer-level operations like `same` and `identity` may differ across releases.',
+    ],
+    entries: [
+        {
+            name: 'same',
+            signatures: ['unsafe.same(a, b)'],
+            description: [
+                'Returns `true` if `a` and `b` are the exact same object in memory (pointer equality), `false` otherwise. This is distinct from `==`, which compares by value.',
+            ],
+            body: [
+                'Because Frost values are immutable, the implementation can often re-use the same exact object. The cases where this optimization can be applied are largely undocumented, and may change between versions without being considered a breaking change.',
+                {
+                    code: """
+                        def a = [1, 2, 3]
+                        def b = [1, 2, 3]
+                        def c = a
+
+                        a == b            # => true  (equal by value)
+                        unsafe.same(a, b) # => false (distinct objects)
+                        unsafe.same(a, c) # => true  (same object)
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'identity',
+            signatures: ['unsafe.identity(value)'],
+            description: [
+                'Returns the memory address of `value` as an `Int`. Two calls return the same `Int` if and only if `unsafe.same` would return `true` for the two values.',
+            ],
+        },
+        {
+            name: 'mutable_cell',
+            signatures: ['unsafe.mutable_cell()', 'unsafe.mutable_cell(initial)'],
+            description: [
+                'Creates a mutable cell with no restrictions on what it can hold. Unlike the standard `mutable_cell`, this cell accepts functions, other mutable cells, and structures containing them.',
+            ],
+            body: [
+                'This makes it possible to create reference cycles, which will leak memory with no warning and no guardrails. Regular Frost code guarantees that reference cycles are impossible, and thus the implementation has no cycle detection. An unsafe mutable cell allows the user to violate this guarantee.',
+                'The interface is identical to `mutable_cell`: `.get()` returns the current value, `.exchange(value)` sets the cell and returns the previous value.',
+            ],
+        },
+        {
+            name: 'weaken',
+            signatures: ['unsafe.weaken(value)'],
+            description: [
+                'Creates a weak reference to `value`. Returns a map with a single method `.get()` that returns the original value if it is still alive, or `null` if it has been freed.',
+            ],
+            body: [
+                'A value is freed when all strong references to it are dropped.',
+                {
+                    code: """
+                        defn make_weak() -> do {
+                            def val = {data: [1, 2, 3]}
+                            def weak = unsafe.weaken(val)
+                            assert(weak.get() != null)
+                            weak
+                        }
+
+                        def weak = make_weak()
+                        assert(weak.get() == null)
+                        """,
+                    illustrative: true,
+                },
+                'Note that a weak reference to `null` is indistinguishable from an expired weak reference, since both return `null` from `.get()`.',
+                'Because Frost values are immutable, the implementation is free to share identical values behind the scenes. A weak reference may appear to stay alive longer than expected if the same value happens to be re-used elsewhere. This sharing behavior is not stable and may change between versions.',
+            ],
+        },
+    ],
+}

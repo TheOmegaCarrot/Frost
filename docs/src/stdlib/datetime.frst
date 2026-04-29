@@ -1,0 +1,139 @@
+export def datetime = {
+    name: 'datetime',
+    title: 'Datetime',
+    module_path: 'std.datetime',
+    import_as: 'dt',
+    description: [
+        'Timestamps, formatting, parsing, and calendar components.',
+        'All timestamps are `Int` values representing Unix milliseconds (ms since 1970-01-01T00:00:00 UTC). Negative values represent dates before the epoch. Integer arithmetic can be used for duration math with the help of the `ms` constants.',
+        {
+            code: """
+                def tomorrow = dt.now() + dt.ms.day
+                def in_3_hours = dt.now() + 3 * dt.ms.hour
+                """,
+            illustrative: true,
+        },
+        'All functions which take a timezone default to UTC. An optional timezone parameter accepts [IANA timezone names](https://en.wikipedia.org/wiki/List_of_tz_database_zones) (e.g., `"America/New_York"`, `"Asia/Tokyo"`).',
+        'Format patterns follow the [`std::chrono::format`](https://en.cppreference.com/w/cpp/chrono/format) specification.',
+    ],
+    entries: [
+        {
+            name: 'now',
+            signatures: ['dt.now()'],
+            description: [
+                'Returns the current time as Unix milliseconds.',
+            ],
+        },
+        {
+            name: 'format',
+            signatures: ['dt.format(millis, pattern)', 'dt.format(millis, pattern, timezone)'],
+            description: [
+                'Formats a timestamp as a `String` using a chrono format pattern.',
+            ],
+            body: [
+                {
+                    code: """
+                        dt.format(dt.now(), '%Y-%m-%d %H:%M:%S')
+                        # => "2026-04-19 14:30:00.000"
+
+                        dt.format(dt.now(), '%Y-%m-%d %H:%M', 'America/New_York')
+                        # => "2026-04-19 10:30"
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'parse',
+            signatures: ['dt.parse(s, pattern)', 'dt.parse(s, pattern, timezone)'],
+            description: [
+                'Parses a date/time string according to a pattern and returns Unix milliseconds. Produces an error on invalid input or pattern mismatch. Fields not specified by the pattern default to their epoch values (1970-01-01 00:00:00 UTC).',
+            ],
+            body: [
+                'When a timezone is provided, the input is interpreted as local time in that timezone.',
+                {
+                    code: """
+                        dt.parse('2024-03-16', '%Y-%m-%d')
+                        dt.parse('2024-03-15 20:00:00', '%Y-%m-%d %H:%M:%S', 'America/New_York')
+                        """,
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'components',
+            signatures: ['dt.components(millis)', 'dt.components(millis, timezone)'],
+            description: [
+                'Breaks a timestamp into its calendar components. Returns a `Map` with keys `year`, `month` (1-12), `day` (1-31), `hour`, `minute`, `second`, `ms`, and `weekday` (a `String` such as `"Monday"`).',
+            ],
+            body: [
+                {
+                    code: """
+                        dt.components(dt.now())
+                        # => {year: 2026, month: 4, day: 19, hour: 21, minute: 55, ...}
+
+                        dt.components(dt.now(), 'Asia/Tokyo')
+                        # => {year: 2026, month: 4, day: 20, hour: 6, minute: 55, ...}
+                        """,
+                    illustrative: true,
+                },
+            ],
+            see_also: ['std.datetime.from_components'],
+        },
+        {
+            name: 'from_components',
+            signatures: ['dt.from_components(map)', 'dt.from_components(map, timezone)'],
+            description: [
+                'Constructs a timestamp from a components `Map`. Missing fields default to the epoch: `year` to 1970, `month` and `day` to 1, time fields to 0. Invalid dates (e.g., Feb 30) and out-of-range time fields (e.g., hour 25) are rejected. Unknown keys (including `weekday`) are ignored, so the output of `components` can be passed directly.',
+            ],
+            body: [
+                'When a timezone is provided, the components are interpreted as local time in that timezone.',
+                {
+                    code: """
+                        dt.from_components({year: 2024, month: 3, day: 16})
+                        dt.from_components({year: 2024, month: 3, day: 16, hour: 14, minute: 30})
+
+                        # "noon in Tokyo" as UTC millis
+                        dt.from_components({year: 2024, month: 3, day: 16, hour: 12}, 'Asia/Tokyo')
+
+                        # modify a timestamp via components
+                        def c = dt.components(dt.now()) + {hour: 0, minute: 0, second: 0, ms: 0}
+                        def midnight_today = dt.from_components(c)
+                        """,
+                    illustrative: true,
+                },
+            ],
+            see_also: ['std.datetime.components'],
+        },
+        {
+            name: 'epoch',
+            kind: 'constant',
+            description: [
+                'The constant `0` -- the Unix epoch (1970-01-01T00:00:00 UTC). Provided for readability: `dt.epoch` is clearer than a bare `0` when expressing intent.',
+            ],
+        },
+        {
+            name: 'ms',
+            kind: 'constant',
+            description: [
+                'A sub-map of duration constants in milliseconds, for performing arithmetic on timestamps.',
+            ],
+            body: [
+                { code: 'def in_2_hours = dt.now() + 2 * dt.ms.hour', illustrative: true },
+                {
+                    table: {
+                        columns: ['Constant', 'Value'],
+                        rows: [
+                            ['`ms.second`', '`1000`'],
+                            ['`ms.minute`', '`60000`'],
+                            ['`ms.hour`', '`3600000`'],
+                            ['`ms.day`', '`86400000`'],
+                            ['`ms.week`', '`604800000`'],
+                        ],
+                    },
+                },
+                'Month and year constants are not provided because their durations vary.',
+            ],
+        },
+    ],
+}

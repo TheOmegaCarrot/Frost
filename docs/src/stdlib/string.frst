@@ -1,0 +1,47 @@
+export def string = {
+    name: 'string',
+    title: 'String',
+    module_path: 'std.string',
+    import_as: 'str',
+    description: [
+        'Additional string operations beyond the global string builtins.',
+    ],
+    entries: [
+        { name: 'index_of', signatures: ['str.index_of(s, substr)'], description: ['Returns the index of the first occurrence of `substr` in `s`, or `null` if not found.'], body: [{ code: "str.index_of('hello world', 'world')", result: '6' }] },
+        { name: 'last_index_of', signatures: ['str.last_index_of(s, substr)'], description: ['Returns the index of the last occurrence of `substr` in `s`, or `null` if not found.'], body: [{ code: "str.last_index_of('abcabc', 'bc')", result: '4' }] },
+        { name: 'count', signatures: ['str.count(s, substr)'], description: ['Counts the number of non-overlapping occurrences of `substr` in `s`. `substr` must not be empty.'], body: [{ code: "str.count('banana', 'an')", result: '2' }] },
+        { name: 'chars', signatures: ['str.chars(s)'], description: ['Splits `s` into an `Array` of single-byte strings.'], body: [{ code: "str.chars('abc')", illustrative: true }] },
+        { name: 'is_empty', signatures: ['str.is_empty(s)'], description: ['Returns `true` if `s` is the empty string.'] },
+        { name: 'is_ascii', signatures: ['str.is_ascii(s)'], description: ['Returns `true` if all bytes in `s` are ASCII (< 128).'] },
+        { name: 'is_digit', signatures: ['str.is_digit(s)'], description: ['Returns `true` if all bytes in `s` are ASCII digits (`0`-`9`). An empty string returns `true` (vacuous truth).'] },
+        { name: 'is_alpha', signatures: ['str.is_alpha(s)'], description: ['Returns `true` if all bytes in `s` are ASCII letters (`a`-`z`, `A`-`Z`). An empty string returns `true`.'] },
+        { name: 'is_alphanumeric', signatures: ['str.is_alphanumeric(s)'], description: ['Returns `true` if all bytes in `s` are ASCII letters or digits. An empty string returns `true`.'] },
+        { name: 'is_whitespace', signatures: ['str.is_whitespace(s)'], description: ['Returns `true` if all bytes in `s` are ASCII whitespace. An empty string returns `true`.'] },
+        { name: 'is_uppercase', signatures: ['str.is_uppercase(s)'], description: ['Returns `true` if all ASCII letters in `s` are uppercase. Non-letter bytes are ignored.'] },
+        { name: 'is_lowercase', signatures: ['str.is_lowercase(s)'], description: ['Returns `true` if all ASCII letters in `s` are lowercase. Non-letter bytes are ignored.'] },
+        {
+            name: 'pad_left',
+            signatures: ['str.pad_left(s, width)', 'str.pad_left(s, width, fill)'],
+            description: ['Pads `s` on the left to the given `width`. `fill` defaults to space. `fill` must be a single-byte string. If `s` is already at or beyond `width`, it is returned unchanged.'],
+            body: [{ code: "str.pad_left('42', 5, '0')", result: '00042' }],
+        },
+        {
+            name: 'pad_right',
+            signatures: ['str.pad_right(s, width)', 'str.pad_right(s, width, fill)'],
+            description: ['Pads `s` on the right to the given `width`. `fill` defaults to space. `fill` must be a single-byte string.'],
+            body: [{ code: "str.pad_right('hi', 5, '.')", result: 'hi...' }],
+        },
+        {
+            name: 'center',
+            signatures: ['str.center(s, width)', 'str.center(s, width, fill)'],
+            description: ['Centers `s` within the given `width`. `fill` defaults to space. When the padding is odd, the extra byte goes on the right.'],
+            body: [{ code: "str.center('hi', 6, '-')", result: '--hi--' }],
+        },
+        {
+            name: 'repeat',
+            signatures: ['str.repeat(s, n)'],
+            description: ['Returns `s` repeated `n` times. `n` must not be negative.'],
+            body: [{ code: "str.repeat('ab', 3)", result: 'ababab' }],
+        },
+    ],
+}
