@@ -181,6 +181,67 @@ defn render_lang(lang) -> {
     backend.end_module(res)
 }
 
+# --- Index generation ---
+
+defn collect_entries(module) -> {
+    def file = $'${module.name}.md'
+    def module_path = if has(module, 'module_path'): module.module_path else: null
+    def prefix = if has(module, 'module_path'): $'${module.name}.' else: ''
+
+    def top = if has(module, 'entries'): (
+        module.entries
+            @ select(fn e -> not has(e, 'kind') or e.kind != 'constant')
+            @ transform(fn e -> {
+                display: $'${prefix}${e.name}',
+                file: file,
+                anchor: e.name,
+                tag: module_path,
+            })
+    ) else: []
+
+    def from_children = if has(module, 'children'): (
+        module.children
+            @ values()
+            @ flat_map(fn child ->
+                child.entries @ transform(fn e -> {
+                    display: $'${prefix}${child.name}.${e.name}',
+                    file: file,
+                    anchor: $'${child.name}${e.name}',
+                    tag: module_path,
+                }))
+    ) else: []
+
+    def from_types = if has(module, 'types'): (
+        module.types
+            @ values()
+            @ flat_map(fn type_def ->
+                type_def.entries @ transform(fn e -> {
+                    display: $'${type_def.name}.${e.name}',
+                    file: file,
+                    anchor: $'${type_def.name}${e.name}',
+                    tag: module_path,
+                }))
+    ) else: []
+
+    top + from_children + from_types
+}
+
+defn generate_index(stdlib) -> {
+    def std_modules = stdlib.std @ and_then($(values($))) or []
+    def ext_modules = stdlib.ext @ and_then($(values($))) or []
+    def page_modules = if has(stdlib, 'pages'): (
+        stdlib.pages @ values() @ select(fn p -> has(p, 'entries'))
+    ) else: []
+
+    def all_entries = (
+        (std_modules + ext_modules + page_modules)
+            @ flat_map(collect_entries)
+            @ sort_by(fn e -> e.display @ to_lower())
+    )
+
+    backend.write_index(all_entries, output_to)
+}
+
 # --- Main ---
 
 defn generate() -> {
@@ -209,6 +270,8 @@ defn generate() -> {
 
     if has(docs, 'lang'):
         render_lang(docs.lang)
+
+    generate_index(stdlib)
 }
 
 generate()

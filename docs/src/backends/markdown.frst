@@ -158,3 +158,21 @@ export defn write_see_also(res, refs, from_subdir) -> {
     }
     res.writeln('')
 }
+
+export defn write_index(entries, output_dir) -> {
+    def dir = fs.concat(output_dir, 'stdlib')
+    fs.mkdir(dir)
+    def res = io.open_trunc(fs.concat(dir, 'index.md'))
+
+    res.writeln('# Standard Library Index')
+    res.writeln('')
+    res.writeln('Alphabetical index of all built-in functions and values. Each entry links to its full documentation.')
+    res.writeln('')
+
+    foreach entries with fn e -> {
+        def tag = if e.tag != null: $' · `${e.tag}`' else: ''
+        res.writeln($'- [${e.display}](${e.file}#${e.anchor})${tag}')
+    }
+
+    res.close()
+}
