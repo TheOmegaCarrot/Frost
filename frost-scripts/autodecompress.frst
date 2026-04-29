@@ -13,10 +13,10 @@ def candidates = [
     {magic: hex.decode("04224d18"),     name: 'lz4'},
 ]
 
-export defn autodecompress(data) -> do {
+export defn autodecompress(data) -> {
     def matched = filter candidates with fn entry -> data @ starts_with(entry.magic)
     match matched {
-        [{name}, ..._] if: c @has(name) =>
+        [{name}, ..._] if: c @ has(name) =>
             c[name].decompress(data),
         [{name}, ..._] =>
             error($'autodecompress: ${name} format detected but not available'),

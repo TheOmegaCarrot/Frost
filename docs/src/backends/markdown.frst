@@ -107,7 +107,7 @@ defn ref_to_link(ref) -> {
     }
 }
 
-defn stdlib_link(text, rest) -> do {
+defn stdlib_link(text, rest) -> {
     def [ module, ...name_pieces ] = rest
     if len(name_pieces) == 0: $'[${text}](stdlib/${module}.md)'
     else: do {

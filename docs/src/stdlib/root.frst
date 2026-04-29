@@ -1,6 +1,4 @@
-export def placeholder_name = {
-    # serializes to README content
-}
+export def { readme } = import('readme')
 
 export def std = (
     import('cli')

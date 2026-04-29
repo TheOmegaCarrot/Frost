@@ -38,7 +38,7 @@ Track progress migrating from hand-written markdown (`docs/stdlib/`) to structur
 - [x] streams
 - [x] strings
 - [x] types
-- [ ] README / index (stdlib landing page)
+- [x] README / index (stdlib landing page)
 
 ## Generator / Backend
 

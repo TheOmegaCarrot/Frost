@@ -176,6 +176,9 @@ defn generate() -> {
             else: render_page(page, 'stdlib')
         }
 
+    if has(stdlib, 'readme'):
+        render_page(stdlib.readme, '')
+
     if has(docs, 'intro'):
         render_page(docs.intro, '')
 
