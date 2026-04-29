@@ -17,7 +17,7 @@ export def encoding = {
                 { name: 'number', desc: 'The number to format' },
                 { name: 'base', desc: 'The numeric base (2-36)' },
             ],
-            examples: [
+            body: [
                 { code: "encoding.fmt_int(255, 16)", result: 'ff' },
                 { code: "encoding.fmt_int(10, 2)", result: '1010' },
             ],
@@ -34,7 +34,7 @@ export def encoding = {
                 { name: 'string', desc: 'The string to parse' },
                 { name: 'base', desc: 'The numeric base (2-36)' },
             ],
-            examples: [
+            body: [
                 { code: "encoding.parse_int('ff', 16)", result: '255' },
                 { code: "encoding.parse_int('1010', 2)", result: '10' },
             ],
@@ -46,7 +46,7 @@ export def encoding = {
             description: [
                 'Returns an array of Int values representing the raw byte values (0-255) of each character in `s`.',
             ],
-            examples: [
+            body: [
                 { code: "encoding.to_bytes('ABC')", result: '[65, 66, 67]' },
             ],
             see_also: ['std.encoding.from_bytes'],
@@ -58,7 +58,7 @@ export def encoding = {
                 'Converts an array of Int values in the range [0, 255] to a string.',
                 'Produces an error if any element is not an Int or is out of range.',
             ],
-            examples: [
+            body: [
                 { code: "encoding.from_bytes([72, 105])", result: 'Hi' },
             ],
             see_also: ['std.encoding.to_bytes'],
@@ -75,7 +75,7 @@ export def encoding = {
                     description: [
                         'Encodes `s` as a lowercase hexadecimal string. Each byte becomes two hex characters.',
                     ],
-                    examples: [
+                    body: [
                         { code: "encoding.hex.encode('Hi')", result: '4869' },
                     ],
                     see_also: ['std.encoding.hex.decode'],
@@ -87,7 +87,7 @@ export def encoding = {
                         'Decodes a hexadecimal string and returns the raw bytes as a string. Input length must be even. Produces an error on invalid input.',
                         'The result is a raw binary string that may contain non-printable bytes. Printing such strings directly may produce unexpected terminal output.',
                     ],
-                    examples: [
+                    body: [
                         { code: "encoding.hex.decode('4869')", result: 'Hi' },
                     ],
                     see_also: ['std.encoding.hex.encode'],
@@ -104,7 +104,7 @@ export def encoding = {
                     description: [
                         'Encodes `s` using standard Base64 (RFC 4648) and returns the result as a string.',
                     ],
-                    examples: [
+                    body: [
                         { code: "encoding.b64.encode('Hello')", result: 'SGVsbG8=' },
                     ],
                     see_also: ['std.encoding.b64.decode'],
@@ -116,7 +116,7 @@ export def encoding = {
                         'Decodes a standard Base64 (RFC 4648) string and returns the raw bytes as a string.',
                         'Produces an error on invalid input.',
                     ],
-                    examples: [
+                    body: [
                         { code: "encoding.b64.decode('SGVsbG8=')", result: 'Hello' },
                     ],
                     see_also: ['std.encoding.b64.encode'],
@@ -150,7 +150,7 @@ export def encoding = {
                     description: [
                         'Percent-encodes `s` per RFC 3986. Unreserved characters (A-Z, a-z, 0-9, `-`, `.`, `_`, `~`) are not encoded.',
                     ],
-                    examples: [
+                    body: [
                         { code: "encoding.url.encode('hello world')", result: 'hello%20world' },
                     ],
                     see_also: ['std.encoding.url.decode'],
@@ -162,7 +162,7 @@ export def encoding = {
                         'Decodes a percent-encoded string.',
                         'Produces an error on invalid input (e.g. `%GG`, truncated `%`).',
                     ],
-                    examples: [
+                    body: [
                         { code: "encoding.url.decode('hello%20world')", result: 'hello world' },
                     ],
                     see_also: ['std.encoding.url.encode'],

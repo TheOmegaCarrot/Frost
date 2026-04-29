@@ -115,7 +115,7 @@ export def sqlite = {
             description: [
                 'Creates a BLOB foreign value from a `String`. When bound as a parameter, this value uses `BLOB` affinity rather than `TEXT`. Calling this does not copy the underlying string data.',
             ],
-            examples: [
+            body: [
                 {
                     code: """
                         def b = sqlite.blob('binary data')
@@ -166,7 +166,7 @@ export def sqlite = {
                     description: [
                         'Executes a single SQL statement and returns the number of rows affected (`Int`). DDL statements return `0`. Multi-statement SQL is rejected.',
                     ],
-                    examples: [
+                    body: [
                         {
                             code: """
                                 def db = sqlite.open_memory()
@@ -193,7 +193,7 @@ export def sqlite = {
                         'Executes one or more SQL statements separated by semicolons. Returns the total number of rows affected across all statements. Does not accept parameter bindings.',
                         'Without a wrapping `db.transaction`, each statement is committed individually. If a statement fails partway through a script, earlier statements will have already committed.',
                     ],
-                    examples: [
+                    body: [
                         {
                             code: """
                                 def db = sqlite.open_memory()
@@ -210,7 +210,7 @@ export def sqlite = {
                         'Executes a single SQL statement and returns all result rows as an `Array` of `Map`s. Each map has column names as keys.',
                         'All result rows are loaded into memory at once. For large result sets, prefer `db.each` or `db.collect` which process one row at a time. Note that even with row-at-a-time processing, each individual column value is fully materialized in memory. Databases containing very large `BLOB` or `TEXT` values (e.g. SQLAR archives) should be handled with care.',
                     ],
-                    examples: [
+                    body: [
                         {
                             code: """
                                 db.query('SELECT * FROM t WHERE id > ?', [0])
@@ -227,7 +227,7 @@ export def sqlite = {
                     description: [
                         'Executes a query and calls `callback` with each row. Only one row is in memory at a time, making this suitable for large result sets. Returns `null`.',
                     ],
-                    examples: [
+                    body: [
                         {
                             code: "db.each('SELECT * FROM src', fn row -> db.exec('INSERT INTO dst VALUES (?)', [row.x]))",
                             illustrative: true,
@@ -241,7 +241,7 @@ export def sqlite = {
                     description: [
                         'Executes a query, calls `callback` with each row, and collects the return values into an `Array`. Rows are processed one at a time, but the collected results are accumulated in memory.',
                     ],
-                    examples: [
+                    body: [
                         {
                             code: """
                                 db.collect('SELECT x FROM t', fn row -> row.x * 2)
@@ -259,7 +259,7 @@ export def sqlite = {
                         'Returns the rowid of the most recent successful `INSERT` on this connection as an `Int`. If no `INSERT` has been performed, returns `0`.',
                         'Also available as `tx.last_insert_rowid()` inside a transaction.',
                     ],
-                    examples: [
+                    body: [
                         {
                             code: """
                                 def db = sqlite.open_memory()
@@ -278,7 +278,7 @@ export def sqlite = {
                         'Executes `callback` inside a SQLite transaction. The callback receives a transaction object `tx` with the same data methods as `db` (`exec`, `query`, `each`, `collect`, `script`, `last_insert_rowid`).',
                         'On normal return, the transaction is committed and `db.transaction` returns the total number of rows affected (`Int`). If the callback produces an error, the transaction is rolled back and the error propagates.',
                     ],
-                    examples: [
+                    body: [
                         {
                             code: """
                                 def db = sqlite.open_memory()
@@ -290,8 +290,6 @@ export def sqlite = {
                                 """,
                             result: '2',
                         },
-                    ],
-                    content: [
                         'While a transaction is active, the `db` object cannot be used for data operations. All data methods on `db` will produce an error until the transaction completes. Use the `tx` object for all database access within the callback. The `tx` object is only valid for the duration of the callback.',
                         {
                             title: 'Transaction Methods',
@@ -333,7 +331,7 @@ export def sqlite = {
                         'SQLite values are converted to Frost types, and the return value is converted back. If the Frost function produces an error, it becomes a SQL error.',
                         'Registering a function with the same name as an existing one replaces it. Functions that return `Array`, `Map`, or `Function` values are not supported and will produce a SQL error.',
                     ],
-                    examples: [
+                    body: [
                         {
                             code: """
                                 db.create_function('double', fn x -> x * 2)
@@ -366,13 +364,11 @@ export def sqlite = {
                         { name: 'step', desc: 'Called once per row; receives the current accumulator as the first argument, followed by the SQL column arguments. Returns the new accumulator.' },
                         { name: 'finalize', desc: 'Optional. Called once after all rows; receives the final accumulator and returns the aggregate result. If omitted, the final accumulator is returned directly.' },
                     ],
-                    content: [
+                    body: [
                         'When no rows match the query, `finalize` is called on `init` (or `init` is returned directly if `finalize` is omitted).',
                         'The accumulator can be any Frost value, including `Array` or `Map`, but the value that becomes the SQL result must be a primitive type (`Null`, `Int`, `Float`, `Bool`, or `String`).',
                         'Errors in `step` or `finalize` are surfaced as errors. An error in `step` stops processing remaining rows.',
                         'Registering an aggregate with the same name as an existing function or aggregate replaces it.',
-                    ],
-                    examples: [
                         {
                             code: """
                                 # Simple sum
@@ -401,7 +397,7 @@ export def sqlite = {
                         'Only one trace callback can be active at a time. Registering a new one replaces the previous.',
                         'Errors produced by the callback are reported to stderr but do not interrupt SQL execution. Fatal errors terminate the program.',
                     ],
-                    examples: [
+                    body: [
                         {
                             code: """
                                 db.trace(fn sql -> print(sql))

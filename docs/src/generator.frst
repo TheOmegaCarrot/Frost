@@ -50,18 +50,11 @@ defn render_entry(res, entry, depth, prefix) -> {
 
     render_content(res, entry.description, depth + 1)
 
-    # these branches are all independently optional
-    # can't become a match
-
     if has(entry, 'params'):
         backend.write_params(res, entry.params)
 
-    if has(entry, 'examples'):
-        foreach entry.examples with fn ex ->
-            backend.write_code_block(res, ex)
-
-    if has(entry, 'content'):
-        render_content(res, entry.content, depth + 1)
+    if has(entry, 'body'):
+        render_content(res, entry.body, depth + 1)
 
     if has(entry, 'see_also'):
         backend.write_see_also(res, entry.see_also)
