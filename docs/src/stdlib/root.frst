@@ -4,7 +4,9 @@ export def placeholder_name = {
 
 export def std = (
     import('encoding')
-    + import('sqlite')
+    + import('io')
 )
 
-# export def ext = {  }
+export def ext = (
+    import('sqlite')
+)

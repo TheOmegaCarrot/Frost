@@ -1,0 +1,208 @@
+export def io = {
+    name: 'io',
+    title: 'IO',
+    module_path: 'std.io',
+    import_as: 'io',
+    description: [
+        'Convenience functions for simple file IO and stream-based readers/writers for more complex use cases.',
+        '[`stdin`](@ref stdlib.streams.stdin), [`stdout`](@ref stdlib.streams.stdout), and [`stderr`](@ref stdlib.streams.stderr) are available as global builtins without importing this module.',
+    ],
+
+    types: {
+        reader: {
+            name: 'reader',
+            title: 'Reader',
+            description: [
+                'A stream for reading data. Not all reader streams support every method below. Each stream constructor specifies its supported subset.',
+            ],
+            entries: [
+                {
+                    name: 'read_line',
+                    signatures: ['reader.read_line()'],
+                    description: [
+                        'Reads and returns one line as a `String`, not including the trailing newline. Returns `null` at EOF.',
+                    ],
+                },
+                {
+                    name: 'read_one',
+                    signatures: ['reader.read_one()'],
+                    description: [
+                        'Reads and returns a single character as a `String`. Returns `null` at EOF.',
+                    ],
+                },
+                {
+                    name: 'read_rest',
+                    signatures: ['reader.read_rest()'],
+                    description: [
+                        'Reads and returns all remaining content as a `String`.',
+                    ],
+                },
+                {
+                    name: 'eof',
+                    signatures: ['reader.eof()'],
+                    description: [
+                        'Returns `true` if the stream is at end of file.',
+                    ],
+                },
+                {
+                    name: 'tell',
+                    signatures: ['reader.tell()'],
+                    description: [
+                        'Returns the current byte position in the stream as an `Int`.',
+                    ],
+                },
+                {
+                    name: 'seek',
+                    signatures: ['reader.seek(pos)'],
+                    description: [
+                        'Sets the current position to byte offset `pos`.',
+                    ],
+                },
+                {
+                    name: 'is_open',
+                    signatures: ['reader.is_open()'],
+                    description: [
+                        'Returns `true` if the stream is open.',
+                    ],
+                },
+                {
+                    name: 'close',
+                    signatures: ['reader.close()'],
+                    description: [
+                        'Closes the stream. Streams are automatically closed once there is no reference to them.',
+                    ],
+                },
+            ],
+        },
+        writer: {
+            name: 'writer',
+            title: 'Writer',
+            description: [
+                'A stream for writing data. Not all writer streams support every method below. Each stream constructor specifies its supported subset.',
+            ],
+            entries: [
+                {
+                    name: 'write',
+                    signatures: ['writer.write(s)'],
+                    description: [
+                        'Writes the string `s` to the stream.',
+                    ],
+                },
+                {
+                    name: 'writeln',
+                    signatures: ['writer.writeln(s)'],
+                    description: [
+                        'Writes the string `s` followed by a newline to the stream.',
+                    ],
+                },
+                {
+                    name: 'tell',
+                    signatures: ['writer.tell()'],
+                    description: [
+                        'Returns the current byte position in the stream as an `Int`.',
+                    ],
+                },
+                {
+                    name: 'seek',
+                    signatures: ['writer.seek(pos)'],
+                    description: [
+                        'Sets the current position to byte offset `pos`.',
+                    ],
+                },
+                {
+                    name: 'flush',
+                    signatures: ['writer.flush()'],
+                    description: [
+                        'Flushes any buffered output to the underlying resource.',
+                    ],
+                },
+                {
+                    name: 'is_open',
+                    signatures: ['writer.is_open()'],
+                    description: [
+                        'Returns `true` if the stream is open.',
+                    ],
+                },
+                {
+                    name: 'close',
+                    signatures: ['writer.close()'],
+                    description: [
+                        'Closes the stream. Streams are automatically closed once there is no reference to them.',
+                    ],
+                },
+            ],
+        },
+    },
+
+    entries: [
+        {
+            name: 'read',
+            signatures: ['io.read(path)'],
+            description: [
+                'Reads the entire file at `path` and returns its contents as a `String`. Produces an error if the file cannot be opened.',
+            ],
+        },
+        {
+            name: 'write',
+            signatures: ['io.write(path, content)'],
+            description: [
+                'Writes `content` to the file at `path`, replacing any existing content. Creates the file if it does not exist. Returns `null`. Produces an error if the file cannot be opened.',
+            ],
+        },
+        {
+            name: 'append',
+            signatures: ['io.append(path, content)'],
+            description: [
+                'Appends `content` to the end of the file at `path`. Creates the file if it does not exist. Returns `null`. Produces an error if the file cannot be opened.',
+            ],
+        },
+        {
+            name: 'open_read',
+            signatures: ['io.open_read(path)'],
+            description: [
+                'Opens the file at `path` for reading. Returns a Reader with full support for all reader methods. Produces an error if the file cannot be opened.',
+            ],
+            see_also: ['std.io.open_trunc', 'std.io.open_append'],
+        },
+        {
+            name: 'open_trunc',
+            signatures: ['io.open_trunc(path)'],
+            description: [
+                'Opens the file at `path` for writing, truncating it if it exists and creating it if it does not. Returns a Writer with full support for all writer methods. Produces an error if the file cannot be opened.',
+            ],
+            see_also: ['std.io.open_read', 'std.io.open_append'],
+        },
+        {
+            name: 'open_append',
+            signatures: ['io.open_append(path)'],
+            description: [
+                'Opens the file at `path` for appending. New writes are added after existing content. Returns a Writer with full support for all writer methods. Produces an error if the file cannot be opened.',
+            ],
+            see_also: ['std.io.open_read', 'std.io.open_trunc'],
+        },
+        {
+            name: 'stringreader',
+            signatures: ['io.stringreader(s)'],
+            description: [
+                'Creates a reader backed by the string `s`. Returns a Reader supporting `.read_line`, `.read_one`, `.read_rest`, `.eof`, `.tell`, `.seek`.',
+            ],
+            see_also: ['std.io.stringwriter'],
+        },
+        {
+            name: 'stringwriter',
+            signatures: ['io.stringwriter()'],
+            description: [
+                'Creates an in-memory writer. Returns a Writer supporting `.write`, `.writeln`, `.tell`, `.seek`, plus `.get`.',
+            ],
+            body: [
+                {
+                    title: '`stringwriter.get`',
+                    content: [
+                        '`stringwriter.get()` -- returns the accumulated content as a `String`.',
+                    ],
+                },
+            ],
+            see_also: ['std.io.stringreader'],
+        },
+    ],
+}

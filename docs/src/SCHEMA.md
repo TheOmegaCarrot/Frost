@@ -185,6 +185,18 @@ Documents a single function parameter.
 Omit the entire `params` array when the parameters are self-evident from the signature and description. Include it when parameters have non-obvious constraints (e.g. valid ranges, type requirements), when the function takes many parameters, or if the parameter can be given a useful name that is not redundant.
 The params should agree with the signatures.
 
+## Page
+
+A standalone concept page for content that doesn't fit the module schema: no functions, no import, just prose. Examples: foreign values, streams (builtins with no import), conceptual guides.
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `name` | String | yes | Machine name. Used for file paths and anchors. |
+| `title` | String | no | Display name for the page heading. Falls back to `name`. |
+| `content` | Content Array | yes | The page body. |
+
+Pages are wired into the doc tree alongside modules. The generator renders them as a heading followed by the content array.
+
 ## Cross-References
 
 `see_also` entries and `@ref` links in prose use absolute paths from the doc root.
