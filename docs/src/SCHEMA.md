@@ -97,7 +97,7 @@ A module is the top-level unit for a stdlib or extension documentation file. Eac
 | `description` | Content Array | yes | Module-level summary. Rendered immediately after the import line. |
 | `content` | Content Array | no | Extended narrative rendered before the API reference. Use for build flags, usage guides, conceptual explanations, etc. |
 | `types` | Map | no | Object types returned by this module. Keys are type names. See [Type](#type). |
-| `entries` | Array | yes | Top-level functions and constants. See [Entry](#entry). |
+| `entries` | Array | no | Top-level functions and constants. Omit for modules that only have children (e.g. compression). See [Entry](#entry). |
 | `children` | Map | no | Sub-namespaces (e.g. `hex`, `b64`). Keys are child names. See [Child](#child). |
 
 ### Render order

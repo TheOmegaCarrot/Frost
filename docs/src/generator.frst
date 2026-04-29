@@ -103,8 +103,9 @@ defn render_module(module) -> {
         foreach module.types @ values() @ sort_by(index('name')) with fn type ->
             render_type(res, type, 2)
 
-    foreach module.entries with fn entry ->
-        render_entry(res, entry, 2, '')
+    if has(module, 'entries'):
+        foreach module.entries with fn entry ->
+            render_entry(res, entry, 2, '')
 
     if has(module, 'children'):
         foreach module.children @ values() @ sort_by(index('name')) with fn child ->

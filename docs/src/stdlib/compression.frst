@@ -1,0 +1,239 @@
+export def compression = {
+    name: 'compression',
+    title: 'Compression',
+    module_path: 'ext.compression',
+    description: [
+        'Each algorithm provides `compress` and `decompress` functions operating on binary strings. Since Frost strings are binary-safe, compressed output can be stored, concatenated, or passed to other functions without issue.',
+        'A common import pattern destructures the module into the relevant subcomponents:',
+        {
+            code: "def { brotli, bz2, deflate, gzip, lz4, snappy, xz, zlib, zstd } = import('ext.compression')",
+            illustrative: true,
+        },
+        'It is valid to import only the components your script needs:',
+        {
+            code: "def { gzip, lz4 } = import('ext.compression')",
+            illustrative: true,
+        }
+    ],
+    content: [
+        'Build flag: `WITH_COMPRESSION` (default: `AUTO`). Requires at least one of: zlib, bz2, xz, brotli, lz4, snappy, or zstd. Each library is independently auto-detected; only algorithms with available libraries are included.',
+        'Algorithms can be swapped at runtime, as all algorithms support the same compress/decompress interface (if default compression parameters are accepted):',
+        {
+            code: """
+                def algo = if fast: deflate else: gzip
+                algo.compress(data)
+                """,
+            illustrative: true,
+        },
+    ],
+    children: {
+        brotli: {
+            name: 'brotli',
+            title: 'Brotli',
+            description: [
+                'Brotli compression (RFC 7932). Used by HTTP `Content-Encoding: br`.',
+            ],
+            entries: [
+                {
+                    name: 'compress',
+                    signatures: ['brotli.compress(s)', 'brotli.compress(s, quality)'],
+                    description: [
+                        'Compresses `s` using Brotli. `quality` is an optional `Int` from `0` to `11`. Default is `11` (maximum compression).',
+                    ],
+                },
+                {
+                    name: 'decompress',
+                    signatures: ['brotli.decompress(s)'],
+                    description: [
+                        'Decompresses a Brotli string. Produces an error on corrupt or truncated input.',
+                    ],
+                },
+            ],
+        },
+        bz2: {
+            name: 'bz2',
+            title: 'bzip2',
+            entries: [
+                {
+                    name: 'compress',
+                    signatures: ['bz2.compress(s)', 'bz2.compress(s, level)'],
+                    description: [
+                        'Compresses `s` using bzip2. `level` is an optional `Int` from `1` to `9` (block size in units of 100k). Default is `9`. Higher levels use more memory but may compress better.',
+                    ],
+                },
+                {
+                    name: 'decompress',
+                    signatures: ['bz2.decompress(s)'],
+                    description: [
+                        'Decompresses a bzip2 string. Produces an error on corrupt or truncated input.',
+                    ],
+                },
+            ],
+        },
+        deflate: {
+            name: 'deflate',
+            title: 'DEFLATE',
+            description: [
+                'Raw DEFLATE compression (RFC 1951). No header or checksum.',
+            ],
+            entries: [
+                {
+                    name: 'compress',
+                    signatures: ['deflate.compress(s)', 'deflate.compress(s, level)'],
+                    description: [
+                        'Compresses `s` using raw DEFLATE. `level` is an optional `Int`: `-1` (default, equivalent to `6`), `0` (no compression), or `1` to `9` (increasing effort).',
+                    ],
+                },
+                {
+                    name: 'decompress',
+                    signatures: ['deflate.decompress(s)'],
+                    description: [
+                        'Decompresses a raw DEFLATE string. Produces an error on corrupt or truncated input.',
+                    ],
+                },
+            ],
+        },
+        gzip: {
+            name: 'gzip',
+            title: 'gzip',
+            description: [
+                'gzip compression (RFC 1952). Includes a gzip header and CRC-32 checksum. Used by HTTP `Content-Encoding: gzip`.',
+            ],
+            entries: [
+                {
+                    name: 'compress',
+                    signatures: ['gzip.compress(s)', 'gzip.compress(s, level)'],
+                    description: [
+                        'Compresses `s` in gzip format. `level` is an optional `Int`: `-1` (default, equivalent to `6`), `0` (no compression), or `1` to `9` (increasing effort).',
+                    ],
+                },
+                {
+                    name: 'decompress',
+                    signatures: ['gzip.decompress(s)'],
+                    description: [
+                        'Decompresses a gzip string. Handles concatenated gzip streams (as produced by `pigz`, `cat a.gz b.gz`, etc.). Produces an error on corrupt or truncated input.',
+                    ],
+                },
+            ],
+        },
+        lz4: {
+            name: 'lz4',
+            title: 'LZ4',
+            description: [
+                'LZ4 frame format compression. Optimized for very fast compression and decompression.',
+            ],
+            entries: [
+                {
+                    name: 'compress',
+                    signatures: ['lz4.compress(s)', 'lz4.compress(s, level)'],
+                    description: [
+                        'Compresses `s` using the LZ4 frame format. `level` is an optional `Int`. `0` is the default (fast mode). Higher levels (`1` to `12`) compress better but slower. Negative levels are faster than `0` at the cost of compression ratio.',
+                    ],
+                },
+                {
+                    name: 'decompress',
+                    signatures: ['lz4.decompress(s)'],
+                    description: [
+                        'Decompresses an LZ4 frame. Produces an error on corrupt or truncated input.',
+                    ],
+                },
+            ],
+        },
+        snappy: {
+            name: 'snappy',
+            title: 'Snappy',
+            description: [
+                'Snappy compression. Optimized for speed over compression ratio. There is no compression level parameter.',
+            ],
+            entries: [
+                {
+                    name: 'compress',
+                    signatures: ['snappy.compress(s)'],
+                    description: [
+                        'Compresses `s` using Snappy.',
+                    ],
+                },
+                {
+                    name: 'decompress',
+                    signatures: ['snappy.decompress(s)', 'snappy.decompress(s, max_size)'],
+                    description: [
+                        'Decompresses a Snappy string. Produces an error on corrupt or truncated input.',
+                    ],
+                    body: [
+                        "Snappy's format embeds the uncompressed size in the frame header, and the decompressor must allocate that much memory upfront. A crafted input can claim an arbitrarily large size. To guard against this, `snappy.decompress` rejects inputs claiming more than 256 MB by default.",
+                        'Pass `max_size` to override (e.g. `snappy.decompress(data, 512 * 1024 * 1024)` for 512 MB, or `0` for no limit). When decompressing untrusted data, consider keeping a reasonable limit.',
+                    ],
+                },
+            ],
+        },
+        xz: {
+            name: 'xz',
+            title: 'xz',
+            description: [
+                'xz compression (LZMA2). High compression ratios, best suited for archival.',
+            ],
+            entries: [
+                {
+                    name: 'compress',
+                    signatures: ['xz.compress(s)', 'xz.compress(s, level)'],
+                    description: [
+                        'Compresses `s` in xz format. `level` is an optional `Int` from `0` to `9`. Default is `6`. Higher levels compress better but are significantly slower and use more memory.',
+                    ],
+                },
+                {
+                    name: 'decompress',
+                    signatures: ['xz.decompress(s)'],
+                    description: [
+                        'Decompresses an xz or legacy LZMA string. Handles concatenated xz streams. Produces an error on corrupt or truncated input.',
+                    ],
+                },
+            ],
+        },
+        zlib: {
+            name: 'zlib',
+            title: 'zlib',
+            description: [
+                'zlib-wrapped compression (RFC 1950). Includes a 2-byte header and Adler-32 checksum.',
+            ],
+            entries: [
+                {
+                    name: 'compress',
+                    signatures: ['zlib.compress(s)', 'zlib.compress(s, level)'],
+                    description: [
+                        'Compresses `s` in zlib-wrapped format. `level` is an optional `Int`: `-1` (default, equivalent to `6`), `0` (no compression), or `1` to `9` (increasing effort).',
+                    ],
+                },
+                {
+                    name: 'decompress',
+                    signatures: ['zlib.decompress(s)'],
+                    description: [
+                        'Decompresses a zlib-wrapped string. Produces an error on corrupt or truncated input.',
+                    ],
+                },
+            ],
+        },
+        zstd: {
+            name: 'zstd',
+            title: 'Zstandard',
+            description: [
+                'Zstandard compression (RFC 8878). Fast compression with high ratios.',
+            ],
+            entries: [
+                {
+                    name: 'compress',
+                    signatures: ['zstd.compress(s)', 'zstd.compress(s, level)'],
+                    description: [
+                        'Compresses `s` using Zstandard. `level` is an optional `Int` from `-131072` to `22`. `0` and `3` are equivalent (default). Higher levels (`1` to `22`) compress better but slower. Negative levels are faster than `1` at the cost of compression ratio.',
+                    ],
+                },
+                {
+                    name: 'decompress',
+                    signatures: ['zstd.decompress(s)'],
+                    description: [
+                        'Decompresses a Zstandard string. Produces an error on corrupt or truncated input.',
+                    ],
+                },
+            ],
+        },
+    },
+}
