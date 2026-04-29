@@ -1,0 +1,44 @@
+export def streams = {
+    name: 'streams',
+    title: 'Streams',
+    description: [
+        'Pre-defined streams available without imports. See [`IO`](@ref std.io) for file and string stream constructors.',
+    ],
+    entries: [
+        {
+            name: 'stdin',
+            kind: 'constant',
+            description: [
+                'A pre-defined Reader backed by standard input. Supports `.read_line`, `.read_one`, `.read`, `.read_rest`.',
+            ],
+            body: [
+                {
+                    title: '`stdin.read`',
+                    content: [
+                        '`stdin.read()` -- alias for `.read_rest()`.',
+                    ],
+                },
+                {
+                    title: '`stdin.read_rest`',
+                    content: [
+                        '`stdin.read_rest()` -- reads all remaining input from stdin as a `String`.',
+                    ],
+                },
+            ],
+        },
+        {
+            name: 'stdout',
+            kind: 'constant',
+            description: [
+                'A pre-defined Writer backed by standard output. Supports `.write`, `.writeln`.',
+            ],
+        },
+        {
+            name: 'stderr',
+            kind: 'constant',
+            description: [
+                'A pre-defined Writer backed by standard error. Supports `.write`, `.writeln`.',
+            ],
+        },
+    ],
+}

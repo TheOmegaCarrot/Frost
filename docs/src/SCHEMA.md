@@ -92,7 +92,7 @@ A module is the top-level unit for a stdlib or extension documentation file. Eac
 |-----|------|----------|-------------|
 | `name` | String | yes | Machine name. Used for file paths, anchors, and as the entry prefix in signatures. |
 | `title` | String | no | Human-readable display name (e.g. `'SQLite'`, `'TOML'`). Falls back to `name` if absent. |
-| `module_path` | String | yes | Dot-separated import path (e.g. `'std.encoding'`, `'ext.sqlite'`). |
+| `module_path` | String | no | Dot-separated import path (e.g. `'std.encoding'`, `'ext.sqlite'`). Omit for builtin modules that require no import (e.g. streams). Technically optional, but rarely omitted. |
 | `import_as` | String | no | Canonical short name shown in the import line (e.g. `'enc'`, `'sqlite'`). When present, the generator emits an import code block at the top of the page. |
 | `description` | Content Array | yes | Module-level summary. Rendered immediately after the import line. |
 | `content` | Content Array | no | Extended narrative rendered before the API reference. Use for build flags, usage guides, conceptual explanations, etc. |

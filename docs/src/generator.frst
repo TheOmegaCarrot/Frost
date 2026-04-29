@@ -113,6 +113,19 @@ defn render_module(module) -> {
     backend.end_module(res)
 }
 
+# --- Page rendering ---
+
+defn render_page(page) -> {
+    def res = backend.begin_module(page, output_to)
+
+    def title = page.title or page.name
+    backend.write_heading(res, title, 1)
+
+    render_content(res, page.content, 2)
+
+    backend.end_module(res)
+}
+
 # --- Main ---
 
 defn generate() -> {
@@ -125,6 +138,13 @@ defn generate() -> {
     if has(stdlib, 'ext'):
         foreach keys(stdlib.ext) with fn name ->
             render_module(stdlib.ext[name])
+
+    if has(stdlib, 'pages'):
+        foreach keys(stdlib.pages) with fn name -> {
+            def page = stdlib.pages[name]
+            if has(page, 'entries'): render_module(page)
+            else: render_page(page)
+        }
 }
 
 generate()

@@ -10,3 +10,8 @@ export def std = (
 export def ext = (
     import('sqlite')
 )
+
+export def pages = (
+    import('streams')
+    + import('foreign-values')
+)
