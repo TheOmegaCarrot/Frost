@@ -107,24 +107,25 @@ defn ref_to_link(ref) -> {
     }
 }
 
+defn stdlib_link(text, rest) -> do {
+    def [ module, ...name_pieces ] = rest
+    if len(name_pieces) == 0: $'[${text}](stdlib/${module}.md)'
+    else: do {
+        def linkname = name_pieces @ join('')
+        $'[${text}](stdlib/${module}.md#${linkname})'
+    }
+}
+
 export defn resolve_ref(text, path) -> {
     def [ section, ...rest ] = path @ split('.')
 
     match section {
-        'std' | 'ext' => do {
-            def [ module, ...name_pieces ] = rest
-            if len(name_pieces) == 0: $'[${text}](${module}.md)'
+        'std' | 'ext' | 'stdlib' => stdlib_link(text, rest),
+        'lang' => do {
+            if len(rest) == 0: $'[${text}](language.md)'
             else: do {
-                def linkname = name_pieces @ join('')
-                $'[${text}](${module}.md#${linkname})'
-            }
-        },
-        'stdlib' => do {
-            def [ page, ...name_pieces ] = rest
-            if len(name_pieces) == 0: $'[${text}](${page}.md)'
-            else: do {
-                def linkname = name_pieces @ join('')
-                $'[${text}](${page}.md#${linkname})'
+                def anchor = rest @ join('') @ to_lower()
+                $'[${text}](language.md#${anchor})'
             }
         },
         _ => $'[${text}](#${path})',

@@ -1,7 +1,8 @@
 def { lang } = import('lang.root')
+def { intro } = import('intro')
 
 export def docs = {
-    intro: import('intro'),
+    intro: intro,
     lang: lang,
     stdlib: import('stdlib.root')
 }

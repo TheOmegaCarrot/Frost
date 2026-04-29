@@ -176,6 +176,9 @@ defn generate() -> {
             else: render_page(page, 'stdlib')
         }
 
+    if has(docs, 'intro'):
+        render_page(docs.intro, '')
+
     if has(docs, 'lang'):
         render_lang(docs.lang)
 }
