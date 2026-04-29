@@ -1,4 +1,4 @@
-export def { readme } = import('readme')
+export def { landing } = import('landing')
 
 export def std = (
     import('cli')

@@ -14,7 +14,8 @@ defn heading_prefix(depth) -> match depth {
 export defn begin_module(module, output_dir, subdir) -> {
     def dir = if subdir == '': output_dir else: fs.concat(output_dir, subdir)
     fs.mkdir(dir)
-    def path = fs.concat(dir, $'${module.name}.md')
+    def filename = if module.name == 'landing': 'README.md' else: $'${module.name}.md'
+    def path = fs.concat(dir, filename)
     io.open_trunc(path)
 }
 
