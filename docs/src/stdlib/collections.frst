@@ -1,0 +1,514 @@
+export def collections = {
+    name: 'collections',
+    title: 'Collections',
+    description: [
+        'Slicing, grouping, sorting, searching, and transforming arrays and maps. All functions in this module are predefined globals available without importing.',
+    ],
+    entries: [
+        {
+            name: 'keys',
+            signatures: ['keys(m)'],
+            description: [
+                'Returns an array of all keys in map `m`. The order is unspecified, but consistent with `values(m)`: index `i` in `keys(m)` corresponds to index `i` in `values(m)`.',
+            ],
+            see_also: ['std.collections.values'],
+        },
+        {
+            name: 'values',
+            signatures: ['values(m)'],
+            description: [
+                'Returns an array of all values in map `m`. The order is unspecified, but consistent with `keys(m)`: index `i` in `values(m)` corresponds to index `i` in `keys(m)`.',
+            ],
+            see_also: ['std.collections.keys'],
+        },
+        {
+            name: 'map_keys',
+            signatures: ['map_keys(m, f)'],
+            description: [
+                'Returns a new map with every key transformed by `f`. Values are unchanged.',
+            ],
+            see_also: ['std.collections.map_values'],
+        },
+        {
+            name: 'map_values',
+            signatures: ['map_values(m, f)'],
+            description: [
+                'Returns a new map with every value transformed by `f`. Keys are unchanged.',
+            ],
+            see_also: ['std.collections.map_keys'],
+        },
+        {
+            name: 'len',
+            signatures: ['len(s)'],
+            description: [
+                'Returns the number of elements in an `Array`, the number of entries in a `Map`, or the byte length of a `String`.',
+            ],
+        },
+        {
+            name: 'range',
+            signatures: ['range(stop)', 'range(start, stop)', 'range(start, stop, step)'],
+            description: [
+                'Returns an `Array` of `Int` values. `step` defaults to `1` and must not be `0`.',
+            ],
+            body: [
+                'When `step > 0`, yields `start, start + step, ...` while the value is `< stop`. When `step < 0`, yields `start, start + step, ...` while the value is `> stop`. Returns an empty array if the range is already exhausted at `start`.',
+                { code: 'range(5)', result: '[ 0, 1, 2, 3, 4 ]' },
+                { code: 'range(2, 5)', result: '[ 2, 3, 4 ]' },
+                { code: 'range(0, 10, 2)', result: '[ 0, 2, 4, 6, 8 ]' },
+                { code: 'range(5, 0, -1)', result: '[ 5, 4, 3, 2, 1 ]' },
+            ],
+        },
+        {
+            name: 'nulls',
+            signatures: ['nulls(n)'],
+            description: [
+                'Returns an array of `n` `null` values. `n` must be `>= 0`.',
+            ],
+        },
+        {
+            name: 'repeat',
+            signatures: ['repeat(value, n)'],
+            description: [
+                'Returns an array of `n` copies of `value`. `n` must be `>= 0`. `value` may be of any type.',
+            ],
+            body: [
+                { code: "repeat(0, 3)", result: '[ 0, 0, 0 ]' },
+                { code: "repeat('x', 4)", result: '[ x, x, x, x ]' },
+            ],
+        },
+        {
+            name: 'id',
+            signatures: ['id(value)'],
+            description: [
+                'Returns `value` unchanged.',
+            ],
+        },
+        {
+            name: 'has',
+            signatures: ['has(structure, index)'],
+            description: [
+                'For a `Map`: returns `true` if `index` exists as a key. For an `Array`: returns `true` if `index` (must be an `Int`) is a valid index.',
+            ],
+        },
+        {
+            name: 'includes',
+            signatures: ['includes(array, value)'],
+            description: [
+                'Returns `true` if `array` contains an element equal to `value`.',
+            ],
+        },
+        {
+            name: 'index',
+            signatures: ['index(k)'],
+            description: [
+                'Returns a function that indexes into its argument with key `k`. Equivalent to `fn s -> s[k]`. Useful in pipelines: `people @ transform(index("name"))`.',
+            ],
+        },
+        {
+            name: 'dig',
+            signatures: ['dig(structure, ...keys)'],
+            description: [
+                'Indexes into nested structures, returning `null` if any intermediate value is `null` rather than producing an error. Each key is applied in order, indexing into the result of the previous step.',
+            ],
+            body: [
+                {
+                    code: """
+                        def m = {a: {b: {c: 42}}}
+                        m @ dig('a', 'b', 'c')
+                        """,
+                    result: '42',
+                },
+                {
+                    code: """
+                        def nested = {items: [{name: 'alice'}, {name: 'bob'}]}
+                        nested @ dig('items', 0, 'name')
+                        """,
+                    result: 'alice',
+                },
+            ],
+        },
+        {
+            name: 'slice',
+            signatures: ['slice(seq, start)', 'slice(seq, start, end)'],
+            description: [
+                'Returns a sub-array or substring from `start` (inclusive) to `end` (exclusive). If `end` is omitted, slices to the end. Negative indices count from the end. Out-of-bounds indices are clamped. Works on both `Array` and `String`.',
+            ],
+            body: [
+                { code: 'slice([1, 2, 3, 4, 5], 1, 3)', result: '[ 2, 3 ]' },
+                { code: 'slice([1, 2, 3, 4, 5], -2)', result: '[ 4, 5 ]' },
+                { code: "slice('hello', 1, 4)", result: 'ell' },
+            ],
+        },
+        {
+            name: 'stride',
+            signatures: ['stride(seq, n)'],
+            description: [
+                'Returns every `n`th element of `seq` starting from index 0. `n` must be `> 0`. Works on both `Array` and `String`.',
+            ],
+            body: [
+                { code: 'stride([1, 2, 3, 4, 5, 6], 2)', result: '[ 1, 3, 5 ]' },
+                { code: "stride('abcdef', 2)", result: 'ace' },
+            ],
+        },
+        {
+            name: 'take',
+            signatures: ['take(seq, n)'],
+            description: [
+                'Returns the first `n` elements of `seq`. `n` must be `>= 0`. Works on both `Array` and `String`.',
+            ],
+        },
+        {
+            name: 'drop',
+            signatures: ['drop(seq, n)'],
+            description: [
+                'Returns all but the first `n` elements of `seq`. `n` must be `>= 0`. Works on both `Array` and `String`.',
+            ],
+        },
+        {
+            name: 'tail',
+            signatures: ['tail(seq, n)'],
+            description: [
+                'Returns the last `n` elements of `seq`. `n` must be `>= 0`. Works on both `Array` and `String`.',
+            ],
+        },
+        {
+            name: 'drop_tail',
+            signatures: ['drop_tail(seq, n)'],
+            description: [
+                'Returns all but the last `n` elements of `seq`. `n` must be `>= 0`. Works on both `Array` and `String`.',
+            ],
+        },
+        {
+            name: 'slide',
+            signatures: ['slide(arr, n)'],
+            description: [
+                'Returns an array of overlapping windows of size `n`. `n` must be `> 0`.',
+            ],
+            body: [
+                {
+                    code: 'slide([1, 2, 3, 4], 3)',
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'chunk',
+            signatures: ['chunk(arr, n)'],
+            description: [
+                'Returns an array of non-overlapping chunks of size `n`. The last chunk may be smaller than `n` if the array length is not evenly divisible. `n` must be `> 0`.',
+            ],
+            body: [
+                {
+                    code: 'chunk([1, 2, 3, 4, 5], 2)',
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'reverse',
+            signatures: ['reverse(seq)'],
+            description: [
+                'Returns `seq` in reverse order. Works on both `Array` and `String`.',
+            ],
+        },
+        {
+            name: 'take_while',
+            signatures: ['take_while(arr, f)'],
+            description: [
+                'Returns elements from the start of `arr` as long as `f` returns truthy, stopping at the first element for which `f` returns falsy.',
+            ],
+        },
+        {
+            name: 'drop_while',
+            signatures: ['drop_while(arr, f)'],
+            description: [
+                'Drops elements from the start of `arr` as long as `f` returns truthy, then returns the remainder.',
+            ],
+        },
+        {
+            name: 'chunk_by',
+            signatures: ['chunk_by(arr, f)'],
+            description: [
+                'Groups consecutive elements into chunks. A new chunk begins whenever `f(previous, current)` returns falsy.',
+            ],
+            body: [
+                {
+                    code: 'chunk_by([1, 1, 2, 2, 1], fn (a, b) -> a == b)',
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'flatten',
+            signatures: ['flatten(arr)', 'flatten(arr, n)'],
+            description: [
+                'Flattens nested arrays. Without `n`, recursively flattens all levels of nesting. With `n`, flattens exactly `n` levels. `n` must be `>= 0`; `n=0` returns `arr` unchanged. Non-array elements are always left untouched.',
+            ],
+            body: [
+                { code: 'flatten([1, [2, [3, 4]], 5])', result: '[ 1, 2, 3, 4, 5 ]' },
+                { code: 'flatten([1, [2, [3, 4]], 5], 1)', illustrative: true },
+            ],
+        },
+        {
+            name: 'zip',
+            signatures: ['zip(...arrays)'],
+            description: [
+                'Combines two or more arrays element by element. Returns an array of arrays, truncated to the length of the shortest input.',
+            ],
+            body: [
+                {
+                    code: """zip([1, 2, 3], ['a', 'b', 'c'])""",
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'zip_with',
+            signatures: ['zip_with(f, ...arrays)'],
+            description: [
+                'Combines two or more arrays element-wise by applying `f` to corresponding elements. The function receives one argument per array. If the input arrays are of unequal length, all are truncated to the length of the shortest input.',
+            ],
+            body: [
+                { code: 'zip_with(fn a, b -> a + b, [1, 2, 3], [10, 20, 30])', result: '[ 11, 22, 33 ]' },
+            ],
+        },
+        {
+            name: 'xprod',
+            signatures: ['xprod(...arrays)'],
+            description: [
+                'Returns the cartesian product of two or more arrays. Each element of the result is an array containing one element from each input. Returns an empty array if any input is empty.',
+            ],
+            body: [
+                {
+                    code: """xprod([1, 2], ['a', 'b'])""",
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'xprod_with',
+            signatures: ['xprod_with(f, ...arrays)'],
+            description: [
+                'Computes the cartesian product of two or more arrays, applying `f` to each element of the product. The function receives one argument per array. Returns an empty array if any input is empty.',
+            ],
+            body: [
+                { code: 'xprod_with(fn a, b -> a + b, [10, 20], [1, 2])', result: '[ 11, 12, 21, 22 ]' },
+            ],
+        },
+        {
+            name: 'transform',
+            signatures: ['transform(structure, f)'],
+            description: [
+                'Functional form of the `map` expression. Applies `f` to each element of an `Array`, or to each key-value pair `(k, v)` of a `Map`. For `Map` input, `f` must return a `Map`; its entries are merged into the result, allowing keys to be remapped or entries to be expanded.',
+            ],
+        },
+        {
+            name: 'flat_map',
+            signatures: ['flat_map(arr, f)'],
+            description: [
+                'Applies `f` to each element of `arr` and flattens the results one level.',
+            ],
+            body: [
+                { code: 'flat_map([1, 2, 3], fn x -> [x, x * 2])', result: '[ 1, 2, 2, 4, 3, 6 ]' },
+            ],
+            see_also: ['std.collections.transform', 'std.collections.flatten'],
+        },
+        {
+            name: 'select',
+            signatures: ['select(structure, f)'],
+            description: [
+                'Functional form of the `filter` expression. Returns elements of an `Array` for which `f` returns truthy, or entries of a `Map` for which `f(k, v)` returns truthy.',
+            ],
+            see_also: ['std.collections.reject'],
+        },
+        {
+            name: 'reject',
+            signatures: ['reject(structure, pred)'],
+            description: [
+                'Returns the elements of `structure` for which `pred` returns falsy. The inverse of `select`.',
+            ],
+            see_also: ['std.collections.select'],
+        },
+        {
+            name: 'fold',
+            signatures: ['fold(structure, f)', 'fold(structure, f, init)'],
+            description: [
+                'Functional form of the `reduce` expression. Reduces `structure` to a single value by repeatedly applying `f`. Without `init`, the first element is used as the initial accumulator. For maps, `f` receives `(accumulator, key, value)`.',
+            ],
+        },
+        {
+            name: 'sum',
+            signatures: ['sum(arr)'],
+            description: [
+                'Returns the sum of all elements in `arr` using `+`. Returns `null` for an empty array.',
+            ],
+            body: [
+                { code: 'sum([1, 2, 3, 4])', result: '10' },
+                { code: 'sum([])', result: 'null' },
+            ],
+        },
+        {
+            name: 'product',
+            signatures: ['product(arr)'],
+            description: [
+                'Returns the product of all elements in `arr` using `*`. Returns `null` for an empty array.',
+            ],
+            body: [
+                { code: 'product([1, 2, 3, 4])', result: '24' },
+            ],
+        },
+        {
+            name: 'sorted',
+            signatures: ['sorted(arr)', 'sorted(arr, f)'],
+            description: [
+                'Returns a sorted copy of `arr`. Without `f`, uses the default `<` ordering. With `f`, uses `f(a, b)` as the comparator, where `f` should return truthy if `a` should come before `b`. Uses a stable sort.',
+            ],
+            see_also: ['std.collections.sort_by'],
+        },
+        {
+            name: 'sort_by',
+            signatures: ['sort_by(arr, projection)'],
+            description: [
+                'Returns a sorted copy of `arr`, using `projection` as a key function. Each element is sorted by the value of `projection(element)` under the default `<` ordering. The projection is called exactly once per element. Uses a stable sort.',
+            ],
+            body: [
+                'Combines well with `index`: `sort_by(users, index("name"))`.',
+            ],
+            see_also: ['std.collections.sorted', 'std.collections.index'],
+        },
+        {
+            name: 'any',
+            signatures: ['any(arr)', 'any(arr, f)'],
+            description: [
+                'Returns `true` if any element of `arr` is truthy, or if `f` returns truthy for any element.',
+            ],
+            see_also: ['std.collections.all', 'std.collections.none'],
+        },
+        {
+            name: 'all',
+            signatures: ['all(arr)', 'all(arr, f)'],
+            description: [
+                'Returns `true` if all elements of `arr` are truthy, or if `f` returns truthy for every element.',
+            ],
+            see_also: ['std.collections.any', 'std.collections.none'],
+        },
+        {
+            name: 'none',
+            signatures: ['none(arr)', 'none(arr, f)'],
+            description: [
+                'Returns `true` if no element of `arr` is truthy, or if `f` returns falsy for every element.',
+            ],
+            see_also: ['std.collections.any', 'std.collections.all'],
+        },
+        {
+            name: 'find',
+            signatures: ['find(arr, predicate)'],
+            description: [
+                'Returns the first element of `arr` for which `predicate` returns truthy, or `null` if no element matches. Short-circuits on the first match.',
+            ],
+        },
+        {
+            name: 'group_by',
+            signatures: ['group_by(arr, f)'],
+            description: [
+                'Returns a map where each key is a value returned by `f`, and each value is an array of all elements in `arr` that produced that key.',
+            ],
+            body: [
+                {
+                    code: 'group_by([1, 2, 3, 4, 5], fn (x) -> x % 2)',
+                    illustrative: true,
+                },
+            ],
+            see_also: ['std.collections.count_by'],
+        },
+        {
+            name: 'count_by',
+            signatures: ['count_by(arr, f)'],
+            description: [
+                'Returns a map where each key is a value returned by `f`, and each value is an `Int` count of how many elements produced that key.',
+            ],
+            body: [
+                {
+                    code: """count_by(['a', 'b', 'a', 'c', 'a'], id)""",
+                    illustrative: true,
+                },
+            ],
+            see_also: ['std.collections.group_by'],
+        },
+        {
+            name: 'scan',
+            signatures: ['scan(arr, f)'],
+            description: [
+                'Returns a running accumulation of `arr` using `f`. The first element of the result is the first element of `arr` (used as the initial accumulator). Each subsequent element is `f(previous_accumulator, current_element)`. Returns an empty array for empty input.',
+            ],
+            body: [
+                { code: 'scan([1, 2, 3, 4], fn(acc, x) -> acc + x)', result: '[ 1, 3, 6, 10 ]' },
+            ],
+        },
+        {
+            name: 'partition',
+            signatures: ['partition(arr, f)'],
+            description: [
+                'Splits `arr` into two arrays based on predicate `f`. Returns `{ pass: [...], fail: [...] }` where `pass` contains elements for which `f` returned truthy and `fail` contains the rest.',
+            ],
+            body: [
+                {
+                    code: 'partition([1, 2, 3, 4, 5], fn (x) -> x % 2 == 1)',
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'map_into',
+            signatures: ['map_into(arr, f)'],
+            description: [
+                'Calls `f` on each element of `arr`. Each call must return a `Map`. The results are merged left-to-right into a single `Map`. Later entries overwrite earlier ones on key collision.',
+            ],
+            body: [
+                {
+                    code: """map_into(['a', 'b', 'c'], fn s -> { [s]: len(s) })""",
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            name: 'to_entries',
+            signatures: ['to_entries(m)'],
+            description: [
+                'Converts a map into an array of `{key: k, value: v}` entries. The order of entries in the result is unspecified.',
+            ],
+            body: [
+                {
+                    code: 'to_entries({a: 1, b: 2})',
+                    illustrative: true,
+                },
+            ],
+            see_also: ['std.collections.from_entries'],
+        },
+        {
+            name: 'from_entries',
+            signatures: ['from_entries(arr)'],
+            description: [
+                'Converts an array of `{key: k, value: v}` maps into a single map. Each element must be a map containing at least a `key` and a `value` entry. Keys must be valid map keys (non-null primitives). Extra entries in the element maps are ignored. On duplicate keys, the last entry wins.',
+            ],
+            body: [
+                {
+                    code: """from_entries([{key: 'a', value: 1}, {key: 'b', value: 2}])""",
+                    illustrative: true,
+                },
+                '`to_entries` and `from_entries` are inverses: `from_entries(to_entries(m)) == m` for any map `m`.',
+            ],
+            see_also: ['std.collections.to_entries'],
+        },
+        {
+            name: 'dissoc',
+            signatures: ['dissoc(m, ...keys)'],
+            description: [
+                'Returns a new map with the given keys removed. Each key must be a valid map key (non-null primitive). Missing keys are silently ignored.',
+            ],
+            body: [
+                { code: "dissoc({a: 1, b: 2, c: 3}, 'b')", illustrative: true },
+            ],
+        },
+    ],
+}

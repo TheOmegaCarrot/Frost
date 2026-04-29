@@ -12,6 +12,7 @@ export def ext = (
 )
 
 export def pages = (
-    import('streams')
+    import('collections')
+    + import('streams')
     + import('foreign-values')
 )
