@@ -28,33 +28,58 @@ def backend = match parsed.options.format {
 
 def ref_pattern = R"(\[([^\]]+)\]\(@ref ([^)]+)\))"
 
-defn resolve_refs(s) -> {
+defn resolve_lang_title(segments, sections) -> {
+    if len(segments) == 0: null
+    else: do {
+        def target = segments[0]
+        def section = find(sections, fn s -> {
+            def key = s.title @ to_lower() @ replace(' ', '')
+            key == target or starts_with(key, target)
+        })
+        if section == null: null
+        elif len(segments) == 1: section.title
+        elif has(section, 'content'): do {
+            def children = filter section.content with fn c -> has(c, 'title')
+            resolve_lang_title(slice(segments, 1), children) or section.title
+        }
+        else: section.title
+    }
+}
+
+defn resolve_refs(s, from_subdir) -> {
     def matches = regex.scan_matches(s, ref_pattern)
     if not matches.found: s
     else: reduce matches.matches init: s with fn (acc, m) -> {
         def text = m.groups[1].value
         def path = m.groups[2].value
-        acc @ replace(m.full, backend.resolve_ref(text, path))
+        def [ section, ...rest ] = path @ split('.')
+        def resolved = if section == 'lang' and has(docs, 'lang') and len(rest) > 0: do {
+            def title = resolve_lang_title(rest, docs.lang.sections)
+            if title != null: backend.resolve_lang_ref(text, title, from_subdir)
+            else: backend.resolve_ref(text, path, from_subdir)
+        }
+        else: backend.resolve_ref(text, path, from_subdir)
+        acc @ replace(m.full, resolved)
     }
 }
 
 # --- Content rendering ---
 
-defn render_content(res, items, depth) ->
+defn render_content(res, items, depth, subdir) ->
     foreach items with fn item -> match item {
-        s is String => backend.write_paragraph(res, resolve_refs(s)),
+        s is String => backend.write_paragraph(res, resolve_refs(s, subdir)),
         { title, content: inner } => do {
             backend.write_heading(res, title, depth)
-            render_content(res, inner, depth + 1)
+            render_content(res, inner, depth + 1, subdir)
         },
-        { list: items } => backend.write_list(res, items @ transform(resolve_refs)),
+        { list: items } => backend.write_list(res, items @ transform(fn s -> resolve_refs(s, subdir))),
         { table } => backend.write_table(res, table),
         { code: _ } as example => backend.write_code_block(res, example),
     }
 
 # --- Entry rendering ---
 
-defn render_entry(res, entry, depth, prefix) -> {
+defn render_entry(res, entry, depth, prefix, subdir) -> {
     backend.write_heading(res, $'`${prefix}${entry.name}`', depth)
 
     if not has(entry, 'kind'): do {
@@ -63,36 +88,36 @@ defn render_entry(res, entry, depth, prefix) -> {
         backend.write_break(res)
     }
 
-    render_content(res, entry.description, depth + 1)
+    render_content(res, entry.description, depth + 1, subdir)
 
     if has(entry, 'params'):
         backend.write_params(res, entry.params)
 
     if has(entry, 'body'):
-        render_content(res, entry.body, depth + 1)
+        render_content(res, entry.body, depth + 1, subdir)
 
     if has(entry, 'see_also'):
-        backend.write_see_also(res, entry.see_also)
+        backend.write_see_also(res, entry.see_also, subdir)
 }
 
 # --- Children and types ---
 
-defn render_child(res, child, depth) -> {
+defn render_child(res, child, depth, subdir) -> {
     def title = child.title or child.name
     backend.write_heading(res, title, depth)
     if has(child, 'description'):
-        render_content(res, child.description, depth + 1)
+        render_content(res, child.description, depth + 1, subdir)
     foreach child.entries with fn entry ->
-        render_entry(res, entry, depth + 1, $'${child.name}.')
+        render_entry(res, entry, depth + 1, $'${child.name}.', subdir)
 }
 
-defn render_type(res, type_def, depth) -> {
+defn render_type(res, type_def, depth, subdir) -> {
     def title = type_def.title or type_def.name
     backend.write_heading(res, title, depth)
     if has(type_def, 'description'):
-        render_content(res, type_def.description, depth + 1)
+        render_content(res, type_def.description, depth + 1, subdir)
     foreach type_def.entries with fn entry ->
-        render_entry(res, entry, depth + 1, $'${type_def.name}.')
+        render_entry(res, entry, depth + 1, $'${type_def.name}.', subdir)
 }
 
 # --- Module rendering ---
@@ -109,22 +134,22 @@ defn render_module(module, subdir) -> {
             illustrative: true,
         })
 
-    render_content(res, module.description, 2)
+    render_content(res, module.description, 2, subdir)
 
     if has(module, 'content'):
-        render_content(res, module.content, 2)
+        render_content(res, module.content, 2, subdir)
 
     if has(module, 'types'):
         foreach module.types @ values() @ sort_by(index('name')) with fn type ->
-            render_type(res, type, 2)
+            render_type(res, type, 2, subdir)
 
     if has(module, 'entries'):
         foreach module.entries with fn entry ->
-            render_entry(res, entry, 2, '')
+            render_entry(res, entry, 2, '', subdir)
 
     if has(module, 'children'):
         foreach module.children @ values() @ sort_by(index('name')) with fn child ->
-            render_child(res, child, 2)
+            render_child(res, child, 2, subdir)
 
     backend.end_module(res)
 }
@@ -137,7 +162,7 @@ defn render_page(page, subdir) -> {
     def title = page.title or page.name
     backend.write_heading(res, title, 1)
 
-    render_content(res, page.content, 2)
+    render_content(res, page.content, 2, subdir)
 
     backend.end_module(res)
 }
@@ -148,10 +173,10 @@ defn render_lang(lang) -> {
     def res = backend.begin_module({ name: 'language' }, output_to, '')
 
     backend.write_heading(res, lang.title, 1)
-    backend.write_paragraph(res, resolve_refs(lang.description))
+    backend.write_paragraph(res, resolve_refs(lang.description, ''))
 
     foreach lang.sections with fn section ->
-        render_content(res, [section], 2)
+        render_content(res, [section], 2, '')
 
     backend.end_module(res)
 }

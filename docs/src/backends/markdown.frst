@@ -108,32 +108,42 @@ defn ref_to_link(ref) -> {
     }
 }
 
-defn stdlib_link(text, rest) -> {
+defn stdlib_link(text, rest, from_subdir) -> {
     def [ module, ...name_pieces ] = rest
-    if len(name_pieces) == 0: $'[${text}](stdlib/${module}.md)'
+    def prefix = if from_subdir == 'stdlib': '' else: 'stdlib/'
+    if len(name_pieces) == 0: $'[${text}](${prefix}${module}.md)'
     else: do {
         def linkname = name_pieces @ join('')
-        $'[${text}](stdlib/${module}.md#${linkname})'
+        $'[${text}](${prefix}${module}.md#${linkname})'
     }
 }
 
-export defn resolve_ref(text, path) -> {
+defn lang_link(text, rest, from_subdir) -> {
+    def prefix = if from_subdir == '': '' else: '../'
+    if len(rest) == 0: $'[${text}](${prefix}language.md)'
+    else: do {
+        def anchor = rest @ join('') @ to_lower()
+        $'[${text}](${prefix}language.md#${anchor})'
+    }
+}
+
+export defn resolve_lang_ref(text, section_title, from_subdir) -> {
+    def prefix = if from_subdir == '': '' else: '../'
+    def anchor = section_title @ to_lower() @ replace(' ', '-')
+    $'[${text}](${prefix}language.md#${anchor})'
+}
+
+export defn resolve_ref(text, path, from_subdir) -> {
     def [ section, ...rest ] = path @ split('.')
 
     match section {
-        'std' | 'ext' | 'stdlib' => stdlib_link(text, rest),
-        'lang' => do {
-            if len(rest) == 0: $'[${text}](language.md)'
-            else: do {
-                def anchor = rest @ join('') @ to_lower()
-                $'[${text}](language.md#${anchor})'
-            }
-        },
+        'std' | 'ext' | 'stdlib' => stdlib_link(text, rest, from_subdir),
+        'lang' => lang_link(text, rest, from_subdir),
         _ => $'[${text}](#${path})',
     }
 }
 
-export defn write_see_also(res, refs) -> {
+export defn write_see_also(res, refs, from_subdir) -> {
     res.writeln('See also:')
     foreach refs with fn ref -> {
         def [ section, ...rest ] = ref @ split('.')
@@ -144,7 +154,7 @@ export defn write_see_also(res, refs) -> {
             },
             _ => $'`${ref}`',
         }
-        res.writeln(resolve_ref(name, ref))
+        res.writeln(resolve_ref(name, ref, from_subdir))
     }
     res.writeln('')
 }
