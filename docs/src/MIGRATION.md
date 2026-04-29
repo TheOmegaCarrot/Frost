@@ -7,7 +7,7 @@ Track progress migrating from hand-written markdown (`docs/stdlib/`) to structur
 - [x] encoding
 - [x] io
 - [ ] cli
-- [ ] collections
+- [X] collections
 - [ ] datetime
 - [ ] debug
 - [ ] fs
@@ -28,7 +28,7 @@ Track progress migrating from hand-written markdown (`docs/stdlib/`) to structur
 ## Extension Modules (ext)
 
 - [x] sqlite
-- [ ] compression
+- [X] compression
 - [ ] hash
 - [ ] http
 - [ ] msgpack
