@@ -1,15 +1,22 @@
 # Compression
 
+Each algorithm provides `compress` and `decompress` functions operating on binary strings. Since Frost strings are binary-safe, compressed output can be stored, concatenated, or passed to other functions without issue.
+
+A common import pattern destructures the module into the relevant subcomponents:
+
 ```frost
 def { brotli, bz2, deflate, gzip, lz4, snappy, xz, zlib, zstd } = import('ext.compression')
 ```
 
-Build flag: `WITH_COMPRESSION` (default: `AUTO`).
-Requires at least one of: zlib, bz2, xz, brotli, lz4, snappy, or zstd.
-Each library is independently auto-detected; only algorithms with available libraries are included.
+It is valid to import only the components your script needs:
 
-Each algorithm provides `compress` and `decompress` functions operating on binary strings.
-Since Frost strings are binary-safe, compressed output can be stored, concatenated, or passed to other functions without issue.
+```frost
+def { gzip, lz4 } = import('ext.compression')
+```
+
+Build flag: `WITH_COMPRESSION` (default: `AUTO`). Requires at least one of: zlib, bz2, xz, brotli, lz4, snappy, or zstd. Each library is independently auto-detected; only algorithms with available libraries are included.
+
+For auto-detecting the format of compressed data, see `frost-scripts/autodecompress.frst`, which detects gzip, zstd, bz2, xz, and lz4 by magic bytes and dispatches to the appropriate decompressor.
 
 Algorithms can be swapped at runtime, as all algorithms support the same compress/decompress interface (if default compression parameters are accepted):
 
@@ -18,130 +25,158 @@ def algo = if fast: deflate else: gzip
 algo.compress(data)
 ```
 
-For auto-detecting the format of compressed data, see [`frost-scripts/autodecompress.frst`](../../frost-scripts/autodecompress.frst), which detects gzip, zstd, bz2, xz, and lz4 by magic bytes and dispatches to the appropriate decompressor.
+## Brotli
 
-## `bz2.compress`
-`bz2.compress(s)`
-`bz2.compress(s, level)`
+Brotli compression (RFC 7932). Used by HTTP `Content-Encoding: br`.
 
-Compresses `s` using bzip2.
-`level` is an optional `Int` from `1` to `9` (block size in units of 100k). Default is `9`.
-Higher levels use more memory but may compress better.
+### `brotli.compress`
 
-## `bz2.decompress`
-`bz2.decompress(s)`
-
-Decompresses a bzip2 string. Produces an error on corrupt or truncated input.
-
-## `brotli.compress`
 `brotli.compress(s)`
 `brotli.compress(s, quality)`
 
-Compresses `s` using Brotli (RFC 7932). Used by HTTP `Content-Encoding: br`.
-`quality` is an optional `Int` from `0` to `11`. Default is `11` (maximum compression).
+Compresses `s` using Brotli. `quality` is an optional `Int` from `0` to `11`. Default is `11` (maximum compression).
 
-## `brotli.decompress`
+### `brotli.decompress`
+
 `brotli.decompress(s)`
 
 Decompresses a Brotli string. Produces an error on corrupt or truncated input.
 
-## `deflate.compress`
+## bzip2
+
+### `bz2.compress`
+
+`bz2.compress(s)`
+`bz2.compress(s, level)`
+
+Compresses `s` using bzip2. `level` is an optional `Int` from `1` to `9` (block size in units of 100k). Default is `9`. Higher levels use more memory but may compress better.
+
+### `bz2.decompress`
+
+`bz2.decompress(s)`
+
+Decompresses a bzip2 string. Produces an error on corrupt or truncated input.
+
+## DEFLATE
+
+Raw DEFLATE compression (RFC 1951). No header or checksum.
+
+### `deflate.compress`
+
 `deflate.compress(s)`
 `deflate.compress(s, level)`
 
-Compresses `s` using raw DEFLATE (RFC 1951). No header or checksum.
-`level` is an optional `Int`: `-1` (default, equivalent to `6`), `0` (no compression), or `1`--`9` (increasing effort).
+Compresses `s` using raw DEFLATE. `level` is an optional `Int`: `-1` (default, equivalent to `6`), `0` (no compression), or `1` to `9` (increasing effort).
 
-## `deflate.decompress`
+### `deflate.decompress`
+
 `deflate.decompress(s)`
 
 Decompresses a raw DEFLATE string. Produces an error on corrupt or truncated input.
 
-## `lz4.compress`
+## gzip
+
+gzip compression (RFC 1952). Includes a gzip header and CRC-32 checksum. Used by HTTP `Content-Encoding: gzip`.
+
+### `gzip.compress`
+
+`gzip.compress(s)`
+`gzip.compress(s, level)`
+
+Compresses `s` in gzip format. `level` is an optional `Int`: `-1` (default, equivalent to `6`), `0` (no compression), or `1` to `9` (increasing effort).
+
+### `gzip.decompress`
+
+`gzip.decompress(s)`
+
+Decompresses a gzip string. Handles concatenated gzip streams (as produced by `pigz`, `cat a.gz b.gz`, etc.). Produces an error on corrupt or truncated input.
+
+## LZ4
+
+LZ4 frame format compression. Optimized for very fast compression and decompression.
+
+### `lz4.compress`
+
 `lz4.compress(s)`
 `lz4.compress(s, level)`
 
-Compresses `s` using the LZ4 frame format.
-Optimized for very fast compression and decompression.
-`level` is an optional `Int`. `0` is the default (fast mode).
-Higher levels (`1`--`12`) compress better but slower.
-Negative levels are faster than `0` at the cost of compression ratio.
+Compresses `s` using the LZ4 frame format. `level` is an optional `Int`. `0` is the default (fast mode). Higher levels (`1` to `12`) compress better but slower. Negative levels are faster than `0` at the cost of compression ratio.
 
-## `lz4.decompress`
+### `lz4.decompress`
+
 `lz4.decompress(s)`
 
 Decompresses an LZ4 frame. Produces an error on corrupt or truncated input.
 
-## `gzip.compress`
-`gzip.compress(s)`
-`gzip.compress(s, level)`
+## Snappy
 
-Compresses `s` in gzip format (RFC 1952). Includes a gzip header and CRC-32 checksum.
-Used by HTTP `Content-Encoding: gzip`.
-`level` is an optional `Int`: `-1` (default, equivalent to `6`), `0` (no compression), or `1`--`9` (increasing effort).
+Snappy compression. Optimized for speed over compression ratio. There is no compression level parameter.
 
-## `gzip.decompress`
-`gzip.decompress(s)`
+### `snappy.compress`
 
-Decompresses a gzip string. Handles concatenated gzip streams (as produced by `pigz`, `cat a.gz b.gz`, etc.).
-Produces an error on corrupt or truncated input.
-
-## `snappy.compress`
 `snappy.compress(s)`
 
-Compresses `s` using Snappy. Optimized for speed over compression ratio.
-There is no compression level parameter.
+Compresses `s` using Snappy.
 
-## `snappy.decompress`
+### `snappy.decompress`
+
 `snappy.decompress(s)`
 `snappy.decompress(s, max_size)`
 
 Decompresses a Snappy string. Produces an error on corrupt or truncated input.
 
-**Note:** Snappy's format embeds the uncompressed size in the frame header, and the decompressor must allocate that much memory upfront.
-A crafted input can claim an arbitrarily large size.
-To guard against this, `snappy.decompress` rejects inputs claiming more than 256 MB by default.
-Pass `max_size` to override (e.g. `snappy.decompress(data, 512 * 1024 * 1024)` for 512 MB, or `0` for no limit).
-When decompressing untrusted data, consider keeping a reasonable limit.
+Snappy's format embeds the uncompressed size in the frame header, and the decompressor must allocate that much memory upfront. A crafted input can claim an arbitrarily large size. To guard against this, `snappy.decompress` rejects inputs claiming more than 256 MB by default.
 
-## `xz.compress`
+Pass `max_size` to override (e.g. `snappy.decompress(data, 512 * 1024 * 1024)` for 512 MB, or `0` for no limit). When decompressing untrusted data, consider keeping a reasonable limit.
+
+## xz
+
+xz compression (LZMA2). High compression ratios, best suited for archival.
+
+### `xz.compress`
+
 `xz.compress(s)`
 `xz.compress(s, level)`
 
-Compresses `s` in xz format (LZMA2). High compression ratios, best suited for archival.
-`level` is an optional `Int` from `0` to `9`. Default is `6`.
-Higher levels compress better but are significantly slower and use more memory.
+Compresses `s` in xz format. `level` is an optional `Int` from `0` to `9`. Default is `6`. Higher levels compress better but are significantly slower and use more memory.
 
-## `xz.decompress`
+### `xz.decompress`
+
 `xz.decompress(s)`
 
-Decompresses an xz or legacy LZMA string. Handles concatenated xz streams.
-Produces an error on corrupt or truncated input.
+Decompresses an xz or legacy LZMA string. Handles concatenated xz streams. Produces an error on corrupt or truncated input.
 
-## `zlib.compress`
+## zlib
+
+zlib-wrapped compression (RFC 1950). Includes a 2-byte header and Adler-32 checksum.
+
+### `zlib.compress`
+
 `zlib.compress(s)`
 `zlib.compress(s, level)`
 
-Compresses `s` in zlib-wrapped format (RFC 1950). Includes a 2-byte header and Adler-32 checksum.
-`level` is an optional `Int`: `-1` (default, equivalent to `6`), `0` (no compression), or `1`--`9` (increasing effort).
+Compresses `s` in zlib-wrapped format. `level` is an optional `Int`: `-1` (default, equivalent to `6`), `0` (no compression), or `1` to `9` (increasing effort).
 
-## `zlib.decompress`
+### `zlib.decompress`
+
 `zlib.decompress(s)`
 
 Decompresses a zlib-wrapped string. Produces an error on corrupt or truncated input.
 
-## `zstd.compress`
+## Zstandard
+
+Zstandard compression (RFC 8878). Fast compression with high ratios.
+
+### `zstd.compress`
+
 `zstd.compress(s)`
 `zstd.compress(s, level)`
 
-Compresses `s` using Zstandard (RFC 8878).
-Fast compression with high ratios.
-`level` is an optional `Int` from `-131072` to `22`.
-`0` and `3` are equivalent (default).
-Higher levels (`1`--`22`) compress better but slower.
-Negative levels are faster than `1` at the cost of compression ratio.
+Compresses `s` using Zstandard. `level` is an optional `Int` from `-131072` to `22`. `0` and `3` are equivalent (default). Higher levels (`1` to `22`) compress better but slower. Negative levels are faster than `1` at the cost of compression ratio.
 
-## `zstd.decompress`
+### `zstd.decompress`
+
 `zstd.decompress(s)`
 
 Decompresses a Zstandard string. Produces an error on corrupt or truncated input.
+

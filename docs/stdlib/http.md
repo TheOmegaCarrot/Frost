@@ -4,88 +4,93 @@
 def http = import('ext.http')
 ```
 
+Asynchronous HTTP client.
+
 Build flag: `WITH_HTTP` (default: `AUTO`). Requires OpenSSL.
 
 ## `parse_url`
-`parse_url(url)`
 
-Parses a URL string and returns a Map suitable for use as the `uri` field of [`request`](#request).
+`http.parse_url(url)`
+
+Parses a URL string and returns a Map suitable for use as the `uri` field of [`request`](http.md#request).
+
+The returned map contains `host`, `path`, and `tls`. `port` is included only when explicitly present in the URL. `query` is included only when the URL contains query parameters.
 
 ```frost
 http.parse_url('https://example.com/api?q=hello')
 # => {host: "example.com", path: "/api", query: {q: "hello"}, tls: true}
 ```
 
-The returned map contains `host`, `path`, and `tls`.
-`port` is included only when explicitly present in the URL.
-`query` is included only when the URL contains query parameters.
+See also:
+[`build_url`](http.md#build_url)
+[`request`](http.md#request)
 
 ## `build_url`
-`build_url(uri_map)`
 
-Constructs a URL string from a uri map (the same format returned by [`parse_url`](#parse_url) and accepted by [`request`](#request)).
+`http.build_url(uri_map)`
+
+Constructs a URL string from a uri map (the same format returned by [`parse_url`](http.md#parse_url) and accepted by [`request`](http.md#request)).
 
 ```frost
-http.build_url({host: "example.com", path: "/api", query: {q: "hello"}})
+http.build_url({host: 'example.com', path: '/api', query: {q: 'hello'}})
 # => "https://example.com/api?q=hello"
 
-http.build_url({host: "localhost", port: 8080, tls: false, path: "/health"})
+http.build_url({host: 'localhost', port: 8080, tls: false, path: '/health'})
 # => "http://localhost:8080/health"
 ```
 
-`host` is required. All other fields are optional and use the same defaults as `request`.
-Query values are automatically percent-encoded.
-Default ports (443 for HTTPS, 80 for HTTP) are omitted from the output.
+`host` is required. All other fields are optional and use the same defaults as [`request`](http.md#request). Query values are automatically percent-encoded. Default ports (443 for HTTPS, 80 for HTTP) are omitted from the output.
 
 `parse_url` and `build_url` are semantic inverses: `parse_url(build_url(m))` produces an equivalent uri map for any valid input.
 
+See also:
+[`parse_url`](http.md#parse_url)
+[`request`](http.md#request)
+
 ## `request`
-`request(config)`
 
-Performs an asynchronous HTTP request.
-Returns immediately with a handle map; use `.is_ready()` to poll and `.get()` to retrieve the result when ready.
+`http.request(config)`
 
-**`config` fields:**
+Performs an asynchronous HTTP request. Returns immediately with a handle map; use `.is_ready()` to poll and `.get()` to retrieve the result when ready.
 
-| Field           | Type   | Required | Default | Description |
-|-----------------|--------|----------|---------|-------------|
-| `uri`           | Map    | Yes      | —       | See URI fields below |
-| `method`        | String | No       | `"GET"` | HTTP method (`"GET"`, `"POST"`, etc.) |
-| `headers`       | Map    | No       | `{}`    | Request headers. Values may be `String` or `Array` of `String` for repeated headers. `host`, `content-length`, and `transfer-encoding` are managed automatically. |
-| `body`          | String | No       | none    | Request body |
-| `timeout_ms`    | Int    | No       | `10000` | Request timeout in milliseconds |
-| `verify_tls`    | Bool   | No       | `true`  | Whether to verify TLS certificates |
-| `ca_file`       | String | No       | —       | Path to a CA certificate file |
-| `ca_path`       | String | No       | —       | Path to a directory of CA certificates |
-| `use_system_ca` | Bool   | No       | `true`  | Whether to load the system CA store |
+### Config Fields
 
-**`uri` fields:**
+|  Field | Type | Required | Default | Description  |
+| ---|---|---|---|--- |
+|  `uri` | Map | Yes | -- | See URI fields below  |
+|  `method` | String | No | `"GET"` | HTTP method (`"GET"`, `"POST"`, etc.)  |
+|  `headers` | Map | No | `{}` | Request headers. Values may be `String` or `Array` of `String` for repeated headers. `host`, `content-length`, and `transfer-encoding` are managed automatically.  |
+|  `body` | String | No | none | Request body  |
+|  `timeout_ms` | Int | No | `10000` | Request timeout in milliseconds  |
+|  `verify_tls` | Bool | No | `true` | Whether to verify TLS certificates  |
+|  `ca_file` | String | No | -- | Path to a CA certificate file  |
+|  `ca_path` | String | No | -- | Path to a directory of CA certificates  |
+|  `use_system_ca` | Bool | No | `true` | Whether to load the system CA store  |
 
-| Field   | Type   | Required | Default   | Description |
-|---------|--------|----------|-----------|-------------|
-| `host`  | String | Yes      | —         | Hostname or IP address |
-| `path`  | String | No       | `"/"`     | Request path |
-| `tls`   | Bool   | No       | `true`    | Whether to use HTTPS |
-| `port`  | Int    | No       | 80 or 443 | Port number (80 if `tls` is `false`, 443 otherwise) |
-| `query` | Map    | No       | `{}`      | Query parameters. Values may be `String`, `null` (value-less param), or `Array` of `String` for repeated params. |
+### URI Fields
 
-**Return value:**
+|  Field | Type | Required | Default | Description  |
+| ---|---|---|---|--- |
+|  `host` | String | Yes | -- | Hostname or IP address  |
+|  `path` | String | No | `"/"` | Request path  |
+|  `tls` | Bool | No | `true` | Whether to use HTTPS  |
+|  `port` | Int | No | 80 or 443 | Port number (80 if `tls` is `false`, 443 otherwise)  |
+|  `query` | Map | No | `{}` | Query parameters. Values may be `String`, `null` (value-less param), or `Array` of `String` for repeated params.  |
 
-```
+### Return Value
+
+```frost
 {
     is_ready: fn -> Bool,
-    get:      fn -> result
+    get:      fn -> result,
 }
 ```
 
-`.get()` blocks until the request either completes or errors, then returns.
-The result is cached internally; subsequent calls to `.get()` return the same value immediately.
+`.get()` blocks until the request either completes or errors, then returns. The result is cached internally; subsequent calls to `.get()` return the same value immediately.
 
-`ok` reflects network-level success (whether a response was received), not the HTTP status code.
-A server returning a 500 yields `ok: true`.
-Check `response.code` to determine application-level success.
+`ok` reflects network-level success (whether a response was received), not the HTTP status code. A server returning a 500 yields `ok: true`. Check `response.code` to determine application-level success.
 
-```
+```frost
 # On network success (any HTTP status code):
 {
     ok:       true,
@@ -103,3 +108,4 @@ Check `response.code` to determine application-level success.
     error: { category: String, phase: String, message: String }
 }
 ```
+

@@ -1,19 +1,22 @@
 # Output
 
+Printing and message formatting. Available without importing.
+
 ## `print`
+
 `print(value)`
 
-Prints `value` to stdout followed by a newline.
-Uses the same display representation as [`to_string`](types.md#to_string).
+Prints `value` to stdout followed by a newline. Uses the same display representation as [`to_string`](types.md#to_string).
 
 ## `mformat`
-`mformat(format string, replacement map)`
 
-Returns a copy of `format string` with `${key}` placeholders replaced by the corresponding values from `replacement map`.
-Produces an error if a placeholder key is not present in the map.
-The placeholder syntax is identical to [language format strings](../language.md#string).
+`mformat(format_string, replacement_map)`
+
+Returns a copy of `format_string` with `${key}` placeholders replaced by the corresponding values from `replacement_map`. The placeholder syntax is identical to [language format strings](../language.md#types-and-literals). Produces an error if a placeholder key is not present in the map.
 
 ## `mprint`
-`mprint(format string, replacement map)`
 
-Equivalent to `print(mformat(format string, replacement map))`.
+`mprint(format_string, replacement_map)`
+
+Equivalent to `print(mformat(format_string, replacement_map))`.
+

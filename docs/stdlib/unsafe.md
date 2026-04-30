@@ -4,23 +4,19 @@
 def unsafe = import('ext.unsafe')
 ```
 
-The `unsafe` module provides functions that bypass Frost's usual safety guarantees.
-These are opt-in and intended for advanced use cases such as performance-critical code, debugging, and interop patterns that require unrestricted mutability or pointer-level introspection.
+Functions that bypass Frost's usual safety guarantees. Opt-in and intended for advanced use cases such as performance-critical code, debugging, and interop patterns that require unrestricted mutability or pointer-level introspection.
 
 Build flag: `WITH_UNSAFE` (default: `AUTO`). No external dependencies.
 
-The precise behavior of these functions may change between versions.
-Internal implementation details such as value sharing and allocation are not part of Frost's stability guarantees, so results from pointer-level operations like `same` and `identity` may differ across releases.
+The precise behavior of these functions may change between versions. Internal implementation details such as value sharing and allocation are not part of Frost's stability guarantees, so results from pointer-level operations like `same` and `identity` may differ across releases.
 
 ## `same`
-`same(a, b)`
 
-Returns `true` if `a` and `b` are the exact same object in memory (pointer equality), `false` otherwise.
-This is distinct from `==`, which compares by value.
+`unsafe.same(a, b)`
 
-Note that results may sometimes be surprising.
-Because Frost values are immutable, the implementation can often re-use the same exact object.
-The cases where this optimization can be applied are largely undocumented, and may change between versions without being considered a breaking change.
+Returns `true` if `a` and `b` are the exact same object in memory (pointer equality), `false` otherwise. This is distinct from `==`, which compares by value.
+
+Because Frost values are immutable, the implementation can often re-use the same exact object. The cases where this optimization can be applied are largely undocumented, and may change between versions without being considered a breaking change.
 
 ```frost
 def a = [1, 2, 3]
@@ -33,60 +29,43 @@ unsafe.same(a, c) # => true  (same object)
 ```
 
 ## `identity`
-`identity(value)`
 
-Returns the memory address of `value` as an `Int`.
-Two calls return the same `Int` if and only if `unsafe.same` would return `true` for the two values.
+`unsafe.identity(value)`
+
+Returns the memory address of `value` as an `Int`. Two calls return the same `Int` if and only if `unsafe.same` would return `true` for the two values.
 
 ## `mutable_cell`
-`mutable_cell()`
-`mutable_cell(initial)`
 
-Creates a mutable cell with no restrictions on what it can hold.
-Unlike the standard [`mutable_cell`](mutable-cell.md#mutable_cell), this cell accepts functions, other mutable cells, and structures containing them.
+`unsafe.mutable_cell()`
+`unsafe.mutable_cell(initial)`
 
-This makes it possible to create reference cycles, which will leak memory with no warning and no guardrails.
-Regular Frost code guarantees that reference cycles are impossible, and thus the implementation has no cycle detection.
-An unsafe mutable cell allows the user to violate this guarantee.
+Creates a mutable cell with no restrictions on what it can hold. Unlike the standard [`mutable_cell`](mutable-cell.md), this cell accepts functions, other mutable cells, and structures containing them.
 
-The interface is identical to `mutable_cell`:
+This makes it possible to create reference cycles, which will leak memory with no warning and no guardrails. Regular Frost code guarantees that reference cycles are impossible, and thus the implementation has no cycle detection. An unsafe mutable cell allows the user to violate this guarantee.
 
-### `.get`
-`.get()`
-
-Returns the current value of the cell.
-
-### `.exchange`
-`.exchange(value)`
-
-Sets the cell to `value` and returns the previous value.
+The interface is identical to `mutable_cell`: `.get()` returns the current value, `.exchange(value)` sets the cell and returns the previous value.
 
 ## `weaken`
-`weaken(value)`
 
-Creates a weak reference to `value`.
-Returns a map with a single method:
+`unsafe.weaken(value)`
 
-### `.get`
-`.get()`
+Creates a weak reference to `value`. Returns a map with a single method `.get()` that returns the original value if it is still alive, or `null` if it has been freed.
 
-Returns the original value if it is still alive, or `null` if it has been freed.
 A value is freed when all strong references to it are dropped.
 
 ```frost
 defn make_weak() -> do {
     def val = {data: [1, 2, 3]}
     def weak = unsafe.weaken(val)
-    assert(weak.get() != null)   # val is in scope
+    assert(weak.get() != null)
     weak
 }
 
 def weak = make_weak()
-assert(weak.get() == null)       # val went out of scope
+assert(weak.get() == null)
 ```
 
 Note that a weak reference to `null` is indistinguishable from an expired weak reference, since both return `null` from `.get()`.
 
-Because Frost values are immutable, the implementation is free to share identical values behind the scenes.
-A weak reference may appear to stay alive longer than expected if the same value happens to be re-used elsewhere.
-This sharing behavior is not stable and may change between versions.
+Because Frost values are immutable, the implementation is free to share identical values behind the scenes. A weak reference may appear to stay alive longer than expected if the same value happens to be re-used elsewhere. This sharing behavior is not stable and may change between versions.
+

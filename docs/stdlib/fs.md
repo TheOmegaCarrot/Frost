@@ -4,65 +4,75 @@
 def fs = import('std.fs')
 ```
 
+Filesystem operations: path manipulation, file metadata, directory listing, and file management.
+
 ## `absolute`
-`absolute(path)`
+
+`fs.absolute(path)`
 
 Returns the absolute form of `path` without resolving symlinks.
 
 ## `canonical`
-`canonical(path)`
 
-Returns the canonical absolute path, resolving symlinks and `.`/`..` components.
-Produces an error if `path` does not exist.
+`fs.canonical(path)`
+
+Returns the canonical absolute path, resolving symlinks and `.`/`..` components. Produces an error if `path` does not exist.
 
 ## `exists`
-`exists(path)`
+
+`fs.exists(path)`
 
 Returns `true` if `path` exists on the filesystem.
 
 ## `is_file`
-`is_file(path)`
+
+`fs.is_file(path)`
 
 Returns `true` if `path` exists and is a regular file.
 
 ## `is_directory`
-`is_directory(path)`
+
+`fs.is_directory(path)`
 
 Returns `true` if `path` exists and is a directory.
 
 ## `is_symlink`
-`is_symlink(path)`
+
+`fs.is_symlink(path)`
 
 Returns `true` if `path` exists and is a symbolic link.
 
 ## `is_block`
-`is_block(path)`
+
+`fs.is_block(path)`
 
 Returns `true` if `path` exists and is a block device.
 
 ## `is_character`
-`is_character(path)`
+
+`fs.is_character(path)`
 
 Returns `true` if `path` exists and is a character device.
 
 ## `is_fifo`
-`is_fifo(path)`
+
+`fs.is_fifo(path)`
 
 Returns `true` if `path` exists and is a named pipe (FIFO).
 
 ## `is_socket`
-`is_socket(path)`
 
-Returns `true` if `path` exists and is a Unix domain socket.
+`fs.is_socket(path)`
 
-All `is_*` predicates return `false` for nonexistent paths.
+Returns `true` if `path` exists and is a Unix domain socket. All `is_*` predicates return `false` for nonexistent paths.
 
 ## `stat`
-`stat(path)`
 
-Returns a map describing the file at `path`:
+`fs.stat(path)`
 
-```
+Returns a map describing the file at `path`. Produces an error if the stat call fails.
+
+```frost
 {
     type:  String,   # "regular", "directory", "symlink", "block",
                      # "character", "fifo", "socket", "none",
@@ -75,118 +85,149 @@ Returns a map describing the file at `path`:
 }
 ```
 
-Produces an error if the stat call fails.
-
 ## `size`
-`size(path)`
 
-Returns the size of the file at `path` in bytes as an `Int`.
-Produces an error if `path` does not exist or is not a regular file.
+`fs.size(path)`
+
+Returns the size of the file at `path` in bytes as an `Int`. Produces an error if `path` does not exist or is not a regular file.
 
 ## `cwd`
-`cwd()`
+
+`fs.cwd()`
 
 Returns the current working directory as a string.
 
 ## `cd`
-`cd(path)`
 
-Changes the current working directory to `path`.
-Produces an error if `path` does not exist or is not accessible.
+`fs.cd(path)`
+
+Changes the current working directory to `path`. Produces an error if `path` does not exist or is not accessible.
 
 ## `list`
-`list(path)`
 
-Returns an array of path strings for all entries in the directory at `path`.
-Produces an error if `path` does not exist or is not a directory.
+`fs.list(path)`
+
+Returns an array of path strings for all entries in the directory at `path`. Produces an error if `path` does not exist or is not a directory.
 
 ## `list_recursively`
-`list_recursively(path)`
 
-Recursively lists all entries under `path`.
-Entries in directories where permission is denied are silently skipped.
-Produces an error if `path` itself does not exist or is not a directory.
+`fs.list_recursively(path)`
+
+Recursively lists all entries under `path`. Entries in directories where permission is denied are silently skipped. Produces an error if `path` itself does not exist or is not a directory.
 
 ## `mkdir`
-`mkdir(path)`
 
-Creates `path` and any missing parent directories.
-Returns `true` if the directory was created, `false` if it already existed.
+`fs.mkdir(path)`
+
+Creates `path` and any missing parent directories. Returns `true` if the directory was created, `false` if it already existed.
 
 ## `move`
-`move(src, dest)`
+
+`fs.move(src, dest)`
 
 Moves or renames `src` to `dest`. Produces an error on failure.
 
 ## `copy`
-`copy(src, dest)`
+
+`fs.copy(src, dest)`
 
 Recursively copies `src` to `dest`. Produces an error on failure.
 
 ## `symlink`
-`symlink(to, link)`
+
+`fs.symlink(to, link)`
 
 Creates a symbolic link at `link` pointing to `to`. Produces an error on failure.
 
 ## `remove`
-`remove(path)`
 
-Removes the file or empty directory at `path`.
-Returns `true` if something was removed, `false` if `path` did not exist.
+`fs.remove(path)`
+
+Removes the file or empty directory at `path`. Returns `true` if something was removed, `false` if `path` did not exist.
 
 ## `remove_recursively`
-`remove_recursively(path)`
 
-Recursively removes `path` and all its contents.
-Returns the number of entries removed as an `Int`.
-Returns `0` if `path` did not exist.
+`fs.remove_recursively(path)`
+
+Recursively removes `path` and all its contents. Returns the number of entries removed as an `Int`. Returns `0` if `path` did not exist.
 
 ## `concat`
-`concat(base, path)`
 
-Joins `base` and `path` using the platform path separator.
-Equivalent to `base / path` in filesystem terms.
+`fs.concat(base, path)`
+
+Joins `base` and `path` using the platform path separator. Equivalent to `base / path` in filesystem terms.
 
 ## `stem`
-`stem(path)`
+
+`fs.stem(path)`
 
 Returns the filename component of `path` with the last extension removed.
 
 ```frost
-fs.stem('/a/b/file.txt')    # => 'file'
-fs.stem('archive.tar.gz')   # => 'archive.tar'
-fs.stem('/a/b/file')        # => 'file'
+fs.stem('/a/b/file.txt')
+# => file
+```
+
+```frost
+fs.stem('archive.tar.gz')
+# => archive.tar
+```
+
+```frost
+fs.stem('/a/b/file')
+# => file
 ```
 
 ## `extension`
-`extension(path)`
 
-Returns the last extension of the filename component of `path`, including the leading dot.
-Returns an empty string if there is no extension.
+`fs.extension(path)`
+
+Returns the last extension of the filename component of `path`, including the leading dot. Returns an empty string if there is no extension.
 
 ```frost
-fs.extension('/a/b/file.txt')   # => '.txt'
-fs.extension('archive.tar.gz')  # => '.gz'
-fs.extension('/a/b/file')       # => ''
+fs.extension('/a/b/file.txt')
+# => .txt
+```
+
+```frost
+fs.extension('archive.tar.gz')
+# => .gz
+```
+
+```frost
+fs.extension('/a/b/file')
+# => 
 ```
 
 ## `filename`
-`filename(path)`
+
+`fs.filename(path)`
 
 Returns the final component of `path` (the filename), including any extension.
 
 ```frost
-fs.filename('/a/b/file.txt')  # => 'file.txt'
+fs.filename('/a/b/file.txt')
+# => file.txt
 ```
 
 ## `parent`
-`parent(path)`
 
-Returns the parent directory of `path`.
-Returns an empty string if `path` contains no directory component.
+`fs.parent(path)`
+
+Returns the parent directory of `path`. Returns an empty string if `path` contains no directory component.
 
 ```frost
-fs.parent('/a/b/file.txt')  # => '/a/b'
-fs.parent('/a/b')           # => '/a'
-fs.parent('file.txt')       # => ''
+fs.parent('/a/b/file.txt')
+# => /a/b
 ```
+
+```frost
+fs.parent('/a/b')
+# => /a
+```
+
+```frost
+fs.parent('file.txt')
+# => 
+```
+
