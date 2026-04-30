@@ -137,7 +137,7 @@ defn lang_link(text, rest, from_subdir) -> {
 
 export defn resolve_lang_ref(text, section_title, from_subdir) -> {
     def prefix = if from_subdir == '': '' else: '../'
-    def anchor = section_title @ to_lower() @ replace(' ', '-')
+    def anchor = section_title @ to_lower() @ replace(' ', '-') @ replace('`', '')
     $'[${text}](${prefix}language.md#${anchor})'
 }
 
