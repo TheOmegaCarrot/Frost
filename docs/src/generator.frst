@@ -271,7 +271,7 @@ defn generate_index(stdlib) -> {
 # --- Main ---
 
 defn generate() -> {
-    backend.setup()
+    backend.setup(output_to)
     def stdlib = docs.stdlib
 
     if has(stdlib, 'std'):

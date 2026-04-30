@@ -37,7 +37,10 @@ defn make_anchor(title) ->
 
 # --- Resource lifecycle ---
 
-export defn setup() -> null
+export defn setup(output_dir) -> {
+    fs.mkdir(output_dir)
+    io.write(fs.concat(output_dir, 'style.css'), css)
+}
 
 export defn finalize() -> null
 
@@ -46,6 +49,7 @@ export defn begin_module(module, output_dir, subdir) -> {
     fs.mkdir(dir)
     def filename = if module.name == 'landing': 'index.html' else: $'${module.name}.html'
     def path = fs.concat(dir, filename)
+    def css_path = if subdir == '': 'style.css' else: '../style.css'
     def res = io.open_trunc(path)
     res.writeln('<!DOCTYPE html>')
     res.writeln('<html lang="en">')
@@ -54,9 +58,7 @@ export defn begin_module(module, output_dir, subdir) -> {
     def title = module.title or module.name
     res.writeln($'<title>${escape_html(title)} - Frost</title>')
     res.writeln('<meta name="viewport" content="width=device-width, initial-scale=1">')
-    res.writeln('<style>')
-    res.writeln(css)
-    res.writeln('</style>')
+    res.writeln($'<link rel="stylesheet" href="${css_path}">')
     res.writeln('</head>')
     res.writeln('<body>')
     res.writeln('<main>')
@@ -221,9 +223,7 @@ export defn write_index(entries, output_dir) -> {
     res.writeln('<meta charset="utf-8">')
     res.writeln('<title>Standard Library Index - Frost</title>')
     res.writeln('<meta name="viewport" content="width=device-width, initial-scale=1">')
-    res.writeln('<style>')
-    res.writeln(css)
-    res.writeln('</style>')
+    res.writeln('<link rel="stylesheet" href="../style.css">')
     res.writeln('</head>')
     res.writeln('<body>')
     res.writeln('<main>')

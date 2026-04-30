@@ -1,6 +1,6 @@
 def { fs, io, string } = import('std')
 
-export defn setup() -> null
+export defn setup(output_dir) -> null
 export defn finalize() -> null
 export def file_extension = '.md'
 export def index_filename = 'index.md'
