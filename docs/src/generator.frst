@@ -1,7 +1,7 @@
 def { cli, fs, io, os, regex } = import('std')
 def { docs } = import('docroot')
 
-def parsed = cli.parse(args, {
+def result = cli.parse(args, {
     name: 'frost-docs',
     description: 'Generate Frost documentation from structured sources',
     options: {
@@ -13,8 +13,16 @@ def parsed = cli.parse(args, {
     },
 })
 
+if not result.ok: do {
+    print(result.error)
+    print(result.help)
+    os.exit(1)
+}
+
+def parsed = result.value
+
 if parsed.flags.help: do {
-    print(parsed.help)
+    print(result.help)
     os.exit(0)
 }
 

@@ -11,7 +11,7 @@ export def cli = {
             name: 'parse',
             signatures: ['cli.parse(args, spec)'],
             description: [
-                'Parses `args` according to `spec`. Returns a Map with four keys: `flags` (`Map` of `Bool`), `options` (`Map` of `String`, `Array`, or `null`), `positional` (`Array` of `String`), and `help` (`String`).',
+                'Parses `args` according to `spec`. Returns a result Map with `ok` (`Bool`), `help` (`String`), and either `value` (on success) or `error` (on failure). The `value` map contains `flags` (`Map` of `Bool`), `options` (`Map` of `String`, `Array`, or `null`), and `positional` (`Array` of `String`). Spec errors (malformed spec) produces an error; parse errors (invalid user input) are returned in the result.',
             ],
             body: [
                 '`args` is typically the predefined [`args`](@ref lang.statements.args) variable. `args[0]` is treated as the script path and is consumed internally (used as the default tool name in error messages and help output). Everything after `args[0]` is parsed against the spec.',
@@ -19,7 +19,7 @@ export def cli = {
                     code: """
                         def cli = import('std.cli')
 
-                        def parsed = cli.parse(args, {
+                        def result = cli.parse(args, {
                             name: 'deploy',
                             description: 'Deploy a service to a target environment',
                             flags: {
@@ -36,6 +36,13 @@ export def cli = {
                             ],
                         })
 
+                        if not result.ok: do {
+                            print(result.error)
+                            print(result.help)
+                            os.exit(1)
+                        }
+
+                        def parsed = result.value
                         if parsed.flags.verbose: print('verbose mode')
                         def retries = parsed.options.retries @ to_int() or 3
                         def service = parsed.positional[0]
@@ -163,32 +170,38 @@ export def cli = {
                     title: 'Help Text',
                     content: [
                         '`result.help` always contains a help string. If the spec provides a `help` key, that string is returned verbatim. Otherwise, help is auto-generated from `name`, `description`, and the declared flags, options, and positionals.',
-                        '`cli.parse` does not handle `--help` or `-h` automatically. The typical pattern is to add a `help` flag to the spec and check it:',
+                        '`cli.parse` does not handle `--help` or `-h` automatically. The typical pattern is to add a `help` flag to the spec and check it after unwrapping:',
                         {
                             code: """
-                                def parsed = cli.parse(args, {
+                                def result = cli.parse(args, {
                                     flags: {
                                         help: { short: 'h', description: 'Show help' },
                                     },
                                 })
 
-                                if parsed.flags.help: do {
-                                    print(parsed.help)
+                                if not result.ok: do {
+                                    print(result.error)
+                                    print(result.help)
+                                    os.exit(1)
+                                }
+
+                                if result.value.flags.help: do {
+                                    print(result.help)
                                     os.exit(0)
                                 }
                                 """,
                             illustrative: true,
                         },
-                        'Note that `parsed.help` (the auto-generated text) and `parsed.flags.help` (the user-declared flag) are distinct keys in the result.',
+                        'Note that `result.help` (the auto-generated text) and `result.value.flags.help` (the user-declared flag) are distinct.',
                     ],
                 },
                 {
                     title: 'Errors',
                     content: [
-                        '`cli.parse` produces errors in two categories, both as normal errors that can be caught by `try_call`:',
+                        '`cli.parse` distinguishes two error categories:',
                         { list: [
-                            'Spec errors are prefixed with `cli.parse:` and indicate a malformed spec. These are bugs in the script, not the user\'s invocation.',
-                            'Parse errors are prefixed with the tool name and indicate a problem with the user\'s invocation (unknown flag, missing required option, etc.).',
+                            'Spec errors are prefixed with `cli.parse:` and indicate a malformed spec. These produce an error (catchable via `try_call`) because they are bugs in the script, not the user\'s invocation.',
+                            'Parse errors are prefixed with the tool name and indicate a problem with the user\'s invocation (unknown flag, missing required option, etc.). These are returned in the result as `{ ok: false, error: "..." }` so the script can show help or take other action.',
                         ] },
                         {
                             code: '''

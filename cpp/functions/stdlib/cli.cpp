@@ -2,6 +2,7 @@
 
 #include <frost/value.hpp>
 
+#include <expected>
 #include <flat_map>
 #include <flat_set>
 #include <iostream>
@@ -309,21 +310,18 @@ void validate_spec(Cli_Spec& spec)
     }
 }
 
-Value_Ptr generate_help(const Cli_Spec& spec, const String& tool_name);
-
-Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
-                     const String& tool_name)
+std::expected<Value_Ptr, String> parse_args(const Cli_Spec& spec,
+                                            const Array& args,
+                                            const String& tool_name)
 {
-    // Parse state: vectors indexed parallel to spec.flags and
-    // spec.options, so lookup tables can feed their indices directly in.
     std::vector<bool> flag_values(spec.flags.size(), false);
     std::vector<std::vector<String>> option_values(spec.options.size());
 
     std::vector<String> positionals;
     bool past_double_dash = false;
 
-    auto err = [&](std::string_view msg) {
-        throw Frost_Recoverable_Error{fmt::format("{}: {}", tool_name, msg)};
+    auto err = [&](std::string msg) -> std::unexpected<String> {
+        return std::unexpected{fmt::format("{}: {}", tool_name, msg)};
     };
 
     // Index-based loop: args[0] is skipped, and we sometimes advance `i`
@@ -364,15 +362,17 @@ Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
                 const auto& opt = spec.options.at(oit->second);
                 auto& vals = option_values.at(oit->second);
                 if (i + 1 >= args.size())
-                    err(fmt::format("option '--{}' requires a value", name));
+                    return err(
+                        fmt::format("option '--{}' requires a value", name));
                 ++i;
                 if (not vals.empty() && not opt.repeatable)
-                    err(fmt::format("option '--{}' cannot be repeated", name));
+                    return err(
+                        fmt::format("option '--{}' cannot be repeated", name));
                 vals.push_back(args.at(i)->raw_get<String>());
                 continue;
             }
 
-            err(fmt::format("unknown option '--{}'", name));
+            return err(fmt::format("unknown option '--{}'", name));
         }
         else
         {
@@ -395,22 +395,24 @@ Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
                 {
                     // Value-taking option must be the last char in a bundle.
                     if (j + 1 < arg.size())
-                        err(fmt::format(
+                        return err(fmt::format(
                             "option '-{}' takes a value and must be the last "
                             "option in a bundle",
                             c));
                     const auto& opt = spec.options.at(oit->second);
                     auto& vals = option_values.at(oit->second);
                     if (i + 1 >= args.size())
-                        err(fmt::format("option '-{}' requires a value", c));
+                        return err(
+                            fmt::format("option '-{}' requires a value", c));
                     ++i;
                     if (not vals.empty() && not opt.repeatable)
-                        err(fmt::format("option '-{}' cannot be repeated", c));
+                        return err(
+                            fmt::format("option '-{}' cannot be repeated", c));
                     vals.push_back(args.at(i)->raw_get<String>());
                     break; // value-taking option ends the bundle
                 }
 
-                err(fmt::format("unknown option '-{}'", c));
+                return err(fmt::format("unknown option '-{}'", c));
             }
         }
     }
@@ -423,7 +425,8 @@ Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
         if (vals.empty())
         {
             if (o.required)
-                err(fmt::format("missing required option '--{}'", o.long_name));
+                return err(
+                    fmt::format("missing required option '--{}'", o.long_name));
             if (o.default_value)
                 vals.push_back(o.default_value.value());
         }
@@ -435,11 +438,11 @@ Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
         != spec.positional.size())
     {
         if (spec.positional.empty())
-            err(fmt::format("unexpected positional argument: '{}'",
-                            positionals.at(0)));
+            return err(fmt::format("unexpected positional argument: '{}'",
+                                   positionals.at(0)));
         else
-            err(fmt::format("expected {} positional argument(s), got {}",
-                            spec.positional.size(), positionals.size()));
+            return err(fmt::format("expected {} positional argument(s), got {}",
+                                   spec.positional.size(), positionals.size()));
     }
 
     // -- Build result --
@@ -481,18 +484,15 @@ Value_Ptr parse_args(const Cli_Spec& spec, const Array& args,
     for (auto& p : positionals)
         positional_arr.push_back(Value::create(String{std::move(p)}));
 
-    static const auto key_flags = "flags"_s;
-    static const auto key_options = "options"_s;
-    static const auto key_positional = "positional"_s;
-    static const auto key_help = "help"_s;
+    STRINGS(flags, options, positional);
 
     return Value::create(
         Value::trusted,
-        Map{{key_flags, Value::create(Value::trusted, std::move(flags_map))},
-            {key_help, generate_help(spec, tool_name)},
-            {key_options,
+        Map{{strings.flags,
+             Value::create(Value::trusted, std::move(flags_map))},
+            {strings.options,
              Value::create(Value::trusted, std::move(options_map))},
-            {key_positional, Value::create(std::move(positional_arr))}});
+            {strings.positional, Value::create(std::move(positional_arr))}});
 }
 
 // -- Help generation --
@@ -623,8 +623,22 @@ BUILTIN(parse)
     validate_spec(spec);
 
     auto tool_name = spec.name.value_or(frost_args.at(0)->raw_get<String>());
+    auto help = generate_help(spec, tool_name);
+    auto result = parse_args(spec, frost_args, tool_name);
 
-    return parse_args(spec, frost_args, tool_name);
+    STRINGS(ok, value, error, help);
+
+    if (result)
+        return Value::create(Value::trusted,
+                             Map{{strings.help, std::move(help)},
+                                 {strings.ok, Value::create(Bool{true})},
+                                 {strings.value, std::move(result.value())}});
+
+    return Value::create(
+        Value::trusted,
+        Map{{strings.error, Value::create(String{std::move(result.error())})},
+            {strings.help, std::move(help)},
+            {strings.ok, Value::create(Bool{false})}});
 }
 
 BUILTIN(prompt)

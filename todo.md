@@ -2,10 +2,6 @@
 
 ## Language
 
-### Abbreviated Lambda Parse Error
-
-- `$($'|${$}|')` fails to parse — abbreviated lambda containing a format string that interpolates `$` (the lambda parameter). Likely a parser ambiguity with nested `$` contexts. Investigate what happened here.
-
 ### Comparison Chaining
 
 - P3239-like comparison chaining
@@ -28,6 +24,13 @@
 - **`unique` / `deduplicate`** — remove duplicates (achievable with `group_by` but awkward)
 
 ## Extensions
+
+### Rust bindings!
+
+- Rust bindings for extensions is an exciting idea
+- Using `cxx` crate and CMake `Corrosion`
+- Test drive extension: CSV
+    - API inspired by existing SQLite API, but simplified
 
 ### HTTP enhancements
 

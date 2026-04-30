@@ -407,26 +407,30 @@ TEST_CASE("cli.parse spec validation")
 
     SECTION("positional as false means no positionals")
     {
-        // Equivalent to omitting `positional` or using `[]`.
         auto result = parse->call(
             {Value::create(make_args({"s.frst"})),
              Value::create(Value::trusted,
                            Map{{"positional"_s, Value::create(Bool{false})}})});
         REQUIRE(result->is<Map>());
-        CHECK(get(result->raw_get<Map>(), "positional")
+        auto envelope = result->raw_get<Map>();
+        REQUIRE(get(envelope, "ok")->raw_get<Bool>() == true);
+        CHECK(get(get(envelope, "value")->raw_get<Map>(), "positional")
                   ->raw_get<Array>()
                   .empty());
     }
 
     SECTION("positional as false rejects positional args")
     {
-        CHECK_THROWS_MATCHES(
-            parse->call({Value::create(make_args({"s.frst", "extra"})),
-                         Value::create(Value::trusted,
-                                       Map{{"positional"_s,
-                                            Value::create(Bool{false})}})}),
-            Frost_Recoverable_Error,
-            MessageMatches(ContainsSubstring("unexpected positional")));
+        auto result = parse->call(
+            {Value::create(make_args({"s.frst", "extra"})),
+             Value::create(Value::trusted,
+                           Map{{"positional"_s, Value::create(Bool{false})}})});
+        REQUIRE(result->is<Map>());
+        auto envelope = result->raw_get<Map>();
+        CHECK(get(envelope, "ok")->raw_get<Bool>() == false);
+        CHECK(get(envelope, "error")
+                  ->raw_get<String>()
+                  .contains("unexpected positional"));
     }
 
     SECTION("Positional entry not a Map")
@@ -480,13 +484,14 @@ TEST_CASE("cli.parse spec validation")
 
     SECTION("Empty positional Array accepts zero args")
     {
-        // Not an error; positional: [] means no positionals expected
         auto result = parse->call(
             {Value::create(make_args({"s.frst"})),
              Value::create(Value::trusted,
                            Map{{"positional"_s, Value::create(Array{})}})});
         REQUIRE(result->is<Map>());
-        CHECK(get(result->raw_get<Map>(), "positional")
+        auto envelope = result->raw_get<Map>();
+        REQUIRE(get(envelope, "ok")->raw_get<Bool>() == true);
+        CHECK(get(get(envelope, "value")->raw_get<Map>(), "positional")
                   ->raw_get<Array>()
                   .empty());
     }
@@ -538,12 +543,20 @@ TEST_CASE("cli.parse successful parsing")
     auto mod = cli_module();
     auto parse = lookup(mod, "parse");
 
-    auto do_parse = [&](std::initializer_list<std::string> argv, Map spec) {
+    auto do_parse_raw = [&](std::initializer_list<std::string> argv, Map spec) {
         auto result =
             parse->call({Value::create(make_args(argv)),
                          Value::create(Value::trusted, std::move(spec))});
         REQUIRE(result->is<Map>());
         return result->raw_get<Map>();
+    };
+
+    auto do_parse = [&](std::initializer_list<std::string> argv, Map spec) {
+        auto envelope = do_parse_raw(argv, std::move(spec));
+        REQUIRE(get(envelope, "ok")->raw_get<Bool>() == true);
+        auto value = get(envelope, "value");
+        REQUIRE(value->is<Map>());
+        return value->raw_get<Map>();
     };
 
     SECTION("Empty spec, no args")
@@ -711,7 +724,7 @@ TEST_CASE("cli.parse successful parsing")
 
     SECTION("Result contains help key")
     {
-        auto result = do_parse({"s.frst"}, {});
+        auto result = do_parse_raw({"s.frst"}, {});
         auto help = get(result, "help");
         REQUIRE(help->is<String>());
         CHECK(not help->raw_get<String>().empty());
@@ -719,7 +732,7 @@ TEST_CASE("cli.parse successful parsing")
 
     SECTION("Custom help text is returned verbatim")
     {
-        auto result = do_parse(
+        auto result = do_parse_raw(
             {"s.frst"}, Map{{"help"_s, Value::create("my custom help"s)}});
         CHECK(get(result, "help")->raw_get<String>() == "my custom help");
     }
@@ -727,13 +740,13 @@ TEST_CASE("cli.parse successful parsing")
     SECTION("Help contains spec name")
     {
         auto result =
-            do_parse({"s.frst"}, Map{{"name"_s, Value::create("deploy"s)}});
+            do_parse_raw({"s.frst"}, Map{{"name"_s, Value::create("deploy"s)}});
         CHECK(get(result, "help")->raw_get<String>().contains("deploy"));
     }
 
     SECTION("Help contains description")
     {
-        auto result = do_parse(
+        auto result = do_parse_raw(
             {"s.frst"},
             Map{{"name"_s, Value::create("deploy"s)},
                 {"description"_s, Value::create("Deploy a service"s)}});
@@ -744,7 +757,7 @@ TEST_CASE("cli.parse successful parsing")
 
     SECTION("Help falls back to args[0] when name absent")
     {
-        auto result = do_parse({"mytool"}, {});
+        auto result = do_parse_raw({"mytool"}, {});
         CHECK(get(result, "help")->raw_get<String>().contains("mytool"));
     }
 
@@ -754,7 +767,7 @@ TEST_CASE("cli.parse successful parsing")
                     {"description"_s, Value::create("verbose mode"s)}};
         Map flags = {
             {"verbose"_s, Value::create(Value::trusted, std::move(flag))}};
-        auto result = do_parse(
+        auto result = do_parse_raw(
             {"s.frst"},
             Map{{"flags"_s, Value::create(Value::trusted, std::move(flags))}});
         auto help_str = get(result, "help")->raw_get<String>();
@@ -771,9 +784,9 @@ TEST_CASE("cli.parse successful parsing")
         Map options = {
             {"env"_s, Value::create(Value::trusted, std::move(opt))}};
         auto result =
-            do_parse({"s.frst", "--env", "x"},
-                     Map{{"options"_s,
-                          Value::create(Value::trusted, std::move(options))}});
+            do_parse_raw({"s.frst", "--env", "x"},
+                         Map{{"options"_s,
+                              Value::create(Value::trusted, std::move(options))}});
         auto help_str = get(result, "help")->raw_get<String>();
         CHECK(help_str.contains("--env"));
         CHECK(help_str.contains("target env"));
@@ -786,9 +799,9 @@ TEST_CASE("cli.parse successful parsing")
         Map options = {
             {"retries"_s, Value::create(Value::trusted, std::move(opt))}};
         auto result =
-            do_parse({"s.frst"},
-                     Map{{"options"_s,
-                          Value::create(Value::trusted, std::move(options))}});
+            do_parse_raw({"s.frst"},
+                         Map{{"options"_s,
+                              Value::create(Value::trusted, std::move(options))}});
         CHECK(get(result, "help")->raw_get<String>().contains("default: 3"));
     }
 
@@ -798,9 +811,9 @@ TEST_CASE("cli.parse successful parsing")
         Map options = {
             {"tag"_s, Value::create(Value::trusted, std::move(opt))}};
         auto result =
-            do_parse({"s.frst"},
-                     Map{{"options"_s,
-                          Value::create(Value::trusted, std::move(options))}});
+            do_parse_raw({"s.frst"},
+                         Map{{"options"_s,
+                              Value::create(Value::trusted, std::move(options))}});
         CHECK(get(result, "help")->raw_get<String>().contains("repeatable"));
     }
 
@@ -810,8 +823,8 @@ TEST_CASE("cli.parse successful parsing")
                      {"description"_s, Value::create("the thing to deploy"s)}};
         Array pos = {Value::create(Value::trusted, std::move(entry))};
         auto result =
-            do_parse({"s.frst", "web"},
-                     Map{{"positional"_s, Value::create(std::move(pos))}});
+            do_parse_raw({"s.frst", "web"},
+                         Map{{"positional"_s, Value::create(std::move(pos))}});
         auto help_str = get(result, "help")->raw_get<String>();
         CHECK(help_str.contains("service"));
         CHECK(help_str.contains("the thing to deploy"));
@@ -819,7 +832,7 @@ TEST_CASE("cli.parse successful parsing")
 
     SECTION("Help for raw collect positionals")
     {
-        auto result = do_parse(
+        auto result = do_parse_raw(
             {"s.frst"}, Map{{"positional"_s, Value::create(Bool{true})}});
         CHECK(get(result, "help")->raw_get<String>().contains("[args...]"));
     }
@@ -903,19 +916,20 @@ TEST_CASE("cli.parse successful parsing")
         Map opt = {{"short"_s, Value::create("e"s)}};
         Map options = {
             {"env"_s, Value::create(Value::trusted, std::move(opt))}};
-        // -ved: e takes a value but is not last. Should error.
-        CHECK_THROWS_MATCHES(
-            parse->call(
-                {Value::create(make_args({"s.frst", "-ved", "prod"})),
-                 Value::create(
-                     Value::trusted,
-                     Map{{"flags"_s,
-                          Value::create(Value::trusted, std::move(flags))},
-                         {"options"_s, Value::create(Value::trusted,
-                                                     std::move(options))}})}),
-            Frost_Recoverable_Error,
-            MessageMatches(ContainsSubstring("must be the last")
-                           || ContainsSubstring("-e")));
+        auto result = parse->call(
+            {Value::create(make_args({"s.frst", "-ved", "prod"})),
+             Value::create(
+                 Value::trusted,
+                 Map{{"flags"_s,
+                      Value::create(Value::trusted, std::move(flags))},
+                     {"options"_s, Value::create(Value::trusted,
+                                                 std::move(options))}})});
+        REQUIRE(result->is<Map>());
+        auto envelope = result->raw_get<Map>();
+        CHECK(get(envelope, "ok")->raw_get<Bool>() == false);
+        auto error_msg = get(envelope, "error")->raw_get<String>();
+        CHECK((error_msg.contains("must be the last")
+               || error_msg.contains("-e")));
     }
 
     SECTION("Short-form repeatable option")
@@ -1035,11 +1049,15 @@ TEST_CASE("cli.parse errors")
 
     auto expect_error = [&](std::initializer_list<std::string> argv, Map spec,
                             const std::string& substring) {
-        CHECK_THROWS_MATCHES(
+        auto result =
             parse->call({Value::create(make_args(argv)),
-                         Value::create(Value::trusted, std::move(spec))}),
-            Frost_Recoverable_Error,
-            MessageMatches(ContainsSubstring(substring)));
+                         Value::create(Value::trusted, std::move(spec))});
+        REQUIRE(result->is<Map>());
+        auto envelope = result->raw_get<Map>();
+        CHECK(get(envelope, "ok")->raw_get<Bool>() == false);
+        auto error_msg = get(envelope, "error")->raw_get<String>();
+        CHECK(error_msg.contains(substring));
+        CHECK(get(envelope, "help")->is<String>());
     };
 
     SECTION("Unknown long flag")
@@ -1112,21 +1130,12 @@ TEST_CASE("cli.parse errors")
 
     SECTION("Error message uses spec name as prefix")
     {
-        CHECK_THROWS_MATCHES(
-            parse->call(
-                {Value::create(make_args({"s.frst", "--bogus"})),
-                 Value::create(Value::trusted,
-                               Map{{"name"_s, Value::create("mytool"s)}})}),
-            Frost_Recoverable_Error,
-            MessageMatches(ContainsSubstring("mytool:")));
+        expect_error({"s.frst", "--bogus"},
+                     Map{{"name"_s, Value::create("mytool"s)}}, "mytool:");
     }
 
     SECTION("Error message falls back to args[0] when no spec name")
     {
-        CHECK_THROWS_MATCHES(
-            parse->call({Value::create(make_args({"some-script", "--bogus"})),
-                         Value::create(Value::trusted, Map{})}),
-            Frost_Recoverable_Error,
-            MessageMatches(ContainsSubstring("some-script:")));
+        expect_error({"some-script", "--bogus"}, {}, "some-script:");
     }
 }
