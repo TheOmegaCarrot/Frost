@@ -1,4 +1,4 @@
-# Documentation Migration Checklist
+# Documentation Todo List
 
 Track progress migrating from hand-written markdown (`docs/stdlib/`) to structured `.frst` sources (`docs/src/stdlib/`).
 
@@ -56,16 +56,16 @@ Track progress migrating from hand-written markdown (`docs/stdlib/`) to structur
 
 ## Post-Migration
 
-- [ ] Replace `docs/stdlib/*.md` with generated output
-- [ ] Replace `generate-index.frst` with generator-produced index
-- [ ] Update `docs/stdlib/README.md` to be generated from `placeholder_name` in root.frst
-- [ ] Remove hand-written markdown files
+- [X] Replace `docs/stdlib/*.md` with generated output
+- [X] Replace `generate-index.frst` with generator-produced index
+- [X] Update `docs/stdlib/README.md` to be generated from `placeholder_name` in root.frst
+- [X] Remove hand-written markdown files
 - [ ] CI: regenerate docs and fail if output differs from committed (ensures data and output stay in sync)
 
 ## Not Yet Planned
 
 - [x] Language reference (`docs/src/lang/`) -- 7 files: root, lexical, types, expressions (+ operators, match, iterative), statements, modules
 - [x] Introduction (`docs/src/intro.frst`)
-- REPL `help()` integration
-- HTML backend
-- Full-text search backend
+- [ ] REPL `help()` integration
+- [ ] HTML backend
+- [ ] Full-text + embedding search backend
