@@ -1,4 +1,5 @@
 def { fs, io, string, regex } = import('std')
+def { css } = import('html-style')
 
 # --- Inline formatting ---
 
@@ -53,6 +54,9 @@ export defn begin_module(module, output_dir, subdir) -> {
     def title = module.title or module.name
     res.writeln($'<title>${escape_html(title)} - Frost</title>')
     res.writeln('<meta name="viewport" content="width=device-width, initial-scale=1">')
+    res.writeln('<style>')
+    res.writeln(css)
+    res.writeln('</style>')
     res.writeln('</head>')
     res.writeln('<body>')
     res.writeln('<main>')
@@ -217,6 +221,9 @@ export defn write_index(entries, output_dir) -> {
     res.writeln('<meta charset="utf-8">')
     res.writeln('<title>Standard Library Index - Frost</title>')
     res.writeln('<meta name="viewport" content="width=device-width, initial-scale=1">')
+    res.writeln('<style>')
+    res.writeln(css)
+    res.writeln('</style>')
     res.writeln('</head>')
     res.writeln('<body>')
     res.writeln('<main>')
