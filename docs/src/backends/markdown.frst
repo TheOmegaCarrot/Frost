@@ -58,6 +58,12 @@ export defn write_code_block(res, example) -> {
     res.writeln('')
 }
 
+export defn write_toc_entry(res, title, depth) -> {
+    def indent = string.repeat('  ', depth)
+    def anchor = title @ to_lower() @ replace(' ', '-') @ replace('`', '')
+    res.writeln($'${indent}- [${title}](#${anchor})')
+}
+
 export defn write_list(res, items) -> {
     foreach items with fn item -> res.writeln($'- ${item}')
     res.writeln('')

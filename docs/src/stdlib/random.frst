@@ -51,7 +51,7 @@ export def random = {
                     code: """
                         def x = random.seed(42)
                         def y = random.seed(42) # different engine, same starting state
-                        x.int(0, 100) == y.int(0, 100)   # true -- both at their first draw
+                        x.int(0, 100) == y.int(0, 100)   # true, both at their first draw
                         """,
                     illustrative: true,
                 },

@@ -173,11 +173,22 @@ defn render_page(page, subdir) -> {
 
 # --- Language reference rendering ---
 
+defn emit_toc(res, items, depth) ->
+    foreach items with fn item ->
+        if is_map(item) and has(item, 'title'): do {
+            backend.write_toc_entry(res, item.title, depth)
+            if has(item, 'content'):
+                emit_toc(res, item.content, depth + 1)
+        }
+
 defn render_lang(lang) -> {
     def res = backend.begin_module({ name: 'language' }, output_to, '')
 
     backend.write_heading(res, lang.title, 1)
     backend.write_paragraph(res, resolve_refs(lang.description, ''))
+
+    emit_toc(res, lang.sections, 0)
+    backend.write_break(res)
 
     foreach lang.sections with fn section ->
         render_content(res, [section], 2, '')
