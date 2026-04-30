@@ -191,7 +191,7 @@ defn emit_toc(res, items, depth) ->
         }
 
 defn render_lang(lang) -> {
-    def res = backend.begin_module({ name: 'language' }, output_to, '')
+    def res = backend.begin_module({ name: 'language', title: lang.title }, output_to, '')
 
     backend.write_heading(res, lang.title, 1)
     backend.write_paragraph(res, resolve_refs(lang.description, ''))

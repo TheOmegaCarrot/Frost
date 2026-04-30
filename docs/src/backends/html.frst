@@ -35,30 +35,122 @@ defn render_inline(s) -> {
 defn make_anchor(title) ->
     title @ to_lower() @ replace(' ', '-') @ replace('`', '')
 
+# --- Navigation state ---
+
+def nav_entries = mutable_cell([])
+def nav_output_dir = mutable_cell(null)
+def current_prefix = mutable_cell('')
+
 # --- Resource lifecycle ---
 
 export defn setup(output_dir) -> {
     fs.mkdir(output_dir)
     io.write(fs.concat(output_dir, 'style.css'), css)
+    nav_output_dir.exchange(output_dir)
 }
 
-export defn finalize() -> null
+export defn finalize() -> {
+    def entries = nav_entries.get()
+    def output_dir = nav_output_dir.get()
+
+    def landing = entries @ select(fn e -> e.name == 'landing')
+    def top_level = (entries @ select(fn e -> e.subdir == '')) + landing
+    def stdlib = entries @ select(fn e -> e.subdir == 'stdlib')
+
+    def core = (
+        stdlib
+            @ select(fn e -> e.module_path == null and e.name != 'landing')
+            @ sort_by(index('title')))
+    def std_modules = (
+        stdlib
+            @ select(fn e -> e.module_path != null and starts_with(e.module_path, 'std.'))
+            @ sort_by(index('title')))
+    def ext_modules = (
+        stdlib
+            @ select(fn e -> e.module_path != null and starts_with(e.module_path, 'ext.'))
+            @ sort_by(index('title')))
+
+    defn entry_to_js(e) ->
+        $'{t:"${escape_html(e.title)}",h:"${e.href}"}'
+
+    def js_top = top_level @ transform(entry_to_js) @ join(',')
+    def js_core = core @ transform(entry_to_js) @ join(',')
+    def js_std = std_modules @ transform(entry_to_js) @ join(',')
+    def js_ext = ext_modules @ transform(entry_to_js) @ join(',')
+
+    def nav_data = $'var defined_nav={top:[${js_top}],core:[${js_core}],std:[${js_std}],ext:[${js_ext}]};'
+
+    def nav_logic = '''
+        (function(){
+        NAV_DATA_PLACEHOLDER
+        var depth=document.documentElement.dataset.depth||"0";
+        var prefix=depth==="1"?"../":"";
+        var nav=document.createElement("nav");
+        nav.id="sidebar";
+        function makeLink(e){
+        var a=document.createElement("a");
+        a.href=prefix+e.h;
+        a.textContent=e.t;
+        if(location.pathname.endsWith(e.h)||location.pathname.endsWith("/"+e.h))a.classList.add("active");
+        return a;
+        }
+        function addSection(label,items){
+        if(items.length===0)return;
+        if(label){
+        var h=document.createElement("div");
+        h.className="nav-heading";
+        h.textContent=label;
+        nav.appendChild(h);
+        }
+        var ul=document.createElement("ul");
+        items.forEach(function(e){
+        var li=document.createElement("li");
+        li.appendChild(makeLink(e));
+        ul.appendChild(li);
+        });
+        nav.appendChild(ul);
+        }
+        addSection("",defined_nav.top);
+        addSection("Core",defined_nav.core);
+        addSection("Standard Modules",defined_nav.std);
+        addSection("Extensions",defined_nav.ext);
+        document.body.insertBefore(nav,document.body.firstChild);
+        })();
+        '''
+
+    def js = nav_logic @ replace('NAV_DATA_PLACEHOLDER', nav_data)
+
+    io.write(fs.concat(output_dir, 'nav.js'), js)
+}
 
 export defn begin_module(module, output_dir, subdir) -> {
     def dir = if subdir == '': output_dir else: fs.concat(output_dir, subdir)
     fs.mkdir(dir)
     def filename = if module.name == 'landing': 'index.html' else: $'${module.name}.html'
     def path = fs.concat(dir, filename)
-    def css_path = if subdir == '': 'style.css' else: '../style.css'
+    def prefix = if subdir == '': '' else: '../'
+    def title = module.title or module.name
+    def module_path = if has(module, 'module_path'): module.module_path else: null
+    def href = if subdir == '': filename else: $'${subdir}/${filename}'
+
+    nav_entries.exchange(nav_entries.get() + [{
+        name: module.name,
+        title: title,
+        subdir: subdir,
+        module_path: module_path,
+        href: href,
+    }])
+
+    current_prefix.exchange(prefix)
+    def depth = if subdir == '': '0' else: '1'
     def res = io.open_trunc(path)
     res.writeln('<!DOCTYPE html>')
-    res.writeln('<html lang="en">')
+    res.writeln($'<html lang="en" data-depth="${depth}">')
     res.writeln('<head>')
     res.writeln('<meta charset="utf-8">')
-    def title = module.title or module.name
     res.writeln($'<title>${escape_html(title)} - Frost</title>')
     res.writeln('<meta name="viewport" content="width=device-width, initial-scale=1">')
-    res.writeln($'<link rel="stylesheet" href="${css_path}">')
+    res.writeln($'<link rel="stylesheet" href="${prefix}style.css">')
     res.writeln('</head>')
     res.writeln('<body>')
     res.writeln('<main>')
@@ -66,7 +158,9 @@ export defn begin_module(module, output_dir, subdir) -> {
 }
 
 export defn end_module(res) -> {
+    def prefix = current_prefix.get()
     res.writeln('</main>')
+    res.writeln($'<script src="${prefix}nav.js"></script>')
     res.writeln('</body>')
     res.writeln('</html>')
     res.close()
@@ -218,7 +312,7 @@ export defn write_index(entries, output_dir) -> {
     def res = io.open_trunc(fs.concat(dir, 'alphabetical.html'))
 
     res.writeln('<!DOCTYPE html>')
-    res.writeln('<html lang="en">')
+    res.writeln('<html lang="en" data-depth="1">')
     res.writeln('<head>')
     res.writeln('<meta charset="utf-8">')
     res.writeln('<title>Standard Library Index - Frost</title>')
@@ -239,6 +333,7 @@ export defn write_index(entries, output_dir) -> {
 
     res.writeln('</ul>')
     res.writeln('</main>')
+    res.writeln('<script src="../nav.js"></script>')
     res.writeln('</body>')
     res.writeln('</html>')
     res.close()
