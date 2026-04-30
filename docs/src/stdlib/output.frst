@@ -8,12 +8,12 @@ export def output = {
         {
             name: 'print',
             signatures: ['print(value)'],
-            description: ['Prints `value` to stdout followed by a newline. Uses the same display representation as `to_string`.'],
+            description: ['Prints `value` to stdout followed by a newline. Uses the same display representation as [`to_string`](@ref std.types.to_string).'],
         },
         {
             name: 'mformat',
             signatures: ['mformat(format_string, replacement_map)'],
-            description: ['Returns a copy of `format_string` with `${key}` placeholders replaced by the corresponding values from `replacement_map`. Produces an error if a placeholder key is not present in the map.'],
+            description: ['Returns a copy of `format_string` with `${key}` placeholders replaced by the corresponding values from `replacement_map`. The placeholder syntax is identical to [language format strings](@ref lang.types). Produces an error if a placeholder key is not present in the map.'],
         },
         {
             name: 'mprint',

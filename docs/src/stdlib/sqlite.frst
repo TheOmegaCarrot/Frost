@@ -50,7 +50,7 @@ export def sqlite = {
         {
             title: 'BLOB Handling',
             content: [
-                'SQLite BLOBs are returned as foreign values. Call the foreign value to get the raw bytes as a `String`. Pass it through unchanged to preserve the BLOB type when binding.',
+                'SQLite BLOBs are returned as [foreign values](@ref stdlib.foreign-values). Call the foreign value to get the raw bytes as a `String`. Pass it through unchanged to preserve the BLOB type when binding.',
                 {
                     code: """
                         def [row, ..._] = db.query('SELECT blob_col FROM t')
@@ -129,7 +129,7 @@ export def sqlite = {
             name: 'open',
             signatures: ['sqlite.open(path)'],
             description: [
-                'Opens a read-write SQLite database at `path`, or creates one if it does not exist. Returns a database object; the methods of which are documented below as `db.*`. Produces an error if the database cannot be opened.',
+                'Opens a read-write SQLite database at `path`, or creates one if it does not exist. Returns a database object, the methods of which are documented as `db.*`. Produces an error if the database cannot be opened.',
             ],
             see_also: ['ext.sqlite.open_readonly', 'ext.sqlite.open_memory'],
         },
@@ -268,6 +268,13 @@ export def sqlite = {
                                 db.last_insert_rowid()
                                 """,
                             result: '1',
+                        },
+                        {
+                            code: """
+                                db.exec('INSERT INTO t (name) VALUES (?)', ['bob'])
+                                db.last_insert_rowid()
+                                """,
+                            result: '2',
                         },
                     ],
                 },

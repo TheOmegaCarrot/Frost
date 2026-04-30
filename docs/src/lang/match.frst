@@ -37,7 +37,7 @@ export def match_expr = {
                         ],
                     },
                 },
-                'Anywhere a pattern appears, any of these forms can be used. This means array and map patterns nest to arbitrary depth.',
+                'Anywhere a pattern appears, any of these forms can be used. This means array and map patterns nest to arbitrary depth (see [Nesting](#nesting)).',
                 'Bare identifiers are always bindings. To compare against an existing variable, wrap it in parentheses: `(x)`.',
             ],
         },
@@ -58,6 +58,7 @@ export def match_expr = {
                         """,
                     illustrative: true,
                 },
+                'The `if:` above denotes a guard clause. See [Guards](#guards) for a full explanation of that syntax.',
             ],
         },
         {
@@ -84,7 +85,15 @@ export def match_expr = {
                         """,
                     illustrative: true,
                 },
-                'When alternatives include bindings, every alternative must bind the same set of names. This ensures the result expression can use the bindings regardless of which alternative matched.',
+                'When alternatives include bindings, every alternative must bind the same set of names. This ensures the result expression can use the bindings regardless of which alternative matched:',
+                {
+                    code: """
+                        match value {
+                            a | [b, c] => a   # error: alternative 1 binds {a}, alternative 2 binds {b, c}
+                        }
+                        """,
+                    illustrative: true,
+                },
                 {
                     code: """
                         match value {

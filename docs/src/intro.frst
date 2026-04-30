@@ -122,7 +122,7 @@ export def intro = {
         {
             title: 'Logic',
             content: [
-                "In Frost, `if` is an expression, and it evaluates to a value; it's not just for control flow. Unlike C's ternary, Frost also supports `elif`: `if foo: bar elif baz: beep else: boop`.",
+                "In Frost, `if` is an expression, and it evaluates to a value; it's not just for control flow. (Think C's ternary `?:` operator. It's basically the same idea.) Unlike C's ternary, Frost also supports `elif`: `if foo: bar elif baz: beep else: boop`.",
                 '`if` switches based on truthiness, not just actual booleans. Every value is truthy, except for `false` and `null`. Even `0`, `""`, and `[]` are truthy.',
                 'For logical operations, `and`, `or`, and `not` are provided. `and` and `or` do not just evaluate to booleans, instead they short-circuit and return values. `or` returns the first true operand (or the last operand), and `and` returns the first false operand (or the last operand). `not`, however, always returns a boolean.',
                 {
@@ -189,7 +189,7 @@ export def intro = {
                         """,
                     illustrative: true,
                 },
-                'See the [`language reference`](@ref lang.expressions.match) for the full details.',
+                'See the [language reference](@ref lang.expressions.match) for the full details.',
             ],
         },
         {
@@ -332,7 +332,7 @@ export def intro = {
                     illustrative: true,
                 },
                 'Global variables do not leak into the script that calls `import`, and file-based `import` returns a map of all `export`-ed definitions.',
-                "That's most of the language! The core of Frost is intentionally pretty small. For more exact details on exactly how the language works, you can read the [`language reference`](@ref lang). Frost also provides quite a bit in its standard library, from math and regex to JSON and HTTP.",
+                "That's most of the language! The core of Frost is intentionally pretty small. For more exact details on exactly how the language works, you can read the [language reference](@ref lang). Frost also provides quite a bit in its [standard library](@ref stdlib.landing), from math and regex to JSON and HTTP.",
             ],
         },
     ],

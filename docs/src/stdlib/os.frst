@@ -55,6 +55,12 @@ export def os = {
                                 # Set working directory
                                 def r = os.run('/bin/pwd', [], {cwd: '/tmp'})
                                 # r.stdout == "/tmp\\n"
+
+                                # Inherit environment and add a variable
+                                def r = os.run('/usr/bin/env', [], {env: {MY_VAR: 'value'}})
+
+                                # Replace environment entirely
+                                def r = os.run('/usr/bin/env', [], {replace_env: {PATH: '/usr/bin'}})
                                 ''',
                             illustrative: true,
                         },

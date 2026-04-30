@@ -6,6 +6,6 @@ def { modules }     = import('modules')
 
 export def lang = {
     title: 'Language Reference',
-    description: 'This document is a full explanation of the core Frost language, starting from the basics and building up to the more complex elements. For most readers, this is not the place to start learning the language; for that, see the introduction.',
+    description: 'This document is a full explanation of the core Frost language, starting from the basics and building up to the more complex elements. For most readers, this is not the place to start learning the language; for that, see the [introduction](@ref intro).',
     sections: [lexical, types, expressions, statements, modules],
 }

@@ -14,7 +14,7 @@ export def msgpack = {
             content: [
                 'MessagePack has types that Frost does not natively support:',
                 { list: [
-                    'Binary data: MessagePack distinguishes binary bytes from UTF-8 strings. Both are Frost Strings, so binary data is wrapped as a [`foreign value`](@ref stdlib.foreign-values) to preserve the distinction.',
+                    'Binary data: MessagePack distinguishes binary bytes from UTF-8 strings. Both are Frost Strings, so binary data is wrapped as a [foreign value](@ref stdlib.foreign-values) to preserve the distinction.',
                     'Special floats: `nan`, `inf`, and `-inf` are valid MessagePack floats but rejected by Frost\'s `Float` type.',
                 ] },
             ],

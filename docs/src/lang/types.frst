@@ -49,10 +49,11 @@ export def types = {
                 '`String` literals may take a few forms: they may use single-quotes or double-quotes. There is no semantic difference between the two forms. All strings are binary-safe, and represent arbitrary sequences of bytes. String literals may also be raw string literals, which do not process escape sequences. Multi-line strings are not supported, this includes raw string literals.',
                 "Raw string literals begin with `R'(` or `R\"(` and end with `')` or `\")`. The opening and closing quotes must match.",
                 {
-                    code: """
+                    code: '''
                         def foo = 'foo'
                         def bar = "bar"
-                        """,
+                        def raw = R'(hello\\n)' # literal 'hello\\n', no escape processing
+                        ''',
                     illustrative: true,
                 },
                 'The supported escape sequences are:',
@@ -64,7 +65,7 @@ export def types = {
                     '`\\"`: double quote (only in `"`-style string)',
                     "`\\'`: single quote (only in `'`-style string)",
                     '`\\0`: null byte',
-                    '`\\xNN`: arbitrary byte, where `NN` is exactly two hexadecimal digits',
+                    '`\\xNN`: arbitrary byte, where `NN` is exactly two hexadecimal digits (e.g. `\\x0a`, `\\xff`)',
                 ] },
                 {
                     title: 'Multiline Strings',
@@ -78,6 +79,17 @@ export def types = {
                                     WHERE active = 1
                                     """
                                 # sql == "SELECT *\\nFROM users\\nWHERE active = 1"
+                                ''',
+                            illustrative: true,
+                        },
+                        'Lines indented further than the closing delimiter retain their extra indentation:',
+                        {
+                            code: '''
+                                def code = """
+                                    if true:
+                                      nested
+                                    """
+                                # code == "if true:\\n  nested"
                                 ''',
                             illustrative: true,
                         },
@@ -98,10 +110,18 @@ export def types = {
                                 """,
                             illustrative: true,
                         },
+                        'Any expression is valid inside `${}`, including `if` expressions and function calls:',
+                        {
+                            code: """
+                                $'cond: ${if true: "yes" else: "no"}'  # "cond: yes"
+                                """,
+                            illustrative: true,
+                        },
                         'A bare `$` not followed by `{` is literal text. `\\$` produces a literal `$`, preventing interpolation:',
                         {
                             code: """
-                                $'price: $5'       # "price: $5" (bare $ is literal)
+                                $'price: $5'          # "price: $5" (bare $ is literal)
+                                $'literal: \\${name}'  # "literal: ${name}" (\\$ escapes)
                                 """,
                             illustrative: true,
                         },

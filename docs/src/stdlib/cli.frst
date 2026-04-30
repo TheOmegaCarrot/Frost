@@ -14,7 +14,7 @@ export def cli = {
                 'Parses `args` according to `spec`. Returns a Map with four keys: `flags` (`Map` of `Bool`), `options` (`Map` of `String`, `Array`, or `null`), `positional` (`Array` of `String`), and `help` (`String`).',
             ],
             body: [
-                '`args` is typically the predefined `args` variable. `args[0]` is treated as the script path and is consumed internally (used as the default tool name in error messages and help output). Everything after `args[0]` is parsed against the spec.',
+                '`args` is typically the predefined [`args`](@ref lang.statements) variable. `args[0]` is treated as the script path and is consumed internally (used as the default tool name in error messages and help output). Everything after `args[0]` is parsed against the spec.',
                 {
                     code: """
                         def cli = import('std.cli')
@@ -103,7 +103,7 @@ export def cli = {
                             },
                         },
                         'In the result, every declared option appears under `result.options`: non-repeatable options are `String` if provided or defaulted, `null` otherwise. Repeatable options are always an `Array` of `String`, possibly empty.',
-                        'Option values are always Strings. `cli.parse` does not perform any type coercion; for other types, apply a conversion like `to_int` on the parsed value.',
+                        'Option values are always Strings. `cli.parse` does not perform any type coercion; for other types, apply a conversion like [`to_int`](@ref std.types.to_int) on the parsed value.',
                         {
                             code: """
                                 options: {
@@ -126,6 +126,15 @@ export def cli = {
                             '`true` -- raw-collect mode. All positional arguments are gathered into `result.positional` without validation.',
                         ] },
                         'Each positional spec entry is a Map with `name` (`String`, required, used in help output) and `description` (`String`, shown in help).',
+                        {
+                            code: """
+                                positional: [
+                                    { name: 'source', description: 'Source file' },
+                                    { name: 'dest', description: 'Destination file' },
+                                ]
+                                """,
+                            illustrative: true,
+                        },
                         'Or for scripts that want to handle positionals themselves:',
                         { code: 'positional: true', illustrative: true },
                         'Array destructuring pairs nicely with declared positionals when you want to bind them by name:',

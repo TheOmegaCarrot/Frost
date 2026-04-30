@@ -5,6 +5,13 @@ export def iterative = {
         {
             title: 'Map',
             content: [
+                {
+                    code: """
+                        map an_array with unary_function
+                        map a_map with binary_function
+                        """,
+                    illustrative: true,
+                },
                 'The `Array` form of a map expression calls a function with each element, in order, and creates a new array with the results of those function calls.',
                 { code: 'map [1, 2, 3] with fn x -> x * 2 # [2, 4, 6]', illustrative: true },
                 'The `Map` form calls a function with each key-value pair, in an unspecified order, and merges the resulting maps. The function must return a map.',
@@ -21,6 +28,13 @@ export def iterative = {
         {
             title: 'Filter',
             content: [
+                {
+                    code: """
+                        filter an_array with unary_predicate
+                        filter a_map with binary_predicate
+                        """,
+                    illustrative: true,
+                },
                 'In both forms, the function is called with each element or key-value pair. If the function returns a truthy value, then that element or key-value pair will be preserved in the result. As with `map`, the iteration order over a `Map` is unspecified.',
                 {
                     code: """
@@ -35,6 +49,14 @@ export def iterative = {
         {
             title: 'Reduce',
             content: [
+                {
+                    code: """
+                        reduce an_array with binary_function
+                        reduce an_array init: value with binary_function
+                        reduce a_map init: value with ternary_function
+                        """,
+                    illustrative: true,
+                },
                 'In the first form, the function is first called with the first two elements. The result is used as the first argument to the next call, whose second argument is the third element. In other words, the first argument to the function is an accumulator, and each call returns a new accumulator value.',
                 { code: 'reduce [1, 2, 3, 4] with fn a, b -> a + b # 10', illustrative: true },
                 'Reducing an empty array without an `init:` clause will return `null`.',
@@ -48,6 +70,13 @@ export def iterative = {
         {
             title: 'Foreach',
             content: [
+                {
+                    code: """
+                        foreach an_array with unary_function
+                        foreach a_map with binary_function
+                        """,
+                    illustrative: true,
+                },
                 'In the `Array` form, the function is called with each array element in order. In the `Map` form, the function is called with each key-value pair in an unspecified order.',
                 'The return value of the function is ignored. A foreach expression always returns `null`.',
             ],

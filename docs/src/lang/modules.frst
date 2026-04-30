@@ -35,7 +35,7 @@ export def modules = {
                 {
                     title: 'Built-in Modules',
                     content: [
-                        'Frost ships with built-in modules under the `std` and `ext` namespaces. These are available without any files on disk.',
+                        'Frost ships with built-in modules under the `std` and `ext` namespaces. These are available without any files on disk. A complete list of built-in modules is in the [standard library documentation](@ref stdlib.landing).',
                         { code: "def fs = import('std.fs')\ndef http = import('ext.http')", illustrative: true },
                         'The built-in module registry is a nested `Map`. `import` walks the `.`-separated path segments through this structure and returns whatever value it reaches. This means you can import at any level of granularity:',
                         {
@@ -76,7 +76,18 @@ export def modules = {
                         },
                         'Dots in the module specification correspond to directory separators:',
                         { code: "def vec = import('lib.math.vectors') # resolves to lib/math/vectors.frst", illustrative: true },
-                        'Because `import` resolves relative to the importing file, not the current working directory, two files can import different modules with the same specification.',
+                        'Because `import` resolves relative to the importing file, not the current working directory, two files can import different modules with the same specification:',
+                        {
+                            code: """
+                                # lib/core.frst
+                                def h = import('helpers') # resolves to lib/helpers.frst, not project/helpers.frst
+
+                                # main.frst
+                                def h = import('helpers')     # resolves to project/helpers.frst
+                                def core = import('lib.core') # resolves to project/lib/core.frst
+                                """,
+                            illustrative: true,
+                        },
                     ],
                 },
             ],

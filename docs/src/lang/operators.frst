@@ -27,9 +27,16 @@ export def operators = {
 
                 # Left-associative operators group left to right:
                 10 - 3 - 2 == (10 - 3) - 2
+                12 / 6 / 2 == (12 / 6) / 2
+
+                # Prefix operators group right to left:
+                not not true == not (not true)
 
                 # Postfix operators bind tighter than prefix:
                 -[1, 2, 3][0] == -(([1, 2, 3])[0])
+
+                # and/or precedence:
+                true and false or true == ((true and false) or true)
                 """,
             illustrative: true,
         },
@@ -37,7 +44,7 @@ export def operators = {
             title: 'Call Threading',
             content: [
                 'One notable operator which would be unfamiliar is the threading operator (`@`). Some languages with a similar feature may call this a pipeline operator.',
-                'In Frost, `a @ f(b)` is exactly equivalent to `f(a, b)`. This also allows for postfix chaining, such that `a @ f(b) @ g(c)` is identical to `g(f(a, b), c)`.',
+                'In Frost, `a @ f(b)` is exactly equivalent to `f(a, b)` (this even results in the same AST). This also allows for postfix chaining, such that `a @ f(b) @ g(c)` is identical to `g(f(a, b), c)`. This is similar to `->` in Fennel or `|>` in Elixir.',
             ],
         },
         {
@@ -55,6 +62,18 @@ export def operators = {
                 'The ordering operators (`<`, `>`, etc) compare numeric types as expected, permitting mixing of Int and Float. (`3 < 3.14` is well-defined.)',
                 'The ordering operators also compare String values lexicographically. (`\'foo\' > \'bar\'` is `true`.)',
                 'Equality comparisons (`==` or `!=`) will never cause a type error. Primitive types, arrays, and maps are compared by value. Functions are compared by identity.',
+                {
+                    code: """
+                        def a = 42
+                        def b = 42
+                        a == b # true
+
+                        def arr1 = [1, 2, 3]
+                        def arr2 = [1, 2, 3]
+                        arr1 == arr2 # true
+                        """,
+                    illustrative: true,
+                },
             ],
         },
         {
@@ -68,6 +87,11 @@ export def operators = {
                         'foo' + 'bar' # 'foobar'
                         { foo: 42, bar: 10 } + { bar: 1024, baz: true } # { foo: 42, bar: 1024, baz: true }
                         """,
+                    illustrative: true,
+                },
+                'Because the map merge is not recursive, nested maps are replaced entirely:',
+                {
+                    code: "{ foo: { bar: 42, baz: 10 } } + { foo: { bar: 1024 } } # { foo: { bar: 1024 } }",
                     illustrative: true,
                 },
             ],

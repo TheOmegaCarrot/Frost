@@ -9,7 +9,7 @@ export def streams = {
             name: 'stdin',
             kind: 'constant',
             description: [
-                'A pre-defined Reader backed by standard input. Supports `.read_line`, `.read_one`, `.read`, `.read_rest`.',
+                'A pre-defined [`Reader`](@ref std.io.reader) backed by standard input. Supports `.read_line`, `.read_one`, `.read`, `.read_rest`.',
             ],
             body: [
                 {
@@ -30,14 +30,14 @@ export def streams = {
             name: 'stdout',
             kind: 'constant',
             description: [
-                'A pre-defined Writer backed by standard output. Supports `.write`, `.writeln`.',
+                'A pre-defined [`Writer`](@ref std.io.writer) backed by standard output. Supports `.write`, `.writeln`.',
             ],
         },
         {
             name: 'stderr',
             kind: 'constant',
             description: [
-                'A pre-defined Writer backed by standard error. Supports `.write`, `.writeln`.',
+                'A pre-defined [`Writer`](@ref std.io.writer) backed by standard error. Supports `.write`, `.writeln`.',
             ],
         },
     ],

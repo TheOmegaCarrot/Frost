@@ -18,11 +18,24 @@ export def expressions = {
                         """,
                     illustrative: true,
                 },
-                'Note that the line breaks and indentation are not necessary. It would be syntactically equivalent to write it all on one line.',
+                'Note that the line breaks and indentation are not necessary. It would be syntactically equivalent to write it all on one line:',
+                {
+                    code: "def x = if condition(): 42 elif something_else(): 81 else: 10",
+                    illustrative: true,
+                },
                 'As one would expect from an `if`, the branch not taken is not evaluated.',
                 { code: 'if false: assert(false) # assert is not evaluated', illustrative: true },
                 'If an `if` does not have an `else` clause, it implicitly has an `else: null`.',
-                'Each branch of an `if` must be a single expression. If a multi-statement branch is desired, use a `do` block:',
+                'Each branch of an `if` must be a single expression. Bare `{ ... }` is a map literal, not a block -- writing `if foo: { ... }` is a syntax error:',
+                {
+                    code: """
+                        if foo: { # syntax error -- this is a map literal, not a block
+                            def x = 10
+                        }
+                        """,
+                    illustrative: true,
+                },
+                'If a multi-statement branch is desired, use a `do` block:',
                 {
                     code: """
                         if foo: do {
@@ -38,7 +51,7 @@ export def expressions = {
         {
             title: 'Do',
             content: [
-                'A `do` block is a single expression that begins a new scope, allows `def` and `defn` statements within, and evaluates to its final expression. This was developed in response to a growing pattern of immediately-invoked functions (`fn -> { ... }()`) being used to scope local definitions.',
+                'A `do` block is a single expression that begins a new scope, allows `def` and `defn` statements within, and evaluates to its final expression. This was developed in response to a growing pattern of immediately-invoked functions (`fn -> { ... }()`) being used to scope local definitions. A `do` block is nearly a drop-in replacement for this pattern, and incurs less runtime overhead.',
                 'Any `def` or `defn` statements are entirely scoped to the block itself:',
                 {
                     code: """
@@ -60,7 +73,15 @@ export def expressions = {
                         """,
                     illustrative: true,
                 },
-                'Similarly to block-style functions, a `do` block may not end with a `def` or `defn` statement.',
+                'Similarly to block-style functions, a `do` block may not end with a `def` or `defn` statement:',
+                {
+                    code: """
+                        do {
+                            def x = 5 # error: a do block must end in an expression
+                        }
+                        """,
+                    illustrative: true,
+                },
             ],
         },
         match_expr,

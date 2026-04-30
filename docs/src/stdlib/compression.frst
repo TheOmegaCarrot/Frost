@@ -17,6 +17,7 @@ export def compression = {
     ],
     content: [
         'Build flag: `WITH_COMPRESSION` (default: `AUTO`). Requires at least one of: zlib, bz2, xz, brotli, lz4, snappy, or zstd. Each library is independently auto-detected; only algorithms with available libraries are included.',
+        'For auto-detecting the format of compressed data, see `frost-scripts/autodecompress.frst`, which detects gzip, zstd, bz2, xz, and lz4 by magic bytes and dispatches to the appropriate decompressor.',
         'Algorithms can be swapped at runtime, as all algorithms support the same compress/decompress interface (if default compression parameters are accepted):',
         {
             code: """

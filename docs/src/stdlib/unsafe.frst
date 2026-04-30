@@ -44,7 +44,7 @@ export def unsafe = {
             name: 'mutable_cell',
             signatures: ['unsafe.mutable_cell()', 'unsafe.mutable_cell(initial)'],
             description: [
-                'Creates a mutable cell with no restrictions on what it can hold. Unlike the standard `mutable_cell`, this cell accepts functions, other mutable cells, and structures containing them.',
+                'Creates a mutable cell with no restrictions on what it can hold. Unlike the standard [`mutable_cell`](@ref stdlib.mutable-cell), this cell accepts functions, other mutable cells, and structures containing them.',
             ],
             body: [
                 'This makes it possible to create reference cycles, which will leak memory with no warning and no guardrails. Regular Frost code guarantees that reference cycles are impossible, and thus the implementation has no cycle detection. An unsafe mutable cell allows the user to violate this guarantee.',

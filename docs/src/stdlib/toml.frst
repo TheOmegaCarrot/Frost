@@ -11,7 +11,7 @@ export def toml = {
         {
             title: 'Foreign Values',
             content: [
-                'TOML has types that Frost does not: dates, times, datetimes, and the special floats `nan`/`inf`/`-inf`. When `decode` encounters one of these, it produces a [`foreign value`](@ref stdlib.foreign-values). Call it to get a `String` representation, or pass it through to `encode` to preserve the original TOML type.',
+                'TOML has types that Frost does not: dates, times, datetimes, and the special floats `nan`/`inf`/`-inf`. When `decode` encounters one of these, it produces a [foreign value](@ref stdlib.foreign-values). Call it to get a `String` representation, or pass it through to `encode` to preserve the original TOML type.',
                 {
                     code: """
                         def doc = toml.decode('created = 2024-03-16')
@@ -64,6 +64,15 @@ export def toml = {
                 'Serializes a `Map` to a TOML `String`. Only string keys are permitted. `null` values and plain `Function` values are rejected. Foreign values produced by `decode` or the constructor functions are serialized with their original TOML types.',
             ],
             body: [
+                {
+                    code: """
+                        toml.encode({
+                            title: 'My Config',
+                            database: {enabled: true, ports: [8001, 8002]},
+                        })
+                        """,
+                    illustrative: true,
+                },
                 'The output is valid TOML, but may not be ideally formatted for all use cases. TOML allows many textual representations of the same data, and `encode` does not currently offer formatting options.',
             ],
         },
