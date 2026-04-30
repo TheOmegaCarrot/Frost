@@ -29,6 +29,7 @@ if parsed.flags.help: do {
 def output_to = parsed.options.output
 def backend = match parsed.options.format {
     'markdown' => import('backends.markdown'),
+    'html' => import('backends.html'),
     fmt => fatal($'Unknown format: ${fmt}'),
 }
 
@@ -195,8 +196,9 @@ defn render_lang(lang) -> {
     backend.write_heading(res, lang.title, 1)
     backend.write_paragraph(res, resolve_refs(lang.description, ''))
 
+    backend.begin_toc(res)
     emit_toc(res, lang.sections, 0)
-    backend.write_break(res)
+    backend.end_toc(res)
 
     foreach lang.sections with fn section ->
         render_content(res, [section], 2, '')
@@ -207,7 +209,8 @@ defn render_lang(lang) -> {
 # --- Index generation ---
 
 defn collect_entries(module) -> {
-    def file = $'${module.name}.md'
+    def ext = backend.file_extension or error('backend does not specify file extension')
+    def file = $'${module.name}${ext}'
     def module_path = if has(module, 'module_path'): module.module_path else: null
     def prefix = if has(module, 'module_path'): $'${module.name}.' else: ''
 
@@ -268,6 +271,7 @@ defn generate_index(stdlib) -> {
 # --- Main ---
 
 defn generate() -> {
+    backend.setup()
     def stdlib = docs.stdlib
 
     if has(stdlib, 'std'):
@@ -295,6 +299,7 @@ defn generate() -> {
         render_lang(docs.lang)
 
     generate_index(stdlib)
+    backend.finalize()
 }
 
 generate()

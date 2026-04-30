@@ -1,5 +1,10 @@
 def { fs, io, string } = import('std')
 
+export defn setup() -> null
+export defn finalize() -> null
+export def file_extension = '.md'
+export def index_filename = 'index.md'
+
 defn heading_prefix(depth) -> match depth {
     1 => '#',
     2 => '##',
@@ -58,6 +63,9 @@ export defn write_code_block(res, example) -> {
     res.writeln('')
 }
 
+export defn begin_toc(res) -> null
+export defn end_toc(res) -> res.writeln('')
+
 export defn write_toc_entry(res, title, depth) -> {
     def indent = string.repeat('  ', depth)
     def anchor = title @ to_lower() @ replace(' ', '-') @ replace('`', '')
@@ -114,7 +122,11 @@ defn ref_to_link(ref) -> {
 defn stdlib_link(text, rest, from_subdir) -> {
     def [ module, ...name_pieces ] = rest
     def prefix = if from_subdir == 'stdlib': '' else: 'stdlib/'
-    def filename = if module == 'landing': 'README.md' else: $'${module}.md'
+    def filename = match module {
+        'landing' => 'README.md',
+        'index' => 'index.md',
+        _ => $'${module}.md',
+    }
     if len(name_pieces) == 0: $'[${text}](${prefix}${filename})'
     else: do {
         def linkname = name_pieces @ join('')

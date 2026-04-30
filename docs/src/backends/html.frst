@@ -1,0 +1,241 @@
+def { fs, io, string, regex } = import('std')
+
+# --- Inline formatting ---
+
+def link_pattern = R"(\[([^\]]+)\]\(([^)]+)\))"
+def code_span_pattern = R"(`([^`]+)`)"
+
+defn escape_html(s) ->
+    s @ replace('&', '&amp;') @ replace('<', '&lt;') @ replace('>', '&gt;')
+
+defn render_inline(s) -> {
+    def with_links = do {
+        def matches = regex.scan_matches(s, link_pattern)
+        if not matches.found: s
+        else: reduce matches.matches init: s with fn (acc, m) -> {
+            def text = m.groups[1].value
+            def url = m.groups[2].value
+            acc @ replace(m.full, $'<a href="${escape_html(url)}">${render_inline(text)}</a>')
+        }
+    }
+
+    def with_code = do {
+        def matches = regex.scan_matches(with_links, code_span_pattern)
+        if not matches.found: with_links
+        else: reduce matches.matches init: with_links with fn (acc, m) -> {
+            def code_text = m.groups[1].value
+            acc @ replace(m.full, $'<code>${escape_html(code_text)}</code>')
+        }
+    }
+
+    with_code
+}
+
+defn make_anchor(title) ->
+    title @ to_lower() @ replace(' ', '-') @ replace('`', '')
+
+# --- Resource lifecycle ---
+
+export defn setup() -> null
+
+export defn finalize() -> null
+
+export defn begin_module(module, output_dir, subdir) -> {
+    def dir = if subdir == '': output_dir else: fs.concat(output_dir, subdir)
+    fs.mkdir(dir)
+    def filename = if module.name == 'landing': 'index.html' else: $'${module.name}.html'
+    def path = fs.concat(dir, filename)
+    def res = io.open_trunc(path)
+    res.writeln('<!DOCTYPE html>')
+    res.writeln('<html lang="en">')
+    res.writeln('<head>')
+    res.writeln('<meta charset="utf-8">')
+    def title = module.title or module.name
+    res.writeln($'<title>${escape_html(title)} - Frost</title>')
+    res.writeln('<meta name="viewport" content="width=device-width, initial-scale=1">')
+    res.writeln('</head>')
+    res.writeln('<body>')
+    res.writeln('<main>')
+    res
+}
+
+export defn end_module(res) -> {
+    res.writeln('</main>')
+    res.writeln('</body>')
+    res.writeln('</html>')
+    res.close()
+}
+
+# --- Primitives ---
+
+export defn write_heading(res, text, depth) -> {
+    def n = if depth > 6: 6 else: depth
+    def anchor = make_anchor(text)
+    res.writeln($'<h${n} id="${anchor}">${render_inline(text)}</h${n}>')
+}
+
+export defn write_paragraph(res, text) ->
+    res.writeln($'<p>${render_inline(text)}</p>')
+
+export defn write_break(res) -> null
+
+export defn write_signature(res, sig) ->
+    res.writeln($'<p class="signature"><code>${escape_html(sig)}</code></p>')
+
+export defn write_code_block(res, example) -> {
+    def lang = example.lang or 'frost'
+    res.writeln($'<pre><code class="language-${lang}">${escape_html(example.code)}')
+
+    match example {
+        { result } => res.writeln(escape_html($'# => ${result}')),
+        { output } => res.writeln(escape_html($'# prints: ${output}')),
+        { error } => res.writeln(escape_html($'# error: ${error}')),
+        { illustrative } => null,
+        _ => fatal($'Unable to handle code block: ${example}'),
+    }
+
+    res.writeln('</code></pre>')
+}
+
+export defn begin_toc(res) -> res.writeln('<nav class="toc"><ul>')
+
+export defn end_toc(res) -> res.writeln('</ul></nav>')
+
+export defn write_toc_entry(res, title, depth) -> {
+    def anchor = make_anchor(title)
+    res.writeln($'  <li class="toc-depth-${depth}"><a href="#${anchor}">${render_inline(title)}</a></li>')
+}
+
+export defn write_list(res, items) -> {
+    res.writeln('<ul>')
+    foreach items with fn item ->
+        res.writeln($'  <li>${render_inline(item)}</li>')
+    res.writeln('</ul>')
+}
+
+export defn write_table(res, table) -> {
+    def cols = table.columns
+    def rows = table.rows
+    res.writeln('<table>')
+    res.writeln('<thead><tr>')
+    foreach cols with fn c ->
+        res.writeln($'  <th>${render_inline(c)}</th>')
+    res.writeln('</tr></thead>')
+    res.writeln('<tbody>')
+    foreach rows with fn row -> {
+        res.writeln('<tr>')
+        foreach row with fn cell ->
+            res.writeln($'  <td>${render_inline(cell)}</td>')
+        res.writeln('</tr>')
+    }
+    res.writeln('</tbody>')
+    res.writeln('</table>')
+}
+
+export defn write_params(res, params) -> {
+    res.writeln('<ul class="params">')
+    foreach params with fn p -> {
+        def desc = match p {
+            { desc } => $': ${render_inline(desc)}',
+            _ => '',
+        }
+        res.writeln($'  <li><code>${escape_html(p.name)}</code>${desc}</li>')
+    }
+    res.writeln('</ul>')
+}
+
+# --- Link resolution ---
+
+defn stdlib_link(text, rest, from_subdir) -> {
+    def [ module, ...name_pieces ] = rest
+    def prefix = if from_subdir == 'stdlib': '' else: 'stdlib/'
+    def filename = match module {
+        'landing' => 'index.html',
+        'index' => 'alphabetical.html',
+        _ => $'${module}.html',
+    }
+    if len(name_pieces) == 0: $'[${text}](${prefix}${filename})'
+    else: do {
+        def linkname = name_pieces @ join('')
+        $'[${text}](${prefix}${filename}#${linkname})'
+    }
+}
+
+defn lang_link(text, rest, from_subdir) -> {
+    def prefix = if from_subdir == '': '' else: '../'
+    if len(rest) == 0: $'[${text}](${prefix}language.html)'
+    else: do {
+        def anchor = rest @ join('') @ to_lower()
+        $'[${text}](${prefix}language.html#${anchor})'
+    }
+}
+
+export defn resolve_lang_ref(text, section_title, from_subdir) -> {
+    def prefix = if from_subdir == '': '' else: '../'
+    def anchor = make_anchor(section_title)
+    $'[${text}](${prefix}language.html#${anchor})'
+}
+
+export defn resolve_ref(text, path, from_subdir) -> {
+    def [ section, ...rest ] = path @ split('.')
+
+    def prefix = if from_subdir == '': '' else: '../'
+
+    match section {
+        'std' | 'ext' | 'stdlib' => stdlib_link(text, rest, from_subdir),
+        'lang' => lang_link(text, rest, from_subdir),
+        'intro' | 'introduction' => $'[${text}](${prefix}introduction.html)',
+        _ => $'[${text}](#${path})',
+    }
+}
+
+export defn write_see_also(res, refs, from_subdir) -> {
+    res.writeln('<p class="see-also">See also:')
+    foreach refs with fn ref -> {
+        def [ section, ...rest ] = ref @ split('.')
+        def name = match section {
+            'std' | 'ext' => do {
+                def [ _, ...name_pieces ] = rest
+                $'`${name_pieces @ join(".")}`'
+            },
+            _ => $'`${ref}`',
+        }
+        def link = resolve_ref(name, ref, from_subdir)
+        res.writeln(render_inline(link))
+    }
+    res.writeln('</p>')
+}
+
+export defn write_index(entries, output_dir) -> {
+    def dir = fs.concat(output_dir, 'stdlib')
+    fs.mkdir(dir)
+    def res = io.open_trunc(fs.concat(dir, 'alphabetical.html'))
+
+    res.writeln('<!DOCTYPE html>')
+    res.writeln('<html lang="en">')
+    res.writeln('<head>')
+    res.writeln('<meta charset="utf-8">')
+    res.writeln('<title>Standard Library Index - Frost</title>')
+    res.writeln('<meta name="viewport" content="width=device-width, initial-scale=1">')
+    res.writeln('</head>')
+    res.writeln('<body>')
+    res.writeln('<main>')
+    res.writeln('<h1>Standard Library Index</h1>')
+    res.writeln('<p>Alphabetical index of all built-in functions and values. Each entry links to its full documentation.</p>')
+    res.writeln('<ul class="index">')
+
+    foreach entries with fn e -> {
+        def file = e.file @ replace('.md', '.html')
+        def tag = if e.tag != null: $' <span class="tag">${escape_html(e.tag)}</span>' else: ''
+        res.writeln($'  <li><a href="${file}#${e.anchor}">${escape_html(e.display)}</a>${tag}</li>')
+    }
+
+    res.writeln('</ul>')
+    res.writeln('</main>')
+    res.writeln('</body>')
+    res.writeln('</html>')
+    res.close()
+}
+
+export def file_extension = '.html'
+export def index_filename = 'alphabetical.html'

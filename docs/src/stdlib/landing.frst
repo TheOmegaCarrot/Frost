@@ -2,7 +2,7 @@ export def landing = {
     name: 'landing',
     title: 'Standard Library',
     content: [
-        'An [alphabetical index of all functions](index.md) is available.',
+        'An [alphabetical index of all functions](@ref stdlib.index) is available.',
         {
             title: 'Parameter Name Conventions',
             content: [
