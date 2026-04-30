@@ -226,3 +226,23 @@ tr:hover td { background: rgba(255, 255, 255, 0.02); }
   padding: 0.75rem 1.25rem 0.25rem;
   user-select: none;
 }
+
+.nav-github {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.nav-github a {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-subtle);
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+
+.nav-github a:hover { color: var(--text); }
