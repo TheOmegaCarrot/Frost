@@ -10,10 +10,6 @@
 
 ## Stdlib
 
-### CLI Design Error
-
-- `cli.parse` should not directly error when parsing the args. Directly return ok+value+help or ok+error+help so the user script can deal with it. (value being parse result, error being existing error messages?)
-
 ### Async
 
 - User-created thread pool objects with `spawn` method, returns a future (like HTTP now)
