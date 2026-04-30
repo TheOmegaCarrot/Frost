@@ -111,10 +111,11 @@ defn ref_to_link(ref) -> {
 defn stdlib_link(text, rest, from_subdir) -> {
     def [ module, ...name_pieces ] = rest
     def prefix = if from_subdir == 'stdlib': '' else: 'stdlib/'
-    if len(name_pieces) == 0: $'[${text}](${prefix}${module}.md)'
+    def filename = if module == 'landing': 'README.md' else: $'${module}.md'
+    if len(name_pieces) == 0: $'[${text}](${prefix}${filename})'
     else: do {
         def linkname = name_pieces @ join('')
-        $'[${text}](${prefix}${module}.md#${linkname})'
+        $'[${text}](${prefix}${filename}#${linkname})'
     }
 }
 
@@ -136,9 +137,12 @@ export defn resolve_lang_ref(text, section_title, from_subdir) -> {
 export defn resolve_ref(text, path, from_subdir) -> {
     def [ section, ...rest ] = path @ split('.')
 
+    def prefix = if from_subdir == '': '' else: '../'
+
     match section {
         'std' | 'ext' | 'stdlib' => stdlib_link(text, rest, from_subdir),
         'lang' => lang_link(text, rest, from_subdir),
+        'intro' | 'introduction' => $'[${text}](${prefix}introduction.md)',
         _ => $'[${text}](#${path})',
     }
 }

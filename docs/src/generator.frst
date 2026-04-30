@@ -39,7 +39,7 @@ defn resolve_lang_title(segments, sections) -> {
         if section == null: null
         elif len(segments) == 1: section.title
         elif has(section, 'content'): do {
-            def children = filter section.content with fn c -> has(c, 'title')
+            def children = filter section.content with fn c -> is_map(c) and has(c, 'title')
             resolve_lang_title(slice(segments, 1), children) or section.title
         }
         else: section.title
