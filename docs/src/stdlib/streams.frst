@@ -15,13 +15,13 @@ export def streams = {
                 {
                     title: '`stdin.read`',
                     content: [
-                        '`stdin.read()` -- alias for `.read_rest()`.',
+                        '`stdin.read()`: alias for `.read_rest()`.',
                     ],
                 },
                 {
                     title: '`stdin.read_rest`',
                     content: [
-                        '`stdin.read_rest()` -- reads all remaining input from stdin as a `String`.',
+                        '`stdin.read_rest()`: reads all remaining input from stdin as a `String`.',
                     ],
                 },
             ],

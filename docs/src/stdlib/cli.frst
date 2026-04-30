@@ -121,9 +121,9 @@ export def cli = {
                     content: [
                         'The `positional` key has three forms:',
                         { list: [
-                            'Absent, `[]`, or `false` -- no positional arguments are allowed. Any positional produces an error.',
-                            'Array of specs -- each entry declares a named positional. All are required. Exact count must match.',
-                            '`true` -- raw-collect mode. All positional arguments are gathered into `result.positional` without validation.',
+                            'Absent, `[]`, or `false`: no positional arguments are allowed. Any positional produces an error.',
+                            'Array of specs: each entry declares a named positional. All are required. Exact count must match.',
+                            '`true`: raw-collect mode. All positional arguments are gathered into `result.positional` without validation.',
                         ] },
                         'Each positional spec entry is a Map with `name` (`String`, required, used in help output) and `description` (`String`, shown in help).',
                         {

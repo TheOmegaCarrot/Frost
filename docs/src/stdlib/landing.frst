@@ -75,9 +75,9 @@ export def landing = {
             content: [
                 'Extensions are optional components that are auto-detected at build time. Each extension has a `WITH_<NAME>` CMake setting with three values:',
                 { list: [
-                    '`AUTO` (default) -- enabled if dependencies are found, skipped otherwise',
-                    '`ON` -- enabled, hard error if dependencies are missing',
-                    '`OFF` -- disabled entirely',
+                    '`AUTO` (default): enabled if dependencies are found, skipped otherwise',
+                    '`ON`: enabled, hard error if dependencies are missing',
+                    '`OFF`: disabled entirely',
                 ] },
                 "The configure output shows the status for each extension and its dependencies. Each extension's documentation describes exactly how it handles its system dependencies (dependencies which must be installed on the system).",
                 {

@@ -26,10 +26,10 @@ export def expressions = {
                 'As one would expect from an `if`, the branch not taken is not evaluated.',
                 { code: 'if false: assert(false) # assert is not evaluated', illustrative: true },
                 'If an `if` does not have an `else` clause, it implicitly has an `else: null`.',
-                'Each branch of an `if` must be a single expression. Bare `{ ... }` is a map literal, not a block -- writing `if foo: { ... }` is a syntax error:',
+                'Each branch of an `if` must be a single expression. Bare `{ ... }` is a map literal, not a block, so writing `if foo: { ... }` is a syntax error:',
                 {
                     code: """
-                        if foo: { # syntax error -- this is a map literal, not a block
+                        if foo: { # syntax error: this is a map literal, not a block
                             def x = 10
                         }
                         """,

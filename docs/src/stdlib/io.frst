@@ -198,7 +198,7 @@ export def io = {
                 {
                     title: '`stringwriter.get`',
                     content: [
-                        '`stringwriter.get()` -- returns the accumulated content as a `String`.',
+                        '`stringwriter.get()`: returns the accumulated content as a `String`.',
                     ],
                 },
             ],

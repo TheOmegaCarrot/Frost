@@ -15,13 +15,13 @@ export def mutable_cell = {
                 {
                     title: '`.get`',
                     content: [
-                        '`.get()` -- returns the current value of the cell.',
+                        '`.get()`: returns the current value of the cell.',
                     ],
                 },
                 {
                     title: '`.exchange`',
                     content: [
-                        '`.exchange(value)` -- sets the cell to `value` and returns the previous value.',
+                        '`.exchange(value)`: sets the cell to `value` and returns the previous value.',
                     ],
                 },
             ],

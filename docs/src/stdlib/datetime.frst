@@ -109,7 +109,7 @@ export def datetime = {
             name: 'epoch',
             kind: 'constant',
             description: [
-                'The constant `0` -- the Unix epoch (1970-01-01T00:00:00 UTC). Provided for readability: `dt.epoch` is clearer than a bare `0` when expressing intent.',
+                'The constant `0`: the Unix epoch (1970-01-01T00:00:00 UTC). Provided for readability, as `dt.epoch` is clearer than a bare `0` when expressing intent.',
             ],
         },
         {

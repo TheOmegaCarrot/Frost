@@ -21,7 +21,7 @@ export def os = {
                 'Runs an executable and waits for it to complete. Returns a Map with `stdout` (`String`), `stderr` (`String`), and `exit_code` (`Int`).',
             ],
             body: [
-                '`command` is the executable to run (absolute path or program name looked up in `PATH`). `args` is an Array of Strings passed as command-line arguments. Each element is passed as a single argument with no word splitting -- `os.run(\'foo\', [\'bar baz\'])` is equivalent to `foo \'bar baz\'`, not `foo bar baz`.',
+                '`command` is the executable to run (absolute path or program name looked up in `PATH`). `args` is an Array of Strings passed as command-line arguments. Each element is passed as a single argument with no word splitting: `os.run(\'foo\', [\'bar baz\'])` is equivalent to `foo \'bar baz\'`, not `foo bar baz`.',
                 {
                     code: '''
                         def r = os.run('/bin/echo', ['hello', 'world'])

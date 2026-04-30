@@ -45,8 +45,8 @@ export def match_expr = {
             title: 'Type Constraints',
             content: [
                 'Type constraints can follow a binding name or `_`. The available constraints are:',
-                '`Null`, `Int`, `Float`, `Bool`, `String`, `Array`, `Map`, `Function` -- match a specific type.',
-                '`Primitive`, `Numeric`, `Structured`, `Nonnull` -- match type categories.',
+                '`Null`, `Int`, `Float`, `Bool`, `String`, `Array`, `Map`, `Function`: match a specific type.',
+                '`Primitive`, `Numeric`, `Structured`, `Nonnull`: match type categories.',
                 {
                     code: """
                         match value {
