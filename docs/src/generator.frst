@@ -73,7 +73,11 @@ defn render_content(res, items, depth, subdir) ->
             render_content(res, inner, depth + 1, subdir)
         },
         { list: items } => backend.write_list(res, items @ transform(fn s -> resolve_refs(s, subdir))),
-        { table } => backend.write_table(res, table),
+        { table } => backend.write_table(res, {
+            columns: table.columns,
+            rows: table.rows @ transform(fn row ->
+                row @ transform(fn cell -> resolve_refs(cell, subdir))),
+        }),
         { code: _ } as example => backend.write_code_block(res, example),
     }
 
