@@ -43,10 +43,10 @@ Track progress migrating from hand-written markdown (`docs/stdlib/`) to structur
 ## Generator / Backend
 
 - [x] Generator: tree walker with CLI
-- [ ] Generator: resolve @ref links in prose strings
+- [X] Generator: resolve @ref links in prose strings
 - [x] Markdown backend: core primitives
 - [x] Markdown backend: tables
-- [ ] Markdown backend: robust ref-to-link resolution
+- [X] Markdown backend: robust ref-to-link resolution
 - [ ] Test harness: walk doc tree, execute testable examples, assert results
 - [ ] Ref validation: check that all `see_also` and `@ref` paths resolve
 

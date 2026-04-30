@@ -96,10 +96,8 @@ defn stdlib_ref(fragments) -> {
     def [ module, ...name_pieces ] = fragments
     def name = name_pieces @ join('.')
 
-    # TODO: be robust
     def linkname = name_pieces @ join('')
 
-    # TODO: doesn't seem like it'll handle all cases right
     $'[`${name}`](${module}.md#${linkname})'
 }
 
@@ -110,8 +108,6 @@ defn ref_to_link(ref) -> {
     
     match section {
         'std' | 'ext' => stdlib_ref(rest)
-        # TODO: lang
-        # TODO: standalone pieces (like foreign values)
     }
 }
 
