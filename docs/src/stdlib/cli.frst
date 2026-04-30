@@ -198,6 +198,7 @@ export def cli = {
                                 # Parse error
                                 deploy: missing required option '--env'
                                 ''',
+                            lang: 'text',
                             illustrative: true,
                         },
                     ],

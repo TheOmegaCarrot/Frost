@@ -68,7 +68,11 @@ External and internal links use the same `[text](target)` syntax. Internal cross
 
 ### Code examples
 
-`code` is a string: single-line or multiline. Multiline strings use Frost's triple-quote syntax with Swift-style indentation trimming. The following example results in a string with no leading whitespace in the content:
+`code` is a string: single-line or multiline. Multiline strings use Frost's triple-quote syntax with Swift-style indentation trimming.
+
+All code example shapes accept an optional `lang` key (String) that controls the syntax-highlighting tag on the rendered code block. Defaults to `'frost'` if absent.
+
+The following example results in a string with no leading whitespace in the content:
 
 ```frost
 body: [

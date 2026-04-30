@@ -14,7 +14,7 @@ export def http = {
             name: 'parse_url',
             signatures: ['http.parse_url(url)'],
             description: [
-                'Parses a URL string and returns a Map suitable for use as the `uri` field of `request`.',
+                'Parses a URL string and returns a Map suitable for use as the `uri` field of [`request`](@ref ext.http.request).',
             ],
             body: [
                 'The returned map contains `host`, `path`, and `tls`. `port` is included only when explicitly present in the URL. `query` is included only when the URL contains query parameters.',
@@ -32,7 +32,7 @@ export def http = {
             name: 'build_url',
             signatures: ['http.build_url(uri_map)'],
             description: [
-                'Constructs a URL string from a uri map (the same format returned by `parse_url` and accepted by `request`).',
+                'Constructs a URL string from a uri map (the same format returned by [`parse_url`](@ref ext.http.parse_url) and accepted by [`request`](@ref ext.http.request)).',
             ],
             body: [
                 {
@@ -45,7 +45,7 @@ export def http = {
                         """,
                     illustrative: true,
                 },
-                '`host` is required. All other fields are optional and use the same defaults as `request`. Query values are automatically percent-encoded. Default ports (443 for HTTPS, 80 for HTTP) are omitted from the output.',
+                '`host` is required. All other fields are optional and use the same defaults as [`request`](@ref ext.http.request). Query values are automatically percent-encoded. Default ports (443 for HTTPS, 80 for HTTP) are omitted from the output.',
                 '`parse_url` and `build_url` are semantic inverses: `parse_url(build_url(m))` produces an equivalent uri map for any valid input.',
             ],
             see_also: ['ext.http.parse_url', 'ext.http.request'],

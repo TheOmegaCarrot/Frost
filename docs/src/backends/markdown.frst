@@ -41,7 +41,8 @@ export defn write_signature(res, sig) -> res.writeln($'`${sig}`')
 export defn format_external_link(text, url) -> $'[${text}](${url})'
 
 export defn write_code_block(res, example) -> {
-    res.writeln('```frost')
+    def lang = example.lang or 'frost'
+    res.writeln($'```${lang}')
     res.writeln(example.code)
 
     match example {
