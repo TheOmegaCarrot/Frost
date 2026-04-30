@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Types - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="types">Types</h1>
+<p>Type checking, conversion, and introspection. Available without importing.</p>
+<h2 id="is_null"><code>is_null</code></h2>
+<p class="signature"><code>is_null(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is <code>null</code>.</p>
+<h2 id="is_int"><code>is_int</code></h2>
+<p class="signature"><code>is_int(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is an <code>Int</code>.</p>
+<h2 id="is_float"><code>is_float</code></h2>
+<p class="signature"><code>is_float(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is a <code>Float</code>.</p>
+<h2 id="is_bool"><code>is_bool</code></h2>
+<p class="signature"><code>is_bool(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is a <code>Bool</code>.</p>
+<h2 id="is_string"><code>is_string</code></h2>
+<p class="signature"><code>is_string(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is a <code>String</code>.</p>
+<h2 id="is_array"><code>is_array</code></h2>
+<p class="signature"><code>is_array(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is an <code>Array</code>.</p>
+<h2 id="is_map"><code>is_map</code></h2>
+<p class="signature"><code>is_map(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is a <code>Map</code>.</p>
+<h2 id="is_function"><code>is_function</code></h2>
+<p class="signature"><code>is_function(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is a <code>Function</code>.</p>
+<h2 id="is_nonnull"><code>is_nonnull</code></h2>
+<p class="signature"><code>is_nonnull(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is not <code>null</code>. Equivalent to <code>not is_null(value)</code>.</p>
+<h2 id="is_numeric"><code>is_numeric</code></h2>
+<p class="signature"><code>is_numeric(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is an <code>Int</code> or <code>Float</code>.</p>
+<h2 id="is_primitive"><code>is_primitive</code></h2>
+<p class="signature"><code>is_primitive(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is a <code>Null</code>, <code>Bool</code>, <code>Int</code>, <code>Float</code>, or <code>String</code>.</p>
+<h2 id="is_structured"><code>is_structured</code></h2>
+<p class="signature"><code>is_structured(value)</code></p>
+<p>Returns <code>true</code> if <code>value</code> is an <code>Array</code> or <code>Map</code>.</p>
+<h2 id="type"><code>type</code></h2>
+<p class="signature"><code>type(value)</code></p>
+<p>Returns the type of <code>value</code> as a <code>String</code>. Possible values: <code>"Null"</code>, <code>"Int"</code>, <code>"Float"</code>, <code>"Bool"</code>, <code>"String"</code>, <code>"Array"</code>, <code>"Map"</code>, <code>"Function"</code>.</p>
+<h2 id="to_string"><code>to_string</code></h2>
+<p class="signature"><code>to_string(value)</code></p>
+<p>Converts <code>value</code> to its display string: the same representation that <a href="output.html#print"><code>print</code></a> would output. For strings, returns the string itself (unquoted). For arrays and maps, returns a compact single-line representation.</p>
+<h2 id="pretty"><code>pretty</code></h2>
+<p class="signature"><code>pretty(value)</code></p>
+<p>Like <code>to_string</code>, but formats arrays and maps as indented, multi-line output. Map keys that are valid identifiers are rendered without quotes.</p>
+<h2 id="read_value"><code>read_value</code></h2>
+<p class="signature"><code>read_value(s)</code></p>
+<p>The deserialization dual of <code>to_string</code> and <code>pretty</code>. Parses a string containing a Frost literal expression and returns the corresponding value. Accepts scalars, arrays, maps, and arithmetic expressions over literal values. Name lookups, function calls, and other non-literal constructs produce an error. Produces an error on malformed input.</p>
+<h2 id="to_int"><code>to_int</code></h2>
+<p class="signature"><code>to_int(value)</code></p>
+<p>Converts <code>value</code> to an <code>Int</code>, or returns <code>null</code> if the conversion is not supported. <code>Int</code> is returned unchanged. <code>Float</code> is truncated toward zero; produces an error if the value is out of <code>Int</code> range. Strings are parsed as base-10 integers.</p>
+<h2 id="to_float"><code>to_float</code></h2>
+<p class="signature"><code>to_float(value)</code></p>
+<p>Converts <code>value</code> to a <code>Float</code>, or returns <code>null</code> if the conversion is not supported. <code>Float</code> is returned unchanged. <code>Int</code> is converted losslessly. Strings are parsed as base-10 floating-point numbers.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

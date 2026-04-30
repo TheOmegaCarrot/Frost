@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Standard Library - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="standard-library">Standard Library</h1>
+<p>An <a href="alphabetical.html">alphabetical index of all functions</a> is available.</p>
+<h2 id="parameter-name-conventions">Parameter Name Conventions</h2>
+<p>Many functions in the standard library are sufficiently generic that parameter names beyond the type carry little additional meaning. In these cases, short placeholder names are used in signatures rather than inventing names that would imply unwarranted specificity.</p>
+<table>
+<thead><tr>
+  <th>Name</th>
+  <th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>n</code></td>
+  <td>Any numeric value</td>
+</tr>
+<tr>
+  <td><code>s</code></td>
+  <td>A <code>String</code></td>
+</tr>
+<tr>
+  <td><code>arr</code></td>
+  <td>An <code>Array</code></td>
+</tr>
+<tr>
+  <td><code>m</code></td>
+  <td>A <code>Map</code></td>
+</tr>
+<tr>
+  <td><code>f</code></td>
+  <td>A <code>Function</code></td>
+</tr>
+<tr>
+  <td><code>value</code></td>
+  <td>Any value</td>
+</tr>
+<tr>
+  <td><code>path</code></td>
+  <td>A filesystem path (<code>String</code>)</td>
+</tr>
+<tr>
+  <td><code>pattern</code></td>
+  <td>A regex pattern (<code>String</code>)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="core">Core</h2>
+<p>Available in every Frost program without imports.</p>
+<table>
+<thead><tr>
+  <th>Module</th>
+  <th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><a href="collections.html">Collections</a></td>
+  <td>Slicing, grouping, sorting, searching, and transforming arrays and maps</td>
+</tr>
+<tr>
+  <td><a href="types.html">Types</a></td>
+  <td>Type checking, conversion, and value serialization</td>
+</tr>
+<tr>
+  <td><a href="strings.html">Strings</a></td>
+  <td>Splitting, joining, case conversion, and searching</td>
+</tr>
+<tr>
+  <td><a href="operators.html">Operators</a></td>
+  <td>Arithmetic and comparison operators as first-class functions</td>
+</tr>
+<tr>
+  <td><a href="output.html">Output</a></td>
+  <td>Printing to stdout and string formatting</td>
+</tr>
+<tr>
+  <td><a href="functions.html">Functions</a></td>
+  <td>Error handling and higher-order utilities</td>
+</tr>
+<tr>
+  <td><a href="streams.html">Streams</a></td>
+  <td>Pre-defined <code>stdin</code> and <code>stderr</code> streams</td>
+</tr>
+<tr>
+  <td><a href="debug.html">Debug</a></td>
+  <td>Assertions and value inspection</td>
+</tr>
+<tr>
+  <td><a href="mutable-cell.html">Mutable Cell</a></td>
+  <td>Mutable state</td>
+</tr>
+</tbody>
+</table>
+<h2 id="standard-modules">Standard Modules</h2>
+<p>Built-in modules accessed via <code>import</code>.</p>
+<table>
+<thead><tr>
+  <th>Module</th>
+  <th>Import</th>
+  <th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><a href="cli.html">CLI</a></td>
+  <td><code>import('std.cli')</code></td>
+  <td>Building command-line tools</td>
+</tr>
+<tr>
+  <td><a href="datetime.html">Datetime</a></td>
+  <td><code>import('std.datetime')</code></td>
+  <td>Timestamps, formatting, calendar math</td>
+</tr>
+<tr>
+  <td><a href="encoding.html">Encoding</a></td>
+  <td><code>import('std.encoding')</code></td>
+  <td>Binary and text encoding utilities</td>
+</tr>
+<tr>
+  <td><a href="fs.html">Filesystem</a></td>
+  <td><code>import('std.fs')</code></td>
+  <td>Reading, writing, and navigating the filesystem</td>
+</tr>
+<tr>
+  <td><a href="io.html">IO</a></td>
+  <td><code>import('std.io')</code></td>
+  <td>Reading and writing files and streams</td>
+</tr>
+<tr>
+  <td><a href="json.html">JSON</a></td>
+  <td><code>import('std.json')</code></td>
+  <td>Encoding and decoding JSON</td>
+</tr>
+<tr>
+  <td><a href="math.html">Math</a></td>
+  <td><code>import('std.math')</code></td>
+  <td>Arithmetic, rounding, logarithms, trig</td>
+</tr>
+<tr>
+  <td><a href="os.html">OS</a></td>
+  <td><code>import('std.os')</code></td>
+  <td>Environment variables, process control</td>
+</tr>
+<tr>
+  <td><a href="random.html">Random</a></td>
+  <td><code>import('std.random')</code></td>
+  <td>Pseudo-random numbers, shuffling</td>
+</tr>
+<tr>
+  <td><a href="regex.html">Regex</a></td>
+  <td><code>import('std.regex')</code></td>
+  <td>Pattern matching, searching, replacement</td>
+</tr>
+<tr>
+  <td><a href="string.html">String</a></td>
+  <td><code>import('std.string')</code></td>
+  <td>Additional string operations</td>
+</tr>
+</tbody>
+</table>
+<h2 id="extensions">Extensions</h2>
+<p>Extensions are optional components that are auto-detected at build time. Each extension has a <code>WITH_&lt;NAME&gt;</code> CMake setting with three values:</p>
+<ul>
+  <li><code>AUTO</code> (default): enabled if dependencies are found, skipped otherwise</li>
+  <li><code>ON</code>: enabled, hard error if dependencies are missing</li>
+  <li><code>OFF</code>: disabled entirely</li>
+</ul>
+<p>The configure output shows the status for each extension and its dependencies. Each extension's documentation describes exactly how it handles its system dependencies (dependencies which must be installed on the system).</p>
+<table>
+<thead><tr>
+  <th>Extension</th>
+  <th>Import</th>
+  <th>Description</th>
+  <th>System Dependencies</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><a href="compression.html">Compression</a></td>
+  <td><code>import('ext.compression')</code></td>
+  <td>Compression and decompression</td>
+  <td>zlib, bz2, xz, brotli, lz4, snappy, zstd</td>
+</tr>
+<tr>
+  <td><a href="hash.html">Hash</a></td>
+  <td><code>import('ext.hash')</code></td>
+  <td>Hash functions, checksums, and HMAC</td>
+  <td>OpenSSL, zlib</td>
+</tr>
+<tr>
+  <td><a href="http.html">HTTP</a></td>
+  <td><code>import('ext.http')</code></td>
+  <td>Making HTTP requests</td>
+  <td>OpenSSL</td>
+</tr>
+<tr>
+  <td><a href="msgpack.html">MessagePack</a></td>
+  <td><code>import('ext.msgpack')</code></td>
+  <td>Binary serialization</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td><a href="sqlite.html">SQLite</a></td>
+  <td><code>import('ext.sqlite')</code></td>
+  <td>Embedded relational database</td>
+  <td>zlib</td>
+</tr>
+<tr>
+  <td><a href="toml.html">TOML</a></td>
+  <td><code>import('ext.toml')</code></td>
+  <td>Encoding and decoding TOML</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td><a href="unsafe.html">Unsafe</a></td>
+  <td><code>import('ext.unsafe')</code></td>
+  <td>Bypass Frost's safety guarantees</td>
+  <td>None</td>
+</tr>
+</tbody>
+</table>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

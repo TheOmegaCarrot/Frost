@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Unsafe - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="unsafe">Unsafe</h1>
+<pre><code class="language-frost">def unsafe = import('ext.unsafe')
+</code></pre>
+<p>Functions that bypass Frost's usual safety guarantees. Opt-in and intended for advanced use cases such as performance-critical code, debugging, and interop patterns that require unrestricted mutability or pointer-level introspection.</p>
+<p>Build flag: <code>WITH_UNSAFE</code> (default: <code>AUTO</code>). No external dependencies.</p>
+<p>The precise behavior of these functions may change between versions. Internal implementation details such as value sharing and allocation are not part of Frost's stability guarantees, so results from pointer-level operations like <code>same</code> and <code>identity</code> may differ across releases.</p>
+<h2 id="same"><code>same</code></h2>
+<p class="signature"><code>unsafe.same(a, b)</code></p>
+<p>Returns <code>true</code> if <code>a</code> and <code>b</code> are the exact same object in memory (pointer equality), <code>false</code> otherwise. This is distinct from <code>==</code>, which compares by value.</p>
+<p>Because Frost values are immutable, the implementation can often re-use the same exact object. The cases where this optimization can be applied are largely undocumented, and may change between versions without being considered a breaking change.</p>
+<pre><code class="language-frost">def a = [1, 2, 3]
+def b = [1, 2, 3]
+def c = a
+
+a == b            # =&gt; true  (equal by value)
+unsafe.same(a, b) # =&gt; false (distinct objects)
+unsafe.same(a, c) # =&gt; true  (same object)
+</code></pre>
+<h2 id="identity"><code>identity</code></h2>
+<p class="signature"><code>unsafe.identity(value)</code></p>
+<p>Returns the memory address of <code>value</code> as an <code>Int</code>. Two calls return the same <code>Int</code> if and only if <code>unsafe.same</code> would return <code>true</code> for the two values.</p>
+<h2 id="mutable_cell"><code>mutable_cell</code></h2>
+<p class="signature"><code>unsafe.mutable_cell()</code></p>
+<p class="signature"><code>unsafe.mutable_cell(initial)</code></p>
+<p>Creates a mutable cell with no restrictions on what it can hold. Unlike the standard <a href="mutable-cell.html"><code>mutable_cell</code></a>, this cell accepts functions, other mutable cells, and structures containing them.</p>
+<p>This makes it possible to create reference cycles, which will leak memory with no warning and no guardrails. Regular Frost code guarantees that reference cycles are impossible, and thus the implementation has no cycle detection. An unsafe mutable cell allows the user to violate this guarantee.</p>
+<p>The interface is identical to <code>mutable_cell</code>: <code>.get()</code> returns the current value, <code>.exchange(value)</code> sets the cell and returns the previous value.</p>
+<h2 id="weaken"><code>weaken</code></h2>
+<p class="signature"><code>unsafe.weaken(value)</code></p>
+<p>Creates a weak reference to <code>value</code>. Returns a map with a single method <code>.get()</code> that returns the original value if it is still alive, or <code>null</code> if it has been freed.</p>
+<p>A value is freed when all strong references to it are dropped.</p>
+<pre><code class="language-frost">defn make_weak() -&gt; do {
+    def val = {data: [1, 2, 3]}
+    def weak = unsafe.weaken(val)
+    assert(weak.get() != null)
+    weak
+}
+
+def weak = make_weak()
+assert(weak.get() == null)
+</code></pre>
+<p>Note that a weak reference to <code>null</code> is indistinguishable from an expired weak reference, since both return <code>null</code> from <code>.get()</code>.</p>
+<p>Because Frost values are immutable, the implementation is free to share identical values behind the scenes. A weak reference may appear to stay alive longer than expected if the same value happens to be re-used elsewhere. This sharing behavior is not stable and may change between versions.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

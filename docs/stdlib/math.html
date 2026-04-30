@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Math - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="math">Math</h1>
+<pre><code class="language-frost">def math = import('std.math')
+</code></pre>
+<p>Mathematical functions and numeric constants. All functions are accessed via dot syntax (e.g. <code>math.sqrt</code>). They accept <code>Int</code> or <code>Float</code> unless noted otherwise. Functions that delegate to C floating-point operations always return <code>Float</code>.</p>
+<h2 id="abs"><code>abs</code></h2>
+<p class="signature"><code>math.abs(n)</code></p>
+<p>Returns the absolute value of <code>n</code>. Returns <code>Int</code> for <code>Int</code> input and <code>Float</code> for <code>Float</code> input. Produces an error if <code>n</code> is the minimum <code>Int</code> value (which has no positive representation).</p>
+<h2 id="round"><code>round</code></h2>
+<p class="signature"><code>math.round(n)</code></p>
+<p>Rounds <code>n</code> to the nearest integer and returns an <code>Int</code>. If <code>n</code> is already an <code>Int</code>, returns it unchanged. Produces an error if the rounded value is out of <code>Int</code> range.</p>
+<h2 id="ceil"><code>ceil</code></h2>
+<p class="signature"><code>math.ceil(n)</code></p>
+<p>Rounds <code>n</code> up to the nearest integer and returns an <code>Int</code>. If <code>n</code> is already an <code>Int</code>, returns it unchanged.</p>
+<h2 id="floor"><code>floor</code></h2>
+<p class="signature"><code>math.floor(n)</code></p>
+<p>Rounds <code>n</code> down to the nearest integer and returns an <code>Int</code>. If <code>n</code> is already an <code>Int</code>, returns it unchanged.</p>
+<h2 id="trunc"><code>trunc</code></h2>
+<p class="signature"><code>math.trunc(n)</code></p>
+<p>Returns <code>n</code> rounded toward zero as a <code>Float</code>.</p>
+<h2 id="sqrt"><code>sqrt</code></h2>
+<p class="signature"><code>math.sqrt(n)</code></p>
+<p>Returns the square root of <code>n</code>.</p>
+<h2 id="cbrt"><code>cbrt</code></h2>
+<p class="signature"><code>math.cbrt(n)</code></p>
+<p>Returns the cube root of <code>n</code>.</p>
+<h2 id="pow"><code>pow</code></h2>
+<p class="signature"><code>math.pow(base, exponent)</code></p>
+<p>Returns <code>base</code> raised to <code>exponent</code>.</p>
+<h2 id="exp"><code>exp</code></h2>
+<p class="signature"><code>math.exp(n)</code></p>
+<p>Returns e raised to the power <code>n</code>.</p>
+<h2 id="exp2"><code>exp2</code></h2>
+<p class="signature"><code>math.exp2(n)</code></p>
+<p>Returns 2 raised to the power <code>n</code>.</p>
+<h2 id="expm1"><code>expm1</code></h2>
+<p class="signature"><code>math.expm1(n)</code></p>
+<p>Returns e raised to the power <code>n</code>, minus 1. More numerically accurate than <code>math.exp(n) - 1</code> for small values of <code>n</code>.</p>
+<h2 id="log"><code>log</code></h2>
+<p class="signature"><code>math.log(n)</code></p>
+<p>Returns the natural logarithm of <code>n</code>.</p>
+<h2 id="log1p"><code>log1p</code></h2>
+<p class="signature"><code>math.log1p(n)</code></p>
+<p>Returns the natural logarithm of <code>1 + n</code>. More numerically accurate than <code>math.log(1 + n)</code> for small values of <code>n</code>.</p>
+<h2 id="log2"><code>log2</code></h2>
+<p class="signature"><code>math.log2(n)</code></p>
+<p>Returns the base-2 logarithm of <code>n</code>.</p>
+<h2 id="log10"><code>log10</code></h2>
+<p class="signature"><code>math.log10(n)</code></p>
+<p>Returns the base-10 logarithm of <code>n</code>.</p>
+<h2 id="sin"><code>sin</code></h2>
+<p class="signature"><code>math.sin(n)</code></p>
+<p>Returns the sine of <code>n</code> (in radians).</p>
+<h2 id="cos"><code>cos</code></h2>
+<p class="signature"><code>math.cos(n)</code></p>
+<p>Returns the cosine of <code>n</code> (in radians).</p>
+<h2 id="tan"><code>tan</code></h2>
+<p class="signature"><code>math.tan(n)</code></p>
+<p>Returns the tangent of <code>n</code> (in radians).</p>
+<h2 id="asin"><code>asin</code></h2>
+<p class="signature"><code>math.asin(n)</code></p>
+<p>Returns the arcsine of <code>n</code> in radians. Input must be in <code>[-1, 1]</code>.</p>
+<h2 id="acos"><code>acos</code></h2>
+<p class="signature"><code>math.acos(n)</code></p>
+<p>Returns the arccosine of <code>n</code> in radians. Input must be in <code>[-1, 1]</code>.</p>
+<h2 id="atan"><code>atan</code></h2>
+<p class="signature"><code>math.atan(n)</code></p>
+<p>Returns the arctangent of <code>n</code> in radians. Result is in <code>(-pi/2, pi/2)</code>.</p>
+<h2 id="atan2"><code>atan2</code></h2>
+<p class="signature"><code>math.atan2(y, x)</code></p>
+<p>Returns the angle in radians between the positive x-axis and the point <code>(x, y)</code>. Result is in <code>(-pi, pi]</code>.</p>
+<h2 id="sinh"><code>sinh</code></h2>
+<p class="signature"><code>math.sinh(n)</code></p>
+<p>Returns the hyperbolic sine of <code>n</code>.</p>
+<h2 id="cosh"><code>cosh</code></h2>
+<p class="signature"><code>math.cosh(n)</code></p>
+<p>Returns the hyperbolic cosine of <code>n</code>.</p>
+<h2 id="tanh"><code>tanh</code></h2>
+<p class="signature"><code>math.tanh(n)</code></p>
+<p>Returns the hyperbolic tangent of <code>n</code>.</p>
+<h2 id="asinh"><code>asinh</code></h2>
+<p class="signature"><code>math.asinh(n)</code></p>
+<p>Returns the inverse hyperbolic sine of <code>n</code>.</p>
+<h2 id="acosh"><code>acosh</code></h2>
+<p class="signature"><code>math.acosh(n)</code></p>
+<p>Returns the inverse hyperbolic cosine of <code>n</code>. Input must be <code>&gt;= 1</code>.</p>
+<h2 id="atanh"><code>atanh</code></h2>
+<p class="signature"><code>math.atanh(n)</code></p>
+<p>Returns the inverse hyperbolic tangent of <code>n</code>. Input must be in <code>(-1, 1)</code>.</p>
+<h2 id="min"><code>min</code></h2>
+<p class="signature"><code>math.min(a, b)</code></p>
+<p>Returns the smaller of <code>a</code> and <code>b</code>. Returns an <code>Int</code> if both arguments are <code>Int</code>; otherwise returns a <code>Float</code>.</p>
+<h2 id="max"><code>max</code></h2>
+<p class="signature"><code>math.max(a, b)</code></p>
+<p>Returns the larger of <code>a</code> and <code>b</code>. Returns an <code>Int</code> if both arguments are <code>Int</code>; otherwise returns a <code>Float</code>.</p>
+<h2 id="hypot"><code>hypot</code></h2>
+<p class="signature"><code>math.hypot(a, b)</code></p>
+<p class="signature"><code>math.hypot(a, b, c)</code></p>
+<p>Returns the Euclidean norm: <code>sqrt(a^2 + b^2)</code> or <code>sqrt(a^2 + b^2 + c^2)</code>.</p>
+<h2 id="clamp"><code>clamp</code></h2>
+<p class="signature"><code>math.clamp(value, lo, hi)</code></p>
+<p>Returns <code>value</code> constrained to the range <code>[lo, hi]</code>. Returns <code>lo</code> if <code>value &lt; lo</code>, <code>hi</code> if <code>value &gt; hi</code>, otherwise <code>value</code> unchanged. Returns an <code>Int</code> if all three arguments are <code>Int</code>; otherwise returns a <code>Float</code>.</p>
+<h2 id="lerp"><code>lerp</code></h2>
+<p class="signature"><code>math.lerp(a, b, t)</code></p>
+<p>Linearly interpolates between <code>a</code> and <code>b</code> by <code>t</code>. Returns <code>a</code> when <code>t</code> is <code>0</code> and <code>b</code> when <code>t</code> is <code>1</code>. <code>t</code> is not clamped; values outside <code>[0, 1]</code> extrapolate beyond the <code>[a, b]</code> range.</p>
+<h2 id="numeric-constants">Numeric Constants</h2>
+<p>A map of numeric constants, accessed as <code>math.nums</code>.</p>
+<h3 id="nums.pi"><code>nums.pi</code></h3>
+<p>pi, approximately 3.14159.</p>
+<h3 id="nums.tau"><code>nums.tau</code></h3>
+<p>2*pi, approximately 6.28318.</p>
+<h3 id="nums.e"><code>nums.e</code></h3>
+<p>Euler's number, approximately 2.71828.</p>
+<h3 id="nums.golden_ratio"><code>nums.golden_ratio</code></h3>
+<p>The golden ratio, approximately 1.61803.</p>
+<h3 id="nums.maxint"><code>nums.maxint</code></h3>
+<p>Largest <code>Int</code> value.</p>
+<h3 id="nums.minint"><code>nums.minint</code></h3>
+<p>Smallest (most negative) <code>Int</code> value.</p>
+<h3 id="nums.maxfloat"><code>nums.maxfloat</code></h3>
+<p>Largest finite <code>Float</code> value.</p>
+<h3 id="nums.minfloat"><code>nums.minfloat</code></h3>
+<p>Most negative finite <code>Float</code> value.</p>
+<h3 id="nums.tinyfloat"><code>nums.tinyfloat</code></h3>
+<p>Smallest positive normalized <code>Float</code> value.</p>
+<h3 id="nums.float_epsilon"><code>nums.float_epsilon</code></h3>
+<p>Difference between <code>1.0</code> and the next representable <code>Float</code>.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Foreign Values - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="foreign-values">Foreign Values</h1>
+<p>Some extensions work with types that Frost does not natively support. For example, TOML has datetimes and SQLite has BLOBs.</p>
+<p>When an extension encounters one of these types, it produces a **foreign value**: a <code>Function</code> that carries the original typed data internally.</p>
+<p>Foreign values have two uses:</p>
+<ul>
+  <li>**Call it** to get a Frost-native approximate representation (often a <code>String</code>).</li>
+  <li>**Pass it through** back to the originating extension to preserve the original type.</li>
+</ul>
+<pre><code class="language-frost"># TOML example: datetimes are foreign values
+def toml = import('ext.toml')
+def doc = toml.decode('created = 2024-03-16')
+doc.created       # =&gt; &lt;Function&gt;
+doc.created()     # =&gt; "2024-03-16"
+toml.encode(doc)  # round-trips as a TOML date, not a string
+</code></pre>
+<p>This allows data to pass through Frost code without losing type information, even when Frost has no native representation for the type. Extensions that produce foreign values also accept them back, enabling lossless round-tripping.</p>
+<p>User-created functions (e.g., <code>fn -&gt; '2024-03-16'</code> for the TOML example) cannot be used in place of a foreign value. Only the extension that defines the type can produce valid foreign values for it. Extensions typically also provide helper functions to explicitly create foreign values from scratch.</p>
+<p>Individual extensions provide further documentation on how they handle foreign values.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

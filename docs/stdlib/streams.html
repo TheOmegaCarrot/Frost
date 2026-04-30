@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Streams - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="streams">Streams</h1>
+<p>Pre-defined streams available without imports. See <a href="io.html"><code>IO</code></a> for file and string stream constructors.</p>
+<h2 id="stdin"><code>stdin</code></h2>
+<p>A pre-defined <a href="io.html#reader"><code>Reader</code></a> backed by standard input. Supports <code>.read_line</code>, <code>.read_one</code>, <code>.read</code>, <code>.read_rest</code>.</p>
+<h3 id="stdin.read"><code>stdin.read</code></h3>
+<p><code>stdin.read()</code>: alias for <code>.read_rest()</code>.</p>
+<h3 id="stdin.read_rest"><code>stdin.read_rest</code></h3>
+<p><code>stdin.read_rest()</code>: reads all remaining input from stdin as a <code>String</code>.</p>
+<h2 id="stdout"><code>stdout</code></h2>
+<p>A pre-defined <a href="io.html#writer"><code>Writer</code></a> backed by standard output. Supports <code>.write</code>, <code>.writeln</code>.</p>
+<h2 id="stderr"><code>stderr</code></h2>
+<p>A pre-defined <a href="io.html#writer"><code>Writer</code></a> backed by standard error. Supports <code>.write</code>, <code>.writeln</code>.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

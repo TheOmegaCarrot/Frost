@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>HTTP - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="http">HTTP</h1>
+<pre><code class="language-frost">def http = import('ext.http')
+</code></pre>
+<p>Asynchronous HTTP client.</p>
+<p>Build flag: <code>WITH_HTTP</code> (default: <code>AUTO</code>). Requires OpenSSL.</p>
+<h2 id="parse_url"><code>parse_url</code></h2>
+<p class="signature"><code>http.parse_url(url)</code></p>
+<p>Parses a URL string and returns a Map suitable for use as the <code>uri</code> field of <a href="http.html#request"><code>request</code></a>.</p>
+<p>The returned map contains <code>host</code>, <code>path</code>, and <code>tls</code>. <code>port</code> is included only when explicitly present in the URL. <code>query</code> is included only when the URL contains query parameters.</p>
+<pre><code class="language-frost">http.parse_url('https://example.com/api?q=hello')
+# =&gt; {host: "example.com", path: "/api", query: {q: "hello"}, tls: true}
+</code></pre>
+<p class="see-also">See also:
+<a href="http.html#build_url"><code>build_url</code></a>
+<a href="http.html#request"><code>request</code></a>
+</p>
+<h2 id="build_url"><code>build_url</code></h2>
+<p class="signature"><code>http.build_url(uri_map)</code></p>
+<p>Constructs a URL string from a uri map (the same format returned by <a href="http.html#parse_url"><code>parse_url</code></a> and accepted by <a href="http.html#request"><code>request</code></a>).</p>
+<pre><code class="language-frost">http.build_url({host: 'example.com', path: '/api', query: {q: 'hello'}})
+# =&gt; "https://example.com/api?q=hello"
+
+http.build_url({host: 'localhost', port: 8080, tls: false, path: '/health'})
+# =&gt; "http://localhost:8080/health"
+</code></pre>
+<p><code>host</code> is required. All other fields are optional and use the same defaults as <a href="http.html#request"><code>request</code></a>. Query values are automatically percent-encoded. Default ports (443 for HTTPS, 80 for HTTP) are omitted from the output.</p>
+<p><code>parse_url</code> and <code>build_url</code> are semantic inverses: <code>parse_url(build_url(m))</code> produces an equivalent uri map for any valid input.</p>
+<p class="see-also">See also:
+<a href="http.html#parse_url"><code>parse_url</code></a>
+<a href="http.html#request"><code>request</code></a>
+</p>
+<h2 id="request"><code>request</code></h2>
+<p class="signature"><code>http.request(config)</code></p>
+<p>Performs an asynchronous HTTP request. Returns immediately with a handle map; use <code>.is_ready()</code> to poll and <code>.get()</code> to retrieve the result when ready.</p>
+<h3 id="config-fields">Config Fields</h3>
+<table>
+<thead><tr>
+  <th>Field</th>
+  <th>Type</th>
+  <th>Required</th>
+  <th>Default</th>
+  <th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>uri</code></td>
+  <td>Map</td>
+  <td>Yes</td>
+  <td>--</td>
+  <td>See URI fields below</td>
+</tr>
+<tr>
+  <td><code>method</code></td>
+  <td>String</td>
+  <td>No</td>
+  <td><code>"GET"</code></td>
+  <td>HTTP method (<code>"GET"</code>, <code>"POST"</code>, etc.)</td>
+</tr>
+<tr>
+  <td><code>headers</code></td>
+  <td>Map</td>
+  <td>No</td>
+  <td><code>{}</code></td>
+  <td>Request headers. Values may be <code>String</code> or <code>Array</code> of <code>String</code> for repeated headers. <code>host</code>, <code>content-length</code>, and <code>transfer-encoding</code> are managed automatically.</td>
+</tr>
+<tr>
+  <td><code>body</code></td>
+  <td>String</td>
+  <td>No</td>
+  <td>none</td>
+  <td>Request body</td>
+</tr>
+<tr>
+  <td><code>timeout_ms</code></td>
+  <td>Int</td>
+  <td>No</td>
+  <td><code>10000</code></td>
+  <td>Request timeout in milliseconds</td>
+</tr>
+<tr>
+  <td><code>verify_tls</code></td>
+  <td>Bool</td>
+  <td>No</td>
+  <td><code>true</code></td>
+  <td>Whether to verify TLS certificates</td>
+</tr>
+<tr>
+  <td><code>ca_file</code></td>
+  <td>String</td>
+  <td>No</td>
+  <td>--</td>
+  <td>Path to a CA certificate file</td>
+</tr>
+<tr>
+  <td><code>ca_path</code></td>
+  <td>String</td>
+  <td>No</td>
+  <td>--</td>
+  <td>Path to a directory of CA certificates</td>
+</tr>
+<tr>
+  <td><code>use_system_ca</code></td>
+  <td>Bool</td>
+  <td>No</td>
+  <td><code>true</code></td>
+  <td>Whether to load the system CA store</td>
+</tr>
+</tbody>
+</table>
+<h3 id="uri-fields">URI Fields</h3>
+<table>
+<thead><tr>
+  <th>Field</th>
+  <th>Type</th>
+  <th>Required</th>
+  <th>Default</th>
+  <th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>host</code></td>
+  <td>String</td>
+  <td>Yes</td>
+  <td>--</td>
+  <td>Hostname or IP address</td>
+</tr>
+<tr>
+  <td><code>path</code></td>
+  <td>String</td>
+  <td>No</td>
+  <td><code>"/"</code></td>
+  <td>Request path</td>
+</tr>
+<tr>
+  <td><code>tls</code></td>
+  <td>Bool</td>
+  <td>No</td>
+  <td><code>true</code></td>
+  <td>Whether to use HTTPS</td>
+</tr>
+<tr>
+  <td><code>port</code></td>
+  <td>Int</td>
+  <td>No</td>
+  <td>80 or 443</td>
+  <td>Port number (80 if <code>tls</code> is <code>false</code>, 443 otherwise)</td>
+</tr>
+<tr>
+  <td><code>query</code></td>
+  <td>Map</td>
+  <td>No</td>
+  <td><code>{}</code></td>
+  <td>Query parameters. Values may be <code>String</code>, <code>null</code> (value-less param), or <code>Array</code> of <code>String</code> for repeated params.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="return-value">Return Value</h3>
+<pre><code class="language-frost">{
+    is_ready: fn -&gt; Bool,
+    get:      fn -&gt; result,
+}
+</code></pre>
+<p><code>.get()</code> blocks until the request either completes or errors, then returns. The result is cached internally; subsequent calls to <code>.get()</code> return the same value immediately.</p>
+<p><code>ok</code> reflects network-level success (whether a response was received), not the HTTP status code. A server returning a 500 yields <code>ok: true</code>. Check <code>response.code</code> to determine application-level success.</p>
+<pre><code class="language-frost"># On network success (any HTTP status code):
+{
+    ok:       true,
+    response: {
+        code:    Int,
+        body:    String,
+        headers: Map   # header names are lowercased; values are String
+                       # or Array of String for repeated headers
+    }
+}
+
+# On network failure (connection error, timeout, etc.):
+{
+    ok:    false,
+    error: { category: String, phase: String, message: String }
+}
+</code></pre>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

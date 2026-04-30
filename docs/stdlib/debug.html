@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Debug - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="debug">Debug</h1>
+<p>Assertion and debugging utilities. Available without importing.</p>
+<h2 id="assert"><code>assert</code></h2>
+<p class="signature"><code>assert(condition)</code></p>
+<p class="signature"><code>assert(condition, message)</code></p>
+<p>Produces a recoverable error if <code>condition</code> is falsy. The optional <code>message</code> is included in the error. Returns <code>condition</code> unchanged if the assertion passes.</p>
+<h2 id="debug_dump"><code>debug_dump</code></h2>
+<p class="signature"><code>debug_dump(value)</code></p>
+<p>Returns a string representation of <code>value</code> for debugging. For non-function values, this is similar to <code>to_string</code>, except that strings are quoted. For functions, returns an AST dump of the function body.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

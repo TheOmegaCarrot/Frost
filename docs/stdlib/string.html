@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>String - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="string">String</h1>
+<pre><code class="language-frost">def str = import('std.string')
+</code></pre>
+<p>Additional string operations beyond the <a href="strings.html">global string builtins</a>.</p>
+<h2 id="index_of"><code>index_of</code></h2>
+<p class="signature"><code>str.index_of(s, substr)</code></p>
+<p>Returns the index of the first occurrence of <code>substr</code> in <code>s</code>, or <code>null</code> if not found.</p>
+<pre><code class="language-frost">str.index_of('hello world', 'world')
+# =&gt; 6
+</code></pre>
+<pre><code class="language-frost">str.index_of('hello', 'xyz')
+# =&gt; null
+</code></pre>
+<h2 id="last_index_of"><code>last_index_of</code></h2>
+<p class="signature"><code>str.last_index_of(s, substr)</code></p>
+<p>Returns the index of the last occurrence of <code>substr</code> in <code>s</code>, or <code>null</code> if not found.</p>
+<pre><code class="language-frost">str.last_index_of('abcabc', 'bc')
+# =&gt; 4
+</code></pre>
+<h2 id="count"><code>count</code></h2>
+<p class="signature"><code>str.count(s, substr)</code></p>
+<p>Counts the number of non-overlapping occurrences of <code>substr</code> in <code>s</code>. <code>substr</code> must not be empty.</p>
+<pre><code class="language-frost">str.count('banana', 'an')
+# =&gt; 2
+</code></pre>
+<pre><code class="language-frost">str.count('aaa', 'aa')
+# =&gt; 1
+</code></pre>
+<h2 id="chars"><code>chars</code></h2>
+<p class="signature"><code>str.chars(s)</code></p>
+<p>Splits <code>s</code> into an <code>Array</code> of single-byte strings.</p>
+<pre><code class="language-frost">str.chars('abc')
+# =&gt; [ "a", "b", "c" ]
+</code></pre>
+<pre><code class="language-frost">str.chars('')
+# =&gt; []
+</code></pre>
+<h2 id="is_empty"><code>is_empty</code></h2>
+<p class="signature"><code>str.is_empty(s)</code></p>
+<p>Returns <code>true</code> if <code>s</code> is the empty string.</p>
+<h2 id="is_ascii"><code>is_ascii</code></h2>
+<p class="signature"><code>str.is_ascii(s)</code></p>
+<p>Returns <code>true</code> if all bytes in <code>s</code> are ASCII (< 128). An empty string returns <code>true</code> (vacuous truth).</p>
+<h2 id="is_digit"><code>is_digit</code></h2>
+<p class="signature"><code>str.is_digit(s)</code></p>
+<p>Returns <code>true</code> if all bytes in <code>s</code> are ASCII digits (<code>0</code>-<code>9</code>). An empty string returns <code>true</code> (vacuous truth).</p>
+<h2 id="is_alpha"><code>is_alpha</code></h2>
+<p class="signature"><code>str.is_alpha(s)</code></p>
+<p>Returns <code>true</code> if all bytes in <code>s</code> are ASCII letters (<code>a</code>-<code>z</code>, <code>A</code>-<code>Z</code>). An empty string returns <code>true</code>.</p>
+<h2 id="is_alphanumeric"><code>is_alphanumeric</code></h2>
+<p class="signature"><code>str.is_alphanumeric(s)</code></p>
+<p>Returns <code>true</code> if all bytes in <code>s</code> are ASCII letters or digits. An empty string returns <code>true</code>.</p>
+<h2 id="is_whitespace"><code>is_whitespace</code></h2>
+<p class="signature"><code>str.is_whitespace(s)</code></p>
+<p>Returns <code>true</code> if all bytes in <code>s</code> are ASCII whitespace. An empty string returns <code>true</code>.</p>
+<h2 id="is_uppercase"><code>is_uppercase</code></h2>
+<p class="signature"><code>str.is_uppercase(s)</code></p>
+<p>Returns <code>true</code> if all ASCII letters in <code>s</code> are uppercase. Non-letter bytes are ignored.</p>
+<h2 id="is_lowercase"><code>is_lowercase</code></h2>
+<p class="signature"><code>str.is_lowercase(s)</code></p>
+<p>Returns <code>true</code> if all ASCII letters in <code>s</code> are lowercase. Non-letter bytes are ignored.</p>
+<h2 id="pad_left"><code>pad_left</code></h2>
+<p class="signature"><code>str.pad_left(s, width)</code></p>
+<p class="signature"><code>str.pad_left(s, width, fill)</code></p>
+<p>Pads <code>s</code> on the left to the given <code>width</code>. <code>fill</code> defaults to space. <code>fill</code> must be a single-byte string. If <code>s</code> is already at or beyond <code>width</code>, it is returned unchanged.</p>
+<pre><code class="language-frost">str.pad_left('42', 5, '0')
+# =&gt; 00042
+</code></pre>
+<pre><code class="language-frost">str.pad_left('42', 5)
+# =&gt;    42
+</code></pre>
+<h2 id="pad_right"><code>pad_right</code></h2>
+<p class="signature"><code>str.pad_right(s, width)</code></p>
+<p class="signature"><code>str.pad_right(s, width, fill)</code></p>
+<p>Pads <code>s</code> on the right to the given <code>width</code>. <code>fill</code> defaults to space. <code>fill</code> must be a single-byte string.</p>
+<pre><code class="language-frost">str.pad_right('hi', 5, '.')
+# =&gt; hi...
+</code></pre>
+<pre><code class="language-frost">str.pad_right('hi', 5)
+# =&gt; hi   
+</code></pre>
+<h2 id="center"><code>center</code></h2>
+<p class="signature"><code>str.center(s, width)</code></p>
+<p class="signature"><code>str.center(s, width, fill)</code></p>
+<p>Centers <code>s</code> within the given <code>width</code>. <code>fill</code> defaults to space. When the padding is odd, the extra byte goes on the right.</p>
+<pre><code class="language-frost">str.center('hi', 6, '-')
+# =&gt; --hi--
+</code></pre>
+<h2 id="repeat"><code>repeat</code></h2>
+<p class="signature"><code>str.repeat(s, n)</code></p>
+<p>Returns <code>s</code> repeated <code>n</code> times. <code>n</code> must not be negative.</p>
+<pre><code class="language-frost">str.repeat('ab', 3)
+# =&gt; ababab
+</code></pre>
+<pre><code class="language-frost">str.repeat('ha', 0)
+# =&gt; 
+</code></pre>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

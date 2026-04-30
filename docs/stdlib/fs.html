@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Filesystem - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="filesystem">Filesystem</h1>
+<pre><code class="language-frost">def fs = import('std.fs')
+</code></pre>
+<p>Filesystem operations: path manipulation, file metadata, directory listing, and file management.</p>
+<h2 id="absolute"><code>absolute</code></h2>
+<p class="signature"><code>fs.absolute(path)</code></p>
+<p>Returns the absolute form of <code>path</code> without resolving symlinks.</p>
+<h2 id="canonical"><code>canonical</code></h2>
+<p class="signature"><code>fs.canonical(path)</code></p>
+<p>Returns the canonical absolute path, resolving symlinks and <code>.</code>/<code>..</code> components. Produces an error if <code>path</code> does not exist.</p>
+<h2 id="exists"><code>exists</code></h2>
+<p class="signature"><code>fs.exists(path)</code></p>
+<p>Returns <code>true</code> if <code>path</code> exists on the filesystem.</p>
+<h2 id="is_file"><code>is_file</code></h2>
+<p class="signature"><code>fs.is_file(path)</code></p>
+<p>Returns <code>true</code> if <code>path</code> exists and is a regular file.</p>
+<h2 id="is_directory"><code>is_directory</code></h2>
+<p class="signature"><code>fs.is_directory(path)</code></p>
+<p>Returns <code>true</code> if <code>path</code> exists and is a directory.</p>
+<h2 id="is_symlink"><code>is_symlink</code></h2>
+<p class="signature"><code>fs.is_symlink(path)</code></p>
+<p>Returns <code>true</code> if <code>path</code> exists and is a symbolic link.</p>
+<h2 id="is_block"><code>is_block</code></h2>
+<p class="signature"><code>fs.is_block(path)</code></p>
+<p>Returns <code>true</code> if <code>path</code> exists and is a block device.</p>
+<h2 id="is_character"><code>is_character</code></h2>
+<p class="signature"><code>fs.is_character(path)</code></p>
+<p>Returns <code>true</code> if <code>path</code> exists and is a character device.</p>
+<h2 id="is_fifo"><code>is_fifo</code></h2>
+<p class="signature"><code>fs.is_fifo(path)</code></p>
+<p>Returns <code>true</code> if <code>path</code> exists and is a named pipe (FIFO).</p>
+<h2 id="is_socket"><code>is_socket</code></h2>
+<p class="signature"><code>fs.is_socket(path)</code></p>
+<p>Returns <code>true</code> if <code>path</code> exists and is a Unix domain socket. All <code>is_*</code> predicates return <code>false</code> for nonexistent paths.</p>
+<h2 id="stat"><code>stat</code></h2>
+<p class="signature"><code>fs.stat(path)</code></p>
+<p>Returns a map describing the file at <code>path</code>. Produces an error if the stat call fails.</p>
+<pre><code class="language-frost">{
+    type:  String,   # "regular", "directory", "symlink", "block",
+                     # "character", "fifo", "socket", "none",
+                     # "not_found", or "unknown"
+    perms: {
+        owner:  { read: Bool, write: Bool, exec: Bool },
+        group:  { read: Bool, write: Bool, exec: Bool },
+        others: { read: Bool, write: Bool, exec: Bool },
+    }
+}
+</code></pre>
+<h2 id="size"><code>size</code></h2>
+<p class="signature"><code>fs.size(path)</code></p>
+<p>Returns the size of the file at <code>path</code> in bytes as an <code>Int</code>. Produces an error if <code>path</code> does not exist or is not a regular file.</p>
+<h2 id="cwd"><code>cwd</code></h2>
+<p class="signature"><code>fs.cwd()</code></p>
+<p>Returns the current working directory as a string.</p>
+<h2 id="cd"><code>cd</code></h2>
+<p class="signature"><code>fs.cd(path)</code></p>
+<p>Changes the current working directory to <code>path</code>. Produces an error if <code>path</code> does not exist or is not accessible.</p>
+<h2 id="list"><code>list</code></h2>
+<p class="signature"><code>fs.list(path)</code></p>
+<p>Returns an array of path strings for all entries in the directory at <code>path</code>. Produces an error if <code>path</code> does not exist or is not a directory.</p>
+<h2 id="list_recursively"><code>list_recursively</code></h2>
+<p class="signature"><code>fs.list_recursively(path)</code></p>
+<p>Recursively lists all entries under <code>path</code>. Entries in directories where permission is denied are silently skipped. Produces an error if <code>path</code> itself does not exist or is not a directory.</p>
+<h2 id="mkdir"><code>mkdir</code></h2>
+<p class="signature"><code>fs.mkdir(path)</code></p>
+<p>Creates <code>path</code> and any missing parent directories. Returns <code>true</code> if the directory was created, <code>false</code> if it already existed.</p>
+<h2 id="move"><code>move</code></h2>
+<p class="signature"><code>fs.move(src, dest)</code></p>
+<p>Moves or renames <code>src</code> to <code>dest</code>. Produces an error on failure.</p>
+<h2 id="copy"><code>copy</code></h2>
+<p class="signature"><code>fs.copy(src, dest)</code></p>
+<p>Recursively copies <code>src</code> to <code>dest</code>. Produces an error on failure.</p>
+<h2 id="symlink"><code>symlink</code></h2>
+<p class="signature"><code>fs.symlink(to, link)</code></p>
+<p>Creates a symbolic link at <code>link</code> pointing to <code>to</code>. Produces an error on failure.</p>
+<h2 id="remove"><code>remove</code></h2>
+<p class="signature"><code>fs.remove(path)</code></p>
+<p>Removes the file or empty directory at <code>path</code>. Returns <code>true</code> if something was removed, <code>false</code> if <code>path</code> did not exist.</p>
+<h2 id="remove_recursively"><code>remove_recursively</code></h2>
+<p class="signature"><code>fs.remove_recursively(path)</code></p>
+<p>Recursively removes <code>path</code> and all its contents. Returns the number of entries removed as an <code>Int</code>. Returns <code>0</code> if <code>path</code> did not exist.</p>
+<h2 id="concat"><code>concat</code></h2>
+<p class="signature"><code>fs.concat(base, path)</code></p>
+<p>Joins <code>base</code> and <code>path</code> using the platform path separator. Equivalent to <code>base / path</code> in filesystem terms.</p>
+<h2 id="stem"><code>stem</code></h2>
+<p class="signature"><code>fs.stem(path)</code></p>
+<p>Returns the filename component of <code>path</code> with the last extension removed.</p>
+<pre><code class="language-frost">fs.stem('/a/b/file.txt')
+# =&gt; file
+</code></pre>
+<pre><code class="language-frost">fs.stem('archive.tar.gz')
+# =&gt; archive.tar
+</code></pre>
+<pre><code class="language-frost">fs.stem('/a/b/file')
+# =&gt; file
+</code></pre>
+<h2 id="extension"><code>extension</code></h2>
+<p class="signature"><code>fs.extension(path)</code></p>
+<p>Returns the last extension of the filename component of <code>path</code>, including the leading dot. Returns an empty string if there is no extension.</p>
+<pre><code class="language-frost">fs.extension('/a/b/file.txt')
+# =&gt; .txt
+</code></pre>
+<pre><code class="language-frost">fs.extension('archive.tar.gz')
+# =&gt; .gz
+</code></pre>
+<pre><code class="language-frost">fs.extension('/a/b/file')
+# =&gt; 
+</code></pre>
+<h2 id="filename"><code>filename</code></h2>
+<p class="signature"><code>fs.filename(path)</code></p>
+<p>Returns the final component of <code>path</code> (the filename), including any extension.</p>
+<pre><code class="language-frost">fs.filename('/a/b/file.txt')
+# =&gt; file.txt
+</code></pre>
+<h2 id="parent"><code>parent</code></h2>
+<p class="signature"><code>fs.parent(path)</code></p>
+<p>Returns the parent directory of <code>path</code>. Returns an empty string if <code>path</code> contains no directory component.</p>
+<pre><code class="language-frost">fs.parent('/a/b/file.txt')
+# =&gt; /a/b
+</code></pre>
+<pre><code class="language-frost">fs.parent('/a/b')
+# =&gt; /a
+</code></pre>
+<pre><code class="language-frost">fs.parent('file.txt')
+# =&gt; 
+</code></pre>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

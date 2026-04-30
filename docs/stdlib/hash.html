@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Hash - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="hash">Hash</h1>
+<pre><code class="language-frost">def hash = import('ext.hash')
+</code></pre>
+<p>Cryptographic and non-cryptographic hash functions, plus HMAC variants.</p>
+<p>All hash functions take a single <code>String</code> argument and return a lowercase hexadecimal <code>String</code> digest. Frost strings are binary-safe, so the input may contain arbitrary bytes.</p>
+<p>Build flag: <code>WITH_HASH</code> (default: <code>AUTO</code>). Requires OpenSSL and zlib.</p>
+<p>To obtain the raw binary digest, use <a href="encoding.html#hexdecode"><code>encoding.hex.decode</code></a>.</p>
+<pre><code class="language-frost">def enc = import('std.encoding')
+def raw_digest = enc.hex.decode(hash.sha256('hello'))
+</code></pre>
+<p>The module also provides HMAC (Hash-based Message Authentication Code) variants of each algorithm via the <code>hmac</code> sub-map. Each HMAC function takes a key and a message, both <code>String</code>, and returns a lowercase hexadecimal <code>String</code>.</p>
+<pre><code class="language-frost">hash.hmac.sha256('my-secret-key', 'message to authenticate')
+</code></pre>
+<p>Some algorithms in this module (notably MD5 and SHA-1) are considered weak and should not be used for security-sensitive purposes. They are included for interoperability with existing systems. When security matters, research current best practices.</p>
+<h2 id="hash-algorithms">Hash Algorithms</h2>
+<p>Each of these also has an HMAC variant.</p>
+<table>
+<thead><tr>
+  <th>Function</th>
+  <th>Algorithm</th>
+  <th>Digest size</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>md5</code></td>
+  <td>MD5</td>
+  <td>128-bit</td>
+</tr>
+<tr>
+  <td><code>sha1</code></td>
+  <td>SHA-1</td>
+  <td>160-bit</td>
+</tr>
+<tr>
+  <td><code>sha224</code></td>
+  <td>SHA-224</td>
+  <td>224-bit</td>
+</tr>
+<tr>
+  <td><code>sha256</code></td>
+  <td>SHA-256</td>
+  <td>256-bit</td>
+</tr>
+<tr>
+  <td><code>sha384</code></td>
+  <td>SHA-384</td>
+  <td>384-bit</td>
+</tr>
+<tr>
+  <td><code>sha512</code></td>
+  <td>SHA-512</td>
+  <td>512-bit</td>
+</tr>
+<tr>
+  <td><code>sha3_224</code></td>
+  <td>SHA3-224</td>
+  <td>224-bit</td>
+</tr>
+<tr>
+  <td><code>sha3_256</code></td>
+  <td>SHA3-256</td>
+  <td>256-bit</td>
+</tr>
+<tr>
+  <td><code>sha3_384</code></td>
+  <td>SHA3-384</td>
+  <td>384-bit</td>
+</tr>
+<tr>
+  <td><code>sha3_512</code></td>
+  <td>SHA3-512</td>
+  <td>512-bit</td>
+</tr>
+<tr>
+  <td><code>sha512_224</code></td>
+  <td>SHA-512/224</td>
+  <td>224-bit</td>
+</tr>
+<tr>
+  <td><code>sha512_256</code></td>
+  <td>SHA-512/256</td>
+  <td>256-bit</td>
+</tr>
+<tr>
+  <td><code>blake2s256</code></td>
+  <td>BLAKE2s</td>
+  <td>256-bit</td>
+</tr>
+<tr>
+  <td><code>blake2b512</code></td>
+  <td>BLAKE2b</td>
+  <td>512-bit</td>
+</tr>
+<tr>
+  <td><code>ripemd160</code></td>
+  <td>RIPEMD-160</td>
+  <td>160-bit</td>
+</tr>
+<tr>
+  <td><code>sm3</code></td>
+  <td>SM3</td>
+  <td>256-bit</td>
+</tr>
+</tbody>
+</table>
+<h2 id="checksums-and-fast-hashes">Checksums and Fast Hashes</h2>
+<table>
+<thead><tr>
+  <th>Function</th>
+  <th>Algorithm</th>
+  <th>Digest size</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>crc32</code></td>
+  <td>CRC-32</td>
+  <td>32-bit</td>
+</tr>
+<tr>
+  <td><code>xxh32</code></td>
+  <td>xxHash32</td>
+  <td>32-bit</td>
+</tr>
+<tr>
+  <td><code>xxh64</code></td>
+  <td>xxHash64</td>
+  <td>64-bit</td>
+</tr>
+<tr>
+  <td><code>xxh3_64</code></td>
+  <td>XXH3 (64-bit)</td>
+  <td>64-bit</td>
+</tr>
+<tr>
+  <td><code>xxh3_128</code></td>
+  <td>XXH3 (128-bit)</td>
+  <td>128-bit</td>
+</tr>
+</tbody>
+</table>
+<h2 id="crc32"><code>crc32</code></h2>
+<p class="signature"><code>hash.crc32(input)</code></p>
+<p>Returns the CRC-32 checksum (32-bit) of <code>input</code> as an 8-character hexadecimal string.</p>
+<h2 id="md5"><code>md5</code></h2>
+<p class="signature"><code>hash.md5(input)</code></p>
+<p>Returns the MD5 digest (128-bit) of <code>input</code>.</p>
+<h2 id="sha1"><code>sha1</code></h2>
+<p class="signature"><code>hash.sha1(input)</code></p>
+<p>Returns the SHA-1 digest (160-bit) of <code>input</code>.</p>
+<h2 id="sha224"><code>sha224</code></h2>
+<p class="signature"><code>hash.sha224(input)</code></p>
+<p>Returns the SHA-224 digest (224-bit) of <code>input</code>.</p>
+<h2 id="sha256"><code>sha256</code></h2>
+<p class="signature"><code>hash.sha256(input)</code></p>
+<p>Returns the SHA-256 digest (256-bit) of <code>input</code>.</p>
+<h2 id="sha384"><code>sha384</code></h2>
+<p class="signature"><code>hash.sha384(input)</code></p>
+<p>Returns the SHA-384 digest (384-bit) of <code>input</code>.</p>
+<h2 id="sha512"><code>sha512</code></h2>
+<p class="signature"><code>hash.sha512(input)</code></p>
+<p>Returns the SHA-512 digest (512-bit) of <code>input</code>.</p>
+<h2 id="sha3_224"><code>sha3_224</code></h2>
+<p class="signature"><code>hash.sha3_224(input)</code></p>
+<p>Returns the SHA3-224 digest (224-bit) of <code>input</code>.</p>
+<h2 id="sha3_256"><code>sha3_256</code></h2>
+<p class="signature"><code>hash.sha3_256(input)</code></p>
+<p>Returns the SHA3-256 digest (256-bit) of <code>input</code>.</p>
+<h2 id="sha3_384"><code>sha3_384</code></h2>
+<p class="signature"><code>hash.sha3_384(input)</code></p>
+<p>Returns the SHA3-384 digest (384-bit) of <code>input</code>.</p>
+<h2 id="sha3_512"><code>sha3_512</code></h2>
+<p class="signature"><code>hash.sha3_512(input)</code></p>
+<p>Returns the SHA3-512 digest (512-bit) of <code>input</code>.</p>
+<h2 id="sha512_224"><code>sha512_224</code></h2>
+<p class="signature"><code>hash.sha512_224(input)</code></p>
+<p>Returns the SHA-512/224 digest (224-bit) of <code>input</code>.</p>
+<h2 id="sha512_256"><code>sha512_256</code></h2>
+<p class="signature"><code>hash.sha512_256(input)</code></p>
+<p>Returns the SHA-512/256 digest (256-bit) of <code>input</code>.</p>
+<h2 id="blake2s256"><code>blake2s256</code></h2>
+<p class="signature"><code>hash.blake2s256(input)</code></p>
+<p>Returns the BLAKE2s digest (256-bit) of <code>input</code>.</p>
+<h2 id="blake2b512"><code>blake2b512</code></h2>
+<p class="signature"><code>hash.blake2b512(input)</code></p>
+<p>Returns the BLAKE2b digest (512-bit) of <code>input</code>.</p>
+<h2 id="ripemd160"><code>ripemd160</code></h2>
+<p class="signature"><code>hash.ripemd160(input)</code></p>
+<p>Returns the RIPEMD-160 digest (160-bit) of <code>input</code>.</p>
+<h2 id="sm3"><code>sm3</code></h2>
+<p class="signature"><code>hash.sm3(input)</code></p>
+<p>Returns the SM3 digest (256-bit) of <code>input</code>.</p>
+<h2 id="xxh32"><code>xxh32</code></h2>
+<p class="signature"><code>hash.xxh32(input)</code></p>
+<p>Returns the xxHash32 digest (32-bit) of <code>input</code> as an 8-character hexadecimal string. xxHash is a non-cryptographic hash optimized for speed.</p>
+<h2 id="xxh64"><code>xxh64</code></h2>
+<p class="signature"><code>hash.xxh64(input)</code></p>
+<p>Returns the xxHash64 digest (64-bit) of <code>input</code>.</p>
+<h2 id="xxh3_64"><code>xxh3_64</code></h2>
+<p class="signature"><code>hash.xxh3_64(input)</code></p>
+<p>Returns the XXH3 digest (64-bit) of <code>input</code>. XXH3 is the latest xxHash algorithm and is faster than xxh32/xxh64 on most inputs.</p>
+<h2 id="xxh3_128"><code>xxh3_128</code></h2>
+<p class="signature"><code>hash.xxh3_128(input)</code></p>
+<p>Returns the XXH3 digest (128-bit) of <code>input</code>.</p>
+<h2 id="hmac">HMAC</h2>
+<p>Each hash algorithm has a corresponding HMAC function under <code>hmac</code>.</p>
+<h3 id="hmac.md5"><code>hmac.md5</code></h3>
+<p class="signature"><code>hash.hmac.md5(key, message)</code></p>
+<p>Returns the HMAC-MD5 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha1"><code>hmac.sha1</code></h3>
+<p class="signature"><code>hash.hmac.sha1(key, message)</code></p>
+<p>Returns the HMAC-SHA-1 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha224"><code>hmac.sha224</code></h3>
+<p class="signature"><code>hash.hmac.sha224(key, message)</code></p>
+<p>Returns the HMAC-SHA-224 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha256"><code>hmac.sha256</code></h3>
+<p class="signature"><code>hash.hmac.sha256(key, message)</code></p>
+<p>Returns the HMAC-SHA-256 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha384"><code>hmac.sha384</code></h3>
+<p class="signature"><code>hash.hmac.sha384(key, message)</code></p>
+<p>Returns the HMAC-SHA-384 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha512"><code>hmac.sha512</code></h3>
+<p class="signature"><code>hash.hmac.sha512(key, message)</code></p>
+<p>Returns the HMAC-SHA-512 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha3_224"><code>hmac.sha3_224</code></h3>
+<p class="signature"><code>hash.hmac.sha3_224(key, message)</code></p>
+<p>Returns the HMAC-SHA3-224 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha3_256"><code>hmac.sha3_256</code></h3>
+<p class="signature"><code>hash.hmac.sha3_256(key, message)</code></p>
+<p>Returns the HMAC-SHA3-256 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha3_384"><code>hmac.sha3_384</code></h3>
+<p class="signature"><code>hash.hmac.sha3_384(key, message)</code></p>
+<p>Returns the HMAC-SHA3-384 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha3_512"><code>hmac.sha3_512</code></h3>
+<p class="signature"><code>hash.hmac.sha3_512(key, message)</code></p>
+<p>Returns the HMAC-SHA3-512 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha512_224"><code>hmac.sha512_224</code></h3>
+<p class="signature"><code>hash.hmac.sha512_224(key, message)</code></p>
+<p>Returns the HMAC-SHA-512/224 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sha512_256"><code>hmac.sha512_256</code></h3>
+<p class="signature"><code>hash.hmac.sha512_256(key, message)</code></p>
+<p>Returns the HMAC-SHA-512/256 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.blake2s256"><code>hmac.blake2s256</code></h3>
+<p class="signature"><code>hash.hmac.blake2s256(key, message)</code></p>
+<p>Returns the HMAC-BLAKE2s of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.blake2b512"><code>hmac.blake2b512</code></h3>
+<p class="signature"><code>hash.hmac.blake2b512(key, message)</code></p>
+<p>Returns the HMAC-BLAKE2b of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.ripemd160"><code>hmac.ripemd160</code></h3>
+<p class="signature"><code>hash.hmac.ripemd160(key, message)</code></p>
+<p>Returns the HMAC-RIPEMD-160 of <code>message</code> using <code>key</code>.</p>
+<h3 id="hmac.sm3"><code>hmac.sm3</code></h3>
+<p class="signature"><code>hash.hmac.sm3(key, message)</code></p>
+<p>Returns the HMAC-SM3 of <code>message</code> using <code>key</code>.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>OS - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="os">OS</h1>
+<pre><code class="language-frost">def os = import('std.os')
+</code></pre>
+<p>Environment variables, process management, and subprocess execution.</p>
+<h2 id="getenv"><code>getenv</code></h2>
+<p class="signature"><code>os.getenv(name)</code></p>
+<p>Returns the value of the environment variable <code>name</code> as a <code>String</code>, or <code>null</code> if it is not set.</p>
+<h2 id="setenv"><code>setenv</code></h2>
+<p class="signature"><code>os.setenv(variable, value)</code></p>
+<p>Sets the environment variable <code>variable</code> to <code>value</code>, overwriting any existing value. Returns <code>null</code>. Produces an error if the operating system rejects the variable name (the exact conditions are platform-dependent).</p>
+<h2 id="unsetenv"><code>unsetenv</code></h2>
+<p class="signature"><code>os.unsetenv(variable)</code></p>
+<p>Removes the environment variable <code>variable</code>. Unsetting a variable that is not set is not an error. Returns <code>null</code>. Produces an error if the operating system rejects the variable name (the exact conditions are platform-dependent).</p>
+<h2 id="pid"><code>pid</code></h2>
+<p class="signature"><code>os.pid()</code></p>
+<p>Returns the process ID of the current process as an <code>Int</code>.</p>
+<h2 id="hostname"><code>hostname</code></h2>
+<p class="signature"><code>os.hostname()</code></p>
+<p>Returns the hostname of the current machine as a <code>String</code>.</p>
+<h2 id="exit"><code>exit</code></h2>
+<p class="signature"><code>os.exit(code)</code></p>
+<p>Terminates the process with the given integer exit code. Does not return.</p>
+<h2 id="sleep"><code>sleep</code></h2>
+<p class="signature"><code>os.sleep(ms)</code></p>
+<p>Pauses execution for <code>ms</code> milliseconds.</p>
+<h2 id="run"><code>run</code></h2>
+<p class="signature"><code>os.run(command, args)</code></p>
+<p class="signature"><code>os.run(command, args, options)</code></p>
+<p>Runs an executable and waits for it to complete. Returns a Map with <code>stdout</code> (<code>String</code>), <code>stderr</code> (<code>String</code>), and <code>exit_code</code> (<code>Int</code>).</p>
+<p><code>command</code> is the executable to run (absolute path or program name looked up in <code>PATH</code>). <code>args</code> is an Array of Strings passed as command-line arguments. Each element is passed as a single argument with no word splitting: <code>os.run('foo', ['bar baz'])</code> is equivalent to <code>foo 'bar baz'</code>, not <code>foo bar baz</code>.</p>
+<pre><code class="language-frost">def r = os.run('/bin/echo', ['hello', 'world'])
+# r.stdout == "hello world\n"
+# r.exit_code == 0
+</code></pre>
+<h3 id="options">Options</h3>
+<p>The optional third argument is a Map that may contain:</p>
+<table>
+<thead><tr>
+  <th>Key</th>
+  <th>Type</th>
+  <th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>stdin</code></td>
+  <td><code>String</code></td>
+  <td>Data piped to the process's standard input</td>
+</tr>
+<tr>
+  <td><code>cwd</code></td>
+  <td><code>String</code></td>
+  <td>Working directory for the process</td>
+</tr>
+<tr>
+  <td><code>env</code></td>
+  <td><code>Map</code></td>
+  <td>Environment variables to add to or override in the inherited environment</td>
+</tr>
+<tr>
+  <td><code>replace_env</code></td>
+  <td><code>Map</code></td>
+  <td>Environment variables that completely replace the inherited environment</td>
+</tr>
+</tbody>
+</table>
+<p><code>env</code> and <code>replace_env</code> are mutually exclusive. Both expect a Map with String keys and String values.</p>
+<pre><code class="language-frost"># Pipe data to stdin
+def r = os.run('/usr/bin/cat', [], {stdin: 'hello'})
+# r.stdout == "hello"
+
+# Set working directory
+def r = os.run('/bin/pwd', [], {cwd: '/tmp'})
+# r.stdout == "/tmp\n"
+
+# Inherit environment and add a variable
+def r = os.run('/usr/bin/env', [], {env: {MY_VAR: 'value'}})
+
+# Replace environment entirely
+def r = os.run('/usr/bin/env', [], {replace_env: {PATH: '/usr/bin'}})
+</code></pre>
+<h3 id="notes">Notes</h3>
+<p><code>run</code> always waits for the child process to exit before returning. Both stdout and stderr are captured in full; this is not a streaming interface.</p>
+<p>If the child process is killed by a signal (e.g., SIGSEGV), <code>exit_code</code> will be non-zero. Any output the child flushed before the signal is still captured.</p>
+<p>If the command cannot be found or fails to launch, <code>run</code> produces an error.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

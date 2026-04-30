@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Compression - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="compression">Compression</h1>
+<p>Each algorithm provides <code>compress</code> and <code>decompress</code> functions operating on binary strings. Since Frost strings are binary-safe, compressed output can be stored, concatenated, or passed to other functions without issue.</p>
+<p>A common import pattern destructures the module into the relevant subcomponents:</p>
+<pre><code class="language-frost">def { brotli, bz2, deflate, gzip, lz4, snappy, xz, zlib, zstd } = import('ext.compression')
+</code></pre>
+<p>It is valid to import only the components your script needs:</p>
+<pre><code class="language-frost">def { gzip, lz4 } = import('ext.compression')
+</code></pre>
+<p>Build flag: <code>WITH_COMPRESSION</code> (default: <code>AUTO</code>). Requires at least one of: zlib, bz2, xz, brotli, lz4, snappy, or zstd. Each library is independently auto-detected; only algorithms with available libraries are included.</p>
+<p>For auto-detecting the format of compressed data, see <code>frost-scripts/autodecompress.frst</code>, which detects gzip, zstd, bz2, xz, and lz4 by magic bytes and dispatches to the appropriate decompressor.</p>
+<p>Algorithms can be swapped at runtime, as all algorithms support the same compress/decompress interface (if default compression parameters are accepted):</p>
+<pre><code class="language-frost">def algo = if fast: deflate else: gzip
+algo.compress(data)
+</code></pre>
+<h2 id="brotli">Brotli</h2>
+<p>Brotli compression (RFC 7932). Used by HTTP <code>Content-Encoding: br</code>.</p>
+<h3 id="brotli.compress"><code>brotli.compress</code></h3>
+<p class="signature"><code>brotli.compress(s)</code></p>
+<p class="signature"><code>brotli.compress(s, quality)</code></p>
+<p>Compresses <code>s</code> using Brotli. <code>quality</code> is an optional <code>Int</code> from <code>0</code> to <code>11</code>. Default is <code>11</code> (maximum compression).</p>
+<h3 id="brotli.decompress"><code>brotli.decompress</code></h3>
+<p class="signature"><code>brotli.decompress(s)</code></p>
+<p>Decompresses a Brotli string. Produces an error on corrupt or truncated input.</p>
+<h2 id="bzip2">bzip2</h2>
+<h3 id="bz2.compress"><code>bz2.compress</code></h3>
+<p class="signature"><code>bz2.compress(s)</code></p>
+<p class="signature"><code>bz2.compress(s, level)</code></p>
+<p>Compresses <code>s</code> using bzip2. <code>level</code> is an optional <code>Int</code> from <code>1</code> to <code>9</code> (block size in units of 100k). Default is <code>9</code>. Higher levels use more memory but may compress better.</p>
+<h3 id="bz2.decompress"><code>bz2.decompress</code></h3>
+<p class="signature"><code>bz2.decompress(s)</code></p>
+<p>Decompresses a bzip2 string. Produces an error on corrupt or truncated input.</p>
+<h2 id="deflate">DEFLATE</h2>
+<p>Raw DEFLATE compression (RFC 1951). No header or checksum.</p>
+<h3 id="deflate.compress"><code>deflate.compress</code></h3>
+<p class="signature"><code>deflate.compress(s)</code></p>
+<p class="signature"><code>deflate.compress(s, level)</code></p>
+<p>Compresses <code>s</code> using raw DEFLATE. <code>level</code> is an optional <code>Int</code>: <code>-1</code> (default, equivalent to <code>6</code>), <code>0</code> (no compression), or <code>1</code> to <code>9</code> (increasing effort).</p>
+<h3 id="deflate.decompress"><code>deflate.decompress</code></h3>
+<p class="signature"><code>deflate.decompress(s)</code></p>
+<p>Decompresses a raw DEFLATE string. Produces an error on corrupt or truncated input.</p>
+<h2 id="gzip">gzip</h2>
+<p>gzip compression (RFC 1952). Includes a gzip header and CRC-32 checksum. Used by HTTP <code>Content-Encoding: gzip</code>.</p>
+<h3 id="gzip.compress"><code>gzip.compress</code></h3>
+<p class="signature"><code>gzip.compress(s)</code></p>
+<p class="signature"><code>gzip.compress(s, level)</code></p>
+<p>Compresses <code>s</code> in gzip format. <code>level</code> is an optional <code>Int</code>: <code>-1</code> (default, equivalent to <code>6</code>), <code>0</code> (no compression), or <code>1</code> to <code>9</code> (increasing effort).</p>
+<h3 id="gzip.decompress"><code>gzip.decompress</code></h3>
+<p class="signature"><code>gzip.decompress(s)</code></p>
+<p>Decompresses a gzip string. Handles concatenated gzip streams (as produced by <code>pigz</code>, <code>cat a.gz b.gz</code>, etc.). Produces an error on corrupt or truncated input.</p>
+<h2 id="lz4">LZ4</h2>
+<p>LZ4 frame format compression. Optimized for very fast compression and decompression.</p>
+<h3 id="lz4.compress"><code>lz4.compress</code></h3>
+<p class="signature"><code>lz4.compress(s)</code></p>
+<p class="signature"><code>lz4.compress(s, level)</code></p>
+<p>Compresses <code>s</code> using the LZ4 frame format. <code>level</code> is an optional <code>Int</code>. <code>0</code> is the default (fast mode). Higher levels (<code>1</code> to <code>12</code>) compress better but slower. Negative levels are faster than <code>0</code> at the cost of compression ratio.</p>
+<h3 id="lz4.decompress"><code>lz4.decompress</code></h3>
+<p class="signature"><code>lz4.decompress(s)</code></p>
+<p>Decompresses an LZ4 frame. Produces an error on corrupt or truncated input.</p>
+<h2 id="snappy">Snappy</h2>
+<p>Snappy compression. Optimized for speed over compression ratio. There is no compression level parameter.</p>
+<h3 id="snappy.compress"><code>snappy.compress</code></h3>
+<p class="signature"><code>snappy.compress(s)</code></p>
+<p>Compresses <code>s</code> using Snappy.</p>
+<h3 id="snappy.decompress"><code>snappy.decompress</code></h3>
+<p class="signature"><code>snappy.decompress(s)</code></p>
+<p class="signature"><code>snappy.decompress(s, max_size)</code></p>
+<p>Decompresses a Snappy string. Produces an error on corrupt or truncated input.</p>
+<p>Snappy's format embeds the uncompressed size in the frame header, and the decompressor must allocate that much memory upfront. A crafted input can claim an arbitrarily large size. To guard against this, <code>snappy.decompress</code> rejects inputs claiming more than 256 MB by default.</p>
+<p>Pass <code>max_size</code> to override (e.g. <code>snappy.decompress(data, 512 * 1024 * 1024)</code> for 512 MB, or <code>0</code> for no limit). When decompressing untrusted data, consider keeping a reasonable limit.</p>
+<h2 id="xz">xz</h2>
+<p>xz compression (LZMA2). High compression ratios, best suited for archival.</p>
+<h3 id="xz.compress"><code>xz.compress</code></h3>
+<p class="signature"><code>xz.compress(s)</code></p>
+<p class="signature"><code>xz.compress(s, level)</code></p>
+<p>Compresses <code>s</code> in xz format. <code>level</code> is an optional <code>Int</code> from <code>0</code> to <code>9</code>. Default is <code>6</code>. Higher levels compress better but are significantly slower and use more memory.</p>
+<h3 id="xz.decompress"><code>xz.decompress</code></h3>
+<p class="signature"><code>xz.decompress(s)</code></p>
+<p>Decompresses an xz or legacy LZMA string. Handles concatenated xz streams. Produces an error on corrupt or truncated input.</p>
+<h2 id="zlib">zlib</h2>
+<p>zlib-wrapped compression (RFC 1950). Includes a 2-byte header and Adler-32 checksum.</p>
+<h3 id="zlib.compress"><code>zlib.compress</code></h3>
+<p class="signature"><code>zlib.compress(s)</code></p>
+<p class="signature"><code>zlib.compress(s, level)</code></p>
+<p>Compresses <code>s</code> in zlib-wrapped format. <code>level</code> is an optional <code>Int</code>: <code>-1</code> (default, equivalent to <code>6</code>), <code>0</code> (no compression), or <code>1</code> to <code>9</code> (increasing effort).</p>
+<h3 id="zlib.decompress"><code>zlib.decompress</code></h3>
+<p class="signature"><code>zlib.decompress(s)</code></p>
+<p>Decompresses a zlib-wrapped string. Produces an error on corrupt or truncated input.</p>
+<h2 id="zstandard">Zstandard</h2>
+<p>Zstandard compression (RFC 8878). Fast compression with high ratios.</p>
+<h3 id="zstd.compress"><code>zstd.compress</code></h3>
+<p class="signature"><code>zstd.compress(s)</code></p>
+<p class="signature"><code>zstd.compress(s, level)</code></p>
+<p>Compresses <code>s</code> using Zstandard. <code>level</code> is an optional <code>Int</code> from <code>-131072</code> to <code>22</code>. <code>0</code> and <code>3</code> are equivalent (default). Higher levels (<code>1</code> to <code>22</code>) compress better but slower. Negative levels are faster than <code>1</code> at the cost of compression ratio.</p>
+<h3 id="zstd.decompress"><code>zstd.decompress</code></h3>
+<p class="signature"><code>zstd.decompress(s)</code></p>
+<p>Decompresses a Zstandard string. Produces an error on corrupt or truncated input.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Functions - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="functions">Functions</h1>
+<p>Higher-order function utilities: calling, error handling, composition, and combinators. Available without importing.</p>
+<h2 id="call"><code>call</code></h2>
+<p class="signature"><code>call(function)</code></p>
+<p class="signature"><code>call(function, args)</code></p>
+<p>Calls <code>function</code> with no arguments, or with the elements of the array <code>args</code> spread as individual arguments.</p>
+<h2 id="try_call"><code>try_call</code></h2>
+<p class="signature"><code>try_call(function)</code></p>
+<p class="signature"><code>try_call(function, args)</code></p>
+<p>Calls <code>function</code> with no arguments, or with the elements of <code>args</code> spread as arguments. Returns <code>{ ok: true, value: result }</code> on success, or <code>{ ok: false, error: message }</code> if the call produces an error.</p>
+<h2 id="error"><code>error</code></h2>
+<p class="signature"><code>error(message)</code></p>
+<p>Produces a normal error with the given message. The error can be caught by <code>try_call</code>.</p>
+<h2 id="fatal"><code>fatal</code></h2>
+<p class="signature"><code>fatal(message)</code></p>
+<p>Produces a fatal error with the given message. The error cannot be caught by <code>try_call</code> and will terminate the program gracefully.</p>
+<h2 id="and_then"><code>and_then</code></h2>
+<p class="signature"><code>and_then(value, f)</code></p>
+<p>If <code>value</code> is <code>null</code>, returns <code>null</code>. Otherwise calls <code>f(value)</code> and returns the result. Useful for chaining operations that may produce <code>null</code>.</p>
+<h2 id="or_else"><code>or_else</code></h2>
+<p class="signature"><code>or_else(value, f)</code></p>
+<p>If <code>value</code> is not <code>null</code>, returns <code>value</code>. If <code>value</code> is <code>null</code>, calls <code>f()</code> with no arguments and returns the result. Useful for providing fallbacks.</p>
+<h2 id="inv"><code>inv</code></h2>
+<p class="signature"><code>inv(f)</code></p>
+<p>Returns a new function that applies <code>f</code> and negates the result with <code>not</code>. Returns <code>fn ...args -&gt; not f @ call(args)</code>.</p>
+<h2 id="curry"><code>curry</code></h2>
+<p class="signature"><code>curry(f, ...outer)</code></p>
+<p>Returns a function that, when called with additional arguments, calls <code>f</code> with the <code>outer</code> arguments prepended. Returns <code>fn ...inner -&gt; f @ call(outer + inner)</code>.</p>
+<h2 id="bcurry"><code>bcurry</code></h2>
+<p class="signature"><code>bcurry(f, ...outer)</code></p>
+<p>Like <code>curry</code>, but appends the <code>outer</code> arguments at the end instead of prepending them. Returns <code>fn ...inner -&gt; f @ call(inner + outer)</code>.</p>
+<h2 id="collect"><code>collect</code></h2>
+<p class="signature"><code>collect(...e)</code></p>
+<p>Returns all arguments as an array.</p>
+<h2 id="spread"><code>spread</code></h2>
+<p class="signature"><code>spread(f)</code></p>
+<p>Returns a function that takes a single array and calls <code>f</code> with its elements spread as individual arguments. Returns <code>fn arr -&gt; call(f, arr)</code>.</p>
+<pre><code class="language-frost">def names = ['Alice', 'Bob']
+def ages = [30, 25]
+foreach zip(names, ages) with spread(fn (name, age) -&gt; print(name + ' is ' + to_string(age)))
+</code></pre>
+<h2 id="rev_args"><code>rev_args</code></h2>
+<p class="signature"><code>rev_args(f)</code></p>
+<p>Returns a function that calls <code>f</code> with its arguments in reverse order.</p>
+<h2 id="tap"><code>tap</code></h2>
+<p class="signature"><code>tap(a, f)</code></p>
+<p>Calls <code>f(a)</code> for its side effects, then returns <code>a</code> unchanged. Useful in <code>@</code> pipelines for logging or debugging intermediate values without breaking the chain.</p>
+<h2 id="const"><code>const</code></h2>
+<p class="signature"><code>const(v)</code></p>
+<p>Returns a function that ignores all its arguments and always returns <code>v</code>.</p>
+<h2 id="compose"><code>compose</code></h2>
+<p class="signature"><code>compose(f, g, ...rest)</code></p>
+<p>Returns a function that applies <code>f</code> first, then <code>g</code>, then each function in <code>rest</code> in order (left-to-right). All arguments must be functions.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

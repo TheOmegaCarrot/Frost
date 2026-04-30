@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>CLI - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="cli">CLI</h1>
+<pre><code class="language-frost">def cli = import('std.cli')
+</code></pre>
+<p><code>std.cli</code> parses command-line arguments against a declarative spec. Describe your tool's flags, options, and positional arguments in a Map; <code>cli.parse</code> validates <code>args</code> against that spec and returns a structured result.</p>
+<h2 id="parse"><code>parse</code></h2>
+<p class="signature"><code>cli.parse(args, spec)</code></p>
+<p>Parses <code>args</code> according to <code>spec</code>. Returns a result Map with <code>ok</code> (<code>Bool</code>), <code>help</code> (<code>String</code>), and either <code>value</code> (on success) or <code>error</code> (on failure). The <code>value</code> map contains <code>flags</code> (<code>Map</code> of <code>Bool</code>), <code>options</code> (<code>Map</code> of <code>String</code>, <code>Array</code>, or <code>null</code>), and <code>positional</code> (<code>Array</code> of <code>String</code>). Spec errors (malformed spec) produces an error; parse errors (invalid user input) are returned in the result.</p>
+<p><code>args</code> is typically the predefined <a href="../language.html#statements"><code>args</code></a> variable. <code>args[0]</code> is treated as the script path and is consumed internally (used as the default tool name in error messages and help output). Everything after <code>args[0]</code> is parsed against the spec.</p>
+<pre><code class="language-frost">def cli = import('std.cli')
+
+def result = cli.parse(args, {
+    name: 'deploy',
+    description: 'Deploy a service to a target environment',
+    flags: {
+        verbose: { short: 'v', description: 'Enable verbose output' },
+        dry_run: { short: 'd', description: 'Show what would happen' },
+    },
+    options: {
+        env: { short: 'e', required: true, description: 'Target environment' },
+        retries: { short: 'r', default: '3', description: 'Number of retries' },
+        tag: { short: 't', repeatable: true, description: 'Image tags' },
+    },
+    positional: [
+        { name: 'service', description: 'Service to deploy' },
+    ],
+})
+
+if not result.ok: do {
+    print(result.error)
+    print(result.help)
+    os.exit(1)
+}
+
+def parsed = result.value
+if parsed.flags.verbose: print('verbose mode')
+def retries = parsed.options.retries @ to_int() or 3
+def service = parsed.positional[0]
+</code></pre>
+<h3 id="spec-shape">Spec Shape</h3>
+<p>The spec is a Map with the following keys. All are optional.</p>
+<table>
+<thead><tr>
+  <th>Key</th>
+  <th>Type</th>
+  <th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>name</code></td>
+  <td><code>String</code></td>
+  <td>Tool name for help output and error messages. Defaults to <code>args[0]</code>.</td>
+</tr>
+<tr>
+  <td><code>description</code></td>
+  <td><code>String</code></td>
+  <td>A short description shown in the auto-generated help.</td>
+</tr>
+<tr>
+  <td><code>help</code></td>
+  <td><code>String</code></td>
+  <td>Custom help text. When present, this replaces the auto-generated help entirely.</td>
+</tr>
+<tr>
+  <td><code>flags</code></td>
+  <td><code>Map</code></td>
+  <td>Boolean toggles. See Flags below.</td>
+</tr>
+<tr>
+  <td><code>options</code></td>
+  <td><code>Map</code></td>
+  <td>Value-taking options. See Options below.</td>
+</tr>
+<tr>
+  <td><code>positional</code></td>
+  <td><code>Array</code> or <code>Bool</code></td>
+  <td>Positional arguments. See Positional Arguments below.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="flags">Flags</h3>
+<p>Flags are boolean toggles. The <code>flags</code> key is a Map where each key is the flag's long name and each value is a sub-spec Map:</p>
+<table>
+<thead><tr>
+  <th>Sub-spec key</th>
+  <th>Type</th>
+  <th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>short</code></td>
+  <td><code>String</code></td>
+  <td>Single-character short form (used with <code>-</code>).</td>
+</tr>
+<tr>
+  <td><code>description</code></td>
+  <td><code>String</code></td>
+  <td>Shown in the auto-generated help.</td>
+</tr>
+</tbody>
+</table>
+<p>In the result, every declared flag appears under <code>result.flags</code> as a <code>Bool</code>: <code>true</code> if it was present in <code>args</code>, <code>false</code> otherwise.</p>
+<pre><code class="language-frost">flags: {
+    verbose: { short: 'v', description: 'Verbose output' },
+    ['dry-run']: { description: 'Dry-run mode' },
+}
+</code></pre>
+<h3 id="options">Options</h3>
+<p>Options take a value from the following argument. The <code>options</code> key is a Map where each key is the option's long name and each value is a sub-spec Map:</p>
+<table>
+<thead><tr>
+  <th>Sub-spec key</th>
+  <th>Type</th>
+  <th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>short</code></td>
+  <td><code>String</code></td>
+  <td>Single-character short form.</td>
+</tr>
+<tr>
+  <td><code>required</code></td>
+  <td><code>Bool</code></td>
+  <td>When true, the option must be provided.</td>
+</tr>
+<tr>
+  <td><code>default</code></td>
+  <td><code>String</code></td>
+  <td>Default value when not provided. Mutually exclusive with <code>required</code>.</td>
+</tr>
+<tr>
+  <td><code>repeatable</code></td>
+  <td><code>Bool</code></td>
+  <td>When true, the option can be specified multiple times.</td>
+</tr>
+<tr>
+  <td><code>description</code></td>
+  <td><code>String</code></td>
+  <td>Shown in the auto-generated help.</td>
+</tr>
+</tbody>
+</table>
+<p>In the result, every declared option appears under <code>result.options</code>: non-repeatable options are <code>String</code> if provided or defaulted, <code>null</code> otherwise. Repeatable options are always an <code>Array</code> of <code>String</code>, possibly empty.</p>
+<p>Option values are always Strings. <code>cli.parse</code> does not perform any type coercion; for other types, apply a conversion like <a href="types.html#to_int"><code>to_int</code></a> on the parsed value.</p>
+<pre><code class="language-frost">options: {
+    env:     { short: 'e', required: true },
+    retries: { short: 'r', default: '3' },
+    tag:     { short: 't', repeatable: true },
+}
+</code></pre>
+<h3 id="positional-arguments">Positional Arguments</h3>
+<p>The <code>positional</code> key has three forms:</p>
+<ul>
+  <li>Absent, <code>[]</code>, or <code>false</code>: no positional arguments are allowed. Any positional produces an error.</li>
+  <li>Array of specs: each entry declares a named positional. All are required. Exact count must match.</li>
+  <li><code>true</code>: raw-collect mode. All positional arguments are gathered into <code>result.positional</code> without validation.</li>
+</ul>
+<p>Each positional spec entry is a Map with <code>name</code> (<code>String</code>, required, used in help output) and <code>description</code> (<code>String</code>, shown in help).</p>
+<pre><code class="language-frost">positional: [
+    { name: 'source', description: 'Source file' },
+    { name: 'dest', description: 'Destination file' },
+]
+</code></pre>
+<p>Or for scripts that want to handle positionals themselves:</p>
+<pre><code class="language-frost">positional: true
+</code></pre>
+<p>Array destructuring pairs nicely with declared positionals when you want to bind them by name:</p>
+<pre><code class="language-frost">def [source, dest] = parsed.positional
+</code></pre>
+<h3 id="parsing-rules">Parsing Rules</h3>
+<ul>
+  <li><code>--name</code> for flags, <code>--name value</code> for options (long form).</li>
+  <li><code>-n</code> for flags, <code>-n value</code> for options (short form).</li>
+  <li><code>-abc</code> is equivalent to <code>-a -b -c</code> (short bundling). The last character in a bundle may be a value-taking option that consumes the next argument. A value-taking option that is not the last character in a bundle is an error.</li>
+  <li><code>--</code> terminates option parsing. Everything after a bare <code>--</code> is treated as positional.</li>
+  <li>Bare <code>-</code> is treated as a positional argument (Unix convention for stdin/stdout).</li>
+  <li>Specifying a non-repeatable option more than once is an error.</li>
+  <li>Required options must be provided or the parse fails.</li>
+  <li>Defaults are applied to non-repeatable, non-required options that were not provided.</li>
+</ul>
+<h3 id="help-text">Help Text</h3>
+<p><code>result.help</code> always contains a help string. If the spec provides a <code>help</code> key, that string is returned verbatim. Otherwise, help is auto-generated from <code>name</code>, <code>description</code>, and the declared flags, options, and positionals.</p>
+<p><code>cli.parse</code> does not handle <code>--help</code> or <code>-h</code> automatically. The typical pattern is to add a <code>help</code> flag to the spec and check it after unwrapping:</p>
+<pre><code class="language-frost">def result = cli.parse(args, {
+    flags: {
+        help: { short: 'h', description: 'Show help' },
+    },
+})
+
+if not result.ok: do {
+    print(result.error)
+    print(result.help)
+    os.exit(1)
+}
+
+if result.value.flags.help: do {
+    print(result.help)
+    os.exit(0)
+}
+</code></pre>
+<p>Note that <code>result.help</code> (the auto-generated text) and <code>result.value.flags.help</code> (the user-declared flag) are distinct.</p>
+<h3 id="errors">Errors</h3>
+<p><code>cli.parse</code> distinguishes two error categories:</p>
+<ul>
+  <li>Spec errors are prefixed with <code>cli.parse:</code> and indicate a malformed spec. These produce an error (catchable via <code>try_call</code>) because they are bugs in the script, not the user's invocation.</li>
+  <li>Parse errors are prefixed with the tool name and indicate a problem with the user's invocation (unknown flag, missing required option, etc.). These are returned in the result as <code>{ ok: false, error: "..." }</code> so the script can show help or take other action.</li>
+</ul>
+<pre><code class="language-text"># Spec error
+cli.parse: option 'env': required and default are mutually exclusive
+
+# Parse error
+deploy: missing required option '--env'
+</code></pre>
+<h2 id="prompt"><code>prompt</code></h2>
+<p class="signature"><code>cli.prompt(message)</code></p>
+<p>Prints <code>message</code> followed by a space to stderr (no newline) and reads a line from stdin. Returns the line as a <code>String</code>, or <code>null</code> if the user aborts with end-of-file. Only the trailing newline is stripped; any other whitespace the user typed is preserved.</p>
+<pre><code class="language-frost">def name = cli.prompt('What is your name?')
+if name != null: print($'Hello, ${name}')
+</code></pre>
+<p>stderr is used so that the prompt is visible even when stdout is redirected (<code>frost script.frst &gt; out.txt</code>).</p>
+<h3 id="building-a-yes/no-confirmation">Building a Yes/No Confirmation</h3>
+<p><code>std.cli</code> does not provide a dedicated confirmation helper because the right behavior on end-of-file or unrecognized input depends on the script. A few lines using <code>prompt</code> cover most needs:</p>
+<pre><code class="language-frost">def ans = cli.prompt('Delete all files? [y/N]')
+def confirmed = ans and ( ans @ to_lower() @ trim() @ starts_with('y') )
+if confirmed: do {
+    # ...
+}
+</code></pre>
+<p>This pattern treats end-of-file as "no" (the safe default), which is usually what you want for destructive actions. Invert the logic for prompts where the safe default is "yes".</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

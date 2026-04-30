@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Strings - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="strings">Strings</h1>
+<p>Global string functions available without importing.</p>
+<h2 id="split"><code>split</code></h2>
+<p class="signature"><code>split(s, delimiter)</code></p>
+<p>Splits <code>s</code> on each occurrence of <code>delimiter</code> and returns an array of strings. If <code>delimiter</code> is not found, returns a single-element array containing <code>s</code>. An empty <code>delimiter</code> splits into individual bytes.</p>
+<h2 id="lines"><code>lines</code></h2>
+<p class="signature"><code>lines(s)</code></p>
+<p>Splits <code>s</code> on each newline (<code>\n</code>) and returns an array of strings. Equivalent to <code>split(s, "\n")</code>.</p>
+<h2 id="join"><code>join</code></h2>
+<p class="signature"><code>join(arr, separator)</code></p>
+<p>Joins an array of strings into a single string, with <code>separator</code> inserted between each element. Returns an empty string for an empty array.</p>
+<h2 id="replace"><code>replace</code></h2>
+<p class="signature"><code>replace(s, find, replacement)</code></p>
+<p>Returns <code>s</code> with every non-overlapping occurrence of <code>find</code> replaced by <code>replacement</code>. Returns <code>s</code> unchanged if <code>find</code> is not present.</p>
+<h2 id="trim"><code>trim</code></h2>
+<p class="signature"><code>trim(s)</code></p>
+<p>Returns <code>s</code> with leading and trailing whitespace removed.</p>
+<h2 id="trim_left"><code>trim_left</code></h2>
+<p class="signature"><code>trim_left(s)</code></p>
+<p>Returns <code>s</code> with leading whitespace removed.</p>
+<h2 id="trim_right"><code>trim_right</code></h2>
+<p class="signature"><code>trim_right(s)</code></p>
+<p>Returns <code>s</code> with trailing whitespace removed.</p>
+<h2 id="to_upper"><code>to_upper</code></h2>
+<p class="signature"><code>to_upper(s)</code></p>
+<p>Returns <code>s</code> with all characters converted to uppercase.</p>
+<h2 id="to_lower"><code>to_lower</code></h2>
+<p class="signature"><code>to_lower(s)</code></p>
+<p>Returns <code>s</code> with all characters converted to lowercase.</p>
+<h2 id="contains"><code>contains</code></h2>
+<p class="signature"><code>contains(s, substring)</code></p>
+<p>Returns <code>true</code> if <code>substring</code> appears anywhere in <code>s</code>.</p>
+<h2 id="starts_with"><code>starts_with</code></h2>
+<p class="signature"><code>starts_with(s, prefix)</code></p>
+<p>Returns <code>true</code> if <code>s</code> begins with <code>prefix</code>.</p>
+<h2 id="ends_with"><code>ends_with</code></h2>
+<p class="signature"><code>ends_with(s, suffix)</code></p>
+<p>Returns <code>true</code> if <code>s</code> ends with <code>suffix</code>.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

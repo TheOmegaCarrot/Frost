@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>IO - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="io">IO</h1>
+<pre><code class="language-frost">def io = import('std.io')
+</code></pre>
+<p>Convenience functions for simple file IO and stream-based readers/writers for more complex use cases.</p>
+<p><a href="streams.html#stdin"><code>stdin</code></a>, <a href="streams.html#stdout"><code>stdout</code></a>, and <a href="streams.html#stderr"><code>stderr</code></a> are available as global builtins without importing this module.</p>
+<h2 id="reader">Reader</h2>
+<p>A stream for reading data. Not all reader streams support every method below. Each stream constructor specifies its supported subset.</p>
+<h3 id="reader.read_line"><code>reader.read_line</code></h3>
+<p class="signature"><code>reader.read_line()</code></p>
+<p>Reads and returns one line as a <code>String</code>, not including the trailing newline. Returns <code>null</code> at EOF.</p>
+<h3 id="reader.read_one"><code>reader.read_one</code></h3>
+<p class="signature"><code>reader.read_one()</code></p>
+<p>Reads and returns a single character as a <code>String</code>. Returns <code>null</code> at EOF.</p>
+<h3 id="reader.read_rest"><code>reader.read_rest</code></h3>
+<p class="signature"><code>reader.read_rest()</code></p>
+<p>Reads and returns all remaining content as a <code>String</code>.</p>
+<h3 id="reader.eof"><code>reader.eof</code></h3>
+<p class="signature"><code>reader.eof()</code></p>
+<p>Returns <code>true</code> if the stream is at end of file.</p>
+<h3 id="reader.tell"><code>reader.tell</code></h3>
+<p class="signature"><code>reader.tell()</code></p>
+<p>Returns the current byte position in the stream as an <code>Int</code>.</p>
+<h3 id="reader.seek"><code>reader.seek</code></h3>
+<p class="signature"><code>reader.seek(pos)</code></p>
+<p>Sets the current position to byte offset <code>pos</code>.</p>
+<h3 id="reader.is_open"><code>reader.is_open</code></h3>
+<p class="signature"><code>reader.is_open()</code></p>
+<p>Returns <code>true</code> if the stream is open.</p>
+<h3 id="reader.close"><code>reader.close</code></h3>
+<p class="signature"><code>reader.close()</code></p>
+<p>Closes the stream. Streams are automatically closed once there is no reference to them.</p>
+<h2 id="writer">Writer</h2>
+<p>A stream for writing data. Not all writer streams support every method below. Each stream constructor specifies its supported subset.</p>
+<h3 id="writer.write"><code>writer.write</code></h3>
+<p class="signature"><code>writer.write(s)</code></p>
+<p>Writes the string <code>s</code> to the stream.</p>
+<h3 id="writer.writeln"><code>writer.writeln</code></h3>
+<p class="signature"><code>writer.writeln(s)</code></p>
+<p>Writes the string <code>s</code> followed by a newline to the stream.</p>
+<h3 id="writer.tell"><code>writer.tell</code></h3>
+<p class="signature"><code>writer.tell()</code></p>
+<p>Returns the current byte position in the stream as an <code>Int</code>.</p>
+<h3 id="writer.seek"><code>writer.seek</code></h3>
+<p class="signature"><code>writer.seek(pos)</code></p>
+<p>Sets the current position to byte offset <code>pos</code>.</p>
+<h3 id="writer.flush"><code>writer.flush</code></h3>
+<p class="signature"><code>writer.flush()</code></p>
+<p>Flushes any buffered output to the underlying resource.</p>
+<h3 id="writer.is_open"><code>writer.is_open</code></h3>
+<p class="signature"><code>writer.is_open()</code></p>
+<p>Returns <code>true</code> if the stream is open.</p>
+<h3 id="writer.close"><code>writer.close</code></h3>
+<p class="signature"><code>writer.close()</code></p>
+<p>Closes the stream. Streams are automatically closed once there is no reference to them.</p>
+<h2 id="read"><code>read</code></h2>
+<p class="signature"><code>io.read(path)</code></p>
+<p>Reads the entire file at <code>path</code> and returns its contents as a <code>String</code>. Produces an error if the file cannot be opened.</p>
+<h2 id="write"><code>write</code></h2>
+<p class="signature"><code>io.write(path, content)</code></p>
+<p>Writes <code>content</code> to the file at <code>path</code>, replacing any existing content. Creates the file if it does not exist. Returns <code>null</code>. Produces an error if the file cannot be opened.</p>
+<h2 id="append"><code>append</code></h2>
+<p class="signature"><code>io.append(path, content)</code></p>
+<p>Appends <code>content</code> to the end of the file at <code>path</code>. Creates the file if it does not exist. Returns <code>null</code>. Produces an error if the file cannot be opened.</p>
+<h2 id="open_read"><code>open_read</code></h2>
+<p class="signature"><code>io.open_read(path)</code></p>
+<p>Opens the file at <code>path</code> for reading. Returns a Reader with full support for all reader methods. Produces an error if the file cannot be opened.</p>
+<p class="see-also">See also:
+<a href="io.html#open_trunc"><code>open_trunc</code></a>
+<a href="io.html#open_append"><code>open_append</code></a>
+</p>
+<h2 id="open_trunc"><code>open_trunc</code></h2>
+<p class="signature"><code>io.open_trunc(path)</code></p>
+<p>Opens the file at <code>path</code> for writing, truncating it if it exists and creating it if it does not. Returns a Writer with full support for all writer methods. Produces an error if the file cannot be opened.</p>
+<p class="see-also">See also:
+<a href="io.html#open_read"><code>open_read</code></a>
+<a href="io.html#open_append"><code>open_append</code></a>
+</p>
+<h2 id="open_append"><code>open_append</code></h2>
+<p class="signature"><code>io.open_append(path)</code></p>
+<p>Opens the file at <code>path</code> for appending. New writes are added after existing content. Returns a Writer with full support for all writer methods. Produces an error if the file cannot be opened.</p>
+<p class="see-also">See also:
+<a href="io.html#open_read"><code>open_read</code></a>
+<a href="io.html#open_trunc"><code>open_trunc</code></a>
+</p>
+<h2 id="stringreader"><code>stringreader</code></h2>
+<p class="signature"><code>io.stringreader(s)</code></p>
+<p>Creates a reader backed by the string <code>s</code>. Returns a Reader supporting <code>.read_line</code>, <code>.read_one</code>, <code>.read_rest</code>, <code>.eof</code>, <code>.tell</code>, <code>.seek</code>.</p>
+<p class="see-also">See also:
+<a href="io.html#stringwriter"><code>stringwriter</code></a>
+</p>
+<h2 id="stringwriter"><code>stringwriter</code></h2>
+<p class="signature"><code>io.stringwriter()</code></p>
+<p>Creates an in-memory writer. Returns a Writer supporting <code>.write</code>, <code>.writeln</code>, <code>.tell</code>, <code>.seek</code>, plus <code>.get</code>.</p>
+<h3 id="stringwriter.get"><code>stringwriter.get</code></h3>
+<p><code>stringwriter.get()</code>: returns the accumulated content as a <code>String</code>.</p>
+<p class="see-also">See also:
+<a href="io.html#stringreader"><code>stringreader</code></a>
+</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

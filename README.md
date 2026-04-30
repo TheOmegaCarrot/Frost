@@ -27,7 +27,7 @@ The following must be installed on your system:
 
 Extensions have their own dependencies which are auto-detected at configure time.
 Missing libraries cause the dependent extension (or feature) to be silently skipped by default.
-See the [extension documentation](docs/stdlib/) for details.
+See the [extension documentation](docs/md/stdlib/) for details.
 
 The following dependencies are fetched automatically by CMake:
 [lexy](https://github.com/foonathan/lexy),
@@ -39,7 +39,7 @@ The following dependencies are fetched automatically by CMake:
 
 Several modules (HTTP, SQLite, etc) are optional extensions that
 can be individually enabled or disabled at build time.
-See the [complete documentation](docs/stdlib/) for build flags and details.
+See the [complete documentation](docs/md/stdlib/) for build flags and details.
 
 ### Compiling
 
@@ -60,6 +60,6 @@ frost -e "print(1 + 2)"   # evaluate an expression
 
 ## Documentation
 
-- [Introduction to Frost](docs/introduction.md) — language philosophy and a guided tour
-- [Language Reference](docs/language.md) — complete syntax reference
-- [Standard Library](docs/stdlib/) — all built-in functions and utilities
+- [Introduction to Frost](docs/md/introduction.md) — language philosophy and a guided tour
+- [Language Reference](docs/md/language.md) — complete syntax reference
+- [Standard Library](docs/md/stdlib/) — all built-in functions and utilities

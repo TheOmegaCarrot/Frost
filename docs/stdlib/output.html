@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Output - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="output">Output</h1>
+<p>Printing and message formatting. Available without importing.</p>
+<h2 id="print"><code>print</code></h2>
+<p class="signature"><code>print(value)</code></p>
+<p>Prints <code>value</code> to stdout followed by a newline. Uses the same display representation as <a href="types.html#to_string"><code>to_string</code></a>.</p>
+<h2 id="mformat"><code>mformat</code></h2>
+<p class="signature"><code>mformat(format_string, replacement_map)</code></p>
+<p>Returns a copy of <code>format_string</code> with <code>${key}</code> placeholders replaced by the corresponding values from <code>replacement_map</code>. The placeholder syntax is identical to <a href="../language.html#types-and-literals">language format strings</a>. Produces an error if a placeholder key is not present in the map.</p>
+<h2 id="mprint"><code>mprint</code></h2>
+<p class="signature"><code>mprint(format_string, replacement_map)</code></p>
+<p>Equivalent to <code>print(mformat(format_string, replacement_map))</code>.</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>MessagePack - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="messagepack">MessagePack</h1>
+<pre><code class="language-frost">def mp = import('ext.msgpack')
+</code></pre>
+<p>Encode and decode <a href="https://msgpack.org/">MessagePack</a> binary data with full type round-tripping.</p>
+<p>MessagePack is a compact binary serialization format. Unlike JSON, it distinguishes binary data from strings and supports <code>null</code> as a first-class type.</p>
+<p>Build flag: <code>WITH_MSGPACK</code> (default: <code>AUTO</code>). No system dependencies.</p>
+<h2 id="foreign-values">Foreign Values</h2>
+<p>MessagePack has types that Frost does not natively support:</p>
+<ul>
+  <li>Binary data: MessagePack distinguishes binary bytes from UTF-8 strings. Both are Frost Strings, so binary data is wrapped as a <a href="foreign-values.html">foreign value</a> to preserve the distinction.</li>
+  <li>Special floats: <code>nan</code>, <code>inf</code>, and <code>-inf</code> are valid MessagePack floats but rejected by Frost's <code>Float</code> type.</li>
+</ul>
+<h2 id="decode"><code>decode</code></h2>
+<p class="signature"><code>mp.decode(data)</code></p>
+<p>Parses a MessagePack-encoded <code>String</code> and returns the corresponding Frost value. The top-level value can be any valid MessagePack type. Unsigned integers that exceed <code>Int</code> range are rejected. Extension types are not supported.</p>
+<pre><code class="language-frost">mp.decode(mp.encode(42))
+# =&gt; 42
+</code></pre>
+<pre><code class="language-frost">mp.decode(mp.encode('hi'))
+# =&gt; hi
+</code></pre>
+<h2 id="encode"><code>encode</code></h2>
+<p class="signature"><code>mp.encode(value)</code></p>
+<p>Serializes any Frost value to a MessagePack-encoded <code>String</code>. Maps may use any key type (MessagePack does not restrict map keys to strings). Plain <code>Function</code> values are rejected. Foreign values (binary, special floats) are serialized with their original MessagePack types.</p>
+<pre><code class="language-frost">mp.encode({name: 'alice', age: 30})
+mp.encode([1, 2, 3])
+mp.encode(null)
+</code></pre>
+<h2 id="binary"><code>binary</code></h2>
+<p class="signature"><code>mp.binary(data)</code></p>
+<p>Creates a binary foreign value from a <code>String</code>. When encoded, this value uses the MessagePack binary type rather than string.</p>
+<pre><code class="language-frost">mp.binary('raw bytes')()
+# =&gt; raw bytes
+</code></pre>
+<pre><code class="language-frost">def b = mp.binary('raw bytes')
+def rt = mp.decode(mp.encode(b))
+rt()  # round-trips as binary, not string
+</code></pre>
+<h2 id="special_float"><code>special_float</code></h2>
+<p class="signature"><code>mp.special_float(s)</code></p>
+<p>Creates a special float foreign value. <code>s</code> must be one of <code>"nan"</code>, <code>"inf"</code>, or <code>"-inf"</code>.</p>
+<pre><code class="language-frost">mp.special_float('nan')()
+# =&gt; nan
+</code></pre>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>Regex - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="regex">Regex</h1>
+<pre><code class="language-frost">def regex = import('std.regex')
+</code></pre>
+<p>Regular expression matching, replacement, and splitting. Regex syntax follows the Boost.Regex Perl-compatible dialect.</p>
+<h2 id="matches"><code>matches</code></h2>
+<p class="signature"><code>regex.matches(string, regex)</code></p>
+<p>Returns <code>true</code> if <code>regex</code> matches the entire <code>string</code>.</p>
+<h2 id="contains"><code>contains</code></h2>
+<p class="signature"><code>regex.contains(string, regex)</code></p>
+<p>Returns <code>true</code> if <code>regex</code> matches any substring of <code>string</code>.</p>
+<h2 id="replace"><code>replace</code></h2>
+<p class="signature"><code>regex.replace(string, regex, replacement)</code></p>
+<p>Replaces all non-overlapping matches of <code>regex</code> in <code>string</code> with <code>replacement</code>.</p>
+<p>The replacement string supports the following substitutions:</p>
+<table>
+<thead><tr>
+  <th>Syntax</th>
+  <th>Replaced with</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>$1</code>, <code>$2</code></td>
+  <td>Numbered capture group</td>
+</tr>
+<tr>
+  <td><code>$+{name}</code></td>
+  <td>Named capture group</td>
+</tr>
+<tr>
+  <td><code>$&amp;</code></td>
+  <td>The entire match</td>
+</tr>
+<tr>
+  <td>`<code> $</code> ``</td>
+  <td>The substring preceding the match</td>
+</tr>
+<tr>
+  <td><code>$'</code></td>
+  <td>The substring following the match</td>
+</tr>
+<tr>
+  <td><code>$$</code></td>
+  <td>A literal <code>$</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="replace_first"><code>replace_first</code></h2>
+<p class="signature"><code>regex.replace_first(string, regex, replacement)</code></p>
+<p>Replaces the first match of <code>regex</code> in <code>string</code> with <code>replacement</code>. Supports the same substitution syntax as <code>replace</code>.</p>
+<p class="see-also">See also:
+<a href="regex.html#replace"><code>replace</code></a>
+</p>
+<h2 id="replace_with"><code>replace_with</code></h2>
+<p class="signature"><code>regex.replace_with(string, regex, callback)</code></p>
+<p>Replaces all full matches of <code>regex</code> in <code>string</code> by calling <code>callback</code> with each match. The callback receives the full match as a <code>String</code> and its return value is converted to a string with <code>to_string</code>.</p>
+<pre><code class="language-frost">regex.replace_with('hello world', R'(\w+)', to_upper)
+# =&gt; "HELLO WORLD"
+
+regex.replace_with('a1b2', R'(\d)', fn d -&gt; to_int(d) * 10)
+# =&gt; "a10b20"
+</code></pre>
+<h2 id="split"><code>split</code></h2>
+<p class="signature"><code>regex.split(string, regex)</code></p>
+<p>Splits <code>string</code> around matches of <code>regex</code> and returns an <code>Array</code> of the substrings between matches. Returns an empty array for an empty input string.</p>
+<pre><code class="language-frost">regex.split('one,two,three', ',')     # =&gt; ['one', 'two', 'three']
+regex.split('a1b2c3', R'(\d)')       # =&gt; ['a', 'b', 'c']
+regex.split('a,,b,,,c', ',+')         # =&gt; ['a', 'b', 'c']
+regex.split('hello', 'x')             # =&gt; ['hello']
+</code></pre>
+<h2 id="scan_matches"><code>scan_matches</code></h2>
+<p class="signature"><code>regex.scan_matches(string, regex)</code></p>
+<p>Returns a map describing all matches of <code>regex</code> in <code>string</code>.</p>
+<pre><code class="language-frost">{
+    found:   Bool,
+    count:   Int,
+    matches: [
+        {
+            full:   String,
+            groups: [
+                { matched: Bool, value: String or null, index: Int },
+            ],
+            named: { name: { matched: Bool, value: String or null } },
+        },
+    ]
+}
+</code></pre>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>
