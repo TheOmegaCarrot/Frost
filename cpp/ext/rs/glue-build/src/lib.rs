@@ -273,39 +273,43 @@ impl ExtensionBuilder {
         writeln!(out, "BUILTIN({name})").unwrap();
         writeln!(out, "{{").unwrap();
 
-        // REQUIRE_ARGS
-        write!(out, "    REQUIRE_ARGS(\"{qualified}\"").unwrap();
-        for pk in &func.params {
-            write!(out, ", ").unwrap();
-            match pk {
-                ParamKind::Required(p) => {
-                    write!(out, "PARAM(\"{}\", {})", p.label, types_macro(&p.types))
+        // Arity and type validation
+        if func.params.is_empty() {
+            writeln!(out, "    REQUIRE_NULLARY(\"{qualified}\");").unwrap();
+        } else {
+            write!(out, "    REQUIRE_ARGS(\"{qualified}\"").unwrap();
+            for pk in &func.params {
+                write!(out, ", ").unwrap();
+                match pk {
+                    ParamKind::Required(p) => {
+                        write!(out, "PARAM(\"{}\", {})", p.label, types_macro(&p.types))
+                            .unwrap();
+                    }
+                    ParamKind::Optional(p) => {
+                        write!(
+                            out,
+                            "OPTIONAL(PARAM(\"{}\", {}))",
+                            p.label,
+                            types_macro(&p.types)
+                        )
                         .unwrap();
-                }
-                ParamKind::Optional(p) => {
-                    write!(
-                        out,
-                        "OPTIONAL(PARAM(\"{}\", {}))",
-                        p.label,
-                        types_macro(&p.types)
-                    )
-                    .unwrap();
-                }
-                ParamKind::VariadicRest {
-                    label,
-                    types,
-                    min_count,
-                } => {
-                    write!(
-                        out,
-                        "VARIADIC_REST({min_count}, \"{label}\", {})",
-                        types_macro(types)
-                    )
-                    .unwrap();
+                    }
+                    ParamKind::VariadicRest {
+                        label,
+                        types,
+                        min_count,
+                    } => {
+                        write!(
+                            out,
+                            "VARIADIC_REST({min_count}, \"{label}\", {})",
+                            types_macro(types)
+                        )
+                        .unwrap();
+                    }
                 }
             }
+            writeln!(out, ");").unwrap();
         }
-        writeln!(out, ");").unwrap();
 
         // Pass entire args span to Rust
         writeln!(out, "    try {{").unwrap();

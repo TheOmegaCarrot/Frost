@@ -22,3 +22,11 @@ target_link_libraries(frost-example-shim
     frost-rs-glue
     ${CMAKE_CURRENT_BINARY_DIR}/libfrost_example.a
 )
+
+if(BUILD_TESTS)
+    add_test(
+        NAME Frost_Ext_Example_rust_ffi
+        COMMAND $<TARGET_FILE:frost>
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/example.frst"
+    )
+endif()

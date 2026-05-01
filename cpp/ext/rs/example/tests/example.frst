@@ -1,0 +1,82 @@
+def ex = import("ext.example")
+
+# ---- Primitive params and return values ----
+
+assert(ex.add_one(0) == 1)
+assert(ex.add_one(41) == 42)
+assert(ex.add_one(-1) == 0)
+
+assert(ex.negate_float(3.14) == -3.14)
+assert(ex.negate_float(-1.0) == 1.0)
+assert(ex.negate_float(0.0) == 0.0)
+
+assert(ex.flip(true) == false)
+assert(ex.flip(false) == true)
+
+assert(ex.shout("hello") == "HELLO")
+assert(ex.shout("") == "")
+assert(ex.shout("already LOUD") == "ALREADY LOUD")
+
+# ---- Multi-type param ----
+
+assert(ex.to_float(42) == 42.0)
+assert(ex.to_float(3.14) == 3.14)
+
+# ---- Any param (identity) ----
+
+assert(ex.identity(42) == 42)
+assert(ex.identity("hi") == "hi")
+assert(ex.identity(true) == true)
+assert(ex.identity(null) == null)
+assert(ex.identity([1, 2, 3]) == [1, 2, 3])
+
+# ---- Optional param ----
+
+assert(ex.greet("world") == "hello, world!")
+assert(ex.greet("world", "hi") == "hi, world!")
+
+# ---- Variadic rest ----
+
+assert(ex.concat() == "")
+assert(ex.concat("a") == "a")
+assert(ex.concat("a", "b") == "ab")
+assert(ex.concat("a", "b", "c", "d") == "abcd")
+
+# ---- Nullary ----
+
+assert(ex.forty_two() == 42)
+
+# ---- Error return ----
+
+assert(ex.fail_if_negative(0) == 0)
+assert(ex.fail_if_negative(42) == 42)
+
+def caught = try_call(fn -> ex.fail_if_negative(-1))
+assert(caught.ok == false)
+assert(contains(caught.error, "negative value: -1"))
+
+# ---- Array param with zero-copy slice ----
+
+assert(ex.array_sum([]) == 0)
+assert(ex.array_sum([10]) == 10)
+assert(ex.array_sum([1, 2, 3, 4, 5]) == 15)
+
+# ---- Arity errors ----
+
+def too_few = try_call(fn -> ex.add_one())
+assert(too_few.ok == false)
+assert(contains(too_few.error, "insufficient"))
+
+def too_many = try_call(fn -> ex.add_one(1, 2))
+assert(too_many.ok == false)
+assert(contains(too_many.error, "too many"))
+
+def nullary_extra = try_call(fn -> ex.forty_two(1))
+assert(nullary_extra.ok == false)
+assert(contains(nullary_extra.error, "too many"))
+
+# ---- Type errors ----
+
+def wrong_type = try_call(fn -> ex.add_one("not an int"))
+assert(wrong_type.ok == false)
+assert(contains(wrong_type.error, "Int"))
