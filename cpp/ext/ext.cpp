@@ -41,6 +41,10 @@ void register_extensions(Stdlib_Registry_Builder& builder)
     DO_REGISTER_EXTENSION(unsafe);
 #endif
 
+#ifdef FROST_ENABLE_EXAMPLE
+    DO_REGISTER_EXTENSION(example);
+#endif
+
 #pragma GCC diagnostic pop
 }
 

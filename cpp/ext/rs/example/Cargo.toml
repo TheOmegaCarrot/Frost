@@ -1,0 +1,15 @@
+[package]
+name = "frost-example"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+frost-glue = { path = "../glue" }
+cxx = "1"
+
+[build-dependencies]
+frost-glue-build = { path = "../glue-build" }
+cxx-build = "1"

@@ -11,8 +11,11 @@ target_include_directories(frost-rs-glue
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp
 )
 
+# Corrosion copies libfrost_glue.a here after cargo builds it.
+# Link against the file path directly since the Corrosion IMPORTED target
+# doesn't set IMPORTED_LOCATION correctly for mold.
 target_link_libraries(frost-rs-glue
     PUBLIC
     frost-value
-    frost-glue
+    ${CMAKE_CURRENT_BINARY_DIR}/libfrost_glue.a
 )
