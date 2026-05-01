@@ -61,6 +61,16 @@ assert(ex.array_sum([]) == 0)
 assert(ex.array_sum([10]) == 10)
 assert(ex.array_sum([1, 2, 3, 4, 5]) == 15)
 
+# ---- Function callback ----
+
+assert(ex.apply(fn x -> x + 1, 41) == 42)
+assert(ex.apply(fn x -> x * 2, 21) == 42)
+assert(ex.apply(fn x -> to_upper(x), "hello") == "HELLO")
+
+# Callback that throws: error propagates back through Rust
+def cb_err = try_call(fn -> ex.apply(fn x -> x + "boom", 1))
+assert(cb_err.ok == false)
+
 # ---- Arity errors ----
 
 def too_few = try_call(fn -> ex.add_one())

@@ -44,5 +44,10 @@ fn main() {
     ext.function("array_sum")
         .param("arr", &[Type::Array]);
 
+    // Function param: call a callback
+    ext.function("apply")
+        .param("func", &[Type::Function])
+        .param("value", &[Type::Any]);
+
     ext.generate();
 }

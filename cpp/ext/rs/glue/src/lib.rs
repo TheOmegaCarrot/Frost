@@ -38,6 +38,12 @@ pub mod ffi {
         fn value_map_has(val: &Value, key: &CxxString) -> bool;
         fn value_map_get(val: &Value, key: &CxxString) -> SharedPtr<Value>;
 
+        // ---- Function call (caller must verify is_function first) ----
+        fn value_call(
+            callable: &Value,
+            args: &[SharedPtr<Value>],
+        ) -> Result<SharedPtr<Value>>;
+
         // ---- Stringification ----
         fn value_to_string(val: &Value) -> UniquePtr<CxxString>;
         fn value_type_name(val: &Value) -> UniquePtr<CxxString>;
@@ -181,6 +187,12 @@ impl FrostValue {
         }
     }
 
+    // ---- Function accessor ----
+
+    pub fn as_function(&self) -> Option<FrostFunction> {
+        self.is_function().then(|| FrostFunction { inner: self.inner.clone() })
+    }
+
     // ---- Stringification ----
 
     pub fn type_name(&self) -> String {
@@ -207,6 +219,36 @@ impl FrostValue {
     /// Wrap an existing shared pointer.
     pub fn from_shared(inner: cxx::SharedPtr<ffi::Value>) -> Self {
         Self { inner }
+    }
+}
+
+/// A Frost Function value. Invariant: the wrapped value is callable.
+///
+/// Obtained via `FrostValue::as_function()`. Provides type-level proof
+/// that the value is a function, so `call` doesn't need a runtime check.
+pub struct FrostFunction {
+    inner: cxx::SharedPtr<ffi::Value>,
+}
+
+impl FrostFunction {
+    pub fn call(&self, args: &[cxx::SharedPtr<ffi::Value>]) -> Result<FrostValue, cxx::Exception> {
+        Ok(FrostValue::from_shared(ffi::value_call(&self.inner, args)?))
+    }
+
+    pub fn call_with(&self, args: &[FrostValue]) -> Result<FrostValue, cxx::Exception> {
+        let shared_args: Vec<cxx::SharedPtr<ffi::Value>> =
+            args.iter().map(|v| v.inner.clone()).collect();
+        self.call(&shared_args)
+    }
+
+    /// Convert back to a generic FrostValue.
+    pub fn into_value(self) -> FrostValue {
+        FrostValue { inner: self.inner }
+    }
+
+    /// Consume this wrapper, returning the underlying shared pointer.
+    pub fn into_shared(self) -> cxx::SharedPtr<ffi::Value> {
+        self.inner
     }
 }
 

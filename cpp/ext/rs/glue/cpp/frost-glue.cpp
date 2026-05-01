@@ -145,6 +145,16 @@ std::shared_ptr<const Value> value_map_get(const Value& val,
     return it->second;
 }
 
+// ---- Function call ----
+
+std::shared_ptr<const Value> value_call(
+    const Value& callable,
+    rust::Slice<const std::shared_ptr<const Value>> args)
+{
+    const auto& fn = callable.raw_get<Function>();
+    return fn->call({args.data(), args.size()});
+}
+
 // ---- Stringification ----
 
 std::unique_ptr<std::string> value_to_string(const Value& val)

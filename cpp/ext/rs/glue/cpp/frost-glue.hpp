@@ -58,6 +58,13 @@ bool value_map_has(const Value& val, const std::string& key);
 std::shared_ptr<const Value> value_map_get(const Value& val,
                                            const std::string& key);
 
+// ---- Function call (caller must verify is_function first) ----
+// Frost exceptions (std::exception subclasses) are caught by cxx and
+// mapped to Result::Err on the Rust side.
+std::shared_ptr<const Value> value_call(
+    const Value& callable,
+    rust::Slice<const std::shared_ptr<const Value>> args);
+
 // ---- Stringification ----
 std::unique_ptr<std::string> value_to_string(const Value& val);
 std::unique_ptr<std::string> value_type_name(const Value& val);

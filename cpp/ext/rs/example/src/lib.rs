@@ -63,4 +63,9 @@ fn array_sum(arr: FrostValue) -> Result<FrostValue, String> {
     Ok(FrostValue::from_int(sum))
 }
 
+fn apply(func: FrostValue, value: FrostValue) -> Result<FrostValue, String> {
+    let f = func.as_function().ok_or("expected Function")?;
+    f.call_with(&[value]).map_err(|e| e.to_string())
+}
+
 include!(concat!(env!("OUT_DIR"), "/bridge.rs"));
