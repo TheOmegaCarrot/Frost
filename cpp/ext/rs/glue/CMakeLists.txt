@@ -9,6 +9,7 @@ add_library(frost-rs-glue
 target_include_directories(frost-rs-glue
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp
+    ${FROST_CXXBRIDGE_INCLUDE}
 )
 
 # Corrosion copies libfrost_glue.a here after cargo builds it.
@@ -19,3 +20,15 @@ target_link_libraries(frost-rs-glue
     frost-value
     ${CMAKE_CURRENT_BINARY_DIR}/libfrost_glue.a
 )
+
+if(BUILD_TESTS)
+    corrosion_import_crate(
+        MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/tests/rust-helpers/Cargo.toml
+    )
+
+    make_test(tests/glue.cpp
+        LIBS
+        frost-rs-glue
+        ${CMAKE_CURRENT_BINARY_DIR}/libfrost_glue_test_helpers.a
+    )
+endif()

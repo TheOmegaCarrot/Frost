@@ -376,7 +376,6 @@ impl ExtensionBuilder {
         .unwrap();
 
         // Bind each arg as a FrostValue (required) or Option<FrostValue> (optional)
-        let mut variadic_start = None;
         for (i, pk) in func.params.iter().enumerate() {
             match pk {
                 ParamKind::Required(_) => {
@@ -395,7 +394,6 @@ impl ExtensionBuilder {
                     .unwrap();
                 }
                 ParamKind::VariadicRest { .. } => {
-                    variadic_start = Some(i);
                     writeln!(
                         out,
                         "    let rest: Vec<frost_glue::FrostValue> = args[{i}..].iter()\

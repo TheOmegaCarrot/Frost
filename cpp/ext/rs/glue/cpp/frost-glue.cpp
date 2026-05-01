@@ -2,6 +2,8 @@
 
 #include <frost/value.hpp>
 
+#include <rust/cxx.h>
+
 namespace frst::rs
 {
 
@@ -97,6 +99,50 @@ bool value_get_bool(const Value& val)
 const std::string& value_get_string(const Value& val)
 {
     return val.raw_get<String>();
+}
+
+// ---- Array accessors ----
+
+size_t value_array_len(const Value& val)
+{
+    return val.raw_get<Array>().size();
+}
+
+std::shared_ptr<const Value> value_array_get(const Value& val, size_t index)
+{
+    const auto& arr = val.raw_get<Array>();
+    if (index >= arr.size())
+        return frst::Value::null();
+    return arr[index];
+}
+
+rust::Slice<const std::shared_ptr<const Value>>
+value_array_slice(const Value& val)
+{
+    const auto& arr = val.raw_get<Array>();
+    return {arr.data(), arr.size()};
+}
+
+// ---- Map accessors ----
+
+size_t value_map_len(const Value& val)
+{
+    return val.raw_get<Map>().size();
+}
+
+bool value_map_has(const Value& val, const std::string& key)
+{
+    return val.raw_get<Map>().contains(frst::Value::create(String{key}));
+}
+
+std::shared_ptr<const Value> value_map_get(const Value& val,
+                                           const std::string& key)
+{
+    const auto& map = val.raw_get<Map>();
+    auto it = map.find(frst::Value::create(String{key}));
+    if (it == map.end())
+        return frst::Value::null();
+    return it->second;
 }
 
 // ---- Stringification ----

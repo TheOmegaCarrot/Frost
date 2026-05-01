@@ -1,0 +1,14 @@
+[package]
+name = "frost-glue-test-helpers"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+frost-glue = { path = "../../" }
+cxx = "=1.0.194"
+
+[build-dependencies]
+cxx-build = "=1.0.194"

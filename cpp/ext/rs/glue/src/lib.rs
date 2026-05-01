@@ -22,11 +22,21 @@ pub mod ffi {
         fn value_is_map(val: &Value) -> bool;
         fn value_is_function(val: &Value) -> bool;
 
-        // ---- Accessors (unchecked -- use FrostValue wrapper) ----
+        // ---- Primitive accessors (unchecked -- use FrostValue wrapper) ----
         fn value_get_int(val: &Value) -> i64;
         fn value_get_float(val: &Value) -> f64;
         fn value_get_bool(val: &Value) -> bool;
         fn value_get_string(val: &Value) -> &CxxString;
+
+        // ---- Array accessors (unchecked -- caller must verify is_array) ----
+        fn value_array_len(val: &Value) -> usize;
+        fn value_array_get(val: &Value, index: usize) -> SharedPtr<Value>;
+        fn value_array_slice(val: &Value) -> &[SharedPtr<Value>];
+
+        // ---- Map accessors (unchecked -- caller must verify is_map) ----
+        fn value_map_len(val: &Value) -> usize;
+        fn value_map_has(val: &Value, key: &CxxString) -> bool;
+        fn value_map_get(val: &Value, key: &CxxString) -> SharedPtr<Value>;
 
         // ---- Stringification ----
         fn value_to_string(val: &Value) -> UniquePtr<CxxString>;
@@ -42,6 +52,8 @@ pub struct FrostValue {
 }
 
 impl FrostValue {
+    // ---- Factories ----
+
     pub fn null() -> Self {
         Self { inner: ffi::value_null() }
     }
@@ -63,6 +75,8 @@ impl FrostValue {
         let_cxx_string!(s = val);
         Self { inner: ffi::value_from_string(&s) }
     }
+
+    // ---- Type checks ----
 
     pub fn is_null(&self) -> bool {
         ffi::value_is_null(&self.inner)
@@ -96,6 +110,8 @@ impl FrostValue {
         ffi::value_is_function(&self.inner)
     }
 
+    // ---- Primitive accessors ----
+
     pub fn as_int(&self) -> Option<i64> {
         self.is_int().then(|| ffi::value_get_int(&self.inner))
     }
@@ -116,6 +132,57 @@ impl FrostValue {
         }
     }
 
+    // ---- Array accessors ----
+
+    pub fn array_len(&self) -> Option<usize> {
+        self.is_array().then(|| ffi::value_array_len(&self.inner))
+    }
+
+    pub fn array_get(&self, index: usize) -> Option<FrostValue> {
+        if self.is_array() {
+            let val = ffi::value_array_get(&self.inner, index);
+            if ffi::value_is_null(&val) { None } else { Some(Self::from_shared(val)) }
+        } else {
+            None
+        }
+    }
+
+    /// Zero-copy view of the array's contents as a slice of shared pointers.
+    pub fn array_slice(&self) -> Option<&[cxx::SharedPtr<ffi::Value>]> {
+        self.is_array().then(|| ffi::value_array_slice(&self.inner))
+    }
+
+    // ---- Map accessors ----
+
+    pub fn map_len(&self) -> Option<usize> {
+        self.is_map().then(|| ffi::value_map_len(&self.inner))
+    }
+
+    pub fn map_has(&self, key: &str) -> bool {
+        if self.is_map() {
+            let_cxx_string!(k = key);
+            ffi::value_map_has(&self.inner, &k)
+        } else {
+            false
+        }
+    }
+
+    pub fn map_get(&self, key: &str) -> Option<FrostValue> {
+        if self.is_map() {
+            let_cxx_string!(k = key);
+            let val = ffi::value_map_get(&self.inner, &k);
+            if ffi::value_is_null(&val) {
+                None
+            } else {
+                Some(Self::from_shared(val))
+            }
+        } else {
+            None
+        }
+    }
+
+    // ---- Stringification ----
+
     pub fn type_name(&self) -> String {
         ffi::value_type_name(&self.inner)
             .to_str()
@@ -130,6 +197,8 @@ impl FrostValue {
             .to_owned()
     }
 
+    // ---- Conversions ----
+
     /// Consume this wrapper, returning the underlying shared pointer.
     pub fn into_shared(self) -> cxx::SharedPtr<ffi::Value> {
         self.inner
@@ -139,24 +208,16 @@ impl FrostValue {
     pub fn from_shared(inner: cxx::SharedPtr<ffi::Value>) -> Self {
         Self { inner }
     }
-
 }
 
 impl std::fmt::Display for FrostValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", ffi::value_to_string(&self.inner).to_str().unwrap_or(""))
+        write!(f, "{}", self.to_display_string())
     }
 }
 
 impl std::fmt::Debug for FrostValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let type_name = ffi::value_type_name(&self.inner);
-        let display = ffi::value_to_string(&self.inner);
-        write!(
-            f,
-            "FrostValue({}:{})",
-            type_name.to_str().unwrap_or("?"),
-            display.to_str().unwrap_or("?"),
-        )
+        write!(f, "FrostValue({}:{})", self.type_name(), self.to_display_string())
     }
 }

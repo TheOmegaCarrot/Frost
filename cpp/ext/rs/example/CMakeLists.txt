@@ -11,7 +11,7 @@ add_dependencies(frost-example-shim cargo-build_frost_example)
 
 target_include_directories(frost-example-shim
     PRIVATE
-    ${CMAKE_BINARY_DIR}/cargo/build/x86_64-unknown-linux-gnu/cxxbridge
+    ${FROST_CXXBRIDGE_INCLUDE}
 )
 
 target_link_libraries(frost-example-shim

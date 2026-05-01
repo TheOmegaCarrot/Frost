@@ -1,9 +1,18 @@
 include(${CMAKE_CURRENT_LIST_DIR}/get-corrosion.cmake)
 
+# cxx include path -- cxxbridge generates rust/cxx.h here.
+set(FROST_CXXBRIDGE_INCLUDE
+    ${CMAKE_BINARY_DIR}/cargo/build/${_CORROSION_RUST_CARGO_TARGET}/cxxbridge
+)
+
 add_subdirectory(glue)
 
-# Like frost_extension(), but for Rust extensions where Corrosion owns the
-# crate target name (frost-<NAME>). The C++ shim target is frost-<NAME>-shim.
+# Register a Rust extension. Each extension directory must:
+#   1. Call corrosion_import_crate() for its Cargo.toml
+#   2. Create a frost-<NAME>-shim library from the generated C++
+#
+# This macro handles the frost-ext linkage, compile definitions, and
+# ON/OFF/AUTO gating — mirroring frost_extension() for C++ extensions.
 macro(frost_rust_extension NAME)
     string(TOUPPER ${NAME} _UPPER)
     set(WITH_${_UPPER} "AUTO" CACHE STRING "Enable ${NAME} extension (ON/OFF/AUTO)")
