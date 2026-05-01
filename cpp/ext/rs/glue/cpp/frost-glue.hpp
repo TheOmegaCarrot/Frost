@@ -22,11 +22,11 @@ namespace frst::rs
 using Value = const frst::Value;
 
 // ---- Factories ----
-std::shared_ptr<Value> value_null();
-std::shared_ptr<Value> value_from_int(int64_t val);
-std::shared_ptr<Value> value_from_float(double val);
-std::shared_ptr<Value> value_from_bool(bool val);
-std::shared_ptr<Value> value_from_string(const std::string& val);
+std::shared_ptr<const Value> value_null();
+std::shared_ptr<const Value> value_from_int(int64_t val);
+std::shared_ptr<const Value> value_from_float(double val);
+std::shared_ptr<const Value> value_from_bool(bool val);
+std::shared_ptr<const Value> value_from_string(const std::string& val);
 
 // ---- Type checks ----
 bool value_is_null(const Value& val);

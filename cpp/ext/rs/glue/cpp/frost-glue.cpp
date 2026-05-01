@@ -6,31 +6,31 @@ namespace frst::rs
 {
 
 // frst::rs::Value is const frst::Value (via the typedef in the header),
-// so Value_Ptr and shared_ptr<Value> are the same type.
+// so shared_ptr<const Value> is the same type as Value_Ptr.
 
 // ---- Factories ----
 
-std::shared_ptr<Value> value_null()
+std::shared_ptr<const Value> value_null()
 {
     return frst::Value::null();
 }
 
-std::shared_ptr<Value> value_from_int(int64_t val)
+std::shared_ptr<const Value> value_from_int(int64_t val)
 {
     return frst::Value::create(Int{val});
 }
 
-std::shared_ptr<Value> value_from_float(double val)
+std::shared_ptr<const Value> value_from_float(double val)
 {
     return frst::Value::create(Float{val});
 }
 
-std::shared_ptr<Value> value_from_bool(bool val)
+std::shared_ptr<const Value> value_from_bool(bool val)
 {
     return frst::Value::create(Bool{val});
 }
 
-std::shared_ptr<Value> value_from_string(const std::string& val)
+std::shared_ptr<const Value> value_from_string(const std::string& val)
 {
     return frst::Value::create(String{val});
 }

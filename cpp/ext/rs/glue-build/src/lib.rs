@@ -225,7 +225,7 @@ impl ExtensionBuilder {
             let name = func.name;
             write!(
                 out,
-                "::std::shared_ptr<::frst::rs::Value> rust_{ext}_{name}("
+                "::std::shared_ptr<const ::frst::rs::Value> rust_{ext}_{name}("
             )
             .unwrap();
 
@@ -246,7 +246,7 @@ impl ExtensionBuilder {
                         first = false;
                         write!(
                             out,
-                            "::rust::Vec<::std::shared_ptr<::frst::rs::Value>> const &rest"
+                            "::rust::Vec<::std::shared_ptr<const ::frst::rs::Value>> const &rest"
                         )
                         .unwrap();
                     }
@@ -489,7 +489,7 @@ fn cpp_param_type(p: &Param) -> &'static str {
             _ => unreachable!(),
         }
     } else {
-        "::std::shared_ptr<::frst::rs::Value>"
+        "::std::shared_ptr<const ::frst::rs::Value>"
     }
 }
 
