@@ -280,7 +280,7 @@ export def css = '''
 
       #sidebar.open { transform: translateX(0); }
 
-      .nav-content { padding-top: 2.75rem; }
+      .nav-content { padding-top: 3.5rem; }
 
       #menu-toggle { display: block; }
 
