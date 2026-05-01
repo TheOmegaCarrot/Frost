@@ -65,6 +65,12 @@ std::shared_ptr<const Value> value_call(
     const Value& callable,
     rust::Slice<const std::shared_ptr<const Value>> args);
 
+// ---- Closure creation ----
+// Wraps a Rust closure in a Frost Builtin. Rust Err maps to
+// Frost_Recoverable_Error via rust::Error catch.
+struct RustClosure;
+std::shared_ptr<const Value> make_closure(rust::Box<RustClosure> closure);
+
 // ---- Stringification ----
 std::unique_ptr<std::string> value_to_string(const Value& val);
 std::unique_ptr<std::string> value_type_name(const Value& val);

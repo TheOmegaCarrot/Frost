@@ -49,5 +49,9 @@ fn main() {
         .param("func", &[Type::Function])
         .param("value", &[Type::Any]);
 
+    // Return a Rust-created closure
+    ext.function("make_adder")
+        .param("n", &[Type::Int]);
+
     ext.generate();
 }

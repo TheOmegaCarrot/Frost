@@ -12,13 +12,13 @@ target_include_directories(frost-rs-glue
     ${FROST_CXXBRIDGE_INCLUDE}
 )
 
-# Corrosion copies libfrost_glue.a here after cargo builds it.
-# Link against the file path directly since the Corrosion IMPORTED target
-# doesn't set IMPORTED_LOCATION correctly for mold.
+# Rust symbols (cxx bridge code) come through extension staticlibs, which
+# include frost-glue as an rlib dependency. Don't link libfrost_glue.a
+# separately -- it would duplicate symbols with every extension.
 target_link_libraries(frost-rs-glue
     PUBLIC
     frost-value
-    ${CMAKE_CURRENT_BINARY_DIR}/libfrost_glue.a
+    frost-functions
 )
 
 if(BUILD_TESTS)

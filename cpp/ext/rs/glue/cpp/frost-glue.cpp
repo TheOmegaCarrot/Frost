@@ -1,5 +1,6 @@
 #include "frost-glue.hpp"
 
+#include <frost/builtin.hpp>
 #include <frost/value.hpp>
 
 #include <rust/cxx.h>
@@ -153,6 +154,32 @@ std::shared_ptr<const Value> value_call(
 {
     const auto& fn = callable.raw_get<Function>();
     return fn->call({args.data(), args.size()});
+}
+
+// ---- Closure creation ----
+
+Value_Ptr rust_closure_call(
+    RustClosure const& closure,
+    rust::Slice<Value_Ptr const> args);
+
+std::shared_ptr<const Value> make_closure(rust::Box<RustClosure> closure)
+{
+    auto shared =
+        std::make_shared<rust::Box<RustClosure>>(std::move(closure));
+    return frst::Value::create(
+        Function{std::make_shared<Builtin>(
+            [shared](builtin_args_t args) -> Value_Ptr {
+                try
+                {
+                    return rust_closure_call(**shared,
+                                            {args.data(), args.size()});
+                }
+                catch (const rust::Error& e)
+                {
+                    throw Frost_Recoverable_Error{std::string(e.what())};
+                }
+            },
+            "<rust closure>")});
 }
 
 // ---- Stringification ----

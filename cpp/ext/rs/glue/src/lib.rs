@@ -44,13 +44,37 @@ pub mod ffi {
             args: &[SharedPtr<Value>],
         ) -> Result<SharedPtr<Value>>;
 
+        // ---- Closure creation ----
+        fn make_closure(closure: Box<RustClosure>) -> SharedPtr<Value>;
+
         // ---- Stringification ----
         fn value_to_string(val: &Value) -> UniquePtr<CxxString>;
         fn value_type_name(val: &Value) -> UniquePtr<CxxString>;
     }
+
+    extern "Rust" {
+        type RustClosure;
+        fn rust_closure_call(
+            closure: &RustClosure,
+            args: &[SharedPtr<Value>],
+        ) -> Result<SharedPtr<Value>>;
+    }
 }
 
 use cxx::let_cxx_string;
+
+type ClosureFn = Box<dyn Fn(&[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String>>;
+
+pub struct RustClosure {
+    f: ClosureFn,
+}
+
+fn rust_closure_call(
+    closure: &RustClosure,
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    (closure.f)(args)
+}
 
 /// A Frost value. Wraps a C++ `shared_ptr<const Value>`.
 pub struct FrostValue {
@@ -231,6 +255,22 @@ pub struct FrostFunction {
 }
 
 impl FrostFunction {
+    /// Create a Frost-callable function from a Rust closure.
+    pub fn new<F>(f: F) -> Self
+    where
+        F: Fn(&[FrostValue]) -> Result<FrostValue, String> + 'static,
+    {
+        let wrapper = move |args: &[cxx::SharedPtr<ffi::Value>]| -> Result<cxx::SharedPtr<ffi::Value>, String> {
+            let frost_args: Vec<FrostValue> = args.iter()
+                .map(|a| FrostValue::from_shared(a.clone()))
+                .collect();
+            let result = f(&frost_args)?;
+            Ok(result.into_shared())
+        };
+        let closure = Box::new(RustClosure { f: Box::new(wrapper) });
+        Self { inner: ffi::make_closure(closure) }
+    }
+
     pub fn call(&self, args: &[cxx::SharedPtr<ffi::Value>]) -> Result<FrostValue, cxx::Exception> {
         Ok(FrostValue::from_shared(ffi::value_call(&self.inner, args)?))
     }

@@ -63,6 +63,15 @@ fn array_sum(arr: FrostValue) -> Result<FrostValue, String> {
     Ok(FrostValue::from_int(sum))
 }
 
+fn make_adder(n: i64) -> Result<FrostValue, String> {
+    let f = frost_glue::FrostFunction::new(move |args| {
+        let x = args.first().ok_or("expected 1 argument")?
+            .as_int().ok_or("expected Int")?;
+        Ok(FrostValue::from_int(n + x))
+    });
+    Ok(f.into_value())
+}
+
 fn apply(func: FrostValue, value: FrostValue) -> Result<FrostValue, String> {
     let f = func.as_function().ok_or("expected Function")?;
     f.call_with(&[value]).map_err(|e| e.to_string())
