@@ -145,14 +145,13 @@ impl ExtensionBuilder {
 
     /// Generate all artifacts and run cxx-build.
     ///
-    /// The generated C++ shim is written to `FROST_GENERATED_DIR` (set by
-    /// CMake via Corrosion) so that CMake can compile it with access to
-    /// the full frost include tree. Falls back to `OUT_DIR` if unset.
+    /// The generated C++ shim is written to `generated/` under the crate's
+    /// CARGO_MANIFEST_DIR so CMake can reference it at a deterministic path.
     pub fn generate(&self) {
         let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
-        let cpp_dir = std::env::var("FROST_GENERATED_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| out_dir.clone());
+        let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
+        let cpp_dir = manifest_dir.join("generated");
+        std::fs::create_dir_all(&cpp_dir).unwrap();
 
         let cpp = self.generate_cpp();
         let cpp_path = cpp_dir.join(format!("{}.cpp", self.name));
