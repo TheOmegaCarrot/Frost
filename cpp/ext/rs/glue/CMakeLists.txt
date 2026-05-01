@@ -6,6 +6,8 @@ add_library(frost-rs-glue
     cpp/frost-glue.cpp
 )
 
+add_dependencies(frost-rs-glue cargo-build_frost_glue)
+
 target_include_directories(frost-rs-glue
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp

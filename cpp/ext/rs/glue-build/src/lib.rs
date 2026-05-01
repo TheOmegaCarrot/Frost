@@ -45,20 +45,6 @@ impl Param {
             )
     }
 
-    fn rust_user_type(&self) -> &'static str {
-        if self.is_single_primitive() {
-            match self.types[0] {
-                Type::Int => "i64",
-                Type::Float => "f64",
-                Type::Bool => "bool",
-                Type::String => "&str",
-                _ => unreachable!(),
-            }
-        } else {
-            "frost_glue::FrostValue"
-        }
-    }
-
     fn rust_extract(&self, var: &str) -> String {
         if self.is_single_primitive() {
             match self.types[0] {
@@ -372,9 +358,10 @@ impl ExtensionBuilder {
         let ext = self.name;
         let name = func.name;
 
+        let args_name = if func.params.is_empty() { "_args" } else { "args" };
         writeln!(
             out,
-            "fn rust_{ext}_{name}(args: &[cxx::SharedPtr<ffi::Value>]) \
+            "fn rust_{ext}_{name}({args_name}: &[cxx::SharedPtr<ffi::Value>]) \
              -> Result<cxx::SharedPtr<ffi::Value>, String> {{"
         )
         .unwrap();
