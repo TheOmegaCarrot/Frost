@@ -8,8 +8,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 frost-glue = { path = "../glue" }
-cxx = "1"
+cxx = "=1.0.194"
 
 [build-dependencies]
 frost-glue-build = { path = "../glue-build" }
-cxx-build = "1"

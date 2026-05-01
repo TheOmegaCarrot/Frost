@@ -44,6 +44,48 @@ impl Param {
                 Type::Int | Type::Float | Type::Bool | Type::String
             )
     }
+
+    fn rust_user_type(&self) -> &'static str {
+        if self.is_single_primitive() {
+            match self.types[0] {
+                Type::Int => "i64",
+                Type::Float => "f64",
+                Type::Bool => "bool",
+                Type::String => "&str",
+                _ => unreachable!(),
+            }
+        } else {
+            "frost_glue::FrostValue"
+        }
+    }
+
+    fn rust_extract(&self, var: &str) -> String {
+        if self.is_single_primitive() {
+            match self.types[0] {
+                Type::Int => format!("{var}.as_int().unwrap()"),
+                Type::Float => format!("{var}.as_float().unwrap()"),
+                Type::Bool => format!("{var}.as_bool().unwrap()"),
+                Type::String => format!("{var}.as_string().unwrap()"),
+                _ => unreachable!(),
+            }
+        } else {
+            var.to_owned()
+        }
+    }
+
+    fn rust_extract_optional(&self, var: &str) -> String {
+        if self.is_single_primitive() {
+            match self.types[0] {
+                Type::Int => format!("{var}.as_ref().and_then(|v| v.as_int())"),
+                Type::Float => format!("{var}.as_ref().and_then(|v| v.as_float())"),
+                Type::Bool => format!("{var}.as_ref().and_then(|v| v.as_bool())"),
+                Type::String => format!("{var}.as_ref().and_then(|v| v.as_string())"),
+                _ => unreachable!(),
+            }
+        } else {
+            var.to_owned()
+        }
+    }
 }
 
 /// Whether a parameter is required, optional, or variadic rest.
@@ -116,11 +158,10 @@ impl FunctionSpec {
 
 /// Builder for a Rust-backed Frost extension.
 ///
-/// Generates three artifacts:
+/// Generates two artifacts:
 /// - A C++ file with BUILTIN shims and REGISTER_EXTENSION (compiled by CMake)
 /// - A Rust bridge file with the cxx bridge and wrapper functions (included by
-///   the extension crate)
-/// - The cxx-build compilation of the bridge
+///   the extension crate via `include!`)
 pub struct ExtensionBuilder {
     name: &'static str,
     functions: Vec<FunctionSpec>,
@@ -181,8 +222,18 @@ impl ExtensionBuilder {
         writeln!(out, "#include <rust/cxx.h>").unwrap();
         writeln!(out).unwrap();
 
-        // Forward-declare the cxx-generated Rust wrapper functions.
-        self.write_cpp_forward_declarations(&mut out);
+        // Forward-declare the Rust wrapper functions.
+        writeln!(out, "namespace frst::rs::{ext}").unwrap();
+        writeln!(out, "{{").unwrap();
+        for func in &self.functions {
+            writeln!(
+                out,
+                "Value_Ptr rust_{ext}_{name}(::rust::Slice<const Value_Ptr> args);",
+                name = func.name,
+            )
+            .unwrap();
+        }
+        writeln!(out, "}} // namespace frst::rs::{ext}").unwrap();
 
         writeln!(out).unwrap();
         writeln!(out, "namespace frst").unwrap();
@@ -202,7 +253,6 @@ impl ExtensionBuilder {
         writeln!(out, "}} // namespace {ext}").unwrap();
         writeln!(out).unwrap();
 
-        // Registration
         write!(out, "REGISTER_EXTENSION({ext}").unwrap();
         for func in &self.functions {
             write!(out, ", ENTRY({})", func.name).unwrap();
@@ -213,50 +263,6 @@ impl ExtensionBuilder {
         writeln!(out, "}} // namespace frst").unwrap();
 
         out
-    }
-
-    fn write_cpp_forward_declarations(&self, out: &mut String) {
-        let ext = self.name;
-
-        writeln!(out, "namespace frst::rs::{ext}").unwrap();
-        writeln!(out, "{{").unwrap();
-
-        for func in &self.functions {
-            let name = func.name;
-            write!(
-                out,
-                "::std::shared_ptr<const ::frst::rs::Value> rust_{ext}_{name}("
-            )
-            .unwrap();
-
-            let mut first = true;
-            for (i, pk) in func.params.iter().enumerate() {
-                match pk {
-                    ParamKind::Required(p) | ParamKind::Optional(p) => {
-                        if !first {
-                            write!(out, ", ").unwrap();
-                        }
-                        first = false;
-                        write!(out, "{} arg{i}", cpp_param_type(p)).unwrap();
-                    }
-                    ParamKind::VariadicRest { .. } => {
-                        if !first {
-                            write!(out, ", ").unwrap();
-                        }
-                        first = false;
-                        write!(
-                            out,
-                            "::rust::Vec<::std::shared_ptr<const ::frst::rs::Value>> const &rest"
-                        )
-                        .unwrap();
-                    }
-                }
-            }
-
-            writeln!(out, ");").unwrap();
-        }
-
-        writeln!(out, "}} // namespace frst::rs::{ext}").unwrap();
     }
 
     fn write_cpp_builtin(&self, out: &mut String, func: &FunctionSpec) {
@@ -301,37 +307,15 @@ impl ExtensionBuilder {
         }
         writeln!(out, ");").unwrap();
 
-        // Call into Rust, catching rust::Error
+        // Pass entire args span to Rust
         writeln!(out, "    try {{").unwrap();
-        write!(out, "        return frst::rs::{ext}::rust_{ext}_{name}(").unwrap();
-
-        let mut first = true;
-        for (i, pk) in func.params.iter().enumerate() {
-            match pk {
-                ParamKind::Required(p) | ParamKind::Optional(p) => {
-                    if !first {
-                        write!(out, ", ").unwrap();
-                    }
-                    first = false;
-                    write!(out, "{}", cpp_arg_extract(i, p)).unwrap();
-                }
-                ParamKind::VariadicRest { .. } => {
-                    // Collect remaining args into a rust::Vec
-                    if !first {
-                        write!(out, ", ").unwrap();
-                    }
-                    first = false;
-                    write!(out, "[&]() {{ ::rust::Vec<Value_Ptr> v; for (auto j = {i}u; j < args.size(); ++j) v.push_back(args[j]); return v; }}()").unwrap();
-                }
-            }
-        }
-
-        writeln!(out, ");").unwrap();
         writeln!(
             out,
-            "    }} catch (const ::rust::Error& e) {{"
+            "        return frst::rs::{ext}::rust_{ext}_{name}(\
+             {{args.data(), args.size()}});"
         )
         .unwrap();
+        writeln!(out, "    }} catch (const ::rust::Error& e) {{").unwrap();
         writeln!(
             out,
             "        throw Frost_Recoverable_Error{{std::string(e.what())}};"
@@ -348,7 +332,6 @@ impl ExtensionBuilder {
         let ext = self.name;
 
         writeln!(out, "// Generated by frost-glue-build -- do not edit").unwrap();
-        writeln!(out, "use cxx::CxxString;").unwrap();
         writeln!(out).unwrap();
         writeln!(out, "#[cxx::bridge(namespace = \"frst::rs::{ext}\")]").unwrap();
         writeln!(out, "mod ffi {{").unwrap();
@@ -361,40 +344,18 @@ impl ExtensionBuilder {
         writeln!(out, "    extern \"Rust\" {{").unwrap();
 
         for func in &self.functions {
-            let name = func.name;
-            write!(
+            writeln!(
                 out,
-                "        fn rust_{ext}_{name}("
+                "        fn rust_{ext}_{name}(args: &[SharedPtr<Value>]) \
+                 -> Result<SharedPtr<Value>>;",
+                name = func.name,
             )
             .unwrap();
-
-            let mut first = true;
-            for (i, pk) in func.params.iter().enumerate() {
-                match pk {
-                    ParamKind::Required(p) | ParamKind::Optional(p) => {
-                        if !first {
-                            write!(out, ", ").unwrap();
-                        }
-                        first = false;
-                        write!(out, "arg{i}: {}", rust_bridge_param_type(p)).unwrap();
-                    }
-                    ParamKind::VariadicRest { .. } => {
-                        if !first {
-                            write!(out, ", ").unwrap();
-                        }
-                        first = false;
-                        write!(out, "rest: &Vec<SharedPtr<Value>>").unwrap();
-                    }
-                }
-            }
-
-            writeln!(out, ") -> Result<SharedPtr<Value>>;").unwrap();
         }
 
         writeln!(out, "    }}").unwrap();
         writeln!(out, "}}").unwrap();
 
-        // Wrapper functions that convert between cxx types and FrostValue
         for func in &self.functions {
             writeln!(out).unwrap();
             self.write_rust_wrapper(&mut out, func);
@@ -407,59 +368,62 @@ impl ExtensionBuilder {
         let ext = self.name;
         let name = func.name;
 
-        // Signature matching the cxx bridge declaration
-        write!(out, "fn rust_{ext}_{name}(").unwrap();
+        writeln!(
+            out,
+            "fn rust_{ext}_{name}(args: &[cxx::SharedPtr<ffi::Value>]) \
+             -> Result<cxx::SharedPtr<ffi::Value>, String> {{"
+        )
+        .unwrap();
 
-        let mut first = true;
+        // Bind each arg as a FrostValue (required) or Option<FrostValue> (optional)
+        let mut variadic_start = None;
         for (i, pk) in func.params.iter().enumerate() {
             match pk {
-                ParamKind::Required(p) | ParamKind::Optional(p) => {
-                    if !first {
-                        write!(out, ", ").unwrap();
-                    }
-                    first = false;
-                    write!(out, "arg{i}: {}", rust_bridge_param_type(p)).unwrap();
+                ParamKind::Required(_) => {
+                    writeln!(
+                        out,
+                        "    let val{i} = frost_glue::FrostValue::from_shared(args[{i}].clone());"
+                    )
+                    .unwrap();
+                }
+                ParamKind::Optional(_) => {
+                    writeln!(
+                        out,
+                        "    let val{i} = args.get({i})\
+                         .map(|v| frost_glue::FrostValue::from_shared(v.clone()));"
+                    )
+                    .unwrap();
                 }
                 ParamKind::VariadicRest { .. } => {
-                    if !first {
-                        write!(out, ", ").unwrap();
-                    }
-                    first = false;
-                    write!(out, "rest: &Vec<cxx::SharedPtr<ffi::Value>>").unwrap();
+                    variadic_start = Some(i);
+                    writeln!(
+                        out,
+                        "    let rest: Vec<frost_glue::FrostValue> = args[{i}..].iter()\
+                         .map(|v| frost_glue::FrostValue::from_shared(v.clone())).collect();"
+                    )
+                    .unwrap();
                 }
             }
         }
 
-        writeln!(
-            out,
-            ") -> Result<cxx::SharedPtr<ffi::Value>, String> {{"
-        )
-        .unwrap();
-
-        // Call the user's function with converted arguments
+        // Call the user's function
         write!(out, "    let result = {name}(").unwrap();
 
         let mut first = true;
         for (i, pk) in func.params.iter().enumerate() {
+            if !first {
+                write!(out, ", ").unwrap();
+            }
+            first = false;
             match pk {
-                ParamKind::Required(p) | ParamKind::Optional(p) => {
-                    if !first {
-                        write!(out, ", ").unwrap();
-                    }
-                    first = false;
-                    write!(out, "{}", rust_arg_convert(i, p)).unwrap();
+                ParamKind::Required(p) => {
+                    write!(out, "{}", p.rust_extract(&format!("val{i}"))).unwrap();
+                }
+                ParamKind::Optional(p) => {
+                    write!(out, "{}", p.rust_extract_optional(&format!("val{i}"))).unwrap();
                 }
                 ParamKind::VariadicRest { .. } => {
-                    if !first {
-                        write!(out, ", ").unwrap();
-                    }
-                    first = false;
-                    write!(
-                        out,
-                        "&rest.iter().map(|v| frost_glue::FrostValue::from_shared(\
-                         v.clone())).collect::<Vec<_>>()"
-                    )
-                    .unwrap();
+                    write!(out, "&rest").unwrap();
                 }
             }
         }
@@ -467,74 +431,6 @@ impl ExtensionBuilder {
         writeln!(out, ")?;").unwrap();
         writeln!(out, "    Ok(result.into_shared())").unwrap();
         writeln!(out, "}}").unwrap();
-    }
-
-    fn has_variadic(&self, func: &FunctionSpec) -> bool {
-        func.params
-            .iter()
-            .any(|p| matches!(p, ParamKind::VariadicRest { .. }))
-    }
-}
-
-// -- Type mapping helpers --
-
-/// C++ parameter type in the forward declaration.
-fn cpp_param_type(p: &Param) -> &'static str {
-    if p.is_single_primitive() {
-        match p.types[0] {
-            Type::Int => "::std::int64_t",
-            Type::Float => "double",
-            Type::Bool => "bool",
-            Type::String => "::std::string const &",
-            _ => unreachable!(),
-        }
-    } else {
-        "::std::shared_ptr<const ::frst::rs::Value>"
-    }
-}
-
-/// C++ expression to extract an arg for the Rust call.
-fn cpp_arg_extract(i: usize, p: &Param) -> String {
-    if p.is_single_primitive() {
-        match p.types[0] {
-            Type::Int => format!("GET({i}, Int)"),
-            Type::Float => format!("GET({i}, Float)"),
-            Type::Bool => format!("GET({i}, Bool)"),
-            Type::String => format!("GET({i}, String)"),
-            _ => unreachable!(),
-        }
-    } else {
-        format!("args[{i}]")
-    }
-}
-
-/// Rust type for a parameter in the cxx bridge declaration.
-fn rust_bridge_param_type(p: &Param) -> &'static str {
-    if p.is_single_primitive() {
-        match p.types[0] {
-            Type::Int => "i64",
-            Type::Float => "f64",
-            Type::Bool => "bool",
-            Type::String => "&CxxString",
-            _ => unreachable!(),
-        }
-    } else {
-        "SharedPtr<Value>"
-    }
-}
-
-/// Rust expression to convert a bridge param into the user function's type.
-fn rust_arg_convert(i: usize, p: &Param) -> String {
-    if p.is_single_primitive() {
-        match p.types[0] {
-            Type::Int | Type::Float | Type::Bool => format!("arg{i}"),
-            Type::String => {
-                format!("arg{i}.to_str().map_err(|e| e.to_string())?")
-            }
-            _ => unreachable!(),
-        }
-    } else {
-        format!("frost_glue::FrostValue::from_shared(arg{i})")
     }
 }
 

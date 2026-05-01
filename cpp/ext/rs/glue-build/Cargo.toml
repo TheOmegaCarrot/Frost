@@ -4,4 +4,4 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
-cxx-build = "1"
+cxx-build = "=1.0.194"
