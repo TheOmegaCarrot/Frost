@@ -5,120 +5,110 @@
 namespace frst::rs
 {
 
-// ValuePtr is const frst::Value under a forward-declared name so the header
-// stays free of frost includes.  These two helpers bridge the gap.
-
-static const Value& as_value(const ValuePtr& v)
-{
-    return reinterpret_cast<const Value&>(v);
-}
-
-static std::shared_ptr<ValuePtr> wrap(Value_Ptr v)
-{
-    return reinterpret_cast<std::shared_ptr<ValuePtr>&>(v);
-}
+// frst::rs::Value is const frst::Value (via the typedef in the header),
+// so Value_Ptr and shared_ptr<Value> are the same type.
 
 // ---- Factories ----
 
-std::shared_ptr<ValuePtr> value_null()
+std::shared_ptr<Value> value_null()
 {
-    return wrap(Value::null());
+    return frst::Value::null();
 }
 
-std::shared_ptr<ValuePtr> value_from_int(int64_t val)
+std::shared_ptr<Value> value_from_int(int64_t val)
 {
-    return wrap(Value::create(Int{val}));
+    return frst::Value::create(Int{val});
 }
 
-std::shared_ptr<ValuePtr> value_from_float(double val)
+std::shared_ptr<Value> value_from_float(double val)
 {
-    return wrap(Value::create(Float{val}));
+    return frst::Value::create(Float{val});
 }
 
-std::shared_ptr<ValuePtr> value_from_bool(bool val)
+std::shared_ptr<Value> value_from_bool(bool val)
 {
-    return wrap(Value::create(Bool{val}));
+    return frst::Value::create(Bool{val});
 }
 
-std::shared_ptr<ValuePtr> value_from_string(const std::string& val)
+std::shared_ptr<Value> value_from_string(const std::string& val)
 {
-    return wrap(Value::create(String{val}));
+    return frst::Value::create(String{val});
 }
 
 // ---- Type checks ----
 
-bool value_is_null(const ValuePtr& val)
+bool value_is_null(const Value& val)
 {
-    return as_value(val).is<Null>();
+    return val.is<Null>();
 }
 
-bool value_is_int(const ValuePtr& val)
+bool value_is_int(const Value& val)
 {
-    return as_value(val).is<Int>();
+    return val.is<Int>();
 }
 
-bool value_is_float(const ValuePtr& val)
+bool value_is_float(const Value& val)
 {
-    return as_value(val).is<Float>();
+    return val.is<Float>();
 }
 
-bool value_is_bool(const ValuePtr& val)
+bool value_is_bool(const Value& val)
 {
-    return as_value(val).is<Bool>();
+    return val.is<Bool>();
 }
 
-bool value_is_string(const ValuePtr& val)
+bool value_is_string(const Value& val)
 {
-    return as_value(val).is<String>();
+    return val.is<String>();
 }
 
-bool value_is_array(const ValuePtr& val)
+bool value_is_array(const Value& val)
 {
-    return as_value(val).is<Array>();
+    return val.is<Array>();
 }
 
-bool value_is_map(const ValuePtr& val)
+bool value_is_map(const Value& val)
 {
-    return as_value(val).is<Map>();
+    return val.is<Map>();
 }
 
-bool value_is_function(const ValuePtr& val)
+bool value_is_function(const Value& val)
 {
-    return as_value(val).is<Function>();
+    return val.is<Function>();
 }
 
 // ---- Accessors ----
 
-int64_t value_get_int(const ValuePtr& val)
+int64_t value_get_int(const Value& val)
 {
-    return as_value(val).raw_get<Int>();
+    return val.raw_get<Int>();
 }
 
-double value_get_float(const ValuePtr& val)
+double value_get_float(const Value& val)
 {
-    return as_value(val).raw_get<Float>();
+    return val.raw_get<Float>();
 }
 
-bool value_get_bool(const ValuePtr& val)
+bool value_get_bool(const Value& val)
 {
-    return as_value(val).raw_get<Bool>();
+    return val.raw_get<Bool>();
 }
 
-const std::string& value_get_string(const ValuePtr& val)
+const std::string& value_get_string(const Value& val)
 {
-    return as_value(val).raw_get<String>();
+    return val.raw_get<String>();
 }
 
 // ---- Stringification ----
 
-std::unique_ptr<std::string> value_to_string(const ValuePtr& val)
+std::unique_ptr<std::string> value_to_string(const Value& val)
 {
-    return std::make_unique<std::string>(as_value(val).to_internal_string());
+    return std::make_unique<std::string>(val.to_internal_string());
 }
 
-std::unique_ptr<std::string> value_type_name(const ValuePtr& val)
+std::unique_ptr<std::string> value_type_name(const Value& val)
 {
-    return std::make_unique<std::string>(as_value(val).type_name());
+    return std::make_unique<std::string>(val.type_name());
 }
 
 } // namespace frst::rs

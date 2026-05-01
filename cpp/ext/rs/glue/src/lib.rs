@@ -1,47 +1,47 @@
 #[cxx::bridge(namespace = "frst::rs")]
-mod ffi {
+pub mod ffi {
     unsafe extern "C++" {
         include!("frost-glue.hpp");
 
-        type ValuePtr;
+        type Value;
 
         // ---- Factories ----
-        fn value_null() -> SharedPtr<ValuePtr>;
-        fn value_from_int(val: i64) -> SharedPtr<ValuePtr>;
-        fn value_from_float(val: f64) -> Result<SharedPtr<ValuePtr>>;
-        fn value_from_bool(val: bool) -> SharedPtr<ValuePtr>;
-        fn value_from_string(val: &CxxString) -> SharedPtr<ValuePtr>;
+        fn value_null() -> SharedPtr<Value>;
+        fn value_from_int(val: i64) -> SharedPtr<Value>;
+        fn value_from_float(val: f64) -> Result<SharedPtr<Value>>;
+        fn value_from_bool(val: bool) -> SharedPtr<Value>;
+        fn value_from_string(val: &CxxString) -> SharedPtr<Value>;
 
         // ---- Type checks ----
-        fn value_is_null(val: &ValuePtr) -> bool;
-        fn value_is_int(val: &ValuePtr) -> bool;
-        fn value_is_float(val: &ValuePtr) -> bool;
-        fn value_is_bool(val: &ValuePtr) -> bool;
-        fn value_is_string(val: &ValuePtr) -> bool;
-        fn value_is_array(val: &ValuePtr) -> bool;
-        fn value_is_map(val: &ValuePtr) -> bool;
-        fn value_is_function(val: &ValuePtr) -> bool;
+        fn value_is_null(val: &Value) -> bool;
+        fn value_is_int(val: &Value) -> bool;
+        fn value_is_float(val: &Value) -> bool;
+        fn value_is_bool(val: &Value) -> bool;
+        fn value_is_string(val: &Value) -> bool;
+        fn value_is_array(val: &Value) -> bool;
+        fn value_is_map(val: &Value) -> bool;
+        fn value_is_function(val: &Value) -> bool;
 
-        // ---- Accessors (unchecked -- use Value wrapper) ----
-        fn value_get_int(val: &ValuePtr) -> i64;
-        fn value_get_float(val: &ValuePtr) -> f64;
-        fn value_get_bool(val: &ValuePtr) -> bool;
-        fn value_get_string(val: &ValuePtr) -> &CxxString;
+        // ---- Accessors (unchecked -- use FrostValue wrapper) ----
+        fn value_get_int(val: &Value) -> i64;
+        fn value_get_float(val: &Value) -> f64;
+        fn value_get_bool(val: &Value) -> bool;
+        fn value_get_string(val: &Value) -> &CxxString;
 
         // ---- Stringification ----
-        fn value_to_string(val: &ValuePtr) -> UniquePtr<CxxString>;
-        fn value_type_name(val: &ValuePtr) -> UniquePtr<CxxString>;
+        fn value_to_string(val: &Value) -> UniquePtr<CxxString>;
+        fn value_type_name(val: &Value) -> UniquePtr<CxxString>;
     }
 }
 
 use cxx::let_cxx_string;
 
 /// A Frost value. Wraps a C++ `shared_ptr<const Value>`.
-pub struct Value {
-    inner: cxx::SharedPtr<ffi::ValuePtr>,
+pub struct FrostValue {
+    inner: cxx::SharedPtr<ffi::Value>,
 }
 
-impl Value {
+impl FrostValue {
     pub fn null() -> Self {
         Self { inner: ffi::value_null() }
     }
@@ -129,21 +129,32 @@ impl Value {
             .unwrap_or("")
             .to_owned()
     }
+
+    /// Consume this wrapper, returning the underlying shared pointer.
+    pub fn into_shared(self) -> cxx::SharedPtr<ffi::Value> {
+        self.inner
+    }
+
+    /// Wrap an existing shared pointer.
+    pub fn from_shared(inner: cxx::SharedPtr<ffi::Value>) -> Self {
+        Self { inner }
+    }
+
 }
 
-impl std::fmt::Display for Value {
+impl std::fmt::Display for FrostValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", ffi::value_to_string(&self.inner).to_str().unwrap_or(""))
     }
 }
 
-impl std::fmt::Debug for Value {
+impl std::fmt::Debug for FrostValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let type_name = ffi::value_type_name(&self.inner);
         let display = ffi::value_to_string(&self.inner);
         write!(
             f,
-            "Value({}:{})",
+            "FrostValue({}:{})",
             type_name.to_str().unwrap_or("?"),
             display.to_str().unwrap_or("?"),
         )

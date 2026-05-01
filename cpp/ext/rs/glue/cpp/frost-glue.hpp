@@ -9,37 +9,44 @@
 #include <memory>
 #include <string>
 
+namespace frst
+{
+class Value;
+} // namespace frst
+
 namespace frst::rs
 {
 
-class ValuePtr;
+// Same type as Value_Ptr (shared_ptr<const Value>), so no casts needed
+// when passing between shim code and the Frost runtime.
+using Value = const frst::Value;
 
 // ---- Factories ----
-std::shared_ptr<ValuePtr> value_null();
-std::shared_ptr<ValuePtr> value_from_int(int64_t val);
-std::shared_ptr<ValuePtr> value_from_float(double val);
-std::shared_ptr<ValuePtr> value_from_bool(bool val);
-std::shared_ptr<ValuePtr> value_from_string(const std::string& val);
+std::shared_ptr<Value> value_null();
+std::shared_ptr<Value> value_from_int(int64_t val);
+std::shared_ptr<Value> value_from_float(double val);
+std::shared_ptr<Value> value_from_bool(bool val);
+std::shared_ptr<Value> value_from_string(const std::string& val);
 
 // ---- Type checks ----
-bool value_is_null(const ValuePtr& val);
-bool value_is_int(const ValuePtr& val);
-bool value_is_float(const ValuePtr& val);
-bool value_is_bool(const ValuePtr& val);
-bool value_is_string(const ValuePtr& val);
-bool value_is_array(const ValuePtr& val);
-bool value_is_map(const ValuePtr& val);
-bool value_is_function(const ValuePtr& val);
+bool value_is_null(const Value& val);
+bool value_is_int(const Value& val);
+bool value_is_float(const Value& val);
+bool value_is_bool(const Value& val);
+bool value_is_string(const Value& val);
+bool value_is_array(const Value& val);
+bool value_is_map(const Value& val);
+bool value_is_function(const Value& val);
 
 // ---- Accessors (caller must type-check first) ----
-int64_t value_get_int(const ValuePtr& val);
-double value_get_float(const ValuePtr& val);
-bool value_get_bool(const ValuePtr& val);
-const std::string& value_get_string(const ValuePtr& val);
+int64_t value_get_int(const Value& val);
+double value_get_float(const Value& val);
+bool value_get_bool(const Value& val);
+const std::string& value_get_string(const Value& val);
 
 // ---- Stringification ----
-std::unique_ptr<std::string> value_to_string(const ValuePtr& val);
-std::unique_ptr<std::string> value_type_name(const ValuePtr& val);
+std::unique_ptr<std::string> value_to_string(const Value& val);
+std::unique_ptr<std::string> value_type_name(const Value& val);
 
 } // namespace frst::rs
 
