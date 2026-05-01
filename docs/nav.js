@@ -51,6 +51,7 @@ overlay.className="nav-overlay";
 function toggleMenu(){
 nav.classList.toggle("open");
 overlay.classList.toggle("open");
+document.body.classList.toggle("nav-open");
 }
 btn.addEventListener("click",toggleMenu);
 overlay.addEventListener("click",toggleMenu);

@@ -280,9 +280,12 @@ export def css = '''
 
       #sidebar.open { transform: translateX(0); }
 
+      .nav-content { padding-top: 3.5rem; }
+
       #menu-toggle { display: block; }
 
       body { margin-left: 0; }
+      body.nav-open { overflow: hidden; }
 
       main { padding-top: 3.5rem; }
 
