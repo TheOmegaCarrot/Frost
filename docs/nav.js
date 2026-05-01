@@ -4,6 +4,8 @@ var depth=document.documentElement.dataset.depth||"0";
 var prefix=depth==="1"?"../":"";
 var nav=document.createElement("nav");
 nav.id="sidebar";
+var content=document.createElement("div");
+content.className="nav-content";
 function makeLink(e){
 var a=document.createElement("a");
 a.href=prefix+e.h;
@@ -17,7 +19,7 @@ if(label){
 var h=document.createElement("div");
 h.className="nav-heading";
 h.textContent=label;
-nav.appendChild(h);
+content.appendChild(h);
 }
 var ul=document.createElement("ul");
 items.forEach(function(e){
@@ -25,12 +27,13 @@ var li=document.createElement("li");
 li.appendChild(makeLink(e));
 ul.appendChild(li);
 });
-nav.appendChild(ul);
+content.appendChild(ul);
 }
 addSection("",defined_nav.top);
 addSection("Core",defined_nav.core);
 addSection("Standard Modules",defined_nav.std);
 addSection("Extensions",defined_nav.ext);
+nav.appendChild(content);
 var gh=document.createElement("div");
 gh.className="nav-github";
 var gha=document.createElement("a");
@@ -40,4 +43,18 @@ gha.innerHTML='<svg height="16" width="16" viewBox="0 0 16 16" fill="currentColo
 gh.appendChild(gha);
 nav.appendChild(gh);
 document.body.insertBefore(nav,document.body.firstChild);
+var btn=document.createElement("button");
+btn.id="menu-toggle";
+btn.innerHTML='<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="4" x2="15" y2="4"/><line x1="3" y1="9" x2="15" y2="9"/><line x1="3" y1="14" x2="15" y2="14"/></svg>';
+var overlay=document.createElement("div");
+overlay.className="nav-overlay";
+function toggleMenu(){
+nav.classList.toggle("open");
+overlay.classList.toggle("open");
+document.body.classList.toggle("nav-open");
+}
+btn.addEventListener("click",toggleMenu);
+overlay.addEventListener("click",toggleMenu);
+document.body.insertBefore(overlay,document.body.firstChild);
+document.body.insertBefore(btn,document.body.firstChild);
 })();

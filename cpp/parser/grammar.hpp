@@ -1128,8 +1128,7 @@ struct expr_fmt_inner
     static constexpr auto whitespace = dsl::whitespace(dsl::lit_c<'\0'>);
 
     static constexpr auto rule = [] {
-        auto opener =
-            dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<quote>);
+        auto opener = dsl::no_whitespace(dsl::lit_c<'$'> + dsl::lit_c<quote>);
         auto not_closing =
             dsl::code_point - dsl::lit_c<quote> - dsl::ascii::newline;
         return opener
@@ -1137,8 +1136,12 @@ struct expr_fmt_inner
                           >> dsl::p<expr_fmt_content<quote>>);
     }();
     static constexpr auto value = lexy::callback<std::vector<EFS::Segment>>(
-        [](std::vector<EFS::Segment> segs) { return std::move(segs); },
-        [](lexy::nullopt) { return std::vector<EFS::Segment>{}; });
+        [](std::vector<EFS::Segment> segs) {
+            return segs;
+        },
+        [](lexy::nullopt) {
+            return std::vector<EFS::Segment>{};
+        });
     static constexpr auto name = "format string inner";
 };
 
@@ -1206,12 +1209,11 @@ struct Format_String
             >> (dsl::p<expr_fmt_inner<'\''>> + dsl::lit_c<'\''>);
         return double_q | single_q;
     }();
-    static constexpr auto value =
-        lexy::callback<ast::Expression::Ptr>(
-            [](std::vector<EFS::Segment> segments) {
-                return std::make_unique<EFS>(ast::AST_Node::no_range,
-                                             std::move(segments));
-            });
+    static constexpr auto value = lexy::callback<ast::Expression::Ptr>(
+        [](std::vector<EFS::Segment> segments) {
+            return std::make_unique<EFS>(ast::AST_Node::no_range,
+                                         std::move(segments));
+        });
     static constexpr auto name = "format string";
 };
 
