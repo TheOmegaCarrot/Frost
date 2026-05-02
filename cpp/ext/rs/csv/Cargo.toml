@@ -1,0 +1,15 @@
+[package]
+name = "frost-csv"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+frost-glue = { path = "../glue" }
+cxx = "=1.0.194"
+csv = "=1.4.0"
+
+[build-dependencies]
+frost-glue-build = { path = "../glue-build" }

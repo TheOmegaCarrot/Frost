@@ -38,3 +38,5 @@ endmacro()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     frost_rust_extension(example)
 endif()
+
+frost_rust_extension(csv)

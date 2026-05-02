@@ -45,6 +45,10 @@ void register_extensions(Stdlib_Registry_Builder& builder)
     DO_REGISTER_EXTENSION(example);
 #endif
 
+#ifdef FROST_ENABLE_CSV
+    DO_REGISTER_EXTENSION(csv);
+#endif
+
 #pragma GCC diagnostic pop
 }
 
