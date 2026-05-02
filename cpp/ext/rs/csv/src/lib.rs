@@ -41,6 +41,7 @@ fn parse_options(options: FrostValue /* Map */) -> Result<CsvOptions, String> {
 }
 
 type CsvReader = csv::Reader<Box<dyn Read>>;
+type Keys = [cxx::SharedPtr<ffi::Value>];
 
 fn each_csv(_reader: CsvReader, _callback: FrostFunction) -> Result<FrostValue, String> {
     Err("Placeholder".into())
@@ -55,15 +56,12 @@ fn record_to_frost_array(record: csv::StringRecord) -> FrostValue {
     FrostValue::from_values(&arr)
 }
 
-fn record_to_frost_map(record: csv::StringRecord, headers: &csv::StringRecord) -> FrostValue {
-    let keys: Vec<_> = headers.iter()
-        .map(|h| FrostValue::from_string(h).into_shared())
-        .collect();
-    let values: Vec<_> = record.iter()
-        .map(|h| FrostValue::from_string(h).into_shared())
+fn record_to_frost_map(record: csv::StringRecord, headers: &Keys) -> FrostValue {
+    let values: Vec<_> = record.into_iter()
+        .map(|v| FrostValue::from_string(v).into_shared())
         .collect();
 
-    FrostValue::from_map_trusted(&keys, &values)
+    FrostValue::from_map_trusted(headers, &values)
 }
 
 fn collect_csv(mut reader: csv::Reader<Box<dyn Read>>) -> Result<FrostValue, String> {
@@ -73,12 +71,16 @@ fn collect_csv(mut reader: csv::Reader<Box<dyn Read>>) -> Result<FrostValue, Str
         None
     };
 
+    let header_keys: Option<Vec<_>> = headers.map(|h| {
+        h.into_iter().map(|s| FrostValue::from_string(s).into_shared()).collect()
+    });
+
     let rows: Result<Vec<FrostValue>, String> = reader
         .records()
         .map(|result| {
             let record = result.map_err(|e| e.to_string())?;
-            if let Some(ref headers) = headers {
-                Ok(record_to_frost_map(record, headers))
+            if let Some(ref header_keys) = header_keys {
+                Ok(record_to_frost_map(record, header_keys))
             } else {
                 Ok(record_to_frost_array(record))
             }
@@ -111,7 +113,7 @@ fn read_file(
         .has_headers(options.has_headers)
         .from_reader(source);
 
-    // C++ gurantees callback is either a FrostFunction or None (type-checked as Function, or not
+    // C++ guarantees callback is either a FrostFunction or None (type-checked as Function, or not
     // provided by Frost at all)
     read_csv(reader, callback.and_then(|fv| fv.as_function()))
 }
