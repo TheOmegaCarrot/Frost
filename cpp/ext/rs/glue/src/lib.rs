@@ -285,6 +285,31 @@ impl FrostValue {
         self.is_function().then(|| FrostFunction { inner: self.inner.clone() })
     }
 
+    // ---- Destructuring ----
+
+    pub fn unpack(&self) -> FrostRef<'_> {
+        if self.is_null() {
+            FrostRef::Null
+        } else if self.is_int() {
+            FrostRef::Int(ffi::value_get_int(&self.inner))
+        } else if self.is_float() {
+            FrostRef::Float(ffi::value_get_float(&self.inner))
+        } else if self.is_bool() {
+            FrostRef::Bool(ffi::value_get_bool(&self.inner))
+        } else if self.is_string() {
+            FrostRef::String(ffi::value_get_string(&self.inner))
+        } else if self.is_array() {
+            FrostRef::Array(ffi::value_array_slice(&self.inner))
+        } else if self.is_map() {
+            FrostRef::Map {
+                keys: ffi::value_map_keys(&self.inner),
+                values: ffi::value_map_values(&self.inner),
+            }
+        } else {
+            FrostRef::Function(FrostFunction { inner: self.inner.clone() })
+        }
+    }
+
     // ---- Stringification ----
 
     pub fn type_name(&self) -> String {
@@ -312,6 +337,21 @@ impl FrostValue {
     pub fn from_shared(inner: cxx::SharedPtr<ffi::Value>) -> Self {
         Self { inner }
     }
+}
+
+/// The Frost type system, destructured for pattern matching.
+pub enum FrostRef<'a> {
+    Null,
+    Int(i64),
+    Float(f64),
+    Bool(bool),
+    String(&'a cxx::CxxString),
+    Array(&'a [cxx::SharedPtr<ffi::Value>]),
+    Map {
+        keys: &'a [cxx::SharedPtr<ffi::Value>],
+        values: &'a [cxx::SharedPtr<ffi::Value>],
+    },
+    Function(FrostFunction),
 }
 
 /// A Frost Function value. Invariant: the wrapped value is callable.
