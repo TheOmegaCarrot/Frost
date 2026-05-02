@@ -38,6 +38,38 @@ std::shared_ptr<const Value> value_from_string(const std::string& val)
     return frst::Value::create(String{val});
 }
 
+// ---- Collection factories ----
+
+std::shared_ptr<const Value> value_from_array(
+    rust::Slice<const std::shared_ptr<const Value>> elements)
+{
+    Array arr;
+    arr.reserve(elements.size());
+    for (const auto& elem : elements)
+        arr.push_back(elem);
+    return frst::Value::create(std::move(arr));
+}
+
+std::shared_ptr<const Value> value_from_map(
+    rust::Slice<const std::shared_ptr<const Value>> keys,
+    rust::Slice<const std::shared_ptr<const Value>> values)
+{
+    Map map;
+    for (std::size_t i = 0; i < keys.size(); ++i)
+        map.emplace(keys[i], values[i]);
+    return frst::Value::create(std::move(map));
+}
+
+std::shared_ptr<const Value> value_from_map_trusted(
+    rust::Slice<const std::shared_ptr<const Value>> keys,
+    rust::Slice<const std::shared_ptr<const Value>> values)
+{
+    Map map;
+    for (std::size_t i = 0; i < keys.size(); ++i)
+        map.emplace(keys[i], values[i]);
+    return frst::Value::create(frst::Value::trusted, std::move(map));
+}
+
 // ---- Type checks ----
 
 bool value_is_null(const Value& val)
@@ -144,6 +176,30 @@ std::shared_ptr<const Value> value_map_get(const Value& val,
     if (it == map.end())
         return frst::Value::null();
     return it->second;
+}
+
+std::shared_ptr<const Value> value_map_get_by(
+    const Value& map_val, const std::shared_ptr<const Value>& key)
+{
+    const auto& map = map_val.raw_get<Map>();
+    auto it = map.find(key);
+    if (it == map.end())
+        return frst::Value::null();
+    return it->second;
+}
+
+rust::Slice<const std::shared_ptr<const Value>>
+value_map_keys(const Value& val)
+{
+    const auto& keys = val.raw_get<Map>().keys();
+    return {keys.data(), keys.size()};
+}
+
+rust::Slice<const std::shared_ptr<const Value>>
+value_map_values(const Value& val)
+{
+    const auto& values = val.raw_get<Map>().values();
+    return {values.data(), values.size()};
 }
 
 // ---- Function call ----

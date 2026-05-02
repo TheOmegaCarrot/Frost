@@ -23,12 +23,22 @@ namespace frst::rs
 // when passing between shim code and the Frost runtime.
 using Value = const frst::Value;
 
-// ---- Factories ----
+// ---- Primitive factories ----
 std::shared_ptr<const Value> value_null();
 std::shared_ptr<const Value> value_from_int(int64_t val);
 std::shared_ptr<const Value> value_from_float(double val);
 std::shared_ptr<const Value> value_from_bool(bool val);
 std::shared_ptr<const Value> value_from_string(const std::string& val);
+
+// ---- Collection factories ----
+std::shared_ptr<const Value> value_from_array(
+    rust::Slice<const std::shared_ptr<const Value>> elements);
+std::shared_ptr<const Value> value_from_map(
+    rust::Slice<const std::shared_ptr<const Value>> keys,
+    rust::Slice<const std::shared_ptr<const Value>> values);
+std::shared_ptr<const Value> value_from_map_trusted(
+    rust::Slice<const std::shared_ptr<const Value>> keys,
+    rust::Slice<const std::shared_ptr<const Value>> values);
 
 // ---- Type checks ----
 bool value_is_null(const Value& val);
@@ -57,6 +67,12 @@ size_t value_map_len(const Value& val);
 bool value_map_has(const Value& val, const std::string& key);
 std::shared_ptr<const Value> value_map_get(const Value& val,
                                            const std::string& key);
+std::shared_ptr<const Value> value_map_get_by(
+    const Value& map, const std::shared_ptr<const Value>& key);
+rust::Slice<const std::shared_ptr<const Value>> value_map_keys(
+    const Value& val);
+rust::Slice<const std::shared_ptr<const Value>> value_map_values(
+    const Value& val);
 
 // ---- Function call (caller must verify is_function first) ----
 // Frost exceptions (std::exception subclasses) are caught by cxx and

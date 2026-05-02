@@ -11,6 +11,15 @@ pub mod ffi {
         fn value_from_float(val: f64) -> Result<SharedPtr<Value>>;
         fn value_from_bool(val: bool) -> SharedPtr<Value>;
         fn value_from_string(val: &CxxString) -> SharedPtr<Value>;
+        fn value_from_array(elements: &[SharedPtr<Value>]) -> SharedPtr<Value>;
+        fn value_from_map(
+            keys: &[SharedPtr<Value>],
+            values: &[SharedPtr<Value>],
+        ) -> Result<SharedPtr<Value>>;
+        fn value_from_map_trusted(
+            keys: &[SharedPtr<Value>],
+            values: &[SharedPtr<Value>],
+        ) -> SharedPtr<Value>;
 
         // ---- Type checks ----
         fn value_is_null(val: &Value) -> bool;
@@ -37,6 +46,9 @@ pub mod ffi {
         fn value_map_len(val: &Value) -> usize;
         fn value_map_has(val: &Value, key: &CxxString) -> bool;
         fn value_map_get(val: &Value, key: &CxxString) -> SharedPtr<Value>;
+        fn value_map_get_by(map: &Value, key: &SharedPtr<Value>) -> SharedPtr<Value>;
+        fn value_map_keys(val: &Value) -> &[SharedPtr<Value>];
+        fn value_map_values(val: &Value) -> &[SharedPtr<Value>];
 
         // ---- Function call (caller must verify is_function first) ----
         fn value_call(
@@ -106,6 +118,34 @@ impl FrostValue {
         Self { inner: ffi::value_from_string(&s) }
     }
 
+    pub fn from_array(elements: &[cxx::SharedPtr<ffi::Value>]) -> Self {
+        Self { inner: ffi::value_from_array(elements) }
+    }
+
+    pub fn from_values(elements: &[FrostValue]) -> Self {
+        let shared: Vec<cxx::SharedPtr<ffi::Value>> =
+            elements.iter().map(|v| v.inner.clone()).collect();
+        Self::from_array(&shared)
+    }
+
+    /// Create a map from parallel key/value slices. Validates keys are
+    /// non-null primitives.
+    pub fn from_map(
+        keys: &[cxx::SharedPtr<ffi::Value>],
+        values: &[cxx::SharedPtr<ffi::Value>],
+    ) -> Result<Self, cxx::Exception> {
+        Ok(Self { inner: ffi::value_from_map(keys, values)? })
+    }
+
+    /// Create a map without key validation. Caller guarantees keys are
+    /// non-null primitives.
+    pub fn from_map_trusted(
+        keys: &[cxx::SharedPtr<ffi::Value>],
+        values: &[cxx::SharedPtr<ffi::Value>],
+    ) -> Self {
+        Self { inner: ffi::value_from_map_trusted(keys, values) }
+    }
+
     // ---- Type checks ----
 
     pub fn is_null(&self) -> bool {
@@ -154,12 +194,16 @@ impl FrostValue {
         self.is_bool().then(|| ffi::value_get_bool(&self.inner))
     }
 
+    pub fn as_cxx_string(&self) -> Option<&cxx::CxxString> {
+        self.is_string().then(|| ffi::value_get_string(&self.inner))
+    }
+
     pub fn as_string(&self) -> Option<&str> {
-        if self.is_string() {
-            ffi::value_get_string(&self.inner).to_str().ok()
-        } else {
-            None
-        }
+        self.as_cxx_string().and_then(|s| s.to_str().ok())
+    }
+
+    pub fn as_bytes(&self) -> Option<&[u8]> {
+        self.as_cxx_string().map(|s| s.as_bytes())
     }
 
     // ---- Array accessors ----
@@ -209,6 +253,30 @@ impl FrostValue {
         } else {
             None
         }
+    }
+
+    /// Look up a map value by any key (not just string).
+    pub fn map_get_by(&self, key: &FrostValue) -> Option<FrostValue> {
+        if self.is_map() {
+            let val = ffi::value_map_get_by(&self.inner, &key.inner);
+            if ffi::value_is_null(&val) {
+                None
+            } else {
+                Some(Self::from_shared(val))
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Zero-copy view of the map's keys as a parallel slice.
+    pub fn map_keys(&self) -> Option<&[cxx::SharedPtr<ffi::Value>]> {
+        self.is_map().then(|| ffi::value_map_keys(&self.inner))
+    }
+
+    /// Zero-copy view of the map's values as a parallel slice.
+    pub fn map_values(&self) -> Option<&[cxx::SharedPtr<ffi::Value>]> {
+        self.is_map().then(|| ffi::value_map_values(&self.inner))
     }
 
     // ---- Function accessor ----
