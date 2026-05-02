@@ -238,6 +238,94 @@ std::shared_ptr<const Value> make_closure(rust::Box<RustClosure> closure)
             "<rust closure>")});
 }
 
+// ---- Arithmetic ----
+
+std::shared_ptr<const Value> value_add(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::add(lhs, rhs);
+}
+
+std::shared_ptr<const Value> value_subtract(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::subtract(lhs, rhs);
+}
+
+std::shared_ptr<const Value> value_multiply(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::multiply(lhs, rhs);
+}
+
+std::shared_ptr<const Value> value_divide(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::divide(lhs, rhs);
+}
+
+std::shared_ptr<const Value> value_modulus(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::modulus(lhs, rhs);
+}
+
+// ---- Comparison ----
+
+std::shared_ptr<const Value> value_equal(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::equal(lhs, rhs);
+}
+
+std::shared_ptr<const Value> value_not_equal(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::not_equal(lhs, rhs);
+}
+
+std::shared_ptr<const Value> value_less_than(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::less_than(lhs, rhs);
+}
+
+std::shared_ptr<const Value> value_less_than_or_equal(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::less_than_or_equal(lhs, rhs);
+}
+
+std::shared_ptr<const Value> value_greater_than(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::greater_than(lhs, rhs);
+}
+
+std::shared_ptr<const Value> value_greater_than_or_equal(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs)
+{
+    return frst::Value::greater_than_or_equal(lhs, rhs);
+}
+
+// ---- Coercion ----
+
+bool value_truthy(const Value& val)
+{
+    return val.truthy();
+}
+
 // ---- Stringification ----
 
 std::unique_ptr<std::string> value_to_string(const Value& val)

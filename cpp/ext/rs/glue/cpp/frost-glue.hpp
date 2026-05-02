@@ -87,6 +87,46 @@ std::shared_ptr<const Value> value_call(
 struct RustClosure;
 std::shared_ptr<const Value> make_closure(rust::Box<RustClosure> closure);
 
+// ---- Arithmetic (throw on type mismatch) ----
+std::shared_ptr<const Value> value_add(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+std::shared_ptr<const Value> value_subtract(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+std::shared_ptr<const Value> value_multiply(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+std::shared_ptr<const Value> value_divide(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+std::shared_ptr<const Value> value_modulus(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+
+// ---- Comparison ----
+std::shared_ptr<const Value> value_equal(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+std::shared_ptr<const Value> value_not_equal(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+std::shared_ptr<const Value> value_less_than(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+std::shared_ptr<const Value> value_less_than_or_equal(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+std::shared_ptr<const Value> value_greater_than(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+std::shared_ptr<const Value> value_greater_than_or_equal(
+    const std::shared_ptr<const Value>& lhs,
+    const std::shared_ptr<const Value>& rhs);
+
+// ---- Coercion ----
+bool value_truthy(const Value& val);
+
 // ---- Stringification ----
 std::unique_ptr<std::string> value_to_string(const Value& val);
 std::unique_ptr<std::string> value_type_name(const Value& val);

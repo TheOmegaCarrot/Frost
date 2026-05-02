@@ -36,6 +36,20 @@ mod ffi {
         fn rt_call_callback(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
         fn rt_make_adder(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
         fn rt_make_failing_fn(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+
+        // ---- Arithmetic / comparison / coercion ----
+        fn rt_add(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_subtract(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_multiply(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_divide(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_modulus(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_equal(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_not_equal(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_less_than(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_less_than_or_equal(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_greater_than(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_greater_than_or_equal(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_truthy(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
     }
 }
 
@@ -260,4 +274,71 @@ fn rt_make_failing_fn(
 ) -> Result<cxx::SharedPtr<ffi::Value>, String> {
     let f = FrostFunction::new(|_| Err("intentional failure".to_owned()));
     Ok(f.into_shared())
+}
+
+// ---- Arithmetic / comparison / coercion ----
+// Each takes two args (lhs, rhs) and applies the Frost-semantic operation.
+
+fn binop(
+    args: &[cxx::SharedPtr<ffi::Value>],
+    op: impl Fn(&FrostValue, &FrostValue) -> Result<FrostValue, cxx::Exception>,
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    if args.len() < 2 {
+        return Err("expected 2 arguments".into());
+    }
+    let lhs = FrostValue::from_shared(args[0].clone());
+    let rhs = FrostValue::from_shared(args[1].clone());
+    Ok(op(&lhs, &rhs).map_err(|e| e.to_string())?.into_shared())
+}
+
+fn rt_add(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::add)
+}
+
+fn rt_subtract(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::subtract)
+}
+
+fn rt_multiply(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::multiply)
+}
+
+fn rt_divide(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::divide)
+}
+
+fn rt_modulus(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::modulus)
+}
+
+fn rt_equal(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::equal)
+}
+
+fn rt_not_equal(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::not_equal)
+}
+
+fn rt_less_than(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::less_than)
+}
+
+fn rt_less_than_or_equal(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::less_than_or_equal)
+}
+
+fn rt_greater_than(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::greater_than)
+}
+
+fn rt_greater_than_or_equal(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    binop(args, FrostValue::greater_than_or_equal)
+}
+
+fn rt_truthy(args: &[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    if args.is_empty() {
+        return Err("expected 1 argument".into());
+    }
+    let val = FrostValue::from_shared(args[0].clone());
+    Ok(FrostValue::from_bool(val.truthy()).into_shared())
 }

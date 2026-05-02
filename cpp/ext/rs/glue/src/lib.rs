@@ -106,6 +106,24 @@ pub mod ffi {
             args: &[SharedPtr<Value>],
         ) -> Result<SharedPtr<Value>>;
 
+        // ---- Arithmetic (throw on type mismatch -> Result::Err) ----
+        fn value_add(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_subtract(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_multiply(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_divide(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_modulus(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+
+        // ---- Comparison ----
+        fn value_equal(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_not_equal(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_less_than(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_less_than_or_equal(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_greater_than(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_greater_than_or_equal(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+
+        // ---- Coercion ----
+        fn value_truthy(val: &Value) -> bool;
+
         // ---- Closure creation ----
         // Wraps a Rust closure in a C++ Builtin. When called from Frost,
         // the Builtin invokes rust_closure_call. If Rust returns Err,
@@ -400,6 +418,75 @@ impl FrostValue {
     /// Zero-copy view of the map's values. Parallel with `map_keys`.
     pub fn map_values(&self) -> Option<&[cxx::SharedPtr<ffi::Value>]> {
         self.is_map().then(|| ffi::value_map_values(&self.inner))
+    }
+
+    // ---- Frost-semantic operations ----
+    // These mirror Frost's operators. They follow Frost's type rules:
+    // - add works on numerics (Int/Float), strings (concat), arrays, maps
+    // - subtract/multiply/divide/modulus are numeric-only
+    // - comparisons work on numerics and strings
+    // - truthy: only null and false are falsy
+
+    /// Frost `+` operator. Works on numerics, strings (concat), arrays, maps.
+    pub fn add(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_add(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost `-` operator. Numeric only.
+    pub fn subtract(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_subtract(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost `*` operator. Numeric only.
+    pub fn multiply(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_multiply(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost `/` operator. Numeric only. Throws on division by zero.
+    pub fn divide(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_divide(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost `%` operator. Integer only. Throws on modulus by zero.
+    pub fn modulus(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_modulus(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost `==` operator. Deep equality. No cross-type numeric equality
+    /// (3 != 3.0).
+    pub fn equal(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_equal(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost `!=` operator.
+    pub fn not_equal(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_not_equal(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost `<` operator. Numeric and string comparison.
+    pub fn less_than(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_less_than(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost `<=` operator.
+    pub fn less_than_or_equal(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_less_than_or_equal(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost `>` operator.
+    pub fn greater_than(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_greater_than(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost `>=` operator.
+    pub fn greater_than_or_equal(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
+        Ok(Self::from_shared(ffi::value_greater_than_or_equal(&self.inner, &rhs.inner)?))
+    }
+
+    /// Frost truthiness. Only `null` and `false` are falsy.
+    /// `0`, `""`, `[]`, `{}` are all truthy.
+    pub fn truthy(&self) -> bool {
+        ffi::value_truthy(&self.inner)
     }
 
     // ---- Function accessor ----

@@ -30,6 +30,18 @@ Value_Ptr rt_describe_type(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_call_callback(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_make_adder(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_make_failing_fn(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_add(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_subtract(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_multiply(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_divide(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_modulus(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_equal(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_not_equal(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_less_than(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_less_than_or_equal(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_greater_than(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_greater_than_or_equal(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_truthy(::rust::Slice<const Value_Ptr> args);
 } // namespace frst::rs::test
 
 namespace
@@ -497,5 +509,241 @@ TEST_CASE("error propagation: Rust Err becomes rust::Error")
                  {Value::create("a"s), Value::create(1_f),
                   Value::create("b"s)}),
             ContainsSubstring("even number"));
+    }
+}
+
+// ==========================================================================
+// Arithmetic operations
+// ==========================================================================
+
+TEST_CASE("add: Frost-semantic addition through Rust")
+{
+    SECTION("int + int")
+    {
+        auto result = call(frst::rs::test::rt_add,
+                           {Value::create(10_f), Value::create(32_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 42);
+    }
+
+    SECTION("float + float")
+    {
+        auto result = call(frst::rs::test::rt_add,
+                           {Value::create(Float{1.5}), Value::create(Float{2.5})});
+        REQUIRE(result->is<Float>());
+        CHECK(result->raw_get<Float>() == Catch::Approx(4.0));
+    }
+
+    SECTION("int + float")
+    {
+        auto result = call(frst::rs::test::rt_add,
+                           {Value::create(1_f), Value::create(Float{0.5})});
+        REQUIRE(result->is<Float>());
+        CHECK(result->raw_get<Float>() == Catch::Approx(1.5));
+    }
+
+    SECTION("string + string (concat)")
+    {
+        auto result = call(frst::rs::test::rt_add,
+                           {Value::create("foo"s), Value::create("bar"s)});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "foobar");
+    }
+
+    SECTION("array + array (concat)")
+    {
+        auto result = call(frst::rs::test::rt_add,
+                           {Value::create(Array{Value::create(1_f)}),
+                            Value::create(Array{Value::create(2_f)})});
+        REQUIRE(result->is<Array>());
+        CHECK(result->raw_get<Array>().size() == 2);
+    }
+
+    SECTION("type mismatch throws")
+    {
+        CHECK_THROWS(call(frst::rs::test::rt_add,
+                          {Value::create(1_f), Value::create("hi"s)}));
+    }
+}
+
+TEST_CASE("subtract/multiply/divide/modulus: numeric operations")
+{
+    SECTION("subtract")
+    {
+        auto result = call(frst::rs::test::rt_subtract,
+                           {Value::create(50_f), Value::create(8_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 42);
+    }
+
+    SECTION("multiply")
+    {
+        auto result = call(frst::rs::test::rt_multiply,
+                           {Value::create(6_f), Value::create(7_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 42);
+    }
+
+    SECTION("divide")
+    {
+        auto result = call(frst::rs::test::rt_divide,
+                           {Value::create(84_f), Value::create(2_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 42);
+    }
+
+    SECTION("divide by zero throws")
+    {
+        CHECK_THROWS(call(frst::rs::test::rt_divide,
+                          {Value::create(1_f), Value::create(0_f)}));
+    }
+
+    SECTION("modulus")
+    {
+        auto result = call(frst::rs::test::rt_modulus,
+                           {Value::create(10_f), Value::create(3_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 1);
+    }
+
+    SECTION("modulus by zero throws")
+    {
+        CHECK_THROWS(call(frst::rs::test::rt_modulus,
+                          {Value::create(10_f), Value::create(0_f)}));
+    }
+}
+
+// ==========================================================================
+// Comparison operations
+// ==========================================================================
+
+TEST_CASE("equal/not_equal: Frost-semantic equality through Rust")
+{
+    SECTION("same int")
+    {
+        auto result = call(frst::rs::test::rt_equal,
+                           {Value::create(42_f), Value::create(42_f)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("different int")
+    {
+        auto result = call(frst::rs::test::rt_equal,
+                           {Value::create(1_f), Value::create(2_f)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == false);
+    }
+
+    SECTION("int != float (no cross-type equality)")
+    {
+        auto result = call(frst::rs::test::rt_equal,
+                           {Value::create(3_f), Value::create(Float{3.0})});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == false);
+    }
+
+    SECTION("not_equal")
+    {
+        auto result = call(frst::rs::test::rt_not_equal,
+                           {Value::create(1_f), Value::create(2_f)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("string equality")
+    {
+        auto result = call(frst::rs::test::rt_equal,
+                           {Value::create("abc"s), Value::create("abc"s)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+}
+
+TEST_CASE("ordering: less_than, greater_than, etc.")
+{
+    SECTION("int less_than")
+    {
+        auto result = call(frst::rs::test::rt_less_than,
+                           {Value::create(1_f), Value::create(2_f)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("int not less_than")
+    {
+        auto result = call(frst::rs::test::rt_less_than,
+                           {Value::create(5_f), Value::create(3_f)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == false);
+    }
+
+    SECTION("less_than_or_equal (equal case)")
+    {
+        auto result = call(frst::rs::test::rt_less_than_or_equal,
+                           {Value::create(3_f), Value::create(3_f)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("greater_than")
+    {
+        auto result = call(frst::rs::test::rt_greater_than,
+                           {Value::create(5_f), Value::create(3_f)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("greater_than_or_equal")
+    {
+        auto result = call(frst::rs::test::rt_greater_than_or_equal,
+                           {Value::create(3_f), Value::create(3_f)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("string ordering")
+    {
+        auto result = call(frst::rs::test::rt_less_than,
+                           {Value::create("abc"s), Value::create("def"s)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("cross-type numeric comparison works")
+    {
+        auto result = call(frst::rs::test::rt_less_than,
+                           {Value::create(1_f), Value::create(Float{2.0})});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+}
+
+// ==========================================================================
+// Truthiness
+// ==========================================================================
+
+TEST_CASE("truthy: Frost truthiness rules through Rust")
+{
+    auto check = [](Value_Ptr val, bool expected) {
+        auto result = call(frst::rs::test::rt_truthy, {val});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == expected);
+    };
+
+    SECTION("falsy values")
+    {
+        check(Value::null(), false);
+        check(Value::create(Bool{false}), false);
+    }
+
+    SECTION("truthy values")
+    {
+        check(Value::create(Bool{true}), true);
+        check(Value::create(0_f), true);
+        check(Value::create(""s), true);
+        check(Value::create(Array{}), true);
+        check(Value::create(Value::trusted, Map{}), true);
+        check(Value::create(42_f), true);
     }
 }
