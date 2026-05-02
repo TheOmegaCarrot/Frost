@@ -35,4 +35,6 @@ macro(frost_rust_extension NAME)
 endmacro()
 
 # ---- Rust extensions ----
-frost_rust_extension(example)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    frost_rust_extension(example)
+endif()
