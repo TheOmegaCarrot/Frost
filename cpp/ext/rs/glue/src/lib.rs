@@ -337,6 +337,12 @@ impl FrostValue {
     pub fn from_shared(inner: cxx::SharedPtr<ffi::Value>) -> Self {
         Self { inner }
     }
+
+    /// Borrow the underlying Value reference (for passing to FFI functions
+    /// that take `&Value`).
+    pub fn as_raw(&self) -> &ffi::Value {
+        &self.inner
+    }
 }
 
 /// The Frost type system, destructured for pattern matching.

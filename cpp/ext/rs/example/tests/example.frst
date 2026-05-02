@@ -81,6 +81,19 @@ assert(add10(-3) == 7)
 def add0 = ex.make_adder(0)
 assert(add0(42) == 42)
 
+# ---- Data-carrying functions (Data_Builtin) ----
+
+def counter = ex.make_counter(10)
+assert(counter() == 10)
+assert(counter() == 11)
+assert(counter() == 12)
+assert(ex.counter_value(counter) == 13)
+
+# downcast of wrong type returns error
+def not_counter = try_call(fn -> ex.counter_value(fn x -> x))
+assert(not_counter.ok == false)
+assert(contains(not_counter.error, "not a Counter"))
+
 # ---- Arity errors ----
 
 def too_few = try_call(fn -> ex.add_one())

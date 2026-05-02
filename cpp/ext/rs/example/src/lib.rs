@@ -72,6 +72,28 @@ fn make_adder(n: i64) -> Result<FrostValue, String> {
     Ok(f.into_value())
 }
 
+use std::sync::atomic::{AtomicI64, Ordering};
+
+struct Counter {
+    value: AtomicI64,
+}
+
+fn make_counter(start: i64) -> Result<FrostValue, String> {
+    Ok(make_data_counter(
+        Counter { value: AtomicI64::new(start) },
+        |counter, _args| {
+            let prev = counter.value.fetch_add(1, Ordering::Relaxed);
+            Ok(FrostValue::from_int(prev))
+        },
+    ))
+}
+
+fn counter_value(counter_fn: FrostValue) -> Result<FrostValue, String> {
+    let counter = try_downcast_counter::<Counter>(&counter_fn)
+        .ok_or("not a Counter")?;
+    Ok(FrostValue::from_int(counter.value.load(Ordering::Relaxed)))
+}
+
 fn apply(func: FrostValue, value: FrostValue) -> Result<FrostValue, String> {
     let f = func.as_function().ok_or("expected Function")?;
     f.call_with(&[value]).map_err(|e| e.to_string())

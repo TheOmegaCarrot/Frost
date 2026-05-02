@@ -53,5 +53,12 @@ fn main() {
     ext.function("make_adder")
         .param("n", &[Type::Int]);
 
+    // Data-carrying functions
+    ext.data_type("counter");
+    ext.function("make_counter")
+        .param("start", &[Type::Int]);
+    ext.function("counter_value")
+        .param("counter", &[Type::Function]);
+
     ext.generate();
 }
