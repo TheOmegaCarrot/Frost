@@ -69,6 +69,8 @@ std::shared_ptr<const Value> value_map_get(const Value& val,
                                            const std::string& key);
 std::shared_ptr<const Value> value_map_get_by(
     const Value& map, const std::shared_ptr<const Value>& key);
+bool value_map_contains_key(
+    const Value& map, const std::shared_ptr<const Value>& key);
 rust::Slice<const std::shared_ptr<const Value>> value_map_keys(
     const Value& val);
 rust::Slice<const std::shared_ptr<const Value>> value_map_values(

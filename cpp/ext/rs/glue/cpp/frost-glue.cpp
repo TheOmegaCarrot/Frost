@@ -188,6 +188,12 @@ std::shared_ptr<const Value> value_map_get_by(
     return it->second;
 }
 
+bool value_map_contains_key(const Value& map_val,
+                            const std::shared_ptr<const Value>& key)
+{
+    return map_val.raw_get<Map>().contains(key);
+}
+
 rust::Slice<const std::shared_ptr<const Value>>
 value_map_keys(const Value& val)
 {

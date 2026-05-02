@@ -741,7 +741,7 @@ impl ExtensionBuilder {
         writeln!(
             out,
             "    call: Box<dyn Fn(&dyn std::any::Any, &[cxx::SharedPtr<ffi::Value>]) \
-             -> Result<cxx::SharedPtr<ffi::Value>, String>>,"
+             -> Result<cxx::SharedPtr<ffi::Value>, String> + Send + Sync>,"
         )
         .unwrap();
         writeln!(out, "}}").unwrap();
@@ -767,10 +767,10 @@ impl ExtensionBuilder {
         )
         .unwrap();
         writeln!(out, "where").unwrap();
-        writeln!(out, "    T: 'static,").unwrap();
+        writeln!(out, "    T: Send + Sync + 'static,").unwrap();
         writeln!(
             out,
-            "    F: Fn(&T, &[frost_glue::FrostValue]) -> Result<frost_glue::FrostValue, String> + 'static,"
+            "    F: Fn(&T, &[frost_glue::FrostValue]) -> Result<frost_glue::FrostValue, String> + Send + Sync + 'static,"
         )
         .unwrap();
         writeln!(out, "{{").unwrap();
@@ -794,10 +794,12 @@ impl ExtensionBuilder {
         writeln!(out, "}}").unwrap();
         writeln!(out).unwrap();
 
-        // Public downcast: recover the typed data from a FrostValue
+        // Public downcast: recover the typed data from a FrostValue.
+        // The lifetime of the returned reference is tied to the &FrostValue
+        // borrow, preventing use-after-free if the FrostValue is dropped.
         writeln!(
             out,
-            "pub fn try_downcast_{dt}<T: 'static>(val: &frost_glue::FrostValue) -> Option<&T> {{"
+            "pub fn try_downcast_{dt}<'a, T: 'static>(val: &'a frost_glue::FrostValue) -> Option<&'a T> {{"
         )
         .unwrap();
         writeln!(

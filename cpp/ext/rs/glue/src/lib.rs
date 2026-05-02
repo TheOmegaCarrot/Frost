@@ -96,6 +96,7 @@ pub mod ffi {
         fn value_map_has(val: &Value, key: &CxxString) -> bool;
         fn value_map_get(val: &Value, key: &CxxString) -> SharedPtr<Value>;
         fn value_map_get_by(map: &Value, key: &SharedPtr<Value>) -> SharedPtr<Value>;
+        fn value_map_contains_key(map: &Value, key: &SharedPtr<Value>) -> bool;
         fn value_map_keys(val: &Value) -> &[SharedPtr<Value>];
         fn value_map_values(val: &Value) -> &[SharedPtr<Value>];
 
@@ -155,7 +156,7 @@ use cxx::let_cxx_string;
 /// The function type stored inside RustClosure.
 /// Takes raw SharedPtr args (already validated by REQUIRE_ARGS on the C++
 /// side) and returns either a new Value or an error string.
-type ClosureFn = Box<dyn Fn(&[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String>>;
+type ClosureFn = Box<dyn Fn(&[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> + Send + Sync>;
 
 /// Opaque type that C++ holds (via `rust::Box<RustClosure>`) inside a
 /// `Data_Builtin` or plain `Builtin`. When Frost calls the function,
@@ -381,14 +382,14 @@ impl FrostValue {
     }
 
     /// Look up by string key. Returns None if not a Map or key not found.
+    /// Returns Some(null FrostValue) if the key exists but maps to null.
     pub fn map_get(&self, key: &str) -> Option<FrostValue> {
         if self.is_map() {
             let_cxx_string!(k = key);
-            let val = ffi::value_map_get(&self.inner, &k);
-            if ffi::value_is_null(&val) {
-                None
+            if ffi::value_map_has(&self.inner, &k) {
+                Some(Self::from_shared(ffi::value_map_get(&self.inner, &k)))
             } else {
-                Some(Self::from_shared(val))
+                None
             }
         } else {
             None
@@ -396,13 +397,14 @@ impl FrostValue {
     }
 
     /// Look up by any key type (Int, Float, Bool, or String).
+    /// Returns None if not a Map or key not found.
+    /// Returns Some(null FrostValue) if the key exists but maps to null.
     pub fn map_get_by(&self, key: &FrostValue) -> Option<FrostValue> {
         if self.is_map() {
-            let val = ffi::value_map_get_by(&self.inner, &key.inner);
-            if ffi::value_is_null(&val) {
-                None
+            if ffi::value_map_contains_key(&self.inner, &key.inner) {
+                Some(Self::from_shared(ffi::value_map_get_by(&self.inner, &key.inner)))
             } else {
-                Some(Self::from_shared(val))
+                None
             }
         } else {
             None
@@ -642,7 +644,7 @@ impl FrostFunction {
     /// maps).
     pub fn new<F>(f: F) -> Self
     where
-        F: Fn(&[FrostValue]) -> Result<FrostValue, String> + 'static,
+        F: Fn(&[FrostValue]) -> Result<FrostValue, String> + Send + Sync + 'static,
     {
         let wrapper = move |args: &[cxx::SharedPtr<ffi::Value>]| -> Result<cxx::SharedPtr<ffi::Value>, String> {
             let frost_args: Vec<FrostValue> = args.iter()
