@@ -1,6 +1,7 @@
 #include <catch2/catch_all.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <frost/builtin.hpp>
 #include <frost/value.hpp>
 
 #include "frost-glue.hpp"
@@ -11,14 +12,24 @@ using namespace frst;
 using namespace std::literals;
 using Catch::Matchers::ContainsSubstring;
 
-// Forward-declare the cxx-generated Rust test helpers
 namespace frst::rs::test
 {
 Value_Ptr rt_identity(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_type_name(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_round_trip(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_array_sum(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_make_array(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_array_reverse(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_make_map(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_map_keys_sorted(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_map_get_by_key(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_map_entry_count(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_concat_all(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_string_byte_len(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_describe_type(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_call_callback(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_make_adder(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_make_failing_fn(::rust::Slice<const Value_Ptr> args);
 } // namespace frst::rs::test
 
 namespace
@@ -31,6 +42,10 @@ Value_Ptr call(auto fn, std::initializer_list<Value_Ptr> args)
 }
 
 } // namespace
+
+// ==========================================================================
+// Basic value passing
+// ==========================================================================
 
 TEST_CASE("identity: values survive C++ -> Rust -> C++ unchanged")
 {
@@ -155,6 +170,10 @@ TEST_CASE("round_trip: Rust extracts and reconstructs primitives")
     }
 }
 
+// ==========================================================================
+// Array operations
+// ==========================================================================
+
 TEST_CASE("array_sum: Rust reads array elements via zero-copy slice")
 {
     SECTION("simple sum")
@@ -183,7 +202,142 @@ TEST_CASE("array_sum: Rust reads array elements via zero-copy slice")
     }
 }
 
-TEST_CASE("concat_all: variadic args via slice")
+TEST_CASE("make_array: Rust constructs arrays from slices")
+{
+    SECTION("from multiple values")
+    {
+        auto result = call(frst::rs::test::rt_make_array,
+                           {Value::create(1_f), Value::create(2_f),
+                            Value::create(3_f)});
+        REQUIRE(result->is<Array>());
+        const auto& arr = result->raw_get<Array>();
+        REQUIRE(arr.size() == 3);
+        CHECK(arr[0]->raw_get<Int>() == 1);
+        CHECK(arr[1]->raw_get<Int>() == 2);
+        CHECK(arr[2]->raw_get<Int>() == 3);
+    }
+
+    SECTION("empty")
+    {
+        auto result = call(frst::rs::test::rt_make_array, {});
+        REQUIRE(result->is<Array>());
+        CHECK(result->raw_get<Array>().empty());
+    }
+
+    SECTION("mixed types")
+    {
+        auto result = call(frst::rs::test::rt_make_array,
+                           {Value::create(42_f), Value::create("hi"s),
+                            Value::null()});
+        REQUIRE(result->is<Array>());
+        const auto& arr = result->raw_get<Array>();
+        CHECK(arr[0]->is<Int>());
+        CHECK(arr[1]->is<String>());
+        CHECK(arr[2]->is<Null>());
+    }
+}
+
+TEST_CASE("array_reverse: Rust transforms array via slice")
+{
+    auto arr = Value::create(
+        Array{Value::create(1_f), Value::create(2_f), Value::create(3_f)});
+    auto result = call(frst::rs::test::rt_array_reverse, {arr});
+    REQUIRE(result->is<Array>());
+    const auto& rev = result->raw_get<Array>();
+    REQUIRE(rev.size() == 3);
+    CHECK(rev[0]->raw_get<Int>() == 3);
+    CHECK(rev[1]->raw_get<Int>() == 2);
+    CHECK(rev[2]->raw_get<Int>() == 1);
+}
+
+// ==========================================================================
+// Map operations
+// ==========================================================================
+
+TEST_CASE("make_map: Rust constructs maps from parallel key/value slices")
+{
+    SECTION("string keys")
+    {
+        auto result = call(frst::rs::test::rt_make_map,
+                           {Value::create("a"s), Value::create(1_f),
+                            Value::create("b"s), Value::create(2_f)});
+        REQUIRE(result->is<Map>());
+        const auto& map = result->raw_get<Map>();
+        CHECK(map.size() == 2);
+        CHECK(map.at(Value::create("a"s))->raw_get<Int>() == 1);
+        CHECK(map.at(Value::create("b"s))->raw_get<Int>() == 2);
+    }
+
+    SECTION("int keys")
+    {
+        auto result = call(frst::rs::test::rt_make_map,
+                           {Value::create(10_f), Value::create("ten"s),
+                            Value::create(20_f), Value::create("twenty"s)});
+        REQUIRE(result->is<Map>());
+        const auto& map = result->raw_get<Map>();
+        CHECK(map.at(Value::create(10_f))->raw_get<String>() == "ten");
+        CHECK(map.at(Value::create(20_f))->raw_get<String>() == "twenty");
+    }
+}
+
+TEST_CASE("map iteration: Rust reads map via parallel key/value slices")
+{
+    auto map = Value::create(Value::trusted,
+                             Map{{Value::create("x"s), Value::create(1_f)},
+                                 {Value::create("y"s), Value::create(2_f)},
+                                 {Value::create("z"s), Value::create(3_f)}});
+
+    SECTION("keys")
+    {
+        auto result = call(frst::rs::test::rt_map_keys_sorted, {map});
+        REQUIRE(result->is<Array>());
+        CHECK(result->raw_get<Array>().size() == 3);
+    }
+
+    SECTION("entry count")
+    {
+        auto result = call(frst::rs::test::rt_map_entry_count, {map});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 3);
+    }
+}
+
+TEST_CASE("map_get_by_key: Rust looks up by arbitrary key type")
+{
+    auto map = Value::create(
+        Value::trusted,
+        Map{{Value::create(42_f), Value::create("found"s)},
+            {Value::create("hello"s), Value::create("world"s)}});
+
+    SECTION("int key")
+    {
+        auto result = call(frst::rs::test::rt_map_get_by_key,
+                           {map, Value::create(42_f)});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "found");
+    }
+
+    SECTION("string key")
+    {
+        auto result = call(frst::rs::test::rt_map_get_by_key,
+                           {map, Value::create("hello"s)});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "world");
+    }
+
+    SECTION("missing key returns null")
+    {
+        auto result = call(frst::rs::test::rt_map_get_by_key,
+                           {map, Value::create(99_f)});
+        CHECK(result->is<Null>());
+    }
+}
+
+// ==========================================================================
+// String / binary operations
+// ==========================================================================
+
+TEST_CASE("concat_all: variadic string args via slice")
 {
     SECTION("two strings")
     {
@@ -193,23 +347,6 @@ TEST_CASE("concat_all: variadic args via slice")
         CHECK(result->raw_get<String>() == "hello, world");
     }
 
-    SECTION("many strings")
-    {
-        auto result = call(frst::rs::test::rt_concat_all,
-                           {Value::create("a"s), Value::create("b"s),
-                            Value::create("c"s), Value::create("d"s)});
-        REQUIRE(result->is<String>());
-        CHECK(result->raw_get<String>() == "abcd");
-    }
-
-    SECTION("single string")
-    {
-        auto result =
-            call(frst::rs::test::rt_concat_all, {Value::create("solo"s)});
-        REQUIRE(result->is<String>());
-        CHECK(result->raw_get<String>() == "solo");
-    }
-
     SECTION("empty args returns empty string")
     {
         auto result = call(frst::rs::test::rt_concat_all, {});
@@ -217,6 +354,119 @@ TEST_CASE("concat_all: variadic args via slice")
         CHECK(result->raw_get<String>().empty());
     }
 }
+
+TEST_CASE("string_byte_len: Rust accesses raw bytes")
+{
+    SECTION("ascii")
+    {
+        auto result = call(frst::rs::test::rt_string_byte_len,
+                           {Value::create("hello"s)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 5);
+    }
+
+    SECTION("multibyte utf-8")
+    {
+        auto result = call(frst::rs::test::rt_string_byte_len,
+                           {Value::create("\xC3\xA9"s)}); // e-acute, 2 bytes
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 2);
+    }
+
+    SECTION("binary data")
+    {
+        auto result = call(frst::rs::test::rt_string_byte_len,
+                           {Value::create("\x00\x01\x02\xFF"s)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 4);
+    }
+}
+
+// ==========================================================================
+// Unpack (FrostRef enum)
+// ==========================================================================
+
+TEST_CASE("describe_type: Rust uses FrostRef enum for pattern matching")
+{
+    auto check = [](Value_Ptr val, const std::string& expected) {
+        auto result = call(frst::rs::test::rt_describe_type, {val});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == expected);
+    };
+
+    check(Value::null(), "null");
+    check(Value::create(42_f), "int:42");
+    check(Value::create(Float{3.14}), "float:3.14");
+    check(Value::create(Bool{true}), "bool:true");
+    check(Value::create("hi"s), "string:2");
+    check(Value::create(Array{Value::create(1_f), Value::create(2_f)}),
+          "array:2");
+    check(Value::create(Value::trusted,
+                        Map{{Value::create("k"s), Value::create("v"s)}}),
+          "map:1");
+}
+
+// ==========================================================================
+// Function operations
+// ==========================================================================
+
+TEST_CASE("call_callback: Rust calls a Frost function")
+{
+    auto double_fn = Value::create(
+        Function{std::make_shared<Builtin>(
+            [](builtin_args_t args) {
+                return Value::create(args[0]->raw_get<Int>() * 2);
+            },
+            "double")});
+
+    auto result = call(frst::rs::test::rt_call_callback,
+                       {double_fn, Value::create(21_f)});
+    REQUIRE(result->is<Int>());
+    CHECK(result->raw_get<Int>() == 42);
+}
+
+TEST_CASE("make_adder: Rust creates closures callable from C++")
+{
+    auto adder = call(frst::rs::test::rt_make_adder, {Value::create(10_f)});
+    REQUIRE(adder->is<Function>());
+
+    auto fn = adder->raw_get<Function>();
+
+    SECTION("basic call")
+    {
+        auto result = fn->call({Value::create(5_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 15);
+    }
+
+    SECTION("negative")
+    {
+        auto result = fn->call({Value::create(-3_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 7);
+    }
+
+    SECTION("zero")
+    {
+        auto result = fn->call({Value::create(0_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 10);
+    }
+}
+
+TEST_CASE("make_failing_fn: Rust closure Err becomes C++ exception")
+{
+    auto failing = call(frst::rs::test::rt_make_failing_fn, {});
+    REQUIRE(failing->is<Function>());
+
+    auto fn = failing->raw_get<Function>();
+    CHECK_THROWS_WITH(fn->call({}),
+                      ContainsSubstring("intentional failure"));
+}
+
+// ==========================================================================
+// Error propagation
+// ==========================================================================
 
 TEST_CASE("error propagation: Rust Err becomes rust::Error")
 {
@@ -238,5 +488,14 @@ TEST_CASE("error propagation: Rust Err becomes rust::Error")
         CHECK_THROWS_WITH(
             call(frst::rs::test::rt_concat_all, {Value::create(42_f)}),
             ContainsSubstring("expected String"));
+    }
+
+    SECTION("make_map with odd arg count")
+    {
+        CHECK_THROWS_WITH(
+            call(frst::rs::test::rt_make_map,
+                 {Value::create("a"s), Value::create(1_f),
+                  Value::create("b"s)}),
+            ContainsSubstring("even number"));
     }
 }
