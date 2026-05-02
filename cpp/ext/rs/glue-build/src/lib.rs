@@ -96,29 +96,26 @@ pub struct Param {
 }
 
 impl Param {
-    // A param is "single primitive" if it accepts exactly one type that maps
-    // to a native Rust scalar (i64, f64, bool, &str). These get extracted
-    // directly rather than passed as FrostValue. Multi-type or structured
-    // params are passed as FrostValue for the user to dispatch on.
-    fn is_single_primitive(&self) -> bool {
-        self.types.len() == 1
-            && matches!(
-                self.types[0],
-                Type::Int | Type::Float | Type::Bool | Type::String
-            )
+    // Is this a single type with a specific Rust extraction?
+    // (as opposed to multi-type params that stay as FrostValue)
+    fn is_single_typed(&self) -> bool {
+        self.types.len() == 1 && !matches!(self.types[0], Type::Any)
     }
 
     // Generate the Rust expression to extract a required param's value.
-    // For single primitives: `val0.as_int().unwrap()` (safe -- REQUIRE_ARGS validated)
-    // For others: just pass the FrostValue through.
+    // Single-typed params get extracted into their natural Rust type.
+    // Multi-type or Any params stay as FrostValue.
     fn rust_extract(&self, var: &str) -> String {
-        if self.is_single_primitive() {
+        if self.is_single_typed() {
             match self.types[0] {
                 Type::Int => format!("{var}.as_int().unwrap()"),
                 Type::Float => format!("{var}.as_float().unwrap()"),
                 Type::Bool => format!("{var}.as_bool().unwrap()"),
                 Type::String => format!("{var}.as_string().unwrap()"),
-                _ => unreachable!(),
+                Type::Array => format!("{var}.as_array().unwrap()"),
+                Type::Map => format!("{var}.as_map().unwrap()"),
+                Type::Function => format!("{var}.as_function().unwrap()"),
+                Type::Any => unreachable!(),
             }
         } else {
             var.to_owned()
@@ -127,13 +124,16 @@ impl Param {
 
     // Same as rust_extract but for optional params (wraps in Option).
     fn rust_extract_optional(&self, var: &str) -> String {
-        if self.is_single_primitive() {
+        if self.is_single_typed() {
             match self.types[0] {
                 Type::Int => format!("{var}.as_ref().and_then(|v| v.as_int())"),
                 Type::Float => format!("{var}.as_ref().and_then(|v| v.as_float())"),
                 Type::Bool => format!("{var}.as_ref().and_then(|v| v.as_bool())"),
                 Type::String => format!("{var}.as_ref().and_then(|v| v.as_string())"),
-                _ => unreachable!(),
+                Type::Array => format!("{var}.as_ref().and_then(|v| v.as_array())"),
+                Type::Map => format!("{var}.as_ref().and_then(|v| v.as_map())"),
+                Type::Function => format!("{var}.as_ref().and_then(|v| v.as_function())"),
+                Type::Any => unreachable!(),
             }
         } else {
             var.to_owned()

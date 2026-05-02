@@ -53,10 +53,9 @@ fn fail_if_negative(value: i64) -> Result<FrostValue, String> {
     }
 }
 
-fn array_sum(arr: FrostValue) -> Result<FrostValue, String> {
-    let elems = arr.array_slice().ok_or("expected Array")?;
+fn array_sum(arr: frost_glue::FrostArray) -> Result<FrostValue, String> {
     let mut sum: i64 = 0;
-    for elem in elems {
+    for elem in arr.as_slice() {
         let v = FrostValue::from_shared(elem.clone());
         sum += v.as_int().ok_or("array element is not Int")?;
     }
@@ -88,15 +87,15 @@ fn make_counter(start: i64) -> Result<FrostValue, String> {
     ))
 }
 
-fn counter_value(counter_fn: FrostValue) -> Result<FrostValue, String> {
-    let counter = try_downcast_counter::<Counter>(&counter_fn)
+fn counter_value(counter_fn: frost_glue::FrostFunction) -> Result<FrostValue, String> {
+    let val = counter_fn.into_value();
+    let counter = try_downcast_counter::<Counter>(&val)
         .ok_or("not a Counter")?;
     Ok(FrostValue::from_int(counter.value.load(Ordering::Relaxed)))
 }
 
-fn apply(func: FrostValue, value: FrostValue) -> Result<FrostValue, String> {
-    let f = func.as_function().ok_or("expected Function")?;
-    f.call_with(&[value]).map_err(|e| e.to_string())
+fn apply(func: frost_glue::FrostFunction, value: FrostValue) -> Result<FrostValue, String> {
+    func.call_with(&[value]).map_err(|e| e.to_string())
 }
 
 include!(concat!(env!("OUT_DIR"), "/bridge.rs"));

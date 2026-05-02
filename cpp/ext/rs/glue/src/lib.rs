@@ -491,11 +491,19 @@ impl FrostValue {
         ffi::value_truthy(&self.inner)
     }
 
-    // ---- Function accessor ----
+    // ---- Typed accessors ----
 
-    /// If this value is a Function, return a `FrostFunction` handle that
-    /// can be called. The FrostFunction type proves at the type level that
-    /// the value is callable.
+    /// If this value is an Array, return a `FrostArray` handle.
+    pub fn as_array(&self) -> Option<FrostArray> {
+        self.is_array().then(|| FrostArray { inner: self.inner.clone() })
+    }
+
+    /// If this value is a Map, return a `FrostMap` handle.
+    pub fn as_map(&self) -> Option<FrostMap> {
+        self.is_map().then(|| FrostMap { inner: self.inner.clone() })
+    }
+
+    /// If this value is a Function, return a `FrostFunction` handle.
     pub fn as_function(&self) -> Option<FrostFunction> {
         self.is_function().then(|| FrostFunction { inner: self.inner.clone() })
     }
@@ -601,6 +609,111 @@ pub enum FrostRef<'a> {
         values: &'a [cxx::SharedPtr<ffi::Value>],
     },
     Function(FrostFunction),
+}
+
+// ===========================================================================
+// FrostArray -- type-safe array handle
+// ===========================================================================
+
+/// A Frost Array value. Obtained via `FrostValue::as_array()`.
+/// Provides type-level proof that the value is an Array.
+pub struct FrostArray {
+    inner: cxx::SharedPtr<ffi::Value>,
+}
+
+impl FrostArray {
+    pub fn len(&self) -> usize {
+        ffi::value_array_len(&self.inner)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn get(&self, index: usize) -> Option<FrostValue> {
+        let val = ffi::value_array_get(&self.inner, index);
+        if ffi::value_is_null(&val) { None } else { Some(FrostValue::from_shared(val)) }
+    }
+
+    /// Zero-copy slice of the array's contiguous storage.
+    pub fn as_slice(&self) -> &[cxx::SharedPtr<ffi::Value>] {
+        ffi::value_array_slice(&self.inner)
+    }
+
+    /// Convert back to a generic FrostValue.
+    pub fn into_value(self) -> FrostValue {
+        FrostValue { inner: self.inner }
+    }
+
+    /// Consume, returning the underlying shared pointer.
+    pub fn into_shared(self) -> cxx::SharedPtr<ffi::Value> {
+        self.inner
+    }
+}
+
+// ===========================================================================
+// FrostMap -- type-safe map handle
+// ===========================================================================
+
+/// A Frost Map value. Obtained via `FrostValue::as_map()`.
+/// Provides type-level proof that the value is a Map.
+pub struct FrostMap {
+    inner: cxx::SharedPtr<ffi::Value>,
+}
+
+impl FrostMap {
+    pub fn len(&self) -> usize {
+        ffi::value_map_len(&self.inner)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Look up by string key.
+    pub fn get(&self, key: &str) -> Option<FrostValue> {
+        let_cxx_string!(k = key);
+        if ffi::value_map_has(&self.inner, &k) {
+            Some(FrostValue::from_shared(ffi::value_map_get(&self.inner, &k)))
+        } else {
+            None
+        }
+    }
+
+    /// Look up by any key type.
+    pub fn get_by(&self, key: &FrostValue) -> Option<FrostValue> {
+        if ffi::value_map_contains_key(&self.inner, &key.inner) {
+            Some(FrostValue::from_shared(ffi::value_map_get_by(&self.inner, &key.inner)))
+        } else {
+            None
+        }
+    }
+
+    /// Check if a string key exists.
+    pub fn has(&self, key: &str) -> bool {
+        let_cxx_string!(k = key);
+        ffi::value_map_has(&self.inner, &k)
+    }
+
+    /// Zero-copy slice of sorted keys. Parallel with `values()`.
+    pub fn keys(&self) -> &[cxx::SharedPtr<ffi::Value>] {
+        ffi::value_map_keys(&self.inner)
+    }
+
+    /// Zero-copy slice of values. Parallel with `keys()`.
+    pub fn values(&self) -> &[cxx::SharedPtr<ffi::Value>] {
+        ffi::value_map_values(&self.inner)
+    }
+
+    /// Convert back to a generic FrostValue.
+    pub fn into_value(self) -> FrostValue {
+        FrostValue { inner: self.inner }
+    }
+
+    /// Consume, returning the underlying shared pointer.
+    pub fn into_shared(self) -> cxx::SharedPtr<ffi::Value> {
+        self.inner
+    }
 }
 
 // ===========================================================================

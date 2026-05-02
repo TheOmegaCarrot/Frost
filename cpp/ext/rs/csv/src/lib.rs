@@ -1,4 +1,4 @@
-use frost_glue::{FrostFunction, FrostValue};
+use frost_glue::{FrostArray, FrostFunction, FrostMap, FrostValue};
 use std::io::Read;
 
 struct CsvOptions {
@@ -6,13 +6,12 @@ struct CsvOptions {
     has_headers: bool,
 }
 
-fn parse_options(options: FrostValue /* Map */) -> Result<CsvOptions, String> {
+fn parse_options(options: FrostMap) -> Result<CsvOptions, String> {
     let mut delim = b',';
     let mut has_headers = true;
 
-    // guaranteed a Map, due to C++-glue-level type checking before entering Rust
-    let keys = options.map_keys().ok_or("csv: options must be a Map")?;
-    let values = options.map_values().unwrap();
+    let keys = options.keys();
+    let values = options.values();
     for (k, v) in keys.iter().zip(values.iter()) {
         let key = FrostValue::from_shared(k.clone());
         let value = FrostValue::from_shared(v.clone());
@@ -48,16 +47,14 @@ fn each_csv(_reader: CsvReader, _callback: FrostFunction) -> Result<FrostValue, 
 }
 
 fn record_to_frost_array(record: csv::StringRecord) -> FrostValue {
-    let arr: Vec<_> = record
-        .into_iter()
-        .map(FrostValue::from_string)
-        .collect();
+    let arr: Vec<_> = record.into_iter().map(FrostValue::from_string).collect();
 
     FrostValue::from_values(&arr)
 }
 
 fn record_to_frost_map(record: csv::StringRecord, headers: &Keys) -> FrostValue {
-    let values: Vec<_> = record.into_iter()
+    let values: Vec<_> = record
+        .into_iter()
         .map(|v| FrostValue::from_string(v).into_shared())
         .collect();
 
@@ -72,7 +69,9 @@ fn collect_csv(mut reader: csv::Reader<Box<dyn Read>>) -> Result<FrostValue, Str
     };
 
     let header_keys: Option<Vec<_>> = headers.map(|h| {
-        h.into_iter().map(|s| FrostValue::from_string(s).into_shared()).collect()
+        h.into_iter()
+            .map(|s| FrostValue::from_string(s).into_shared())
+            .collect()
     });
 
     let rows: Result<Vec<FrostValue>, String> = reader
@@ -100,8 +99,8 @@ fn read_csv(reader: CsvReader, callback: Option<FrostFunction>) -> Result<FrostV
 
 fn read_file(
     path: &str,
-    options: FrostValue,          // Map
-    callback: Option<FrostValue>, // Function
+    options: FrostMap,
+    callback: Option<FrostFunction>,
 ) -> Result<FrostValue, String> {
     let file = std::fs::File::open(path).map_err(|e| e.to_string())?;
     let source: Box<dyn Read> = Box::new(file);
@@ -113,9 +112,7 @@ fn read_file(
         .has_headers(options.has_headers)
         .from_reader(source);
 
-    // C++ guarantees callback is either a FrostFunction or None (type-checked as Function, or not
-    // provided by Frost at all)
-    read_csv(reader, callback.and_then(|fv| fv.as_function()))
+    read_csv(reader, callback)
 }
 
 include!(concat!(env!("OUT_DIR"), "/bridge.rs"));
