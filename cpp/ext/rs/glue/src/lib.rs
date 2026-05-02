@@ -729,6 +729,13 @@ impl FrostMap {
         ffi::value_map_values(&self.inner)
     }
 
+    /// Iterate over (key, value) pairs as FrostValues.
+    pub fn iter(&self) -> impl Iterator<Item = (FrostValue, FrostValue)> + '_ {
+        self.keys().iter().zip(self.values().iter()).map(|(k, v)| {
+            (FrostValue::from_shared(k.clone()), FrostValue::from_shared(v.clone()))
+        })
+    }
+
     /// Convert back to a generic FrostValue.
     pub fn into_value(self) -> FrostValue {
         FrostValue { inner: self.inner }

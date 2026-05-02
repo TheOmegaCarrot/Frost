@@ -10,11 +10,7 @@ fn parse_options(options: FrostMap) -> Result<CsvOptions, String> {
     let mut delim = b',';
     let mut has_headers = true;
 
-    let keys = options.keys();
-    let values = options.values();
-    for (k, v) in keys.iter().zip(values.iter()) {
-        let key = FrostValue::from_shared(k.clone());
-        let value = FrostValue::from_shared(v.clone());
+    for (key, value) in options.iter() {
         match key.as_string() {
             Some("delim") => {
                 let bytes = value.as_bytes().ok_or("csv: delimiter must be a String")?;
