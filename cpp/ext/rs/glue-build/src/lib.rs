@@ -626,10 +626,9 @@ impl ExtensionBuilder {
     }
 
     fn write_rust_data_type(&self, out: &mut String, dt: &str) {
-        let ext = self.name;
-
         // The RustData_<name> struct wraps the user's type + closure.
         // It's what gets boxed and passed to C++.
+        writeln!(out, "#[allow(non_camel_case_types)]").unwrap();
         writeln!(out, "pub struct RustData_{dt} {{").unwrap();
         writeln!(out, "    data: Box<dyn std::any::Any>,").unwrap();
         writeln!(
