@@ -807,11 +807,12 @@ impl FrostFunction {
         Ok(FrostValue::from_shared(ffi::value_call(&self.inner, args)?))
     }
 
-    /// Call this function with FrostValue args (convenience wrapper).
-    pub fn call_with(&self, args: &[FrostValue]) -> Result<FrostValue, cxx::Exception> {
+    /// Call this function with FrostValue args.
+    /// Frost errors are returned as `Err(String)`.
+    pub fn call_with(&self, args: &[FrostValue]) -> Result<FrostValue, String> {
         let shared_args: Vec<cxx::SharedPtr<ffi::Value>> =
             args.iter().map(|v| v.inner.clone()).collect();
-        self.call(&shared_args)
+        self.call(&shared_args).map_err(|e| e.to_string())
     }
 
     /// Convert back to a generic FrostValue (for returning from extension

@@ -37,10 +37,6 @@ fn parse_options(options: FrostMap) -> Result<CsvOptions, String> {
 
 type CsvReader = csv::Reader<Box<dyn Read>>;
 
-fn each_csv(_reader: CsvReader, _callback: FrostFunction) -> Result<FrostValue, String> {
-    Err("Placeholder".into())
-}
-
 fn record_to_frost_array(record: csv::StringRecord) -> FrostValue {
     let arr: Vec<_> = record.into_iter().map(FrostValue::from_string).collect();
 
@@ -48,48 +44,50 @@ fn record_to_frost_array(record: csv::StringRecord) -> FrostValue {
 }
 
 fn record_to_frost_map(record: csv::StringRecord, headers: &[FrostValue]) -> FrostValue {
-    let values: Vec<_> = record
-        .into_iter()
-        .map(FrostValue::from_string)
-        .collect();
+    let values: Vec<_> = record.into_iter().map(FrostValue::from_string).collect();
 
     FrostValue::from_entries_trusted(headers, &values)
 }
 
-fn collect_csv(mut reader: csv::Reader<Box<dyn Read>>) -> Result<FrostValue, String> {
-    let headers = if reader.has_headers() {
-        Some(reader.headers().map_err(|e| e.to_string())?.clone())
+fn extract_headers(reader: &mut CsvReader) -> Result<Option<Vec<FrostValue>>, String> {
+    if reader.has_headers() {
+        let headers = reader.headers().map_err(|e| e.to_string())?;
+        Ok(Some(
+            headers.into_iter().map(FrostValue::from_string).collect(),
+        ))
     } else {
-        None
-    };
+        Ok(None)
+    }
+}
 
-    let header_keys: Option<Vec<_>> = headers.map(|h| {
-        h.into_iter()
-            .map(FrostValue::from_string)
-            .collect()
-    });
+fn process_csv(
+    mut reader: CsvReader,
+    mut on_row: impl FnMut(FrostValue) -> Result<FrostValue, String>,
+) -> Result<Vec<FrostValue>, String> {
+    let headers = extract_headers(&mut reader)?;
 
-    let rows: Result<Vec<FrostValue>, String> = reader
+    reader
         .records()
         .map(|result| {
             let record = result.map_err(|e| e.to_string())?;
-            if let Some(ref header_keys) = header_keys {
-                Ok(record_to_frost_map(record, header_keys))
+            let row = if let Some(ref headers) = headers {
+                record_to_frost_map(record, headers)
             } else {
-                Ok(record_to_frost_array(record))
-            }
+                record_to_frost_array(record)
+            };
+            on_row(row)
         })
-        .collect();
-
-    rows.map(|r| FrostValue::from_values(&r))
+        .collect()
 }
 
 fn read_csv(reader: CsvReader, callback: Option<FrostFunction>) -> Result<FrostValue, String> {
-    if let Some(callback) = callback {
-        each_csv(reader, callback)
+    let rows = if let Some(callback) = callback {
+        process_csv(reader, |row| callback.call_with(&[row]))?
     } else {
-        collect_csv(reader)
-    }
+        process_csv(reader, Ok)?
+    };
+
+    Ok(FrostValue::from_values(&rows))
 }
 
 fn read_file(
