@@ -1,3 +1,62 @@
+//! # frost-glue-build: Code generation for Rust Frost extensions
+//!
+//! This crate is used as a `[build-dependency]` by Rust extensions. It
+//! generates two files from a declarative description of exported functions:
+//!
+//! ## Generated C++ (written to `generated/<name>.cpp`)
+//!
+//! A single file containing:
+//! - Forward declarations of the cxx-generated Rust wrapper functions
+//! - A `BUILTIN(fn_name)` for each exported function that:
+//!   - Calls `REQUIRE_ARGS` to validate arity and types
+//!   - Passes the entire args span as `rust::Slice<const Value_Ptr>` to Rust
+//!   - Catches `rust::Error` (from Rust `Err`) and re-throws as `Frost_Recoverable_Error`
+//! - A `REGISTER_EXTENSION(name, ENTRY(fn1), ENTRY(fn2), ...)` to register
+//!   the module with Frost's import system
+//! - (If data types declared) Data_Builtin wrapper structs, make/downcast functions
+//!
+//! ## Generated Rust (written to `$OUT_DIR/bridge.rs`)
+//!
+//! Included by the extension crate via `include!(concat!(env!("OUT_DIR"), "/bridge.rs"))`.
+//! Contains:
+//! - A `#[cxx::bridge]` module with:
+//!   - `extern "C++"`: Value type reference + data type make/downcast functions
+//!   - `extern "Rust"`: one function per export + data type call functions
+//! - Wrapper functions that convert between cxx types and the user's Rust types:
+//!   - Wraps each `SharedPtr<Value>` from the args slice into a `FrostValue`
+//!   - Extracts typed values (as_int, as_string, etc.) for single-primitive params
+//!   - Passes `Option<T>` for optional params, `&[FrostValue]` for variadic rest
+//!   - Converts the returned `FrostValue` back to `SharedPtr<Value>`
+//! - (If data types declared) RustData structs, call trampolines, make/downcast helpers
+//!
+//! ## Example build.rs
+//!
+//! ```ignore
+//! use frost_glue_build::{ExtensionBuilder, Type};
+//!
+//! fn main() {
+//!     let glue_include = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+//!         .join("../glue/cpp");
+//!
+//!     let mut ext = ExtensionBuilder::new("myext", glue_include);
+//!
+//!     ext.function("add")
+//!         .param("a", &[Type::Int])
+//!         .param("b", &[Type::Int]);
+//!
+//!     ext.function("greet")
+//!         .param("name", &[Type::String])
+//!         .optional("greeting", &[Type::String]);
+//!
+//!     ext.function("sum_all")
+//!         .variadic_rest("values", &[Type::Int], 1);
+//!
+//!     ext.data_type("connection");
+//!
+//!     ext.generate();
+//! }
+//! ```
+
 use std::fmt::Write;
 use std::path::PathBuf;
 
@@ -37,6 +96,10 @@ pub struct Param {
 }
 
 impl Param {
+    // A param is "single primitive" if it accepts exactly one type that maps
+    // to a native Rust scalar (i64, f64, bool, &str). These get extracted
+    // directly rather than passed as FrostValue. Multi-type or structured
+    // params are passed as FrostValue for the user to dispatch on.
     fn is_single_primitive(&self) -> bool {
         self.types.len() == 1
             && matches!(
@@ -45,6 +108,9 @@ impl Param {
             )
     }
 
+    // Generate the Rust expression to extract a required param's value.
+    // For single primitives: `val0.as_int().unwrap()` (safe -- REQUIRE_ARGS validated)
+    // For others: just pass the FrostValue through.
     fn rust_extract(&self, var: &str) -> String {
         if self.is_single_primitive() {
             match self.types[0] {
@@ -59,6 +125,7 @@ impl Param {
         }
     }
 
+    // Same as rust_extract but for optional params (wraps in Option).
     fn rust_extract_optional(&self, var: &str) -> String {
         if self.is_single_primitive() {
             match self.types[0] {
@@ -213,6 +280,11 @@ impl ExtensionBuilder {
     }
 
     // -- C++ codegen --
+    // Generates a single .cpp file compiled by CMake. Structure:
+    //   1. Data type structs + make/downcast functions (if any)
+    //   2. Forward declarations of Rust wrapper functions
+    //   3. BUILTIN(name) shim for each function (REQUIRE_ARGS + try/catch)
+    //   4. REGISTER_EXTENSION macro call
 
     fn generate_cpp(&self) -> String {
         let mut out = String::new();
@@ -275,6 +347,7 @@ impl ExtensionBuilder {
         out
     }
 
+    // Emit one BUILTIN(name) { REQUIRE_ARGS(...); try { call_rust(...); } catch ... }
     fn write_cpp_builtin(&self, out: &mut String, func: &FunctionSpec) {
         let ext = self.name;
         let name = func.name;
@@ -339,6 +412,10 @@ impl ExtensionBuilder {
         writeln!(out, "}}").unwrap();
     }
 
+    // Generates a small header (<name>-data.hpp) declaring make/downcast
+    // functions. This header is visible to cxx-build so the generated bridge
+    // code can reference these functions. The full implementations are in
+    // the main .cpp (compiled by CMake with access to frost headers).
     fn generate_data_header(&self) -> String {
         let mut out = String::new();
         let ext = self.name;
@@ -371,6 +448,14 @@ impl ExtensionBuilder {
         out
     }
 
+    // Generates the full Data_Builtin infrastructure for each data type:
+    //   - Forward declarations of opaque Rust types and their call trampolines
+    //   - DataPayload_<name> struct (holds shared_ptr<rust::Box<RustData_<name>>>)
+    //   - make_data_<name>: creates a Data_Builtin wrapping the Rust box
+    //     The lambda captures a shared_ptr to the box (shared with the payload)
+    //     so both the call path and the downcast path access the same data.
+    //   - try_downcast_<name>: dynamic_cast to DataPayload, return raw pointer
+    //     to the Rust data (or nullptr if wrong type)
     fn write_cpp_data_types(&self, out: &mut String) {
         let ext = self.name;
 
@@ -483,6 +568,14 @@ impl ExtensionBuilder {
     }
 
     // -- Rust codegen --
+    // Generates bridge.rs which the extension includes via include!().
+    // Structure:
+    //   1. #[cxx::bridge] module with extern "C++" (Value type + data funcs)
+    //      and extern "Rust" (wrapper functions + data call trampolines)
+    //   2. Wrapper function per export: receives &[SharedPtr<Value>], wraps
+    //      each arg in FrostValue, extracts typed values, calls user function
+    //   3. Data type support: RustData_<name> struct (holds Box<dyn Any> +
+    //      call closure), trampoline, public make/downcast helpers
 
     fn generate_bridge_rs(&self) -> String {
         let mut out = String::new();
@@ -557,6 +650,11 @@ impl ExtensionBuilder {
         out
     }
 
+    // Emit one Rust wrapper function that:
+    //   1. Binds each arg from the slice as FrostValue / Option<FrostValue>
+    //   2. Extracts typed values (unwrap is safe: REQUIRE_ARGS validated)
+    //   3. Calls the user's function with native Rust types
+    //   4. Converts the returned FrostValue back to SharedPtr<Value>
     fn write_rust_wrapper(&self, out: &mut String, func: &FunctionSpec) {
         let ext = self.name;
         let name = func.name;
@@ -625,9 +723,18 @@ impl ExtensionBuilder {
         writeln!(out, "}}").unwrap();
     }
 
+    // Emit the Rust support code for one data type. Generates:
+    //   - RustData_<name>: opaque struct holding Box<dyn Any> (user's data)
+    //     + a call closure. C++ holds this via rust::Box inside Data_Builtin.
+    //   - rust_data_<name>_call: trampoline invoked by C++ when the function
+    //     is called from Frost. Delegates to the stored closure.
+    //   - make_data_<name><T, F>: public constructor. Takes user's typed data
+    //     + a typed callback. Wraps them in type-erased form (dyn Any),
+    //     passes to C++ which builds a Data_Builtin.
+    //   - try_downcast_<name><T>: public downcast. Calls C++ try_downcast
+    //     (dynamic_cast on the C++ side), then uses Any::downcast_ref on
+    //     the Rust side to recover the original typed data.
     fn write_rust_data_type(&self, out: &mut String, dt: &str) {
-        // The RustData_<name> struct wraps the user's type + closure.
-        // It's what gets boxed and passed to C++.
         writeln!(out, "#[allow(non_camel_case_types)]").unwrap();
         writeln!(out, "pub struct RustData_{dt} {{").unwrap();
         writeln!(out, "    data: Box<dyn std::any::Any>,").unwrap();
