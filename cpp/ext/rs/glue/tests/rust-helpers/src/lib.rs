@@ -37,6 +37,9 @@ mod ffi {
         fn rt_make_adder(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
         fn rt_make_failing_fn(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
 
+        // ---- Map null-value fidelity ----
+        fn rt_map_lookup_found(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+
         // ---- Arithmetic / comparison / coercion ----
         fn rt_add(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
         fn rt_subtract(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
@@ -274,6 +277,21 @@ fn rt_make_failing_fn(
 ) -> Result<cxx::SharedPtr<ffi::Value>, String> {
     let f = FrostFunction::new(|_| Err("intentional failure".to_owned()));
     Ok(f.into_shared())
+}
+
+// ---- Map null-value fidelity ----
+// Returns Bool: true if map_get_by found the key (even if value is null),
+// false if the key was not present.
+fn rt_map_lookup_found(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    if args.len() < 2 {
+        return Err("expected (map, key)".into());
+    }
+    let map = FrostValue::from_shared(args[0].clone());
+    let key = FrostValue::from_shared(args[1].clone());
+    let found = map.map_get_by(&key).is_some();
+    Ok(FrostValue::from_bool(found).into_shared())
 }
 
 // ---- Arithmetic / comparison / coercion ----

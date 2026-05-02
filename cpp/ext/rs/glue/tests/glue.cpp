@@ -30,6 +30,7 @@ Value_Ptr rt_describe_type(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_call_callback(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_make_adder(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_make_failing_fn(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_map_lookup_found(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_add(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_subtract(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_multiply(::rust::Slice<const Value_Ptr> args);
@@ -342,6 +343,39 @@ TEST_CASE("map_get_by_key: Rust looks up by arbitrary key type")
         auto result = call(frst::rs::test::rt_map_get_by_key,
                            {map, Value::create(99_f)});
         CHECK(result->is<Null>());
+    }
+}
+
+TEST_CASE("map_get null fidelity: null value vs missing key")
+{
+    // Map where "present" key maps to null
+    auto map = Value::create(
+        Value::trusted,
+        Map{{Value::create("present"s), Value::null()},
+            {Value::create("normal"s), Value::create(42_f)}});
+
+    SECTION("key mapping to null is found (not confused with missing)")
+    {
+        auto result = call(frst::rs::test::rt_map_lookup_found,
+                           {map, Value::create("present"s)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("actually missing key returns false")
+    {
+        auto result = call(frst::rs::test::rt_map_lookup_found,
+                           {map, Value::create("absent"s)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == false);
+    }
+
+    SECTION("normal key is found")
+    {
+        auto result = call(frst::rs::test::rt_map_lookup_found,
+                           {map, Value::create("normal"s)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
     }
 }
 
