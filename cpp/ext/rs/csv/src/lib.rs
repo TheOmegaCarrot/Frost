@@ -1,4 +1,4 @@
-use frost_glue::{FrostArray, FrostFunction, FrostMap, FrostValue};
+use frost_glue::{FrostFunction, FrostMap, FrostValue};
 use std::io::Read;
 
 struct CsvOptions {
@@ -40,7 +40,6 @@ fn parse_options(options: FrostMap) -> Result<CsvOptions, String> {
 }
 
 type CsvReader = csv::Reader<Box<dyn Read>>;
-type Keys = [cxx::SharedPtr<ffi::Value>];
 
 fn each_csv(_reader: CsvReader, _callback: FrostFunction) -> Result<FrostValue, String> {
     Err("Placeholder".into())
@@ -52,13 +51,13 @@ fn record_to_frost_array(record: csv::StringRecord) -> FrostValue {
     FrostValue::from_values(&arr)
 }
 
-fn record_to_frost_map(record: csv::StringRecord, headers: &Keys) -> FrostValue {
+fn record_to_frost_map(record: csv::StringRecord, headers: &[FrostValue]) -> FrostValue {
     let values: Vec<_> = record
         .into_iter()
-        .map(|v| FrostValue::from_string(v).into_shared())
+        .map(FrostValue::from_string)
         .collect();
 
-    FrostValue::from_map_trusted(headers, &values)
+    FrostValue::from_entries_trusted(headers, &values)
 }
 
 fn collect_csv(mut reader: csv::Reader<Box<dyn Read>>) -> Result<FrostValue, String> {
@@ -70,7 +69,7 @@ fn collect_csv(mut reader: csv::Reader<Box<dyn Read>>) -> Result<FrostValue, Str
 
     let header_keys: Option<Vec<_>> = headers.map(|h| {
         h.into_iter()
-            .map(|s| FrostValue::from_string(s).into_shared())
+            .map(FrostValue::from_string)
             .collect()
     });
 

@@ -238,8 +238,8 @@ impl FrostValue {
         Self { inner: ffi::value_from_string(&s) }
     }
 
-    /// Create a Frost Array from a slice of raw shared pointers.
-    /// Use `from_values` for the higher-level API.
+    /// Create a Frost Array from a slice of SharedPtrs.
+    /// Prefer `from_values` when you have `&[FrostValue]`.
     pub fn from_array(elements: &[cxx::SharedPtr<ffi::Value>]) -> Self {
         Self { inner: ffi::value_from_array(elements) }
     }
@@ -251,7 +251,7 @@ impl FrostValue {
         Self::from_array(&shared)
     }
 
-    /// Create a Frost Map from parallel key/value slices.
+    /// Create a Frost Map from parallel key/value SharedPtr slices.
     /// Keys must be non-null primitives (Int, Float, Bool, or String).
     /// Returns `Err` if key validation fails.
     pub fn from_map(
@@ -261,13 +261,37 @@ impl FrostValue {
         Ok(Self { inner: ffi::value_from_map(keys, values)? })
     }
 
-    /// Create a Frost Map without key validation.
-    /// Caller must guarantee all keys are non-null primitives.
+    /// Create a Frost Map from parallel key/value SharedPtr slices,
+    /// without key validation. Caller must guarantee all keys are non-null
+    /// primitives. Use when keys are known-good (e.g., string literals,
+    /// pre-validated header rows).
     pub fn from_map_trusted(
         keys: &[cxx::SharedPtr<ffi::Value>],
         values: &[cxx::SharedPtr<ffi::Value>],
     ) -> Self {
         Self { inner: ffi::value_from_map_trusted(keys, values) }
+    }
+
+    /// Create a Frost Map from parallel key/value FrostValue slices.
+    /// Keys must be non-null primitives. Returns `Err` on invalid keys.
+    pub fn from_entries(
+        keys: &[FrostValue],
+        values: &[FrostValue],
+    ) -> Result<Self, cxx::Exception> {
+        let k: Vec<_> = keys.iter().map(|v| v.inner.clone()).collect();
+        let v: Vec<_> = values.iter().map(|v| v.inner.clone()).collect();
+        Self::from_map(&k, &v)
+    }
+
+    /// Create a Frost Map from parallel key/value FrostValue slices,
+    /// without key validation. Caller guarantees keys are non-null primitives.
+    pub fn from_entries_trusted(
+        keys: &[FrostValue],
+        values: &[FrostValue],
+    ) -> Self {
+        let k: Vec<_> = keys.iter().map(|v| v.inner.clone()).collect();
+        let v: Vec<_> = values.iter().map(|v| v.inner.clone()).collect();
+        Self::from_map_trusted(&k, &v)
     }
 
     // ---- Type checks ----
