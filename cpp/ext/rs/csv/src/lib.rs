@@ -2,16 +2,17 @@ use frost_glue::{FrostFunction, FrostMap, FrostValue};
 use std::io::{Cursor, Read};
 
 // =======================================
-// Generic to reading and writing
+// Reading CSV
 // =======================================
-struct CsvOptions {
+
+struct ReadCsvOptions {
     delim: u8,
     has_headers: bool,
 }
 
-fn parse_options(options: FrostMap) -> Result<CsvOptions, String> {
+fn parse_options(options: FrostMap) -> Result<ReadCsvOptions, String> {
     let mut delim = b',';
-    let mut has_headers = true;
+    let mut has_headers: Option<bool> = None;
 
     for (key, value) in options.iter() {
         match key.as_string() {
@@ -26,7 +27,7 @@ fn parse_options(options: FrostMap) -> Result<CsvOptions, String> {
                 if !value.is_bool() {
                     return Err("csv: headers option must be a Bool".into());
                 }
-                has_headers = value.as_bool().unwrap();
+                has_headers = value.as_bool();
             }
             Some(other) => {
                 return Err(format!("csv: unknown option: {other}"));
@@ -35,12 +36,10 @@ fn parse_options(options: FrostMap) -> Result<CsvOptions, String> {
         }
     }
 
-    Ok(CsvOptions { delim, has_headers })
-}
+    let has_headers = has_headers.ok_or("csv: 'headers' option is required")?;
 
-// =======================================
-// Reading CSV
-// =======================================
+    Ok(ReadCsvOptions { delim, has_headers })
+}
 
 type CsvReader = csv::Reader<Box<dyn Read>>;
 

@@ -61,6 +61,12 @@ assert(len(from_file) == 2)
 assert(from_file[0].name == "Alice")
 assert(from_file[1].age == "25")
 
+# ---- error: missing required 'headers' option ----
+
+def no_headers = try_call(fn -> csv.read_str("a,b\n1,2", {}))
+assert(no_headers.ok == false)
+assert(contains(no_headers.error, "headers"))
+
 # ---- error: bad option ----
 
 def bad_opt = try_call(fn -> csv.read_str("a,b", {headers: true, bogus: 1}))
