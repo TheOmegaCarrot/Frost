@@ -1,5 +1,5 @@
 use frost_glue::{
-    FrostArray, FrostFunction, FrostMap, FrostValue,
+    FrostArray, FrostFunction, FrostMap, FrostRef, FrostValue,
     require::{Param, Type, require_args, require_nullary},
 };
 use std::{
@@ -175,33 +175,58 @@ fn frost_array_to_string_vec(headers: FrostArray) -> Result<Vec<String>, String>
         .collect()
 }
 
-fn frost_value_to_record(arr: &FrostValue) -> Result<Vec<String>, String> {
-    arr.as_array()
-        .ok_or("csv.writer.row: internal error: expected Array after validation")?
-        .iter()
-        .map(|val| {
-            if !val.is_primitive() {
-                let tn = val.type_name();
-                return Err(format!(
-                    "csv.writer.row: Row values must be primitives, got {tn}"
-                ));
-            }
-            Ok(val.to_display_string())
-        })
-        .collect::<Result<Vec<String>, String>>()
+fn frost_value_to_record(
+    value: &FrostValue,
+    headers: &Option<Vec<String>>,
+) -> Result<Vec<String>, String> {
+    if let Some(arr) = value.as_array() {
+        arr.iter()
+            .map(|val| {
+                if !val.is_primitive() {
+                    let tn = val.type_name();
+                    return Err(format!(
+                        "csv.writer.row: Row values must be primitives, got {tn}"
+                    ));
+                }
+                Ok(val.to_display_string())
+            })
+            .collect::<Result<Vec<String>, String>>()
+    } else if let Some(map) = value.as_map() {
+        let headers = headers
+            .as_ref()
+            .ok_or("csv.writer.row: Map rows require headers to be defined")?;
+
+        headers
+            .iter()
+            .map(|h| {
+                Ok(map
+                    .get(h)
+                    .ok_or(format!("csv.writer.row: Map is missing key '{h}'"))?
+                    .to_display_string())
+            })
+            .collect()
+    } else {
+        Err(format!(
+            "csv.writer.row: expected Array or Map, got {}",
+            value.type_name()
+        ))
+    }
 }
 
-fn make_row_fn<W: Write + Send + 'static>(writer: &Arc<Mutex<csv::Writer<W>>>) -> FrostValue {
+fn make_row_fn<W: Write + Send + 'static>(
+    writer: &Arc<Mutex<csv::Writer<W>>>,
+    headers: Option<Vec<String>>,
+) -> FrostValue {
     let w = writer.clone();
     FrostFunction::new(move |args| {
         require_args(
             "csv.writer.row",
             args,
-            &[Param::required("row", &[Type::Array])],
+            &[Param::required("row", &[Type::Array, Type::Map])],
         )?;
         let mut writer = w.lock().map_err(|e| e.to_string())?;
 
-        let row = frost_value_to_record(&args[0])?;
+        let row = frost_value_to_record(&args[0], &headers)?;
         writer.write_record(&row).map_err(|e| e.to_string())?;
 
         Ok(FrostValue::null())
@@ -209,10 +234,13 @@ fn make_row_fn<W: Write + Send + 'static>(writer: &Arc<Mutex<csv::Writer<W>>>) -
     .into_value()
 }
 
-fn make_file_writer_bundle(writer: csv::Writer<File>) -> Result<FrostValue, String> {
+fn make_file_writer_bundle(
+    writer: csv::Writer<File>,
+    headers: Option<Vec<String>>,
+) -> Result<FrostValue, String> {
     let writer = Arc::new(Mutex::new(writer));
 
-    let row_fn = make_row_fn(&writer);
+    let row_fn = make_row_fn(&writer, headers);
 
     let flush_fn = {
         let w = writer.clone();
@@ -231,10 +259,13 @@ fn make_file_writer_bundle(writer: csv::Writer<File>) -> Result<FrostValue, Stri
     ]))
 }
 
-fn make_string_writer_bundle(writer: csv::Writer<Vec<u8>>) -> Result<FrostValue, String> {
+fn make_string_writer_bundle(
+    writer: csv::Writer<Vec<u8>>,
+    headers: Option<Vec<String>>,
+) -> Result<FrostValue, String> {
     let writer = Arc::new(Mutex::new(writer));
 
-    let row_fn = make_row_fn(&writer);
+    let row_fn = make_row_fn(&writer, headers);
 
     let get_fn = {
         let w = writer.clone();
@@ -291,7 +322,7 @@ fn write_file(path: &str, options: Option<FrostMap>) -> Result<FrostValue, Strin
         writer.write_record(headers).map_err(|e| e.to_string())?;
     }
 
-    make_file_writer_bundle(writer)
+    make_file_writer_bundle(writer, options.headers)
 }
 
 fn write_str(options: Option<FrostMap>) -> Result<FrostValue, String> {
@@ -304,7 +335,7 @@ fn write_str(options: Option<FrostMap>) -> Result<FrostValue, String> {
         writer.write_record(headers).map_err(|e| e.to_string())?;
     }
 
-    make_string_writer_bundle(writer)
+    make_string_writer_bundle(writer, options.headers)
 }
 
 include!(concat!(env!("OUT_DIR"), "/bridge.rs"));
