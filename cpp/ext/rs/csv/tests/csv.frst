@@ -1,0 +1,73 @@
+def csv = import("ext.csv")
+
+# ---- read_str with headers ----
+
+def people = csv.read_str("name,age,city\nAlice,30,NYC\nBob,25,LA", {headers: true})
+assert(len(people) == 2)
+assert(people[0].name == "Alice")
+assert(people[0].age == "30")
+assert(people[0].city == "NYC")
+assert(people[1].name == "Bob")
+assert(people[1].age == "25")
+assert(people[1].city == "LA")
+
+# ---- read_str without headers ----
+
+def rows = csv.read_str("a,b,c\n1,2,3", {headers: false})
+assert(len(rows) == 2)
+assert(rows[0] == ["a", "b", "c"])
+assert(rows[1] == ["1", "2", "3"])
+
+# ---- custom delimiter ----
+
+def tsv = csv.read_str("x\ty\tz\n1\t2\t3", {headers: true, delim: "\t"})
+assert(len(tsv) == 1)
+assert(tsv[0].x == "1")
+assert(tsv[0].y == "2")
+assert(tsv[0].z == "3")
+
+# ---- callback mode (each/map) ----
+
+def results = csv.read_str("val\n10\n20\n30", {headers: true}, fn row -> row.val)
+assert(results == ["10", "20", "30"])
+
+# ---- callback with accumulation ----
+
+def sum = reduce [0] + results with fn (acc, v) -> acc + to_int(v)
+assert(sum == 60)
+
+# ---- empty CSV ----
+
+def empty = csv.read_str("name,age", {headers: true})
+assert(len(empty) == 0)
+
+def empty_no_header = csv.read_str("", {headers: false})
+assert(len(empty_no_header) == 0)
+
+# ---- single row ----
+
+def single = csv.read_str("k,v\nhello,world", {headers: true})
+assert(len(single) == 1)
+assert(single[0].k == "hello")
+assert(single[0].v == "world")
+
+# ---- read_file ----
+
+def io = import("std.io")
+def test_path = "./frost_csv_test.csv"
+io.write(test_path, "name,age\nAlice,30\nBob,25\n")
+def from_file = csv.read_file(test_path, {headers: true})
+assert(len(from_file) == 2)
+assert(from_file[0].name == "Alice")
+assert(from_file[1].age == "25")
+
+# ---- error: bad option ----
+
+def bad_opt = try_call(fn -> csv.read_str("a,b", {headers: true, bogus: 1}))
+assert(bad_opt.ok == false)
+assert(contains(bad_opt.error, "unknown option"))
+
+# ---- error: file not found ----
+
+def no_file = try_call(fn -> csv.read_file("/nonexistent/path.csv", {headers: true}))
+assert(no_file.ok == false)

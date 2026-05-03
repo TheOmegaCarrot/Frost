@@ -22,3 +22,11 @@ target_link_libraries(frost-csv-shim
     frost-rs-glue
     ${CMAKE_CURRENT_BINARY_DIR}/libfrost_csv.a
 )
+
+if(BUILD_TESTS)
+    add_test(
+        NAME Frost_Ext_Csv
+        COMMAND $<TARGET_FILE:frost>
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/csv.frst"
+    )
+endif()
