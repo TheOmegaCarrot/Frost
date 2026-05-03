@@ -36,7 +36,7 @@ endmacro()
 
 # ---- Rust extensions ----
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    frost_rust_extension(example)
+    frost_rust_extension(example) # Just a small example extension + tests for the bindings
 endif()
 
 frost_rust_extension(csv)
