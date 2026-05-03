@@ -8,6 +8,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+fn prefix_err(prefix: &str, err: String) -> String {
+    format!("{prefix}: {err}")
+}
+
 // =======================================
 // Reading CSV
 // =======================================
@@ -25,24 +29,24 @@ fn parse_read_options(options: FrostMap) -> Result<ReadCsvOptions, String> {
         match key.as_string() {
             Some("delim") => {
                 let Some(&[byte]) = value.as_bytes() else {
-                    return Err("csv: delimiter must be a single-byte String".into());
+                    return Err("delimiter must be a single-byte String".into());
                 };
                 delim = byte;
             }
             Some("headers") => {
                 if !value.is_bool() {
-                    return Err("csv: headers option must be a Bool".into());
+                    return Err("headers option must be a Bool".into());
                 }
                 has_headers = value.as_bool();
             }
             Some(other) => {
-                return Err(format!("csv: unknown option: {other}"));
+                return Err(format!("unknown option: {other}"));
             }
-            None => return Err("csv: option keys must be Strings".into()),
+            None => return Err("option keys must be Strings".into()),
         }
     }
 
-    let has_headers = has_headers.ok_or("csv: 'headers' option is required")?;
+    let has_headers = has_headers.ok_or("'headers' option is required")?;
 
     Ok(ReadCsvOptions { delim, has_headers })
 }
@@ -142,7 +146,7 @@ fn parse_write_options(options: Option<FrostMap>) -> Result<WriteCsvOptions, Str
         match key.as_string() {
             Some("delim") => {
                 let Some(&[byte]) = value.as_bytes() else {
-                    return Err("csv: delimiter must be a single-byte String".into());
+                    return Err("delimiter must be a single-byte String".into());
                 };
                 opts.delim = byte;
             }
@@ -150,13 +154,13 @@ fn parse_write_options(options: Option<FrostMap>) -> Result<WriteCsvOptions, Str
                 opts.headers = Some(frost_array_to_string_vec(
                     value
                         .as_array()
-                        .ok_or("csv: 'headers' option must be an Array")?,
+                        .ok_or("'headers' option must be an Array")?,
                 )?);
             }
             Some(other) => {
-                return Err(format!("csv: unknown option: {other}"));
+                return Err(format!("unknown option: {other}"));
             }
-            None => return Err("csv: option keys must be Strings".into()),
+            None => return Err("option keys must be Strings".into()),
         }
     }
 
@@ -169,7 +173,7 @@ fn frost_array_to_string_vec(headers: FrostArray) -> Result<Vec<String>, String>
         .map(|elem| {
             Ok(elem
                 .as_string()
-                .ok_or("csv: 'headers' array must only contain Strings")?
+                .ok_or("'headers' array must only contain Strings")?
                 .to_owned())
         })
         .collect()
@@ -184,9 +188,7 @@ fn frost_value_to_record(
             .map(|val| {
                 if !val.is_primitive() {
                     let tn = val.type_name();
-                    return Err(format!(
-                        "csv.writer.row: Row values must be primitives, got {tn}"
-                    ));
+                    return Err(format!("row values must be primitives, got {tn}"));
                 }
                 Ok(val.to_display_string())
             })
@@ -194,22 +196,19 @@ fn frost_value_to_record(
     } else if let Some(map) = value.as_map() {
         let headers = headers
             .as_ref()
-            .ok_or("csv.writer.row: Map rows require headers to be defined")?;
+            .ok_or("Map rows require headers to be defined")?;
 
         headers
             .iter()
             .map(|h| {
                 Ok(map
                     .get(h)
-                    .ok_or(format!("csv.writer.row: Map is missing key '{h}'"))?
+                    .ok_or(format!("Map is missing key '{h}'"))?
                     .to_display_string())
             })
             .collect()
     } else {
-        Err(format!(
-            "csv.writer.row: expected Array or Map, got {}",
-            value.type_name()
-        ))
+        Err(format!("expected Array or Map, got {}", value.type_name()))
     }
 }
 
@@ -224,12 +223,42 @@ fn make_row_fn<W: Write + Send + 'static>(
             args,
             &[Param::required("row", &[Type::Array, Type::Map])],
         )?;
-        let mut writer = w.lock().map_err(|e| e.to_string())?;
+        {
+            let mut writer = w.lock().map_err(|e| e.to_string())?;
+            let row = frost_value_to_record(&args[0], &headers)?;
+            writer.write_record(&row).map_err(|e| e.to_string())?;
+            Ok(FrostValue::null())
+        }
+        .map_err(|e| prefix_err("csv.writer.row", e))
+    })
+    .into_value()
+}
 
-        let row = frost_value_to_record(&args[0], &headers)?;
-        writer.write_record(&row).map_err(|e| e.to_string())?;
+fn make_flush_fn(writer: &Arc<Mutex<csv::Writer<File>>>) -> FrostValue {
+    let w = writer.clone();
+    FrostFunction::new(move |args| {
+        require_nullary("csv.writer.flush", args)?;
+        {
+            let mut writer = w.lock().map_err(|e| e.to_string())?;
+            writer.flush().map_err(|e| e.to_string())?;
+            Ok(FrostValue::null())
+        }
+        .map_err(|e| prefix_err("csv.writer.flush", e))
+    })
+    .into_value()
+}
 
-        Ok(FrostValue::null())
+fn make_get_fn(writer: &Arc<Mutex<csv::Writer<Vec<u8>>>>) -> FrostValue {
+    let w = writer.clone();
+    FrostFunction::new(move |args| {
+        require_nullary("csv.writer.get", args)?;
+        {
+            let mut writer = w.lock().map_err(|e| e.to_string())?;
+            writer.flush().map_err(|e| e.to_string())?;
+            let s = std::str::from_utf8(writer.get_ref()).map_err(|e| e.to_string())?;
+            Ok(FrostValue::from_string(s))
+        }
+        .map_err(|e| prefix_err("csv.writer.get", e))
     })
     .into_value()
 }
@@ -240,22 +269,12 @@ fn make_file_writer_bundle(
 ) -> Result<FrostValue, String> {
     let writer = Arc::new(Mutex::new(writer));
 
-    let row_fn = make_row_fn(&writer, headers);
-
-    let flush_fn = {
-        let w = writer.clone();
-        FrostFunction::new(move |args| {
-            require_nullary("csv.writer.flush", args)?;
-            let mut writer = w.lock().map_err(|e| e.to_string())?;
-            writer.flush().map_err(|e| e.to_string())?;
-            Ok(FrostValue::null())
-        })
-        .into_value()
-    };
-
     Ok(FrostValue::from_pairs_trusted(&[
-        (FrostValue::from_string("row"), row_fn),
-        (FrostValue::from_string("flush"), flush_fn),
+        (
+            FrostValue::from_string("row"),
+            make_row_fn(&writer, headers),
+        ),
+        (FrostValue::from_string("flush"), make_flush_fn(&writer)),
     ]))
 }
 
@@ -265,24 +284,12 @@ fn make_string_writer_bundle(
 ) -> Result<FrostValue, String> {
     let writer = Arc::new(Mutex::new(writer));
 
-    let row_fn = make_row_fn(&writer, headers);
-
-    let get_fn = {
-        let w = writer.clone();
-        FrostFunction::new(move |args| {
-            require_nullary("csv.writer.get", args)?;
-            let mut writer = w.lock().map_err(|e| e.to_string())?;
-            writer.flush().map_err(|e| e.to_string())?;
-            let s = std::str::from_utf8(writer.get_ref()).map_err(|e| e.to_string())?;
-
-            Ok(FrostValue::from_string(s))
-        })
-        .into_value()
-    };
-
     Ok(FrostValue::from_pairs_trusted(&[
-        (FrostValue::from_string("row"), row_fn),
-        (FrostValue::from_string("get"), get_fn),
+        (
+            FrostValue::from_string("row"),
+            make_row_fn(&writer, headers),
+        ),
+        (FrostValue::from_string("get"), make_get_fn(&writer)),
     ]))
 }
 
@@ -294,48 +301,58 @@ fn read_file(
     options: FrostMap,
     callback: Option<FrostFunction>,
 ) -> Result<FrostValue, String> {
-    let file = std::fs::File::open(path).map_err(|e| e.to_string())?;
-    let source: Box<dyn Read> = Box::new(file);
-
-    read_csv(source, options, callback)
+    {
+        let file = File::open(path).map_err(|e| e.to_string())?;
+        let source: Box<dyn Read> = Box::new(file);
+        read_csv(source, options, callback)
+    }
+    .map_err(|e| prefix_err("csv.read_file", e))
 }
 
 fn read_str(
-    csv: &str,
+    text: &str,
     options: FrostMap,
     callback: Option<FrostFunction>,
 ) -> Result<FrostValue, String> {
-    let cursor = Cursor::new(csv.to_owned().into_bytes());
-    let source: Box<dyn Read> = Box::new(cursor);
-
-    read_csv(source, options, callback)
+    {
+        let cursor = Cursor::new(text.to_owned().into_bytes());
+        let source: Box<dyn Read> = Box::new(cursor);
+        read_csv(source, options, callback)
+    }
+    .map_err(|e| prefix_err("csv.read_str", e))
 }
 
 fn write_file(path: &str, options: Option<FrostMap>) -> Result<FrostValue, String> {
-    let options = parse_write_options(options)?;
-    let mut writer = csv::WriterBuilder::new()
-        .delimiter(options.delim)
-        .from_path(path)
-        .map_err(|e| e.to_string())?;
+    {
+        let options = parse_write_options(options)?;
+        let mut writer = csv::WriterBuilder::new()
+            .delimiter(options.delim)
+            .from_path(path)
+            .map_err(|e| e.to_string())?;
 
-    if let Some(ref headers) = options.headers {
-        writer.write_record(headers).map_err(|e| e.to_string())?;
+        if let Some(ref headers) = options.headers {
+            writer.write_record(headers).map_err(|e| e.to_string())?;
+        }
+
+        make_file_writer_bundle(writer, options.headers)
     }
-
-    make_file_writer_bundle(writer, options.headers)
+    .map_err(|e| prefix_err("csv.write_file", e))
 }
 
 fn write_str(options: Option<FrostMap>) -> Result<FrostValue, String> {
-    let options = parse_write_options(options)?;
-    let mut writer = csv::WriterBuilder::new()
-        .delimiter(options.delim)
-        .from_writer(Vec::<u8>::new());
+    {
+        let options = parse_write_options(options)?;
+        let mut writer = csv::WriterBuilder::new()
+            .delimiter(options.delim)
+            .from_writer(Vec::<u8>::new());
 
-    if let Some(ref headers) = options.headers {
-        writer.write_record(headers).map_err(|e| e.to_string())?;
+        if let Some(ref headers) = options.headers {
+            writer.write_record(headers).map_err(|e| e.to_string())?;
+        }
+
+        make_string_writer_bundle(writer, options.headers)
     }
-
-    make_string_writer_bundle(writer, options.headers)
+    .map_err(|e| prefix_err("csv.write_str", e))
 }
 
 include!(concat!(env!("OUT_DIR"), "/bridge.rs"));
