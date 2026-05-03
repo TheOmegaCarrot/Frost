@@ -50,6 +50,11 @@ bool value_is_array(const Value& val);
 bool value_is_map(const Value& val);
 bool value_is_function(const Value& val);
 
+// ---- Category checks ----
+bool value_is_numeric(const Value& val);
+bool value_is_primitive(const Value& val);
+bool value_is_structured(const Value& val);
+
 // ---- Primitive accessors (caller must type-check first) ----
 int64_t value_get_int(const Value& val);
 double value_get_float(const Value& val);

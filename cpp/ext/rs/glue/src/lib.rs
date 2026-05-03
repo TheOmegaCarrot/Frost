@@ -40,6 +40,8 @@
 //! `Frost_Recoverable_Error`, making Rust errors catchable by Frost's
 //! `try_call`.
 
+pub mod require;
+
 // The cxx bridge: raw FFI declarations between Rust and C++.
 // These functions are implemented in frost-glue.cpp (compiled by CMake).
 // Extension crates reference the `Value` type from this module via
@@ -79,6 +81,11 @@ pub mod ffi {
         fn value_is_array(val: &Value) -> bool;
         fn value_is_map(val: &Value) -> bool;
         fn value_is_function(val: &Value) -> bool;
+
+        // ---- Category checks ----
+        fn value_is_numeric(val: &Value) -> bool;
+        fn value_is_primitive(val: &Value) -> bool;
+        fn value_is_structured(val: &Value) -> bool;
 
         // ---- Primitive accessors (unchecked -- use FrostValue wrapper) ----
         fn value_get_int(val: &Value) -> i64;
@@ -294,6 +301,22 @@ impl FrostValue {
         Self::from_map_trusted(&k, &v)
     }
 
+    /// Create a Frost Map from key-value pairs.
+    /// Keys must be non-null primitives. Returns `Err` on invalid keys.
+    pub fn from_pairs(entries: &[(FrostValue, FrostValue)]) -> Result<Self, cxx::Exception> {
+        let keys: Vec<_> = entries.iter().map(|(k, _)| k.inner.clone()).collect();
+        let values: Vec<_> = entries.iter().map(|(_, v)| v.inner.clone()).collect();
+        Self::from_map(&keys, &values)
+    }
+
+    /// Create a Frost Map from key-value pairs, without key validation.
+    /// Caller guarantees keys are non-null primitives.
+    pub fn from_pairs_trusted(entries: &[(FrostValue, FrostValue)]) -> Self {
+        let keys: Vec<_> = entries.iter().map(|(k, _)| k.inner.clone()).collect();
+        let values: Vec<_> = entries.iter().map(|(_, v)| v.inner.clone()).collect();
+        Self::from_map_trusted(&keys, &values)
+    }
+
     // ---- Type checks ----
 
     pub fn is_null(&self) -> bool {
@@ -326,6 +349,20 @@ impl FrostValue {
 
     pub fn is_function(&self) -> bool {
         ffi::value_is_function(&self.inner)
+    }
+
+    // ---- Category checks (matching C++ Frost_* concepts) ----
+
+    pub fn is_numeric(&self) -> bool {
+        ffi::value_is_numeric(&self.inner)
+    }
+
+    pub fn is_primitive(&self) -> bool {
+        ffi::value_is_primitive(&self.inner)
+    }
+
+    pub fn is_structured(&self) -> bool {
+        ffi::value_is_structured(&self.inner)
     }
 
     // ---- Primitive accessors ----
@@ -662,6 +699,11 @@ impl FrostArray {
     /// Zero-copy slice of the array's contiguous storage.
     pub fn as_slice(&self) -> &[cxx::SharedPtr<ffi::Value>] {
         ffi::value_array_slice(&self.inner)
+    }
+
+    /// Iterate elements as FrostValues.
+    pub fn iter(&self) -> impl Iterator<Item = FrostValue> + '_ {
+        self.as_slice().iter().map(|e| FrostValue::from_shared(e.clone()))
     }
 
     /// Convert back to a generic FrostValue.

@@ -40,6 +40,20 @@ mod ffi {
         // ---- Map null-value fidelity ----
         fn rt_map_lookup_found(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
 
+        // ---- FrostArray::iter() ----
+        fn rt_array_iter_strings(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+
+        // ---- Category checks ----
+        fn rt_is_numeric(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_is_primitive(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_is_structured(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+
+        // ---- require_args validation ----
+        fn rt_require_nullary(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_require_one_int(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_require_string_opt_int(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_require_any(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+
         // ---- Arithmetic / comparison / coercion ----
         fn rt_add(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
         fn rt_subtract(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
@@ -292,6 +306,94 @@ fn rt_map_lookup_found(
     let key = FrostValue::from_shared(args[1].clone());
     let found = map.map_get_by(&key).is_some();
     Ok(FrostValue::from_bool(found).into_shared())
+}
+
+// ---- FrostArray::iter() ----
+
+fn rt_array_iter_strings(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    if args.is_empty() {
+        return Err("expected an array argument".into());
+    }
+    let val = FrostValue::from_shared(args[0].clone());
+    let arr = val.as_array().ok_or("expected Array")?;
+
+    let concatenated: String = arr.iter()
+        .map(|v| v.to_display_string())
+        .collect::<Vec<_>>()
+        .join(",");
+
+    Ok(FrostValue::from_string(&concatenated).into_shared())
+}
+
+// ---- Category checks ----
+
+fn rt_is_numeric(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    if args.is_empty() { return Err("expected 1 argument".into()); }
+    let val = FrostValue::from_shared(args[0].clone());
+    Ok(FrostValue::from_bool(val.is_numeric()).into_shared())
+}
+
+fn rt_is_primitive(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    if args.is_empty() { return Err("expected 1 argument".into()); }
+    let val = FrostValue::from_shared(args[0].clone());
+    Ok(FrostValue::from_bool(val.is_primitive()).into_shared())
+}
+
+fn rt_is_structured(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    if args.is_empty() { return Err("expected 1 argument".into()); }
+    let val = FrostValue::from_shared(args[0].clone());
+    Ok(FrostValue::from_bool(val.is_structured()).into_shared())
+}
+
+// ---- require_args validation ----
+
+use frost_glue::require::{self, Param, Type};
+
+fn rt_require_nullary(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    let fv: Vec<_> = args.iter().map(|a| FrostValue::from_shared(a.clone())).collect();
+    require::require_nullary("test.nullary", &fv)?;
+    Ok(FrostValue::null().into_shared())
+}
+
+fn rt_require_one_int(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    let fv: Vec<_> = args.iter().map(|a| FrostValue::from_shared(a.clone())).collect();
+    require::require_args("test.one_int", &fv, &[
+        Param::required("value", &[Type::Int]),
+    ])?;
+    Ok(args[0].clone())
+}
+
+fn rt_require_string_opt_int(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    let fv: Vec<_> = args.iter().map(|a| FrostValue::from_shared(a.clone())).collect();
+    require::require_args("test.str_opt_int", &fv, &[
+        Param::required("name", &[Type::String]),
+        Param::optional("count", &[Type::Int]),
+    ])?;
+    Ok(FrostValue::from_bool(true).into_shared())
+}
+
+fn rt_require_any(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    let fv: Vec<_> = args.iter().map(|a| FrostValue::from_shared(a.clone())).collect();
+    require::require_args("test.any_val", &fv, &[
+        Param::any("value"),
+    ])?;
+    Ok(args[0].clone())
 }
 
 // ---- Arithmetic / comparison / coercion ----

@@ -31,6 +31,14 @@ Value_Ptr rt_call_callback(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_make_adder(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_make_failing_fn(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_map_lookup_found(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_array_iter_strings(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_is_numeric(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_is_primitive(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_is_structured(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_require_nullary(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_require_one_int(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_require_string_opt_int(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_require_any(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_add(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_subtract(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_multiply(::rust::Slice<const Value_Ptr> args);
@@ -779,5 +787,222 @@ TEST_CASE("truthy: Frost truthiness rules through Rust")
         check(Value::create(Array{}), true);
         check(Value::create(Value::trusted, Map{}), true);
         check(Value::create(42_f), true);
+    }
+}
+
+// ==========================================================================
+// FrostArray::iter()
+// ==========================================================================
+
+TEST_CASE("FrostArray::iter(): iterate and process elements")
+{
+    SECTION("strings joined")
+    {
+        auto arr = Value::create(
+            Array{Value::create("hello"s), Value::create("world"s)});
+        auto result = call(frst::rs::test::rt_array_iter_strings, {arr});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "hello,world");
+    }
+
+    SECTION("mixed types display")
+    {
+        auto arr = Value::create(
+            Array{Value::create(1_f), Value::create("two"s),
+                  Value::create(Bool{true})});
+        auto result = call(frst::rs::test::rt_array_iter_strings, {arr});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "1,two,true");
+    }
+
+    SECTION("empty array")
+    {
+        auto arr = Value::create(Array{});
+        auto result = call(frst::rs::test::rt_array_iter_strings, {arr});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>().empty());
+    }
+}
+
+// ==========================================================================
+// Category checks (is_numeric, is_primitive, is_structured)
+// ==========================================================================
+
+TEST_CASE("is_numeric: Int and Float only")
+{
+    auto check = [](Value_Ptr val, bool expected) {
+        auto result = call(frst::rs::test::rt_is_numeric, {val});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == expected);
+    };
+
+    check(Value::create(42_f), true);
+    check(Value::create(Float{3.14}), true);
+    check(Value::null(), false);
+    check(Value::create(Bool{true}), false);
+    check(Value::create("hi"s), false);
+    check(Value::create(Array{}), false);
+    check(Value::create(Value::trusted, Map{}), false);
+}
+
+TEST_CASE("is_primitive: Null, Bool, Int, Float, String")
+{
+    auto check = [](Value_Ptr val, bool expected) {
+        auto result = call(frst::rs::test::rt_is_primitive, {val});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == expected);
+    };
+
+    check(Value::null(), true);
+    check(Value::create(Bool{false}), true);
+    check(Value::create(42_f), true);
+    check(Value::create(Float{1.0}), true);
+    check(Value::create("hi"s), true);
+    check(Value::create(Array{}), false);
+    check(Value::create(Value::trusted, Map{}), false);
+}
+
+TEST_CASE("is_structured: Array and Map only")
+{
+    auto check = [](Value_Ptr val, bool expected) {
+        auto result = call(frst::rs::test::rt_is_structured, {val});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == expected);
+    };
+
+    check(Value::create(Array{}), true);
+    check(Value::create(Value::trusted, Map{}), true);
+    check(Value::null(), false);
+    check(Value::create(42_f), false);
+    check(Value::create("hi"s), false);
+    check(Value::create(Bool{true}), false);
+}
+
+// ==========================================================================
+// require_args (Rust-side REQUIRE_ARGS equivalent)
+// ==========================================================================
+
+TEST_CASE("require_nullary: rejects any arguments")
+{
+    SECTION("passes with no args")
+    {
+        auto result = call(frst::rs::test::rt_require_nullary, {});
+        CHECK(result->is<Null>());
+    }
+
+    SECTION("fails with args")
+    {
+        CHECK_THROWS_WITH(
+            call(frst::rs::test::rt_require_nullary, {Value::create(1_f)}),
+            ContainsSubstring("too many arguments"));
+    }
+}
+
+TEST_CASE("require_args: validates single required param")
+{
+    SECTION("correct type passes")
+    {
+        auto result = call(frst::rs::test::rt_require_one_int,
+                           {Value::create(42_f)});
+        REQUIRE(result->is<Int>());
+        CHECK(result->raw_get<Int>() == 42);
+    }
+
+    SECTION("wrong type gives descriptive error")
+    {
+        CHECK_THROWS_WITH(
+            call(frst::rs::test::rt_require_one_int,
+                 {Value::create("hi"s)}),
+            ContainsSubstring("requires Int as argument 1 (value), got String"));
+    }
+
+    SECTION("too few args")
+    {
+        CHECK_THROWS_WITH(
+            call(frst::rs::test::rt_require_one_int, {}),
+            ContainsSubstring("insufficient arguments"));
+    }
+
+    SECTION("too many args")
+    {
+        CHECK_THROWS_WITH(
+            call(frst::rs::test::rt_require_one_int,
+                 {Value::create(1_f), Value::create(2_f)}),
+            ContainsSubstring("too many arguments"));
+    }
+}
+
+TEST_CASE("require_args: optional parameters")
+{
+    SECTION("required only")
+    {
+        auto result = call(frst::rs::test::rt_require_string_opt_int,
+                           {Value::create("hello"s)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("required + optional")
+    {
+        auto result = call(frst::rs::test::rt_require_string_opt_int,
+                           {Value::create("hello"s), Value::create(5_f)});
+        REQUIRE(result->is<Bool>());
+        CHECK(result->raw_get<Bool>() == true);
+    }
+
+    SECTION("wrong type for required")
+    {
+        CHECK_THROWS_WITH(
+            call(frst::rs::test::rt_require_string_opt_int,
+                 {Value::create(42_f)}),
+            ContainsSubstring("requires String as argument 1 (name), got Int"));
+    }
+
+    SECTION("wrong type for optional")
+    {
+        CHECK_THROWS_WITH(
+            call(frst::rs::test::rt_require_string_opt_int,
+                 {Value::create("hi"s), Value::create("nope"s)}),
+            ContainsSubstring("requires Int as argument 2 (count), got String"));
+    }
+
+    SECTION("too many args")
+    {
+        CHECK_THROWS_WITH(
+            call(frst::rs::test::rt_require_string_opt_int,
+                 {Value::create("a"s), Value::create(1_f),
+                  Value::create(2_f)}),
+            ContainsSubstring("too many arguments"));
+    }
+}
+
+TEST_CASE("require_args: any type")
+{
+    SECTION("accepts int")
+    {
+        auto result = call(frst::rs::test::rt_require_any,
+                           {Value::create(42_f)});
+        REQUIRE(result->is<Int>());
+    }
+
+    SECTION("accepts string")
+    {
+        auto result = call(frst::rs::test::rt_require_any,
+                           {Value::create("hi"s)});
+        REQUIRE(result->is<String>());
+    }
+
+    SECTION("accepts null")
+    {
+        auto result = call(frst::rs::test::rt_require_any,
+                           {Value::null()});
+        CHECK(result->is<Null>());
+    }
+
+    SECTION("still requires arity")
+    {
+        CHECK_THROWS_WITH(
+            call(frst::rs::test::rt_require_any, {}),
+            ContainsSubstring("insufficient arguments"));
     }
 }

@@ -15,5 +15,9 @@ fn main() {
         .param("options", &[Type::Map])
         .optional("callback", &[Type::Function]);
 
+    ext.function("write_file")
+        .param("path", &[Type::String])
+        .param("options", &[Type::Map]);
+
     ext.generate();
 }

@@ -1,5 +1,12 @@
-use frost_glue::{FrostFunction, FrostMap, FrostValue};
-use std::io::{Cursor, Read};
+use frost_glue::{
+    FrostArray, FrostFunction, FrostMap, FrostValue,
+    require::{Param, Type, require_args, require_nullary},
+};
+use std::{
+    fs::File,
+    io::{Cursor, Read},
+    sync::{Arc, Mutex},
+};
 
 // =======================================
 // Reading CSV
@@ -10,18 +17,17 @@ struct ReadCsvOptions {
     has_headers: bool,
 }
 
-fn parse_options(options: FrostMap) -> Result<ReadCsvOptions, String> {
+fn parse_read_options(options: FrostMap) -> Result<ReadCsvOptions, String> {
     let mut delim = b',';
     let mut has_headers: Option<bool> = None;
 
     for (key, value) in options.iter() {
         match key.as_string() {
             Some("delim") => {
-                let bytes = value.as_bytes().ok_or("csv: delimiter must be a String")?;
-                if bytes.len() != 1 {
-                    return Err("csv: delimiter must be a single byte".into());
-                }
-                delim = bytes[0];
+                let Some(&[byte]) = value.as_bytes() else {
+                    return Err("csv: delimiter must be a single-byte String".into());
+                };
+                delim = byte;
             }
             Some("headers") => {
                 if !value.is_bool() {
@@ -91,7 +97,7 @@ fn read_csv(
     options: FrostMap,
     callback: Option<FrostFunction>,
 ) -> Result<FrostValue, String> {
-    let options = parse_options(options)?;
+    let options = parse_read_options(options)?;
 
     let reader = csv::ReaderBuilder::new()
         .delimiter(options.delim)
@@ -105,6 +111,107 @@ fn read_csv(
     };
 
     Ok(FrostValue::from_values(&rows))
+}
+
+// =======================================
+// Writing CSV
+// =======================================
+
+struct WriteCsvOptions {
+    headers: Vec<String>,
+    delim: u8,
+}
+
+fn parse_write_options(options: FrostMap) -> Result<WriteCsvOptions, String> {
+    let mut delim = b',';
+    let mut headers: Option<Vec<String>> = None;
+
+    for (key, value) in options.iter() {
+        match key.as_string() {
+            Some("delim") => {
+                let Some(&[byte]) = value.as_bytes() else {
+                    return Err("csv: delimiter must be a single-byte String".into());
+                };
+                delim = byte;
+            }
+            Some("headers") => {
+                headers = Some(val_to_str_array(
+                    value
+                        .as_array()
+                        .ok_or("csv: 'headers' option must be an Array")?,
+                )?);
+            }
+            Some(other) => {
+                return Err(format!("csv: unknown option: {other}"));
+            }
+            None => return Err("csv: option keys must be Strings".into()),
+        }
+    }
+
+    let headers = headers.ok_or("csv: 'headers' option is required")?;
+
+    Ok(WriteCsvOptions { delim, headers })
+}
+
+fn val_to_str_array(headers: FrostArray) -> Result<Vec<String>, String> {
+    headers
+        .iter()
+        .map(|elem| {
+            Ok(elem.as_string()
+                .ok_or("csv: 'headers' array must only contain Strings")?
+                .to_owned())
+        })
+        .collect()
+}
+
+fn make_writer_bundle(writer: csv::Writer<File>) -> Result<FrostValue, String> {
+    let writer = Arc::new(Mutex::new(writer));
+
+    let row_fn = {
+        let w = writer.clone();
+        FrostFunction::new(move |args| {
+            require_args(
+                "csv.writer.row",
+                args,
+                &[Param::required("row", &[Type::Array])],
+            )?;
+            let mut writer = w.lock().map_err(|e| e.to_string())?;
+
+            let row = args[0].as_array().ok_or("UNREACHABLE")?
+                .iter()
+                .map(|val| {
+                    if !val.is_primitive() {
+                        let tn = val.type_name();
+                        return Err(format!(
+                            "csv.writer.row: Row values must be primitives, got {tn}"
+                        ));
+                    }
+                    Ok(val.to_display_string())
+                })
+                .collect::<Result<Vec<String>, String>>()?;
+
+            writer.write_record(&row).map_err(|e| e.to_string())?;
+
+            Ok(FrostValue::null())
+        })
+        .into_value()
+    };
+
+    let flush_fn = {
+        let w = writer.clone();
+        FrostFunction::new(move |args| {
+            require_nullary("csv.writer.flush", args)?;
+            let mut writer = w.lock().map_err(|e| e.to_string())?;
+            writer.flush().map_err(|e| e.to_string())?;
+            Ok(FrostValue::null())
+        })
+        .into_value()
+    };
+
+    Ok(FrostValue::from_pairs_trusted(&[
+        (FrostValue::from_string("row"), row_fn),
+        (FrostValue::from_string("flush"), flush_fn),
+    ]))
 }
 
 // =======================================
@@ -130,6 +237,20 @@ fn read_str(
     let source: Box<dyn Read> = Box::new(cursor);
 
     read_csv(source, options, callback)
+}
+
+fn write_file(path: &str, options: FrostMap) -> Result<FrostValue, String> {
+    let options = parse_write_options(options)?;
+    let mut writer = csv::WriterBuilder::new()
+        .delimiter(options.delim)
+        .from_path(path)
+        .map_err(|e| e.to_string())?;
+
+    writer
+        .write_record(options.headers)
+        .map_err(|e| e.to_string())?;
+
+    make_writer_bundle(writer)
 }
 
 include!(concat!(env!("OUT_DIR"), "/bridge.rs"));

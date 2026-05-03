@@ -112,6 +112,23 @@ bool value_is_function(const Value& val)
     return val.is<Function>();
 }
 
+// ---- Category checks ----
+
+bool value_is_numeric(const Value& val)
+{
+    return val.is_numeric();
+}
+
+bool value_is_primitive(const Value& val)
+{
+    return val.is_primitive();
+}
+
+bool value_is_structured(const Value& val)
+{
+    return val.is_structured();
+}
+
 // ---- Accessors ----
 
 int64_t value_get_int(const Value& val)
