@@ -21,13 +21,6 @@
 
 ## Extensions
 
-### Rust bindings!
-
-- Rust bindings for extensions is an exciting idea
-- Using `cxx` crate and CMake `Corrosion`
-- Test drive extension: CSV
-    - API inspired by existing SQLite API, but simplified
-
 ### HTTP enhancements
 
 - redirects, cancellation
