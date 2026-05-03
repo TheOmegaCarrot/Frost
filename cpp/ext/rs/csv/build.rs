@@ -17,9 +17,9 @@ fn main() {
 
     ext.function("write_file")
         .param("path", &[Type::String])
-        .param("options", &[Type::Map]);
+        .optional("options", &[Type::Map]);
 
-    ext.function("write_str").param("options", &[Type::Map]);
+    ext.function("write_str").optional("options", &[Type::Map]);
 
     ext.generate();
 }

@@ -118,13 +118,25 @@ fn read_csv(
 // =======================================
 
 struct WriteCsvOptions {
-    headers: Vec<String>,
+    headers: Option<Vec<String>>,
     delim: u8,
 }
 
-fn parse_write_options(options: FrostMap) -> Result<WriteCsvOptions, String> {
-    let mut delim = b',';
-    let mut headers: Option<Vec<String>> = None;
+impl Default for WriteCsvOptions {
+    fn default() -> Self {
+        Self {
+            headers: None,
+            delim: b',',
+        }
+    }
+}
+
+fn parse_write_options(options: Option<FrostMap>) -> Result<WriteCsvOptions, String> {
+    let mut opts = WriteCsvOptions::default();
+
+    let Some(options) = options else {
+        return Ok(opts);
+    };
 
     for (key, value) in options.iter() {
         match key.as_string() {
@@ -132,10 +144,10 @@ fn parse_write_options(options: FrostMap) -> Result<WriteCsvOptions, String> {
                 let Some(&[byte]) = value.as_bytes() else {
                     return Err("csv: delimiter must be a single-byte String".into());
                 };
-                delim = byte;
+                opts.delim = byte;
             }
             Some("headers") => {
-                headers = Some(frost_array_to_string_vec(
+                opts.headers = Some(frost_array_to_string_vec(
                     value
                         .as_array()
                         .ok_or("csv: 'headers' option must be an Array")?,
@@ -148,9 +160,7 @@ fn parse_write_options(options: FrostMap) -> Result<WriteCsvOptions, String> {
         }
     }
 
-    let headers = headers.ok_or("csv: 'headers' option is required")?;
-
-    Ok(WriteCsvOptions { delim, headers })
+    Ok(opts)
 }
 
 fn frost_array_to_string_vec(headers: FrostArray) -> Result<Vec<String>, String> {
@@ -270,29 +280,29 @@ fn read_str(
     read_csv(source, options, callback)
 }
 
-fn write_file(path: &str, options: FrostMap) -> Result<FrostValue, String> {
+fn write_file(path: &str, options: Option<FrostMap>) -> Result<FrostValue, String> {
     let options = parse_write_options(options)?;
     let mut writer = csv::WriterBuilder::new()
         .delimiter(options.delim)
         .from_path(path)
         .map_err(|e| e.to_string())?;
 
-    writer
-        .write_record(options.headers)
-        .map_err(|e| e.to_string())?;
+    if let Some(ref headers) = options.headers {
+        writer.write_record(headers).map_err(|e| e.to_string())?;
+    }
 
     make_file_writer_bundle(writer)
 }
 
-fn write_str(options: FrostMap) -> Result<FrostValue, String> {
+fn write_str(options: Option<FrostMap>) -> Result<FrostValue, String> {
     let options = parse_write_options(options)?;
     let mut writer = csv::WriterBuilder::new()
         .delimiter(options.delim)
         .from_writer(Vec::<u8>::new());
 
-    writer
-        .write_record(options.headers)
-        .map_err(|e| e.to_string())?;
+    if let Some(ref headers) = options.headers {
+        writer.write_record(headers).map_err(|e| e.to_string())?;
+    }
 
     make_string_writer_bundle(writer)
 }
