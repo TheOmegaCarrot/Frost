@@ -4,7 +4,7 @@ use frost_glue::{
 };
 use std::{
     fs::File,
-    io::{Cursor, Read},
+    io::{Cursor, Read, Write},
     sync::{Arc, Mutex},
 };
 
@@ -157,45 +157,52 @@ fn frost_array_to_string_vec(headers: FrostArray) -> Result<Vec<String>, String>
     headers
         .iter()
         .map(|elem| {
-            Ok(elem.as_string()
+            Ok(elem
+                .as_string()
                 .ok_or("csv: 'headers' array must only contain Strings")?
                 .to_owned())
         })
         .collect()
 }
 
-fn make_writer_bundle(writer: csv::Writer<File>) -> Result<FrostValue, String> {
+fn frost_value_to_record(arr: &FrostValue) -> Result<Vec<String>, String> {
+    arr.as_array()
+        .ok_or("csv.writer.row: internal error: expected Array after validation")?
+        .iter()
+        .map(|val| {
+            if !val.is_primitive() {
+                let tn = val.type_name();
+                return Err(format!(
+                    "csv.writer.row: Row values must be primitives, got {tn}"
+                ));
+            }
+            Ok(val.to_display_string())
+        })
+        .collect::<Result<Vec<String>, String>>()
+}
+
+fn make_row_fn<W: Write + Send + 'static>(writer: &Arc<Mutex<csv::Writer<W>>>) -> FrostValue {
+    let w = writer.clone();
+    FrostFunction::new(move |args| {
+        require_args(
+            "csv.writer.row",
+            args,
+            &[Param::required("row", &[Type::Array])],
+        )?;
+        let mut writer = w.lock().map_err(|e| e.to_string())?;
+
+        let row = frost_value_to_record(&args[0])?;
+        writer.write_record(&row).map_err(|e| e.to_string())?;
+
+        Ok(FrostValue::null())
+    })
+    .into_value()
+}
+
+fn make_file_writer_bundle(writer: csv::Writer<File>) -> Result<FrostValue, String> {
     let writer = Arc::new(Mutex::new(writer));
 
-    let row_fn = {
-        let w = writer.clone();
-        FrostFunction::new(move |args| {
-            require_args(
-                "csv.writer.row",
-                args,
-                &[Param::required("row", &[Type::Array])],
-            )?;
-            let mut writer = w.lock().map_err(|e| e.to_string())?;
-
-            let row = args[0].as_array().ok_or("csv.writer.row: internal error: expected Array after validation")?
-                .iter()
-                .map(|val| {
-                    if !val.is_primitive() {
-                        let tn = val.type_name();
-                        return Err(format!(
-                            "csv.writer.row: Row values must be primitives, got {tn}"
-                        ));
-                    }
-                    Ok(val.to_display_string())
-                })
-                .collect::<Result<Vec<String>, String>>()?;
-
-            writer.write_record(&row).map_err(|e| e.to_string())?;
-
-            Ok(FrostValue::null())
-        })
-        .into_value()
-    };
+    let row_fn = make_row_fn(&writer);
 
     let flush_fn = {
         let w = writer.clone();
@@ -211,6 +218,30 @@ fn make_writer_bundle(writer: csv::Writer<File>) -> Result<FrostValue, String> {
     Ok(FrostValue::from_pairs_trusted(&[
         (FrostValue::from_string("row"), row_fn),
         (FrostValue::from_string("flush"), flush_fn),
+    ]))
+}
+
+fn make_string_writer_bundle(writer: csv::Writer<Vec<u8>>) -> Result<FrostValue, String> {
+    let writer = Arc::new(Mutex::new(writer));
+
+    let row_fn = make_row_fn(&writer);
+
+    let get_fn = {
+        let w = writer.clone();
+        FrostFunction::new(move |args| {
+            require_nullary("csv.writer.get", args)?;
+            let mut writer = w.lock().map_err(|e| e.to_string())?;
+            writer.flush().map_err(|e| e.to_string())?;
+            let s = std::str::from_utf8(writer.get_ref()).map_err(|e| e.to_string())?;
+
+            Ok(FrostValue::from_string(s))
+        })
+        .into_value()
+    };
+
+    Ok(FrostValue::from_pairs_trusted(&[
+        (FrostValue::from_string("row"), row_fn),
+        (FrostValue::from_string("get"), get_fn),
     ]))
 }
 
@@ -250,7 +281,20 @@ fn write_file(path: &str, options: FrostMap) -> Result<FrostValue, String> {
         .write_record(options.headers)
         .map_err(|e| e.to_string())?;
 
-    make_writer_bundle(writer)
+    make_file_writer_bundle(writer)
+}
+
+fn write_str(options: FrostMap) -> Result<FrostValue, String> {
+    let options = parse_write_options(options)?;
+    let mut writer = csv::WriterBuilder::new()
+        .delimiter(options.delim)
+        .from_writer(Vec::<u8>::new());
+
+    writer
+        .write_record(options.headers)
+        .map_err(|e| e.to_string())?;
+
+    make_string_writer_bundle(writer)
 }
 
 include!(concat!(env!("OUT_DIR"), "/bridge.rs"));
