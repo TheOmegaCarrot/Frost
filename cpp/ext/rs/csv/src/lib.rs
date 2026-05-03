@@ -1,5 +1,5 @@
 use frost_glue::{
-    FrostArray, FrostFunction, FrostMap, FrostRef, FrostValue,
+    FrostArray, FrostFunction, FrostMap, FrostValue,
     require::{Param, Type, require_args, require_nullary},
 };
 use std::{

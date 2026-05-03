@@ -11,7 +11,7 @@ fn main() {
         .optional("callback", &[Type::Function]);
 
     ext.function("read_str")
-        .param("path", &[Type::String])
+        .param("content", &[Type::String])
         .param("options", &[Type::Map])
         .optional("callback", &[Type::Function]);
 
