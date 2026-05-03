@@ -85,6 +85,7 @@ export def landing = {
                         columns: ['Extension', 'Import', 'Description', 'System Dependencies'],
                         rows: [
                             ['[Compression](@ref ext.compression)', "`import('ext.compression')`", 'Compression and decompression', 'zlib, bz2, xz, brotli, lz4, snappy, zstd'],
+                            ['[CSV](@ref ext.csv)', "`import('ext.csv')`", 'Read and write CSV data', 'Rust toolchain'],
                             ['[Hash](@ref ext.hash)', "`import('ext.hash')`", 'Hash functions, checksums, and HMAC', 'OpenSSL, zlib'],
                             ['[HTTP](@ref ext.http)', "`import('ext.http')`", 'Making HTTP requests', 'OpenSSL'],
                             ['[MessagePack](@ref ext.msgpack)', "`import('ext.msgpack')`", 'Binary serialization', 'None'],

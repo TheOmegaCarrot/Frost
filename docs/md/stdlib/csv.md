@@ -46,13 +46,13 @@ Writes a single row. `values` may be an `Array` of primitives (positional) or, w
 
 `writer.flush()`
 
-Flushes buffered data to the file. Only on file writers. The writer remains usable.
+Flushes buffered data to the file. Only available on file writers. The writer remains usable.
 
 ### `writer.get`
 
 `writer.get()`
 
-Returns the accumulated CSV data as a `String`. Only on string writers. The writer remains usable; subsequent rows append.
+Returns the accumulated CSV data as a `String`. Only available on string writers. The writer remains usable; subsequent rows append.
 
 ## `read_file`
 

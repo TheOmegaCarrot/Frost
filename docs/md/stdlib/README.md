@@ -64,6 +64,7 @@ The configure output shows the status for each extension and its dependencies. E
 |  Extension | Import | Description | System Dependencies  |
 | ---|---|---|--- |
 |  [Compression](compression.md) | `import('ext.compression')` | Compression and decompression | zlib, bz2, xz, brotli, lz4, snappy, zstd  |
+|  [CSV](csv.md) | `import('ext.csv')` | Read and write CSV data | Rust toolchain  |
 |  [Hash](hash.md) | `import('ext.hash')` | Hash functions, checksums, and HMAC | OpenSSL, zlib  |
 |  [HTTP](http.md) | `import('ext.http')` | Making HTTP requests | OpenSSL  |
 |  [MessagePack](msgpack.md) | `import('ext.msgpack')` | Binary serialization | None  |

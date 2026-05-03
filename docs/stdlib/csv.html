@@ -37,10 +37,10 @@
 <p>Writes a single row. <code>values</code> may be an <code>Array</code> of primitives (positional) or, when headers are defined, a <code>Map</code> keyed by header names. All values are stringified. Non-primitive values produce an error.</p>
 <h3 id="writer.flush"><code>writer.flush</code></h3>
 <p class="signature"><code>writer.flush()</code></p>
-<p>Flushes buffered data to the file. Only on file writers. The writer remains usable.</p>
+<p>Flushes buffered data to the file. Only available on file writers. The writer remains usable.</p>
 <h3 id="writer.get"><code>writer.get</code></h3>
 <p class="signature"><code>writer.get()</code></p>
-<p>Returns the accumulated CSV data as a <code>String</code>. Only on string writers. The writer remains usable; subsequent rows append.</p>
+<p>Returns the accumulated CSV data as a <code>String</code>. Only available on string writers. The writer remains usable; subsequent rows append.</p>
 <h2 id="read_file"><code>read_file</code></h2>
 <p class="signature"><code>csv.read_file(path, options)</code></p>
 <p class="signature"><code>csv.read_file(path, options, callback)</code></p>
