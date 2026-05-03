@@ -1,6 +1,9 @@
 use frost_glue::{FrostFunction, FrostMap, FrostValue};
-use std::io::Read;
+use std::io::{Cursor, Read};
 
+// =======================================
+// Generic to reading and writing
+// =======================================
 struct CsvOptions {
     delim: u8,
     has_headers: bool,
@@ -34,6 +37,10 @@ fn parse_options(options: FrostMap) -> Result<CsvOptions, String> {
 
     Ok(CsvOptions { delim, has_headers })
 }
+
+// =======================================
+// Reading CSV
+// =======================================
 
 type CsvReader = csv::Reader<Box<dyn Read>>;
 
@@ -80,7 +87,18 @@ fn process_csv(
         .collect()
 }
 
-fn read_csv(reader: CsvReader, callback: Option<FrostFunction>) -> Result<FrostValue, String> {
+fn read_csv(
+    source: Box<dyn Read>,
+    options: FrostMap,
+    callback: Option<FrostFunction>,
+) -> Result<FrostValue, String> {
+    let options = parse_options(options)?;
+
+    let reader = csv::ReaderBuilder::new()
+        .delimiter(options.delim)
+        .has_headers(options.has_headers)
+        .from_reader(source);
+
     let rows = if let Some(callback) = callback {
         process_csv(reader, |row| callback.call_with(&[row]))?
     } else {
@@ -90,6 +108,9 @@ fn read_csv(reader: CsvReader, callback: Option<FrostFunction>) -> Result<FrostV
     Ok(FrostValue::from_values(&rows))
 }
 
+// =======================================
+// Entry points
+// =======================================
 fn read_file(
     path: &str,
     options: FrostMap,
@@ -98,14 +119,18 @@ fn read_file(
     let file = std::fs::File::open(path).map_err(|e| e.to_string())?;
     let source: Box<dyn Read> = Box::new(file);
 
-    let options = parse_options(options)?;
+    read_csv(source, options, callback)
+}
 
-    let reader = csv::ReaderBuilder::new()
-        .delimiter(options.delim)
-        .has_headers(options.has_headers)
-        .from_reader(source);
+fn read_str(
+    csv: &str,
+    options: FrostMap,
+    callback: Option<FrostFunction>,
+) -> Result<FrostValue, String> {
+    let cursor = Cursor::new(csv.to_owned().into_bytes());
+    let source: Box<dyn Read> = Box::new(cursor);
 
-    read_csv(reader, callback)
+    read_csv(source, options, callback)
 }
 
 include!(concat!(env!("OUT_DIR"), "/bridge.rs"));
