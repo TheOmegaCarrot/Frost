@@ -135,7 +135,7 @@ fn parse_write_options(options: FrostMap) -> Result<WriteCsvOptions, String> {
                 delim = byte;
             }
             Some("headers") => {
-                headers = Some(val_to_str_array(
+                headers = Some(frost_array_to_string_vec(
                     value
                         .as_array()
                         .ok_or("csv: 'headers' option must be an Array")?,
@@ -153,7 +153,7 @@ fn parse_write_options(options: FrostMap) -> Result<WriteCsvOptions, String> {
     Ok(WriteCsvOptions { delim, headers })
 }
 
-fn val_to_str_array(headers: FrostArray) -> Result<Vec<String>, String> {
+fn frost_array_to_string_vec(headers: FrostArray) -> Result<Vec<String>, String> {
     headers
         .iter()
         .map(|elem| {
@@ -177,7 +177,7 @@ fn make_writer_bundle(writer: csv::Writer<File>) -> Result<FrostValue, String> {
             )?;
             let mut writer = w.lock().map_err(|e| e.to_string())?;
 
-            let row = args[0].as_array().ok_or("UNREACHABLE")?
+            let row = args[0].as_array().ok_or("csv.writer.row: internal error: expected Array after validation")?
                 .iter()
                 .map(|val| {
                     if !val.is_primitive() {
