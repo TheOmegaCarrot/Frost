@@ -1,0 +1,165 @@
+export def csv = {
+    name: 'csv',
+    title: 'CSV',
+    module_path: 'ext.csv',
+    import_as: 'csv',
+    description: [
+        'Read and write CSV (comma-separated values) data from files and strings.',
+        'All field values are `String`. The caller is responsible for type conversion (e.g. `to_int`).',
+    ],
+    content: [
+        {
+            title: 'Read Options',
+            content: [
+                'Read functions take a required `options` map:',
+                { list: [
+                    '`headers` (`Bool`, required): when `true`, the first row is treated as column names and data rows are returned as `Map`s. When `false`, all rows are returned as `Array`s.',
+                    '`delim` (`String`, optional): field delimiter. Must be a single byte. Defaults to `","`.',
+                ] },
+            ],
+        },
+        {
+            title: 'Write Options',
+            content: [
+                'Write functions take an optional `options` map:',
+                { list: [
+                    '`headers` (`Array` of `String`, optional): column names. When provided, a header row is written immediately. Enables `Map`-based row writing.',
+                    '`delim` (`String`, optional): field delimiter. Must be a single byte. Defaults to `","`.',
+                ] },
+            ],
+        },
+        {
+            title: 'Callback Mode',
+            content: [
+                'Read functions accept an optional callback as the last argument. When provided, the callback is called with each row and the results are collected:',
+                {
+                    code: """
+                        csv.read_str("val\\n10\\n20\\n30", {headers: true}, fn row -> to_int(row.val))
+                        """,
+                    illustrative: true,
+                },
+                'Result: `[10, 20, 30]`.',
+            ],
+        },
+    ],
+
+    entries: [
+        {
+            name: 'read_file',
+            signatures: [
+                'csv.read_file(path, options)',
+                'csv.read_file(path, options, callback)',
+            ],
+            description: [
+                'Reads CSV data from the file at `path`. Returns an `Array` of rows. With a callback, returns an `Array` of callback results. Produces an error if the file cannot be opened.',
+            ],
+            body: [
+                {
+                    code: """
+                        csv.read_file('./data.csv', {headers: true})
+                        csv.read_file('./data.csv', {headers: true}, fn row -> row.name)
+                        """,
+                    illustrative: true,
+                },
+            ],
+            see_also: ['ext.csv.read_str'],
+        },
+        {
+            name: 'read_str',
+            signatures: [
+                'csv.read_str(text, options)',
+                'csv.read_str(text, options, callback)',
+            ],
+            description: [
+                'Parses CSV data from the string `text`. Returns an `Array` of rows. With a callback, returns an `Array` of callback results.',
+            ],
+            body: [
+                {
+                    code: """
+                        csv.read_str("name,age\\nAlice,30", {headers: true})
+                        """,
+                    illustrative: true,
+                },
+                'Result: `[{name: "Alice", age: "30"}]`.',
+            ],
+            see_also: ['ext.csv.read_file'],
+        },
+        {
+            name: 'write_file',
+            signatures: [
+                'csv.write_file(path)',
+                'csv.write_file(path, options)',
+            ],
+            description: [
+                'Creates a CSV file at `path` and returns a writer object. The file is created or truncated. If `headers` is specified in options, the header row is written immediately. Produces an error if the file cannot be opened.',
+            ],
+            body: [
+                {
+                    code: """
+                        def w = csv.write_file('./out.csv', {headers: ['name', 'age']})
+                        w.row(['Alice', '30'])
+                        w.row({name: 'Bob', age: '25'})
+                        w.flush()
+                        """,
+                    illustrative: true,
+                },
+            ],
+            see_also: ['ext.csv.write_str'],
+        },
+        {
+            name: 'write_str',
+            signatures: [
+                'csv.write_str()',
+                'csv.write_str(options)',
+            ],
+            description: [
+                'Creates an in-memory CSV writer and returns a writer object. If `headers` is specified in options, the header row is written immediately.',
+            ],
+            body: [
+                {
+                    code: """
+                        def w = csv.write_str({headers: ['x', 'y']})
+                        w.row(['1', '2'])
+                        w.get()
+                        """,
+                    illustrative: true,
+                },
+                'Result: `"x,y\\n1,2\\n"`.',
+            ],
+            see_also: ['ext.csv.write_file'],
+        },
+    ],
+
+    types: {
+        writer: {
+            name: 'writer',
+            title: 'CSV Writer',
+            description: [
+                'A writer object returned by `write_file` or `write_str`. File writers have `row` and `flush`. String writers have `row` and `get`.',
+            ],
+            entries: [
+                {
+                    name: 'row',
+                    signatures: ['writer.row(values)'],
+                    description: [
+                        'Writes a single row. `values` may be an `Array` of primitives (positional) or, when headers are defined, a `Map` keyed by header names. All values are stringified. Non-primitive values produce an error.',
+                    ],
+                },
+                {
+                    name: 'flush',
+                    signatures: ['writer.flush()'],
+                    description: [
+                        'Flushes buffered data to the file. Only available on file writers. The writer remains usable.',
+                    ],
+                },
+                {
+                    name: 'get',
+                    signatures: ['writer.get()'],
+                    description: [
+                        'Returns the accumulated CSV data as a `String`. Only available on string writers. The writer remains usable; subsequent rows append.',
+                    ],
+                },
+            ],
+        },
+    },
+}

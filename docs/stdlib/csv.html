@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>CSV - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="csv">CSV</h1>
+<pre><code class="language-frost">def csv = import('ext.csv')
+</code></pre>
+<p>Read and write CSV (comma-separated values) data from files and strings.</p>
+<p>All field values are <code>String</code>. The caller is responsible for type conversion (e.g. <code>to_int</code>).</p>
+<h2 id="read-options">Read Options</h2>
+<p>Read functions take a required <code>options</code> map:</p>
+<ul>
+  <li><code>headers</code> (<code>Bool</code>, required): when <code>true</code>, the first row is treated as column names and data rows are returned as <code>Map</code>s. When <code>false</code>, all rows are returned as <code>Array</code>s.</li>
+  <li><code>delim</code> (<code>String</code>, optional): field delimiter. Must be a single byte. Defaults to <code>","</code>.</li>
+</ul>
+<h2 id="write-options">Write Options</h2>
+<p>Write functions take an optional <code>options</code> map:</p>
+<ul>
+  <li><code>headers</code> (<code>Array</code> of <code>String</code>, optional): column names. When provided, a header row is written immediately. Enables <code>Map</code>-based row writing.</li>
+  <li><code>delim</code> (<code>String</code>, optional): field delimiter. Must be a single byte. Defaults to <code>","</code>.</li>
+</ul>
+<h2 id="callback-mode">Callback Mode</h2>
+<p>Read functions accept an optional callback as the last argument. When provided, the callback is called with each row and the results are collected:</p>
+<pre><code class="language-frost">csv.read_str("val\n10\n20\n30", {headers: true}, fn row -&gt; to_int(row.val))
+</code></pre>
+<p>Result: <code>[10, 20, 30]</code>.</p>
+<h2 id="csv-writer">CSV Writer</h2>
+<p>A writer object returned by <code>write_file</code> or <code>write_str</code>. File writers have <code>row</code> and <code>flush</code>. String writers have <code>row</code> and <code>get</code>.</p>
+<h3 id="writer.row"><code>writer.row</code></h3>
+<p class="signature"><code>writer.row(values)</code></p>
+<p>Writes a single row. <code>values</code> may be an <code>Array</code> of primitives (positional) or, when headers are defined, a <code>Map</code> keyed by header names. All values are stringified. Non-primitive values produce an error.</p>
+<h3 id="writer.flush"><code>writer.flush</code></h3>
+<p class="signature"><code>writer.flush()</code></p>
+<p>Flushes buffered data to the file. Only on file writers. The writer remains usable.</p>
+<h3 id="writer.get"><code>writer.get</code></h3>
+<p class="signature"><code>writer.get()</code></p>
+<p>Returns the accumulated CSV data as a <code>String</code>. Only on string writers. The writer remains usable; subsequent rows append.</p>
+<h2 id="read_file"><code>read_file</code></h2>
+<p class="signature"><code>csv.read_file(path, options)</code></p>
+<p class="signature"><code>csv.read_file(path, options, callback)</code></p>
+<p>Reads CSV data from the file at <code>path</code>. Returns an <code>Array</code> of rows. With a callback, returns an <code>Array</code> of callback results. Produces an error if the file cannot be opened.</p>
+<pre><code class="language-frost">csv.read_file('./data.csv', {headers: true})
+csv.read_file('./data.csv', {headers: true}, fn row -&gt; row.name)
+</code></pre>
+<p class="see-also">See also:
+<a href="csv.html#read_str"><code>read_str</code></a>
+</p>
+<h2 id="read_str"><code>read_str</code></h2>
+<p class="signature"><code>csv.read_str(text, options)</code></p>
+<p class="signature"><code>csv.read_str(text, options, callback)</code></p>
+<p>Parses CSV data from the string <code>text</code>. Returns an <code>Array</code> of rows. With a callback, returns an <code>Array</code> of callback results.</p>
+<pre><code class="language-frost">csv.read_str("name,age\nAlice,30", {headers: true})
+</code></pre>
+<p>Result: <code>[{name: "Alice", age: "30"}]</code>.</p>
+<p class="see-also">See also:
+<a href="csv.html#read_file"><code>read_file</code></a>
+</p>
+<h2 id="write_file"><code>write_file</code></h2>
+<p class="signature"><code>csv.write_file(path)</code></p>
+<p class="signature"><code>csv.write_file(path, options)</code></p>
+<p>Creates a CSV file at <code>path</code> and returns a writer object. The file is created or truncated. If <code>headers</code> is specified in options, the header row is written immediately. Produces an error if the file cannot be opened.</p>
+<pre><code class="language-frost">def w = csv.write_file('./out.csv', {headers: ['name', 'age']})
+w.row(['Alice', '30'])
+w.row({name: 'Bob', age: '25'})
+w.flush()
+</code></pre>
+<p class="see-also">See also:
+<a href="csv.html#write_str"><code>write_str</code></a>
+</p>
+<h2 id="write_str"><code>write_str</code></h2>
+<p class="signature"><code>csv.write_str()</code></p>
+<p class="signature"><code>csv.write_str(options)</code></p>
+<p>Creates an in-memory CSV writer and returns a writer object. If <code>headers</code> is specified in options, the header row is written immediately.</p>
+<pre><code class="language-frost">def w = csv.write_str({headers: ['x', 'y']})
+w.row(['1', '2'])
+w.get()
+</code></pre>
+<p>Result: <code>"x,y\n1,2\n"</code>.</p>
+<p class="see-also">See also:
+<a href="csv.html#write_file"><code>write_file</code></a>
+</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

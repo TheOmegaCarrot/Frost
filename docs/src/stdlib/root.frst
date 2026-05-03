@@ -16,6 +16,7 @@ export def std = (
 
 export def ext = (
     import('compression')
+    + import('csv')
     + import('hash')
     + import('http')
     + import('msgpack')

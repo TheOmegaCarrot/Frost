@@ -35,6 +35,10 @@ Alphabetical index of all built-in functions and values. Each entry links to its
 - [const](functions.md#const)
 - [contains](strings.md#contains)
 - [count_by](collections.md#count_by)
+- [csv.read_file](csv.md#read_file) · `ext.csv`
+- [csv.read_str](csv.md#read_str) · `ext.csv`
+- [csv.write_file](csv.md#write_file) · `ext.csv`
+- [csv.write_str](csv.md#write_str) · `ext.csv`
 - [curry](functions.md#curry)
 - [datetime.components](datetime.md#components) · `std.datetime`
 - [datetime.format](datetime.md#format) · `std.datetime`
@@ -346,7 +350,10 @@ Alphabetical index of all built-in functions and values. Each entry links to its
 - [values](collections.md#values)
 - [writer.close](io.md#writerclose) · `std.io`
 - [writer.flush](io.md#writerflush) · `std.io`
+- [writer.flush](csv.md#writerflush) · `ext.csv`
+- [writer.get](csv.md#writerget) · `ext.csv`
 - [writer.is_open](io.md#writeris_open) · `std.io`
+- [writer.row](csv.md#writerrow) · `ext.csv`
 - [writer.seek](io.md#writerseek) · `std.io`
 - [writer.tell](io.md#writertell) · `std.io`
 - [writer.write](io.md#writerwrite) · `std.io`
