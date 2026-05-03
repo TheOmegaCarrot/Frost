@@ -77,3 +77,91 @@ assert(contains(bad_opt.error, "unknown option"))
 
 def no_file = try_call(fn -> csv.read_file("/nonexistent/path.csv", {headers: true}))
 assert(no_file.ok == false)
+
+# ============================================
+# Writing CSV
+# ============================================
+
+# ---- write_str: basic array rows ----
+
+def w = csv.write_str({headers: ["name", "age"]})
+w.row(["Alice", "30"])
+w.row(["Bob", "25"])
+assert(w.get() == "name,age\nAlice,30\nBob,25\n")
+
+# ---- write_str: map rows (ordered by headers) ----
+
+def wm = csv.write_str({headers: ["x", "y", "z"]})
+wm.row({z: "3", x: "1", y: "2"})
+assert(wm.get() == "x,y,z\n1,2,3\n")
+
+# ---- write_str: no headers ----
+
+def wnh = csv.write_str()
+wnh.row(["a", "b", "c"])
+wnh.row(["1", "2", "3"])
+assert(wnh.get() == "a,b,c\n1,2,3\n")
+
+# ---- write_str: custom delimiter ----
+
+def wt = csv.write_str({headers: ["a", "b"], delim: "\t"})
+wt.row(["1", "2"])
+assert(wt.get() == "a\tb\n1\t2\n")
+
+# ---- write_str: non-string primitives are stringified ----
+
+def wp = csv.write_str({headers: ["val"]})
+wp.row([42])
+wp.row([true])
+wp.row([3.14])
+assert(wp.get() == "val\n42\ntrue\n3.14\n")
+
+# ---- write_str: multiple get() calls (writer remains valid) ----
+
+def wg = csv.write_str({headers: ["n"]})
+wg.row(["1"])
+def snap1 = wg.get()
+wg.row(["2"])
+def snap2 = wg.get()
+assert(snap1 == "n\n1\n")
+assert(snap2 == "n\n1\n2\n")
+
+# ---- write_file ----
+
+def out_path = "./frost_csv_write_test.csv"
+def wf = csv.write_file(out_path, {headers: ["col1", "col2"]})
+wf.row(["hello", "world"])
+wf.row(["foo", "bar"])
+wf.flush()
+
+def written = csv.read_file(out_path, {headers: true})
+assert(len(written) == 2)
+assert(written[0].col1 == "hello")
+assert(written[1].col2 == "bar")
+
+# ---- error: map row without headers defined ----
+
+def wne = csv.write_str()
+def map_err = try_call(fn -> wne.row({a: "1"}))
+assert(map_err.ok == false)
+assert(contains(map_err.error, "headers"))
+
+# ---- error: map row missing key ----
+
+def wmk = csv.write_str({headers: ["x", "y"]})
+def missing_key = try_call(fn -> wmk.row({x: "1"}))
+assert(missing_key.ok == false)
+assert(contains(missing_key.error, "missing key"))
+
+# ---- error: row with non-primitive value ----
+
+def wnp = csv.write_str({headers: ["val"]})
+def non_prim = try_call(fn -> wnp.row([[1, 2, 3]]))
+assert(non_prim.ok == false)
+assert(contains(non_prim.error, "primitives"))
+
+# ---- error: row wrong type ----
+
+def wrt = csv.write_str()
+def wrong_row = try_call(fn -> wrt.row("not an array"))
+assert(wrong_row.ok == false)
