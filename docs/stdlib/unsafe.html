@@ -9,8 +9,7 @@
 <body>
 <main>
 <h1 id="unsafe">Unsafe</h1>
-<pre><code class="language-frost">def unsafe = import('ext.unsafe')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">unsafe</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ext.unsafe'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Functions that bypass Frost's usual safety guarantees. Opt-in and intended for advanced use cases such as performance-critical code, debugging, and interop patterns that require unrestricted mutability or pointer-level introspection.</p>
 <p>Build flag: <code>WITH_UNSAFE</code> (default: <code>AUTO</code>). No external dependencies.</p>
 <p>The precise behavior of these functions may change between versions. Internal implementation details such as value sharing and allocation are not part of Frost's stability guarantees, so results from pointer-level operations like <code>same</code> and <code>identity</code> may differ across releases.</p>
@@ -18,14 +17,13 @@
 <p class="signature"><code>unsafe.same(a, b)</code></p>
 <p>Returns <code>true</code> if <code>a</code> and <code>b</code> are the exact same object in memory (pointer equality), <code>false</code> otherwise. This is distinct from <code>==</code>, which compares by value.</p>
 <p>Because Frost values are immutable, the implementation can often re-use the same exact object. The cases where this optimization can be applied are largely undocumented, and may change between versions without being considered a breaking change.</p>
-<pre><code class="language-frost">def a = [1, 2, 3]
-def b = [1, 2, 3]
-def c = a
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">a</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">b</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">c</span> <span class="hl-operator">=</span> <span class="hl-variable">a</span>
 
-a == b            # =&gt; true  (equal by value)
-unsafe.same(a, b) # =&gt; false (distinct objects)
-unsafe.same(a, c) # =&gt; true  (same object)
-</code></pre>
+<span class="hl-variable">a</span><span class="hl-operator"> ==</span> <span class="hl-variable">b</span><span class="hl-comment">            # =&gt; true  (equal by value)</span>
+<span class="hl-variable">unsafe</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">same</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # =&gt; false (distinct objects)</span>
+<span class="hl-variable">unsafe</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">same</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">c</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # =&gt; true  (same object)</span></code></pre>
 <h2 id="identity"><code>identity</code></h2>
 <p class="signature"><code>unsafe.identity(value)</code></p>
 <p>Returns the memory address of <code>value</code> as an <code>Int</code>. Two calls return the same <code>Int</code> if and only if <code>unsafe.same</code> would return <code>true</code> for the two values.</p>
@@ -39,16 +37,15 @@ unsafe.same(a, c) # =&gt; true  (same object)
 <p class="signature"><code>unsafe.weaken(value)</code></p>
 <p>Creates a weak reference to <code>value</code>. Returns a map with a single method <code>.get()</code> that returns the original value if it is still alive, or <code>null</code> if it has been freed.</p>
 <p>A value is freed when all strong references to it are dropped.</p>
-<pre><code class="language-frost">defn make_weak() -&gt; do {
-    def val = {data: [1, 2, 3]}
-    def weak = unsafe.weaken(val)
-    assert(weak.get() != null)
-    weak
-}
+<pre><code class="language-frost"><span class="hl-keyword">defn</span><span class="hl-variable"> make_weak</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-keyword">do</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-keyword">def</span> <span class="hl-variable">val</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">data</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span>
+    <span class="hl-keyword">def</span> <span class="hl-variable">weak</span> <span class="hl-operator">=</span> <span class="hl-variable">unsafe</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">weaken</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">val</span><span class="hl-punctuation-bracket">)</span>
+    <span class="hl-function">assert</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">weak</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">get</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> !=</span> <span class="hl-constant-builtin">null</span><span class="hl-punctuation-bracket">)</span>
+    <span class="hl-variable">weak</span>
+<span class="hl-punctuation-bracket">}</span>
 
-def weak = make_weak()
-assert(weak.get() == null)
-</code></pre>
+<span class="hl-keyword">def</span> <span class="hl-variable">weak</span> <span class="hl-operator">=</span> <span class="hl-function">make_weak</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-function">assert</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">weak</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">get</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> ==</span> <span class="hl-constant-builtin">null</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Note that a weak reference to <code>null</code> is indistinguishable from an expired weak reference, since both return <code>null</code> from <code>.get()</code>.</p>
 <p>Because Frost values are immutable, the implementation is free to share identical values behind the scenes. A weak reference may appear to stay alive longer than expected if the same value happens to be re-used elsewhere. This sharing behavior is not stable and may change between versions.</p>
 </main>

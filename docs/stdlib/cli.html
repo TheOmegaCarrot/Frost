@@ -9,43 +9,41 @@
 <body>
 <main>
 <h1 id="cli">CLI</h1>
-<pre><code class="language-frost">def cli = import('std.cli')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">cli</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.cli'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p><code>std.cli</code> parses command-line arguments against a declarative spec. Describe your tool's flags, options, and positional arguments in a Map; <code>cli.parse</code> validates <code>args</code> against that spec and returns a structured result.</p>
 <h2 id="parse"><code>parse</code></h2>
 <p class="signature"><code>cli.parse(args, spec)</code></p>
 <p>Parses <code>args</code> according to <code>spec</code>. Returns a result Map with <code>ok</code> (<code>Bool</code>), <code>help</code> (<code>String</code>), and either <code>value</code> (on success) or <code>error</code> (on failure). The <code>value</code> map contains <code>flags</code> (<code>Map</code> of <code>Bool</code>), <code>options</code> (<code>Map</code> of <code>String</code>, <code>Array</code>, or <code>null</code>), and <code>positional</code> (<code>Array</code> of <code>String</code>). Spec errors (malformed spec) produces an error; parse errors (invalid user input) are returned in the result.</p>
 <p><code>args</code> is typically the predefined <a href="../language.html#statements"><code>args</code></a> variable. <code>args[0]</code> is treated as the script path and is consumed internally (used as the default tool name in error messages and help output). Everything after <code>args[0]</code> is parsed against the spec.</p>
-<pre><code class="language-frost">def cli = import('std.cli')
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">cli</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.cli'</span><span class="hl-punctuation-bracket">)</span>
 
-def result = cli.parse(args, {
-    name: 'deploy',
-    description: 'Deploy a service to a target environment',
-    flags: {
-        verbose: { short: 'v', description: 'Enable verbose output' },
-        dry_run: { short: 'd', description: 'Show what would happen' },
-    },
-    options: {
-        env: { short: 'e', required: true, description: 'Target environment' },
-        retries: { short: 'r', default: '3', description: 'Number of retries' },
-        tag: { short: 't', repeatable: true, description: 'Image tags' },
-    },
-    positional: [
-        { name: 'service', description: 'Service to deploy' },
-    ],
-})
+<span class="hl-keyword">def</span> <span class="hl-variable">result</span> <span class="hl-operator">=</span> <span class="hl-variable">cli</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">parse</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">args</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'deploy'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Deploy a service to a target environment'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">flags</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span>
+        <span class="hl-property">verbose</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">short</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'v'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Enable verbose output'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+        <span class="hl-property">dry_run</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">short</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'d'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Show what would happen'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">options</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span>
+        <span class="hl-property">env</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">short</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'e'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">required</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Target environment'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+        <span class="hl-property">retries</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">short</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'r'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">default</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'3'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Number of retries'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+        <span class="hl-property">tag</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">short</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'t'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">repeatable</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Image tags'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">positional</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span>
+        <span class="hl-punctuation-bracket">{</span> <span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'service'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Service to deploy'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
 
-if not result.ok: do {
-    print(result.error)
-    print(result.help)
-    os.exit(1)
-}
+<span class="hl-keyword">if</span> <span class="hl-keyword">not</span> <span class="hl-variable">result</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">ok</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-keyword">do</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">result</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">error</span><span class="hl-punctuation-bracket">)</span>
+    <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">result</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">help</span><span class="hl-punctuation-bracket">)</span>
+    <span class="hl-variable">os</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exit</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-punctuation-bracket">}</span>
 
-def parsed = result.value
-if parsed.flags.verbose: print('verbose mode')
-def retries = parsed.options.retries @ to_int() or 3
-def service = parsed.positional[0]
-</code></pre>
+<span class="hl-keyword">def</span> <span class="hl-variable">parsed</span> <span class="hl-operator">=</span> <span class="hl-variable">result</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">value</span>
+<span class="hl-keyword">if</span> <span class="hl-variable">parsed</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">flags</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">verbose</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'verbose mode'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">retries</span> <span class="hl-operator">=</span> <span class="hl-variable">parsed</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">options</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">retries</span><span class="hl-operator"> @</span> <span class="hl-function">to_int</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-keyword"> or</span> <span class="hl-number">3</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">service</span> <span class="hl-operator">=</span> <span class="hl-variable">parsed</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">positional</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">0</span><span class="hl-punctuation-bracket">]</span></code></pre>
 <h3 id="spec-shape">Spec Shape</h3>
 <p>The spec is a Map with the following keys. All are optional.</p>
 <table>
@@ -109,11 +107,10 @@ def service = parsed.positional[0]
 </tbody>
 </table>
 <p>In the result, every declared flag appears under <code>result.flags</code> as a <code>Bool</code>: <code>true</code> if it was present in <code>args</code>, <code>false</code> otherwise.</p>
-<pre><code class="language-frost">flags: {
-    verbose: { short: 'v', description: 'Verbose output' },
-    ['dry-run']: { description: 'Dry-run mode' },
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">flags</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">verbose</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">short</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'v'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Verbose output'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-string">'dry-run'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Dry-run mode'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <h3 id="options">Options</h3>
 <p>Options take a value from the following argument. The <code>options</code> key is a Map where each key is the option's long name and each value is a sub-spec Map:</p>
 <table>
@@ -152,12 +149,11 @@ def service = parsed.positional[0]
 </table>
 <p>In the result, every declared option appears under <code>result.options</code>: non-repeatable options are <code>String</code> if provided or defaulted, <code>null</code> otherwise. Repeatable options are always an <code>Array</code> of <code>String</code>, possibly empty.</p>
 <p>Option values are always Strings. <code>cli.parse</code> does not perform any type coercion; for other types, apply a conversion like <a href="types.html#to_int"><code>to_int</code></a> on the parsed value.</p>
-<pre><code class="language-frost">options: {
-    env:     { short: 'e', required: true },
-    retries: { short: 'r', default: '3' },
-    tag:     { short: 't', repeatable: true },
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">options</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">env</span><span class="hl-punctuation-delimiter">:</span>     <span class="hl-punctuation-bracket">{</span> <span class="hl-property">short</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'e'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">required</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">retries</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">short</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'r'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">default</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'3'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">tag</span><span class="hl-punctuation-delimiter">:</span>     <span class="hl-punctuation-bracket">{</span> <span class="hl-property">short</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'t'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">repeatable</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <h3 id="positional-arguments">Positional Arguments</h3>
 <p>The <code>positional</code> key has three forms:</p>
 <ul>
@@ -166,17 +162,14 @@ def service = parsed.positional[0]
   <li><code>true</code>: raw-collect mode. All positional arguments are gathered into <code>result.positional</code> without validation.</li>
 </ul>
 <p>Each positional spec entry is a Map with <code>name</code> (<code>String</code>, required, used in help output) and <code>description</code> (<code>String</code>, shown in help).</p>
-<pre><code class="language-frost">positional: [
-    { name: 'source', description: 'Source file' },
-    { name: 'dest', description: 'Destination file' },
-]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">positional</span><span class="hl-punctuation-delimiter">:</span><span class="hl-punctuation-bracket"> [</span>
+    <span class="hl-punctuation-bracket">{</span> <span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'source'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Source file'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">{</span> <span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'dest'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Destination file'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">]</span></code></pre>
 <p>Or for scripts that want to handle positionals themselves:</p>
-<pre><code class="language-frost">positional: true
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">positional</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span></code></pre>
 <p>Array destructuring pairs nicely with declared positionals when you want to bind them by name:</p>
-<pre><code class="language-frost">def [source, dest] = parsed.positional
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">source</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">dest</span><span class="hl-punctuation-bracket">]</span> <span class="hl-operator">=</span> <span class="hl-variable">parsed</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">positional</span></code></pre>
 <h3 id="parsing-rules">Parsing Rules</h3>
 <ul>
   <li><code>--name</code> for flags, <code>--name value</code> for options (long form).</li>
@@ -191,23 +184,22 @@ def service = parsed.positional[0]
 <h3 id="help-text">Help Text</h3>
 <p><code>result.help</code> always contains a help string. If the spec provides a <code>help</code> key, that string is returned verbatim. Otherwise, help is auto-generated from <code>name</code>, <code>description</code>, and the declared flags, options, and positionals.</p>
 <p><code>cli.parse</code> does not handle <code>--help</code> or <code>-h</code> automatically. The typical pattern is to add a <code>help</code> flag to the spec and check it after unwrapping:</p>
-<pre><code class="language-frost">def result = cli.parse(args, {
-    flags: {
-        help: { short: 'h', description: 'Show help' },
-    },
-})
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">result</span> <span class="hl-operator">=</span> <span class="hl-variable">cli</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">parse</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">args</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">flags</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span>
+        <span class="hl-property">help</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">short</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'h'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">description</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Show help'</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
 
-if not result.ok: do {
-    print(result.error)
-    print(result.help)
-    os.exit(1)
-}
+<span class="hl-keyword">if</span> <span class="hl-keyword">not</span> <span class="hl-variable">result</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">ok</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-keyword">do</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">result</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">error</span><span class="hl-punctuation-bracket">)</span>
+    <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">result</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">help</span><span class="hl-punctuation-bracket">)</span>
+    <span class="hl-variable">os</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exit</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-punctuation-bracket">}</span>
 
-if result.value.flags.help: do {
-    print(result.help)
-    os.exit(0)
-}
-</code></pre>
+<span class="hl-keyword">if</span> <span class="hl-variable">result</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">value</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">flags</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">help</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-keyword">do</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">result</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">help</span><span class="hl-punctuation-bracket">)</span>
+    <span class="hl-variable">os</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exit</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>Note that <code>result.help</code> (the auto-generated text) and <code>result.value.flags.help</code> (the user-declared flag) are distinct.</p>
 <h3 id="errors">Errors</h3>
 <p><code>cli.parse</code> distinguishes two error categories:</p>
@@ -219,23 +211,20 @@ if result.value.flags.help: do {
 cli.parse: option 'env': required and default are mutually exclusive
 
 # Parse error
-deploy: missing required option '--env'
-</code></pre>
+deploy: missing required option '--env'</code></pre>
 <h2 id="prompt"><code>prompt</code></h2>
 <p class="signature"><code>cli.prompt(message)</code></p>
 <p>Prints <code>message</code> followed by a space to stderr (no newline) and reads a line from stdin. Returns the line as a <code>String</code>, or <code>null</code> if the user aborts with end-of-file. Only the trailing newline is stripped; any other whitespace the user typed is preserved.</p>
-<pre><code class="language-frost">def name = cli.prompt('What is your name?')
-if name != null: print($'Hello, ${name}')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">name</span> <span class="hl-operator">=</span> <span class="hl-variable">cli</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">prompt</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'What is your name?'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">if</span> <span class="hl-variable">name</span><span class="hl-operator"> !=</span> <span class="hl-constant-builtin">null</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-string-special">$'Hello, </span><span class="hl-punctuation-special">${</span><span class="hl-variable">name</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>stderr is used so that the prompt is visible even when stdout is redirected (<code>frost script.frst &gt; out.txt</code>).</p>
 <h3 id="building-a-yes/no-confirmation">Building a Yes/No Confirmation</h3>
 <p><code>std.cli</code> does not provide a dedicated confirmation helper because the right behavior on end-of-file or unrecognized input depends on the script. A few lines using <code>prompt</code> cover most needs:</p>
-<pre><code class="language-frost">def ans = cli.prompt('Delete all files? [y/N]')
-def confirmed = ans and ( ans @ to_lower() @ trim() @ starts_with('y') )
-if confirmed: do {
-    # ...
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">ans</span> <span class="hl-operator">=</span> <span class="hl-variable">cli</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">prompt</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'Delete all files? [y/N]'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">confirmed</span> <span class="hl-operator">=</span> <span class="hl-variable">ans</span><span class="hl-keyword"> and</span> <span class="hl-punctuation-bracket">(</span> <span class="hl-variable">ans</span><span class="hl-operator"> @</span> <span class="hl-function">to_lower</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> @</span> <span class="hl-function">trim</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> @</span> <span class="hl-function">starts_with</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'y'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket"> )</span>
+<span class="hl-keyword">if</span> <span class="hl-variable">confirmed</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-keyword">do</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-comment"># ...</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>This pattern treats end-of-file as "no" (the safe default), which is usually what you want for destructive actions. Invert the logic for prompts where the safe default is "yes".</p>
 </main>
 <script src="../nav.js"></script>

@@ -97,6 +97,24 @@ export def css = '''
       color: var(--text);
     }
 
+    .hl-comment { color: #6c7086; font-style: italic; }
+    .hl-keyword { color: #cba6f7; }
+    .hl-constant-builtin { color: #fab387; }
+    .hl-number { color: #fab387; }
+    .hl-string { color: #a6e3a1; }
+    .hl-string-special { color: #a6e3a1; }
+    .hl-string-escape { color: #f2cdcd; }
+    .hl-punctuation-special { color: #f2cdcd; }
+    .hl-error { color: #f38ba8; text-decoration: wavy underline; }
+    .hl-variable-parameter { color: #f2cdcd; }
+    .hl-variable { color: #cdd6f4; }
+    .hl-function { color: #89b4fa; }
+    .hl-property { color: #89dceb; }
+    .hl-type { color: #f9e2af; }
+    .hl-operator { color: #94e2d5; }
+    .hl-punctuation-bracket { color: #9399b2; }
+    .hl-punctuation-delimiter { color: #9399b2; }
+
     .signature { margin-bottom: 0.25rem; }
 
     .signature code {

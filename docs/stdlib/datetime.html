@@ -9,13 +9,11 @@
 <body>
 <main>
 <h1 id="datetime">Datetime</h1>
-<pre><code class="language-frost">def dt = import('std.datetime')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">dt</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.datetime'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Timestamps, formatting, parsing, and calendar components.</p>
 <p>All timestamps are <code>Int</code> values representing Unix milliseconds (ms since 1970-01-01T00:00:00 UTC). Negative values represent dates before the epoch. Integer arithmetic can be used for duration math with the help of the <code>ms</code> constants.</p>
-<pre><code class="language-frost">def tomorrow = dt.now() + dt.ms.day
-def in_3_hours = dt.now() + 3 * dt.ms.hour
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">tomorrow</span> <span class="hl-operator">=</span> <span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">now</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> +</span> <span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">ms</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">day</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">in_3_hours</span> <span class="hl-operator">=</span> <span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">now</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> +</span> <span class="hl-number">3</span><span class="hl-operator"> *</span> <span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">ms</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">hour</span></code></pre>
 <p>All functions which take a timezone default to UTC. An optional timezone parameter accepts <a href="https://en.wikipedia.org/wiki/List_of_tz_database_zones">IANA timezone names</a> (e.g., <code>"America/New_York"</code>, <code>"Asia/Tokyo"</code>).</p>
 <p>Format patterns follow the <a href="https://en.cppreference.com/w/cpp/chrono/format"><code>std::chrono::format</code></a> specification.</p>
 <h2 id="now"><code>now</code></h2>
@@ -25,30 +23,27 @@ def in_3_hours = dt.now() + 3 * dt.ms.hour
 <p class="signature"><code>dt.format(millis, pattern)</code></p>
 <p class="signature"><code>dt.format(millis, pattern, timezone)</code></p>
 <p>Formats a timestamp as a <code>String</code> using a chrono format pattern.</p>
-<pre><code class="language-frost">dt.format(dt.now(), '%Y-%m-%d %H:%M:%S')
-# =&gt; "2026-04-19 14:30:00.000"
+<pre><code class="language-frost"><span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">format</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">now</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'%Y-%m-%d %H:%M:%S'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; "2026-04-19 14:30:00.000"</span>
 
-dt.format(dt.now(), '%Y-%m-%d %H:%M', 'America/New_York')
-# =&gt; "2026-04-19 10:30"
-</code></pre>
+<span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">format</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">now</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'%Y-%m-%d %H:%M'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'America/New_York'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; "2026-04-19 10:30"</span></code></pre>
 <h2 id="parse"><code>parse</code></h2>
 <p class="signature"><code>dt.parse(s, pattern)</code></p>
 <p class="signature"><code>dt.parse(s, pattern, timezone)</code></p>
 <p>Parses a date/time string according to a pattern and returns Unix milliseconds. Produces an error on invalid input or pattern mismatch. Fields not specified by the pattern default to their epoch values (1970-01-01 00:00:00 UTC).</p>
 <p>When a timezone is provided, the input is interpreted as local time in that timezone.</p>
-<pre><code class="language-frost">dt.parse('2024-03-16', '%Y-%m-%d')
-dt.parse('2024-03-15 20:00:00', '%Y-%m-%d %H:%M:%S', 'America/New_York')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">parse</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'2024-03-16'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'%Y-%m-%d'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">parse</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'2024-03-15 20:00:00'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'%Y-%m-%d %H:%M:%S'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'America/New_York'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h2 id="components"><code>components</code></h2>
 <p class="signature"><code>dt.components(millis)</code></p>
 <p class="signature"><code>dt.components(millis, timezone)</code></p>
 <p>Breaks a timestamp into its calendar components. Returns a <code>Map</code> with keys <code>year</code>, <code>month</code> (1-12), <code>day</code> (1-31), <code>hour</code>, <code>minute</code>, <code>second</code>, <code>ms</code>, and <code>weekday</code> (a <code>String</code> such as <code>"Monday"</code>).</p>
-<pre><code class="language-frost">dt.components(dt.now())
-# =&gt; {year: 2026, month: 4, day: 19, hour: 21, minute: 55, ...}
+<pre><code class="language-frost"><span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">components</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">now</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; {year: 2026, month: 4, day: 19, hour: 21, minute: 55, ...}</span>
 
-dt.components(dt.now(), 'Asia/Tokyo')
-# =&gt; {year: 2026, month: 4, day: 20, hour: 6, minute: 55, ...}
-</code></pre>
+<span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">components</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">now</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'Asia/Tokyo'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; {year: 2026, month: 4, day: 20, hour: 6, minute: 55, ...}</span></code></pre>
 <p class="see-also">See also:
 <a href="datetime.html#from_components"><code>from_components</code></a>
 </p>
@@ -57,16 +52,15 @@ dt.components(dt.now(), 'Asia/Tokyo')
 <p class="signature"><code>dt.from_components(map, timezone)</code></p>
 <p>Constructs a timestamp from a components <code>Map</code>. Missing fields default to the epoch: <code>year</code> to 1970, <code>month</code> and <code>day</code> to 1, time fields to 0. Invalid dates (e.g., Feb 30) and out-of-range time fields (e.g., hour 25) are rejected. Unknown keys (including <code>weekday</code>) are ignored, so the output of <code>components</code> can be passed directly.</p>
 <p>When a timezone is provided, the components are interpreted as local time in that timezone.</p>
-<pre><code class="language-frost">dt.from_components({year: 2024, month: 3, day: 16})
-dt.from_components({year: 2024, month: 3, day: 16, hour: 14, minute: 30})
+<pre><code class="language-frost"><span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">from_components</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">year</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">2024</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">month</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">day</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">16</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">from_components</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">year</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">2024</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">month</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">day</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">16</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">hour</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">14</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">minute</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">30</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
 
-# "noon in Tokyo" as UTC millis
-dt.from_components({year: 2024, month: 3, day: 16, hour: 12}, 'Asia/Tokyo')
+<span class="hl-comment"># "noon in Tokyo" as UTC millis</span>
+<span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">from_components</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">year</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">2024</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">month</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">day</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">16</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">hour</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">12</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'Asia/Tokyo'</span><span class="hl-punctuation-bracket">)</span>
 
-# modify a timestamp via components
-def c = dt.components(dt.now()) + {hour: 0, minute: 0, second: 0, ms: 0}
-def midnight_today = dt.from_components(c)
-</code></pre>
+<span class="hl-comment"># modify a timestamp via components</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">c</span> <span class="hl-operator">=</span> <span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">components</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">now</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> +</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">hour</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">minute</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">second</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">ms</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">0</span><span class="hl-punctuation-bracket">}</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">midnight_today</span> <span class="hl-operator">=</span> <span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">from_components</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">c</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p class="see-also">See also:
 <a href="datetime.html#components"><code>components</code></a>
 </p>
@@ -74,8 +68,7 @@ def midnight_today = dt.from_components(c)
 <p>The constant <code>0</code>: the Unix epoch (1970-01-01T00:00:00 UTC). Provided for readability, as <code>dt.epoch</code> is clearer than a bare <code>0</code> when expressing intent.</p>
 <h2 id="ms"><code>ms</code></h2>
 <p>A sub-map of duration constants in milliseconds, for performing arithmetic on timestamps.</p>
-<pre><code class="language-frost">def in_2_hours = dt.now() + 2 * dt.ms.hour
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">in_2_hours</span> <span class="hl-operator">=</span> <span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">now</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> +</span> <span class="hl-number">2</span><span class="hl-operator"> *</span> <span class="hl-variable">dt</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">ms</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">hour</span></code></pre>
 <table>
 <thead><tr>
   <th>Constant</th>

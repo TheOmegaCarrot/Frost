@@ -9,8 +9,7 @@
 <body>
 <main>
 <h1 id="encoding">Encoding</h1>
-<pre><code class="language-frost">def enc = import('std.encoding')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">enc</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.encoding'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Number formatting, byte-level string manipulation, and common encoding schemes (hex, Base64, URL percent-encoding).</p>
 <h2 id="fmt_int"><code>fmt_int</code></h2>
 <p class="signature"><code>encoding.fmt_int(number, base)</code></p>
@@ -19,12 +18,10 @@
   <li><code>number</code>: The number to format</li>
   <li><code>base</code>: The numeric base (2-36)</li>
 </ul>
-<pre><code class="language-frost">encoding.fmt_int(255, 16)
-# =&gt; ff
-</code></pre>
-<pre><code class="language-frost">encoding.fmt_int(10, 2)
-# =&gt; 1010
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">fmt_int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">255</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">16</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; ff</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">fmt_int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 1010</span></code></pre>
 <p class="see-also">See also:
 <a href="encoding.html#parse_int"><code>parse_int</code></a>
 </p>
@@ -36,21 +33,18 @@
   <li><code>string</code>: The string to parse</li>
   <li><code>base</code>: The numeric base (2-36)</li>
 </ul>
-<pre><code class="language-frost">encoding.parse_int('ff', 16)
-# =&gt; 255
-</code></pre>
-<pre><code class="language-frost">encoding.parse_int('1010', 2)
-# =&gt; 10
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">parse_int</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ff'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">16</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 255</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">parse_int</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'1010'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 10</span></code></pre>
 <p class="see-also">See also:
 <a href="encoding.html#fmt_int"><code>fmt_int</code></a>
 </p>
 <h2 id="to_bytes"><code>to_bytes</code></h2>
 <p class="signature"><code>encoding.to_bytes(s)</code></p>
 <p>Returns an array of Int values representing the raw byte values (0-255) of each character in <code>s</code>.</p>
-<pre><code class="language-frost">encoding.to_bytes('ABC')
-# =&gt; [65, 66, 67]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">to_bytes</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ABC'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [65, 66, 67]</span></code></pre>
 <p class="see-also">See also:
 <a href="encoding.html#from_bytes"><code>from_bytes</code></a>
 </p>
@@ -58,9 +52,8 @@
 <p class="signature"><code>encoding.from_bytes(arr)</code></p>
 <p>Converts an array of Int values in the range [0, 255] to a string.</p>
 <p>Produces an error if any element is not an Int or is out of range.</p>
-<pre><code class="language-frost">encoding.from_bytes([72, 105])
-# =&gt; Hi
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">from_bytes</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">72</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">105</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; Hi</span></code></pre>
 <p class="see-also">See also:
 <a href="encoding.html#to_bytes"><code>to_bytes</code></a>
 </p>
@@ -69,9 +62,8 @@
 <h3 id="b64.encode"><code>b64.encode</code></h3>
 <p class="signature"><code>encoding.b64.encode(s)</code></p>
 <p>Encodes <code>s</code> using standard Base64 (RFC 4648) and returns the result as a string.</p>
-<pre><code class="language-frost">encoding.b64.encode('Hello')
-# =&gt; SGVsbG8=
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">b64</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">encode</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'Hello'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; SGVsbG8=</span></code></pre>
 <p class="see-also">See also:
 <a href="encoding.html#b64decode"><code>b64.decode</code></a>
 </p>
@@ -79,9 +71,8 @@
 <p class="signature"><code>encoding.b64.decode(s)</code></p>
 <p>Decodes a standard Base64 (RFC 4648) string and returns the raw bytes as a string.</p>
 <p>Produces an error on invalid input.</p>
-<pre><code class="language-frost">encoding.b64.decode('SGVsbG8=')
-# =&gt; Hello
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">b64</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">decode</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'SGVsbG8='</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; Hello</span></code></pre>
 <p class="see-also">See also:
 <a href="encoding.html#b64encode"><code>b64.encode</code></a>
 </p>
@@ -103,9 +94,8 @@
 <h3 id="hex.encode"><code>hex.encode</code></h3>
 <p class="signature"><code>encoding.hex.encode(s)</code></p>
 <p>Encodes <code>s</code> as a lowercase hexadecimal string. Each byte becomes two hex characters.</p>
-<pre><code class="language-frost">encoding.hex.encode('Hi')
-# =&gt; 4869
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">hex</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">encode</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'Hi'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 4869</span></code></pre>
 <p class="see-also">See also:
 <a href="encoding.html#hexdecode"><code>hex.decode</code></a>
 </p>
@@ -113,9 +103,8 @@
 <p class="signature"><code>encoding.hex.decode(s)</code></p>
 <p>Decodes a hexadecimal string and returns the raw bytes as a string. Input length must be even. Produces an error on invalid input.</p>
 <p>The result is a raw binary string that may contain non-printable bytes. Printing such strings directly may produce unexpected terminal output.</p>
-<pre><code class="language-frost">encoding.hex.decode('4869')
-# =&gt; Hi
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">hex</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">decode</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'4869'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; Hi</span></code></pre>
 <p class="see-also">See also:
 <a href="encoding.html#hexencode"><code>hex.encode</code></a>
 </p>
@@ -124,9 +113,8 @@
 <h3 id="url.encode"><code>url.encode</code></h3>
 <p class="signature"><code>encoding.url.encode(s)</code></p>
 <p>Percent-encodes <code>s</code> per RFC 3986. Unreserved characters (A-Z, a-z, 0-9, <code>-</code>, <code>.</code>, <code>_</code>, <code>~</code>) are not encoded.</p>
-<pre><code class="language-frost">encoding.url.encode('hello world')
-# =&gt; hello%20world
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">url</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">encode</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'hello world'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; hello%20world</span></code></pre>
 <p class="see-also">See also:
 <a href="encoding.html#urldecode"><code>url.decode</code></a>
 </p>
@@ -134,9 +122,8 @@
 <p class="signature"><code>encoding.url.decode(s)</code></p>
 <p>Decodes a percent-encoded string.</p>
 <p>Produces an error on invalid input (e.g. <code>%GG</code>, truncated <code>%</code>).</p>
-<pre><code class="language-frost">encoding.url.decode('hello%20world')
-# =&gt; hello world
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">encoding</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">url</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">decode</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'hello%20world'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; hello world</span></code></pre>
 <p class="see-also">See also:
 <a href="encoding.html#urlencode"><code>url.encode</code></a>
 </p>

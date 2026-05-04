@@ -45,10 +45,9 @@
 <h2 id="spread"><code>spread</code></h2>
 <p class="signature"><code>spread(f)</code></p>
 <p>Returns a function that takes a single array and calls <code>f</code> with its elements spread as individual arguments. Returns <code>fn arr -&gt; call(f, arr)</code>.</p>
-<pre><code class="language-frost">def names = ['Alice', 'Bob']
-def ages = [30, 25]
-foreach zip(names, ages) with spread(fn (name, age) -&gt; print(name + ' is ' + to_string(age)))
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">names</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'Alice'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'Bob'</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">ages</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">30</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">25</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-keyword">foreach</span> <span class="hl-function">zip</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">names</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">ages</span><span class="hl-punctuation-bracket">)</span><span class="hl-keyword"> with</span> <span class="hl-function">spread</span><span class="hl-punctuation-bracket">(</span><span class="hl-keyword">fn</span> <span class="hl-punctuation-bracket">(</span><span class="hl-variable">name</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">age</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">name</span><span class="hl-operator"> +</span> <span class="hl-string">' is '</span><span class="hl-operator"> +</span> <span class="hl-function">to_string</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">age</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h2 id="rev_args"><code>rev_args</code></h2>
 <p class="signature"><code>rev_args(f)</code></p>
 <p>Returns a function that calls <code>f</code> with its arguments in reverse order.</p>

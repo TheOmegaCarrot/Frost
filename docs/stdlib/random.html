@@ -9,8 +9,7 @@
 <body>
 <main>
 <h1 id="random">Random</h1>
-<pre><code class="language-frost">def random = import('std.random')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">random</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.random'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Pseudo-random number generation, sampling, and shuffling.</p>
 <p>Not for cryptography. <code>std.random</code> is designed for simulation, sampling, and games. Its output is fully predictable from a seed value. Do not use <code>std.random</code> for tokens, keys, initialization vectors, salts, passwords, or anything else where predictability would be a vulnerability.</p>
 <h2 id="engines">Engines</h2>
@@ -32,91 +31,78 @@
 </tr>
 </tbody>
 </table>
-<pre><code class="language-frost">def random = import('std.random')
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">random</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.random'</span><span class="hl-punctuation-bracket">)</span>
 
-# Convenient default
-def roll = random.rng.int(1, 6)
+<span class="hl-comment"># Convenient default</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">roll</span> <span class="hl-operator">=</span> <span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">6</span><span class="hl-punctuation-bracket">)</span>
 
-# Reproducible
-def rng = random.seed(42)
-def first = rng.int(1, 6)
-def second = rng.int(1, 6)
-</code></pre>
+<span class="hl-comment"># Reproducible</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">rng</span> <span class="hl-operator">=</span> <span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">seed</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">42</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">first</span> <span class="hl-operator">=</span> <span class="hl-variable">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">6</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">second</span> <span class="hl-operator">=</span> <span class="hl-variable">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">6</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Engines are stateful. Two references to the same engine share state: binding an engine to a new name does not fork it.</p>
-<pre><code class="language-frost">def a = random.seed(42)
-def b = a               # same engine, not a copy
-a.int(0, 100)           # advances the engine
-b.int(0, 100)           # sees the *next* draw, not a fresh start
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">a</span> <span class="hl-operator">=</span> <span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">seed</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">42</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">b</span> <span class="hl-operator">=</span> <span class="hl-variable">a</span><span class="hl-comment">               # same engine, not a copy</span>
+<span class="hl-variable">a</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">100</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">           # advances the engine</span>
+<span class="hl-variable">b</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">100</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">           # sees the *next* draw, not a fresh start</span></code></pre>
 <p>Each call to <code>random.seed(n)</code> returns an independent engine, even with the same seed.</p>
-<pre><code class="language-frost">def x = random.seed(42)
-def y = random.seed(42) # different engine, same starting state
-x.int(0, 100) == y.int(0, 100)   # true, both at their first draw
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">seed</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">42</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">y</span> <span class="hl-operator">=</span> <span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">seed</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">42</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # different engine, same starting state</span>
+<span class="hl-variable">x</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">100</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> ==</span> <span class="hl-variable">y</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">100</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">   # true, both at their first draw</span></code></pre>
 <p>The import system allows for some more convenient forms:</p>
-<pre><code class="language-frost">def rng = import('std.random.rng')
-def first = rng.int(1, 5) # OS-seeded
-</code></pre>
-<pre><code class="language-frost">def rng = import('std.random').seed(1234)
-def first = rng.int(1, 5) # reproducible
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">rng</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.random.rng'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">first</span> <span class="hl-operator">=</span> <span class="hl-variable">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # OS-seeded</span></code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">rng</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.random'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">seed</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1234</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">first</span> <span class="hl-operator">=</span> <span class="hl-variable">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # reproducible</span></code></pre>
 <p>The draw methods are documented below as <code>rng.METHOD</code> since <code>random.rng</code> is the most common access path.</p>
 <h2 id="engine-methods">Engine Methods</h2>
 <p>Draw methods available on any engine (both <code>random.rng</code> and engines returned by <code>random.seed</code>).</p>
 <h3 id="rng.int"><code>rng.int</code></h3>
 <p class="signature"><code>rng.int(low, high)</code></p>
 <p>Returns a uniformly-distributed <code>Int</code> in <code>[low, high]</code> (inclusive on both ends). Produces an error if <code>low &gt; high</code>. <code>low == high</code> is allowed and always returns that value.</p>
-<pre><code class="language-frost">def rng = random.seed(0)
-rng.int(1, 6)        # 1 through 6 inclusive
-rng.int(-10, 10)     # any int in [-10, 10]
-rng.int(5, 5)        # always 5
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">rng</span> <span class="hl-operator">=</span> <span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">seed</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">6</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">        # 1 through 6 inclusive</span>
+<span class="hl-variable">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-operator">-</span><span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">10</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">     # any int in [-10, 10]</span>
+<span class="hl-variable">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">5</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">        # always 5</span></code></pre>
 <h3 id="rng.float"><code>rng.float</code></h3>
 <p class="signature"><code>rng.float(low, high)</code></p>
 <p>Returns a uniformly-distributed <code>Float</code> in <code>[low, high]</code>. Produces an error if <code>low &gt; high</code>. <code>low == high</code> is allowed and always returns that value.</p>
-<pre><code class="language-frost">random.rng.float(0.0, 1.0)
-random.rng.float(-1.0, 1.0)
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">float</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0.0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">1.0</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">float</span><span class="hl-punctuation-bracket">(</span><span class="hl-operator">-</span><span class="hl-number">1.0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">1.0</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h3 id="rng.bool"><code>rng.bool</code></h3>
 <p class="signature"><code>rng.bool()</code></p>
 <p class="signature"><code>rng.bool(probability)</code></p>
 <p>Returns a <code>Bool</code>. Without arguments, behaves like a fair coin. With a <code>Float</code> <code>probability</code> in <code>[0.0, 1.0]</code>, returns <code>true</code> with that probability. Produces an error if <code>probability</code> is outside <code>[0.0, 1.0]</code>.</p>
-<pre><code class="language-frost">random.rng.bool()        # 50/50
-random.rng.bool(0.7)     # 70% true
-random.rng.bool(0.0)     # always false
-random.rng.bool(1.0)     # always true
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">bool</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">        # 50/50</span>
+<span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">bool</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0.7</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">     # 70% true</span>
+<span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">bool</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0.0</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">     # always false</span>
+<span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">bool</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1.0</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">     # always true</span></code></pre>
 <h3 id="rng.choice"><code>rng.choice</code></h3>
 <p class="signature"><code>rng.choice(arr)</code></p>
 <p>Returns one uniformly-randomly-selected element from <code>arr</code>. Produces an error if <code>arr</code> is empty.</p>
-<pre><code class="language-frost">random.rng.choice(['rock', 'paper', 'scissors'])
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">choice</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-string">'rock'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'paper'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'scissors'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h3 id="rng.sample"><code>rng.sample</code></h3>
 <p class="signature"><code>rng.sample(arr, n)</code></p>
 <p>Returns a new <code>Array</code> containing <code>n</code> distinct elements drawn from <code>arr</code> without replacement. Produces an error if <code>n</code> is negative or greater than <code>len(arr)</code>. <code>n == 0</code> returns an empty array; <code>n == len(arr)</code> returns a permutation of the input.</p>
-<pre><code class="language-frost">def deck = range(52)
-def hand = random.rng.sample(deck, 5)   # 5 distinct cards
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">deck</span> <span class="hl-operator">=</span> <span class="hl-function">range</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">52</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">hand</span> <span class="hl-operator">=</span> <span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">sample</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">deck</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">   # 5 distinct cards</span></code></pre>
 <h3 id="rng.shuffle"><code>rng.shuffle</code></h3>
 <p class="signature"><code>rng.shuffle(arr)</code></p>
 <p>Returns a new <code>Array</code> containing the same elements as <code>arr</code> in a uniformly-random order. The input is not modified.</p>
-<pre><code class="language-frost">random.rng.shuffle(range(52))
-random.rng.shuffle(['a', 'b', 'c'])
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">shuffle</span><span class="hl-punctuation-bracket">(</span><span class="hl-function">range</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">52</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">shuffle</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'b'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'c'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h2 id="seed"><code>seed</code></h2>
 <p class="signature"><code>random.seed(n)</code></p>
 <p>Returns a new engine seeded with the <code>Int</code> value <code>n</code>. Two engines created with the same seed produce identical sequences across all methods, including the collection operations.</p>
-<pre><code class="language-frost">def a = random.seed(2024)
-def b = random.seed(2024)
-a.int(1, 100) == b.int(1, 100)                  # true
-a.shuffle([1, 2, 3]) == b.shuffle([1, 2, 3])    # true
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">a</span> <span class="hl-operator">=</span> <span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">seed</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">2024</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">b</span> <span class="hl-operator">=</span> <span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">seed</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">2024</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">a</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">100</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> ==</span> <span class="hl-variable">b</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">100</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">                  # true</span>
+<span class="hl-variable">a</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">shuffle</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> ==</span> <span class="hl-variable">b</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">shuffle</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">    # true</span></code></pre>
 <p>Any <code>Int</code> is a valid seed, including <code>0</code> and negative values. Seeded engines are well-suited for reproducible test fixtures, deterministic simulations, and replaying scenarios with known seeds.</p>
 <h2 id="rng"><code>rng</code></h2>
 <p>A default engine pre-seeded from the operating system at startup. Use this for casual non-reproducible randomness.</p>
-<pre><code class="language-frost">random.rng.int(1, 6)
-random.rng.choice(['a', 'b', 'c'])
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">int</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">6</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">random</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">rng</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">choice</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'b'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'c'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span></code></pre>
 </main>
 <script src="../nav.js"></script>
 </body>

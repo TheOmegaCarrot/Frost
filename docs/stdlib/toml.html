@@ -9,80 +9,67 @@
 <body>
 <main>
 <h1 id="toml">TOML</h1>
-<pre><code class="language-frost">def toml = import('ext.toml')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">toml</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ext.toml'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Encode and decode <a href="https://toml.io/en/v1.0.0">TOML v1.0.0</a> documents with full semantic round-tripping.</p>
 <p>Build flag: <code>WITH_TOML</code> (default: <code>AUTO</code>). No external dependencies.</p>
 <h2 id="foreign-values">Foreign Values</h2>
 <p>TOML has types that Frost does not: dates, times, datetimes, and the special floats <code>nan</code>/<code>inf</code>/<code>-inf</code>. When <code>decode</code> encounters one of these, it produces a <a href="foreign-values.html">foreign value</a>. Call it to get a <code>String</code> representation, or pass it through to <code>encode</code> to preserve the original TOML type.</p>
-<pre><code class="language-frost">def doc = toml.decode('created = 2024-03-16')
-doc.created       # =&gt; &lt;Function&gt;
-doc.created()     # =&gt; "2024-03-16"
-toml.encode(doc)  # round-trips as a TOML date, not a string
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">doc</span> <span class="hl-operator">=</span> <span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">decode</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'created = 2024-03-16'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">doc</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">created</span><span class="hl-comment">       # =&gt; &lt;Function&gt;</span>
+<span class="hl-variable">doc</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">created</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">     # =&gt; "2024-03-16"</span>
+<span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">encode</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">doc</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">  # round-trips as a TOML date, not a string</span></code></pre>
 <p>You can also construct foreign values directly using <code>toml.date</code>, <code>toml.time</code>, <code>toml.date_time</code>, and <code>toml.special_float</code>. This lets you build TOML documents from scratch that include these types.</p>
-<pre><code class="language-frost">def doc = {
-    created: toml.date('2024-03-16'),
-    updated: toml.date_time('2024-03-16T10:30:00Z'),
-    threshold: toml.special_float('inf'),
-}
-toml.encode(doc)
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">doc</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">created</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">date</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'2024-03-16'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">updated</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">date_time</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'2024-03-16T10:30:00Z'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">threshold</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">special_float</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'inf'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">}</span>
+<span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">encode</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">doc</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h2 id="decode"><code>decode</code></h2>
 <p class="signature"><code>toml.decode(s)</code></p>
 <p>Parses a TOML document from <code>String</code> <code>s</code> and returns a <code>Map</code>. All TOML types map to their natural Frost equivalents. Dates, times, datetimes, and special floats become foreign values.</p>
-<pre><code class="language-frost">def config = toml.decode('''
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">config</span> <span class="hl-operator">=</span> <span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">decode</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'''
 [server]
 host = "localhost"
 port = 8080
-''')
-config.server.host  # =&gt; "localhost"
-</code></pre>
+'''</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">config</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">server</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">host</span><span class="hl-comment">  # =&gt; "localhost"</span></code></pre>
 <h2 id="encode"><code>encode</code></h2>
 <p class="signature"><code>toml.encode(m)</code></p>
 <p>Serializes a <code>Map</code> to a TOML <code>String</code>. Only string keys are permitted. <code>null</code> values and plain <code>Function</code> values are rejected. Foreign values produced by <code>decode</code> or the constructor functions are serialized with their original TOML types.</p>
-<pre><code class="language-frost">toml.encode({
-    title: 'My Config',
-    database: {enabled: true, ports: [8001, 8002]},
-})
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">encode</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">title</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'My Config'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">database</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">enabled</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">ports</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">8001</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">8002</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>The output is valid TOML, but may not be ideally formatted for all use cases. TOML allows many textual representations of the same data, and <code>encode</code> does not currently offer formatting options.</p>
 <h2 id="date"><code>date</code></h2>
 <p class="signature"><code>toml.date(s)</code></p>
 <p>Creates a TOML date foreign value from a <code>String</code> in <code>YYYY-MM-DD</code> format. See the <a href="https://toml.io/en/v1.0.0#local-date">TOML date specification</a> for exact syntax.</p>
-<pre><code class="language-frost">toml.date('2024-03-16')()
-# =&gt; 2024-03-16
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">date</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'2024-03-16'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 2024-03-16</span></code></pre>
 <h2 id="time"><code>time</code></h2>
 <p class="signature"><code>toml.time(s)</code></p>
 <p>Creates a TOML time foreign value from a <code>String</code> in <code>HH:MM:SS</code> format, with optional fractional seconds. See the <a href="https://toml.io/en/v1.0.0#local-time">TOML time specification</a> for exact syntax.</p>
-<pre><code class="language-frost">toml.time('14:30:00')()
-# =&gt; 14:30:00
-</code></pre>
-<pre><code class="language-frost">toml.time('08:23:22.000523000')()
-# =&gt; 08:23:22.000523000
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">time</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'14:30:00'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 14:30:00</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">time</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'08:23:22.000523000'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 08:23:22.000523000</span></code></pre>
 <h2 id="date_time"><code>date_time</code></h2>
 <p class="signature"><code>toml.date_time(s)</code></p>
 <p>Creates a TOML datetime foreign value from a <code>String</code>. Accepts any datetime format that TOML supports: local datetimes, offset datetimes with <code>Z</code> or <code>+HH:MM</code>/<code>-HH:MM</code>, and the space separator variant. See the <a href="https://toml.io/en/v1.0.0#offset-date-time">TOML datetime specification</a> for exact syntax.</p>
-<pre><code class="language-frost">toml.date_time('1979-05-27T07:32:00Z')()
-# =&gt; 1979-05-27T07:32:00Z
-</code></pre>
-<pre><code class="language-frost">toml.date_time('1979-05-27T07:32:00')()
-# =&gt; 1979-05-27T07:32:00
-</code></pre>
-<pre><code class="language-frost">toml.date_time('1979-05-27T07:32:00+09:00')()
-# =&gt; 1979-05-27T07:32:00+09:00
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">date_time</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'1979-05-27T07:32:00Z'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 1979-05-27T07:32:00Z</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">date_time</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'1979-05-27T07:32:00'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 1979-05-27T07:32:00</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">date_time</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'1979-05-27T07:32:00+09:00'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 1979-05-27T07:32:00+09:00</span></code></pre>
 <h2 id="special_float"><code>special_float</code></h2>
 <p class="signature"><code>toml.special_float(s)</code></p>
 <p>Creates a TOML special float foreign value. <code>s</code> must be one of <code>"nan"</code>, <code>"inf"</code>, or <code>"-inf"</code> (lowercase, matching TOML syntax). Frost normally rejects these values at construction, but foreign values can carry them safely for round-tripping.</p>
-<pre><code class="language-frost">toml.special_float('nan')()
-# =&gt; nan
-</code></pre>
-<pre><code class="language-frost">toml.special_float('inf')()
-# =&gt; inf
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">special_float</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'nan'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; nan</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">toml</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">special_float</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'inf'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; inf</span></code></pre>
 </main>
 <script src="../nav.js"></script>
 </body>

@@ -43,39 +43,30 @@
 <p class="signature"><code>range(start, stop, step)</code></p>
 <p>Returns an <code>Array</code> of <code>Int</code> values. <code>step</code> defaults to <code>1</code> and must not be <code>0</code>.</p>
 <p>When <code>step &gt; 0</code>, yields <code>start, start + step, ...</code> while the value is <code>&lt; stop</code>. When <code>step &lt; 0</code>, yields <code>start, start + step, ...</code> while the value is <code>&gt; stop</code>. Returns an empty array if the range is already exhausted at <code>start</code>.</p>
-<pre><code class="language-frost">range(5)
-# =&gt; [ 0, 1, 2, 3, 4 ]
-</code></pre>
-<pre><code class="language-frost">range(2, 5)
-# =&gt; [ 2, 3, 4 ]
-</code></pre>
-<pre><code class="language-frost">range(0, 10, 2)
-# =&gt; [ 0, 2, 4, 6, 8 ]
-</code></pre>
-<pre><code class="language-frost">range(5, 0, -1)
-# =&gt; [ 5, 4, 3, 2, 1 ]
-</code></pre>
-<pre><code class="language-frost">range(5, 5)
-# =&gt; []
-</code></pre>
-<pre><code class="language-frost">range(0, 5, -1)
-# =&gt; []
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">range</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 0, 1, 2, 3, 4 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">range</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 2, 3, 4 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">range</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 0, 2, 4, 6, 8 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">range</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">5</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">-</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 5, 4, 3, 2, 1 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">range</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">5</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; []</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">range</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">-</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; []</span></code></pre>
 <h2 id="nulls"><code>nulls</code></h2>
 <p class="signature"><code>nulls(n)</code></p>
 <p>Returns an array of <code>n</code> <code>null</code> values. <code>n</code> must be <code>&gt;= 0</code>.</p>
 <h2 id="repeat"><code>repeat</code></h2>
 <p class="signature"><code>repeat(value, n)</code></p>
 <p>Returns an array of <code>n</code> copies of <code>value</code>. <code>n</code> must be <code>&gt;= 0</code>. <code>value</code> may be of any type.</p>
-<pre><code class="language-frost">repeat(0, 3)
-# =&gt; [ 0, 0, 0 ]
-</code></pre>
-<pre><code class="language-frost">repeat('x', 4)
-# =&gt; [ "x", "x", "x", "x" ]
-</code></pre>
-<pre><code class="language-frost">repeat(null, 0)
-# =&gt; []
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">repeat</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 0, 0, 0 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">repeat</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'x'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ "x", "x", "x", "x" ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">repeat</span><span class="hl-punctuation-bracket">(</span><span class="hl-constant-builtin">null</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">0</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; []</span></code></pre>
 <h2 id="id"><code>id</code></h2>
 <p class="signature"><code>id(value)</code></p>
 <p>Returns <code>value</code> unchanged.</p>
@@ -91,51 +82,39 @@
 <h2 id="dig"><code>dig</code></h2>
 <p class="signature"><code>dig(structure, ...keys)</code></p>
 <p>Indexes into nested structures, returning <code>null</code> if any intermediate value is <code>null</code> rather than producing an error. Each key is applied in order, indexing into the result of the previous step.</p>
-<pre><code class="language-frost">def m = {a: {b: {c: 42}}}
-m @ dig('a', 'b', 'c')
-# =&gt; 42
-</code></pre>
-<pre><code class="language-frost">def m = {a: {b: {c: 42}}}
-m @ dig('a', 'x', 'c')   # =&gt; null (missing intermediate key)
-</code></pre>
-<pre><code class="language-frost">def nested = {items: [{name: 'alice'}, {name: 'bob'}]}
-nested @ dig('items', 0, 'name')
-# =&gt; alice
-</code></pre>
-<pre><code class="language-frost">def nested = {items: [{name: 'alice'}, {name: 'bob'}]}
-nested @ dig('items', 5, 'name')   # =&gt; null (out of bounds)
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">m</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">a</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">b</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">c</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">}</span>
+<span class="hl-variable">m</span><span class="hl-operator"> @</span> <span class="hl-function">dig</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'b'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'c'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 42</span></code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">m</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">a</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">b</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">c</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">}</span>
+<span class="hl-variable">m</span><span class="hl-operator"> @</span> <span class="hl-function">dig</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'x'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'c'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">   # =&gt; null (missing intermediate key)</span></code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">nested</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">items</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'bob'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span>
+<span class="hl-variable">nested</span><span class="hl-operator"> @</span> <span class="hl-function">dig</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'items'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'name'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; alice</span></code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">nested</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">items</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'bob'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span>
+<span class="hl-variable">nested</span><span class="hl-operator"> @</span> <span class="hl-function">dig</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'items'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'name'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">   # =&gt; null (out of bounds)</span></code></pre>
 <h2 id="slice"><code>slice</code></h2>
 <p class="signature"><code>slice(seq, start)</code></p>
 <p class="signature"><code>slice(seq, start, end)</code></p>
 <p>Returns a sub-array or substring from <code>start</code> (inclusive) to <code>end</code> (exclusive). If <code>end</code> is omitted, slices to the end. Negative indices count from the end. Out-of-bounds indices are clamped. Works on both <code>Array</code> and <code>String</code>.</p>
-<pre><code class="language-frost">slice([1, 2, 3, 4, 5], 1, 3)
-# =&gt; [ 2, 3 ]
-</code></pre>
-<pre><code class="language-frost">slice([1, 2, 3, 4, 5], 2)
-# =&gt; [ 3, 4, 5 ]
-</code></pre>
-<pre><code class="language-frost">slice([1, 2, 3, 4, 5], -2)
-# =&gt; [ 4, 5 ]
-</code></pre>
-<pre><code class="language-frost">slice([1, 2, 3, 4, 5], 1, -1)
-# =&gt; [ 2, 3, 4 ]
-</code></pre>
-<pre><code class="language-frost">slice('hello', 1, 4)
-# =&gt; ell
-</code></pre>
-<pre><code class="language-frost">slice('hello', -3)
-# =&gt; llo
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">slice</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 2, 3 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">slice</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 3, 4, 5 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">slice</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">-</span><span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 4, 5 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">slice</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">-</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 2, 3, 4 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">slice</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'hello'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; ell</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">slice</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'hello'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">-</span><span class="hl-number">3</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; llo</span></code></pre>
 <h2 id="stride"><code>stride</code></h2>
 <p class="signature"><code>stride(seq, n)</code></p>
 <p>Returns every <code>n</code>th element of <code>seq</code> starting from index 0. <code>n</code> must be <code>&gt; 0</code>. Works on both <code>Array</code> and <code>String</code>.</p>
-<pre><code class="language-frost">stride([1, 2, 3, 4, 5, 6], 2)
-# =&gt; [ 1, 3, 5 ]
-</code></pre>
-<pre><code class="language-frost">stride('abcdef', 2)
-# =&gt; ace
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">stride</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">6</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 1, 3, 5 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">stride</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'abcdef'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; ace</span></code></pre>
 <h2 id="take"><code>take</code></h2>
 <p class="signature"><code>take(seq, n)</code></p>
 <p>Returns the first <code>n</code> elements of <code>seq</code>. <code>n</code> must be <code>&gt;= 0</code>. Works on both <code>Array</code> and <code>String</code>.</p>
@@ -151,15 +130,13 @@ nested @ dig('items', 5, 'name')   # =&gt; null (out of bounds)
 <h2 id="slide"><code>slide</code></h2>
 <p class="signature"><code>slide(arr, n)</code></p>
 <p>Returns an array of overlapping windows of size <code>n</code>. <code>n</code> must be <code>&gt; 0</code>.</p>
-<pre><code class="language-frost">slide([1, 2, 3, 4], 3)
-# =&gt; [ [ 1, 2, 3 ], [ 2, 3, 4 ] ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">slide</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ [ 1, 2, 3 ], [ 2, 3, 4 ] ]</span></code></pre>
 <h2 id="chunk"><code>chunk</code></h2>
 <p class="signature"><code>chunk(arr, n)</code></p>
 <p>Returns an array of non-overlapping chunks of size <code>n</code>. The last chunk may be smaller than <code>n</code> if the array length is not evenly divisible. <code>n</code> must be <code>&gt; 0</code>.</p>
-<pre><code class="language-frost">chunk([1, 2, 3, 4, 5], 2)
-# =&gt; [ [ 1, 2 ], [ 3, 4 ], [ 5 ] ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">chunk</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ [ 1, 2 ], [ 3, 4 ], [ 5 ] ]</span></code></pre>
 <h2 id="reverse"><code>reverse</code></h2>
 <p class="signature"><code>reverse(seq)</code></p>
 <p>Returns <code>seq</code> in reverse order. Works on both <code>Array</code> and <code>String</code>.</p>
@@ -172,63 +149,52 @@ nested @ dig('items', 5, 'name')   # =&gt; null (out of bounds)
 <h2 id="chunk_by"><code>chunk_by</code></h2>
 <p class="signature"><code>chunk_by(arr, f)</code></p>
 <p>Groups consecutive elements into chunks. A new chunk begins whenever <code>f(previous, current)</code> returns falsy.</p>
-<pre><code class="language-frost">chunk_by([1, 1, 2, 2, 1], fn (a, b) -&gt; a == b)
-# =&gt; [ [ 1, 1 ], [ 2, 2 ], [ 1 ] ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">chunk_by</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">1</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-punctuation-bracket">(</span><span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> ==</span> <span class="hl-variable">b</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ [ 1, 1 ], [ 2, 2 ], [ 1 ] ]</span></code></pre>
 <h2 id="flatten"><code>flatten</code></h2>
 <p class="signature"><code>flatten(arr)</code></p>
 <p class="signature"><code>flatten(arr, n)</code></p>
 <p>Flattens nested arrays. Without <code>n</code>, recursively flattens all levels of nesting. With <code>n</code>, flattens exactly <code>n</code> levels. <code>n</code> must be <code>&gt;= 0</code>; <code>n=0</code> returns <code>arr</code> unchanged. Non-array elements are always left untouched.</p>
-<pre><code class="language-frost">flatten([1, [2, [3, 4]], 5])
-# =&gt; [ 1, 2, 3, 4, 5 ]
-</code></pre>
-<pre><code class="language-frost">flatten([1, [2, [3, 4]], 5], 1)
-# =&gt; [ 1, 2, [ 3, 4 ], 5 ]
-</code></pre>
-<pre><code class="language-frost">flatten([1, [2, [3, 4]], 5], 0)
-# =&gt; [ 1, [ 2, [ 3, 4 ] ], 5 ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">flatten</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 1, 2, 3, 4, 5 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">flatten</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">1</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 1, 2, [ 3, 4 ], 5 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">flatten</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">0</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 1, [ 2, [ 3, 4 ] ], 5 ]</span></code></pre>
 <h2 id="zip"><code>zip</code></h2>
 <p class="signature"><code>zip(...arrays)</code></p>
 <p>Combines two or more arrays element by element. Returns an array of arrays, truncated to the length of the shortest input.</p>
-<pre><code class="language-frost">zip([1, 2, 3], ['a', 'b', 'c'])
-# =&gt; [ [ 1, "a" ], [ 2, "b" ], [ 3, "c" ] ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">zip</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'b'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'c'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ [ 1, "a" ], [ 2, "b" ], [ 3, "c" ] ]</span></code></pre>
 <h2 id="zip_with"><code>zip_with</code></h2>
 <p class="signature"><code>zip_with(f, ...arrays)</code></p>
 <p>Combines two or more arrays element-wise by applying <code>f</code> to corresponding elements. The function receives one argument per array. If the input arrays are of unequal length, all are truncated to the length of the shortest input.</p>
 <p>Equivalent to <code>map zip(...arrays) with spread(f)</code>, but without materializing the intermediate array of arrays.</p>
-<pre><code class="language-frost">zip_with(fn a, b -&gt; a + b, [1, 2, 3], [10, 20, 30])
-# =&gt; [ 11, 22, 33 ]
-</code></pre>
-<pre><code class="language-frost">zip_with(fn a, b, c -&gt; a * b + c, [2, 3, 4], [10, 20, 30], [1, 1])
-# =&gt; [ 21, 61 ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">zip_with</span><span class="hl-punctuation-bracket">(</span><span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-variable">b</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">20</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">30</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 11, 22, 33 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">zip_with</span><span class="hl-punctuation-bracket">(</span><span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">c</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> *</span> <span class="hl-variable">b</span><span class="hl-operator"> +</span> <span class="hl-variable">c</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">20</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">30</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">1</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 21, 61 ]</span></code></pre>
 <h2 id="xprod"><code>xprod</code></h2>
 <p class="signature"><code>xprod(...arrays)</code></p>
 <p>Returns the cartesian product of two or more arrays. Each element of the result is an array containing one element from each input. Returns an empty array if any input is empty.</p>
-<pre><code class="language-frost">xprod([1, 2], ['a', 'b'])
-# =&gt; [ [ 1, "a" ], [ 1, "b" ], [ 2, "a" ], [ 2, "b" ] ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">xprod</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'b'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ [ 1, "a" ], [ 1, "b" ], [ 2, "a" ], [ 2, "b" ] ]</span></code></pre>
 <h2 id="xprod_with"><code>xprod_with</code></h2>
 <p class="signature"><code>xprod_with(f, ...arrays)</code></p>
 <p>Computes the cartesian product of two or more arrays, applying <code>f</code> to each element of the product. The function receives one argument per array. Returns an empty array if any input is empty.</p>
 <p>Equivalent to <code>map xprod(...arrays) with spread(f)</code>, but without materializing the intermediate array of arrays.</p>
-<pre><code class="language-frost">xprod_with(fn a, b -&gt; a + b, [10, 20], [1, 2])
-# =&gt; [ 11, 12, 21, 22 ]
-</code></pre>
-<pre><code class="language-frost">xprod_with(fn a, b -&gt; a + b, ['a', 'b'], ['1', '2'])
-# =&gt; [ "a1", "a2", "b1", "b2" ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">xprod_with</span><span class="hl-punctuation-bracket">(</span><span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-variable">b</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">20</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 11, 12, 21, 22 ]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">xprod_with</span><span class="hl-punctuation-bracket">(</span><span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-variable">b</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'b'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'1'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'2'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ "a1", "a2", "b1", "b2" ]</span></code></pre>
 <h2 id="transform"><code>transform</code></h2>
 <p class="signature"><code>transform(structure, f)</code></p>
 <p>Functional form of the <code>map</code> expression. Applies <code>f</code> to each element of an <code>Array</code>, or to each key-value pair <code>(k, v)</code> of a <code>Map</code>. For <code>Map</code> input, <code>f</code> must return a <code>Map</code>; its entries are merged into the result, allowing keys to be remapped or entries to be expanded.</p>
 <h2 id="flat_map"><code>flat_map</code></h2>
 <p class="signature"><code>flat_map(arr, f)</code></p>
 <p>Applies <code>f</code> to each element of <code>arr</code> and flattens the results one level. Equivalent to <code>arr @ transform(f) @ flatten(1)</code>.</p>
-<pre><code class="language-frost">flat_map([1, 2, 3], fn x -&gt; [x, x * 2])
-# =&gt; [ 1, 2, 2, 4, 3, 6 ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">flat_map</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-variable">x</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">x</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">x</span><span class="hl-operator"> *</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 1, 2, 2, 4, 3, 6 ]</span></code></pre>
 <p class="see-also">See also:
 <a href="collections.html#transform"><code>transform</code></a>
 <a href="collections.html#flatten"><code>flatten</code></a>
@@ -252,27 +218,21 @@ nested @ dig('items', 5, 'name')   # =&gt; null (out of bounds)
 <h2 id="sum"><code>sum</code></h2>
 <p class="signature"><code>sum(arr)</code></p>
 <p>Returns the sum of all elements in <code>arr</code> using <code>+</code>. Returns <code>null</code> for an empty array. Equivalent to <code>reduce arr with plus</code>.</p>
-<pre><code class="language-frost">sum([1, 2, 3, 4])
-# =&gt; 10
-</code></pre>
-<pre><code class="language-frost">sum([1.5, 2.5])
-# =&gt; 4.0
-</code></pre>
-<pre><code class="language-frost">sum([])
-# =&gt; null
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">sum</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 10</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">sum</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1.5</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2.5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 4.0</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">sum</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; null</span></code></pre>
 <h2 id="product"><code>product</code></h2>
 <p class="signature"><code>product(arr)</code></p>
 <p>Returns the product of all elements in <code>arr</code> using <code>*</code>. Returns <code>null</code> for an empty array. Equivalent to <code>reduce arr with times</code>.</p>
-<pre><code class="language-frost">product([1, 2, 3, 4])
-# =&gt; 24
-</code></pre>
-<pre><code class="language-frost">product([2, 3.0])
-# =&gt; 6.0
-</code></pre>
-<pre><code class="language-frost">product([])
-# =&gt; null
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">product</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 24</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">product</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3.0</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 6.0</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">product</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; null</span></code></pre>
 <h2 id="sorted"><code>sorted</code></h2>
 <p class="signature"><code>sorted(arr)</code></p>
 <p class="signature"><code>sorted(arr, f)</code></p>
@@ -318,58 +278,49 @@ nested @ dig('items', 5, 'name')   # =&gt; null (out of bounds)
 <h2 id="group_by"><code>group_by</code></h2>
 <p class="signature"><code>group_by(arr, f)</code></p>
 <p>Returns a map where each key is a value returned by <code>f</code>, and each value is an array of all elements in <code>arr</code> that produced that key.</p>
-<pre><code class="language-frost">group_by([1, 2, 3, 4, 5], fn (x) -&gt; x % 2)
-# =&gt; { [0]: [ 2, 4 ], [1]: [ 1, 3, 5 ] }
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">group_by</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-punctuation-bracket">(</span><span class="hl-variable">x</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">x</span><span class="hl-operator"> %</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; { [0]: [ 2, 4 ], [1]: [ 1, 3, 5 ] }</span></code></pre>
 <p class="see-also">See also:
 <a href="collections.html#count_by"><code>count_by</code></a>
 </p>
 <h2 id="count_by"><code>count_by</code></h2>
 <p class="signature"><code>count_by(arr, f)</code></p>
 <p>Returns a map where each key is a value returned by <code>f</code>, and each value is an <code>Int</code> count of how many elements produced that key.</p>
-<pre><code class="language-frost">count_by(['a', 'b', 'a', 'c', 'a'], id)
-# =&gt; { ["a"]: 3, ["b"]: 1, ["c"]: 1 }
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">count_by</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'b'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'c'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'a'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">id</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; { ["a"]: 3, ["b"]: 1, ["c"]: 1 }</span></code></pre>
 <p class="see-also">See also:
 <a href="collections.html#group_by"><code>group_by</code></a>
 </p>
 <h2 id="scan"><code>scan</code></h2>
 <p class="signature"><code>scan(arr, f)</code></p>
 <p>Returns a running accumulation of <code>arr</code> using <code>f</code>. The first element of the result is the first element of <code>arr</code> (used as the initial accumulator). Each subsequent element is <code>f(previous_accumulator, current_element)</code>. Returns an empty array for empty input.</p>
-<pre><code class="language-frost">scan([1, 2, 3, 4], fn(acc, x) -&gt; acc + x)
-# =&gt; [ 1, 3, 6, 10 ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">scan</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">acc</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">x</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">acc</span><span class="hl-operator"> +</span> <span class="hl-variable">x</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ 1, 3, 6, 10 ]</span></code></pre>
 <h2 id="partition"><code>partition</code></h2>
 <p class="signature"><code>partition(arr, f)</code></p>
 <p>Splits <code>arr</code> into two arrays based on predicate <code>f</code>. Returns <code>{ pass: [...], fail: [...] }</code> where <code>pass</code> contains elements for which <code>f</code> returned truthy and <code>fail</code> contains the rest.</p>
-<pre><code class="language-frost">partition([1, 2, 3, 4, 5], fn (x) -&gt; x % 2 == 1)
-# =&gt; { ["fail"]: [ 2, 4 ], ["pass"]: [ 1, 3, 5 ] }
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">partition</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-punctuation-bracket">(</span><span class="hl-variable">x</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">x</span><span class="hl-operator"> %</span> <span class="hl-number">2</span><span class="hl-operator"> ==</span> <span class="hl-number">1</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; { ["fail"]: [ 2, 4 ], ["pass"]: [ 1, 3, 5 ] }</span></code></pre>
 <h2 id="map_into"><code>map_into</code></h2>
 <p class="signature"><code>map_into(arr, f)</code></p>
 <p>Calls <code>f</code> on each element of <code>arr</code>. Each call must return a <code>Map</code>. The results are merged left-to-right into a single <code>Map</code>. Later entries overwrite earlier ones on key collision.</p>
-<pre><code class="language-frost">map_into(['a', 'b', 'c'], fn s -&gt; { [s]: len(s) })
-</code></pre>
-<pre><code class="language-frost">map_into(range(3), fn n -&gt; { [n]: n * n })
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">map_into</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'b'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'c'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-variable">s</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">s</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-function">len</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">s</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-bracket">)</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">map_into</span><span class="hl-punctuation-bracket">(</span><span class="hl-function">range</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">3</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-variable">n</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">n</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">n</span><span class="hl-operator"> *</span> <span class="hl-variable">n</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h2 id="to_entries"><code>to_entries</code></h2>
 <p class="signature"><code>to_entries(m)</code></p>
 <p>Converts a map into an array of <code>{key: k, value: v}</code> entries. The order of entries in the result is unspecified.</p>
-<pre><code class="language-frost">to_entries({a: 1, b: 2})
-# =&gt; [ { ["key"]: "a", ["value"]: 1 }, { ["key"]: "b", ["value"]: 2 } ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">to_entries</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">a</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">b</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [ { ["key"]: "a", ["value"]: 1 }, { ["key"]: "b", ["value"]: 2 } ]</span></code></pre>
 <p class="see-also">See also:
 <a href="collections.html#from_entries"><code>from_entries</code></a>
 </p>
 <h2 id="from_entries"><code>from_entries</code></h2>
 <p class="signature"><code>from_entries(arr)</code></p>
 <p>Converts an array of <code>{key: k, value: v}</code> maps into a single map. Each element must be a map containing at least a <code>key</code> and a <code>value</code> entry. Keys must be valid map keys (non-null primitives). Extra entries in the element maps are ignored. On duplicate keys, the last entry wins.</p>
-<pre><code class="language-frost">from_entries([{key: 'a', value: 1}, {key: 'b', value: 2}])
-# =&gt; { ["a"]: 1, ["b"]: 2 }
-</code></pre>
-<pre><code class="language-frost">from_entries([{key: 'x', value: 1}, {key: 'x', value: 2}])
-# =&gt; { ["x"]: 2 }
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">from_entries</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">key</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">value</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">key</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'b'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">value</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; { ["a"]: 1, ["b"]: 2 }</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">from_entries</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">key</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'x'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">value</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">key</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'x'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">value</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; { ["x"]: 2 }</span></code></pre>
 <p><code>to_entries</code> and <code>from_entries</code> are inverses: <code>from_entries(to_entries(m)) == m</code> for any map <code>m</code>.</p>
 <p class="see-also">See also:
 <a href="collections.html#to_entries"><code>to_entries</code></a>
@@ -377,18 +328,14 @@ nested @ dig('items', 5, 'name')   # =&gt; null (out of bounds)
 <h2 id="dissoc"><code>dissoc</code></h2>
 <p class="signature"><code>dissoc(m, ...keys)</code></p>
 <p>Returns a new map with the given keys removed. Each key must be a valid map key (non-null primitive). Missing keys are silently ignored.</p>
-<pre><code class="language-frost">dissoc({a: 1, b: 2, c: 3}, 'b')
-# =&gt; { ["a"]: 1, ["c"]: 3 }
-</code></pre>
-<pre><code class="language-frost">dissoc({a: 1, b: 2, c: 3}, 'a', 'c')
-# =&gt; { ["b"]: 2 }
-</code></pre>
-<pre><code class="language-frost">dissoc({a: 1}, 'missing')
-# =&gt; { ["a"]: 1 }
-</code></pre>
-<pre><code class="language-frost">{a: 1, b: 2, c: 3} @ dissoc('b')
-# =&gt; { ["a"]: 1, ["c"]: 3 }
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">dissoc</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">a</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">b</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">c</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'b'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; { ["a"]: 1, ["c"]: 3 }</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">dissoc</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">a</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">b</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">c</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'a'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'c'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; { ["b"]: 2 }</span></code></pre>
+<pre><code class="language-frost"><span class="hl-function">dissoc</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">a</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'missing'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; { ["a"]: 1 }</span></code></pre>
+<pre><code class="language-frost"><span class="hl-punctuation-bracket">{</span><span class="hl-property">a</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">b</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">c</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">}</span><span class="hl-operator"> @</span> <span class="hl-function">dissoc</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'b'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; { ["a"]: 1, ["c"]: 3 }</span></code></pre>
 </main>
 <script src="../nav.js"></script>
 </body>

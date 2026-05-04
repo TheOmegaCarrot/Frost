@@ -1,5 +1,8 @@
-def { fs, io, string, regex } = import('std')
+def { fs, io, os, string, regex } = import('std')
 def { css } = import('html-style')
+
+def highlighter = (os.getenv('FROST_HIGHLIGHT')
+    or error('frost-highlight tool not available. Set FROST_HIGHLIGHT when generating HTML docs'))
 
 # --- Inline formatting ---
 
@@ -207,19 +210,38 @@ export defn write_break(res) -> null
 export defn write_signature(res, sig) ->
     res.writeln($'<p class="signature"><code>${escape_html(sig)}</code></p>')
 
+defn highlight_frost(code) -> {
+    def result = os.run(highlighter, [], {stdin: code})
+    if result.exit_code != 0: do {
+        print($'Warning: frost-highlight encountered an error processing the following:\n${code}')
+        escape_html(code)
+    }
+    else: result.stdout
+}
+
 export defn write_code_block(res, example) -> {
     def lang = example.lang or 'frost'
-    res.writeln($'<pre><code class="language-${lang}">${escape_html(example.code)}')
 
-    match example {
-        { result } => res.writeln(escape_html($'# => ${result}')),
-        { output } => res.writeln(escape_html($'# prints: ${output}')),
-        { error } => res.writeln(escape_html($'# error: ${error}')),
-        { illustrative } => null,
+    def suffix = match example {
+        { result } => $'\n# => ${result}',
+        { output } => $'\n# prints: ${output}',
+        { error } => $'\n# error: ${error}',
+        { illustrative } => '',
         _ => fatal($'Unable to handle code block: ${example}'),
     }
 
-    res.writeln('</code></pre>')
+    def source = example.code + suffix
+
+    if lang == 'frost': do {
+        res.write('<pre><code class="language-frost">')
+        res.write(highlight_frost(source))
+        res.writeln('</code></pre>')
+    }
+    else: do {
+        res.write($'<pre><code class="language-${lang}">')
+        res.write(escape_html(source))
+        res.writeln('</code></pre>')
+    }
 }
 
 export defn begin_toc(res) -> res.writeln('<nav class="toc"><ul>')

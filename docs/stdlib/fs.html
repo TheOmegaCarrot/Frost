@@ -9,8 +9,7 @@
 <body>
 <main>
 <h1 id="filesystem">Filesystem</h1>
-<pre><code class="language-frost">def fs = import('std.fs')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">fs</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.fs'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Filesystem operations: path manipulation, file metadata, directory listing, and file management.</p>
 <h2 id="absolute"><code>absolute</code></h2>
 <p class="signature"><code>fs.absolute(path)</code></p>
@@ -45,17 +44,16 @@
 <h2 id="stat"><code>stat</code></h2>
 <p class="signature"><code>fs.stat(path)</code></p>
 <p>Returns a map describing the file at <code>path</code>. Produces an error if the stat call fails.</p>
-<pre><code class="language-frost">{
-    type:  String,   # "regular", "directory", "symlink", "block",
-                     # "character", "fifo", "socket", "none",
-                     # "not_found", or "unknown"
-    perms: {
-        owner:  { read: Bool, write: Bool, exec: Bool },
-        group:  { read: Bool, write: Bool, exec: Bool },
-        others: { read: Bool, write: Bool, exec: Bool },
-    }
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">type</span><span class="hl-punctuation-delimiter">:</span>  <span class="hl-variable">String</span><span class="hl-punctuation-delimiter">,</span>   <span class="hl-comment"># "regular", "directory", "symlink", "block",</span>
+                     <span class="hl-comment"># "character", "fifo", "socket", "none",</span>
+                     <span class="hl-comment"># "not_found", or "unknown"</span>
+    <span class="hl-property">perms</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span>
+        <span class="hl-property">owner</span><span class="hl-punctuation-delimiter">:</span>  <span class="hl-punctuation-bracket">{</span> <span class="hl-property">read</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">write</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">exec</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+        <span class="hl-property">group</span><span class="hl-punctuation-delimiter">:</span>  <span class="hl-punctuation-bracket">{</span> <span class="hl-property">read</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">write</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">exec</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+        <span class="hl-property">others</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">read</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">write</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">exec</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">}</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <h2 id="size"><code>size</code></h2>
 <p class="signature"><code>fs.size(path)</code></p>
 <p>Returns the size of the file at <code>path</code> in bytes as an <code>Int</code>. Produces an error if <code>path</code> does not exist or is not a regular file.</p>
@@ -95,45 +93,35 @@
 <h2 id="stem"><code>stem</code></h2>
 <p class="signature"><code>fs.stem(path)</code></p>
 <p>Returns the filename component of <code>path</code> with the last extension removed.</p>
-<pre><code class="language-frost">fs.stem('/a/b/file.txt')
-# =&gt; file
-</code></pre>
-<pre><code class="language-frost">fs.stem('archive.tar.gz')
-# =&gt; archive.tar
-</code></pre>
-<pre><code class="language-frost">fs.stem('/a/b/file')
-# =&gt; file
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">fs</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">stem</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'/a/b/file.txt'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; file</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">fs</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">stem</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'archive.tar.gz'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; archive.tar</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">fs</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">stem</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'/a/b/file'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; file</span></code></pre>
 <h2 id="extension"><code>extension</code></h2>
 <p class="signature"><code>fs.extension(path)</code></p>
 <p>Returns the last extension of the filename component of <code>path</code>, including the leading dot. Returns an empty string if there is no extension.</p>
-<pre><code class="language-frost">fs.extension('/a/b/file.txt')
-# =&gt; .txt
-</code></pre>
-<pre><code class="language-frost">fs.extension('archive.tar.gz')
-# =&gt; .gz
-</code></pre>
-<pre><code class="language-frost">fs.extension('/a/b/file')
-# =&gt; 
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">fs</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">extension</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'/a/b/file.txt'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; .txt</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">fs</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">extension</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'archive.tar.gz'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; .gz</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">fs</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">extension</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'/a/b/file'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; </span></code></pre>
 <h2 id="filename"><code>filename</code></h2>
 <p class="signature"><code>fs.filename(path)</code></p>
 <p>Returns the final component of <code>path</code> (the filename), including any extension.</p>
-<pre><code class="language-frost">fs.filename('/a/b/file.txt')
-# =&gt; file.txt
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">fs</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">filename</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'/a/b/file.txt'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; file.txt</span></code></pre>
 <h2 id="parent"><code>parent</code></h2>
 <p class="signature"><code>fs.parent(path)</code></p>
 <p>Returns the parent directory of <code>path</code>. Returns an empty string if <code>path</code> contains no directory component.</p>
-<pre><code class="language-frost">fs.parent('/a/b/file.txt')
-# =&gt; /a/b
-</code></pre>
-<pre><code class="language-frost">fs.parent('/a/b')
-# =&gt; /a
-</code></pre>
-<pre><code class="language-frost">fs.parent('file.txt')
-# =&gt; 
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">fs</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">parent</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'/a/b/file.txt'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; /a/b</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">fs</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">parent</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'/a/b'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; /a</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">fs</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">parent</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'file.txt'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; </span></code></pre>
 </main>
 <script src="../nav.js"></script>
 </body>

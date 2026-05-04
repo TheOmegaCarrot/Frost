@@ -9,8 +9,7 @@
 <body>
 <main>
 <h1 id="json">JSON</h1>
-<pre><code class="language-frost">def json = import('std.json')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">json</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.json'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Encode and decode JSON.</p>
 <h2 id="decode"><code>decode</code></h2>
 <p class="signature"><code>json.decode(s)</code></p>
@@ -22,15 +21,14 @@
 <h2 id="encode_pretty"><code>encode_pretty</code></h2>
 <p class="signature"><code>json.encode_pretty(value, indent)</code></p>
 <p>Serializes <code>value</code> to a pretty-printed JSON string with the given <code>indent</code> level (number of spaces per nesting level). <code>indent</code> must be a non-negative <code>Int</code>. Carries the same value restrictions as <code>encode</code>.</p>
-<pre><code class="language-frost">json.encode_pretty({name: 'Alice', scores: [10, 20]}, 2)
-# {
-#   "name": "Alice",
-#   "scores": [
-#     10,
-#     20
-#   ]
-# }
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">json</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">encode_pretty</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Alice'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">scores</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">20</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># {</span>
+<span class="hl-comment">#   "name": "Alice",</span>
+<span class="hl-comment">#   "scores": [</span>
+<span class="hl-comment">#     10,</span>
+<span class="hl-comment">#     20</span>
+<span class="hl-comment">#   ]</span>
+<span class="hl-comment"># }</span></code></pre>
 </main>
 <script src="../nav.js"></script>
 </body>

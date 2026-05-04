@@ -9,8 +9,7 @@
 <body>
 <main>
 <h1 id="sqlite">SQLite</h1>
-<pre><code class="language-frost">def sqlite = import('ext.sqlite')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">sqlite</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ext.sqlite'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Access to SQLite databases.</p>
 <p>Supported binding types are <code>Null</code>, <code>Int</code>, <code>Float</code>, <code>Bool</code>, <code>String</code>, and BLOB foreign values. <code>Bool</code> values are stored as integers (<code>true</code> -> <code>1</code>, <code>false</code> -> <code>0</code>).</p>
 <p>SQLite types map to Frost types as follows: <code>INTEGER</code> -> <code>Int</code>, <code>REAL</code> -> <code>Float</code>, <code>TEXT</code> -> <code>String</code>, <code>NULL</code> -> <code>null</code>, and <code>BLOB</code> -> foreign value.</p>
@@ -46,30 +45,26 @@
 </ul>
 <h2 id="blob-handling">BLOB Handling</h2>
 <p>SQLite BLOBs are returned as <a href="foreign-values.html">foreign values</a>. Call the foreign value to get the raw bytes as a <code>String</code>. Pass it through unchanged to preserve the BLOB type when binding.</p>
-<pre><code class="language-frost">def [row, ..._] = db.query('SELECT blob_col FROM t')
-row.blob_col     # =&gt; &lt;Function&gt;
-row.blob_col()   # =&gt; the raw bytes as a String
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">row</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">...</span><span class="hl-variable">_</span><span class="hl-punctuation-bracket">]</span> <span class="hl-operator">=</span> <span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">query</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'SELECT blob_col FROM t'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">row</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">blob_col</span><span class="hl-comment">     # =&gt; &lt;Function&gt;</span>
+<span class="hl-variable">row</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">blob_col</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">   # =&gt; the raw bytes as a String</span>
 
-# Round-trip: re-inserting preserves the BLOB type
-db.exec('INSERT INTO t2 VALUES (?)', [row.blob_col])
-</code></pre>
+<span class="hl-comment"># Round-trip: re-inserting preserves the BLOB type</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t2 VALUES (?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">row</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">blob_col</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>To create a BLOB from scratch, use <code>sqlite.blob()</code>. A plain <code>String</code> always binds as TEXT; use <code>sqlite.blob()</code> when you need BLOB binding specifically.</p>
 <h2 id="positional-bindings">Positional Bindings</h2>
 <p>Use <code>?</code> placeholders and pass an <code>Array</code> of values.</p>
-<pre><code class="language-frost">db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t VALUES (?, ?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h2 id="named-bindings">Named Bindings</h2>
 <p>Use <code>:name</code>, <code>@name</code>, or <code>$name</code> placeholders and pass a <code>Map</code> with string keys. The keys in the map correspond to the parameter names without the prefix.</p>
-<pre><code class="language-frost">db.exec('INSERT INTO t VALUES (:id, :name)', {id: 1, name: 'alice'})
-db.query('SELECT * FROM t WHERE id &gt; @min', {min: 0})
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t VALUES (:id, :name)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">id</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">query</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'SELECT * FROM t WHERE id &gt; @min'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">min</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">0</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>All methods that accept bindings (<code>exec</code>, <code>query</code>, <code>each</code>, <code>collect</code>) support both forms.</p>
 <p>There are no explicit prepared statements. For repeated operations, wrap a parameterized call in a function:</p>
-<pre><code class="language-frost">defn insert_user(db, id, name) -&gt; db.exec('INSERT INTO users VALUES (?, ?)', [id, name])
+<pre><code class="language-frost"><span class="hl-keyword">defn</span><span class="hl-variable"> insert_user</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">id</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">name</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO users VALUES (?, ?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">id</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">name</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
 
-insert_user(db, 1, 'alice')
-insert_user(db, 2, 'bob')
-</code></pre>
+<span class="hl-function">insert_user</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-function">insert_user</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'bob'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h2 id="database-connection">Database Connection</h2>
 <p>A database connection object, returned by <code>open</code>, <code>open_readonly</code>, or <code>open_memory</code>. All database operations go through this object: executing statements, querying rows, managing transactions, and registering custom SQL functions.</p>
 <p>The connection is automatically closed when there are no remaining references to it. Use <code>db.close()</code> for explicit lifecycle control.</p>
@@ -77,15 +72,13 @@ insert_user(db, 2, 'bob')
 <p class="signature"><code>db.exec(sql)</code></p>
 <p class="signature"><code>db.exec(sql, bindings)</code></p>
 <p>Executes a single SQL statement and returns the number of rows affected (<code>Int</code>). DDL statements return <code>0</code>. Multi-statement SQL is rejected.</p>
-<pre><code class="language-frost">def db = sqlite.open_memory()
-db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
-db.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
-# =&gt; 1
-</code></pre>
-<pre><code class="language-frost">def db = sqlite.open_memory()
-db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
-db.exec('UPDATE t SET name = :name WHERE id = :id', {name: 'x', id: 1})
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">db</span> <span class="hl-operator">=</span> <span class="hl-variable">sqlite</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">open_memory</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t VALUES (?, ?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 1</span></code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">db</span> <span class="hl-operator">=</span> <span class="hl-variable">sqlite</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">open_memory</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'UPDATE t SET name = :name WHERE id = :id'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'x'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">id</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p class="see-also">See also:
 <a href="sqlite.html#dbscript"><code>db.script</code></a>
 </p>
@@ -93,18 +86,16 @@ db.exec('UPDATE t SET name = :name WHERE id = :id', {name: 'x', id: 1})
 <p class="signature"><code>db.script(sql)</code></p>
 <p>Executes one or more SQL statements separated by semicolons. Returns the total number of rows affected across all statements. Does not accept parameter bindings.</p>
 <p>Without a wrapping <code>db.transaction</code>, each statement is committed individually. If a statement fails partway through a script, earlier statements will have already committed.</p>
-<pre><code class="language-frost">def db = sqlite.open_memory()
-db.script('CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1); INSERT INTO t VALUES (2)')
-# =&gt; 2
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">db</span> <span class="hl-operator">=</span> <span class="hl-variable">sqlite</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">open_memory</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">script</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1); INSERT INTO t VALUES (2)'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 2</span></code></pre>
 <h3 id="db.query"><code>db.query</code></h3>
 <p class="signature"><code>db.query(sql)</code></p>
 <p class="signature"><code>db.query(sql, bindings)</code></p>
 <p>Executes a single SQL statement and returns all result rows as an <code>Array</code> of <code>Map</code>s. Each map has column names as keys.</p>
 <p>All result rows are loaded into memory at once. For large result sets, prefer <code>db.each</code> or <code>db.collect</code> which process one row at a time. Note that even with row-at-a-time processing, each individual column value is fully materialized in memory. Databases containing very large <code>BLOB</code> or <code>TEXT</code> values (e.g. SQLAR archives) should be handled with care.</p>
-<pre><code class="language-frost">db.query('SELECT * FROM t WHERE id &gt; ?', [0])
-# =&gt; [{id: 1, name: 'alice'}, {id: 2, name: 'bob'}]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">query</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'SELECT * FROM t WHERE id &gt; ?'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">0</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [{id: 1, name: 'alice'}, {id: 2, name: 'bob'}]</span></code></pre>
 <p class="see-also">See also:
 <a href="sqlite.html#dbeach"><code>db.each</code></a>
 <a href="sqlite.html#dbcollect"><code>db.collect</code></a>
@@ -113,8 +104,7 @@ db.script('CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1); INSERT INTO t 
 <p class="signature"><code>db.each(sql, callback)</code></p>
 <p class="signature"><code>db.each(sql, bindings, callback)</code></p>
 <p>Executes a query and calls <code>callback</code> with each row. Only one row is in memory at a time, making this suitable for large result sets. Returns <code>null</code>.</p>
-<pre><code class="language-frost">db.each('SELECT * FROM src', fn row -&gt; db.exec('INSERT INTO dst VALUES (?)', [row.x]))
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">each</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'SELECT * FROM src'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-variable">row</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO dst VALUES (?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">row</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">x</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p class="see-also">See also:
 <a href="sqlite.html#dbquery"><code>db.query</code></a>
 <a href="sqlite.html#dbcollect"><code>db.collect</code></a>
@@ -123,9 +113,8 @@ db.script('CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1); INSERT INTO t 
 <p class="signature"><code>db.collect(sql, callback)</code></p>
 <p class="signature"><code>db.collect(sql, bindings, callback)</code></p>
 <p>Executes a query, calls <code>callback</code> with each row, and collects the return values into an <code>Array</code>. Rows are processed one at a time, but the collected results are accumulated in memory.</p>
-<pre><code class="language-frost">db.collect('SELECT x FROM t', fn row -&gt; row.x * 2)
-# =&gt; [2, 4, 6]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">collect</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'SELECT x FROM t'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-variable">row</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">row</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">x</span><span class="hl-operator"> *</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [2, 4, 6]</span></code></pre>
 <p class="see-also">See also:
 <a href="sqlite.html#dbquery"><code>db.query</code></a>
 <a href="sqlite.html#dbeach"><code>db.each</code></a>
@@ -134,28 +123,25 @@ db.script('CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1); INSERT INTO t 
 <p class="signature"><code>db.last_insert_rowid()</code></p>
 <p>Returns the rowid of the most recent successful <code>INSERT</code> on this connection as an <code>Int</code>. If no <code>INSERT</code> has been performed, returns <code>0</code>.</p>
 <p>Also available as <code>tx.last_insert_rowid()</code> inside a transaction.</p>
-<pre><code class="language-frost">def db = sqlite.open_memory()
-db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
-db.exec('INSERT INTO t (name) VALUES (?)', ['alice'])
-db.last_insert_rowid()
-# =&gt; 1
-</code></pre>
-<pre><code class="language-frost">db.exec('INSERT INTO t (name) VALUES (?)', ['bob'])
-db.last_insert_rowid()
-# =&gt; 2
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">db</span> <span class="hl-operator">=</span> <span class="hl-variable">sqlite</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">open_memory</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t (name) VALUES (?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'alice'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">last_insert_rowid</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 1</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t (name) VALUES (?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'bob'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">last_insert_rowid</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 2</span></code></pre>
 <h3 id="db.transaction"><code>db.transaction</code></h3>
 <p class="signature"><code>db.transaction(callback)</code></p>
 <p>Executes <code>callback</code> inside a SQLite transaction. The callback receives a transaction object <code>tx</code> with the same data methods as <code>db</code> (<code>exec</code>, <code>query</code>, <code>each</code>, <code>collect</code>, <code>script</code>, <code>last_insert_rowid</code>).</p>
 <p>On normal return, the transaction is committed and <code>db.transaction</code> returns the total number of rows affected (<code>Int</code>). If the callback produces an error, the transaction is rolled back and the error propagates.</p>
-<pre><code class="language-frost">def db = sqlite.open_memory()
-db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
-db.transaction(fn tx -&gt; {
-    tx.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
-    tx.exec('INSERT INTO t VALUES (?, ?)', [2, 'bob'])
-})
-# =&gt; 2
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">db</span> <span class="hl-operator">=</span> <span class="hl-variable">sqlite</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">open_memory</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">transaction</span><span class="hl-punctuation-bracket">(</span><span class="hl-keyword">fn</span> <span class="hl-variable">tx</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-variable">tx</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t VALUES (?, ?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+    <span class="hl-variable">tx</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t VALUES (?, ?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'bob'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; 2</span></code></pre>
 <p>While a transaction is active, the <code>db</code> object cannot be used for data operations. All data methods on <code>db</code> will produce an error until the transaction completes. Use the <code>tx</code> object for all database access within the callback. The <code>tx</code> object is only valid for the duration of the callback.</p>
 <h4 id="transaction-methods">Transaction Methods</h4>
 <p><code>tx.exec</code>, <code>tx.query</code>, <code>tx.each</code>, <code>tx.collect</code>, <code>tx.script</code>, and <code>tx.last_insert_rowid</code> have the same signatures and behavior as their <code>db</code> counterparts, but operate within the transaction. Queries through <code>tx</code> see uncommitted changes made earlier in the same transaction. Callbacks passed to <code>tx.each</code> and <code>tx.collect</code> should also use <code>tx</code> for any database operations, not <code>db</code>.</p>
@@ -163,27 +149,24 @@ db.transaction(fn tx -&gt; {
 <p>Nested transactions are not supported. Calling <code>db.transaction</code> while a transaction is already active produces an error.</p>
 <h4 id="errors-during-a-transaction">Errors During a Transaction</h4>
 <p>Any error inside the callback, whether from Frost code or from SQLite (e.g. a constraint violation), causes an automatic rollback. The error then propagates to the caller of <code>db.transaction</code>.</p>
-<pre><code class="language-frost">def db = sqlite.open_memory()
-db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)')
-def result = try_call(db.transaction, [fn tx -&gt; {
-    tx.exec('INSERT INTO t VALUES (?, ?)', [1, 'alice'])
-    tx.exec('INSERT INTO t VALUES (?, ?)', [1, 'duplicate'])
-}])
-result.ok
-# =&gt; false
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">db</span> <span class="hl-operator">=</span> <span class="hl-variable">sqlite</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">open_memory</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">result</span> <span class="hl-operator">=</span> <span class="hl-function">try_call</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">transaction</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-keyword">fn</span> <span class="hl-variable">tx</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-variable">tx</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t VALUES (?, ?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+    <span class="hl-variable">tx</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t VALUES (?, ?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'duplicate'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">result</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">ok</span>
+<span class="hl-comment"># =&gt; false</span></code></pre>
 <h3 id="db.create_function"><code>db.create_function</code></h3>
 <p class="signature"><code>db.create_function(name, function)</code></p>
 <p>Registers a Frost function as a scalar SQL function with the given name. The function can accept any number of arguments.</p>
 <p>SQLite values are converted to Frost types, and the return value is converted back. If the Frost function produces an error, it becomes a SQL error, which is then propagated back to the calling Frost code as a recoverable error.</p>
 <p>Registering a function with the same name as an existing one replaces it. Functions that return <code>Array</code>, <code>Map</code>, or <code>Function</code> values are not supported and will produce a SQL error.</p>
-<pre><code class="language-frost">db.create_function('double', fn x -&gt; x * 2)
-db.query('SELECT double(21)')
-# =&gt; [{["double(21)"]: 42}]
-</code></pre>
-<pre><code class="language-frost">db.create_function('is_even', fn x -&gt; x % 2 == 0)
-db.query('SELECT val FROM t WHERE is_even(val)')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">create_function</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'double'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-variable">x</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">x</span><span class="hl-operator"> *</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">query</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'SELECT double(21)'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; [{["double(21)"]: 42}]</span></code></pre>
+<pre><code class="language-frost"><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">create_function</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'is_even'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-variable">x</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">x</span><span class="hl-operator"> %</span> <span class="hl-number">2</span><span class="hl-operator"> ==</span> <span class="hl-number">0</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">query</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'SELECT val FROM t WHERE is_even(val)'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h3 id="db.create_aggregate"><code>db.create_aggregate</code></h3>
 <p class="signature"><code>db.create_aggregate(name, init, step)</code></p>
 <p class="signature"><code>db.create_aggregate(name, init, step, finalize)</code></p>
@@ -198,28 +181,25 @@ db.query('SELECT val FROM t WHERE is_even(val)')
 <p>The accumulator can be any Frost value, including <code>Array</code> or <code>Map</code>, but the value that becomes the SQL result must be a primitive type (<code>Null</code>, <code>Int</code>, <code>Float</code>, <code>Bool</code>, or <code>String</code>).</p>
 <p>Errors in <code>step</code> or <code>finalize</code> are surfaced as errors. An error in <code>step</code> stops processing remaining rows.</p>
 <p>Registering an aggregate with the same name as an existing function or aggregate replaces it.</p>
-<pre><code class="language-frost"># Simple sum
-db.create_aggregate('sum2', 0, fn (acc, x) -&gt; acc + x)
-db.query('SELECT sum2(val) as total FROM t')
-</code></pre>
-<pre><code class="language-frost"># Custom average using an Array accumulator
-db.create_aggregate('avg2', [0, 0],
-    fn (acc, x) -&gt; [acc[0] + x, acc[1] + 1],
-    fn acc -&gt; acc[0] / acc[1])
-db.query('SELECT avg2(score) as mean FROM students')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-comment"># Simple sum</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">create_aggregate</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'sum2'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-punctuation-bracket">(</span><span class="hl-variable">acc</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">x</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">acc</span><span class="hl-operator"> +</span> <span class="hl-variable">x</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">query</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'SELECT sum2(val) as total FROM t'</span><span class="hl-punctuation-bracket">)</span></code></pre>
+<pre><code class="language-frost"><span class="hl-comment"># Custom average using an Array accumulator</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">create_aggregate</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'avg2'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">0</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-keyword">fn</span> <span class="hl-punctuation-bracket">(</span><span class="hl-variable">acc</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">x</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">acc</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">0</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator"> +</span> <span class="hl-variable">x</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">acc</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator"> +</span> <span class="hl-number">1</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-keyword">fn</span> <span class="hl-variable">acc</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">acc</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">0</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator"> /</span> <span class="hl-variable">acc</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">query</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'SELECT avg2(score) as mean FROM students'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h3 id="db.trace"><code>db.trace</code></h3>
 <p class="signature"><code>db.trace(callback)</code></p>
 <p class="signature"><code>db.trace(null)</code></p>
 <p>Registers a callback that is called with the SQL text of each statement before it executes. Bound parameter values are expanded into the SQL string (e.g., <code>INSERT INTO t VALUES (42)</code> rather than <code>INSERT INTO t VALUES (?)</code>). Pass <code>null</code> to disable tracing.</p>
 <p>Only one trace callback can be active at a time. Registering a new one replaces the previous.</p>
 <p>Errors produced by the callback are reported to stderr but do not interrupt SQL execution. Fatal errors terminate the program.</p>
-<pre><code class="language-frost">db.trace(fn sql -&gt; print(sql))
-db.exec('INSERT INTO t VALUES (?)', [42])
-# prints: INSERT INTO t VALUES (42)
+<pre><code class="language-frost"><span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">trace</span><span class="hl-punctuation-bracket">(</span><span class="hl-keyword">fn</span> <span class="hl-variable">sql</span> <span class="hl-operator">-&gt;</span> <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">sql</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t VALUES (?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">42</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># prints: INSERT INTO t VALUES (42)</span>
 
-db.trace(null)  # disable tracing
-</code></pre>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">trace</span><span class="hl-punctuation-bracket">(</span><span class="hl-constant-builtin">null</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">  # disable tracing</span></code></pre>
 <h3 id="db.close"><code>db.close</code></h3>
 <p class="signature"><code>db.close()</code></p>
 <p>Closes the database connection. Produces an error if a transaction is active. After closing, all operations on <code>db</code> produce an error.</p>
@@ -228,9 +208,8 @@ db.trace(null)  # disable tracing
 <h2 id="blob"><code>blob</code></h2>
 <p class="signature"><code>sqlite.blob(data)</code></p>
 <p>Creates a BLOB foreign value from a <code>String</code>. When bound as a parameter, this value uses <code>BLOB</code> affinity rather than <code>TEXT</code>. Calling this does not copy the underlying string data.</p>
-<pre><code class="language-frost">def b = sqlite.blob('binary data')
-db.exec('INSERT INTO t VALUES (?)', [b])
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">b</span> <span class="hl-operator">=</span> <span class="hl-variable">sqlite</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">blob</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'binary data'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">db</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">exec</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'INSERT INTO t VALUES (?)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">b</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h2 id="open"><code>open</code></h2>
 <p class="signature"><code>sqlite.open(path)</code></p>
 <p>Opens a read-write SQLite database at <code>path</code>, or creates one if it does not exist. Returns a database object, the methods of which are documented as <code>db.*</code>. Produces an error if the database cannot be opened.</p>

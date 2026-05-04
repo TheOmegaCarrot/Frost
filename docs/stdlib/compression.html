@@ -11,17 +11,14 @@
 <h1 id="compression">Compression</h1>
 <p>Each algorithm provides <code>compress</code> and <code>decompress</code> functions operating on binary strings. Since Frost strings are binary-safe, compressed output can be stored, concatenated, or passed to other functions without issue.</p>
 <p>A common import pattern destructures the module into the relevant subcomponents:</p>
-<pre><code class="language-frost">def { brotli, bz2, deflate, gzip, lz4, snappy, xz, zlib, zstd } = import('ext.compression')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">brotli</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">bz2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">deflate</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">gzip</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">lz4</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">snappy</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">xz</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">zlib</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">zstd</span><span class="hl-punctuation-bracket"> }</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ext.compression'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>It is valid to import only the components your script needs:</p>
-<pre><code class="language-frost">def { gzip, lz4 } = import('ext.compression')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">gzip</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">lz4</span><span class="hl-punctuation-bracket"> }</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ext.compression'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Build flag: <code>WITH_COMPRESSION</code> (default: <code>AUTO</code>). Requires at least one of: zlib, bz2, xz, brotli, lz4, snappy, or zstd. Each library is independently auto-detected; only algorithms with available libraries are included.</p>
 <p>For auto-detecting the format of compressed data, see <code>frost-scripts/autodecompress.frst</code>, which detects gzip, zstd, bz2, xz, and lz4 by magic bytes and dispatches to the appropriate decompressor.</p>
 <p>Algorithms can be swapped at runtime, as all algorithms support the same compress/decompress interface (if default compression parameters are accepted):</p>
-<pre><code class="language-frost">def algo = if fast: deflate else: gzip
-algo.compress(data)
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">algo</span> <span class="hl-operator">=</span> <span class="hl-keyword">if</span> <span class="hl-variable">fast</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">deflate</span><span class="hl-keyword"> else</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">gzip</span>
+<span class="hl-variable">algo</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">compress</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">data</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h2 id="brotli">Brotli</h2>
 <p>Brotli compression (RFC 7932). Used by HTTP <code>Content-Encoding: br</code>.</p>
 <h3 id="brotli.compress"><code>brotli.compress</code></h3>

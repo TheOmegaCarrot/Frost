@@ -67,20 +67,18 @@
 <h3 id="whitespace">Whitespace</h3>
 <p>Space characters are not significant in Frost; indentation is also not significant. Line breaks are used to separate statements and expressions.</p>
 <p>Semicolons may be used in place of line breaks to separate statements on the same line.</p>
-<pre><code class="language-frost">def a = 1; def b = 2; print(a + b)
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">a</span> <span class="hl-operator">=</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">;</span> <span class="hl-keyword">def</span> <span class="hl-variable">b</span> <span class="hl-operator">=</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">;</span> <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-variable">b</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Inside paired delimiters (<code>()</code>, <code>[]</code>, and <code>{}</code>), line breaks are ignored, since the closing delimiter is unambiguous. Function calls, indexing, dot map accesses, and the threading operator must begin on the same line as the left operand, unless enclosed in <code>()</code>.</p>
-<pre><code class="language-frost"># two expressions
-foo
-(bar)
+<pre><code class="language-frost"><span class="hl-comment"># two expressions</span>
+<span class="hl-variable">foo</span>
+<span class="hl-punctuation-bracket">(</span><span class="hl-variable">bar</span><span class="hl-punctuation-bracket">)</span>
 
-# function call
-foo(bar)
+<span class="hl-comment"># function call</span>
+<span class="hl-function">foo</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">bar</span><span class="hl-punctuation-bracket">)</span>
 
-# function call
-( foo
-    (bar) )
-</code></pre>
+<span class="hl-comment"># function call</span>
+<span class="hl-punctuation-bracket">(</span> <span class="hl-variable">foo</span>
+    <span class="hl-punctuation-bracket">(</span><span class="hl-variable">bar</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket"> )</span></code></pre>
 <h3 id="identifiers">Identifiers</h3>
 <p>Frost's identifier rules mirror those of C, and thus should be familiar to most programmers. Reserved words may not be used as identifiers. Below is a list of reserved words.</p>
 <ul>
@@ -112,36 +110,31 @@ foo(bar)
 <p>There are only 8 types: <code>Null</code>, <code>Int</code>, <code>Float</code>, <code>Bool</code>, <code>String</code>, <code>Array</code>, <code>Map</code>, and <code>Function</code>. The types can be grouped into type categories: <code>Numeric</code> types are <code>Int</code> and <code>Float</code>. <code>Primitive</code> types are <code>Numeric</code>, <code>Null</code>, <code>Bool</code>, and <code>String</code>. <code>Structured</code> types are <code>Array</code> and <code>Map</code>.</p>
 <h3 id="null">Null</h3>
 <p>The keyword <code>null</code> is used to refer to the <code>Null</code> value.</p>
-<pre><code class="language-frost">def null_value = null
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">null_value</span> <span class="hl-operator">=</span> <span class="hl-constant-builtin">null</span></code></pre>
 <h3 id="int">Int</h3>
 <p>An <code>Int</code> literal is simply a sequence of digits. <code>Int</code>s are all stored as signed 64-bit integers.</p>
-<pre><code class="language-frost">def an_int = 42
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">an_int</span> <span class="hl-operator">=</span> <span class="hl-number">42</span></code></pre>
 <h3 id="float">Float</h3>
 <p><code>Float</code>s are all stored as 64-bit double-precision IEEE-754 floating-point numbers. A <code>Float</code> may not be NaN or infinity.</p>
 <p>A <code>Float</code> literal may be written as a decimal number or in scientific notation. Digits before and after the decimal point may not be omitted.</p>
-<pre><code class="language-frost">def a_float = 3.14
-def precise = 1.23e-10
-def big     = 1e+20
-def not_big = 3e2      # 300.0
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">a_float</span> <span class="hl-operator">=</span> <span class="hl-number">3.14</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">precise</span> <span class="hl-operator">=</span> <span class="hl-number">1.23e-10</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">big</span>     <span class="hl-operator">=</span> <span class="hl-number">1e+20</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">not_big</span> <span class="hl-operator">=</span> <span class="hl-number">3e2</span><span class="hl-comment">      # 300.0</span>
 
-def bad_1 = .5 # not permitted, use 0.5
-def bad_2 = 3. # not permitted, use 3.0
-</code></pre>
+<span class="hl-keyword">def</span> <span class="hl-variable">bad_1</span> <span class="hl-operator">=</span><span class="hl-punctuation-delimiter"> .</span><span class="hl-number">5</span><span class="hl-comment"> # not permitted, use 0.5</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">bad_2</span> <span class="hl-operator">=</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">.</span><span class="hl-comment"> # not permitted, use 3.0</span></code></pre>
 <p>Scientific notation uses <code>e</code> followed by an optional sign (<code>+</code> or <code>-</code>) and one or more digits. The decimal point is optional in scientific notation: <code>1e+20</code> and <code>1.0e+20</code> are both valid. No whitespace may appear within a float literal.</p>
 <h3 id="bool">Bool</h3>
 <p>A <code>Bool</code> is just <code>true</code> or <code>false</code>.</p>
-<pre><code class="language-frost">def yes = true
-def no  = false
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">yes</span> <span class="hl-operator">=</span> <span class="hl-constant-builtin">true</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">no</span>  <span class="hl-operator">=</span> <span class="hl-constant-builtin">false</span></code></pre>
 <h3 id="string">String</h3>
 <p><code>String</code> literals may take a few forms: they may use single-quotes or double-quotes. There is no semantic difference between the two forms. All strings are binary-safe, and represent arbitrary sequences of bytes. String literals may also be raw string literals, which do not process escape sequences. Multi-line strings are not supported, this includes raw string literals.</p>
 <p>Raw string literals begin with <code>R'(</code> or <code>R"(</code> and end with <code>')</code> or <code>")</code>. The opening and closing quotes must match.</p>
-<pre><code class="language-frost">def foo = 'foo'
-def bar = "bar"
-def raw = R'(hello\n)' # literal 'hello\n', no escape processing
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">foo</span> <span class="hl-operator">=</span> <span class="hl-string">'foo'</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">bar</span> <span class="hl-operator">=</span> <span class="hl-string">"bar"</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">raw</span> <span class="hl-operator">=</span> <span class="hl-string">R'(hello\n)'</span><span class="hl-comment"> # literal 'hello\n', no escape processing</span></code></pre>
 <p>The supported escape sequences are:</p>
 <ul>
   <li><code>\n</code>: newline</li>
@@ -155,154 +148,131 @@ def raw = R'(hello\n)' # literal 'hello\n', no escape processing
 </ul>
 <h4 id="multiline-strings">Multiline Strings</h4>
 <p>Triple-quoted strings (<code>"""..."""</code> or <code>'''...'''</code>) may span multiple lines. The opening delimiter must be immediately followed by a newline. Indentation is trimmed based on the closing delimiter's position: each content line has the closing delimiter's leading whitespace stripped. Lines indented further than the closing delimiter retain their extra indentation. Empty lines are preserved.</p>
-<pre><code class="language-frost">def sql = """
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">sql</span> <span class="hl-operator">=</span> <span class="hl-string">"""
     SELECT *
     FROM users
     WHERE active = 1
-    """
-# sql == "SELECT *\nFROM users\nWHERE active = 1"
-</code></pre>
+    """</span>
+<span class="hl-comment"># sql == "SELECT *\nFROM users\nWHERE active = 1"</span></code></pre>
 <p>Lines indented further than the closing delimiter retain their extra indentation:</p>
-<pre><code class="language-frost">def code = """
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">code</span> <span class="hl-operator">=</span> <span class="hl-string">"""
     if true:
       nested
-    """
-# code == "if true:\n  nested"
-</code></pre>
+    """</span>
+<span class="hl-comment"># code == "if true:\n  nested"</span></code></pre>
 <p>The <code>\n</code>, <code>\r</code>, and <code>\xNN</code> escape sequences are not available in multiline strings. Newlines are written directly, and byte escapes are restricted because they can produce newline bytes that interfere with indentation trimming. The remaining escape sequences (<code>\\</code>, <code>\t</code>, <code>\0</code>, <code>\"</code>, <code>\'</code>) are supported.</p>
 <h4 id="format-strings">Format Strings</h4>
 <p>Format strings are prepended with a <code>$</code>, and may be single- or double-quoted. Raw string literals may not be used as format strings. Format strings are evaluated immediately.</p>
 <p>Each <code>${}</code> specifier contains an expression which is evaluated and converted to a string:</p>
-<pre><code class="language-frost">def name = 'world'
-$'hello, ${name}'                     # "hello, world"
-$'1 + 2 = ${1 + 2}'                   # "1 + 2 = 3"
-$'upper: ${to_upper(name)}'           # "upper: WORLD"
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">name</span> <span class="hl-operator">=</span> <span class="hl-string">'world'</span>
+<span class="hl-string-special">$'hello, </span><span class="hl-punctuation-special">${</span><span class="hl-variable">name</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span><span class="hl-comment">                     # "hello, world"</span>
+<span class="hl-string-special">$'1 + 2 = </span><span class="hl-punctuation-special">${</span><span class="hl-number">1</span><span class="hl-operator"> +</span><span class="hl-string-special"> </span><span class="hl-number">2</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span><span class="hl-comment">                   # "1 + 2 = 3"</span>
+<span class="hl-string-special">$'upper: </span><span class="hl-punctuation-special">${</span><span class="hl-function">to_upper</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">name</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span><span class="hl-comment">           # "upper: WORLD"</span></code></pre>
 <p>Any expression is valid inside <code>${}</code>, including <code>if</code> expressions and function calls:</p>
-<pre><code class="language-frost">$'cond: ${if true: "yes" else: "no"}'  # "cond: yes"
-</code></pre>
+<pre><code class="language-frost"><span class="hl-string-special">$'cond: </span><span class="hl-punctuation-special">${</span><span class="hl-keyword">if</span><span class="hl-string-special"> </span><span class="hl-constant-builtin">true</span><span class="hl-punctuation-delimiter">:</span><span class="hl-string-special"> </span><span class="hl-string">"yes"</span><span class="hl-keyword"> else</span><span class="hl-punctuation-delimiter">:</span><span class="hl-string-special"> </span><span class="hl-string">"no"</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span><span class="hl-comment">  # "cond: yes"</span></code></pre>
 <p>A bare <code>$</code> not followed by <code>{</code> is literal text. <code>\$</code> produces a literal <code>$</code>, preventing interpolation:</p>
-<pre><code class="language-frost">$'price: $5'          # "price: $5" (bare $ is literal)
-$'literal: \${name}'  # "literal: ${name}" (\$ escapes)
-</code></pre>
+<pre><code class="language-frost"><span class="hl-string-special">$'price: $5'</span><span class="hl-comment">          # "price: $5" (bare $ is literal)</span>
+<span class="hl-string-special">$'literal: </span><span class="hl-error">\$</span><span class="hl-string-special">{name}'</span><span class="hl-comment">  # "literal: ${name}" (\$ escapes)</span></code></pre>
 <p>All other escape sequences (<code>\n</code>, <code>\t</code>, <code>\\</code>, <code>\0</code>, <code>\"</code>, <code>\'</code>, <code>\xNN</code>) work the same as in regular strings.</p>
 <h3 id="array">Array</h3>
 <p>An <code>Array</code> is a heterogenous sequence of values. Any value may appear in an array. Arrays may be empty. An <code>Array</code> literal is a <code>,</code>-separated list of arbitrary expressions enclosed in <code>[]</code> brackets. Trailing commas are permitted, and newlines may appear within the array literal.</p>
-<pre><code class="language-frost">def an_array = [
-    'foo',
-    40 + 2,
-    [],
-] # [ 'foo', 42, [] ]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">an_array</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span>
+    <span class="hl-string">'foo'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-number">40</span><span class="hl-operator"> +</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">]</span><span class="hl-comment"> # [ 'foo', 42, [] ]</span></code></pre>
 <p>Arrays may be indexed directly using familiar postfix <code>[]</code> syntax. Arrays use zero-based indexing, and also support reverse indexing, which should be familiar to Python developers. Out-of-bounds indexes evaluate to <code>null</code>.</p>
-<pre><code class="language-frost">an_array[1] # 42
-an_array[-1] # []
-an_array[5000] # null
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">an_array</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">]</span><span class="hl-comment"> # 42</span>
+<span class="hl-variable">an_array</span><span class="hl-punctuation-bracket">[</span><span class="hl-operator">-</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">]</span><span class="hl-comment"> # []</span>
+<span class="hl-variable">an_array</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">5000</span><span class="hl-punctuation-bracket">]</span><span class="hl-comment"> # null</span></code></pre>
 <h3 id="map">Map</h3>
 <p>A <code>Map</code> is a key-value structure. <code>Null</code>, <code>Array</code>, <code>Map</code>, and <code>Function</code> may not be map keys, but any value may be a map value. Maps may be empty. A <code>Map</code> literal consists of <code>,</code>-separated key-value pairs enclosed in <code>{}</code> braces. Trailing commas are permitted, and newlines may appear within the map literal.</p>
 <p>A key-value pair is an expression enclosed in <code>[]</code> brackets (which is the key), followed by a <code>:</code>, followed by an expression which is used as the corresponding value.</p>
-<pre><code class="language-frost">def a_map = {
-    ['foo']: 42,
-    ['bar']: 10,
-    [40 + 2]: '42',
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">a_map</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-string">'foo'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-string">'bar'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-number">40</span><span class="hl-operator"> +</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'42'</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>Alternately, if a key is a string which conforms to identifier rules, the brackets and quotes may be omitted:</p>
-<pre><code class="language-frost">def a_map = {
-    foo: 42,
-    bar: 10,
-    [42]: '42',
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">a_map</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">bar</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-number">42</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'42'</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>Just like with identifiers, reserved words may not be used in this way:</p>
-<pre><code class="language-frost">{ ['if']: true } # ok
+<pre><code class="language-frost"><span class="hl-punctuation-bracket">{</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'if'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket"> }</span><span class="hl-comment"> # ok</span>
 
-{ if: true } # syntax error
-</code></pre>
+<span class="hl-punctuation-bracket">{</span> <span class="hl-keyword">if</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket"> }</span><span class="hl-comment"> # syntax error</span></code></pre>
 <p>To access a value in a map, you may use indexing similar to arrays. If a key does not exist, <code>null</code> will be returned.</p>
-<pre><code class="language-frost">a_map['foo'] # 42
-a_map['missing'] # null
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">a_map</span><span class="hl-punctuation-bracket">[</span><span class="hl-string">'foo'</span><span class="hl-punctuation-bracket">]</span><span class="hl-comment"> # 42</span>
+<span class="hl-variable">a_map</span><span class="hl-punctuation-bracket">[</span><span class="hl-string">'missing'</span><span class="hl-punctuation-bracket">]</span><span class="hl-comment"> # null</span></code></pre>
 <p>Similar to map literals, if a key is a string which conforms to identifier rules, dot map access may be used:</p>
-<pre><code class="language-frost">a_map.foo # 42
-a_map.missing # null
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">a_map</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">foo</span><span class="hl-comment"> # 42</span>
+<span class="hl-variable">a_map</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">missing</span><span class="hl-comment"> # null</span></code></pre>
 <h3 id="functions">Functions</h3>
 <p>All function definitions are lambda expressions. To bind a function to a name, simply use the same <code>def</code> syntax with a lambda on the right-hand side of the <code>=</code>.</p>
 <p>A function definition consists of the keyword <code>fn</code>, followed by an optional list of arguments, followed by <code>-&gt;</code>, followed by a body. The list of arguments may optionally be enclosed in parentheses. The body is enclosed in <code>{}</code> braces, and may consist of multiple statements. If the body consists of only a single expression, then the enclosing <code>{}</code> may be omitted. This is even true when the single expression appears on the following line.</p>
 <p>When a function is called, the final expression is used as the return value. All functions return exactly one value. It is typical for side-effect functions (such as <code>print</code>) to return <code>null</code>.</p>
-<pre><code class="language-frost">def f1 = fn ( a, b ) -&gt; { a + ( b * 2 ) }
-def f2 = fn (a, b) -&gt; a + ( b * 2 )
-def f3 = fn a, b -&gt; { a + ( b * 2 ) }
-def f4 = fn a, b -&gt; a + ( b * 2 )
-def f5 = fn a, b -&gt;
-    a + ( b * 2 ) # indentation is not required
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">f1</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-punctuation-bracket">(</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-punctuation-bracket">(</span> <span class="hl-variable">b</span><span class="hl-operator"> *</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket"> )</span><span class="hl-punctuation-bracket"> }</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">f2</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-punctuation-bracket">(</span><span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-punctuation-bracket">(</span> <span class="hl-variable">b</span><span class="hl-operator"> *</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket"> )</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">f3</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-punctuation-bracket">(</span> <span class="hl-variable">b</span><span class="hl-operator"> *</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket"> )</span><span class="hl-punctuation-bracket"> }</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">f4</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-punctuation-bracket">(</span> <span class="hl-variable">b</span><span class="hl-operator"> *</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket"> )</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">f5</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span>
+    <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-punctuation-bracket">(</span> <span class="hl-variable">b</span><span class="hl-operator"> *</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket"> )</span><span class="hl-comment"> # indentation is not required</span>
 
-f5(2, 4) # 10
-</code></pre>
+<span class="hl-function">f5</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # 10</span></code></pre>
 <p>Map literals can appear directly as a function body, with one exception: when the first entry uses a computed key (<code>[...]</code>), the parser cannot distinguish it from a block. Wrap the map in parentheses, or put an identifier-keyed entry first.</p>
-<pre><code class="language-frost">def f1 = fn -&gt; { foo: 42 }           # ok
-def f2 = fn -&gt; {}                    # ok
-def f3 = fn -&gt; { [k]: 42 }           # syntax error
-def f4 = fn -&gt; ({ [k]: 42 })         # ok
-def f5 = fn -&gt; { foo: 1, [k]: 42 }   # ok
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">f1</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-bracket"> }</span><span class="hl-comment">           # ok</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">f2</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span><span class="hl-punctuation-bracket">}</span><span class="hl-comment">                    # ok</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">f3</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">k</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-bracket"> }</span><span class="hl-comment">           # syntax error</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">f4</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">k</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">         # ok</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">f5</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">k</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-bracket"> }</span><span class="hl-comment">   # ok</span></code></pre>
 <p>A function may contain local <code>def</code> and <code>defn</code> statements, but neither may end a function body. The body of a function may not <code>export</code> any definitions.</p>
-<pre><code class="language-frost">def f5 = fn a, b -&gt; {
-    def c = b * 2
-    a + c
-} # ok
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">f5</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-keyword">def</span> <span class="hl-variable">c</span> <span class="hl-operator">=</span> <span class="hl-variable">b</span><span class="hl-operator"> *</span> <span class="hl-number">2</span>
+    <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-variable">c</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-comment"> # ok</span>
 
-def f6 = fn a, b -&gt; {
-    def c = a * b
-} # syntax error
+<span class="hl-keyword">def</span> <span class="hl-variable">f6</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-keyword">def</span> <span class="hl-variable">c</span> <span class="hl-operator">=</span> <span class="hl-variable">a</span><span class="hl-operator"> *</span> <span class="hl-variable">b</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-comment"> # syntax error</span>
 
-def f7 = fn a, b -&gt; {
-    export def c = a * b
-    c
-} # syntax error
-</code></pre>
+<span class="hl-keyword">def</span> <span class="hl-variable">f7</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-keyword">export</span><span class="hl-keyword"> def</span> <span class="hl-variable">c</span> <span class="hl-operator">=</span> <span class="hl-variable">a</span><span class="hl-operator"> *</span> <span class="hl-variable">b</span>
+    <span class="hl-variable">c</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-comment"> # syntax error</span></code></pre>
 <p>A function may capture definitions which appear prior to its own definition. A function argument may be captured.</p>
-<pre><code class="language-frost">def make_adder = fn a -&gt; {
-    fn b -&gt; a + b # a is captured
-}
-make_adder(5)(3) # 8
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">make_adder</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-keyword">fn</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-variable">b</span><span class="hl-comment"> # a is captured</span>
+<span class="hl-punctuation-bracket">}</span>
+<span class="hl-function">make_adder</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">3</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # 8</span>
 
-# braces can also be omitted when returning a new function:
-def also_make_adder = fn a -&gt; fn b -&gt; a + b
-</code></pre>
+<span class="hl-comment"># braces can also be omitted when returning a new function:</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">also_make_adder</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span> <span class="hl-operator">-&gt;</span> <span class="hl-keyword">fn</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-variable">b</span></code></pre>
 <p>Functions may also be variadic. A variadic parameter is preceded by <code>...</code>, and must appear as the final parameter. Any extra arguments will be collected into an array which is the variadic argument. The variadic argument array may be empty.</p>
-<pre><code class="language-frost">def add_things = fn i, ...rest -&gt; reduce rest init: i with plus
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">add_things</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">i</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">...</span><span class="hl-variable">rest</span> <span class="hl-operator">-&gt;</span> <span class="hl-keyword">reduce</span> <span class="hl-variable">rest</span><span class="hl-keyword"> init</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">i</span><span class="hl-keyword"> with</span> <span class="hl-variable">plus</span>
 
-add_things(1, 2, 3, 4) # 10 (rest was [2, 3, 4])
-</code></pre>
+<span class="hl-function">add_things</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # 10 (rest was [2, 3, 4])</span></code></pre>
 <p>For a function to be able to recurse, it must capture itself. For a lambda to capture itself, the closure's own name appears before its parameter list. Note that parentheses are required in this form.</p>
-<pre><code class="language-frost">map [1, 2, 3, 4] with fn fib(n) -&gt; if n &lt;= 1: n else: fib(n-1) + fib(n-2)
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">map</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-keyword"> with</span> <span class="hl-keyword">fn</span> <span class="hl-variable">fib</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">n</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-keyword">if</span> <span class="hl-variable">n</span><span class="hl-operator"> &lt;=</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">n</span><span class="hl-keyword"> else</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-function">fib</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">n</span><span class="hl-operator">-</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> +</span> <span class="hl-function">fib</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">n</span><span class="hl-operator">-</span><span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>For a function being bound to a definition, <code>defn</code> is a shortened form:</p>
-<pre><code class="language-frost">defn fib(n) -&gt; {
-    if n &lt;= 1: n
-    else: fib(n-1) + fib(n-2)
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">defn</span><span class="hl-variable"> fib</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">n</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-keyword">if</span> <span class="hl-variable">n</span><span class="hl-operator"> &lt;=</span> <span class="hl-number">1</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">n</span>
+    <span class="hl-keyword">else</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-function">fib</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">n</span><span class="hl-operator">-</span><span class="hl-number">1</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> +</span> <span class="hl-function">fib</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">n</span><span class="hl-operator">-</span><span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <h4 id="abbreviated-lambdas">Abbreviated Lambdas</h4>
 <p>For short inline functions, Frost provides an abbreviated lambda syntax using <code>$(...)</code>. Instead of naming parameters, you use placeholder identifiers: <code>$</code> (or <code>$1</code>) for the first argument, <code>$2</code> for the second, and so on up to <code>$9</code>. <code>$0</code> is not a valid placeholder. <code>$$</code> captures variadic (rest) arguments as an array.</p>
-<pre><code class="language-frost">map [1, 2, 3] with $($ * 2)           # [2, 4, 6]
-filter [1, 2, 3, 4] with $($ &gt; 2)     # [3, 4]
-[10, 20, 30] @ transform($($1 + 5))   # [15, 25, 35]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">map</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-keyword"> with</span> <span class="hl-punctuation-bracket">$(</span><span class="hl-variable-parameter">$</span><span class="hl-operator"> *</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">           # [2, 4, 6]</span>
+<span class="hl-keyword">filter</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-keyword"> with</span> <span class="hl-punctuation-bracket">$(</span><span class="hl-variable-parameter">$</span><span class="hl-operator"> &gt;</span> <span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">     # [3, 4]</span>
+<span class="hl-punctuation-bracket">[</span><span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">20</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">30</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator"> @</span> <span class="hl-function">transform</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">$(</span><span class="hl-variable-parameter">$1</span><span class="hl-operator"> +</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">   # [15, 25, 35]</span></code></pre>
 <p><code>$</code> and <code>$1</code> are interchangeable: both refer to the first argument. Unused parameters between <code>$1</code> and the highest used <code>$N</code> are filled automatically:</p>
-<pre><code class="language-frost">$($3 + 1)   # equivalent to: fn $1, $2, $3 -&gt; $3 + 1
-</code></pre>
+<pre><code class="language-frost"><span class="hl-punctuation-bracket">$(</span><span class="hl-variable-parameter">$3</span><span class="hl-operator"> +</span> <span class="hl-number">1</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">   # equivalent to: fn $1, $2, $3 -&gt; $3 + 1</span></code></pre>
 <p><code>$$</code> works like <code>...rest</code> in a regular lambda:</p>
-<pre><code class="language-frost">def f = $($$)
-f(1, 2, 3)   # [1, 2, 3]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">f</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">$(</span><span class="hl-variable-parameter">$$</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-function">f</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">   # [1, 2, 3]</span></code></pre>
 <p>A <code>$(...)</code> with no placeholder references produces a zero-parameter function:</p>
-<pre><code class="language-frost">def thunk = $(42)
-thunk()   # 42
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">thunk</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">$(</span><span class="hl-number">42</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-function">thunk</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">   # 42</span></code></pre>
 <p>The <code>$</code> and <code>(</code> must be adjacent: <code>$ (expr)</code> is not an abbreviated lambda.</p>
 <p>Abbreviated lambdas can be nested, though this is not recommended. Each <code>$(...)</code> creates its own scope: inner placeholders refer to the inner function's arguments, not the outer's.</p>
 <h2 id="expressions">Expressions</h2>
@@ -358,109 +328,95 @@ thunk()   # 42
 </tbody>
 </table>
 <p>Equality and comparison operators are non-chainable; expressions like <code>1 &lt; 2 &lt; 3</code> or <code>a == b == c</code> are syntax errors.</p>
-<pre><code class="language-frost"># These are all true:
-1 + 2 * 3 == 1 + (2 * 3)
-not true or false == (not true) or false
--2 + 3 == (-2) + 3
+<pre><code class="language-frost"><span class="hl-comment"># These are all true:</span>
+<span class="hl-number">1</span><span class="hl-operator"> +</span> <span class="hl-number">2</span><span class="hl-operator"> *</span> <span class="hl-number">3</span><span class="hl-operator"> ==</span> <span class="hl-number">1</span><span class="hl-operator"> +</span> <span class="hl-punctuation-bracket">(</span><span class="hl-number">2</span><span class="hl-operator"> *</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">not</span> <span class="hl-constant-builtin">true</span><span class="hl-keyword"> or</span> <span class="hl-constant-builtin">false</span><span class="hl-operator"> ==</span> <span class="hl-punctuation-bracket">(</span><span class="hl-keyword">not</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket">)</span><span class="hl-keyword"> or</span> <span class="hl-constant-builtin">false</span>
+<span class="hl-operator">-</span><span class="hl-number">2</span><span class="hl-operator"> +</span> <span class="hl-number">3</span><span class="hl-operator"> ==</span> <span class="hl-punctuation-bracket">(</span><span class="hl-operator">-</span><span class="hl-number">2</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> +</span> <span class="hl-number">3</span>
 
-# Left-associative operators group left to right:
-10 - 3 - 2 == (10 - 3) - 2
-12 / 6 / 2 == (12 / 6) / 2
+<span class="hl-comment"># Left-associative operators group left to right:</span>
+<span class="hl-number">10</span><span class="hl-operator"> -</span> <span class="hl-number">3</span><span class="hl-operator"> -</span> <span class="hl-number">2</span><span class="hl-operator"> ==</span> <span class="hl-punctuation-bracket">(</span><span class="hl-number">10</span><span class="hl-operator"> -</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> -</span> <span class="hl-number">2</span>
+<span class="hl-number">12</span><span class="hl-operator"> /</span> <span class="hl-number">6</span><span class="hl-operator"> /</span> <span class="hl-number">2</span><span class="hl-operator"> ==</span> <span class="hl-punctuation-bracket">(</span><span class="hl-number">12</span><span class="hl-operator"> /</span> <span class="hl-number">6</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> /</span> <span class="hl-number">2</span>
 
-# Prefix operators group right to left:
-not not true == not (not true)
+<span class="hl-comment"># Prefix operators group right to left:</span>
+<span class="hl-keyword">not</span> <span class="hl-keyword">not</span> <span class="hl-constant-builtin">true</span><span class="hl-operator"> ==</span> <span class="hl-keyword">not</span> <span class="hl-punctuation-bracket">(</span><span class="hl-keyword">not</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket">)</span>
 
-# Postfix operators bind tighter than prefix:
--[1, 2, 3][0] == -(([1, 2, 3])[0])
+<span class="hl-comment"># Postfix operators bind tighter than prefix:</span>
+<span class="hl-operator">-</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">0</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator"> ==</span> <span class="hl-operator">-</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">[</span><span class="hl-number">0</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
 
-# and/or precedence:
-true and false or true == ((true and false) or true)
-</code></pre>
+<span class="hl-comment"># and/or precedence:</span>
+<span class="hl-constant-builtin">true</span><span class="hl-keyword"> and</span> <span class="hl-constant-builtin">false</span><span class="hl-keyword"> or</span> <span class="hl-constant-builtin">true</span><span class="hl-operator"> ==</span> <span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">(</span><span class="hl-constant-builtin">true</span><span class="hl-keyword"> and</span> <span class="hl-constant-builtin">false</span><span class="hl-punctuation-bracket">)</span><span class="hl-keyword"> or</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h4 id="call-threading">Call Threading</h4>
 <p>One notable operator which would be unfamiliar is the threading operator (<code>@</code>). Some languages with a similar feature may call this a pipeline operator.</p>
 <p>In Frost, <code>a @ f(b)</code> is exactly equivalent to <code>f(a, b)</code> (this even results in the same AST). This also allows for postfix chaining, such that <code>a @ f(b) @ g(c)</code> is identical to <code>g(f(a, b), c)</code>. This is similar to <code>-&gt;</code> in Fennel or <code>|&gt;</code> in Elixir.</p>
 <h4 id="logical-operators">Logical Operators</h4>
 <p><code>or</code> will return its first "truthy" argument, or the final argument if all are "falsy". <code>and</code> will return its first "falsy" argument, or the final argument if all are "truthy". <code>not</code> will always return a boolean which is the inverse of the "truthiness" of its operand.</p>
 <p>Evaluation of <code>and</code> and <code>or</code> short-circuits.</p>
-<pre><code class="language-frost">42 or assert(false) # 42, and assert is not evaluated
-false and assert(false) # false, and assert is not evaluated
-</code></pre>
+<pre><code class="language-frost"><span class="hl-number">42</span><span class="hl-keyword"> or</span> <span class="hl-function">assert</span><span class="hl-punctuation-bracket">(</span><span class="hl-constant-builtin">false</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # 42, and assert is not evaluated</span>
+<span class="hl-constant-builtin">false</span><span class="hl-keyword"> and</span> <span class="hl-function">assert</span><span class="hl-punctuation-bracket">(</span><span class="hl-constant-builtin">false</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # false, and assert is not evaluated</span></code></pre>
 <p>All values are truthy, except for an actual <code>false</code> and <code>null</code>.</p>
 <h4 id="logical-comparisons">Logical Comparisons</h4>
 <p>The ordering operators (<code>&lt;</code>, <code>&gt;</code>, etc) compare numeric types as expected, permitting mixing of Int and Float. (<code>3 &lt; 3.14</code> is well-defined.)</p>
 <p>The ordering operators also compare String values lexicographically. (<code>'foo' &gt; 'bar'</code> is <code>true</code>.)</p>
 <p>Equality comparisons (<code>==</code> or <code>!=</code>) will never cause a type error. Primitive types, arrays, and maps are compared by value. Functions are compared by identity.</p>
-<pre><code class="language-frost">def a = 42
-def b = 42
-a == b # true
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">a</span> <span class="hl-operator">=</span> <span class="hl-number">42</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">b</span> <span class="hl-operator">=</span> <span class="hl-number">42</span>
+<span class="hl-variable">a</span><span class="hl-operator"> ==</span> <span class="hl-variable">b</span><span class="hl-comment"> # true</span>
 
-def arr1 = [1, 2, 3]
-def arr2 = [1, 2, 3]
-arr1 == arr2 # true
-</code></pre>
+<span class="hl-keyword">def</span> <span class="hl-variable">arr1</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">arr2</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-variable">arr1</span><span class="hl-operator"> ==</span> <span class="hl-variable">arr2</span><span class="hl-comment"> # true</span></code></pre>
 <h4 id="arithmetic-operators">Arithmetic Operators</h4>
 <p><code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, and <code>%</code> all work as one would expect. When mixing <code>Int</code> and <code>Float</code>, operands are implicitly converted to <code>Float</code>. <code>%</code> only supports <code>Int</code> operands. <code>/</code> will perform truncating integer division when both operands are <code>Int</code>.</p>
 <p><code>+</code> has some additional functionality when used with <code>String</code>, <code>Array</code>, and <code>Map</code> operands: <code>String</code> concatenation, <code>Array</code> concatenation, and <code>Map</code> merge operations. Note that the <code>Map</code> merge is not recursive.</p>
-<pre><code class="language-frost">[1, 2, 3] + [4, 5, 6] # [1, 2, 3, 4, 5, 6]
-'foo' + 'bar' # 'foobar'
-{ foo: 42, bar: 10 } + { bar: 1024, baz: true } # { foo: 42, bar: 1024, baz: true }
-</code></pre>
+<pre><code class="language-frost"><span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator"> +</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">4</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">5</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">6</span><span class="hl-punctuation-bracket">]</span><span class="hl-comment"> # [1, 2, 3, 4, 5, 6]</span>
+<span class="hl-string">'foo'</span><span class="hl-operator"> +</span> <span class="hl-string">'bar'</span><span class="hl-comment"> # 'foobar'</span>
+<span class="hl-punctuation-bracket">{</span> <span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">bar</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">10</span><span class="hl-punctuation-bracket"> }</span><span class="hl-operator"> +</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">bar</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1024</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">baz</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket"> }</span><span class="hl-comment"> # { foo: 42, bar: 1024, baz: true }</span></code></pre>
 <p>Because the map merge is not recursive, nested maps are replaced entirely:</p>
-<pre><code class="language-frost">{ foo: { bar: 42, baz: 10 } } + { foo: { bar: 1024 } } # { foo: { bar: 1024 } }
-</code></pre>
+<pre><code class="language-frost"><span class="hl-punctuation-bracket">{</span> <span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">bar</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">baz</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">10</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-bracket"> }</span><span class="hl-operator"> +</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">bar</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">1024</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-bracket"> }</span><span class="hl-comment"> # { foo: { bar: 1024 } }</span></code></pre>
 <h3 id="if-expressions">If Expressions</h3>
 <p><code>if</code> is an expression, and evaluates to a value. This is similar to the ternary operator (<code>? :</code>) in C or C++.</p>
-<pre><code class="language-frost">def x = if condition(): 42
-        elif something_else(): 81
-        else: 10
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-keyword">if</span> <span class="hl-function">condition</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span>
+        <span class="hl-keyword">elif</span> <span class="hl-function">something_else</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">81</span>
+        <span class="hl-keyword">else</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">10</span></code></pre>
 <p>Note that the line breaks and indentation are not necessary. It would be syntactically equivalent to write it all on one line:</p>
-<pre><code class="language-frost">def x = if condition(): 42 elif something_else(): 81 else: 10
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-keyword">if</span> <span class="hl-function">condition</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-keyword"> elif</span> <span class="hl-function">something_else</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">81</span><span class="hl-keyword"> else</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">10</span></code></pre>
 <p>As one would expect from an <code>if</code>, the branch not taken is not evaluated.</p>
-<pre><code class="language-frost">if false: assert(false) # assert is not evaluated
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">if</span> <span class="hl-constant-builtin">false</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-function">assert</span><span class="hl-punctuation-bracket">(</span><span class="hl-constant-builtin">false</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # assert is not evaluated</span></code></pre>
 <p>If an <code>if</code> does not have an <code>else</code> clause, it implicitly has an <code>else: null</code>.</p>
 <p>Each branch of an <code>if</code> must be a single expression. Bare <code>{ ... }</code> is a map literal, not a block, so writing <code>if foo: { ... }</code> is a syntax error:</p>
-<pre><code class="language-frost">if foo: { # syntax error: this is a map literal, not a block
-    def x = 10
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">if</span> <span class="hl-variable">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-comment"># syntax error: this is a map literal, not a block</span>
+    <span class="hl-keyword">def</span> <span class="hl-variable">x</span><span class="hl-operator"> =</span> <span class="hl-number">10</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>If a multi-statement branch is desired, use a <code>do</code> block:</p>
-<pre><code class="language-frost">if foo: do {
-    def x = 10
-    x
-}
-else: 42
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">if</span> <span class="hl-variable">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-keyword">do</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-number">10</span>
+    <span class="hl-variable">x</span>
+<span class="hl-punctuation-bracket">}</span>
+<span class="hl-keyword">else</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span></code></pre>
 <h3 id="do">Do</h3>
 <p>A <code>do</code> block is a single expression that begins a new scope, allows <code>def</code> and <code>defn</code> statements within, and evaluates to its final expression. This was developed in response to a growing pattern of immediately-invoked functions (<code>fn -&gt; { ... }()</code>) being used to scope local definitions. A <code>do</code> block is nearly a drop-in replacement for this pattern, and incurs less runtime overhead.</p>
 <p>Any <code>def</code> or <code>defn</code> statements are entirely scoped to the block itself:</p>
-<pre><code class="language-frost">do {
-    def x = 5
-    x
-}
-x # error: Symbol x is not defined
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">do</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-number">5</span>
+    <span class="hl-variable">x</span>
+<span class="hl-punctuation-bracket">}</span>
+<span class="hl-variable">x</span><span class="hl-comment"> # error: Symbol x is not defined</span></code></pre>
 <p>A <code>do</code> block evaluates to its final expression:</p>
-<pre><code class="language-frost">assert(do {
-    def x = 5
-    x
-} == 5)
-</code></pre>
+<pre><code class="language-frost"><span class="hl-function">assert</span><span class="hl-punctuation-bracket">(</span><span class="hl-keyword">do</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-number">5</span>
+    <span class="hl-variable">x</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-operator"> ==</span> <span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Similarly to block-style functions, a <code>do</code> block may not end with a <code>def</code> or <code>defn</code> statement:</p>
-<pre><code class="language-frost">do {
-    def x = 5 # error: a do block must end in an expression
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">do</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-number">5</span><span class="hl-comment"> # error: a do block must end in an expression</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <h3 id="match-expressions">Match Expressions</h3>
 <p>A <code>match</code> expression compares a value against a series of patterns and evaluates the result of the first matching arm.</p>
-<pre><code class="language-frost">def result = match value {
-    1 =&gt; 'one',
-    2 =&gt; 'two',
-    _ =&gt; 'other'
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">result</span> <span class="hl-operator">=</span> <span class="hl-keyword">match</span> <span class="hl-variable">value</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-number">1</span><span class="hl-operator"> =&gt;</span> <span class="hl-string">'one'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-number">2</span><span class="hl-operator"> =&gt;</span> <span class="hl-string">'two'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">_</span><span class="hl-operator"> =&gt;</span> <span class="hl-string">'other'</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>Arms are comma-separated. A trailing comma is permitted. If no arm matches, the expression produces an error.</p>
 <h4 id="patterns">Patterns</h4>
 <p>A pattern can be one of the following forms:</p>
@@ -530,281 +486,237 @@ x # error: Symbol x is not defined
 <p>Type constraints can follow a binding name or <code>_</code>. The available constraints are:</p>
 <p><code>Null</code>, <code>Int</code>, <code>Float</code>, <code>Bool</code>, <code>String</code>, <code>Array</code>, <code>Map</code>, <code>Function</code>: match a specific type.</p>
 <p><code>Primitive</code>, <code>Numeric</code>, <code>Structured</code>, <code>Nonnull</code>: match type categories.</p>
-<pre><code class="language-frost">match value {
-    n is Int if: n &gt; 0 =&gt; 'positive int',
-    _ is String        =&gt; 'some string',
-    _ is Nonnull       =&gt; 'something else',
-    null               =&gt; 'nothing'
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">match</span> <span class="hl-variable">value</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-variable">n</span><span class="hl-keyword"> is</span><span class="hl-type"> Int</span><span class="hl-keyword"> if</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">n</span><span class="hl-operator"> &gt;</span> <span class="hl-number">0</span><span class="hl-operator"> =&gt;</span> <span class="hl-string">'positive int'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">_</span><span class="hl-keyword"> is</span><span class="hl-type"> String</span><span class="hl-operator">        =&gt;</span> <span class="hl-string">'some string'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">_</span><span class="hl-keyword"> is</span><span class="hl-type"> Nonnull</span><span class="hl-operator">       =&gt;</span> <span class="hl-string">'something else'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-constant-builtin">null</span><span class="hl-operator">               =&gt;</span> <span class="hl-string">'nothing'</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>The <code>if:</code> above denotes a guard clause. See <a href="#guards">Guards</a> for a full explanation of that syntax.</p>
 <h4 id="alternatives">Alternatives</h4>
 <p>Patterns can be combined with <code>|</code> to try multiple patterns for the same arm. The patterns are tried left-to-right; the first one that matches wins.</p>
-<pre><code class="language-frost">match http_code {
-    200 | 201 | 204 =&gt; 'success',
-    301 | 302       =&gt; 'redirect',
-    _               =&gt; 'other'
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">match</span> <span class="hl-variable">http_code</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-number">200</span><span class="hl-operator"> |</span> <span class="hl-number">201</span><span class="hl-operator"> |</span> <span class="hl-number">204</span><span class="hl-operator"> =&gt;</span> <span class="hl-string">'success'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-number">301</span><span class="hl-operator"> |</span> <span class="hl-number">302</span><span class="hl-operator">       =&gt;</span> <span class="hl-string">'redirect'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">_</span><span class="hl-operator">               =&gt;</span> <span class="hl-string">'other'</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>Alternatives work anywhere a pattern can appear, including nested inside array and map patterns:</p>
-<pre><code class="language-frost">match [method, status] {
-    ['GET' | 'HEAD', 200 | 304] =&gt; 'cacheable',
-    _                           =&gt; 'not cacheable'
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">match</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">method</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">status</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-string">'GET'</span><span class="hl-operator"> |</span> <span class="hl-string">'HEAD'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">200</span><span class="hl-operator"> |</span> <span class="hl-number">304</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator"> =&gt;</span> <span class="hl-string">'cacheable'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">_</span><span class="hl-operator">                           =&gt;</span> <span class="hl-string">'not cacheable'</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>When alternatives include bindings, every alternative must bind the same set of names. This ensures the result expression can use the bindings regardless of which alternative matched:</p>
-<pre><code class="language-frost">match value {
-    a | [b, c] =&gt; a   # error: alternative 1 binds {a}, alternative 2 binds {b, c}
-}
-</code></pre>
-<pre><code class="language-frost">match value {
-    [first, ..._] | {first} =&gt; first,   # both bind `first`
-    _                       =&gt; null
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">match</span> <span class="hl-variable">value</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-variable">a</span><span class="hl-operator"> |</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">b</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">c</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator"> =&gt;</span> <span class="hl-variable">a</span><span class="hl-comment">   # error: alternative 1 binds {a}, alternative 2 binds {b, c}</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">match</span> <span class="hl-variable">value</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-variable">first</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">...</span><span class="hl-variable">_</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator"> |</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">first</span><span class="hl-punctuation-bracket">}</span><span class="hl-operator"> =&gt;</span> <span class="hl-variable">first</span><span class="hl-punctuation-delimiter">,</span>   <span class="hl-comment"># both bind `first`</span>
+    <span class="hl-variable">_</span><span class="hl-operator">                       =&gt;</span> <span class="hl-constant-builtin">null</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>Guards apply to the whole top-level pattern: the guard runs after whichever branch matched:</p>
-<pre><code class="language-frost">match value {
-    n is Int | n is Float if: n &gt; 0 =&gt; 'positive number',
-    _                               =&gt; 'other'
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">match</span> <span class="hl-variable">value</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-variable">n</span><span class="hl-keyword"> is</span><span class="hl-type"> Int</span><span class="hl-operator"> |</span> <span class="hl-variable">n</span><span class="hl-keyword"> is</span><span class="hl-type"> Float</span><span class="hl-keyword"> if</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">n</span><span class="hl-operator"> &gt;</span> <span class="hl-number">0</span><span class="hl-operator"> =&gt;</span> <span class="hl-string">'positive number'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">_</span><span class="hl-operator">                               =&gt;</span> <span class="hl-string">'other'</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <h4 id="array-patterns">Array Patterns</h4>
 <p>Array patterns match element-wise. Without a rest clause, the array must have exactly as many elements as the pattern. With a rest clause, the array may be longer.</p>
-<pre><code class="language-frost">match [1, 2, 3] {
-    [a, b, c]       =&gt; a + b + c,     # exact match
-    [head, ...tail] =&gt; head,           # at least one element
-    []              =&gt; 'empty'         # empty array
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">match</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">c</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator">       =&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-variable">b</span><span class="hl-operator"> +</span> <span class="hl-variable">c</span><span class="hl-punctuation-delimiter">,</span>     <span class="hl-comment"># exact match</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-variable">head</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">...</span><span class="hl-variable">tail</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator"> =&gt;</span> <span class="hl-variable">head</span><span class="hl-punctuation-delimiter">,</span>           <span class="hl-comment"># at least one element</span>
+    <span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">]</span><span class="hl-operator">              =&gt;</span> <span class="hl-string">'empty'</span><span class="hl-comment">         # empty array</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <h4 id="map-patterns">Map Patterns</h4>
 <p>Map patterns match by key. Every key named in the pattern must be present in the match target; missing keys cause the arm to fail. Extra keys in the match target are ignored.</p>
-<pre><code class="language-frost">match {name: 'alice', age: 30, role: 'admin'} {
-    {name: n, supervisor: s} =&gt; $'${n} works for ${s}', # no match
-    {name: n, role: 'admin'} =&gt; $'admin: ${n}', # match
-    {name: n}                =&gt; n,
-    _                        =&gt; 'unknown'
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">match</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">age</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">30</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">role</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'admin'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">n</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">supervisor</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">s</span><span class="hl-punctuation-bracket">}</span><span class="hl-operator"> =&gt;</span> <span class="hl-string-special">$'</span><span class="hl-punctuation-special">${</span><span class="hl-variable">n</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special"> works for </span><span class="hl-punctuation-special">${</span><span class="hl-variable">s</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-comment"># no match</span>
+    <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">n</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">role</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'admin'</span><span class="hl-punctuation-bracket">}</span><span class="hl-operator"> =&gt;</span> <span class="hl-string-special">$'admin: </span><span class="hl-punctuation-special">${</span><span class="hl-variable">n</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-comment"># match</span>
+    <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">n</span><span class="hl-punctuation-bracket">}</span><span class="hl-operator">                =&gt;</span> <span class="hl-variable">n</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">_</span><span class="hl-operator">                        =&gt;</span> <span class="hl-string">'unknown'</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>The shorthand form <code>{key}</code> is equivalent to <code>{key: key}</code>, and <code>{key is Type}</code> is equivalent to <code>{key: key is Type}</code>. Map keys can also be computed with bracket syntax: <code>{[expr]: pattern}</code>.</p>
 <p>A map pattern can also bind the entire matched map using <code>as</code>:</p>
-<pre><code class="language-frost">match {name: 'alice', age: 30, role: 'admin'} {
-    {name: n, role: 'admin'} as person =&gt; $'admin ${n} is ${person.age}',
-    {name: n}                          =&gt; n,
-    _                                  =&gt; 'unknown'
-}
-# "admin alice is 30"
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">match</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">age</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">30</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">role</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'admin'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">n</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">role</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'admin'</span><span class="hl-punctuation-bracket">}</span><span class="hl-keyword"> as</span><span class="hl-variable"> person</span><span class="hl-operator"> =&gt;</span> <span class="hl-string-special">$'admin </span><span class="hl-punctuation-special">${</span><span class="hl-variable">n</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special"> is </span><span class="hl-punctuation-special">${</span><span class="hl-variable">person</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">age</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">n</span><span class="hl-punctuation-bracket">}</span><span class="hl-operator">                          =&gt;</span> <span class="hl-variable">n</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">_</span><span class="hl-operator">                                  =&gt;</span> <span class="hl-string">'unknown'</span>
+<span class="hl-punctuation-bracket">}</span>
+<span class="hl-comment"># "admin alice is 30"</span></code></pre>
 <p>The <code>as</code> binding receives the original map, not a subset. It is bound only when the map pattern succeeds. The <code>as</code> name is visible in guards and arm results alongside any names bound by the sub-patterns. <code>as</code> works in nested positions: <code>[{name} as person, ...rest]</code> binds the inner map while destructuring the outer array.</p>
 <h4 id="nesting">Nesting</h4>
 <p>Array and map patterns nest arbitrarily. Anywhere a binding can appear, a nested pattern can appear instead.</p>
-<pre><code class="language-frost">def data = {
-    users: [
-        {name: 'alice', tags: ['admin', 'staff']},
-        {name: 'bob', tags: []}
-    ]
-}
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">data</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">users</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span>
+        <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'alice'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">tags</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'admin'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'staff'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+        <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'bob'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">tags</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span>
+    <span class="hl-punctuation-bracket">]</span>
+<span class="hl-punctuation-bracket">}</span>
 
-match data {
-    {
-        users: [
-            {name: first, tags: [role, ..._]},
-            ...rest
-        ]
-    } =&gt; $'${first} is ${role}',
-    _ =&gt; 'no match'
-}
-# "alice is admin"
-</code></pre>
+<span class="hl-keyword">match</span> <span class="hl-variable">data</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-punctuation-bracket">{</span>
+        <span class="hl-property">users</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span>
+            <span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">first</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">tags</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">role</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">...</span><span class="hl-variable">_</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+            <span class="hl-operator">...</span><span class="hl-variable">rest</span>
+        <span class="hl-punctuation-bracket">]</span>
+    <span class="hl-punctuation-bracket">}</span><span class="hl-operator"> =&gt;</span> <span class="hl-string-special">$'</span><span class="hl-punctuation-special">${</span><span class="hl-variable">first</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special"> is </span><span class="hl-punctuation-special">${</span><span class="hl-variable">role</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">_</span><span class="hl-operator"> =&gt;</span> <span class="hl-string">'no match'</span>
+<span class="hl-punctuation-bracket">}</span>
+<span class="hl-comment"># "alice is admin"</span></code></pre>
 <h4 id="guards">Guards</h4>
 <p>An arm can have a guard expression with <code>if:</code>. The guard runs only after the pattern matches, and the arm wins only if the guard is truthy.</p>
-<pre><code class="language-frost">match n {
-    x if: x &gt; 0 and x &lt; 100  =&gt; 'small positive',
-    x if: x &gt;= 100           =&gt; 'large',
-    _                        =&gt; 'non-positive'
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">match</span> <span class="hl-variable">n</span><span class="hl-punctuation-bracket"> {</span>
+    <span class="hl-variable">x</span><span class="hl-keyword"> if</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">x</span><span class="hl-operator"> &gt;</span> <span class="hl-number">0</span><span class="hl-keyword"> and</span> <span class="hl-variable">x</span><span class="hl-operator"> &lt;</span> <span class="hl-number">100</span><span class="hl-operator">  =&gt;</span> <span class="hl-string">'small positive'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">x</span><span class="hl-keyword"> if</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">x</span><span class="hl-operator"> &gt;=</span> <span class="hl-number">100</span><span class="hl-operator">           =&gt;</span> <span class="hl-string">'large'</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-variable">_</span><span class="hl-operator">                        =&gt;</span> <span class="hl-string">'non-positive'</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <p>Bindings from the pattern are in scope within the guard expression.</p>
 <h3 id="iterative-expressions">Iterative Expressions</h3>
 <p>There are 4 iterative expressions built into the language itself: <code>map</code>, <code>filter</code>, <code>reduce</code> and <code>foreach</code>. Each is defined for <code>Array</code> and <code>Map</code> inputs.</p>
 <h4 id="map">Map</h4>
-<pre><code class="language-frost">map an_array with unary_function
-map a_map with binary_function
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">map</span> <span class="hl-variable">an_array</span><span class="hl-keyword"> with</span> <span class="hl-variable">unary_function</span>
+<span class="hl-keyword">map</span> <span class="hl-variable">a_map</span><span class="hl-keyword"> with</span> <span class="hl-variable">binary_function</span></code></pre>
 <p>The <code>Array</code> form of a map expression calls a function with each element, in order, and creates a new array with the results of those function calls.</p>
-<pre><code class="language-frost">map [1, 2, 3] with fn x -&gt; x * 2 # [2, 4, 6]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">map</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-keyword"> with</span> <span class="hl-keyword">fn</span> <span class="hl-variable">x</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">x</span><span class="hl-operator"> *</span> <span class="hl-number">2</span><span class="hl-comment"> # [2, 4, 6]</span></code></pre>
 <p>The <code>Map</code> form calls a function with each key-value pair, in an unspecified order, and merges the resulting maps. The function must return a map.</p>
-<pre><code class="language-frost">map {foo: 42, bar: 10} with fn k, v -&gt; ({ [k]: v, [k + k]: v + v })
-# { foo: 42, bar: 10, foofoo: 84, barbar: 20 }
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">map</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">bar</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">10</span><span class="hl-punctuation-bracket">}</span><span class="hl-keyword"> with</span> <span class="hl-keyword">fn</span> <span class="hl-variable">k</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">v</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">k</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">v</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">k</span><span class="hl-operator"> +</span> <span class="hl-variable">k</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">v</span><span class="hl-operator"> +</span> <span class="hl-variable">v</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># { foo: 42, bar: 10, foofoo: 84, barbar: 20 }</span></code></pre>
 <p>See also <a href="stdlib/collections.html#transform"><code>transform</code></a>, the functional form for use in <code>@</code> pipelines.</p>
 <h4 id="filter">Filter</h4>
-<pre><code class="language-frost">filter an_array with unary_predicate
-filter a_map with binary_predicate
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">filter</span> <span class="hl-variable">an_array</span><span class="hl-keyword"> with</span> <span class="hl-variable">unary_predicate</span>
+<span class="hl-keyword">filter</span> <span class="hl-variable">a_map</span><span class="hl-keyword"> with</span> <span class="hl-variable">binary_predicate</span></code></pre>
 <p>In both forms, the function is called with each element or key-value pair. If the function returns a truthy value, then that element or key-value pair will be preserved in the result. As with <code>map</code>, the iteration order over a <code>Map</code> is unspecified.</p>
-<pre><code class="language-frost">filter [1, 2, 3, 4] with fn n -&gt; n % 2 == 0 # [2, 4]
-filter {foo: 42, bar: 11} with fn k, v -&gt; v % 2 == 0 # { foo: 42 }
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">filter</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-keyword"> with</span> <span class="hl-keyword">fn</span> <span class="hl-variable">n</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">n</span><span class="hl-operator"> %</span> <span class="hl-number">2</span><span class="hl-operator"> ==</span> <span class="hl-number">0</span><span class="hl-comment"> # [2, 4]</span>
+<span class="hl-keyword">filter</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">bar</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">11</span><span class="hl-punctuation-bracket">}</span><span class="hl-keyword"> with</span> <span class="hl-keyword">fn</span> <span class="hl-variable">k</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">v</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">v</span><span class="hl-operator"> %</span> <span class="hl-number">2</span><span class="hl-operator"> ==</span> <span class="hl-number">0</span><span class="hl-comment"> # { foo: 42 }</span></code></pre>
 <p>See also <a href="stdlib/collections.html#select"><code>select</code></a>, the functional form for use in <code>@</code> pipelines.</p>
 <h4 id="reduce">Reduce</h4>
-<pre><code class="language-frost">reduce an_array with binary_function
-reduce an_array init: value with binary_function
-reduce a_map init: value with ternary_function
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">reduce</span> <span class="hl-variable">an_array</span><span class="hl-keyword"> with</span> <span class="hl-variable">binary_function</span>
+<span class="hl-keyword">reduce</span> <span class="hl-variable">an_array</span><span class="hl-keyword"> init</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">value</span><span class="hl-keyword"> with</span> <span class="hl-variable">binary_function</span>
+<span class="hl-keyword">reduce</span> <span class="hl-variable">a_map</span><span class="hl-keyword"> init</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">value</span><span class="hl-keyword"> with</span> <span class="hl-variable">ternary_function</span></code></pre>
 <p>In the first form, the function is first called with the first two elements. The result is used as the first argument to the next call, whose second argument is the third element. In other words, the first argument to the function is an accumulator, and each call returns a new accumulator value.</p>
-<pre><code class="language-frost">reduce [1, 2, 3, 4] with fn a, b -&gt; a + b # 10
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">reduce</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-keyword"> with</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-variable">b</span><span class="hl-comment"> # 10</span></code></pre>
 <p>Reducing an empty array without an <code>init:</code> clause will return <code>null</code>.</p>
 <p>In the second form, the value after <code>init:</code> is used as the initial accumulator value.</p>
-<pre><code class="language-frost">reduce [1, 2, 3, 4] init: 0 with fn a, b -&gt; a + b # 10
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">reduce</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span><span class="hl-keyword"> init</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">0</span><span class="hl-keyword"> with</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">a</span><span class="hl-operator"> +</span> <span class="hl-variable">b</span><span class="hl-comment"> # 10</span></code></pre>
 <p>In the third form, a <code>Map</code> is being iterated over. The function is called with the accumulator, a map key, and the corresponding map value. The <code>init:</code> clause is required for the <code>Map</code> form. The iteration order over a <code>Map</code> is unspecified.</p>
-<pre><code class="language-frost">reduce {foo: 42, bar: 10} init: 0 with fn acc, k, v -&gt; acc + v # 52
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">reduce</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">bar</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">10</span><span class="hl-punctuation-bracket">}</span><span class="hl-keyword"> init</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">0</span><span class="hl-keyword"> with</span> <span class="hl-keyword">fn</span> <span class="hl-variable">acc</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">k</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">v</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">acc</span><span class="hl-operator"> +</span> <span class="hl-variable">v</span><span class="hl-comment"> # 52</span></code></pre>
 <p>See also <a href="stdlib/collections.html#fold"><code>fold</code></a>, the functional form for use in <code>@</code> pipelines.</p>
 <h4 id="foreach">Foreach</h4>
-<pre><code class="language-frost">foreach an_array with unary_function
-foreach a_map with binary_function
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">foreach</span> <span class="hl-variable">an_array</span><span class="hl-keyword"> with</span> <span class="hl-variable">unary_function</span>
+<span class="hl-keyword">foreach</span> <span class="hl-variable">a_map</span><span class="hl-keyword"> with</span> <span class="hl-variable">binary_function</span></code></pre>
 <p>In the <code>Array</code> form, the function is called with each array element in order. In the <code>Map</code> form, the function is called with each key-value pair in an unspecified order.</p>
 <p>The return value of the function is ignored. A foreach expression always returns <code>null</code>.</p>
 <h2 id="statements">Statements</h2>
 <p>Most of Frost consists of expressions, but there are a few proper statements. The distinction is that an expression evaluates to a value, whereas a statement does not.</p>
 <h3 id="definitions">Definitions</h3>
 <p>A value may be bound to a name using a <code>def</code> statement.</p>
-<pre><code class="language-frost">def a_name = any_expression
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">a_name</span> <span class="hl-operator">=</span> <span class="hl-variable">any_expression</span></code></pre>
 <p>A name may not be redefined within the same scope:</p>
-<pre><code class="language-frost">def x = 42
-def x = 10 # error
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-number">42</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-number">10</span><span class="hl-comment"> # error</span></code></pre>
 <p>A function introduces a new scope:</p>
-<pre><code class="language-frost">def x = 42
-def f = fn a -&gt; {
-    def x = 10
-    x + a
-}
-f(5) # 15
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-number">42</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">f</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">a</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-keyword">def</span> <span class="hl-variable">x</span> <span class="hl-operator">=</span> <span class="hl-number">10</span>
+    <span class="hl-variable">x</span><span class="hl-operator"> +</span> <span class="hl-variable">a</span>
+<span class="hl-punctuation-bracket">}</span>
+<span class="hl-function">f</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">5</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # 15</span></code></pre>
 <h4 id="array-destructuring">Array Destructuring</h4>
 <p>A <code>def</code> statement can destructure an <code>Array</code>. The right-hand side may be any expression which evaluates to an <code>Array</code>.</p>
-<pre><code class="language-frost">def [a, b, c] = [1, 2, 3]
-# a == 1 and b == 2 and c == 3
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">c</span><span class="hl-punctuation-bracket">]</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-comment"># a == 1 and b == 2 and c == 3</span></code></pre>
 <p>The number of names on the left must exactly equal the number of elements in the array on the right.</p>
 <p>Array destructuring can also bind an unknown number of elements to an array:</p>
-<pre><code class="language-frost">def [a, b, ...rest] = [1, 2, 3, 4]
-# a == 1 and b == 2 and rest == [3, 4]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">b</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">...</span><span class="hl-variable">rest</span><span class="hl-punctuation-bracket">]</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">4</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-comment"># a == 1 and b == 2 and rest == [3, 4]</span></code></pre>
 <p>In this form, all of the names before the <code>...</code> must match an element, and the <code>...</code> name may bind an empty array.</p>
 <h4 id="map-destructuring">Map Destructuring</h4>
 <p>A <code>def</code> statement can destructure a <code>Map</code>. Every key named in the pattern must be present in the map; a missing key is an error. The matching does not need to be exhaustive.</p>
-<pre><code class="language-frost">def { foo: bar, beep: boop } = { foo: 42, beep: 10, dropped: 128 }
-# bar == 42 and boop == 10
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">bar</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">beep</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">boop</span> <span class="hl-punctuation-bracket">}</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">beep</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">dropped</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">128</span><span class="hl-punctuation-bracket"> }</span>
+<span class="hl-comment"># bar == 42 and boop == 10</span></code></pre>
 <p>The keys on the left do not necessarily need to be string keys:</p>
-<pre><code class="language-frost">def { [42]: foo, [false]: bar } = { [42]: 'wow', [false]: 'neat' }
-# foo == 'wow' and bar == 'neat'
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">42</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">foo</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-constant-builtin">false</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">bar</span> <span class="hl-punctuation-bracket">}</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">42</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'wow'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-constant-builtin">false</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'neat'</span><span class="hl-punctuation-bracket"> }</span>
+<span class="hl-comment"># foo == 'wow' and bar == 'neat'</span></code></pre>
 <p>A shortened form is available when the binding name matches the key: <code>def { foo, bar }</code> is equivalent to <code>def { foo: foo, bar: bar }</code>.</p>
 <p>A map destructure can also bind the entire map using <code>as</code>:</p>
-<pre><code class="language-frost">def { name, age } as person = { name: 'Alice', age: 30, role: 'admin' }
-# name == "Alice" and age == 30 and person == the full map
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">name</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">age</span><span class="hl-punctuation-bracket"> }</span> <span class="hl-keyword">as</span><span class="hl-variable"> person</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Alice'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">age</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">30</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">role</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'admin'</span><span class="hl-punctuation-bracket"> }</span>
+<span class="hl-comment"># name == "Alice" and age == 30 and person == the full map</span></code></pre>
 <p>The <code>as</code> name receives the full original map. This is useful when you want a few fields pulled out for convenience but also need the whole map:</p>
-<pre><code class="language-frost">export def { encode, decode } as json = import('std.json')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">export</span><span class="hl-keyword"> def</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">encode</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">decode</span><span class="hl-punctuation-bracket"> }</span> <span class="hl-keyword">as</span><span class="hl-variable"> json</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.json'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p><code>as</code> works in nested positions: <code>def [{name} as first, ...rest] = items</code> binds the inner map while destructuring the outer array.</p>
 <h4 id="recursive-destructuring">Recursive Destructuring</h4>
 <p>Array and map destructuring patterns can be nested arbitrarily. Anywhere a name can appear in a destructure pattern, a nested array or map pattern can appear instead.</p>
-<pre><code class="language-frost">def [a, [b, c]] = [1, [2, 3]]
-# a == 1 and b == 2 and c == 3
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">a</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">b</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">c</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">]</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-comment"># a == 1 and b == 2 and c == 3</span>
 
-def {foo: [x, y]} = {foo: [10, 20]}
-# x == 10 and y == 20
+<span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">x</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">y</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">foo</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">10</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">20</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span>
+<span class="hl-comment"># x == 10 and y == 20</span>
 
-def [{alpha}, beta] = [{alpha: 'a'}, 'b']
-# alpha == 'a' and beta == 'b'
+<span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">alpha</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">beta</span><span class="hl-punctuation-bracket">]</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">alpha</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'a'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'b'</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-comment"># alpha == 'a' and beta == 'b'</span>
 
-def {outer: {inner: val}} = {outer: {inner: 42}}
-# val == 42
-</code></pre>
+<span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">outer</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">inner</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">val</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">}</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">outer</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">inner</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">42</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">}</span>
+<span class="hl-comment"># val == 42</span></code></pre>
 <p>Rest bindings can appear inside nested array patterns:</p>
-<pre><code class="language-frost">def [head, [first, ...tail]] = [0, [1, 2, 3]]
-# head == 0 and first == 1 and tail == [2, 3]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">head</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">first</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-operator">...</span><span class="hl-variable">tail</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">]</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">0</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-comment"># head == 0 and first == 1 and tail == [2, 3]</span></code></pre>
 <p>The discard binding <code>_</code> works at any nesting level:</p>
-<pre><code class="language-frost">def [_, [_, x]] = [1, [2, 3]]
-# x == 3
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">_</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-variable">_</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">x</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">]</span> <span class="hl-operator">=</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">1</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">[</span><span class="hl-number">2</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-number">3</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-comment"># x == 3</span></code></pre>
 <h2 id="modules">Modules</h2>
 <p>Frost provides a mechanism for using code across separate files. One file may use the <code>import</code> function to import what is <code>export</code>-ed by another file.</p>
 <h3 id="export">Export</h3>
 <p>Any <code>def</code> or <code>defn</code> statement at file scope may be prepended with the <code>export</code> keyword. Any definition marked as <code>export</code> will be made available when a script is imported. This does not change the meaning within that script file, and the name(s) can be used normally. The rules for an exported definition are the same as described in previous sections.</p>
-<pre><code class="language-frost">export def foo = 42
-# foo == 42
-# if this file is imported, then foo will be exported
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">export</span><span class="hl-keyword"> def</span> <span class="hl-variable">foo</span> <span class="hl-operator">=</span> <span class="hl-number">42</span>
+<span class="hl-comment"># foo == 42</span>
+<span class="hl-comment"># if this file is imported, then foo will be exported</span></code></pre>
 <p><code>export defn</code> is the shorthand form for exporting a named function:</p>
-<pre><code class="language-frost">export defn greet(name) -&gt; $'hello, ${name}'
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">export</span><span class="hl-keyword"> defn</span><span class="hl-variable"> greet</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">name</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">-&gt;</span> <span class="hl-string-special">$'hello, </span><span class="hl-punctuation-special">${</span><span class="hl-variable">name</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span></code></pre>
 <p>It is an error for an <code>export def</code> or <code>export defn</code> to appear within a function:</p>
-<pre><code class="language-frost">def f = fn -&gt; {
-    export def foo = 10 # error
-    foo
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">f</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-operator">-&gt;</span> <span class="hl-punctuation-bracket">{</span>
+    <span class="hl-keyword">export</span><span class="hl-keyword"> def</span> <span class="hl-variable">foo</span> <span class="hl-operator">=</span> <span class="hl-number">10</span><span class="hl-comment"> # error</span>
+    <span class="hl-variable">foo</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 <h3 id="import">Import</h3>
 <p>The function <code>import</code> takes a module specification and returns a value. The module specification must be a non-empty <code>String</code>.</p>
 <h4 id="built-in-modules">Built-in Modules</h4>
 <p>Frost ships with built-in modules under the <code>std</code> and <code>ext</code> namespaces. These are available without any files on disk. A complete list of built-in modules is in the <a href="stdlib/index.html">standard library documentation</a>.</p>
-<pre><code class="language-frost">def fs = import('std.fs')
-def http = import('ext.http')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">fs</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.fs'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">http</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ext.http'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>The built-in module registry is a nested <code>Map</code>. <code>import</code> walks the <code>.</code>-separated path segments through this structure and returns whatever value it reaches. This means you can import at any level of granularity:</p>
-<pre><code class="language-frost">def std = import('std')           # the entire standard library (a Map of Maps)
-def b64 = import('std.encoding.b64')  # a specific sub-map
-def encode = import('std.encoding.b64.encode')  # a single function
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">std</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">           # the entire standard library (a Map of Maps)</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">b64</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.encoding.b64'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">  # a specific sub-map</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">encode</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.encoding.b64.encode'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">  # a single function</span></code></pre>
 <p>Because <code>import</code> returns a <code>Map</code>, you can even apply destructuring to it:</p>
-<pre><code class="language-frost">def { fs, io, json } = import('std') # imports fs, io, and json in one line
-def { http, sqlite } = import('ext')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">fs</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">io</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">json</span><span class="hl-punctuation-bracket"> }</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # imports fs, io, and json in one line</span>
+<span class="hl-keyword">def</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">http</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">sqlite</span><span class="hl-punctuation-bracket"> }</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ext'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h4 id="file-based-modules">File-based Modules</h4>
 <p>If no built-in module matches, <code>import</code> treats the specification as a relative path using <code>.</code> as a path separator. The <code>.frst</code> file extension is added automatically. For example: <code>'foo.bar.baz'</code> specifies a relative path <code>foo/bar/baz.frst</code>.</p>
 <p>The result is a <code>Map</code> with keys being the exported names, and values being the values bound to those names.</p>
 <p><code>import</code> will first check relative to the importing file. If no file can be found relative to the importing file, the interpreter will then look relative to the current working directory. It is an error if a module import cannot be resolved.</p>
 <p>If no file is found, then a list of paths will be looked up in the environment variable <code>FROST_MODULE_PATH</code>. This environment variable consists of a colon-separated list of paths (relative or absolute). Each path in the list is tried as a base directory for the module specification.</p>
-<pre><code class="language-frost"># utils.frst
-export def greet = fn name -&gt; $'hello, ${name}'
+<pre><code class="language-frost"><span class="hl-comment"># utils.frst</span>
+<span class="hl-keyword">export</span><span class="hl-keyword"> def</span> <span class="hl-variable">greet</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">name</span> <span class="hl-operator">-&gt;</span> <span class="hl-string-special">$'hello, </span><span class="hl-punctuation-special">${</span><span class="hl-variable">name</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span>
 
-# main.frst
-def utils = import('utils')
-utils.greet('world') # "hello, world"
-</code></pre>
+<span class="hl-comment"># main.frst</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">utils</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'utils'</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">utils</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">greet</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'world'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # "hello, world"</span></code></pre>
 <p>Dots in the module specification correspond to directory separators:</p>
-<pre><code class="language-frost">def vec = import('lib.math.vectors') # resolves to lib/math/vectors.frst
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">vec</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'lib.math.vectors'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # resolves to lib/math/vectors.frst</span></code></pre>
 <p>Because <code>import</code> resolves relative to the importing file, not the current working directory, two files can import different modules with the same specification:</p>
-<pre><code class="language-frost"># lib/core.frst
-def h = import('helpers') # resolves to lib/helpers.frst, not project/helpers.frst
+<pre><code class="language-frost"><span class="hl-comment"># lib/core.frst</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">h</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'helpers'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # resolves to lib/helpers.frst, not project/helpers.frst</span>
 
-# main.frst
-def h = import('helpers')     # resolves to project/helpers.frst
-def core = import('lib.core') # resolves to project/lib/core.frst
-</code></pre>
+<span class="hl-comment"># main.frst</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">h</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'helpers'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">     # resolves to project/helpers.frst</span>
+<span class="hl-keyword">def</span> <span class="hl-variable">core</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'lib.core'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment"> # resolves to project/lib/core.frst</span></code></pre>
 <h3 id="the-imported-variable">The <code>imported</code> Variable</h3>
 <p>Every Frost file has access to a predefined <code>Bool</code> named <code>imported</code>. It is <code>false</code> when the file is run directly, and <code>true</code> when it is loaded via <code>import</code>.</p>
 <p>This allows a file to act as both a reusable module and a runnable script:</p>
-<pre><code class="language-frost">export def greet = fn name -&gt; $'hello, ${name}'
+<pre><code class="language-frost"><span class="hl-keyword">export</span><span class="hl-keyword"> def</span> <span class="hl-variable">greet</span> <span class="hl-operator">=</span> <span class="hl-keyword">fn</span> <span class="hl-variable">name</span> <span class="hl-operator">-&gt;</span> <span class="hl-string-special">$'hello, </span><span class="hl-punctuation-special">${</span><span class="hl-variable">name</span><span class="hl-punctuation-bracket">}</span><span class="hl-string-special">'</span>
 
-if not imported: print(greet('world'))
-</code></pre>
+<span class="hl-keyword">if</span> <span class="hl-keyword">not</span> <span class="hl-variable">imported</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-function">print</span><span class="hl-punctuation-bracket">(</span><span class="hl-function">greet</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'world'</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <h3 id="the-args-variable">The <code>args</code> Variable</h3>
 <p>When running a file, <code>args</code> is predefined as an <code>Array</code> of <code>String</code> values containing the command-line arguments passed to the program. <code>args[0]</code> is the path to the main script file, and any subsequent elements are any additional arguments.</p>
-<pre><code class="language-frost">frost script.frst foo bar   # args == ["script.frst", "foo", "bar"]
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">frost</span><span class="hl-variable"> script</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">frst</span><span class="hl-variable"> foo</span><span class="hl-variable"> bar</span><span class="hl-comment">   # args == ["script.frst", "foo", "bar"]</span></code></pre>
 </main>
 <script src="nav.js"></script>
 </body>

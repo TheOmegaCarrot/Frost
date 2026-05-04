@@ -9,8 +9,7 @@
 <body>
 <main>
 <h1 id="csv">CSV</h1>
-<pre><code class="language-frost">def csv = import('ext.csv')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">csv</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ext.csv'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Read and write CSV (comma-separated values) data from files and strings.</p>
 <p>All field values are <code>String</code>. The caller is responsible for type conversion (e.g. <code>to_int</code>).</p>
 <h2 id="read-options">Read Options</h2>
@@ -27,8 +26,7 @@
 </ul>
 <h2 id="callback-mode">Callback Mode</h2>
 <p>Read functions accept an optional callback as the last argument. When provided, the callback is called with each row and the results are collected:</p>
-<pre><code class="language-frost">csv.read_str("val\n10\n20\n30", {headers: true}, fn row -&gt; to_int(row.val))
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">csv</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">read_str</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">"val\n10\n20\n30"</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">headers</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-variable">row</span> <span class="hl-operator">-&gt;</span> <span class="hl-function">to_int</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">row</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">val</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Result: <code>[10, 20, 30]</code>.</p>
 <h2 id="csv-writer">CSV Writer</h2>
 <p>A writer object returned by <code>write_file</code> or <code>write_str</code>. File writers have <code>row</code> and <code>flush</code>. String writers have <code>row</code> and <code>get</code>.</p>
@@ -45,9 +43,8 @@
 <p class="signature"><code>csv.read_file(path, options)</code></p>
 <p class="signature"><code>csv.read_file(path, options, callback)</code></p>
 <p>Reads CSV data from the file at <code>path</code>. Returns an <code>Array</code> of rows. With a callback, returns an <code>Array</code> of callback results. Produces an error if the file cannot be opened.</p>
-<pre><code class="language-frost">csv.read_file('./data.csv', {headers: true})
-csv.read_file('./data.csv', {headers: true}, fn row -&gt; row.name)
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">csv</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">read_file</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'./data.csv'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">headers</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">csv</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">read_file</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'./data.csv'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">headers</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-variable">row</span> <span class="hl-operator">-&gt;</span> <span class="hl-variable">row</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">name</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p class="see-also">See also:
 <a href="csv.html#read_str"><code>read_str</code></a>
 </p>
@@ -55,8 +52,7 @@ csv.read_file('./data.csv', {headers: true}, fn row -&gt; row.name)
 <p class="signature"><code>csv.read_str(text, options)</code></p>
 <p class="signature"><code>csv.read_str(text, options, callback)</code></p>
 <p>Parses CSV data from the string <code>text</code>. Returns an <code>Array</code> of rows. With a callback, returns an <code>Array</code> of callback results.</p>
-<pre><code class="language-frost">csv.read_str("name,age\nAlice,30", {headers: true})
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">csv</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">read_str</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">"name,age\nAlice,30"</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">headers</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">true</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Result: <code>[{name: "Alice", age: "30"}]</code>.</p>
 <p class="see-also">See also:
 <a href="csv.html#read_file"><code>read_file</code></a>
@@ -65,11 +61,10 @@ csv.read_file('./data.csv', {headers: true}, fn row -&gt; row.name)
 <p class="signature"><code>csv.write_file(path)</code></p>
 <p class="signature"><code>csv.write_file(path, options)</code></p>
 <p>Creates a CSV file at <code>path</code> and returns a writer object. The file is created or truncated. If <code>headers</code> is specified in options, the header row is written immediately. Produces an error if the file cannot be opened.</p>
-<pre><code class="language-frost">def w = csv.write_file('./out.csv', {headers: ['name', 'age']})
-w.row(['Alice', '30'])
-w.row({name: 'Bob', age: '25'})
-w.flush()
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">w</span> <span class="hl-operator">=</span> <span class="hl-variable">csv</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">write_file</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'./out.csv'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">headers</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'name'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'age'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">w</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">row</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-string">'Alice'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'30'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">w</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">row</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'Bob'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">age</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'25'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">w</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">flush</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p class="see-also">See also:
 <a href="csv.html#write_str"><code>write_str</code></a>
 </p>
@@ -77,10 +72,9 @@ w.flush()
 <p class="signature"><code>csv.write_str()</code></p>
 <p class="signature"><code>csv.write_str(options)</code></p>
 <p>Creates an in-memory CSV writer and returns a writer object. If <code>headers</code> is specified in options, the header row is written immediately.</p>
-<pre><code class="language-frost">def w = csv.write_str({headers: ['x', 'y']})
-w.row(['1', '2'])
-w.get()
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">w</span> <span class="hl-operator">=</span> <span class="hl-variable">csv</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">write_str</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span><span class="hl-property">headers</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-string">'x'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'y'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">w</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">row</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">[</span><span class="hl-string">'1'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'2'</span><span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">w</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">get</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Result: <code>"x,y\n1,2\n"</code>.</p>
 <p class="see-also">See also:
 <a href="csv.html#write_file"><code>write_file</code></a>

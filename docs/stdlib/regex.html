@@ -9,8 +9,7 @@
 <body>
 <main>
 <h1 id="regex">Regex</h1>
-<pre><code class="language-frost">def regex = import('std.regex')
-</code></pre>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">regex</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'std.regex'</span><span class="hl-punctuation-bracket">)</span></code></pre>
 <p>Regular expression matching, replacement, and splitting. Regex syntax follows the Boost.Regex Perl-compatible dialect.</p>
 <h2 id="matches"><code>matches</code></h2>
 <p class="signature"><code>regex.matches(string, regex)</code></p>
@@ -63,37 +62,34 @@
 <h2 id="replace_with"><code>replace_with</code></h2>
 <p class="signature"><code>regex.replace_with(string, regex, callback)</code></p>
 <p>Replaces all full matches of <code>regex</code> in <code>string</code> by calling <code>callback</code> with each match. The callback receives the full match as a <code>String</code> and its return value is converted to a string with <code>to_string</code>.</p>
-<pre><code class="language-frost">regex.replace_with('hello world', R'(\w+)', to_upper)
-# =&gt; "HELLO WORLD"
+<pre><code class="language-frost"><span class="hl-variable">regex</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">replace_with</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'hello world'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">R'(\w+)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">to_upper</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; "HELLO WORLD"</span>
 
-regex.replace_with('a1b2', R'(\d)', fn d -&gt; to_int(d) * 10)
-# =&gt; "a10b20"
-</code></pre>
+<span class="hl-variable">regex</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">replace_with</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'a1b2'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">R'(\d)'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-keyword">fn</span> <span class="hl-variable">d</span> <span class="hl-operator">-&gt;</span> <span class="hl-function">to_int</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">d</span><span class="hl-punctuation-bracket">)</span><span class="hl-operator"> *</span> <span class="hl-number">10</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-comment"># =&gt; "a10b20"</span></code></pre>
 <h2 id="split"><code>split</code></h2>
 <p class="signature"><code>regex.split(string, regex)</code></p>
 <p>Splits <code>string</code> around matches of <code>regex</code> and returns an <code>Array</code> of the substrings between matches. Returns an empty array for an empty input string.</p>
-<pre><code class="language-frost">regex.split('one,two,three', ',')     # =&gt; ['one', 'two', 'three']
-regex.split('a1b2c3', R'(\d)')       # =&gt; ['a', 'b', 'c']
-regex.split('a,,b,,,c', ',+')         # =&gt; ['a', 'b', 'c']
-regex.split('hello', 'x')             # =&gt; ['hello']
-</code></pre>
+<pre><code class="language-frost"><span class="hl-variable">regex</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">split</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'one,two,three'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">','</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">     # =&gt; ['one', 'two', 'three']</span>
+<span class="hl-variable">regex</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">split</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'a1b2c3'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">R'(\d)'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">       # =&gt; ['a', 'b', 'c']</span>
+<span class="hl-variable">regex</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">split</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'a,,b,,,c'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">',+'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">         # =&gt; ['a', 'b', 'c']</span>
+<span class="hl-variable">regex</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">split</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'hello'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">'x'</span><span class="hl-punctuation-bracket">)</span><span class="hl-comment">             # =&gt; ['hello']</span></code></pre>
 <h2 id="scan_matches"><code>scan_matches</code></h2>
 <p class="signature"><code>regex.scan_matches(string, regex)</code></p>
 <p>Returns a map describing all matches of <code>regex</code> in <code>string</code>.</p>
-<pre><code class="language-frost">{
-    found:   Bool,
-    count:   Int,
-    matches: [
-        {
-            full:   String,
-            groups: [
-                { matched: Bool, value: String or null, index: Int },
-            ],
-            named: { name: { matched: Bool, value: String or null } },
-        },
-    ]
-}
-</code></pre>
+<pre><code class="language-frost"><span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">found</span><span class="hl-punctuation-delimiter">:</span>   <span class="hl-variable">Bool</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">count</span><span class="hl-punctuation-delimiter">:</span>   <span class="hl-variable">Int</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">matches</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span>
+        <span class="hl-punctuation-bracket">{</span>
+            <span class="hl-property">full</span><span class="hl-punctuation-delimiter">:</span>   <span class="hl-variable">String</span><span class="hl-punctuation-delimiter">,</span>
+            <span class="hl-property">groups</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span>
+                <span class="hl-punctuation-bracket">{</span> <span class="hl-property">matched</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">value</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">String</span><span class="hl-keyword"> or</span> <span class="hl-constant-builtin">null</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">index</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Int</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+            <span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-delimiter">,</span>
+            <span class="hl-property">named</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">name</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span> <span class="hl-property">matched</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">Bool</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">value</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-variable">String</span><span class="hl-keyword"> or</span> <span class="hl-constant-builtin">null</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-bracket"> }</span><span class="hl-punctuation-delimiter">,</span>
+        <span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">]</span>
+<span class="hl-punctuation-bracket">}</span></code></pre>
 </main>
 <script src="../nav.js"></script>
 </body>
