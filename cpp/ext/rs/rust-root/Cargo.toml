@@ -1,0 +1,18 @@
+[package]
+name = "frost-rust-ext"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib"]
+
+[features]
+default = []
+csv = ["dep:frost-csv"]
+example = ["dep:frost-example"]
+test-helpers = ["dep:frost-glue-test-helpers"]
+
+[dependencies]
+frost-csv = { path = "../csv", optional = true }
+frost-example = { path = "../example", optional = true }
+frost-glue-test-helpers = { path = "../glue/tests/rust-helpers", optional = true }

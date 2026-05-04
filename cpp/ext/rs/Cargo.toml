@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "glue",
+    "glue-build",
+    "glue/tests/rust-helpers",
+    "rust-root",
+    "csv",
+    "example",
+]
+resolver = "2"
