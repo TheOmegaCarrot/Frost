@@ -1,5 +1,5 @@
 use frost_glue::{
-    FrostArray, FrostFunction, FrostMap, FrostValue,
+    FrostFunction, FrostMap, FrostValue, de,
     require::{Param, Type, require_args, require_nullary},
 };
 use std::{
@@ -16,39 +16,25 @@ fn prefix_err(prefix: &str, err: String) -> String {
 // Reading CSV
 // =======================================
 
-struct ReadCsvOptions {
-    delim: u8,
-    has_headers: bool,
+fn default_delim() -> u8 {
+    b','
 }
 
-fn parse_read_options(options: FrostMap) -> Result<ReadCsvOptions, String> {
-    let mut delim = b',';
-    let mut has_headers: Option<bool> = None;
-
-    for (key, value) in options.iter() {
-        match key.as_string() {
-            Some("delim") => {
-                let Some(&[byte]) = value.as_bytes() else {
-                    return Err("delimiter must be a single-byte String".into());
-                };
-                delim = byte;
-            }
-            Some("headers") => {
-                if !value.is_bool() {
-                    return Err("headers option must be a Bool".into());
-                }
-                has_headers = value.as_bool();
-            }
-            Some(other) => {
-                return Err(format!("unknown option: {other}"));
-            }
-            None => return Err("option keys must be Strings".into()),
-        }
+fn deserialize_delim<'de, D: serde::Deserializer<'de>>(de: D) -> Result<u8, D::Error> {
+    let s: String = serde::Deserialize::deserialize(de)?;
+    if let [b] = s.as_bytes() {
+        Ok(*b)
+    } else {
+        Err(serde::de::Error::custom("delimiter must be a single byte"))
     }
+}
 
-    let has_headers = has_headers.ok_or("'headers' option is required")?;
-
-    Ok(ReadCsvOptions { delim, has_headers })
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReadCsvOptions {
+    #[serde(default = "default_delim", deserialize_with = "deserialize_delim")]
+    delim: u8,
+    headers: bool,
 }
 
 type CsvReader = csv::Reader<Box<dyn Read>>;
@@ -101,11 +87,12 @@ fn read_csv(
     options: FrostMap,
     callback: Option<FrostFunction>,
 ) -> Result<FrostValue, String> {
-    let options = parse_read_options(options)?;
+    let options: ReadCsvOptions =
+        de::from_value(&options.into_value()).map_err(|e| e.to_string())?;
 
     let reader = csv::ReaderBuilder::new()
         .delimiter(options.delim)
-        .has_headers(options.has_headers)
+        .has_headers(options.headers)
         .from_reader(source);
 
     let rows = if let Some(callback) = callback {
@@ -121,8 +108,11 @@ fn read_csv(
 // Writing CSV
 // =======================================
 
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields, default)]
 struct WriteCsvOptions {
     headers: Option<Vec<String>>,
+    #[serde(deserialize_with = "deserialize_delim")]
     delim: u8,
 }
 
@@ -130,53 +120,18 @@ impl Default for WriteCsvOptions {
     fn default() -> Self {
         Self {
             headers: None,
-            delim: b',',
+            delim: default_delim(),
         }
     }
 }
 
 fn parse_write_options(options: Option<FrostMap>) -> Result<WriteCsvOptions, String> {
-    let mut opts = WriteCsvOptions::default();
-
-    let Some(options) = options else {
-        return Ok(opts);
-    };
-
-    for (key, value) in options.iter() {
-        match key.as_string() {
-            Some("delim") => {
-                let Some(&[byte]) = value.as_bytes() else {
-                    return Err("delimiter must be a single-byte String".into());
-                };
-                opts.delim = byte;
-            }
-            Some("headers") => {
-                opts.headers = Some(frost_array_to_string_vec(
-                    value
-                        .as_array()
-                        .ok_or("'headers' option must be an Array")?,
-                )?);
-            }
-            Some(other) => {
-                return Err(format!("unknown option: {other}"));
-            }
-            None => return Err("option keys must be Strings".into()),
-        }
+    if let Some(options) = options {
+        let val = options.into_value();
+        Ok(de::from_value(&val).map_err(|e|e.to_string())?)
+    } else {
+        Ok(WriteCsvOptions::default())
     }
-
-    Ok(opts)
-}
-
-fn frost_array_to_string_vec(headers: FrostArray) -> Result<Vec<String>, String> {
-    headers
-        .iter()
-        .map(|elem| {
-            Ok(elem
-                .as_string()
-                .ok_or("'headers' array must only contain Strings")?
-                .to_owned())
-        })
-        .collect()
 }
 
 fn frost_value_to_record(

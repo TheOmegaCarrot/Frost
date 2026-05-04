@@ -141,6 +141,7 @@ version = "0.0.0"
 dependencies = [
  "cxx",
  "cxx-build",
+ "serde",
 ]
 
 [[package]]
@@ -150,6 +151,7 @@ dependencies = [
  "cxx",
  "cxx-build",
  "frost-glue",
+ "serde",
 ]
 
 [[package]]

@@ -48,6 +48,13 @@ mod ffi {
         fn rt_is_primitive(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
         fn rt_is_structured(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
 
+        // ---- serde deserialization ----
+        fn rt_serde_flat_struct(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_serde_optional_field(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_serde_nested(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_serde_vec(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+        fn rt_serde_primitives(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
+
         // ---- require_args validation ----
         fn rt_require_nullary(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
         fn rt_require_one_int(args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
@@ -351,6 +358,119 @@ fn rt_is_structured(
     if args.is_empty() { return Err("expected 1 argument".into()); }
     let val = FrostValue::from_shared(args[0].clone());
     Ok(FrostValue::from_bool(val.is_structured()).into_shared())
+}
+
+// ---- serde deserialization ----
+
+use frost_glue::de::from_value;
+
+// Flat struct with required fields
+#[derive(serde::Deserialize)]
+struct FlatConfig {
+    name: String,
+    count: i64,
+    enabled: bool,
+}
+
+fn rt_serde_flat_struct(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    let val = FrostValue::from_shared(args[0].clone());
+    let config: FlatConfig = from_value(&val).map_err(|e| e.to_string())?;
+    // Return a string proving we read all fields
+    Ok(FrostValue::from_string(&format!(
+        "{}:{}:{}",
+        config.name, config.count, config.enabled
+    ))
+    .into_shared())
+}
+
+// Struct with optional/default fields
+#[derive(serde::Deserialize)]
+struct OptConfig {
+    required: String,
+    #[serde(default)]
+    optional_int: i64,
+    #[serde(default)]
+    optional_str: String,
+}
+
+fn rt_serde_optional_field(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    let val = FrostValue::from_shared(args[0].clone());
+    let config: OptConfig = from_value(&val).map_err(|e| e.to_string())?;
+    Ok(FrostValue::from_string(&format!(
+        "{}:{}:{}",
+        config.required, config.optional_int, config.optional_str
+    ))
+    .into_shared())
+}
+
+// Nested struct
+#[derive(serde::Deserialize)]
+struct Inner {
+    x: i64,
+    y: i64,
+}
+
+#[derive(serde::Deserialize)]
+struct Outer {
+    label: String,
+    point: Inner,
+}
+
+fn rt_serde_nested(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    let val = FrostValue::from_shared(args[0].clone());
+    let outer: Outer = from_value(&val).map_err(|e| e.to_string())?;
+    Ok(FrostValue::from_string(&format!(
+        "{}:({},{})",
+        outer.label, outer.point.x, outer.point.y
+    ))
+    .into_shared())
+}
+
+// Vec from Array
+#[derive(serde::Deserialize)]
+struct WithVec {
+    items: Vec<String>,
+}
+
+fn rt_serde_vec(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    let val = FrostValue::from_shared(args[0].clone());
+    let w: WithVec = from_value(&val).map_err(|e| e.to_string())?;
+    Ok(FrostValue::from_string(&w.items.join(",")).into_shared())
+}
+
+// Direct primitive deserialization (not from a struct)
+fn rt_serde_primitives(
+    args: &[cxx::SharedPtr<ffi::Value>],
+) -> Result<cxx::SharedPtr<ffi::Value>, String> {
+    let val = FrostValue::from_shared(args[0].clone());
+    // Deserialize the FrostValue as whatever it naturally is, then stringify
+    // Try as i64 first, then f64, then bool, then string
+    if val.is_int() {
+        let n: i64 = from_value(&val).map_err(|e| e.to_string())?;
+        Ok(FrostValue::from_string(&format!("int:{n}")).into_shared())
+    } else if val.is_float() {
+        let f: f64 = from_value(&val).map_err(|e| e.to_string())?;
+        Ok(FrostValue::from_string(&format!("float:{f}")).into_shared())
+    } else if val.is_bool() {
+        let b: bool = from_value(&val).map_err(|e| e.to_string())?;
+        Ok(FrostValue::from_string(&format!("bool:{b}")).into_shared())
+    } else if val.is_string() {
+        let s: String = from_value(&val).map_err(|e| e.to_string())?;
+        Ok(FrostValue::from_string(&format!("string:{s}")).into_shared())
+    } else if val.is_null() {
+        let _: () = from_value(&val).map_err(|e| e.to_string())?;
+        Ok(FrostValue::from_string("null").into_shared())
+    } else {
+        Err("unexpected type".into())
+    }
 }
 
 // ---- require_args validation ----

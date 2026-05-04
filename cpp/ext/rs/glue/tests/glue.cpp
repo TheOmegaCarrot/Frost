@@ -35,6 +35,11 @@ Value_Ptr rt_array_iter_strings(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_is_numeric(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_is_primitive(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_is_structured(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_serde_flat_struct(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_serde_optional_field(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_serde_nested(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_serde_vec(::rust::Slice<const Value_Ptr> args);
+Value_Ptr rt_serde_primitives(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_require_nullary(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_require_one_int(::rust::Slice<const Value_Ptr> args);
 Value_Ptr rt_require_string_opt_int(::rust::Slice<const Value_Ptr> args);
@@ -876,6 +881,143 @@ TEST_CASE("is_structured: Array and Map only")
     check(Value::create(42_f), false);
     check(Value::create("hi"s), false);
     check(Value::create(Bool{true}), false);
+}
+
+// ==========================================================================
+// Serde deserialization
+// ==========================================================================
+
+TEST_CASE("serde: flat struct from Map")
+{
+    auto map = Value::create(
+        Value::trusted,
+        Map{{Value::create("name"s), Value::create("Alice"s)},
+            {Value::create("count"s), Value::create(42_f)},
+            {Value::create("enabled"s), Value::create(Bool{true})}});
+
+    auto result = call(frst::rs::test::rt_serde_flat_struct, {map});
+    REQUIRE(result->is<String>());
+    CHECK(result->raw_get<String>() == "Alice:42:true");
+}
+
+TEST_CASE("serde: optional/default fields")
+{
+    SECTION("all fields present")
+    {
+        auto map = Value::create(
+            Value::trusted,
+            Map{{Value::create("required"s), Value::create("hello"s)},
+                {Value::create("optional_int"s), Value::create(5_f)},
+                {Value::create("optional_str"s), Value::create("world"s)}});
+
+        auto result = call(frst::rs::test::rt_serde_optional_field, {map});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "hello:5:world");
+    }
+
+    SECTION("optional fields missing (use defaults)")
+    {
+        auto map = Value::create(
+            Value::trusted,
+            Map{{Value::create("required"s), Value::create("hello"s)}});
+
+        auto result = call(frst::rs::test::rt_serde_optional_field, {map});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "hello:0:");
+    }
+}
+
+TEST_CASE("serde: nested struct")
+{
+    auto inner = Value::create(
+        Value::trusted,
+        Map{{Value::create("x"s), Value::create(10_f)},
+            {Value::create("y"s), Value::create(20_f)}});
+
+    auto outer = Value::create(
+        Value::trusted,
+        Map{{Value::create("label"s), Value::create("origin"s)},
+            {Value::create("point"s), inner}});
+
+    auto result = call(frst::rs::test::rt_serde_nested, {outer});
+    REQUIRE(result->is<String>());
+    CHECK(result->raw_get<String>() == "origin:(10,20)");
+}
+
+TEST_CASE("serde: Vec from Array")
+{
+    auto map = Value::create(
+        Value::trusted,
+        Map{{Value::create("items"s),
+             Value::create(Array{Value::create("a"s), Value::create("b"s),
+                                 Value::create("c"s)})}});
+
+    auto result = call(frst::rs::test::rt_serde_vec, {map});
+    REQUIRE(result->is<String>());
+    CHECK(result->raw_get<String>() == "a,b,c");
+}
+
+TEST_CASE("serde: direct primitive deserialization")
+{
+    SECTION("int")
+    {
+        auto result =
+            call(frst::rs::test::rt_serde_primitives, {Value::create(42_f)});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "int:42");
+    }
+
+    SECTION("float")
+    {
+        auto result = call(frst::rs::test::rt_serde_primitives,
+                           {Value::create(Float{3.14})});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "float:3.14");
+    }
+
+    SECTION("bool")
+    {
+        auto result = call(frst::rs::test::rt_serde_primitives,
+                           {Value::create(Bool{true})});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "bool:true");
+    }
+
+    SECTION("string")
+    {
+        auto result = call(frst::rs::test::rt_serde_primitives,
+                           {Value::create("hello"s)});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "string:hello");
+    }
+
+    SECTION("null")
+    {
+        auto result =
+            call(frst::rs::test::rt_serde_primitives, {Value::null()});
+        REQUIRE(result->is<String>());
+        CHECK(result->raw_get<String>() == "null");
+    }
+}
+
+TEST_CASE("serde: error on type mismatch")
+{
+    SECTION("expected struct, got Int")
+    {
+        CHECK_THROWS(
+            call(frst::rs::test::rt_serde_flat_struct, {Value::create(42_f)}));
+    }
+
+    SECTION("wrong field type")
+    {
+        auto map = Value::create(
+            Value::trusted,
+            Map{{Value::create("name"s), Value::create(42_f)},
+                {Value::create("count"s), Value::create(1_f)},
+                {Value::create("enabled"s), Value::create(Bool{true})}});
+
+        CHECK_THROWS(call(frst::rs::test::rt_serde_flat_struct, {map}));
+    }
 }
 
 // ==========================================================================

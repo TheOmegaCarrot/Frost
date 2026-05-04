@@ -71,7 +71,7 @@ assert(contains(no_headers.error, "headers"))
 
 def bad_opt = try_call(fn -> csv.read_str("a,b", {headers: true, bogus: 1}))
 assert(bad_opt.ok == false)
-assert(contains(bad_opt.error, "unknown option"))
+assert(contains(bad_opt.error, "unknown field"))
 
 # ---- error: file not found ----
 

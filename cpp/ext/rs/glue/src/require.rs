@@ -62,21 +62,37 @@ pub struct Param {
 
 impl Param {
     pub const fn required(label: &'static str, types: &'static [Type]) -> Self {
-        Self { label, types, optional: false }
+        Self {
+            label,
+            types,
+            optional: false,
+        }
     }
 
     pub const fn optional(label: &'static str, types: &'static [Type]) -> Self {
-        Self { label, types, optional: true }
+        Self {
+            label,
+            types,
+            optional: true,
+        }
     }
 
     /// Special: matches any type.
     pub const fn any(label: &'static str) -> Self {
-        Self { label, types: &[], optional: false }
+        Self {
+            label,
+            types: &[],
+            optional: false,
+        }
     }
 
     /// Special: optional, matches any type.
     pub const fn optional_any(label: &'static str) -> Self {
-        Self { label, types: &[], optional: true }
+        Self {
+            label,
+            types: &[],
+            optional: true,
+        }
     }
 
     fn accepts_any(&self) -> bool {
@@ -94,7 +110,8 @@ impl Param {
         if self.accepts_any() {
             return "Any".to_owned();
         }
-        self.types.iter()
+        self.types
+            .iter()
             .map(|t| t.name())
             .collect::<Vec<_>>()
             .join(" or ")
@@ -119,7 +136,9 @@ pub fn require_args(fn_name: &str, args: &[FrostValue], params: &[Param]) -> Res
         return Err(format!(
             "Function {} called with insufficient arguments. \
              Called with {} but requires at least {}.",
-            fn_name, args.len(), min_args
+            fn_name,
+            args.len(),
+            min_args
         ));
     }
 
@@ -127,7 +146,9 @@ pub fn require_args(fn_name: &str, args: &[FrostValue], params: &[Param]) -> Res
         return Err(format!(
             "Function {} called with too many arguments. \
              Called with {} but accepts no more than {}.",
-            fn_name, args.len(), max_args
+            fn_name,
+            args.len(),
+            max_args
         ));
     }
 

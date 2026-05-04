@@ -41,6 +41,7 @@
 //! `try_call`.
 
 pub mod require;
+pub mod de;
 
 // The cxx bridge: raw FFI declarations between Rust and C++.
 // These functions are implemented in frost-glue.cpp (compiled by CMake).
@@ -109,25 +110,47 @@ pub mod ffi {
 
         // ---- Function call (caller must verify is_function first) ----
         // Frost exceptions are caught by cxx and returned as Err.
-        fn value_call(
-            callable: &Value,
-            args: &[SharedPtr<Value>],
-        ) -> Result<SharedPtr<Value>>;
+        fn value_call(callable: &Value, args: &[SharedPtr<Value>]) -> Result<SharedPtr<Value>>;
 
         // ---- Arithmetic (throw on type mismatch -> Result::Err) ----
         fn value_add(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
-        fn value_subtract(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
-        fn value_multiply(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
-        fn value_divide(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
-        fn value_modulus(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_subtract(
+            lhs: &SharedPtr<Value>,
+            rhs: &SharedPtr<Value>,
+        ) -> Result<SharedPtr<Value>>;
+        fn value_multiply(
+            lhs: &SharedPtr<Value>,
+            rhs: &SharedPtr<Value>,
+        ) -> Result<SharedPtr<Value>>;
+        fn value_divide(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>)
+        -> Result<SharedPtr<Value>>;
+        fn value_modulus(
+            lhs: &SharedPtr<Value>,
+            rhs: &SharedPtr<Value>,
+        ) -> Result<SharedPtr<Value>>;
 
         // ---- Comparison ----
         fn value_equal(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
-        fn value_not_equal(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
-        fn value_less_than(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
-        fn value_less_than_or_equal(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
-        fn value_greater_than(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
-        fn value_greater_than_or_equal(lhs: &SharedPtr<Value>, rhs: &SharedPtr<Value>) -> Result<SharedPtr<Value>>;
+        fn value_not_equal(
+            lhs: &SharedPtr<Value>,
+            rhs: &SharedPtr<Value>,
+        ) -> Result<SharedPtr<Value>>;
+        fn value_less_than(
+            lhs: &SharedPtr<Value>,
+            rhs: &SharedPtr<Value>,
+        ) -> Result<SharedPtr<Value>>;
+        fn value_less_than_or_equal(
+            lhs: &SharedPtr<Value>,
+            rhs: &SharedPtr<Value>,
+        ) -> Result<SharedPtr<Value>>;
+        fn value_greater_than(
+            lhs: &SharedPtr<Value>,
+            rhs: &SharedPtr<Value>,
+        ) -> Result<SharedPtr<Value>>;
+        fn value_greater_than_or_equal(
+            lhs: &SharedPtr<Value>,
+            rhs: &SharedPtr<Value>,
+        ) -> Result<SharedPtr<Value>>;
 
         // ---- Coercion ----
         fn value_truthy(val: &Value) -> bool;
@@ -163,7 +186,11 @@ use cxx::let_cxx_string;
 /// The function type stored inside RustClosure.
 /// Takes raw SharedPtr args (already validated by REQUIRE_ARGS on the C++
 /// side) and returns either a new Value or an error string.
-type ClosureFn = Box<dyn Fn(&[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String> + Send + Sync>;
+type ClosureFn = Box<
+    dyn Fn(&[cxx::SharedPtr<ffi::Value>]) -> Result<cxx::SharedPtr<ffi::Value>, String>
+        + Send
+        + Sync,
+>;
 
 /// Opaque type that C++ holds (via `rust::Box<RustClosure>`) inside a
 /// `Data_Builtin` or plain `Builtin`. When Frost calls the function,
@@ -211,6 +238,7 @@ fn rust_closure_call(
 ///     _ => ...,
 /// }
 /// ```
+#[derive(Clone)]
 pub struct FrostValue {
     inner: cxx::SharedPtr<ffi::Value>,
 }
@@ -220,35 +248,47 @@ impl FrostValue {
 
     /// The Frost null value (singleton).
     pub fn null() -> Self {
-        Self { inner: ffi::value_null() }
+        Self {
+            inner: ffi::value_null(),
+        }
     }
 
     /// Create a Frost Int from a Rust i64.
     pub fn from_int(val: i64) -> Self {
-        Self { inner: ffi::value_from_int(val) }
+        Self {
+            inner: ffi::value_from_int(val),
+        }
     }
 
     /// Create a Frost Float. Returns `Err` if the value is NaN or infinity
     /// (Frost rejects these at construction time).
     pub fn from_float(val: f64) -> Result<Self, cxx::Exception> {
-        Ok(Self { inner: ffi::value_from_float(val)? })
+        Ok(Self {
+            inner: ffi::value_from_float(val)?,
+        })
     }
 
     /// Create a Frost Bool.
     pub fn from_bool(val: bool) -> Self {
-        Self { inner: ffi::value_from_bool(val) }
+        Self {
+            inner: ffi::value_from_bool(val),
+        }
     }
 
     /// Create a Frost String from a UTF-8 `&str`.
     pub fn from_string(val: &str) -> Self {
         let_cxx_string!(s = val);
-        Self { inner: ffi::value_from_string(&s) }
+        Self {
+            inner: ffi::value_from_string(&s),
+        }
     }
 
     /// Create a Frost Array from a slice of SharedPtrs.
     /// Prefer `from_values` when you have `&[FrostValue]`.
     pub fn from_array(elements: &[cxx::SharedPtr<ffi::Value>]) -> Self {
-        Self { inner: ffi::value_from_array(elements) }
+        Self {
+            inner: ffi::value_from_array(elements),
+        }
     }
 
     /// Create a Frost Array from a slice of FrostValues.
@@ -265,7 +305,9 @@ impl FrostValue {
         keys: &[cxx::SharedPtr<ffi::Value>],
         values: &[cxx::SharedPtr<ffi::Value>],
     ) -> Result<Self, cxx::Exception> {
-        Ok(Self { inner: ffi::value_from_map(keys, values)? })
+        Ok(Self {
+            inner: ffi::value_from_map(keys, values)?,
+        })
     }
 
     /// Create a Frost Map from parallel key/value SharedPtr slices,
@@ -276,7 +318,9 @@ impl FrostValue {
         keys: &[cxx::SharedPtr<ffi::Value>],
         values: &[cxx::SharedPtr<ffi::Value>],
     ) -> Self {
-        Self { inner: ffi::value_from_map_trusted(keys, values) }
+        Self {
+            inner: ffi::value_from_map_trusted(keys, values),
+        }
     }
 
     /// Create a Frost Map from parallel key/value FrostValue slices.
@@ -292,10 +336,7 @@ impl FrostValue {
 
     /// Create a Frost Map from parallel key/value FrostValue slices,
     /// without key validation. Caller guarantees keys are non-null primitives.
-    pub fn from_entries_trusted(
-        keys: &[FrostValue],
-        values: &[FrostValue],
-    ) -> Self {
+    pub fn from_entries_trusted(keys: &[FrostValue], values: &[FrostValue]) -> Self {
         let k: Vec<_> = keys.iter().map(|v| v.inner.clone()).collect();
         let v: Vec<_> = values.iter().map(|v| v.inner.clone()).collect();
         Self::from_map_trusted(&k, &v)
@@ -411,7 +452,11 @@ impl FrostValue {
     pub fn array_get(&self, index: usize) -> Option<FrostValue> {
         if self.is_array() {
             let val = ffi::value_array_get(&self.inner, index);
-            if ffi::value_is_null(&val) { None } else { Some(Self::from_shared(val)) }
+            if ffi::value_is_null(&val) {
+                None
+            } else {
+                Some(Self::from_shared(val))
+            }
         } else {
             None
         }
@@ -463,7 +508,10 @@ impl FrostValue {
     pub fn map_get_by(&self, key: &FrostValue) -> Option<FrostValue> {
         if self.is_map() {
             if ffi::value_map_contains_key(&self.inner, &key.inner) {
-                Some(Self::from_shared(ffi::value_map_get_by(&self.inner, &key.inner)))
+                Some(Self::from_shared(ffi::value_map_get_by(
+                    &self.inner,
+                    &key.inner,
+                )))
             } else {
                 None
             }
@@ -497,53 +545,83 @@ impl FrostValue {
 
     /// Frost `-` operator. Numeric only.
     pub fn subtract(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
-        Ok(Self::from_shared(ffi::value_subtract(&self.inner, &rhs.inner)?))
+        Ok(Self::from_shared(ffi::value_subtract(
+            &self.inner,
+            &rhs.inner,
+        )?))
     }
 
     /// Frost `*` operator. Numeric only.
     pub fn multiply(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
-        Ok(Self::from_shared(ffi::value_multiply(&self.inner, &rhs.inner)?))
+        Ok(Self::from_shared(ffi::value_multiply(
+            &self.inner,
+            &rhs.inner,
+        )?))
     }
 
     /// Frost `/` operator. Numeric only. Throws on division by zero.
     pub fn divide(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
-        Ok(Self::from_shared(ffi::value_divide(&self.inner, &rhs.inner)?))
+        Ok(Self::from_shared(ffi::value_divide(
+            &self.inner,
+            &rhs.inner,
+        )?))
     }
 
     /// Frost `%` operator. Integer only. Throws on modulus by zero.
     pub fn modulus(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
-        Ok(Self::from_shared(ffi::value_modulus(&self.inner, &rhs.inner)?))
+        Ok(Self::from_shared(ffi::value_modulus(
+            &self.inner,
+            &rhs.inner,
+        )?))
     }
 
     /// Frost `==` operator. Deep equality. No cross-type numeric equality
     /// (3 != 3.0).
     pub fn equal(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
-        Ok(Self::from_shared(ffi::value_equal(&self.inner, &rhs.inner)?))
+        Ok(Self::from_shared(ffi::value_equal(
+            &self.inner,
+            &rhs.inner,
+        )?))
     }
 
     /// Frost `!=` operator.
     pub fn not_equal(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
-        Ok(Self::from_shared(ffi::value_not_equal(&self.inner, &rhs.inner)?))
+        Ok(Self::from_shared(ffi::value_not_equal(
+            &self.inner,
+            &rhs.inner,
+        )?))
     }
 
     /// Frost `<` operator. Numeric and string comparison.
     pub fn less_than(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
-        Ok(Self::from_shared(ffi::value_less_than(&self.inner, &rhs.inner)?))
+        Ok(Self::from_shared(ffi::value_less_than(
+            &self.inner,
+            &rhs.inner,
+        )?))
     }
 
     /// Frost `<=` operator.
     pub fn less_than_or_equal(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
-        Ok(Self::from_shared(ffi::value_less_than_or_equal(&self.inner, &rhs.inner)?))
+        Ok(Self::from_shared(ffi::value_less_than_or_equal(
+            &self.inner,
+            &rhs.inner,
+        )?))
     }
 
     /// Frost `>` operator.
     pub fn greater_than(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
-        Ok(Self::from_shared(ffi::value_greater_than(&self.inner, &rhs.inner)?))
+        Ok(Self::from_shared(ffi::value_greater_than(
+            &self.inner,
+            &rhs.inner,
+        )?))
     }
 
     /// Frost `>=` operator.
     pub fn greater_than_or_equal(&self, rhs: &FrostValue) -> Result<FrostValue, cxx::Exception> {
-        Ok(Self::from_shared(ffi::value_greater_than_or_equal(&self.inner, &rhs.inner)?))
+        Ok(Self::from_shared(ffi::value_greater_than_or_equal(
+            &self.inner,
+            &rhs.inner,
+        )?))
     }
 
     /// Frost truthiness. Only `null` and `false` are falsy.
@@ -556,17 +634,23 @@ impl FrostValue {
 
     /// If this value is an Array, return a `FrostArray` handle.
     pub fn as_array(&self) -> Option<FrostArray> {
-        self.is_array().then(|| FrostArray { inner: self.inner.clone() })
+        self.is_array().then(|| FrostArray {
+            inner: self.inner.clone(),
+        })
     }
 
     /// If this value is a Map, return a `FrostMap` handle.
     pub fn as_map(&self) -> Option<FrostMap> {
-        self.is_map().then(|| FrostMap { inner: self.inner.clone() })
+        self.is_map().then(|| FrostMap {
+            inner: self.inner.clone(),
+        })
     }
 
     /// If this value is a Function, return a `FrostFunction` handle.
     pub fn as_function(&self) -> Option<FrostFunction> {
-        self.is_function().then(|| FrostFunction { inner: self.inner.clone() })
+        self.is_function().then(|| FrostFunction {
+            inner: self.inner.clone(),
+        })
     }
 
     // ---- Destructuring ----
@@ -601,7 +685,9 @@ impl FrostValue {
                 values: ffi::value_map_values(&self.inner),
             }
         } else {
-            FrostRef::Function(FrostFunction { inner: self.inner.clone() })
+            FrostRef::Function(FrostFunction {
+                inner: self.inner.clone(),
+            })
         }
     }
 
@@ -693,7 +779,11 @@ impl FrostArray {
 
     pub fn get(&self, index: usize) -> Option<FrostValue> {
         let val = ffi::value_array_get(&self.inner, index);
-        if ffi::value_is_null(&val) { None } else { Some(FrostValue::from_shared(val)) }
+        if ffi::value_is_null(&val) {
+            None
+        } else {
+            Some(FrostValue::from_shared(val))
+        }
     }
 
     /// Zero-copy slice of the array's contiguous storage.
@@ -703,7 +793,9 @@ impl FrostArray {
 
     /// Iterate elements as FrostValues.
     pub fn iter(&self) -> impl Iterator<Item = FrostValue> + '_ {
-        self.as_slice().iter().map(|e| FrostValue::from_shared(e.clone()))
+        self.as_slice()
+            .iter()
+            .map(|e| FrostValue::from_shared(e.clone()))
     }
 
     /// Convert back to a generic FrostValue.
@@ -749,7 +841,10 @@ impl FrostMap {
     /// Look up by any key type.
     pub fn get_by(&self, key: &FrostValue) -> Option<FrostValue> {
         if ffi::value_map_contains_key(&self.inner, &key.inner) {
-            Some(FrostValue::from_shared(ffi::value_map_get_by(&self.inner, &key.inner)))
+            Some(FrostValue::from_shared(ffi::value_map_get_by(
+                &self.inner,
+                &key.inner,
+            )))
         } else {
             None
         }
@@ -774,7 +869,10 @@ impl FrostMap {
     /// Iterate over (key, value) pairs as FrostValues.
     pub fn iter(&self) -> impl Iterator<Item = (FrostValue, FrostValue)> + '_ {
         self.keys().iter().zip(self.values().iter()).map(|(k, v)| {
-            (FrostValue::from_shared(k.clone()), FrostValue::from_shared(v.clone()))
+            (
+                FrostValue::from_shared(k.clone()),
+                FrostValue::from_shared(v.clone()),
+            )
         })
     }
 
@@ -839,8 +937,12 @@ impl FrostFunction {
             let result = f(&frost_args)?;
             Ok(result.into_shared())
         };
-        let closure = Box::new(RustClosure { f: Box::new(wrapper) });
-        Self { inner: ffi::make_closure(closure) }
+        let closure = Box::new(RustClosure {
+            f: Box::new(wrapper),
+        });
+        Self {
+            inner: ffi::make_closure(closure),
+        }
     }
 
     /// Call this function with raw SharedPtr args.
@@ -877,6 +979,11 @@ impl std::fmt::Display for FrostValue {
 
 impl std::fmt::Debug for FrostValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "FrostValue({}:{})", self.type_name(), self.to_display_string())
+        write!(
+            f,
+            "FrostValue({}:{})",
+            self.type_name(),
+            self.to_display_string()
+        )
     }
 }

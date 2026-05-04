@@ -678,9 +678,10 @@ impl ExtensionBuilder {
                     .unwrap();
                 }
                 ParamKind::Optional(_) => {
+                    let accessor = if i == 0 { "first()".to_owned() } else { format!("get({i})") };
                     writeln!(
                         out,
-                        "    let val{i} = args.get({i})\
+                        "    let val{i} = args.{accessor}\
                          .map(|v| frost_glue::FrostValue::from_shared(v.clone()));"
                     )
                     .unwrap();

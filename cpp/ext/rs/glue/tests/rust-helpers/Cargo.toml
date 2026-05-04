@@ -9,6 +9,7 @@ crate-type = ["staticlib"]
 [dependencies]
 frost-glue = { path = "../../" }
 cxx = "=1.0.194"
+serde = { version = "1", features = ["derive"] }
 
 [build-dependencies]
 cxx-build = "=1.0.194"

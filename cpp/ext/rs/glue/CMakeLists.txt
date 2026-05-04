@@ -17,10 +17,17 @@ target_include_directories(frost-rs-glue
 # Rust symbols (cxx bridge code) come through extension staticlibs, which
 # include frost-glue as an rlib dependency. Don't link libfrost_glue.a
 # separately -- it would duplicate symbols with every extension.
+# Multiple extension staticlibs contain identical copies of glue symbols;
+# --allow-multiple-definition is safe here (same source, same compilation).
+# The proper fix is a Cargo workspace (single staticlib), tracked for later.
 target_link_libraries(frost-rs-glue
     PUBLIC
     frost-value
     frost-functions
+)
+target_link_options(frost-rs-glue
+    PUBLIC
+    "LINKER:--allow-multiple-definition"
 )
 
 if(BUILD_TESTS)

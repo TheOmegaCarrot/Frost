@@ -10,6 +10,7 @@ crate-type = ["staticlib"]
 frost-glue = { path = "../glue" }
 cxx = "=1.0.194"
 csv = "1"
+serde = { version = "1", features = ["derive"] }
 
 [build-dependencies]
 frost-glue-build = { path = "../glue-build" }
