@@ -143,6 +143,29 @@ export defn finalize() -> {
         overlay.addEventListener("click",toggleMenu);
         document.body.insertBefore(overlay,document.body.firstChild);
         document.body.insertBefore(btn,document.body.firstChild);
+        document.querySelectorAll("h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]").forEach(function(h){
+        var a=document.createElement("a");
+        a.className="heading-anchor";
+        a.href="#"+h.id;
+        a.textContent="#";
+        a.setAttribute("aria-hidden","true");
+        h.insertBefore(a,h.firstChild);
+        });
+        document.querySelectorAll("pre").forEach(function(pre){
+        var btn=document.createElement("button");
+        btn.className="copy-btn";
+        btn.setAttribute("aria-label","Copy code");
+        btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+        btn.addEventListener("click",function(){
+        var code=pre.querySelector("code");
+        if(!code)return;
+        navigator.clipboard.writeText(code.textContent).then(function(){
+        btn.classList.add("copied");
+        setTimeout(function(){btn.classList.remove("copied")},1500);
+        });
+        });
+        pre.appendChild(btn);
+        });
         })();
         '''
 

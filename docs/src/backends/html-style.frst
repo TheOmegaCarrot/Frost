@@ -25,6 +25,7 @@ export def css = '''
     html {
       background: var(--bg);
       color: var(--text);
+      scroll-behavior: smooth;
     }
 
     body {
@@ -316,6 +317,63 @@ export def css = '''
       }
 
       .nav-overlay.open { display: block; }
+    }
+
+    /* --- Heading anchors --- */
+
+    h1, h2, h3, h4, h5, h6 { position: relative; }
+
+    .heading-anchor {
+      position: absolute;
+      left: -1.25em;
+      color: var(--text-subtle);
+      text-decoration: none;
+      font-weight: 400;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .heading-anchor:hover { color: var(--blue); }
+
+    h1:hover .heading-anchor,
+    h2:hover .heading-anchor,
+    h3:hover .heading-anchor,
+    h4:hover .heading-anchor,
+    h5:hover .heading-anchor,
+    h6:hover .heading-anchor { opacity: 1; }
+
+    /* --- Copy button --- */
+
+    pre { position: relative; }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-subtle);
+      padding: 0.25rem 0.4rem;
+      cursor: pointer;
+      line-height: 0;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    pre:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { color: var(--text); border-color: var(--border-light); }
+
+    .copy-btn.copied { color: var(--green); }
+
+    /* --- Print --- */
+
+    @media print {
+      #sidebar, #menu-toggle, .nav-overlay, .copy-btn { display: none; }
+      body { margin-left: 0; }
+      main { max-width: none; }
+      a { color: inherit; text-decoration: underline; }
+      pre { border-color: #999; }
     }
 
     '''
