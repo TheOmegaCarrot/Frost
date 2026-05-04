@@ -96,7 +96,7 @@ pub mod ffi {
 
         // ---- Array accessors (unchecked -- caller must verify is_array) ----
         fn value_array_len(val: &Value) -> usize;
-        fn value_array_get(val: &Value, index: usize) -> SharedPtr<Value>;
+        fn value_array_get(val: &Value, index: usize) -> Result<SharedPtr<Value>>;
         fn value_array_slice(val: &Value) -> &[SharedPtr<Value>];
 
         // ---- Map accessors (unchecked -- caller must verify is_map) ----
@@ -447,19 +447,9 @@ impl FrostValue {
         self.is_array().then(|| ffi::value_array_len(&self.inner))
     }
 
-    /// Get element by index. Returns None if not an Array or index is
-    /// out of bounds.
-    pub fn array_get(&self, index: usize) -> Option<FrostValue> {
-        if self.is_array() {
-            let val = ffi::value_array_get(&self.inner, index);
-            if ffi::value_is_null(&val) {
-                None
-            } else {
-                Some(Self::from_shared(val))
-            }
-        } else {
-            None
-        }
+    /// Get element by index. Returns Err on out of bounds.
+    pub fn array_get(&self, index: usize) -> Result<FrostValue, cxx::Exception> {
+        ffi::value_array_get(&self.inner, index).map(Self::from_shared)
     }
 
     /// Zero-copy view of the array's contiguous storage.
@@ -777,13 +767,9 @@ impl FrostArray {
         self.len() == 0
     }
 
-    pub fn get(&self, index: usize) -> Option<FrostValue> {
-        let val = ffi::value_array_get(&self.inner, index);
-        if ffi::value_is_null(&val) {
-            None
-        } else {
-            Some(FrostValue::from_shared(val))
-        }
+    /// Get element by index. Returns Err on out of bounds.
+    pub fn get(&self, index: usize) -> Result<FrostValue, cxx::Exception> {
+        ffi::value_array_get(&self.inner, index).map(FrostValue::from_shared)
     }
 
     /// Zero-copy slice of the array's contiguous storage.

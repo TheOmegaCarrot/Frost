@@ -162,7 +162,7 @@ std::shared_ptr<const Value> value_array_get(const Value& val, size_t index)
 {
     const auto& arr = val.raw_get<Array>();
     if (index >= arr.size())
-        return frst::Value::null();
+        throw Frost_Recoverable_Error{"Array index out of bounds"};
     return arr[index];
 }
 
