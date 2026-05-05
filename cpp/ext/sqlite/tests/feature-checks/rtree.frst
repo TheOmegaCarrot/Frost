@@ -1,0 +1,20 @@
+# Verify R*-Tree extension is enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+db.exec('CREATE VIRTUAL TABLE spatial USING rtree(id, x1, x2, y1, y2)')
+db.exec('INSERT INTO spatial VALUES (1, 0.0, 1.0, 0.0, 1.0)')
+db.exec('INSERT INTO spatial VALUES (2, 5.0, 6.0, 5.0, 6.0)')
+
+def rows = db.query('SELECT id FROM spatial WHERE x1 >= 0 AND x2 <= 2 AND y1 >= 0 AND y2 <= 2')
+assert(len(rows) == 1, 'rtree query should return one row')
+assert(rows[0].id == 1)
+
+db.close()
+if path != ':memory:': fs.remove(path)

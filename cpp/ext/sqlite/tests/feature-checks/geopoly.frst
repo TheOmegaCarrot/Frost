@@ -1,0 +1,19 @@
+# Verify Geopoly extension is enabled
+
+def fs = import('std.fs')
+def sqlite = import('ext.sqlite')
+def path = args[1]
+
+if fs.exists(path): fs.remove(path)
+
+def db = sqlite.open(path)
+
+db.exec('CREATE VIRTUAL TABLE geo USING geopoly()')
+db.exec("INSERT INTO geo (_shape) VALUES ('[[0,0],[1,0],[1,1],[0,1],[0,0]]')")
+
+def rows = db.query('SELECT geopoly_area(_shape) AS area FROM geo')
+assert(len(rows) == 1, 'geopoly table should have one row')
+assert(rows[0].area == 1.0, 'unit square should have area 1')
+
+db.close()
+if path != ':memory:': fs.remove(path)

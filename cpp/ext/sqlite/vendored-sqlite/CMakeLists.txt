@@ -23,8 +23,10 @@ target_compile_definitions(sqlite3
     # Features
     SQLITE_ENABLE_DBSTAT_VTAB
     SQLITE_ENABLE_FTS5
+    SQLITE_ENABLE_GEOPOLY
     SQLITE_ENABLE_MATH_FUNCTIONS
     SQLITE_ENABLE_PERCENTILE
+    SQLITE_ENABLE_RTREE
     SQLITE_ENABLE_STAT4
     SQLITE_SOUNDEX
 
@@ -38,8 +40,6 @@ target_compile_definitions(sqlite3
     SQLITE_MAX_EXPR_DEPTH=0
     SQLITE_USE_ALLOCA
 
-    # Cleanup
-    SQLITE_OMIT_UTF16
 )
 
 if(ZLIB_FOUND)

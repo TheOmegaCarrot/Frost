@@ -23,9 +23,11 @@ set(SQLITE_FEATURE_CHECKS
     feature-checks/foreign-keys.frst
     feature-checks/fts5.frst
     feature-checks/generate-series.frst
+    feature-checks/geopoly.frst
     feature-checks/math-functions.frst
     feature-checks/percentile.frst
     feature-checks/regexp.frst
+    feature-checks/rtree.frst
     feature-checks/sha3.frst
     feature-checks/soundex.frst
     feature-checks/uuid.frst
