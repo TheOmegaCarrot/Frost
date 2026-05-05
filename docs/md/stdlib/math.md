@@ -34,7 +34,7 @@ Rounds `n` down to the nearest integer and returns an `Int`. If `n` is already a
 
 `math.trunc(n)`
 
-Returns `n` rounded toward zero as a `Float`.
+Returns `n` rounded toward zero as an `Int`. If `n` is already an `Int`, returns it unchanged.
 
 ## `sqrt`
 

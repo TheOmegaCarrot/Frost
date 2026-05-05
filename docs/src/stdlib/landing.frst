@@ -38,7 +38,7 @@ export def landing = {
                             ['[Operators](@ref stdlib.operators)', 'Arithmetic and comparison operators as first-class functions'],
                             ['[Output](@ref stdlib.output)', 'Printing to stdout and string formatting'],
                             ['[Functions](@ref stdlib.functions)', 'Error handling and higher-order utilities'],
-                            ['[Streams](@ref stdlib.streams)', 'Pre-defined `stdin` and `stderr` streams'],
+                            ['[Streams](@ref stdlib.streams)', 'Pre-defined `stdin`, `stdout`, and `stderr` streams'],
                             ['[Debug](@ref stdlib.debug)', 'Assertions and value inspection'],
                             ['[Mutable Cell](@ref stdlib.mutable-cell)', 'Mutable state'],
                         ],

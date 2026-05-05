@@ -413,12 +413,6 @@ TEST_CASE("std.math")
                 .float_in = 10.0,
             },
             {
-                .name = "trunc",
-                .fn = std::trunc,
-                .int_in = 2,
-                .float_in = -2.7,
-            },
-            {
                 .name = "exp",
                 .fn = std::exp,
                 .int_in = 0,
@@ -621,6 +615,22 @@ TEST_CASE("std.math")
         auto neg = fn->call({Value::create(-2.3)});
         REQUIRE(neg->is<Int>());
         CHECK(neg->get<Int>() == -3_f);
+    }
+
+    SECTION("trunc")
+    {
+        auto fn = get_fn("trunc");
+        auto i = fn->call({Value::create(7_f)});
+        REQUIRE(i->is<Int>());
+        CHECK(i->get<Int>() == 7_f);
+
+        auto f = fn->call({Value::create(2.7)});
+        REQUIRE(f->is<Int>());
+        CHECK(f->get<Int>() == 2_f);
+
+        auto neg = fn->call({Value::create(-2.7)});
+        REQUIRE(neg->is<Int>());
+        CHECK(neg->get<Int>() == -2_f);
     }
 
     SECTION("hypot")

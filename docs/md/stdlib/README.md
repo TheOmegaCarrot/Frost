@@ -29,7 +29,7 @@ Available in every Frost program without imports.
 |  [Operators](operators.md) | Arithmetic and comparison operators as first-class functions  |
 |  [Output](output.md) | Printing to stdout and string formatting  |
 |  [Functions](functions.md) | Error handling and higher-order utilities  |
-|  [Streams](streams.md) | Pre-defined `stdin` and `stderr` streams  |
+|  [Streams](streams.md) | Pre-defined `stdin`, `stdout`, and `stderr` streams  |
 |  [Debug](debug.md) | Assertions and value inspection  |
 |  [Mutable Cell](mutable-cell.md) | Mutable state  |
 

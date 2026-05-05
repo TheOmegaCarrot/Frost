@@ -15,7 +15,7 @@
 <p>Prints <code>value</code> to stdout followed by a newline. Uses the same display representation as <a href="types.html#to_string"><code>to_string</code></a>.</p>
 <h2 id="mformat"><code>mformat</code></h2>
 <p class="signature"><code>mformat(format_string, replacement_map)</code></p>
-<p>Returns a copy of <code>format_string</code> with <code>${key}</code> placeholders replaced by the corresponding values from <code>replacement_map</code>. The placeholder syntax is identical to <a href="../language.html#types-and-literals">language format strings</a>. Produces an error if a placeholder key is not present in the map.</p>
+<p>Returns a copy of <code>format_string</code> with <code>${key}</code> placeholders replaced by the corresponding values from <code>replacement_map</code>. Uses the same <code>${key}</code> delimiter syntax as <a href="../language.html#types-and-literals">language format strings</a>, but only performs key lookup in the map (not arbitrary expression evaluation). Produces an error if a placeholder key is not present in the map.</p>
 <h2 id="mprint"><code>mprint</code></h2>
 <p class="signature"><code>mprint(format_string, replacement_map)</code></p>
 <p>Equivalent to <code>print(mformat(format_string, replacement_map))</code>.</p>

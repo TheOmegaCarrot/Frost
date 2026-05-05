@@ -42,7 +42,7 @@ defn resolve_lang_title(segments, sections) -> {
     else: do {
         def target = segments[0]
         def section = find(sections, fn s -> {
-            def key = s.title @ to_lower() @ replace(' ', '')
+            def key = s.title @ to_lower() @ replace(' ', '') @ replace('`', '')
             key == target or starts_with(key, target)
         })
         if section == null: null

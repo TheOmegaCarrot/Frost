@@ -305,5 +305,5 @@ print(str.shout('hello')) # HELLO!
 
 Global variables do not leak into the script that calls `import`, and file-based `import` returns a map of all `export`-ed definitions.
 
-That's most of the language! The core of Frost is intentionally pretty small. For more exact details on exactly how the language works, you can read the [language reference](language.md). Frost also provides quite a bit in its [standard library](stdlib/README.md), from math and regex to JSON and HTTP.
+That's most of the language! The core of Frost is intentionally pretty small. For the full details on how the language works, you can read the [language reference](language.md). Frost also provides quite a bit in its [standard library](stdlib/README.md), from math and regex to JSON and HTTP.
 

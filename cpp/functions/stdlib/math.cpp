@@ -32,7 +32,6 @@ namespace math
     X(log1p)                                                                   \
     X(log2)                                                                    \
     X(log10)                                                                   \
-    X(trunc)                                                                   \
     X(exp)                                                                     \
     X(exp2)                                                                    \
     X(expm1)
@@ -163,6 +162,12 @@ BUILTIN(ceil)
     return Value::create(Int{std::llround(std::ceil(COERCE(0, Float)))});
 }
 
+BUILTIN(trunc)
+{
+    REQUIRE_ARGS("math.trunc", TYPES(Int, Float));
+    return Value::create(Int{std::llround(std::trunc(COERCE(0, Float)))});
+}
+
 BUILTIN(clamp)
 {
     REQUIRE_ARGS("math.clamp", TYPES(Int, Float),
@@ -214,6 +219,7 @@ STDLIB_MODULE(math,
     ENTRY(lerp),
     ENTRY(floor),
     ENTRY(ceil),
+    ENTRY(trunc),
     ENTRY(clamp),
     {"nums"_s, Value::create(
         Value::trusted,

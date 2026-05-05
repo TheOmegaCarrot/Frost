@@ -13,7 +13,7 @@ export def output = {
         {
             name: 'mformat',
             signatures: ['mformat(format_string, replacement_map)'],
-            description: ['Returns a copy of `format_string` with `${key}` placeholders replaced by the corresponding values from `replacement_map`. The placeholder syntax is identical to [language format strings](@ref lang.types.formatstrings). Produces an error if a placeholder key is not present in the map.'],
+            description: ['Returns a copy of `format_string` with `${key}` placeholders replaced by the corresponding values from `replacement_map`. Uses the same `${key}` delimiter syntax as [language format strings](@ref lang.types.formatstrings), but only performs key lookup in the map (not arbitrary expression evaluation). Produces an error if a placeholder key is not present in the map.'],
         },
         {
             name: 'mprint',

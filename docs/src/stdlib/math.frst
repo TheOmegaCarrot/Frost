@@ -11,7 +11,7 @@ export def math = {
         { name: 'round', signatures: ['math.round(n)'], description: ['Rounds `n` to the nearest integer and returns an `Int`. If `n` is already an `Int`, returns it unchanged. Produces an error if the rounded value is out of `Int` range.'] },
         { name: 'ceil', signatures: ['math.ceil(n)'], description: ['Rounds `n` up to the nearest integer and returns an `Int`. If `n` is already an `Int`, returns it unchanged.'] },
         { name: 'floor', signatures: ['math.floor(n)'], description: ['Rounds `n` down to the nearest integer and returns an `Int`. If `n` is already an `Int`, returns it unchanged.'] },
-        { name: 'trunc', signatures: ['math.trunc(n)'], description: ['Returns `n` rounded toward zero as a `Float`.'] },
+        { name: 'trunc', signatures: ['math.trunc(n)'], description: ['Returns `n` rounded toward zero as an `Int`. If `n` is already an `Int`, returns it unchanged.'] },
         { name: 'sqrt', signatures: ['math.sqrt(n)'], description: ['Returns the square root of `n`.'] },
         { name: 'cbrt', signatures: ['math.cbrt(n)'], description: ['Returns the cube root of `n`.'] },
         { name: 'pow', signatures: ['math.pow(base, exponent)'], description: ['Returns `base` raised to `exponent`.'] },

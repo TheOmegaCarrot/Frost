@@ -12,7 +12,7 @@ def cli = import('std.cli')
 
 Parses `args` according to `spec`. Returns a result Map with `ok` (`Bool`), `help` (`String`), and either `value` (on success) or `error` (on failure). The `value` map contains `flags` (`Map` of `Bool`), `options` (`Map` of `String`, `Array`, or `null`), and `positional` (`Array` of `String`). Spec errors (malformed spec) produces an error; parse errors (invalid user input) are returned in the result.
 
-`args` is typically the predefined [`args`](../language.md#statements) variable. `args[0]` is treated as the script path and is consumed internally (used as the default tool name in error messages and help output). Everything after `args[0]` is parsed against the spec.
+`args` is typically the predefined [`args`](../language.md#the-args-variable) variable. `args[0]` is treated as the script path and is consumed internally (used as the default tool name in error messages and help output). Everything after `args[0]` is parsed against the spec.
 
 ```frost
 def cli = import('std.cli')

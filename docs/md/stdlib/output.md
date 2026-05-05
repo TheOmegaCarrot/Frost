@@ -12,7 +12,7 @@ Prints `value` to stdout followed by a newline. Uses the same display representa
 
 `mformat(format_string, replacement_map)`
 
-Returns a copy of `format_string` with `${key}` placeholders replaced by the corresponding values from `replacement_map`. The placeholder syntax is identical to [language format strings](../language.md#types-and-literals). Produces an error if a placeholder key is not present in the map.
+Returns a copy of `format_string` with `${key}` placeholders replaced by the corresponding values from `replacement_map`. Uses the same `${key}` delimiter syntax as [language format strings](../language.md#types-and-literals), but only performs key lookup in the map (not arbitrary expression evaluation). Produces an error if a placeholder key is not present in the map.
 
 ## `mprint`
 
