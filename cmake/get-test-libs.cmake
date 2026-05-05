@@ -2,7 +2,7 @@ if(BUILD_TESTS)
     CPMAddPackage(
         NAME Catch2
         GITHUB_REPOSITORY catchorg/Catch2
-        GIT_TAG v3.12.0
+        GIT_TAG v3.14.0
     )
 
     CPMAddPackage(

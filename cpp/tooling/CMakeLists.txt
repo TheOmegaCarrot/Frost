@@ -8,7 +8,7 @@ if(BUILD_ASTVIZ OR BUILD_HIGHLIGHT)
     CPMAddPackage(
         NAME tree-sitter
         GITHUB_REPOSITORY tree-sitter/tree-sitter
-        GIT_TAG v0.26.6
+        GIT_TAG v0.26.8
     )
 
     add_library( frost-ts-grammar OBJECT

@@ -12,7 +12,7 @@ endif()
 CPMAddPackage(
     NAME mimalloc
     GITHUB_REPOSITORY microsoft/mimalloc
-    GIT_TAG v2.2.4
+    GIT_TAG v2.2.6
     OPTIONS
         "MI_BUILD_SHARED OFF"
         "MI_BUILD_TESTS OFF"
