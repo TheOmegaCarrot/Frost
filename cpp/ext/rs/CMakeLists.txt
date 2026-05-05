@@ -1,8 +1,16 @@
 include(${CMAKE_CURRENT_LIST_DIR}/get-corrosion.cmake)
 
 # cxx include path -- cxxbridge generates rust/cxx.h here.
+# Reconstruct Corrosion's internal cargo target directory (hash-bucketed since 0.6).
+set(_ws_manifest ${CMAKE_CURRENT_SOURCE_DIR}/rust-root/Cargo.toml)
+cmake_path(GET _ws_manifest PARENT_PATH _parent)
+cmake_path(GET _parent PARENT_PATH _grandparent)
+string(REPLACE "${_grandparent}/" "" _cargo_folder "${_parent}")
+string(SHA1 _cargo_hash "${_ws_manifest}")
+string(SUBSTRING "${_cargo_hash}" 0 5 _cargo_hash)
+
 set(FROST_CXXBRIDGE_INCLUDE
-    ${CMAKE_BINARY_DIR}/cargo/build/${_CORROSION_RUST_CARGO_TARGET}/cxxbridge
+    ${CMAKE_BINARY_DIR}/cargo/${_cargo_folder}_${_cargo_hash}/${_CORROSION_RUST_CARGO_TARGET}/cxxbridge
 )
 
 # Collect enabled Rust extension features for the workspace root crate.
@@ -51,11 +59,6 @@ endif()
 corrosion_import_crate(
     MANIFEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/rust-root/Cargo.toml
     FEATURES ${_RUST_FEATURES}
-)
-
-# Path to the single workspace staticlib (Corrosion copies it here).
-set(FROST_RUST_STATICLIB
-    ${CMAKE_CURRENT_BINARY_DIR}/libfrost_rust_ext.a
 )
 
 add_subdirectory(glue)

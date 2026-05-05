@@ -4,20 +4,17 @@ add_library(frost-rs-glue
     cpp/frost-glue.cpp
 )
 
-add_dependencies(frost-rs-glue cargo-build_frost_rust_ext)
-
 target_include_directories(frost-rs-glue
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp
     ${FROST_CXXBRIDGE_INCLUDE}
 )
 
-# All Rust symbols come from the single workspace staticlib.
 target_link_libraries(frost-rs-glue
     PUBLIC
     frost-value
     frost-functions
-    ${FROST_RUST_STATICLIB}
+    frost_rust_ext-static
 )
 
 if(BUILD_TESTS)
