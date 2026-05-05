@@ -12,8 +12,8 @@ set(FROST_RUST_FEATURES "")
 #   1. Create a frost-<NAME>-shim library from the generated C++
 #   2. Be listed as an optional dependency in rust-root/Cargo.toml
 #
-# This macro handles the frost-ext linkage, compile definitions, feature
-# collection, and ON/OFF/AUTO gating.
+# This macro handles the frost-ext linkage, feature collection, and
+# ON/OFF/AUTO gating.
 macro(frost_rust_extension NAME)
     string(TOUPPER ${NAME} _UPPER)
     set(WITH_${_UPPER} "AUTO" CACHE STRING "Enable ${NAME} extension (ON/OFF/AUTO)")
@@ -27,7 +27,6 @@ macro(frost_rust_extension NAME)
             message(STATUS "${FROST_YELLOW}ext.${NAME}: unavailable${FROST_RESET}")
         else()
             target_link_libraries(frost-ext PUBLIC frost-${NAME}-shim)
-            target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_${_UPPER})
             list(APPEND FROST_RUST_FEATURES ${NAME})
             message(STATUS "${FROST_GREEN}ext.${NAME}: enabled (Rust)${FROST_RESET}")
         endif()
@@ -60,3 +59,6 @@ set(FROST_RUST_STATICLIB
 )
 
 add_subdirectory(glue)
+
+list(APPEND FROST_ENABLED_EXTENSIONS ${FROST_RUST_FEATURES})
+set(FROST_ENABLED_EXTENSIONS "${FROST_ENABLED_EXTENSIONS}" PARENT_SCOPE)

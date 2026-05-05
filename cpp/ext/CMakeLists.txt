@@ -1,6 +1,4 @@
-add_library( frost-ext
-    ext.cpp
-)
+add_library( frost-ext )
 
 target_include_directories( frost-ext
     PUBLIC
@@ -84,7 +82,7 @@ macro(frost_extension NAME)
         else()
             message(STATUS "${FROST_GREEN}ext.${NAME}: enabled${FROST_RESET}")
             target_link_libraries(frost-ext PRIVATE frost-${NAME})
-            target_compile_definitions(frost-ext PRIVATE FROST_ENABLE_${_UPPER})
+            list(APPEND FROST_ENABLED_EXTENSIONS ${NAME})
         endif()
     else()
         message(STATUS "${FROST_RED}ext.${NAME}: disabled${FROST_RESET}")
@@ -113,3 +111,19 @@ if(NOT WITH_RUST STREQUAL "OFF")
     endif()
 endif()
 
+# Generate ext.cpp from the accumulated list of enabled extensions.
+set(_EXT_BODY "")
+foreach(_ext IN LISTS FROST_ENABLED_EXTENSIONS)
+    string(APPEND _EXT_BODY
+        "    void register_module_${_ext}(Stdlib_Registry_Builder&);\n"
+        "    register_module_${_ext}(builder);\n\n")
+endforeach()
+
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/ext.cpp"
+    "#include <frost/ext.hpp>\n\n"
+    "namespace frst\n{\n\n"
+    "void register_extensions(Stdlib_Registry_Builder& builder)\n{\n"
+    "${_EXT_BODY}"
+    "}\n\n} // namespace frst\n")
+
+target_sources(frost-ext PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/ext.cpp")
