@@ -1,1 +1,2 @@
-cpp/ext/sqlite/vendored-sqlite/** linguist-vendored
+cpp/ext/sqlite/vendored-sqlite/* linguist-vendored
+editor/tree-sitter-frost/src/* linguist-generated
