@@ -10,7 +10,8 @@
 //! - A `BUILTIN(fn_name)` for each exported function that:
 //!   - Calls `REQUIRE_ARGS` to validate arity and types
 //!   - Passes the entire args span as `rust::Slice<const Value_Ptr>` to Rust
-//!   - Catches `rust::Error` (from Rust `Err`) and re-throws as `Frost_Recoverable_Error`
+//!   - Catches `rust::Error` and rethrows any stashed Frost exception (preserving
+//!     type and backtrace), or creates a fresh `Frost_Recoverable_Error` for Rust-originated errors
 //! - A `REGISTER_EXTENSION(name, ENTRY(fn1), ENTRY(fn2), ...)` to register
 //!   the module with Frost's import system
 //! - (If data types declared) Data_Builtin wrapper structs, make/downcast functions
@@ -405,7 +406,9 @@ impl ExtensionBuilder {
         writeln!(out, "    }} catch (const ::rust::Error& e) {{").unwrap();
         writeln!(
             out,
-            "        throw Frost_Recoverable_Error{{std::string(e.what())}};"
+            "        if (auto ex = frst::rs::take_stashed_exception())\n\
+             \x20           std::rethrow_exception(ex);\n\
+             \x20       throw Frost_Recoverable_Error{{std::string(e.what())}};"
         )
         .unwrap();
         writeln!(out, "    }}").unwrap();
@@ -527,7 +530,9 @@ impl ExtensionBuilder {
             .unwrap();
             writeln!(
                 out,
-                "                    throw Frost_Recoverable_Error{{\
+                "                    if (auto ex = frst::rs::take_stashed_exception())\n\
+                 \x20                       std::rethrow_exception(ex);\n\
+                 \x20                   throw Frost_Recoverable_Error{{\
                  std::string(e.what())}};"
             )
             .unwrap();

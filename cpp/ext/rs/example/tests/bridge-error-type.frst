@@ -1,0 +1,12 @@
+# A fatal (unrecoverable) error thrown inside a callback passed through the
+# Rust bridge must remain unrecoverable. If the bridge correctly preserves
+# the error type, this process exits nonzero (the fatal escapes try_call).
+# If the bridge demotes it to recoverable, try_call catches it and we reach
+# the assertion at the end, which fails explicitly.
+
+def ex = import("ext.example")
+
+def result = try_call(fn -> ex.apply(fn _ -> fatal("should stay fatal"), null))
+
+# If we get here, try_call caught it -- the error was wrongly demoted.
+fatal($'BUG: unrecoverable error was demoted to recoverable: ${result.error}')

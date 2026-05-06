@@ -6,6 +6,7 @@
 // the frost include tree. Implementations live in frost-glue.cpp.
 
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <string>
 
@@ -82,15 +83,12 @@ rust::Slice<const std::shared_ptr<const Value>> value_map_values(
     const Value& val);
 
 // ---- Function call (caller must verify is_function first) ----
-// Frost exceptions (std::exception subclasses) are caught by cxx and
-// mapped to Result::Err on the Rust side.
 std::shared_ptr<const Value> value_call(
     const Value& callable,
     rust::Slice<const std::shared_ptr<const Value>> args);
 
 // ---- Closure creation ----
-// Wraps a Rust closure in a Frost Builtin. Rust Err maps to
-// Frost_Recoverable_Error via rust::Error catch.
+// Wraps a Rust closure in a Frost Builtin.
 struct RustClosure;
 std::shared_ptr<const Value> make_closure(rust::Box<RustClosure> closure);
 
@@ -137,6 +135,17 @@ bool value_truthy(const Value& val);
 // ---- Stringification ----
 std::unique_ptr<std::string> value_to_string(const Value& val);
 std::unique_ptr<std::string> value_type_name(const Value& val);
+
+// ---- Exception stash for bridge crossings ----
+//
+// When a Frost exception is about to cross into Rust (where cxx flattens it
+// to a rust::Error string), we stash the original exception_ptr in a
+// thread-local. When the error returns to C++ (caught as rust::Error in a
+// generated shim), take_stashed_exception() retrieves it so we can rethrow
+// with the original type and backtrace intact. If the stash is empty, the
+// error originated in Rust and gets a fresh Frost_Recoverable_Error.
+
+std::exception_ptr take_stashed_exception();
 
 } // namespace frst::rs
 

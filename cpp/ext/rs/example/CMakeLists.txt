@@ -26,4 +26,23 @@ if(BUILD_TESTS)
         COMMAND $<TARGET_FILE:frost>
                 "${CMAKE_CURRENT_SOURCE_DIR}/tests/example.frst"
     )
+
+    add_test(
+        NAME Frost_Ext_Example_bridge_error_type
+        COMMAND $<TARGET_FILE:frost>
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/bridge-error-type.frst"
+    )
+    set_tests_properties(Frost_Ext_Example_bridge_error_type PROPERTIES WILL_FAIL TRUE)
+
+    add_test(
+        NAME Frost_Ext_Example_bridge_backtrace
+        COMMAND $<TARGET_FILE:frost> --enable-backtrace
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/bridge-backtrace.frst"
+    )
+
+    add_test(
+        NAME Frost_Ext_Example_bridge_backtrace_rust_error
+        COMMAND $<TARGET_FILE:frost> --enable-backtrace
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/bridge-backtrace-rust-error.frst"
+    )
 endif()

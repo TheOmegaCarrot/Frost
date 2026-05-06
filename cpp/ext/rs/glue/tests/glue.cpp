@@ -64,7 +64,16 @@ namespace
 Value_Ptr call(auto fn, std::initializer_list<Value_Ptr> args)
 {
     auto vec = std::vector<Value_Ptr>(args);
-    return fn({vec.data(), vec.size()});
+    try
+    {
+        return fn({vec.data(), vec.size()});
+    }
+    catch (const rust::Error& e)
+    {
+        if (auto ex = frst::rs::take_stashed_exception())
+            std::rethrow_exception(ex);
+        throw Frost_Recoverable_Error{std::string(e.what())};
+    }
 }
 
 } // namespace
@@ -524,8 +533,48 @@ TEST_CASE("make_failing_fn: Rust closure Err becomes C++ exception")
 }
 
 // ==========================================================================
+// Error type preservation across bridge
+// ==========================================================================
+
+TEST_CASE("bridge preserves Unrecoverable error type")
+{
+    auto throw_unrecoverable = Value::create(
+        Function{std::make_shared<Builtin>(
+            [](builtin_args_t) -> Value_Ptr {
+                throw Frost_Unrecoverable_Error{"this is unrecoverable"};
+            },
+            "throw_unrecoverable")});
+
+    CHECK_THROWS_AS(
+        call(frst::rs::test::rt_call_callback,
+             {throw_unrecoverable, Value::null()}),
+        Frost_Unrecoverable_Error);
+}
+
+TEST_CASE("bridge preserves Recoverable error type")
+{
+    auto throw_recoverable = Value::create(
+        Function{std::make_shared<Builtin>(
+            [](builtin_args_t) -> Value_Ptr {
+                throw Frost_Recoverable_Error{"this is recoverable"};
+            },
+            "throw_recoverable")});
+
+    CHECK_THROWS_AS(
+        call(frst::rs::test::rt_call_callback,
+             {throw_recoverable, Value::null()}),
+        Frost_Recoverable_Error);
+}
+
+// ==========================================================================
 // Error propagation
 // ==========================================================================
+
+TEST_CASE("Rust-originated error becomes Frost_Recoverable_Error")
+{
+    CHECK_THROWS_AS(call(frst::rs::test::rt_identity, {}),
+                    Frost_Recoverable_Error);
+}
 
 TEST_CASE("error propagation: Rust Err becomes rust::Error")
 {

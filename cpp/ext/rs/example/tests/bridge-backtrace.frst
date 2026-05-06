@@ -1,0 +1,33 @@
+# A recoverable error thrown inside a callback passed through the Rust bridge
+# must preserve its backtrace from the original throw site, not a partial
+# backtrace reconstructed at the bridge re-entry point.
+# Run with --enable-backtrace.
+
+def ex = import("ext.example")
+
+# Build a multi-layer Frost call stack before the bridge crossing.
+# A reconstructed backtrace at the bridge boundary would only have frames
+# from the shim outward -- it would miss layer_one, layer_two, and the
+# error() call site within layer_two.
+defn layer_two(_) -> error("traced through bridge")
+defn layer_one(x) -> layer_two(x)
+
+def result = try_call(fn -> ex.apply(layer_one, null))
+
+assert(result.ok == false)
+assert(contains(result.error, "traced through bridge"))
+assert(has(result, "trace"), "backtrace should be present")
+assert(len(result.trace) > 0, "backtrace should not be empty")
+
+# Verify frames from inside the callback survived the bridge.
+# layer_one is called from Rust (via value_call), so its entry frame is not
+# in the Frost backtrace. But layer_two is called from layer_one through
+# normal Frost evaluation, so "In layer_two" must appear -- proving the
+# frames from deep inside the callback survived the Rust bridge crossing.
+defn has_frame(trace, name) -> (
+    trace
+    @ select(fn frame -> contains(frame, name))
+    @ len() > 0
+)
+
+assert(has_frame(result.trace, "layer_two"), $'backtrace should contain layer_two, got: ${result.trace}')

@@ -1,0 +1,21 @@
+# An error originating in Rust (not a C++ passthrough) should still get a
+# backtrace rooted at the Frost call site. Run with --enable-backtrace.
+
+def ex = import("ext.example")
+
+defn calls_rust(x) -> ex.fail_if_negative(x)
+
+def result = try_call(fn -> calls_rust(-1))
+
+assert(result.ok == false)
+assert(contains(result.error, "negative value: -1"))
+assert(has(result, "trace"), "backtrace should be present")
+assert(len(result.trace) > 0, "backtrace should not be empty")
+
+defn has_frame(trace, name) -> (
+    trace
+    @ select(fn frame -> contains(frame, name))
+    @ len() > 0
+)
+
+assert(has_frame(result.trace, "calls_rust"), $'backtrace should contain calls_rust, got: ${result.trace}')
