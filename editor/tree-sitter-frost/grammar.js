@@ -611,9 +611,9 @@ module.exports = grammar({
 
     format_dollar: _ => token.immediate('$'),
 
-    format_escape_sequence: _ => token.immediate(/\\[ntr"\\0$]/),
+    format_escape_sequence: _ => token.immediate(prec(1, /\\[ntr"$0\\]/)),
     format_invalid_escape_sequence: _ => token.immediate(/\\./),
-    format_single_escape_sequence: _ => token.immediate(/\\[ntr'\\0$]/),
+    format_single_escape_sequence: _ => token.immediate(prec(1, /\\[ntr'$0\\]/)),
     format_single_invalid_escape_sequence: _ => token.immediate(/\\./),
 
     // `${expr}` -- expression interpolation. The expression is a full

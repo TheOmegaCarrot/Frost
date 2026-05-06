@@ -2834,8 +2834,12 @@
     "format_escape_sequence": {
       "type": "IMMEDIATE_TOKEN",
       "content": {
-        "type": "PATTERN",
-        "value": "\\\\[ntr\"\\\\0$]"
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "\\\\[ntr\"$0\\\\]"
+        }
       }
     },
     "format_invalid_escape_sequence": {
@@ -2848,8 +2852,12 @@
     "format_single_escape_sequence": {
       "type": "IMMEDIATE_TOKEN",
       "content": {
-        "type": "PATTERN",
-        "value": "\\\\[ntr'\\\\0$]"
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "\\\\[ntr'$0\\\\]"
+        }
       }
     },
     "format_single_invalid_escape_sequence": {

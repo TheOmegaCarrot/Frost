@@ -57,9 +57,6 @@
   (format_single_invalid_escape_sequence)
 ] @error
 
-(format_placeholder "${" @punctuation.special)
-(format_placeholder "}" @punctuation.special)
-
 (identifier) @variable
 
 (dollar_identifier) @variable.parameter
@@ -137,3 +134,6 @@
 ] @punctuation.delimiter
 
 (no_nl_dot) @punctuation.delimiter
+
+(format_placeholder "${" @punctuation.special)
+(format_placeholder "}" @punctuation.special)
