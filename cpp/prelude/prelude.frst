@@ -33,8 +33,7 @@ defn dig(m, ...idxs) ->
 defn compose(f, g, ...rest) -> {
 
     defn require_fn(f) -> {
-        assert(is_function(f),
-            mformat('Compose requires functions, got ${type}', {type: type(f)}))
+        assert(is_function(f), $'Compose requires functions, got ${type(f)}')
     }
 
     foreach [f, g] + rest with require_fn
