@@ -123,7 +123,7 @@ TEST_CASE("Parser Numeric Literals")
 
     SECTION("Identifiers starting with 'e' are not floats")
     {
-        auto result = frst::parse_program("e2");
+        auto result = frst::parse_program("e2", "<test>");
         REQUIRE(result.has_value());
         auto program = std::move(result).value();
         REQUIRE(program.size() == 1);

@@ -490,7 +490,7 @@ void repl(frst::Symbol_Table& symbols)
 
         rx.history_add(*line);
 
-        auto parse_result = frst::parse_program(*line);
+        auto parse_result = frst::parse_program(*line, "<repl>");
 
         if (not parse_result)
         {

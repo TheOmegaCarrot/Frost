@@ -10,7 +10,7 @@ namespace
 // Asserts that the input fails to parse and returns the error text.
 std::string parse_error(const std::string& input)
 {
-    auto result = frst::parse_program(input);
+    auto result = frst::parse_program(input, "<test>");
     REQUIRE_FALSE(result.has_value());
     return result.error();
 }
@@ -64,13 +64,13 @@ TEST_CASE("Parser error messages - else if instead of elif")
 
     SECTION("valid elif still parses")
     {
-        auto result = frst::parse_program("if true: 1 elif false: 2 else: 3");
+        auto result = frst::parse_program("if true: 1 elif false: 2 else: 3", "<test>");
         CHECK(result.has_value());
     }
 
     SECTION("valid else still parses")
     {
-        auto result = frst::parse_program("if true: 1 else: 2");
+        auto result = frst::parse_program("if true: 1 else: 2", "<test>");
         CHECK(result.has_value());
     }
 }
@@ -181,7 +181,7 @@ TEST_CASE("Parser error messages - foreign language keywords")
     {
         // `format`, `formula`, `letter`, `variable` must NOT trigger errors.
         auto ok = [](const std::string& input) {
-            return frst::parse_program(input).has_value();
+            return frst::parse_program(input, "<test>").has_value();
         };
         CHECK(ok("def format = 1"));
         CHECK(ok("def formula = 2"));
@@ -212,14 +212,14 @@ TEST_CASE("Parser error messages - unicode in comments")
     SECTION("em dash in comment")
     {
         auto result = frst::parse_program(
-            "# this is a comment \xe2\x80\x94 with an em dash\nprint(1)");
+            "# this is a comment \xe2\x80\x94 with an em dash\nprint(1)", "<test>");
         CHECK(result.has_value());
     }
 
     SECTION("curly quotes in comment")
     {
         auto result =
-            frst::parse_program("# \xe2\x80\x9chello\xe2\x80\x9d\nprint(1)");
+            frst::parse_program("# \xe2\x80\x9chello\xe2\x80\x9d\nprint(1)", "<test>");
         CHECK(result.has_value());
     }
 }
@@ -248,7 +248,7 @@ TEST_CASE("Parser error messages - reassignment inside blocks")
     {
         // `def x = 10` inside blocks is fine
         auto ok = [](const std::string& input) {
-            return frst::parse_program(input).has_value();
+            return frst::parse_program(input, "<test>").has_value();
         };
         CHECK(ok("def f = fn x -> { def y = x + 1; y }"));
         CHECK(ok("do { def x = 10; x }"));
@@ -290,7 +290,7 @@ TEST_CASE("Parser error messages - do block suggestion")
     SECTION("does not fire for valid map literals")
     {
         auto ok = [](const std::string& input) {
-            return frst::parse_program(input).has_value();
+            return frst::parse_program(input, "<test>").has_value();
         };
         CHECK(ok("def m = {}"));
         CHECK(ok("def m = { foo: 42 }"));
@@ -303,7 +303,7 @@ TEST_CASE("Parser error messages - do block suggestion")
     SECTION("does not fire in lambda block bodies")
     {
         auto ok = [](const std::string& input) {
-            return frst::parse_program(input).has_value();
+            return frst::parse_program(input, "<test>").has_value();
         };
         CHECK(ok("def f = fn -> { def x = 1; x }"));
         CHECK(ok("def f = fn x -> { def y = x + 1; y }"));
@@ -312,7 +312,7 @@ TEST_CASE("Parser error messages - do block suggestion")
     SECTION("does not fire in do blocks")
     {
         auto ok = [](const std::string& input) {
-            return frst::parse_program(input).has_value();
+            return frst::parse_program(input, "<test>").has_value();
         };
         CHECK(ok("do { def x = 1; x }"));
         CHECK(ok("if true: do { def x = 1; x }"));

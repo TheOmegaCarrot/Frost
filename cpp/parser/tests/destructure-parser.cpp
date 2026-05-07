@@ -14,7 +14,7 @@ namespace
 {
 auto parse(std::string_view input)
 {
-    return frst::parse_program(std::string{input});
+    return frst::parse_program(std::string{input}, "<test>");
 }
 
 void run(std::string_view code, frst::Symbol_Table& table)

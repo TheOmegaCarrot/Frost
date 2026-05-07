@@ -10,7 +10,7 @@
 namespace frst
 {
 [[nodiscard]] std::expected<std::vector<ast::Statement::Ptr>, std::string>
-parse_program(const std::string& program_text);
+parse_program(const std::string& program_text, std::string_view filepath);
 
 [[nodiscard]] std::expected<std::vector<ast::Statement::Ptr>, std::string>
 parse_file(const std::filesystem::path& filename);

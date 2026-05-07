@@ -140,7 +140,7 @@ TEST_CASE("Parser Filter Expressions")
     SECTION("Postfix does not bind across newlines after filter expressions")
     {
         auto result = frst::parse_program(
-            std::string{"(filter [1, 2, 3] with fn (x) -> { x > 1 })\n[0]"});
+            std::string{"(filter [1, 2, 3] with fn (x) -> { x > 1 })\n[0]"}, "<test>");
         REQUIRE(result.has_value());
         CHECK(result.value().size() == 2);
     }

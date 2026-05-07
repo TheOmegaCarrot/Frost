@@ -143,7 +143,7 @@ TEST_CASE("Parser Map Expressions")
     SECTION("Postfix does not bind across newlines after map expressions")
     {
         auto result = frst::parse_program(
-            std::string{"(map [1] with fn (x) -> { x })\n[0]"});
+            std::string{"(map [1] with fn (x) -> { x })\n[0]"}, "<test>");
         REQUIRE(result.has_value());
         CHECK(result.value().size() == 2);
     }

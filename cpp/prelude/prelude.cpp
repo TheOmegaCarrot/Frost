@@ -16,7 +16,7 @@ void inject_prelude(Symbol_Table& table)
 
 void inject_prelude(Execution_Context ctx)
 {
-    auto ast = parse_program(prelude_text);
+    auto ast = parse_program(prelude_text, "<prelude>");
 
     if (!ast)
         throw Frost_Interpreter_Error{ast.error()};

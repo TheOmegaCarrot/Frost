@@ -2,7 +2,6 @@
 #define FROST_AST_DESTRUCTURE_HPP
 
 #include <frost/ast/ast-node.hpp>
-#include <frost/backtrace.hpp>
 #include <frost/execution-context.hpp>
 
 namespace frst::ast
@@ -27,12 +26,7 @@ class Destructure : public AST_Node
 
     void destructure(Execution_Context ctx, const Value_Ptr& value) const
     {
-        auto* bt = Backtrace_State::current();
-        if (not bt)
-            return do_destructure(ctx, value);
-
-        Frame_Guard guard{bt,
-                          fmt::format("{} [{}]", node_label(), source_range())};
+        auto guard = make_node_frame_guard(*this);
         do_destructure(ctx, value);
     }
 

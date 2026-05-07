@@ -14,7 +14,7 @@ namespace
 {
 auto parse(std::string_view input)
 {
-    return frst::parse_program(std::string{input});
+    return frst::parse_program(std::string{input}, "<test>");
 }
 
 frst::Value_Ptr call_function(const frst::Value_Ptr& value,

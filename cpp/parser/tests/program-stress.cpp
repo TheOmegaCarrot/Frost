@@ -48,7 +48,7 @@ TEST_CASE("Parser Program Stress Tests")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        return frst::parse_program(std::string{input});
+        return frst::parse_program(std::string{input}, "<test>");
     };
 
     auto require_equivalent_programs = [&](std::string_view left_src,

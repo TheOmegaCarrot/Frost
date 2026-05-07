@@ -23,7 +23,7 @@ TEST_CASE("Parser Format Strings")
     };
 
     auto parse_prog = [](std::string_view input) {
-        return frst::parse_program(std::string{input});
+        return frst::parse_program(std::string{input}, "<test>");
     };
 
     SECTION("Double- and single-quoted format strings parse")

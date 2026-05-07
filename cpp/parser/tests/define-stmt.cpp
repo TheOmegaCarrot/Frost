@@ -25,7 +25,7 @@ frst::Value_Ptr evaluate_expression(const frst::ast::Statement::Ptr& statement,
 TEST_CASE("Parser Define Statements")
 {
     auto parse = [](std::string_view input) {
-        return frst::parse_program(std::string{input});
+        return frst::parse_program(std::string{input}, "<test>");
     };
 
     SECTION("Single definition binds a name")

@@ -445,10 +445,10 @@ TEST_CASE("Parser Postfix Expressions")
         REQUIRE(index_out2->is<frst::Int>());
         CHECK(index_out2->get<frst::Int>().value() == 3_f);
 
-        CHECK(not frst::parse_program(std::string{"obj.\nkey"}));
-        CHECK(not frst::parse_program(std::string{"obj.# comment\nkey"}));
+        CHECK(not frst::parse_program(std::string{"obj.\nkey"}, "<test>"));
+        CHECK(not frst::parse_program(std::string{"obj.# comment\nkey"}, "<test>"));
         CHECK(
-            not frst::parse_program(std::string{"obj .\n inner \n.\n value"}));
+            not frst::parse_program(std::string{"obj .\n inner \n.\n value"}, "<test>"));
 
         auto call_empty = parse("f( # comment\n )");
         REQUIRE(call_empty.has_value());

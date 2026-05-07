@@ -51,7 +51,7 @@ TEST_CASE("Parser Lambda Expressions")
     };
 
     auto parse_prog = [](std::string_view input) {
-        return frst::parse_program(std::string{input});
+        return frst::parse_program(std::string{input}, "<test>");
     };
 
     auto run = [&](std::string_view code, frst::Execution_Context& ctx) {

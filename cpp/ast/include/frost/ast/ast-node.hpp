@@ -3,11 +3,14 @@
 
 #include <generator>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
 
 #include <fmt/format.h>
+
+#include <frost/backtrace.hpp>
 
 namespace frst::ast
 {
@@ -89,6 +92,16 @@ class AST_Node
         source_range_ = range;
     }
 
+    const std::shared_ptr<const std::string>& filepath() const
+    {
+        return filepath_;
+    }
+
+    void set_filepath(std::shared_ptr<const std::string> filepath) const
+    {
+        filepath_ = filepath;
+    }
+
     struct Child_Info
     {
         const AST_Node* node = nullptr;
@@ -129,6 +142,10 @@ class AST_Node
     static std::string child_prefix(const Print_Context& context);
 
     Source_Range source_range_;
+
+    // This is mutable just so that the parser can stamp nodes with a filename
+    // after construction using `walk()`
+    mutable std::shared_ptr<const std::string> filepath_;
 };
 
 } // namespace frst::ast
@@ -154,5 +171,25 @@ struct fmt::formatter<frst::ast::AST_Node::Source_Range>
         return fmt::format_to(ctx.out(), "{}-{}", range.begin, range.end);
     }
 };
+
+namespace frst::ast
+{
+
+inline std::optional<Frame_Guard> make_node_frame_guard(const AST_Node& node)
+{
+    auto* bt = Backtrace_State::current();
+    if (not bt)
+        return std::nullopt;
+
+    std::string_view path =
+        node.filepath() ? std::string_view{*node.filepath()} : "<unknown>";
+
+    auto label =
+        fmt::format("{} [{}] {}", node.node_label(), node.source_range(), path);
+
+    return Frame_Guard{bt, std::move(label)};
+}
+
+} // namespace frst::ast
 
 #endif

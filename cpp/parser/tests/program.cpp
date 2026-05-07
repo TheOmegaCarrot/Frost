@@ -90,7 +90,7 @@ TEST_CASE("Parser Program")
     // AI-generated test by Codex (GPT-5).
     // Signed: Codex (GPT-5).
     auto parse = [](std::string_view input) {
-        return frst::parse_program(std::string{input});
+        return frst::parse_program(std::string{input}, "<test>");
     };
 
     SECTION("Empty input yields empty program")

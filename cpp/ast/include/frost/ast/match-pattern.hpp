@@ -2,7 +2,6 @@
 #define FROST_AST_MATCH_PATTERN_HPP
 
 #include <frost/ast/ast-node.hpp>
-#include <frost/backtrace.hpp>
 #include <frost/execution-context.hpp>
 
 namespace frst::ast
@@ -42,12 +41,7 @@ class Match_Pattern : public AST_Node
     //! @returns true if the pattern matched, false if it did not.
     bool try_match(Execution_Context ctx, const Value_Ptr& value) const
     {
-        auto* bt = Backtrace_State::current();
-        if (not bt)
-            return do_try_match(ctx, value);
-
-        Frame_Guard guard{bt,
-                          fmt::format("{} [{}]", node_label(), source_range())};
+        auto guard = make_node_frame_guard(*this);
         return do_try_match(ctx, value);
     }
 

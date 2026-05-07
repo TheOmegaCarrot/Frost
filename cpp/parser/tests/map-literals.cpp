@@ -189,7 +189,7 @@ TEST_CASE("Parser Map Literals")
 
     SECTION("Map literals cannot be followed by postfix across newlines")
     {
-        auto result = frst::parse_program(std::string{"{a: 1}\n[\"a\"]"});
+        auto result = frst::parse_program(std::string{"{a: 1}\n[\"a\"]"}, "<test>");
         REQUIRE(result.has_value());
         CHECK(result.value().size() == 2);
     }

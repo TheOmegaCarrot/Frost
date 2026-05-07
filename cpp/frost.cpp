@@ -212,7 +212,7 @@ int main(int argc, const char** argv)
 
     for (const auto& cli_program : strings_to_evaluate)
     {
-        auto results = frst::parse_program(cli_program);
+        auto results = frst::parse_program(cli_program, "<commandline>");
         if (not results)
         {
             fmt::println(stderr, "{}", results.error());

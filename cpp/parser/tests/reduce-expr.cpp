@@ -172,7 +172,7 @@ TEST_CASE("Parser Reduce Expressions")
     SECTION("Reduce does not bind across newlines in larger expressions")
     {
         auto result = frst::parse_program(
-            std::string{"(reduce [1, 2] with fn (acc, x) -> { acc + x })\n1"});
+            std::string{"(reduce [1, 2] with fn (acc, x) -> { acc + x })\n1"}, "<test>");
         REQUIRE(result.has_value());
         CHECK(result.value().size() == 2);
     }
