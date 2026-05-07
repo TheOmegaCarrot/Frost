@@ -1,9 +1,8 @@
 #!/usr/bin/env ruby
 
 n = 14_000
-rows = (0...n).map { |i| {i => i, "shared" => i} }
 merged = {}
-rows.each { |row| merged.merge!(row) }
+(0...n).each { |i| merged[i] = i; merged["shared"] = i }
 result = merged.length
 
 raise unless result == 14_001
