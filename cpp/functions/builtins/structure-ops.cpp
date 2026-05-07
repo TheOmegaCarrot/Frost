@@ -259,6 +259,29 @@ BUILTIN(dissoc)
     return Value::create(Value::trusted, std::move(input));
 }
 
+BUILTIN(map_into)
+{
+    REQUIRE_ARGS("map_into", TYPES(Array), TYPES(Function));
+
+    const auto& arr = GET(0, Array);
+    const auto& fn = GET(1, Function);
+
+    Map result;
+    for (const auto& elem : arr)
+    {
+        auto entry = fn->call({elem});
+        if (not entry->is<Map>())
+            throw Frost_Recoverable_Error{
+                fmt::format("map_into: callback returned {}, expected Map",
+                            entry->type_name())};
+
+        for (const auto& [k, v] : entry->raw_get<Map>())
+            result.insert_or_assign(k, v);
+    }
+
+    return Value::create(Value::trusted, std::move(result));
+}
+
 void inject_structure_ops(Symbol_Table& table)
 {
     INJECT(keys);
@@ -272,5 +295,6 @@ void inject_structure_ops(Symbol_Table& table)
     INJECT(to_entries);
     INJECT(from_entries);
     INJECT(dissoc);
+    INJECT(map_into);
 }
 } // namespace frst
