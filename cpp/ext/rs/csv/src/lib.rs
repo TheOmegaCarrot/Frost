@@ -128,7 +128,7 @@ impl Default for WriteCsvOptions {
 fn parse_write_options(options: Option<FrostMap>) -> Result<WriteCsvOptions, String> {
     if let Some(options) = options {
         let val = options.into_value();
-        Ok(de::from_value(&val).map_err(|e|e.to_string())?)
+        de::from_value(&val).map_err(|e| e.to_string())?
     } else {
         Ok(WriteCsvOptions::default())
     }
