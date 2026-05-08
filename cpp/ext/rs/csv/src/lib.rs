@@ -251,6 +251,7 @@ fn make_string_writer_bundle(
 // =======================================
 // Entry points
 // =======================================
+
 fn read_file(
     path: &str,
     options: FrostMap,

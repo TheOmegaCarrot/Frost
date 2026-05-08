@@ -49,6 +49,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 frost_rust_extension(csv)
+frost_rust_extension(ini)
 
 # ---- Single workspace staticlib containing all enabled extensions ----
 set(_RUST_FEATURES ${FROST_RUST_FEATURES})

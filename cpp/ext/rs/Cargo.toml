@@ -5,6 +5,7 @@ members = [
     "glue/tests/rust-helpers",
     "rust-root",
     "csv",
+    "ini",
     "example",
 ]
 resolver = "2"

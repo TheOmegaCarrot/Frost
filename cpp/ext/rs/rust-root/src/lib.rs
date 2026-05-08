@@ -4,6 +4,9 @@
 #[cfg(feature = "csv")]
 pub use frost_csv;
 
+#[cfg(feature = "ini")]
+pub use frost_ini;
+
 #[cfg(feature = "example")]
 pub use frost_example;
 

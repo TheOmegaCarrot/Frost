@@ -9,10 +9,12 @@ crate-type = ["staticlib"]
 [features]
 default = []
 csv = ["dep:frost-csv"]
+ini = ["dep:frost-ini"]
 example = ["dep:frost-example"]
 test-helpers = ["dep:frost-glue-test-helpers"]
 
 [dependencies]
 frost-csv = { path = "../csv", optional = true }
+frost-ini = { path = "../ini", optional = true }
 frost-example = { path = "../example", optional = true }
 frost-glue-test-helpers = { path = "../glue/tests/rust-helpers", optional = true }

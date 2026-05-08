@@ -1,0 +1,16 @@
+[package]
+name = "frost-ini"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+frost-glue = { path = "../glue" }
+cxx = "=1.0.194"
+ini = "1"
+serde = { version = "1", features = ["derive"] }
+
+[build-dependencies]
+frost-glue-build = { path = "../glue-build" }
