@@ -83,17 +83,24 @@ static void write_escaped(std::ostream& out, char c)
 {
     switch (c)
     {
-    case '&': out << "&amp;"; break;
-    case '<': out << "&lt;"; break;
-    case '>': out << "&gt;"; break;
-    default: out << c; break;
+    case '&':
+        out << "&amp;";
+        break;
+    case '<':
+        out << "&lt;";
+        break;
+    case '>':
+        out << "&gt;";
+        break;
+    default:
+        out << c;
+        break;
     }
 }
 
 int main()
 {
-    auto source = std::string{
-        std::istreambuf_iterator<char>{std::cin}, {}};
+    auto source = std::string{std::istreambuf_iterator<char>{std::cin}, {}};
 
     auto highlights = get_highlights(source);
 
@@ -117,9 +124,10 @@ int main()
             if (current_scope != -1)
                 std::cout << "</span>";
             if (scope != -1)
-                std::cout << "<span class=\"hl-"
-                          << highlights[static_cast<std::size_t>(scope)].scope
-                          << "\">";
+                std::cout
+                    << "<span class=\"hl-"
+                    << highlights[static_cast<std::size_t>(scope)].scope
+                    << "\">";
             current_scope = scope;
         }
         write_escaped(std::cout, source[i]);

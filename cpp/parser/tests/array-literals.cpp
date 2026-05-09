@@ -241,7 +241,8 @@ TEST_CASE("Parser Array Literals")
 
     SECTION("Arrays can start statements in programs")
     {
-        auto program_result = frst::parse_program(std::string{"[]\n42"}, "<test>");
+        auto program_result =
+            frst::parse_program(std::string{"[]\n42"}, "<test>");
         REQUIRE(program_result.has_value());
         auto program = std::move(program_result).value();
         REQUIRE(program.size() == 2);

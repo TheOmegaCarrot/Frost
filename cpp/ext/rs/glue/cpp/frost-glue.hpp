@@ -75,8 +75,8 @@ std::shared_ptr<const Value> value_map_get(const Value& val,
                                            const std::string& key);
 std::shared_ptr<const Value> value_map_get_by(
     const Value& map, const std::shared_ptr<const Value>& key);
-bool value_map_contains_key(
-    const Value& map, const std::shared_ptr<const Value>& key);
+bool value_map_contains_key(const Value& map,
+                            const std::shared_ptr<const Value>& key);
 rust::Slice<const std::shared_ptr<const Value>> value_map_keys(
     const Value& val);
 rust::Slice<const std::shared_ptr<const Value>> value_map_values(
@@ -93,9 +93,8 @@ struct RustClosure;
 std::shared_ptr<const Value> make_closure(rust::Box<RustClosure> closure);
 
 // ---- Arithmetic (throw on type mismatch) ----
-std::shared_ptr<const Value> value_add(
-    const std::shared_ptr<const Value>& lhs,
-    const std::shared_ptr<const Value>& rhs);
+std::shared_ptr<const Value> value_add(const std::shared_ptr<const Value>& lhs,
+                                       const std::shared_ptr<const Value>& rhs);
 std::shared_ptr<const Value> value_subtract(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs);

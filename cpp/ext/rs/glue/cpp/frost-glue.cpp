@@ -191,8 +191,8 @@ std::shared_ptr<const Value> value_array_get(const Value& val, size_t index)
     });
 }
 
-rust::Slice<const std::shared_ptr<const Value>>
-value_array_slice(const Value& val)
+rust::Slice<const std::shared_ptr<const Value>> value_array_slice(
+    const Value& val)
 {
     const auto& arr = val.raw_get<Array>();
     return {arr.data(), arr.size()};
@@ -236,15 +236,14 @@ bool value_map_contains_key(const Value& map_val,
     return map_val.raw_get<Map>().contains(key);
 }
 
-rust::Slice<const std::shared_ptr<const Value>>
-value_map_keys(const Value& val)
+rust::Slice<const std::shared_ptr<const Value>> value_map_keys(const Value& val)
 {
     const auto& keys = val.raw_get<Map>().keys();
     return {keys.data(), keys.size()};
 }
 
-rust::Slice<const std::shared_ptr<const Value>>
-value_map_values(const Value& val)
+rust::Slice<const std::shared_ptr<const Value>> value_map_values(
+    const Value& val)
 {
     const auto& values = val.raw_get<Map>().values();
     return {values.data(), values.size()};
@@ -253,8 +252,7 @@ value_map_values(const Value& val)
 // ---- Function call ----
 
 std::shared_ptr<const Value> value_call(
-    const Value& callable,
-    rust::Slice<const std::shared_ptr<const Value>> args)
+    const Value& callable, rust::Slice<const std::shared_ptr<const Value>> args)
 {
     return stash_frost_errors([&] {
         const auto& fn = callable.raw_get<Function>();
@@ -264,67 +262,72 @@ std::shared_ptr<const Value> value_call(
 
 // ---- Closure creation ----
 
-Value_Ptr rust_closure_call(
-    RustClosure const& closure,
-    rust::Slice<Value_Ptr const> args);
+Value_Ptr rust_closure_call(RustClosure const& closure,
+                            rust::Slice<Value_Ptr const> args);
 
 std::shared_ptr<const Value> make_closure(rust::Box<RustClosure> closure)
 {
-    auto shared =
-        std::make_shared<rust::Box<RustClosure>>(std::move(closure));
-    return frst::Value::create(
-        Function{std::make_shared<Builtin>(
-            [shared](builtin_args_t args) -> Value_Ptr {
-                try
-                {
-                    return rust_closure_call(**shared,
-                                            {args.data(), args.size()});
-                }
-                catch (const rust::Error& e)
-                {
-                    if (auto ex = take_stashed_exception())
-                        std::rethrow_exception(ex);
-                    throw Frost_Recoverable_Error{std::string(e.what())};
-                }
-            },
-            "<rust closure>")});
+    auto shared = std::make_shared<rust::Box<RustClosure>>(std::move(closure));
+    return frst::Value::create(Function{std::make_shared<Builtin>(
+        [shared](builtin_args_t args) -> Value_Ptr {
+            try
+            {
+                return rust_closure_call(**shared, {args.data(), args.size()});
+            }
+            catch (const rust::Error& e)
+            {
+                if (auto ex = take_stashed_exception())
+                    std::rethrow_exception(ex);
+                throw Frost_Recoverable_Error{std::string(e.what())};
+            }
+        },
+        "<rust closure>")});
 }
 
 // ---- Arithmetic ----
 
-std::shared_ptr<const Value> value_add(
-    const std::shared_ptr<const Value>& lhs,
-    const std::shared_ptr<const Value>& rhs)
+std::shared_ptr<const Value> value_add(const std::shared_ptr<const Value>& lhs,
+                                       const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::add(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::add(lhs, rhs);
+    });
 }
 
 std::shared_ptr<const Value> value_subtract(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::subtract(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::subtract(lhs, rhs);
+    });
 }
 
 std::shared_ptr<const Value> value_multiply(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::multiply(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::multiply(lhs, rhs);
+    });
 }
 
 std::shared_ptr<const Value> value_divide(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::divide(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::divide(lhs, rhs);
+    });
 }
 
 std::shared_ptr<const Value> value_modulus(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::modulus(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::modulus(lhs, rhs);
+    });
 }
 
 // ---- Comparison ----
@@ -333,42 +336,54 @@ std::shared_ptr<const Value> value_equal(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::equal(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::equal(lhs, rhs);
+    });
 }
 
 std::shared_ptr<const Value> value_not_equal(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::not_equal(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::not_equal(lhs, rhs);
+    });
 }
 
 std::shared_ptr<const Value> value_less_than(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::less_than(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::less_than(lhs, rhs);
+    });
 }
 
 std::shared_ptr<const Value> value_less_than_or_equal(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::less_than_or_equal(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::less_than_or_equal(lhs, rhs);
+    });
 }
 
 std::shared_ptr<const Value> value_greater_than(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::greater_than(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::greater_than(lhs, rhs);
+    });
 }
 
 std::shared_ptr<const Value> value_greater_than_or_equal(
     const std::shared_ptr<const Value>& lhs,
     const std::shared_ptr<const Value>& rhs)
 {
-    return stash_frost_errors([&] { return frst::Value::greater_than_or_equal(lhs, rhs); });
+    return stash_frost_errors([&] {
+        return frst::Value::greater_than_or_equal(lhs, rhs);
+    });
 }
 
 // ---- Coercion ----

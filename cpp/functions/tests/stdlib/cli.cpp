@@ -785,8 +785,8 @@ TEST_CASE("cli.parse successful parsing")
             {"env"_s, Value::create(Value::trusted, std::move(opt))}};
         auto result =
             do_parse_raw({"s.frst", "--env", "x"},
-                         Map{{"options"_s,
-                              Value::create(Value::trusted, std::move(options))}});
+                         Map{{"options"_s, Value::create(Value::trusted,
+                                                         std::move(options))}});
         auto help_str = get(result, "help")->raw_get<String>();
         CHECK(help_str.contains("--env"));
         CHECK(help_str.contains("target env"));
@@ -798,10 +798,9 @@ TEST_CASE("cli.parse successful parsing")
         Map opt = {{"default"_s, Value::create("3"s)}};
         Map options = {
             {"retries"_s, Value::create(Value::trusted, std::move(opt))}};
-        auto result =
-            do_parse_raw({"s.frst"},
-                         Map{{"options"_s,
-                              Value::create(Value::trusted, std::move(options))}});
+        auto result = do_parse_raw(
+            {"s.frst"}, Map{{"options"_s, Value::create(Value::trusted,
+                                                        std::move(options))}});
         CHECK(get(result, "help")->raw_get<String>().contains("default: 3"));
     }
 
@@ -810,10 +809,9 @@ TEST_CASE("cli.parse successful parsing")
         Map opt = {{"repeatable"_s, Value::create(Bool{true})}};
         Map options = {
             {"tag"_s, Value::create(Value::trusted, std::move(opt))}};
-        auto result =
-            do_parse_raw({"s.frst"},
-                         Map{{"options"_s,
-                              Value::create(Value::trusted, std::move(options))}});
+        auto result = do_parse_raw(
+            {"s.frst"}, Map{{"options"_s, Value::create(Value::trusted,
+                                                        std::move(options))}});
         CHECK(get(result, "help")->raw_get<String>().contains("repeatable"));
     }
 
@@ -922,8 +920,8 @@ TEST_CASE("cli.parse successful parsing")
                  Value::trusted,
                  Map{{"flags"_s,
                       Value::create(Value::trusted, std::move(flags))},
-                     {"options"_s, Value::create(Value::trusted,
-                                                 std::move(options))}})});
+                     {"options"_s,
+                      Value::create(Value::trusted, std::move(options))}})});
         REQUIRE(result->is<Map>());
         auto envelope = result->raw_get<Map>();
         CHECK(get(envelope, "ok")->raw_get<Bool>() == false);

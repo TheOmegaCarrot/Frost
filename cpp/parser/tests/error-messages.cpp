@@ -64,7 +64,8 @@ TEST_CASE("Parser error messages - else if instead of elif")
 
     SECTION("valid elif still parses")
     {
-        auto result = frst::parse_program("if true: 1 elif false: 2 else: 3", "<test>");
+        auto result =
+            frst::parse_program("if true: 1 elif false: 2 else: 3", "<test>");
         CHECK(result.has_value());
     }
 
@@ -212,14 +213,15 @@ TEST_CASE("Parser error messages - unicode in comments")
     SECTION("em dash in comment")
     {
         auto result = frst::parse_program(
-            "# this is a comment \xe2\x80\x94 with an em dash\nprint(1)", "<test>");
+            "# this is a comment \xe2\x80\x94 with an em dash\nprint(1)",
+            "<test>");
         CHECK(result.has_value());
     }
 
     SECTION("curly quotes in comment")
     {
-        auto result =
-            frst::parse_program("# \xe2\x80\x9chello\xe2\x80\x9d\nprint(1)", "<test>");
+        auto result = frst::parse_program(
+            "# \xe2\x80\x9chello\xe2\x80\x9d\nprint(1)", "<test>");
         CHECK(result.has_value());
     }
 }

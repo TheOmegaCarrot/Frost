@@ -63,8 +63,8 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_program(
 {
     auto input = lexy::string_input<lexy::utf8_encoding>(program_text);
 
-    auto result = parse_impl(
-        input, lexy_ext::report_error.opts({lexy::visualize_fancy}));
+    auto result =
+        parse_impl(input, lexy_ext::report_error.opts({lexy::visualize_fancy}));
 
     if (result)
         assign_filepath(result.value(), filepath);
@@ -83,9 +83,9 @@ std::expected<std::vector<ast::Statement::Ptr>, std::string> parse_file(
             fmt::format("Failed to read file '{}'", path_str)};
     }
 
-    auto result = parse_impl(
-        file.buffer(), lexy_ext::report_error.path(path_str.c_str())
-                           .opts({lexy::visualize_fancy}));
+    auto result =
+        parse_impl(file.buffer(), lexy_ext::report_error.path(path_str.c_str())
+                                      .opts({lexy::visualize_fancy}));
 
     if (result)
         assign_filepath(result.value(), path_str);

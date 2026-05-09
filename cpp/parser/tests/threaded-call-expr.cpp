@@ -307,7 +307,8 @@ TEST_CASE("Parser threaded call expressions")
         REQUIRE(callable->received.size() == 1);
         CHECK(callable->received[0] == a_val);
 
-        CHECK(not frst::parse_program(std::string{"a @ obj .\n m ( )"}, "<test>"));
+        CHECK(not frst::parse_program(std::string{"a @ obj .\n m ( )"},
+                                      "<test>"));
     }
 
     SECTION("Threaded call requires a call expression on the right-hand side")
