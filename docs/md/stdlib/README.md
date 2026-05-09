@@ -67,6 +67,7 @@ The configure output shows the status for each extension and its dependencies. E
 |  [CSV](csv.md) | `import('ext.csv')` | Read and write CSV data | Rust toolchain  |
 |  [Hash](hash.md) | `import('ext.hash')` | Hash functions, checksums, and HMAC | OpenSSL, zlib  |
 |  [HTTP](http.md) | `import('ext.http')` | Making HTTP requests | OpenSSL  |
+|  [INI](ini.md) | `import('ext.ini')` | Encoding and decoding INI files | Rust toolchain  |
 |  [MessagePack](msgpack.md) | `import('ext.msgpack')` | Binary serialization | None  |
 |  [SQLite](sqlite.md) | `import('ext.sqlite')` | Embedded relational database | zlib  |
 |  [TOML](toml.md) | `import('ext.toml')` | Encoding and decoding TOML | None  |

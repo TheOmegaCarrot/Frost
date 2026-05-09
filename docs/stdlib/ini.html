@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" data-depth="1">
+<head>
+<meta charset="utf-8">
+<title>INI - Frost</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+<h1 id="ini">INI</h1>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">ini</span> <span class="hl-operator">=</span> <span class="hl-function">import</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'ext.ini'</span><span class="hl-punctuation-bracket">)</span></code></pre>
+<p>Encode and decode INI configuration files. All keys and values are <code>String</code>.</p>
+<h2 id="document-structure">Document Structure</h2>
+<p>An INI document is represented as a <code>Map</code> with two keys:</p>
+<ul>
+  <li><code>globals</code>: a <code>Map</code> of key-value pairs that appear before any section header.</li>
+  <li><code>sections</code>: a <code>Map</code> of section names to <code>Map</code>s of key-value pairs.</li>
+</ul>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">doc</span> <span class="hl-operator">=</span> <span class="hl-variable">ini</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">decode</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'''
+                     app = myapp
+
+                     [database]
+                     host = localhost
+                     port = 5432
+                     '''</span><span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">doc</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">globals</span><span class="hl-comment">   # =&gt; {app: "myapp"}</span>
+<span class="hl-variable">doc</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">sections</span><span class="hl-comment">  # =&gt; {database: {host: "localhost", port: "5432"}}</span></code></pre>
+<p>The same structure is used for encoding:</p>
+<pre><code class="language-frost"><span class="hl-variable">ini</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">encode</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">globals</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">app</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'myapp'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">sections</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span>
+        <span class="hl-property">database</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">host</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'localhost'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">port</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'5432'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span></code></pre>
+<p>Result:</p>
+<pre><code class="language-ini">app = myapp
+
+[database]
+host = localhost
+port = 5432</code></pre>
+<h2 id="decode-options">Decode Options</h2>
+<p><code>decode</code> accepts an optional <code>options</code> map with the following fields (all default to sensible values):</p>
+<table>
+<thead><tr>
+  <th>Key</th>
+  <th>Type</th>
+  <th>Default</th>
+  <th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>strip_quotes</code></td>
+  <td><code>Bool</code></td>
+  <td><code>true</code></td>
+  <td>Strip surrounding <code>"</code> or <code>'</code> from values.</td>
+</tr>
+<tr>
+  <td><code>escapes</code></td>
+  <td><code>Bool</code></td>
+  <td><code>true</code></td>
+  <td>Interpret backslash escapes (e.g. <code>\n</code>, <code>\t</code>).</td>
+</tr>
+<tr>
+  <td><code>multiline_values</code></td>
+  <td><code>Bool</code></td>
+  <td><code>false</code></td>
+  <td>Allow values to span multiple indented lines.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="encode-options">Encode Options</h2>
+<p><code>encode</code> accepts an optional <code>options</code> map:</p>
+<table>
+<thead><tr>
+  <th>Key</th>
+  <th>Type</th>
+  <th>Default</th>
+  <th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>kv_separator</code></td>
+  <td><code>String</code></td>
+  <td><code>" = "</code></td>
+  <td>Separator between keys and values. Common choices: <code>"="</code>, <code>" = "</code>, <code>": "</code>.</td>
+</tr>
+<tr>
+  <td><code>line_separator</code></td>
+  <td><code>String</code></td>
+  <td><code>"LF"</code></td>
+  <td>Line ending style: <code>"LF"</code> (<code>\n</code>) or <code>"CRLF"</code> (<code>\r\n</code>).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="limitations">Limitations</h2>
+<ul>
+  <li>Comments are stripped on decode and not preserved for round-tripping.</li>
+  <li>When duplicate keys appear within a section, it is unspecified which key is preserved.</li>
+  <li>All values are strings. The caller is responsible for type conversion.</li>
+</ul>
+<h2 id="decode"><code>decode</code></h2>
+<p class="signature"><code>ini.decode(s)</code></p>
+<p class="signature"><code>ini.decode(s, options)</code></p>
+<p>Parses an INI document from <code>String</code> <code>s</code> and returns a <code>Map</code> with <code>globals</code> and <code>sections</code>. Produces an error on malformed input.</p>
+<pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">config</span> <span class="hl-operator">=</span> <span class="hl-variable">ini</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">decode</span><span class="hl-punctuation-bracket">(</span>'
+<span class="hl-variable">app</span><span class="hl-operator">=</span><span class="hl-variable">myapp</span>
+
+<span class="hl-punctuation-bracket">[</span><span class="hl-variable">server</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-variable">host</span><span class="hl-operator">=</span><span class="hl-number">0.0</span><span class="hl-punctuation-delimiter">.</span><span class="hl-number">0.0</span>
+<span class="hl-variable">port</span><span class="hl-operator">=</span><span class="hl-number">8080</span>
+
+<span class="hl-punctuation-bracket">[</span><span class="hl-variable">logging</span><span class="hl-punctuation-bracket">]</span>
+<span class="hl-variable">level</span><span class="hl-operator">=</span><span class="hl-variable">info</span>
+'<span class="hl-punctuation-bracket">)</span>
+<span class="hl-variable">config</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">globals</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">app</span><span class="hl-comment">         # =&gt; "myapp"</span>
+<span class="hl-variable">config</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">sections</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">server</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">host</span><span class="hl-comment">  # =&gt; "0.0.0.0"</span></code></pre>
+<h3 id="disabling-escape-interpretation">Disabling escape interpretation</h3>
+<pre><code class="language-frost"><span class="hl-variable">ini</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">decode</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">'[s]\npath=C:\\Users\\me'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">escapes</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-constant-builtin">false</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span></code></pre>
+<p class="see-also">See also:
+<a href="ini.html#encode"><code>encode</code></a>
+</p>
+<h2 id="encode"><code>encode</code></h2>
+<p class="signature"><code>ini.encode(doc)</code></p>
+<p class="signature"><code>ini.encode(doc, options)</code></p>
+<p>Serializes a <code>Map</code> with <code>globals</code> and <code>sections</code> to an INI <code>String</code>. All keys and values must be <code>String</code>. Non-string keys or values produce an error.</p>
+<pre><code class="language-frost"><span class="hl-variable">ini</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">encode</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">{</span>
+    <span class="hl-property">globals</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-property">sections</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span>
+        <span class="hl-property">database</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">host</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'localhost'</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">port</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">'5432'</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+    <span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span>
+<span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span></code></pre>
+<h3 id="custom-separator">Custom separator</h3>
+<pre><code class="language-frost"><span class="hl-variable">ini</span><span class="hl-punctuation-delimiter">.</span><span class="hl-property">encode</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">doc</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span><span class="hl-property">kv_separator</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">': '</span><span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-bracket">)</span></code></pre>
+<p>Produces <code>key: value</code> instead of <code>key = value</code>.</p>
+<p class="see-also">See also:
+<a href="ini.html#decode"><code>decode</code></a>
+</p>
+</main>
+<script src="../nav.js"></script>
+</body>
+</html>

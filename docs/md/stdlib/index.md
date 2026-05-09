@@ -158,6 +158,8 @@ Alphabetical index of all built-in functions and values. Each entry links to its
 - [id](collections.md#id)
 - [includes](collections.md#includes)
 - [index](collections.md#index)
+- [ini.decode](ini.md#decode) · `ext.ini`
+- [ini.encode](ini.md#encode) · `ext.ini`
 - [inv](functions.md#inv)
 - [io.append](io.md#append) · `std.io`
 - [io.open_append](io.md#open_append) · `std.io`

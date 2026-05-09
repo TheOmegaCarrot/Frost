@@ -1,0 +1,176 @@
+export def ini = {
+    name: 'ini',
+    title: 'INI',
+    module_path: 'ext.ini',
+    import_as: 'ini',
+    description: [
+        'Encode and decode INI configuration files. All keys and values are `String`.',
+    ],
+    content: [
+        {
+            title: 'Document Structure',
+            content: [
+                'An INI document is represented as a `Map` with two keys:',
+                { list: [
+                    '`globals`: a `Map` of key-value pairs that appear before any section header.',
+                    '`sections`: a `Map` of section names to `Map`s of key-value pairs.',
+                ] },
+                {
+                    code: """
+                        def doc = ini.decode('''
+                                             app = myapp
+
+                                             [database]
+                                             host = localhost
+                                             port = 5432
+                                             ''')
+                        doc.globals   # => {app: "myapp"}
+                        doc.sections  # => {database: {host: "localhost", port: "5432"}}
+                        """,
+                    illustrative: true,
+                },
+                'The same structure is used for encoding:',
+                {
+                    code: """
+                        ini.encode({
+                            globals: {app: 'myapp'},
+                            sections: {
+                                database: {host: 'localhost', port: '5432'},
+                            },
+                        })
+                        """,
+                    illustrative: true,
+                },
+                'Result:',
+                {
+                    code: """
+                        app = myapp
+
+                        [database]
+                        host = localhost
+                        port = 5432
+                        """,
+                    lang: 'ini',
+                    illustrative: true,
+                },
+            ],
+        },
+        {
+            title: 'Decode Options',
+            content: [
+                '`decode` accepts an optional `options` map with the following fields (all default to sensible values):',
+                { table: {
+                    columns: ['Key', 'Type', 'Default', 'Description'],
+                    rows: [
+                        ['`strip_quotes`', '`Bool`', '`true`', 'Strip surrounding `"` or `\'` from values.'],
+                        ['`escapes`', '`Bool`', '`true`', 'Interpret backslash escapes (e.g. `\\n`, `\\t`).'],
+                        ['`multiline_values`', '`Bool`', '`false`', 'Allow values to span multiple indented lines.'],
+                    ],
+                } },
+            ],
+        },
+        {
+            title: 'Encode Options',
+            content: [
+                '`encode` accepts an optional `options` map:',
+                { table: {
+                    columns: ['Key', 'Type', 'Default', 'Description'],
+                    rows: [
+                        ['`kv_separator`', '`String`', '`" = "`', 'Separator between keys and values. Common choices: `"="`, `" = "`, `": "`.'],
+                        ['`line_separator`', '`String`', '`"LF"`', 'Line ending style: `"LF"` (`\\n`) or `"CRLF"` (`\\r\\n`).'],
+                    ],
+                } },
+            ],
+        },
+        {
+            title: 'Limitations',
+            content: [
+                { list: [
+                    'Comments are stripped on decode and not preserved for round-tripping.',
+                    'When duplicate keys appear within a section, it is unspecified which key is preserved.',
+                    'All values are strings. The caller is responsible for type conversion.',
+                ] },
+            ],
+        },
+    ],
+
+    entries: [
+        {
+            name: 'decode',
+            signatures: [
+                'ini.decode(s)',
+                'ini.decode(s, options)',
+            ],
+            description: [
+                'Parses an INI document from `String` `s` and returns a `Map` with `globals` and `sections`. Produces an error on malformed input.',
+            ],
+            body: [
+                {
+                    code: """
+                        def config = ini.decode('
+                        app=myapp
+
+                        [server]
+                        host=0.0.0.0
+                        port=8080
+
+                        [logging]
+                        level=info
+                        ')
+                        config.globals.app         # => "myapp"
+                        config.sections.server.host  # => "0.0.0.0"
+                        """,
+                    illustrative: true,
+                },
+                {
+                    title: 'Disabling escape interpretation',
+                    content: [
+                        {
+                            code: """
+                                ini.decode('[s]\\npath=C:\\\\Users\\\\me', {escapes: false})
+                                """,
+                            illustrative: true,
+                        },
+                    ],
+                },
+            ],
+            see_also: ['ext.ini.encode'],
+        },
+        {
+            name: 'encode',
+            signatures: [
+                'ini.encode(doc)',
+                'ini.encode(doc, options)',
+            ],
+            description: [
+                'Serializes a `Map` with `globals` and `sections` to an INI `String`. All keys and values must be `String`. Non-string keys or values produce an error.',
+            ],
+            body: [
+                {
+                    code: """
+                        ini.encode({
+                            globals: {},
+                            sections: {
+                                database: {host: 'localhost', port: '5432'},
+                            },
+                        })
+                        """,
+                    illustrative: true,
+                },
+                {
+                    title: 'Custom separator',
+                    content: [
+                        {
+                            code: """
+                                ini.encode(doc, {kv_separator: ': '})
+                                """,
+                            illustrative: true,
+                        },
+                        'Produces `key: value` instead of `key = value`.',
+                    ],
+                },
+            ],
+            see_also: ['ext.ini.decode'],
+        },
+    ],
+}

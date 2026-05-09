@@ -88,6 +88,7 @@ export def landing = {
                             ['[CSV](@ref ext.csv)', "`import('ext.csv')`", 'Read and write CSV data', 'Rust toolchain'],
                             ['[Hash](@ref ext.hash)', "`import('ext.hash')`", 'Hash functions, checksums, and HMAC', 'OpenSSL, zlib'],
                             ['[HTTP](@ref ext.http)', "`import('ext.http')`", 'Making HTTP requests', 'OpenSSL'],
+                            ['[INI](@ref ext.ini)', "`import('ext.ini')`", 'Encoding and decoding INI files', 'Rust toolchain'],
                             ['[MessagePack](@ref ext.msgpack)', "`import('ext.msgpack')`", 'Binary serialization', 'None'],
                             ['[SQLite](@ref ext.sqlite)', "`import('ext.sqlite')`", 'Embedded relational database', 'zlib'],
                             ['[TOML](@ref ext.toml)', "`import('ext.toml')`", 'Encoding and decoding TOML', 'None'],
