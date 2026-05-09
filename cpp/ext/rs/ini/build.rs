@@ -13,6 +13,5 @@ fn main() {
         .param("ini", &[Type::String])
         .optional("options", &[Type::Map]);
 
-
     ext.generate();
 }

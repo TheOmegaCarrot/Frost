@@ -40,8 +40,8 @@
 //! `Frost_Recoverable_Error`, making Rust errors catchable by Frost's
 //! `try_call`.
 
-pub mod require;
 pub mod de;
+pub mod require;
 
 // The cxx bridge: raw FFI declarations between Rust and C++.
 // These functions are implemented in frost-glue.cpp (compiled by CMake).
@@ -355,6 +355,30 @@ impl FrostValue {
     pub fn from_pairs_trusted(entries: &[(FrostValue, FrostValue)]) -> Self {
         let keys: Vec<_> = entries.iter().map(|(k, _)| k.inner.clone()).collect();
         let values: Vec<_> = entries.iter().map(|(_, v)| v.inner.clone()).collect();
+        Self::from_map_trusted(&keys, &values)
+    }
+
+    /// Create a Frost Map from an iterator over key/value pairs.
+    /// Keys must be non-null primitives. Returns `Err` on invalid keys.
+    pub fn from_pairs_iter(iter: impl IntoIterator<Item = (FrostValue, FrostValue)>) -> Result<Self, String> {
+        let mut keys = Vec::new();
+        let mut values = Vec::new();
+        for (k, v) in iter {
+            keys.push(k.inner);
+            values.push(v.inner);
+        }
+        Self::from_map(&keys, &values).map_err(|e| e.to_string())
+    }
+
+    /// Create a Frost Map from an iterator over key/value pairs,
+    /// without key validation. Caller guarantees keys are non-null primitives.
+    pub fn from_pairs_trusted_iter(iter: impl IntoIterator<Item = (FrostValue, FrostValue)>) -> Self {
+        let mut keys = Vec::new();
+        let mut values = Vec::new();
+        for (k, v) in iter {
+            keys.push(k.inner);
+            values.push(v.inner);
+        }
         Self::from_map_trusted(&keys, &values)
     }
 
@@ -971,5 +995,72 @@ impl std::fmt::Debug for FrostValue {
             self.type_name(),
             self.to_display_string()
         )
+    }
+}
+
+impl From<&str> for FrostValue {
+    fn from(s: &str) -> FrostValue {
+        FrostValue::from_string(s)
+    }
+}
+
+impl From<String> for FrostValue {
+    fn from(s: String) -> FrostValue {
+        FrostValue::from_string(s.as_str())
+    }
+}
+
+impl From<i64> for FrostValue {
+    fn from(i: i64) -> FrostValue {
+        FrostValue::from_int(i)
+    }
+}
+
+impl From<bool> for FrostValue {
+    fn from(b: bool) -> FrostValue {
+        FrostValue::from_bool(b)
+    }
+}
+
+impl From<FrostArray> for FrostValue {
+    fn from(a: FrostArray) -> FrostValue {
+        a.into_value()
+    }
+}
+
+impl From<FrostMap> for FrostValue {
+    fn from(a: FrostMap) -> FrostValue {
+        a.into_value()
+    }
+}
+
+impl TryFrom<FrostValue> for i64 {
+    type Error = String;
+    fn try_from(val: FrostValue) -> Result<i64, String> {
+        val.as_int()
+            .ok_or_else(|| format!("expected Int, got {}", val.type_name()))
+    }
+}
+
+impl TryFrom<FrostValue> for bool {
+    type Error = String;
+    fn try_from(val: FrostValue) -> Result<bool, String> {
+        val.as_bool()
+            .ok_or_else(|| format!("expected Bool, got {}", val.type_name()))
+    }
+}
+
+impl TryFrom<FrostValue> for String {
+    type Error = String;
+    fn try_from(val: FrostValue) -> Result<String, String> {
+        val.as_string()
+            .map(|s| s.to_owned())
+            .ok_or_else(|| format!("expected String, got {}", val.type_name()))
+    }
+}
+
+impl FromIterator<FrostValue> for FrostValue {
+    fn from_iter<I: IntoIterator<Item = FrostValue>>(iter: I) -> Self {
+        FrostValue::from_values( iter.into_iter().collect::<Vec<_>>().as_slice())
     }
 }

@@ -9,7 +9,7 @@ crate-type = ["rlib"]
 [dependencies]
 frost-glue = { path = "../glue" }
 cxx = "=1.0.194"
-ini = "1"
+rust-ini = "0.21"
 serde = { version = "1", features = ["derive"] }
 
 [build-dependencies]
