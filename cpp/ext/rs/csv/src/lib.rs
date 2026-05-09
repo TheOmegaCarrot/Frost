@@ -8,8 +8,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-fn prefix_err(prefix: &str, err: String) -> String {
-    format!("{prefix}: {err}")
+fn prefixed<T>(prefix: &str, f: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+    f().map_err(|e| format!("{prefix}: {e}"))
 }
 
 // =======================================
@@ -173,18 +173,17 @@ fn make_row_fn<W: Write + Send + 'static>(
 ) -> FrostValue {
     let w = writer.clone();
     FrostFunction::new(move |args| {
-        require_args(
-            "csv.writer.row",
-            args,
-            &[Param::required("row", &[Type::Array, Type::Map])],
-        )?;
-        {
+        prefixed("csv.writer.row", || {
+            require_args(
+                "csv.writer.row",
+                args,
+                &[Param::required("row", &[Type::Array, Type::Map])],
+            )?;
             let mut writer = w.lock().map_err(|e| e.to_string())?;
             let row = frost_value_to_record(&args[0], &headers)?;
             writer.write_record(&row).map_err(|e| e.to_string())?;
             Ok(FrostValue::null())
-        }
-        .map_err(|e| prefix_err("csv.writer.row", e))
+        })
     })
     .into_value()
 }
@@ -192,13 +191,12 @@ fn make_row_fn<W: Write + Send + 'static>(
 fn make_flush_fn(writer: &Arc<Mutex<csv::Writer<File>>>) -> FrostValue {
     let w = writer.clone();
     FrostFunction::new(move |args| {
-        require_nullary("csv.writer.flush", args)?;
-        {
+        prefixed("csv.writer.flush", || {
+            require_nullary("csv.writer.flush", args)?;
             let mut writer = w.lock().map_err(|e| e.to_string())?;
             writer.flush().map_err(|e| e.to_string())?;
             Ok(FrostValue::null())
-        }
-        .map_err(|e| prefix_err("csv.writer.flush", e))
+        })
     })
     .into_value()
 }
@@ -206,14 +204,13 @@ fn make_flush_fn(writer: &Arc<Mutex<csv::Writer<File>>>) -> FrostValue {
 fn make_get_fn(writer: &Arc<Mutex<csv::Writer<Vec<u8>>>>) -> FrostValue {
     let w = writer.clone();
     FrostFunction::new(move |args| {
-        require_nullary("csv.writer.get", args)?;
-        {
+        prefixed("csv.writer.get", || {
+            require_nullary("csv.writer.get", args)?;
             let mut writer = w.lock().map_err(|e| e.to_string())?;
             writer.flush().map_err(|e| e.to_string())?;
             let s = std::str::from_utf8(writer.get_ref()).map_err(|e| e.to_string())?;
             Ok(FrostValue::from_string(s))
-        }
-        .map_err(|e| prefix_err("csv.writer.get", e))
+        })
     })
     .into_value()
 }
@@ -257,12 +254,11 @@ fn read_file(
     options: FrostMap,
     callback: Option<FrostFunction>,
 ) -> Result<FrostValue, String> {
-    {
+    prefixed("csv.read_file", || {
         let file = File::open(path).map_err(|e| e.to_string())?;
         let source: Box<dyn Read> = Box::new(file);
         read_csv(source, options, callback)
-    }
-    .map_err(|e| prefix_err("csv.read_file", e))
+    })
 }
 
 fn read_str(
@@ -270,16 +266,15 @@ fn read_str(
     options: FrostMap,
     callback: Option<FrostFunction>,
 ) -> Result<FrostValue, String> {
-    {
+    prefixed("csv.read_str", || {
         let cursor = Cursor::new(text.to_owned().into_bytes());
         let source: Box<dyn Read> = Box::new(cursor);
         read_csv(source, options, callback)
-    }
-    .map_err(|e| prefix_err("csv.read_str", e))
+    })
 }
 
 fn write_file(path: &str, options: Option<FrostMap>) -> Result<FrostValue, String> {
-    {
+    prefixed("csv.write_file", || {
         let options = parse_write_options(options)?;
         let mut writer = csv::WriterBuilder::new()
             .delimiter(options.delim)
@@ -291,12 +286,11 @@ fn write_file(path: &str, options: Option<FrostMap>) -> Result<FrostValue, Strin
         }
 
         make_file_writer_bundle(writer, options.headers)
-    }
-    .map_err(|e| prefix_err("csv.write_file", e))
+    })
 }
 
 fn write_str(options: Option<FrostMap>) -> Result<FrostValue, String> {
-    {
+    prefixed("csv.write_str", || {
         let options = parse_write_options(options)?;
         let mut writer = csv::WriterBuilder::new()
             .delimiter(options.delim)
@@ -307,8 +301,7 @@ fn write_str(options: Option<FrostMap>) -> Result<FrostValue, String> {
         }
 
         make_string_writer_bundle(writer, options.headers)
-    }
-    .map_err(|e| prefix_err("csv.write_str", e))
+    })
 }
 
 include!(concat!(env!("OUT_DIR"), "/bridge.rs"));

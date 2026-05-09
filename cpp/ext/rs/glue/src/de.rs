@@ -16,6 +16,7 @@
 //! ```
 
 use crate::{FrostRef, FrostValue};
+use serde::de::IntoDeserializer;
 use std::fmt;
 
 // ===========================================================================
@@ -157,13 +158,33 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         }
     }
 
+    /// Note that this is intended for unit enums.
+    /// Probably won't work with data-carrying enums.
+    fn deserialize_enum<V: serde::de::Visitor<'de>>(
+        self,
+        _name: &'static str,
+        _variants: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        match self.value.unpack() {
+            FrostRef::String(s) => {
+                let s = s.to_str().map_err(serde::de::Error::custom)?;
+                visitor.visit_enum(s.into_deserializer())
+            }
+            _ => Err(serde::de::Error::custom(format!(
+                "expected String for enum variant, got {}",
+                self.value.type_name()
+            ))),
+        }
+    }
+
     // Forward everything else to deserialize_any.
     serde::forward_to_deserialize_any! {
         bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64
         char str string bytes byte_buf
         unit unit_struct newtype_struct
         tuple tuple_struct
-        enum identifier ignored_any
+        identifier ignored_any
     }
 }
 

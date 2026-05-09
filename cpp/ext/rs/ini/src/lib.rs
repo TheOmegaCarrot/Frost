@@ -1,6 +1,10 @@
 use frost_glue::{FrostMap, FrostValue, de};
 use ini::Ini;
 
+fn prefixed<T>(prefix: &str, f: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+    f().map_err(|e| format!("{prefix}: {e}"))
+}
+
 // =======================================
 // Encode
 // =======================================
@@ -206,16 +210,18 @@ fn ini_to_frost(ini: Ini) -> FrostValue {
 // =======================================
 
 fn encode(ini: FrostMap, options: Option<FrostMap>) -> Result<FrostValue, String> {
-    let options = parse_encode_options(options)?;
-
-    Ok(frost_to_ini_str(ini, options.try_into()?)?.into())
+    prefixed("ini.encode", || {
+        let options = parse_encode_options(options)?;
+        Ok(frost_to_ini_str(ini, options.try_into()?)?.into())
+    })
 }
 
 fn decode(ini_str: &str, options: Option<FrostMap>) -> Result<FrostValue, String> {
-    let options = parse_decode_options(options)?;
-    let ini = Ini::load_from_str_opt(ini_str, options.into()).map_err(|e| e.to_string())?;
-
-    Ok(ini_to_frost(ini))
+    prefixed("ini.decode", || {
+        let options = parse_decode_options(options)?;
+        let ini = Ini::load_from_str_opt(ini_str, options.into()).map_err(|e| e.to_string())?;
+        Ok(ini_to_frost(ini))
+    })
 }
 
 include!(concat!(env!("OUT_DIR"), "/bridge.rs"));

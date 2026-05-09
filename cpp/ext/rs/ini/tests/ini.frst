@@ -1,0 +1,249 @@
+def ini = import("ext.ini")
+
+# ============================================
+# Decode
+# ============================================
+
+# ---- basic sections and globals ----
+
+def basic = ini.decode("[database]\nhost=localhost\nport=5432\n")
+assert(basic.sections.database.host == "localhost")
+assert(basic.sections.database.port == "5432")
+assert(basic.globals == {})
+
+# ---- globals (sectionless keys) ----
+
+def with_globals = ini.decode("key=value\nother=thing\n[section]\na=b\n")
+assert(with_globals.globals.key == "value")
+assert(with_globals.globals.other == "thing")
+assert(with_globals.sections.section.a == "b")
+
+# ---- multiple sections ----
+
+def multi = ini.decode("[one]\nx=1\n[two]\ny=2\n[three]\nz=3\n")
+assert(len(keys(multi.sections)) == 3)
+assert(multi.sections.one.x == "1")
+assert(multi.sections.two.y == "2")
+assert(multi.sections.three.z == "3")
+
+# ---- empty input ----
+
+def empty = ini.decode("")
+assert(empty.globals == {})
+assert(empty.sections == {})
+
+# ---- comments are stripped ----
+
+def with_comments = ini.decode("; this is a comment\n# so is this\n[section]\nkey=value\n")
+assert(with_comments.sections.section.key == "value")
+
+# ---- values with = in them ----
+
+def eq_in_value = ini.decode("[s]\npath=C:\\Program Files\\app\nurl=https://example.com?a=1&b=2\n")
+assert(contains(eq_in_value.sections.s.url, "a=1"))
+
+# ---- whitespace around keys and values ----
+
+def spaced = ini.decode("[s]\n  key  =  value  \n")
+assert(has(spaced.sections.s, "key"))
+
+# ---- decode options: escapes ----
+
+def escaped = ini.decode("[s]\npath=hello\\nworld\n", {escapes: true})
+assert(contains(escaped.sections.s.path, "\n"))
+
+def unescaped = ini.decode("[s]\npath=hello\\nworld\n", {escapes: false})
+assert(contains(unescaped.sections.s.path, "\\n"))
+
+# ---- decode options: strip_quotes ----
+
+def quoted = ini.decode("[s]\nname=\"Alice\"\n", {strip_quotes: true})
+assert(quoted.sections.s.name == "Alice")
+
+def not_stripped = ini.decode("[s]\nname=\"Alice\"\n", {strip_quotes: false})
+assert(contains(not_stripped.sections.s.name, "\""))
+
+# ---- decode options: multiline_values ----
+
+def ml = ini.decode("[s]\ndesc=line one\n  line two\n  line three\nother=x\n", {multiline_values: true})
+assert(contains(ml.sections.s.desc, "line one"))
+assert(contains(ml.sections.s.desc, "line two"))
+assert(contains(ml.sections.s.desc, "line three"))
+assert(ml.sections.s.other == "x")
+
+# ---- duplicate keys: behavior is unspecified, but should not error ----
+
+def dupes = ini.decode("[s]\nkey=first\nkey=second\n")
+assert(has(dupes.sections.s, "key"))
+
+# ---- empty values ----
+
+def empty_val = ini.decode("[s]\nkey=\nother=has value\n")
+assert(empty_val.sections.s.key == "")
+assert(empty_val.sections.s.other == "has value")
+
+# ---- section with no keys ----
+
+def empty_section = ini.decode("[empty]\n[notempty]\nk=v\n")
+assert(empty_section.sections.empty == {})
+assert(empty_section.sections.notempty.k == "v")
+
+# ---- colon as delimiter ----
+
+def colon_delim = ini.decode("[s]\nkey: value\n")
+assert(colon_delim.sections.s.key == "value")
+
+# ---- unicode in keys and values ----
+
+def unicode = ini.decode("[s]\ngreeting=hello\ncity=\xC3\x96rebro\n")
+assert(unicode.sections.s.city == "\xC3\x96rebro")
+
+# ---- section names with special characters ----
+
+def special_section = ini.decode("[my section]\nk=v\n[a.b.c]\nx=y\n")
+assert(special_section.sections['my section'].k == "v")
+assert(special_section.sections['a.b.c'].x == "y")
+
+# ---- decode error: malformed input ----
+
+def bad = try_call(fn -> ini.decode("[unterminated"))
+assert(bad.ok == false)
+
+# ============================================
+# Encode
+# ============================================
+
+# ---- basic encode ----
+
+def doc = {
+    globals: {},
+    sections: {
+        database: {host: "localhost", port: "5432"}
+    }
+}
+
+def encoded = ini.encode(doc)
+assert(contains(encoded, "[database]"))
+assert(contains(encoded, "host"))
+assert(contains(encoded, "localhost"))
+
+# ---- encode with globals ----
+
+def with_g = {
+    globals: {app: "myapp", version: "1.0"},
+    sections: {logging: {level: "info"}}
+}
+
+def g_encoded = ini.encode(with_g)
+assert(contains(g_encoded, "app"))
+assert(contains(g_encoded, "myapp"))
+assert(contains(g_encoded, "[logging]"))
+
+# ---- encode with custom kv_separator ----
+
+def eq_sep = ini.encode(doc, {kv_separator: "="})
+assert(contains(eq_sep, "host=localhost"))
+
+def colon_sep = ini.encode(doc, {kv_separator: ": "})
+assert(contains(colon_sep, "host: localhost"))
+
+# ---- encode with CRLF line separator ----
+
+def crlf_doc = {globals: {}, sections: {s: {k: "v"}}}
+def crlf_encoded = ini.encode(crlf_doc, {line_separator: "CRLF"})
+assert(contains(crlf_encoded, "\r\n"))
+
+def lf_encoded = ini.encode(crlf_doc, {line_separator: "LF"})
+assert(not contains(lf_encoded, "\r\n"))
+assert(contains(lf_encoded, "\n"))
+
+# ---- globals-only document ----
+
+def globals_only = {globals: {app: "test", ver: "1"}, sections: {}}
+def go_encoded = ini.encode(globals_only)
+assert(contains(go_encoded, "app"))
+assert(not contains(go_encoded, "["))
+
+# ---- sections-only document ----
+
+def sections_only = {globals: {}, sections: {s: {k: "v"}}}
+def so_encoded = ini.encode(sections_only)
+assert(contains(so_encoded, "[s]"))
+
+# ---- encode error: unknown top-level keys ----
+
+def bad_toplevel = try_call(fn -> ini.encode({globals: {}, sections: {}, extra: "bad"}))
+assert(bad_toplevel.ok == false)
+assert(contains(bad_toplevel.error, "globals"))
+
+# ---- empty document ----
+
+def empty_doc = {globals: {}, sections: {}}
+def empty_encoded = ini.encode(empty_doc)
+assert(len(trim(empty_encoded)) == 0 or empty_encoded == "")
+
+# ---- round-trip: decode(encode(x)) preserves data ----
+
+def original = {
+    globals: {root: "/opt"},
+    sections: {
+        server: {host: "0.0.0.0", port: "8080"},
+        logging: {level: "debug", file: "/var/log/app.log"}
+    }
+}
+
+def round_tripped = ini.decode(ini.encode(original))
+assert(round_tripped.globals.root == "/opt")
+assert(round_tripped.sections.server.host == "0.0.0.0")
+assert(round_tripped.sections.server.port == "8080")
+assert(round_tripped.sections.logging.level == "debug")
+assert(round_tripped.sections.logging.file == "/var/log/app.log")
+
+# ---- encode error: non-string values ----
+
+def bad_val = try_call(fn -> ini.encode({globals: {}, sections: {s: {key: 42}}}))
+assert(bad_val.ok == false)
+assert(contains(bad_val.error, "String"))
+
+# ---- encode error: non-string keys ----
+
+def bad_key = try_call(fn -> ini.encode({globals: {}, sections: {s: {[1]: "val"}}}))
+assert(bad_key.ok == false)
+assert(contains(bad_key.error, "String"))
+
+# ---- encode error: bad structure ----
+
+def bad_struct = try_call(fn -> ini.encode({globals: {}, sections: {s: "not a map"}}))
+assert(bad_struct.ok == false)
+assert(contains(bad_struct.error, "Map"))
+
+# ============================================
+# Round-trip edge cases
+# ============================================
+
+# ---- round-trip: globals only ----
+
+def rt_globals = {globals: {a: "1", b: "2"}, sections: {}}
+def rt_globals_result = ini.decode(ini.encode(rt_globals))
+assert(rt_globals_result.globals.a == "1")
+assert(rt_globals_result.globals.b == "2")
+assert(rt_globals_result.sections == {})
+
+# ---- round-trip with custom separator survives decode ----
+
+def rt_custom = {globals: {}, sections: {s: {key: "val"}}}
+def rt_custom_result = ini.decode(ini.encode(rt_custom, {kv_separator: ": "}))
+assert(rt_custom_result.sections.s.key == "val")
+
+# ---- round-trip: section names with spaces ----
+
+def rt_spaces = {globals: {}, sections: {["my section"]: {k: "v"}}}
+def rt_spaces_result = ini.decode(ini.encode(rt_spaces))
+assert(rt_spaces_result.sections['my section'].k == "v")
+
+# ---- round-trip: empty values ----
+
+def rt_empty_val = {globals: {}, sections: {s: {empty: "", notempty: "x"}}}
+def rt_empty_result = ini.decode(ini.encode(rt_empty_val))
+assert(rt_empty_result.sections.s.empty == "")
+assert(rt_empty_result.sections.s.notempty == "x")

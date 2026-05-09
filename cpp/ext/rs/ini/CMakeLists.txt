@@ -19,3 +19,11 @@ target_link_libraries(frost-ini-shim
     PUBLIC
     frost-rs-glue
 )
+
+if(BUILD_TESTS)
+    add_test(
+        NAME Frost_Ext_Ini
+        COMMAND $<TARGET_FILE:frost>
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/ini.frst"
+    )
+endif()
