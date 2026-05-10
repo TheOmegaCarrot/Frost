@@ -3,11 +3,27 @@
 using namespace frst;
 
 ast::Define::Define(const Source_Range& source_range,
-                    Destructure::Ptr destructure, Expression::Ptr expr)
+                    Destructure::Ptr destructure, Expression::Ptr expr,
+                    bool exported)
     : Statement(source_range)
     , destructure_{std::move(destructure)}
     , expr_{std::move(expr)}
 {
+    if (exported)
+    {
+        auto& exports = exports_.emplace();
+
+        for (const auto& symbol : destructure_->symbol_sequence())
+        {
+            symbol.visit(Overload{
+                [](const Usage&) {
+                },
+                [&](const Definition& def) {
+                    exports.push_back(def.name);
+                },
+            });
+        }
+    }
 }
 
 void ast::Define::do_execute(Execution_Context& ctx) const

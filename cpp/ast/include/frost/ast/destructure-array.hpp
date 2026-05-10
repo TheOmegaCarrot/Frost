@@ -20,11 +20,10 @@ class Destructure_Array final : public Destructure
 
     Destructure_Array(const Source_Range& source_range,
                       std::vector<Destructure::Ptr> destructures,
-                      std::optional<std::string> rest_name, bool exported)
+                      std::optional<std::string> rest_name)
         : Destructure{source_range}
         , destructures_{std::move(destructures)}
         , rest_name_{std::move(rest_name)}
-        , exported_{exported}
     {
         if (rest_name_.has_value() && rest_name_.value() != "_")
             forbid_dollar_identifier(rest_name_.value());
@@ -36,7 +35,7 @@ class Destructure_Array final : public Destructure
             co_yield std::ranges::elements_of(d->symbol_sequence());
 
         if (rest_name_ && rest_name_ != "_")
-            co_yield Definition{rest_name_.value(), exported_};
+            co_yield Definition{rest_name_.value()};
     }
 
     std::generator<Child_Info> children() const final
@@ -61,7 +60,6 @@ class Destructure_Array final : public Destructure
   private:
     std::vector<Destructure::Ptr> destructures_;
     std::optional<std::string> rest_name_;
-    bool exported_;
 };
 
 } // namespace frst::ast

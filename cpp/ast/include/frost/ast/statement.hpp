@@ -31,6 +31,12 @@ class Statement : public AST_Node
         do_execute(ctx);
     }
 
+    const std::optional<std::vector<std::string>>& exports() const
+    {
+        static decltype(auto{exports()}) none;
+        return none;
+    }
+
   protected:
     virtual void do_execute(Execution_Context& ctx) const = 0;
 };

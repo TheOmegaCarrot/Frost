@@ -67,10 +67,10 @@ Expression::Ptr lit_int(Int v)
                                      Value::create(auto{v}));
 }
 
-Destructure::Ptr binding(std::string n, bool exported = false)
+Destructure::Ptr binding(std::string n)
 {
     return std::make_unique<Destructure_Binding>(AST_Node::no_range,
-                                                 std::move(n), exported);
+                                                 std::move(n));
 }
 
 Statement::Ptr def(std::string n, Expression::Ptr expr)

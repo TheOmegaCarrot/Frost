@@ -53,7 +53,6 @@ class AST_Node
     struct Definition
     {
         std::string name;
-        bool exported;
     };
     struct Usage
     {

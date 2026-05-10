@@ -26,7 +26,7 @@ TEST_CASE("Destructure_Binding")
         Execution_Context ctx{.symbols = syms};
 
         auto val = Value::create(42_f);
-        Destructure_Binding binding{AST_Node::no_range, "x", false};
+        Destructure_Binding binding{AST_Node::no_range, "x"};
 
         REQUIRE_CALL(syms, define("x", val));
 
@@ -40,7 +40,7 @@ TEST_CASE("Destructure_Binding")
 
         FORBID_CALL(syms, define(_, _));
 
-        Destructure_Binding binding{AST_Node::no_range, std::nullopt, false};
+        Destructure_Binding binding{AST_Node::no_range, std::nullopt};
         binding.destructure(ctx, Value::create(42_f));
     }
 
@@ -60,27 +60,14 @@ TEST_CASE("Destructure_Binding")
 
             REQUIRE_CALL(syms, define("v", val));
 
-            Destructure_Binding binding{AST_Node::no_range, "v", false};
+            Destructure_Binding binding{AST_Node::no_range, "v"};
             binding.destructure(ctx, val);
         }
     }
 
-    SECTION("Export flag does not affect destructure behavior")
+    SECTION("symbol_sequence: normal name")
     {
-        mock::Mock_Symbol_Table syms;
-        Execution_Context ctx{.symbols = syms};
-
-        auto val = Value::create(42_f);
-
-        REQUIRE_CALL(syms, define("x", val));
-
-        Destructure_Binding binding{AST_Node::no_range, "x", true};
-        binding.destructure(ctx, val);
-    }
-
-    SECTION("symbol_sequence: normal name, not exported")
-    {
-        Destructure_Binding binding{AST_Node::no_range, "foo", false};
+        Destructure_Binding binding{AST_Node::no_range, "foo"};
 
         auto actions =
             binding.symbol_sequence() | std::ranges::to<std::vector>();
@@ -88,25 +75,11 @@ TEST_CASE("Destructure_Binding")
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
         CHECK(def->name == "foo");
-        CHECK(def->exported == false);
-    }
-
-    SECTION("symbol_sequence: normal name, exported")
-    {
-        Destructure_Binding binding{AST_Node::no_range, "bar", true};
-
-        auto actions =
-            binding.symbol_sequence() | std::ranges::to<std::vector>();
-        REQUIRE(actions.size() == 1);
-        auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
-        REQUIRE(def);
-        CHECK(def->name == "bar");
-        CHECK(def->exported == true);
     }
 
     SECTION("symbol_sequence: discard _ yields nothing")
     {
-        Destructure_Binding binding{AST_Node::no_range, std::nullopt, false};
+        Destructure_Binding binding{AST_Node::no_range, std::nullopt};
 
         auto actions =
             binding.symbol_sequence() | std::ranges::to<std::vector>();
@@ -115,31 +88,16 @@ TEST_CASE("Destructure_Binding")
 
     SECTION("Empty name is rejected")
     {
-        CHECK_THROWS_AS(Destructure_Binding(AST_Node::no_range, "", false),
+        CHECK_THROWS_AS(Destructure_Binding(AST_Node::no_range, ""),
                         Frost_Interpreter_Error);
-    }
-
-    SECTION("Exported discard _ does not define and yields nothing")
-    {
-        mock::Mock_Symbol_Table syms;
-        Execution_Context ctx{.symbols = syms};
-
-        FORBID_CALL(syms, define(_, _));
-
-        Destructure_Binding binding{AST_Node::no_range, std::nullopt, true};
-        binding.destructure(ctx, Value::create(42_f));
-
-        auto actions =
-            binding.symbol_sequence() | std::ranges::to<std::vector>();
-        CHECK(actions.empty());
     }
 
     SECTION("node_label")
     {
-        Destructure_Binding binding{AST_Node::no_range, "myvar", false};
+        Destructure_Binding binding{AST_Node::no_range, "myvar"};
         CHECK(binding.node_label() == "Destructure_Binding(myvar)");
 
-        Destructure_Binding discard{AST_Node::no_range, std::nullopt, false};
+        Destructure_Binding discard{AST_Node::no_range, std::nullopt};
         CHECK(discard.node_label() == "Destructure_Binding(discarded)");
     }
 }

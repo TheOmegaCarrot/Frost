@@ -149,35 +149,17 @@ struct Importer
         inject_import(isolated_table, child_search_path, *root_table, stdlib,
                       import_cache, import_mutex, import_stack);
 
+        std::vector<std::string> exported_names;
+
         for (const auto& statement : parse_result.value())
         {
             statement->execute(isolated_ctx);
-        }
 
-        auto exported_names =
-            parse_result.value()
-            | std::views::transform(
-                [](const ast::Statement::Ptr& stmt)
-                    -> std::generator<ast::AST_Node::Symbol_Action> {
-                    co_yield std::ranges::elements_of(stmt->symbol_sequence());
-                })
-            | std::views::join
-            | std::views::filter([](const ast::AST_Node::Symbol_Action& sym) {
-                  return sym.visit(Overload{
-                      [](const ast::AST_Node::Definition& def) {
-                          return def.exported;
-                      },
-                      [](const ast::AST_Node::Usage&) {
-                          return false;
-                      },
-                  });
-              })
-            | std::views::transform(
-                [](const ast::AST_Node::Symbol_Action& sym) {
-                    return sym.visit([](const auto& action) {
-                        return action.name;
-                    });
-                });
+            if (const auto& exports = statement->exports(); exports)
+            {
+                exported_names.append_range(*exports);
+            }
+        }
 
         Map imported;
         for (const std::string& name : exported_names)

@@ -9,7 +9,7 @@ std::generator<AST_Node::Symbol_Action> Match_Array::symbol_sequence() const
         co_yield std::ranges::elements_of(pattern->symbol_sequence());
 
     if (rest_ && rest_->name)
-        co_yield Definition{.name = rest_->name.value(), .exported = false};
+        co_yield Definition{.name = rest_->name.value()};
 }
 
 std::generator<AST_Node::Child_Info> Match_Array::children() const

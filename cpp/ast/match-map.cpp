@@ -12,8 +12,7 @@ std::generator<AST_Node::Symbol_Action> Match_Map::symbol_sequence() const
     }
 
     if (bind_whole_name_)
-        co_yield Definition{.name = bind_whole_name_.value(),
-                            .exported = false};
+        co_yield Definition{.name = bind_whole_name_.value()};
 }
 
 std::generator<AST_Node::Child_Info> Match_Map::children() const

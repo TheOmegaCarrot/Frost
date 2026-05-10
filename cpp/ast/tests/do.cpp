@@ -31,7 +31,7 @@ Expression::Ptr name_lookup(std::string_view n)
 Destructure::Ptr binding(std::string n)
 {
     return std::make_unique<Destructure_Binding>(AST_Node::no_range,
-                                                 std::move(n), false);
+                                                 std::move(n));
 }
 
 std::string action_to_string(const AST_Node::Symbol_Action& action)

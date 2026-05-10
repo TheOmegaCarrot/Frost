@@ -13,10 +13,9 @@ class Destructure_Binding final : public Destructure
     using Ptr = std::unique_ptr<Destructure_Binding>;
 
     Destructure_Binding(const Source_Range& source_range,
-                        std::optional<std::string> name, bool exported)
+                        std::optional<std::string> name)
         : Destructure(source_range)
         , name_{std::move(name)}
-        , exported_{exported}
     {
         if (name_.has_value() && name_.value().empty())
             throw Frost_Interpreter_Error{"Attempting to bind an empty name!"};
@@ -34,7 +33,7 @@ class Destructure_Binding final : public Destructure
     std::generator<AST_Node::Symbol_Action> symbol_sequence() const final
     {
         if (name_)
-            co_yield AST_Node::Definition{name_.value(), exported_};
+            co_yield AST_Node::Definition{name_.value()};
     }
 
   protected:
@@ -53,7 +52,6 @@ class Destructure_Binding final : public Destructure
 
   private:
     std::optional<std::string> name_;
-    bool exported_;
 };
 
 } // namespace frst::ast

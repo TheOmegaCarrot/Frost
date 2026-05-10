@@ -17,7 +17,7 @@ class Define final : public Statement
 
     Define() = delete;
     Define(const Source_Range& source_range, Destructure::Ptr destructure,
-           Expression::Ptr expr);
+           Expression::Ptr expr, bool exported);
 
     Define(const Define&) = delete;
     Define(Define&&) = delete;
@@ -28,6 +28,11 @@ class Define final : public Statement
     std::generator<Symbol_Action> symbol_sequence() const final;
     std::generator<Child_Info> children() const final;
 
+    const std::optional<std::vector<std::string>>& exports() const
+    {
+        return exports_;
+    }
+
   protected:
     std::string do_node_label() const final;
 
@@ -36,6 +41,7 @@ class Define final : public Statement
   private:
     Destructure::Ptr destructure_;
     Expression::Ptr expr_;
+    std::optional<std::vector<std::string>> exports_;
 };
 
 } // namespace frst::ast

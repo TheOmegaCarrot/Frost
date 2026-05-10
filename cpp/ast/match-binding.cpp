@@ -49,7 +49,7 @@ namespace frst::ast
 std::generator<AST_Node::Symbol_Action> Match_Binding::symbol_sequence() const
 {
     if (name_)
-        co_yield Definition{.name = name_.value(), .exported = false};
+        co_yield Definition{.name = name_.value()};
 }
 
 bool Match_Binding::do_try_match(Execution_Context ctx,

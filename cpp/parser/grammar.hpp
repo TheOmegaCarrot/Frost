@@ -1464,21 +1464,20 @@ struct destructure_pattern_impl
         [](auto begin, destructure_pack pack, auto end) {
             return std::make_unique<ast::Destructure_Array>(
                 make_source_range(begin, end), std::move(pack.elements),
-                std::move(pack.rest_name), exported);
+                std::move(pack.rest_name));
         },
         // From map destructure, without `as`
         [](auto begin, std::vector<ast::Destructure_Map::Element> elems,
            lexy::nullopt, auto end) {
             return std::make_unique<ast::Destructure_Map>(
-                make_source_range(begin, end), std::move(elems), std::nullopt,
-                exported);
+                make_source_range(begin, end), std::move(elems), std::nullopt);
         },
         // From map destructure, with `as name`
         [](auto begin, std::vector<ast::Destructure_Map::Element> elems,
            std::string as_name, auto end) {
             return std::make_unique<ast::Destructure_Map>(
                 make_source_range(begin, end), std::move(elems),
-                std::move(as_name), exported);
+                std::move(as_name));
         },
         // Leaf identifier
         [](auto begin, std::string name, auto end) -> ast::Destructure::Ptr {
@@ -1486,7 +1485,7 @@ struct destructure_pattern_impl
                 name == "_" ? std::nullopt
                             : std::optional<std::string>{std::move(name)};
             return std::make_unique<ast::Destructure_Binding>(
-                make_source_range(begin, end), std::move(opt_name), exported);
+                make_source_range(begin, end), std::move(opt_name));
         });
     static constexpr auto name = "destructure pattern";
 };
@@ -2343,8 +2342,7 @@ struct map_destructure_entry_impl
                 std::make_unique<ast::Destructure_Binding>(
                     make_source_range(key_begin, key_end),
                     key == "_" ? std::optional<std::string>{}
-                               : std::optional<std::string>{std::string{key}},
-                    exported)};
+                               : std::optional<std::string>{std::string{key}})};
         });
     static constexpr auto name = "map destructure entry";
 };
@@ -3633,7 +3631,7 @@ struct Defn
                 std::move(body), std::move(params.vararg), name);
             auto binding = std::make_unique<ast::Destructure_Binding>(
                 make_source_range(begin_pos, name_end_pos),
-                std::optional<std::string>{std::string{name}}, false);
+                std::optional<std::string>{std::string{name}});
             return std::make_unique<ast::Define>(
                 ast::AST_Node::no_range, std::move(binding), std::move(lambda));
         });
@@ -3670,7 +3668,7 @@ struct Export_Defn
                 std::move(body), std::move(params.vararg), name);
             auto binding = std::make_unique<ast::Destructure_Binding>(
                 make_source_range(begin_pos, name_end_pos),
-                std::optional<std::string>{std::string{name}}, true);
+                std::optional<std::string>{std::string{name}});
             return std::make_unique<ast::Define>(
                 ast::AST_Node::no_range, std::move(binding), std::move(lambda));
         });

@@ -27,11 +27,10 @@ class Destructure_Map final : public Destructure
 
     Destructure_Map(const Source_Range& source_range,
                     std::vector<Element> destructure_elems,
-                    std::optional<std::string> bind_whole_name, bool exported)
+                    std::optional<std::string> bind_whole_name)
         : Destructure(source_range)
         , destructure_elems_{std::move(destructure_elems)}
         , bind_whole_name_{std::move(bind_whole_name)}
-        , exported_{exported}
     {
         if (bind_whole_name_.has_value())
             forbid_dollar_identifier(bind_whole_name_.value());
@@ -46,8 +45,7 @@ class Destructure_Map final : public Destructure
         }
 
         if (bind_whole_name_)
-            co_yield Definition{.name = bind_whole_name_.value(),
-                                .exported = exported_};
+            co_yield Definition{.name = bind_whole_name_.value()};
     }
 
     std::generator<Child_Info> children() const final
@@ -77,7 +75,6 @@ class Destructure_Map final : public Destructure
   private:
     std::vector<Element> destructure_elems_;
     std::optional<std::string> bind_whole_name_;
-    bool exported_;
 };
 
 } // namespace frst::ast
