@@ -74,6 +74,32 @@ bool Value::internal_not_equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
     return !internal_equal(lhs, rhs);
 }
 
+namespace
+{
+
+bool array_less_than(const Array& lhs, const Array& rhs)
+{
+    return std::ranges::lexicographical_compare(lhs, rhs,
+                                                &Value::internal_less_than);
+}
+
+bool array_greater_than(const Array& lhs, const Array& rhs)
+{
+    return array_less_than(rhs, lhs);
+}
+
+bool array_less_than_or_equal(const Array& lhs, const Array& rhs)
+{
+    return not array_less_than(rhs, lhs);
+}
+
+bool array_greater_than_or_equal(const Array& lhs, const Array& rhs)
+{
+    return not array_less_than(lhs, rhs);
+}
+
+} // namespace
+
 #define DEF_ORDERING(NAME, OP)                                                 \
     struct raw_##NAME##_fn_t                                                   \
     {                                                                          \
@@ -84,6 +110,10 @@ bool Value::internal_not_equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
             }                                                                  \
         {                                                                      \
             return lhs OP rhs;                                                 \
+        }                                                                      \
+        static bool operator()(const Array& lhs, const Array& rhs)             \
+        {                                                                      \
+            return array_##NAME(lhs, rhs);                                     \
         }                                                                      \
         static bool operator()(const auto&, const auto&)                       \
         {                                                                      \
@@ -99,7 +129,8 @@ bool Value::internal_not_equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
     bool Value::internal_##NAME(const Value_Ptr& lhs, const Value_Ptr& rhs)    \
     {                                                                          \
         if ((lhs->is_numeric() && rhs->is_numeric())                           \
-            || (lhs->is<String>() && rhs->is<String>()))                       \
+            || (lhs->is<String>() && rhs->is<String>())                        \
+            || (lhs->is<Array>() && rhs->is<Array>()))                         \
             return raw_##NAME(lhs->value_, rhs->value_);                       \
                                                                                \
         compare_err(#OP, lhs->type_name(), rhs->type_name());                  \

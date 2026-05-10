@@ -123,6 +123,46 @@ TEST_CASE("String Lexicographical GTE")
     CHECK(Value::greater_than_or_equal(foobar, foo)->get<frst::Bool>().value());
 }
 
+TEST_CASE("Array Lexicographical GTE")
+{
+    SECTION("Equal arrays")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        CHECK(Value::internal_greater_than_or_equal(a, b));
+    }
+
+    SECTION("Strictly greater")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(3_f)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        CHECK(Value::internal_greater_than_or_equal(a, b));
+        CHECK_FALSE(Value::internal_greater_than_or_equal(b, a));
+    }
+
+    SECTION("Longer array is greater than or equal to its prefix")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(2_f), Value::create(3_f)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        CHECK(Value::internal_greater_than_or_equal(a, b));
+        CHECK_FALSE(Value::internal_greater_than_or_equal(b, a));
+    }
+
+    SECTION("Both empty")
+    {
+        auto a = Value::create(frst::Array{});
+        auto b = Value::create(frst::Array{});
+        CHECK(Value::internal_greater_than_or_equal(a, b));
+    }
+
+    SECTION("Incompatible element types throw")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f)});
+        auto b = Value::create(frst::Array{Value::create("hello"s)});
+        CHECK_THROWS(Value::internal_greater_than_or_equal(a, b));
+    }
+}
+
 TEST_CASE("Greater Than Or Equal Compare All Permutations")
 {
     auto Null = Value::null();
@@ -131,7 +171,7 @@ TEST_CASE("Greater Than Or Equal Compare All Permutations")
     auto Bool = Value::create(true);
     auto String = Value::create("Hello!"s);
     auto Array =
-        Value::create(frst::Array{Value::create(64.314), Value::create(true)});
+        Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
     auto Map = Value::create(frst::Map{
         {
             Value::create("foo"s),
@@ -189,7 +229,7 @@ TEST_CASE("Greater Than Or Equal Compare All Permutations")
     INCOMPAT(Array, Float)
     INCOMPAT(Array, Bool)
     INCOMPAT(Array, String)
-    INCOMPAT(Array, Array)
+    COMPAT(Array, Array)
     INCOMPAT(Array, Map)
     INCOMPAT(Map, Null)
     INCOMPAT(Map, Int)

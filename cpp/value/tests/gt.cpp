@@ -85,6 +85,55 @@ TEST_CASE("String Lexicographical GT")
     CHECK(Value::greater_than(foobar, foo)->get<frst::Bool>().value());
 }
 
+TEST_CASE("Array Lexicographical GT")
+{
+    SECTION("Element-wise comparison")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(3_f)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        CHECK(Value::internal_greater_than(a, b));
+        CHECK_FALSE(Value::internal_greater_than(b, a));
+    }
+
+    SECTION("First element decides")
+    {
+        auto a = Value::create(frst::Array{Value::create(2_f), Value::create(0_f)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(9_f)});
+        CHECK(Value::internal_greater_than(a, b));
+        CHECK_FALSE(Value::internal_greater_than(b, a));
+    }
+
+    SECTION("Longer array is greater than its prefix")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(2_f), Value::create(3_f)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        CHECK(Value::internal_greater_than(a, b));
+        CHECK_FALSE(Value::internal_greater_than(b, a));
+    }
+
+    SECTION("Equal arrays are not greater than")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        CHECK_FALSE(Value::internal_greater_than(a, b));
+    }
+
+    SECTION("Non-empty is greater than empty")
+    {
+        auto empty = Value::create(frst::Array{});
+        auto nonempty = Value::create(frst::Array{Value::create(1_f)});
+        CHECK(Value::internal_greater_than(nonempty, empty));
+        CHECK_FALSE(Value::internal_greater_than(empty, nonempty));
+    }
+
+    SECTION("Incompatible element types throw")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f)});
+        auto b = Value::create(frst::Array{Value::create("hello"s)});
+        CHECK_THROWS(Value::internal_greater_than(a, b));
+    }
+}
+
 TEST_CASE("Greater Than Compare All Permutations")
 {
     auto Null = Value::null();
@@ -93,7 +142,7 @@ TEST_CASE("Greater Than Compare All Permutations")
     auto Bool = Value::create(true);
     auto String = Value::create("Hello!"s);
     auto Array =
-        Value::create(frst::Array{Value::create(64.314), Value::create(true)});
+        Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
     auto Map = Value::create(frst::Map{
         {
             Value::create("foo"s),
@@ -151,7 +200,7 @@ TEST_CASE("Greater Than Compare All Permutations")
     INCOMPAT(Array, Float)
     INCOMPAT(Array, Bool)
     INCOMPAT(Array, String)
-    INCOMPAT(Array, Array)
+    COMPAT(Array, Array)
     INCOMPAT(Array, Map)
     INCOMPAT(Map, Null)
     INCOMPAT(Map, Int)

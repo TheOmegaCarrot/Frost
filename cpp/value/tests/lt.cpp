@@ -80,6 +80,79 @@ TEST_CASE("String Lexicographical LT")
     CHECK(Value::less_than(foo, foobar)->get<frst::Bool>().value());
 }
 
+TEST_CASE("Array Lexicographical LT")
+{
+    SECTION("Element-wise comparison")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(3_f)});
+        CHECK(Value::internal_less_than(a, b));
+        CHECK_FALSE(Value::internal_less_than(b, a));
+    }
+
+    SECTION("First element decides")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(9_f)});
+        auto b = Value::create(frst::Array{Value::create(2_f), Value::create(0_f)});
+        CHECK(Value::internal_less_than(a, b));
+        CHECK_FALSE(Value::internal_less_than(b, a));
+    }
+
+    SECTION("Proper prefix is less than")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(2_f), Value::create(3_f)});
+        CHECK(Value::internal_less_than(a, b));
+        CHECK_FALSE(Value::internal_less_than(b, a));
+    }
+
+    SECTION("Equal arrays are not less than")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
+        CHECK_FALSE(Value::internal_less_than(a, b));
+    }
+
+    SECTION("Empty array is less than non-empty")
+    {
+        auto empty = Value::create(frst::Array{});
+        auto nonempty = Value::create(frst::Array{Value::create(1_f)});
+        CHECK(Value::internal_less_than(empty, nonempty));
+        CHECK_FALSE(Value::internal_less_than(nonempty, empty));
+    }
+
+    SECTION("Both empty are equal")
+    {
+        auto a = Value::create(frst::Array{});
+        auto b = Value::create(frst::Array{});
+        CHECK_FALSE(Value::internal_less_than(a, b));
+    }
+
+    SECTION("Nested arrays compare recursively")
+    {
+        auto a = Value::create(frst::Array{
+            Value::create(frst::Array{Value::create(1_f), Value::create(2_f)})});
+        auto b = Value::create(frst::Array{
+            Value::create(frst::Array{Value::create(1_f), Value::create(3_f)})});
+        CHECK(Value::internal_less_than(a, b));
+        CHECK_FALSE(Value::internal_less_than(b, a));
+    }
+
+    SECTION("Mixed element types that are comparable")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f), Value::create(2.0)});
+        auto b = Value::create(frst::Array{Value::create(1_f), Value::create(3.0)});
+        CHECK(Value::internal_less_than(a, b));
+    }
+
+    SECTION("Incompatible element types throw")
+    {
+        auto a = Value::create(frst::Array{Value::create(1_f)});
+        auto b = Value::create(frst::Array{Value::create("hello"s)});
+        CHECK_THROWS(Value::internal_less_than(a, b));
+    }
+}
+
 TEST_CASE("LT Compare All Permutations")
 {
     auto Null = Value::null();
@@ -88,7 +161,7 @@ TEST_CASE("LT Compare All Permutations")
     auto Bool = Value::create(true);
     auto String = Value::create("Hello!"s);
     auto Array =
-        Value::create(frst::Array{Value::create(64.314), Value::create(true)});
+        Value::create(frst::Array{Value::create(1_f), Value::create(2_f)});
     auto Map = Value::create(frst::Map{
         {
             Value::create("foo"s),
@@ -146,7 +219,7 @@ TEST_CASE("LT Compare All Permutations")
     INCOMPAT(Array, Float)
     INCOMPAT(Array, Bool)
     INCOMPAT(Array, String)
-    INCOMPAT(Array, Array)
+    COMPAT(Array, Array)
     INCOMPAT(Array, Map)
     INCOMPAT(Map, Null)
     INCOMPAT(Map, Int)
