@@ -172,7 +172,7 @@ BUILTIN(includes)
     const auto& arr = GET(0, Array);
 
     const auto itr = std::ranges::find_if(arr, [&](const Value_Ptr& elem) {
-        return Value::equal(elem, args.at(1))->truthy();
+        return Value::internal_equal(elem, args.at(1));
     });
 
     return Value::create(itr != arr.end());

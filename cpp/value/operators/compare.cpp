@@ -12,7 +12,7 @@ namespace frst
     op_err("compare", op_glyph, lhs_type, rhs_type);
 }
 
-bool Value::equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
+bool Value::internal_equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
 {
     if (lhs == rhs)
         return true;
@@ -69,9 +69,9 @@ bool Value::equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
     return std::visit(visitor, lhs->value_, rhs->value_);
 }
 
-bool Value::not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
+bool Value::internal_not_equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
 {
-    return !equal_impl(lhs, rhs);
+    return !internal_equal(lhs, rhs);
 }
 
 #define DEF_ORDERING(NAME, OP)                                                 \
@@ -96,7 +96,7 @@ bool Value::not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)
         return std::visit(raw_##NAME##_fn, lhs, rhs);                          \
     }                                                                          \
                                                                                \
-    bool Value::NAME##_impl(const Value_Ptr& lhs, const Value_Ptr& rhs)        \
+    bool Value::internal_##NAME(const Value_Ptr& lhs, const Value_Ptr& rhs)    \
     {                                                                          \
         if ((lhs->is_numeric() && rhs->is_numeric())                           \
             || (lhs->is<String>() && rhs->is<String>()))                       \

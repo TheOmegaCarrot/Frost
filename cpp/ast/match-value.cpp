@@ -6,7 +6,7 @@ namespace frst::ast
 bool Match_Value::do_try_match(Execution_Context ctx,
                                const Value_Ptr& value) const
 {
-    return Value::equal(value, expr_->evaluate(ctx.as_eval()))->truthy();
+    return Value::internal_equal(value, expr_->evaluate(ctx.as_eval()));
 }
 
 std::string Match_Value::do_node_label() const

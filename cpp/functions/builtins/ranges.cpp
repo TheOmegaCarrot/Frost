@@ -438,17 +438,13 @@ BUILTIN(sort_by)
                        })
                      | std::ranges::to<std::vector>();
 
-    std::ranges::stable_sort(
-        projected,
-        [](const Value_Ptr& l, const Value_Ptr& r) {
-            return Value::less_than(l, r)->truthy();
-        },
-        [](const auto& pair) {
-            return pair.second;
-        });
+    std::ranges::stable_sort(projected, &Value::internal_less_than,
+                             [](const auto& pair) {
+                                 return pair.second;
+                             });
 
     return Value::create(
-        projected | std::views::keys | std::ranges::to<Array>());
+        projected | std::views::elements<0> | std::ranges::to<Array>());
 }
 
 BUILTIN(any)

@@ -269,30 +269,40 @@ class Value
 
     static Value_Ptr equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
     {
-        return create(equal_impl(lhs, rhs));
+        return create(internal_equal(lhs, rhs));
     }
     static Value_Ptr not_equal(const Value_Ptr& lhs, const Value_Ptr& rhs)
     {
-        return create(not_equal_impl(lhs, rhs));
+        return create(internal_not_equal(lhs, rhs));
     }
     static Value_Ptr less_than(const Value_Ptr& lhs, const Value_Ptr& rhs)
     {
-        return create(less_than_impl(lhs, rhs));
+        return create(internal_less_than(lhs, rhs));
     }
     static Value_Ptr less_than_or_equal(const Value_Ptr& lhs,
                                         const Value_Ptr& rhs)
     {
-        return create(less_than_or_equal_impl(lhs, rhs));
+        return create(internal_less_than_or_equal(lhs, rhs));
     }
     static Value_Ptr greater_than(const Value_Ptr& lhs, const Value_Ptr& rhs)
     {
-        return create(greater_than_impl(lhs, rhs));
+        return create(internal_greater_than(lhs, rhs));
     }
     static Value_Ptr greater_than_or_equal(const Value_Ptr& lhs,
                                            const Value_Ptr& rhs)
     {
-        return create(greater_than_or_equal_impl(lhs, rhs));
+        return create(internal_greater_than_or_equal(lhs, rhs));
     }
+
+    static bool internal_equal(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static bool internal_not_equal(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static bool internal_less_than(const Value_Ptr& lhs, const Value_Ptr& rhs);
+    static bool internal_less_than_or_equal(const Value_Ptr& lhs,
+                                            const Value_Ptr& rhs);
+    static bool internal_greater_than(const Value_Ptr& lhs,
+                                      const Value_Ptr& rhs);
+    static bool internal_greater_than_or_equal(const Value_Ptr& lhs,
+                                               const Value_Ptr& rhs);
 
     [[nodiscard]] Value_Ptr logical_not() const
     {
@@ -317,15 +327,6 @@ class Value
 
   private:
     std::variant<Null, Int, Float, Bool, String, Array, Map, Function> value_;
-
-    static bool equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
-    static bool not_equal_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
-    static bool less_than_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
-    static bool less_than_or_equal_impl(const Value_Ptr& lhs,
-                                        const Value_Ptr& rhs);
-    static bool greater_than_impl(const Value_Ptr& lhs, const Value_Ptr& rhs);
-    static bool greater_than_or_equal_impl(const Value_Ptr& lhs,
-                                           const Value_Ptr& rhs);
 
     static inline Value_Ptr null_singleton_ =
         std::make_shared<Value>(singleton_tag, Null{});
