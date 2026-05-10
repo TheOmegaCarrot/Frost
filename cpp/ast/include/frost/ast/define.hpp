@@ -28,7 +28,7 @@ class Define final : public Statement
     std::generator<Symbol_Action> symbol_sequence() const final;
     std::generator<Child_Info> children() const final;
 
-    const std::optional<std::vector<std::string>>& exports() const
+    const std::optional<std::vector<std::string>>& exports() const override
     {
         return exports_;
     }
