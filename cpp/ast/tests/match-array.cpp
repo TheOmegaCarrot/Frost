@@ -403,7 +403,6 @@ TEST_CASE("Match_Array: symbol_sequence")
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
         CHECK(def->name == "rest");
-        CHECK(def->exported == false);
     }
 
     SECTION("Discarded rest yields nothing")

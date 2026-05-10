@@ -565,7 +565,6 @@ TEST_CASE("Match_Map: as symbol_sequence yields Definition for bind_whole_name")
     auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
     REQUIRE(def);
     CHECK(def->name == "m");
-    CHECK(def->exported == false);
 }
 
 TEST_CASE("Match_Map: as Definition appears after subpattern actions in "

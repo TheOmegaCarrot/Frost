@@ -93,10 +93,10 @@ std::unique_ptr<T> node(Args&&... args)
     return std::make_unique<T>(std::forward<Args>(args)...);
 }
 
-ast::Destructure::Ptr binding(std::string n, bool exported = false)
+ast::Destructure::Ptr binding(std::string n)
 {
     return std::make_unique<ast::Destructure_Binding>(ast::AST_Node::no_range,
-                                                      std::move(n), exported);
+                                                      std::move(n));
 }
 
 template <typename T, typename... Args>
@@ -526,7 +526,7 @@ Literal(42) [0:0-0:0]
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
             AST_Node::no_range, binding("rest"),
-            node<Literal>(AST_Node::no_range, Value::create(1_f))));
+            node<Literal>(AST_Node::no_range, Value::create(1_f)), false));
         body.push_back(node<Name_Lookup>(AST_Node::no_range, "rest"));
         auto body_ptr = make_body(std::move(body));
 
@@ -675,7 +675,7 @@ Literal(42) [0:0-0:0]
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
             AST_Node::no_range, binding("x"),
-            node<Literal>(AST_Node::no_range, Value::create(1_f))));
+            node<Literal>(AST_Node::no_range, Value::create(1_f)), false));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{},
@@ -698,7 +698,7 @@ Literal(42) [0:0-0:0]
         std::vector<Statement::Ptr> body;
         body.push_back(
             node<Define>(AST_Node::no_range, binding("x"),
-                         node<Name_Lookup>(AST_Node::no_range, "p")));
+                         node<Name_Lookup>(AST_Node::no_range, "p"), false));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{"p"},
@@ -722,10 +722,10 @@ Literal(42) [0:0-0:0]
         std::vector<Statement::Ptr> body;
         body.push_back(
             node<Define>(AST_Node::no_range, binding("y"),
-                         node<Name_Lookup>(AST_Node::no_range, "x")));
+                         node<Name_Lookup>(AST_Node::no_range, "x"), false));
         body.push_back(node<Define>(
             AST_Node::no_range, binding("x"),
-            node<Literal>(AST_Node::no_range, Value::create(4_f))));
+            node<Literal>(AST_Node::no_range, Value::create(4_f)), false));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{},
@@ -771,7 +771,7 @@ Literal(42) [0:0-0:0]
         body.push_back(node<Name_Lookup>(AST_Node::no_range, "x"));
         body.push_back(
             node<Define>(AST_Node::no_range, binding("x"),
-                         node<Literal>(AST_Node::no_range, local_val)));
+                         node<Literal>(AST_Node::no_range, local_val), false));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{},

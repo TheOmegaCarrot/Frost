@@ -46,7 +46,7 @@ TEST_CASE("Destructure_Array")
         REQUIRE_CALL(*b, do_destructure(_, val_b)).IN_SEQUENCE(seq);
 
         Destructure_Array node{AST_Node::no_range, std::move(children),
-                               std::nullopt, false};
+                               std::nullopt};
         node.destructure(ctx, arr);
     }
 
@@ -65,7 +65,7 @@ TEST_CASE("Destructure_Array")
         auto arr = Value::create(Array{Value::create(1_f)});
 
         Destructure_Array node{AST_Node::no_range, std::move(children),
-                               std::nullopt, false};
+                               std::nullopt};
 
         CHECK_THROWS_WITH(node.destructure(ctx, arr),
                           ContainsSubstring("Insufficient"));
@@ -85,7 +85,7 @@ TEST_CASE("Destructure_Array")
         auto arr = Value::create(Array{Value::create(1_f), Value::create(2_f)});
 
         Destructure_Array node{AST_Node::no_range, std::move(children),
-                               std::nullopt, false};
+                               std::nullopt};
 
         // The first child would be called before the size check fails,
         // so allow it
@@ -116,8 +116,7 @@ TEST_CASE("Destructure_Array")
         REQUIRE_CALL(syms, define("rest", _))
             .LR_SIDE_EFFECT(captured_rest = _2);
 
-        Destructure_Array node{AST_Node::no_range, std::move(children), "rest",
-                               false};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "rest"};
         node.destructure(ctx, arr);
 
         REQUIRE(captured_rest->is<Array>());
@@ -146,8 +145,7 @@ TEST_CASE("Destructure_Array")
         REQUIRE_CALL(syms, define("rest", _))
             .LR_SIDE_EFFECT(captured_rest = _2);
 
-        Destructure_Array node{AST_Node::no_range, std::move(children), "rest",
-                               false};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "rest"};
         node.destructure(ctx, arr);
 
         REQUIRE(captured_rest->is<Array>());
@@ -172,8 +170,7 @@ TEST_CASE("Destructure_Array")
         REQUIRE_CALL(*a, do_destructure(_, val));
         FORBID_CALL(syms, define(_, _));
 
-        Destructure_Array node{AST_Node::no_range, std::move(children), "_",
-                               false};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "_"};
         node.destructure(ctx, arr);
     }
 
@@ -185,7 +182,7 @@ TEST_CASE("Destructure_Array")
         std::vector<Destructure::Ptr> children;
 
         Destructure_Array node{AST_Node::no_range, std::move(children),
-                               std::nullopt, false};
+                               std::nullopt};
 
         CHECK_THROWS_WITH(node.destructure(ctx, Value::create(42_f)),
                           ContainsSubstring("Array"));
@@ -204,7 +201,7 @@ TEST_CASE("Destructure_Array")
         auto arr = Value::create(Array{});
 
         Destructure_Array node{AST_Node::no_range, std::move(children),
-                               std::nullopt, false};
+                               std::nullopt};
         node.destructure(ctx, arr);
     }
 
@@ -226,7 +223,7 @@ TEST_CASE("Destructure_Array")
         REQUIRE_CALL(*a, do_destructure(_, _)).WITH(_2.get() == val.get());
 
         Destructure_Array node{AST_Node::no_range, std::move(children),
-                               std::nullopt, false};
+                               std::nullopt};
         node.destructure(ctx, arr);
     }
 
@@ -234,23 +231,20 @@ TEST_CASE("Destructure_Array")
     {
         std::vector<Destructure::Ptr> children;
 
-        Destructure_Array node{AST_Node::no_range, std::move(children), "rest",
-                               true};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "rest"};
 
         auto actions = node.symbol_sequence() | std::ranges::to<std::vector>();
         REQUIRE(actions.size() == 1);
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
         CHECK(def->name == "rest");
-        CHECK(def->exported == true);
     }
 
     SECTION("symbol_sequence: rest _ yields no Definition")
     {
         std::vector<Destructure::Ptr> children;
 
-        Destructure_Array node{AST_Node::no_range, std::move(children), "_",
-                               false};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "_"};
 
         auto actions = node.symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
@@ -260,15 +254,14 @@ TEST_CASE("Destructure_Array")
     {
         std::vector<Destructure::Ptr> children;
         Destructure_Array node{AST_Node::no_range, std::move(children),
-                               std::nullopt, false};
+                               std::nullopt};
         CHECK(node.node_label() == "Destructure_Array");
     }
 
     SECTION("node_label with rest")
     {
         std::vector<Destructure::Ptr> children;
-        Destructure_Array node{AST_Node::no_range, std::move(children), "tail",
-                               false};
+        Destructure_Array node{AST_Node::no_range, std::move(children), "tail"};
         CHECK(node.node_label() == "Destructure_Array(rest: tail)");
     }
 
@@ -293,7 +286,7 @@ TEST_CASE("Destructure_Array")
         FORBID_CALL(*b, do_destructure(_, _));
 
         Destructure_Array node{AST_Node::no_range, std::move(children),
-                               std::nullopt, false};
+                               std::nullopt};
 
         CHECK_THROWS_WITH(node.destructure(ctx, arr),
                           ContainsSubstring("child boom"));
@@ -306,7 +299,7 @@ TEST_CASE("Destructure_Array")
 
         std::vector<Destructure::Ptr> children;
         Destructure_Array node{AST_Node::no_range, std::move(children),
-                               std::nullopt, false};
+                               std::nullopt};
 
         CHECK_THROWS_WITH(node.destructure(ctx, Value::null()),
                           ContainsSubstring("Null"));

@@ -76,7 +76,7 @@ Destructure::Ptr binding(std::string n)
 Statement::Ptr def(std::string n, Expression::Ptr expr)
 {
     return std::make_unique<Define>(AST_Node::no_range, binding(n),
-                                    std::move(expr));
+                                    std::move(expr), false);
 }
 } // namespace
 
@@ -99,14 +99,14 @@ TEST_CASE("Symbol Sequence")
 
     SECTION("Define yields RHS then definition")
     {
-        Define node{AST_Node::no_range, binding("x"), name("y")};
+        Define node{AST_Node::no_range, binding("x"), name("y"), false};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:y", "def:x"});
     }
 
     SECTION("Define with literal yields only definition")
     {
-        Define node{AST_Node::no_range, binding("x"), lit_int(1_f)};
+        Define node{AST_Node::no_range, binding("x"), lit_int(1_f), false};
         CHECK(collect_sequence(node) == std::vector<std::string>{"def:x"});
     }
 
@@ -216,7 +216,8 @@ TEST_CASE("Symbol Sequence")
     {
         Define node{AST_Node::no_range, binding("x"),
                     std::make_unique<Binop>(AST_Node::no_range, name("y"),
-                                            Binary_Op::PLUS, name("z"))};
+                                            Binary_Op::PLUS, name("z")),
+                    false};
         CHECK(collect_sequence(node)
               == std::vector<std::string>{"use:y", "use:z", "def:x"});
     }

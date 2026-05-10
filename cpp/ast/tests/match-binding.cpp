@@ -322,7 +322,6 @@ TEST_CASE("Match_Binding: symbol_sequence")
         auto* def = std::get_if<AST_Node::Definition>(&actions[0]);
         REQUIRE(def);
         CHECK(def->name == "foo");
-        CHECK(def->exported == false);
     }
 
     SECTION("Discard binding yields nothing")

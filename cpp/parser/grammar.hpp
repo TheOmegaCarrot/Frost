@@ -1427,9 +1427,7 @@ struct destructure_pack
 };
 
 // Forward declarations for recursive destructure patterns.
-template <bool exported>
 struct array_destructure_pattern_impl;
-template <bool exported>
 struct map_destructure_entries_impl;
 
 // Optional `as identifier` clause, shared by map destructure and match map
@@ -1443,17 +1441,16 @@ constexpr auto as_clause = [] {
 
 // A single destructure pattern element. Recursively allows nested
 // array/map destructuring, or an identifier binding.
-template <bool exported>
 struct destructure_pattern_impl
 {
     static constexpr auto rule =
         dsl::peek(dsl::lit_c<'['>)
         >> (dsl::position
-            + dsl::recurse<array_destructure_pattern_impl<exported>>
+            + dsl::recurse<array_destructure_pattern_impl>
             + dsl::position)
         | dsl::peek(dsl::lit_c<'{'>)
         >> (dsl::position
-            + dsl::recurse<map_destructure_entries_impl<exported>>
+            + dsl::recurse<map_destructure_entries_impl>
             + as_clause
             + dsl::position)
         | dsl::else_
@@ -1490,14 +1487,13 @@ struct destructure_pattern_impl
     static constexpr auto name = "destructure pattern";
 };
 
-template <bool exported>
 struct destructure_pattern_list_impl
 {
     static constexpr auto rule = [] {
         auto elem_start =
             dsl::ascii::alpha_underscore / dsl::lit_c<'['> / dsl::lit_c<'{'>;
         auto item = dsl::peek(elem_start)
-                    >> dsl::recurse<destructure_pattern_impl<exported>>;
+                    >> dsl::recurse<destructure_pattern_impl>;
         // Trailing comma is allowed: `[a, b,]`. Broaden the separator's
         // peek to also accept the closing `]` so the list commits to the
         // comma even when no further element follows.
@@ -1527,22 +1523,20 @@ struct destructure_rest_binding
 //   [a, b]         — pattern bindings only
 //   [...rest]      — rest binding only
 //   [a, b, ...rest] — pattern bindings followed by a rest binding
-template <bool exported>
 struct destructure_payload_impl
 {
     static constexpr auto rule = [] {
         auto leading_comma = dsl::peek(dsl::lit_c<','>)
                              >> dsl::error<expected_destructure_binding>;
         auto rest = (dsl::must(dsl::peek(LEXY_LIT("...")))
-                         .template error<
-                             expected_destructure_rest
-                         > >> (LEXY_LIT("...")
-                               + param_ws_nl
-                               + dsl::p<destructure_rest_binding>));
+                         .error<expected_destructure_rest>
+                     >> (LEXY_LIT("...")
+                         + param_ws_nl
+                         + dsl::p<destructure_rest_binding>));
         auto rest_checked = rest
                             + dsl::must(dsl::peek_not(dsl::lit_c<','>))
-                                  .template error<expected_vararg_last>;
-        auto patterns = dsl::p<destructure_pattern_list_impl<exported>>;
+                                  .error<expected_vararg_last>;
+        auto patterns = dsl::p<destructure_pattern_list_impl>;
         auto elem_start =
             dsl::ascii::alpha_underscore / dsl::lit_c<'['> / dsl::lit_c<'{'>;
         auto patterns_then_rest =
@@ -1570,12 +1564,11 @@ struct destructure_payload_impl
     static constexpr auto name = "destructure payload";
 };
 
-template <bool exported>
 struct array_destructure_pattern_impl
 {
     static constexpr auto rule = dsl::lit_c<'['>
                                  + param_ws_nl
-                                 + dsl::p<destructure_payload_impl<exported>>
+                                 + dsl::p<destructure_payload_impl>
                                  + param_ws_nl
                                  + dsl::lit_c<']'>;
     static constexpr auto value = lexy::forward<destructure_pack>;
@@ -2286,7 +2279,6 @@ struct map_entry
 //
 // Cannot reuse `map_key` here because the shorthand path needs the identifier
 // string directly (before conversion to a Literal node) to use as the binding.
-template <bool exported>
 struct map_destructure_entry_impl
 {
     static constexpr auto rule = [] {
@@ -2301,7 +2293,7 @@ struct map_destructure_entry_impl
                             + param_ws_nl
                             + dsl::lit_c<':'>
                             + param_ws_nl
-                            + dsl::recurse<destructure_pattern_impl<exported>>);
+                            + dsl::recurse<destructure_pattern_impl>);
 
         // Named key: peek for `:` to distinguish explicit binding from
         // shorthand.
@@ -2310,7 +2302,7 @@ struct map_destructure_entry_impl
                      >> (param_ws_nl
                          + dsl::lit_c<':'>
                          + param_ws_nl
-                         + dsl::recurse<destructure_pattern_impl<exported>>));
+                         + dsl::recurse<destructure_pattern_impl>));
         auto named = dsl::else_
                      >> (dsl::position
                          + dsl::p<identifier_required>
@@ -2383,12 +2375,11 @@ struct map_entries
 
 // `map_destructure_entries`: `{key: pattern, ...}` in a def destructure.
 // Trailing comma is allowed: `{a, b,}`.
-template <bool exported>
 struct map_destructure_entries_impl
 {
     static constexpr auto rule = [] {
         auto entry_start = dsl::peek(map_entry_start);
-        auto item = entry_start >> dsl::p<map_destructure_entry_impl<exported>>;
+        auto item = entry_start >> dsl::p<map_destructure_entry_impl>;
         auto sep = comma_sep_nl_after(map_entry_start | dsl::lit_c<'}'>);
         auto list = dsl::list(item, dsl::trailing_sep(sep));
         return braced_list(map_entry_start, list);
@@ -3548,30 +3539,26 @@ namespace node
 //   def name = expr               — identifier binding
 //   def [a, b, ...rest] = expr   — array destructure (recursive)
 //   def {key: pattern} = expr     — map destructure (recursive)
-// Templated on export_flag to thread it into destructure node constructors.
-template <bool export_flag>
-constexpr auto define_lhs = [] {
-    return dsl::p<destructure_pattern_impl<export_flag>>;
-}();
+constexpr auto define_lhs = dsl::p<destructure_pattern_impl>;
 
 // `define_payload`: the `lhs = expr` part (after the `def` keyword).
-template <bool export_flag>
 constexpr auto define_payload = [] {
-    return define_lhs<export_flag>
+    return define_lhs
            + dsl::lit_c<'='>
            + param_ws
            + dsl::p<expression>;
 }();
 
 // `define_callback`: constructs a Define from a Destructure::Ptr and
-// an Expression::Ptr. Single overload — all LHS forms produce
-// Destructure::Ptr.
+// an Expression::Ptr.
+template <bool exported>
 constexpr auto define_callback()
 {
     return lexy::callback<ast::Statement::Ptr>([](ast::Destructure::Ptr dest,
                                                   ast::Expression::Ptr expr) {
         return std::make_unique<ast::Define>(ast::AST_Node::no_range,
-                                             std::move(dest), std::move(expr));
+                                             std::move(dest), std::move(expr),
+                                             exported);
     });
 }
 
@@ -3581,9 +3568,9 @@ struct Define
 {
     static constexpr auto rule = [] {
         auto kw_def = LEXY_KEYWORD("def", identifier::base);
-        return kw_def >> define_payload<false>;
+        return kw_def >> define_payload;
     }();
-    static constexpr auto value = define_callback();
+    static constexpr auto value = define_callback<false>();
     static constexpr auto name = "def statement";
 };
 
@@ -3596,9 +3583,9 @@ struct Export_Def
     static constexpr auto rule = [] {
         auto kw_export = LEXY_KEYWORD("export", identifier::base);
         auto kw_def = LEXY_KEYWORD("def", identifier::base);
-        return kw_export + param_ws_no_comment + kw_def + define_payload<true>;
+        return kw_export + param_ws_no_comment + kw_def + define_payload;
     }();
-    static constexpr auto value = define_callback();
+    static constexpr auto value = define_callback<true>();
     static constexpr auto name = "export def statement";
 };
 
@@ -3633,7 +3620,8 @@ struct Defn
                 make_source_range(begin_pos, name_end_pos),
                 std::optional<std::string>{std::string{name}});
             return std::make_unique<ast::Define>(
-                ast::AST_Node::no_range, std::move(binding), std::move(lambda));
+                ast::AST_Node::no_range, std::move(binding), std::move(lambda),
+                false);
         });
     static constexpr auto name = "defn statement";
 };
@@ -3670,7 +3658,8 @@ struct Export_Defn
                 make_source_range(begin_pos, name_end_pos),
                 std::optional<std::string>{std::string{name}});
             return std::make_unique<ast::Define>(
-                ast::AST_Node::no_range, std::move(binding), std::move(lambda));
+                ast::AST_Node::no_range, std::move(binding), std::move(lambda),
+                true);
         });
     static constexpr auto name = "export defn statement";
 };

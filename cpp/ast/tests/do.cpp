@@ -72,7 +72,7 @@ TEST_CASE("Do_Block - construction")
         // Define is a Statement but not an Expression — rejected as the tail
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1), false));
         CHECK_THROWS_AS((Do_Block{AST_Node::no_range, std::move(body)}),
                         Frost_Unrecoverable_Error);
     }
@@ -88,7 +88,7 @@ TEST_CASE("Do_Block - construction")
     {
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1), false));
         body.push_back(name_lookup("x"));
         CHECK_NOTHROW((Do_Block{AST_Node::no_range, std::move(body)}));
     }
@@ -135,7 +135,7 @@ TEST_CASE("Do_Block - evaluate")
         // exec_table, Name_Lookup("x") would fail — x is not in syms.
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(7)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(7), false));
         body.push_back(name_lookup("x"));
         Do_Block node{AST_Node::no_range, std::move(body)};
 
@@ -152,7 +152,7 @@ TEST_CASE("Do_Block - evaluate")
         // exec_table, "x" would appear in syms after the call.
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1), false));
         body.push_back(name_lookup("x"));
         Do_Block node{AST_Node::no_range, std::move(body)};
 
@@ -168,9 +168,9 @@ TEST_CASE("Do_Block - evaluate")
         // If statements ran in reverse, y = x would fail (x not yet defined).
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(5)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(5), false));
         body.push_back(std::make_unique<Define>(
-            AST_Node::no_range, binding("y"), name_lookup("x")));
+            AST_Node::no_range, binding("y"), name_lookup("x"), false));
         body.push_back(name_lookup("y"));
         Do_Block node{AST_Node::no_range, std::move(body)};
 
@@ -194,7 +194,8 @@ TEST_CASE("Do_Block - evaluate")
 
         std::vector<Statement::Ptr> body;
         body.push_back(std::make_unique<Define>(AST_Node::no_range,
-                                                binding("x"), std::move(bad)));
+                                                binding("x"), std::move(bad),
+                                                false));
         body.push_back(std::move(never)); // becomes value_expr_
 
         Do_Block node{AST_Node::no_range, std::move(body)};
@@ -282,7 +283,7 @@ TEST_CASE("Do_Block - symbol_sequence")
         // do { def x = 1; x } — x is defined and used locally; nothing escapes
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1), false));
         body.push_back(name_lookup("x"));
         Do_Block node{AST_Node::no_range, std::move(body)};
         CHECK(collect_sequence(node).empty());
@@ -304,7 +305,7 @@ TEST_CASE("Do_Block - symbol_sequence")
         // do { def x = outer; x } — yields use:outer, not use:x
         std::vector<Statement::Ptr> body;
         body.push_back(std::make_unique<Define>(
-            AST_Node::no_range, binding("x"), name_lookup("outer")));
+            AST_Node::no_range, binding("x"), name_lookup("outer"), false));
         body.push_back(name_lookup("x"));
         Do_Block node{AST_Node::no_range, std::move(body)};
         CHECK(collect_sequence(node) == std::vector<std::string>{"use:outer"});
@@ -316,7 +317,7 @@ TEST_CASE("Do_Block - symbol_sequence")
         // name(x) All three usages of x are suppressed after the definition.
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1), false));
         body.push_back(name_lookup("x")); // prefix statement
         body.push_back(name_lookup("x")); // value_expr
         Do_Block node{AST_Node::no_range, std::move(body)};
@@ -330,7 +331,7 @@ TEST_CASE("Do_Block - symbol_sequence")
         // The value_expr use:x is suppressed.
         std::vector<Statement::Ptr> body;
         body.push_back(std::make_unique<Define>(
-            AST_Node::no_range, binding("x"), name_lookup("x_outer")));
+            AST_Node::no_range, binding("x"), name_lookup("x_outer"), false));
         body.push_back(name_lookup("x"));
         Do_Block node{AST_Node::no_range, std::move(body)};
         CHECK(collect_sequence(node)
@@ -358,9 +359,9 @@ TEST_CASE("Do_Block - symbol_sequence")
         // escape incorrectly.
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(1), false));
         body.push_back(std::make_unique<Define>(
-            AST_Node::no_range, binding("y"), name_lookup("x")));
+            AST_Node::no_range, binding("y"), name_lookup("x"), false));
         body.push_back(name_lookup("y"));
         Do_Block node{AST_Node::no_range, std::move(body)};
         CHECK(collect_sequence(node).empty());
@@ -376,14 +377,14 @@ TEST_CASE("Do_Block - symbol_sequence")
         std::vector<Statement::Ptr> inner_body;
         inner_body.push_back(name_lookup("x"));
         inner_body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(2)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(2), false));
         inner_body.push_back(name_lookup("x"));
         auto inner = std::make_unique<Do_Block>(AST_Node::no_range,
                                                 std::move(inner_body));
 
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(5)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(5), false));
         body.push_back(std::move(inner));
         Do_Block node{AST_Node::no_range, std::move(body)};
         CHECK(collect_sequence(node).empty());
@@ -409,7 +410,7 @@ TEST_CASE("Do_Block - nested evaluate")
         body.push_back(name_lookup("x")); // reads outer 99, discarded
         body.push_back(std::make_unique<Define>(AST_Node::no_range,
                                                 binding("x"),
-                                                lit(5))); // defines local x
+                                                lit(5), false)); // defines local x
         body.push_back(name_lookup("x"));                 // returns local 5
         Do_Block node{AST_Node::no_range, std::move(body)};
 
@@ -432,7 +433,7 @@ TEST_CASE("Do_Block - nested evaluate")
 
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(5)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(5), false));
         body.push_back(std::move(inner));
         Do_Block node{AST_Node::no_range, std::move(body)};
 
@@ -453,7 +454,7 @@ TEST_CASE("Do_Block - nested evaluate")
 
         std::vector<Statement::Ptr> body;
         body.push_back(std::make_unique<Define>(
-            AST_Node::no_range, binding("x"), std::move(inner)));
+            AST_Node::no_range, binding("x"), std::move(inner), false));
         body.push_back(name_lookup("x"));
         Do_Block node{AST_Node::no_range, std::move(body)};
 
@@ -470,7 +471,7 @@ TEST_CASE("Do_Block - nested evaluate")
         // After evaluation, "inner" must not be accessible in syms.
         std::vector<Statement::Ptr> inner_body;
         inner_body.push_back(std::make_unique<Define>(
-            AST_Node::no_range, binding("inner"), lit(1)));
+            AST_Node::no_range, binding("inner"), lit(1), false));
         inner_body.push_back(name_lookup("inner"));
         auto inner = std::make_unique<Do_Block>(AST_Node::no_range,
                                                 std::move(inner_body));
@@ -496,7 +497,7 @@ TEST_CASE("Do_Block - nested symbol_sequence")
         std::vector<Statement::Ptr> body;
         body.push_back(name_lookup("x"));
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(5)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(5), false));
         body.push_back(name_lookup("x"));
         Do_Block node{AST_Node::no_range, std::move(body)};
         CHECK(collect_sequence(node) == std::vector<std::string>{"use:x"});
@@ -516,7 +517,7 @@ TEST_CASE("Do_Block - nested symbol_sequence")
 
         std::vector<Statement::Ptr> body;
         body.push_back(
-            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(5)));
+            std::make_unique<Define>(AST_Node::no_range, binding("x"), lit(5), false));
         body.push_back(std::move(inner));
         Do_Block node{AST_Node::no_range, std::move(body)};
         CHECK(collect_sequence(node) == std::vector<std::string>{"use:y"});

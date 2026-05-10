@@ -40,7 +40,7 @@ TEST_CASE("Define")
         REQUIRE_CALL(*dest_ptr, do_destructure(_, value)).IN_SEQUENCE(seq);
 
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
-                         std::move(expr)};
+                         std::move(expr), false};
         node.execute(ctx);
     }
 
@@ -59,7 +59,7 @@ TEST_CASE("Define")
         FORBID_CALL(*dest_ptr, do_destructure(_, _));
 
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
-                         std::move(expr)};
+                         std::move(expr), false};
 
         CHECK_THROWS_WITH(node.execute(ctx), ContainsSubstring("expr boom"));
     }
@@ -79,7 +79,7 @@ TEST_CASE("Define")
             .THROW(Frost_Recoverable_Error{"dest boom"});
 
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
-                         std::move(expr)};
+                         std::move(expr), false};
 
         CHECK_THROWS_WITH(node.execute(ctx), ContainsSubstring("dest boom"));
     }
@@ -92,7 +92,7 @@ TEST_CASE("Define")
         // Both mocks yield empty symbol sequences by default,
         // so the combined sequence is empty
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
-                         std::move(expr)};
+                         std::move(expr), false};
 
         auto actions = node.symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
@@ -104,7 +104,7 @@ TEST_CASE("Define")
         auto dest = mock::Mock_Destructure::make();
 
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
-                         std::move(expr)};
+                         std::move(expr), false};
 
         auto kids = node.children() | std::ranges::to<std::vector>();
         REQUIRE(kids.size() == 2);
@@ -118,7 +118,7 @@ TEST_CASE("Define")
         auto dest = mock::Mock_Destructure::make();
 
         ast::Define node{ast::AST_Node::no_range, std::move(dest),
-                         std::move(expr)};
+                         std::move(expr), false};
 
         CHECK(node.node_label() == "Define");
     }
