@@ -357,6 +357,7 @@
 <h4 id="logical-comparisons">Logical Comparisons</h4>
 <p>The ordering operators (<code>&lt;</code>, <code>&gt;</code>, etc) compare numeric types as expected, permitting mixing of Int and Float. (<code>3 &lt; 3.14</code> is well-defined.)</p>
 <p>The ordering operators also compare String values lexicographically. (<code>'foo' &gt; 'bar'</code> is <code>true</code>.)</p>
+<p>Arrays are compared lexicographically by element; a proper prefix is less than the longer array. (<code>[1, 2] &lt; [1, 3]</code> and <code>[1, 2] &lt; [1, 2, 3]</code> are both <code>true</code>.) Note that corresponding elements must be comparable. For example, <code>[1, 2] &lt; [1, 'foo']</code> would produce an error, as <code>2 &lt; 'foo'</code> is not a valid comparison.</p>
 <p>Equality comparisons (<code>==</code> or <code>!=</code>) will never cause a type error. Primitive types, arrays, and maps are compared by value. Functions are compared by identity.</p>
 <pre><code class="language-frost"><span class="hl-keyword">def</span> <span class="hl-variable">a</span> <span class="hl-operator">=</span> <span class="hl-number">42</span>
 <span class="hl-keyword">def</span> <span class="hl-variable">b</span> <span class="hl-operator">=</span> <span class="hl-number">42</span>

@@ -480,6 +480,8 @@ The ordering operators (`<`, `>`, etc) compare numeric types as expected, permit
 
 The ordering operators also compare String values lexicographically. (`'foo' > 'bar'` is `true`.)
 
+Arrays are compared lexicographically by element; a proper prefix is less than the longer array. (`[1, 2] < [1, 3]` and `[1, 2] < [1, 2, 3]` are both `true`.) Note that corresponding elements must be comparable. For example, `[1, 2] < [1, 'foo']` would produce an error, as `2 < 'foo'` is not a valid comparison.
+
 Equality comparisons (`==` or `!=`) will never cause a type error. Primitive types, arrays, and maps are compared by value. Functions are compared by identity.
 
 ```frost
