@@ -3534,16 +3534,10 @@ struct expression_nl : expression_impl<true>
 
 namespace node
 {
-// `define_lhs`: the left-hand side of a `def` statement.
-// Three forms, all producing Destructure::Ptr:
-//   def name = expr               — identifier binding
-//   def [a, b, ...rest] = expr   — array destructure (recursive)
-//   def {key: pattern} = expr     — map destructure (recursive)
-constexpr auto define_lhs = dsl::p<destructure_pattern_impl>;
-
-// `define_payload`: the `lhs = expr` part (after the `def` keyword).
+// `define_payload`: the `pattern = expr` part (after the `def` keyword).
+// The LHS is a destructure pattern (identifier, array, or map).
 constexpr auto define_payload = [] {
-    return define_lhs
+    return dsl::p<destructure_pattern_impl>
            + dsl::lit_c<'='>
            + param_ws
            + dsl::p<expression>;
@@ -3589,27 +3583,27 @@ struct Export_Def
     static constexpr auto name = "export def statement";
 };
 
-// `defn name(params) -> body`. Syntactic sugar for
-// `def name = fn name(params) -> body`. The function name is bound as
-// self_name in the Lambda, so the body can call it recursively.
-// Permitted wherever `def` is (top-level and inside block bodies).
-struct Defn
+// `defn_payload`: the shared `name(params) -> body` portion after keyword(s).
+// Produces: position, string, position, lambda_param_pack,
+//           vector<Statement::Ptr>, position.
+constexpr auto defn_payload = [] {
+    return dsl::position
+           + dsl::p<identifier_required>
+           + dsl::position
+           + param_ws
+           + dsl::p<lambda_parameters_paren>
+           + param_ws_nl
+           + LEXY_LIT("->")
+           + dsl::p<lambda_body>
+           + dsl::position;
+}();
+
+// `defn_callback`: desugars `defn name(params) -> body` into
+// `def name = fn name(params) -> body`.
+template <bool exported>
+constexpr auto defn_callback()
 {
-    static constexpr auto rule = [] {
-        auto kw_defn = LEXY_KEYWORD("defn", identifier::base);
-        return kw_defn
-               >> (param_ws
-                   + dsl::position
-                   + dsl::p<identifier_required>
-                   + dsl::position
-                   + param_ws
-                   + dsl::p<lambda_parameters_paren>
-                   + param_ws_nl
-                   + LEXY_LIT("->")
-                   + dsl::p<lambda_body>
-                   + dsl::position);
-    }();
-    static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
+    return lexy::callback<ast::Statement::Ptr>(
         [](auto begin_pos, std::string name, auto name_end_pos,
            lambda_param_pack params, std::vector<ast::Statement::Ptr> body,
            auto end_pos) {
@@ -3621,8 +3615,21 @@ struct Defn
                 std::optional<std::string>{std::string{name}});
             return std::make_unique<ast::Define>(
                 ast::AST_Node::no_range, std::move(binding), std::move(lambda),
-                false);
+                exported);
         });
+}
+
+// `defn name(params) -> body`. Syntactic sugar for
+// `def name = fn name(params) -> body`. The function name is bound as
+// self_name in the Lambda, so the body can call it recursively.
+// Permitted wherever `def` is (top-level and inside block bodies).
+struct Defn
+{
+    static constexpr auto rule = [] {
+        auto kw_defn = LEXY_KEYWORD("defn", identifier::base);
+        return kw_defn >> (param_ws + defn_payload);
+    }();
+    static constexpr auto value = defn_callback<false>();
     static constexpr auto name = "defn statement";
 };
 
@@ -3633,34 +3640,10 @@ struct Export_Defn
     static constexpr auto rule = [] {
         auto kw_export = LEXY_KEYWORD("export", identifier::base);
         auto kw_defn = LEXY_KEYWORD("defn", identifier::base);
-        return kw_export
-               + param_ws_no_comment
-               + kw_defn
-               + param_ws
-               + dsl::position
-               + dsl::p<identifier_required>
-               + dsl::position
-               + param_ws
-               + dsl::p<lambda_parameters_paren>
-               + param_ws_nl
-               + LEXY_LIT("->")
-               + dsl::p<lambda_body>
-               + dsl::position;
+        return kw_export + param_ws_no_comment + kw_defn + param_ws
+               + defn_payload;
     }();
-    static constexpr auto value = lexy::callback<ast::Statement::Ptr>(
-        [](auto begin_pos, std::string name, auto name_end_pos,
-           lambda_param_pack params, std::vector<ast::Statement::Ptr> body,
-           auto end_pos) {
-            auto lambda = std::make_unique<ast::Lambda>(
-                make_source_range(begin_pos, end_pos), std::move(params.params),
-                std::move(body), std::move(params.vararg), name);
-            auto binding = std::make_unique<ast::Destructure_Binding>(
-                make_source_range(begin_pos, name_end_pos),
-                std::optional<std::string>{std::string{name}});
-            return std::make_unique<ast::Define>(
-                ast::AST_Node::no_range, std::move(binding), std::move(lambda),
-                true);
-        });
+    static constexpr auto value = defn_callback<true>();
     static constexpr auto name = "export defn statement";
 };
 } // namespace node

@@ -174,8 +174,8 @@ struct Importer
             catch (const std::exception& e)
             {
                 // if the name could not be found, then there is a bug in the
-                // interpreter, because the names were pulled right from the
-                // symbol_sequence
+                // interpreter, because the names came from the Define node's
+                // own destructure pattern
                 throw Frost_Interpreter_Error{fmt::format(
                     "Error looking up exported symbol {}: {}", name, e.what())};
             }
