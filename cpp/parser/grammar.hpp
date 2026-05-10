@@ -1492,8 +1492,8 @@ struct destructure_pattern_list_impl
     static constexpr auto rule = [] {
         auto elem_start =
             dsl::ascii::alpha_underscore / dsl::lit_c<'['> / dsl::lit_c<'{'>;
-        auto item = dsl::peek(elem_start)
-                    >> dsl::recurse<destructure_pattern_impl>;
+        auto item =
+            dsl::peek(elem_start) >> dsl::recurse<destructure_pattern_impl>;
         // Trailing comma is allowed: `[a, b,]`. Broaden the separator's
         // peek to also accept the closing `]` so the list commits to the
         // comma even when no further element follows.
@@ -1529,10 +1529,11 @@ struct destructure_payload_impl
         auto leading_comma = dsl::peek(dsl::lit_c<','>)
                              >> dsl::error<expected_destructure_binding>;
         auto rest = (dsl::must(dsl::peek(LEXY_LIT("...")))
-                         .error<expected_destructure_rest>
-                     >> (LEXY_LIT("...")
-                         + param_ws_nl
-                         + dsl::p<destructure_rest_binding>));
+                         .error<
+                             expected_destructure_rest
+                         > >> (LEXY_LIT("...")
+                               + param_ws_nl
+                               + dsl::p<destructure_rest_binding>));
         auto rest_checked = rest
                             + dsl::must(dsl::peek_not(dsl::lit_c<','>))
                                   .error<expected_vararg_last>;
@@ -3548,12 +3549,12 @@ constexpr auto define_payload = [] {
 template <bool exported>
 constexpr auto define_callback()
 {
-    return lexy::callback<ast::Statement::Ptr>([](ast::Destructure::Ptr dest,
-                                                  ast::Expression::Ptr expr) {
-        return std::make_unique<ast::Define>(ast::AST_Node::no_range,
-                                             std::move(dest), std::move(expr),
-                                             exported);
-    });
+    return lexy::callback<ast::Statement::Ptr>(
+        [](ast::Destructure::Ptr dest, ast::Expression::Ptr expr) {
+            return std::make_unique<ast::Define>(ast::AST_Node::no_range,
+                                                 std::move(dest),
+                                                 std::move(expr), exported);
+        });
 }
 
 // `def name = expr`. The `def` keyword commits; then `define_payload` must
@@ -3613,9 +3614,9 @@ constexpr auto defn_callback()
             auto binding = std::make_unique<ast::Destructure_Binding>(
                 make_source_range(begin_pos, name_end_pos),
                 std::optional<std::string>{std::string{name}});
-            return std::make_unique<ast::Define>(
-                ast::AST_Node::no_range, std::move(binding), std::move(lambda),
-                exported);
+            return std::make_unique<ast::Define>(ast::AST_Node::no_range,
+                                                 std::move(binding),
+                                                 std::move(lambda), exported);
         });
 }
 
@@ -3640,7 +3641,10 @@ struct Export_Defn
     static constexpr auto rule = [] {
         auto kw_export = LEXY_KEYWORD("export", identifier::base);
         auto kw_defn = LEXY_KEYWORD("defn", identifier::base);
-        return kw_export + param_ws_no_comment + kw_defn + param_ws
+        return kw_export
+               + param_ws_no_comment
+               + kw_defn
+               + param_ws
                + defn_payload;
     }();
     static constexpr auto value = defn_callback<true>();

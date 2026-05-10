@@ -58,7 +58,8 @@ TEST_CASE("Destructure_Map")
         elems.push_back({std::move(key_a_expr), std::move(mock_a)});
         elems.push_back({std::move(key_b_expr), std::move(mock_b)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
         node.destructure(ctx, map);
     }
 
@@ -81,7 +82,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
         CHECK_THROWS_WITH(node.destructure(ctx, map),
                           ContainsSubstring("not found"));
     }
@@ -107,7 +109,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
         node.destructure(ctx, map);
     }
 
@@ -126,7 +129,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
 
         CHECK_THROWS_WITH(node.destructure(ctx, Value::create(Map{})),
                           ContainsSubstring("valid Map keys"));
@@ -147,7 +151,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
 
         CHECK_THROWS_WITH(node.destructure(ctx, Value::create(Map{})),
                           ContainsSubstring("valid Map keys"));
@@ -159,7 +164,8 @@ TEST_CASE("Destructure_Map")
         Execution_Context ctx{.symbols = syms};
 
         std::vector<Destructure_Map::Element> elems;
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
 
         CHECK_THROWS_WITH(node.destructure(ctx, Value::create(42_f)),
                           ContainsSubstring("Map"));
@@ -175,7 +181,8 @@ TEST_CASE("Destructure_Map")
         Execution_Context ctx{.symbols = syms};
 
         std::vector<Destructure_Map::Element> elems;
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
 
         node.destructure(ctx, Value::create(Map{}));
     }
@@ -204,7 +211,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
         node.destructure(ctx, map);
     }
 
@@ -229,7 +237,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
         node.destructure(ctx, map);
     }
 
@@ -242,7 +251,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
 
         auto actions = node.symbol_sequence() | std::ranges::to<std::vector>();
         CHECK(actions.empty());
@@ -258,7 +268,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
 
         auto actions = node.symbol_sequence() | std::ranges::to<std::vector>();
         REQUIRE(actions.size() == 1);
@@ -270,7 +281,8 @@ TEST_CASE("Destructure_Map")
     SECTION("node_label")
     {
         std::vector<Destructure_Map::Element> elems;
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
         CHECK(node.node_label() == "Destructure_Map");
     }
 
@@ -296,7 +308,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
 
         CHECK_THROWS_WITH(node.destructure(ctx, map),
                           ContainsSubstring("child boom"));
@@ -332,7 +345,8 @@ TEST_CASE("Destructure_Map")
         elems.push_back({std::move(key_found_expr), std::move(mock_found)});
         elems.push_back({std::move(key_missing_expr), std::move(mock_missing)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
         CHECK_THROWS_WITH(node.destructure(ctx, map),
                           ContainsSubstring("not found"));
     }
@@ -358,7 +372,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
         node.destructure(ctx, map);
     }
 
@@ -379,7 +394,8 @@ TEST_CASE("Destructure_Map")
         std::vector<Destructure_Map::Element> elems;
         elems.push_back({std::move(key_expr), std::move(mock_child)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
 
         CHECK_THROWS_WITH(node.destructure(ctx, Value::create(Map{})),
                           ContainsSubstring("key boom"));
@@ -420,7 +436,8 @@ TEST_CASE("Destructure_Map")
         elems.push_back({std::move(key_expr_1), std::move(mock_a)});
         elems.push_back({std::move(key_expr_2), std::move(mock_b)});
 
-        Destructure_Map node{AST_Node::no_range, std::move(elems), std::nullopt};
+        Destructure_Map node{AST_Node::no_range, std::move(elems),
+                             std::nullopt};
         node.destructure(ctx, map);
     }
 }

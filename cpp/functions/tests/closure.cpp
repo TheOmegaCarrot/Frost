@@ -696,9 +696,9 @@ Literal(42) [0:0-0:0]
         Symbol_Table captures;
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Define>(AST_Node::no_range, binding("x"),
-                         node<Name_Lookup>(AST_Node::no_range, "p"), false));
+        body.push_back(node<Define>(AST_Node::no_range, binding("x"),
+                                    node<Name_Lookup>(AST_Node::no_range, "p"),
+                                    false));
         auto body_ptr = make_body(std::move(body));
 
         Closure closure{{"p"},
@@ -720,9 +720,9 @@ Literal(42) [0:0-0:0]
         captures.define("x", Value::create(2_f));
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Define>(AST_Node::no_range, binding("y"),
-                         node<Name_Lookup>(AST_Node::no_range, "x"), false));
+        body.push_back(node<Define>(AST_Node::no_range, binding("y"),
+                                    node<Name_Lookup>(AST_Node::no_range, "x"),
+                                    false));
         body.push_back(node<Define>(
             AST_Node::no_range, binding("x"),
             node<Literal>(AST_Node::no_range, Value::create(4_f)), false));

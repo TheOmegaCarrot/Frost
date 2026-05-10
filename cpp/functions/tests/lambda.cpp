@@ -729,9 +729,9 @@ TEST_CASE("Lambda")
         env.define("y", y_val);
 
         std::vector<Statement::Ptr> body;
-        body.push_back(
-            node<Define>(AST_Node::no_range, binding("x"),
-                         node<Name_Lookup>(AST_Node::no_range, "y"), false));
+        body.push_back(node<Define>(AST_Node::no_range, binding("x"),
+                                    node<Name_Lookup>(AST_Node::no_range, "y"),
+                                    false));
         body.push_back(node<Name_Lookup>(AST_Node::no_range, "x"));
 
         Lambda node{AST_Node::no_range, {}, std::move(body)};
@@ -808,7 +808,8 @@ TEST_CASE("Lambda")
             node<Binop>(AST_Node::no_range,
                         node<Literal>(AST_Node::no_range, Value::create(1_f)),
                         Binary_Op::PLUS,
-                        node<Name_Lookup>(AST_Node::no_range, "x")), false));
+                        node<Name_Lookup>(AST_Node::no_range, "x")),
+            false));
         body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
 
         Lambda node{AST_Node::no_range, {}, std::move(body)};
@@ -830,10 +831,11 @@ TEST_CASE("Lambda")
         std::vector<Statement::Ptr> body;
         body.push_back(node<Define>(
             AST_Node::no_range, binding("x"),
-            node<Binop>(
-                AST_Node::no_range, node<Name_Lookup>(AST_Node::no_range, "p"),
-                Binary_Op::PLUS,
-                node<Literal>(AST_Node::no_range, Value::create(1_f))), false));
+            node<Binop>(AST_Node::no_range,
+                        node<Name_Lookup>(AST_Node::no_range, "p"),
+                        Binary_Op::PLUS,
+                        node<Literal>(AST_Node::no_range, Value::create(1_f))),
+            false));
         body.push_back(node<Literal>(AST_Node::no_range, Value::null()));
 
         Lambda node{AST_Node::no_range, {"p"}, std::move(body)};
@@ -1091,7 +1093,8 @@ TEST_CASE("Lambda")
         outer_body.push_back(node<Define>(
             AST_Node::no_range, binding("inner"),
             node<Lambda>(AST_Node::no_range, std::vector<std::string>{},
-                         std::move(inner_body)), false));
+                         std::move(inner_body)),
+            false));
         outer_body.push_back(node<Define>(
             AST_Node::no_range, binding("x"),
             node<Literal>(AST_Node::no_range, Value::create(2_f)), false));
@@ -1207,7 +1210,8 @@ TEST_CASE("Lambda")
 
             inner_body.push_back(node<Define>(
                 AST_Node::no_range, binding("m"),
-                node<Map_Constructor>(AST_Node::no_range, std::move(pairs)), false));
+                node<Map_Constructor>(AST_Node::no_range, std::move(pairs)),
+                false));
 
             std::vector<Expression::Ptr> elems;
             elems.push_back(node<Index>(
@@ -1228,14 +1232,14 @@ TEST_CASE("Lambda")
             std::vector<Expression::Ptr> b_elems;
             b_elems.push_back(node<Literal>(AST_Node::no_range, one));
 
-            outer_body.push_back(
-                node<Define>(AST_Node::no_range, binding("a"),
-                             node<Array_Constructor>(AST_Node::no_range,
-                                                     std::move(a_elems)), false));
-            outer_body.push_back(
-                node<Define>(AST_Node::no_range, binding("b"),
-                             node<Array_Constructor>(AST_Node::no_range,
-                                                     std::move(b_elems)), false));
+            outer_body.push_back(node<Define>(
+                AST_Node::no_range, binding("a"),
+                node<Array_Constructor>(AST_Node::no_range, std::move(a_elems)),
+                false));
+            outer_body.push_back(node<Define>(
+                AST_Node::no_range, binding("b"),
+                node<Array_Constructor>(AST_Node::no_range, std::move(b_elems)),
+                false));
             outer_body.push_back(node<Lambda>(AST_Node::no_range,
                                               std::vector<std::string>{},
                                               std::move(inner_body)));
