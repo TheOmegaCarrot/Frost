@@ -1,13 +1,5 @@
 # To-Do
 
-## Language
-
-### Comparison Chaining
-
-- P3239-like comparison chaining
-    - https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/p3439r3.pdf
-    - Maybe? Might not be good. I'll let this one sit a while.
-
 ## Stdlib
 
 ### Async
