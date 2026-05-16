@@ -46,7 +46,13 @@ struct To_String_Impl
                 fmt::format("Float->String error: {}",
                             std::make_error_code(err).message())};
 
-        return buf;
+        std::string result(std::ranges::begin(buf), ptr);
+        if (not(result.contains(".") || result.contains("e")))
+        {
+            result.append(".0");
+        }
+
+        return result;
     }
 
     std::string operator()(const String& str,

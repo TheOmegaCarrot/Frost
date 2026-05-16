@@ -148,6 +148,47 @@ TEST_CASE("Builtin read_value")
         REQUIRE(nested->is<Map>());
     }
 
+    SECTION("Float to_string round-trips through read_value")
+    {
+        auto check_round_trip = [&](frst::Float f) {
+            auto original = Value::create(f);
+            auto serialized = original->to_internal_string();
+            auto reparsed = read_value->call({Value::create(std::move(serialized))});
+            REQUIRE(reparsed->is<frst::Float>());
+            CHECK(reparsed->get<frst::Float>().value() == f);
+        };
+
+        check_round_trip(0.0);
+        check_round_trip(1.0);
+        check_round_trip(-1.0);
+        check_round_trip(42.0);
+        check_round_trip(999999.0);
+        check_round_trip(3.14);
+        check_round_trip(1e20);
+        check_round_trip(5e-324);
+    }
+
+    SECTION("Negative zero round-trips as Float")
+    {
+        auto original = Value::create(-0.0);
+        auto serialized = original->to_internal_string();
+        auto reparsed = read_value->call({Value::create(std::move(serialized))});
+        REQUIRE(reparsed->is<frst::Float>());
+        CHECK(std::signbit(reparsed->get<frst::Float>().value()));
+    }
+
+    SECTION("Structured values with floats round-trip")
+    {
+        auto original = Value::create(frst::Array{
+            Value::create(1.0),
+            Value::create(0.0),
+            Value::create(3.14),
+        });
+        auto serialized = original->to_internal_string();
+        auto reparsed = read_value->call({Value::create(std::move(serialized))});
+        CHECK(Value::internal_equal(reparsed, original));
+    }
+
     SECTION("Rejects name lookup")
     {
         CHECK_THROWS_MATCHES(

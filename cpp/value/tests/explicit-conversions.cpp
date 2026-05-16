@@ -167,6 +167,48 @@ TEST_CASE("to_pretty_string")
           == "[\n    1,\n    \"hi\"\n]");
 }
 
+TEST_CASE("Float to_string always contains decimal point or exponent")
+{
+    SECTION("Integer-valued floats render with .0 suffix")
+    {
+        CHECK(Value::create(0.0)->to_internal_string() == "0.0");
+        CHECK(Value::create(1.0)->to_internal_string() == "1.0");
+        CHECK(Value::create(-1.0)->to_internal_string() == "-1.0");
+        CHECK(Value::create(42.0)->to_internal_string() == "42.0");
+        CHECK(Value::create(100.0)->to_internal_string() == "100.0");
+        CHECK(Value::create(999999.0)->to_internal_string() == "999999.0");
+    }
+
+    SECTION("Negative zero")
+    {
+        CHECK(Value::create(-0.0)->to_internal_string() == "-0.0");
+    }
+
+    SECTION("Large integer-valued floats that use scientific notation are unchanged")
+    {
+        auto s = Value::create(1e20)->to_internal_string();
+        CHECK(s.contains('e'));
+        CHECK_FALSE(s.ends_with(".0"));
+    }
+
+    SECTION("Non-integer floats are unchanged")
+    {
+        CHECK(Value::create(3.14)->to_internal_string().starts_with("3.14"));
+        CHECK(Value::create(0.5)->to_internal_string() == "0.5");
+        CHECK(Value::create(-0.25)->to_internal_string() == "-0.25");
+    }
+
+    SECTION("Integer-valued floats in structures also get .0 suffix")
+    {
+        auto arr = Value::create(frst::Array{
+            Value::create(1.0),
+            Value::create(0.0),
+            Value::create(-42.0),
+        });
+        CHECK(arr->to_internal_string() == "[ 1.0, 0.0, -42.0 ]");
+    }
+}
+
 TEST_CASE("to_internal_int")
 {
     auto v_null = Value::null();
