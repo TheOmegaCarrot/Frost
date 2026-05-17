@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 mod error;
+mod frost_array;
 mod frost_float;
 mod value;
 mod value_impl;

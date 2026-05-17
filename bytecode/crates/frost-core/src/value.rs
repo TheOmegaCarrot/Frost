@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc, any::Any};
+use std::{any::Any, collections::BTreeMap, sync::Arc};
 
 pub use crate::error::FrostError;
 pub use crate::frost_float::FrostFloat;
@@ -34,7 +34,7 @@ pub trait Callable: std::fmt::Debug + Send + Sync {
 /// data structure can be changed without affecting consumers.
 #[derive(Clone, Debug)]
 pub struct FrostArray {
-    pub(crate) inner: Arc<Vec<Value>>,
+    pub(crate) inner: Arc<[Value]>,
 }
 
 /// Frost's map type. Implementation is opaque so the backing
