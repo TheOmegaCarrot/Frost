@@ -1,7 +1,9 @@
 #![allow(unused)]
 
-mod value;
 mod error;
+mod frost_float;
+mod value;
+mod value_impl;
 
-pub use value::Value;
 pub use error::{FrostError, FrostResult};
+pub use value::Value;

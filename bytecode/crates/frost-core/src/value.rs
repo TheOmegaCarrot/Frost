@@ -1,24 +1,28 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, sync::Arc, any::Any};
 
-use crate::error::FrostError;
+pub use crate::error::FrostError;
+pub use crate::frost_float::FrostFloat;
 
+/// The basic value type of Frost.
 #[derive(Clone, Debug)]
 pub enum Value {
     Null,
     Bool(bool),
     Int(i64),
-    Float(f64),
+    Float(FrostFloat),
     String(Arc<str>),
     Array(FrostArray),
     Map(FrostMap),
     Function(Arc<dyn Callable>),
+    Opaque(Arc<dyn Any>),
 }
 
-#[derive(Clone, Debug)]
+/// A Frost Map key, only a subset of types.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MapKey {
     Bool(bool),
     Int(i64),
-    Float(f64),
+    Float(FrostFloat),
     String(Arc<str>),
 }
 
@@ -30,7 +34,7 @@ pub trait Callable: std::fmt::Debug + Send + Sync {
 /// data structure can be changed without affecting consumers.
 #[derive(Clone, Debug)]
 pub struct FrostArray {
-    inner: Arc<Vec<Value>>,
+    pub(crate) inner: Arc<Vec<Value>>,
 }
 
 /// Frost's map type. Implementation is opaque so the backing
@@ -38,5 +42,5 @@ pub struct FrostArray {
 /// map) without affecting consumers.
 #[derive(Clone, Debug)]
 pub struct FrostMap {
-    inner: Arc<BTreeMap<MapKey, Value>>,
+    pub(crate) inner: Arc<BTreeMap<MapKey, Value>>,
 }
