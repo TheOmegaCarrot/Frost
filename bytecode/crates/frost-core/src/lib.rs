@@ -3,6 +3,7 @@
 mod error;
 mod frost_array;
 mod frost_float;
+mod frost_map;
 mod value;
 mod value_impl;
 

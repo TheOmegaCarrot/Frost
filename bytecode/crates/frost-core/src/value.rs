@@ -14,7 +14,7 @@ pub enum Value {
     Array(FrostArray),
     Map(FrostMap),
     Function(Arc<dyn Callable>),
-    Opaque(Arc<dyn Any>),
+    Opaque(Arc<dyn Any + Send + Sync>),
 }
 
 /// A Frost Map key, only a subset of types.
