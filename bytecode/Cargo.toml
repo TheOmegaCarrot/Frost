@@ -1,6 +1,14 @@
-[package]
-name = "frost-cli"
+[workspace]
+members = [
+    "crates/frost-core",
+    "crates/frost-parse",
+    "crates/frost-compile",
+    "crates/frost-runtime",
+    "crates/frost-stdlib",
+    "crates/frost-cli",
+]
+resolver = "3"
+
+[workspace.package]
 version = "0.0.4"
 edition = "2024"
-
-[dependencies]

@@ -1,0 +1,8 @@
+[package]
+name = "frost-compile"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+frost-core = { path = "../frost-core" }
+frost-parse = { path = "../frost-parse" }

@@ -5,3 +5,45 @@ version = 4
 [[package]]
 name = "frost-cli"
 version = "0.0.4"
+dependencies = [
+ "frost-compile",
+ "frost-core",
+ "frost-parse",
+ "frost-runtime",
+ "frost-stdlib",
+]
+
+[[package]]
+name = "frost-compile"
+version = "0.0.4"
+dependencies = [
+ "frost-core",
+ "frost-parse",
+]
+
+[[package]]
+name = "frost-core"
+version = "0.0.4"
+
+[[package]]
+name = "frost-parse"
+version = "0.0.4"
+dependencies = [
+ "frost-core",
+]
+
+[[package]]
+name = "frost-runtime"
+version = "0.0.4"
+dependencies = [
+ "frost-compile",
+ "frost-core",
+]
+
+[[package]]
+name = "frost-stdlib"
+version = "0.0.4"
+dependencies = [
+ "frost-core",
+ "frost-runtime",
+]
