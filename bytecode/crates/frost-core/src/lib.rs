@@ -6,4 +6,5 @@ mod value;
 mod value_impl;
 
 pub use error::{FrostError, FrostResult};
-pub use value::Value;
+pub use frost_float::FrostFloat;
+pub use value::{Callable, FrostArray, FrostMap, MapKey, Value};
