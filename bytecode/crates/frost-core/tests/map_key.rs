@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use frost_core::{FrostFloat, MapKey, Value};
 
 #[test]
@@ -64,7 +66,7 @@ fn map_key_ordering_cross_type_is_consistent() {
     let bool_key = MapKey::Bool(false);
     let int_key = MapKey::Int(0);
     let float_key = MapKey::Float(FrostFloat::new(0.0).unwrap());
-    let string_key = MapKey::String("".into());
+    let string_key = MapKey::String(Arc::from(b"" as &[u8]));
 
     // Exact order doesn't matter semantically, but it must be consistent
     assert!(bool_key < int_key);

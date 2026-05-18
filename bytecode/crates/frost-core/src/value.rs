@@ -10,7 +10,7 @@ pub enum Value {
     Bool(bool),
     Int(i64),
     Float(FrostFloat),
-    String(Arc<str>),
+    String(Arc<[u8]>),
     Array(FrostArray),
     Map(FrostMap),
     Function(Arc<dyn Callable>),
@@ -23,7 +23,7 @@ pub enum MapKey {
     Bool(bool),
     Int(i64),
     Float(FrostFloat),
-    String(Arc<str>),
+    String(Arc<[u8]>),
 }
 
 pub trait Callable: std::fmt::Debug + Send + Sync {

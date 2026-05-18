@@ -3,10 +3,14 @@ use std::sync::Arc;
 
 use frost_core::{FrostFloat, FrostMap, MapKey, Value};
 
+fn str_key(s: &str) -> MapKey {
+    MapKey::String(Arc::from(s.as_bytes()))
+}
+
 fn sample_map() -> FrostMap {
     vec![
-        (MapKey::String(Arc::from("name")), Value::from("alice")),
-        (MapKey::String(Arc::from("age")), Value::from(30i64)),
+        (str_key("name"), Value::from("alice")),
+        (str_key("age"), Value::from(30i64)),
         (MapKey::Bool(true), Value::from("yes")),
     ]
     .into_iter()
@@ -69,36 +73,31 @@ fn collect_duplicate_keys_last_wins() {
 #[test]
 fn get_existing_key() {
     let map = sample_map();
-    let key = MapKey::String(Arc::from("name"));
-    assert!(map.get(&key).is_some());
+    assert!(map.get(&str_key("name")).is_some());
 }
 
 #[test]
 fn get_missing_key() {
     let map = sample_map();
-    let key = MapKey::String(Arc::from("missing"));
-    assert!(map.get(&key).is_none());
+    assert!(map.get(&str_key("missing")).is_none());
 }
 
 #[test]
 fn get_non_string_key() {
     let map = sample_map();
-    let key = MapKey::Bool(true);
-    assert!(map.get(&key).is_some());
+    assert!(map.get(&MapKey::Bool(true)).is_some());
 }
 
 #[test]
 fn contains_key_true() {
     let map = sample_map();
-    let key = MapKey::String(Arc::from("age"));
-    assert!(map.contains_key(&key));
+    assert!(map.contains_key(&str_key("age")));
 }
 
 #[test]
 fn contains_key_false() {
     let map = sample_map();
-    let key = MapKey::String(Arc::from("missing"));
-    assert!(!map.contains_key(&key));
+    assert!(!map.contains_key(&str_key("missing")));
 }
 
 // -- String convenience access --
@@ -168,7 +167,6 @@ fn for_loop_borrows() {
         count += 1;
     }
     assert_eq!(count, 3);
-    // map is still usable
     assert_eq!(map.len(), 3);
 }
 
@@ -177,35 +175,31 @@ fn for_loop_borrows() {
 #[test]
 fn iteration_order_is_deterministic() {
     let map: FrostMap = vec![
-        (MapKey::String(Arc::from("b")), Value::from(2i64)),
-        (MapKey::String(Arc::from("a")), Value::from(1i64)),
-        (MapKey::String(Arc::from("c")), Value::from(3i64)),
+        (str_key("b"), Value::from(2i64)),
+        (str_key("a"), Value::from(1i64)),
+        (str_key("c"), Value::from(3i64)),
     ]
     .into_iter()
     .collect();
 
     let keys: Vec<_> = map.keys().collect();
-    assert_eq!(keys[0], &MapKey::String(Arc::from("a")));
-    assert_eq!(keys[1], &MapKey::String(Arc::from("b")));
-    assert_eq!(keys[2], &MapKey::String(Arc::from("c")));
+    assert_eq!(keys[0], &str_key("a"));
+    assert_eq!(keys[1], &str_key("b"));
+    assert_eq!(keys[2], &str_key("c"));
 }
 
 #[test]
 fn cross_type_keys_have_consistent_order() {
     let map: FrostMap = vec![
-        (MapKey::String(Arc::from("z")), Value::from("str")),
+        (str_key("z"), Value::from("str")),
         (MapKey::Bool(false), Value::from("bool")),
         (MapKey::Int(99), Value::from("int")),
-        (
-            MapKey::Float(FrostFloat::new(1.5).unwrap()),
-            Value::from("float"),
-        ),
+        (MapKey::Float(FrostFloat::new(1.5).unwrap()), Value::from("float")),
     ]
     .into_iter()
     .collect();
 
     let keys: Vec<_> = map.keys().collect();
-    // Order follows MapKey's derived Ord: Bool < Int < Float < String
     assert!(matches!(keys[0], MapKey::Bool(_)));
     assert!(matches!(keys[1], MapKey::Int(_)));
     assert!(matches!(keys[2], MapKey::Float(_)));
@@ -219,7 +213,6 @@ fn clone_shares_data() {
     let map = sample_map();
     let cloned = map.clone();
     assert_eq!(cloned.len(), map.len());
-    // Both point to the same underlying data (Arc)
     assert!(map.get_str("name").is_some());
     assert!(cloned.get_str("name").is_some());
 }

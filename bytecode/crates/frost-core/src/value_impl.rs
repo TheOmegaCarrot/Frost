@@ -29,18 +29,30 @@ impl From<FrostFloat> for Value {
 
 impl From<&str> for Value {
     fn from(s: &str) -> Value {
-        Value::String(Arc::from(s))
+        Value::String(Arc::from(s.as_bytes()))
     }
 }
 
 impl From<String> for Value {
     fn from(s: String) -> Value {
+        Value::String(Arc::from(s.into_bytes()))
+    }
+}
+
+impl From<&[u8]> for Value {
+    fn from(s: &[u8]) -> Value {
         Value::String(Arc::from(s))
     }
 }
 
-impl From<Arc<str>> for Value {
-    fn from(s: Arc<str>) -> Value {
+impl From<Vec<u8>> for Value {
+    fn from(s: Vec<u8>) -> Value {
+        Value::String(Arc::from(s))
+    }
+}
+
+impl From<Arc<[u8]>> for Value {
+    fn from(s: Arc<[u8]>) -> Value {
         Value::String(s)
     }
 }

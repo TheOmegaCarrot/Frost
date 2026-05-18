@@ -87,17 +87,20 @@ fn stringify_float(f: f64, buf: &mut String) {
     buf.push_str(ryu_buf.format(f));
 }
 
-fn stringify_string(s: &str, buf: &mut String, ctx: &StringifyContext) {
+fn stringify_string(s: &[u8], buf: &mut String, ctx: &StringifyContext) {
     if ctx.in_structure {
         escape_string(s, buf);
     } else {
-        buf.push_str(s);
+        match std::str::from_utf8(s) {
+            Ok(valid) => buf.push_str(valid),
+            Err(_) => escape_string(s, buf),
+        }
     }
 }
 
-fn escape_string(s: &str, buf: &mut String) {
+fn escape_string(s: &[u8], buf: &mut String) {
     buf.push('"');
-    for byte in s.bytes() {
+    for &byte in s.iter() {
         match byte {
             b'"' => buf.push_str("\\\""),
             b'\\' => buf.push_str("\\\\"),
@@ -177,7 +180,10 @@ fn stringify_map(map: &crate::value::FrostMap, buf: &mut String, ctx: &Stringify
 
 fn stringify_map_entry(key: &MapKey, value: &Value, buf: &mut String, ctx: &StringifyContext) {
     let shorthand_name = match key {
-        MapKey::String(s) if ctx.pretty && is_identifier_like_and_not_keyword(s) => Some(s.as_ref()),
+        // Safe: is_identifier_like guarantees ASCII, which is valid UTF-8
+        MapKey::String(s) if ctx.pretty && is_identifier_like_and_not_keyword(s) => {
+            Some(std::str::from_utf8(s).unwrap())
+        }
         _ => None,
     };
 

@@ -2,6 +2,10 @@ use std::sync::Arc;
 
 use frost_core::{FrostArray, FrostFloat, FrostMap, MapKey, Value};
 
+fn str_key(s: &str) -> MapKey {
+    MapKey::String(Arc::from(s.as_bytes()))
+}
+
 // -- Primitives: to_frost_string --
 
 #[test]
@@ -69,6 +73,12 @@ fn string_top_level_with_special_chars_is_raw() {
 }
 
 #[test]
+fn string_top_level_non_utf8_falls_back_to_escaped() {
+    let v: Value = vec![0x80u8, 0xff].into();
+    assert_eq!(v.to_frost_string(), "\"\\x80\\xff\"");
+}
+
+#[test]
 fn function_placeholder() {
     // Can't easily construct a Function value in tests, tested via type_name coverage
 }
@@ -117,9 +127,8 @@ fn debug_string_hex_escapes_null_byte() {
 
 #[test]
 fn debug_string_hex_escapes_high_bytes() {
-    // Frost strings are binary-safe, but Rust's str/String must be valid UTF-8.
-    // Arc<str> cannot hold arbitrary bytes like \x80\xff.
-    // TODO: revisit if Frost's string type is changed to Arc<[u8]>.
+    let v: Value = vec![0x80u8, 0xff].into();
+    assert_eq!(v.to_debug_string(), "\"\\x80\\xff\"");
 }
 
 #[test]
@@ -172,7 +181,7 @@ fn nested_array_compact() {
 #[test]
 fn map_compact_string_keys() {
     let map: FrostMap = vec![
-        (MapKey::String(Arc::from("foo")), Value::from(1i64)),
+        (str_key("foo"), Value::from(1i64)),
     ]
     .into_iter()
     .collect();
@@ -196,7 +205,7 @@ fn map_compact_non_string_keys() {
 #[test]
 fn map_compact_reserved_keyword_key() {
     let map: FrostMap = vec![
-        (MapKey::String(Arc::from("if")), Value::from(1i64)),
+        (str_key("if"), Value::from(1i64)),
     ]
     .into_iter()
     .collect();
@@ -235,8 +244,8 @@ fn nested_array_pretty() {
 #[test]
 fn map_pretty_identifier_keys() {
     let map: FrostMap = vec![
-        (MapKey::String(Arc::from("a")), Value::from(1i64)),
-        (MapKey::String(Arc::from("b")), Value::from(2i64)),
+        (str_key("a"), Value::from(1i64)),
+        (str_key("b"), Value::from(2i64)),
     ]
     .into_iter()
     .collect();
@@ -249,8 +258,8 @@ fn map_pretty_identifier_keys() {
 #[test]
 fn map_pretty_keyword_key_uses_brackets() {
     let map: FrostMap = vec![
-        (MapKey::String(Arc::from("if")), Value::from(1i64)),
-        (MapKey::String(Arc::from("ok")), Value::from(2i64)),
+        (str_key("if"), Value::from(1i64)),
+        (str_key("ok"), Value::from(2i64)),
     ]
     .into_iter()
     .collect();
@@ -275,7 +284,7 @@ fn map_pretty_non_string_key_uses_brackets() {
 #[test]
 fn map_pretty_non_identifier_string_key() {
     let map: FrostMap = vec![
-        (MapKey::String(Arc::from("not-valid")), Value::from(1i64)),
+        (str_key("not-valid"), Value::from(1i64)),
     ]
     .into_iter()
     .collect();
@@ -293,7 +302,7 @@ fn empty_map_pretty() {
 fn map_with_nested_array_pretty() {
     let arr = FrostArray::new(&[Value::from(1i64), Value::from(2i64)]);
     let map: FrostMap = vec![
-        (MapKey::String(Arc::from("nums")), Value::from(arr)),
+        (str_key("nums"), Value::from(arr)),
     ]
     .into_iter()
     .collect();

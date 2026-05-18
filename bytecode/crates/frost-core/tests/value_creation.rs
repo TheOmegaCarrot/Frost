@@ -48,9 +48,21 @@ fn from_string() {
 }
 
 #[test]
-fn from_arc_str() {
-    let arc: Arc<str> = Arc::from("hello");
+fn from_arc_bytes() {
+    let arc: Arc<[u8]> = Arc::from(b"hello" as &[u8]);
     let v: Value = arc.into();
+    assert!(matches!(v, Value::String(_)));
+}
+
+#[test]
+fn from_byte_slice() {
+    let v: Value = (b"binary" as &[u8]).into();
+    assert!(matches!(v, Value::String(_)));
+}
+
+#[test]
+fn from_vec_u8() {
+    let v: Value = vec![0u8, 1, 2, 255].into();
     assert!(matches!(v, Value::String(_)));
 }
 

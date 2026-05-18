@@ -79,7 +79,7 @@ impl FrostMap {
 
     /// Convenience for string-keyed lookups without manually wrapping in MapKey.
     pub fn get_str(&self, key: &str) -> Option<&Value> {
-        self.inner.get(&MapKey::String(Arc::from(key)))
+        self.inner.get(&MapKey::String(Arc::from(key.as_bytes())))
     }
 
     pub fn into_value(self) -> Value {
