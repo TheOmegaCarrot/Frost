@@ -2,3 +2,6 @@
 name = "frost-core"
 version.workspace = true
 edition.workspace = true
+
+[dependencies]
+ryu = "1"

@@ -88,4 +88,8 @@ impl FrostArray {
             Some(&self.inner[resolved as usize])
         }
     }
+
+    pub fn into_value(self) -> Value {
+        Value::from(self)
+    }
 }

@@ -49,9 +49,7 @@ fn from_arc_btreemap() {
 
 #[test]
 fn collect_from_iterator() {
-    let map: FrostMap = (0..5)
-        .map(|i| (MapKey::Int(i), Value::from(i)))
-        .collect();
+    let map: FrostMap = (0..5).map(|i| (MapKey::Int(i), Value::from(i))).collect();
     assert_eq!(map.len(), 5);
 }
 

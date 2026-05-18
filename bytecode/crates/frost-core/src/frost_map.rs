@@ -81,4 +81,8 @@ impl FrostMap {
     pub fn get_str(&self, key: &str) -> Option<&Value> {
         self.inner.get(&MapKey::String(Arc::from(key)))
     }
+
+    pub fn into_value(self) -> Value {
+        Value::from(self)
+    }
 }
