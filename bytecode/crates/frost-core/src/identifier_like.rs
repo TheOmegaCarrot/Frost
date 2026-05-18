@@ -1,7 +1,7 @@
 const RESERVED_KEYWORDS: &[&[u8]] = &[
-    b"and", b"as", b"def", b"defn", b"do", b"elif", b"else", b"export", b"false", b"filter",
-    b"fn", b"foreach", b"if", b"init", b"is", b"map", b"match", b"not", b"null", b"or",
-    b"reduce", b"true", b"with",
+    b"and", b"as", b"def", b"defn", b"do", b"elif", b"else", b"export", b"false", b"filter", b"fn",
+    b"foreach", b"if", b"init", b"is", b"map", b"match", b"not", b"null", b"or", b"reduce",
+    b"true", b"with",
 ];
 
 /// Determines if a byte string is a Frost keyword.

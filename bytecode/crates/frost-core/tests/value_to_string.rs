@@ -69,7 +69,10 @@ fn string_top_level_is_raw() {
 
 #[test]
 fn string_top_level_with_special_chars_is_raw() {
-    assert_eq!(Value::from("line1\nline2").to_frost_string(), "line1\nline2");
+    assert_eq!(
+        Value::from("line1\nline2").to_frost_string(),
+        "line1\nline2"
+    );
 }
 
 #[test]
@@ -117,7 +120,10 @@ fn debug_string_escapes_backslash() {
 
 #[test]
 fn debug_string_escapes_double_quote() {
-    assert_eq!(Value::from("say \"hi\"").to_debug_string(), "\"say \\\"hi\\\"\"");
+    assert_eq!(
+        Value::from("say \"hi\"").to_debug_string(),
+        "\"say \\\"hi\\\"\""
+    );
 }
 
 #[test]
@@ -133,7 +139,10 @@ fn debug_string_hex_escapes_high_bytes() {
 
 #[test]
 fn debug_string_printable_ascii_unescaped() {
-    assert_eq!(Value::from("abc 123 !@#").to_debug_string(), "\"abc 123 !@#\"");
+    assert_eq!(
+        Value::from("abc 123 !@#").to_debug_string(),
+        "\"abc 123 !@#\""
+    );
 }
 
 #[test]
@@ -180,11 +189,9 @@ fn nested_array_compact() {
 
 #[test]
 fn map_compact_string_keys() {
-    let map: FrostMap = vec![
-        (str_key("foo"), Value::from(1i64)),
-    ]
-    .into_iter()
-    .collect();
+    let map: FrostMap = vec![(str_key("foo"), Value::from(1i64))]
+        .into_iter()
+        .collect();
     // Compact mode always uses [key]: syntax
     assert_eq!(Value::from(map).to_frost_string(), "{ [\"foo\"]: 1 }");
 }
@@ -204,11 +211,9 @@ fn map_compact_non_string_keys() {
 
 #[test]
 fn map_compact_reserved_keyword_key() {
-    let map: FrostMap = vec![
-        (str_key("if"), Value::from(1i64)),
-    ]
-    .into_iter()
-    .collect();
+    let map: FrostMap = vec![(str_key("if"), Value::from(1i64))]
+        .into_iter()
+        .collect();
     assert_eq!(Value::from(map).to_frost_string(), "{ [\"if\"]: 1 }");
 }
 
@@ -217,10 +222,7 @@ fn map_compact_reserved_keyword_key() {
 #[test]
 fn array_pretty() {
     let arr = FrostArray::new(&[Value::from(1i64), Value::from(2i64)]);
-    assert_eq!(
-        Value::from(arr).to_pretty_string(),
-        "[\n    1,\n    2\n]"
-    );
+    assert_eq!(Value::from(arr).to_pretty_string(), "[\n    1,\n    2\n]");
 }
 
 #[test]
@@ -270,25 +272,22 @@ fn map_pretty_keyword_key_uses_brackets() {
 
 #[test]
 fn map_pretty_non_string_key_uses_brackets() {
-    let map: FrostMap = vec![
-        (MapKey::Bool(true), Value::from(1i64)),
-    ]
-    .into_iter()
-    .collect();
-    assert_eq!(
-        Value::from(map).to_pretty_string(),
-        "{\n    [true]: 1\n}"
-    );
+    let map: FrostMap = vec![(MapKey::Bool(true), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    assert_eq!(Value::from(map).to_pretty_string(), "{\n    [true]: 1\n}");
 }
 
 #[test]
 fn map_pretty_non_identifier_string_key() {
-    let map: FrostMap = vec![
-        (str_key("not-valid"), Value::from(1i64)),
-    ]
-    .into_iter()
-    .collect();
-    assert!(Value::from(map).to_pretty_string().contains("[\"not-valid\"]: 1"));
+    let map: FrostMap = vec![(str_key("not-valid"), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    assert!(
+        Value::from(map)
+            .to_pretty_string()
+            .contains("[\"not-valid\"]: 1")
+    );
 }
 
 #[test]
@@ -301,11 +300,9 @@ fn empty_map_pretty() {
 #[test]
 fn map_with_nested_array_pretty() {
     let arr = FrostArray::new(&[Value::from(1i64), Value::from(2i64)]);
-    let map: FrostMap = vec![
-        (str_key("nums"), Value::from(arr)),
-    ]
-    .into_iter()
-    .collect();
+    let map: FrostMap = vec![(str_key("nums"), Value::from(arr))]
+        .into_iter()
+        .collect();
     assert_eq!(
         Value::from(map).to_pretty_string(),
         "{\n    nums: [\n        1,\n        2\n    ]\n}"
@@ -333,9 +330,10 @@ fn string_with_escapes_in_array() {
 
 #[test]
 fn map_compact_float_key() {
-    let map: FrostMap = vec![
-        (MapKey::Float(FrostFloat::new(3.14).unwrap()), Value::from("pi")),
-    ]
+    let map: FrostMap = vec![(
+        MapKey::Float(FrostFloat::new(3.14).unwrap()),
+        Value::from("pi"),
+    )]
     .into_iter()
     .collect();
     assert_eq!(Value::from(map).to_frost_string(), "{ [3.14]: \"pi\" }");

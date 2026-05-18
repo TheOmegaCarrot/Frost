@@ -194,7 +194,10 @@ fn cross_type_keys_have_consistent_order() {
         (str_key("z"), Value::from("str")),
         (MapKey::Bool(false), Value::from("bool")),
         (MapKey::Int(99), Value::from("int")),
-        (MapKey::Float(FrostFloat::new(1.5).unwrap()), Value::from("float")),
+        (
+            MapKey::Float(FrostFloat::new(1.5).unwrap()),
+            Value::from("float"),
+        ),
     ]
     .into_iter()
     .collect();
