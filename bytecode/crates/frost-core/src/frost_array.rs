@@ -1,4 +1,4 @@
-use std::ops::Index;
+use std::{cmp::Ordering, ops::Index};
 use std::sync::Arc;
 
 use crate::value::{FrostArray, Value};
@@ -49,6 +49,16 @@ impl PartialEq for FrostArray {
 }
 
 impl Eq for FrostArray {}
+
+impl PartialOrd for FrostArray {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if Arc::ptr_eq(&self.inner, &other.inner) {
+            Some(Ordering::Equal)
+        } else {
+            self.inner.iter().partial_cmp(other.inner.iter())
+        }
+    }
+}
 
 impl Default for FrostArray {
     fn default() -> Self {
