@@ -1,6 +1,6 @@
 Core:
 - [ ] Fundamental arithmetic operations (including array/map `+`)
-- [ ] Fundamental comparison/equality operations
+- [X] Fundamental comparison/equality operations
 - [ ] Fundamental Frost-semantic type conversions
 - [X] Stringification
 - [ ] Serde serialization/deserialization
