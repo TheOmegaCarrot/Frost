@@ -21,11 +21,7 @@ impl From<Arc<BTreeMap<MapKey, Value>>> for FrostMap {
 
 impl PartialEq for FrostMap {
     fn eq(&self, other: &Self) -> bool {
-        self.len() == other.len()
-            && self
-                .iter()
-                .zip(other.iter())
-                .all(|((lk, lv), (rk, rv))| lk == rk && lv == rv)
+        Arc::ptr_eq(&self.inner, &other.inner) || self.inner == other.inner
     }
 }
 

@@ -44,7 +44,7 @@ impl From<Vec<Value>> for FrostArray {
 
 impl PartialEq for FrostArray {
     fn eq(&self, other: &Self) -> bool {
-        self.len() == other.len() && self.iter().zip(other.iter()).all(|(l, r)| l == r)
+        Arc::ptr_eq(&self.inner, &other.inner) || self.as_slice() == other.as_slice()
     }
 }
 
