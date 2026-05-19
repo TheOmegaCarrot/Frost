@@ -42,6 +42,14 @@ impl From<Vec<Value>> for FrostArray {
     }
 }
 
+impl PartialEq for FrostArray {
+    fn eq(&self, other: &Self) -> bool {
+        self.len() == other.len() && self.iter().zip(other.iter()).all(|(l, r)| l == r)
+    }
+}
+
+impl Eq for FrostArray {}
+
 impl Default for FrostArray {
     fn default() -> Self {
         Self::empty()
