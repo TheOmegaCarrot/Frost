@@ -6,6 +6,7 @@ mod frost_float;
 mod frost_map;
 mod identifier_like;
 mod value;
+mod value_compare;
 mod value_impl;
 mod value_to_string;
 
