@@ -1,5 +1,5 @@
-use std::{cmp::Ordering, ops::Index};
 use std::sync::Arc;
+use std::{cmp::Ordering, ops::Index};
 
 use crate::value::{FrostArray, Value};
 

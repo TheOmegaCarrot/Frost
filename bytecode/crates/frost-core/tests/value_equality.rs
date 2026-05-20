@@ -118,27 +118,42 @@ fn nested_array_equality() {
 
 #[test]
 fn empty_maps_equal() {
-    assert_eq!(Value::from(FrostMap::empty()), Value::from(FrostMap::empty()));
+    assert_eq!(
+        Value::from(FrostMap::empty()),
+        Value::from(FrostMap::empty())
+    );
 }
 
 #[test]
 fn maps_same_entries() {
-    let a: FrostMap = vec![(str_key("x"), Value::from(1i64))].into_iter().collect();
-    let b: FrostMap = vec![(str_key("x"), Value::from(1i64))].into_iter().collect();
+    let a: FrostMap = vec![(str_key("x"), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    let b: FrostMap = vec![(str_key("x"), Value::from(1i64))]
+        .into_iter()
+        .collect();
     assert_eq!(Value::from(a), Value::from(b));
 }
 
 #[test]
 fn maps_different_values() {
-    let a: FrostMap = vec![(str_key("x"), Value::from(1i64))].into_iter().collect();
-    let b: FrostMap = vec![(str_key("x"), Value::from(2i64))].into_iter().collect();
+    let a: FrostMap = vec![(str_key("x"), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    let b: FrostMap = vec![(str_key("x"), Value::from(2i64))]
+        .into_iter()
+        .collect();
     assert_ne!(Value::from(a), Value::from(b));
 }
 
 #[test]
 fn maps_different_keys() {
-    let a: FrostMap = vec![(str_key("x"), Value::from(1i64))].into_iter().collect();
-    let b: FrostMap = vec![(str_key("y"), Value::from(1i64))].into_iter().collect();
+    let a: FrostMap = vec![(str_key("x"), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    let b: FrostMap = vec![(str_key("y"), Value::from(1i64))]
+        .into_iter()
+        .collect();
     assert_ne!(Value::from(a), Value::from(b));
 }
 
@@ -150,7 +165,9 @@ fn maps_different_sizes() {
     ]
     .into_iter()
     .collect();
-    let b: FrostMap = vec![(str_key("x"), Value::from(1i64))].into_iter().collect();
+    let b: FrostMap = vec![(str_key("x"), Value::from(1i64))]
+        .into_iter()
+        .collect();
     assert_ne!(Value::from(a), Value::from(b));
 }
 
@@ -166,7 +183,9 @@ fn same_arc_array_is_equal() {
 
 #[test]
 fn same_arc_map_is_equal() {
-    let map: FrostMap = vec![(str_key("k"), Value::from(1i64))].into_iter().collect();
+    let map: FrostMap = vec![(str_key("k"), Value::from(1i64))]
+        .into_iter()
+        .collect();
     let a = Value::from(map.clone());
     let b = Value::from(map);
     assert_eq!(a, b);

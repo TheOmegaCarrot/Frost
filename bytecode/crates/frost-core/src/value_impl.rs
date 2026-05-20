@@ -14,6 +14,12 @@ impl From<i64> for Value {
     }
 }
 
+impl From<i32> for Value {
+    fn from(i: i32) -> Value {
+        Value::Int(i as i64)
+    }
+}
+
 impl TryFrom<f64> for Value {
     type Error = FrostError;
     fn try_from(f: f64) -> Result<Value, Self::Error> {

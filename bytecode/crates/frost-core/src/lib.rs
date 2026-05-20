@@ -1,5 +1,6 @@
 #![allow(unused)]
 
+mod binary_operators;
 mod error;
 mod frost_array;
 mod frost_float;

@@ -17,6 +17,10 @@ impl FrostFloat {
             Ok(Self(f))
         }
     }
+
+    pub fn get(&self) -> f64 {
+        self.0
+    }
 }
 
 impl TryFrom<f64> for FrostFloat {
@@ -26,9 +30,21 @@ impl TryFrom<f64> for FrostFloat {
     }
 }
 
+impl From<i64> for FrostFloat {
+    fn from(i: i64) -> FrostFloat {
+        FrostFloat::new(i as f64).expect("IMPOSSIBLE: Integer conversion to FrostFloat failed")
+    }
+}
+
+impl From<FrostFloat> for f64 {
+    fn from(value: FrostFloat) -> Self {
+        value.0
+    }
+}
+
 impl Deref for FrostFloat {
     type Target = f64;
-    fn deref(&self) -> &f64 {
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
