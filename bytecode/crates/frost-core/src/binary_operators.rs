@@ -1,6 +1,43 @@
-use crate::{FrostError, FrostFloat, Value};
+use std::{collections::BTreeMap, sync::Arc};
+
+use crate::{FrostArray, FrostError, FrostFloat, FrostMap, Value};
 
 impl Value {
+    pub fn add(&self, rhs: &Value) -> Result<Value, FrostError> {
+        match (self, rhs) {
+            (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_add(*r))),
+
+            (Value::Float(l), Value::Float(r)) => {
+                Ok(Value::from(FrostFloat::try_from(l.get() + r.get())?))
+            }
+
+            (Value::Int(l), Value::Float(r)) => {
+                Ok(Value::from(FrostFloat::try_from(*l as f64 + r.get())?))
+            }
+
+            (Value::Float(l), Value::Int(r)) => {
+                Ok(Value::from(FrostFloat::try_from(l.get() + *r as f64)?))
+            }
+
+            (Value::String(l), Value::String(r)) => {
+                Ok(Value::from(Arc::from([l.as_ref(), r.as_ref()].concat())))
+            }
+
+            (Value::Array(l), Value::Array(r)) => Ok(Value::from(FrostArray::from(
+                [l.as_slice(), r.as_slice()].concat(),
+            ))),
+
+            (Value::Map(l), Value::Map(r)) => Ok(Value::Map(
+                l.iter()
+                    .chain(r.iter())
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect(),
+            )),
+
+            _ => Err(binop_type_error("add", "+", self, rhs)),
+        }
+    }
+
     pub fn subtract(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_sub(*r))),
