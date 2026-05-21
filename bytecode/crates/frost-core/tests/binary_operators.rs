@@ -319,8 +319,12 @@ fn add_array_both_empty() {
 
 #[test]
 fn add_map_disjoint_keys() {
-    let l: FrostMap = vec![(str_key("a"), Value::from(1i64))].into_iter().collect();
-    let r: FrostMap = vec![(str_key("b"), Value::from(2i64))].into_iter().collect();
+    let l: FrostMap = vec![(str_key("a"), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    let r: FrostMap = vec![(str_key("b"), Value::from(2i64))]
+        .into_iter()
+        .collect();
     let result = Value::from(l).add(&Value::from(r)).unwrap();
 
     let expected: FrostMap = vec![
@@ -360,9 +364,15 @@ fn add_map_overlapping_keys_right_wins() {
 
 #[test]
 fn add_map_shallow_merge_not_recursive() {
-    let inner_l: FrostMap = vec![(str_key("x"), Value::from(1i64))].into_iter().collect();
-    let inner_r: FrostMap = vec![(str_key("y"), Value::from(2i64))].into_iter().collect();
-    let l: FrostMap = vec![(str_key("a"), Value::from(inner_l))].into_iter().collect();
+    let inner_l: FrostMap = vec![(str_key("x"), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    let inner_r: FrostMap = vec![(str_key("y"), Value::from(2i64))]
+        .into_iter()
+        .collect();
+    let l: FrostMap = vec![(str_key("a"), Value::from(inner_l))]
+        .into_iter()
+        .collect();
     let r: FrostMap = vec![(str_key("a"), Value::from(inner_r.clone()))]
         .into_iter()
         .collect();
@@ -377,14 +387,18 @@ fn add_map_shallow_merge_not_recursive() {
 #[test]
 fn add_map_empty_left() {
     let l = FrostMap::empty();
-    let r: FrostMap = vec![(str_key("a"), Value::from(1i64))].into_iter().collect();
+    let r: FrostMap = vec![(str_key("a"), Value::from(1i64))]
+        .into_iter()
+        .collect();
     let result = Value::from(l).add(&Value::from(r.clone())).unwrap();
     assert_eq!(result, Value::from(r));
 }
 
 #[test]
 fn add_map_empty_right() {
-    let l: FrostMap = vec![(str_key("a"), Value::from(1i64))].into_iter().collect();
+    let l: FrostMap = vec![(str_key("a"), Value::from(1i64))]
+        .into_iter()
+        .collect();
     let r = FrostMap::empty();
     let result = Value::from(l.clone()).add(&Value::from(r)).unwrap();
     assert_eq!(result, Value::from(l));

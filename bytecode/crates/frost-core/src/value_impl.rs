@@ -124,4 +124,81 @@ impl Value {
             Value::Opaque(_) => "Opaque",
         }
     }
+
+    pub fn is_null(&self) -> bool {
+        matches!(self, Value::Null)
+    }
+    pub fn is_bool(&self) -> bool {
+        matches!(self, Value::Bool(_))
+    }
+    pub fn is_int(&self) -> bool {
+        matches!(self, Value::Int(_))
+    }
+    pub fn is_float(&self) -> bool {
+        matches!(self, Value::Float(_))
+    }
+    pub fn is_string(&self) -> bool {
+        matches!(self, Value::String(_))
+    }
+    pub fn is_array(&self) -> bool {
+        matches!(self, Value::Array(_))
+    }
+    pub fn is_map(&self) -> bool {
+        matches!(self, Value::Map(_))
+    }
+    pub fn is_function(&self) -> bool {
+        matches!(self, Value::Function(_))
+    }
+    pub fn is_opaque(&self) -> bool {
+        matches!(self, Value::Opaque(_))
+    }
+
+    pub fn is_numeric(&self) -> bool {
+        matches!(self, Value::Int(_) | Value::Float(_))
+    }
+    pub fn is_primitive(&self) -> bool {
+        matches!(
+            self,
+            Value::Null | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::String(_)
+        )
+    }
+    pub fn is_structured(&self) -> bool {
+        matches!(self, Value::Array(_) | Value::Map(_))
+    }
+    pub fn is_nonnull(&self) -> bool {
+        !self.is_null()
+    }
+
+    /// Frost's `to_int`: Int passes through, Float truncates toward zero,
+    /// String parses as an integer. Everything else returns Null.
+    pub fn to_frost_int(&self) -> Value {
+        match self {
+            Value::Int(_) => self.clone(),
+            Value::Float(f) => Value::from(f.get() as i64),
+            Value::String(s) => std::str::from_utf8(s)
+                .ok()
+                .and_then(|s| s.parse::<i64>().ok())
+                .map(Value::from)
+                .unwrap_or(Value::Null),
+            _ => Value::Null,
+        }
+    }
+
+    /// Frost's `to_float`: Float passes through, Int promotes,
+    /// String parses as a float. Everything else returns Null.
+    pub fn to_frost_float(&self) -> Value {
+        match self {
+            Value::Float(_) => self.clone(),
+            Value::Int(i) => FrostFloat::new(*i as f64)
+                .map(Value::from)
+                .unwrap_or(Value::Null),
+            Value::String(s) => std::str::from_utf8(s)
+                .ok()
+                .and_then(|s| s.parse::<f64>().ok())
+                .and_then(|f| FrostFloat::new(f).ok())
+                .map(Value::from)
+                .unwrap_or(Value::Null),
+            _ => Value::Null,
+        }
+    }
 }
