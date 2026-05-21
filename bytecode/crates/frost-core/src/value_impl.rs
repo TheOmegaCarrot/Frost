@@ -103,6 +103,7 @@ impl TryFrom<Value> for MapKey {
 }
 
 impl Value {
+    /// Returns `true` if the value is truthy. Only `Null` and `Bool(false)` are falsy.
     pub fn is_truthy(&self) -> bool {
         match self {
             Value::Null => false,
@@ -111,6 +112,7 @@ impl Value {
         }
     }
 
+    /// Returns the Frost type name of this value (e.g. `"Int"`, `"String"`, `"Array"`).
     pub fn type_name(&self) -> &'static str {
         match self {
             Value::Null => "Null",
@@ -125,46 +127,70 @@ impl Value {
         }
     }
 
+    /// Returns true if this value is a Null.
     pub fn is_null(&self) -> bool {
         matches!(self, Value::Null)
     }
+
+    /// Returns true if this value is a Bool.
     pub fn is_bool(&self) -> bool {
         matches!(self, Value::Bool(_))
     }
+
+    /// Returns true if this value is an Int.
     pub fn is_int(&self) -> bool {
         matches!(self, Value::Int(_))
     }
+
+    /// Returns true if this value is a Float.
     pub fn is_float(&self) -> bool {
         matches!(self, Value::Float(_))
     }
+
+    /// Returns true if this value is a String.
     pub fn is_string(&self) -> bool {
         matches!(self, Value::String(_))
     }
+
+    /// Returns true if this value is an Array.
     pub fn is_array(&self) -> bool {
         matches!(self, Value::Array(_))
     }
+
+    /// Returns true if this value is a Map.
     pub fn is_map(&self) -> bool {
         matches!(self, Value::Map(_))
     }
+
+    /// Returns true if this value is a Function.
     pub fn is_function(&self) -> bool {
         matches!(self, Value::Function(_))
     }
+
+    /// Returns true if this value is an Opaque.
     pub fn is_opaque(&self) -> bool {
         matches!(self, Value::Opaque(_))
     }
 
+    /// Returns true if this value is Int or Float.
     pub fn is_numeric(&self) -> bool {
         matches!(self, Value::Int(_) | Value::Float(_))
     }
+
+    /// Returns true if this value is Null, Bool, Int, Float, or String.
     pub fn is_primitive(&self) -> bool {
         matches!(
             self,
             Value::Null | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::String(_)
         )
     }
+
+    /// Returns true if this value is Array or Map.
     pub fn is_structured(&self) -> bool {
         matches!(self, Value::Array(_) | Value::Map(_))
     }
+
+    /// Returns true if this value is not Null.
     pub fn is_nonnull(&self) -> bool {
         !self.is_null()
     }

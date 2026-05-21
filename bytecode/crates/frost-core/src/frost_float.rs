@@ -8,6 +8,7 @@ use crate::error::FrostError;
 pub struct FrostFloat(f64);
 
 impl FrostFloat {
+    /// Creates a new FrostFloat, returning an error if the value is NaN or Infinity.
     pub fn new(f: f64) -> Result<Self, FrostError> {
         if f.is_nan() || f.is_infinite() {
             Err(FrostError::Recoverable(
@@ -18,6 +19,7 @@ impl FrostFloat {
         }
     }
 
+    /// Returns the inner f64 value.
     pub fn get(&self) -> f64 {
         self.0
     }

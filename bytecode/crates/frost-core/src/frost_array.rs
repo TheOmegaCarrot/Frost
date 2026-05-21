@@ -67,30 +67,36 @@ impl Default for FrostArray {
 }
 
 impl FrostArray {
+    /// Creates a new FrostArray from a slice of values.
     pub fn new(elems: &[Value]) -> Self {
         Self {
             inner: Arc::from(elems),
         }
     }
 
+    /// Creates an empty FrostArray.
     pub fn empty() -> Self {
         Self {
             inner: Arc::from([]),
         }
     }
 
+    /// Returns an iterator over references to the elements.
     pub fn iter(&self) -> std::slice::Iter<'_, Value> {
         self.inner.iter()
     }
 
+    /// Returns the number of elements.
     pub fn len(&self) -> usize {
         self.inner.len()
     }
 
+    /// Returns true if the array has no elements.
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
 
+    /// Returns the elements as a slice.
     pub fn as_slice(&self) -> &[Value] {
         &self.inner
     }
@@ -107,6 +113,7 @@ impl FrostArray {
         }
     }
 
+    /// Converts this array into a Value.
     pub fn into_value(self) -> Value {
         Value::from(self)
     }

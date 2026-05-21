@@ -26,6 +26,7 @@ impl ser::Error for SerError {
 
 // -- Public API --
 
+/// Serializes any `Serialize` type into a Frost `Value`.
 pub fn to_value<T: Serialize>(value: &T) -> Result<Value, crate::FrostError> {
     value
         .serialize(ValueSerializer)

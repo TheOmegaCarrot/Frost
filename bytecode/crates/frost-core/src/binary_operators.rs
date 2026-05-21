@@ -3,6 +3,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use crate::{FrostArray, FrostError, FrostFloat, FrostMap, Value};
 
 impl Value {
+    /// Frost `+` operator: numeric addition, string/array concatenation, or map merge.
     pub fn add(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_add(*r))),
@@ -38,6 +39,7 @@ impl Value {
         }
     }
 
+    /// Frost `-` operator: numeric subtraction.
     pub fn subtract(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_sub(*r))),
@@ -58,6 +60,7 @@ impl Value {
         }
     }
 
+    /// Frost `*` operator: numeric multiplication.
     pub fn multiply(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_mul(*r))),
@@ -78,6 +81,7 @@ impl Value {
         }
     }
 
+    /// Frost `/` operator: numeric division. Integer division truncates toward zero.
     pub fn divide(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
             (Value::Int(_) | Value::Float(_), Value::Int(0)) => {
@@ -106,6 +110,7 @@ impl Value {
         }
     }
 
+    /// Frost `%` operator: integer-only modulus.
     pub fn modulus(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
             (Value::Int(_), Value::Int(0)) => {

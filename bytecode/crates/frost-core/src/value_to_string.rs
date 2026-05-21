@@ -4,18 +4,23 @@ use crate::identifier_like::is_identifier_like_and_not_keyword;
 use crate::value::{MapKey, Value};
 
 impl Value {
+    /// Converts to a compact string representation.
+    /// Strings at the top level are unquoted.
     pub fn to_frost_string(&self) -> String {
         let mut buf = String::new();
         stringify(self, &mut buf, &StringifyContext::compact());
         buf
     }
 
+    /// Converts to a pretty-printed string with indentation.
+    /// Strings at the top level are unquoted.
     pub fn to_pretty_string(&self) -> String {
         let mut buf = String::new();
         stringify(self, &mut buf, &StringifyContext::pretty());
         buf
     }
 
+    /// Converts to a string representation where all values are quoted/escaped.
     pub fn to_debug_string(&self) -> String {
         let mut buf = String::new();
         stringify(self, &mut buf, &StringifyContext::debug());

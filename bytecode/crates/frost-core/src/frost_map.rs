@@ -51,37 +51,45 @@ impl<'a> IntoIterator for &'a FrostMap {
 }
 
 impl FrostMap {
+    /// Creates an empty FrostMap.
     pub fn empty() -> Self {
         Self {
             inner: Arc::from(BTreeMap::new()),
         }
     }
 
+    /// Returns the number of entries.
     pub fn len(&self) -> usize {
         self.inner.len()
     }
 
+    /// Returns true if the map has no entries.
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
 
+    /// Returns the value associated with the given key, or None.
     pub fn get(&self, key: &MapKey) -> Option<&Value> {
         self.inner.get(key)
     }
 
+    /// Returns true if the map contains the given key.
     pub fn contains_key(&self, key: &MapKey) -> bool {
         self.inner.contains_key(key)
     }
 
-    pub fn keys(&self) -> btree_map::Keys<'_, MapKey, Value> {
+    /// Returns an iterator over the keys.
+    pub fn keys(&self) -> impl Iterator<Item = &MapKey> {
         self.inner.keys()
     }
 
-    pub fn values(&self) -> btree_map::Values<'_, MapKey, Value> {
+    /// Returns an iterator over the values.
+    pub fn values(&self) -> impl Iterator<Item = &Value> {
         self.inner.values()
     }
 
-    pub fn iter(&self) -> btree_map::Iter<'_, MapKey, Value> {
+    /// Returns an iterator over key-value pairs.
+    pub fn iter(&self) -> impl Iterator<Item = (&MapKey, &Value)> {
         self.inner.iter()
     }
 
@@ -90,6 +98,7 @@ impl FrostMap {
         self.inner.get(&MapKey::String(Arc::from(key.as_bytes())))
     }
 
+    /// Converts this map into a Value.
     pub fn into_value(self) -> Value {
         Value::from(self)
     }
