@@ -1,5 +1,5 @@
 Core:
-- [ ] Fundamental arithmetic operations (including array/map `+`)
+- [X] Fundamental arithmetic operations (including array/map `+`)
 - [X] Fundamental comparison/equality operations
 - [ ] Fundamental Frost-semantic type conversions
 - [X] Stringification
