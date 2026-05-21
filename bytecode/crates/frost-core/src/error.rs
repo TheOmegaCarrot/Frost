@@ -1,5 +1,10 @@
 use std::fmt;
 
+// TODO: Add backtrace support for function-call-level error tracing.
+// Each variant gets a Vec<String> of function names, accumulated by the VM
+// as errors propagate through call frames via a .with_frame("name") method.
+// Deferred until the VM is dispatching calls.
+
 #[derive(Clone, Debug)]
 pub enum FrostError {
     /// An error caused by user code, which user code can recover from.
