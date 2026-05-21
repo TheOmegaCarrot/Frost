@@ -3,5 +3,5 @@ Core:
 - [X] Fundamental comparison/equality operations
 - [X] Fundamental Frost-semantic type conversions
 - [X] Stringification
-- [ ] Serde serialization/deserialization
+- [X] Serde serialization/deserialization
 - [ ] Error polish (pending more work being done outside the core)
