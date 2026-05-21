@@ -105,6 +105,18 @@ impl Value {
             _ => Err(binop_type_error("divide", "/", self, rhs)),
         }
     }
+
+    pub fn modulus(&self, rhs: &Value) -> Result<Value, FrostError> {
+        match (self, rhs) {
+            (Value::Int(_), Value::Int(0)) => {
+                Err(FrostError::Recoverable("Modulus by zero".into()))
+            }
+
+            (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_rem(*r))),
+
+            _ => Err(binop_type_error("modulus", "%", self, rhs)),
+        }
+    }
 }
 
 fn binop_type_error(verb: &str, glyph: &str, lhs: &Value, rhs: &Value) -> FrostError {

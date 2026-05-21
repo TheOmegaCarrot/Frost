@@ -431,3 +431,51 @@ fn add_type_error_is_recoverable() {
     let r = Value::from(1i64).add(&Value::from("a"));
     assert!(matches!(r.unwrap_err(), FrostError::Recoverable(_)));
 }
+
+// ---- Modulus ----
+
+#[test]
+fn modulus_int_int() {
+    assert_eq!(
+        Value::from(7i64).modulus(&Value::from(3i64)).unwrap(),
+        Value::from(1i64)
+    );
+}
+
+#[test]
+fn modulus_negative_dividend() {
+    assert_eq!(
+        Value::from(-7i64).modulus(&Value::from(3i64)).unwrap(),
+        Value::from(-1i64)
+    );
+}
+
+#[test]
+fn modulus_negative_divisor() {
+    assert_eq!(
+        Value::from(7i64).modulus(&Value::from(-3i64)).unwrap(),
+        Value::from(1i64)
+    );
+}
+
+#[test]
+fn modulus_by_zero() {
+    assert!(Value::from(7i64).modulus(&Value::from(0i64)).is_err());
+}
+
+#[test]
+fn modulus_float_is_type_error() {
+    let f: Value = 7.0.try_into().unwrap();
+    assert!(f.modulus(&Value::from(3i64)).is_err());
+}
+
+#[test]
+fn modulus_int_float_is_type_error() {
+    let f: Value = 3.0.try_into().unwrap();
+    assert!(Value::from(7i64).modulus(&f).is_err());
+}
+
+#[test]
+fn modulus_string_is_type_error() {
+    assert!(Value::from("a").modulus(&Value::from(1i64)).is_err());
+}
