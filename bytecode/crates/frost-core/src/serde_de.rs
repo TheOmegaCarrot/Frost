@@ -34,8 +34,7 @@ impl de::Error for DeError {
 // -- Public API --
 
 pub fn from_value<'de, T: serde::Deserialize<'de>>(value: Value) -> Result<T, crate::FrostError> {
-    T::deserialize(ValueDeserializer(value))
-        .map_err(|e| crate::FrostError::Recoverable(e.0))
+    T::deserialize(ValueDeserializer(value)).map_err(|e| crate::FrostError::Recoverable(e.0))
 }
 
 // -- Deserializer --
@@ -82,7 +81,11 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
     fn deserialize_map<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
         match self.0 {
             Value::Map(ref map) => visitor.visit_map(MapAccess {
-                iter: map.iter().map(|(k, v)| (k.clone(), v.clone())).collect::<Vec<_>>().into_iter(),
+                iter: map
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect::<Vec<_>>()
+                    .into_iter(),
                 pending_value: None,
             }),
             _ => Err(de::Error::custom(format!(
@@ -116,8 +119,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
     ) -> Result<V::Value, DeError> {
         match &self.0 {
             Value::String(s) => {
-                let s = std::str::from_utf8(s)
-                    .map_err(de::Error::custom)?;
+                let s = std::str::from_utf8(s).map_err(de::Error::custom)?;
                 visitor.visit_enum(s.into_deserializer())
             }
             Value::Map(map) => {
@@ -128,8 +130,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
                 }
                 let (key, value) = map.iter().next().unwrap();
                 let variant_name = match key {
-                    MapKey::String(s) => std::str::from_utf8(s)
-                        .map_err(de::Error::custom)?,
+                    MapKey::String(s) => std::str::from_utf8(s).map_err(de::Error::custom)?,
                     _ => return Err(de::Error::custom("enum variant key must be a String")),
                 };
                 visitor.visit_enum(EnumAccess {
@@ -353,13 +354,13 @@ impl<'de> Visitor<'de> for ValueVisitor {
     fn visit_map<A: de::MapAccess<'de>>(self, mut map: A) -> Result<Value, A::Error> {
         let mut entries = Vec::with_capacity(map.size_hint().unwrap_or(0));
         while let Some((key, value)) = map.next_entry::<Value, Value>()? {
-            let map_key = MapKey::try_from(key)
-                .map_err(de::Error::custom)?;
+            let map_key = MapKey::try_from(key).map_err(de::Error::custom)?;
             entries.push((map_key, value));
         }
         Ok(Value::from(FrostMap::from(
-            entries.into_iter().collect::<std::collections::BTreeMap<_, _>>(),
+            entries
+                .into_iter()
+                .collect::<std::collections::BTreeMap<_, _>>(),
         )))
     }
 }
-

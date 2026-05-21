@@ -17,6 +17,11 @@ pub enum Value {
     Opaque(Arc<dyn Any + Send + Sync>),
 }
 
+const _: () = {
+    const fn assert_send_sync<T: Send + Sync>() {}
+    assert_send_sync::<Value>();
+};
+
 /// A Frost Map key, only a subset of types.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MapKey {
@@ -28,6 +33,7 @@ pub enum MapKey {
 
 pub trait Callable: std::fmt::Debug + Send + Sync {
     fn call(&self, args: &[Value]) -> Result<Value, FrostError>;
+    fn name(&self) -> &str;
 }
 
 /// Frost's array type. Implementation is opaque so the backing

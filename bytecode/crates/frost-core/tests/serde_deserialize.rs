@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use frost_core::{from_value, to_value, FrostArray, FrostFloat, FrostMap, MapKey, Value};
+use frost_core::{FrostArray, FrostFloat, FrostMap, MapKey, Value, from_value, to_value};
 
 fn str_key(s: &str) -> MapKey {
     MapKey::String(Arc::from(s.as_bytes()))
@@ -42,10 +42,7 @@ fn deserialize_f64() {
 
 #[test]
 fn deserialize_string() {
-    assert_eq!(
-        from_value::<String>(Value::from("hello")).unwrap(),
-        "hello"
-    );
+    assert_eq!(from_value::<String>(Value::from("hello")).unwrap(), "hello");
 }
 
 // ---- Option ----
@@ -339,7 +336,9 @@ fn deserialize_value_array() {
 
 #[test]
 fn deserialize_value_map() {
-    let map: FrostMap = vec![(str_key("a"), Value::from(1i64))].into_iter().collect();
+    let map: FrostMap = vec![(str_key("a"), Value::from(1i64))]
+        .into_iter()
+        .collect();
     let original = Value::from(map);
     let v: Value = from_value(original.clone()).unwrap();
     assert_eq!(v, original);
@@ -539,10 +538,7 @@ fn round_trip_struct_enum() {
 
 #[test]
 fn round_trip_vec_of_structs() {
-    let original = vec![
-        Inner { x: 1, y: 2 },
-        Inner { x: 3, y: 4 },
-    ];
+    let original = vec![Inner { x: 1, y: 2 }, Inner { x: 3, y: 4 }];
     let value = to_value(&original).unwrap();
     let recovered: Vec<Inner> = from_value(value).unwrap();
     assert_eq!(original, recovered);

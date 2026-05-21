@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use serde::Serialize;
 
-use frost_core::{to_value, FrostArray, FrostMap, MapKey, Value};
+use frost_core::{FrostArray, FrostMap, MapKey, Value, to_value};
 
 fn str_key(s: &str) -> MapKey {
     MapKey::String(Arc::from(s.as_bytes()))
@@ -343,7 +343,9 @@ fn serialize_value_array() {
 
 #[test]
 fn serialize_value_map() {
-    let map: FrostMap = vec![(str_key("a"), Value::from(1i64))].into_iter().collect();
+    let map: FrostMap = vec![(str_key("a"), Value::from(1i64))]
+        .into_iter()
+        .collect();
     let original = Value::from(map);
     let v = to_value(&original).unwrap();
     assert_eq!(v, original);
@@ -379,10 +381,7 @@ fn serialize_tuple_variant() {
     let v = to_value(&Expr::Pair(1, "hello".into())).unwrap();
     if let Value::Map(outer) = v {
         let inner = outer.get_str("Pair").unwrap();
-        let expected = Value::from(FrostArray::new(&[
-            Value::from(1i64),
-            Value::from("hello"),
-        ]));
+        let expected = Value::from(FrostArray::new(&[Value::from(1i64), Value::from("hello")]));
         assert_eq!(inner, &expected);
     } else {
         panic!("expected Map");

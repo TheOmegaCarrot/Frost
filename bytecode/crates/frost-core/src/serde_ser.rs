@@ -151,12 +151,9 @@ impl ser::Serializer for ValueSerializer {
         value: &T,
     ) -> Result<Value, SerError> {
         let inner = value.serialize(ValueSerializer)?;
-        let map: FrostMap = vec![(
-            MapKey::String(Arc::from(variant.as_bytes())),
-            inner,
-        )]
-        .into_iter()
-        .collect();
+        let map: FrostMap = vec![(MapKey::String(Arc::from(variant.as_bytes())), inner)]
+            .into_iter()
+            .collect();
         Ok(Value::from(map))
     }
 
@@ -284,12 +281,9 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
 
     fn end(self) -> Result<Value, SerError> {
         let arr = Value::from(FrostArray::from(self.elements));
-        let map: FrostMap = vec![(
-            MapKey::String(Arc::from(self.variant.as_bytes())),
-            arr,
-        )]
-        .into_iter()
-        .collect();
+        let map: FrostMap = vec![(MapKey::String(Arc::from(self.variant.as_bytes())), arr)]
+            .into_iter()
+            .collect();
         Ok(Value::from(map))
     }
 }
@@ -305,8 +299,7 @@ impl ser::SerializeMap for SerializeMap {
 
     fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> Result<(), SerError> {
         let key_value = key.serialize(ValueSerializer)?;
-        let map_key = MapKey::try_from(key_value)
-            .map_err(ser::Error::custom)?;
+        let map_key = MapKey::try_from(key_value).map_err(ser::Error::custom)?;
         self.pending_key = Some(map_key);
         Ok(())
     }
@@ -322,7 +315,9 @@ impl ser::SerializeMap for SerializeMap {
 
     fn end(self) -> Result<Value, SerError> {
         Ok(Value::from(FrostMap::from(
-            self.entries.into_iter().collect::<std::collections::BTreeMap<_, _>>(),
+            self.entries
+                .into_iter()
+                .collect::<std::collections::BTreeMap<_, _>>(),
         )))
     }
 }
@@ -349,7 +344,9 @@ impl ser::SerializeStruct for SerializeStruct {
 
     fn end(self) -> Result<Value, SerError> {
         Ok(Value::from(FrostMap::from(
-            self.entries.into_iter().collect::<std::collections::BTreeMap<_, _>>(),
+            self.entries
+                .into_iter()
+                .collect::<std::collections::BTreeMap<_, _>>(),
         )))
     }
 }
