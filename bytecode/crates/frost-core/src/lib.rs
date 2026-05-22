@@ -16,4 +16,5 @@ mod value;
 pub use error::{FrostError, FrostResult};
 pub use serde::{from_value, to_value};
 pub use types::float::FrostFloat;
+pub use util::identifier::KEYWORDS;
 pub use value::{Callable, FrostArray, FrostMap, MapKey, Value};

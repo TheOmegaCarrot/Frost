@@ -1,7 +1,16 @@
-const RESERVED_KEYWORDS: &[&[u8]] = &[
-    b"and", b"as", b"def", b"defn", b"do", b"elif", b"else", b"export", b"false", b"filter", b"fn",
-    b"foreach", b"if", b"init", b"is", b"map", b"match", b"not", b"null", b"or", b"reduce",
-    b"true", b"with",
+macro_rules! define_keywords {
+    ($($kw:literal),+ $(,)?) => {
+        /// All Frost reserved keywords, as str slices.
+        pub const KEYWORDS: &[&str] = &[$($kw),+];
+        /// All Frost reserved keywords, as byte strings.
+        const RESERVED_KEYWORDS: &[&[u8]] = &[$($kw.as_bytes()),+];
+    };
+}
+
+define_keywords![
+    "and", "as", "def", "defn", "do", "elif", "else", "export", "false", "filter", "fn",
+    "foreach", "if", "init", "is", "map", "match", "not", "null", "or", "reduce",
+    "true", "with",
 ];
 
 /// Determines if a byte string is a Frost keyword.
