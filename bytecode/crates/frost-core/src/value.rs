@@ -1,7 +1,12 @@
+mod compare;
+mod convert;
+mod operators;
+mod stringify;
+
 use std::{any::Any, collections::BTreeMap, sync::Arc};
 
 pub use crate::error::FrostError;
-pub use crate::frost_float::FrostFloat;
+pub use crate::types::float::FrostFloat;
 
 /// The fundamental runtime value type of Frost.
 ///

@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use crate::identifier_like::is_identifier_like_and_not_keyword;
+use crate::util::identifier::is_identifier_like_and_not_keyword;
 use crate::value::{MapKey, Value};
 
 impl Value {
