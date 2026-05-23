@@ -14,6 +14,15 @@ pub struct SourceSpan {
     pub end: SourcePos,
 }
 
+// -- Binding --
+
+/// A name binding: either a named identifier or a discard (`_`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Binding {
+    Named(String),
+    Discarded,
+}
+
 // -- Program --
 
 /// A program is a sequence of statements.
@@ -91,15 +100,15 @@ pub enum ExprKind {
     FormatString(Vec<FormatSegment>),
     /// `fn name?(params) -> body`
     Lambda {
-        /// Non-variadic parameters, excluding a `...rest` param
-        params: Vec<String>,
-        /// Variadic param, preceded by `...`
-        variadic_param: Option<String>,
-        /// Lambdas may or may not have a name
+        /// Non-variadic parameters, excluding a `...rest` param.
+        params: Vec<Binding>,
+        /// Variadic param, preceded by `...`.
+        variadic_param: Option<Binding>,
+        /// Lambdas may or may not have a name for self-recursion.
         self_name: Option<String>,
-        /// Non-tail statements
+        /// Non-tail statements.
         body: Vec<Statement>,
-        /// Tail position expression which evaluates to return value
+        /// Tail position expression which evaluates to the return value.
         return_expr: Box<Expr>,
     },
     /// `filter structure with operation`
@@ -188,7 +197,7 @@ pub struct MatchPattern {
 pub enum MatchPatternKind {
     /// `name` or `name is Type` or `_` or `_ is Type`.
     Binding {
-        name: Option<String>,
+        name: Binding,
         type_constraint: Option<TypeConstraint>,
     },
     /// `(expr)` or a literal -- compare by value.
@@ -196,12 +205,12 @@ pub enum MatchPatternKind {
     /// `[p1, p2, ...rest]`
     Array {
         elements: Vec<MatchPattern>,
-        rest: Option<Option<String>>,
+        rest: Option<Binding>,
     },
     /// `{key: pattern, ...} as name?`
     Map {
         entries: Vec<MapPatternEntry>,
-        bind_whole: Option<String>,
+        bind_whole: Option<Binding>,
     },
     /// `p1 | p2 | p3`
     Alternative(Vec<MatchPattern>),
@@ -237,16 +246,16 @@ pub struct Destructure {
 
 pub enum DestructureKind {
     /// `def name = ...`
-    Binding(Option<String>),
+    Binding(Binding),
     /// `def [a, b, ...rest] = ...`
     Array {
         elements: Vec<Destructure>,
-        rest: Option<Option<String>>,
+        rest: Option<Binding>,
     },
     /// `def {key: name, ...} as whole? = ...`
     Map {
         entries: Vec<MapDestructureEntry>,
-        bind_whole: Option<String>,
+        bind_whole: Option<Binding>,
     },
 }
 
