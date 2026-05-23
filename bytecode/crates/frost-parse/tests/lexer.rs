@@ -9,7 +9,11 @@ fn lex<'a>(input: &'a str) -> Vec<Token<'a>> {
 
 fn lex_one<'a>(input: &'a str) -> Token<'a> {
     let tokens = lex(input);
-    assert_eq!(tokens.len(), 1, "expected 1 token from {input:?}, got {tokens:?}");
+    assert_eq!(
+        tokens.len(),
+        1,
+        "expected 1 token from {input:?}, got {tokens:?}"
+    );
     tokens.into_iter().next().unwrap()
 }
 
@@ -186,7 +190,12 @@ fn tabs_are_skipped() {
 fn mixed_whitespace_skipped() {
     assert_eq!(
         lex("  def \t x  =  42"),
-        vec![Token::KwDef, Token::Identifier("x"), Token::Assign, Token::IntLiteral(42)]
+        vec![
+            Token::KwDef,
+            Token::Identifier("x"),
+            Token::Assign,
+            Token::IntLiteral(42)
+        ]
     );
 }
 
@@ -216,7 +225,12 @@ fn comment_only_line() {
 fn simple_def() {
     assert_eq!(
         lex("def x = 42"),
-        vec![Token::KwDef, Token::Identifier("x"), Token::Assign, Token::IntLiteral(42)]
+        vec![
+            Token::KwDef,
+            Token::Identifier("x"),
+            Token::Assign,
+            Token::IntLiteral(42)
+        ]
     );
 }
 
@@ -409,10 +423,7 @@ fn dot_access() {
 #[test]
 fn negative_number_is_two_tokens() {
     // Unary minus is handled by the parser, not the lexer
-    assert_eq!(
-        lex("-42"),
-        vec![Token::OpMinus, Token::IntLiteral(42)]
-    );
+    assert_eq!(lex("-42"), vec![Token::OpMinus, Token::IntLiteral(42)]);
 }
 
 #[test]
@@ -506,7 +517,10 @@ fn only_whitespace() {
 
 #[test]
 fn consecutive_newlines() {
-    assert_eq!(lex("\n\n\n"), vec![Token::Newline, Token::Newline, Token::Newline]);
+    assert_eq!(
+        lex("\n\n\n"),
+        vec![Token::Newline, Token::Newline, Token::Newline]
+    );
 }
 
 #[test]
@@ -520,6 +534,292 @@ fn dollar_paren_vs_paren() {
             Token::CloseParen,
             Token::OpenParen,
             Token::Identifier("y"),
+            Token::CloseParen,
+        ]
+    );
+}
+
+// ---- String literals ----
+
+#[test]
+fn raw_string_single() {
+    assert_eq!(lex_one("R'(hello)'"), Token::RawStringLiteral("hello"));
+}
+
+#[test]
+fn raw_string_double() {
+    assert_eq!(lex_one(r#"R"(hello)""#), Token::RawStringLiteral("hello"));
+}
+
+#[test]
+fn raw_string_preserves_backslashes() {
+    assert_eq!(lex_one(r"R'(hello\nworld)'"), Token::RawStringLiteral(r"hello\nworld"));
+}
+
+#[test]
+fn simple_string_single() {
+    assert_eq!(lex_one("'hello'"), Token::SimpleStringLiteral("hello"));
+}
+
+#[test]
+fn simple_string_double() {
+    assert_eq!(lex_one(r#""hello""#), Token::SimpleStringLiteral("hello"));
+}
+
+#[test]
+fn simple_string_empty() {
+    assert_eq!(lex_one("''"), Token::SimpleStringLiteral(""));
+    assert_eq!(lex_one(r#""""#), Token::SimpleStringLiteral(""));
+}
+
+#[test]
+fn simple_string_with_escapes() {
+    // Escapes are preserved raw — parser handles them
+    assert_eq!(lex_one(r"'hello\nworld'"), Token::SimpleStringLiteral(r"hello\nworld"));
+    assert_eq!(lex_one(r"'tab\there'"), Token::SimpleStringLiteral(r"tab\there"));
+}
+
+#[test]
+fn simple_string_escaped_quote() {
+    assert_eq!(lex_one(r"'it\'s'"), Token::SimpleStringLiteral(r"it\'s"));
+    assert_eq!(lex_one(r#""say \"hi\"""#), Token::SimpleStringLiteral(r#"say \"hi\""#));
+}
+
+#[test]
+fn simple_string_escaped_backslash() {
+    assert_eq!(lex_one(r"'back\\slash'"), Token::SimpleStringLiteral(r"back\\slash"));
+}
+
+#[test]
+fn multiline_string_double() {
+    let input = "\"\"\"\n    hello\n    world\n    \"\"\"";
+    let tok = lex_one(input);
+    assert!(matches!(tok, Token::MultilineStringLiteral(_)));
+    if let Token::MultilineStringLiteral(content) = tok {
+        assert!(content.contains("hello"));
+        assert!(content.contains("world"));
+        assert!(content.contains('\n'));
+    }
+}
+
+#[test]
+fn multiline_string_single() {
+    let input = "'''\n    hello\n    world\n    '''";
+    let tok = lex_one(input);
+    assert!(matches!(tok, Token::MultilineStringLiteral(_)));
+}
+
+// ---- Format string literals ----
+
+#[test]
+fn format_string_simple() {
+    assert_eq!(
+        lex_one("$'hello'"),
+        Token::FormatStringLiteral("hello")
+    );
+}
+
+#[test]
+fn format_string_double_quote() {
+    assert_eq!(
+        lex_one("$\"hello\""),
+        Token::FormatStringLiteral("hello")
+    );
+}
+
+#[test]
+fn format_string_with_interpolation() {
+    assert_eq!(
+        lex_one("$'hello, ${name}'"),
+        Token::FormatStringLiteral("hello, ${name}")
+    );
+}
+
+#[test]
+fn format_string_with_expression_interpolation() {
+    assert_eq!(
+        lex_one("$'result: ${1 + 2}'"),
+        Token::FormatStringLiteral("result: ${1 + 2}")
+    );
+}
+
+#[test]
+fn format_string_nested_braces_in_interpolation() {
+    // Map literal inside interpolation: { foo: 1 } has braces
+    assert_eq!(
+        lex_one("$'value: ${{ foo: 1 }}'"),
+        Token::FormatStringLiteral("value: ${{ foo: 1 }}")
+    );
+}
+
+#[test]
+fn format_string_string_inside_interpolation_same_quote() {
+    // String with same quote style inside interpolation
+    assert_eq!(
+        lex_one("$'result: ${map['key']}'"),
+        Token::FormatStringLiteral("result: ${map['key']}")
+    );
+}
+
+#[test]
+fn format_string_string_inside_interpolation_other_quote() {
+    assert_eq!(
+        lex_one(r#"$"result: ${map["key"]}""#),
+        Token::FormatStringLiteral(r#"result: ${map["key"]}"#)
+    );
+}
+
+#[test]
+fn format_string_escaped_dollar() {
+    assert_eq!(
+        lex_one(r"$'price: \${5}'"),
+        Token::FormatStringLiteral(r"price: \${5}")
+    );
+}
+
+#[test]
+fn format_string_bare_dollar() {
+    // $ not followed by { is literal
+    assert_eq!(
+        lex_one("$'price: $5'"),
+        Token::FormatStringLiteral("price: $5")
+    );
+}
+
+#[test]
+fn format_string_escaped_quote() {
+    assert_eq!(
+        lex_one(r"$'it\'s here'"),
+        Token::FormatStringLiteral(r"it\'s here")
+    );
+}
+
+#[test]
+fn format_string_escaped_backslash_before_quote() {
+    // \\' should be escaped backslash then closing quote
+    assert_eq!(
+        lex_one("$'back\\\\'"),
+        Token::FormatStringLiteral("back\\\\")
+    );
+}
+
+#[test]
+fn format_string_multiple_interpolations() {
+    assert_eq!(
+        lex_one("$'${a} and ${b}'"),
+        Token::FormatStringLiteral("${a} and ${b}")
+    );
+}
+
+#[test]
+fn format_string_nested_format_string_in_interpolation() {
+    // Format string inside interpolation: ${$"inner"}
+    assert_eq!(
+        lex_one(r#"$'outer: ${$"inner"}'  "#.trim()),
+        Token::FormatStringLiteral(r#"outer: ${$"inner"}"#)
+    );
+}
+
+#[test]
+fn format_string_complex_expression() {
+    // if expression inside interpolation
+    assert_eq!(
+        lex_one(r#"$"${if true: "yes" else: "no"}""#),
+        Token::FormatStringLiteral(r#"${if true: "yes" else: "no"}"#)
+    );
+}
+
+#[test]
+fn format_string_empty() {
+    assert_eq!(lex_one("$''"), Token::FormatStringLiteral(""));
+    assert_eq!(lex_one("$\"\""), Token::FormatStringLiteral(""));
+}
+
+#[test]
+fn format_string_brace_in_string_in_interpolation() {
+    // } inside a string inside interpolation shouldn't close the interpolation
+    assert_eq!(
+        lex_one("$'${f(\"}\")}'"),
+        Token::FormatStringLiteral("${f(\"}\")}")
+    );
+}
+
+#[test]
+fn format_string_nested_interpolation_with_braces() {
+    // Deeply nested braces: ${fn -> { def x = { a: 1 }; x }}
+    assert_eq!(
+        lex_one("$'${fn -> { def x = { a: 1 }; x }}'"),
+        Token::FormatStringLiteral("${fn -> { def x = { a: 1 }; x }}")
+    );
+}
+
+#[test]
+fn format_string_is_single_token() {
+    // The whole format string is one token, other tokens can follow
+    assert_eq!(
+        lex("$'hello' + $'world'"),
+        vec![
+            Token::FormatStringLiteral("hello"),
+            Token::OpPlus,
+            Token::FormatStringLiteral("world"),
+        ]
+    );
+}
+
+// ---- Dollar identifiers ----
+
+#[test]
+fn dollar_bare() {
+    assert_eq!(lex_one("$"), Token::DollarIdentifier("$"));
+}
+
+#[test]
+fn dollar_digits() {
+    assert_eq!(lex_one("$1"), Token::DollarIdentifier("$1"));
+    assert_eq!(lex_one("$2"), Token::DollarIdentifier("$2"));
+    assert_eq!(lex_one("$9"), Token::DollarIdentifier("$9"));
+}
+
+#[test]
+fn dollar_dollar() {
+    assert_eq!(lex_one("$$"), Token::DollarIdentifier("$$"));
+}
+
+#[test]
+fn dollar_in_abbreviated_lambda() {
+    assert_eq!(
+        lex("$($ * 2)"),
+        vec![
+            Token::DollarParen,
+            Token::DollarIdentifier("$"),
+            Token::OpTimes,
+            Token::IntLiteral(2),
+            Token::CloseParen,
+        ]
+    );
+}
+
+#[test]
+fn dollar_numbered_in_abbreviated_lambda() {
+    assert_eq!(
+        lex("$($1 + $2)"),
+        vec![
+            Token::DollarParen,
+            Token::DollarIdentifier("$1"),
+            Token::OpPlus,
+            Token::DollarIdentifier("$2"),
+            Token::CloseParen,
+        ]
+    );
+}
+
+#[test]
+fn dollar_rest_in_abbreviated_lambda() {
+    assert_eq!(
+        lex("$($$ )"),
+        vec![
+            Token::DollarParen,
+            Token::DollarIdentifier("$$"),
             Token::CloseParen,
         ]
     );

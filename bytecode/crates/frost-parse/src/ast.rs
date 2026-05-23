@@ -67,10 +67,7 @@ pub enum ExprKind {
         right: Box<Expr>,
     },
     /// A unary operation: `-x`, `not x`.
-    UnaryOp {
-        op: UnaryOp,
-        operand: Box<Expr>,
-    },
+    UnaryOp { op: UnaryOp, operand: Box<Expr> },
     /// `if cond: then elif cond2: then2 else: fallback`
     If {
         condition: Box<Expr>,
@@ -83,15 +80,9 @@ pub enum ExprKind {
         value: Box<Expr>,
     },
     /// `f(a, b, c)`
-    Call {
-        callee: Box<Expr>,
-        args: Vec<Expr>,
-    },
+    Call { callee: Box<Expr>, args: Vec<Expr> },
     /// `a[b]` or `a.foo`
-    Index {
-        target: Box<Expr>,
-        key: Box<Expr>,
-    },
+    Index { target: Box<Expr>, key: Box<Expr> },
     /// `[a, b, c]`
     Array(Vec<Expr>),
     /// `{ [k1]: v1, [k2]: v2 }`

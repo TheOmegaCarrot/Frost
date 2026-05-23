@@ -164,11 +164,16 @@ pub enum Token<'src> {
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice())]
     Identifier(&'src str),
 
+    // As appear in abbreviated lambdas.
+    #[regex(r"\$[1-9$]?")]
+    DollarIdentifier(&'src str),
+
     // -- Strings --
 
-    // No escape sequences to expand.
-    #[regex(r"R'\([^\n]*\)'", slice_raw_str)] // R'(...)'
-    #[regex(r#"R"\([^\n]*\)""#, slice_raw_str)] // R"(...)"
+    // No escape sequences to expand. Uses #[token] + callback because
+    // logos' DFA can't disambiguate the R' prefix from identifier + simple string.
+    #[token("R'(", |lex| lex_raw(lex, ")'"))]
+    #[token(r#"R"("#, |lex| lex_raw(lex, r#")""#))]
     RawStringLiteral(&'src str),
 
     // Consumer is responsible for expanding escape sequences,
@@ -177,6 +182,18 @@ pub enum Token<'src> {
     #[regex(r#""([^"\\]|\\.)*""#, slice_str)] // "..."
     SimpleStringLiteral(&'src str),
 
+    // Consumer is responsible for trimming indentation and expanding
+    // the restricted set of escape sequences.
+    #[token("\"\"\"", lex_multiline_double)]
+    #[token("'''", lex_multiline_single)]
+    MultilineStringLiteral(&'src str),
+
+    // Consumer is responsible for splitting into segments, expanding
+    // escape sequences, and re-lexing/parsing interpolation expressions.
+    #[token("$\"", |lex| lex_format_str(lex, b'"'))]
+    #[token("$'", |lex| lex_format_str(lex, b'\''))]
+    FormatStringLiteral(&'src str),
+
     // -- Whitespace and comments (skipped) --
 
     #[regex(r"[ \t\r\f]+", logos::skip)]
@@ -184,12 +201,97 @@ pub enum Token<'src> {
     Skip,
 }
 
-fn slice_raw_str<'src>(lex: &logos::Lexer<'src, Token<'src>>) -> &'src str {
-    let s = lex.slice();
-    &s[3..s.len() - 2]
+fn lex_raw<'src>(
+    lex: &mut logos::Lexer<'src, Token<'src>>,
+    closer: &str,
+) -> Option<&'src str> {
+    let rest = lex.remainder();
+    let close = rest.find(closer)?;
+    if rest[..close].contains('\n') {
+        return None;
+    }
+    lex.bump(close + closer.len());
+    Some(&rest[..close])
 }
 
 fn slice_str<'src>(lex: &logos::Lexer<'src, Token<'src>>) -> &'src str {
     let s = lex.slice();
     &s[1..s.len() - 1]
+}
+
+fn lex_multiline<'src>(
+    lex: &mut logos::Lexer<'src, Token<'src>>,
+    delimiter: &str,
+) -> Option<&'src str> {
+    let rest = lex.remainder();
+    let close = rest.find(delimiter)?;
+    lex.bump(close + delimiter.len());
+    Some(&rest[..close])
+}
+
+fn lex_multiline_double<'src>(lex: &mut logos::Lexer<'src, Token<'src>>) -> Option<&'src str> {
+    lex_multiline(lex, "\"\"\"")
+}
+
+fn lex_multiline_single<'src>(lex: &mut logos::Lexer<'src, Token<'src>>) -> Option<&'src str> {
+    lex_multiline(lex, "'''")
+}
+
+fn lex_format_str<'src>(
+    lex: &mut logos::Lexer<'src, Token<'src>>,
+    quote: u8,
+) -> Option<&'src str> {
+    let bytes = lex.remainder().as_bytes();
+    let mut i = 0;
+
+    while i < bytes.len() {
+        match bytes[i] {
+            // Escaped character — skip both the backslash and the next byte
+            b'\\' if i + 1 < bytes.len() => i += 2,
+
+            // Interpolation — scan forward with brace depth counting
+            b'$' if i + 1 < bytes.len() && bytes[i + 1] == b'{' => {
+                i += 2; // skip past ${
+                let mut depth = 1u32;
+                while i < bytes.len() && depth > 0 {
+                    match bytes[i] {
+                        b'{' => depth += 1,
+                        b'}' => depth -= 1,
+                        // String literal inside interpolation — skip its contents
+                        q @ (b'\'' | b'"') => {
+                            i += 1;
+                            while i < bytes.len() {
+                                match bytes[i] {
+                                    b'\\' if i + 1 < bytes.len() => i += 2,
+                                    c if c == q => { i += 1; break; }
+                                    _ => i += 1,
+                                }
+                            }
+                            continue;
+                        }
+                        _ => {}
+                    }
+                    i += 1;
+                }
+                if depth != 0 {
+                    return None; // unclosed interpolation
+                }
+            }
+
+            // Closing quote — done
+            c if c == quote => {
+                let content = &lex.remainder()[..i];
+                lex.bump(i + 1); // consume content + closing quote
+                return Some(content);
+            }
+
+            // Newline — format strings are single-line
+            b'\n' => return None,
+
+            // Any other byte
+            _ => i += 1,
+        }
+    }
+
+    None // unclosed string
 }
