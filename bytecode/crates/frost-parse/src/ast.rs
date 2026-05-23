@@ -1,3 +1,21 @@
+// -- Source location --
+
+/// A position in source code.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SourcePos {
+    pub line: u32,
+    pub column: u32,
+}
+
+/// A range in source code, from start (inclusive) to end (inclusive).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SourceSpan {
+    pub start: SourcePos,
+    pub end: SourcePos,
+}
+
+// -- Program --
+
 /// A program is a sequence of statements.
 pub struct Program {
     pub statements: Vec<Statement>,
@@ -5,7 +23,12 @@ pub struct Program {
 
 // -- Statements --
 
-pub enum Statement {
+pub struct Statement {
+    pub kind: StatementKind,
+    pub span: SourceSpan,
+}
+
+pub enum StatementKind {
     /// `def name = expr` or `export def name = expr`
     Def {
         destructure: Destructure,
@@ -18,7 +41,12 @@ pub enum Statement {
 
 // -- Expressions --
 
-pub enum Expr {
+pub struct Expr {
+    pub kind: ExprKind,
+    pub span: SourceSpan,
+}
+
+pub enum ExprKind {
     /// A literal value: `42`, `3.14`, `"hello"`, `true`, `null`.
     Literal(Literal),
     /// A variable reference: `foo`.
@@ -62,7 +90,18 @@ pub enum Expr {
     /// `$'hello, ${name}'`
     FormatString(Vec<FormatSegment>),
     /// `fn name?(params) -> body`
-    Lambda(Lambda),
+    Lambda {
+        /// Non-variadic parameters, excluding a `...rest` param
+        params: Vec<String>,
+        /// Variadic param, preceded by `...`
+        variadic_param: Option<String>,
+        /// Lambdas may or may not have a name
+        self_name: Option<String>,
+        /// Non-tail statements
+        body: Vec<Statement>,
+        /// Tail position expression which evaluates to return value
+        return_expr: Box<Expr>,
+    },
     /// `filter structure with operation`
     Filter {
         structure: Box<Expr>,
@@ -133,16 +172,6 @@ pub enum FormatSegment {
     Interpolation(Expr),
 }
 
-// -- Lambdas --
-
-pub struct Lambda {
-    pub params: Vec<String>,
-    pub variadic: Option<String>,
-    pub self_name: Option<String>,
-    pub body: Vec<Statement>,
-    pub return_expr: Box<Expr>,
-}
-
 // -- Match --
 
 pub struct MatchArm {
@@ -151,13 +180,18 @@ pub struct MatchArm {
     pub result: Expr,
 }
 
-pub enum MatchPattern {
+pub struct MatchPattern {
+    pub kind: MatchPatternKind,
+    pub span: SourceSpan,
+}
+
+pub enum MatchPatternKind {
     /// `name` or `name is Type` or `_` or `_ is Type`.
     Binding {
         name: Option<String>,
         type_constraint: Option<TypeConstraint>,
     },
-    /// `(expr)` or a literal — compare by value.
+    /// `(expr)` or a literal -- compare by value.
     Value(Expr),
     /// `[p1, p2, ...rest]`
     Array {
@@ -196,7 +230,12 @@ pub enum TypeConstraint {
 
 // -- Destructuring (for `def`) --
 
-pub enum Destructure {
+pub struct Destructure {
+    pub kind: DestructureKind,
+    pub span: SourceSpan,
+}
+
+pub enum DestructureKind {
     /// `def name = ...`
     Binding(Option<String>),
     /// `def [a, b, ...rest] = ...`
