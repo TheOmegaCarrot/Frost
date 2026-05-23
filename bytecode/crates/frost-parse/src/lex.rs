@@ -164,9 +164,32 @@ pub enum Token<'src> {
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice())]
     Identifier(&'src str),
 
+    // -- Strings --
+
+    // No escape sequences to expand.
+    #[regex(r"R'\([^\n]*\)'", slice_raw_str)] // R'(...)'
+    #[regex(r#"R"\([^\n]*\)""#, slice_raw_str)] // R"(...)"
+    RawStringLiteral(&'src str),
+
+    // Consumer is responsible for expanding escape sequences,
+    // and for complaining about invalid sequences.
+    #[regex(r"'([^'\\]|\\.)*'", slice_str)] // '...'
+    #[regex(r#""([^"\\]|\\.)*""#, slice_str)] // "..."
+    SimpleStringLiteral(&'src str),
+
     // -- Whitespace and comments (skipped) --
 
     #[regex(r"[ \t\r\f]+", logos::skip)]
     #[regex(r"#[^\n]*", logos::skip)]
     Skip,
+}
+
+fn slice_raw_str<'src>(lex: &logos::Lexer<'src, Token<'src>>) -> &'src str {
+    let s = lex.slice();
+    &s[3..s.len() - 2]
+}
+
+fn slice_str<'src>(lex: &logos::Lexer<'src, Token<'src>>) -> &'src str {
+    let s = lex.slice();
+    &s[1..s.len() - 1]
 }
