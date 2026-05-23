@@ -1,17 +1,11 @@
 // -- Source location --
 
-/// A position in source code.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct SourcePos {
-    pub line: u32,
-    pub column: u32,
-}
-
 /// A range in source code, from start (inclusive) to end (inclusive).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct SourceSpan {
-    pub start: SourcePos,
-    pub end: SourcePos,
+    // byte offsets into the source
+    pub start: usize,
+    pub end: usize,
 }
 
 // -- Binding --
