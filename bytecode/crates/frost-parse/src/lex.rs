@@ -146,4 +146,25 @@ pub enum Token {
 
     #[token(">=")]
     OpGte,
+
+    // -- Literals --
+
+    #[regex(r"[0-9]+", |lex| lex.slice().parse::<i64>().ok())]
+    IntLiteral(i64),
+
+    #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
+    #[regex(r"[0-9]+[eE][+-]?[0-9]+", |lex| lex.slice().parse::<f64>().ok())]
+    #[regex(r"\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
+    FloatLiteral(f64),
+
+    // -- Identifiers --
+
+    #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*")]
+    Identifier,
+
+    // -- Whitespace and comments (skipped) --
+
+    #[regex(r"[ \t\r\f]+", logos::skip)]
+    #[regex(r"#[^\n]*", logos::skip)]
+    Skip,
 }
