@@ -1,7 +1,9 @@
 use logos::Logos;
 
 #[derive(Logos, Debug, PartialEq)]
-pub enum Token {
+// Re: lifetime: Logos understands this annotation and fills in the rest in its generated code,
+//               so that the lifetime of the Token is tied to the lifetime of the input string.
+pub enum Token<'src> {
     // -- Keywords --
 
     #[token("as")]
@@ -159,8 +161,8 @@ pub enum Token {
 
     // -- Identifiers --
 
-    #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*")]
-    Identifier,
+    #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice())]
+    Identifier(&'src str),
 
     // -- Whitespace and comments (skipped) --
 

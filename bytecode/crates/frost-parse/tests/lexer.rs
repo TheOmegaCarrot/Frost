@@ -1,13 +1,13 @@
 use frost_parse::lex::Token;
 use logos::Logos;
 
-fn lex(input: &str) -> Vec<Token> {
+fn lex<'a>(input: &'a str) -> Vec<Token<'a>> {
     Token::lexer(input)
         .map(|r| r.expect(&format!("unexpected token in: {input:?}")))
         .collect()
 }
 
-fn lex_one(input: &str) -> Token {
+fn lex_one<'a>(input: &'a str) -> Token<'a> {
     let tokens = lex(input);
     assert_eq!(tokens.len(), 1, "expected 1 token from {input:?}, got {tokens:?}");
     tokens.into_iter().next().unwrap()
@@ -42,12 +42,12 @@ fn keywords() {
 #[test]
 fn keyword_prefix_is_identifier() {
     // "defn" is a keyword, but "define" is an identifier
-    assert_eq!(lex_one("define"), Token::Identifier);
-    assert_eq!(lex_one("iffy"), Token::Identifier);
-    assert_eq!(lex_one("trueish"), Token::Identifier);
-    assert_eq!(lex_one("nullify"), Token::Identifier);
-    assert_eq!(lex_one("format"), Token::Identifier);
-    assert_eq!(lex_one("matching"), Token::Identifier);
+    assert_eq!(lex_one("define"), Token::Identifier("define"));
+    assert_eq!(lex_one("iffy"), Token::Identifier("iffy"));
+    assert_eq!(lex_one("trueish"), Token::Identifier("trueish"));
+    assert_eq!(lex_one("nullify"), Token::Identifier("nullify"));
+    assert_eq!(lex_one("format"), Token::Identifier("format"));
+    assert_eq!(lex_one("matching"), Token::Identifier("matching"));
 }
 
 // ---- Keyword operators ----
@@ -160,14 +160,14 @@ fn float_leading_dot() {
 
 #[test]
 fn identifiers() {
-    assert_eq!(lex_one("x"), Token::Identifier);
-    assert_eq!(lex_one("foo"), Token::Identifier);
-    assert_eq!(lex_one("hello_world"), Token::Identifier);
-    assert_eq!(lex_one("_private"), Token::Identifier);
-    assert_eq!(lex_one("_"), Token::Identifier);
-    assert_eq!(lex_one("camelCase"), Token::Identifier);
-    assert_eq!(lex_one("item42"), Token::Identifier);
-    assert_eq!(lex_one("ALL_CAPS"), Token::Identifier);
+    assert_eq!(lex_one("x"), Token::Identifier("x"));
+    assert_eq!(lex_one("foo"), Token::Identifier("foo"));
+    assert_eq!(lex_one("hello_world"), Token::Identifier("hello_world"));
+    assert_eq!(lex_one("_private"), Token::Identifier("_private"));
+    assert_eq!(lex_one("_"), Token::Identifier("_"));
+    assert_eq!(lex_one("camelCase"), Token::Identifier("camelCase"));
+    assert_eq!(lex_one("item42"), Token::Identifier("item42"));
+    assert_eq!(lex_one("ALL_CAPS"), Token::Identifier("ALL_CAPS"));
 }
 
 // ---- Whitespace skipping ----
@@ -186,7 +186,7 @@ fn tabs_are_skipped() {
 fn mixed_whitespace_skipped() {
     assert_eq!(
         lex("  def \t x  =  42"),
-        vec![Token::KwDef, Token::Identifier, Token::Assign, Token::IntLiteral(42)]
+        vec![Token::KwDef, Token::Identifier("x"), Token::Assign, Token::IntLiteral(42)]
     );
 }
 
@@ -216,7 +216,7 @@ fn comment_only_line() {
 fn simple_def() {
     assert_eq!(
         lex("def x = 42"),
-        vec![Token::KwDef, Token::Identifier, Token::Assign, Token::IntLiteral(42)]
+        vec![Token::KwDef, Token::Identifier("x"), Token::Assign, Token::IntLiteral(42)]
     );
 }
 
@@ -226,16 +226,16 @@ fn function_def() {
         lex("defn add(x, y) -> x + y"),
         vec![
             Token::KwDefn,
-            Token::Identifier, // add
+            Token::Identifier("add"),
             Token::OpenParen,
-            Token::Identifier, // x
+            Token::Identifier("x"),
             Token::Comma,
-            Token::Identifier, // y
+            Token::Identifier("y"),
             Token::CloseParen,
             Token::SlimArrow,
-            Token::Identifier, // x
+            Token::Identifier("x"),
             Token::OpPlus,
-            Token::Identifier, // y
+            Token::Identifier("y"),
         ]
     );
 }
@@ -246,7 +246,7 @@ fn if_expression() {
         lex("if x: 1 else: 2"),
         vec![
             Token::KwIf,
-            Token::Identifier,
+            Token::Identifier("x"),
             Token::Colon,
             Token::IntLiteral(1),
             Token::KwElse,
@@ -278,7 +278,7 @@ fn map_literal() {
         lex("{ foo: 42 }"),
         vec![
             Token::OpenBrace,
-            Token::Identifier,
+            Token::Identifier("foo"),
             Token::Colon,
             Token::IntLiteral(42),
             Token::CloseBrace,
@@ -291,13 +291,13 @@ fn threading_pipeline() {
     assert_eq!(
         lex("x @ f() @ g()"),
         vec![
-            Token::Identifier,
+            Token::Identifier("x"),
             Token::OpThread,
-            Token::Identifier,
+            Token::Identifier("f"),
             Token::OpenParen,
             Token::CloseParen,
             Token::OpThread,
-            Token::Identifier,
+            Token::Identifier("g"),
             Token::OpenParen,
             Token::CloseParen,
         ]
@@ -310,7 +310,7 @@ fn match_expression() {
         lex("match x { 1 | 2 => true, _ => false }"),
         vec![
             Token::KwMatch,
-            Token::Identifier,
+            Token::Identifier("x"),
             Token::OpenBrace,
             Token::IntLiteral(1),
             Token::Pipe,
@@ -318,7 +318,7 @@ fn match_expression() {
             Token::FatArrow,
             Token::KwTrue,
             Token::Comma,
-            Token::Identifier, // _
+            Token::Identifier("_"),
             Token::FatArrow,
             Token::KwFalse,
             Token::CloseBrace,
@@ -332,12 +332,12 @@ fn multiline_with_newlines() {
         lex("def x = 1\ndef y = 2"),
         vec![
             Token::KwDef,
-            Token::Identifier,
+            Token::Identifier("x"),
             Token::Assign,
             Token::IntLiteral(1),
             Token::Newline,
             Token::KwDef,
-            Token::Identifier,
+            Token::Identifier("y"),
             Token::Assign,
             Token::IntLiteral(2),
         ]
@@ -350,12 +350,12 @@ fn semicolons_as_separators() {
         lex("def x = 1; def y = 2"),
         vec![
             Token::KwDef,
-            Token::Identifier,
+            Token::Identifier("x"),
             Token::Assign,
             Token::IntLiteral(1),
             Token::Semicolon,
             Token::KwDef,
-            Token::Identifier,
+            Token::Identifier("y"),
             Token::Assign,
             Token::IntLiteral(2),
         ]
@@ -368,12 +368,12 @@ fn lambda_with_rest() {
         lex("fn x, ...rest -> x"),
         vec![
             Token::KwFn,
-            Token::Identifier,
+            Token::Identifier("x"),
             Token::Comma,
             Token::DotDotDot,
-            Token::Identifier,
+            Token::Identifier("rest"),
             Token::SlimArrow,
-            Token::Identifier,
+            Token::Identifier("x"),
         ]
     );
 }
@@ -384,7 +384,7 @@ fn abbreviated_lambda() {
         lex("$(x + 1)"),
         vec![
             Token::DollarParen,
-            Token::Identifier,
+            Token::Identifier("x"),
             Token::OpPlus,
             Token::IntLiteral(1),
             Token::CloseParen,
@@ -397,11 +397,11 @@ fn dot_access() {
     assert_eq!(
         lex("foo.bar.baz"),
         vec![
-            Token::Identifier,
+            Token::Identifier("foo"),
             Token::OpDot,
-            Token::Identifier,
+            Token::Identifier("bar"),
             Token::OpDot,
-            Token::Identifier,
+            Token::Identifier("baz"),
         ]
     );
 }
@@ -420,19 +420,19 @@ fn comparison_chain() {
     assert_eq!(
         lex("a == b != c <= d >= e < f > g"),
         vec![
-            Token::Identifier,
+            Token::Identifier("a"),
             Token::OpEq,
-            Token::Identifier,
+            Token::Identifier("b"),
             Token::OpNeq,
-            Token::Identifier,
+            Token::Identifier("c"),
             Token::OpLte,
-            Token::Identifier,
+            Token::Identifier("d"),
             Token::OpGte,
-            Token::Identifier,
+            Token::Identifier("e"),
             Token::OpLt,
-            Token::Identifier,
+            Token::Identifier("f"),
             Token::OpGt,
-            Token::Identifier,
+            Token::Identifier("g"),
         ]
     );
 }
@@ -442,12 +442,12 @@ fn logical_operators_in_context() {
     assert_eq!(
         lex("a and b or not c"),
         vec![
-            Token::Identifier,
+            Token::Identifier("a"),
             Token::OpAnd,
-            Token::Identifier,
+            Token::Identifier("b"),
             Token::OpOr,
             Token::OpNot,
-            Token::Identifier,
+            Token::Identifier("c"),
         ]
     );
 }
@@ -516,10 +516,10 @@ fn dollar_paren_vs_paren() {
         lex("$(x)(y)"),
         vec![
             Token::DollarParen,
-            Token::Identifier,
+            Token::Identifier("x"),
             Token::CloseParen,
             Token::OpenParen,
-            Token::Identifier,
+            Token::Identifier("y"),
             Token::CloseParen,
         ]
     );
