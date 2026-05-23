@@ -38,13 +38,10 @@ fn value_to_map_key_null_fails() {
 }
 
 #[test]
-fn value_to_map_key_null_error_is_recoverable() {
+fn value_to_map_key_null_error_has_message() {
     let v = Value::Null;
     let err: Result<MapKey, _> = v.try_into();
-    assert!(matches!(
-        err.unwrap_err(),
-        frost_core::FrostError::Recoverable(_)
-    ));
+    assert!(!err.unwrap_err().message.is_empty());
 }
 
 #[test]

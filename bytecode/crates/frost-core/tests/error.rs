@@ -1,19 +1,28 @@
 use frost_core::FrostError;
 
 #[test]
-fn recoverable_display() {
-    let err = FrostError::Recoverable("division by zero".into());
+fn display() {
+    let err = FrostError::new("division by zero");
     assert_eq!(err.to_string(), "Error: division by zero");
 }
 
 #[test]
-fn unrecoverable_display() {
-    let err = FrostError::Unrecoverable("cannot bind to $1".into());
-    assert_eq!(err.to_string(), "Error: cannot bind to $1");
+fn from_str() {
+    let err: FrostError = "something went wrong".into();
+    assert_eq!(err.message, "something went wrong");
+    assert!(err.backtrace.is_empty());
 }
 
 #[test]
-fn internal_display() {
-    let err = FrostError::Internal("unreachable code reached".into());
-    assert_eq!(err.to_string(), "INTERNAL ERROR: unreachable code reached");
+fn from_string() {
+    let err: FrostError = String::from("bad input").into();
+    assert_eq!(err.message, "bad input");
+}
+
+#[test]
+fn with_frame() {
+    let err = FrostError::new("type mismatch")
+        .with_frame("add")
+        .with_frame("eval");
+    assert_eq!(err.backtrace, vec!["add", "eval"]);
 }

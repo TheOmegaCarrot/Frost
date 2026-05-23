@@ -1,4 +1,4 @@
-use frost_core::{FrostError, FrostFloat};
+use frost_core::FrostFloat;
 
 #[test]
 fn accepts_normal_values() {
@@ -83,7 +83,7 @@ fn try_from_f64() {
 }
 
 #[test]
-fn rejection_is_recoverable_error() {
+fn rejection_produces_error() {
     let err = FrostFloat::new(f64::NAN).unwrap_err();
-    assert!(matches!(err, FrostError::Recoverable(_)));
+    assert!(!err.message.is_empty());
 }

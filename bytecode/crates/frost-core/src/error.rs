@@ -1,34 +1,50 @@
 use std::fmt;
 
-// TODO: Add backtrace support for function-call-level error tracing.
-// Each variant gets a Vec<String> of function names, accumulated by the VM
-// as errors propagate through call frames via a .with_frame("name") method.
-// Deferred until the VM is dispatching calls.
-
+/// A runtime error produced by Frost code.
+///
+/// Catchable by Frost's `try_call`. The VM accumulates function names
+/// in `backtrace` as the error propagates through call frames.
 #[derive(Clone, Debug)]
-pub enum FrostError {
-    /// An error caused by user code, which user code can recover from.
-    Recoverable(String),
+pub struct FrostError {
+    pub message: String,
+    pub backtrace: Vec<String>,
+}
 
-    /// An error caused by user code, which user code cannot recover from.
-    /// (Provable bug in user code)
-    Unrecoverable(String),
+impl FrostError {
+    /// Creates a new error with the given message and an empty backtrace.
+    pub fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            backtrace: Vec::new(),
+        }
+    }
 
-    /// Internal invariant violated. This means there's a bug in the interpreter.
-    Internal(String),
+    /// Pushes a function name onto the backtrace as the error propagates.
+    pub fn with_frame(mut self, name: impl Into<String>) -> Self {
+        self.backtrace.push(name.into());
+        self
+    }
 }
 
 impl fmt::Display for FrostError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            FrostError::Recoverable(msg) => write!(f, "Error: {msg}"),
-            FrostError::Unrecoverable(msg) => write!(f, "Error: {msg}"),
-            FrostError::Internal(msg) => write!(f, "INTERNAL ERROR: {msg}"),
-        }
+        write!(f, "Error: {}", self.message)
     }
 }
 
 impl std::error::Error for FrostError {}
+
+impl From<String> for FrostError {
+    fn from(message: String) -> Self {
+        Self::new(message)
+    }
+}
+
+impl From<&str> for FrostError {
+    fn from(message: &str) -> Self {
+        Self::new(message)
+    }
+}
 
 use crate::Value;
 

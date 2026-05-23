@@ -94,10 +94,7 @@ impl TryFrom<Value> for MapKey {
             Value::Int(i) => Ok(MapKey::Int(i)),
             Value::Float(f) => Ok(MapKey::Float(f)),
             Value::String(s) => Ok(MapKey::String(s)),
-            _ => Err(Self::Error::Recoverable(format!(
-                "Type {} is not a valid Map key",
-                v.type_name()
-            ))),
+            _ => Err(format!("Type {} is not a valid Map key", v.type_name()).into()),
         }
     }
 }

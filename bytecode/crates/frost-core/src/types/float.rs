@@ -11,9 +11,7 @@ impl FrostFloat {
     /// Creates a new FrostFloat, returning an error if the value is NaN or Infinity.
     pub fn new(f: f64) -> Result<Self, FrostError> {
         if f.is_nan() || f.is_infinite() {
-            Err(FrostError::Recoverable(
-                "Frost Float cannot be NaN or Infinity".into(),
-            ))
+            Err("Frost Float cannot be NaN or Infinity".into())
         } else {
             Ok(Self(f))
         }

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use frost_core::{FrostArray, FrostError, FrostMap, MapKey, Value};
+use frost_core::{FrostArray, FrostMap, MapKey, Value};
 
 fn str_key(s: &str) -> MapKey {
     MapKey::String(Arc::from(s.as_bytes()))
@@ -60,7 +60,7 @@ fn subtract_int_overflow_wraps() {
 fn subtract_type_error() {
     let r = Value::from("a").subtract(&Value::from(1i64));
     assert!(r.is_err());
-    assert!(matches!(r.unwrap_err(), FrostError::Recoverable(_)));
+    assert!(!r.unwrap_err().message.is_empty());
 }
 
 // ---- Multiplication ----
@@ -116,7 +116,7 @@ fn multiply_float_overflow_errors() {
 fn multiply_type_error() {
     let r = Value::from("a").multiply(&Value::from(1i64));
     assert!(r.is_err());
-    assert!(matches!(r.unwrap_err(), FrostError::Recoverable(_)));
+    assert!(!r.unwrap_err().message.is_empty());
 }
 
 // ---- Division ----
@@ -196,7 +196,7 @@ fn divide_zero_by_zero_float() {
 fn divide_type_error() {
     let r = Value::from("a").divide(&Value::from(1i64));
     assert!(r.is_err());
-    assert!(matches!(r.unwrap_err(), FrostError::Recoverable(_)));
+    assert!(!r.unwrap_err().message.is_empty());
 }
 
 // ---- Addition: numeric ----
@@ -429,7 +429,7 @@ fn add_array_map_errors() {
 #[test]
 fn add_type_error_is_recoverable() {
     let r = Value::from(1i64).add(&Value::from("a"));
-    assert!(matches!(r.unwrap_err(), FrostError::Recoverable(_)));
+    assert!(!r.unwrap_err().message.is_empty());
 }
 
 // ---- Modulus ----

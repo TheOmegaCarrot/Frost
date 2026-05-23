@@ -30,7 +30,7 @@ impl ser::Error for SerError {
 pub fn to_value<T: Serialize>(value: &T) -> Result<Value, crate::FrostError> {
     value
         .serialize(ValueSerializer)
-        .map_err(|e| crate::FrostError::Recoverable(e.0))
+        .map_err(|e| e.0.into())
 }
 
 // -- Serializer --

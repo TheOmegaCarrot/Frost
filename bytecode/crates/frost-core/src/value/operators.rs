@@ -85,11 +85,11 @@ impl Value {
     pub fn divide(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
             (Value::Int(_) | Value::Float(_), Value::Int(0)) => {
-                Err(FrostError::Recoverable("Division by zero".into()))
+                Err("Division by zero".into())
             }
 
             (Value::Int(_) | Value::Float(_), Value::Float(f)) if f.get() == 0.0 => {
-                Err(FrostError::Recoverable("Division by zero".into()))
+                Err("Division by zero".into())
             }
 
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_div(*r))),
@@ -114,7 +114,7 @@ impl Value {
     pub fn modulus(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
             (Value::Int(_), Value::Int(0)) => {
-                Err(FrostError::Recoverable("Modulus by zero".into()))
+                Err("Modulus by zero".into())
             }
 
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_rem(*r))),
@@ -125,9 +125,10 @@ impl Value {
 }
 
 fn binop_type_error(verb: &str, glyph: &str, lhs: &Value, rhs: &Value) -> FrostError {
-    FrostError::Recoverable(format!(
+    format!(
         "Cannot {verb} incompatible types: {} {glyph} {}",
         lhs.type_name(),
         rhs.type_name()
-    ))
+    )
+    .into()
 }
