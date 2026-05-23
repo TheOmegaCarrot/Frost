@@ -35,6 +35,12 @@ impl From<String> for ParseError {
     }
 }
 
+impl From<miette::Report> for ParseError {
+    fn from(value: miette::Report) -> Self {
+        Self(format!("{:?}", value))
+    }
+}
+
 pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseError> {
     let ctx = ParseCtx::new(filename, input)?;
 

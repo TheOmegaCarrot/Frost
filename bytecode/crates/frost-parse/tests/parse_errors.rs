@@ -1,4 +1,4 @@
-use frost_parse::parse::parse_program;
+use frost_parse::parse_program;
 
 #[test]
 fn lex_error_on_invalid_character() {
@@ -47,9 +47,7 @@ fn lex_error_on_unclosed_format_string() {
 fn valid_input_does_not_lex_error() {
     // This will hit the todo!() in parse_program, but it should NOT
     // fail during lexing. We catch the panic to verify lexing succeeded.
-    let result = std::panic::catch_unwind(|| {
-        parse_program("test.frst", "def x = 42")
-    });
+    let result = std::panic::catch_unwind(|| parse_program("test.frst", "def x = 42"));
     // Should panic (todo!) rather than returning Err (lex failure)
     assert!(result.is_err(), "expected todo!() panic, not a lex error");
 }

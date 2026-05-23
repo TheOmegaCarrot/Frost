@@ -84,9 +84,7 @@ impl Value {
     /// Frost `/` operator: numeric division. Integer division truncates toward zero.
     pub fn divide(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
-            (Value::Int(_) | Value::Float(_), Value::Int(0)) => {
-                Err("Division by zero".into())
-            }
+            (Value::Int(_) | Value::Float(_), Value::Int(0)) => Err("Division by zero".into()),
 
             (Value::Int(_) | Value::Float(_), Value::Float(f)) if f.get() == 0.0 => {
                 Err("Division by zero".into())
@@ -113,9 +111,7 @@ impl Value {
     /// Frost `%` operator: integer-only modulus.
     pub fn modulus(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
-            (Value::Int(_), Value::Int(0)) => {
-                Err("Modulus by zero".into())
-            }
+            (Value::Int(_), Value::Int(0)) => Err("Modulus by zero".into()),
 
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_rem(*r))),
 

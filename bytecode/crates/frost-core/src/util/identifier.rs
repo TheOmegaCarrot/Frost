@@ -8,9 +8,8 @@ macro_rules! define_keywords {
 }
 
 define_keywords![
-    "and", "as", "def", "defn", "do", "elif", "else", "export", "false", "filter", "fn",
-    "foreach", "if", "init", "is", "map", "match", "not", "null", "or", "reduce",
-    "true", "with",
+    "and", "as", "def", "defn", "do", "elif", "else", "export", "false", "filter", "fn", "foreach",
+    "if", "init", "is", "map", "match", "not", "null", "or", "reduce", "true", "with",
 ];
 
 /// Determines if a byte string is a Frost keyword.

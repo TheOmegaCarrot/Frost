@@ -2,7 +2,7 @@ use std::env;
 use std::fs;
 use std::process;
 
-use frost_parse::parse::parse_program;
+use frost_parse::parse_program;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

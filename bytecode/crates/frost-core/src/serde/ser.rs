@@ -28,9 +28,7 @@ impl ser::Error for SerError {
 
 /// Serializes any `Serialize` type into a Frost `Value`.
 pub fn to_value<T: Serialize>(value: &T) -> Result<Value, crate::FrostError> {
-    value
-        .serialize(ValueSerializer)
-        .map_err(|e| e.0.into())
+    value.serialize(ValueSerializer).map_err(|e| e.0.into())
 }
 
 // -- Serializer --
