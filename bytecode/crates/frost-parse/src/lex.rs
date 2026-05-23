@@ -5,7 +5,6 @@ use logos::Logos;
 //               so that the lifetime of the Token is tied to the lifetime of the input string.
 pub enum Token<'src> {
     // -- Keywords --
-
     #[token("as")]
     KwAs,
     #[token("def")]
@@ -48,7 +47,6 @@ pub enum Token<'src> {
     KwWith,
 
     // -- Punctiation (excludes operators) --
-
     #[token(":")]
     Colon,
 
@@ -100,7 +98,6 @@ pub enum Token<'src> {
     Pipe,
 
     // -- Operators (including keyword operators) --
-
     #[token("and")]
     OpAnd,
 
@@ -150,7 +147,6 @@ pub enum Token<'src> {
     OpGte,
 
     // -- Literals --
-
     #[regex(r"[0-9]+", |lex| lex.slice().parse::<i64>().ok())]
     IntLiteral(i64),
 
@@ -160,7 +156,6 @@ pub enum Token<'src> {
     FloatLiteral(f64),
 
     // -- Identifiers --
-
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice())]
     Identifier(&'src str),
 
@@ -195,16 +190,12 @@ pub enum Token<'src> {
     FormatStringLiteral(&'src str),
 
     // -- Whitespace and comments (skipped) --
-
     #[regex(r"[ \t\r\f]+", logos::skip)]
     #[regex(r"#[^\n]*", logos::skip)]
     Skip,
 }
 
-fn lex_raw<'src>(
-    lex: &mut logos::Lexer<'src, Token<'src>>,
-    closer: &str,
-) -> Option<&'src str> {
+fn lex_raw<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, closer: &str) -> Option<&'src str> {
     let rest = lex.remainder();
     let close = rest.find(closer)?;
     if rest[..close].contains('\n') {
@@ -237,10 +228,7 @@ fn lex_multiline_single<'src>(lex: &mut logos::Lexer<'src, Token<'src>>) -> Opti
     lex_multiline(lex, "'''")
 }
 
-fn lex_format_str<'src>(
-    lex: &mut logos::Lexer<'src, Token<'src>>,
-    quote: u8,
-) -> Option<&'src str> {
+fn lex_format_str<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, quote: u8) -> Option<&'src str> {
     let bytes = lex.remainder().as_bytes();
     let mut i = 0;
 
@@ -263,7 +251,10 @@ fn lex_format_str<'src>(
                             while i < bytes.len() {
                                 match bytes[i] {
                                     b'\\' if i + 1 < bytes.len() => i += 2,
-                                    c if c == q => { i += 1; break; }
+                                    c if c == q => {
+                                        i += 1;
+                                        break;
+                                    }
                                     _ => i += 1,
                                 }
                             }

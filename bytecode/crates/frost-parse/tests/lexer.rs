@@ -3,7 +3,7 @@ use logos::Logos;
 
 fn lex<'a>(input: &'a str) -> Vec<Token<'a>> {
     Token::lexer(input)
-        .map(|r| r.expect(&format!("unexpected token in: {input:?}")))
+        .map(|r| r.unwrap_or_else(|_| panic!("unexpected token in: {input:?}")))
         .collect()
 }
 
@@ -553,7 +553,10 @@ fn raw_string_double() {
 
 #[test]
 fn raw_string_preserves_backslashes() {
-    assert_eq!(lex_one(r"R'(hello\nworld)'"), Token::RawStringLiteral(r"hello\nworld"));
+    assert_eq!(
+        lex_one(r"R'(hello\nworld)'"),
+        Token::RawStringLiteral(r"hello\nworld")
+    );
 }
 
 #[test]
@@ -575,19 +578,31 @@ fn simple_string_empty() {
 #[test]
 fn simple_string_with_escapes() {
     // Escapes are preserved raw — parser handles them
-    assert_eq!(lex_one(r"'hello\nworld'"), Token::SimpleStringLiteral(r"hello\nworld"));
-    assert_eq!(lex_one(r"'tab\there'"), Token::SimpleStringLiteral(r"tab\there"));
+    assert_eq!(
+        lex_one(r"'hello\nworld'"),
+        Token::SimpleStringLiteral(r"hello\nworld")
+    );
+    assert_eq!(
+        lex_one(r"'tab\there'"),
+        Token::SimpleStringLiteral(r"tab\there")
+    );
 }
 
 #[test]
 fn simple_string_escaped_quote() {
     assert_eq!(lex_one(r"'it\'s'"), Token::SimpleStringLiteral(r"it\'s"));
-    assert_eq!(lex_one(r#""say \"hi\"""#), Token::SimpleStringLiteral(r#"say \"hi\""#));
+    assert_eq!(
+        lex_one(r#""say \"hi\"""#),
+        Token::SimpleStringLiteral(r#"say \"hi\""#)
+    );
 }
 
 #[test]
 fn simple_string_escaped_backslash() {
-    assert_eq!(lex_one(r"'back\\slash'"), Token::SimpleStringLiteral(r"back\\slash"));
+    assert_eq!(
+        lex_one(r"'back\\slash'"),
+        Token::SimpleStringLiteral(r"back\\slash")
+    );
 }
 
 #[test]
@@ -616,18 +631,12 @@ fn multiline_string_single() {
 
 #[test]
 fn format_string_simple() {
-    assert_eq!(
-        lex_one("$'hello'"),
-        Token::FormatStringLiteral("hello")
-    );
+    assert_eq!(lex_one("$'hello'"), Token::FormatStringLiteral("hello"));
 }
 
 #[test]
 fn format_string_double_quote() {
-    assert_eq!(
-        lex_one("$\"hello\""),
-        Token::FormatStringLiteral("hello")
-    );
+    assert_eq!(lex_one("$\"hello\""), Token::FormatStringLiteral("hello"));
 }
 
 #[test]
@@ -911,10 +920,17 @@ else: call(compose, [ compose2(f, g) ] + rest )"#;
     assert!(tokens.contains(&Token::KwWith));
 
     // The format string should be captured as a single token
-    assert!(tokens.iter().any(|t| matches!(t, Token::FormatStringLiteral(_))));
+    assert!(
+        tokens
+            .iter()
+            .any(|t| matches!(t, Token::FormatStringLiteral(_)))
+    );
 
     // Verify the format string content includes the interpolation
-    if let Some(Token::FormatStringLiteral(s)) = tokens.iter().find(|t| matches!(t, Token::FormatStringLiteral(_))) {
+    if let Some(Token::FormatStringLiteral(s)) = tokens
+        .iter()
+        .find(|t| matches!(t, Token::FormatStringLiteral(_)))
+    {
         assert!(s.contains("${type(f)}"));
         assert!(s.contains("Compose requires functions"));
     }
