@@ -5,10 +5,14 @@ use crate::lex::Token;
 use crate::parse::ParseError;
 
 use logos::Logos;
+use miette::{miette, LabeledSpan, NamedSource};
 
-pub struct ParseCtx<'src> {
+#[derive(Debug)]
+pub struct ParseCtx<'src, 'f> {
     /// The original full source, preserved for diagnostics.
     full_source: &'src str,
+
+    filename: &'f str,
 
     /// The full lexer result.
     input: Vec<Spanned<'src>>,
@@ -16,6 +20,7 @@ pub struct ParseCtx<'src> {
     state: ParseState,
 }
 
+#[derive(Debug)]
 pub struct Spanned<'src> {
     pub token: Token<'src>,
     pub span: Range<usize>,
@@ -24,13 +29,11 @@ pub struct Spanned<'src> {
 #[derive(Clone, Debug, Default)]
 pub struct ParseState {
     /// The current offset into `input`.
+    /// Token-level position, not byte offset.
     pub pos: usize,
-
-    /// Current line number.
-    pub line: usize,
 }
 
-impl<'src> ParseCtx<'src> {
+impl<'src, 'f> ParseCtx<'src, 'f> {
     pub fn checkpoint(&self) -> ParseState {
         self.state.clone()
     }
@@ -39,7 +42,7 @@ impl<'src> ParseCtx<'src> {
         self.state = state;
     }
 
-    pub fn new(src: &'src str) -> Result<Self, ParseError> {
+    pub fn new(filename: &'f str, src: &'src str) -> Result<Self, ParseError> {
         let mut lexer = Token::lexer(src);
         let mut input = Vec::new();
 
@@ -48,7 +51,7 @@ impl<'src> ParseCtx<'src> {
             let span = lexer.span();
 
             let Ok(token) = token else {
-                return Err("placeholder for a proper miette error".into());
+                return Err(lex_error(filename, src, span));
             };
 
             input.push(Spanned {
@@ -59,8 +62,22 @@ impl<'src> ParseCtx<'src> {
 
         Ok(Self {
             full_source: src,
+            filename,
             input,
             state: ParseState::default(),
         })
     }
+}
+
+fn lex_error(filename: &str, src: &str, span: Range<usize>) -> ParseError {
+
+    let source = NamedSource::new(filename, src.to_owned());
+
+    let report = miette!(
+        labels = vec![LabeledSpan::at(span, "unrecognized")],
+        "unexpected character"
+    )
+    .with_source_code(source);
+
+    ParseError(format!("{:?}", report))
 }

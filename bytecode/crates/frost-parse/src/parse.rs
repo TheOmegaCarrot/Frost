@@ -35,8 +35,8 @@ impl From<String> for ParseError {
     }
 }
 
-pub fn parse_program(input: &str) -> Result<ast::Program, ParseError> {
-    let ctx = ParseCtx::new(input)?;
+pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseError> {
+    let ctx = ParseCtx::new(filename, input)?;
 
     // TODO: call into the "real" parser entry point (NYI)
     todo!()

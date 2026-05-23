@@ -26,17 +26,20 @@ pub enum Binding {
 // -- Program --
 
 /// A program is a sequence of statements.
+#[derive(Debug)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }
 
 // -- Statements --
 
+#[derive(Debug)]
 pub struct Statement {
     pub kind: StatementKind,
     pub span: SourceSpan,
 }
 
+#[derive(Debug)]
 pub enum StatementKind {
     /// `def name = expr` or `export def name = expr`
     Def {
@@ -50,11 +53,13 @@ pub enum StatementKind {
 
 // -- Expressions --
 
+#[derive(Debug)]
 pub struct Expr {
     pub kind: ExprKind,
     pub span: SourceSpan,
 }
 
+#[derive(Debug)]
 pub enum ExprKind {
     /// A literal value: `42`, `3.14`, `"hello"`, `true`, `null`.
     Literal(Literal),
@@ -132,6 +137,7 @@ pub enum ExprKind {
 
 // -- Literals --
 
+#[derive(Debug)]
 pub enum Literal {
     Null,
     Bool(bool),
@@ -142,7 +148,7 @@ pub enum Literal {
 
 // -- Operators --
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum BinOp {
     Add,
     Sub,
@@ -159,7 +165,7 @@ pub enum BinOp {
     Or,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum UnaryOp {
     Negate,
     Not,
@@ -167,6 +173,7 @@ pub enum UnaryOp {
 
 // -- Format strings --
 
+#[derive(Debug)]
 pub enum FormatSegment {
     Literal(Vec<u8>),
     Interpolation(Expr),
@@ -174,17 +181,20 @@ pub enum FormatSegment {
 
 // -- Match --
 
+#[derive(Debug)]
 pub struct MatchArm {
     pub pattern: MatchPattern,
     pub guard: Option<Expr>,
     pub result: Expr,
 }
 
+#[derive(Debug)]
 pub struct MatchPattern {
     pub kind: MatchPatternKind,
     pub span: SourceSpan,
 }
 
+#[derive(Debug)]
 pub enum MatchPatternKind {
     /// `name` or `name is Type` or `_` or `_ is Type`.
     Binding {
@@ -207,12 +217,13 @@ pub enum MatchPatternKind {
     Alternative(Vec<MatchPattern>),
 }
 
+#[derive(Debug)]
 pub struct MapPatternEntry {
     pub key: Expr,
     pub pattern: MatchPattern,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum TypeConstraint {
     Null,
     Int,
@@ -230,11 +241,13 @@ pub enum TypeConstraint {
 
 // -- Destructuring (for `def`) --
 
+#[derive(Debug)]
 pub struct Destructure {
     pub kind: DestructureKind,
     pub span: SourceSpan,
 }
 
+#[derive(Debug)]
 pub enum DestructureKind {
     /// `def name = ...`
     Binding(Binding),
@@ -250,6 +263,7 @@ pub enum DestructureKind {
     },
 }
 
+#[derive(Debug)]
 pub struct MapDestructureEntry {
     pub key: Expr,
     pub destructure: Destructure,
