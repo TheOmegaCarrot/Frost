@@ -592,7 +592,10 @@ fn simple_string_escaped_backslash() {
 
 #[test]
 fn multiline_string_double() {
-    let input = "\"\"\"\n    hello\n    world\n    \"\"\"";
+    let input = r#""""
+    hello
+    world
+    """"#;
     let tok = lex_one(input);
     assert!(matches!(tok, Token::MultilineStringLiteral(_)));
     if let Token::MultilineStringLiteral(content) = tok {
@@ -604,7 +607,7 @@ fn multiline_string_double() {
 
 #[test]
 fn multiline_string_single() {
-    let input = "'''\n    hello\n    world\n    '''";
+    let input = "'''\n    hello\n    world\n    '''"; // can't use raw string here — ''' conflicts
     let tok = lex_one(input);
     assert!(matches!(tok, Token::MultilineStringLiteral(_)));
 }
@@ -823,4 +826,216 @@ fn dollar_rest_in_abbreviated_lambda() {
             Token::CloseParen,
         ]
     );
+}
+
+// ---- Full program lexing ----
+
+#[test]
+fn lex_prelude_tap() {
+    // From the Frost prelude: defn tap(a, f) -> { f(a) ; a }
+    assert_eq!(
+        lex("defn tap(a, f) -> { f(a) ; a }"),
+        vec![
+            Token::KwDefn,
+            Token::Identifier("tap"),
+            Token::OpenParen,
+            Token::Identifier("a"),
+            Token::Comma,
+            Token::Identifier("f"),
+            Token::CloseParen,
+            Token::SlimArrow,
+            Token::OpenBrace,
+            Token::Identifier("f"),
+            Token::OpenParen,
+            Token::Identifier("a"),
+            Token::CloseParen,
+            Token::Semicolon,
+            Token::Identifier("a"),
+            Token::CloseBrace,
+        ]
+    );
+}
+
+#[test]
+fn lex_prelude_curry() {
+    // defn curry(f, ...outer) -> fn ...inner -> f @ call(outer + inner)
+    assert_eq!(
+        lex("defn curry(f, ...outer) -> fn ...inner -> f @ call(outer + inner)"),
+        vec![
+            Token::KwDefn,
+            Token::Identifier("curry"),
+            Token::OpenParen,
+            Token::Identifier("f"),
+            Token::Comma,
+            Token::DotDotDot,
+            Token::Identifier("outer"),
+            Token::CloseParen,
+            Token::SlimArrow,
+            Token::KwFn,
+            Token::DotDotDot,
+            Token::Identifier("inner"),
+            Token::SlimArrow,
+            Token::Identifier("f"),
+            Token::OpThread,
+            Token::Identifier("call"),
+            Token::OpenParen,
+            Token::Identifier("outer"),
+            Token::OpPlus,
+            Token::Identifier("inner"),
+            Token::CloseParen,
+        ]
+    );
+}
+
+#[test]
+fn lex_prelude_compose_fragment() {
+    // A chunk from compose that exercises format strings, if/else, map iteration
+    let src = r#"defn require_fn(f) -> {
+    assert(is_function(f), $'Compose requires functions, got ${type(f)}')
+}
+
+foreach [f, g] + rest with require_fn
+
+if len(rest) == 0: compose2(f, g)
+else: call(compose, [ compose2(f, g) ] + rest )"#;
+
+    let tokens = lex(src);
+
+    // Check key tokens are present without asserting exact sequence
+    assert!(tokens.contains(&Token::KwDefn));
+    assert!(tokens.contains(&Token::KwForeach));
+    assert!(tokens.contains(&Token::KwIf));
+    assert!(tokens.contains(&Token::KwElse));
+    assert!(tokens.contains(&Token::OpEq));
+    assert!(tokens.contains(&Token::Colon));
+    assert!(tokens.contains(&Token::KwWith));
+
+    // The format string should be captured as a single token
+    assert!(tokens.iter().any(|t| matches!(t, Token::FormatStringLiteral(_))));
+
+    // Verify the format string content includes the interpolation
+    if let Some(Token::FormatStringLiteral(s)) = tokens.iter().find(|t| matches!(t, Token::FormatStringLiteral(_))) {
+        assert!(s.contains("${type(f)}"));
+        assert!(s.contains("Compose requires functions"));
+    }
+}
+
+#[test]
+fn lex_multiline_program() {
+    let src = r#"def x = 42
+def y = x + 1
+if y > 42: true else: false"#;
+    let tokens = lex(src);
+
+    let newline_count = tokens.iter().filter(|t| **t == Token::Newline).count();
+    assert_eq!(newline_count, 2);
+
+    assert_eq!(tokens[0], Token::KwDef);
+    assert_eq!(tokens[1], Token::Identifier("x"));
+    assert_eq!(tokens[2], Token::Assign);
+    assert_eq!(tokens[3], Token::IntLiteral(42));
+    assert_eq!(tokens[4], Token::Newline);
+
+    assert_eq!(tokens[5], Token::KwDef);
+    assert_eq!(tokens[6], Token::Identifier("y"));
+    assert_eq!(tokens[7], Token::Assign);
+    assert_eq!(tokens[8], Token::Identifier("x"));
+    assert_eq!(tokens[9], Token::OpPlus);
+    assert_eq!(tokens[10], Token::IntLiteral(1));
+    assert_eq!(tokens[11], Token::Newline);
+
+    assert_eq!(tokens[12], Token::KwIf);
+    assert_eq!(tokens[13], Token::Identifier("y"));
+    assert_eq!(tokens[14], Token::OpGt);
+    assert_eq!(tokens[15], Token::IntLiteral(42));
+    assert_eq!(tokens[16], Token::Colon);
+    assert_eq!(tokens[17], Token::KwTrue);
+    assert_eq!(tokens[18], Token::KwElse);
+    assert_eq!(tokens[19], Token::Colon);
+    assert_eq!(tokens[20], Token::KwFalse);
+}
+
+#[test]
+fn lex_match_with_patterns() {
+    let src = r#"match v {
+    n is Int if: n > 0 => n,
+    [first, ...rest] => first,
+    _ => null
+}"#;
+    let tokens = lex(src);
+
+    assert!(tokens.contains(&Token::KwMatch));
+    assert!(tokens.contains(&Token::KwIs));
+    assert!(tokens.contains(&Token::KwIf));
+    assert!(tokens.contains(&Token::FatArrow));
+    assert!(tokens.contains(&Token::DotDotDot));
+    assert!(tokens.contains(&Token::KwNull));
+    assert!(tokens.contains(&Token::Comma));
+}
+
+#[test]
+fn lex_map_filter_reduce() {
+    let src = "def result = reduce (filter (map [1, 2, 3] with fn x -> x * 2) with fn x -> x > 2) with plus";
+    let tokens = lex(src);
+
+    assert!(tokens.contains(&Token::KwMap));
+    assert!(tokens.contains(&Token::KwFilter));
+    assert!(tokens.contains(&Token::KwReduce));
+    assert!(tokens.contains(&Token::KwWith));
+    assert!(tokens.contains(&Token::KwFn));
+    assert!(tokens.contains(&Token::SlimArrow));
+    assert_eq!(tokens.iter().filter(|t| **t == Token::KwWith).count(), 3);
+}
+
+#[test]
+fn lex_export_def_with_destructure() {
+    let src = "export def [a, b, ...rest] = some_array";
+    assert_eq!(
+        lex(src),
+        vec![
+            Token::KwExport,
+            Token::KwDef,
+            Token::OpenBracket,
+            Token::Identifier("a"),
+            Token::Comma,
+            Token::Identifier("b"),
+            Token::Comma,
+            Token::DotDotDot,
+            Token::Identifier("rest"),
+            Token::CloseBracket,
+            Token::Assign,
+            Token::Identifier("some_array"),
+        ]
+    );
+}
+
+#[test]
+fn lex_map_destructure() {
+    let src = "def { name: n, age } = person";
+    assert_eq!(
+        lex(src),
+        vec![
+            Token::KwDef,
+            Token::OpenBrace,
+            Token::Identifier("name"),
+            Token::Colon,
+            Token::Identifier("n"),
+            Token::Comma,
+            Token::Identifier("age"),
+            Token::CloseBrace,
+            Token::Assign,
+            Token::Identifier("person"),
+        ]
+    );
+}
+
+#[test]
+fn lex_threading_pipeline_full() {
+    let src = "data @ transform(fn x -> x * 2) @ select(fn x -> x > 5) @ fold(plus)";
+    let tokens = lex(src);
+
+    let thread_count = tokens.iter().filter(|t| **t == Token::OpThread).count();
+    assert_eq!(thread_count, 3);
+    assert!(tokens.contains(&Token::KwFn));
+    assert!(tokens.contains(&Token::SlimArrow));
 }
