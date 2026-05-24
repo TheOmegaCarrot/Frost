@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::ast;
 use crate::lex::Token;
-use crate::parse::ParseError;
+use crate::parse::{ParseError, ParseResult};
 
 use logos::Logos;
 use miette::{LabeledSpan, NamedSource, miette};
@@ -42,7 +42,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.state = state;
     }
 
-    pub fn new(filename: &'f str, src: &'src str) -> Result<Self, ParseError> {
+    pub fn new(filename: &'f str, src: &'src str) -> ParseResult<Self> {
         let mut lexer = Token::lexer(src);
         let mut input = Vec::new();
 
@@ -81,7 +81,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self
     }
 
-    pub fn expect(&mut self, token: Token) -> Result<&mut Self, ParseError> {
+    pub fn expect(&mut self, token: Token) -> ParseResult<&mut Self> {
         let Some(current) = self.peek() else {
             return Err(miette!(format!("Expected {token}, but got end of input.")).into());
         };
@@ -103,7 +103,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub fn skip_nl(&mut self) -> &mut Self {
-        while let Some(SrcToken{token: Token::Newline, ..}) = self.peek() {
+        while let Some(SrcToken {
+            token: Token::Newline,
+            ..
+        }) = self.peek()
+        {
             self.advance(1);
         }
         self
@@ -111,6 +115,14 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     pub fn at_end(&self) -> bool {
         self.peek().is_none()
+    }
+
+    pub fn here(&self) -> usize {
+        self.state.pos
+    }
+
+    pub fn get(&self, pos: usize) -> Option<&SrcToken<'src>> {
+        self.input.get(pos)
     }
 
     /// Expensive: only called in the error case

@@ -4,4 +4,4 @@ pub mod ast;
 pub mod lex;
 mod parse;
 
-pub use parse::{parse_program, ParseError};
+pub use parse::{ParseError, parse_program};

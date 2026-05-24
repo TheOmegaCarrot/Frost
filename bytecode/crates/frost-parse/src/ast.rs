@@ -37,9 +37,9 @@ pub struct Statement {
 pub enum StatementKind {
     /// `def name = expr` or `export def name = expr`
     Def {
-        destructure: Destructure,
-        value: Expr,
         exported: bool,
+        destructure: Destructure,
+        expr: Expr,
     },
     /// A bare expression executed for its side effects.
     Expr(Expr),

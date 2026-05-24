@@ -4,10 +4,13 @@ use std::fmt::Display;
 use crate::ast;
 use crate::lex::Token;
 use crate::parse::ctx::ParseCtx;
+use crate::parse::statements::{StatementContext, parse_statements};
 
 use logos::Logos;
 
-mod program;
+mod destructure;
+mod expression;
+mod statements;
 
 pub(crate) mod ctx;
 
@@ -41,9 +44,11 @@ impl From<miette::Report> for ParseError {
     }
 }
 
-pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseError> {
-    let ctx = ParseCtx::new(filename, input)?;
+pub fn parse_program(filename: &str, input: &str) -> ParseResult<ast::Program> {
+    let mut ctx = ParseCtx::new(filename, input)?;
 
-    // TODO: call into the "real" parser entry point (NYI)
-    todo!()
+    parse_statements(&mut ctx, StatementContext::TopLevel)
+        .map(|statements| ast::Program { statements })
 }
+
+type ParseResult<T> = Result<T, ParseError>;
