@@ -22,7 +22,10 @@ fn main() {
     };
 
     match parse_program(filename, &source) {
-        Ok(program) => println!("{:#?}", program),
+        Ok(program) => {
+            let json = serde_json::to_string_pretty(&program).unwrap();
+            println!("{json}");
+        }
         Err(e) => {
             eprintln!("{e}");
             process::exit(1);

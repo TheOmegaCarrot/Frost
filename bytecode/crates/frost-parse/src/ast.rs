@@ -2,8 +2,10 @@
 
 use std::ops::Range;
 
+use serde::Serialize;
+
 /// A range in source code, from start (inclusive) to end (exclusive).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct SourceSpan {
     // byte offsets into the source
     pub start: usize,
@@ -22,7 +24,7 @@ impl From<Range<usize>> for SourceSpan {
 // -- Binding --
 
 /// A name binding: either a named identifier or a discard (`_`).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum Binding {
     Named(String),
     Discarded,
@@ -31,20 +33,20 @@ pub enum Binding {
 // -- Program --
 
 /// A program is a sequence of statements.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }
 
 // -- Statements --
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Statement {
     pub kind: StatementKind,
     pub span: SourceSpan,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum StatementKind {
     /// `def name = expr` or `export def name = expr`
     Def {
@@ -58,13 +60,13 @@ pub enum StatementKind {
 
 // -- Expressions --
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Expr {
     pub kind: ExprKind,
     pub span: SourceSpan,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum ExprKind {
     /// A literal value: `42`, `3.14`, `"hello"`, `true`, `null`.
     Literal(Literal),
@@ -142,7 +144,7 @@ pub enum ExprKind {
 
 // -- Literals --
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Literal {
     Null,
     Bool(bool),
@@ -153,7 +155,7 @@ pub enum Literal {
 
 // -- Operators --
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub enum BinOp {
     Add,
     Sub,
@@ -170,7 +172,7 @@ pub enum BinOp {
     Or,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub enum UnaryOp {
     Negate,
     Not,
@@ -178,7 +180,7 @@ pub enum UnaryOp {
 
 // -- Format strings --
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum FormatSegment {
     Literal(Vec<u8>),
     Interpolation(Expr),
@@ -186,20 +188,20 @@ pub enum FormatSegment {
 
 // -- Match --
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct MatchArm {
     pub pattern: MatchPattern,
     pub guard: Option<Expr>,
     pub result: Expr,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct MatchPattern {
     pub kind: MatchPatternKind,
     pub span: SourceSpan,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum MatchPatternKind {
     /// `name` or `name is Type` or `_` or `_ is Type`.
     Binding {
@@ -222,13 +224,13 @@ pub enum MatchPatternKind {
     Alternative(Vec<MatchPattern>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct MapPatternEntry {
     pub key: Expr,
     pub pattern: MatchPattern,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub enum TypeConstraint {
     Null,
     Int,
@@ -246,13 +248,13 @@ pub enum TypeConstraint {
 
 // -- Destructuring (for `def`) --
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Destructure {
     pub kind: DestructureKind,
     pub span: SourceSpan,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum DestructureKind {
     /// `def name = ...`
     Binding(Binding),
@@ -268,7 +270,7 @@ pub enum DestructureKind {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct MapDestructureEntry {
     pub key: Expr,
     pub destructure: Destructure,
