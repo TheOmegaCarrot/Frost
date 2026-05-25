@@ -53,7 +53,11 @@ fn parse_def(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
 
     Ok(Statement {
         span: SourceSpan {
-            start: ctx.get(first_token_pos).expect("IMPOSSIBLE: OOB access after check").span.start,
+            start: ctx
+                .get(first_token_pos)
+                .expect("IMPOSSIBLE: OOB access after check")
+                .span
+                .start,
             end: expr.span.end,
         },
         kind: StatementKind::Def {

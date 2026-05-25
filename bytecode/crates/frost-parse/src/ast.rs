@@ -1,11 +1,22 @@
 // -- Source location --
 
-/// A range in source code, from start (inclusive) to end (inclusive).
+use std::ops::Range;
+
+/// A range in source code, from start (inclusive) to end (exclusive).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct SourceSpan {
     // byte offsets into the source
     pub start: usize,
     pub end: usize,
+}
+
+impl From<Range<usize>> for SourceSpan {
+    fn from(value: Range<usize>) -> Self {
+        Self {
+            start: value.start,
+            end: value.end,
+        }
+    }
 }
 
 // -- Binding --

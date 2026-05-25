@@ -69,6 +69,10 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.input.get(self.state.pos)
     }
 
+    pub fn must_peek(&self, context: &str) -> ParseResult<&SrcToken<'src>> {
+        self.peek().ok_or_else(|| self.unexpected_eof(context))
+    }
+
     /// Get the current token, and advance the state.
     pub fn next(&mut self) -> Option<&SrcToken<'src>> {
         self.advance(1);
@@ -81,13 +85,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self
     }
 
-    pub fn expect(&mut self, token: Token) -> ParseResult<&mut Self> {
+    pub fn expect(&mut self, token: Token) -> ParseResult<&SrcToken<'src>> {
         let Some(current) = self.peek() else {
-            return Err(miette!(format!("Expected {token}, but got end of input.")).into());
+            return Err(self.unexpected_eof(format!("{token}").as_str()));
         };
-        if current.token == token {
-            self.advance(1);
-        } else {
+        if current.token != token {
             return Err(miette!(
                 labels = vec![LabeledSpan::at(
                     current.span.clone(),
@@ -97,9 +99,10 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             )
             .with_source_code(self.named_source())
             .into());
-        };
+        }
 
-        Ok(self)
+        self.advance(1);
+        Ok(&self.input[self.state.pos - 1])
     }
 
     pub fn skip_nl(&mut self) -> &mut Self {
@@ -123,6 +126,26 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     pub fn get(&self, pos: usize) -> Option<&SrcToken<'src>> {
         self.input.get(pos)
+    }
+
+    pub fn unexpected_token(&self, token: &SrcToken, tried_to_parse: &str) -> ParseError {
+        miette!(
+            labels = vec![LabeledSpan::at(token.span.clone(), "unexpected")],
+            "unexpected {} while parsing {tried_to_parse}",
+            token.token
+        )
+        .with_source_code(self.named_source())
+        .into()
+    }
+
+    pub fn unexpected_eof(&self, tried_to_parse: &str) -> ParseError {
+        let end = self.full_source.len();
+        miette!(
+            labels = vec![LabeledSpan::at(end..end, "end of input")],
+            "unexpected end of input while parsing {tried_to_parse}"
+        )
+        .with_source_code(self.named_source())
+        .into()
     }
 
     /// Expensive: only called in the error case
