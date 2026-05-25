@@ -1,6 +1,13 @@
 use frost_parse::ast::*;
 use frost_parse::parse_program;
 
+fn str_key(entry: &MapDestructureEntry) -> &[u8] {
+    match &entry.key.kind {
+        ExprKind::Literal(Literal::String(s)) => s,
+        other => panic!("expected string key, got {other:?}"),
+    }
+}
+
 fn parse(src: &str) -> Program {
     parse_program("test.frst", src).expect(&format!("failed to parse: {src}"))
 }
@@ -275,4 +282,271 @@ fn error_eof_after_def() {
 fn error_non_identifier_binding() {
     let err = parse_err("def 42 = 1");
     assert!(err.contains("unexpected"), "error was: {err}");
+}
+
+// -- Map destructuring --
+
+#[test]
+fn empty_map() {
+    let d = def_destructure("def {} = 1");
+    match d.kind {
+        DestructureKind::Map { entries, bind_whole } => {
+            assert!(entries.is_empty());
+            assert!(bind_whole.is_none());
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_shorthand() {
+    let d = def_destructure("def {foo, bar} = 1");
+    match d.kind {
+        DestructureKind::Map { entries, bind_whole } => {
+            assert_eq!(entries.len(), 2);
+            assert_eq!(str_key(&entries[0]), b"foo");
+            assert!(matches!(&entries[0].destructure.kind, DestructureKind::Binding(Binding::Named(n)) if n == "foo"));
+            assert_eq!(str_key(&entries[1]), b"bar");
+            assert!(matches!(&entries[1].destructure.kind, DestructureKind::Binding(Binding::Named(n)) if n == "bar"));
+            assert!(bind_whole.is_none());
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_explicit_keys() {
+    let d = def_destructure("def {foo: a, bar: b} = 1");
+    match d.kind {
+        DestructureKind::Map { entries, bind_whole } => {
+            assert_eq!(entries.len(), 2);
+            assert_eq!(str_key(&entries[0]), b"foo");
+            assert!(matches!(&entries[0].destructure.kind, DestructureKind::Binding(Binding::Named(n)) if n == "a"));
+            assert_eq!(str_key(&entries[1]), b"bar");
+            assert!(matches!(&entries[1].destructure.kind, DestructureKind::Binding(Binding::Named(n)) if n == "b"));
+            assert!(bind_whole.is_none());
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_computed_key() {
+    let d = def_destructure("def {[42]: x} = 1");
+    match d.kind {
+        DestructureKind::Map { entries, bind_whole } => {
+            assert_eq!(entries.len(), 1);
+            assert!(matches!(&entries[0].key.kind, ExprKind::Literal(Literal::Int(42))));
+            assert!(matches!(&entries[0].destructure.kind, DestructureKind::Binding(Binding::Named(n)) if n == "x"));
+            assert!(bind_whole.is_none());
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_mixed_keys() {
+    let d = def_destructure("def {foo, bar: b, [42]: c} = 1");
+    match d.kind {
+        DestructureKind::Map { entries, .. } => {
+            assert_eq!(entries.len(), 3);
+            assert_eq!(str_key(&entries[0]), b"foo");
+            assert!(matches!(&entries[0].destructure.kind, DestructureKind::Binding(Binding::Named(n)) if n == "foo"));
+            assert_eq!(str_key(&entries[1]), b"bar");
+            assert!(matches!(&entries[1].destructure.kind, DestructureKind::Binding(Binding::Named(n)) if n == "b"));
+            assert!(matches!(&entries[2].key.kind, ExprKind::Literal(Literal::Int(42))));
+            assert!(matches!(&entries[2].destructure.kind, DestructureKind::Binding(Binding::Named(n)) if n == "c"));
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_trailing_comma() {
+    let d = def_destructure("def {foo, bar,} = 1");
+    match d.kind {
+        DestructureKind::Map { entries, .. } => {
+            assert_eq!(entries.len(), 2);
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_as_binding() {
+    let d = def_destructure("def {foo, bar} as whole = 1");
+    match d.kind {
+        DestructureKind::Map { entries, bind_whole } => {
+            assert_eq!(entries.len(), 2);
+            assert!(matches!(&bind_whole, Some(Binding::Named(n)) if n == "whole"));
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_as_discard() {
+    let d = def_destructure("def {foo} as _ = 1");
+    match d.kind {
+        DestructureKind::Map { entries, bind_whole } => {
+            assert_eq!(entries.len(), 1);
+            assert!(matches!(bind_whole, Some(Binding::Discarded)));
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_nested_array_value() {
+    let d = def_destructure("def {foo: [a, b]} = 1");
+    match d.kind {
+        DestructureKind::Map { entries, .. } => {
+            assert_eq!(entries.len(), 1);
+            assert_eq!(str_key(&entries[0]), b"foo");
+            match &entries[0].destructure.kind {
+                DestructureKind::Array { elements, rest } => {
+                    assert_eq!(elements.len(), 2);
+                    assert!(matches!(&elements[0].kind, DestructureKind::Binding(Binding::Named(n)) if n == "a"));
+                    assert!(matches!(&elements[1].kind, DestructureKind::Binding(Binding::Named(n)) if n == "b"));
+                    assert!(rest.is_none());
+                }
+                other => panic!("expected nested Array, got {other:?}"),
+            }
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_nested_map_value() {
+    let d = def_destructure("def {outer: {inner: val}} = 1");
+    match d.kind {
+        DestructureKind::Map { entries, .. } => {
+            assert_eq!(entries.len(), 1);
+            assert_eq!(str_key(&entries[0]), b"outer");
+            match &entries[0].destructure.kind {
+                DestructureKind::Map { entries: inner, .. } => {
+                    assert_eq!(inner.len(), 1);
+                    assert_eq!(str_key(&inner[0]), b"inner");
+                    assert!(matches!(&inner[0].destructure.kind, DestructureKind::Binding(Binding::Named(n)) if n == "val"));
+                }
+                other => panic!("expected nested Map, got {other:?}"),
+            }
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+// -- Map error cases --
+
+#[test]
+fn error_map_eof_mid_entry() {
+    let err = parse_err("def {foo");
+    assert!(err.contains("end of input"), "error was: {err}");
+}
+
+#[test]
+fn error_map_unexpected_token() {
+    let err = parse_err("def {foo + bar} = 1");
+    assert!(err.contains("unexpected"), "error was: {err}");
+}
+
+#[test]
+fn error_map_non_identifier_key() {
+    let err = parse_err("def {42: x} = 1");
+    assert!(err.contains("unexpected"), "error was: {err}");
+}
+
+// -- Nested `as` in array position --
+
+#[test]
+fn map_as_nested_in_array() {
+    let d = def_destructure("def [{name} as person, ...rest] = 1");
+    match d.kind {
+        DestructureKind::Array { elements, rest } => {
+            assert_eq!(elements.len(), 1);
+            match &elements[0].kind {
+                DestructureKind::Map { entries, bind_whole } => {
+                    assert_eq!(entries.len(), 1);
+                    assert_eq!(str_key(&entries[0]), b"name");
+                    assert!(matches!(&bind_whole, Some(Binding::Named(n)) if n == "person"));
+                }
+                other => panic!("expected Map in array element, got {other:?}"),
+            }
+            assert!(matches!(&rest, Some(Binding::Named(n)) if n == "rest"));
+        }
+        other => panic!("expected Array, got {other:?}"),
+    }
+}
+
+// -- Statement separation --
+
+#[test]
+fn multiple_statements_newline() {
+    let program = parse("def a = 1\ndef b = 1");
+    assert_eq!(program.statements.len(), 2);
+}
+
+#[test]
+fn multiple_statements_semicolon() {
+    let program = parse("def a = 1; def b = 1");
+    assert_eq!(program.statements.len(), 2);
+}
+
+#[test]
+fn multiple_statements_mixed() {
+    let program = parse("def a = 1\ndef b = 1; def c = 1");
+    assert_eq!(program.statements.len(), 3);
+}
+
+// -- Map empty with `as` --
+
+#[test]
+fn empty_map_with_as() {
+    let d = def_destructure("def {} as m = 1");
+    match d.kind {
+        DestructureKind::Map { entries, bind_whole } => {
+            assert!(entries.is_empty());
+            assert!(matches!(&bind_whole, Some(Binding::Named(n)) if n == "m"));
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+// -- Additional error cases --
+
+#[test]
+fn error_trailing_comma_after_rest() {
+    let err = parse_err("def [a, ...rest,] = 1");
+    assert!(err.contains("Expected ]") || err.contains("unexpected"), "error was: {err}");
+}
+
+#[test]
+fn error_rest_not_at_end() {
+    let err = parse_err("def [...rest, a] = 1");
+    assert!(err.contains("Expected ]") || err.contains("unexpected"), "error was: {err}");
+}
+
+#[test]
+fn error_empty_rest() {
+    let err = parse_err("def [...] = 1");
+    assert!(err.contains("unexpected"), "error was: {err}");
+}
+
+#[test]
+fn error_eof_after_as() {
+    let err = parse_err("def {foo} as");
+    assert!(err.contains("end of input"), "error was: {err}");
+}
+
+#[test]
+fn error_eof_after_dots() {
+    let err = parse_err("def [a, ...");
+    assert!(err.contains("end of input"), "error was: {err}");
+}
+
+#[test]
+fn error_double_rest() {
+    let err = parse_err("def [a, ...b, ...c] = 1");
+    assert!(err.contains("Expected ]") || err.contains("unexpected"), "error was: {err}");
 }

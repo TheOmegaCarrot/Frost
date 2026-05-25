@@ -19,6 +19,7 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
         match peek.token {
             Token::KwExport => stmts.push(parse_def(ctx, true)?),
             Token::KwDef => stmts.push(parse_def(ctx, false)?),
+            Token::KwDefn => todo!("defn"),
             _ => {
                 let expr = parse_expression(ctx)?;
 
@@ -27,6 +28,13 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
                     kind: StatementKind::Expr(expr),
                 })
             }
+        }
+
+        if let Some(peek) = ctx.peek() {
+            match peek.token {
+                Token::Semicolon | Token::Newline => ctx.advance(1),
+                _ => return Err(ctx.unexpected_token(peek, "expected line break or semicolon after complete statement")),
+            };
         }
     }
 
