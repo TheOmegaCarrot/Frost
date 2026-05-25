@@ -1,11 +1,9 @@
-use crate::ast::{Binding, Destructure, DestructureKind, SourceSpan};
+use crate::ast::{Binding, Destructure, DestructureKind};
 use crate::lex::Token;
 use crate::parse::{ParseResult, ctx::ParseCtx};
 
 pub fn parse_destructure(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
-    let Some(peek) = ctx.peek() else {
-        return Err(ctx.unexpected_eof("destructuring"));
-    };
+    let peek = ctx.must_peek("destructuring")?;
 
     match peek.token {
         Token::Identifier(_) => {
@@ -74,9 +72,7 @@ fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
 }
 
 fn parse_binding(ctx: &mut ParseCtx, context: &str) -> ParseResult<Binding> {
-    let Some(token) = ctx.peek() else {
-        return Err(ctx.unexpected_eof(context));
-    };
+    let token = ctx.must_peek(context)?;
 
     match token.token {
         Token::Identifier("_") => {

@@ -1,6 +1,3 @@
-use crate::ParseError;
-use crate::ast;
-use crate::ast::SourceSpan;
 use crate::ast::Statement;
 use crate::ast::StatementKind;
 use crate::lex::Token;
@@ -37,7 +34,7 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
 }
 
 fn parse_def(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
-    let first_token_pos = ctx.here();
+    let start = ctx.must_peek("definition")?.span.start;
 
     if exported {
         ctx.expect(Token::KwExport)?;
@@ -52,14 +49,7 @@ fn parse_def(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
     let expr = parse_expression(ctx)?;
 
     Ok(Statement {
-        span: SourceSpan {
-            start: ctx
-                .get(first_token_pos)
-                .expect("IMPOSSIBLE: OOB access after check")
-                .span
-                .start,
-            end: expr.span.end,
-        },
+        span: (start..expr.span.end).into(),
         kind: StatementKind::Def {
             exported,
             destructure,
