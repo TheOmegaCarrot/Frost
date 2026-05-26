@@ -12,6 +12,31 @@ fn parse_expr_bp(ctx: &mut ParseCtx, min_bp: u8) -> ParseResult<Expr> {
     let mut lhs = parse_prefix(ctx)?;
 
     loop {
+        // Postfix operators bind tightest and must appear on the same line
+        // (unless we're inside delimiters where newlines are insignificant).
+        // Check them BEFORE skipping newlines.
+        if let Some(peek) = ctx.peek() {
+            match peek.token {
+                Token::OpenParen if POSTFIX_BP >= min_bp => {
+                    lhs = parse_call(ctx, lhs)?;
+                    continue;
+                }
+                Token::OpenBracket if POSTFIX_BP >= min_bp => {
+                    lhs = parse_index(ctx, lhs)?;
+                    continue;
+                }
+                Token::OpDot if POSTFIX_BP >= min_bp => {
+                    lhs = parse_dot_access(ctx, lhs)?;
+                    continue;
+                }
+                Token::OpThread if POSTFIX_BP >= min_bp => {
+                    lhs = parse_thread(ctx, lhs)?;
+                    continue;
+                }
+                _ => {}
+            }
+        }
+
         ctx.maybe_skip_nl();
 
         let Some(peek) = ctx.peek() else { break };
@@ -50,6 +75,142 @@ fn parse_expr_bp(ctx: &mut ParseCtx, min_bp: u8) -> ParseResult<Expr> {
     }
 
     Ok(lhs)
+}
+
+const POSTFIX_BP: u8 = 16;
+
+fn parse_call(ctx: &mut ParseCtx, callee: Expr) -> ParseResult<Expr> {
+    let start = callee.span.start;
+    ctx.expect(Token::OpenParen)?;
+    ctx.enter_nl_context().maybe_skip_nl();
+
+    let mut args = Vec::new();
+
+    if !matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
+        loop {
+            ctx.maybe_skip_nl();
+            args.push(parse_expr_bp(ctx, 0)?);
+            ctx.maybe_skip_nl();
+
+            let peek = ctx.must_peek("function call arguments")?;
+            match peek.token {
+                Token::Comma => { ctx.expect(Token::Comma)?; }
+                Token::CloseParen => break,
+                _ => return Err(ctx.unexpected_token(peek, "function call arguments")),
+            }
+
+            if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
+                break;
+            }
+        }
+    }
+
+    ctx.maybe_skip_nl().exit_nl_context();
+    let close = ctx.expect(Token::CloseParen)?;
+
+    Ok(Expr {
+        span: (start..close.span.end).into(),
+        kind: ExprKind::Call {
+            callee: Box::new(callee),
+            args,
+        },
+    })
+}
+
+fn parse_index(ctx: &mut ParseCtx, target: Expr) -> ParseResult<Expr> {
+    let start = target.span.start;
+    ctx.expect(Token::OpenBracket)?;
+    ctx.enter_nl_context().maybe_skip_nl();
+
+    let key = parse_expr_bp(ctx, 0)?;
+
+    ctx.maybe_skip_nl().exit_nl_context();
+    let close = ctx.expect(Token::CloseBracket)?;
+
+    Ok(Expr {
+        span: (start..close.span.end).into(),
+        kind: ExprKind::Index {
+            target: Box::new(target),
+            key: Box::new(key),
+        },
+    })
+}
+
+fn parse_dot_access(ctx: &mut ParseCtx, target: Expr) -> ParseResult<Expr> {
+    let start = target.span.start;
+    ctx.expect(Token::OpDot)?;
+
+    let field = ctx.must_peek("dot access")?;
+    let field_span = field.span.clone();
+    match field.token {
+        Token::Identifier(name) => {
+            let name = name.to_owned();
+            ctx.advance(1);
+            Ok(Expr {
+                span: (start..field_span.end).into(),
+                kind: ExprKind::Index {
+                    target: Box::new(target),
+                    key: Box::new(Expr {
+                        span: field_span.into(),
+                        kind: ExprKind::Literal(Literal::String(name.into_bytes())),
+                    }),
+                },
+            })
+        }
+        _ => Err(ctx.unexpected_token(field, "dot access (expected identifier)")),
+    }
+}
+
+fn parse_thread(ctx: &mut ParseCtx, lhs: Expr) -> ParseResult<Expr> {
+    let start = lhs.span.start;
+    ctx.expect(Token::OpThread)?;
+    ctx.maybe_skip_nl();
+
+    // Parse callee — restricted to atoms + dot/index postfix only
+    let mut callee = parse_atom(ctx)?;
+
+    while let Some(peek) = ctx.peek() {
+        match peek.token {
+            Token::OpDot => callee = parse_dot_access(ctx, callee)?,
+            Token::OpenBracket => callee = parse_index(ctx, callee)?,
+            _ => break,
+        }
+    }
+
+    ctx.expect(Token::OpenParen)?;
+    ctx.enter_nl_context().maybe_skip_nl();
+
+    let mut args = vec![lhs];
+
+    if !matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
+        loop {
+            ctx.maybe_skip_nl();
+            args.push(parse_expr_bp(ctx, 0)?);
+            ctx.maybe_skip_nl();
+
+            let peek = ctx.must_peek("threaded call arguments")?;
+            match peek.token {
+                Token::Comma => { ctx.expect(Token::Comma)?; }
+                Token::CloseParen => break,
+                _ => return Err(ctx.unexpected_token(peek, "threaded call arguments")),
+            }
+
+            if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
+                break;
+            }
+        }
+    }
+
+    ctx.maybe_skip_nl().exit_nl_context();
+    let close = ctx.expect(Token::CloseParen)?;
+
+    Ok(Expr {
+        span: (start..close.span.end).into(),
+        kind: ExprKind::Call {
+            callee: Box::new(callee),
+            args,
+        },
+    })
 }
 
 fn parse_prefix(ctx: &mut ParseCtx) -> ParseResult<Expr> {
@@ -164,7 +325,31 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
             })
         }
 
-        // there's a LOT of TODO here...
+        // -- Atoms: strings --
+        Token::SimpleStringLiteral(_) => todo!("simple string literal"),
+        Token::RawStringLiteral(_) => todo!("raw string literal"),
+        Token::MultilineStringLiteral(_) => todo!("multiline string literal"),
+        Token::FormatStringLiteral(_) => todo!("format string"),
+
+        // -- Atoms: composite literals --
+        Token::OpenBracket => todo!("Array literal"),
+        Token::OpenBrace => todo!("Map literal"),
+
+        // -- Atoms: control flow --
+        Token::KwIf => todo!("if expression"),
+        Token::KwDo => todo!("do block"),
+        Token::KwMatch => todo!("match expression"),
+
+        // -- Atoms: functions --
+        Token::KwFn => todo!("lambda"),
+        Token::DollarParen => todo!("abbreviated lambda"),
+
+        // -- Atoms: iterative expressions --
+        Token::KwMap => todo!("map expression"),
+        Token::KwFilter => todo!("filter expression"),
+        Token::KwReduce => todo!("reduce expression"),
+        Token::KwForeach => todo!("foreach expression"),
+
         _ => Err(ctx.unexpected_token(peek, "expression")),
     }
 }

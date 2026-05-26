@@ -551,3 +551,334 @@ fn error_mismatched_paren() {
     let err = parse_err("(1 + 2]");
     assert!(err.contains("Expected )") || err.contains("unexpected"), "error was: {err}");
 }
+
+// -- Function calls --
+
+#[test]
+fn call_no_args() {
+    let expr = parse_expr("f()");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+            assert!(args.is_empty());
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn call_one_arg() {
+    let expr = parse_expr("f(1)");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+            assert_eq!(args.len(), 1);
+            assert!(is_int(&args[0], 1));
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn call_multiple_args() {
+    let expr = parse_expr("f(1, 2, 3)");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+            assert_eq!(args.len(), 3);
+            assert!(is_int(&args[0], 1));
+            assert!(is_int(&args[1], 2));
+            assert!(is_int(&args[2], 3));
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn call_trailing_comma() {
+    let expr = parse_expr("f(1, 2,)");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+            assert_eq!(args.len(), 2);
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn call_with_expression_args() {
+    let expr = parse_expr("f(1 + 2, 3 * 4)");
+    match &expr.kind {
+        ExprKind::Call { args, .. } => {
+            assert_eq!(args.len(), 2);
+            assert!(is_binop(&args[0]).is_some());
+            assert!(is_binop(&args[1]).is_some());
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn call_with_newlines() {
+    let expr = parse_expr("f(\n1,\n2\n)");
+    match &expr.kind {
+        ExprKind::Call { args, .. } => {
+            assert_eq!(args.len(), 2);
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn chained_calls() {
+    // f(1)(2) == Call(Call(f, [1]), [2])
+    let expr = parse_expr("f(1)(2)");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert_eq!(args.len(), 1);
+            assert!(is_int(&args[0], 2));
+            match &callee.kind {
+                ExprKind::Call { callee: inner, args: inner_args } => {
+                    assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "f"));
+                    assert_eq!(inner_args.len(), 1);
+                    assert!(is_int(&inner_args[0], 1));
+                }
+                other => panic!("expected inner Call, got {other:?}"),
+            }
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn call_newline_not_call() {
+    // f\n(1) is two statements, not a call
+    let program = parse_program("test.frst", "f\n(1)")
+        .expect("failed to parse");
+    assert_eq!(program.statements.len(), 2);
+}
+
+// -- Indexing --
+
+#[test]
+fn index_literal() {
+    let expr = parse_expr("a[0]");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+            assert!(is_int(key, 0));
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+#[test]
+fn index_expression() {
+    let expr = parse_expr("a[1 + 2]");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+            assert!(is_binop(key).is_some());
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+#[test]
+fn chained_index() {
+    // a[0][1] == Index(Index(a, 0), 1)
+    let expr = parse_expr("a[0][1]");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(is_int(key, 1));
+            match &target.kind {
+                ExprKind::Index { target: inner, key: inner_key } => {
+                    assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(is_int(inner_key, 0));
+                }
+                other => panic!("expected inner Index, got {other:?}"),
+            }
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+#[test]
+fn index_with_newlines() {
+    let expr = parse_expr("a[\n0\n]");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+            assert!(is_int(key, 0));
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+// -- Dot access --
+
+#[test]
+fn dot_access() {
+    let expr = parse_expr("a.foo");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"foo"));
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+#[test]
+fn chained_dot() {
+    // a.b.c == Index(Index(a, "b"), "c")
+    let expr = parse_expr("a.b.c");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"c"));
+            match &target.kind {
+                ExprKind::Index { target: inner, key: inner_key } => {
+                    assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(matches!(&inner_key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b"));
+                }
+                other => panic!("expected inner Index, got {other:?}"),
+            }
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+#[test]
+fn dot_then_call() {
+    // a.foo(1) == Call(Index(a, "foo"), [1])
+    let expr = parse_expr("a.foo(1)");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert_eq!(args.len(), 1);
+            assert!(is_int(&args[0], 1));
+            match &callee.kind {
+                ExprKind::Index { target, key } => {
+                    assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"foo"));
+                }
+                other => panic!("expected Index inside Call, got {other:?}"),
+            }
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+// -- Threading --
+
+#[test]
+fn thread_no_extra_args() {
+    // a @ f() == f(a)
+    let expr = parse_expr("a @ f()");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+            assert_eq!(args.len(), 1);
+            assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn thread_with_args() {
+    // a @ f(1) == f(a, 1)
+    let expr = parse_expr("a @ f(1)");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+            assert_eq!(args.len(), 2);
+            assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+            assert!(is_int(&args[1], 1));
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn thread_chained() {
+    // a @ f(1) @ g(2) == g(f(a, 1), 2)
+    let expr = parse_expr("a @ f(1) @ g(2)");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "g"));
+            assert_eq!(args.len(), 2);
+            assert!(is_int(&args[1], 2));
+            match &args[0].kind {
+                ExprKind::Call { callee: inner_callee, args: inner_args } => {
+                    assert!(matches!(&inner_callee.kind, ExprKind::NameLookup(n) if n == "f"));
+                    assert_eq!(inner_args.len(), 2);
+                    assert!(matches!(&inner_args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(is_int(&inner_args[1], 1));
+                }
+                other => panic!("expected inner Call, got {other:?}"),
+            }
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn thread_dot_callee() {
+    // a @ m.f() == m.f(a) == Index(m, "f") called with [a]
+    let expr = parse_expr("a @ m.f()");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert_eq!(args.len(), 1);
+            assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+            match &callee.kind {
+                ExprKind::Index { target, key } => {
+                    assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "m"));
+                    assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"f"));
+                }
+                other => panic!("expected Index callee, got {other:?}"),
+            }
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+// -- Postfix binds tighter than prefix --
+
+#[test]
+fn negate_index() {
+    // -a[0] == -(a[0])
+    let expr = parse_expr("-a[0]");
+    match &expr.kind {
+        ExprKind::UnaryOp { op: UnaryOp::Negate, operand } => {
+            assert!(matches!(&operand.kind, ExprKind::Index { .. }));
+        }
+        other => panic!("expected Negate(Index), got {other:?}"),
+    }
+}
+
+// -- Postfix error cases --
+
+#[test]
+fn error_dot_no_identifier() {
+    let err = parse_err("a.42");
+    assert!(err.contains("unexpected") || err.contains("expected identifier"), "error was: {err}");
+}
+
+#[test]
+fn error_unclosed_index() {
+    let err = parse_err("a[0");
+    assert!(err.contains("end of input") || err.contains("Expected ]"), "error was: {err}");
+}
+
+#[test]
+fn error_unclosed_call() {
+    let err = parse_err("f(1, 2");
+    assert!(err.contains("end of input") || err.contains("Expected )"), "error was: {err}");
+}
+
+#[test]
+fn error_thread_no_parens() {
+    let err = parse_err("a @ f");
+    assert!(err.contains("Expected (") || err.contains("unexpected"), "error was: {err}");
+}
