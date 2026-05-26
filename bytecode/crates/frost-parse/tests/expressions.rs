@@ -882,3 +882,256 @@ fn error_thread_no_parens() {
     let err = parse_err("a @ f");
     assert!(err.contains("Expected (") || err.contains("unexpected"), "error was: {err}");
 }
+
+// -- Mixed postfix chains --
+
+#[test]
+fn call_then_index() {
+    // f()[0] == Index(Call(f, []), 0)
+    let expr = parse_expr("f()[0]");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(is_int(key, 0));
+            match &target.kind {
+                ExprKind::Call { callee, args } => {
+                    assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+                    assert!(args.is_empty());
+                }
+                other => panic!("expected Call, got {other:?}"),
+            }
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+#[test]
+fn index_then_call() {
+    // a[0](1) == Call(Index(a, 0), [1])
+    let expr = parse_expr("a[0](1)");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert_eq!(args.len(), 1);
+            assert!(is_int(&args[0], 1));
+            match &callee.kind {
+                ExprKind::Index { target, key } => {
+                    assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(is_int(key, 0));
+                }
+                other => panic!("expected Index, got {other:?}"),
+            }
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn call_then_dot() {
+    // f().bar == Index(Call(f, []), "bar")
+    let expr = parse_expr("f().bar");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"bar"));
+            match &target.kind {
+                ExprKind::Call { callee, args } => {
+                    assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+                    assert!(args.is_empty());
+                }
+                other => panic!("expected Call, got {other:?}"),
+            }
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+#[test]
+fn dot_then_index() {
+    // a.b[0] == Index(Index(a, "b"), 0)
+    let expr = parse_expr("a.b[0]");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(is_int(key, 0));
+            match &target.kind {
+                ExprKind::Index { target: inner, key: inner_key } => {
+                    assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(matches!(&inner_key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b"));
+                }
+                other => panic!("expected inner Index, got {other:?}"),
+            }
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+#[test]
+fn index_then_dot() {
+    // a[0].bar == Index(Index(a, 0), "bar")
+    let expr = parse_expr("a[0].bar");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"bar"));
+            match &target.kind {
+                ExprKind::Index { target: inner, key: inner_key } => {
+                    assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(is_int(inner_key, 0));
+                }
+                other => panic!("expected inner Index, got {other:?}"),
+            }
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+#[test]
+fn long_postfix_chain() {
+    // a.b[0].c(1).d == Index(Call(Index(Index(Index(a, "b"), 0), "c"), [1]), "d")
+    let expr = parse_expr("a.b[0].c(1).d");
+    // outermost is .d
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"d"));
+            // next is (1)
+            match &target.kind {
+                ExprKind::Call { callee, args } => {
+                    assert_eq!(args.len(), 1);
+                    assert!(is_int(&args[0], 1));
+                    // next is .c
+                    match &callee.kind {
+                        ExprKind::Index { target, key } => {
+                            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"c"));
+                            // next is [0]
+                            match &target.kind {
+                                ExprKind::Index { target, key } => {
+                                    assert!(is_int(key, 0));
+                                    // next is .b
+                                    match &target.kind {
+                                        ExprKind::Index { target, key } => {
+                                            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b"));
+                                            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+                                        }
+                                        other => panic!("expected .b Index, got {other:?}"),
+                                    }
+                                }
+                                other => panic!("expected [0] Index, got {other:?}"),
+                            }
+                        }
+                        other => panic!("expected .c Index, got {other:?}"),
+                    }
+                }
+                other => panic!("expected Call, got {other:?}"),
+            }
+        }
+        other => panic!("expected .d Index, got {other:?}"),
+    }
+}
+
+// -- Postfix in binary operands --
+
+#[test]
+fn calls_in_arithmetic() {
+    // f(1) + g(2)
+    let expr = parse_expr("f(1) + g(2)");
+    let (left, op, right) = is_binop(&expr).unwrap();
+    assert!(matches!(op, BinOp::Add));
+    assert!(matches!(&left.kind, ExprKind::Call { .. }));
+    assert!(matches!(&right.kind, ExprKind::Call { .. }));
+}
+
+#[test]
+fn index_in_arithmetic() {
+    // a[0] * b[1]
+    let expr = parse_expr("a[0] * b[1]");
+    let (left, op, right) = is_binop(&expr).unwrap();
+    assert!(matches!(op, BinOp::Mul));
+    assert!(matches!(&left.kind, ExprKind::Index { .. }));
+    assert!(matches!(&right.kind, ExprKind::Index { .. }));
+}
+
+#[test]
+fn dot_in_comparison() {
+    // a.x == b.y
+    let expr = parse_expr("a.x == b.y");
+    let (left, op, right) = is_binop(&expr).unwrap();
+    assert!(matches!(op, BinOp::Eq));
+    assert!(matches!(&left.kind, ExprKind::Index { .. }));
+    assert!(matches!(&right.kind, ExprKind::Index { .. }));
+}
+
+// -- Threading extras --
+
+#[test]
+fn thread_multiple_extra_args() {
+    // a @ f(1, 2) == f(a, 1, 2)
+    let expr = parse_expr("a @ f(1, 2)");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+            assert_eq!(args.len(), 3);
+            assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+            assert!(is_int(&args[1], 1));
+            assert!(is_int(&args[2], 2));
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn thread_after_postfix() {
+    // a.b @ f() == f(a.b) == f(Index(a, "b"))
+    let expr = parse_expr("a.b @ f()");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+            assert_eq!(args.len(), 1);
+            assert!(matches!(&args[0].kind, ExprKind::Index { .. }));
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn thread_result_indexed() {
+    // a @ f()[0] — thread result then index
+    let expr = parse_expr("a @ f()[0]");
+    match &expr.kind {
+        ExprKind::Index { target, key } => {
+            assert!(is_int(key, 0));
+            match &target.kind {
+                ExprKind::Call { callee, args } => {
+                    assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+                    assert_eq!(args.len(), 1);
+                    assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+                }
+                other => panic!("expected Call, got {other:?}"),
+            }
+        }
+        other => panic!("expected Index, got {other:?}"),
+    }
+}
+
+// -- Newline sensitivity with postfix --
+
+#[test]
+#[should_panic(expected = "Array literal")]
+fn newline_before_bracket_is_two_statements() {
+    // a\n[0] is two statements: `a` and `[0]` (array literal)
+    // Hits todo!() because array literal parsing isn't implemented yet.
+    // Remove should_panic once array literals are in place.
+    let program = parse_program("test.frst", "a\n[0]")
+        .expect("failed to parse");
+    assert_eq!(program.statements.len(), 2);
+}
+
+#[test]
+fn newline_before_dot_is_error() {
+    // a\n.foo — `.foo` is not a valid expression start
+    let err = parse_err("a\n.foo");
+    assert!(err.contains("unexpected"), "error was: {err}");
+}
+
+#[test]
+fn newline_before_call_is_two_statements() {
+    // f\n(1) is two statements: `f` and `(1)` (parenthesized 1)
+    let program = parse_program("test.frst", "f\n(1)")
+        .expect("failed to parse");
+    assert_eq!(program.statements.len(), 2);
+}
