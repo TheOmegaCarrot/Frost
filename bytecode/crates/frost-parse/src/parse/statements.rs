@@ -33,7 +33,12 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
         if let Some(peek) = ctx.peek() {
             match peek.token {
                 Token::Semicolon | Token::Newline => ctx.advance(1),
-                _ => return Err(ctx.unexpected_token(peek, "expected line break or semicolon after complete statement")),
+                _ => {
+                    return Err(ctx.unexpected_token(
+                        peek,
+                        "expected line break or semicolon after complete statement",
+                    ));
+                }
             };
         }
     }

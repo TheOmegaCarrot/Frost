@@ -31,6 +31,9 @@ pub struct ParseState {
     /// The current offset into `input`.
     /// Token-level position, not byte offset.
     pub pos: usize,
+
+    /// When > 0, newlines are not significant (we're inside delimiters).
+    pub nl_depth: u32,
 }
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
@@ -105,13 +108,23 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         Ok(&self.input[self.state.pos - 1])
     }
 
-    pub fn skip_nl(&mut self) -> &mut Self {
-        while let Some(SrcToken {
-            token: Token::Newline,
-            ..
-        }) = self.peek()
-        {
-            self.advance(1);
+    pub fn enter_nl_context(&mut self) -> &mut Self {
+        self.state.nl_depth += 1;
+        self
+    }
+
+    pub fn exit_nl_context(&mut self) -> &mut Self {
+        self.state.nl_depth -= 1;
+        self
+    }
+
+    /// Skip newlines that are not acting as statement separators.
+    /// When inside delimiters (nl_depth > 0), newlines are insignificant.
+    pub fn maybe_skip_nl(&mut self) -> &mut Self {
+        if self.state.nl_depth > 0 {
+            while matches!(self.peek().map(|t| &t.token), Some(Token::Newline)) {
+                self.advance(1);
+            }
         }
         self
     }

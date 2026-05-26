@@ -1,4 +1,6 @@
-use crate::ast::{Binding, Destructure, DestructureKind, Expr, ExprKind, Literal, MapDestructureEntry};
+use crate::ast::{
+    Binding, Destructure, DestructureKind, Expr, ExprKind, Literal, MapDestructureEntry,
+};
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
 use crate::parse::{ParseResult, ctx::ParseCtx};
@@ -127,7 +129,10 @@ fn parse_destructure_map(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
 
     Ok(Destructure {
         span: (start..end).into(),
-        kind: DestructureKind::Map { entries, bind_whole },
+        kind: DestructureKind::Map {
+            entries,
+            bind_whole,
+        },
     })
 }
 
@@ -155,9 +160,7 @@ fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<MapDestructureEntry> {
                 Ok(MapDestructureEntry {
                     key: Expr {
                         span: span.into(),
-                        kind: ExprKind::Literal(
-                            Literal::String(name.into_bytes()),
-                        ),
+                        kind: ExprKind::Literal(Literal::String(name.into_bytes())),
                     },
                     destructure,
                 })
@@ -169,9 +172,7 @@ fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<MapDestructureEntry> {
                 Ok(MapDestructureEntry {
                     key: Expr {
                         span: span.clone().into(),
-                        kind: ExprKind::Literal(
-                            Literal::String(name.into_bytes()),
-                        ),
+                        kind: ExprKind::Literal(Literal::String(name.into_bytes())),
                     },
                     destructure: Destructure {
                         span: span.into(),
