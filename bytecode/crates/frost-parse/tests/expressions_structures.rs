@@ -93,7 +93,10 @@ mod array_literals {
         let elems = array_elements(&expr);
         assert_eq!(elems.len(), 4);
         assert!(is_int(&elems[0], 1));
-        assert!(matches!(&elems[1].kind, ExprKind::Literal(Literal::Bool(true))));
+        assert!(matches!(
+            &elems[1].kind,
+            ExprKind::Literal(Literal::Bool(true))
+        ));
         assert!(matches!(&elems[2].kind, ExprKind::Literal(Literal::Null)));
         assert!(matches!(&elems[3].kind, ExprKind::NameLookup(n) if n == "foo"));
     }
@@ -208,13 +211,19 @@ mod array_errors {
     #[test]
     fn unclosed() {
         let err = parse_err("[1, 2");
-        assert!(err.contains("end of input") || err.contains("Expected ]"), "error was: {err}");
+        assert!(
+            err.contains("end of input") || err.contains("Expected ]"),
+            "error was: {err}"
+        );
     }
 
     #[test]
     fn missing_comma() {
         let err = parse_err("[1 2]");
-        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+        assert!(
+            err.contains("unexpected") || err.contains("Expected"),
+            "error was: {err}"
+        );
     }
 
     #[test]
@@ -474,13 +483,19 @@ mod map_errors {
     #[test]
     fn unclosed() {
         let err = parse_err("{foo: 1");
-        assert!(err.contains("end of input") || err.contains("Expected }"), "error was: {err}");
+        assert!(
+            err.contains("end of input") || err.contains("Expected }"),
+            "error was: {err}"
+        );
     }
 
     #[test]
     fn missing_colon() {
         let err = parse_err("{foo 1}");
-        assert!(err.contains("Expected :") || err.contains("unexpected"), "error was: {err}");
+        assert!(
+            err.contains("Expected :") || err.contains("unexpected"),
+            "error was: {err}"
+        );
     }
 
     #[test]
@@ -504,6 +519,9 @@ mod map_errors {
     #[test]
     fn shorthand_not_allowed() {
         let err = parse_err("{foo}");
-        assert!(err.contains("Expected :") || err.contains("unexpected"), "error was: {err}");
+        assert!(
+            err.contains("Expected :") || err.contains("unexpected"),
+            "error was: {err}"
+        );
     }
 }

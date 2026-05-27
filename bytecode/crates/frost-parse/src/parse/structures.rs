@@ -17,7 +17,9 @@ pub fn parse_array_literal(ctx: &mut ParseCtx) -> ParseResult<Expr> {
 
             let peek = ctx.must_peek("Array literal")?;
             match peek.token {
-                Token::Comma => { ctx.expect(Token::Comma)?; }
+                Token::Comma => {
+                    ctx.expect(Token::Comma)?;
+                }
                 Token::CloseBracket => break,
                 _ => return Err(ctx.unexpected_token(peek, "Array literal")),
             }
@@ -52,7 +54,9 @@ pub fn parse_map_literal(ctx: &mut ParseCtx) -> ParseResult<Expr> {
 
             let peek = ctx.must_peek("Map literal")?;
             match peek.token {
-                Token::Comma => { ctx.expect(Token::Comma)?; }
+                Token::Comma => {
+                    ctx.expect(Token::Comma)?;
+                }
                 Token::CloseBrace => break,
                 _ => return Err(ctx.unexpected_token(peek, "Map literal")),
             }

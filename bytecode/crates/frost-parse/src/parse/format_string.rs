@@ -12,8 +12,9 @@ pub fn parse_format_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult
     let peek = ctx.must_peek("format String")?;
     let span = peek.span.clone();
     let raw = match peek.token {
-        Token::SingleQuoteFormatStringLiteral(s)
-        | Token::DoubleQuoteFormatStringLiteral(s) => s.to_owned(),
+        Token::SingleQuoteFormatStringLiteral(s) | Token::DoubleQuoteFormatStringLiteral(s) => {
+            s.to_owned()
+        }
         _ => return Err(ctx.unexpected_token(peek, "format String")),
     };
     ctx.advance(1);
@@ -51,21 +52,45 @@ fn split_format_segments(
         match bytes[i] {
             b'\\' => {
                 if i + 1 >= bytes.len() {
-                    return Err(format_error(ctx, span, "unexpected end of String after backslash"));
+                    return Err(format_error(
+                        ctx,
+                        span,
+                        "unexpected end of String after backslash",
+                    ));
                 }
                 let escape = bytes[i + 1];
                 match escape {
-                    b'n' => { literal_buf.push(b'\n'); i += 2; }
-                    b't' => { literal_buf.push(b'\t'); i += 2; }
-                    b'r' => { literal_buf.push(b'\r'); i += 2; }
-                    b'\\' => { literal_buf.push(b'\\'); i += 2; }
-                    b'0' => { literal_buf.push(0); i += 2; }
-                    b'$' => { literal_buf.push(b'$'); i += 2; }
+                    b'n' => {
+                        literal_buf.push(b'\n');
+                        i += 2;
+                    }
+                    b't' => {
+                        literal_buf.push(b'\t');
+                        i += 2;
+                    }
+                    b'r' => {
+                        literal_buf.push(b'\r');
+                        i += 2;
+                    }
+                    b'\\' => {
+                        literal_buf.push(b'\\');
+                        i += 2;
+                    }
+                    b'0' => {
+                        literal_buf.push(0);
+                        i += 2;
+                    }
+                    b'$' => {
+                        literal_buf.push(b'$');
+                        i += 2;
+                    }
                     b'\'' if matches!(quote, QuoteStyle::Single) => {
-                        literal_buf.push(b'\''); i += 2;
+                        literal_buf.push(b'\'');
+                        i += 2;
                     }
                     b'"' if matches!(quote, QuoteStyle::Double) => {
-                        literal_buf.push(b'"'); i += 2;
+                        literal_buf.push(b'"');
+                        i += 2;
                     }
                     b'x' => {
                         if i + 3 >= bytes.len() {
@@ -79,7 +104,8 @@ fn split_format_segments(
                     }
                     _ => {
                         return Err(format_error(
-                            ctx, span,
+                            ctx,
+                            span,
                             format!("invalid escape sequence: \\{}", escape as char),
                         ));
                     }
@@ -105,7 +131,10 @@ fn split_format_segments(
                             while i < bytes.len() {
                                 match bytes[i] {
                                     b'\\' if i + 1 < bytes.len() => i += 2,
-                                    c if c == q => { i += 1; break; }
+                                    c if c == q => {
+                                        i += 1;
+                                        break;
+                                    }
                                     _ => i += 1,
                                 }
                             }
@@ -117,7 +146,11 @@ fn split_format_segments(
                 }
 
                 if depth != 0 {
-                    return Err(format_error(ctx, span, "unclosed interpolation in format String"));
+                    return Err(format_error(
+                        ctx,
+                        span,
+                        "unclosed interpolation in format String",
+                    ));
                 }
 
                 // The content is between start and i-1 (i is past the closing })
@@ -151,7 +184,12 @@ fn split_format_segments(
     Ok(segments)
 }
 
-fn parse_interpolation(src: &str, ctx: &ParseCtx, span: &Range<usize>, base_offset: usize) -> ParseResult<Expr> {
+fn parse_interpolation(
+    src: &str,
+    ctx: &ParseCtx,
+    span: &Range<usize>,
+    base_offset: usize,
+) -> ParseResult<Expr> {
     let mut sub_ctx = ParseCtx::new_with_offset(ctx.filename(), src, base_offset)
         .map_err(|e| format_error(ctx, span, e.to_string()))?;
 
@@ -159,7 +197,11 @@ fn parse_interpolation(src: &str, ctx: &ParseCtx, span: &Range<usize>, base_offs
         .map_err(|e| format_error(ctx, span, format!("in interpolation: {e}")))?;
 
     if !sub_ctx.at_end() {
-        return Err(format_error(ctx, span, "unexpected tokens after interpolation expression"));
+        return Err(format_error(
+            ctx,
+            span,
+            "unexpected tokens after interpolation expression",
+        ));
     }
 
     Ok(expr)

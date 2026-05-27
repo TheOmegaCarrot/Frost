@@ -30,8 +30,7 @@ pub fn parse_simple_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult
         _ => return Err(ctx.unexpected_token(peek, "String literal")),
     };
     ctx.advance(1);
-    let bytes = expand_escapes(&raw, quote)
-        .map_err(|msg| string_error(ctx, &span, msg))?;
+    let bytes = expand_escapes(&raw, quote).map_err(|msg| string_error(ctx, &span, msg))?;
     Ok(Expr {
         span: span.into(),
         kind: ExprKind::Literal(Literal::String(bytes)),
@@ -61,10 +60,8 @@ pub fn parse_multiline_string(ctx: &mut ParseCtx) -> ParseResult<Expr> {
         _ => return Err(ctx.unexpected_token(peek, "multiline String literal")),
     };
     ctx.advance(1);
-    let trimmed = trim_multiline_indentation(&raw)
-        .map_err(|msg| string_error(ctx, &span, msg))?;
-    let bytes = expand_multiline_escapes(&trimmed)
-        .map_err(|msg| string_error(ctx, &span, msg))?;
+    let trimmed = trim_multiline_indentation(&raw).map_err(|msg| string_error(ctx, &span, msg))?;
+    let bytes = expand_multiline_escapes(&trimmed).map_err(|msg| string_error(ctx, &span, msg))?;
     Ok(Expr {
         span: span.into(),
         kind: ExprKind::Literal(Literal::String(bytes)),

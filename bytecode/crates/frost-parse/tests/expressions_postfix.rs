@@ -91,7 +91,10 @@ fn chained_calls() {
             assert_eq!(args.len(), 1);
             assert!(is_int(&args[0], 2));
             match &callee.kind {
-                ExprKind::Call { callee: inner, args: inner_args } => {
+                ExprKind::Call {
+                    callee: inner,
+                    args: inner_args,
+                } => {
                     assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "f"));
                     assert_eq!(inner_args.len(), 1);
                     assert!(is_int(&inner_args[0], 1));
@@ -105,8 +108,7 @@ fn chained_calls() {
 
 #[test]
 fn call_newline_not_call() {
-    let program = parse_program("test.frst", "f\n(1)")
-        .expect("failed to parse");
+    let program = parse_program("test.frst", "f\n(1)").expect("failed to parse");
     assert_eq!(program.statements.len(), 2);
 }
 
@@ -143,7 +145,10 @@ fn chained_index() {
         ExprKind::Index { target, key } => {
             assert!(is_int(key, 1));
             match &target.kind {
-                ExprKind::Index { target: inner, key: inner_key } => {
+                ExprKind::Index {
+                    target: inner,
+                    key: inner_key,
+                } => {
                     assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "a"));
                     assert!(is_int(inner_key, 0));
                 }
@@ -187,9 +192,14 @@ fn chained_dot() {
         ExprKind::Index { target, key } => {
             assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"c"));
             match &target.kind {
-                ExprKind::Index { target: inner, key: inner_key } => {
+                ExprKind::Index {
+                    target: inner,
+                    key: inner_key,
+                } => {
                     assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "a"));
-                    assert!(matches!(&inner_key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b"));
+                    assert!(
+                        matches!(&inner_key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b")
+                    );
                 }
                 other => panic!("expected inner Index, got {other:?}"),
             }
@@ -208,7 +218,9 @@ fn dot_then_call() {
             match &callee.kind {
                 ExprKind::Index { target, key } => {
                     assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
-                    assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"foo"));
+                    assert!(
+                        matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"foo")
+                    );
                 }
                 other => panic!("expected Index inside Call, got {other:?}"),
             }
@@ -271,7 +283,10 @@ fn thread_chained() {
             assert_eq!(args.len(), 2);
             assert!(is_int(&args[1], 2));
             match &args[0].kind {
-                ExprKind::Call { callee: inner_callee, args: inner_args } => {
+                ExprKind::Call {
+                    callee: inner_callee,
+                    args: inner_args,
+                } => {
                     assert!(matches!(&inner_callee.kind, ExprKind::NameLookup(n) if n == "f"));
                     assert_eq!(inner_args.len(), 2);
                     assert!(matches!(&inner_args[0].kind, ExprKind::NameLookup(n) if n == "a"));
@@ -294,7 +309,9 @@ fn thread_dot_callee() {
             match &callee.kind {
                 ExprKind::Index { target, key } => {
                     assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "m"));
-                    assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"f"));
+                    assert!(
+                        matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"f")
+                    );
                 }
                 other => panic!("expected Index callee, got {other:?}"),
             }
@@ -384,7 +401,9 @@ fn dot_then_index() {
             assert!(is_int(key, 0));
             match &target.kind {
                 ExprKind::Index { key: inner_key, .. } => {
-                    assert!(matches!(&inner_key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b"));
+                    assert!(
+                        matches!(&inner_key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b")
+                    );
                 }
                 other => panic!("expected inner Index, got {other:?}"),
             }
@@ -423,14 +442,20 @@ fn long_postfix_chain() {
                     assert!(is_int(&args[0], 1));
                     match &callee.kind {
                         ExprKind::Index { target, key } => {
-                            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"c"));
+                            assert!(
+                                matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"c")
+                            );
                             match &target.kind {
                                 ExprKind::Index { target, key } => {
                                     assert!(is_int(key, 0));
                                     match &target.kind {
                                         ExprKind::Index { target, key } => {
-                                            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b"));
-                                            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+                                            assert!(
+                                                matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b")
+                                            );
+                                            assert!(
+                                                matches!(&target.kind, ExprKind::NameLookup(n) if n == "a")
+                                            );
                                         }
                                         other => panic!("expected .b Index, got {other:?}"),
                                     }
@@ -484,7 +509,10 @@ fn negate_index() {
     // -a[0] == -(a[0])
     let expr = parse_expr("-a[0]");
     match &expr.kind {
-        ExprKind::UnaryOp { op: UnaryOp::Negate, operand } => {
+        ExprKind::UnaryOp {
+            op: UnaryOp::Negate,
+            operand,
+        } => {
             assert!(matches!(&operand.kind, ExprKind::Index { .. }));
         }
         other => panic!("expected Negate(Index), got {other:?}"),
@@ -495,8 +523,7 @@ fn negate_index() {
 
 #[test]
 fn newline_before_bracket_is_two_statements() {
-    let program = parse_program("test.frst", "a\n[0]")
-        .expect("failed to parse");
+    let program = parse_program("test.frst", "a\n[0]").expect("failed to parse");
     assert_eq!(program.statements.len(), 2);
 }
 
@@ -508,8 +535,7 @@ fn newline_before_dot_is_error() {
 
 #[test]
 fn newline_before_call_is_two_statements() {
-    let program = parse_program("test.frst", "f\n(1)")
-        .expect("failed to parse");
+    let program = parse_program("test.frst", "f\n(1)").expect("failed to parse");
     assert_eq!(program.statements.len(), 2);
 }
 
@@ -518,23 +544,35 @@ fn newline_before_call_is_two_statements() {
 #[test]
 fn error_dot_no_identifier() {
     let err = parse_err("a.42");
-    assert!(err.contains("unexpected") || err.contains("expected identifier"), "error was: {err}");
+    assert!(
+        err.contains("unexpected") || err.contains("expected identifier"),
+        "error was: {err}"
+    );
 }
 
 #[test]
 fn error_unclosed_index() {
     let err = parse_err("a[0");
-    assert!(err.contains("end of input") || err.contains("Expected ]"), "error was: {err}");
+    assert!(
+        err.contains("end of input") || err.contains("Expected ]"),
+        "error was: {err}"
+    );
 }
 
 #[test]
 fn error_unclosed_call() {
     let err = parse_err("f(1, 2");
-    assert!(err.contains("end of input") || err.contains("Expected )"), "error was: {err}");
+    assert!(
+        err.contains("end of input") || err.contains("Expected )"),
+        "error was: {err}"
+    );
 }
 
 #[test]
 fn error_thread_no_parens() {
     let err = parse_err("a @ f");
-    assert!(err.contains("Expected (") || err.contains("unexpected"), "error was: {err}");
+    assert!(
+        err.contains("Expected (") || err.contains("unexpected"),
+        "error was: {err}"
+    );
 }

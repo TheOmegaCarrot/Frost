@@ -250,14 +250,21 @@ fn double_negate() {
 fn double_not() {
     let expr = parse_expr("not not true");
     match &expr.kind {
-        ExprKind::UnaryOp { op: UnaryOp::Not, operand } => {
-            match &operand.kind {
-                ExprKind::UnaryOp { op: UnaryOp::Not, operand: inner } => {
-                    assert!(matches!(&inner.kind, ExprKind::Literal(Literal::Bool(true))));
-                }
-                other => panic!("expected inner Not, got {other:?}"),
+        ExprKind::UnaryOp {
+            op: UnaryOp::Not,
+            operand,
+        } => match &operand.kind {
+            ExprKind::UnaryOp {
+                op: UnaryOp::Not,
+                operand: inner,
+            } => {
+                assert!(matches!(
+                    &inner.kind,
+                    ExprKind::Literal(Literal::Bool(true))
+                ));
             }
-        }
+            other => panic!("expected inner Not, got {other:?}"),
+        },
         other => panic!("expected Not, got {other:?}"),
     }
 }
@@ -266,7 +273,10 @@ fn double_not() {
 fn negate_float() {
     let expr = parse_expr("-3.14");
     match &expr.kind {
-        ExprKind::UnaryOp { op: UnaryOp::Negate, operand } => {
+        ExprKind::UnaryOp {
+            op: UnaryOp::Negate,
+            operand,
+        } => {
             assert!(matches!(&operand.kind, ExprKind::Literal(Literal::Float(f)) if *f == 3.14));
         }
         other => panic!("expected Negate, got {other:?}"),
@@ -338,29 +348,40 @@ fn parens_with_newlines() {
 
 #[test]
 fn newline_terminates_expression() {
-    let program = parse_program("test.frst", "1 + 2\n3")
-        .expect("failed to parse");
+    let program = parse_program("test.frst", "1 + 2\n3").expect("failed to parse");
     assert_eq!(program.statements.len(), 2);
 }
 
 #[test]
 fn newline_after_prefix_is_error() {
     let err = parse_err("not\ntrue");
-    assert!(err.contains("unexpected") || err.contains("end of input"), "error was: {err}");
+    assert!(
+        err.contains("unexpected") || err.contains("end of input"),
+        "error was: {err}"
+    );
 }
 
 #[test]
 fn negate_newline_is_error() {
     let err = parse_err("-\n5");
-    assert!(err.contains("unexpected") || err.contains("end of input"), "error was: {err}");
+    assert!(
+        err.contains("unexpected") || err.contains("end of input"),
+        "error was: {err}"
+    );
 }
 
 #[test]
 fn prefix_with_newline_in_parens() {
     let expr = parse_expr("(\nnot\ntrue\n)");
     match &expr.kind {
-        ExprKind::UnaryOp { op: UnaryOp::Not, operand } => {
-            assert!(matches!(&operand.kind, ExprKind::Literal(Literal::Bool(true))));
+        ExprKind::UnaryOp {
+            op: UnaryOp::Not,
+            operand,
+        } => {
+            assert!(matches!(
+                &operand.kind,
+                ExprKind::Literal(Literal::Bool(true))
+            ));
         }
         other => panic!("expected Not, got {other:?}"),
     }
@@ -370,7 +391,10 @@ fn prefix_with_newline_in_parens() {
 fn negate_with_newline_in_parens() {
     let expr = parse_expr("(-\n5)");
     match &expr.kind {
-        ExprKind::UnaryOp { op: UnaryOp::Negate, operand } => {
+        ExprKind::UnaryOp {
+            op: UnaryOp::Negate,
+            operand,
+        } => {
             assert!(is_int(operand, 5));
         }
         other => panic!("expected Negate, got {other:?}"),
@@ -411,7 +435,10 @@ fn error_mixed_chain() {
 #[test]
 fn error_trailing_operator() {
     let err = parse_err("1 +");
-    assert!(err.contains("end of input") || err.contains("unexpected"), "error was: {err}");
+    assert!(
+        err.contains("end of input") || err.contains("unexpected"),
+        "error was: {err}"
+    );
 }
 
 #[test]
@@ -423,11 +450,17 @@ fn error_leading_infix_operator() {
 #[test]
 fn error_unclosed_paren() {
     let err = parse_err("(1 + 2");
-    assert!(err.contains("end of input") || err.contains("Expected )"), "error was: {err}");
+    assert!(
+        err.contains("end of input") || err.contains("Expected )"),
+        "error was: {err}"
+    );
 }
 
 #[test]
 fn error_mismatched_paren() {
     let err = parse_err("(1 + 2]");
-    assert!(err.contains("Expected )") || err.contains("unexpected"), "error was: {err}");
+    assert!(
+        err.contains("Expected )") || err.contains("unexpected"),
+        "error was: {err}"
+    );
 }

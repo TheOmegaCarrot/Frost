@@ -67,7 +67,9 @@ fn float_scientific() {
 #[test]
 fn float_scientific_negative_exponent() {
     let expr = parse_expr("3.14e-2");
-    assert!(matches!(&expr.kind, ExprKind::Literal(Literal::Float(f)) if (*f - 3.14e-2).abs() < 1e-15));
+    assert!(
+        matches!(&expr.kind, ExprKind::Literal(Literal::Float(f)) if (*f - 3.14e-2).abs() < 1e-15)
+    );
 }
 
 // -- Program-level --

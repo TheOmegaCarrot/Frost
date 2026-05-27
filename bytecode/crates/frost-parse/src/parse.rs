@@ -8,6 +8,7 @@ use crate::parse::statements::{StatementContext, parse_statements};
 
 use logos::Logos;
 
+mod control_flow;
 mod destructure;
 mod expression;
 mod format_string;

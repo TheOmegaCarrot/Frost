@@ -1,11 +1,13 @@
 use crate::ast::{BinOp, Expr, ExprKind, Literal, UnaryOp};
 use crate::lex::Token;
-use crate::parse::{ParseResult, ctx::ParseCtx};
+use crate::parse::control_flow::parse_if;
 use crate::parse::format_string;
 use crate::parse::strings;
 use crate::parse::structures::{parse_array_literal, parse_map_literal};
+use crate::parse::{ParseResult, ctx::ParseCtx};
 
 pub fn parse_expression(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+    ctx.maybe_skip_nl();
     parse_expr_bp(ctx, 0)
 }
 
@@ -97,7 +99,9 @@ fn parse_call(ctx: &mut ParseCtx, callee: Expr) -> ParseResult<Expr> {
 
             let peek = ctx.must_peek("function call arguments")?;
             match peek.token {
-                Token::Comma => { ctx.expect(Token::Comma)?; }
+                Token::Comma => {
+                    ctx.expect(Token::Comma)?;
+                }
                 Token::CloseParen => break,
                 _ => return Err(ctx.unexpected_token(peek, "function call arguments")),
             }
@@ -194,7 +198,9 @@ fn parse_thread(ctx: &mut ParseCtx, lhs: Expr) -> ParseResult<Expr> {
 
             let peek = ctx.must_peek("threaded call arguments")?;
             match peek.token {
-                Token::Comma => { ctx.expect(Token::Comma)?; }
+                Token::Comma => {
+                    ctx.expect(Token::Comma)?;
+                }
                 Token::CloseParen => break,
                 _ => return Err(ctx.unexpected_token(peek, "threaded call arguments")),
             }
@@ -331,19 +337,27 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
         }
 
         // -- Atoms: strings --
-        Token::SingleQuoteStringLiteral(_) => strings::parse_simple_string(ctx, strings::QuoteStyle::Single),
-        Token::DoubleQuoteStringLiteral(_) => strings::parse_simple_string(ctx, strings::QuoteStyle::Double),
+        Token::SingleQuoteStringLiteral(_) => {
+            strings::parse_simple_string(ctx, strings::QuoteStyle::Single)
+        }
+        Token::DoubleQuoteStringLiteral(_) => {
+            strings::parse_simple_string(ctx, strings::QuoteStyle::Double)
+        }
         Token::RawStringLiteral(_) => strings::parse_raw_string(ctx),
         Token::MultilineStringLiteral(_) => strings::parse_multiline_string(ctx),
-        Token::SingleQuoteFormatStringLiteral(_) => format_string::parse_format_string(ctx, strings::QuoteStyle::Single),
-        Token::DoubleQuoteFormatStringLiteral(_) => format_string::parse_format_string(ctx, strings::QuoteStyle::Double),
+        Token::SingleQuoteFormatStringLiteral(_) => {
+            format_string::parse_format_string(ctx, strings::QuoteStyle::Single)
+        }
+        Token::DoubleQuoteFormatStringLiteral(_) => {
+            format_string::parse_format_string(ctx, strings::QuoteStyle::Double)
+        }
 
         // -- Atoms: composite literals --
         Token::OpenBracket => parse_array_literal(ctx),
         Token::OpenBrace => parse_map_literal(ctx),
 
         // -- Atoms: control flow --
-        Token::KwIf => todo!("if expression"),
+        Token::KwIf => parse_if(ctx),
         Token::KwDo => todo!("do block"),
         Token::KwMatch => todo!("match expression"),
 

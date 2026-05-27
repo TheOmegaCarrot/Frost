@@ -566,7 +566,10 @@ fn simple_string_single() {
 
 #[test]
 fn simple_string_double() {
-    assert_eq!(lex_one(r#""hello""#), Token::DoubleQuoteStringLiteral("hello"));
+    assert_eq!(
+        lex_one(r#""hello""#),
+        Token::DoubleQuoteStringLiteral("hello")
+    );
 }
 
 #[test]
@@ -589,7 +592,10 @@ fn simple_string_with_escapes() {
 
 #[test]
 fn simple_string_escaped_quote() {
-    assert_eq!(lex_one(r"'it\'s'"), Token::SingleQuoteStringLiteral(r"it\'s"));
+    assert_eq!(
+        lex_one(r"'it\'s'"),
+        Token::SingleQuoteStringLiteral(r"it\'s")
+    );
     assert_eq!(
         lex_one(r#""say \"hi\"""#),
         Token::DoubleQuoteStringLiteral(r#"say \"hi\""#)
@@ -630,12 +636,18 @@ fn multiline_string_single() {
 
 #[test]
 fn format_string_simple() {
-    assert_eq!(lex_one("$'hello'"), Token::SingleQuoteFormatStringLiteral("hello"));
+    assert_eq!(
+        lex_one("$'hello'"),
+        Token::SingleQuoteFormatStringLiteral("hello")
+    );
 }
 
 #[test]
 fn format_string_double_quote() {
-    assert_eq!(lex_one("$\"hello\""), Token::DoubleQuoteFormatStringLiteral("hello"));
+    assert_eq!(
+        lex_one("$\"hello\""),
+        Token::DoubleQuoteFormatStringLiteral("hello")
+    );
 }
 
 #[test]
@@ -910,17 +922,20 @@ else: call(compose, [ compose2(f, g) ] + rest )"#;
     assert!(tokens.contains(&Token::KwWith));
 
     // The format string should be captured as a single token
-    assert!(
-        tokens
-            .iter()
-            .any(|t| matches!(t, Token::SingleQuoteFormatStringLiteral(_) | Token::DoubleQuoteFormatStringLiteral(_)))
-    );
+    assert!(tokens.iter().any(|t| matches!(
+        t,
+        Token::SingleQuoteFormatStringLiteral(_) | Token::DoubleQuoteFormatStringLiteral(_)
+    )));
 
     // Verify the format string content includes the interpolation
-    if let Some(Token::SingleQuoteFormatStringLiteral(s) | Token::DoubleQuoteFormatStringLiteral(s)) = tokens
-        .iter()
-        .find(|t| matches!(t, Token::SingleQuoteFormatStringLiteral(_) | Token::DoubleQuoteFormatStringLiteral(_)))
-    {
+    if let Some(
+        Token::SingleQuoteFormatStringLiteral(s) | Token::DoubleQuoteFormatStringLiteral(s),
+    ) = tokens.iter().find(|t| {
+        matches!(
+            t,
+            Token::SingleQuoteFormatStringLiteral(_) | Token::DoubleQuoteFormatStringLiteral(_)
+        )
+    }) {
         assert!(s.contains("${type(f)}"));
         assert!(s.contains("Compose requires functions"));
     }

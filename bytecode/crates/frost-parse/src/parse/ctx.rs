@@ -49,7 +49,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         Self::new_with_offset(filename, src, 0)
     }
 
-    pub fn new_with_offset(filename: &'f str, src: &'src str, base_offset: usize) -> ParseResult<Self> {
+    pub fn new_with_offset(
+        filename: &'f str,
+        src: &'src str,
+        base_offset: usize,
+    ) -> ParseResult<Self> {
         let mut lexer = Token::lexer(src);
         let mut input = Vec::new();
 
@@ -62,7 +66,10 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             };
 
             let shifted = (span.start + base_offset)..(span.end + base_offset);
-            input.push(SrcToken { token, span: shifted });
+            input.push(SrcToken {
+                token,
+                span: shifted,
+            });
         }
 
         Ok(Self {
@@ -124,8 +131,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self
     }
 
-    /// Skip newlines that are not acting as statement separators.
-    /// When inside delimiters (nl_depth > 0), newlines are insignificant.
+    /// Skip newlines only when inside delimiters (nl_depth > 0).
     pub fn maybe_skip_nl(&mut self) -> &mut Self {
         if self.state.nl_depth > 0 {
             while matches!(self.peek().map(|t| &t.token), Some(Token::Newline)) {
