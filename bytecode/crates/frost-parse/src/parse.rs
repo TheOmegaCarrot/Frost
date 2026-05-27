@@ -11,6 +11,7 @@ use logos::Logos;
 mod destructure;
 mod expression;
 mod statements;
+mod strings;
 
 pub(crate) mod ctx;
 

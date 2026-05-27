@@ -174,8 +174,10 @@ pub enum Token<'src> {
     // Consumer is responsible for expanding escape sequences,
     // and for complaining about invalid sequences.
     #[regex(r"'([^'\\]|\\.)*'", slice_str)] // '...'
+    SingleQuoteStringLiteral(&'src str),
+
     #[regex(r#""([^"\\]|\\.)*""#, slice_str)] // "..."
-    SimpleStringLiteral(&'src str),
+    DoubleQuoteStringLiteral(&'src str),
 
     // Consumer is responsible for trimming indentation and expanding
     // the restricted set of escape sequences.
@@ -347,7 +349,8 @@ impl<'src> std::fmt::Display for Token<'src> {
             Token::Identifier(s) => write!(f, "{s}"),
             Token::DollarIdentifier(s) => write!(f, "{s}"),
             Token::RawStringLiteral(s) => write!(f, "R'({s})'"),
-            Token::SimpleStringLiteral(s) => write!(f, "'{s}'"),
+            Token::SingleQuoteStringLiteral(s) => write!(f, "'{s}'"),
+            Token::DoubleQuoteStringLiteral(s) => write!(f, "\"{s}\""),
             Token::MultilineStringLiteral(_) => write!(f, "multiline string"),
             Token::FormatStringLiteral(s) => write!(f, "$'{s}'"),
             Token::Skip => write!(f, ""),

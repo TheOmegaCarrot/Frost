@@ -561,39 +561,38 @@ fn raw_string_preserves_backslashes() {
 
 #[test]
 fn simple_string_single() {
-    assert_eq!(lex_one("'hello'"), Token::SimpleStringLiteral("hello"));
+    assert_eq!(lex_one("'hello'"), Token::SingleQuoteStringLiteral("hello"));
 }
 
 #[test]
 fn simple_string_double() {
-    assert_eq!(lex_one(r#""hello""#), Token::SimpleStringLiteral("hello"));
+    assert_eq!(lex_one(r#""hello""#), Token::DoubleQuoteStringLiteral("hello"));
 }
 
 #[test]
 fn simple_string_empty() {
-    assert_eq!(lex_one("''"), Token::SimpleStringLiteral(""));
-    assert_eq!(lex_one(r#""""#), Token::SimpleStringLiteral(""));
+    assert_eq!(lex_one("''"), Token::SingleQuoteStringLiteral(""));
+    assert_eq!(lex_one(r#""""#), Token::DoubleQuoteStringLiteral(""));
 }
 
 #[test]
 fn simple_string_with_escapes() {
-    // Escapes are preserved raw — parser handles them
     assert_eq!(
         lex_one(r"'hello\nworld'"),
-        Token::SimpleStringLiteral(r"hello\nworld")
+        Token::SingleQuoteStringLiteral(r"hello\nworld")
     );
     assert_eq!(
         lex_one(r"'tab\there'"),
-        Token::SimpleStringLiteral(r"tab\there")
+        Token::SingleQuoteStringLiteral(r"tab\there")
     );
 }
 
 #[test]
 fn simple_string_escaped_quote() {
-    assert_eq!(lex_one(r"'it\'s'"), Token::SimpleStringLiteral(r"it\'s"));
+    assert_eq!(lex_one(r"'it\'s'"), Token::SingleQuoteStringLiteral(r"it\'s"));
     assert_eq!(
         lex_one(r#""say \"hi\"""#),
-        Token::SimpleStringLiteral(r#"say \"hi\""#)
+        Token::DoubleQuoteStringLiteral(r#"say \"hi\""#)
     );
 }
 
@@ -601,7 +600,7 @@ fn simple_string_escaped_quote() {
 fn simple_string_escaped_backslash() {
     assert_eq!(
         lex_one(r"'back\\slash'"),
-        Token::SimpleStringLiteral(r"back\\slash")
+        Token::SingleQuoteStringLiteral(r"back\\slash")
     );
 }
 

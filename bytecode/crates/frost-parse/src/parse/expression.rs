@@ -1,6 +1,7 @@
 use crate::ast::{BinOp, Expr, ExprKind, Literal, UnaryOp};
 use crate::lex::Token;
 use crate::parse::{ParseResult, ctx::ParseCtx};
+use crate::parse::strings;
 
 pub fn parse_expression(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     parse_expr_bp(ctx, 0)
@@ -326,9 +327,10 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
         }
 
         // -- Atoms: strings --
-        Token::SimpleStringLiteral(_) => todo!("simple string literal"),
-        Token::RawStringLiteral(_) => todo!("raw string literal"),
-        Token::MultilineStringLiteral(_) => todo!("multiline string literal"),
+        Token::SingleQuoteStringLiteral(_) => strings::parse_simple_string(ctx, strings::QuoteStyle::Single),
+        Token::DoubleQuoteStringLiteral(_) => strings::parse_simple_string(ctx, strings::QuoteStyle::Double),
+        Token::RawStringLiteral(_) => strings::parse_raw_string(ctx),
+        Token::MultilineStringLiteral(_) => strings::parse_multiline_string(ctx),
         Token::FormatStringLiteral(_) => todo!("format string"),
 
         // -- Atoms: composite literals --
