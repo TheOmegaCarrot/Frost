@@ -187,9 +187,10 @@ pub enum Token<'src> {
 
     // Consumer is responsible for splitting into segments, expanding
     // escape sequences, and re-lexing/parsing interpolation expressions.
-    #[token("$\"", |lex| lex_format_str(lex, b'"'))]
     #[token("$'", |lex| lex_format_str(lex, b'\''))]
-    FormatStringLiteral(&'src str),
+    SingleQuoteFormatStringLiteral(&'src str),
+    #[token("$\"", |lex| lex_format_str(lex, b'"'))]
+    DoubleQuoteFormatStringLiteral(&'src str),
 
     // -- Whitespace and comments (skipped) --
     #[regex(r"[ \t\r\f]+", logos::skip)]
@@ -352,7 +353,8 @@ impl<'src> std::fmt::Display for Token<'src> {
             Token::SingleQuoteStringLiteral(s) => write!(f, "'{s}'"),
             Token::DoubleQuoteStringLiteral(s) => write!(f, "\"{s}\""),
             Token::MultilineStringLiteral(_) => write!(f, "multiline string"),
-            Token::FormatStringLiteral(s) => write!(f, "$'{s}'"),
+            Token::SingleQuoteFormatStringLiteral(s) => write!(f, "$'{s}'"),
+            Token::DoubleQuoteFormatStringLiteral(s) => write!(f, "$\"{s}\""),
             Token::Skip => write!(f, ""),
         }
     }

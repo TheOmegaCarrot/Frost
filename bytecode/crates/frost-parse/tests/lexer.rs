@@ -630,19 +630,19 @@ fn multiline_string_single() {
 
 #[test]
 fn format_string_simple() {
-    assert_eq!(lex_one("$'hello'"), Token::FormatStringLiteral("hello"));
+    assert_eq!(lex_one("$'hello'"), Token::SingleQuoteFormatStringLiteral("hello"));
 }
 
 #[test]
 fn format_string_double_quote() {
-    assert_eq!(lex_one("$\"hello\""), Token::FormatStringLiteral("hello"));
+    assert_eq!(lex_one("$\"hello\""), Token::DoubleQuoteFormatStringLiteral("hello"));
 }
 
 #[test]
 fn format_string_with_interpolation() {
     assert_eq!(
         lex_one("$'hello, ${name}'"),
-        Token::FormatStringLiteral("hello, ${name}")
+        Token::SingleQuoteFormatStringLiteral("hello, ${name}")
     );
 }
 
@@ -650,25 +650,23 @@ fn format_string_with_interpolation() {
 fn format_string_with_expression_interpolation() {
     assert_eq!(
         lex_one("$'result: ${1 + 2}'"),
-        Token::FormatStringLiteral("result: ${1 + 2}")
+        Token::SingleQuoteFormatStringLiteral("result: ${1 + 2}")
     );
 }
 
 #[test]
 fn format_string_nested_braces_in_interpolation() {
-    // Map literal inside interpolation: { foo: 1 } has braces
     assert_eq!(
         lex_one("$'value: ${{ foo: 1 }}'"),
-        Token::FormatStringLiteral("value: ${{ foo: 1 }}")
+        Token::SingleQuoteFormatStringLiteral("value: ${{ foo: 1 }}")
     );
 }
 
 #[test]
 fn format_string_string_inside_interpolation_same_quote() {
-    // String with same quote style inside interpolation
     assert_eq!(
         lex_one("$'result: ${map['key']}'"),
-        Token::FormatStringLiteral("result: ${map['key']}")
+        Token::SingleQuoteFormatStringLiteral("result: ${map['key']}")
     );
 }
 
@@ -676,7 +674,7 @@ fn format_string_string_inside_interpolation_same_quote() {
 fn format_string_string_inside_interpolation_other_quote() {
     assert_eq!(
         lex_one(r#"$"result: ${map["key"]}""#),
-        Token::FormatStringLiteral(r#"result: ${map["key"]}"#)
+        Token::DoubleQuoteFormatStringLiteral(r#"result: ${map["key"]}"#)
     );
 }
 
@@ -684,16 +682,15 @@ fn format_string_string_inside_interpolation_other_quote() {
 fn format_string_escaped_dollar() {
     assert_eq!(
         lex_one(r"$'price: \${5}'"),
-        Token::FormatStringLiteral(r"price: \${5}")
+        Token::SingleQuoteFormatStringLiteral(r"price: \${5}")
     );
 }
 
 #[test]
 fn format_string_bare_dollar() {
-    // $ not followed by { is literal
     assert_eq!(
         lex_one("$'price: $5'"),
-        Token::FormatStringLiteral("price: $5")
+        Token::SingleQuoteFormatStringLiteral("price: $5")
     );
 }
 
@@ -701,16 +698,15 @@ fn format_string_bare_dollar() {
 fn format_string_escaped_quote() {
     assert_eq!(
         lex_one(r"$'it\'s here'"),
-        Token::FormatStringLiteral(r"it\'s here")
+        Token::SingleQuoteFormatStringLiteral(r"it\'s here")
     );
 }
 
 #[test]
 fn format_string_escaped_backslash_before_quote() {
-    // \\' should be escaped backslash then closing quote
     assert_eq!(
         lex_one("$'back\\\\'"),
-        Token::FormatStringLiteral("back\\\\")
+        Token::SingleQuoteFormatStringLiteral("back\\\\")
     );
 }
 
@@ -718,61 +714,56 @@ fn format_string_escaped_backslash_before_quote() {
 fn format_string_multiple_interpolations() {
     assert_eq!(
         lex_one("$'${a} and ${b}'"),
-        Token::FormatStringLiteral("${a} and ${b}")
+        Token::SingleQuoteFormatStringLiteral("${a} and ${b}")
     );
 }
 
 #[test]
 fn format_string_nested_format_string_in_interpolation() {
-    // Format string inside interpolation: ${$"inner"}
     assert_eq!(
         lex_one(r#"$'outer: ${$"inner"}'  "#.trim()),
-        Token::FormatStringLiteral(r#"outer: ${$"inner"}"#)
+        Token::SingleQuoteFormatStringLiteral(r#"outer: ${$"inner"}"#)
     );
 }
 
 #[test]
 fn format_string_complex_expression() {
-    // if expression inside interpolation
     assert_eq!(
         lex_one(r#"$"${if true: "yes" else: "no"}""#),
-        Token::FormatStringLiteral(r#"${if true: "yes" else: "no"}"#)
+        Token::DoubleQuoteFormatStringLiteral(r#"${if true: "yes" else: "no"}"#)
     );
 }
 
 #[test]
 fn format_string_empty() {
-    assert_eq!(lex_one("$''"), Token::FormatStringLiteral(""));
-    assert_eq!(lex_one("$\"\""), Token::FormatStringLiteral(""));
+    assert_eq!(lex_one("$''"), Token::SingleQuoteFormatStringLiteral(""));
+    assert_eq!(lex_one("$\"\""), Token::DoubleQuoteFormatStringLiteral(""));
 }
 
 #[test]
 fn format_string_brace_in_string_in_interpolation() {
-    // } inside a string inside interpolation shouldn't close the interpolation
     assert_eq!(
         lex_one("$'${f(\"}\")}'"),
-        Token::FormatStringLiteral("${f(\"}\")}")
+        Token::SingleQuoteFormatStringLiteral("${f(\"}\")}")
     );
 }
 
 #[test]
 fn format_string_nested_interpolation_with_braces() {
-    // Deeply nested braces: ${fn -> { def x = { a: 1 }; x }}
     assert_eq!(
         lex_one("$'${fn -> { def x = { a: 1 }; x }}'"),
-        Token::FormatStringLiteral("${fn -> { def x = { a: 1 }; x }}")
+        Token::SingleQuoteFormatStringLiteral("${fn -> { def x = { a: 1 }; x }}")
     );
 }
 
 #[test]
 fn format_string_is_single_token() {
-    // The whole format string is one token, other tokens can follow
     assert_eq!(
         lex("$'hello' + $'world'"),
         vec![
-            Token::FormatStringLiteral("hello"),
+            Token::SingleQuoteFormatStringLiteral("hello"),
             Token::OpPlus,
-            Token::FormatStringLiteral("world"),
+            Token::SingleQuoteFormatStringLiteral("world"),
         ]
     );
 }
@@ -922,13 +913,13 @@ else: call(compose, [ compose2(f, g) ] + rest )"#;
     assert!(
         tokens
             .iter()
-            .any(|t| matches!(t, Token::FormatStringLiteral(_)))
+            .any(|t| matches!(t, Token::SingleQuoteFormatStringLiteral(_) | Token::DoubleQuoteFormatStringLiteral(_)))
     );
 
     // Verify the format string content includes the interpolation
-    if let Some(Token::FormatStringLiteral(s)) = tokens
+    if let Some(Token::SingleQuoteFormatStringLiteral(s) | Token::DoubleQuoteFormatStringLiteral(s)) = tokens
         .iter()
-        .find(|t| matches!(t, Token::FormatStringLiteral(_)))
+        .find(|t| matches!(t, Token::SingleQuoteFormatStringLiteral(_) | Token::DoubleQuoteFormatStringLiteral(_)))
     {
         assert!(s.contains("${type(f)}"));
         assert!(s.contains("Compose requires functions"));

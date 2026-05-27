@@ -10,6 +10,7 @@ use logos::Logos;
 
 mod destructure;
 mod expression;
+mod format_string;
 mod statements;
 mod strings;
 

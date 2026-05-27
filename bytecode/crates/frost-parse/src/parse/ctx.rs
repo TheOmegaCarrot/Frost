@@ -46,6 +46,10 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub fn new(filename: &'f str, src: &'src str) -> ParseResult<Self> {
+        Self::new_with_offset(filename, src, 0)
+    }
+
+    pub fn new_with_offset(filename: &'f str, src: &'src str, base_offset: usize) -> ParseResult<Self> {
         let mut lexer = Token::lexer(src);
         let mut input = Vec::new();
 
@@ -53,10 +57,12 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             let span = lexer.span();
 
             let Ok(token) = token else {
-                return Err(lex_error(filename, src, span));
+                let shifted = (span.start + base_offset)..(span.end + base_offset);
+                return Err(lex_error(filename, src, shifted));
             };
 
-            input.push(SrcToken { token, span });
+            let shifted = (span.start + base_offset)..(span.end + base_offset);
+            input.push(SrcToken { token, span: shifted });
         }
 
         Ok(Self {
@@ -127,6 +133,10 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             }
         }
         self
+    }
+
+    pub fn filename(&self) -> &'f str {
+        self.filename
     }
 
     pub fn at_end(&self) -> bool {
