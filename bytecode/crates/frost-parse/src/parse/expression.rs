@@ -3,7 +3,7 @@ use crate::lex::Token;
 use crate::parse::{ParseResult, ctx::ParseCtx};
 use crate::parse::format_string;
 use crate::parse::strings;
-use crate::parse::structures::parse_array_literal;
+use crate::parse::structures::{parse_array_literal, parse_map_literal};
 
 pub fn parse_expression(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     parse_expr_bp(ctx, 0)
@@ -340,7 +340,7 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
 
         // -- Atoms: composite literals --
         Token::OpenBracket => parse_array_literal(ctx),
-        Token::OpenBrace => todo!("Map literal"),
+        Token::OpenBrace => parse_map_literal(ctx),
 
         // -- Atoms: control flow --
         Token::KwIf => todo!("if expression"),

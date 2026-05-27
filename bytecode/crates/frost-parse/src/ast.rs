@@ -98,7 +98,7 @@ pub enum ExprKind {
     /// `[a, b, c]`
     Array(Vec<Expr>),
     /// `{ [k1]: v1, [k2]: v2 }`
-    Map(Vec<(Expr, Expr)>),
+    Map(Vec<MapEntry>),
     /// `$'hello, ${name}'`
     FormatString(Vec<FormatSegment>),
     /// `fn name?(params) -> body`
@@ -176,6 +176,14 @@ pub enum BinOp {
 pub enum UnaryOp {
     Negate,
     Not,
+}
+
+// -- Map entries --
+
+#[derive(Clone, Debug, Serialize)]
+pub struct MapEntry {
+    pub key: Expr,
+    pub value: Expr,
 }
 
 // -- Format strings --
