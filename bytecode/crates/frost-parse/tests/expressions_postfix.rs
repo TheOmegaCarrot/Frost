@@ -494,9 +494,7 @@ fn negate_index() {
 // -- Newline sensitivity with postfix --
 
 #[test]
-#[should_panic(expected = "Array literal")]
 fn newline_before_bracket_is_two_statements() {
-    // Hits todo!() because array literal parsing isn't implemented yet.
     let program = parse_program("test.frst", "a\n[0]")
         .expect("failed to parse");
     assert_eq!(program.statements.len(), 2);

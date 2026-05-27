@@ -3,6 +3,7 @@ use crate::lex::Token;
 use crate::parse::{ParseResult, ctx::ParseCtx};
 use crate::parse::format_string;
 use crate::parse::strings;
+use crate::parse::structures::parse_array_literal;
 
 pub fn parse_expression(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     parse_expr_bp(ctx, 0)
@@ -101,6 +102,7 @@ fn parse_call(ctx: &mut ParseCtx, callee: Expr) -> ParseResult<Expr> {
                 _ => return Err(ctx.unexpected_token(peek, "function call arguments")),
             }
 
+            ctx.maybe_skip_nl();
             if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
                 break;
             }
@@ -197,6 +199,7 @@ fn parse_thread(ctx: &mut ParseCtx, lhs: Expr) -> ParseResult<Expr> {
                 _ => return Err(ctx.unexpected_token(peek, "threaded call arguments")),
             }
 
+            ctx.maybe_skip_nl();
             if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
                 break;
             }
@@ -336,7 +339,7 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
         Token::DoubleQuoteFormatStringLiteral(_) => format_string::parse_format_string(ctx, strings::QuoteStyle::Double),
 
         // -- Atoms: composite literals --
-        Token::OpenBracket => todo!("Array literal"),
+        Token::OpenBracket => parse_array_literal(ctx),
         Token::OpenBrace => todo!("Map literal"),
 
         // -- Atoms: control flow --

@@ -13,6 +13,7 @@ mod expression;
 mod format_string;
 mod statements;
 mod strings;
+mod structures;
 
 pub(crate) mod ctx;
 
