@@ -15,9 +15,17 @@ pub enum StatementContext {
 pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResult<Vec<Statement>> {
     let mut stmts = Vec::new();
 
+    let allow_export = matches!(kind, StatementContext::TopLevel);
+
     while let Some(peek) = ctx.peek() {
+        if matches!(kind, StatementContext::Scope) && peek.token == Token::CloseBrace {
+            break;
+        }
+
         match peek.token {
-            Token::KwExport => stmts.push(parse_def(ctx, true)?),
+            Token::KwExport if allow_export => {
+                stmts.push(parse_def(ctx, true)?);
+            }
             Token::KwDef => stmts.push(parse_def(ctx, false)?),
             Token::KwDefn => todo!("defn"),
             _ => {
@@ -31,8 +39,18 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
         }
 
         if let Some(peek) = ctx.peek() {
+            if matches!(kind, StatementContext::Scope) && peek.token == Token::CloseBrace {
+                break;
+            }
             match peek.token {
-                Token::Semicolon | Token::Newline => ctx.advance(1),
+                Token::Semicolon | Token::Newline => {
+                    ctx.advance(1);
+                    ctx.maybe_skip_nl();
+                }
+                _ if matches!(kind, StatementContext::Scope) => {
+                    // In scope context (inside nl context), newlines may have
+                    // already been consumed. Allow statements to follow directly.
+                }
                 _ => {
                     return Err(ctx.unexpected_token(
                         peek,

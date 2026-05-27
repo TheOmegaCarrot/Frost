@@ -1,7 +1,8 @@
-use crate::ast::{Expr, ExprKind};
+use crate::ast::{Expr, ExprKind, StatementKind};
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
-use crate::parse::{ParseResult, ctx::ParseCtx};
+use crate::parse::statements::{StatementContext, parse_statements};
+use crate::parse::{ParseError, ParseResult, ctx::ParseCtx};
 
 pub fn parse_if(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let start = ctx.expect(Token::KwIf)?.span.start;
@@ -69,6 +70,36 @@ fn parse_if_from_elif(ctx: &mut ParseCtx) -> ParseResult<Expr> {
             condition: Box::new(condition),
             consequent: Box::new(consequent),
             alternate: alternate.map(Box::new),
+        },
+    })
+}
+
+pub fn parse_do(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+    let start = ctx.expect(Token::KwDo)?.span.start;
+    ctx.expect(Token::OpenBrace)?;
+    ctx.enter_nl_context().maybe_skip_nl();
+
+    let mut body = parse_statements(ctx, StatementContext::Scope)?;
+
+    ctx.maybe_skip_nl().exit_nl_context();
+    let close = ctx.expect(Token::CloseBrace)?;
+
+    let Some(last) = body.pop() else {
+        return Err(ParseError::from("do block must contain at least one expression"));
+    };
+
+    let value = match last.kind {
+        StatementKind::Expr(expr) => expr,
+        StatementKind::Def { .. } => {
+            return Err(ParseError::from("do block must end with an expression, not a definition"));
+        }
+    };
+
+    Ok(Expr {
+        span: (start..close.span.end).into(),
+        kind: ExprKind::Do {
+            body,
+            value: Box::new(value),
         },
     })
 }

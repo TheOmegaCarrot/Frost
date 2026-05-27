@@ -232,3 +232,191 @@ mod if_errors {
         );
     }
 }
+
+// ============================================================
+// Do blocks
+// ============================================================
+
+fn assert_do(expr: &Expr) -> (&[Statement], &Expr) {
+    match &expr.kind {
+        ExprKind::Do { body, value } => (body, value),
+        other => panic!("expected Do, got {other:?}"),
+    }
+}
+
+mod do_basic {
+    use super::*;
+
+    #[test]
+    fn single_expression() {
+        let expr = parse_expr("do { 42 }");
+        let (body, value) = assert_do(&expr);
+        assert!(body.is_empty());
+        assert!(is_int(value, 42));
+    }
+
+    #[test]
+    fn def_then_expression() {
+        let expr = parse_expr("do { def x = 5; x }");
+        let (body, value) = assert_do(&expr);
+        assert_eq!(body.len(), 1);
+        assert!(matches!(&body[0].kind, StatementKind::Def { .. }));
+        assert!(matches!(&value.kind, ExprKind::NameLookup(n) if n == "x"));
+    }
+
+    #[test]
+    fn multiple_defs() {
+        let expr = parse_expr("do { def x = 1; def y = 2; x + y }");
+        let (body, value) = assert_do(&expr);
+        assert_eq!(body.len(), 2);
+        assert!(is_binop(value).is_some());
+    }
+
+    #[test]
+    fn expression_value_with_arithmetic() {
+        let expr = parse_expr("do { def x = 5; x + 1 }");
+        let (body, value) = assert_do(&expr);
+        assert_eq!(body.len(), 1);
+        assert!(is_binop(value).is_some());
+    }
+
+    #[test]
+    fn side_effect_expressions_in_body() {
+        let expr = parse_expr("do { f(1); g(2); 42 }");
+        let (body, value) = assert_do(&expr);
+        assert_eq!(body.len(), 2);
+        assert!(matches!(&body[0].kind, StatementKind::Expr(_)));
+        assert!(matches!(&body[1].kind, StatementKind::Expr(_)));
+        assert!(is_int(value, 42));
+    }
+}
+
+mod do_newlines {
+    use super::*;
+
+    #[test]
+    fn multiline() {
+        let expr = parse_expr("do {\n    def x = 5\n    x\n}");
+        let (body, value) = assert_do(&expr);
+        assert_eq!(body.len(), 1);
+        assert!(matches!(&value.kind, ExprKind::NameLookup(n) if n == "x"));
+    }
+
+    #[test]
+    fn multiline_multiple_defs() {
+        let expr = parse_expr("do {\n    def a = 1\n    def b = 2\n    a + b\n}");
+        let (body, _) = assert_do(&expr);
+        assert_eq!(body.len(), 2);
+    }
+
+    #[test]
+    fn blank_lines() {
+        let expr = parse_expr("do {\n    def x = 1\n\n    x\n}");
+        let (body, _) = assert_do(&expr);
+        assert_eq!(body.len(), 1);
+    }
+
+    #[test]
+    fn semicolons_and_newlines_mixed() {
+        let expr = parse_expr("do {\n    def x = 1; def y = 2\n    x + y\n}");
+        let (body, _) = assert_do(&expr);
+        assert_eq!(body.len(), 2);
+    }
+}
+
+mod do_in_expressions {
+    use super::*;
+
+    #[test]
+    fn do_in_def() {
+        let program = parse("def x = do { 42 }");
+        assert_eq!(program.statements.len(), 1);
+        match &program.statements[0].kind {
+            StatementKind::Def { expr, .. } => {
+                assert!(matches!(&expr.kind, ExprKind::Do { .. }));
+            }
+            other => panic!("expected Def, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn do_in_call() {
+        let expr = parse_expr("f(do { 42 })");
+        assert!(matches!(&expr.kind, ExprKind::Call { .. }));
+    }
+
+    #[test]
+    fn do_in_if_branch() {
+        let expr = parse_expr("if true: do { def x = 1; x } else: 0");
+        let (_, then, _) = assert_if(&expr);
+        assert!(matches!(&then.kind, ExprKind::Do { .. }));
+    }
+
+    #[test]
+    fn do_in_arithmetic() {
+        let expr = parse_expr("do { 1 } + do { 2 }");
+        let (left, op, right) = is_binop(&expr).unwrap();
+        assert!(matches!(op, BinOp::Add));
+        assert!(matches!(&left.kind, ExprKind::Do { .. }));
+        assert!(matches!(&right.kind, ExprKind::Do { .. }));
+    }
+
+    #[test]
+    fn nested_do() {
+        let expr = parse_expr("do { def x = do { 5 }; x }");
+        let (body, _) = assert_do(&expr);
+        assert_eq!(body.len(), 1);
+        match &body[0].kind {
+            StatementKind::Def { expr, .. } => {
+                assert!(matches!(&expr.kind, ExprKind::Do { .. }));
+            }
+            other => panic!("expected Def, got {other:?}"),
+        }
+    }
+}
+
+mod do_errors {
+    use super::*;
+
+    #[test]
+    fn empty_do_block() {
+        let err = parse_err("do {}");
+        assert!(
+            err.contains("at least one expression"),
+            "error was: {err}"
+        );
+    }
+
+    #[test]
+    fn do_ending_with_def() {
+        let err = parse_err("do { def x = 5 }");
+        assert!(
+            err.contains("end with an expression"),
+            "error was: {err}"
+        );
+    }
+
+    #[test]
+    fn export_in_do() {
+        let err = parse_err("do { export def x = 5; x }");
+        assert!(err.contains("unexpected"), "error was: {err}");
+    }
+
+    #[test]
+    fn missing_closing_brace() {
+        let err = parse_err("do { 42");
+        assert!(
+            err.contains("end of input") || err.contains("Expected }"),
+            "error was: {err}"
+        );
+    }
+
+    #[test]
+    fn missing_opening_brace() {
+        let err = parse_err("do 42");
+        assert!(
+            err.contains("Expected {") || err.contains("unexpected"),
+            "error was: {err}"
+        );
+    }
+}
