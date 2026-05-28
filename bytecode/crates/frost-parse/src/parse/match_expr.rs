@@ -4,7 +4,7 @@ use crate::ast::{
 };
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
-use crate::parse::{ParseResult, ctx::ParseCtx};
+use crate::parse::{ParseResult, ctx::ParseCtx, parse_binding};
 
 pub fn parse_match(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let start = ctx.expect(Token::KwMatch)?.span.start;
@@ -236,7 +236,8 @@ fn parse_array_pattern(ctx: &mut ParseCtx) -> ParseResult<MatchPattern> {
 
             if matches!(ctx.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
                 ctx.advance(1);
-                rest = Some(parse_rest_binding(ctx)?);
+                rest = Some(parse_binding(ctx, "rest binding after '...'")?);
+
                 ctx.maybe_skip_nl();
                 break;
             }
@@ -266,22 +267,6 @@ fn parse_array_pattern(ctx: &mut ParseCtx) -> ParseResult<MatchPattern> {
         span: (start..close.span.end).into(),
         kind: MatchPatternKind::Array { elements, rest },
     })
-}
-
-fn parse_rest_binding(ctx: &mut ParseCtx) -> ParseResult<Binding> {
-    let peek = ctx.must_peek("rest binding after '...'")?;
-    match peek.token {
-        Token::Identifier("_") => {
-            ctx.advance(1);
-            Ok(Binding::Discarded)
-        }
-        Token::Identifier(name) => {
-            let name = name.to_owned();
-            ctx.advance(1);
-            Ok(Binding::Named(name))
-        }
-        _ => Err(ctx.unexpected_token(peek, "rest binding after '...'")),
-    }
 }
 
 fn parse_map_pattern(ctx: &mut ParseCtx) -> ParseResult<MatchPattern> {
@@ -316,21 +301,11 @@ fn parse_map_pattern(ctx: &mut ParseCtx) -> ParseResult<MatchPattern> {
 
     let bind_whole = if matches!(ctx.peek().map(|t| &t.token), Some(Token::KwAs)) {
         ctx.advance(1);
-        let peek = ctx.must_peek("as binding")?;
-        match peek.token {
-            Token::Identifier("_") => {
-                end = peek.span.end;
-                ctx.advance(1);
-                Some(Binding::Discarded)
-            }
-            Token::Identifier(name) => {
-                let name = name.to_owned();
-                end = peek.span.end;
-                ctx.advance(1);
-                Some(Binding::Named(name))
-            }
-            _ => return Err(ctx.unexpected_token(peek, "as binding")),
+        let binding = parse_binding(ctx, "as binding")?;
+        if let Some(t) = ctx.get(ctx.here() - 1) {
+            end = t.span.end;
         }
+        Some(binding)
     } else {
         None
     };
@@ -372,20 +347,8 @@ fn parse_map_pattern_entry(ctx: &mut ParseCtx) -> ParseResult<MapPatternEntry> {
                 ctx.advance(1);
                 ctx.maybe_skip_nl();
                 parse_pattern_alternatives(ctx)?
-            } else if matches!(peek2.token, Token::KwIs) {
-                parse_binding_pattern(ctx, name.clone(), start, end)?
             } else {
-                let binding = match name.as_str() {
-                    "_" => Binding::Discarded,
-                    _ => Binding::Named(name.clone()),
-                };
-                MatchPattern {
-                    span: (start..end).into(),
-                    kind: MatchPatternKind::Binding {
-                        name: binding,
-                        type_constraint: None,
-                    },
-                }
+                parse_binding_pattern(ctx, name.clone(), start, end)?
             };
 
             Ok(MapPatternEntry {

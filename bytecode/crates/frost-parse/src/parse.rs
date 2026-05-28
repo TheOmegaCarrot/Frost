@@ -1,7 +1,8 @@
 use std::error::Error;
 use std::fmt::Display;
 
-use crate::ast;
+use crate::ast::{self, Binding};
+use crate::lex::Token;
 use crate::parse::ctx::ParseCtx;
 use crate::parse::statements::{StatementContext, parse_statements};
 
@@ -9,6 +10,7 @@ mod control_flow;
 mod destructure;
 mod expression;
 mod format_string;
+mod lambda;
 mod match_expr;
 mod statements;
 mod strings;
@@ -54,3 +56,19 @@ pub fn parse_program(filename: &str, input: &str) -> ParseResult<ast::Program> {
 }
 
 type ParseResult<T> = Result<T, ParseError>;
+
+fn parse_binding(ctx: &mut ParseCtx, context: &str) -> ParseResult<Binding> {
+    let peek = ctx.must_peek(context)?;
+    match peek.token {
+        Token::Identifier("_") => {
+            ctx.advance(1);
+            Ok(Binding::Discarded)
+        }
+        Token::Identifier(name) => {
+            let name = name.to_owned();
+            ctx.advance(1);
+            Ok(Binding::Named(name))
+        }
+        _ => Err(ctx.unexpected_token(peek, context)),
+    }
+}
