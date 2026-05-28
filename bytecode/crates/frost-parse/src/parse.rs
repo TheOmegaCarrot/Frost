@@ -9,6 +9,7 @@ mod control_flow;
 mod destructure;
 mod expression;
 mod format_string;
+mod match_expr;
 mod statements;
 mod strings;
 mod structures;

@@ -16,10 +16,15 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
     let mut stmts = Vec::new();
 
     let allow_export = matches!(kind, StatementContext::TopLevel);
+    let in_a_scope = !allow_export;
 
     while let Some(peek) = ctx.peek() {
-        if matches!(kind, StatementContext::Scope) && peek.token == Token::CloseBrace {
-            break;
+        match peek.token {
+            // Newlines between statements should be skipped.
+            // Doing it at the top of the loop skips blank/comment lines at the top of a file.
+            Token::Newline => { ctx.advance(1); continue; }
+            Token::CloseBrace if in_a_scope => break,
+            _ => {}
         }
 
         match peek.token {
@@ -39,7 +44,7 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
         }
 
         if let Some(peek) = ctx.peek() {
-            if matches!(kind, StatementContext::Scope) && peek.token == Token::CloseBrace {
+            if in_a_scope && peek.token == Token::CloseBrace {
                 break;
             }
             match peek.token {
@@ -47,7 +52,7 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
                     ctx.advance(1);
                     ctx.maybe_skip_nl();
                 }
-                _ if matches!(kind, StatementContext::Scope) => {
+                _ if in_a_scope => {
                     // In scope context (inside nl context), newlines may have
                     // already been consumed. Allow statements to follow directly.
                 }

@@ -2,6 +2,7 @@ use crate::ast::{BinOp, Expr, ExprKind, Literal, UnaryOp};
 use crate::lex::Token;
 use crate::parse::control_flow::{parse_do, parse_if};
 use crate::parse::format_string;
+use crate::parse::match_expr::parse_match;
 use crate::parse::strings;
 use crate::parse::structures::{parse_array_literal, parse_map_literal};
 use crate::parse::{ParseResult, ctx::ParseCtx};
@@ -258,7 +259,7 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
         // -- Atoms: control flow --
         Token::KwIf => parse_if(ctx),
         Token::KwDo => parse_do(ctx),
-        Token::KwMatch => todo!("match expression"),
+        Token::KwMatch => parse_match(ctx),
 
         // -- Atoms: functions --
         Token::KwFn => todo!("lambda"),
