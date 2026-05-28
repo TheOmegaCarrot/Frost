@@ -88,14 +88,13 @@ fn parse_single_pattern(ctx: &mut ParseCtx) -> ParseResult<MatchPattern> {
         Token::OpenBrace => parse_map_pattern(ctx),
 
         Token::OpenParen => {
-            let start = peek.span.start;
             ctx.advance(1);
             ctx.enter_nl_context().maybe_skip_nl();
             let expr = parse_expression(ctx)?;
             ctx.maybe_skip_nl().exit_nl_context();
             let close = ctx.expect(Token::CloseParen)?;
             Ok(MatchPattern {
-                span: (start..close.span.end).into(),
+                span: (peek_start..close.span.end).into(),
                 kind: MatchPatternKind::Value(expr),
             })
         }
@@ -139,19 +138,18 @@ fn parse_single_pattern(ctx: &mut ParseCtx) -> ParseResult<MatchPattern> {
         }
 
         Token::OpMinus => {
-            let start = peek.span.start;
             ctx.advance(1);
             let next = ctx.must_peek("negative literal in match pattern")?;
             match next.token {
                 Token::IntLiteral(n) => {
                     let end = next.span.end;
                     ctx.advance(1);
-                    Ok(literal_pattern(start, end, Literal::Int(-n)))
+                    Ok(literal_pattern(peek_start, end, Literal::Int(-n)))
                 }
                 Token::FloatLiteral(n) => {
                     let end = next.span.end;
                     ctx.advance(1);
-                    Ok(literal_pattern(start, end, Literal::Float(-n)))
+                    Ok(literal_pattern(peek_start, end, Literal::Float(-n)))
                 }
                 _ => Err(ctx.unexpected_token(next, "negative literal in match pattern")),
             }
@@ -159,9 +157,8 @@ fn parse_single_pattern(ctx: &mut ParseCtx) -> ParseResult<MatchPattern> {
 
         Token::Identifier(name) => {
             let name = name.to_owned();
-            let span = peek.span.clone();
             ctx.advance(1);
-            parse_binding_pattern(ctx, name, span)
+            parse_binding_pattern(ctx, name, peek_start, peek_end)
         }
 
         _ => Err(ctx.unexpected_token(peek, "match pattern")),
@@ -171,7 +168,8 @@ fn parse_single_pattern(ctx: &mut ParseCtx) -> ParseResult<MatchPattern> {
 fn parse_binding_pattern(
     ctx: &mut ParseCtx,
     name: String,
-    span: std::ops::Range<usize>,
+    start: usize,
+    end: usize,
 ) -> ParseResult<MatchPattern> {
     let binding = match name.as_str() {
         "_" => Binding::Discarded,
@@ -188,13 +186,13 @@ fn parse_binding_pattern(
     let end = if type_constraint.is_some() {
         ctx.get(ctx.here() - 1)
             .map(|t| t.span.end)
-            .unwrap_or(span.end)
+            .unwrap_or(end)
     } else {
-        span.end
+        end
     };
 
     Ok(MatchPattern {
-        span: (span.start..end).into(),
+        span: (start..end).into(),
         kind: MatchPatternKind::Binding {
             name: binding,
             type_constraint,
@@ -364,41 +362,36 @@ fn parse_map_pattern_entry(ctx: &mut ParseCtx) -> ParseResult<MapPatternEntry> {
 
         Token::Identifier(name) => {
             let name = name.to_owned();
-            let span = peek.span.clone();
+            let start = peek.span.start;
+            let end = peek.span.end;
             ctx.advance(1);
 
             let peek2 = ctx.must_peek("map pattern entry")?;
 
-            if peek2.token == Token::Colon {
+            let pattern = if peek2.token == Token::Colon {
                 ctx.advance(1);
                 ctx.maybe_skip_nl();
-                let pattern = parse_pattern_alternatives(ctx)?;
-                Ok(MapPatternEntry {
-                    key: string_key_expr(name, span),
-                    pattern,
-                })
+                parse_pattern_alternatives(ctx)?
             } else if matches!(peek2.token, Token::KwIs) {
-                let pattern = parse_binding_pattern(ctx, name.clone(), span.clone())?;
-                Ok(MapPatternEntry {
-                    key: string_key_expr(name, span),
-                    pattern,
-                })
+                parse_binding_pattern(ctx, name.clone(), start, end)?
             } else {
                 let binding = match name.as_str() {
                     "_" => Binding::Discarded,
                     _ => Binding::Named(name.clone()),
                 };
-                Ok(MapPatternEntry {
-                    key: string_key_expr(name, span.clone()),
-                    pattern: MatchPattern {
-                        span: span.into(),
-                        kind: MatchPatternKind::Binding {
-                            name: binding,
-                            type_constraint: None,
-                        },
+                MatchPattern {
+                    span: (start..end).into(),
+                    kind: MatchPatternKind::Binding {
+                        name: binding,
+                        type_constraint: None,
                     },
-                })
-            }
+                }
+            };
+
+            Ok(MapPatternEntry {
+                key: string_key_expr(name, start, end),
+                pattern,
+            })
         }
 
         _ => Err(ctx.unexpected_token(peek, "map pattern entry")),
@@ -415,9 +408,9 @@ fn literal_pattern(start: usize, end: usize, literal: Literal) -> MatchPattern {
     }
 }
 
-fn string_key_expr(name: String, span: std::ops::Range<usize>) -> Expr {
+fn string_key_expr(name: String, start: usize, end: usize) -> Expr {
     Expr {
-        span: span.into(),
+        span: (start..end).into(),
         kind: ExprKind::Literal(Literal::String(name.into_bytes())),
     }
 }
