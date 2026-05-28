@@ -87,34 +87,12 @@ const POSTFIX_BP: u8 = 16;
 fn parse_call(ctx: &mut ParseCtx, callee: Expr) -> ParseResult<Expr> {
     let start = callee.span.start;
     ctx.expect(Token::OpenParen)?;
-    ctx.enter_nl_context().maybe_skip_nl();
+    ctx.enter_nl_context();
 
-    let mut args = Vec::new();
-
-    if !matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
-        loop {
-            ctx.maybe_skip_nl();
-            args.push(parse_expr_bp(ctx, 0)?);
-            ctx.maybe_skip_nl();
-
-            let peek = ctx.must_peek("function call arguments")?;
-            match peek.token {
-                Token::Comma => {
-                    ctx.expect(Token::Comma)?;
-                }
-                Token::CloseParen => break,
-                _ => return Err(ctx.unexpected_token(peek, "function call arguments")),
-            }
-
-            ctx.maybe_skip_nl();
-            if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
-                break;
-            }
-        }
-    }
-
-    ctx.maybe_skip_nl().exit_nl_context();
-    let close = ctx.expect(Token::CloseParen)?;
+    let (args, close) =
+        ctx.parse_comma_separated(Token::CloseParen, "function call arguments", |ctx| {
+            parse_expr_bp(ctx, 0)
+        })?;
 
     Ok(Expr {
         span: (start..close.span.end).into(),
@@ -174,7 +152,6 @@ fn parse_thread(ctx: &mut ParseCtx, lhs: Expr) -> ParseResult<Expr> {
     ctx.expect(Token::OpThread)?;
     ctx.maybe_skip_nl();
 
-    // Parse callee — restricted to atoms + dot/index postfix only
     let mut callee = parse_atom(ctx)?;
 
     while let Some(peek) = ctx.peek() {
@@ -186,34 +163,14 @@ fn parse_thread(ctx: &mut ParseCtx, lhs: Expr) -> ParseResult<Expr> {
     }
 
     ctx.expect(Token::OpenParen)?;
-    ctx.enter_nl_context().maybe_skip_nl();
+    ctx.enter_nl_context();
 
-    let mut args = vec![lhs];
+    let (mut args, close) =
+        ctx.parse_comma_separated(Token::CloseParen, "threaded call arguments", |ctx| {
+            parse_expr_bp(ctx, 0)
+        })?;
 
-    if !matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
-        loop {
-            ctx.maybe_skip_nl();
-            args.push(parse_expr_bp(ctx, 0)?);
-            ctx.maybe_skip_nl();
-
-            let peek = ctx.must_peek("threaded call arguments")?;
-            match peek.token {
-                Token::Comma => {
-                    ctx.expect(Token::Comma)?;
-                }
-                Token::CloseParen => break,
-                _ => return Err(ctx.unexpected_token(peek, "threaded call arguments")),
-            }
-
-            ctx.maybe_skip_nl();
-            if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseParen)) {
-                break;
-            }
-        }
-    }
-
-    ctx.maybe_skip_nl().exit_nl_context();
-    let close = ctx.expect(Token::CloseParen)?;
+    args.insert(0, lhs);
 
     Ok(Expr {
         span: (start..close.span.end).into(),

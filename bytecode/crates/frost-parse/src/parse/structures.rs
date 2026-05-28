@@ -5,34 +5,12 @@ use crate::parse::{ParseResult, ctx::ParseCtx};
 
 pub fn parse_array_literal(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let start = ctx.expect(Token::OpenBracket)?.span.start;
-    ctx.enter_nl_context().maybe_skip_nl();
+    ctx.enter_nl_context();
 
-    let mut elements = Vec::new();
-
-    if !matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
-        loop {
-            ctx.maybe_skip_nl();
-            elements.push(parse_expression(ctx)?);
-            ctx.maybe_skip_nl();
-
-            let peek = ctx.must_peek("Array literal")?;
-            match peek.token {
-                Token::Comma => {
-                    ctx.expect(Token::Comma)?;
-                }
-                Token::CloseBracket => break,
-                _ => return Err(ctx.unexpected_token(peek, "Array literal")),
-            }
-
-            ctx.maybe_skip_nl();
-            if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
-                break;
-            }
-        }
-    }
-
-    ctx.maybe_skip_nl().exit_nl_context();
-    let close = ctx.expect(Token::CloseBracket)?;
+    let (elements, close) =
+        ctx.parse_comma_separated(Token::CloseBracket, "Array literal", |ctx| {
+            parse_expression(ctx)
+        })?;
 
     Ok(Expr {
         span: (start..close.span.end).into(),
@@ -42,34 +20,10 @@ pub fn parse_array_literal(ctx: &mut ParseCtx) -> ParseResult<Expr> {
 
 pub fn parse_map_literal(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let start = ctx.expect(Token::OpenBrace)?.span.start;
-    ctx.enter_nl_context().maybe_skip_nl();
+    ctx.enter_nl_context();
 
-    let mut entries = Vec::new();
-
-    if !matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBrace)) {
-        loop {
-            ctx.maybe_skip_nl();
-            entries.push(parse_map_entry(ctx)?);
-            ctx.maybe_skip_nl();
-
-            let peek = ctx.must_peek("Map literal")?;
-            match peek.token {
-                Token::Comma => {
-                    ctx.expect(Token::Comma)?;
-                }
-                Token::CloseBrace => break,
-                _ => return Err(ctx.unexpected_token(peek, "Map literal")),
-            }
-
-            ctx.maybe_skip_nl();
-            if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBrace)) {
-                break;
-            }
-        }
-    }
-
-    ctx.maybe_skip_nl().exit_nl_context();
-    let close = ctx.expect(Token::CloseBrace)?;
+    let (entries, close) =
+        ctx.parse_comma_separated(Token::CloseBrace, "Map literal", parse_map_entry)?;
 
     Ok(Expr {
         span: (start..close.span.end).into(),

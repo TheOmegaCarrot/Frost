@@ -2,11 +2,8 @@ use std::error::Error;
 use std::fmt::Display;
 
 use crate::ast;
-use crate::lex::Token;
 use crate::parse::ctx::ParseCtx;
 use crate::parse::statements::{StatementContext, parse_statements};
-
-use logos::Logos;
 
 mod control_flow;
 mod destructure;

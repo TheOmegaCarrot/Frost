@@ -1,6 +1,5 @@
 use std::ops::Range;
 
-use crate::ast;
 use crate::lex::Token;
 use crate::parse::{ParseError, ParseResult};
 
@@ -139,6 +138,46 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             }
         }
         self
+    }
+
+    /// Parse a comma-separated list of items inside delimiters.
+    /// The opening delimiter must already be consumed and nl context entered.
+    /// Consumes the closing delimiter and exits nl context.
+    pub fn parse_comma_separated<T>(
+        &mut self,
+        close: Token,
+        context: &str,
+        mut parse_item: impl FnMut(&mut Self) -> ParseResult<T>,
+    ) -> ParseResult<(Vec<T>, &SrcToken<'src>)> {
+        self.maybe_skip_nl();
+
+        let mut items = Vec::new();
+
+        if !matches!(self.peek().map(|t| &t.token), Some(t) if *t == close) {
+            loop {
+                self.maybe_skip_nl();
+                items.push(parse_item(self)?);
+                self.maybe_skip_nl();
+
+                let peek = self.must_peek(context)?;
+                if peek.token == close {
+                    break;
+                }
+                match peek.token {
+                    Token::Comma => { self.expect(Token::Comma)?; }
+                    _ => return Err(self.unexpected_token(peek, context)),
+                }
+
+                self.maybe_skip_nl();
+                if matches!(self.peek().map(|t| &t.token), Some(t) if *t == close) {
+                    break;
+                }
+            }
+        }
+
+        self.maybe_skip_nl().exit_nl_context();
+        let close_token = self.expect(close)?;
+        Ok((items, close_token))
     }
 
     pub fn filename(&self) -> &'f str {
