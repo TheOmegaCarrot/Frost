@@ -53,10 +53,7 @@ fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
                 ctx.advance(1);
             }
             Token::CloseBracket => break,
-            _ => {
-                let token = peek;
-                return Err(ctx.unexpected_token(token, "Array destructuring"));
-            }
+            _ => return Err(ctx.unexpected_token(peek, "Array destructuring")),
         }
 
         if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
@@ -74,19 +71,12 @@ fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
 }
 
 fn parse_binding(ctx: &mut ParseCtx, context: &str) -> ParseResult<Binding> {
-    let token = ctx.must_peek(context)?;
+    let peek = ctx.must_peek(context)?;
 
-    match token.token {
-        Token::Identifier("_") => {
-            ctx.advance(1);
-            Ok(Binding::Discarded)
-        }
-        Token::Identifier(name) => {
-            let name = name.to_owned();
-            ctx.advance(1);
-            Ok(Binding::Named(name))
-        }
-        _ => Err(ctx.unexpected_token(token, context)),
+    match peek.token {
+        Token::Identifier("_") => { ctx.next(); Ok(Binding::Discarded) }
+        Token::Identifier(name) => { let name = name.to_owned(); ctx.next(); Ok(Binding::Named(name)) }
+        _ => Err(ctx.unexpected_token(peek, context)),
     }
 }
 
@@ -136,6 +126,13 @@ fn parse_destructure_map(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
     })
 }
 
+fn string_key_expr(name: String, span: std::ops::Range<usize>) -> Expr {
+    Expr {
+        span: span.into(),
+        kind: ExprKind::Literal(Literal::String(name.into_bytes())),
+    }
+}
+
 fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<MapDestructureEntry> {
     let peek = ctx.must_peek("Map destructuring entry")?;
 
@@ -158,10 +155,7 @@ fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<MapDestructureEntry> {
                 ctx.advance(1);
                 let destructure = parse_destructure(ctx)?;
                 Ok(MapDestructureEntry {
-                    key: Expr {
-                        span: span.into(),
-                        kind: ExprKind::Literal(Literal::String(name.into_bytes())),
-                    },
+                    key: string_key_expr(name, span),
                     destructure,
                 })
             } else {
@@ -170,10 +164,7 @@ fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<MapDestructureEntry> {
                     _ => Binding::Named(name.clone()),
                 };
                 Ok(MapDestructureEntry {
-                    key: Expr {
-                        span: span.clone().into(),
-                        kind: ExprKind::Literal(Literal::String(name.into_bytes())),
-                    },
+                    key: string_key_expr(name, span.clone()),
                     destructure: Destructure {
                         span: span.into(),
                         kind: DestructureKind::Binding(binding),

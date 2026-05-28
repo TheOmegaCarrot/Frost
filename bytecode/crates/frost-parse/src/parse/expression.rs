@@ -126,24 +126,22 @@ fn parse_dot_access(ctx: &mut ParseCtx, target: Expr) -> ParseResult<Expr> {
     let start = target.span.start;
     ctx.expect(Token::OpDot)?;
 
-    let field = ctx.must_peek("dot access")?;
-    let field_span = field.span.clone();
-    match field.token {
-        Token::Identifier(name) => {
-            let name = name.to_owned();
-            ctx.advance(1);
-            Ok(Expr {
-                span: (start..field_span.end).into(),
-                kind: ExprKind::Index {
-                    target: Box::new(target),
-                    key: Box::new(Expr {
-                        span: field_span.into(),
-                        kind: ExprKind::Literal(Literal::String(name.into_bytes())),
-                    }),
-                },
-            })
-        }
-        _ => Err(ctx.unexpected_token(field, "dot access (expected identifier)")),
+    let peek = ctx.must_peek("dot access")?;
+    if let Token::Identifier(name) = peek.token {
+        let name = name.to_owned();
+        let field_span = ctx.next().unwrap().span.clone();
+        Ok(Expr {
+            span: (start..field_span.end).into(),
+            kind: ExprKind::Index {
+                target: Box::new(target),
+                key: Box::new(Expr {
+                    span: field_span.into(),
+                    kind: ExprKind::Literal(Literal::String(name.into_bytes())),
+                }),
+            },
+        })
+    } else {
+        Err(ctx.unexpected_token(peek, "dot access (expected identifier)"))
     }
 }
 
@@ -184,95 +182,39 @@ fn parse_thread(ctx: &mut ParseCtx, lhs: Expr) -> ParseResult<Expr> {
 fn parse_prefix(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let peek = ctx.must_peek("expression")?;
 
-    match peek.token {
-        Token::OpMinus => {
-            let start = peek.span.start;
-            ctx.advance(1);
-            ctx.maybe_skip_nl();
-            let operand = parse_expr_bp(ctx, PREFIX_BP)?;
-            Ok(Expr {
-                span: (start..operand.span.end).into(),
-                kind: ExprKind::UnaryOp {
-                    op: UnaryOp::Negate,
-                    operand: Box::new(operand),
-                },
-            })
-        }
-        Token::OpNot => {
-            let start = peek.span.start;
-            ctx.advance(1);
-            ctx.maybe_skip_nl();
-            let operand = parse_expr_bp(ctx, PREFIX_BP)?;
-            Ok(Expr {
-                span: (start..operand.span.end).into(),
-                kind: ExprKind::UnaryOp {
-                    op: UnaryOp::Not,
-                    operand: Box::new(operand),
-                },
-            })
-        }
-        _ => parse_atom(ctx),
+    let unary_op = match peek.token {
+        Token::OpMinus => Some((Token::OpMinus, UnaryOp::Negate)),
+        Token::OpNot => Some((Token::OpNot, UnaryOp::Not)),
+        _ => None,
+    };
+
+    if let Some((token, op)) = unary_op {
+        let start = ctx.expect(token)?.span.start;
+        ctx.maybe_skip_nl();
+        let operand = parse_expr_bp(ctx, PREFIX_BP)?;
+        return Ok(Expr {
+            span: (start..operand.span.end).into(),
+            kind: ExprKind::UnaryOp {
+                op,
+                operand: Box::new(operand),
+            },
+        });
     }
+
+    parse_atom(ctx)
 }
 
 fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let peek = ctx.must_peek("expression")?;
+    let span = peek.span.clone();
 
     match peek.token {
-        Token::IntLiteral(n) => {
-            let span = peek.span.clone();
-            ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::Int(n)),
-            })
-        }
-
-        Token::FloatLiteral(n) => {
-            let span = peek.span.clone();
-            ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::Float(n)),
-            })
-        }
-
-        Token::KwTrue => {
-            let span = peek.span.clone();
-            ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::Bool(true)),
-            })
-        }
-
-        Token::KwFalse => {
-            let span = peek.span.clone();
-            ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::Bool(false)),
-            })
-        }
-
-        Token::KwNull => {
-            let span = peek.span.clone();
-            ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::Null),
-            })
-        }
-
-        Token::Identifier(name) => {
-            let span = peek.span.clone();
-            let name = name.to_owned();
-            ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::NameLookup(name),
-            })
-        }
+        Token::IntLiteral(n) => { ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::Literal(Literal::Int(n)) }) }
+        Token::FloatLiteral(n) => { ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::Literal(Literal::Float(n)) }) }
+        Token::KwTrue => { ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::Literal(Literal::Bool(true)) }) }
+        Token::KwFalse => { ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::Literal(Literal::Bool(false)) }) }
+        Token::KwNull => { ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::Literal(Literal::Null) }) }
+        Token::Identifier(name) => { let name = name.to_owned(); ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::NameLookup(name) }) }
 
         Token::OpenParen => {
             let start = peek.span.start;
