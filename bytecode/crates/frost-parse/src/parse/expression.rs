@@ -211,12 +211,49 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let span = peek.span.clone();
 
     match peek.token {
-        Token::IntLiteral(n) => { ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::Literal(Literal::Int(n)) }) }
-        Token::FloatLiteral(n) => { ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::Literal(Literal::Float(n)) }) }
-        Token::KwTrue => { ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::Literal(Literal::Bool(true)) }) }
-        Token::KwFalse => { ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::Literal(Literal::Bool(false)) }) }
-        Token::KwNull => { ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::Literal(Literal::Null) }) }
-        Token::Identifier(name) => { let name = name.to_owned(); ctx.advance(1); Ok(Expr { span: span.into(), kind: ExprKind::NameLookup(name) }) }
+        Token::IntLiteral(n) => {
+            ctx.advance(1);
+            Ok(Expr {
+                span: span.into(),
+                kind: ExprKind::Literal(Literal::Int(n)),
+            })
+        }
+        Token::FloatLiteral(n) => {
+            ctx.advance(1);
+            Ok(Expr {
+                span: span.into(),
+                kind: ExprKind::Literal(Literal::Float(n)),
+            })
+        }
+        Token::KwTrue => {
+            ctx.advance(1);
+            Ok(Expr {
+                span: span.into(),
+                kind: ExprKind::Literal(Literal::Bool(true)),
+            })
+        }
+        Token::KwFalse => {
+            ctx.advance(1);
+            Ok(Expr {
+                span: span.into(),
+                kind: ExprKind::Literal(Literal::Bool(false)),
+            })
+        }
+        Token::KwNull => {
+            ctx.advance(1);
+            Ok(Expr {
+                span: span.into(),
+                kind: ExprKind::Literal(Literal::Null),
+            })
+        }
+        Token::Identifier(name) => {
+            let name = name.to_owned();
+            ctx.advance(1);
+            Ok(Expr {
+                span: span.into(),
+                kind: ExprKind::NameLookup(name),
+            })
+        }
 
         Token::OpenParen => {
             let start = peek.span.start;

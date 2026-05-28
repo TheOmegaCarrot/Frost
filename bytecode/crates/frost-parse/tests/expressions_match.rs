@@ -456,7 +456,9 @@ mod map_patterns {
         assert_eq!(entries.len(), 1);
         assert!(bind_whole.is_none());
 
-        assert!(matches!(&entries[0].key.kind, ExprKind::Literal(Literal::String(s)) if s == b"name"));
+        assert!(
+            matches!(&entries[0].key.kind, ExprKind::Literal(Literal::String(s)) if s == b"name")
+        );
         let (b, _) = assert_binding(&entries[0].pattern);
         assert_eq!(*b, Binding::Named("n".into()));
     }
@@ -467,7 +469,9 @@ mod map_patterns {
         let (_, arms) = assert_match(&expr);
         let (entries, _) = assert_map_pattern(&arms[0].pattern);
         assert_eq!(entries.len(), 1);
-        assert!(matches!(&entries[0].key.kind, ExprKind::Literal(Literal::String(s)) if s == b"name"));
+        assert!(
+            matches!(&entries[0].key.kind, ExprKind::Literal(Literal::String(s)) if s == b"name")
+        );
         let (b, _) = assert_binding(&entries[0].pattern);
         assert_eq!(*b, Binding::Named("name".into()));
     }
@@ -549,10 +553,7 @@ mod map_patterns {
             *bind_whole.expect("as binding"),
             Binding::Named("person".into())
         );
-        assert_eq!(
-            *rest.expect("rest binding"),
-            Binding::Named("rest".into())
-        );
+        assert_eq!(*rest.expect("rest binding"), Binding::Named("rest".into()));
     }
 }
 
@@ -579,7 +580,8 @@ mod newlines {
 
     #[test]
     fn multiline_array_pattern() {
-        let expr = parse_expr("match x {\n    [\n        a,\n        b,\n        ...rest\n    ] => a\n}");
+        let expr =
+            parse_expr("match x {\n    [\n        a,\n        b,\n        ...rest\n    ] => a\n}");
         let (_, arms) = assert_match(&expr);
         let (elements, rest) = assert_array_pattern(&arms[0].pattern);
         assert_eq!(elements.len(), 2);
@@ -588,9 +590,7 @@ mod newlines {
 
     #[test]
     fn multiline_map_pattern() {
-        let expr = parse_expr(
-            "match x {\n    {\n        name: n,\n        age: a\n    } => n\n}",
-        );
+        let expr = parse_expr("match x {\n    {\n        name: n,\n        age: a\n    } => n\n}");
         let (_, arms) = assert_match(&expr);
         let (entries, _) = assert_map_pattern(&arms[0].pattern);
         assert_eq!(entries.len(), 2);

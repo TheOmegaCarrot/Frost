@@ -184,9 +184,7 @@ fn parse_binding_pattern(
     };
 
     let end = if type_constraint.is_some() {
-        ctx.get(ctx.here() - 1)
-            .map(|t| t.span.end)
-            .unwrap_or(end)
+        ctx.get(ctx.here() - 1).map(|t| t.span.end).unwrap_or(end)
     } else {
         end
     };

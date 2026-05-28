@@ -418,19 +418,13 @@ mod errors {
     #[test]
     fn empty_block_body() {
         let err = parse_err("fn -> {}");
-        assert!(
-            err.contains("at least one expression"),
-            "error was: {err}"
-        );
+        assert!(err.contains("at least one expression"), "error was: {err}");
     }
 
     #[test]
     fn block_body_ending_with_def() {
         let err = parse_err("fn -> { def x = 1 }");
-        assert!(
-            err.contains("end with an expression"),
-            "error was: {err}"
-        );
+        assert!(err.contains("end with an expression"), "error was: {err}");
     }
 
     #[test]

@@ -164,7 +164,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                     break;
                 }
                 match peek.token {
-                    Token::Comma => { self.expect(Token::Comma)?; }
+                    Token::Comma => {
+                        self.expect(Token::Comma)?;
+                    }
                     _ => return Err(self.unexpected_token(peek, context)),
                 }
 

@@ -64,13 +64,17 @@ pub fn parse_do(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let close = ctx.expect(Token::CloseBrace)?;
 
     let Some(last) = body.pop() else {
-        return Err(ParseError::from("do block must contain at least one expression"));
+        return Err(ParseError::from(
+            "do block must contain at least one expression",
+        ));
     };
 
     let value = match last.kind {
         StatementKind::Expr(expr) => expr,
         StatementKind::Def { .. } => {
-            return Err(ParseError::from("do block must end with an expression, not a definition"));
+            return Err(ParseError::from(
+                "do block must end with an expression, not a definition",
+            ));
         }
     };
 

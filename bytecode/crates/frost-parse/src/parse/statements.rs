@@ -1,9 +1,9 @@
-use crate::ast::Statement;
-use crate::ast::StatementKind;
+use crate::ast::{Binding, Destructure, DestructureKind, ExprKind, Statement, StatementKind};
 use crate::lex::Token;
 use crate::parse::destructure::parse_destructure;
 use crate::parse::expression::parse_expression;
-use crate::parse::{ParseResult, ctx::ParseCtx};
+use crate::parse::lambda::{parse_fn_body, parse_parenthesized_params};
+use crate::parse::{ParseResult, ctx::ParseCtx, parse_binding};
 
 /// Statements are only allowed in a few contexts,
 /// and the rules differ between contexts.
@@ -22,17 +22,25 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
         match peek.token {
             // Newlines between statements should be skipped.
             // Doing it at the top of the loop skips blank/comment lines at the top of a file.
-            Token::Newline => { ctx.advance(1); continue; }
+            Token::Newline => {
+                ctx.advance(1);
+                continue;
+            }
             Token::CloseBrace if in_a_scope => break,
             _ => {}
         }
 
         match peek.token {
             Token::KwExport if allow_export => {
-                stmts.push(parse_def(ctx, true)?);
+                let next = ctx.get(ctx.here() + 1).map(|t| &t.token);
+                if matches!(next, Some(Token::KwDefn)) {
+                    stmts.push(parse_defn(ctx, true)?);
+                } else {
+                    stmts.push(parse_def(ctx, true)?);
+                }
             }
             Token::KwDef => stmts.push(parse_def(ctx, false)?),
-            Token::KwDefn => todo!("defn"),
+            Token::KwDefn => stmts.push(parse_defn(ctx, false)?),
             _ => {
                 let expr = parse_expression(ctx)?;
 
@@ -89,6 +97,49 @@ fn parse_def(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
         kind: StatementKind::Def {
             exported,
             destructure,
+            expr,
+        },
+    })
+}
+
+fn parse_defn(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
+    let start = ctx.must_peek("function definition")?.span.start;
+
+    if exported {
+        ctx.expect(Token::KwExport)?;
+    }
+
+    ctx.expect(Token::KwDefn)?;
+
+    let name = match parse_binding(ctx, "function name")? {
+        Binding::Named(name) => name,
+        Binding::Discarded => {
+            return Err("defn requires a function name, not '_'".into());
+        }
+    };
+
+    let (params, variadic_param) = parse_parenthesized_params(ctx)?;
+    let (body, return_expr, end) = parse_fn_body(ctx)?;
+
+    let expr = crate::ast::Expr {
+        span: (start..end).into(),
+        kind: ExprKind::Lambda {
+            params,
+            variadic_param,
+            self_name: Some(name.clone()),
+            body,
+            return_expr: Box::new(return_expr),
+        },
+    };
+
+    Ok(Statement {
+        span: (start..end).into(),
+        kind: StatementKind::Def {
+            exported,
+            destructure: Destructure {
+                span: (start..end).into(),
+                kind: DestructureKind::Binding(Binding::Named(name)),
+            },
             expr,
         },
     })

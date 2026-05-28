@@ -381,19 +381,13 @@ mod do_errors {
     #[test]
     fn empty_do_block() {
         let err = parse_err("do {}");
-        assert!(
-            err.contains("at least one expression"),
-            "error was: {err}"
-        );
+        assert!(err.contains("at least one expression"), "error was: {err}");
     }
 
     #[test]
     fn do_ending_with_def() {
         let err = parse_err("do { def x = 5 }");
-        assert!(
-            err.contains("end with an expression"),
-            "error was: {err}"
-        );
+        assert!(err.contains("end with an expression"), "error was: {err}");
     }
 
     #[test]

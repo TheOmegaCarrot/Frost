@@ -196,9 +196,7 @@ fn parse_block_body(ctx: &mut ParseCtx) -> ParseResult<(Vec<Statement>, Expr, us
 
 /// Parse the tail of a bare param list: `[, param]* [, ...rest]`.
 /// Stops at `->` (which is not consumed).
-fn parse_bare_params_tail(
-    ctx: &mut ParseCtx,
-) -> ParseResult<(Vec<Binding>, Option<Binding>)> {
+fn parse_bare_params_tail(ctx: &mut ParseCtx) -> ParseResult<(Vec<Binding>, Option<Binding>)> {
     let mut params = Vec::new();
     let mut variadic = None;
 
