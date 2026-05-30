@@ -4,7 +4,6 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-frost-core = { path = "../frost-core" }
 logos = "0.15"
 miette = { version = "7", features = ["fancy"] }
 serde = { version = "1", features = ["derive"] }

@@ -4,7 +4,6 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-frost-core = { path = "../frost-core" }
 frost-parse = { path = "../frost-parse" }
 frost-compile = { path = "../frost-compile" }
 frost-runtime = { path = "../frost-runtime" }

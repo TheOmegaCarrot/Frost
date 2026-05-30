@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "crates/frost-core",
     "crates/frost-parse",
     "crates/frost-compile",
     "crates/frost-runtime",

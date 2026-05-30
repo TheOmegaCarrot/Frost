@@ -1,8 +1,0 @@
-[package]
-name = "frost-core"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]
-ryu = "1"
-serde = { version = "1", features = ["derive"] }

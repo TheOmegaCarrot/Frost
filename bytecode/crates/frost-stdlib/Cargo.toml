@@ -4,5 +4,4 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-frost-core = { path = "../frost-core" }
 frost-runtime = { path = "../frost-runtime" }

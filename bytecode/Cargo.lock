@@ -80,7 +80,6 @@ name = "frost-cli"
 version = "0.0.4"
 dependencies = [
  "frost-compile",
- "frost-core",
  "frost-parse",
  "frost-runtime",
  "frost-stdlib",
@@ -91,23 +90,13 @@ dependencies = [
 name = "frost-compile"
 version = "0.0.4"
 dependencies = [
- "frost-core",
  "frost-parse",
-]
-
-[[package]]
-name = "frost-core"
-version = "0.0.4"
-dependencies = [
- "ryu",
- "serde",
 ]
 
 [[package]]
 name = "frost-parse"
 version = "0.0.4"
 dependencies = [
- "frost-core",
  "logos",
  "miette",
  "serde",
@@ -118,14 +107,14 @@ name = "frost-runtime"
 version = "0.0.4"
 dependencies = [
  "frost-compile",
- "frost-core",
+ "ryu",
+ "serde",
 ]
 
 [[package]]
 name = "frost-stdlib"
 version = "0.0.4"
 dependencies = [
- "frost-core",
  "frost-runtime",
 ]
 
