@@ -1,0 +1,980 @@
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'SF Mono', 'Consolas', 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #toolbar {
+    height: 36px;
+    background: #181825;
+    border-bottom: 1px solid #313244;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+  }
+
+  #toolbar .filename {
+    font-weight: 600;
+    color: #cdd6f4;
+  }
+
+  #toolbar .stats {
+    color: #6c7086;
+    font-size: 11px;
+  }
+
+  #container {
+    display: flex;
+    height: calc(100vh - 36px);
+  }
+
+  .pane {
+    flex: 1;
+    overflow: auto;
+    padding: 8px 0;
+    min-width: 100px;
+  }
+
+  #divider {
+    width: 5px;
+    background: #313244;
+    cursor: col-resize;
+    flex-shrink: 0;
+  }
+
+  #divider:hover, #divider.dragging {
+    background: #585b70;
+  }
+
+  .pane-header {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c7086;
+    padding: 4px 16px 8px;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: inherit;
+  }
+
+  .search-box {
+    background: #313244;
+    color: #cdd6f4;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    width: 180px;
+    outline: none;
+  }
+
+  .search-box:focus {
+    border-color: #89b4fa;
+  }
+
+  .search-box::placeholder {
+    color: #585b70;
+  }
+
+  .search-count {
+    font-weight: 400;
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: normal;
+    min-width: 3em;
+  }
+
+  #source-pane {
+    border-right: 1px solid #313244;
+    background: #1e1e2e;
+  }
+
+  #ast-pane {
+    background: #181825;
+  }
+
+  /* --- Source pane --- */
+
+  .source-line {
+    display: flex;
+    line-height: 20px;
+    min-height: 20px;
+  }
+
+  .source-line:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .line-number {
+    color: #585b70;
+    min-width: 4em;
+    text-align: right;
+    padding-right: 16px;
+    padding-left: 8px;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .source-content {
+    white-space: pre;
+  }
+
+  .ch {
+    position: relative;
+  }
+
+  /* --- Syntax highlighting (Catppuccin Mocha) --- */
+  .ch.hl-comment { color: #6c7086; font-style: italic; }
+  .ch.hl-keyword { color: #cba6f7; }
+  .ch.hl-constant-builtin { color: #fab387; }
+  .ch.hl-number { color: #fab387; }
+  .ch.hl-string { color: #a6e3a1; }
+  .ch.hl-string-special { color: #a6e3a1; }
+  .ch.hl-string-escape { color: #f2cdcd; }
+  .ch.hl-error { color: #f38ba8; text-decoration: wavy underline; }
+  .ch.hl-variable-parameter { color: #f2cdcd; }
+  .ch.hl-variable { color: #cdd6f4; }
+  .ch.hl-function { color: #89b4fa; }
+  .ch.hl-property { color: #89dceb; }
+  .ch.hl-type { color: #f9e2af; }
+  .ch.hl-operator { color: #94e2d5; }
+  .ch.hl-punctuation-bracket { color: #9399b2; }
+  .ch.hl-punctuation-delimiter { color: #9399b2; }
+
+  .ch.search-match {
+    background: rgba(249, 226, 175, 0.4);
+    border-radius: 1px;
+  }
+
+  .ch.hl-source {
+    background: rgba(137, 180, 250, 0.45);
+  }
+
+  .ch.hl-source-pin {
+    background: rgba(249, 226, 175, 0.35);
+  }
+
+  /* When both hover and pin are active, hover wins visually */
+  .ch.hl-source.hl-source-pin {
+    background: rgba(137, 180, 250, 0.45);
+  }
+
+  /* --- AST pane --- */
+
+  #ast-tree ul {
+    list-style: none;
+    padding-left: 20px;
+  }
+
+  #ast-tree > ul {
+    padding-left: 8px;
+  }
+
+  #ast-tree li {
+    line-height: 22px;
+  }
+
+  .node-row {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 6px;
+    border-radius: 3px;
+    gap: 4px;
+    cursor: default;
+    white-space: nowrap;
+  }
+
+  .node-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .toggle {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    color: #585b70;
+    font-size: 11px;
+    flex-shrink: 0;
+    border-radius: 3px;
+  }
+
+  .toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #a6adc8;
+  }
+
+  .toggle::before { content: '\25b8'; }
+
+  li.expanded > .node-row > .toggle::before { content: '\25be'; }
+
+  li:not(.expanded) > ul { display: none; }
+
+  .node-label {
+    color: #cdd6f4;
+  }
+
+  .wrapper-label {
+    color: #6c7086;
+    font-style: italic;
+  }
+
+  .range-info {
+    color: #7f849c;
+    font-size: 11px;
+  }
+
+  /* --- Highlighting --- */
+
+  .node-row.search-match {
+    background: rgba(249, 226, 175, 0.2) !important;
+  }
+
+  .node-row.hl-primary {
+    background: rgba(137, 180, 250, 0.35) !important;
+  }
+
+  .node-row.hl-ancestor {
+    background: rgba(137, 180, 250, 0.12) !important;
+  }
+
+  .node-row.hl-pin {
+    background: rgba(249, 226, 175, 0.3) !important;
+  }
+
+  /* Pin indicator dot */
+  .node-row.hl-pin::after {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgb(249, 226, 175);
+    margin-left: 4px;
+    flex-shrink: 0;
+  }
+
+  /* no_range warning */
+  .node-row.no-range .node-label {
+    color: #f38ba8;
+  }
+
+  .node-row.no-range .range-info {
+    color: #f38ba8;
+  }
+
+  /* Range warnings (gentle) */
+  .warn-text {
+    color: #f9e2af;
+    font-size: 12px;
+    margin-left: 6px;
+  }
+
+  .toolbar-warnings {
+    color: #f9e2af;
+    font-size: 11px;
+  }
+
+  .toolbar-warnings.clean {
+    color: #a6e3a1;
+  }
+
+  /* Toolbar buttons */
+  .toolbar-btn {
+    background: #313244;
+    color: #a6adc8;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .toolbar-btn:hover {
+    background: #45475a;
+    color: #cdd6f4;
+  }
+</style>
+
+<div id="toolbar">
+  <span class="filename" id="filename"></span>
+  <span class="stats" id="stats"></span>
+  <span class="toolbar-warnings" id="warnings"></span>
+  <button class="toolbar-btn" id="btn-expand-all">Expand All</button>
+  <button class="toolbar-btn" id="btn-collapse-all">Collapse All</button>
+</div>
+<div id="container">
+  <div id="source-pane" class="pane">
+    <div class="pane-header">
+      Source
+      <input class="search-box" id="source-search" type="text" placeholder="Search source...">
+      <span class="search-count" id="source-search-count"></span>
+    </div>
+    <div id="source-code"></div>
+  </div>
+  <div id="divider"></div>
+  <div id="ast-pane" class="pane">
+    <div class="pane-header">
+      AST
+      <input class="search-box" id="ast-search" type="text" placeholder="Search nodes...">
+      <span class="search-count" id="ast-search-count"></span>
+    </div>
+    <div id="ast-tree"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var data = window.FROST_DATA;
+  var sourceLines = data.source.split('\n');
+
+  // --- Indexes ---
+  var nodeMap = new Map();        // id -> node JSON object
+  var nodeElements = new Map();   // id -> .node-row DOM element
+  var charElements = new Map();   // "L:C" -> .ch DOM element
+  var charToNodes = new Map();    // "L:C" -> [{id, size}, ...]
+
+  // --- Render source ---
+  var sourceEl = document.getElementById('source-code');
+  var lineNumWidth = String(sourceLines.length).length;
+
+  sourceLines.forEach(function(line, idx) {
+    var lineNum = idx + 1;
+    var lineDiv = document.createElement('div');
+    lineDiv.className = 'source-line';
+
+    var numSpan = document.createElement('span');
+    numSpan.className = 'line-number';
+    numSpan.textContent = String(lineNum).padStart(lineNumWidth);
+    lineDiv.appendChild(numSpan);
+
+    var content = document.createElement('span');
+    content.className = 'source-content';
+
+    for (var col = 0; col < line.length; col++) {
+      var ch = document.createElement('span');
+      ch.className = 'ch';
+      ch.dataset.line = lineNum;
+      ch.dataset.col = col + 1;
+      ch.textContent = line[col];
+      content.appendChild(ch);
+      charElements.set(lineNum + ':' + (col + 1), ch);
+    }
+
+    lineDiv.appendChild(content);
+    sourceEl.appendChild(lineDiv);
+  });
+
+  // --- Byte offset to "line:col" key mapping (used by highlighting and search) ---
+  var byteToKey = [];
+  var byteOff = 0;
+  sourceLines.forEach(function(line, idx) {
+    for (var col = 0; col < line.length; col++) {
+      byteToKey[byteOff + col] = (idx + 1) + ':' + (col + 1);
+    }
+    byteOff += line.length + 1; // +1 for newline
+  });
+
+  // --- Apply syntax highlighting ---
+  if (data.highlights && data.highlights.length > 0) {
+    // Apply highlights in order (last capture wins per character)
+    data.highlights.forEach(function(hl) {
+      for (var b = hl.s; b < hl.e; b++) {
+        var key = byteToKey[b];
+        if (!key) continue;
+        var el = charElements.get(key);
+        if (el) {
+          el.className = 'ch hl-' + hl.c;
+        }
+      }
+    });
+  }
+
+  // --- Render AST tree ---
+  function renderNode(node, parentUl) {
+    nodeMap.set(node.id, node);
+
+    var li = document.createElement('li');
+    li.dataset.nodeId = node.id;
+
+    var hasChildren = node.children && node.children.length > 0;
+    if (hasChildren) li.classList.add('expanded');
+
+    var row = document.createElement('div');
+    row.className = 'node-row';
+    nodeElements.set(node.id, row);
+
+    if (hasChildren) {
+      var toggle = document.createElement('span');
+      toggle.className = 'toggle';
+      toggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (e.altKey) {
+          // Alt+click: recursively expand or collapse
+          var expanding = !li.classList.contains('expanded');
+          if (expanding) li.classList.add('expanded');
+          else li.classList.remove('expanded');
+          li.querySelectorAll('li').forEach(function(child) {
+            if (child.querySelector('ul')) {
+              if (expanding) child.classList.add('expanded');
+              else child.classList.remove('expanded');
+            }
+          });
+        } else {
+          li.classList.toggle('expanded');
+        }
+      });
+      row.appendChild(toggle);
+    }
+
+    // Flag real AST nodes that are missing a source range (a bug)
+    var isNoRange = !node.range && !node.wrapper;
+    if (isNoRange) row.classList.add('no-range');
+
+    var label = document.createElement('span');
+    label.className = node.wrapper ? 'wrapper-label' : 'node-label';
+    label.textContent = node.label;
+    row.appendChild(label);
+
+    if (node.range) {
+      var rangeSpan = document.createElement('span');
+      rangeSpan.className = 'range-info';
+      var r = node.range;
+      rangeSpan.textContent = '[' + r.sl + ':' + r.sc + '-' + r.el + ':' + r.ec + ']';
+      row.appendChild(rangeSpan);
+    } else if (isNoRange) {
+      var warnSpan = document.createElement('span');
+      warnSpan.className = 'range-info';
+      warnSpan.textContent = '[no range]';
+      row.appendChild(warnSpan);
+    }
+
+    li.appendChild(row);
+
+    if (hasChildren) {
+      var childUl = document.createElement('ul');
+      node.children.forEach(function(child) { renderNode(child, childUl); });
+      li.appendChild(childUl);
+    }
+
+    parentUl.appendChild(li);
+  }
+
+  var rootUl = document.createElement('ul');
+  data.ast.forEach(function(stmt) { renderNode(stmt, rootUl); });
+  document.getElementById('ast-tree').appendChild(rootUl);
+
+  // --- Build reverse index: source position -> AST nodes ---
+  function rangeSize(r) {
+    return (r.el - r.sl) * 10000 + (r.ec - r.sc);
+  }
+
+  function indexNode(node) {
+    if (node.range) {
+      var r = node.range;
+      for (var line = r.sl; line <= r.el; line++) {
+        var lineText = sourceLines[line - 1] || '';
+        var startCol = (line === r.sl) ? r.sc : 1;
+        // ranges are half-open: ec is the exclusive end column, so the last
+        // included column on the end line is ec - 1.
+        var endCol = (line === r.el) ? r.ec - 1 : lineText.length;
+        for (var col = startCol; col <= endCol; col++) {
+          var key = line + ':' + col;
+          if (!charToNodes.has(key)) charToNodes.set(key, []);
+          charToNodes.get(key).push({ id: node.id, size: rangeSize(r) });
+        }
+      }
+    }
+    if (node.children) node.children.forEach(indexNode);
+  }
+
+  data.ast.forEach(indexNode);
+
+  // Sort: innermost (smallest range) first
+  charToNodes.forEach(function(entries) {
+    entries.sort(function(a, b) { return a.size - b.size; });
+  });
+
+  // --- Source range validation ---
+  var warnings = [];
+
+  function rangeContains(outer, inner) {
+    if (inner.sl < outer.sl || inner.el > outer.el) return false;
+    if (inner.sl === outer.sl && inner.sc < outer.sc) return false;
+    if (inner.el === outer.el && inner.ec > outer.ec) return false;
+    return true;
+  }
+
+  function rangeOverlaps(a, b) {
+    // True if a and b partially overlap (not disjoint and not one containing the other)
+    // half-open ranges: end column ec is exclusive, so a ends before b when a.ec <= b.sc
+    var aBeforeB = (a.el < b.sl) || (a.el === b.sl && a.ec <= b.sc);
+    var bBeforeA = (b.el < a.sl) || (b.el === a.sl && b.ec <= a.sc);
+    if (aBeforeB || bBeforeA) return false; // disjoint
+    if (rangeContains(a, b) || rangeContains(b, a)) return false; // containment
+    return true; // partial overlap
+  }
+
+  function addWarning(nodeId, msg) {
+    warnings.push({ id: nodeId, msg: msg });
+    var el = nodeElements.get(nodeId);
+    if (!el) return;
+    var span = document.createElement('span');
+    span.className = 'warn-text';
+    span.textContent = '\u26a0 ' + msg;
+    el.appendChild(span);
+  }
+
+  function validateNode(node, parent) {
+    if (node.range) {
+      var r = node.range;
+
+      // Inverted range
+      if (r.el < r.sl || (r.el === r.sl && r.ec < r.sc)) {
+        addWarning(node.id, 'Inverted range: end before start');
+      }
+
+      // Range beyond source bounds
+      if (r.sl < 1 || r.el > sourceLines.length) {
+        addWarning(node.id, 'Range beyond source: line ' + r.sl + '-' + r.el +
+          ' (source has ' + sourceLines.length + ' lines)');
+      } else {
+        if (r.sc > sourceLines[r.sl - 1].length + 1) {
+          addWarning(node.id, 'Start column ' + r.sc + ' beyond line ' + r.sl +
+            ' length (' + sourceLines[r.sl - 1].length + ')');
+        }
+        if (r.ec > sourceLines[r.el - 1].length + 1) {
+          addWarning(node.id, 'End column ' + r.ec + ' beyond line ' + r.el +
+            ' length (' + sourceLines[r.el - 1].length + ')');
+        }
+      }
+
+      // Child exceeds parent
+      if (parent && parent.range && !rangeContains(parent.range, r)) {
+        addWarning(node.id, 'Range exceeds parent (' + node.label +
+          ' [' + r.sl + ':' + r.sc + '-' + r.el + ':' + r.ec + ']' +
+          ' outside ' + parent.label +
+          ' [' + parent.range.sl + ':' + parent.range.sc + '-' +
+          parent.range.el + ':' + parent.range.ec + '])');
+      }
+    }
+
+    // Overlapping siblings
+    if (node.children) {
+      var rangedChildren = node.children.filter(function(c) { return c.range; });
+      for (var i = 0; i < rangedChildren.length; i++) {
+        for (var j = i + 1; j < rangedChildren.length; j++) {
+          if (rangeOverlaps(rangedChildren[i].range, rangedChildren[j].range)) {
+            addWarning(rangedChildren[j].id,
+              'Range overlaps sibling ' + rangedChildren[i].label);
+          }
+        }
+      }
+
+      node.children.forEach(function(child) { validateNode(child, node); });
+    }
+  }
+
+  data.ast.forEach(function(stmt) { validateNode(stmt, null); });
+
+  // --- Stats ---
+  document.getElementById('filename').textContent = data.filename;
+  document.getElementById('stats').textContent =
+    sourceLines.length + ' lines, ' + nodeMap.size + ' nodes';
+
+  var warningsEl = document.getElementById('warnings');
+  if (warnings.length > 0) {
+    warningsEl.textContent = '\u26a0 ' + warnings.length + ' warning' +
+      (warnings.length === 1 ? '' : 's');
+  } else {
+    warningsEl.textContent = '\u2713 no warnings';
+    warningsEl.classList.add('clean');
+  }
+
+  // --- Highlighting state ---
+  var hoverASTIds = [];
+  var hoverCharKeys = [];
+  var pinnedId = null;
+  var pinASTIds = [];
+  var pinCharKeys = [];
+
+  function clearHover() {
+    hoverASTIds.forEach(function(id) {
+      var el = nodeElements.get(id);
+      if (el) {
+        el.classList.remove('hl-primary');
+        el.classList.remove('hl-ancestor');
+      }
+    });
+    hoverASTIds = [];
+
+    hoverCharKeys.forEach(function(key) {
+      var el = charElements.get(key);
+      if (el) el.classList.remove('hl-source');
+    });
+    hoverCharKeys = [];
+  }
+
+  function forEachCharInRange(range, fn) {
+    for (var line = range.sl; line <= range.el; line++) {
+      var lineText = sourceLines[line - 1] || '';
+      var startCol = (line === range.sl) ? range.sc : 1;
+      // half-open: exclusive end column, last included column is ec - 1
+      var endCol = (line === range.el) ? range.ec - 1 : lineText.length;
+      for (var col = startCol; col <= endCol; col++) {
+        fn(line + ':' + col);
+      }
+    }
+  }
+
+  function highlightSourceChars(range, cls, keyList) {
+    forEachCharInRange(range, function(key) {
+      var el = charElements.get(key);
+      if (el) {
+        el.classList.add(cls);
+        keyList.push(key);
+      }
+    });
+  }
+
+  function ensureVisible(nodeId) {
+    // Expand ancestor tree nodes so this node is visible
+    var el = nodeElements.get(nodeId);
+    if (!el) return;
+    var li = el.closest('li');
+    var parent = li ? li.parentElement : null;
+    while (parent) {
+      var parentLi = parent.closest('li');
+      if (parentLi && !parentLi.classList.contains('expanded')) {
+        parentLi.classList.add('expanded');
+      }
+      parent = parentLi ? parentLi.parentElement : null;
+    }
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  // --- Source -> AST ---
+  document.getElementById('source-pane').addEventListener('mouseover', function(e) {
+    var ch = e.target.closest('.ch');
+    if (!ch) return;
+
+    clearHover();
+
+    var key = ch.dataset.line + ':' + ch.dataset.col;
+    var entries = charToNodes.get(key);
+    if (!entries) return;
+
+    entries.forEach(function(entry, idx) {
+      var el = nodeElements.get(entry.id);
+      if (!el) return;
+      el.classList.add(idx === 0 ? 'hl-primary' : 'hl-ancestor');
+      hoverASTIds.push(entry.id);
+    });
+
+    if (entries.length > 0) ensureVisible(entries[0].id);
+  });
+
+  document.getElementById('source-pane').addEventListener('mouseleave', function() {
+    clearHover();
+  });
+
+  // --- AST -> Source ---
+  document.getElementById('ast-pane').addEventListener('mouseover', function(e) {
+    var row = e.target.closest('.node-row');
+    if (!row) return;
+
+    clearHover();
+
+    var li = row.closest('li');
+    var nodeId = parseInt(li.dataset.nodeId, 10);
+    var node = nodeMap.get(nodeId);
+
+    if (node && node.range) {
+      highlightSourceChars(node.range, 'hl-source', hoverCharKeys);
+      row.classList.add('hl-primary');
+      hoverASTIds.push(nodeId);
+    }
+  });
+
+  document.getElementById('ast-pane').addEventListener('mouseleave', function() {
+    clearHover();
+  });
+
+  // --- Click to pin ---
+  function clearPin() {
+    pinCharKeys.forEach(function(key) {
+      var el = charElements.get(key);
+      if (el) el.classList.remove('hl-source-pin');
+    });
+    pinASTIds.forEach(function(id) {
+      var el = nodeElements.get(id);
+      if (el) el.classList.remove('hl-pin');
+    });
+    pinCharKeys = [];
+    pinASTIds = [];
+    pinnedId = null;
+  }
+
+  function pinNode(nodeId) {
+    var node = nodeMap.get(nodeId);
+    if (!node || !node.range) return;
+
+    clearPin();
+    pinnedId = nodeId;
+
+    highlightSourceChars(node.range, 'hl-source-pin', pinCharKeys);
+
+    // Scroll source to the start of the range
+    var startKey = node.range.sl + ':' + node.range.sc;
+    var startEl = charElements.get(startKey);
+    if (startEl) startEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+    var el = nodeElements.get(nodeId);
+    if (el) {
+      el.classList.add('hl-pin');
+      pinASTIds.push(nodeId);
+    }
+  }
+
+  document.getElementById('source-pane').addEventListener('click', function(e) {
+    var ch = e.target.closest('.ch');
+    if (!ch) return;
+
+    var key = ch.dataset.line + ':' + ch.dataset.col;
+    var entries = charToNodes.get(key);
+    if (!entries || entries.length === 0) return;
+
+    var innermostId = entries[0].id;
+    if (pinnedId === innermostId) clearPin();
+    else pinNode(innermostId);
+  });
+
+  document.getElementById('ast-pane').addEventListener('click', function(e) {
+    if (e.target.closest('.toggle')) return;
+
+    var row = e.target.closest('.node-row');
+    if (!row) return;
+
+    var li = row.closest('li');
+    var nodeId = parseInt(li.dataset.nodeId, 10);
+
+    if (pinnedId === nodeId) clearPin();
+    else pinNode(nodeId);
+  });
+  // --- Resizable panes ---
+  var divider = document.getElementById('divider');
+  var container = document.getElementById('container');
+  var sourcePane = document.getElementById('source-pane');
+  var astPane = document.getElementById('ast-pane');
+
+  divider.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    divider.classList.add('dragging');
+
+    function onMove(e) {
+      var rect = container.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var total = rect.width - 5; // subtract divider width
+      var ratio = Math.max(0.1, Math.min(0.9, x / rect.width));
+      sourcePane.style.flex = 'none';
+      sourcePane.style.width = (ratio * total) + 'px';
+      astPane.style.flex = '1';
+    }
+
+    function onUp() {
+      divider.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // --- Expand / Collapse all ---
+  document.getElementById('btn-expand-all').addEventListener('click', function() {
+    document.querySelectorAll('#ast-tree li').forEach(function(li) {
+      if (li.querySelector('ul')) li.classList.add('expanded');
+    });
+  });
+
+  document.getElementById('btn-collapse-all').addEventListener('click', function() {
+    document.querySelectorAll('#ast-tree li.expanded').forEach(function(li) {
+      li.classList.remove('expanded');
+    });
+  });
+
+  // --- Source search ---
+  var sourceSearchMatches = [];
+  var lowerSource = data.source.toLowerCase();
+
+  function clearSourceSearch() {
+    sourceSearchMatches.forEach(function(key) {
+      var el = charElements.get(key);
+      if (el) el.classList.remove('search-match');
+    });
+    sourceSearchMatches = [];
+    document.getElementById('source-search-count').textContent = '';
+  }
+
+  document.getElementById('source-search').addEventListener('input', function(e) {
+    clearSourceSearch();
+    var query = e.target.value;
+    if (!query) return;
+
+    var lowerQuery = query.toLowerCase();
+    var matchCount = 0;
+    var firstMatchKey = null;
+
+    // Search the raw source string using byte offsets
+    var pos = 0;
+    while ((pos = lowerSource.indexOf(lowerQuery, pos)) !== -1) {
+      matchCount++;
+      for (var i = 0; i < query.length; i++) {
+        var key = byteToKey[pos + i];
+        if (!key) continue;
+        var el = charElements.get(key);
+        if (el) {
+          el.classList.add('search-match');
+          sourceSearchMatches.push(key);
+          if (!firstMatchKey) firstMatchKey = key;
+        }
+      }
+      pos++;
+    }
+
+    var countEl = document.getElementById('source-search-count');
+    countEl.textContent = matchCount > 0 ? matchCount + ' found' : 'no matches';
+
+    // Scroll to first match
+    if (firstMatchKey) {
+      var el = charElements.get(firstMatchKey);
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  });
+
+  // --- AST search ---
+  var astSearchActive = false;
+  var savedExpandState = [];
+
+  function saveExpandState() {
+    savedExpandState = [];
+    document.querySelectorAll('#ast-tree li').forEach(function(li) {
+      if (li.querySelector('ul')) {
+        savedExpandState.push({
+          li: li,
+          expanded: li.classList.contains('expanded'),
+        });
+      }
+    });
+  }
+
+  function restoreExpandState() {
+    savedExpandState.forEach(function(entry) {
+      if (entry.expanded) entry.li.classList.add('expanded');
+      else entry.li.classList.remove('expanded');
+    });
+    savedExpandState = [];
+  }
+
+  function clearASTSearch() {
+    if (!astSearchActive) return;
+    astSearchActive = false;
+    document.querySelectorAll('#ast-tree .node-row.search-match').forEach(function(el) {
+      el.classList.remove('search-match');
+    });
+    restoreExpandState();
+    document.getElementById('ast-search-count').textContent = '';
+  }
+
+  // Returns true if this node or any descendant matches
+  function markASTSearch(node, query) {
+    var selfMatch = node.label.toLowerCase().indexOf(query) !== -1;
+    var childMatch = false;
+
+    if (node.children) {
+      node.children.forEach(function(child) {
+        if (markASTSearch(child, query)) childMatch = true;
+      });
+    }
+
+    var matches = selfMatch || childMatch;
+    var el = nodeElements.get(node.id);
+    var li = el ? el.closest('li') : null;
+
+    if (selfMatch && el) {
+      el.classList.add('search-match');
+    }
+
+    if (li && li.querySelector('ul')) {
+      if (matches) {
+        // Expand to show matches
+        li.classList.add('expanded');
+      } else {
+        // Collapse subtrees with no matches
+        li.classList.remove('expanded');
+      }
+    }
+
+    return matches;
+  }
+
+  document.getElementById('ast-search').addEventListener('input', function(e) {
+    clearASTSearch();
+    var query = e.target.value;
+    if (!query) return;
+
+    astSearchActive = true;
+    saveExpandState();
+    var lowerQuery = query.toLowerCase();
+    var matchCount = 0;
+
+    data.ast.forEach(function(stmt) { markASTSearch(stmt, lowerQuery); });
+
+    document.querySelectorAll('#ast-tree .node-row.search-match').forEach(function() {
+      matchCount++;
+    });
+
+    var countEl = document.getElementById('ast-search-count');
+    countEl.textContent = matchCount > 0 ? matchCount + ' found' : 'no matches';
+
+    // Scroll to first match
+    var first = document.querySelector('#ast-tree .node-row.search-match');
+    if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  });
+
+  // Escape to clear searches and unpin
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      clearSourceSearch();
+      clearASTSearch();
+      clearPin();
+      document.getElementById('source-search').value = '';
+      document.getElementById('ast-search').value = '';
+    }
+  });
+})();
+</script>

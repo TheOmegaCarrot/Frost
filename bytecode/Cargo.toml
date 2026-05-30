@@ -5,6 +5,7 @@ members = [
     "crates/frost-runtime",
     "crates/frost-stdlib",
     "crates/frost-cli",
+    "crates/frost-astviz",
 ]
 resolver = "3"
 
