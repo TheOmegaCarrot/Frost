@@ -144,6 +144,7 @@ enum BraceKind {
 /// Disambiguate `{` after `->`:
 /// - `{ identifier :` → map literal (expression)
 /// - `{ [` → probably map, try expression first, backtrack to block on failure
+/// - `{ }` → empty map (rare in practice, but there's nothing else that makes sense)
 /// - `{ <anything else>` → block body
 /// - no `{` → plain expression
 fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
@@ -163,6 +164,7 @@ fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
             BraceKind::Expression
         }
         Some(Token::OpenBracket) => BraceKind::TryMap,
+        Some(Token::CloseBrace) => BraceKind::Expression,
         _ => BraceKind::Block,
     }
 }

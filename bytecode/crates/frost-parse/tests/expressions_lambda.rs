@@ -321,6 +321,19 @@ mod map_body {
         let lam = assert_lambda(&expr);
         assert!(matches!(&lam.return_expr.kind, ExprKind::Map(entries) if entries.len() == 2));
     }
+
+    // `fn -> {}` is a thunk returning an empty Map, not an empty block.
+    // Matches the C++ oracle: `Lambda() -> Map_Constructor`.
+    #[test]
+    fn empty_map_thunk() {
+        let expr = parse_expr("fn -> {}");
+        let lam = assert_lambda(&expr);
+        assert!(lam.params.is_empty());
+        assert!(lam.variadic_param.is_none());
+        assert!(lam.self_name.is_none());
+        assert!(lam.body.is_empty());
+        assert!(matches!(&lam.return_expr.kind, ExprKind::Map(entries) if entries.is_empty()));
+    }
 }
 
 // ============================================================
@@ -413,12 +426,6 @@ mod errors {
             err.contains("end of input") || err.contains("unexpected"),
             "error was: {err}"
         );
-    }
-
-    #[test]
-    fn empty_block_body() {
-        let err = parse_err("fn -> {}");
-        assert!(err.contains("at least one expression"), "error was: {err}");
     }
 
     #[test]
