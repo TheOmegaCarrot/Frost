@@ -2,6 +2,7 @@ use crate::ast::{BinOp, Expr, ExprKind, Literal, UnaryOp};
 use crate::lex::Token;
 use crate::parse::control_flow::{parse_do, parse_if};
 use crate::parse::format_string;
+use crate::parse::iterative;
 use crate::parse::lambda::{parse_abbreviated_lambda, parse_lambda};
 use crate::parse::match_expr::parse_match;
 use crate::parse::strings;
@@ -312,10 +313,10 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
         Token::DollarParen => parse_abbreviated_lambda(ctx),
 
         // -- Atoms: iterative expressions --
-        Token::KwMap => todo!("map expression"),
-        Token::KwFilter => todo!("filter expression"),
-        Token::KwReduce => todo!("reduce expression"),
-        Token::KwForeach => todo!("foreach expression"),
+        Token::KwMap => iterative::parse_map_iter(ctx),
+        Token::KwFilter => iterative::parse_filter(ctx),
+        Token::KwForeach => iterative::parse_foreach(ctx),
+        Token::KwReduce => iterative::parse_reduce(ctx),
 
         _ => Err(ctx.unexpected_token(peek, "expression")),
     }
