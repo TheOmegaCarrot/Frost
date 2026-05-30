@@ -118,7 +118,7 @@ fn call_newline_not_call() {
 fn index_literal() {
     let expr = parse_expr("a[0]");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
+        ExprKind::SoftIndex { target, key } => {
             assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
             assert!(is_int(key, 0));
         }
@@ -130,7 +130,7 @@ fn index_literal() {
 fn index_expression() {
     let expr = parse_expr("a[1 + 2]");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
+        ExprKind::SoftIndex { target, key } => {
             assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
             assert!(is_binop(key).is_some());
         }
@@ -142,20 +142,20 @@ fn index_expression() {
 fn chained_index() {
     let expr = parse_expr("a[0][1]");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
+        ExprKind::SoftIndex { target, key } => {
             assert!(is_int(key, 1));
             match &target.kind {
-                ExprKind::Index {
+                ExprKind::SoftIndex {
                     target: inner,
                     key: inner_key,
                 } => {
                     assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "a"));
                     assert!(is_int(inner_key, 0));
                 }
-                other => panic!("expected inner Index, got {other:?}"),
+                other => panic!("expected inner SoftIndex, got {other:?}"),
             }
         }
-        other => panic!("expected Index, got {other:?}"),
+        other => panic!("expected SoftIndex, got {other:?}"),
     }
 }
 
@@ -163,11 +163,11 @@ fn chained_index() {
 fn index_with_newlines() {
     let expr = parse_expr("a[\n0\n]");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
+        ExprKind::SoftIndex { target, key } => {
             assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
             assert!(is_int(key, 0));
         }
-        other => panic!("expected Index, got {other:?}"),
+        other => panic!("expected SoftIndex, got {other:?}"),
     }
 }
 
@@ -177,11 +177,11 @@ fn index_with_newlines() {
 fn dot_access() {
     let expr = parse_expr("a.foo");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
+        ExprKind::HardIndex { target, key } => {
             assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
-            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"foo"));
+            assert!(key == "foo");
         }
-        other => panic!("expected Index, got {other:?}"),
+        other => panic!("expected HardIndex, got {other:?}"),
     }
 }
 
@@ -189,22 +189,20 @@ fn dot_access() {
 fn chained_dot() {
     let expr = parse_expr("a.b.c");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
-            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"c"));
+        ExprKind::HardIndex { target, key } => {
+            assert!(key == "c");
             match &target.kind {
-                ExprKind::Index {
+                ExprKind::HardIndex {
                     target: inner,
                     key: inner_key,
                 } => {
                     assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "a"));
-                    assert!(
-                        matches!(&inner_key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b")
-                    );
+                    assert!(inner_key == "b");
                 }
-                other => panic!("expected inner Index, got {other:?}"),
+                other => panic!("expected inner HardIndex, got {other:?}"),
             }
         }
-        other => panic!("expected Index, got {other:?}"),
+        other => panic!("expected HardIndex, got {other:?}"),
     }
 }
 
@@ -216,13 +214,11 @@ fn dot_then_call() {
             assert_eq!(args.len(), 1);
             assert!(is_int(&args[0], 1));
             match &callee.kind {
-                ExprKind::Index { target, key } => {
+                ExprKind::HardIndex { target, key } => {
                     assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
-                    assert!(
-                        matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"foo")
-                    );
+                    assert!(key == "foo");
                 }
-                other => panic!("expected Index inside Call, got {other:?}"),
+                other => panic!("expected HardIndex inside Call, got {other:?}"),
             }
         }
         other => panic!("expected Call, got {other:?}"),
@@ -307,13 +303,11 @@ fn thread_dot_callee() {
             assert_eq!(args.len(), 1);
             assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
             match &callee.kind {
-                ExprKind::Index { target, key } => {
+                ExprKind::HardIndex { target, key } => {
                     assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "m"));
-                    assert!(
-                        matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"f")
-                    );
+                    assert!(key == "f");
                 }
-                other => panic!("expected Index callee, got {other:?}"),
+                other => panic!("expected HardIndex callee, got {other:?}"),
             }
         }
         other => panic!("expected Call, got {other:?}"),
@@ -328,7 +322,7 @@ fn thread_after_postfix() {
         ExprKind::Call { callee, args } => {
             assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
             assert_eq!(args.len(), 1);
-            assert!(matches!(&args[0].kind, ExprKind::Index { .. }));
+            assert!(matches!(&args[0].kind, ExprKind::HardIndex { .. }));
         }
         other => panic!("expected Call, got {other:?}"),
     }
@@ -339,7 +333,7 @@ fn thread_result_indexed() {
     // a @ f()[0]
     let expr = parse_expr("a @ f()[0]");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
+        ExprKind::SoftIndex { target, key } => {
             assert!(is_int(key, 0));
             match &target.kind {
                 ExprKind::Call { callee, args } => {
@@ -350,7 +344,7 @@ fn thread_result_indexed() {
                 other => panic!("expected Call, got {other:?}"),
             }
         }
-        other => panic!("expected Index, got {other:?}"),
+        other => panic!("expected SoftIndex, got {other:?}"),
     }
 }
 
@@ -360,11 +354,11 @@ fn thread_result_indexed() {
 fn call_then_index() {
     let expr = parse_expr("f()[0]");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
+        ExprKind::SoftIndex { target, key } => {
             assert!(is_int(key, 0));
             assert!(matches!(&target.kind, ExprKind::Call { .. }));
         }
-        other => panic!("expected Index, got {other:?}"),
+        other => panic!("expected SoftIndex, got {other:?}"),
     }
 }
 
@@ -375,7 +369,7 @@ fn index_then_call() {
         ExprKind::Call { callee, args } => {
             assert_eq!(args.len(), 1);
             assert!(is_int(&args[0], 1));
-            assert!(matches!(&callee.kind, ExprKind::Index { .. }));
+            assert!(matches!(&callee.kind, ExprKind::SoftIndex { .. }));
         }
         other => panic!("expected Call, got {other:?}"),
     }
@@ -385,11 +379,11 @@ fn index_then_call() {
 fn call_then_dot() {
     let expr = parse_expr("f().bar");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
-            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"bar"));
+        ExprKind::HardIndex { target, key } => {
+            assert!(key == "bar");
             assert!(matches!(&target.kind, ExprKind::Call { .. }));
         }
-        other => panic!("expected Index, got {other:?}"),
+        other => panic!("expected HardIndex, got {other:?}"),
     }
 }
 
@@ -397,18 +391,16 @@ fn call_then_dot() {
 fn dot_then_index() {
     let expr = parse_expr("a.b[0]");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
+        ExprKind::SoftIndex { target, key } => {
             assert!(is_int(key, 0));
             match &target.kind {
-                ExprKind::Index { key: inner_key, .. } => {
-                    assert!(
-                        matches!(&inner_key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b")
-                    );
+                ExprKind::HardIndex { key: inner_key, .. } => {
+                    assert!(inner_key == "b");
                 }
-                other => panic!("expected inner Index, got {other:?}"),
+                other => panic!("expected inner HardIndex, got {other:?}"),
             }
         }
-        other => panic!("expected Index, got {other:?}"),
+        other => panic!("expected SoftIndex, got {other:?}"),
     }
 }
 
@@ -416,16 +408,16 @@ fn dot_then_index() {
 fn index_then_dot() {
     let expr = parse_expr("a[0].bar");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
-            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"bar"));
+        ExprKind::HardIndex { target, key } => {
+            assert!(key == "bar");
             match &target.kind {
-                ExprKind::Index { key: inner_key, .. } => {
+                ExprKind::SoftIndex { key: inner_key, .. } => {
                     assert!(is_int(inner_key, 0));
                 }
-                other => panic!("expected inner Index, got {other:?}"),
+                other => panic!("expected inner SoftIndex, got {other:?}"),
             }
         }
-        other => panic!("expected Index, got {other:?}"),
+        other => panic!("expected HardIndex, got {other:?}"),
     }
 }
 
@@ -434,42 +426,38 @@ fn long_postfix_chain() {
     // a.b[0].c(1).d
     let expr = parse_expr("a.b[0].c(1).d");
     match &expr.kind {
-        ExprKind::Index { target, key } => {
-            assert!(matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"d"));
+        ExprKind::HardIndex { target, key } => {
+            assert!(key == "d");
             match &target.kind {
                 ExprKind::Call { callee, args } => {
                     assert_eq!(args.len(), 1);
                     assert!(is_int(&args[0], 1));
                     match &callee.kind {
-                        ExprKind::Index { target, key } => {
-                            assert!(
-                                matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"c")
-                            );
+                        ExprKind::HardIndex { target, key } => {
+                            assert!(key == "c");
                             match &target.kind {
-                                ExprKind::Index { target, key } => {
+                                ExprKind::SoftIndex { target, key } => {
                                     assert!(is_int(key, 0));
                                     match &target.kind {
-                                        ExprKind::Index { target, key } => {
-                                            assert!(
-                                                matches!(&key.kind, ExprKind::Literal(Literal::String(s)) if s == b"b")
-                                            );
+                                        ExprKind::HardIndex { target, key } => {
+                                            assert!(key == "b");
                                             assert!(
                                                 matches!(&target.kind, ExprKind::NameLookup(n) if n == "a")
                                             );
                                         }
-                                        other => panic!("expected .b Index, got {other:?}"),
+                                        other => panic!("expected .b HardIndex, got {other:?}"),
                                     }
                                 }
-                                other => panic!("expected [0] Index, got {other:?}"),
+                                other => panic!("expected [0] SoftIndex, got {other:?}"),
                             }
                         }
-                        other => panic!("expected .c Index, got {other:?}"),
+                        other => panic!("expected .c HardIndex, got {other:?}"),
                     }
                 }
                 other => panic!("expected Call, got {other:?}"),
             }
         }
-        other => panic!("expected .d Index, got {other:?}"),
+        other => panic!("expected .d HardIndex, got {other:?}"),
     }
 }
 
@@ -489,8 +477,8 @@ fn index_in_arithmetic() {
     let expr = parse_expr("a[0] * b[1]");
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Mul));
-    assert!(matches!(&left.kind, ExprKind::Index { .. }));
-    assert!(matches!(&right.kind, ExprKind::Index { .. }));
+    assert!(matches!(&left.kind, ExprKind::SoftIndex { .. }));
+    assert!(matches!(&right.kind, ExprKind::SoftIndex { .. }));
 }
 
 #[test]
@@ -498,8 +486,8 @@ fn dot_in_comparison() {
     let expr = parse_expr("a.x == b.y");
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Eq));
-    assert!(matches!(&left.kind, ExprKind::Index { .. }));
-    assert!(matches!(&right.kind, ExprKind::Index { .. }));
+    assert!(matches!(&left.kind, ExprKind::HardIndex { .. }));
+    assert!(matches!(&right.kind, ExprKind::HardIndex { .. }));
 }
 
 // -- Postfix binds tighter than prefix --
@@ -513,9 +501,9 @@ fn negate_index() {
             op: UnaryOp::Negate,
             operand,
         } => {
-            assert!(matches!(&operand.kind, ExprKind::Index { .. }));
+            assert!(matches!(&operand.kind, ExprKind::SoftIndex { .. }));
         }
-        other => panic!("expected Negate(Index), got {other:?}"),
+        other => panic!("expected Negate(SoftIndex), got {other:?}"),
     }
 }
 
@@ -527,7 +515,7 @@ fn negate_dot() {
         ExprKind::UnaryOp {
             op: UnaryOp::Negate,
             operand,
-        } => assert!(matches!(&operand.kind, ExprKind::Index { .. })),
+        } => assert!(matches!(&operand.kind, ExprKind::HardIndex { .. })),
         other => panic!("expected Negate(Index), got {other:?}"),
     }
 }
@@ -540,7 +528,7 @@ fn not_dot() {
         ExprKind::UnaryOp {
             op: UnaryOp::Not,
             operand,
-        } => assert!(matches!(&operand.kind, ExprKind::Index { .. })),
+        } => assert!(matches!(&operand.kind, ExprKind::HardIndex { .. })),
         other => panic!("expected Not(Index), got {other:?}"),
     }
 }

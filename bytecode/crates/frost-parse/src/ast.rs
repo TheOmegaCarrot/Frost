@@ -93,8 +93,10 @@ pub enum ExprKind {
     },
     /// `f(a, b, c)`
     Call { callee: Box<Expr>, args: Vec<Expr> },
-    /// `a[b]` or `a.foo`
-    Index { target: Box<Expr>, key: Box<Expr> },
+    /// `a[b]`
+    SoftIndex { target: Box<Expr>, key: Box<Expr> },
+    /// `foo.bar`
+    HardIndex { target: Box<Expr>, key: String },
     /// `[a, b, c]`
     Array(Vec<Expr>),
     /// `{ [k1]: v1, [k2]: v2 }`

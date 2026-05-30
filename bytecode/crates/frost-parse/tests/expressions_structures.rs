@@ -132,7 +132,7 @@ mod array_literals {
     fn indexing() {
         let expr = parse_expr("[1, 2, 3][0]");
         match &expr.kind {
-            ExprKind::Index { target, key } => {
+            ExprKind::SoftIndex { target, key } => {
                 assert_eq!(array_elements(target).len(), 3);
                 assert!(is_int(key, 0));
             }
@@ -445,13 +445,13 @@ mod map_literals {
     #[test]
     fn dot_access() {
         let expr = parse_expr("{foo: 42}.foo");
-        assert!(matches!(&expr.kind, ExprKind::Index { .. }));
+        assert!(matches!(&expr.kind, ExprKind::HardIndex { .. }));
     }
 
     #[test]
     fn index_access() {
         let expr = parse_expr("{foo: 42}['foo']");
-        assert!(matches!(&expr.kind, ExprKind::Index { .. }));
+        assert!(matches!(&expr.kind, ExprKind::SoftIndex { .. }));
     }
 
     #[test]

@@ -118,7 +118,7 @@ fn parse_index(ctx: &mut ParseCtx, target: Expr) -> ParseResult<Expr> {
 
     Ok(Expr {
         span: (start..close.span.end).into(),
-        kind: ExprKind::Index {
+        kind: ExprKind::SoftIndex {
             target: Box::new(target),
             key: Box::new(key),
         },
@@ -135,12 +135,9 @@ fn parse_dot_access(ctx: &mut ParseCtx, target: Expr) -> ParseResult<Expr> {
         let field_span = ctx.next().unwrap().span.clone();
         Ok(Expr {
             span: (start..field_span.end).into(),
-            kind: ExprKind::Index {
+            kind: ExprKind::HardIndex {
                 target: Box::new(target),
-                key: Box::new(Expr {
-                    span: field_span.into(),
-                    kind: ExprKind::Literal(Literal::String(name.into_bytes())),
-                }),
+                key: name,
             },
         })
     } else {
