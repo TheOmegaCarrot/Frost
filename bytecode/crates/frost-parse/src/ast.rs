@@ -25,6 +25,7 @@ impl From<Range<usize>> for SourceSpan {
 
 /// A name binding: either a named identifier or a discard (`_`).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", content = "value")]
 pub enum Binding {
     Named(String),
     Discarded,
@@ -47,6 +48,7 @@ pub struct Statement {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(tag = "type", content = "value")]
 pub enum StatementKind {
     /// `def name = expr` or `export def name = expr`
     Def {
@@ -67,6 +69,7 @@ pub struct Expr {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(tag = "type", content = "value")]
 pub enum ExprKind {
     /// A literal value: `42`, `3.14`, `"hello"`, `true`, `null`.
     Literal(Literal),
@@ -152,6 +155,7 @@ pub enum ExprKind {
 // -- Literals --
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(tag = "type", content = "value")]
 pub enum Literal {
     Null,
     Bool(bool),
@@ -196,6 +200,7 @@ pub struct MapEntry {
 // -- Format strings --
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(tag = "type", content = "value")]
 pub enum FormatSegment {
     Literal(Vec<u8>),
     Interpolation(Expr),
@@ -217,6 +222,7 @@ pub struct MatchPattern {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(tag = "type", content = "value")]
 pub enum MatchPatternKind {
     /// `name` or `name is Type` or `_` or `_ is Type`.
     Binding {
@@ -270,6 +276,7 @@ pub struct Destructure {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(tag = "type", content = "value")]
 pub enum DestructureKind {
     /// `def name = ...`
     Binding(Binding),
