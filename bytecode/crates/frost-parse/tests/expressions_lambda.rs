@@ -441,4 +441,90 @@ mod errors {
         let err = parse_err("fn 42 -> 42");
         assert!(err.contains("unexpected"), "error was: {err}");
     }
+
+    #[test]
+    fn dollar_id_outside_abbreviated_lambda() {
+        let err = parse_err("def a = $($ + 2) ; def $3 = 2");
+        assert!(err.contains("unexpected"), "error was: {err}");
+    }
+}
+
+// ============================================================
+// Abbreviated lambdas
+// ============================================================
+
+mod abbreviated {
+    use super::*;
+
+    #[test]
+    fn single_dollar() {
+        let expr = parse_expr("$($ * 2)");
+        let lam = assert_lambda(&expr);
+        assert_eq!(lam.params.len(), 1);
+        assert!(is_named(&lam.params[0], "$1"));
+        assert!(lam.variadic_param.is_none());
+    }
+
+    #[test]
+    fn numbered_params() {
+        let expr = parse_expr("$($1 + $2)");
+        let lam = assert_lambda(&expr);
+        assert_eq!(lam.params.len(), 2);
+        assert!(is_named(&lam.params[0], "$1"));
+        assert!(is_named(&lam.params[1], "$2"));
+    }
+
+    #[test]
+    fn rest_only() {
+        let expr = parse_expr("$($$)");
+        let lam = assert_lambda(&expr);
+        assert!(lam.params.is_empty());
+        assert!(is_named(lam.variadic_param.expect("variadic"), "$$"));
+    }
+
+    #[test]
+    fn numbered_with_rest() {
+        let expr = parse_expr("$($ + $$)");
+        let lam = assert_lambda(&expr);
+        assert_eq!(lam.params.len(), 1);
+        assert!(is_named(lam.variadic_param.expect("variadic"), "$$"));
+    }
+
+    #[test]
+    fn gap_filling() {
+        let expr = parse_expr("$($9)");
+        let lam = assert_lambda(&expr);
+        assert_eq!(lam.params.len(), 9);
+        assert!(is_named(&lam.params[8], "$9"));
+    }
+
+    #[test]
+    fn no_dollar_ids() {
+        let expr = parse_expr("$(42)");
+        let lam = assert_lambda(&expr);
+        assert!(lam.params.is_empty());
+        assert!(lam.variadic_param.is_none());
+    }
+
+    #[test]
+    fn dollar_in_call() {
+        let expr = parse_expr("$(f($))");
+        let lam = assert_lambda(&expr);
+        assert_eq!(lam.params.len(), 1);
+        assert!(matches!(&lam.return_expr.kind, ExprKind::Call { .. }));
+    }
+
+    #[test]
+    fn mixed_dollar_and_numbered() {
+        let expr = parse_expr("$($ + $2)");
+        let lam = assert_lambda(&expr);
+        assert_eq!(lam.params.len(), 2);
+    }
+
+    #[test]
+    fn three_params() {
+        let expr = parse_expr("$($1 + $2 + $3)");
+        let lam = assert_lambda(&expr);
+        assert_eq!(lam.params.len(), 3);
+    }
 }

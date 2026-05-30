@@ -33,6 +33,9 @@ pub struct ParseState {
 
     /// When > 0, newlines are not significant (we're inside delimiters).
     pub nl_depth: u32,
+
+    /// When true, dollar identifiers (`$`, `$1`-`$9`, `$$`) are valid in expressions.
+    pub in_abbreviated_lambda: bool,
 }
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
@@ -184,6 +187,20 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     pub fn filename(&self) -> &'f str {
         self.filename
+    }
+
+    pub fn in_abbreviated_lambda(&self) -> bool {
+        self.state.in_abbreviated_lambda
+    }
+
+    pub fn enter_abbreviated_lambda(&mut self) -> &mut Self {
+        self.state.in_abbreviated_lambda = true;
+        self
+    }
+
+    pub fn exit_abbreviated_lambda(&mut self) -> &mut Self {
+        self.state.in_abbreviated_lambda = false;
+        self
     }
 
     pub fn at_end(&self) -> bool {

@@ -2,7 +2,7 @@ use crate::ast::{BinOp, Expr, ExprKind, Literal, UnaryOp};
 use crate::lex::Token;
 use crate::parse::control_flow::{parse_do, parse_if};
 use crate::parse::format_string;
-use crate::parse::lambda::parse_lambda;
+use crate::parse::lambda::{parse_abbreviated_lambda, parse_lambda};
 use crate::parse::match_expr::parse_match;
 use crate::parse::strings;
 use crate::parse::structures::{parse_array_literal, parse_map_literal};
@@ -254,6 +254,14 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
                 kind: ExprKind::NameLookup(name),
             })
         }
+        Token::DollarIdentifier(name) if ctx.in_abbreviated_lambda() => {
+            let name = name.to_owned();
+            ctx.advance(1);
+            Ok(Expr {
+                span: span.into(),
+                kind: ExprKind::NameLookup(name),
+            })
+        }
 
         Token::OpenParen => {
             let start = peek.span.start;
@@ -301,7 +309,7 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
 
         // -- Atoms: functions --
         Token::KwFn => parse_lambda(ctx),
-        Token::DollarParen => todo!("abbreviated lambda"),
+        Token::DollarParen => parse_abbreviated_lambda(ctx),
 
         // -- Atoms: iterative expressions --
         Token::KwMap => todo!("map expression"),
