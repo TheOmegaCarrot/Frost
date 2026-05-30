@@ -1,4 +1,4 @@
-use crate::ast::{Binding, Destructure, DestructureKind, ExprKind, Statement, StatementKind};
+use crate::ast::{Binding, Destructure, DestructureKind, Expr, ExprKind, Statement, StatementKind};
 use crate::lex::Token;
 use crate::parse::destructure::parse_destructure;
 use crate::parse::expression::parse_expression;
@@ -99,13 +99,16 @@ fn parse_def(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
 }
 
 fn parse_defn(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
-    let start = ctx.must_peek("function definition")?.span.start;
+    let defn_start = ctx.must_peek("function definition")?.span.start;
 
     if exported {
         ctx.expect(Token::KwExport)?;
     }
 
     ctx.expect(Token::KwDefn)?;
+
+    // Not yet checked to be a name, but parse_binding below will error if this isn't the case.
+    let name_span = ctx.must_peek("defn function name")?.span.clone();
 
     let name = match parse_binding(ctx, "function name")? {
         Binding::Named(name) => name,
@@ -117,8 +120,8 @@ fn parse_defn(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
     let (params, variadic_param) = parse_parenthesized_params(ctx)?;
     let (body, return_expr, end) = parse_fn_body(ctx)?;
 
-    let expr = crate::ast::Expr {
-        span: (start..end).into(),
+    let expr = Expr {
+        span: (name_span.start..end).into(),
         kind: ExprKind::Lambda {
             params,
             variadic_param,
@@ -129,11 +132,11 @@ fn parse_defn(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
     };
 
     Ok(Statement {
-        span: (start..end).into(),
+        span: (defn_start..end).into(),
         kind: StatementKind::Def {
             exported,
             destructure: Destructure {
-                span: (start..end).into(),
+                span: name_span.into(),
                 kind: DestructureKind::Binding(Binding::Named(name)),
             },
             expr,

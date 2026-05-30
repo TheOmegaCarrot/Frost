@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::Display;
 
-use crate::ast::{self, Binding};
+use crate::ast::{self, Binding, SourceSpan};
 use crate::lex::Token;
 use crate::parse::ctx::ParseCtx;
 use crate::parse::statements::{StatementContext, parse_statements};
