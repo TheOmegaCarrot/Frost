@@ -454,6 +454,14 @@ mod errors {
         let err = parse_err("def a = $($ + 2) ; def $3 = 2");
         assert!(err.contains("unexpected"), "error was: {err}");
     }
+
+    // A block-body lambda follows top-level grammar (minus `export`):
+    // adjacent expressions require a separator.
+    #[test]
+    fn block_body_missing_separator() {
+        let err = parse_err("fn -> { 1 2 }");
+        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+    }
 }
 
 // ============================================================
@@ -463,75 +471,114 @@ mod errors {
 mod abbreviated {
     use super::*;
 
+    // The parser preserves the body verbatim with placeholders left as name
+    // lookups; param shape (count/variadic) is derived later by the compiler.
+    fn assert_abbreviated(expr: &Expr) -> &Expr {
+        match &expr.kind {
+            ExprKind::AbbreviatedLambda { body } => body,
+            other => panic!("expected AbbreviatedLambda, got {other:?}"),
+        }
+    }
+
+    fn is_dollar(expr: &Expr, name: &str) -> bool {
+        matches!(&expr.kind, ExprKind::NameLookup(n) if n == name)
+    }
+
     #[test]
     fn single_dollar() {
         let expr = parse_expr("$($ * 2)");
-        let lam = assert_lambda(&expr);
-        assert_eq!(lam.params.len(), 1);
-        assert!(is_named(&lam.params[0], "$1"));
-        assert!(lam.variadic_param.is_none());
+        let body = assert_abbreviated(&expr);
+        let (l, op, r) = is_binop(body).expect("binop body");
+        assert!(is_dollar(l, "$"));
+        assert!(matches!(op, BinOp::Mul));
+        assert!(is_int(r, 2));
     }
 
     #[test]
     fn numbered_params() {
         let expr = parse_expr("$($1 + $2)");
-        let lam = assert_lambda(&expr);
-        assert_eq!(lam.params.len(), 2);
-        assert!(is_named(&lam.params[0], "$1"));
-        assert!(is_named(&lam.params[1], "$2"));
+        let body = assert_abbreviated(&expr);
+        let (l, op, r) = is_binop(body).expect("binop body");
+        assert!(is_dollar(l, "$1"));
+        assert!(matches!(op, BinOp::Add));
+        assert!(is_dollar(r, "$2"));
     }
 
     #[test]
     fn rest_only() {
         let expr = parse_expr("$($$)");
-        let lam = assert_lambda(&expr);
-        assert!(lam.params.is_empty());
-        assert!(is_named(lam.variadic_param.expect("variadic"), "$$"));
+        let body = assert_abbreviated(&expr);
+        assert!(is_dollar(body, "$$"));
     }
 
     #[test]
     fn numbered_with_rest() {
         let expr = parse_expr("$($ + $$)");
-        let lam = assert_lambda(&expr);
-        assert_eq!(lam.params.len(), 1);
-        assert!(is_named(lam.variadic_param.expect("variadic"), "$$"));
+        let body = assert_abbreviated(&expr);
+        let (l, _, r) = is_binop(body).expect("binop body");
+        assert!(is_dollar(l, "$"));
+        assert!(is_dollar(r, "$$"));
     }
 
     #[test]
     fn gap_filling() {
         let expr = parse_expr("$($9)");
-        let lam = assert_lambda(&expr);
-        assert_eq!(lam.params.len(), 9);
-        assert!(is_named(&lam.params[8], "$9"));
+        let body = assert_abbreviated(&expr);
+        assert!(is_dollar(body, "$9"));
     }
 
     #[test]
     fn no_dollar_ids() {
         let expr = parse_expr("$(42)");
-        let lam = assert_lambda(&expr);
-        assert!(lam.params.is_empty());
-        assert!(lam.variadic_param.is_none());
+        let body = assert_abbreviated(&expr);
+        assert!(is_int(body, 42));
     }
 
     #[test]
     fn dollar_in_call() {
         let expr = parse_expr("$(f($))");
-        let lam = assert_lambda(&expr);
-        assert_eq!(lam.params.len(), 1);
-        assert!(matches!(&lam.return_expr.kind, ExprKind::Call { .. }));
+        let body = assert_abbreviated(&expr);
+        match &body.kind {
+            ExprKind::Call { args, .. } => {
+                assert_eq!(args.len(), 1);
+                assert!(is_dollar(&args[0], "$"));
+            }
+            other => panic!("expected Call, got {other:?}"),
+        }
     }
 
     #[test]
     fn mixed_dollar_and_numbered() {
         let expr = parse_expr("$($ + $2)");
-        let lam = assert_lambda(&expr);
-        assert_eq!(lam.params.len(), 2);
+        let body = assert_abbreviated(&expr);
+        let (l, _, r) = is_binop(body).expect("binop body");
+        assert!(is_dollar(l, "$"));
+        assert!(is_dollar(r, "$2"));
     }
 
     #[test]
     fn three_params() {
+        // Left-associative: ($1 + $2) + $3.
         let expr = parse_expr("$($1 + $2 + $3)");
-        let lam = assert_lambda(&expr);
-        assert_eq!(lam.params.len(), 3);
+        let body = assert_abbreviated(&expr);
+        let (l, _, r) = is_binop(body).expect("binop body");
+        assert!(is_dollar(r, "$3"));
+        let (ll, _, lr) = is_binop(l).expect("nested binop");
+        assert!(is_dollar(ll, "$1"));
+        assert!(is_dollar(lr, "$2"));
+    }
+
+    // A nested abbreviated lambda is its own scope: the inner `$($1)` parses to
+    // its own node and does not consume the outer `$1` that follows it. The
+    // depth counter must keep the outer `$1` legal after the inner one closes.
+    #[test]
+    fn nested_abbreviated() {
+        let expr = parse_expr("$($($1) + $1)");
+        let body = assert_abbreviated(&expr);
+        let (l, op, r) = is_binop(body).expect("binop body");
+        assert!(matches!(op, BinOp::Add));
+        let inner = assert_abbreviated(l);
+        assert!(is_dollar(inner, "$1"));
+        assert!(is_dollar(r, "$1"));
     }
 }

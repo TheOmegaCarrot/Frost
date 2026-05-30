@@ -413,4 +413,23 @@ mod do_errors {
             "error was: {err}"
         );
     }
+
+    // Block content must follow the same grammar as the top level (minus
+    // `export`): adjacent expressions require a separator. The oracle errors on
+    // `do { 1 2 }` ("exhausted choice").
+    #[test]
+    fn missing_separator_between_exprs() {
+        let err = parse_err("do { 1 2 }");
+        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+    }
+
+    // A trailing binary operator must not silently continue onto the next line
+    // inside a block: newlines are significant at the top level and blocks
+    // mirror that. The oracle errors. Red until block bodies stop entering a
+    // newline-insignificant context.
+    #[test]
+    fn operator_continuation_across_newline() {
+        let err = parse_err("do {\n  x +\n  y\n}");
+        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+    }
 }

@@ -34,8 +34,8 @@ pub struct ParseState {
     /// When > 0, newlines are not significant (we're inside delimiters).
     pub nl_depth: u32,
 
-    /// When true, dollar identifiers (`$`, `$1`-`$9`, `$$`) are valid in expressions.
-    pub in_abbreviated_lambda: bool,
+    /// When > 0, permit dollar identifiers.
+    pub abbrev_lambda_depth: u32,
 }
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
@@ -190,16 +190,16 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub fn in_abbreviated_lambda(&self) -> bool {
-        self.state.in_abbreviated_lambda
+        self.state.abbrev_lambda_depth > 0
     }
 
     pub fn enter_abbreviated_lambda(&mut self) -> &mut Self {
-        self.state.in_abbreviated_lambda = true;
+        self.state.abbrev_lambda_depth += 1;
         self
     }
 
     pub fn exit_abbreviated_lambda(&mut self) -> &mut Self {
-        self.state.in_abbreviated_lambda = false;
+        self.state.abbrev_lambda_depth -= 1;
         self
     }
 

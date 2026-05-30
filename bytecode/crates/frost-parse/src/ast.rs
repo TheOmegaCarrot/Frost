@@ -114,6 +114,11 @@ pub enum ExprKind {
         /// Tail position expression which evaluates to the return value.
         return_expr: Box<Expr>,
     },
+    AbbreviatedLambda {
+        /// A single body expression that contains dollar identifiers.
+        /// This is the only place dollar identifiers are legal (parser-enforced).
+        body: Box<Expr>,
+    },
     /// `filter structure with operation`
     Filter {
         structure: Box<Expr>,
