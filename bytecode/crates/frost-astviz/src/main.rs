@@ -4,6 +4,7 @@
 //! left, AST tree on the right, with bidirectional highlighting and source
 //! range validation. Developer tooling, not part of the distribution.
 
+mod highlight;
 mod walk;
 
 use std::path::Path;
@@ -48,6 +49,8 @@ fn main() -> ExitCode {
     let mut walker = Walker::new(&index);
     let ast: Vec<Node> = program.statements.iter().map(|s| walker.stmt(s)).collect();
 
+    let highlights = highlight::highlights(&source);
+
     let filename = Path::new(path)
         .file_name()
         .map(|s| s.to_string_lossy().into_owned())
@@ -57,8 +60,7 @@ fn main() -> ExitCode {
         filename: filename.clone(),
         source,
         ast,
-        // Syntax highlighting is added in phase 2 (tree-sitter).
-        highlights: Vec::new(),
+        highlights,
     };
 
     // Escape `</` as `<\/` so embedded JSON can't close the <script> early.
