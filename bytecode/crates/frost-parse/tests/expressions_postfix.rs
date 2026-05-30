@@ -519,6 +519,32 @@ fn negate_index() {
     }
 }
 
+#[test]
+fn negate_dot() {
+    // -a.b == -(a.b): dot indexing binds tighter than prefix negate.
+    let expr = parse_expr("-a.b");
+    match &expr.kind {
+        ExprKind::UnaryOp {
+            op: UnaryOp::Negate,
+            operand,
+        } => assert!(matches!(&operand.kind, ExprKind::Index { .. })),
+        other => panic!("expected Negate(Index), got {other:?}"),
+    }
+}
+
+#[test]
+fn not_dot() {
+    // not a.b == not (a.b): dot indexing binds tighter than prefix not.
+    let expr = parse_expr("not a.b");
+    match &expr.kind {
+        ExprKind::UnaryOp {
+            op: UnaryOp::Not,
+            operand,
+        } => assert!(matches!(&operand.kind, ExprKind::Index { .. })),
+        other => panic!("expected Not(Index), got {other:?}"),
+    }
+}
+
 // -- Newline sensitivity with postfix --
 
 #[test]

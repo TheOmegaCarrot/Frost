@@ -265,6 +265,17 @@ mod do_basic {
     }
 
     #[test]
+    fn nested_do() {
+        // A `do` block can be the tail value of another `do` block.
+        let expr = parse_expr("do { do { x } }");
+        let (body, value) = assert_do(&expr);
+        assert!(body.is_empty());
+        let (inner_body, inner_value) = assert_do(value);
+        assert!(inner_body.is_empty());
+        assert!(matches!(&inner_value.kind, ExprKind::NameLookup(n) if n == "x"));
+    }
+
+    #[test]
     fn multiple_defs() {
         let expr = parse_expr("do { def x = 1; def y = 2; x + y }");
         let (body, value) = assert_do(&expr);
@@ -415,8 +426,7 @@ mod do_errors {
     }
 
     // Block content must follow the same grammar as the top level (minus
-    // `export`): adjacent expressions require a separator. The oracle errors on
-    // `do { 1 2 }` ("exhausted choice").
+    // `export`): adjacent expressions require a separator.
     #[test]
     fn missing_separator_between_exprs() {
         let err = parse_err("do { 1 2 }");
@@ -425,8 +435,7 @@ mod do_errors {
 
     // A trailing binary operator must not silently continue onto the next line
     // inside a block: newlines are significant at the top level and blocks
-    // mirror that. The oracle errors. Red until block bodies stop entering a
-    // newline-insignificant context.
+    // mirror that.
     #[test]
     fn operator_continuation_across_newline() {
         let err = parse_err("do {\n  x +\n  y\n}");

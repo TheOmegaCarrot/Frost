@@ -283,6 +283,51 @@ fn negate_float() {
     }
 }
 
+#[test]
+fn not_binds_tighter_than_equality() {
+    // `not a == b` parses as `(not a) == b`, not `not (a == b)`.
+    let expr = parse_expr("not a == b");
+    let (left, op, right) = is_binop(&expr).unwrap();
+    assert!(matches!(op, BinOp::Eq));
+    assert!(matches!(&right.kind, ExprKind::NameLookup(n) if n == "b"));
+    match &left.kind {
+        ExprKind::UnaryOp {
+            op: UnaryOp::Not,
+            operand,
+        } => assert!(matches!(&operand.kind, ExprKind::NameLookup(n) if n == "a")),
+        other => panic!("expected Not(a), got {other:?}"),
+    }
+}
+
+#[test]
+fn subtract_negative_literal() {
+    // `3 - -2` is binary minus with a negated-literal RHS, not `3 -- 2`.
+    let expr = parse_expr("3 - -2");
+    let (left, op, right) = is_binop(&expr).unwrap();
+    assert!(matches!(op, BinOp::Sub));
+    assert!(is_int(left, 3));
+    match &right.kind {
+        ExprKind::UnaryOp {
+            op: UnaryOp::Negate,
+            operand,
+        } => assert!(is_int(operand, 2)),
+        other => panic!("expected Negate(2), got {other:?}"),
+    }
+}
+
+#[test]
+fn negate_call() {
+    // `-f()` is `-(f())`: the call binds tighter than the prefix negate.
+    let expr = parse_expr("-f()");
+    match &expr.kind {
+        ExprKind::UnaryOp {
+            op: UnaryOp::Negate,
+            operand,
+        } => assert!(matches!(&operand.kind, ExprKind::Call { .. })),
+        other => panic!("expected Negate(Call), got {other:?}"),
+    }
+}
+
 // -- Comparisons --
 
 #[test]
@@ -428,6 +473,52 @@ fn error_chained_equality() {
 fn error_mixed_chain() {
     let err = parse_err("1 < 2 == 3");
     assert!(err.contains("cannot chain"), "error was: {err}");
+}
+
+// Relational and equality operators are mutually non-chainable: they cannot
+// chain with each other OR mix in either direction. Parentheses are required.
+
+#[test]
+fn error_equality_then_comparison() {
+    let err = parse_err("a == b < c");
+    assert!(err.contains("cannot chain"), "error was: {err}");
+}
+
+#[test]
+fn error_inequality_then_comparison() {
+    let err = parse_err("a != b > c");
+    assert!(err.contains("cannot chain"), "error was: {err}");
+}
+
+#[test]
+fn error_comparison_then_inequality() {
+    let err = parse_err("a > b != c");
+    assert!(err.contains("cannot chain"), "error was: {err}");
+}
+
+#[test]
+fn error_le_then_equality() {
+    let err = parse_err("a <= b == c");
+    assert!(err.contains("cannot chain"), "error was: {err}");
+}
+
+// Explicit parentheses are the escape hatch: a grouped relational result may be
+// compared for equality. The chaining ban must NOT reject these -- a parsed
+// Paren/group resets the "previous operator tier" tracking.
+#[test]
+fn parens_allow_relational_then_equality() {
+    let expr = parse_expr("(a < b) == c");
+    let (left, op, _right) = is_binop(&expr).unwrap();
+    assert!(matches!(op, BinOp::Eq));
+    assert!(matches!(is_binop(left), Some((_, BinOp::Lt, _))));
+}
+
+#[test]
+fn parens_allow_equality_then_relational() {
+    let expr = parse_expr("(a == b) < c");
+    let (left, op, _right) = is_binop(&expr).unwrap();
+    assert!(matches!(op, BinOp::Lt));
+    assert!(matches!(is_binop(left), Some((_, BinOp::Eq, _))));
 }
 
 // -- General error cases --

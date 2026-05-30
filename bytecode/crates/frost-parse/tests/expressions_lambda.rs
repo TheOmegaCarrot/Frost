@@ -323,7 +323,6 @@ mod map_body {
     }
 
     // `fn -> {}` is a thunk returning an empty Map, not an empty block.
-    // Matches the C++ oracle: `Lambda() -> Map_Constructor`.
     #[test]
     fn empty_map_thunk() {
         let expr = parse_expr("fn -> {}");

@@ -357,6 +357,27 @@ mod map_literals {
     }
 
     #[test]
+    fn negative_computed_key() {
+        let expr = parse_expr("{[-1]: v}");
+        let entries = map_entries(&expr);
+        assert_eq!(entries.len(), 1);
+        assert!(matches!(
+            &entries[0].key.kind,
+            ExprKind::UnaryOp { op: UnaryOp::Negate, .. }
+        ));
+    }
+
+    #[test]
+    fn reserved_keyword_key() {
+        // A reserved word cannot be an identifier map key (shorthand or `key:`).
+        let err = parse_err("{if: 1}");
+        assert!(
+            err.contains("reserved") || err.contains("unexpected") || err.contains("Expected"),
+            "error was: {err}"
+        );
+    }
+
+    #[test]
     fn mixed_key_styles() {
         let expr = parse_expr("{foo: 1, [42]: 2, bar: 3}");
         let entries = map_entries(&expr);
