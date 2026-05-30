@@ -61,7 +61,7 @@ pub trait Callable: std::fmt::Debug + Send + Sync {
 /// Frost's array type. Immutable once created.
 #[derive(Clone, Debug)]
 pub struct FrostArray {
-    pub(crate) inner: Arc<[Value]>,
+    pub(crate) inner: Arc<Vec<Value>>,
 }
 
 /// Frost's map type. Immutable once created.

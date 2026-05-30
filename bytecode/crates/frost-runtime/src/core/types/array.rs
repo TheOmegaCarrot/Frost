@@ -15,7 +15,7 @@ impl<'a> IntoIterator for &'a FrostArray {
 impl FromIterator<Value> for FrostArray {
     fn from_iter<T: IntoIterator<Item = Value>>(iter: T) -> Self {
         Self {
-            inner: iter.into_iter().collect::<Arc<[Value]>>(),
+            inner: Arc::from(iter.into_iter().collect::<Vec<Value>>()),
         }
     }
 }
@@ -70,14 +70,14 @@ impl FrostArray {
     /// Creates a new FrostArray from a slice of values.
     pub fn new(elems: &[Value]) -> Self {
         Self {
-            inner: Arc::from(elems),
+            inner: Arc::from(Vec::from(elems)),
         }
     }
 
     /// Creates an empty FrostArray.
     pub fn empty() -> Self {
         Self {
-            inner: Arc::from([]),
+            inner: Arc::from(Vec::new()),
         }
     }
 
