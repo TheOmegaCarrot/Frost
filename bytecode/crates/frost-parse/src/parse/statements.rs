@@ -22,7 +22,7 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
         match peek.token {
             // Newlines between statements should be skipped.
             // Doing it at the top of the loop skips blank/comment lines at the top of a file.
-            Token::Newline => {
+            Token::Newline | Token::Semicolon => {
                 ctx.advance(1);
                 continue;
             }

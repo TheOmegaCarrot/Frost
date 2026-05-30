@@ -42,3 +42,24 @@ fn lex_error_on_unclosed_format_string() {
     let result = parse_program("test.frst", "def x = $'hello ${name}");
     assert!(result.is_err());
 }
+
+// The whitespace class is space, tab, newline, carriage return, and form feed.
+// A vertical tab is not whitespace and must lex as an invalid character. This
+// guards the whitespace set against accidental widening.
+#[test]
+fn lex_error_on_vertical_tab() {
+    let result = parse_program("test.frst", "1\u{0b}2");
+    assert!(result.is_err());
+    let err = result.unwrap_err().to_string();
+    assert!(err.contains("unexpected character"), "error was: {err}");
+}
+
+// A leading UTF-8 byte-order mark is not stripped; it lexes as an invalid
+// character like any other non-source byte.
+#[test]
+fn lex_error_on_leading_bom() {
+    let result = parse_program("test.frst", "\u{feff}1");
+    assert!(result.is_err());
+    let err = result.unwrap_err().to_string();
+    assert!(err.contains("unexpected character"), "error was: {err}");
+}

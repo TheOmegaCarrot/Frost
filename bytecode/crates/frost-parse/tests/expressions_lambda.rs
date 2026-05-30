@@ -290,6 +290,17 @@ mod block_body {
         assert_eq!(lam.self_name, Some("f"));
         assert_eq!(lam.body.len(), 1);
     }
+
+    // A lone identifier in braces is a thunk returning that name, not a map.
+    // Map literals always require `key: value` pairs, so `{a}` can only be a
+    // single-expression block body, equivalent to `fn -> a`.
+    #[test]
+    fn single_bare_identifier_is_thunk() {
+        let expr = parse_expr("fn -> {a}");
+        let lam = assert_lambda(&expr);
+        assert!(lam.body.is_empty());
+        assert!(matches!(&lam.return_expr.kind, ExprKind::NameLookup(n) if n == "a"));
+    }
 }
 
 // ============================================================
@@ -461,6 +472,14 @@ mod errors {
         let err = parse_err("fn -> { 1 2 }");
         assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
     }
+
+    // `{a, b}` is neither a map (no `:` values) nor a valid block (a comma is
+    // not a statement separator), so it cannot be a lambda body.
+    #[test]
+    fn comma_separated_bare_identifiers() {
+        let err = parse_err("fn -> {a, b}");
+        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+    }
 }
 
 // ============================================================
@@ -579,5 +598,29 @@ mod abbreviated {
         let inner = assert_abbreviated(l);
         assert!(is_dollar(inner, "$1"));
         assert!(is_dollar(r, "$1"));
+    }
+
+    // Placeholders are `$`, `$1`-`$9`, and `$$`. `$0` is not one of them, so it
+    // is not a valid placeholder name in any position.
+    #[test]
+    fn dollar_zero_is_rejected() {
+        let err = parse_err("$($0)");
+        assert!(err.contains("Expected") || err.contains("unexpected"), "error was: {err}");
+        let err = parse_err("$0");
+        assert!(err.contains("unexpected"), "error was: {err}");
+    }
+
+    // Placeholder indices are a single digit; `$10` is not `$1` followed by `0`.
+    #[test]
+    fn two_digit_placeholder_is_rejected() {
+        let err = parse_err("$($10)");
+        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+    }
+
+    // An abbreviated lambda must wrap an expression; `$()` is empty.
+    #[test]
+    fn empty_abbreviated_is_rejected() {
+        let err = parse_err("$()");
+        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
     }
 }

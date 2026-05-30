@@ -589,6 +589,40 @@ fn multiple_statements_mixed() {
     assert_eq!(program.statements.len(), 3);
 }
 
+// A separator with no statement before it is an empty statement, not an error.
+// Leading, doubled, and lone separators are all absorbed.
+
+#[test]
+fn lone_semicolon_is_empty_program() {
+    let program = parse(";");
+    assert_eq!(program.statements.len(), 0);
+}
+
+#[test]
+fn leading_semicolon() {
+    let program = parse(";1");
+    assert_eq!(program.statements.len(), 1);
+}
+
+#[test]
+fn doubled_semicolon() {
+    let program = parse("1;;2");
+    assert_eq!(program.statements.len(), 2);
+}
+
+#[test]
+fn leading_semicolon_in_scope() {
+    let expr = parse("do { ;1 }").statements[0].clone();
+    let StatementKind::Expr(expr) = expr.kind else {
+        panic!("expected expression statement");
+    };
+    let ExprKind::Do { body, value } = expr.kind else {
+        panic!("expected do block, got {:?}", expr.kind);
+    };
+    assert_eq!(body.len(), 0);
+    assert!(matches!(&value.kind, ExprKind::Literal(Literal::Int(1))));
+}
+
 // -- Map empty with `as` --
 
 #[test]

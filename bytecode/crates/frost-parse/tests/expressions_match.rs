@@ -622,6 +622,17 @@ mod errors {
         );
     }
 
+    // Arms are comma-separated. A newline between two arms is not a separator,
+    // so the second arm without a leading comma is an error.
+    #[test]
+    fn newline_is_not_an_arm_separator() {
+        let err = parse_err("match x { 1 => a\n  2 => b }");
+        assert!(
+            err.contains("Expected }") || err.contains("unexpected"),
+            "error was: {err}"
+        );
+    }
+
     #[test]
     fn missing_close_brace() {
         let err = parse_err("match x { 1 => 2");

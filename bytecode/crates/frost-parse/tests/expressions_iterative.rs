@@ -279,4 +279,34 @@ mod errors {
             "error was: {err}"
         );
     }
+
+    // The seed clause comes before `with`, not after it.
+    #[test]
+    fn reduce_init_after_with() {
+        let err = parse_err("reduce xs with f init: 0");
+        assert!(
+            err.contains("unexpected") || err.contains("Expected"),
+            "error was: {err}"
+        );
+    }
+
+    // `init:` is a reduce-only clause; map has no seed.
+    #[test]
+    fn map_rejects_init() {
+        let err = parse_err("map xs init: 0 with f");
+        assert!(
+            err.contains("Expected with") || err.contains("unexpected"),
+            "error was: {err}"
+        );
+    }
+
+    // The seed clause is `init:`; the colon is required.
+    #[test]
+    fn reduce_init_requires_colon() {
+        let err = parse_err("reduce xs init 0 with f");
+        assert!(
+            err.contains("Expected :") || err.contains("unexpected") || err.contains("Expected"),
+            "error was: {err}"
+        );
+    }
 }
