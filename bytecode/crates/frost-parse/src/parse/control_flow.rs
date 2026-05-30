@@ -56,11 +56,9 @@ fn parse_tail(ctx: &mut ParseCtx) -> ParseResult<Option<Expr>> {
 pub fn parse_do(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let start = ctx.expect(Token::KwDo)?.span.start;
     ctx.expect(Token::OpenBrace)?;
-    ctx.enter_nl_context().maybe_skip_nl();
 
     let mut body = parse_statements(ctx, StatementContext::Scope)?;
 
-    ctx.maybe_skip_nl().exit_nl_context();
     let close = ctx.expect(Token::CloseBrace)?;
 
     let Some(last) = body.pop() else {

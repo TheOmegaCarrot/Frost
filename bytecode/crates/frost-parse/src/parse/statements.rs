@@ -60,10 +60,6 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
                     ctx.advance(1);
                     ctx.maybe_skip_nl();
                 }
-                _ if in_a_scope => {
-                    // In scope context (inside nl context), newlines may have
-                    // already been consumed. Allow statements to follow directly.
-                }
                 _ => {
                     return Err(ctx.unexpected_token(
                         peek,

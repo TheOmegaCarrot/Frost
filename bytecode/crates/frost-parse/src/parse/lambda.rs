@@ -171,11 +171,9 @@ fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
 
 fn parse_block_body(ctx: &mut ParseCtx) -> ParseResult<(Vec<Statement>, Expr, usize)> {
     ctx.expect(Token::OpenBrace)?;
-    ctx.enter_nl_context().maybe_skip_nl();
 
     let mut body = parse_statements(ctx, StatementContext::Scope)?;
 
-    ctx.maybe_skip_nl().exit_nl_context();
     let close = ctx.expect(Token::CloseBrace)?;
 
     let Some(last) = body.pop() else {
