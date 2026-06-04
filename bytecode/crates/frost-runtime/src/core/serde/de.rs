@@ -57,7 +57,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
             },
             Value::Array(_) => self.deserialize_seq(visitor),
             Value::Map(_) => self.deserialize_map(visitor),
-            Value::Function(_) => Err(de::Error::custom("cannot deserialize Function")),
+            Value::NativeFunction(_) => Err(de::Error::custom("cannot deserialize Function")),
             Value::Opaque(_) => Err(de::Error::custom("cannot deserialize Opaque")),
         }
     }

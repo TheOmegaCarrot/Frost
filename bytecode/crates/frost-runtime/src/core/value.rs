@@ -30,8 +30,8 @@ pub enum Value {
     Array(FrostArray),
     /// An ordered, immutable key-value mapping.
     Map(FrostMap),
-    /// A callable function (Frost closure or native).
-    Function(Arc<dyn Callable>),
+    /// A native-backed function
+    NativeFunction(Arc<dyn NativeFunction>),
     /// Interpreter-managed opaque data. Native functions downcast to their concrete type.
     Opaque(Arc<dyn Any + Send + Sync>),
 }
@@ -51,7 +51,7 @@ pub enum MapKey {
 }
 
 /// A callable Frost function: either a user-defined closure or a native builtin.
-pub trait Callable: std::fmt::Debug + Send + Sync {
+pub trait NativeFunction: std::fmt::Debug + Send + Sync {
     /// Invoke this function with the given arguments.
     fn call(&self, args: &[Value]) -> Result<Value, FrostError>;
     /// The display name of this function, used in error messages.

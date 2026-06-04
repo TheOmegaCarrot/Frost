@@ -12,7 +12,7 @@ impl PartialEq for Value {
             (Value::String(l), Value::String(r)) => l == r,
             (Value::Array(l), Value::Array(r)) => l == r,
             (Value::Map(l), Value::Map(r)) => l == r,
-            (Value::Function(l), Value::Function(r)) => Arc::ptr_eq(l, r),
+            (Value::NativeFunction(l), Value::NativeFunction(r)) => Arc::ptr_eq(l, r),
             (Value::Opaque(l), Value::Opaque(r)) => Arc::ptr_eq(l, r),
             _ => false,
         }
@@ -30,8 +30,8 @@ impl PartialOrd for Value {
             (Value::Float(l), Value::Float(r)) => l.partial_cmp(r),
             (Value::String(l), Value::String(r)) => l.partial_cmp(r),
             (Value::Array(l), Value::Array(r)) => l.partial_cmp(r),
-            (Value::Map(l), Value::Map(r)) => None,
-            (Value::Function(l), Value::Function(r)) => None,
+            (Value::Map(_), Value::Map(_)) => None,
+            (Value::NativeFunction(_), Value::NativeFunction(_)) => None,
             (Value::Opaque(l), Value::Opaque(r)) => None,
 
             (Value::Int(l), Value::Float(r)) => FrostFloat::from(*l).partial_cmp(r),

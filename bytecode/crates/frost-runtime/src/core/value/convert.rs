@@ -119,7 +119,7 @@ impl Value {
             Value::String(_) => "String",
             Value::Array(_) => "Array",
             Value::Map(_) => "Map",
-            Value::Function(_) => "Function",
+            Value::NativeFunction(_) => "Function",
             Value::Opaque(_) => "Opaque",
         }
     }
@@ -161,7 +161,7 @@ impl Value {
 
     /// Returns true if this value is a Function.
     pub fn is_function(&self) -> bool {
-        matches!(self, Value::Function(_))
+        matches!(self, Value::NativeFunction(_))
     }
 
     /// Returns true if this value is an Opaque.
