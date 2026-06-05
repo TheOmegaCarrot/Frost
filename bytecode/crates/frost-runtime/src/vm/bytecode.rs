@@ -1,6 +1,5 @@
-// Tentative bytecode design -- revisit once Value and runtime foundations are solid.
-//
-// use frost_core::Value;
+use crate::core::Value;
+
 //
 // #[derive(Clone, Debug)]
 // pub struct CompiledFunction {
