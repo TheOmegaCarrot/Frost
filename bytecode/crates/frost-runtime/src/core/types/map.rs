@@ -102,4 +102,19 @@ impl FrostMap {
     pub fn into_value(self) -> Value {
         Value::from(self)
     }
+
+    /// Extract a mutable map when not shared, or return the FrostMap as-is.
+    /// Zero-copy in the `Ok` case.
+    pub fn try_extract(self) -> Result<BTreeMap<MapKey, Value>, FrostMap> {
+        match Arc::try_unwrap(self.inner) {
+            Ok(map) => Ok(map),
+            Err(arc) => Err(FrostMap { inner: arc }),
+        }
+    }
+
+    /// Extract a BTreeMap from a FrostMap, zero-copy when possible, but quietly copies when not.
+    /// If you want your copy to be explicit, use `try_extract`.
+    pub fn to_owned(self) -> BTreeMap<MapKey, Value> {
+        Arc::unwrap_or_clone(self.inner)
+    }
 }

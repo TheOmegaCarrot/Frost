@@ -131,3 +131,72 @@ fn as_slice_to_new_array() {
     assert_eq!(tail.len(), 2);
     assert!(matches!(tail.frost_get(0), Some(Value::Int(20))));
 }
+
+// -- Stealing / extraction --
+
+#[test]
+fn try_extract_unique_succeeds() {
+    let arr = sample_array();
+    let vec = arr.try_extract().expect("unique array should extract");
+    assert_eq!(vec.len(), 3);
+    assert!(matches!(vec[0], Value::Int(10)));
+}
+
+#[test]
+fn try_extract_shared_fails() {
+    let arr = sample_array();
+    let _alias = arr.clone();
+    let result = arr.try_extract();
+    assert!(result.is_err());
+    let recovered = result.unwrap_err();
+    assert_eq!(recovered.len(), 3);
+}
+
+#[test]
+fn try_extract_shared_then_dropped_succeeds() {
+    let arr = sample_array();
+    let alias = arr.clone();
+    drop(alias);
+    let vec = arr.try_extract().expect("should succeed after alias dropped");
+    assert_eq!(vec.len(), 3);
+}
+
+#[test]
+fn to_owned_unique_steals() {
+    let arr = FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]);
+    let vec = arr.to_owned();
+    assert_eq!(vec.len(), 2);
+}
+
+#[test]
+fn to_owned_shared_clones() {
+    let arr = sample_array();
+    let _alias = arr.clone();
+    let vec = arr.to_owned();
+    assert_eq!(vec.len(), 3);
+    assert!(matches!(vec[0], Value::Int(10)));
+}
+
+#[test]
+fn to_owned_is_mutable() {
+    let arr = sample_array();
+    let mut vec = arr.to_owned();
+    vec.push(Value::from(40i64));
+    assert_eq!(vec.len(), 4);
+}
+
+#[test]
+fn try_extract_then_rebuild() {
+    let arr = sample_array();
+    let mut vec = arr.try_extract().unwrap();
+    vec.iter_mut().for_each(|v| {
+        if let Value::Int(n) = v {
+            *v = Value::from(*n * 2);
+        }
+    });
+    let arr2 = FrostArray::from(vec);
+    assert_eq!(arr2.len(), 3);
+    assert!(matches!(arr2.frost_get(0), Some(Value::Int(20))));
+    assert!(matches!(arr2.frost_get(1), Some(Value::Int(40))));
+    assert!(matches!(arr2.frost_get(2), Some(Value::Int(60))));
+}

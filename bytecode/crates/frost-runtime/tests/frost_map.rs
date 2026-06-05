@@ -219,3 +219,66 @@ fn clone_shares_data() {
     assert!(map.get_str("name").is_some());
     assert!(cloned.get_str("name").is_some());
 }
+
+// -- Stealing / extraction --
+
+#[test]
+fn try_extract_unique_succeeds() {
+    let map = sample_map();
+    let btree = map.try_extract().expect("unique map should extract");
+    assert_eq!(btree.len(), 3);
+    assert!(btree.contains_key(&str_key("name")));
+}
+
+#[test]
+fn try_extract_shared_fails() {
+    let map = sample_map();
+    let _alias = map.clone();
+    let result = map.try_extract();
+    assert!(result.is_err());
+    let recovered = result.unwrap_err();
+    assert_eq!(recovered.len(), 3);
+}
+
+#[test]
+fn try_extract_shared_then_dropped_succeeds() {
+    let map = sample_map();
+    let alias = map.clone();
+    drop(alias);
+    let btree = map.try_extract().expect("should succeed after alias dropped");
+    assert_eq!(btree.len(), 3);
+}
+
+#[test]
+fn to_owned_unique_steals() {
+    let map = sample_map();
+    let btree = map.to_owned();
+    assert_eq!(btree.len(), 3);
+}
+
+#[test]
+fn to_owned_shared_clones() {
+    let map = sample_map();
+    let _alias = map.clone();
+    let btree = map.to_owned();
+    assert_eq!(btree.len(), 3);
+    assert!(btree.contains_key(&str_key("name")));
+}
+
+#[test]
+fn to_owned_is_mutable() {
+    let map = sample_map();
+    let mut btree = map.to_owned();
+    btree.insert(str_key("new_key"), Value::from(99i64));
+    assert_eq!(btree.len(), 4);
+}
+
+#[test]
+fn try_extract_then_rebuild() {
+    let map = sample_map();
+    let mut btree = map.try_extract().unwrap();
+    btree.insert(str_key("extra"), Value::from("added"));
+    let map2 = FrostMap::from(btree);
+    assert_eq!(map2.len(), 4);
+    assert!(map2.get_str("extra").is_some());
+}
