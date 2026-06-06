@@ -157,7 +157,9 @@ fn try_extract_shared_then_dropped_succeeds() {
     let arr = sample_array();
     let alias = arr.clone();
     drop(alias);
-    let vec = arr.try_extract().expect("should succeed after alias dropped");
+    let vec = arr
+        .try_extract()
+        .expect("should succeed after alias dropped");
     assert_eq!(vec.len(), 3);
 }
 

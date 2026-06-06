@@ -245,7 +245,9 @@ fn try_extract_shared_then_dropped_succeeds() {
     let map = sample_map();
     let alias = map.clone();
     drop(alias);
-    let btree = map.try_extract().expect("should succeed after alias dropped");
+    let btree = map
+        .try_extract()
+        .expect("should succeed after alias dropped");
     assert_eq!(btree.len(), 3);
 }
 

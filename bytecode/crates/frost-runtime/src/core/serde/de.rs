@@ -34,7 +34,9 @@ impl de::Error for DeError {
 // -- Public API --
 
 /// Deserializes a Frost `Value` into any `Deserialize` type.
-pub fn from_value<'de, T: serde::Deserialize<'de>>(value: Value) -> Result<T, crate::core::FrostError> {
+pub fn from_value<'de, T: serde::Deserialize<'de>>(
+    value: Value,
+) -> Result<T, crate::core::FrostError> {
     T::deserialize(ValueDeserializer(value)).map_err(|e| e.0.into())
 }
 

@@ -122,8 +122,8 @@ impl FrostArray {
     /// Zero-copy in the `Ok` case.
     pub fn try_extract(self) -> Result<Vec<Value>, FrostArray> {
         match Arc::try_unwrap(self.inner) {
-            Ok(vec)  => Ok(vec),
-            Err(arc) => Err(FrostArray{inner: arc}),
+            Ok(vec) => Ok(vec),
+            Err(arc) => Err(FrostArray { inner: arc }),
         }
     }
 

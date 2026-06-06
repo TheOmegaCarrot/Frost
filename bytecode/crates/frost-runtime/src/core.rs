@@ -17,4 +17,4 @@ pub use error::{FrostError, FrostResult};
 pub use serde::{from_value, to_value};
 pub use types::float::FrostFloat;
 pub use util::identifier::KEYWORDS;
-pub use value::{NativeFunction, FrostArray, FrostMap, MapKey, Value};
+pub use value::{FrostArray, FrostMap, MapKey, NativeFunction, Value};
