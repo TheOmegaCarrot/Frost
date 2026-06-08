@@ -1,9 +1,10 @@
 #![allow(unused)]
 
+use std::num::NonZeroUsize;
 use std::{collections::BTreeMap, sync::Arc};
 
 use crate::core::FrostFloat;
-use crate::Value;
+use crate::{FrostError, Value};
 
 // ============================================================
 // Bytecode
@@ -50,8 +51,8 @@ pub enum Bytecode {
 
     // Flow
     // Jump ahead N instructions
-    Jump(usize), // unconditionally
-    JumpIfTrue(usize), // only if the top of the stack is true (NOT consumed)
+    Jump(usize),        // unconditionally
+    JumpIfTrue(usize),  // only if the top of the stack is true (NOT consumed)
     JumpIfFalse(usize), // only if the top of the stack is falsey (NOT consumed)
 
     // Functions
@@ -62,14 +63,13 @@ pub enum Bytecode {
 
     // Move num_captures elements from the stack to a closure capture structure,
     // as a part of a new closure with code from function (index into function table)
-    CreateClosure{ num_captures: u32, function: u32 },
+    CreateClosure { num_captures: u32, function: u32 },
 
     // Data structures
     MakeArray(usize), // Consume N items from the stack, pushing an Array to the stack
-                      // The top of the stack is the back of the array
+    // The top of the stack is the back of the array
     MakeMap(usize), // Consume 2N items from the stack, as kv pairs
-                    // Keys are below their corresponding values
-
+    // Keys are below their corresponding values
     ExplodeArray, // Inverse of MakeArray: blast Array contents onto the stack
 
     // Index a structure, structure is below the index initially (consumed)
@@ -95,7 +95,7 @@ pub enum Bytecode {
 // ============================================================
 
 /// VM state
-struct Vm {
+pub struct Vm {
     // The working stack of the Vm
     stack: Vec<Value>,
     // Represents a call frame.
@@ -113,23 +113,23 @@ struct Vm {
 
 /// Compiled representation of a single function.
 /// A script's top-level is also a function.
-struct CompiledFunction {
+pub struct CompiledFunction {
     // Functions may or may not have a name
-    name: Option<String>,
-    code: Vec<Bytecode>,
+    pub name: Option<String>,
+    pub code: Vec<Bytecode>,
     // Functions which are defined in this function's body
-    child_fns: Vec<Arc<CompiledFunction>>,
+    pub child_fns: Vec<Arc<CompiledFunction>>,
     // Constant values that can't be inlined in an opcode.
     // Mostly strings, but can include any structured value the compiler can constant-fold.
-    constants: Vec<Value>,
+    pub constants: Vec<Value>,
     // Table so that locals can be looked up by name at runtime,
     // or their slot given a name by an error.
-    name_table: BTreeMap<String, NameTableEntry>,
+    pub name_table: BTreeMap<String, NameTableEntry>,
 }
 
-struct NameTableEntry {
-    slot: usize,
-    exported: bool,
+pub struct NameTableEntry {
+    pub slot: usize,
+    pub exported: bool,
 }
 
 struct NativeArgFrames {
@@ -146,9 +146,20 @@ struct StackFrame {
     local_slots: Vec<Option<Value>>,
     // Index into the code of the calling function which should be jumped back to.
     // The instruction _after_ the Call that pushed this StackFrame.
-    return_address: usize,
+    return_address: Option<NonZeroUsize>,
     // The function represented by this StackFrame.
     this_fn: Arc<CompiledFunction>,
+}
+
+/// The result of executing a CompiledFunction.
+/// Provides access to the top-level defined values and exports of a script.
+pub struct ProgramResult {
+    // The top-level's slots, for post-execution retrieval
+    slots: Vec<Value>,
+    // Table of names of top-levels globals, so post-execution retrieval
+    name_table: BTreeMap<String, NameTableEntry>,
+    // The tail expression of the top-level. Often irrelevant, but it's available.
+    tail: Value,
 }
 
 // ============================================================
@@ -184,3 +195,93 @@ struct StackFrame {
 // the args are _moved_ to the first available NativeArgFrame,
 // and the native function is invoked, given a &mut[Value] to the NativeArgFrame.
 // A call increments native_arg_frames.next, and decrements it upon returning.
+
+// ============================================================
+// Vm Methods
+// ============================================================
+
+impl ProgramResult {
+    /// Get the value of the tail expression of a script.
+    /// Often `null`.
+    pub fn tail(&self) -> &Value {
+        &self.tail
+    }
+
+    /// Look up the value of a variable.
+    /// None indicates the name was not defined.
+    pub fn lookup<'a>(&'a self, name: &str) -> Option<&'a Value> {
+        self.name_table
+            .get(name)
+            .and_then(|nte| self.slots.get(nte.slot))
+    }
+
+    /// Get all values exported by the script.
+    pub fn exports(&self) -> impl Iterator<Item = (&String, &Value)> {
+        self.name_table.iter().filter_map(|(name, nte)| {
+            if nte.exported {
+                Some((
+                    name,
+                    (self
+                        .slots
+                        .get(nte.slot)
+                        .expect("IMPOSSIBLE: exported slot unfilled after execution")),
+                ))
+            } else {
+                None
+            }
+        })
+    }
+}
+
+impl Vm {
+    /// Create a Vm instance from a CompiledFunction.
+    /// The CompiledFunction has many invariants which cannot be thoroughly checked,
+    /// and the Frost compiler is relied upon for emitting correct code.
+    /// If the provided CompiledFunction is incorrect (indexes a missing slot, pops an empty stack, etc),
+    /// then execution or other Vm methods may panic.
+    /// Any use of a CompiledFunction which was not emitted by the compiler is unsupported.
+    ///
+    /// A Vm is pretty cheap to construct, and so a Vm will only run one Frost program.
+    pub fn new(program: Arc<CompiledFunction>) -> Result<Vm, FrostError> {
+        Ok(Self {
+            stack: Vec::new(),
+            stack_frames: vec![StackFrame {
+                base_idx: 0,
+                local_slots: vec![None; program.name_table.len()],
+                return_address: None,
+                this_fn: program,
+            }],
+            native_arg_frames: NativeArgFrames {
+                next: 0,
+                args: Vec::new(),
+            },
+        })
+
+        // TODO: fill in global predefined values
+    }
+
+    /// Assign a global binding to be used by the script.
+    /// Some scripts may use values provided directly by the host application,
+    /// and this is the mechanism to provide them.
+    /// This method is not necessary if the script only uses bindings that it defines itself or
+    /// that are provided by the Frost runtime.
+    /// This allows for overridding existing global bindings, including runtime-provided values,
+    /// which should be done with care.
+    /// Returns true if the script may use the binding, or false if it does not.
+    pub fn set_global(&mut self, name: &str, value: Value) -> bool {
+        let base_frame = self.stack_frames.first_mut().expect("IMPOSSIBLE: Vm lacking base stack frame");
+        let Some(nte) = base_frame.this_fn.name_table.get(name) else {
+            return false;
+        };
+
+        base_frame.local_slots[nte.slot] = Some(value);
+
+        true
+    }
+
+    /// Execute this script.
+    /// Any script errors not handled by the script itself are surfaced in the Err case.
+    pub fn run(mut self) -> Result<ProgramResult, FrostError> {
+        todo!()
+    }
+}
