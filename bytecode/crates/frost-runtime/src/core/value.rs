@@ -31,10 +31,13 @@ pub enum Value {
     /// An ordered, immutable key-value mapping.
     Map(FrostMap),
     /// A native-backed function
-    NativeFunction(Arc<dyn NativeFunction>),
+    NativeFunction(FrostNativeFunction),
     /// Interpreter-managed opaque data. Native functions downcast to their concrete type.
-    Opaque(Arc<dyn Any + Send + Sync>),
+    Opaque(FrostOpaque),
 }
+
+type FrostNativeFunction = Arc<dyn NativeFunction>;
+type FrostOpaque = Arc<dyn Any + Send + Sync>;
 
 const _: () = {
     const fn assert_send_sync<T: Send + Sync>() {}
@@ -68,4 +71,74 @@ pub struct FrostArray {
 #[derive(Clone, Debug)]
 pub struct FrostMap {
     pub(crate) inner: Arc<BTreeMap<MapKey, Value>>,
+}
+
+impl Value {
+    /// Returns the inner `i64` if this is an `Int`, or `None`.
+    pub fn as_int(&self) -> Option<i64> {
+        match self {
+            Self::Int(i) => Some(*i),
+            _ => None,
+        }
+    }
+
+    /// Returns the inner `f64` if this is a `Float`, or `None`.
+    /// If `Some`, guaranteed not to be NaN or infinite.
+    pub fn as_float(&self) -> Option<f64> {
+        match self {
+            Self::Float(f) => Some(f.get()),
+            _ => None,
+        }
+    }
+
+    /// Returns the inner `bool` if this is a `Bool`, or `None`.
+    pub fn as_bool(&self) -> Option<bool> {
+        match self {
+            Self::Bool(b) => Some(*b),
+            _ => None,
+        }
+    }
+
+    /// Returns the string contents as `&str` if this is a valid UTF-8 `String`, or `None`.
+    /// Use [`as_byte_string`](Self::as_byte_string) for strings that may not be valid UTF-8.
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Self::String(s) => std::str::from_utf8(s).ok(),
+            _ => None,
+        }
+    }
+
+    /// Returns the raw bytes if this is a `String`, or `None`.
+    /// Unlike [`as_str`](Self::as_str), this always succeeds for String values
+    /// regardless of UTF-8 validity.
+    pub fn as_byte_string(&self) -> Option<&[u8]> {
+        match self {
+            Self::String(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Returns a reference to the inner `FrostArray` if this is an `Array`, or `None`.
+    pub fn as_array(&self) -> Option<&FrostArray> {
+        match self {
+            Self::Array(a) => Some(a),
+            _ => None,
+        }
+    }
+
+    /// Returns a reference to the inner `FrostMap` if this is a `Map`, or `None`.
+    pub fn as_map(&self) -> Option<&FrostMap> {
+        match self {
+            Self::Map(m) => Some(m),
+            _ => None,
+        }
+    }
+
+    /// Returns a reference to the inner `Arc<dyn Any + Send + Sync>` if this is `Opaque`, or `None`.
+    pub fn as_opaque(&self) -> Option<&FrostOpaque> {
+        match self {
+            Self::Opaque(o) => Some(o),
+            _ => None,
+        }
+    }
 }
