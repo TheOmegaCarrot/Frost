@@ -75,7 +75,10 @@ fn as_str_from_non_string() {
 
 #[test]
 fn as_byte_string_from_utf8() {
-    assert_eq!(Value::from("hello").as_byte_string(), Some(b"hello".as_slice()));
+    assert_eq!(
+        Value::from("hello").as_byte_string(),
+        Some(b"hello".as_slice())
+    );
 }
 
 #[test]
@@ -112,9 +115,10 @@ fn as_array_from_non_array() {
 
 #[test]
 fn as_map_from_map() {
-    let map: FrostMap = vec![
-        (MapKey::String(Arc::from(b"key".as_slice())), Value::from(1i64)),
-    ]
+    let map: FrostMap = vec![(
+        MapKey::String(Arc::from(b"key".as_slice())),
+        Value::from(1i64),
+    )]
     .into_iter()
     .collect();
     let v = Value::from(map);
@@ -136,7 +140,9 @@ fn as_opaque_from_opaque() {
     let data: Arc<dyn std::any::Any + Send + Sync> = Arc::new(42u32);
     let v = Value::Opaque(data);
     let opaque = v.as_opaque().expect("should be opaque");
-    let downcasted = opaque.downcast_ref::<u32>().expect("should downcast to u32");
+    let downcasted = opaque
+        .downcast_ref::<u32>()
+        .expect("should downcast to u32");
     assert_eq!(*downcasted, 42u32);
 }
 

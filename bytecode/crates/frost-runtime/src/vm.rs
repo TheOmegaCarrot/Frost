@@ -10,7 +10,7 @@ use crate::{FrostError, Value};
 // Bytecode
 // ============================================================
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub enum Bytecode {
     // Constants
     PushNull,
@@ -21,7 +21,9 @@ pub enum Bytecode {
 
     // Stack
     Pop,
-    PeekDown(usize), // Index N down from the top of the stack, and copy that onto the top
+    Dup,             // Duplicate the top item on the stack
+    PeekDown(usize), // Index N down from the top of the stack, and copy that onto the top.
+    // PeekDown(1) is just Dup with extra steps.
 
     // Slots
     DefLocal(usize),  // Move the top of the stack to local slot N
@@ -95,6 +97,7 @@ pub enum Bytecode {
 // ============================================================
 
 /// VM state
+#[derive(Debug)]
 pub struct Vm {
     // The working stack of the Vm
     stack: Vec<Value>,
@@ -113,6 +116,7 @@ pub struct Vm {
 
 /// Compiled representation of a single function.
 /// A script's top-level is also a function.
+#[derive(Clone, Debug)]
 pub struct CompiledFunction {
     // Functions may or may not have a name
     pub name: Option<String>,
@@ -127,11 +131,13 @@ pub struct CompiledFunction {
     pub name_table: BTreeMap<String, NameTableEntry>,
 }
 
+#[derive(Debug, Clone)]
 pub struct NameTableEntry {
     pub slot: usize,
     pub exported: bool,
 }
 
+#[derive(Debug)]
 struct NativeArgFrames {
     // All of the native frames.
     args: Vec<Vec<Value>>,
@@ -139,6 +145,7 @@ struct NativeArgFrames {
     next: usize,
 }
 
+#[derive(Debug)]
 struct StackFrame {
     // Absolute stack index of the base of a frame
     base_idx: usize,
@@ -153,9 +160,10 @@ struct StackFrame {
 
 /// The result of executing a CompiledFunction.
 /// Provides access to the top-level defined values and exports of a script.
+#[derive(Debug)]
 pub struct ProgramResult {
     // The top-level's slots, for post-execution retrieval
-    slots: Vec<Value>,
+    slots: Vec<Option<Value>>,
     // Table of names of top-levels globals, so post-execution retrieval
     name_table: BTreeMap<String, NameTableEntry>,
     // The tail expression of the top-level. Often irrelevant, but it's available.
@@ -213,6 +221,7 @@ impl ProgramResult {
         self.name_table
             .get(name)
             .and_then(|nte| self.slots.get(nte.slot))
+            .and_then(|o| o.as_ref())
     }
 
     /// Get all values exported by the script.
@@ -224,6 +233,7 @@ impl ProgramResult {
                     (self
                         .slots
                         .get(nte.slot)
+                        .and_then(|o| o.as_ref())
                         .expect("IMPOSSIBLE: exported slot unfilled after execution")),
                 ))
             } else {
@@ -269,7 +279,10 @@ impl Vm {
     /// which should be done with care.
     /// Returns true if the script may use the binding, or false if it does not.
     pub fn set_global(&mut self, name: &str, value: Value) -> bool {
-        let base_frame = self.stack_frames.first_mut().expect("IMPOSSIBLE: Vm lacking base stack frame");
+        let base_frame = self
+            .stack_frames
+            .first_mut()
+            .expect("IMPOSSIBLE: Vm lacking base stack frame");
         let Some(nte) = base_frame.this_fn.name_table.get(name) else {
             return false;
         };
@@ -279,9 +292,169 @@ impl Vm {
         true
     }
 
+    fn this_frame(&self) -> &StackFrame {
+        self.stack_frames
+            .last()
+            .expect("IMPOSSIBLE: Vm has no stack frame")
+    }
+
+    fn this_frame_mut(&mut self) -> &mut StackFrame {
+        self.stack_frames
+            .last_mut()
+            .expect("IMPOSSIBLE: Vm has no stack frame")
+    }
+
     /// Execute this script.
     /// Any script errors not handled by the script itself are surfaced in the Err case.
     pub fn run(mut self) -> Result<ProgramResult, FrostError> {
-        todo!()
+        let mut pc: usize = 0;
+
+        while let Some(&op) = self.this_frame().this_fn.code.get(pc) {
+            match op {
+                Bytecode::PushNull => {
+                    self.stack.push(Value::Null);
+                }
+                Bytecode::PushTrue => {
+                    self.stack.push(Value::Bool(true));
+                }
+                Bytecode::PushFalse => {
+                    self.stack.push(Value::Bool(false));
+                }
+                Bytecode::PushInt(i) => self.stack.push(Value::Int(i)),
+                Bytecode::PushFloat(f) => self.stack.push(Value::Float(f)),
+                Bytecode::Pop => {
+                    self.stack.pop();
+                }
+                Bytecode::Dup => self
+                    .stack
+                    .push(self.stack.last().expect("FROST STACK UNDERFLOW").clone()),
+                Bytecode::PeekDown(idx) => {
+                    self.stack.push(self.stack[self.stack.len() - idx].clone());
+                }
+                Bytecode::DefLocal(idx) => {
+                    self.this_frame_mut().local_slots[idx] =
+                        Some(self.stack.pop().expect("FROST STACK UNDERFLOW"));
+                }
+                Bytecode::LoadLocal(idx) => {
+                    self.stack.push(
+                        self.this_frame().local_slots[idx]
+                            .as_ref()
+                            .expect("IMPOSSIBLE: local value is undefined")
+                            .clone(),
+                    );
+                }
+                Bytecode::LoadConst(idx) => {
+                    todo!();
+                }
+                Bytecode::Add => {
+                    todo!();
+                }
+                Bytecode::Sub => {
+                    todo!();
+                }
+                Bytecode::Mul => {
+                    todo!();
+                }
+                Bytecode::Div => {
+                    todo!();
+                }
+                Bytecode::Mod => {
+                    todo!();
+                }
+                Bytecode::Eq => {
+                    todo!();
+                }
+                Bytecode::Neq => {
+                    todo!();
+                }
+                Bytecode::Lt => {
+                    todo!();
+                }
+                Bytecode::Lte => {
+                    todo!();
+                }
+                Bytecode::Gt => {
+                    todo!();
+                }
+                Bytecode::Gte => {
+                    todo!();
+                }
+                Bytecode::Not => {
+                    todo!();
+                }
+                Bytecode::Neg => {
+                    todo!();
+                }
+                Bytecode::Jump(_) => {
+                    todo!();
+                }
+                Bytecode::JumpIfTrue(_) => {
+                    todo!();
+                }
+                Bytecode::JumpIfFalse(_) => {
+                    todo!();
+                }
+                Bytecode::Call(_) => {
+                    todo!();
+                }
+                Bytecode::TailCall(_) => {
+                    todo!();
+                }
+                Bytecode::CreateClosure {
+                    num_captures,
+                    function,
+                } => {
+                    todo!();
+                }
+                Bytecode::MakeArray(_) => {
+                    todo!();
+                }
+                Bytecode::MakeMap(_) => {
+                    todo!();
+                }
+                Bytecode::ExplodeArray => {
+                    todo!();
+                }
+                Bytecode::SoftIndexStructure => {
+                    todo!();
+                }
+                Bytecode::HardIndexStructure => {
+                    todo!();
+                }
+                Bytecode::Map => {
+                    todo!();
+                }
+                Bytecode::Filter => {
+                    todo!();
+                }
+                Bytecode::Reduce => {
+                    todo!();
+                }
+                Bytecode::Foreach => {
+                    todo!();
+                }
+                Bytecode::ReduceWithInit => {
+                    todo!();
+                }
+            };
+            pc += 1;
+        }
+
+        let mut base_frame = self
+            .stack_frames
+            .into_iter()
+            .next()
+            .expect("IMPOSSIBLE: VM has no stack frame");
+
+        let this_fn = base_frame.this_fn;
+
+        Ok(ProgramResult {
+            slots: base_frame.local_slots,
+            name_table: match Arc::try_unwrap(this_fn) {
+                Ok(func) => func.name_table,
+                Err(arc) => arc.name_table.clone(),
+            },
+            tail: self.stack.pop().unwrap_or(Value::Null),
+        })
     }
 }
