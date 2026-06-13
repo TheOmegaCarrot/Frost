@@ -6,4 +6,6 @@ pub use core::{
     Value, from_value, to_value,
 };
 
-pub use vm::{Bytecode, CompiledFunction, NameTableEntry, ProgramResult, Vm};
+pub use vm::{
+    Bytecode, CompiledFunction, GlobalName, GlobalSet, NameTableEntry, ProgramResult, Vm,
+};

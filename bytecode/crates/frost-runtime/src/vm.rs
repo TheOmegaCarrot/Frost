@@ -1,5 +1,8 @@
 #![allow(unused)]
 
+mod globals;
+pub use globals::GlobalName;
+
 use std::num::NonZeroUsize;
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -26,30 +29,31 @@ pub enum Bytecode {
     // PeekDown(1) is just Dup with extra steps.
 
     // Slots
-    DefLocal(usize),  // Move the top of the stack to local slot N
-    LoadLocal(usize), // Copy local slot N to the top of the stack
-    LoadConst(usize), // Copy constant slot N to the top of the stack
+    DefLocal(usize),   // Move the top of the stack to local slot N
+    LoadLocal(usize),  // Copy local slot N to the top of the stack
+    LoadConst(usize),  // Copy constant slot N to the top of the stack
+    LoadGlobal(usize), // Copy global slot N to the top of the stack
 
     // Arithmetic
     // Consume 2 stack items, and the rhs is the top item, result is one item on the stack
     Add,
-    Sub,
-    Mul,
-    Div,
-    Mod,
+    Subtract,
+    Multiply,
+    Divide,
+    Modulus,
 
     // Comparison
     // Same stack conventions as arithmetic
-    Eq,
-    Neq,
-    Lt,
-    Lte,
-    Gt,
-    Gte,
+    CompareEqual,
+    CompareNotEqual,
+    CompareLessThan,
+    CompareLessThanOrEqual,
+    CompareGreaterThan,
+    CompareGreaterThanOrEqual,
 
     // Unary
-    Not,
-    Neg,
+    LogicalNot,
+    Negate,
 
     // Flow
     // Jump ahead N instructions
@@ -78,25 +82,13 @@ pub enum Bytecode {
     // Leaves a single value on the stack
     SoftIndexStructure, // Null on missing
     HardIndexStructure, // Error on missing
-
-    // Iterative
-    // Structure is below function (consumed)
-    // Leaves a single value on the stack
-    Map,
-    Filter,
-    Reduce,
-    Foreach,
-
-    // Structure is below the init, and the function is atop the init (consumed)
-    // Leaves a single value on the stack
-    ReduceWithInit,
 }
 
 // ============================================================
 // VM Types
 // ============================================================
 
-/// VM state
+/// VM state and execution context.
 #[derive(Debug)]
 pub struct Vm {
     // The working stack of the Vm
@@ -112,6 +104,13 @@ pub struct Vm {
     // This allows a native call to directly consume its arguments
     // without a mutable borrow of the stack, and call back into the VM cleanly.
     native_arg_frames: NativeArgFrames,
+    globals: Arc<GlobalSet>,
+}
+
+#[derive(Debug, Clone)]
+pub struct GlobalSet {
+    names: Arc<BTreeMap<String, usize>>,
+    slots: Vec<Value>,
 }
 
 /// Compiled representation of a single function.
@@ -244,15 +243,25 @@ impl ProgramResult {
 }
 
 impl Vm {
-    /// Create a Vm instance from a CompiledFunction.
-    /// The CompiledFunction has many invariants which cannot be thoroughly checked,
+    /// Create a [Vm] instance from a [CompiledFunction].
+    /// The [CompiledFunction] has many invariants which cannot be thoroughly checked,
     /// and the Frost compiler is relied upon for emitting correct code.
-    /// If the provided CompiledFunction is incorrect (indexes a missing slot, pops an empty stack, etc),
+    /// If the provided [CompiledFunction] is incorrect (indexes a missing slot, pops an empty stack, etc),
     /// then execution or other Vm methods may panic.
-    /// Any use of a CompiledFunction which was not emitted by the compiler is unsupported.
+    /// Any use of a [CompiledFunction] which was not emitted by the compiler is unsupported.
     ///
     /// A Vm is pretty cheap to construct, and so a Vm will only run one Frost program.
     pub fn new(program: Arc<CompiledFunction>) -> Result<Vm, FrostError> {
+        Self::new_with_globals(program, GlobalSet::defaults())
+    }
+
+    /// Create a [Vm] with explicit [GlobalSet].
+    /// This function is only useful if you intend to override some default globals,
+    /// otherwise just use [Vm::new].
+    pub fn new_with_globals(
+        program: Arc<CompiledFunction>,
+        globals: Arc<GlobalSet>,
+    ) -> Result<Vm, FrostError> {
         Ok(Self {
             stack: Vec::new(),
             stack_frames: vec![StackFrame {
@@ -265,20 +274,17 @@ impl Vm {
                 next: 0,
                 args: Vec::new(),
             },
+            globals,
         })
-
-        // TODO: fill in global predefined values
     }
 
-    /// Assign a global binding to be used by the script.
+    /// Assign a predefined binding to be used by the script.
     /// Some scripts may use values provided directly by the host application,
     /// and this is the mechanism to provide them.
     /// This method is not necessary if the script only uses bindings that it defines itself or
     /// that are provided by the Frost runtime.
-    /// This allows for overridding existing global bindings, including runtime-provided values,
-    /// which should be done with care.
     /// Returns true if the script may use the binding, or false if it does not.
-    pub fn set_global(&mut self, name: &str, value: Value) -> bool {
+    pub fn set_binding(&mut self, name: &str, value: Value) -> bool {
         let base_frame = self
             .stack_frames
             .first_mut()
@@ -346,43 +352,46 @@ impl Vm {
                 Bytecode::LoadConst(idx) => {
                     todo!();
                 }
+                Bytecode::LoadGlobal(idx) => {
+                    todo!();
+                }
                 Bytecode::Add => {
                     todo!();
                 }
-                Bytecode::Sub => {
+                Bytecode::Subtract => {
                     todo!();
                 }
-                Bytecode::Mul => {
+                Bytecode::Multiply => {
                     todo!();
                 }
-                Bytecode::Div => {
+                Bytecode::Divide => {
                     todo!();
                 }
-                Bytecode::Mod => {
+                Bytecode::Modulus => {
                     todo!();
                 }
-                Bytecode::Eq => {
+                Bytecode::CompareEqual => {
                     todo!();
                 }
-                Bytecode::Neq => {
+                Bytecode::CompareNotEqual => {
                     todo!();
                 }
-                Bytecode::Lt => {
+                Bytecode::CompareLessThan => {
                     todo!();
                 }
-                Bytecode::Lte => {
+                Bytecode::CompareLessThanOrEqual => {
                     todo!();
                 }
-                Bytecode::Gt => {
+                Bytecode::CompareGreaterThan => {
                     todo!();
                 }
-                Bytecode::Gte => {
+                Bytecode::CompareGreaterThanOrEqual => {
                     todo!();
                 }
-                Bytecode::Not => {
+                Bytecode::LogicalNot => {
                     todo!();
                 }
-                Bytecode::Neg => {
+                Bytecode::Negate => {
                     todo!();
                 }
                 Bytecode::Jump(_) => {
@@ -419,21 +428,6 @@ impl Vm {
                     todo!();
                 }
                 Bytecode::HardIndexStructure => {
-                    todo!();
-                }
-                Bytecode::Map => {
-                    todo!();
-                }
-                Bytecode::Filter => {
-                    todo!();
-                }
-                Bytecode::Reduce => {
-                    todo!();
-                }
-                Bytecode::Foreach => {
-                    todo!();
-                }
-                Bytecode::ReduceWithInit => {
                     todo!();
                 }
             };

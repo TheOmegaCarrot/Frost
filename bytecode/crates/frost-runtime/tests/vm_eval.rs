@@ -3,8 +3,8 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use frost_runtime::{CompiledFunction, FrostFloat, NameTableEntry, Value, Vm};
 use frost_runtime::Bytecode;
+use frost_runtime::{CompiledFunction, FrostFloat, NameTableEntry, Value, Vm};
 
 fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
@@ -16,7 +16,10 @@ fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
     })
 }
 
-fn fn_with_locals(code: Vec<Bytecode>, locals: BTreeMap<String, NameTableEntry>) -> Arc<CompiledFunction> {
+fn fn_with_locals(
+    code: Vec<Bytecode>,
+    locals: BTreeMap<String, NameTableEntry>,
+) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
         name: None,
         code,
@@ -82,7 +85,11 @@ fn push_float() {
 
 #[test]
 fn tail_is_top_of_stack() {
-    let result = run(vec![Bytecode::PushInt(1), Bytecode::PushInt(2), Bytecode::PushInt(3)]);
+    let result = run(vec![
+        Bytecode::PushInt(1),
+        Bytecode::PushInt(2),
+        Bytecode::PushInt(3),
+    ]);
     assert_eq!(result.tail(), &Value::Int(3));
 }
 
@@ -92,7 +99,11 @@ fn tail_is_top_of_stack() {
 
 #[test]
 fn pop_discards_top() {
-    let result = run(vec![Bytecode::PushInt(1), Bytecode::PushInt(2), Bytecode::Pop]);
+    let result = run(vec![
+        Bytecode::PushInt(1),
+        Bytecode::PushInt(2),
+        Bytecode::Pop,
+    ]);
     assert_eq!(result.tail(), &Value::Int(1));
 }
 
@@ -164,7 +175,7 @@ fn def_local_moves_off_stack() {
             Bytecode::PushInt(1),
             Bytecode::PushInt(2),
             Bytecode::DefLocal(0), // moves 2 into slot 0
-            // stack now has just 1
+                                   // stack now has just 1
         ],
         locals,
     );
@@ -199,7 +210,7 @@ fn set_global_fills_slot() {
     let locals = BTreeMap::from([slot("greeting", 0, false)]);
     let program = fn_with_locals(vec![Bytecode::LoadLocal(0)], locals);
     let mut vm = Vm::new(program).unwrap();
-    assert!(vm.set_global("greeting", Value::from("hello")));
+    assert!(vm.set_binding("greeting", Value::from("hello")));
     let result = vm.run().unwrap();
     assert_eq!(result.tail().as_str(), Some("hello"));
 }
@@ -208,7 +219,7 @@ fn set_global_fills_slot() {
 fn set_global_unknown_name_returns_false() {
     let program = empty_fn(vec![]);
     let mut vm = Vm::new(program).unwrap();
-    assert!(!vm.set_global("nonexistent", Value::from(1i64)));
+    assert!(!vm.set_binding("nonexistent", Value::from(1i64)));
 }
 
 #[test]
@@ -216,8 +227,8 @@ fn set_global_override() {
     let locals = BTreeMap::from([slot("x", 0, false)]);
     let program = fn_with_locals(vec![Bytecode::LoadLocal(0)], locals);
     let mut vm = Vm::new(program).unwrap();
-    vm.set_global("x", Value::from(1i64));
-    vm.set_global("x", Value::from(2i64)); // override
+    vm.set_binding("x", Value::from(1i64));
+    vm.set_binding("x", Value::from(2i64)); // override
     let result = vm.run().unwrap();
     assert_eq!(result.tail(), &Value::Int(2));
 }
@@ -243,10 +254,7 @@ fn lookup_returns_none_for_unknown_name() {
 #[test]
 fn lookup_distinguishes_null_from_undefined() {
     let locals = BTreeMap::from([slot("defined_null", 0, false), slot("never_set", 1, false)]);
-    let program = fn_with_locals(
-        vec![Bytecode::PushNull, Bytecode::DefLocal(0)],
-        locals,
-    );
+    let program = fn_with_locals(vec![Bytecode::PushNull, Bytecode::DefLocal(0)], locals);
     let result = Vm::new(program).unwrap().run().unwrap();
     assert_eq!(result.lookup("defined_null"), Some(&Value::Null));
     assert_eq!(result.lookup("never_set"), None);
@@ -254,10 +262,7 @@ fn lookup_distinguishes_null_from_undefined() {
 
 #[test]
 fn exports_returns_only_exported() {
-    let locals = BTreeMap::from([
-        slot("public_val", 0, true),
-        slot("private_val", 1, false),
-    ]);
+    let locals = BTreeMap::from([slot("public_val", 0, true), slot("private_val", 1, false)]);
     let program = fn_with_locals(
         vec![
             Bytecode::PushInt(10),
