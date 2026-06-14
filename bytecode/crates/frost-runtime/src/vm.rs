@@ -6,7 +6,7 @@ pub use globals::GlobalName;
 use std::num::NonZeroUsize;
 use std::{collections::BTreeMap, sync::Arc};
 
-use crate::{FrostError, Value, FrostFloat, FrostResult};
+use crate::{FrostError, FrostFloat, FrostResult, Value};
 
 // ============================================================
 // Bytecode
@@ -370,16 +370,10 @@ impl Vm {
                             .clone(),
                     );
                 }
-                Bytecode::LoadConst(idx) => {
-                    self.stack.push(
-                        self.this_frame().this_fn.constants[idx].clone()
-                    )
-                }
-                Bytecode::LoadGlobal(idx) => {
-                    self.stack.push(
-                        self.globals.slots[idx].clone()
-                    )
-                }
+                Bytecode::LoadConst(idx) => self
+                    .stack
+                    .push(self.this_frame().this_fn.constants[idx].clone()),
+                Bytecode::LoadGlobal(idx) => self.stack.push(self.globals.slots[idx].clone()),
                 Bytecode::Add => {
                     todo!();
                 }
@@ -476,5 +470,4 @@ impl Vm {
             tail: self.stack.pop().unwrap_or(Value::Null),
         })
     }
-
 }

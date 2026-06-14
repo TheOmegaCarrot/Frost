@@ -470,7 +470,10 @@ mod errors {
     #[test]
     fn block_body_missing_separator() {
         let err = parse_err("fn -> { 1 2 }");
-        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+        assert!(
+            err.contains("unexpected") || err.contains("Expected"),
+            "error was: {err}"
+        );
     }
 
     // `{a, b}` is neither a map (no `:` values) nor a valid block (a comma is
@@ -478,7 +481,10 @@ mod errors {
     #[test]
     fn comma_separated_bare_identifiers() {
         let err = parse_err("fn -> {a, b}");
-        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+        assert!(
+            err.contains("unexpected") || err.contains("Expected"),
+            "error was: {err}"
+        );
     }
 }
 
@@ -605,7 +611,10 @@ mod abbreviated {
     #[test]
     fn dollar_zero_is_rejected() {
         let err = parse_err("$($0)");
-        assert!(err.contains("Expected") || err.contains("unexpected"), "error was: {err}");
+        assert!(
+            err.contains("Expected") || err.contains("unexpected"),
+            "error was: {err}"
+        );
         let err = parse_err("$0");
         assert!(err.contains("unexpected"), "error was: {err}");
     }
@@ -614,13 +623,19 @@ mod abbreviated {
     #[test]
     fn two_digit_placeholder_is_rejected() {
         let err = parse_err("$($10)");
-        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+        assert!(
+            err.contains("unexpected") || err.contains("Expected"),
+            "error was: {err}"
+        );
     }
 
     // An abbreviated lambda must wrap an expression; `$()` is empty.
     #[test]
     fn empty_abbreviated_is_rejected() {
         let err = parse_err("$()");
-        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+        assert!(
+            err.contains("unexpected") || err.contains("Expected"),
+            "error was: {err}"
+        );
     }
 }

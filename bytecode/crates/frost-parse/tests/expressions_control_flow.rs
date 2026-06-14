@@ -430,7 +430,10 @@ mod do_errors {
     #[test]
     fn missing_separator_between_exprs() {
         let err = parse_err("do { 1 2 }");
-        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+        assert!(
+            err.contains("unexpected") || err.contains("Expected"),
+            "error was: {err}"
+        );
     }
 
     // A trailing binary operator must not silently continue onto the next line
@@ -439,6 +442,9 @@ mod do_errors {
     #[test]
     fn operator_continuation_across_newline() {
         let err = parse_err("do {\n  x +\n  y\n}");
-        assert!(err.contains("unexpected") || err.contains("Expected"), "error was: {err}");
+        assert!(
+            err.contains("unexpected") || err.contains("Expected"),
+            "error was: {err}"
+        );
     }
 }

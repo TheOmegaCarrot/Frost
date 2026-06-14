@@ -363,7 +363,10 @@ mod map_literals {
         assert_eq!(entries.len(), 1);
         assert!(matches!(
             &entries[0].key.kind,
-            ExprKind::UnaryOp { op: UnaryOp::Negate, .. }
+            ExprKind::UnaryOp {
+                op: UnaryOp::Negate,
+                ..
+            }
         ));
     }
 

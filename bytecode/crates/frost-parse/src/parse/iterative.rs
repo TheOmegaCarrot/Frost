@@ -9,11 +9,7 @@ enum IterativeKind {
     Foreach,
 }
 
-fn parse_iterative(
-    ctx: &mut ParseCtx,
-    keyword: Token,
-    kind: IterativeKind,
-) -> ParseResult<Expr> {
+fn parse_iterative(ctx: &mut ParseCtx, keyword: Token, kind: IterativeKind) -> ParseResult<Expr> {
     let start = ctx.expect(keyword)?.span.start;
 
     let structure = parse_expression(ctx)?;
