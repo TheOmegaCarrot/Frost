@@ -151,14 +151,7 @@ struct StackFrame {
 /// The result of executing a CompiledFunction.
 /// Provides access to the top-level defined values and exports of a script.
 #[derive(Debug)]
-pub struct ProgramResult {
-    // The top-level's slots, for post-execution retrieval
-    slots: Vec<Option<Value>>,
-    // Table of names of top-levels globals, so post-execution retrieval
-    name_table: BTreeMap<String, NameTableEntry>,
-    // The tail expression of the top-level. Often irrelevant, but it's available.
-    tail: Value,
-}
+pub struct ProgramResult(Vm);
 
 /// Representation of the arity of a Frost function.
 /// Every function has a certain number of fixed args,
@@ -235,34 +228,76 @@ impl ProgramResult {
     /// Get the value of the tail expression of a script.
     /// Often `null`.
     pub fn tail(&self) -> &Value {
-        &self.tail
+        self.0.stack.last().unwrap_or(&Value::Null)
     }
 
-    /// Look up the value of a variable.
-    /// None indicates the name was not defined.
-    pub fn lookup<'a>(&'a self, name: &str) -> Option<&'a Value> {
-        self.name_table
+    /// Look up the value of an exported binding.
+    /// None indicates the name was not exported.
+    pub fn get_export<'a>(&'a self, name: &str) -> Option<&'a Value> {
+        self.0
+            .base_frame()
+            .this_fn
+            .name_table
             .get(name)
-            .and_then(|nte| self.slots.get(nte.slot))
+            .and_then(|nte| {
+                if nte.exported {
+                    self.0.this_frame().local_slots.get(nte.slot)
+                } else {
+                    None
+                }
+            })
             .and_then(|o| o.as_ref())
     }
 
     /// Get all values exported by the script.
-    pub fn exports(&self) -> impl Iterator<Item = (&String, &Value)> {
-        self.name_table.iter().filter_map(|(name, nte)| {
-            if nte.exported {
-                Some((
-                    name,
-                    (self
-                        .slots
-                        .get(nte.slot)
-                        .and_then(|o| o.as_ref())
-                        .expect("IMPOSSIBLE: exported slot unfilled after execution")),
-                ))
-            } else {
-                None
-            }
-        })
+    pub fn exports(&self) -> impl Iterator<Item = (&str, &Value)> {
+        self.0
+            .base_frame()
+            .this_fn
+            .name_table
+            .iter()
+            .filter_map(|(name, nte)| {
+                if nte.exported {
+                    Some((
+                        name.as_str(),
+                        (self
+                            .0
+                            .this_frame()
+                            .local_slots
+                            .get(nte.slot)
+                            .and_then(|o| o.as_ref())
+                            .expect("IMPOSSIBLE: exported slot unfilled after execution")),
+                    ))
+                } else {
+                    None
+                }
+            })
+    }
+
+    /// Prepare the Vm for another execution.
+    /// Any values bound using set_binding are not preserved.
+    /// Any customized globals are preserved.
+    /// The configured importer is preserved.
+    ///
+    /// The advantage to using this function over creating a new Vm from scratch
+    /// is that this allows the implementation to re-use internal allocations,
+    /// reducing the number of allocation calls.
+    ///
+    /// If you want to optimize for speed and predictable performance characteristics,
+    /// keep re-using a Vm using this method.
+    /// If you'd rather keep total memory consumption at a minimum, even at the cost of performance
+    /// and predictability, just drop the ProgramResult and create a new Vm.
+    pub fn reset(self, program: Arc<CompiledFunction>) -> Vm {
+        let mut vm = self.0;
+        vm.stack.clear();
+        vm.stack_frames.clear();
+        vm.stack_frames.push(StackFrame {
+            base_idx: 0,
+            local_slots: vec![None; program.name_table.len()],
+            return_address: None,
+            this_fn: program,
+        });
+        vm
     }
 }
 
@@ -325,11 +360,24 @@ impl Vm {
             .expect("IMPOSSIBLE: Vm has no stack frame")
     }
 
+    fn base_frame(&self) -> &StackFrame {
+        self.stack_frames
+            .first()
+            .expect("IMPOSSIBLE: Vm has no stack frame")
+    }
+
     fn this_frame_mut(&mut self) -> &mut StackFrame {
         self.stack_frames
             .last_mut()
             .expect("IMPOSSIBLE: Vm has no stack frame")
     }
+
+    fn base_frame_mut(&mut self) -> &mut StackFrame {
+        self.stack_frames
+            .first_mut()
+            .expect("IMPOSSIBLE: Vm has no stack frame")
+    }
+
 
     /// Execute this script.
     /// Any script errors not handled by the script itself are surfaced in the Err case.
@@ -453,21 +501,6 @@ impl Vm {
             pc += 1;
         }
 
-        let mut base_frame = self
-            .stack_frames
-            .into_iter()
-            .next()
-            .expect("IMPOSSIBLE: VM has no stack frame");
-
-        let this_fn = base_frame.this_fn;
-
-        Ok(ProgramResult {
-            slots: base_frame.local_slots,
-            name_table: match Arc::try_unwrap(this_fn) {
-                Ok(func) => func.name_table,
-                Err(arc) => arc.name_table.clone(),
-            },
-            tail: self.stack.pop().unwrap_or(Value::Null),
-        })
+        Ok(ProgramResult(self))
     }
 }
