@@ -7,6 +7,7 @@ use std::{any::Any, collections::BTreeMap, sync::Arc};
 
 pub use crate::core::error::FrostError;
 pub use crate::core::types::float::FrostFloat;
+pub use crate::vm::NativeFunction;
 
 /// The fundamental runtime value type of Frost.
 ///
@@ -31,12 +32,11 @@ pub enum Value {
     /// An ordered, immutable key-value mapping.
     Map(FrostMap),
     /// A native-backed function
-    NativeFunction(FrostNativeFunction),
+    NativeFunction(Arc<NativeFunction>),
     /// Interpreter-managed opaque data. Native functions downcast to their concrete type.
     Opaque(FrostOpaque),
 }
 
-type FrostNativeFunction = Arc<dyn NativeFunction>;
 type FrostOpaque = Arc<dyn Any + Send + Sync>;
 
 const _: () = {
@@ -51,14 +51,6 @@ pub enum MapKey {
     Int(i64),
     Float(FrostFloat),
     String(Arc<[u8]>),
-}
-
-/// A callable Frost function: either a user-defined closure or a native builtin.
-pub trait NativeFunction: std::fmt::Debug + Send + Sync {
-    /// Invoke this function with the given arguments.
-    fn call(&self, args: &[Value]) -> Result<Value, FrostError>;
-    /// The display name of this function, used in error messages.
-    fn name(&self) -> &str;
 }
 
 /// Frost's array type. Immutable once created.

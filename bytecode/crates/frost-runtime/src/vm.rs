@@ -6,8 +6,7 @@ pub use globals::GlobalName;
 use std::num::NonZeroUsize;
 use std::{collections::BTreeMap, sync::Arc};
 
-use crate::core::FrostFloat;
-use crate::{FrostError, Value};
+use crate::{FrostError, Value, FrostFloat, FrostResult};
 
 // ============================================================
 // Bytecode
@@ -99,11 +98,11 @@ pub struct Vm {
     // The bottom StackFrame holds globals (runtime populates predefined globals prior to execution).
     stack_frames: Vec<StackFrame>,
     // Used to hold the args of a native function call.
-    // A native call moves its args to the first available frame,
-    // which is then marked unoccupied when that call exits.
-    // This allows a native call to directly consume its arguments
-    // without a mutable borrow of the stack, and call back into the VM cleanly.
-    native_arg_frames: NativeArgFrames,
+    // A native call acquires a Vec from this pool,
+    // moves args from the stack to that Vec (or makes a new one), then clears it and returns it.
+    // This allows for re-use of allocations for native args, while allowing a native call to hold
+    // mutable references to their args AND the Vm separately.
+    native_arg_pool: Vec<Vec<Value>>,
     globals: Arc<GlobalSet>,
 }
 
@@ -137,14 +136,6 @@ pub struct NameTableEntry {
 }
 
 #[derive(Debug)]
-struct NativeArgFrames {
-    // All of the native frames.
-    args: Vec<Vec<Value>>,
-    // Index to the next free frame.
-    next: usize,
-}
-
-#[derive(Debug)]
 struct StackFrame {
     // Absolute stack index of the base of a frame
     base_idx: usize,
@@ -168,6 +159,39 @@ pub struct ProgramResult {
     // The tail expression of the top-level. Often irrelevant, but it's available.
     tail: Value,
 }
+
+/// Representation of the arity of a Frost function.
+/// Every function has a certain number of fixed args,
+/// and may or may not be variadic.
+/// ```frost
+/// fn a, b, c, ...more -> ...
+/// # at least 3
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Arity {
+    Exact(usize),
+    AtLeast(usize),
+}
+
+type NativeFn = dyn Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync;
+
+pub struct NativeFunction {
+    arity: Arity,
+    function: Box<NativeFn>,
+    name: String,
+}
+
+impl std::fmt::Debug for NativeFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NativeFunction")
+            .field("name", &self.name)
+            .field("arity", &self.arity)
+            .finish_non_exhaustive()
+    }
+}
+
+#[derive(Debug)]
+pub struct NativeCtx<'a>(&'a mut Vm);
 
 // ============================================================
 // Calling Convention
@@ -270,10 +294,7 @@ impl Vm {
                 return_address: None,
                 this_fn: program,
             }],
-            native_arg_frames: NativeArgFrames {
-                next: 0,
-                args: Vec::new(),
-            },
+            native_arg_pool: Vec::new(),
             globals,
         })
     }
@@ -350,10 +371,14 @@ impl Vm {
                     );
                 }
                 Bytecode::LoadConst(idx) => {
-                    todo!();
+                    self.stack.push(
+                        self.this_frame().this_fn.constants[idx].clone()
+                    )
                 }
                 Bytecode::LoadGlobal(idx) => {
-                    todo!();
+                    self.stack.push(
+                        self.globals.slots[idx].clone()
+                    )
                 }
                 Bytecode::Add => {
                     todo!();
@@ -394,19 +419,19 @@ impl Vm {
                 Bytecode::Negate => {
                     todo!();
                 }
-                Bytecode::Jump(_) => {
+                Bytecode::Jump(n) => {
                     todo!();
                 }
-                Bytecode::JumpIfTrue(_) => {
+                Bytecode::JumpIfTrue(n) => {
                     todo!();
                 }
-                Bytecode::JumpIfFalse(_) => {
+                Bytecode::JumpIfFalse(n) => {
                     todo!();
                 }
-                Bytecode::Call(_) => {
+                Bytecode::Call(arity) => {
                     todo!();
                 }
-                Bytecode::TailCall(_) => {
+                Bytecode::TailCall(arity) => {
                     todo!();
                 }
                 Bytecode::CreateClosure {
@@ -415,10 +440,10 @@ impl Vm {
                 } => {
                     todo!();
                 }
-                Bytecode::MakeArray(_) => {
+                Bytecode::MakeArray(num_elems) => {
                     todo!();
                 }
-                Bytecode::MakeMap(_) => {
+                Bytecode::MakeMap(num_pairs) => {
                     todo!();
                 }
                 Bytecode::ExplodeArray => {
@@ -451,4 +476,5 @@ impl Vm {
             tail: self.stack.pop().unwrap_or(Value::Null),
         })
     }
+
 }

@@ -152,7 +152,9 @@ impl<'a> Walker<'a> {
     pub fn expr(&mut self, e: &Expr) -> Node {
         let span = e.span;
         match &e.kind {
-            ExprKind::Literal(lit) => self.ranged(format!("Literal {}", literal_label(lit)), span, vec![]),
+            ExprKind::Literal(lit) => {
+                self.ranged(format!("Literal {}", literal_label(lit)), span, vec![])
+            }
             ExprKind::NameLookup(name) => self.ranged(format!("NameLookup {name}"), span, vec![]),
             ExprKind::BinOp { left, op, right } => {
                 let l = self.expr(left);
@@ -163,7 +165,11 @@ impl<'a> Walker<'a> {
             }
             ExprKind::UnaryOp { op, operand } => {
                 let child = self.expr(operand);
-                self.ranged(format!("UnaryOp {}", unaryop_symbol(*op)), span, vec![child])
+                self.ranged(
+                    format!("UnaryOp {}", unaryop_symbol(*op)),
+                    span,
+                    vec![child],
+                )
             }
             ExprKind::If {
                 condition,
@@ -226,7 +232,8 @@ impl<'a> Walker<'a> {
                 for seg in segments {
                     match seg {
                         FormatSegment::Literal(bytes) => {
-                            children.push(self.no_range(format!("FmtLiteral {}", bytes_label(bytes))));
+                            children
+                                .push(self.no_range(format!("FmtLiteral {}", bytes_label(bytes))));
                         }
                         FormatSegment::Interpolation(expr) => {
                             let inner = self.expr(expr);
