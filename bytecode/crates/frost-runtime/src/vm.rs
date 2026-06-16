@@ -166,7 +166,10 @@ pub enum Arity {
     AtLeast(usize),
 }
 
-type NativeFn = dyn Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync;
+#[derive(Debug)]
+pub struct NativeCtx<'a>(pub(crate) &'a mut Vm);
+
+type NativeFn = dyn Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static;
 
 pub struct NativeFunction {
     arity: Arity,
@@ -183,8 +186,33 @@ impl std::fmt::Debug for NativeFunction {
     }
 }
 
-#[derive(Debug)]
-pub struct NativeCtx<'a>(&'a mut Vm);
+impl NativeFunction {
+    pub fn new<F>(function: F, name: &str, arity: Arity) -> Self
+    where
+        F: Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static,
+    {
+        Self {
+            arity,
+            name: name.to_owned(),
+            function: Box::new(function),
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+
+    pub fn arity(&self) -> Arity {
+        self.arity
+    }
+}
+
+pub struct Closure {
+    function: Arc<CompiledFunction>,
+
+    // If nonempty, occupy slots 0..n
+    captures: Vec<Value>,
+}
 
 // ============================================================
 // Calling Convention
@@ -378,7 +406,6 @@ impl Vm {
             .expect("IMPOSSIBLE: Vm has no stack frame")
     }
 
-
     /// Execute this script.
     /// Any script errors not handled by the script itself are surfaced in the Err case.
     pub fn run(mut self) -> Result<ProgramResult, FrostError> {
@@ -502,5 +529,32 @@ impl Vm {
         }
 
         Ok(ProgramResult(self))
+    }
+
+    fn invoke_native(&self, function: &NativeFunction, args: &mut [Value]) -> FrostResult {
+        match function.arity {
+            Arity::Exact(req_arity) => {
+                if req_arity != args.len() {
+                    return Err(FrostError::new(format!(
+                        "Function {} requires {} arguments, but got {}",
+                        function.name,
+                        req_arity,
+                        args.len()
+                    )));
+                }
+            }
+            Arity::AtLeast(min_arity) => {
+                if min_arity < args.len() {
+                    return Err(FrostError::new(format!(
+                        "Function {} requires at least {} arguments, but got {}",
+                        function.name,
+                        min_arity,
+                        args.len()
+                    )));
+                }
+            }
+        }
+
+        todo!()
     }
 }
