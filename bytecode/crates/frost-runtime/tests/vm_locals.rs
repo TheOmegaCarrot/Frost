@@ -1,8 +1,6 @@
 mod common;
 
-use std::collections::BTreeMap;
-
-use common::{empty_fn, fn_with_locals, slot};
+use common::{empty_fn, entry, fn_with_locals};
 use frost_runtime::{Bytecode, Value, Vm};
 
 // ============================================================
@@ -11,7 +9,7 @@ use frost_runtime::{Bytecode, Value, Vm};
 
 #[test]
 fn def_local_stores_and_load_local_retrieves() {
-    let locals = BTreeMap::from([slot("x", 0, false)]);
+    let locals = vec![entry("x", false)];
     let program = fn_with_locals(
         vec![
             Bytecode::PushInt(99),
@@ -27,7 +25,7 @@ fn def_local_stores_and_load_local_retrieves() {
 #[test]
 fn def_local_moves_off_stack() {
     // After DefLocal, the value is no longer on the stack
-    let locals = BTreeMap::from([slot("x", 0, false)]);
+    let locals = vec![entry("x", false)];
     let program = fn_with_locals(
         vec![
             Bytecode::PushInt(1),
@@ -44,7 +42,7 @@ fn def_local_moves_off_stack() {
 #[test]
 fn load_local_copies_not_moves() {
     // LoadLocal should copy (clone) -- loading twice works
-    let locals = BTreeMap::from([slot("x", 0, false)]);
+    let locals = vec![entry("x", false)];
     let program = fn_with_locals(
         vec![
             Bytecode::PushInt(5),
@@ -65,7 +63,7 @@ fn load_local_copies_not_moves() {
 
 #[test]
 fn set_binding_fills_slot() {
-    let locals = BTreeMap::from([slot("greeting", 0, false)]);
+    let locals = vec![entry("greeting", false)];
     let program = fn_with_locals(vec![Bytecode::LoadLocal(0)], locals);
     let mut vm = Vm::new(program).unwrap();
     assert!(vm.set_binding("greeting", Value::from("hello")));
@@ -82,7 +80,7 @@ fn set_binding_unknown_name_returns_false() {
 
 #[test]
 fn set_binding_override() {
-    let locals = BTreeMap::from([slot("x", 0, false)]);
+    let locals = vec![entry("x", false)];
     let program = fn_with_locals(vec![Bytecode::LoadLocal(0)], locals);
     let mut vm = Vm::new(program).unwrap();
     vm.set_binding("x", Value::from(1i64));

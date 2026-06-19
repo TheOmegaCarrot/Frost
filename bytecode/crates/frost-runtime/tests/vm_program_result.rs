@@ -1,8 +1,6 @@
 mod common;
 
-use std::collections::BTreeMap;
-
-use common::{empty_fn, fn_with_locals, run, slot};
+use common::{empty_fn, entry, fn_with_locals, run};
 use frost_runtime::{Bytecode, Value, Vm};
 
 // ============================================================
@@ -11,7 +9,7 @@ use frost_runtime::{Bytecode, Value, Vm};
 
 #[test]
 fn get_export_finds_exported_value() {
-    let locals = BTreeMap::from([slot("x", 0, true)]);
+    let locals = vec![entry("x", true)];
     let program = fn_with_locals(vec![Bytecode::PushInt(42), Bytecode::DefLocal(0)], locals);
     let result = Vm::new(program).unwrap().run().unwrap();
     assert_eq!(result.get_export("x"), Some(&Value::Int(42)));
@@ -27,7 +25,7 @@ fn get_export_returns_none_for_unknown_name() {
 fn get_export_hides_non_exported_local() {
     // A defined but non-exported top-level local is invisible to get_export:
     // only `export`ed names are part of a program's result surface.
-    let locals = BTreeMap::from([slot("secret", 0, false)]);
+    let locals = vec![entry("secret", false)];
     let program = fn_with_locals(vec![Bytecode::PushInt(7), Bytecode::DefLocal(0)], locals);
     let result = Vm::new(program).unwrap().run().unwrap();
     assert_eq!(result.get_export("secret"), None);
@@ -37,7 +35,7 @@ fn get_export_hides_non_exported_local() {
 fn get_export_returns_exported_null_as_some() {
     // An exported binding defined as null reads back as Some(Null), not None --
     // a present null is distinct from an absent name.
-    let locals = BTreeMap::from([slot("maybe", 0, true)]);
+    let locals = vec![entry("maybe", true)];
     let program = fn_with_locals(vec![Bytecode::PushNull, Bytecode::DefLocal(0)], locals);
     let result = Vm::new(program).unwrap().run().unwrap();
     assert_eq!(result.get_export("maybe"), Some(&Value::Null));
@@ -45,7 +43,7 @@ fn get_export_returns_exported_null_as_some() {
 
 #[test]
 fn exports_returns_only_exported() {
-    let locals = BTreeMap::from([slot("public_val", 0, true), slot("private_val", 1, false)]);
+    let locals = vec![entry("public_val", true), entry("private_val", false)];
     let program = fn_with_locals(
         vec![
             Bytecode::PushInt(10),
@@ -83,14 +81,14 @@ fn reset_recycles_into_a_runnable_vm() {
 #[test]
 fn reset_does_not_leak_bindings() {
     // Program A loads an exported `x` that the host binds to 100.
-    let a_locals = BTreeMap::from([slot("x", 0, true)]);
+    let a_locals = vec![entry("x", true)];
     let mut vm = Vm::new(fn_with_locals(vec![Bytecode::LoadLocal(0)], a_locals)).unwrap();
     assert!(vm.set_binding("x", Value::from(100i64)));
     let result_a = vm.run().unwrap();
     assert_eq!(result_a.get_export("x"), Some(&Value::Int(100)));
 
     // Recycle into Program B, which has the same slot `x` but is never bound.
-    let b_locals = BTreeMap::from([slot("x", 0, true)]);
+    let b_locals = vec![entry("x", true)];
     let result_b = result_a
         .reset(fn_with_locals(vec![], b_locals))
         .run()

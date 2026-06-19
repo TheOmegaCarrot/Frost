@@ -1,10 +1,9 @@
 #![allow(unused)]
 
 mod globals;
-pub use globals::GlobalName;
 
 use std::num::NonZeroUsize;
-use std::{collections::BTreeMap, sync::Arc};
+use std::sync::Arc;
 
 use crate::{FrostError, FrostFloat, FrostResult, Value};
 
@@ -107,10 +106,7 @@ pub struct Vm {
 }
 
 #[derive(Debug, Clone)]
-pub struct GlobalSet {
-    names: Arc<BTreeMap<String, usize>>,
-    slots: Vec<Value>,
-}
+pub struct GlobalSet(Vec<Value>);
 
 /// Compiled representation of a single function.
 /// A script's top-level is also a function.
@@ -126,12 +122,12 @@ pub struct CompiledFunction {
     pub constants: Vec<Value>,
     // Table so that locals can be looked up by name at runtime,
     // or their slot given a name by an error.
-    pub name_table: BTreeMap<String, NameTableEntry>,
+    pub name_table: Vec<NameEntry>,
 }
 
 #[derive(Debug, Clone)]
-pub struct NameTableEntry {
-    pub slot: usize,
+pub struct NameEntry {
+    pub name: String,
     pub exported: bool,
 }
 
@@ -262,43 +258,32 @@ impl ProgramResult {
     /// Look up the value of an exported binding.
     /// None indicates the name was not exported.
     pub fn get_export<'a>(&'a self, name: &str) -> Option<&'a Value> {
-        self.0
-            .base_frame()
-            .this_fn
+        let base = self.0.base_frame();
+        // There cannot be duplicate names that are both exported.
+        // Exports can only be defined at the top-level in an `export def`,
+        // and the compiler must reject any duplicate bindings.
+        base.this_fn
             .name_table
-            .get(name)
-            .and_then(|nte| {
-                if nte.exported {
-                    self.0.this_frame().local_slots.get(nte.slot)
-                } else {
-                    None
-                }
-            })
-            .and_then(|o| o.as_ref())
+            .iter()
+            .zip(&base.local_slots)
+            .find(|(entry, _)| entry.exported && entry.name == name)
+            .and_then(|(_, slot)| slot.as_ref())
     }
 
     /// Get all values exported by the script.
     pub fn exports(&self) -> impl Iterator<Item = (&str, &Value)> {
-        self.0
-            .base_frame()
-            .this_fn
+        let base = self.0.base_frame();
+        base.this_fn
             .name_table
             .iter()
-            .filter_map(|(name, nte)| {
-                if nte.exported {
-                    Some((
-                        name.as_str(),
-                        (self
-                            .0
-                            .this_frame()
-                            .local_slots
-                            .get(nte.slot)
-                            .and_then(|o| o.as_ref())
-                            .expect("IMPOSSIBLE: exported slot unfilled after execution")),
-                    ))
-                } else {
-                    None
-                }
+            .zip(&base.local_slots)
+            .filter(|(entry, _)| entry.exported)
+            .map(|(entry, slot)| {
+                (
+                    entry.name.as_str(),
+                    slot.as_ref()
+                        .expect("IMPOSSIBLE: exported slot unfilled after execution"),
+                )
             })
     }
 
@@ -373,11 +358,16 @@ impl Vm {
             .stack_frames
             .first_mut()
             .expect("IMPOSSIBLE: Vm lacking base stack frame");
-        let Some(nte) = base_frame.this_fn.name_table.get(name) else {
+        let Some(slot) = base_frame
+            .this_fn
+            .name_table
+            .iter()
+            .position(|entry| entry.name == name)
+        else {
             return false;
         };
 
-        base_frame.local_slots[nte.slot] = Some(value);
+        base_frame.local_slots[slot] = Some(value);
 
         true
     }
@@ -406,9 +396,7 @@ impl Vm {
             .expect("IMPOSSIBLE: Vm has no stack frame")
     }
 
-    /// Execute this script.
-    /// Any script errors not handled by the script itself are surfaced in the Err case.
-    pub fn run(mut self) -> Result<ProgramResult, FrostError> {
+    fn execute_function(&mut self) -> Result<(), FrostError> {
         let mut pc: usize = 0;
 
         while let Some(&op) = self.this_frame().this_fn.code.get(pc) {
@@ -448,7 +436,7 @@ impl Vm {
                 Bytecode::LoadConst(idx) => self
                     .stack
                     .push(self.this_frame().this_fn.constants[idx].clone()),
-                Bytecode::LoadGlobal(idx) => self.stack.push(self.globals.slots[idx].clone()),
+                Bytecode::LoadGlobal(idx) => self.stack.push(self.globals.get(idx).clone()),
                 Bytecode::Add => {
                     todo!();
                 }
@@ -528,7 +516,16 @@ impl Vm {
             pc += 1;
         }
 
-        Ok(ProgramResult(self))
+        Ok(())
+    }
+
+    /// Execute this script.
+    /// Any script errors not handled by the script itself are surfaced in the Err case.
+    pub fn run(mut self) -> Result<ProgramResult, FrostError> {
+        match self.execute_function() {
+            Ok(_) => Ok(ProgramResult(self)),
+            Err(err) => todo!(),
+        }
     }
 
     fn invoke_native(&self, function: &NativeFunction, args: &mut [Value]) -> FrostResult {

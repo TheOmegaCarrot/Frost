@@ -1,43 +1,30 @@
-use std::collections::BTreeMap;
 use std::sync::{Arc, LazyLock};
 
 use crate::Value;
 
 use super::GlobalSet;
 
+// Sync-only macro: names and slot initializers expand from the same `name => init`
+// list in the same order, so `names[i]` and `slots[i]` cannot drift apart.
 macro_rules! define_globals {
-    ($($variant:ident = $name:literal => $init:expr),* $(,)?) => {
-        #[derive(Clone, Copy, Debug)]
-        pub enum GlobalName {
-            $($variant),*
-        }
-
-        impl GlobalName {
-            pub fn as_str(self) -> &'static str {
-                match self { $( Self::$variant => $name, )* }
-            }
-        }
-
+    ($($name:literal => $init:expr),* $(,)?) => {
         impl GlobalSet {
-            const GLOBAL_COUNT: usize = [$(stringify!($variant)),*].len();
+            /// Names of all predefined globals.
+            /// Every GlobalSet shares the same names, so it is not a
+            /// field. The single source of truth for global ordering.
+            const NAMES: &'static [&'static str] = &[ $($name),* ];
 
             fn build_defaults() -> Self {
-                let names: BTreeMap<String, usize> = [
-                    $( ($name.to_string(), GlobalName::$variant as usize), )*
-                ].into_iter().collect();
-
-                let mut slots = vec![Value::Null; Self::GLOBAL_COUNT];
-                $( slots[GlobalName::$variant as usize] = $init; )*
-
-                GlobalSet { names: Arc::new(names), slots }
+                GlobalSet ( vec![ $($init),* ] )
             }
         }
-    }
+    };
 }
 
 define_globals! {
-    Print     = "print"     => Value::Null, // TODO: native print
-    Transform = "transform" => Value::Null, // TODO: native transform
+     // TODO: actually implement these
+    "print"     => Value::Null,
+    "transform" => Value::Null,
 }
 
 static DEFAULT_GLOBALS: LazyLock<Arc<GlobalSet>> =
@@ -48,21 +35,23 @@ impl GlobalSet {
         DEFAULT_GLOBALS.clone()
     }
 
-    /// Override an existing global by name. The name must be a known global
-    /// (a variant of `GlobalName`); new globals cannot be added.
-    pub fn with_override(mut self: Arc<Self>, name: GlobalName, value: Value) -> Arc<GlobalSet> {
-        Arc::make_mut(&mut self).slots[name as usize] = value;
-        self
+    /// Override an existing global by name. Returns the set on
+    /// success, or `None` if `name` is not a known global, the set is closed,
+    /// so new globals cannot be added.
+    pub fn with_override(mut self: Arc<Self>, name: &str, value: Value) -> Option<Arc<GlobalSet>> {
+        let idx = self.resolve(name)?;
+        Arc::make_mut(&mut self).0[idx] = value;
+        Some(self)
     }
 
-    /// Look up a global's slot index by name. Used by the compiler to resolve
-    /// global references to LoadGlobal indices.
-    pub fn resolve(&self, name: &str) -> Option<usize> {
-        self.names.get(name).copied()
+    /// Look up a global's slot index by name.
+    fn resolve(&self, name: &str) -> Option<usize> {
+        // Yes, this is a linear scan, but this should be a pretty cold path.
+        Self::NAMES.iter().position(|&n| n == name)
     }
 
     /// Get the value at a global slot index. Used by the VM during execution.
     pub fn get(&self, idx: usize) -> &Value {
-        &self.slots[idx]
+        &self.0[idx]
     }
 }
