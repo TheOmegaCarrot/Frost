@@ -58,11 +58,7 @@ fn call_leaves_exactly_one_value() {
     // exactly one result on top; popping it reveals the sentinel -- proving
     // `( f a.. -- r )` and that the caller resumed to run the trailing Pop.
     let callee = func(
-        vec![
-            Bytecode::DefLocal(0),
-            Bytecode::Pop,
-            Bytecode::LoadLocal(0),
-        ],
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
         Arity::Exact(1),
         vec![entry("x", false)],
         vec![],
@@ -90,11 +86,7 @@ fn call_leaves_exactly_one_value() {
 fn caller_resumes_after_call() {
     // The instruction after Call only runs if control returned to the caller.
     let callee = func(
-        vec![
-            Bytecode::DefLocal(0),
-            Bytecode::Pop,
-            Bytecode::LoadLocal(0),
-        ],
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
         Arity::Exact(1),
         vec![entry("x", false)],
         vec![],
@@ -196,11 +188,7 @@ fn call_variadic_collapses_rest() {
 fn call_variadic_empty_rest() {
     // fn ...rest -> rest, called with no args -> rest is the empty array.
     let callee = func(
-        vec![
-            Bytecode::DefLocal(0),
-            Bytecode::Pop,
-            Bytecode::LoadLocal(0),
-        ],
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
         Arity::AtLeast(0),
         vec![entry("rest", false)],
         vec![],
@@ -392,4 +380,201 @@ fn call_closure_captures_in_order() {
     );
     let result = run_fn(program);
     assert_eq!(result.tail(), &Value::Int(1));
+}
+
+// ============================================================
+// Variadic + captures (full slot math: captures, then fixed, then rest)
+// ============================================================
+
+#[test]
+fn call_variadic_closure_with_capture() {
+    // fn x, ...rest -> rest, with one capture.
+    // Slots: 0 = capture, 1 = x (fixed), 2 = rest. The vararg collapse index
+    // (base + 1 + fixed_argc) must ignore the capture (captures are not on the
+    // stack and not counted in arity) -- otherwise `rest` comes out wrong.
+    let callee = func(
+        vec![
+            Bytecode::DefLocal(2), // rest array (top) -> slot 2
+            Bytecode::DefLocal(1), // x -> slot 1
+            Bytecode::Pop,         // pop the function value
+            Bytecode::LoadLocal(2), // return rest
+        ],
+        Arity::AtLeast(1),
+        vec![entry("c", false), entry("x", false), entry("rest", false)],
+        vec![],
+    );
+    let program = func(
+        vec![
+            Bytecode::PushInt(99), // captured
+            Bytecode::CreateClosure {
+                num_captures: 1,
+                function: 0,
+            },
+            Bytecode::PushInt(10), // x
+            Bytecode::PushInt(20), // rest[0]
+            Bytecode::PushInt(30), // rest[1]
+            Bytecode::Call(3),
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![callee],
+    );
+    let result = run_fn(program);
+    let expected = Value::Array(FrostArray::from(vec![Value::Int(20), Value::Int(30)]));
+    assert_eq!(result.tail(), &expected);
+}
+
+// ============================================================
+// Reuse, composition, deeper nesting
+// ============================================================
+
+#[test]
+fn call_closure_reused_via_dup() {
+    // Dup a closure and call it twice. `Call` clones the function value out, so
+    // the first call must not destroy the shared `Arc` the second call uses.
+    let callee = func(
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
+        Arity::Exact(1),
+        vec![entry("x", false)],
+        vec![],
+    );
+    let program = func(
+        vec![
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 0,
+            },
+            Bytecode::Dup,
+            Bytecode::PushInt(5),
+            Bytecode::Call(1), // call the dup with 5
+            Bytecode::Pop,     // discard 5
+            Bytecode::PushInt(6),
+            Bytecode::Call(1), // call the original with 6
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![callee],
+    );
+    let result = run_fn(program);
+    assert_eq!(result.tail(), &Value::Int(6));
+}
+
+#[test]
+fn call_closure_ignores_unused_param() {
+    // fn x -> 42 : the prelude must still consume the arg even though the body
+    // never reads it, or a stray value would corrupt the result slot.
+    let callee = func(
+        vec![
+            Bytecode::DefLocal(0), // consume the arg (unused)
+            Bytecode::Pop,
+            Bytecode::PushInt(42),
+        ],
+        Arity::Exact(1),
+        vec![entry("x", false)],
+        vec![],
+    );
+    let program = func(
+        vec![
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 0,
+            },
+            Bytecode::PushInt(5),
+            Bytecode::Call(1),
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![callee],
+    );
+    let result = run_fn(program);
+    assert_eq!(result.tail(), &Value::Int(42));
+}
+
+#[test]
+fn call_result_feeds_next_call() {
+    // f(g(5)) where g = (fn x -> 42) and f = identity. The 42 returned by g must
+    // flow in as f's argument, so the final result is 42 (not 5).
+    let f = func(
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
+        Arity::Exact(1),
+        vec![entry("x", false)],
+        vec![],
+    );
+    let g = func(
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::PushInt(42)],
+        Arity::Exact(1),
+        vec![entry("x", false)],
+        vec![],
+    );
+    let program = func(
+        vec![
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 0,
+            }, // f (child 0)
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 1,
+            }, // g (child 1)
+            Bytecode::PushInt(5),
+            Bytecode::Call(1), // g(5) -> 42
+            Bytecode::Call(1), // f(42) -> 42
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![f, g],
+    );
+    let result = run_fn(program);
+    assert_eq!(result.tail(), &Value::Int(42));
+}
+
+#[test]
+fn call_deeply_nested_closures() {
+    // top -> A -> B -> C, C returns 7. Trampoline must floor correctly at depth 3.
+    let c = func(
+        vec![Bytecode::Pop, Bytecode::PushInt(7)],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    );
+    let b = func(
+        vec![
+            Bytecode::Pop,
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 0,
+            },
+            Bytecode::Call(0),
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![c],
+    );
+    let a = func(
+        vec![
+            Bytecode::Pop,
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 0,
+            },
+            Bytecode::Call(0),
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![b],
+    );
+    let program = func(
+        vec![
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 0,
+            },
+            Bytecode::Call(0),
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![a],
+    );
+    let result = run_fn(program);
+    assert_eq!(result.tail(), &Value::Int(7));
 }

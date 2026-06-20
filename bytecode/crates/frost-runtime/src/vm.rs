@@ -112,8 +112,8 @@ pub struct GlobalSet(Vec<Value>);
 /// A script's top-level is also a function.
 #[derive(Clone, Debug)]
 pub struct CompiledFunction {
-    // Functions may or may not have a name
-    pub name: Option<String>,
+    // Functions always have a name
+    pub name: String,
     pub code: Vec<Bytecode>,
     // Functions which are defined in this function's body
     pub child_fns: Vec<Arc<CompiledFunction>>,
@@ -558,23 +558,11 @@ impl Vm {
                                     Err(FrostError::new(match arity {
                                         Arity::Exact(n) => format!(
                                             "Function {} expects {} arguments, but was called with {}",
-                                            closure
-                                                .function
-                                                .name
-                                                .clone()
-                                                .unwrap_or("unknown".to_owned()),
-                                            n,
-                                            argc
+                                            closure.function.name, n, argc
                                         ),
                                         Arity::AtLeast(n) => format!(
                                             "Function {} expects at least {} arguments, but was called with {}",
-                                            closure
-                                                .function
-                                                .name
-                                                .clone()
-                                                .unwrap_or("unknown".to_owned()),
-                                            n,
-                                            argc
+                                            closure.function.name, n, argc
                                         ),
                                     }))
                                 }
@@ -640,7 +628,10 @@ impl Vm {
                 panic!("IMPOSSIBLE: function execution completed through native frame");
             };
 
-            pc = frame.return_address.expect("IMPOSSIBLE: Callee lacks return address").get();
+            pc = frame
+                .return_address
+                .expect("IMPOSSIBLE: Callee lacks return address")
+                .get();
         }
     }
 

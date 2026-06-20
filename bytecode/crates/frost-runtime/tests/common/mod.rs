@@ -13,7 +13,7 @@ use frost_runtime::{Arity, Bytecode, CompiledFunction, NameEntry, ProgramResult,
 /// Arity `Exact(0)` -- suitable for a top-level / thunk.
 pub fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
-        name: None,
+        name: "<test>".to_string(),
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -26,7 +26,7 @@ pub fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
 /// position in `names` is its slot index. Arity `Exact(0)`.
 pub fn fn_with_locals(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
-        name: None,
+        name: "<test>".to_string(),
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
@@ -45,7 +45,7 @@ pub fn func(
     child_fns: Vec<Arc<CompiledFunction>>,
 ) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
-        name: None,
+        name: "<test>".to_string(),
         code,
         child_fns,
         constants: Vec::new(),
