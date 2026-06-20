@@ -578,7 +578,79 @@ impl Vm {
                         }
                     }
                     Bytecode::TailCall(argc) => {
-                        todo!();
+                        let base = self.stack.len() - (argc + 1);
+                        let function = self.stack[base].clone();
+
+                        let res = match function {
+                            Value::NativeFunction(native_fn) => self.native_call(&native_fn, argc),
+                            Value::Closure(closure) => {
+                                let arity = closure.function.arity;
+                                let arity_ok = match arity {
+                                    Arity::Exact(n) => argc == n,
+                                    Arity::AtLeast(n) => argc >= n,
+                                };
+
+                                if arity_ok {
+                                    let StackFrame::VmFrame(gone_frame) = self
+                                        .stack_frames
+                                        .pop()
+                                        .expect("IMPOSSIBLE: Vm has no frame")
+                                    else {
+                                        // I have no idea how we could even get here
+                                        panic!("IMPOSSIBLE: Tail call in native frame");
+                                    };
+
+                                    // Reuse the popped frame's slot: identical to Call's setup,
+                                    // but inherit gone_frame's base and return address so the
+                                    // callee returns to F's original caller.
+                                    // This is the TCO: one frame popped, one pushed, net zero.
+                                    self.stack_frames.push(StackFrame::VmFrame(VmFrame {
+                                        base_idx: gone_frame.base_idx,
+                                        local_slots: {
+                                            let mut slots =
+                                                vec![None; closure.function.name_table.len()];
+
+                                            for (i, capture) in closure.captures.iter().enumerate()
+                                            {
+                                                slots[i] = Some(capture.clone());
+                                            }
+
+                                            slots
+                                        },
+                                        return_address: gone_frame.return_address,
+                                        this_fn: closure.function.clone(),
+                                    }));
+
+                                    if let Arity::AtLeast(fixed_argc) = arity {
+                                        let varargs = self
+                                            .stack
+                                            .split_off(gone_frame.base_idx + 1 + fixed_argc);
+                                        self.stack.push(Value::Array(varargs.into()));
+                                    }
+
+                                    pc = 0;
+                                    continue;
+                                } else {
+                                    Err(FrostError::new(match arity {
+                                        Arity::Exact(n) => format!(
+                                            "Function {} expects {} arguments, but was called with {}",
+                                            closure.function.name, n, argc
+                                        ),
+                                        Arity::AtLeast(n) => format!(
+                                            "Function {} expects at least {} arguments, but was called with {}",
+                                            closure.function.name, n, argc
+                                        ),
+                                    }))
+                                }
+                            }
+
+                            _ => Err(FrostError::new(format!(
+                                "Attempt to call value of type {}",
+                                function.type_name()
+                            ))),
+                        };
+
+                        todo!()
                     }
                     Bytecode::CreateClosure {
                         num_captures,
