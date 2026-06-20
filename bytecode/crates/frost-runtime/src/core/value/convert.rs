@@ -120,6 +120,7 @@ impl Value {
             Value::Array(_) => "Array",
             Value::Map(_) => "Map",
             Value::NativeFunction(_) => "Function",
+            Value::Closure(_) => "Function",
             Value::Opaque(_) => "Opaque",
         }
     }

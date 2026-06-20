@@ -418,6 +418,7 @@ impl Serialize for Value {
                 m.end()
             }
             Value::NativeFunction(_) => Err(ser::Error::custom("cannot serialize Function")),
+            Value::Closure(_) => Err(ser::Error::custom("cannot serialize Function")),
             Value::Opaque(_) => Err(ser::Error::custom("cannot serialize Opaque")),
         }
     }

@@ -123,6 +123,8 @@ pub struct CompiledFunction {
     // Table so that locals can be looked up by name at runtime,
     // or their slot given a name by an error.
     pub name_table: Vec<NameEntry>,
+    // Arity of top-level is Exact(0)
+    pub arity: Arity,
 }
 
 #[derive(Debug, Clone)]
@@ -132,7 +134,13 @@ pub struct NameEntry {
 }
 
 #[derive(Debug)]
-struct StackFrame {
+enum StackFrame {
+    NativeFrame,
+    VmFrame(VmFrame),
+}
+
+#[derive(Debug)]
+struct VmFrame {
     // Absolute stack index of the base of a frame
     base_idx: usize,
     // Storage for local variables.
@@ -203,11 +211,22 @@ impl NativeFunction {
     }
 }
 
+#[derive(Debug)]
 pub struct Closure {
     function: Arc<CompiledFunction>,
 
     // If nonempty, occupy slots 0..n
     captures: Vec<Value>,
+}
+
+impl Closure {
+    pub fn inner_fn(&self) -> &CompiledFunction {
+        &self.function
+    }
+
+    pub fn inner_fn_arc(&self) -> Arc<CompiledFunction> {
+        self.function.clone()
+    }
 }
 
 // ============================================================
@@ -304,12 +323,12 @@ impl ProgramResult {
         let mut vm = self.0;
         vm.stack.clear();
         vm.stack_frames.clear();
-        vm.stack_frames.push(StackFrame {
+        vm.stack_frames.push(StackFrame::VmFrame(VmFrame {
             base_idx: 0,
             local_slots: vec![None; program.name_table.len()],
             return_address: None,
             this_fn: program,
-        });
+        }));
         vm
     }
 }
@@ -336,12 +355,12 @@ impl Vm {
     ) -> Result<Vm, FrostError> {
         Ok(Self {
             stack: Vec::new(),
-            stack_frames: vec![StackFrame {
+            stack_frames: vec![StackFrame::VmFrame(VmFrame {
                 base_idx: 0,
                 local_slots: vec![None; program.name_table.len()],
                 return_address: None,
                 this_fn: program,
-            }],
+            })],
             native_arg_pool: Vec::new(),
             globals,
         })
@@ -354,10 +373,8 @@ impl Vm {
     /// that are provided by the Frost runtime.
     /// Returns true if the script may use the binding, or false if it does not.
     pub fn set_binding(&mut self, name: &str, value: Value) -> bool {
-        let base_frame = self
-            .stack_frames
-            .first_mut()
-            .expect("IMPOSSIBLE: Vm lacking base stack frame");
+        let base_frame = self.base_frame_mut();
+
         let Some(slot) = base_frame
             .this_fn
             .name_table
@@ -372,151 +389,259 @@ impl Vm {
         true
     }
 
-    fn this_frame(&self) -> &StackFrame {
-        self.stack_frames
-            .last()
-            .expect("IMPOSSIBLE: Vm has no stack frame")
+    fn this_frame(&self) -> &VmFrame {
+        match (self.stack_frames.last()) {
+            Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
+            Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: current Vm frame is native frame"),
+            None => panic!("IMPOSSIBLE: Vm has no frame"),
+        }
     }
 
-    fn base_frame(&self) -> &StackFrame {
-        self.stack_frames
-            .first()
-            .expect("IMPOSSIBLE: Vm has no stack frame")
+    fn base_frame(&self) -> &VmFrame {
+        match (self.stack_frames.first()) {
+            Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
+            Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: base Vm frame is native frame"),
+            None => panic!("IMPOSSIBLE: Vm has no frame"),
+        }
     }
 
-    fn this_frame_mut(&mut self) -> &mut StackFrame {
-        self.stack_frames
-            .last_mut()
-            .expect("IMPOSSIBLE: Vm has no stack frame")
+    fn this_frame_mut(&mut self) -> &mut VmFrame {
+        match (self.stack_frames.last_mut()) {
+            Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
+            Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: current Vm frame is native frame"),
+            None => panic!("IMPOSSIBLE: Vm has no frame"),
+        }
     }
 
-    fn base_frame_mut(&mut self) -> &mut StackFrame {
-        self.stack_frames
-            .first_mut()
-            .expect("IMPOSSIBLE: Vm has no stack frame")
+    fn base_frame_mut(&mut self) -> &mut VmFrame {
+        match (self.stack_frames.first_mut()) {
+            Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
+            Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: base Vm frame is native frame"),
+            None => panic!("IMPOSSIBLE: Vm has no frame"),
+        }
     }
 
     fn execute_function(&mut self) -> Result<(), FrostError> {
         let mut pc: usize = 0;
+        let floor = self.stack_frames.len(); // 1 for run(),
+        // or more for native -> Vm re-entrancy
 
-        while let Some(&op) = self.this_frame().this_fn.code.get(pc) {
-            match op {
-                Bytecode::PushNull => {
-                    self.stack.push(Value::Null);
-                }
-                Bytecode::PushTrue => {
-                    self.stack.push(Value::Bool(true));
-                }
-                Bytecode::PushFalse => {
-                    self.stack.push(Value::Bool(false));
-                }
-                Bytecode::PushInt(i) => self.stack.push(Value::Int(i)),
-                Bytecode::PushFloat(f) => self.stack.push(Value::Float(f)),
-                Bytecode::Pop => {
-                    self.stack.pop();
-                }
-                Bytecode::Dup => self
-                    .stack
-                    .push(self.stack.last().expect("FROST STACK UNDERFLOW").clone()),
-                Bytecode::PeekDown(idx) => {
-                    self.stack.push(self.stack[self.stack.len() - idx].clone());
-                }
-                Bytecode::DefLocal(idx) => {
-                    self.this_frame_mut().local_slots[idx] =
-                        Some(self.stack.pop().expect("FROST STACK UNDERFLOW"));
-                }
-                Bytecode::LoadLocal(idx) => {
-                    self.stack.push(
-                        self.this_frame().local_slots[idx]
-                            .as_ref()
-                            .expect("IMPOSSIBLE: local value is undefined")
-                            .clone(),
-                    );
-                }
-                Bytecode::LoadConst(idx) => self
-                    .stack
-                    .push(self.this_frame().this_fn.constants[idx].clone()),
-                Bytecode::LoadGlobal(idx) => self.stack.push(self.globals.get(idx).clone()),
-                Bytecode::Add => {
-                    todo!();
-                }
-                Bytecode::Subtract => {
-                    todo!();
-                }
-                Bytecode::Multiply => {
-                    todo!();
-                }
-                Bytecode::Divide => {
-                    todo!();
-                }
-                Bytecode::Modulus => {
-                    todo!();
-                }
-                Bytecode::CompareEqual => {
-                    todo!();
-                }
-                Bytecode::CompareNotEqual => {
-                    todo!();
-                }
-                Bytecode::CompareLessThan => {
-                    todo!();
-                }
-                Bytecode::CompareLessThanOrEqual => {
-                    todo!();
-                }
-                Bytecode::CompareGreaterThan => {
-                    todo!();
-                }
-                Bytecode::CompareGreaterThanOrEqual => {
-                    todo!();
-                }
-                Bytecode::LogicalNot => {
-                    todo!();
-                }
-                Bytecode::Negate => {
-                    todo!();
-                }
-                Bytecode::Jump(n) => {
-                    todo!();
-                }
-                Bytecode::JumpIfTrue(n) => {
-                    todo!();
-                }
-                Bytecode::JumpIfFalse(n) => {
-                    todo!();
-                }
-                Bytecode::Call(arity) => {
-                    todo!();
-                }
-                Bytecode::TailCall(arity) => {
-                    todo!();
-                }
-                Bytecode::CreateClosure {
-                    num_captures,
-                    function,
-                } => {
-                    todo!();
-                }
-                Bytecode::MakeArray(num_elems) => {
-                    todo!();
-                }
-                Bytecode::MakeMap(num_pairs) => {
-                    todo!();
-                }
-                Bytecode::ExplodeArray => {
-                    todo!();
-                }
-                Bytecode::SoftIndexStructure => {
-                    todo!();
-                }
-                Bytecode::HardIndexStructure => {
-                    todo!();
-                }
+        loop {
+            while let Some(&op) = self.this_frame().this_fn.code.get(pc) {
+                match op {
+                    Bytecode::PushNull => {
+                        self.stack.push(Value::Null);
+                    }
+                    Bytecode::PushTrue => {
+                        self.stack.push(Value::Bool(true));
+                    }
+                    Bytecode::PushFalse => {
+                        self.stack.push(Value::Bool(false));
+                    }
+                    Bytecode::PushInt(i) => self.stack.push(Value::Int(i)),
+                    Bytecode::PushFloat(f) => self.stack.push(Value::Float(f)),
+                    Bytecode::Pop => {
+                        self.stack.pop();
+                    }
+                    Bytecode::Dup => self
+                        .stack
+                        .push(self.stack.last().expect("FROST STACK UNDERFLOW").clone()),
+                    Bytecode::PeekDown(idx) => {
+                        self.stack.push(self.stack[self.stack.len() - idx].clone());
+                    }
+                    Bytecode::DefLocal(idx) => {
+                        self.this_frame_mut().local_slots[idx] =
+                            Some(self.stack.pop().expect("FROST STACK UNDERFLOW"));
+                    }
+                    Bytecode::LoadLocal(idx) => {
+                        self.stack.push(
+                            self.this_frame().local_slots[idx]
+                                .as_ref()
+                                .expect("IMPOSSIBLE: local value is undefined")
+                                .clone(),
+                        );
+                    }
+                    Bytecode::LoadConst(idx) => self
+                        .stack
+                        .push(self.this_frame().this_fn.constants[idx].clone()),
+                    Bytecode::LoadGlobal(idx) => self.stack.push(self.globals.get(idx).clone()),
+                    Bytecode::Add => {
+                        todo!();
+                    }
+                    Bytecode::Subtract => {
+                        todo!();
+                    }
+                    Bytecode::Multiply => {
+                        todo!();
+                    }
+                    Bytecode::Divide => {
+                        todo!();
+                    }
+                    Bytecode::Modulus => {
+                        todo!();
+                    }
+                    Bytecode::CompareEqual => {
+                        todo!();
+                    }
+                    Bytecode::CompareNotEqual => {
+                        todo!();
+                    }
+                    Bytecode::CompareLessThan => {
+                        todo!();
+                    }
+                    Bytecode::CompareLessThanOrEqual => {
+                        todo!();
+                    }
+                    Bytecode::CompareGreaterThan => {
+                        todo!();
+                    }
+                    Bytecode::CompareGreaterThanOrEqual => {
+                        todo!();
+                    }
+                    Bytecode::LogicalNot => {
+                        todo!();
+                    }
+                    Bytecode::Negate => {
+                        todo!();
+                    }
+                    Bytecode::Jump(n) => {
+                        todo!();
+                    }
+                    Bytecode::JumpIfTrue(n) => {
+                        todo!();
+                    }
+                    Bytecode::JumpIfFalse(n) => {
+                        todo!();
+                    }
+                    Bytecode::Call(argc) => {
+                        let base = self.stack.len() - (argc + 1);
+                        let function = self.stack[base].clone();
+
+                        let res = match function {
+                            Value::NativeFunction(native_fn) => self.native_call(&native_fn, argc),
+                            Value::Closure(closure) => {
+                                let arity = closure.function.arity;
+                                let arity_ok = match arity {
+                                    Arity::Exact(n) => argc == n,
+                                    Arity::AtLeast(n) => argc >= n,
+                                };
+
+                                if arity_ok {
+                                    self.stack_frames.push(StackFrame::VmFrame(VmFrame {
+                                        base_idx: base,
+                                        local_slots: {
+                                            let mut slots =
+                                                vec![None; closure.function.name_table.len()];
+
+                                            for (i, capture) in closure.captures.iter().enumerate()
+                                            {
+                                                slots[i] = Some(capture.clone());
+                                            }
+
+                                            slots
+                                        },
+                                        return_address: NonZeroUsize::new(pc + 1),
+                                        this_fn: closure.function.clone(),
+                                    }));
+
+                                    if let Arity::AtLeast(fixed_argc) = closure.function.arity {
+                                        let varargs = self.stack.split_off(base + 1 + fixed_argc);
+                                        self.stack.push(Value::Array(varargs.into()));
+                                    }
+
+                                    // next iteration of the big while loop enters the closure, which is
+                                    // responsible for correctly handling the args on the stack, and
+                                    // leaving behind a singular return value
+                                    pc = 0;
+                                    continue;
+                                } else {
+                                    Err(FrostError::new(match arity {
+                                        Arity::Exact(n) => format!(
+                                            "Function {} expects {} arguments, but was called with {}",
+                                            closure
+                                                .function
+                                                .name
+                                                .clone()
+                                                .unwrap_or("unknown".to_owned()),
+                                            n,
+                                            argc
+                                        ),
+                                        Arity::AtLeast(n) => format!(
+                                            "Function {} expects at least {} arguments, but was called with {}",
+                                            closure
+                                                .function
+                                                .name
+                                                .clone()
+                                                .unwrap_or("unknown".to_owned()),
+                                            n,
+                                            argc
+                                        ),
+                                    }))
+                                }
+                            }
+                            _ => Err(FrostError::new(format!(
+                                "Attempt to call value of type {}",
+                                function.type_name()
+                            ))),
+                        };
+
+                        if let Err(err) = res {
+                            todo!()
+                        }
+                    }
+                    Bytecode::TailCall(argc) => {
+                        todo!();
+                    }
+                    Bytecode::CreateClosure {
+                        num_captures,
+                        function,
+                    } => {
+                        let function =
+                            self.this_frame().this_fn.child_fns[function as usize].clone();
+                        let captures = self
+                            .stack
+                            .split_off(self.stack.len() - num_captures as usize);
+
+                        self.stack
+                            .push(Value::Closure(Arc::new(Closure { function, captures })))
+                    }
+                    Bytecode::MakeArray(num_elems) => {
+                        todo!();
+                    }
+                    Bytecode::MakeMap(num_pairs) => {
+                        todo!();
+                    }
+                    Bytecode::ExplodeArray => {
+                        todo!();
+                    }
+                    Bytecode::SoftIndexStructure => {
+                        todo!();
+                    }
+                    Bytecode::HardIndexStructure => {
+                        todo!();
+                    }
+                };
+                pc += 1;
+            }
+
+            if self.stack_frames.len() == floor {
+                // We're done!
+                // Return back to either `run()` or native function re-entrancy handling
+                return Ok(());
+            }
+
+            // Vm function return path
+
+            let StackFrame::VmFrame(frame) = self
+                .stack_frames
+                .pop()
+                .expect("IMPOSSIBLE: Vm has no stack frame")
+            else {
+                panic!("IMPOSSIBLE: function execution completed through native frame");
             };
-            pc += 1;
-        }
 
-        Ok(())
+            pc = frame.return_address.expect("IMPOSSIBLE: Callee lacks return address").get();
+        }
     }
 
     /// Execute this script.
@@ -528,7 +653,13 @@ impl Vm {
         }
     }
 
-    fn invoke_native(&self, function: &NativeFunction, args: &mut [Value]) -> FrostResult {
+    fn native_call(&mut self, function: &NativeFunction, argc: usize) -> Result<(), FrostError> {
+        let mut args = self.native_arg_pool.pop().unwrap_or_default();
+        args.extend(self.stack.drain((self.stack.len() - argc)..));
+
+        // Pop the function off the stack
+        self.stack.pop();
+
         match function.arity {
             Arity::Exact(req_arity) => {
                 if req_arity != args.len() {
@@ -541,7 +672,7 @@ impl Vm {
                 }
             }
             Arity::AtLeast(min_arity) => {
-                if min_arity < args.len() {
+                if args.len() < min_arity {
                     return Err(FrostError::new(format!(
                         "Function {} requires at least {} arguments, but got {}",
                         function.name,
@@ -552,6 +683,7 @@ impl Vm {
             }
         }
 
+        // Perform the call, and leave the result on the stack
         todo!()
     }
 }

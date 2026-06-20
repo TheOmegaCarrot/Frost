@@ -7,7 +7,8 @@ use std::{any::Any, collections::BTreeMap, sync::Arc};
 
 pub use crate::core::error::FrostError;
 pub use crate::core::types::float::FrostFloat;
-pub use crate::vm::NativeFunction;
+use crate::vm::Closure;
+use crate::vm::NativeFunction;
 
 /// The fundamental runtime value type of Frost.
 ///
@@ -31,8 +32,10 @@ pub enum Value {
     Array(FrostArray),
     /// An ordered, immutable key-value mapping.
     Map(FrostMap),
-    /// A native-backed function
+    /// A native-backed function.
     NativeFunction(Arc<NativeFunction>),
+    /// A Frost closure.
+    Closure(Arc<Closure>),
     /// Interpreter-managed opaque data. Native functions downcast to their concrete type.
     Opaque(FrostOpaque),
 }
