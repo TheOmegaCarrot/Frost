@@ -394,9 +394,9 @@ fn call_variadic_closure_with_capture() {
     // stack and not counted in arity) -- otherwise `rest` comes out wrong.
     let callee = func(
         vec![
-            Bytecode::DefLocal(2), // rest array (top) -> slot 2
-            Bytecode::DefLocal(1), // x -> slot 1
-            Bytecode::Pop,         // pop the function value
+            Bytecode::DefLocal(2),  // rest array (top) -> slot 2
+            Bytecode::DefLocal(1),  // x -> slot 1
+            Bytecode::Pop,          // pop the function value
             Bytecode::LoadLocal(2), // return rest
         ],
         Arity::AtLeast(1),
