@@ -2,6 +2,7 @@
 
 mod globals;
 
+use std::debug_assert_matches;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 
@@ -709,15 +710,34 @@ impl Vm {
     }
 
     fn native_call(&mut self, function: &NativeFunction, argc: usize) -> Result<(), FrostError> {
+
+        Self::check_arity(function.arity, argc, &function.name)?;
+
         let mut args = self.native_arg_pool.pop().unwrap_or_default();
         args.extend(self.stack.drain((self.stack.len() - argc)..));
 
         // Pop the function off the stack
         self.stack.pop();
 
-        Self::check_arity(function.arity, argc, &function.name)?;
+        self.stack_frames.push(StackFrame::NativeFrame);
+        let result = (function.function)(NativeCtx(self), &mut args);
+        args.clear();
+        self.native_arg_pool.push(args);
 
-        // Perform the call, and leave the result on the stack
-        todo!()
+        let popped = self.stack_frames.pop();
+
+        debug_assert_matches!(
+            popped,
+            Some(StackFrame::NativeFrame),
+            "native_call must pop the NativeFrame it pushed"
+        );
+
+        match result {
+            Ok(val) => {
+                self.stack.push(val);
+                Ok(())
+            }
+            Err(err) => Err(err),
+        }
     }
 }
