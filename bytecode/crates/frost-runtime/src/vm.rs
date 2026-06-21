@@ -520,51 +520,14 @@ impl Vm {
                         let res = match function {
                             Value::NativeFunction(native_fn) => self.native_call(&native_fn, argc),
                             Value::Closure(closure) => {
-                                let arity = closure.function.arity;
-                                let arity_ok = match arity {
-                                    Arity::Exact(n) => argc == n,
-                                    Arity::AtLeast(n) => argc >= n,
-                                };
-
-                                if arity_ok {
-                                    self.stack_frames.push(StackFrame::VmFrame(VmFrame {
-                                        base_idx: base,
-                                        local_slots: {
-                                            let mut slots =
-                                                vec![None; closure.function.name_table.len()];
-
-                                            for (i, capture) in closure.captures.iter().enumerate()
-                                            {
-                                                slots[i] = Some(capture.clone());
-                                            }
-
-                                            slots
-                                        },
-                                        return_address: NonZeroUsize::new(pc + 1),
-                                        this_fn: closure.function.clone(),
-                                    }));
-
-                                    if let Arity::AtLeast(fixed_argc) = closure.function.arity {
-                                        let varargs = self.stack.split_off(base + 1 + fixed_argc);
-                                        self.stack.push(Value::Array(varargs.into()));
-                                    }
-
-                                    // next iteration of the big while loop enters the closure, which is
-                                    // responsible for correctly handling the args on the stack, and
-                                    // leaving behind a singular return value
+                                if let Err(e) = Self::check_closure_arity(&closure, argc) {
+                                    Err(e)
+                                } else {
+                                    // The next loop iteration enters the closure, whose prelude
+                                    // consumes the args on the stack and leaves one return value
+                                    self.push_closure_frame(&closure, base, NonZeroUsize::new(pc + 1));
                                     pc = 0;
                                     continue;
-                                } else {
-                                    Err(FrostError::new(match arity {
-                                        Arity::Exact(n) => format!(
-                                            "Function {} expects {} arguments, but was called with {}",
-                                            closure.function.name, n, argc
-                                        ),
-                                        Arity::AtLeast(n) => format!(
-                                            "Function {} expects at least {} arguments, but was called with {}",
-                                            closure.function.name, n, argc
-                                        ),
-                                    }))
                                 }
                             }
                             _ => Err(FrostError::new(format!(
@@ -584,63 +547,29 @@ impl Vm {
                         let res = match function {
                             Value::NativeFunction(native_fn) => self.native_call(&native_fn, argc),
                             Value::Closure(closure) => {
-                                let arity = closure.function.arity;
-                                let arity_ok = match arity {
-                                    Arity::Exact(n) => argc == n,
-                                    Arity::AtLeast(n) => argc >= n,
-                                };
-
-                                if arity_ok {
+                                // Check arity BEFORE popping the caller frame, so an arity error
+                                // does not destroy the frame the error path still needs
+                                if let Err(e) = Self::check_closure_arity(&closure, argc) {
+                                    Err(e)
+                                } else {
                                     let StackFrame::VmFrame(gone_frame) = self
                                         .stack_frames
                                         .pop()
                                         .expect("IMPOSSIBLE: Vm has no frame")
                                     else {
-                                        // I have no idea how we could even get here
-                                        panic!("IMPOSSIBLE: Tail call in native frame");
+                                        panic!("IMPOSSIBLE: tail call in native frame");
                                     };
 
-                                    // Reuse the popped frame's slot: identical to Call's setup,
-                                    // but inherit gone_frame's base and return address so the
-                                    // callee returns to F's original caller.
-                                    // This is the TCO: one frame popped, one pushed, net zero.
-                                    self.stack_frames.push(StackFrame::VmFrame(VmFrame {
-                                        base_idx: gone_frame.base_idx,
-                                        local_slots: {
-                                            let mut slots =
-                                                vec![None; closure.function.name_table.len()];
-
-                                            for (i, capture) in closure.captures.iter().enumerate()
-                                            {
-                                                slots[i] = Some(capture.clone());
-                                            }
-
-                                            slots
-                                        },
-                                        return_address: gone_frame.return_address,
-                                        this_fn: closure.function.clone(),
-                                    }));
-
-                                    if let Arity::AtLeast(fixed_argc) = arity {
-                                        let varargs = self
-                                            .stack
-                                            .split_off(gone_frame.base_idx + 1 + fixed_argc);
-                                        self.stack.push(Value::Array(varargs.into()));
-                                    }
-
+                                    // Reuse the popped frame's slot, inheriting its base and return
+                                    // address so the callee returns to F's original caller.
+                                    // The TCO: one frame popped, one pushed, net zero.
+                                    self.push_closure_frame(
+                                        &closure,
+                                        gone_frame.base_idx,
+                                        gone_frame.return_address,
+                                    );
                                     pc = 0;
                                     continue;
-                                } else {
-                                    Err(FrostError::new(match arity {
-                                        Arity::Exact(n) => format!(
-                                            "Function {} expects {} arguments, but was called with {}",
-                                            closure.function.name, n, argc
-                                        ),
-                                        Arity::AtLeast(n) => format!(
-                                            "Function {} expects at least {} arguments, but was called with {}",
-                                            closure.function.name, n, argc
-                                        ),
-                                    }))
                                 }
                             }
 
@@ -713,6 +642,58 @@ impl Vm {
         match self.execute_function() {
             Ok(_) => Ok(ProgramResult(self)),
             Err(err) => todo!(),
+        }
+    }
+
+    /// Returns an arity-mismatch error if `argc` does not satisfy `closure`'s
+    /// declared arity, or `Ok(())` if it does.
+    fn check_closure_arity(closure: &Closure, argc: usize) -> Result<(), FrostError> {
+        let arity = closure.function.arity;
+        let ok = match arity {
+            Arity::Exact(n) => argc == n,
+            Arity::AtLeast(n) => argc >= n,
+        };
+        if ok {
+            return Ok(());
+        }
+        Err(FrostError::new(match arity {
+            Arity::Exact(n) => format!(
+                "Function {} expects {} arguments, but was called with {}",
+                closure.function.name, n, argc
+            ),
+            Arity::AtLeast(n) => format!(
+                "Function {} expects at least {} arguments, but was called with {}",
+                closure.function.name, n, argc
+            ),
+        }))
+    }
+
+    /// Push a [VmFrame] to enter `closure`: captures seat into slots `0..n`, then
+    /// variadic args are collapsed into a trailing rest array. `base` is the frame
+    /// base (the closure's slot on the stack); `return_address` is where the
+    /// callee returns to. Arity must already be checked. Shared by `Call` (push a
+    /// new frame) and `TailCall` (reuse the popped frame's base + return address).
+    fn push_closure_frame(
+        &mut self,
+        closure: &Closure,
+        base: usize,
+        return_address: Option<NonZeroUsize>,
+    ) {
+        let mut local_slots = vec![None; closure.function.name_table.len()];
+        for (i, capture) in closure.captures.iter().enumerate() {
+            local_slots[i] = Some(capture.clone());
+        }
+
+        self.stack_frames.push(StackFrame::VmFrame(VmFrame {
+            base_idx: base,
+            local_slots,
+            return_address,
+            this_fn: closure.function.clone(),
+        }));
+
+        if let Arity::AtLeast(fixed_argc) = closure.function.arity {
+            let varargs = self.stack.split_off(base + 1 + fixed_argc);
+            self.stack.push(Value::Array(varargs.into()));
         }
     }
 
