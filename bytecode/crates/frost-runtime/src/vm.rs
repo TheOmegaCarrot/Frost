@@ -520,12 +520,20 @@ impl Vm {
                         let res = match function {
                             Value::NativeFunction(native_fn) => self.native_call(&native_fn, argc),
                             Value::Closure(closure) => {
-                                if let Err(e) = Self::check_closure_arity(&closure, argc) {
+                                if let Err(e) = Self::check_arity(
+                                    closure.function.arity,
+                                    argc,
+                                    &closure.function.name,
+                                ) {
                                     Err(e)
                                 } else {
                                     // The next loop iteration enters the closure, whose prelude
                                     // consumes the args on the stack and leaves one return value
-                                    self.push_closure_frame(&closure, base, NonZeroUsize::new(pc + 1));
+                                    self.push_closure_frame(
+                                        &closure,
+                                        base,
+                                        NonZeroUsize::new(pc + 1),
+                                    );
                                     pc = 0;
                                     continue;
                                 }
@@ -549,7 +557,11 @@ impl Vm {
                             Value::Closure(closure) => {
                                 // Check arity BEFORE popping the caller frame, so an arity error
                                 // does not destroy the frame the error path still needs
-                                if let Err(e) = Self::check_closure_arity(&closure, argc) {
+                                if let Err(e) = Self::check_arity(
+                                    closure.function.arity,
+                                    argc,
+                                    &closure.function.name,
+                                ) {
                                     Err(e)
                                 } else {
                                     let StackFrame::VmFrame(gone_frame) = self
@@ -645,10 +657,9 @@ impl Vm {
         }
     }
 
-    /// Returns an arity-mismatch error if `argc` does not satisfy `closure`'s
-    /// declared arity, or `Ok(())` if it does.
-    fn check_closure_arity(closure: &Closure, argc: usize) -> Result<(), FrostError> {
-        let arity = closure.function.arity;
+    /// Returns an arity-mismatch error if `argc` does not satisfy `arity`, or `Ok(())` if it does.
+    /// `name` is the called function's name, for the error message.
+    fn check_arity(arity: Arity, argc: usize, name: &str) -> Result<(), FrostError> {
         let ok = match arity {
             Arity::Exact(n) => argc == n,
             Arity::AtLeast(n) => argc >= n,
@@ -657,22 +668,22 @@ impl Vm {
             return Ok(());
         }
         Err(FrostError::new(match arity {
-            Arity::Exact(n) => format!(
-                "Function {} expects {} arguments, but was called with {}",
-                closure.function.name, n, argc
-            ),
-            Arity::AtLeast(n) => format!(
-                "Function {} expects at least {} arguments, but was called with {}",
-                closure.function.name, n, argc
-            ),
+            Arity::Exact(n) => {
+                format!("Function {name} expects {n} arguments, but was called with {argc}")
+            }
+            Arity::AtLeast(n) => {
+                format!(
+                    "Function {name} expects at least {n} arguments, but was called with {argc}"
+                )
+            }
         }))
     }
 
-    /// Push a [VmFrame] to enter `closure`: captures seat into slots `0..n`, then
-    /// variadic args are collapsed into a trailing rest array. `base` is the frame
-    /// base (the closure's slot on the stack); `return_address` is where the
-    /// callee returns to. Arity must already be checked. Shared by `Call` (push a
-    /// new frame) and `TailCall` (reuse the popped frame's base + return address).
+    /// Push a [VmFrame] to enter `closure`: captures seat into slots `0..n`,
+    /// then variadic args are collapsed into a trailing rest array.
+    /// `base` is the frame base (the closure's slot on the stack);
+    /// `return_address` is where the callee returns to.
+    /// Arity must already be checked.
     fn push_closure_frame(
         &mut self,
         closure: &Closure,
@@ -704,28 +715,7 @@ impl Vm {
         // Pop the function off the stack
         self.stack.pop();
 
-        match function.arity {
-            Arity::Exact(req_arity) => {
-                if req_arity != args.len() {
-                    return Err(FrostError::new(format!(
-                        "Function {} requires {} arguments, but got {}",
-                        function.name,
-                        req_arity,
-                        args.len()
-                    )));
-                }
-            }
-            Arity::AtLeast(min_arity) => {
-                if args.len() < min_arity {
-                    return Err(FrostError::new(format!(
-                        "Function {} requires at least {} arguments, but got {}",
-                        function.name,
-                        min_arity,
-                        args.len()
-                    )));
-                }
-            }
-        }
+        Self::check_arity(function.arity, argc, &function.name)?;
 
         // Perform the call, and leave the result on the stack
         todo!()

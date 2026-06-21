@@ -522,11 +522,7 @@ fn call_eq_tail_call_multiple_params() {
 fn call_eq_tail_call_capture_and_param() {
     // fn x -> capture : capture in slot 0, param in slot 1; returns the capture.
     let callee = func(
-        vec![
-            Bytecode::DefLocal(1),
-            Bytecode::Pop,
-            Bytecode::LoadLocal(0),
-        ],
+        vec![Bytecode::DefLocal(1), Bytecode::Pop, Bytecode::LoadLocal(0)],
         Arity::Exact(1),
         vec![entry("c", false), entry("x", false)],
         vec![],
@@ -549,11 +545,7 @@ fn call_eq_tail_call_capture_and_param() {
 #[test]
 fn call_eq_tail_call_variadic_rest() {
     let callee = func(
-        vec![
-            Bytecode::DefLocal(0),
-            Bytecode::Pop,
-            Bytecode::LoadLocal(0),
-        ],
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
         Arity::AtLeast(0),
         vec![entry("rest", false)],
         vec![],
@@ -582,11 +574,7 @@ fn call_eq_tail_call_variadic_rest() {
 #[test]
 fn call_eq_tail_call_variadic_empty() {
     let callee = func(
-        vec![
-            Bytecode::DefLocal(0),
-            Bytecode::Pop,
-            Bytecode::LoadLocal(0),
-        ],
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
         Arity::AtLeast(0),
         vec![entry("rest", false)],
         vec![],
