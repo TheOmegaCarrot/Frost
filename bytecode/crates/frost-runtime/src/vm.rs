@@ -184,26 +184,7 @@ impl NativeCtx<'_> {
             Value::NativeFunction(native) => {
                 let mut buf = self.0.native_arg_pool.pop().unwrap_or_default();
                 buf.extend(args);
-
-                if let Err(err) = Vm::check_arity(native.arity, buf.len(), &native.name) {
-                    buf.clear();
-                    self.0.native_arg_pool.push(buf);
-                    return Err(err);
-                }
-
-                self.0.stack_frames.push(StackFrame::NativeFrame);
-                let result = (native.function)(NativeCtx(self.0), &mut buf);
-                buf.clear();
-                self.0.native_arg_pool.push(buf);
-
-                let popped = self.0.stack_frames.pop();
-                debug_assert_matches!(
-                    popped,
-                    Some(StackFrame::NativeFrame),
-                    "native_call must pop the NativeFrame it pushed"
-                );
-
-                result
+                self.0.run_native(native, buf)
             }
 
             Value::Closure(closure) => {
@@ -222,10 +203,7 @@ impl NativeCtx<'_> {
                 self.0.stack_frames.pop();
                 Ok(result)
             }
-            _ => Err(FrostError::new(format!(
-                "Attempt to call non-function value of type {}",
-                function.type_name()
-            ))),
+            _ => Err(Vm::not_callable(function)),
         }
     }
 }
@@ -595,10 +573,7 @@ impl Vm {
                                     continue;
                                 }
                             }
-                            _ => Err(FrostError::new(format!(
-                                "Attempt to call non-function value of type {}",
-                                function.type_name()
-                            ))),
+                            _ => Err(Self::not_callable(&function)),
                         };
 
                         if let Err(err) = res {
@@ -642,10 +617,7 @@ impl Vm {
                                 }
                             }
 
-                            _ => Err(FrostError::new(format!(
-                                "Attempt to call value of type {}",
-                                function.type_name()
-                            ))),
+                            _ => Err(Self::not_callable(&function)),
                         };
 
                         todo!()
@@ -736,6 +708,11 @@ impl Vm {
         }))
     }
 
+    /// The error produced when a non-callable value is called.
+    fn not_callable(value: &Value) -> FrostError {
+        FrostError::new(format!("Attempt to call non-function value of type {}", value.type_name()))
+    }
+
     /// Push a [VmFrame] to enter `closure`: captures seat into slots `0..n`,
     /// then variadic args are collapsed into a trailing rest array.
     /// `base` is the frame base (the closure's slot on the stack);
@@ -766,33 +743,37 @@ impl Vm {
     }
 
     fn native_call(&mut self, function: &NativeFunction, argc: usize) -> Result<(), FrostError> {
-        Self::check_arity(function.arity, argc, &function.name)?;
+        let mut buf = self.native_arg_pool.pop().unwrap_or_default();
+        buf.extend(self.stack.drain((self.stack.len() - argc)..));
+        self.stack.pop(); // pop the function value off the stack
 
-        let mut args = self.native_arg_pool.pop().unwrap_or_default();
-        args.extend(self.stack.drain((self.stack.len() - argc)..));
+        let result = self.run_native(function, buf)?;
+        self.stack.push(result);
+        Ok(())
+    }
 
-        // Pop the function off the stack
-        self.stack.pop();
+    /// Invoke `native` with its args already collected in `buf`, then recycle `buf`.
+    /// Checks arity, brackets the call with a `NativeFrame` marker, and returns the native's result.
+    /// `buf` is reclaimed to the pool on every path.
+    fn run_native(&mut self, native: &NativeFunction, mut buf: Vec<Value>) -> FrostResult {
+        if let Err(err) = Self::check_arity(native.arity, buf.len(), &native.name) {
+            buf.clear();
+            self.native_arg_pool.push(buf);
+            return Err(err);
+        }
 
         self.stack_frames.push(StackFrame::NativeFrame);
-        let result = (function.function)(NativeCtx(self), &mut args);
-        args.clear();
-        self.native_arg_pool.push(args);
+        let result = (native.function)(NativeCtx(self), &mut buf);
+        buf.clear();
+        self.native_arg_pool.push(buf);
 
         let popped = self.stack_frames.pop();
-
         debug_assert_matches!(
             popped,
             Some(StackFrame::NativeFrame),
-            "native_call must pop the NativeFrame it pushed"
+            "run_native must pop the NativeFrame it pushed"
         );
 
-        match result {
-            Ok(val) => {
-                self.stack.push(val);
-                Ok(())
-            }
-            Err(err) => Err(err),
-        }
+        result
     }
 }
