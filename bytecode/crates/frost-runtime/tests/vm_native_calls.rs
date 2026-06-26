@@ -13,8 +13,11 @@ mod common;
 
 use std::sync::Arc;
 
-use common::{entry, fn_with_locals};
-use frost_runtime::{Arity, Bytecode, FrostResult, NativeCtx, NativeFunction, ProgramResult, Value};
+use common::{entry, fn_with_locals, func};
+use frost_runtime::{
+    Arity, Bytecode, CompiledFunction, FrostArray, FrostResult, NativeCtx, NativeFunction,
+    ProgramResult, Value,
+};
 
 /// Build a native function `Value`.
 fn native(
@@ -30,7 +33,10 @@ fn native(
 fn run_with_bindings(bindings: Vec<(&str, Value)>, code: Vec<Bytecode>) -> ProgramResult {
     let program = fn_with_locals(
         code,
-        bindings.iter().map(|(name, _)| entry(name, false)).collect(),
+        bindings
+            .iter()
+            .map(|(name, _)| entry(name, false))
+            .collect(),
     );
     let mut vm = frost_runtime::Vm::new(program).unwrap();
     for (name, value) in bindings {
@@ -43,7 +49,9 @@ fn run_with_bindings(bindings: Vec<(&str, Value)>, code: Vec<Bytecode>) -> Progr
 fn native_returns_result() {
     // add(2, 3) -> 5, computed in Rust.
     let add = native("add", Arity::Exact(2), |_ctx, args| {
-        Ok(Value::from(args[0].as_int().unwrap() + args[1].as_int().unwrap()))
+        Ok(Value::from(
+            args[0].as_int().unwrap() + args[1].as_int().unwrap(),
+        ))
     });
     let result = run_with_bindings(
         vec![("add", add)],
@@ -61,7 +69,9 @@ fn native_returns_result() {
 fn native_receives_args_in_order() {
     // sub(10, 3) -> 7 ; order-sensitive, so a swapped arg slice would give -7.
     let sub = native("sub", Arity::Exact(2), |_ctx, args| {
-        Ok(Value::from(args[0].as_int().unwrap() - args[1].as_int().unwrap()))
+        Ok(Value::from(
+            args[0].as_int().unwrap() - args[1].as_int().unwrap(),
+        ))
     });
     let result = run_with_bindings(
         vec![("sub", sub)],
@@ -77,7 +87,9 @@ fn native_receives_args_in_order() {
 
 #[test]
 fn native_no_args() {
-    let answer = native("answer", Arity::Exact(0), |_ctx, _args| Ok(Value::from(42i64)));
+    let answer = native("answer", Arity::Exact(0), |_ctx, _args| {
+        Ok(Value::from(42i64))
+    });
     let result = run_with_bindings(
         vec![("answer", answer)],
         vec![Bytecode::LoadLocal(0), Bytecode::Call(0)],
@@ -111,7 +123,9 @@ fn native_call_leaves_exactly_one_value() {
     // A sentinel sits below the call. add(2, 3) consumes the function and both
     // args and leaves exactly one result; Pop reveals the sentinel -- `( f a.. -- r )`.
     let add = native("add", Arity::Exact(2), |_ctx, args| {
-        Ok(Value::from(args[0].as_int().unwrap() + args[1].as_int().unwrap()))
+        Ok(Value::from(
+            args[0].as_int().unwrap() + args[1].as_int().unwrap(),
+        ))
     });
     let result = run_with_bindings(
         vec![("add", add)],
@@ -130,7 +144,9 @@ fn native_call_leaves_exactly_one_value() {
 #[test]
 fn native_result_feeds_native() {
     // inc(answer()) -> 43 : the value answer() returns must flow in as inc's arg.
-    let answer = native("answer", Arity::Exact(0), |_ctx, _args| Ok(Value::from(42i64)));
+    let answer = native("answer", Arity::Exact(0), |_ctx, _args| {
+        Ok(Value::from(42i64))
+    });
     let inc = native("inc", Arity::Exact(1), |_ctx, args| {
         Ok(Value::from(args[0].as_int().unwrap() + 1))
     });
@@ -144,4 +160,192 @@ fn native_result_feeds_native() {
         ],
     );
     assert_eq!(result.tail(), &Value::Int(43));
+}
+
+// ============================================================
+// Re-entrancy: NativeCtx::invoke (native -> native, native -> closure)
+// ============================================================
+
+/// Like `run_with_bindings`, but the top-level also carries `children` reachable
+/// via `CreateClosure`, so a native can be handed a closure to invoke.
+fn run_native_program(
+    bindings: Vec<(&str, Value)>,
+    children: Vec<Arc<CompiledFunction>>,
+    code: Vec<Bytecode>,
+) -> ProgramResult {
+    let program = func(
+        code,
+        Arity::Exact(0),
+        bindings.iter().map(|(name, _)| entry(name, false)).collect(),
+        children,
+    );
+    let mut vm = frost_runtime::Vm::new(program).unwrap();
+    for (name, value) in bindings {
+        assert!(vm.set_binding(name, value));
+    }
+    vm.run().unwrap()
+}
+
+/// `apply(f, ...rest)` -- a native that invokes `f` with the rest of its args,
+/// stealing them. Drives `NativeCtx::invoke` for either a native or closure `f`.
+fn apply_native() -> Value {
+    native("apply", Arity::AtLeast(1), |mut ctx, args| {
+        let f = args[0].clone();
+        ctx.invoke(
+            &f,
+            args[1..].iter_mut().map(|v| std::mem::replace(v, Value::Null)),
+        )
+    })
+}
+
+#[test]
+fn native_invokes_native() {
+    // apply(inc, 5) -> invoke(inc, [5]) -> 6
+    let inc = native("inc", Arity::Exact(1), |_ctx, args| {
+        Ok(Value::from(args[0].as_int().unwrap() + 1))
+    });
+    let result = run_native_program(
+        vec![("apply", apply_native()), ("inc", inc)],
+        vec![],
+        vec![
+            Bytecode::LoadLocal(0), // apply
+            Bytecode::LoadLocal(1), // inc
+            Bytecode::PushInt(5),
+            Bytecode::Call(2),
+        ],
+    );
+    assert_eq!(result.tail(), &Value::Int(6));
+}
+
+#[test]
+fn native_invokes_closure() {
+    // apply(identity, 7) -> invoke -> 7 ; proves the arg flows native -> closure.
+    let identity = func(
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
+        Arity::Exact(1),
+        vec![entry("x", false)],
+        vec![],
+    );
+    let result = run_native_program(
+        vec![("apply", apply_native())],
+        vec![identity],
+        vec![
+            Bytecode::LoadLocal(0),
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 0,
+            },
+            Bytecode::PushInt(7),
+            Bytecode::Call(2),
+        ],
+    );
+    assert_eq!(result.tail(), &Value::Int(7));
+}
+
+#[test]
+fn native_invokes_closure_multiple_args() {
+    // fn a, b -> a ; apply(first, 10, 20) -> invoke(first, [10, 20]) -> 10
+    let first = func(
+        vec![
+            Bytecode::DefLocal(1),
+            Bytecode::DefLocal(0),
+            Bytecode::Pop,
+            Bytecode::LoadLocal(0),
+        ],
+        Arity::Exact(2),
+        vec![entry("a", false), entry("b", false)],
+        vec![],
+    );
+    let result = run_native_program(
+        vec![("apply", apply_native())],
+        vec![first],
+        vec![
+            Bytecode::LoadLocal(0),
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 0,
+            },
+            Bytecode::PushInt(10),
+            Bytecode::PushInt(20),
+            Bytecode::Call(3),
+        ],
+    );
+    assert_eq!(result.tail(), &Value::Int(10));
+}
+
+#[test]
+fn native_invokes_zero_arg_closure() {
+    // fn -> 99 ; apply(const) -> invoke(const, []) -> 99
+    let const99 = func(
+        vec![Bytecode::Pop, Bytecode::PushInt(99)],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    );
+    let result = run_native_program(
+        vec![("apply", apply_native())],
+        vec![const99],
+        vec![
+            Bytecode::LoadLocal(0),
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 0,
+            },
+            Bytecode::Call(1),
+        ],
+    );
+    assert_eq!(result.tail(), &Value::Int(99));
+}
+
+#[test]
+fn native_invokes_variadic_closure() {
+    // fn ...rest -> rest ; apply(rest, 1, 2, 3) -> invoke(rest, [1,2,3]) -> [1,2,3]
+    let rest = func(
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
+        Arity::AtLeast(0),
+        vec![entry("rest", false)],
+        vec![],
+    );
+    let result = run_native_program(
+        vec![("apply", apply_native())],
+        vec![rest],
+        vec![
+            Bytecode::LoadLocal(0),
+            Bytecode::CreateClosure {
+                num_captures: 0,
+                function: 0,
+            },
+            Bytecode::PushInt(1),
+            Bytecode::PushInt(2),
+            Bytecode::PushInt(3),
+            Bytecode::Call(4),
+        ],
+    );
+    let expected = Value::Array(FrostArray::from(vec![
+        Value::Int(1),
+        Value::Int(2),
+        Value::Int(3),
+    ]));
+    assert_eq!(result.tail(), &expected);
+}
+
+#[test]
+fn nested_native_invoke() {
+    // apply(apply, inc, 5) -> invoke(apply, [inc, 5]) -> apply(inc, 5)
+    //   -> invoke(inc, [5]) -> 6. Exercises invoke nesting (pool + frame depth).
+    let inc = native("inc", Arity::Exact(1), |_ctx, args| {
+        Ok(Value::from(args[0].as_int().unwrap() + 1))
+    });
+    let result = run_native_program(
+        vec![("apply", apply_native()), ("inc", inc)],
+        vec![],
+        vec![
+            Bytecode::LoadLocal(0), // apply
+            Bytecode::LoadLocal(0), // apply
+            Bytecode::LoadLocal(1), // inc
+            Bytecode::PushInt(5),
+            Bytecode::Call(3),
+        ],
+    );
+    assert_eq!(result.tail(), &Value::Int(6));
 }

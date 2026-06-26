@@ -174,6 +174,62 @@ pub enum Arity {
 #[derive(Debug)]
 pub struct NativeCtx<'a>(pub(crate) &'a mut Vm);
 
+impl NativeCtx<'_> {
+    pub fn invoke(
+        &mut self,
+        function: &Value,
+        args: impl IntoIterator<Item = Value>,
+    ) -> FrostResult {
+        match function {
+            Value::NativeFunction(native) => {
+                let mut buf = self.0.native_arg_pool.pop().unwrap_or_default();
+                buf.extend(args);
+
+                if let Err(err) = Vm::check_arity(native.arity, buf.len(), &native.name) {
+                    buf.clear();
+                    self.0.native_arg_pool.push(buf);
+                    return Err(err);
+                }
+
+                self.0.stack_frames.push(StackFrame::NativeFrame);
+                let result = (native.function)(NativeCtx(self.0), &mut buf);
+                buf.clear();
+                self.0.native_arg_pool.push(buf);
+
+                let popped = self.0.stack_frames.pop();
+                debug_assert_matches!(
+                    popped,
+                    Some(StackFrame::NativeFrame),
+                    "native_call must pop the NativeFrame it pushed"
+                );
+
+                result
+            }
+
+            Value::Closure(closure) => {
+                let base = self.0.stack.len();
+                self.0.stack.push(function.clone());
+                self.0.stack.extend(args);
+                let argc = self.0.stack.len() - base - 1;
+                Vm::check_arity(closure.function.arity, argc, &closure.function.name)?;
+                self.0.push_closure_frame(closure, base, None);
+                self.0.execute_function()?;
+                let result = self
+                    .0
+                    .stack
+                    .pop()
+                    .expect("IMPOSSIBLE: closure left no result");
+                self.0.stack_frames.pop();
+                Ok(result)
+            }
+            _ => Err(FrostError::new(format!(
+                "Attempt to call non-function value of type {}",
+                function.type_name()
+            ))),
+        }
+    }
+}
+
 type NativeFn = dyn Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static;
 
 pub struct NativeFunction {
@@ -540,7 +596,7 @@ impl Vm {
                                 }
                             }
                             _ => Err(FrostError::new(format!(
-                                "Attempt to call value of type {}",
+                                "Attempt to call non-function value of type {}",
                                 function.type_name()
                             ))),
                         };
@@ -710,7 +766,6 @@ impl Vm {
     }
 
     fn native_call(&mut self, function: &NativeFunction, argc: usize) -> Result<(), FrostError> {
-
         Self::check_arity(function.arity, argc, &function.name)?;
 
         let mut args = self.native_arg_pool.pop().unwrap_or_default();
