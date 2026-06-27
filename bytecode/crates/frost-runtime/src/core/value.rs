@@ -10,6 +10,30 @@ pub use crate::core::types::float::FrostFloat;
 use crate::vm::Closure;
 use crate::vm::NativeFunction;
 
+/// The possible types of a Frost Value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FrostType {
+    Null,
+    Bool,
+    Int,
+    Float,
+    String,
+    Array,
+    Map,
+    Function,
+    Opaque,
+}
+
+/// The possible ways to categorize Frost types, as exposed within the language.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FrostTypeCategory {
+    Exact(FrostType),
+    Primitive,
+    Numeric,
+    Structured,
+    NonNull,
+}
+
 /// The fundamental runtime value type of Frost.
 ///
 /// Every Frost value is one of these variants. `Clone` is cheap:

@@ -296,7 +296,13 @@ fn explode_uniquely_owned_array_round_trips() {
     // Build the array with MakeArray (uniquely owned -> try_extract moves), then
     // explode and rebuild. Exercises the zero-copy steal path.
     assert_eq!(
-        val(vec![PushInt(1), PushInt(2), MakeArray(2), ExplodeArray, MakeArray(2)]),
+        val(vec![
+            PushInt(1),
+            PushInt(2),
+            MakeArray(2),
+            ExplodeArray,
+            MakeArray(2)
+        ]),
         array(vec![Value::Int(1), Value::Int(2)])
     );
 }
@@ -316,10 +322,7 @@ fn explode_mixed_types_round_trips() {
 fn explode_is_shallow() {
     // Exploding [[1], [2]] pushes the two inner arrays as single values, not their
     // contents -- re-collecting yields the original nested structure.
-    let original = array(vec![
-        array(vec![Value::Int(1)]),
-        array(vec![Value::Int(2)]),
-    ]);
+    let original = array(vec![array(vec![Value::Int(1)]), array(vec![Value::Int(2)])]);
     let out = eval(
         vec![original.clone()],
         vec![LoadConst(0), ExplodeArray, MakeArray(2)],

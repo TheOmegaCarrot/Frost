@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::core::value::{FrostArray, FrostError, FrostFloat, FrostMap, MapKey, Value};
+use crate::core::value::{
+    FrostArray, FrostError, FrostFloat, FrostMap, FrostType, FrostTypeCategory, MapKey, Value,
+};
 
 impl From<bool> for Value {
     fn from(b: bool) -> Value {
@@ -99,6 +101,25 @@ impl TryFrom<Value> for MapKey {
     }
 }
 
+type Ft = FrostType;
+type Ftc = FrostTypeCategory;
+
+impl FrostType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Ft::Null => "Null",
+            Ft::Bool => "Bool",
+            Ft::Int => "Int",
+            Ft::Float => "Float",
+            Ft::String => "String",
+            Ft::Array => "Array",
+            Ft::Map => "Map",
+            Ft::Function => "Function",
+            Ft::Opaque => "Opaque",
+        }
+    }
+}
+
 impl Value {
     /// Returns `true` if the value is truthy. Only `Null` and `Bool(false)` are falsy.
     pub fn is_truthy(&self) -> bool {
@@ -111,86 +132,99 @@ impl Value {
 
     /// Returns the Frost type name of this value (e.g. `"Int"`, `"String"`, `"Array"`).
     pub fn type_name(&self) -> &'static str {
+        self.frost_type().name()
+    }
+
+    pub fn frost_type(&self) -> FrostType {
         match self {
-            Value::Null => "Null",
-            Value::Bool(_) => "Bool",
-            Value::Int(_) => "Int",
-            Value::Float(_) => "Float",
-            Value::String(_) => "String",
-            Value::Array(_) => "Array",
-            Value::Map(_) => "Map",
-            Value::NativeFunction(_) => "Function",
-            Value::Closure(_) => "Function",
-            Value::Opaque(_) => "Opaque",
+            Value::Null => Ft::Null,
+            Value::Bool(_) => Ft::Bool,
+            Value::Int(_) => Ft::Int,
+            Value::Float(_) => Ft::Float,
+            Value::String(_) => Ft::String,
+            Value::Array(_) => Ft::Array,
+            Value::Map(_) => Ft::Map,
+            Value::NativeFunction(_) => Ft::Function,
+            Value::Closure(_) => Ft::Function,
+            Value::Opaque(_) => Ft::Opaque,
+        }
+    }
+
+    pub fn fits_category(&self, category: FrostTypeCategory) -> bool {
+        match (self.frost_type(), category) {
+            (t, Ftc::Exact(c)) => t == c,
+            (t, Ftc::NonNull) => !matches!(t, Ft::Null),
+            (t, Ftc::Primitive) => {
+                matches!(t, Ft::Null | Ft::Int | Ft::Float | Ft::Bool | Ft::String)
+            }
+            (t, Ftc::Numeric) => matches!(t, Ft::Int | Ft::Float),
+            (t, Ftc::Structured) => matches!(t, Ft::Array | Ft::Map),
         }
     }
 
     /// Returns true if this value is a Null.
     pub fn is_null(&self) -> bool {
-        matches!(self, Value::Null)
+        self.fits_category(Ftc::Exact(Ft::Null))
     }
 
     /// Returns true if this value is a Bool.
     pub fn is_bool(&self) -> bool {
-        matches!(self, Value::Bool(_))
+        self.fits_category(Ftc::Exact(Ft::Bool))
     }
 
     /// Returns true if this value is an Int.
     pub fn is_int(&self) -> bool {
-        matches!(self, Value::Int(_))
+        self.fits_category(Ftc::Exact(Ft::Int))
     }
 
     /// Returns true if this value is a Float.
     pub fn is_float(&self) -> bool {
-        matches!(self, Value::Float(_))
+        self.fits_category(Ftc::Exact(Ft::Float))
     }
 
     /// Returns true if this value is a String.
     pub fn is_string(&self) -> bool {
-        matches!(self, Value::String(_))
+        self.fits_category(Ftc::Exact(Ft::String))
     }
 
     /// Returns true if this value is an Array.
     pub fn is_array(&self) -> bool {
-        matches!(self, Value::Array(_))
+        self.fits_category(Ftc::Exact(Ft::Array))
     }
 
     /// Returns true if this value is a Map.
     pub fn is_map(&self) -> bool {
-        matches!(self, Value::Map(_))
+        self.fits_category(Ftc::Exact(Ft::Map))
     }
 
-    /// Returns true if this value is a Function.
+    /// Returns true if this value is a Function (native or closure).
     pub fn is_function(&self) -> bool {
-        matches!(self, Value::NativeFunction(_))
+        self.fits_category(Ftc::Exact(Ft::Function))
     }
 
     /// Returns true if this value is an Opaque.
     pub fn is_opaque(&self) -> bool {
-        matches!(self, Value::Opaque(_))
+        self.fits_category(Ftc::Exact(Ft::Opaque))
     }
 
     /// Returns true if this value is Int or Float.
     pub fn is_numeric(&self) -> bool {
-        matches!(self, Value::Int(_) | Value::Float(_))
+        self.fits_category(Ftc::Numeric)
     }
 
     /// Returns true if this value is Null, Bool, Int, Float, or String.
     pub fn is_primitive(&self) -> bool {
-        matches!(
-            self,
-            Value::Null | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::String(_)
-        )
+        self.fits_category(Ftc::Primitive)
     }
 
     /// Returns true if this value is Array or Map.
     pub fn is_structured(&self) -> bool {
-        matches!(self, Value::Array(_) | Value::Map(_))
+        self.fits_category(Ftc::Structured)
     }
 
     /// Returns true if this value is not Null.
     pub fn is_nonnull(&self) -> bool {
-        !self.is_null()
+        self.fits_category(Ftc::NonNull)
     }
 
     /// Frost's `to_int`: Int passes through, Float truncates toward zero,
