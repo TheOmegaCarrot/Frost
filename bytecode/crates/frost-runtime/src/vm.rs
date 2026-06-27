@@ -13,7 +13,9 @@ use std::debug_assert_matches;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 
-use crate::{FrostError, FrostFloat, FrostResult, Value};
+use itertools::Itertools;
+
+use crate::{FrostArray, FrostError, FrostFloat, FrostMap, FrostResult, MapKey, Value};
 
 // ============================================================
 // Bytecode
@@ -78,11 +80,15 @@ pub enum Bytecode {
     CreateClosure { num_captures: u32, function: u32 },
 
     // Data structures
-    MakeArray(usize), // Consume N items from the stack, pushing an Array to the stack
+
+    // Consume N items from the stack, pushing an Array to the stack
     // The top of the stack is the back of the array
-    MakeMap(usize), // Consume 2N items from the stack, as kv pairs
+    MakeArray(usize),
+    // Consume 2N items from the stack, as kv pairs
     // Keys are below their corresponding values
-    ExplodeArray, // Inverse of MakeArray: blast Array contents onto the stack
+    MakeMap(usize),
+    // Inverse of MakeArray: blast Array contents onto the stack
+    ExplodeArray,
 
     // Index a structure, structure is below the index initially (consumed)
     // Leaves a single value on the stack
@@ -675,10 +681,21 @@ impl Vm {
                             .push(Value::Closure(Arc::new(Closure { function, captures })))
                     }
                     Bytecode::MakeArray(num_elems) => {
-                        todo!();
+                        let arr: FrostArray =
+                            self.stack.split_off(self.stack.len() - num_elems).into();
+                        self.stack.push(arr.into());
                     }
                     Bytecode::MakeMap(num_pairs) => {
-                        todo!();
+                        let split_point = self.stack.len() - 2 * num_pairs;
+                        let flat_pairs = self.stack.split_off(split_point);
+
+                        let map: FrostMap = flat_pairs
+                            .into_iter()
+                            .tuples()
+                            .map(|(k, v)| Ok((MapKey::try_from(k)?, v)))
+                            .collect::<Result<_, FrostError>>()?;
+
+                        self.stack.push(map.into());
                     }
                     Bytecode::ExplodeArray => {
                         todo!();
