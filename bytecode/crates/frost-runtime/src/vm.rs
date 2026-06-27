@@ -2,6 +2,12 @@
 
 mod globals;
 
+// White-box tests for the unwind invariants (operand stack, frame stack, and
+// native-arg-pool restoration on catch). Kept in their own file -- a child module
+// still reaches this module's private `Vm` internals.
+#[cfg(test)]
+mod unwind_tests;
+
 use std::debug_assert_matches;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
@@ -192,9 +198,30 @@ impl NativeCtx<'_> {
                 self.0.stack.push(function.clone());
                 self.0.stack.extend(args);
                 let argc = self.0.stack.len() - base - 1;
-                Vm::check_arity(closure.function.arity, argc, &closure.function.name)?;
+
+                // This native boundary is where an unwinding error stops. On any
+                // error path below, restore the Vm to its pre-call shape before
+                // returning Err -- truncate the operand stack back to `base` and
+                // discard the Frost frames left above our entry floor -- so that a
+                // catching native (e.g. `try_call`) resumes on a clean Vm.
+                if let Err(err) =
+                    Vm::check_arity(closure.function.arity, argc, &closure.function.name)
+                {
+                    // The callee never ran: only the function value and its args
+                    // (no frame) sit above `base`.
+                    self.0.stack.truncate(base);
+                    return Err(err);
+                }
+
+                let frame_floor = self.0.stack_frames.len();
                 self.0.push_closure_frame(closure, base, None);
-                self.0.execute_function()?;
+
+                if let Err(err) = self.0.execute_function() {
+                    let err = self.0.unwind_frames(frame_floor, err);
+                    self.0.stack.truncate(base);
+                    return Err(err);
+                }
+
                 let result = self
                     .0
                     .stack
@@ -500,21 +527,14 @@ impl Vm {
                         .stack
                         .push(self.this_frame().this_fn.constants[idx].clone()),
                     Bytecode::LoadGlobal(idx) => self.stack.push(self.globals.get(idx).clone()),
-                    Bytecode::Add => {
-                        todo!();
-                    }
-                    Bytecode::Subtract => {
-                        todo!();
-                    }
-                    Bytecode::Multiply => {
-                        todo!();
-                    }
-                    Bytecode::Divide => {
-                        todo!();
-                    }
-                    Bytecode::Modulus => {
-                        todo!();
-                    }
+                    // Arithmetic delegates to the operators defined on `Value`; a
+                    // type error or division by zero surfaces as an `Err` that `?`
+                    // propagates straight out of this activation (see `unwind_frames`).
+                    Bytecode::Add => self.binary_op(Value::add)?,
+                    Bytecode::Subtract => self.binary_op(Value::subtract)?,
+                    Bytecode::Multiply => self.binary_op(Value::multiply)?,
+                    Bytecode::Divide => self.binary_op(Value::divide)?,
+                    Bytecode::Modulus => self.binary_op(Value::modulus)?,
                     Bytecode::CompareEqual => {
                         todo!();
                     }
@@ -552,75 +572,71 @@ impl Vm {
                         let base = self.stack.len() - (argc + 1);
                         let function = self.stack[base].clone();
 
-                        let res = match function {
-                            Value::NativeFunction(native_fn) => self.native_call(&native_fn, argc),
+                        // Errors below `?` straight out of `execute_function`; the
+                        // boundary that entered this activation (`invoke` or `run`)
+                        // truncates the abandoned frames and operands.
+                        match function {
+                            Value::NativeFunction(native_fn) => {
+                                self.native_call(&native_fn, argc)?
+                            }
                             Value::Closure(closure) => {
-                                if let Err(e) = Self::check_arity(
+                                Self::check_arity(
                                     closure.function.arity,
                                     argc,
                                     &closure.function.name,
-                                ) {
-                                    Err(e)
-                                } else {
-                                    // The next loop iteration enters the closure, whose prelude
-                                    // consumes the args on the stack and leaves one return value
-                                    self.push_closure_frame(
-                                        &closure,
-                                        base,
-                                        NonZeroUsize::new(pc + 1),
-                                    );
-                                    pc = 0;
-                                    continue;
-                                }
+                                )?;
+                                // The next loop iteration enters the closure, whose prelude
+                                // consumes the args on the stack and leaves one return value.
+                                self.push_closure_frame(&closure, base, NonZeroUsize::new(pc + 1));
+                                pc = 0;
+                                continue;
                             }
-                            _ => Err(Self::not_callable(&function)),
-                        };
-
-                        if let Err(err) = res {
-                            todo!()
+                            _ => return Err(Self::not_callable(&function)),
                         }
                     }
                     Bytecode::TailCall(argc) => {
                         let base = self.stack.len() - (argc + 1);
                         let function = self.stack[base].clone();
 
-                        let res = match function {
-                            Value::NativeFunction(native_fn) => self.native_call(&native_fn, argc),
+                        match function {
+                            // A native callee adds no VM frame, so there is nothing to
+                            // elide: run it exactly like a plain `Call`. Its result is
+                            // left on the stack and, since `TailCall` sits in tail
+                            // position, the enclosing function returns it via the normal
+                            // end-of-code path on the next loop turn.
+                            Value::NativeFunction(native_fn) => {
+                                self.native_call(&native_fn, argc)?
+                            }
                             Value::Closure(closure) => {
                                 // Check arity BEFORE popping the caller frame, so an arity error
-                                // does not destroy the frame the error path still needs
-                                if let Err(e) = Self::check_arity(
+                                // does not destroy the frame the error path still needs.
+                                Self::check_arity(
                                     closure.function.arity,
                                     argc,
                                     &closure.function.name,
-                                ) {
-                                    Err(e)
-                                } else {
-                                    let StackFrame::VmFrame(gone_frame) = self
-                                        .stack_frames
-                                        .pop()
-                                        .expect("IMPOSSIBLE: Vm has no frame")
-                                    else {
-                                        panic!("IMPOSSIBLE: tail call in native frame");
-                                    };
+                                )?;
 
-                                    // Reuse the popped frame's slot, inheriting its base and return
-                                    // address so the callee returns to F's original caller.
-                                    // The TCO: one frame popped, one pushed, net zero.
-                                    self.push_closure_frame(
-                                        &closure,
-                                        gone_frame.base_idx,
-                                        gone_frame.return_address,
-                                    );
-                                    pc = 0;
-                                    continue;
-                                }
+                                let StackFrame::VmFrame(gone_frame) = self
+                                    .stack_frames
+                                    .pop()
+                                    .expect("IMPOSSIBLE: Vm has no frame")
+                                else {
+                                    panic!("IMPOSSIBLE: tail call in native frame");
+                                };
+
+                                // Reuse the popped frame's slot, inheriting its base and return
+                                // address so the callee returns to F's original caller.
+                                // The TCO: one frame popped, one pushed, net zero.
+                                self.push_closure_frame(
+                                    &closure,
+                                    gone_frame.base_idx,
+                                    gone_frame.return_address,
+                                );
+                                pc = 0;
+                                continue;
                             }
-
-                            _ => Err(Self::not_callable(&function)),
-                        };
-
-                        todo!()
+                            _ => return Err(Self::not_callable(&function)),
+                        }
                     }
                     Bytecode::CreateClosure {
                         num_captures,
@@ -682,8 +698,46 @@ impl Vm {
     pub fn run(mut self) -> Result<ProgramResult, FrostError> {
         match self.execute_function() {
             Ok(_) => Ok(ProgramResult(self)),
-            Err(err) => todo!(),
+            // No `NativeFrame` exists above the top level, so the error has nowhere
+            // to be caught: accumulate the backtrace across every remaining frame
+            // and surface it to the host. `self` -- now in an unrecoverable state --
+            // is dropped (a `Vm` runs a single program; `reset` lives only on the
+            // success path).
+            Err(err) => Err(self.unwind_frames(0, err)),
         }
+    }
+
+    /// Pop the top two operands (rhs on top, lhs below) and push `op(lhs, rhs)`.
+    /// Any operator error `?`-propagates out of the current activation; the
+    /// consumed operands are simply dropped, since the unwind path truncates the
+    /// operand stack back to the boundary floor regardless of its exact height.
+    fn binary_op(
+        &mut self,
+        op: impl FnOnce(&Value, &Value) -> Result<Value, FrostError>,
+    ) -> Result<(), FrostError> {
+        let rhs = self.stack.pop().expect("FROST STACK UNDERFLOW");
+        let lhs = self.stack.pop().expect("FROST STACK UNDERFLOW");
+        self.stack.push(op(&lhs, &rhs)?);
+        Ok(())
+    }
+
+    /// Append the names of the `VmFrame`s in `stack_frames[floor..]` to `err`'s
+    /// backtrace -- innermost (top of the frame stack) first -- then discard those
+    /// frames.
+    ///
+    /// This is the only place a Frost frame's name reaches the backtrace: `?`
+    /// propagation has no hook, so the trace is built here as the abandoned frames
+    /// are dropped. Called at each native boundary that catches an unwinding error
+    /// ([`NativeCtx::invoke`]) and at the top-level terminus ([`Vm::run`]).
+    /// `NativeFrame` markers carry no name; a native's own name is recorded by
+    /// [`Vm::run_native`] instead.
+    fn unwind_frames(&mut self, floor: usize, mut err: FrostError) -> FrostError {
+        for frame in self.stack_frames.drain(floor..).rev() {
+            if let StackFrame::VmFrame(vm_frame) = frame {
+                err = err.with_frame(vm_frame.this_fn.name.clone());
+            }
+        }
+        err
     }
 
     /// Returns an arity-mismatch error if `argc` does not satisfy `arity`, or `Ok(())` if it does.
@@ -774,6 +828,9 @@ impl Vm {
             "run_native must pop the NativeFrame it pushed"
         );
 
-        result
+        // A native that ran and failed contributes its own name to the backtrace.
+        // Its only call-stack presence is a nameless `NativeFrame` marker, so the
+        // frame-walk in `unwind_frames` cannot record it -- do it here.
+        result.map_err(|err| err.with_frame(native.name.clone()))
     }
 }
