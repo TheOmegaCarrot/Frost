@@ -698,7 +698,16 @@ impl Vm {
                         self.stack.push(map.into());
                     }
                     Bytecode::ExplodeArray => {
-                        todo!();
+                        let arr = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let arr = match arr {
+                            Value::Array(inner_arr) => inner_arr,
+                            _ => panic!("ExplodeArray: operand not Array"),
+                        };
+
+                        match arr.try_extract() {
+                            Ok(vec) => self.stack.extend(vec),
+                            Err(arr) => self.stack.extend(arr.iter().cloned()),
+                        }
                     }
                     Bytecode::SoftIndexStructure => {
                         todo!();

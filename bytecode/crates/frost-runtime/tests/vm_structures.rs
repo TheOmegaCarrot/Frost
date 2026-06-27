@@ -1,10 +1,14 @@
-//! Tests for the structure-building opcodes: `MakeArray` and `MakeMap`.
+//! Tests for the structure opcodes: `MakeArray`, `MakeMap`, and `ExplodeArray`.
 //!
-//! Both consume operands from the top of the stack and push one structure:
 //!   * `MakeArray(n)` takes the top `n` values; the topmost becomes the *back*.
 //!   * `MakeMap(n)` takes the top `2n` values as `k1, v1, k2, v2, ...` (key
 //!     deeper than its value). Keys must be non-null primitives, so it is
 //!     fallible; duplicate keys keep the last value (right wins).
+//!   * `ExplodeArray` is the inverse of `MakeArray`: it consumes one Array and
+//!     pushes its elements (the back ends up on top). Its operand is
+//!     compiler-guaranteed to be an Array (emitted only in compiled destructuring
+//!     / pattern matching), so a non-array is an IMPOSSIBLE state -- it panics and
+//!     is not tested here.
 //!
 //! Operands without a `Push*` opcode (String/Array/Map) come from the constant
 //! table via `LoadConst`.
@@ -45,7 +49,7 @@ fn map(pairs: Vec<(MapKey, Value)>) -> Value {
     Value::Map(pairs.into_iter().collect())
 }
 
-use Bytecode::{LoadConst, MakeArray, MakeMap, Pop, PushInt, PushNull};
+use Bytecode::{ExplodeArray, LoadConst, MakeArray, MakeMap, Pop, PushInt, PushNull};
 
 // ============================================================
 // MakeArray
@@ -58,7 +62,10 @@ fn make_array_empty() {
 
 #[test]
 fn make_array_single() {
-    assert_eq!(val(vec![PushInt(1), MakeArray(1)]), array(vec![Value::Int(1)]));
+    assert_eq!(
+        val(vec![PushInt(1), MakeArray(1)]),
+        array(vec![Value::Int(1)])
+    );
 }
 
 #[test]
@@ -77,7 +84,10 @@ fn make_array_holds_mixed_types() {
         vec![PushInt(1), LoadConst(0), PushNull, MakeArray(3)],
     )
     .unwrap();
-    assert_eq!(out, array(vec![Value::Int(1), Value::from("x"), Value::Null]));
+    assert_eq!(
+        out,
+        array(vec![Value::Int(1), Value::from("x"), Value::Null])
+    );
 }
 
 #[test]
@@ -146,7 +156,10 @@ fn make_map_multiple_pairs() {
         ],
     )
     .unwrap();
-    assert_eq!(out, map(vec![(skey("a"), Value::Int(1)), (skey("b"), Value::Int(2))]));
+    assert_eq!(
+        out,
+        map(vec![(skey("a"), Value::Int(1)), (skey("b"), Value::Int(2))])
+    );
 }
 
 #[test]
@@ -214,4 +227,103 @@ fn make_map_consumes_exactly_two_per_pair() {
     )
     .unwrap();
     assert_eq!(out, Value::Int(99));
+}
+
+// ============================================================
+// ExplodeArray
+// ============================================================
+
+#[test]
+fn explode_empty_pushes_nothing() {
+    // Sentinel below an empty array: exploding consumes the array and pushes
+    // nothing, so the sentinel remains the tail.
+    let out = eval(
+        vec![array(vec![])],
+        vec![PushInt(99), LoadConst(0), ExplodeArray],
+    )
+    .unwrap();
+    assert_eq!(out, Value::Int(99));
+}
+
+#[test]
+fn explode_single_element() {
+    let out = eval(
+        vec![array(vec![Value::Int(7)])],
+        vec![LoadConst(0), ExplodeArray],
+    )
+    .unwrap();
+    assert_eq!(out, Value::Int(7));
+}
+
+#[test]
+fn explode_puts_array_back_on_top() {
+    // [1, 2, 3] explodes so the back element (3) lands on top of the stack.
+    let out = eval(
+        vec![array(vec![Value::Int(1), Value::Int(2), Value::Int(3)])],
+        vec![LoadConst(0), ExplodeArray],
+    )
+    .unwrap();
+    assert_eq!(out, Value::Int(3));
+}
+
+#[test]
+fn explode_then_make_array_round_trips() {
+    // ExplodeArray followed by MakeArray(n) is the identity -- proves element
+    // order is preserved. (Clone path: the constant table still references it.)
+    let original = array(vec![Value::Int(1), Value::Int(2), Value::Int(3)]);
+    let out = eval(
+        vec![original.clone()],
+        vec![LoadConst(0), ExplodeArray, MakeArray(3)],
+    )
+    .unwrap();
+    assert_eq!(out, original);
+}
+
+#[test]
+fn explode_consumes_array_and_pushes_each_element() {
+    // Sentinel below; explode a 2-element array, re-collect exactly 2, then Pop
+    // the rebuilt array -- the sentinel proves explode pushed exactly two values.
+    let out = eval(
+        vec![array(vec![Value::Int(1), Value::Int(2)])],
+        vec![PushInt(99), LoadConst(0), ExplodeArray, MakeArray(2), Pop],
+    )
+    .unwrap();
+    assert_eq!(out, Value::Int(99));
+}
+
+#[test]
+fn explode_uniquely_owned_array_round_trips() {
+    // Build the array with MakeArray (uniquely owned -> try_extract moves), then
+    // explode and rebuild. Exercises the zero-copy steal path.
+    assert_eq!(
+        val(vec![PushInt(1), PushInt(2), MakeArray(2), ExplodeArray, MakeArray(2)]),
+        array(vec![Value::Int(1), Value::Int(2)])
+    );
+}
+
+#[test]
+fn explode_mixed_types_round_trips() {
+    let original = array(vec![Value::Int(1), Value::from("x"), Value::Null]);
+    let out = eval(
+        vec![original.clone()],
+        vec![LoadConst(0), ExplodeArray, MakeArray(3)],
+    )
+    .unwrap();
+    assert_eq!(out, original);
+}
+
+#[test]
+fn explode_is_shallow() {
+    // Exploding [[1], [2]] pushes the two inner arrays as single values, not their
+    // contents -- re-collecting yields the original nested structure.
+    let original = array(vec![
+        array(vec![Value::Int(1)]),
+        array(vec![Value::Int(2)]),
+    ]);
+    let out = eval(
+        vec![original.clone()],
+        vec![LoadConst(0), ExplodeArray, MakeArray(2)],
+    )
+    .unwrap();
+    assert_eq!(out, original);
 }
