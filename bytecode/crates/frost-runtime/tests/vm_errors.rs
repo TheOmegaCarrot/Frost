@@ -100,7 +100,9 @@ fn apply_native() -> Value {
         let f = args[0].clone();
         ctx.invoke(
             &f,
-            args[1..].iter_mut().map(|v| std::mem::replace(v, Value::Null)),
+            args[1..]
+                .iter_mut()
+                .map(|v| std::mem::replace(v, Value::Null)),
         )
     })
 }
@@ -164,7 +166,11 @@ fn top_level_division_by_zero() {
 fn top_level_modulus_by_zero() {
     let program = named(
         "main",
-        vec![Bytecode::PushInt(7), Bytecode::PushInt(0), Bytecode::Modulus],
+        vec![
+            Bytecode::PushInt(7),
+            Bytecode::PushInt(0),
+            Bytecode::Modulus,
+        ],
         Arity::Exact(0),
         vec![],
         vec![],
@@ -392,7 +398,11 @@ fn try_call_catches_non_function() {
     let map = expect_map(result.tail());
     assert_eq!(map.get_str("ok"), Some(&Value::Bool(false)));
     assert!(
-        map.get_str("error").unwrap().as_str().unwrap().contains("non-function"),
+        map.get_str("error")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .contains("non-function"),
         "unexpected error: {:?}",
         map.get_str("error")
     );
@@ -425,7 +435,11 @@ fn try_call_catches_arity_mismatch() {
     let map = expect_map(result.tail());
     assert_eq!(map.get_str("ok"), Some(&Value::Bool(false)));
     assert!(
-        map.get_str("error").unwrap().as_str().unwrap().contains("expects 1"),
+        map.get_str("error")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .contains("expects 1"),
         "unexpected error: {:?}",
         map.get_str("error")
     );
@@ -474,7 +488,11 @@ fn try_call_catches_native_arity_mismatch() {
     let map = expect_map(result.tail());
     assert_eq!(map.get_str("ok"), Some(&Value::Bool(false)));
     assert!(
-        map.get_str("error").unwrap().as_str().unwrap().contains("expects 0"),
+        map.get_str("error")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .contains("expects 0"),
         "unexpected error: {:?}",
         map.get_str("error")
     );
@@ -644,7 +662,7 @@ fn catch_truncates_abandoned_operands() {
             Bytecode::LoadGlobal(try_call_slot()),
             closure(0),
             Bytecode::Call(1), // catch
-            Bytecode::Pop,      // discard the result map
+            Bytecode::Pop,     // discard the result map
         ],
         Arity::Exact(0),
         vec![],
@@ -664,7 +682,7 @@ fn vm_continues_after_catch() {
             Bytecode::LoadGlobal(try_call_slot()),
             closure(0),
             Bytecode::Call(1), // catch
-            Bytecode::Pop,      // discard result
+            Bytecode::Pop,     // discard result
             Bytecode::PushInt(10),
             Bytecode::PushInt(20),
             Bytecode::Add, // 30
@@ -675,6 +693,38 @@ fn vm_continues_after_catch() {
     );
     let result = run(program).unwrap();
     assert_eq!(result.tail(), &Value::Int(30));
+}
+
+#[test]
+fn frame_stack_restored_after_catch() {
+    // After a catch, a fresh closure call must work normally. A frame leaked by
+    // the unwind would corrupt `this_frame()`/base math, so `identity(7)` would
+    // not yield 7 (it would run the wrong code or mis-seat the arg).
+    let fail = named("fail", div_zero_body(), Arity::Exact(0), vec![], vec![]);
+    let identity = named(
+        "identity",
+        vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
+        Arity::Exact(1),
+        vec![entry("x", false)],
+        vec![],
+    );
+    let program = named(
+        "main",
+        vec![
+            Bytecode::LoadGlobal(try_call_slot()),
+            closure(0),        // fail
+            Bytecode::Call(1), // try_call(fail) -- catches
+            Bytecode::Pop,     // discard result map
+            closure(1),        // identity
+            Bytecode::PushInt(7),
+            Bytecode::Call(1), // identity(7) -> 7, only correct if frames were restored
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![fail, identity],
+    );
+    let result = run(program).unwrap();
+    assert_eq!(result.tail(), &Value::Int(7));
 }
 
 #[test]
@@ -716,7 +766,13 @@ fn nested_try_call_inner_catch_is_independent() {
     // try_call(mid); mid catches its own try_call(inner_fail), then raises its
     // own error, which the outer try_call catches. The inner catch must not
     // disturb the outer unwind.
-    let inner_fail = named("inner_fail", div_zero_body(), Arity::Exact(0), vec![], vec![]);
+    let inner_fail = named(
+        "inner_fail",
+        div_zero_body(),
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    );
     let mid = named(
         "mid",
         vec![
@@ -724,7 +780,7 @@ fn nested_try_call_inner_catch_is_independent() {
             Bytecode::LoadGlobal(try_call_slot()),
             closure(0),        // inner_fail
             Bytecode::Call(1), // try_call(inner_fail) -> caught
-            Bytecode::Pop,      // discard inner result
+            Bytecode::Pop,     // discard inner result
             Bytecode::PushInt(1),
             Bytecode::PushInt(0),
             Bytecode::Divide, // mid's own error
@@ -812,7 +868,7 @@ fn tail_call_chain_error_is_caught() {
             Bytecode::LoadGlobal(try_call_slot()),
             closure(0),
             Bytecode::Call(1), // try_call(A)
-            Bytecode::Pop,      // discard result map
+            Bytecode::Pop,     // discard result map
         ],
         Arity::Exact(0),
         vec![],

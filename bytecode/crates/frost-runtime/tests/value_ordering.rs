@@ -1,25 +1,36 @@
+//! Ordering tests for `Value::compare` -- the fallible, three-way comparison that
+//! backs `<`/`<=`/`>`/`>=`. Comparable operands yield an `Ordering`; non-orderable
+//! ones (mismatched or inherently unordered types) are a type error, not a silent
+//! `None`. Equality lives separately on `PartialEq` (see `value_equality.rs`).
+
+use std::cmp::Ordering;
+
 use frost_runtime::{FrostArray, Value};
 
 // -- Int ordering --
 
 #[test]
 fn int_less_than() {
-    assert!(Value::from(1i64) < Value::from(2i64));
+    assert_eq!(
+        Value::from(1i64).compare(&Value::from(2i64)).unwrap(),
+        Ordering::Less
+    );
 }
 
 #[test]
-fn int_not_less_when_greater() {
-    assert!(!(Value::from(2i64) < Value::from(1i64)));
+fn int_greater_when_greater() {
+    assert_eq!(
+        Value::from(2i64).compare(&Value::from(1i64)).unwrap(),
+        Ordering::Greater
+    );
 }
 
 #[test]
-fn int_not_less_when_equal() {
-    assert!(!(Value::from(1i64) < Value::from(1i64)));
-}
-
-#[test]
-fn int_greater_than() {
-    assert!(Value::from(2i64) > Value::from(1i64));
+fn int_equal() {
+    assert_eq!(
+        Value::from(1i64).compare(&Value::from(1i64)).unwrap(),
+        Ordering::Equal
+    );
 }
 
 // -- Float ordering --
@@ -28,56 +39,65 @@ fn int_greater_than() {
 fn float_less_than() {
     let a: Value = 1.0.try_into().unwrap();
     let b: Value = 2.0.try_into().unwrap();
-    assert!(a < b);
+    assert_eq!(a.compare(&b).unwrap(), Ordering::Less);
 }
 
 #[test]
-fn float_negative_zero_not_less_than_zero() {
+fn float_negative_zero_equals_zero() {
     let neg: Value = (-0.0f64).try_into().unwrap();
     let pos: Value = 0.0.try_into().unwrap();
-    assert!(!(neg < pos));
-    assert!(!(pos < neg));
+    assert_eq!(neg.compare(&pos).unwrap(), Ordering::Equal);
+    assert_eq!(pos.compare(&neg).unwrap(), Ordering::Equal);
 }
 
-// -- Cross-type numeric ordering --
+// -- Cross-type numeric ordering (works, unlike equality) --
 
 #[test]
 fn int_less_than_float() {
     let i = Value::from(3i64);
     let f: Value = 3.14.try_into().unwrap();
-    assert!(i < f);
+    assert_eq!(i.compare(&f).unwrap(), Ordering::Less);
 }
 
 #[test]
 fn float_less_than_int() {
     let f: Value = 3.14.try_into().unwrap();
     let i = Value::from(4i64);
-    assert!(f < i);
+    assert_eq!(f.compare(&i).unwrap(), Ordering::Less);
 }
 
 #[test]
-fn int_float_equal_values_not_less() {
+fn int_float_equal_values_compare_equal() {
     let i = Value::from(3i64);
     let f: Value = 3.0.try_into().unwrap();
-    assert!(!(i < f));
-    assert!(!(f < i));
+    assert_eq!(i.compare(&f).unwrap(), Ordering::Equal);
+    assert_eq!(f.compare(&i).unwrap(), Ordering::Equal);
 }
 
 // -- String ordering --
 
 #[test]
 fn string_lexicographic() {
-    assert!(Value::from("abc") < Value::from("abd"));
+    assert_eq!(
+        Value::from("abc").compare(&Value::from("abd")).unwrap(),
+        Ordering::Less
+    );
 }
 
 #[test]
-fn string_equal_not_less() {
-    assert!(!(Value::from("abc") < Value::from("abc")));
+fn string_equal() {
+    assert_eq!(
+        Value::from("abc").compare(&Value::from("abc")).unwrap(),
+        Ordering::Equal
+    );
 }
 
 #[test]
 fn string_prefix_is_less() {
-    assert!(Value::from("ab") < Value::from("abc"));
+    assert_eq!(
+        Value::from("ab").compare(&Value::from("abc")).unwrap(),
+        Ordering::Less
+    );
 }
 
 // -- Array ordering --
@@ -86,7 +106,7 @@ fn string_prefix_is_less() {
 fn array_lexicographic() {
     let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
     let b = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(3i64)]));
-    assert!(a < b);
+    assert_eq!(a.compare(&b).unwrap(), Ordering::Less);
 }
 
 #[test]
@@ -97,40 +117,68 @@ fn array_prefix_is_less() {
         Value::from(2i64),
         Value::from(3i64),
     ]));
-    assert!(a < b);
+    assert_eq!(a.compare(&b).unwrap(), Ordering::Less);
 }
 
 #[test]
-fn array_equal_not_less() {
+fn array_equal() {
     let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
     let b = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
-    assert!(!(a < b));
+    assert_eq!(a.compare(&b).unwrap(), Ordering::Equal);
 }
 
 #[test]
-fn empty_arrays_not_less() {
+fn empty_arrays_equal() {
     let a = Value::from(FrostArray::new(&[]));
     let b = Value::from(FrostArray::new(&[]));
-    assert!(!(a < b));
+    assert_eq!(a.compare(&b).unwrap(), Ordering::Equal);
 }
 
 #[test]
 fn empty_array_less_than_nonempty() {
     let a = Value::from(FrostArray::new(&[]));
     let b = Value::from(FrostArray::new(&[Value::from(1i64)]));
-    assert!(a < b);
+    assert_eq!(a.compare(&b).unwrap(), Ordering::Less);
 }
 
-// -- Non-comparable types return None (maps to error in Frost) --
+#[test]
+fn array_incomparable_element_is_error() {
+    // [1, "x"] vs [1, 2]: the second elements (String vs Int) are not orderable,
+    // so comparison fails -- and the error blames the element types, not Array.
+    let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from("x")]));
+    let b = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
+    let err = a.compare(&b).unwrap_err();
+    assert!(
+        err.message.contains("String") && err.message.contains("Int"),
+        "got: {}",
+        err.message
+    );
+    assert!(
+        !err.message.contains("Array"),
+        "should blame the element, not Array: {}",
+        err.message
+    );
+}
+
+#[test]
+fn array_incomparable_element_short_circuited_away() {
+    // [1, "x"] vs [2, 3]: decided at index 0 (1 < 2), so the incomparable second
+    // elements are never reached -- no error.
+    let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from("x")]));
+    let b = Value::from(FrostArray::new(&[Value::from(2i64), Value::from(3i64)]));
+    assert_eq!(a.compare(&b).unwrap(), Ordering::Less);
+}
+
+// -- Non-orderable types are a type error --
 
 #[test]
 fn null_not_orderable() {
-    assert!(Value::Null.partial_cmp(&Value::Null).is_none());
+    assert!(Value::Null.compare(&Value::Null).is_err());
 }
 
 #[test]
 fn bool_not_orderable() {
-    assert!(Value::from(true).partial_cmp(&Value::from(false)).is_none());
+    assert!(Value::from(true).compare(&Value::from(false)).is_err());
 }
 
 #[test]
@@ -138,23 +186,23 @@ fn map_not_orderable() {
     use frost_runtime::FrostMap;
     let a = Value::from(FrostMap::empty());
     let b = Value::from(FrostMap::empty());
-    assert!(a.partial_cmp(&b).is_none());
+    assert!(a.compare(&b).is_err());
 }
 
-// -- Cross-type non-numeric returns None --
+// -- Cross-type non-numeric is a type error --
 
 #[test]
 fn int_vs_string_not_orderable() {
-    assert!(Value::from(1i64).partial_cmp(&Value::from("a")).is_none());
+    assert!(Value::from(1i64).compare(&Value::from("a")).is_err());
 }
 
 #[test]
 fn null_vs_int_not_orderable() {
-    assert!(Value::Null.partial_cmp(&Value::from(1i64)).is_none());
+    assert!(Value::Null.compare(&Value::from(1i64)).is_err());
 }
 
 #[test]
 fn string_vs_array_not_orderable() {
     let arr = Value::from(FrostArray::new(&[]));
-    assert!(Value::from("a").partial_cmp(&arr).is_none());
+    assert!(Value::from("a").compare(&arr).is_err());
 }

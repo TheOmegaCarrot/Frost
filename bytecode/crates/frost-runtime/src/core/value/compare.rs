@@ -1,6 +1,6 @@
-use std::{cmp::Ordering, sync::Arc};
+use std::sync::Arc;
 
-use crate::core::{FrostFloat, Value};
+use crate::core::Value;
 
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
@@ -20,23 +20,3 @@ impl PartialEq for Value {
 }
 
 impl Eq for Value {}
-
-impl PartialOrd for Value {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (self, other) {
-            (Value::Null, Value::Null) => None,
-            (Value::Bool(_), Value::Bool(_)) => None,
-            (Value::Int(l), Value::Int(r)) => l.partial_cmp(r),
-            (Value::Float(l), Value::Float(r)) => l.partial_cmp(r),
-            (Value::String(l), Value::String(r)) => l.partial_cmp(r),
-            (Value::Array(l), Value::Array(r)) => l.partial_cmp(r),
-            (Value::Map(_), Value::Map(_)) => None,
-            (Value::NativeFunction(_), Value::NativeFunction(_)) => None,
-            (Value::Opaque(l), Value::Opaque(r)) => None,
-
-            (Value::Int(l), Value::Float(r)) => FrostFloat::from(*l).partial_cmp(r),
-            (Value::Float(l), Value::Int(r)) => l.partial_cmp(&FrostFloat::from(*r)),
-            _ => None,
-        }
-    }
-}

@@ -61,7 +61,11 @@ fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
             (string_key("value"), value),
         ])),
         Err(err) => {
-            let trace = err.backtrace.into_iter().map(Value::from).collect::<Vec<_>>();
+            let trace = err
+                .backtrace
+                .into_iter()
+                .map(Value::from)
+                .collect::<Vec<_>>();
             Ok(result_map([
                 (string_key("ok"), Value::Bool(false)),
                 (string_key("error"), Value::from(err.message)),

@@ -2,11 +2,12 @@
 
 mod globals;
 
-// White-box tests for the unwind invariants (operand stack, frame stack, and
-// native-arg-pool restoration on catch). Kept in their own file -- a child module
-// still reaches this module's private `Vm` internals.
+// White-box tests for the one unwind invariant not observable through the public
+// API: native-arg-pool buffer recycling. (Operand-stack and frame restoration are
+// covered black-box in tests/vm_errors.rs.) Kept in their own file -- a child
+// module still reaches this module's private `Vm` internals.
 #[cfg(test)]
-mod unwind_tests;
+mod arg_pool_tests;
 
 use std::debug_assert_matches;
 use std::num::NonZeroUsize;
@@ -535,23 +536,21 @@ impl Vm {
                     Bytecode::Multiply => self.binary_op(Value::multiply)?,
                     Bytecode::Divide => self.binary_op(Value::divide)?,
                     Bytecode::Modulus => self.binary_op(Value::modulus)?,
-                    Bytecode::CompareEqual => {
-                        todo!();
-                    }
-                    Bytecode::CompareNotEqual => {
-                        todo!();
-                    }
+                    // Equality is infallible (`Value: Eq`). Ordering delegates to
+                    // `Value::compare`, where an unorderable pair is a type error.
+                    Bytecode::CompareEqual => self.binary_op(|l, r| Ok(Value::Bool(l == r)))?,
+                    Bytecode::CompareNotEqual => self.binary_op(|l, r| Ok(Value::Bool(l != r)))?,
                     Bytecode::CompareLessThan => {
-                        todo!();
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_lt())))?
                     }
                     Bytecode::CompareLessThanOrEqual => {
-                        todo!();
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_le())))?
                     }
                     Bytecode::CompareGreaterThan => {
-                        todo!();
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_gt())))?
                     }
                     Bytecode::CompareGreaterThanOrEqual => {
-                        todo!();
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_ge())))?
                     }
                     Bytecode::LogicalNot => {
                         todo!();
@@ -764,7 +763,10 @@ impl Vm {
 
     /// The error produced when a non-callable value is called.
     fn not_callable(value: &Value) -> FrostError {
-        FrostError::new(format!("Attempt to call non-function value of type {}", value.type_name()))
+        FrostError::new(format!(
+            "Attempt to call non-function value of type {}",
+            value.type_name()
+        ))
     }
 
     /// Push a [VmFrame] to enter `closure`: captures seat into slots `0..n`,

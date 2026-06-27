@@ -176,7 +176,10 @@ fn run_native_program(
     let program = func(
         code,
         Arity::Exact(0),
-        bindings.iter().map(|(name, _)| entry(name, false)).collect(),
+        bindings
+            .iter()
+            .map(|(name, _)| entry(name, false))
+            .collect(),
         children,
     );
     let mut vm = frost_runtime::Vm::new(program).unwrap();
@@ -193,7 +196,9 @@ fn apply_native() -> Value {
         let f = args[0].clone();
         ctx.invoke(
             &f,
-            args[1..].iter_mut().map(|v| std::mem::replace(v, Value::Null)),
+            args[1..]
+                .iter_mut()
+                .map(|v| std::mem::replace(v, Value::Null)),
         )
     })
 }

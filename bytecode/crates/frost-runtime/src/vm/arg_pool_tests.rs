@@ -1,7 +1,11 @@
-//! White-box checks that integration tests cannot reach: after an error is
-//! caught, the operand stack, the frame stack, and the native-arg pool must all
-//! be restored. As a child of `vm`, this module can assert the private `Vm`
-//! internals directly.
+//! White-box tests for the one unwind invariant that is *not* observable through
+//! the public API: recycling of `native_arg_pool` buffers on the error path.
+//!
+//! Recycling a buffer versus allocating a fresh one produces identical results,
+//! so a black-box test cannot distinguish them -- only a direct check of the
+//! private pool can. (Operand-stack and frame-stack restoration *are* observable
+//! and are covered black-box in `tests/vm_errors.rs`.) As a child of `vm`, this
+//! module can read the private `Vm` internals directly.
 
 use std::sync::Arc;
 
@@ -58,7 +62,9 @@ fn apply_native() -> Value {
             let f = args[0].clone();
             ctx.invoke(
                 &f,
-                args[1..].iter_mut().map(|v| std::mem::replace(v, Value::Null)),
+                args[1..]
+                    .iter_mut()
+                    .map(|v| std::mem::replace(v, Value::Null)),
             )
         },
         "apply",
@@ -67,33 +73,9 @@ fn apply_native() -> Value {
 }
 
 #[test]
-fn catch_restores_operand_stack_and_frames() {
-    // try_call(fail): after the catch, exactly the result map is left on the
-    // operand stack, and only the base frame remains.
-    let program = func(
-        "main",
-        vec![
-            Bytecode::LoadGlobal(try_call_slot()),
-            closure(0),
-            Bytecode::Call(1),
-        ],
-        vec![],
-        vec![fail_fn()],
-    );
-    let result = Vm::new(program).unwrap().run().unwrap();
-    let vm = &result.0;
-    assert_eq!(vm.stack.len(), 1, "exactly the result map should remain");
-    assert!(
-        vm.stack[0].as_map().is_some(),
-        "the surviving value should be the result map"
-    );
-    assert_eq!(vm.stack_frames.len(), 1, "only the base frame should remain");
-}
-
-#[test]
 fn catch_recycles_native_arg_buffer() {
-    // try_call checks out a pooled buffer for its own args; after the call it must
-    // be returned, so the pool is non-empty.
+    // try_call checks out a pooled buffer for its own args; after the caught
+    // error it must be returned, so the pool is non-empty.
     let program = func(
         "main",
         vec![
@@ -139,6 +121,4 @@ fn catch_recycles_every_intermediate_buffer() {
         2,
         "both intermediate arg buffers should be recycled"
     );
-    assert_eq!(result.0.stack.len(), 1);
-    assert_eq!(result.0.stack_frames.len(), 1);
 }

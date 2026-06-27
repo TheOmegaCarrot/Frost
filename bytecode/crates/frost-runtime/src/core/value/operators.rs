@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::{collections::BTreeMap, sync::Arc};
 
 use crate::core::{FrostArray, FrostError, FrostFloat, FrostMap, Value};
@@ -116,6 +117,45 @@ impl Value {
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_rem(*r))),
 
             _ => Err(binop_type_error("modulus", "%", self, rhs)),
+        }
+    }
+
+    /// Frost ordered comparison: the single source of truth for `<`, `<=`, `>`,
+    /// and `>=`. Returns the [`Ordering`] of two values, or a type error when they
+    /// are not orderable -- mismatched types, or inherently unordered ones like
+    /// `Bool`, `Null`, and `Map`. Equality (`==`/`!=`) does not go through here;
+    /// `Value: Eq` makes it infallible.
+    ///
+    /// Numeric `Int`/`Float` compare across types (unlike equality). Arrays order
+    /// lexicographically, comparing corresponding elements *recursively* through
+    /// this method: an incomparable element raises a type error naming the
+    /// *element* types (e.g. `String and Float`), not the enclosing `Array`, and
+    /// the first non-equal pair decides the result -- so a later incomparable pair
+    /// is never reached (`[1, 'x'] < [2, 3.0]` is `true`, not an error).
+    pub fn compare(&self, rhs: &Value) -> Result<Ordering, FrostError> {
+        match (self, rhs) {
+            (Value::Int(l), Value::Int(r)) => Ok(l.cmp(r)),
+            (Value::Float(l), Value::Float(r)) => Ok(l.cmp(r)),
+            (Value::Int(l), Value::Float(r)) => Ok(FrostFloat::from(*l).cmp(r)),
+            (Value::Float(l), Value::Int(r)) => Ok(l.cmp(&FrostFloat::from(*r))),
+            (Value::String(l), Value::String(r)) => Ok(l.cmp(r)),
+
+            (Value::Array(a), Value::Array(b)) => {
+                for (x, y) in a.iter().zip(b.iter()) {
+                    match x.compare(y)? {
+                        Ordering::Equal => continue,
+                        ordering => return Ok(ordering),
+                    }
+                }
+                Ok(a.len().cmp(&b.len()))
+            }
+
+            _ => Err(format!(
+                "Cannot compare incompatible types: {} and {}",
+                self.type_name(),
+                rhs.type_name()
+            )
+            .into()),
         }
     }
 }
