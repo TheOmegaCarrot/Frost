@@ -553,10 +553,25 @@ impl Vm {
                         self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_ge())))?
                     }
                     Bytecode::LogicalNot => {
-                        todo!();
+                        let operand = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let result = Value::from(!operand.is_truthy());
+                        self.stack.push(result);
                     }
                     Bytecode::Negate => {
-                        todo!();
+                        let operand = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let result = match operand {
+                            Value::Int(i) => Value::from(i.wrapping_neg()),
+                            // Unwrap is safe here because I'm just negating a float that's already
+                            // proven not to be NaN or Inf
+                            Value::Float(f) => Value::Float(FrostFloat::new(-f.get()).unwrap()),
+                            _ => {
+                                return Err(FrostError::new(format!(
+                                    "Cannot negate value of type {}",
+                                    operand.type_name()
+                                )));
+                            }
+                        };
+                        self.stack.push(result);
                     }
                     Bytecode::Jump(n) => {
                         todo!();

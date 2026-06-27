@@ -16,7 +16,9 @@
 
 use std::sync::Arc;
 
-use frost_runtime::{Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostFloat, MapKey, Value, Vm};
+use frost_runtime::{
+    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostFloat, MapKey, Value, Vm,
+};
 
 // ============================================================
 // Helpers
@@ -96,7 +98,11 @@ fn add_concatenates_strings_in_operand_order() {
 #[test]
 fn add_concatenates_arrays() {
     // [1, 2] + [3] -> [1, 2, 3].
-    let out = eval(vec![arr(&[1, 2]), arr(&[3])], vec![LoadConst(0), LoadConst(1), Add]).unwrap();
+    let out = eval(
+        vec![arr(&[1, 2]), arr(&[3])],
+        vec![LoadConst(0), LoadConst(1), Add],
+    )
+    .unwrap();
     assert_eq!(out, arr(&[1, 2, 3]));
 }
 
@@ -114,7 +120,11 @@ fn add_merges_maps() {
 #[test]
 fn add_incompatible_types_is_error() {
     let err = eval(vec![], vec![PushInt(1), PushNull, Add]).unwrap_err();
-    assert!(err.message.contains("incompatible types"), "got: {}", err.message);
+    assert!(
+        err.message.contains("incompatible types"),
+        "got: {}",
+        err.message
+    );
 }
 
 // ============================================================
@@ -135,7 +145,11 @@ fn subtract_floats() {
 #[test]
 fn subtract_incompatible_types_is_error() {
     let err = eval(vec![], vec![PushInt(1), PushNull, Subtract]).unwrap_err();
-    assert!(err.message.contains("incompatible types"), "got: {}", err.message);
+    assert!(
+        err.message.contains("incompatible types"),
+        "got: {}",
+        err.message
+    );
 }
 
 // ============================================================
@@ -155,7 +169,11 @@ fn multiply_promotes_int_and_float() {
 #[test]
 fn multiply_incompatible_types_is_error() {
     let err = eval(vec![], vec![PushInt(2), PushNull, Multiply]).unwrap_err();
-    assert!(err.message.contains("incompatible types"), "got: {}", err.message);
+    assert!(
+        err.message.contains("incompatible types"),
+        "got: {}",
+        err.message
+    );
 }
 
 // ============================================================
@@ -211,7 +229,11 @@ fn modulus_by_zero_is_error() {
 fn modulus_on_floats_is_type_error() {
     // Modulus is Int-only; floats are a type error, not a computation.
     let err = eval(vec![], vec![float(7.0), float(3.0), Modulus]).unwrap_err();
-    assert!(err.message.contains("incompatible types"), "got: {}", err.message);
+    assert!(
+        err.message.contains("incompatible types"),
+        "got: {}",
+        err.message
+    );
 }
 
 // ============================================================
@@ -222,5 +244,8 @@ fn modulus_on_floats_is_type_error() {
 fn arithmetic_leaves_exactly_one_value() {
     // Sentinel below; after the op and a Pop, the sentinel is the tail -- proving
     // the opcode consumed two operands and pushed exactly one result.
-    assert_eq!(val(vec![PushInt(99), PushInt(2), PushInt(3), Add, Pop]), Value::Int(99));
+    assert_eq!(
+        val(vec![PushInt(99), PushInt(2), PushInt(3), Add, Pop]),
+        Value::Int(99)
+    );
 }
