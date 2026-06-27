@@ -573,14 +573,23 @@ impl Vm {
                         };
                         self.stack.push(result);
                     }
+                    // Jump(n) (and conditional variants) skip n instructions.
+                    // The `pc += 1` is intended to still be hit.
+                    // Jump(0) is just a funny way to spell "Nop".
                     Bytecode::Jump(n) => {
-                        todo!();
+                        pc += n;
                     }
                     Bytecode::JumpIfTrue(n) => {
-                        todo!();
+                        let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        if operand.is_truthy() {
+                            pc += n;
+                        }
                     }
                     Bytecode::JumpIfFalse(n) => {
-                        todo!();
+                        let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        if !operand.is_truthy() {
+                            pc += n;
+                        }
                     }
                     Bytecode::Call(argc) => {
                         let base = self.stack.len() - (argc + 1);

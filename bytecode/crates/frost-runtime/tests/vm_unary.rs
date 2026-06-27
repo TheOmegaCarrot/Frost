@@ -88,7 +88,11 @@ fn not_empty_string_is_false() {
 fn not_empty_array_is_false() {
     // Empty array is truthy.
     assert_eq!(
-        eval(vec![Value::Array(FrostArray::empty())], vec![LoadConst(0), LogicalNot]).unwrap(),
+        eval(
+            vec![Value::Array(FrostArray::empty())],
+            vec![LoadConst(0), LogicalNot]
+        )
+        .unwrap(),
         Value::Bool(false)
     );
 }
@@ -97,7 +101,11 @@ fn not_empty_array_is_false() {
 fn not_empty_map_is_false() {
     // Empty map is truthy.
     assert_eq!(
-        eval(vec![Value::Map(FrostMap::empty())], vec![LoadConst(0), LogicalNot]).unwrap(),
+        eval(
+            vec![Value::Map(FrostMap::empty())],
+            vec![LoadConst(0), LogicalNot]
+        )
+        .unwrap(),
         Value::Bool(false)
     );
 }
@@ -105,13 +113,19 @@ fn not_empty_map_is_false() {
 #[test]
 fn double_not_collapses_to_bool() {
     // not (not 5) -> not false -> true.
-    assert_eq!(val(vec![PushInt(5), LogicalNot, LogicalNot]), Value::Bool(true));
+    assert_eq!(
+        val(vec![PushInt(5), LogicalNot, LogicalNot]),
+        Value::Bool(true)
+    );
 }
 
 #[test]
 fn logical_not_leaves_exactly_one_value() {
     // Sentinel below; after the op and a Pop, the sentinel is the tail.
-    assert_eq!(val(vec![PushInt(42), PushTrue, LogicalNot, Pop]), Value::Int(42));
+    assert_eq!(
+        val(vec![PushInt(42), PushTrue, LogicalNot, Pop]),
+        Value::Int(42)
+    );
 }
 
 // ============================================================
@@ -170,12 +184,19 @@ fn negate_string_is_type_error() {
 
 #[test]
 fn negate_array_is_type_error() {
-    let err = eval(vec![Value::Array(FrostArray::empty())], vec![LoadConst(0), Negate]).unwrap_err();
+    let err = eval(
+        vec![Value::Array(FrostArray::empty())],
+        vec![LoadConst(0), Negate],
+    )
+    .unwrap_err();
     assert!(err.message.contains("negate"), "got: {}", err.message);
 }
 
 #[test]
 fn negate_leaves_exactly_one_value() {
     // Sentinel below; after the op and a Pop, the sentinel is the tail.
-    assert_eq!(val(vec![PushInt(42), PushInt(5), Negate, Pop]), Value::Int(42));
+    assert_eq!(
+        val(vec![PushInt(42), PushInt(5), Negate, Pop]),
+        Value::Int(42)
+    );
 }
