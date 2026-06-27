@@ -140,7 +140,12 @@ fn type_name_delegates_to_frost_type_name() {
 #[test]
 fn exact_matches_own_type() {
     for (v, t) in samples() {
-        assert!(v.fits_category(Ftc::Exact(t)), "{} is Exact({:?})", v.type_name(), t);
+        assert!(
+            v.fits_category(Ftc::Exact(t)),
+            "{} is Exact({:?})",
+            v.type_name(),
+            t
+        );
     }
 }
 
@@ -180,7 +185,10 @@ fn numeric_category() {
 #[test]
 fn primitive_category() {
     // Null counts as primitive; Array/Map/Function/Opaque do not.
-    assert_membership(Ftc::Primitive, &[Ft::Null, Ft::Bool, Ft::Int, Ft::Float, Ft::String]);
+    assert_membership(
+        Ftc::Primitive,
+        &[Ft::Null, Ft::Bool, Ft::Int, Ft::Float, Ft::String],
+    );
 }
 
 #[test]

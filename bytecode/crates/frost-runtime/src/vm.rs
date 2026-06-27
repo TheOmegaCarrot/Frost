@@ -15,7 +15,9 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 
-use crate::{FrostArray, FrostError, FrostFloat, FrostMap, FrostResult, MapKey, Value};
+use crate::{
+    FrostArray, FrostError, FrostFloat, FrostMap, FrostResult, FrostTypeCategory, MapKey, Value,
+};
 
 // ============================================================
 // Bytecode
@@ -94,6 +96,10 @@ pub enum Bytecode {
     // Leaves a single value on the stack
     SoftIndexStructure, // Null on missing
     HardIndexStructure, // Error on missing
+
+    // Consumes the value at the top of the stack, and produces a bool depending if the value fits
+    // the given type category.
+    TypeTest(FrostTypeCategory),
 }
 
 // ============================================================
@@ -714,6 +720,10 @@ impl Vm {
                     }
                     Bytecode::HardIndexStructure => {
                         todo!();
+                    }
+                    Bytecode::TypeTest(tc) => {
+                        let operand = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        self.stack.push(operand.fits_category(tc).into());
                     }
                 };
                 pc += 1;
