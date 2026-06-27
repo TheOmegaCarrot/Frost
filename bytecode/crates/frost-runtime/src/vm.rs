@@ -95,7 +95,7 @@ pub enum Bytecode {
     // Index a structure, structure is below the index initially (consumed)
     // Leaves a single value on the stack
     SoftIndexStructure, // Null on missing
-    HardIndexStructure, // Error on missing
+    HardIndexMap,       // Error on missing
 
     // Consumes the value at the top of the stack, and produces a bool depending if the value fits
     // the given type category.
@@ -716,9 +716,35 @@ impl Vm {
                         }
                     }
                     Bytecode::SoftIndexStructure => {
-                        todo!();
+                        let index = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let structure = self.stack.pop().expect("FROST STACK UNDERFLOW");
+
+                        let result = match (&structure, &index) {
+                            (Value::Array(arr), Value::Int(i)) => {
+                                arr.frost_get(*i).unwrap_or(&Value::Null)
+                            }
+                            (Value::Array(_), _) => {
+                                return Err(FrostError::new(format!(
+                                    "Cannot index Array with value of type {}",
+                                    index.type_name()
+                                )));
+                            }
+                            (Value::Map(map), _) => {
+                                let key = MapKey::try_from(index)?;
+                                map.get(&key).unwrap_or(&Value::Null)
+                            }
+                            _ => {
+                                return Err(FrostError::new(format!(
+                                    "Cannot index value of type {}",
+                                    structure.type_name()
+                                )));
+                            }
+                        }
+                        .clone();
+
+                        self.stack.push(result);
                     }
-                    Bytecode::HardIndexStructure => {
+                    Bytecode::HardIndexMap => {
                         todo!();
                     }
                     Bytecode::TypeTest(tc) => {
