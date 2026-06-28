@@ -253,6 +253,7 @@ pub struct ProgramResult(Vm);
 
 /// Representation of the arity of a Frost function.
 /// Every function has a certain number of fixed args, and may or may not be variadic.
+/// A native function may have a specific arity range, without being variadic.
 /// ```frost
 /// fn a, b, c, ...more -> ...
 /// # at least 3
@@ -260,6 +261,7 @@ pub struct ProgramResult(Vm);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Arity {
     Exact(usize),
+    Between(u32, u32),
     AtLeast(usize),
 }
 
@@ -927,6 +929,7 @@ impl Vm {
     fn check_arity(arity: Arity, argc: usize, name: &str) -> Result<(), FrostError> {
         let ok = match arity {
             Arity::Exact(n) => argc == n,
+            Arity::Between(lo, hi) => (lo..=hi).contains(&(argc as u32)),
             Arity::AtLeast(n) => argc >= n,
         };
         if ok {
@@ -935,6 +938,9 @@ impl Vm {
         Err(FrostError::new(match arity {
             Arity::Exact(n) => {
                 format!("Function {name} expects {n} arguments, but was called with {argc}")
+            }
+            Arity::Between(lo, hi) => {
+                format!("Function {name} expects between {lo} and {hi} arguments, but was called with {argc}")
             }
             Arity::AtLeast(n) => {
                 format!(
@@ -974,9 +980,23 @@ impl Vm {
             this_fn: closure.function.clone(),
         }));
 
-        if let Arity::AtLeast(fixed_argc) = closure.function.arity {
-            let varargs = self.stack.split_off(base + 1 + fixed_argc);
-            self.stack.push(Value::Array(varargs.into()));
+        // The incoming argument count: everything on the operand stack above the
+        // function value at `base`, captured before the rearrangement below.
+        let argc = self.stack.len() - (base + 1);
+
+        match closure.function.arity {
+            // Surplus args beyond the fixed params collapse into the rest array.
+            Arity::AtLeast(fixed_argc) => {
+                let varargs = self.stack.split_off(base + 1 + fixed_argc);
+                self.stack.push(Value::Array(varargs.into()));
+            }
+            // A `Between` closure is always hand-rolled bytecode. Hand its prelude the
+            // actual arg count on top of the args, so it can tell an omitted optional
+            // from one explicitly passed as null and seat its slots accordingly.
+            Arity::Between(..) => {
+                self.stack.push(Value::Int(argc as i64));
+            }
+            Arity::Exact(_) => {}
         }
     }
 
