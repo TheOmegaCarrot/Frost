@@ -78,6 +78,10 @@ pub enum Bytecode {
     Call(usize),
     TailCall(usize),
 
+    // Dynamic-arity call: ( f arg_arry -- r )
+    // Purpose-built for the `call` builtin
+    DynTailCall,
+
     // Move num_captures elements from the stack to a closure capture structure,
     // as a part of a new closure with code from function (index into function table)
     CreateClosure { num_captures: u32, function: u32 },
@@ -263,6 +267,14 @@ pub enum Arity {
     Exact(usize),
     Between(u32, u32),
     AtLeast(usize),
+}
+
+/// Control-flow outcome of a tail call, shared by `TailCall` and `DynTailCall`.
+enum TailFlow {
+    /// Closure callee: the loop must re-enter at the callee's frame (`pc = 0`).
+    Reenter,
+    /// Native callee: it ran inline, so fall through to the next instruction.
+    FellThrough,
 }
 
 #[derive(Debug)]
@@ -641,56 +653,28 @@ impl Vm {
                         }
                     }
                     Bytecode::TailCall(argc) => {
-                        let base = self.stack.len() - (argc + 1);
-                        let function = self.stack[base].clone();
-
-                        match function {
-                            // A native callee adds no VM frame, so there is nothing to elide: run it exactly like a plain `Call`.
-                            // Its result is left on the stack and, since `TailCall` sits in tail position,
-                            // the enclosing function returns it via the normal end-of-code path on the next loop turn.
-                            Value::NativeFunction(native_fn) => {
-                                self.native_call(&native_fn, argc)?
-                            }
-                            Value::Closure(closure) => {
-                                // Check arity BEFORE popping the caller frame,
-                                // so an arity error does not destroy the frame the error path still needs.
-                                Self::check_arity(
-                                    closure.function.arity,
-                                    argc,
-                                    &closure.function.name,
-                                )?;
-
-                                // A tail call reuses the current frame.
-                                // But the bottom frame (`len == 1`) is the top-level closure whose locals back `exports`; eliding it would orphan them.
-                                // From the bottom frame, degrade to a normal Call: keep the top-level frame and let the callee return into it.
-                                // (Re-entrant `invoke` activations always run with >= 2 frames, so genuine TCO is preserved everywhere else.)
-                                if self.stack_frames.len() == 1 {
-                                    self.push_closure_frame(&closure, base, NonZeroUsize::new(pc + 1));
-                                    pc = 0;
-                                    continue;
-                                }
-
-                                let StackFrame::VmFrame(gone_frame) = self
-                                    .stack_frames
-                                    .pop()
-                                    .expect("IMPOSSIBLE: Vm has no frame")
-                                else {
-                                    panic!("IMPOSSIBLE: tail call in native frame");
-                                };
-
-                                // Reuse the popped frame's slot, inheriting its base and return address
-                                // so the callee returns to F's original caller.
-                                // The TCO: one frame popped, one pushed, net zero.
-                                self.push_closure_frame(
-                                    &closure,
-                                    gone_frame.base_idx,
-                                    gone_frame.return_address,
-                                );
+                        match self.tail_call(argc, NonZeroUsize::new(pc + 1))? {
+                            TailFlow::Reenter => {
                                 pc = 0;
                                 continue;
                             }
-                            _ => return Err(Self::not_callable(&function)),
+                            TailFlow::FellThrough => {}
                         }
+                    }
+                    // Spread the args array on top, then tail-call the function beneath it.
+                    // `call`'s body normalizes and type-checks its args, so a non-Array here is a bug.
+                    Bytecode::DynTailCall => {
+                        let argc = self.explode_array();
+                        match self.tail_call(argc, NonZeroUsize::new(pc + 1))? {
+                            TailFlow::Reenter => {
+                                pc = 0;
+                                continue;
+                            }
+                            TailFlow::FellThrough => {}
+                        }
+                    }
+                    Bytecode::ExplodeArray => {
+                        self.explode_array();
                     }
                     Bytecode::CreateClosure {
                         num_captures,
@@ -721,18 +705,6 @@ impl Vm {
                             .collect::<Result<_, FrostError>>()?;
 
                         self.stack.push(map.into());
-                    }
-                    Bytecode::ExplodeArray => {
-                        let arr = self.stack_pop();
-                        let arr = match arr {
-                            Value::Array(inner_arr) => inner_arr,
-                            _ => panic!("ExplodeArray: operand not Array"),
-                        };
-
-                        match arr.try_extract() {
-                            Ok(vec) => self.stack.extend(vec),
-                            Err(arr) => self.stack.extend(arr.iter().cloned()),
-                        }
                     }
                     Bytecode::SoftIndexStructure => {
                         let index = self.stack_pop();
@@ -997,6 +969,77 @@ impl Vm {
                 self.stack.push(Value::Int(argc as i64));
             }
             Arity::Exact(_) => {}
+        }
+    }
+
+    /// Pop the top operand (which must be an Array) and push its elements in order,
+    /// returning the count. Backs `ExplodeArray` and the arg-spread of `DynTailCall`.
+    fn explode_array(&mut self) -> usize {
+        let Value::Array(arr) = self.stack_pop() else {
+            panic!("explode: operand not Array");
+        };
+        let before = self.stack.len();
+        match arr.try_extract() {
+            Ok(vec) => self.stack.extend(vec),
+            Err(arr) => self.stack.extend(arr.iter().cloned()),
+        }
+        self.stack.len() - before
+    }
+
+    /// Shared dispatch for `TailCall` and `DynTailCall`: with the callee and its
+    /// `argc` operands on top of the stack, run a native inline or set up a closure
+    /// frame for tail-call reuse. The returned [`TailFlow`] tells the caller whether
+    /// to re-enter the loop in the callee's frame (closure) or fall through (native).
+    ///
+    /// `return_address` is consulted only by the bottom-frame guard: the top-level
+    /// frame backs `exports`, so a tail call from it is degraded to a normal call
+    /// that returns into the preserved frame rather than eliding it. (Re-entrant
+    /// `invoke` activations always run with >= 2 frames, so TCO holds everywhere else.)
+    fn tail_call(
+        &mut self,
+        argc: usize,
+        return_address: Option<NonZeroUsize>,
+    ) -> Result<TailFlow, FrostError> {
+        let base = self.stack.len() - (argc + 1);
+        let function = self.stack[base].clone();
+
+        match function {
+            // A native callee adds no VM frame: run it inline like a plain Call.
+            // Its result is left on the stack; in tail position the enclosing
+            // function returns it via the normal end-of-code path next turn.
+            Value::NativeFunction(native_fn) => {
+                self.native_call(&native_fn, argc)?;
+                Ok(TailFlow::FellThrough)
+            }
+            Value::Closure(closure) => {
+                // Check arity before popping the caller frame, so an arity error
+                // does not destroy the frame the error path still needs.
+                Self::check_arity(closure.function.arity, argc, &closure.function.name)?;
+
+                // A tail call reuses the current frame -- except the bottom frame,
+                // which is preserved (see the doc comment).
+                if self.stack_frames.len() == 1 {
+                    self.push_closure_frame(&closure, base, return_address);
+                } else {
+                    let StackFrame::VmFrame(gone_frame) = self
+                        .stack_frames
+                        .pop()
+                        .expect("IMPOSSIBLE: Vm has no frame")
+                    else {
+                        panic!("IMPOSSIBLE: tail call in native frame");
+                    };
+
+                    // Reuse the popped frame's slot, inheriting its base and return
+                    // address so the callee returns to the original caller.
+                    self.push_closure_frame(
+                        &closure,
+                        gone_frame.base_idx,
+                        gone_frame.return_address,
+                    );
+                }
+                Ok(TailFlow::Reenter)
+            }
+            _ => Err(Self::not_callable(&function)),
         }
     }
 
