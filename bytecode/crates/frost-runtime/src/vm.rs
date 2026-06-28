@@ -108,6 +108,10 @@ pub enum Bytecode {
     // Consumes the value at the top of the stack, and produces a bool depending if the value fits
     // the given type category.
     TypeTest(FrostTypeCategory),
+
+    // Consume the value atop the stack and attach it to an error.
+    // The error is then produced, and enters the usual flow of a user-code error.
+    ProduceError,
 }
 
 // ============================================================
@@ -550,8 +554,7 @@ impl Vm {
                         self.stack.push(self.stack[self.stack.len() - idx].clone());
                     }
                     Bytecode::DefLocal(idx) => {
-                        self.this_frame_mut().local_slots[idx] =
-                            Some(self.stack_pop());
+                        self.this_frame_mut().local_slots[idx] = Some(self.stack_pop());
                     }
                     Bytecode::LoadLocal(idx) => {
                         self.stack.push(
@@ -768,6 +771,16 @@ impl Vm {
                         let operand = self.stack_pop();
                         self.stack.push(operand.fits_category(tc).into());
                     }
+                    Bytecode::ProduceError => match self.stack_pop() {
+                        // TODO: enhance FrostError to support attaching an arbitrary Value
+                        // (with an optimization for the most-common case of a UTF-8 string)
+                        Value::String(s) => {
+                            return Err(FrostError::new(String::from_utf8_lossy(&s)));
+                        }
+                        // This error message is kinda lame, but can be removed after
+                        // addressing the above TODO
+                        _ => return Err(FrostError::new("An unknown error occurred")),
+                    },
                 };
                 pc += 1;
             }
@@ -912,7 +925,9 @@ impl Vm {
                 format!("Function {name} expects {n} arguments, but was called with {argc}")
             }
             Arity::Between(lo, hi) => {
-                format!("Function {name} expects between {lo} and {hi} arguments, but was called with {argc}")
+                format!(
+                    "Function {name} expects between {lo} and {hi} arguments, but was called with {argc}"
+                )
             }
             Arity::AtLeast(n) => {
                 format!(

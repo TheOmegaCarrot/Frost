@@ -10,8 +10,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, MissingCaptures, NameEntry, ProgramResult, Value,
-    Vm,
+    Arity, Bytecode, CompiledFunction, FrostArray, MissingCaptures, NameEntry, ProgramResult,
+    Value, Vm,
 };
 
 use Bytecode::{DefLocal, LoadLocal, Pop, PushInt, Subtract};
@@ -79,7 +79,12 @@ fn close_ignores_extra_map_entries() {
 fn close_missing_capture_is_error() {
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
     let err = f.close(BTreeMap::new()).unwrap_err();
-    assert_eq!(err, MissingCaptures { names: vec!["x".to_string()] });
+    assert_eq!(
+        err,
+        MissingCaptures {
+            names: vec!["x".to_string()]
+        }
+    );
 }
 
 #[test]
@@ -88,7 +93,12 @@ fn close_reports_every_missing_capture_in_slot_order() {
     // middle one provided: the error must list the absent names in SLOT order
     // (["z", "y"]), which differs from sorted order (["y", "z"]) -- so a stray
     // sort of the missing list would be caught.
-    let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 3, &["z", "x", "y"]);
+    let f = compiled(
+        vec![Pop, LoadLocal(0)],
+        Arity::Exact(0),
+        3,
+        &["z", "x", "y"],
+    );
     let err = f.close(capmap(vec![("x", Value::Int(1))])).unwrap_err();
     assert_eq!(
         err,
@@ -132,7 +142,9 @@ fn close_injects_imported_capture() {
 fn close_does_not_let_host_override_imported() {
     // A host `imported` entry is ignored; the injected false wins.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["imported"]);
-    let closure = f.close(capmap(vec![("imported", Value::Bool(true))])).unwrap();
+    let closure = f
+        .close(capmap(vec![("imported", Value::Bool(true))]))
+        .unwrap();
     assert_eq!(run(Vm::new(closure).unwrap()).tail(), &Value::Bool(false));
 }
 
@@ -140,15 +152,24 @@ fn close_does_not_let_host_override_imported() {
 fn close_injects_imported_at_its_name_table_slot() {
     // `imported` is at slot 1, after host capture `x`. The injected false must
     // land at slot 1 (its name-table position), not a fixed slot 0.
-    let read_imported =
-        compiled(vec![Pop, LoadLocal(1)], Arity::Exact(0), 2, &["x", "imported"]);
+    let read_imported = compiled(
+        vec![Pop, LoadLocal(1)],
+        Arity::Exact(0),
+        2,
+        &["x", "imported"],
+    );
     let c1 = read_imported
         .close(capmap(vec![("x", Value::Int(7))]))
         .unwrap();
     assert_eq!(run(Vm::new(c1).unwrap()).tail(), &Value::Bool(false));
 
     // ...and the host capture `x` is seated at slot 0, undisturbed by the injection.
-    let read_x = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 2, &["x", "imported"]);
+    let read_x = compiled(
+        vec![Pop, LoadLocal(0)],
+        Arity::Exact(0),
+        2,
+        &["x", "imported"],
+    );
     let c2 = read_x.close(capmap(vec![("x", Value::Int(7))])).unwrap();
     assert_eq!(run(Vm::new(c2).unwrap()).tail(), &Value::Int(7));
 }
@@ -169,7 +190,12 @@ fn into_closure_errors_when_host_capture_needed() {
     // into_closure is `close` with an empty map, so a required host capture is missing.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
     let err = f.into_closure().unwrap_err();
-    assert_eq!(err, MissingCaptures { names: vec!["x".to_string()] });
+    assert_eq!(
+        err,
+        MissingCaptures {
+            names: vec!["x".to_string()]
+        }
+    );
 }
 
 #[test]
@@ -207,7 +233,14 @@ fn run_with_args_passes_arguments() {
     // fn value. A non-commutative op makes the seating order load-bearing:
     // 10 - 20 = -10, whereas a swapped seating would give +10.
     let f = compiled(
-        vec![DefLocal(1), DefLocal(0), Pop, LoadLocal(0), LoadLocal(1), Subtract],
+        vec![
+            DefLocal(1),
+            DefLocal(0),
+            Pop,
+            LoadLocal(0),
+            LoadLocal(1),
+            Subtract,
+        ],
         Arity::Exact(2),
         0,
         &["a", "b"],
@@ -264,7 +297,14 @@ fn run_with_args_variadic_collects_rest() {
 #[test]
 fn run_with_args_too_few_is_arity_error() {
     let f = compiled(
-        vec![DefLocal(1), DefLocal(0), Pop, LoadLocal(0), LoadLocal(1), Subtract],
+        vec![
+            DefLocal(1),
+            DefLocal(0),
+            Pop,
+            LoadLocal(0),
+            LoadLocal(1),
+            Subtract,
+        ],
         Arity::Exact(2),
         0,
         &["a", "b"],
@@ -273,8 +313,16 @@ fn run_with_args_too_few_is_arity_error() {
         .unwrap()
         .run_with_args([Value::Int(10)])
         .unwrap_err();
-    assert!(err.message.contains("expects 2 arguments"), "got: {}", err.message);
-    assert!(err.message.contains("called with 1"), "got: {}", err.message);
+    assert!(
+        err.message.contains("expects 2 arguments"),
+        "got: {}",
+        err.message
+    );
+    assert!(
+        err.message.contains("called with 1"),
+        "got: {}",
+        err.message
+    );
 }
 
 #[test]
@@ -291,8 +339,16 @@ fn run_with_args_too_many_is_arity_error() {
         .unwrap()
         .run_with_args([Value::Int(1), Value::Int(2)])
         .unwrap_err();
-    assert!(err.message.contains("expects 1 arguments"), "got: {}", err.message);
-    assert!(err.message.contains("called with 2"), "got: {}", err.message);
+    assert!(
+        err.message.contains("expects 1 arguments"),
+        "got: {}",
+        err.message
+    );
+    assert!(
+        err.message.contains("called with 2"),
+        "got: {}",
+        err.message
+    );
 }
 
 #[test]
@@ -309,7 +365,11 @@ fn run_with_args_variadic_too_few_is_arity_error() {
         .run_with_args([Value::Int(1)])
         .unwrap_err();
     assert!(err.message.contains("at least 2"), "got: {}", err.message);
-    assert!(err.message.contains("called with 1"), "got: {}", err.message);
+    assert!(
+        err.message.contains("called with 1"),
+        "got: {}",
+        err.message
+    );
 }
 
 #[test]
@@ -321,7 +381,18 @@ fn run_no_args_on_parameterized_is_arity_error() {
         0,
         &["a"],
     );
-    let err = Vm::new(f.into_closure().unwrap()).unwrap().run().unwrap_err();
-    assert!(err.message.contains("expects 1 arguments"), "got: {}", err.message);
-    assert!(err.message.contains("called with 0"), "got: {}", err.message);
+    let err = Vm::new(f.into_closure().unwrap())
+        .unwrap()
+        .run()
+        .unwrap_err();
+    assert!(
+        err.message.contains("expects 1 arguments"),
+        "got: {}",
+        err.message
+    );
+    assert!(
+        err.message.contains("called with 0"),
+        "got: {}",
+        err.message
+    );
 }

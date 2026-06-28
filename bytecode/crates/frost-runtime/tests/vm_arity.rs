@@ -75,7 +75,11 @@ fn between_below_lower_bound_is_arity_error() {
         "got: {}",
         err.message
     );
-    assert!(err.message.contains("called with 0"), "got: {}", err.message);
+    assert!(
+        err.message.contains("called with 0"),
+        "got: {}",
+        err.message
+    );
 }
 
 #[test]
@@ -86,7 +90,11 @@ fn between_above_upper_bound_is_arity_error() {
         "got: {}",
         err.message
     );
-    assert!(err.message.contains("called with 3"), "got: {}", err.message);
+    assert!(
+        err.message.contains("called with 3"),
+        "got: {}",
+        err.message
+    );
 }
 
 #[test]
@@ -94,7 +102,9 @@ fn between_equal_bounds_behaves_like_exact() {
     // A degenerate range Between(2, 2) accepts exactly 2 -- the bounds are inclusive
     // on both ends -- and rejects 1 and 3.
     assert_eq!(
-        call_native(counting(Arity::Between(2, 2)), 2).unwrap().tail(),
+        call_native(counting(Arity::Between(2, 2)), 2)
+            .unwrap()
+            .tail(),
         &Value::Int(2)
     );
     assert!(call_native(counting(Arity::Between(2, 2)), 1).is_err());

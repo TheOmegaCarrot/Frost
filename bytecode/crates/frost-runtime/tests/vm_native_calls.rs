@@ -36,7 +36,10 @@ fn run_with(
     children: Vec<Arc<CompiledFunction>>,
     code: Vec<Bytecode>,
 ) -> ProgramResult {
-    let names: Vec<NameEntry> = bindings.iter().map(|(name, _)| entry(name, false)).collect();
+    let names: Vec<NameEntry> = bindings
+        .iter()
+        .map(|(name, _)| entry(name, false))
+        .collect();
     let num_captures = names.len();
     let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
     body.extend(code);
@@ -49,8 +52,10 @@ fn run_with(
         num_captures,
         arity: Arity::Exact(0),
     });
-    let captures: BTreeMap<String, Value> =
-        bindings.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
+    let captures: BTreeMap<String, Value> = bindings
+        .into_iter()
+        .map(|(n, v)| (n.to_string(), v))
+        .collect();
     let closure = program.close(captures).expect("all captures provided");
     Vm::new(closure).unwrap().run().unwrap()
 }

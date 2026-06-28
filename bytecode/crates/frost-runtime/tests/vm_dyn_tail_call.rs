@@ -55,7 +55,14 @@ fn dyn_tail_call_spreads_array_into_closure() {
     // add = fn a, b -> a + b ; DynTailCall(add, [10, 20]) -> 30.
     let add = func(
         "add",
-        vec![DefLocal(1), DefLocal(0), Pop, LoadLocal(0), LoadLocal(1), Add],
+        vec![
+            DefLocal(1),
+            DefLocal(0),
+            Pop,
+            LoadLocal(0),
+            LoadLocal(1),
+            Add,
+        ],
         Arity::Exact(2),
         &["a", "b"],
     );
@@ -104,10 +111,7 @@ fn dyn_tail_call_with_empty_array_calls_with_no_args() {
     // const99 = fn -> 99 ; DynTailCall(const99, []) -> 99 (argc 0 from an empty spread).
     let const99 = func("const99", vec![Pop, PushInt(99)], Arity::Exact(0), &[]);
     let const99 = Value::Closure(Arc::new(const99.into_closure().unwrap()));
-    let result = run_with_f(
-        const99,
-        vec![Pop, LoadLocal(0), MakeArray(0), DynTailCall],
-    );
+    let result = run_with_f(const99, vec![Pop, LoadLocal(0), MakeArray(0), DynTailCall]);
     assert_eq!(result, Value::Int(99));
 }
 
@@ -116,7 +120,14 @@ fn dyn_tail_call_preserves_argument_order() {
     // sub = fn a, b -> a - b ; a non-commutative op proves the spread keeps order.
     let sub = func(
         "sub",
-        vec![DefLocal(1), DefLocal(0), Pop, LoadLocal(0), LoadLocal(1), Subtract],
+        vec![
+            DefLocal(1),
+            DefLocal(0),
+            Pop,
+            LoadLocal(0),
+            LoadLocal(1),
+            Subtract,
+        ],
         Arity::Exact(2),
         &["a", "b"],
     );

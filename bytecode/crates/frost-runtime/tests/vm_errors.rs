@@ -88,9 +88,13 @@ fn run_with(
         num_captures: bindings.len(),
         ..(*program).clone()
     };
-    let captures: std::collections::BTreeMap<String, Value> =
-        bindings.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
-    let closure = Arc::new(top).close(captures).expect("all captures provided");
+    let captures: std::collections::BTreeMap<String, Value> = bindings
+        .into_iter()
+        .map(|(n, v)| (n.to_string(), v))
+        .collect();
+    let closure = Arc::new(top)
+        .close(captures)
+        .expect("all captures provided");
     Vm::new(closure).unwrap().run()
 }
 
@@ -915,4 +919,99 @@ fn tail_call_chain_error_trace_is_lossy_under_tco() {
     let map = expect_map(result.tail());
     assert_eq!(map.get_str("ok"), Some(&Value::Bool(false)));
     assert_eq!(trace_of(map), vec!["C"]);
+}
+
+// ============================================================
+// ProduceError: ( e -- ! ) -- unconditional raise, same flow as other errors
+// ============================================================
+
+/// A capture-less child closure whose body is `error(message)`:
+/// `Pop` (own fn value); `LoadConst(0)`; `ProduceError`, with `message` its sole constant.
+fn raiser_fn(message: &str) -> Arc<CompiledFunction> {
+    Arc::new(CompiledFunction {
+        name: "raiser".to_string(),
+        code: vec![
+            Bytecode::Pop,
+            Bytecode::LoadConst(0),
+            Bytecode::ProduceError,
+        ],
+        child_fns: Vec::new(),
+        constants: vec![Value::from(message)],
+        name_table: Vec::new(),
+        num_captures: 0,
+        arity: Arity::Exact(0),
+    })
+}
+
+#[test]
+fn produce_error_with_string_raises_that_message() {
+    // error("boom") at the top level reaches the host via run(), message intact.
+    let program = Arc::new(CompiledFunction {
+        name: "main".to_string(),
+        code: vec![Bytecode::LoadConst(0), Bytecode::ProduceError],
+        child_fns: Vec::new(),
+        constants: vec![Value::from("boom")],
+        name_table: Vec::new(),
+        num_captures: 0,
+        arity: Arity::Exact(0),
+    });
+    let err = run(program).unwrap_err();
+    assert_eq!(err.message, "boom");
+    assert_eq!(backtrace(&err), vec!["main"]);
+}
+
+#[test]
+fn produce_error_unwinds_through_calls() {
+    // main -> raiser, which raises. The error unwinds frames just like div-by-zero,
+    // accumulating the backtrace innermost-first.
+    let program = named(
+        "main",
+        vec![closure(0), Bytecode::Call(0)],
+        Arity::Exact(0),
+        vec![],
+        vec![raiser_fn("boom")],
+    );
+    let err = run(program).unwrap_err();
+    assert_eq!(err.message, "boom");
+    assert_eq!(backtrace(&err), vec!["raiser", "main"]);
+}
+
+#[test]
+fn try_call_catches_produce_error() {
+    // try_call(raiser) -> { ok: false, error: "boom", trace: ["raiser"] }.
+    // Proves ProduceError raises a *recoverable* error on the same path as the rest.
+    let program = named(
+        "main",
+        vec![
+            Bytecode::LoadGlobal(try_call_slot()),
+            closure(0),
+            Bytecode::Call(1),
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![raiser_fn("boom")],
+    );
+    let result = run(program).unwrap();
+    let map = expect_map(result.tail());
+    assert_eq!(map.get_str("ok"), Some(&Value::Bool(false)));
+    assert_eq!(map.get_str("error"), Some(&Value::from("boom")));
+    assert_eq!(trace_of(map), vec!["raiser"]);
+}
+
+#[test]
+fn produce_error_with_non_string_value_still_raises() {
+    // Any operand raises (stack effect `( e -- ! )`). The exact message for a
+    // non-string payload is an intentional placeholder (pending Value-carrying
+    // errors), so assert the flow -- it raises and reaches the host -- not the text.
+    let program = Arc::new(CompiledFunction {
+        name: "main".to_string(),
+        code: vec![Bytecode::PushInt(42), Bytecode::ProduceError],
+        child_fns: Vec::new(),
+        constants: Vec::new(),
+        name_table: Vec::new(),
+        num_captures: 0,
+        arity: Arity::Exact(0),
+    });
+    let err = run(program).unwrap_err();
+    assert_eq!(backtrace(&err), vec!["main"]);
 }
