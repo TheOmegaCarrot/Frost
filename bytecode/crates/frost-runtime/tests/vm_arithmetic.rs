@@ -66,7 +66,9 @@ fn map_kv(pairs: &[(&str, i64)]) -> Value {
     )
 }
 
-use Bytecode::{Add, Divide, LoadConst, Modulus, Multiply, Pop, PushInt, PushNull, Subtract};
+use Bytecode::{
+    Add, Divide, LoadConst, MakeArray, Modulus, Multiply, Pop, PushInt, PushNull, Subtract,
+};
 
 // ============================================================
 // Add (numeric, plus string/array/map overloads)
@@ -115,6 +117,54 @@ fn add_merges_maps() {
     )
     .unwrap();
     assert_eq!(out, map_kv(&[("a", 1), ("b", 2)]));
+}
+
+#[test]
+fn add_map_overlapping_keys_right_wins() {
+    // {a: 1, b: 2} + {b: 99, c: 3} -> {a: 1, b: 99, c: 3}: the rhs value wins on a
+    // key collision. (The Add opcode now merges in its own steal path, so pin it.)
+    let out = eval(
+        vec![
+            map_kv(&[("a", 1), ("b", 2)]),
+            map_kv(&[("b", 99), ("c", 3)]),
+        ],
+        vec![LoadConst(0), LoadConst(1), Add],
+    )
+    .unwrap();
+    assert_eq!(out, map_kv(&[("a", 1), ("b", 99), ("c", 3)]));
+}
+
+#[test]
+fn add_arrays_with_empty_operands() {
+    // Empty operands concat correctly on either side.
+    let lhs_empty = eval(
+        vec![arr(&[]), arr(&[1, 2])],
+        vec![LoadConst(0), LoadConst(1), Add],
+    )
+    .unwrap();
+    assert_eq!(lhs_empty, arr(&[1, 2]));
+    let rhs_empty = eval(
+        vec![arr(&[1, 2]), arr(&[])],
+        vec![LoadConst(0), LoadConst(1), Add],
+    )
+    .unwrap();
+    assert_eq!(rhs_empty, arr(&[1, 2]));
+}
+
+#[test]
+fn add_uniquely_owned_arrays_concat_via_steal_path() {
+    // Operands built fresh with MakeArray are uniquely owned, so Add takes the
+    // steal/move branch; the result must still be the plain concatenation.
+    assert_eq!(
+        val(vec![
+            PushInt(1),
+            MakeArray(1),
+            PushInt(2),
+            MakeArray(1),
+            Add
+        ]),
+        arr(&[1, 2])
+    );
 }
 
 #[test]

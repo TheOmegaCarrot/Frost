@@ -268,11 +268,7 @@ fn hard_index_present_key_with_null_value_is_not_missing() {
 #[test]
 fn hard_index_non_map_is_error() {
     // 5.bar -> error: only maps are dot-indexable. (Key const at index 0.)
-    let err = eval(
-        vec![Value::from("bar")],
-        vec![PushInt(5), HardIndexMap(0)],
-    )
-    .unwrap_err();
+    let err = eval(vec![Value::from("bar")], vec![PushInt(5), HardIndexMap(0)]).unwrap_err();
     assert!(err.message.contains("index"), "got: {}", err.message);
 }
 

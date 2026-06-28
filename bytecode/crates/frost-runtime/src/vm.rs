@@ -546,7 +546,7 @@ impl Vm {
                     // Arithmetic delegates to the operators defined on `Value`; a
                     // type error or division by zero surfaces as an `Err` that `?`
                     // propagates straight out of this activation (see `unwind_frames`).
-                    Bytecode::Add => self.binary_op(Value::add)?,
+                    Bytecode::Add => self.do_add()?,
                     Bytecode::Subtract => self.binary_op(Value::subtract)?,
                     Bytecode::Multiply => self.binary_op(Value::multiply)?,
                     Bytecode::Divide => self.binary_op(Value::divide)?,
@@ -832,6 +832,44 @@ impl Vm {
         let rhs = self.stack.pop().expect("FROST STACK UNDERFLOW");
         let lhs = self.stack.pop().expect("FROST STACK UNDERFLOW");
         self.stack.push(op(&lhs, &rhs)?);
+        Ok(())
+    }
+
+    /// The `Add` opcode. `Array + Array` and `Map + Map` are the only overloads
+    /// where the borrowing `Value::add` would clone every element/entry, so for
+    /// those we *steal* the operands' storage -- reusing it in place when the
+    /// `Arc` is uniquely owned (a frequent case for stack temporaries), cloning
+    /// only when shared. Numeric addition, string concat, and every type error
+    /// have nothing worth stealing and fall back to the shared `binary_op` path.
+    fn do_add(&mut self) -> Result<(), FrostError> {
+        let n = self.stack.len();
+        let both_structural = n >= 2
+            && matches!(
+                (&self.stack[n - 2], &self.stack[n - 1]),
+                (Value::Array(_), Value::Array(_)) | (Value::Map(_), Value::Map(_))
+            );
+
+        if !both_structural {
+            return self.binary_op(Value::add);
+        }
+
+        let rhs = self.stack.pop().expect("FROST STACK UNDERFLOW");
+        let lhs = self.stack.pop().expect("FROST STACK UNDERFLOW");
+        let combined = match (lhs, rhs) {
+            (Value::Array(lhs), Value::Array(rhs)) => {
+                let mut elems = lhs.to_owned(); // steals lhs's Vec when uniquely owned
+                elems.extend(rhs.to_owned()); // steals rhs's elements when uniquely owned
+                Value::Array(elems.into())
+            }
+            (Value::Map(lhs), Value::Map(rhs)) => {
+                let mut entries = lhs.to_owned();
+                entries.extend(rhs.to_owned()); // on key collision rhs wins, matching `+`
+                Value::Map(entries.into())
+            }
+            // `both_structural` guarantees one of the two arms above.
+            _ => unreachable!("add: both_structural implies Array+Array or Map+Map"),
+        };
+        self.stack.push(combined);
         Ok(())
     }
 
