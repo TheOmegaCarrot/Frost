@@ -9,10 +9,17 @@
 //!   * Map + valid key -> value, or null when the key is absent; Map + null or
 //!     structured key -> error.
 //!   * Indexing a non-structure (String, Int, ...) -> error.
+//!
+//! `HardIndexMap` (`foo.bar`) is the Map-only counterpart. Stack: `( map -- value )`
+//! -- the key is a String constant read from the const pool, not a stack operand.
+//! A missing key is an ERROR (an intentional deviation from the oracle's
+//! null-on-missing), and non-map operands error too (arrays are not dot-indexable).
 
 use std::sync::Arc;
 
-use frost_runtime::{Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostFloat, MapKey, Value, Vm};
+use frost_runtime::{
+    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostFloat, MapKey, Value, Vm,
+};
 
 fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> {
     let program = Arc::new(CompiledFunction {
@@ -31,7 +38,9 @@ fn float(x: f64) -> Bytecode {
 }
 
 fn ints(xs: &[i64]) -> Value {
-    Value::Array(FrostArray::from(xs.iter().copied().map(Value::Int).collect::<Vec<_>>()))
+    Value::Array(FrostArray::from(
+        xs.iter().copied().map(Value::Int).collect::<Vec<_>>(),
+    ))
 }
 
 fn skey(s: &str) -> MapKey {
@@ -42,7 +51,7 @@ fn map(pairs: Vec<(MapKey, Value)>) -> Value {
     Value::Map(pairs.into_iter().collect())
 }
 
-use Bytecode::{LoadConst, Pop, PushInt, PushNull, SoftIndexStructure};
+use Bytecode::{HardIndexMap, LoadConst, Pop, PushInt, PushNull, SoftIndexStructure};
 
 // ============================================================
 // Array indexing
@@ -50,31 +59,51 @@ use Bytecode::{LoadConst, Pop, PushInt, PushNull, SoftIndexStructure};
 
 #[test]
 fn array_index_in_bounds() {
-    let out = eval(vec![ints(&[10, 20, 30])], vec![LoadConst(0), PushInt(0), SoftIndexStructure]).unwrap();
+    let out = eval(
+        vec![ints(&[10, 20, 30])],
+        vec![LoadConst(0), PushInt(0), SoftIndexStructure],
+    )
+    .unwrap();
     assert_eq!(out, Value::Int(10));
 }
 
 #[test]
 fn array_index_last() {
-    let out = eval(vec![ints(&[10, 20, 30])], vec![LoadConst(0), PushInt(2), SoftIndexStructure]).unwrap();
+    let out = eval(
+        vec![ints(&[10, 20, 30])],
+        vec![LoadConst(0), PushInt(2), SoftIndexStructure],
+    )
+    .unwrap();
     assert_eq!(out, Value::Int(30));
 }
 
 #[test]
 fn array_index_negative_counts_from_end() {
-    let out = eval(vec![ints(&[10, 20, 30])], vec![LoadConst(0), PushInt(-1), SoftIndexStructure]).unwrap();
+    let out = eval(
+        vec![ints(&[10, 20, 30])],
+        vec![LoadConst(0), PushInt(-1), SoftIndexStructure],
+    )
+    .unwrap();
     assert_eq!(out, Value::Int(30));
 }
 
 #[test]
 fn array_index_out_of_bounds_is_null() {
-    let out = eval(vec![ints(&[10, 20, 30])], vec![LoadConst(0), PushInt(10), SoftIndexStructure]).unwrap();
+    let out = eval(
+        vec![ints(&[10, 20, 30])],
+        vec![LoadConst(0), PushInt(10), SoftIndexStructure],
+    )
+    .unwrap();
     assert_eq!(out, Value::Null);
 }
 
 #[test]
 fn array_index_negative_out_of_bounds_is_null() {
-    let out = eval(vec![ints(&[10, 20, 30])], vec![LoadConst(0), PushInt(-10), SoftIndexStructure]).unwrap();
+    let out = eval(
+        vec![ints(&[10, 20, 30])],
+        vec![LoadConst(0), PushInt(-10), SoftIndexStructure],
+    )
+    .unwrap();
     assert_eq!(out, Value::Null);
 }
 
@@ -90,7 +119,11 @@ fn array_index_with_string_is_error() {
 
 #[test]
 fn array_index_with_float_is_error() {
-    let err = eval(vec![ints(&[1, 2])], vec![LoadConst(0), float(1.5), SoftIndexStructure]).unwrap_err();
+    let err = eval(
+        vec![ints(&[1, 2])],
+        vec![LoadConst(0), float(1.5), SoftIndexStructure],
+    )
+    .unwrap_err();
     assert!(err.message.contains("Array"), "got: {}", err.message);
 }
 
@@ -181,7 +214,86 @@ fn consumes_structure_and_index_pushes_one() {
     // result; Pop drops it, revealing the sentinel -- `( structure index -- r )`.
     let out = eval(
         vec![ints(&[7, 8, 9])],
-        vec![PushInt(99), LoadConst(0), PushInt(1), SoftIndexStructure, Pop],
+        vec![
+            PushInt(99),
+            LoadConst(0),
+            PushInt(1),
+            SoftIndexStructure,
+            Pop,
+        ],
+    )
+    .unwrap();
+    assert_eq!(out, Value::Int(99));
+}
+
+// ============================================================
+// HardIndexMap (`foo.bar`) -- Map-only, compile-time key, error on missing
+// ============================================================
+
+#[test]
+fn hard_index_present_key() {
+    // {bar: 1}.bar -> 1. Key "bar" is the constant at index 1.
+    let out = eval(
+        vec![map(vec![(skey("bar"), Value::Int(1))]), Value::from("bar")],
+        vec![LoadConst(0), HardIndexMap(1)],
+    )
+    .unwrap();
+    assert_eq!(out, Value::Int(1));
+}
+
+#[test]
+fn hard_index_missing_key_is_error() {
+    // {bar: 1}.baz -> error. The oracle returns null here; erroring is the
+    // intentional deviation.
+    let err = eval(
+        vec![map(vec![(skey("bar"), Value::Int(1))]), Value::from("baz")],
+        vec![LoadConst(0), HardIndexMap(1)],
+    )
+    .unwrap_err();
+    assert!(!err.message.is_empty());
+}
+
+#[test]
+fn hard_index_present_key_with_null_value_is_not_missing() {
+    // {bar: null}.bar -> null: the key is present, so the stored null is returned
+    // rather than erroring. Distinguishes "present but null" from "missing".
+    let out = eval(
+        vec![map(vec![(skey("bar"), Value::Null)]), Value::from("bar")],
+        vec![LoadConst(0), HardIndexMap(1)],
+    )
+    .unwrap();
+    assert_eq!(out, Value::Null);
+}
+
+#[test]
+fn hard_index_non_map_is_error() {
+    // 5.bar -> error: only maps are dot-indexable. (Key const at index 0.)
+    let err = eval(
+        vec![Value::from("bar")],
+        vec![PushInt(5), HardIndexMap(0)],
+    )
+    .unwrap_err();
+    assert!(err.message.contains("index"), "got: {}", err.message);
+}
+
+#[test]
+fn hard_index_array_is_error() {
+    // Arrays are not dot-indexable -- the reason this opcode is Map-specific.
+    let err = eval(
+        vec![ints(&[1, 2]), Value::from("bar")],
+        vec![LoadConst(0), HardIndexMap(1)],
+    )
+    .unwrap_err();
+    assert!(err.message.contains("index"), "got: {}", err.message);
+}
+
+#[test]
+fn hard_index_consumes_only_the_map() {
+    // Sentinel below; the key is from the const pool, so only the map is
+    // consumed. Pop drops the result, revealing the sentinel -- `( map -- value )`.
+    let out = eval(
+        vec![map(vec![(skey("bar"), Value::Int(1))]), Value::from("bar")],
+        vec![PushInt(99), LoadConst(0), HardIndexMap(1), Pop],
     )
     .unwrap();
     assert_eq!(out, Value::Int(99));

@@ -95,7 +95,10 @@ pub enum Bytecode {
     // Index a structure, structure is below the index initially (consumed)
     // Leaves a single value on the stack
     SoftIndexStructure, // Null on missing
-    HardIndexMap,       // Error on missing
+
+    // Index a Map with a constant String key.
+    // The key is in the constant pool at the index stored in this variant.
+    HardIndexMap(usize), // Error on missing
 
     // Consumes the value at the top of the stack, and produces a bool depending if the value fits
     // the given type category.
@@ -744,8 +747,34 @@ impl Vm {
 
                         self.stack.push(result);
                     }
-                    Bytecode::HardIndexMap => {
-                        todo!();
+                    Bytecode::HardIndexMap(const_pool_idx_of_key) => {
+                        let val = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let Value::Map(map) = val else {
+                            return Err(FrostError::new(format!(
+                                "Cannot index value of type {}",
+                                val.type_name()
+                            )));
+                        };
+                        let key = &self.this_frame().this_fn.constants[const_pool_idx_of_key];
+
+                        // The key constant is compiler-guaranteed to be a String (it is the
+                        // field name from `foo.bar`); any other type is broken bytecode.
+                        let Value::String(s) = key else {
+                            panic!(
+                                "IMPOSSIBLE: HardIndexMap key constant must be a String, but was {}",
+                                key.type_name()
+                            );
+                        };
+                        let key = MapKey::String(s.clone());
+
+                        match map.get(&key) {
+                            Some(result) => self.stack.push(result.clone()),
+                            // TODO: improve error message with "did you mean ...?" hint
+                            // (Error message sucks for now, and that's ok for now)
+                            None => {
+                                return Err(FrostError::new("Map has no value at key"));
+                            }
+                        }
                     }
                     Bytecode::TypeTest(tc) => {
                         let operand = self.stack.pop().expect("FROST STACK UNDERFLOW");
