@@ -519,7 +519,7 @@ impl Vm {
                     Bytecode::PushInt(i) => self.stack.push(Value::Int(i)),
                     Bytecode::PushFloat(f) => self.stack.push(Value::Float(f)),
                     Bytecode::Pop => {
-                        self.stack.pop();
+                        self.stack_pop();
                     }
                     Bytecode::Dup => self
                         .stack
@@ -529,7 +529,7 @@ impl Vm {
                     }
                     Bytecode::DefLocal(idx) => {
                         self.this_frame_mut().local_slots[idx] =
-                            Some(self.stack.pop().expect("FROST STACK UNDERFLOW"));
+                            Some(self.stack_pop());
                     }
                     Bytecode::LoadLocal(idx) => {
                         self.stack.push(
@@ -568,12 +568,12 @@ impl Vm {
                         self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_ge())))?
                     }
                     Bytecode::LogicalNot => {
-                        let operand = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let operand = self.stack_pop();
                         let result = Value::from(!operand.is_truthy());
                         self.stack.push(result);
                     }
                     Bytecode::Negate => {
-                        let operand = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let operand = self.stack_pop();
                         let result = match operand {
                             Value::Int(i) => Value::from(i.wrapping_neg()),
                             // Unwrap is safe here because I'm just negating a float that's already
@@ -707,7 +707,7 @@ impl Vm {
                         self.stack.push(map.into());
                     }
                     Bytecode::ExplodeArray => {
-                        let arr = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let arr = self.stack_pop();
                         let arr = match arr {
                             Value::Array(inner_arr) => inner_arr,
                             _ => panic!("ExplodeArray: operand not Array"),
@@ -719,8 +719,8 @@ impl Vm {
                         }
                     }
                     Bytecode::SoftIndexStructure => {
-                        let index = self.stack.pop().expect("FROST STACK UNDERFLOW");
-                        let structure = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let index = self.stack_pop();
+                        let structure = self.stack_pop();
 
                         let result = match (&structure, &index) {
                             (Value::Array(arr), Value::Int(i)) => {
@@ -748,7 +748,7 @@ impl Vm {
                         self.stack.push(result);
                     }
                     Bytecode::HardIndexMap(const_pool_idx_of_key) => {
-                        let val = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let val = self.stack_pop();
                         let Value::Map(map) = val else {
                             return Err(FrostError::new(format!(
                                 "Cannot index value of type {}",
@@ -777,7 +777,7 @@ impl Vm {
                         }
                     }
                     Bytecode::TypeTest(tc) => {
-                        let operand = self.stack.pop().expect("FROST STACK UNDERFLOW");
+                        let operand = self.stack_pop();
                         self.stack.push(operand.fits_category(tc).into());
                     }
                 };
@@ -821,6 +821,12 @@ impl Vm {
         }
     }
 
+    /// Pop the top of the operand stack. A missing operand is a compiler/bytecode
+    /// bug, not a recoverable error, so underflow panics.
+    fn stack_pop(&mut self) -> Value {
+        self.stack.pop().expect("FROST STACK UNDERFLOW")
+    }
+
     /// Pop the top two operands (rhs on top, lhs below) and push `op(lhs, rhs)`.
     /// Any operator error `?`-propagates out of the current activation; the
     /// consumed operands are simply dropped, since the unwind path truncates the
@@ -829,8 +835,8 @@ impl Vm {
         &mut self,
         op: impl FnOnce(&Value, &Value) -> Result<Value, FrostError>,
     ) -> Result<(), FrostError> {
-        let rhs = self.stack.pop().expect("FROST STACK UNDERFLOW");
-        let lhs = self.stack.pop().expect("FROST STACK UNDERFLOW");
+        let rhs = self.stack_pop();
+        let lhs = self.stack_pop();
         self.stack.push(op(&lhs, &rhs)?);
         Ok(())
     }
@@ -853,8 +859,8 @@ impl Vm {
             return self.binary_op(Value::add);
         }
 
-        let rhs = self.stack.pop().expect("FROST STACK UNDERFLOW");
-        let lhs = self.stack.pop().expect("FROST STACK UNDERFLOW");
+        let rhs = self.stack_pop();
+        let lhs = self.stack_pop();
         let combined = match (lhs, rhs) {
             (Value::Array(lhs), Value::Array(rhs)) => {
                 let mut elems = lhs.to_owned(); // steals lhs's Vec when uniquely owned
@@ -954,7 +960,7 @@ impl Vm {
     fn native_call(&mut self, function: &NativeFunction, argc: usize) -> Result<(), FrostError> {
         let mut buf = self.native_arg_pool.pop().unwrap_or_default();
         buf.extend(self.stack.drain((self.stack.len() - argc)..));
-        self.stack.pop(); // pop the function value off the stack
+        self.stack_pop(); // pop the function value off the stack
 
         let result = self.run_native(function, buf)?;
         self.stack.push(result);
