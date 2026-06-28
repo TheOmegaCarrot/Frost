@@ -1,14 +1,12 @@
 //! Tests for the control-flow opcodes: `Jump`, `JumpIfTrue`, `JumpIfFalse`.
 //!
-//! Convention (forward-only): a taken jump does `pc += n`, and the dispatch
-//! loop's trailing `pc += 1` supplies the step -- so the effective advance is
-//! `n + 1`, i.e. `Jump(n)` skips the next `n` instructions and `Jump(0)` is a Nop.
-//! `JumpIf*` peek the condition (it is NOT consumed) and fall through (advance 1)
-//! when not taken. Truthiness follows Frost: only `null`/`false` are falsy.
+//! Convention (forward-only): a taken jump does `pc += n`, and the dispatch loop's trailing `pc += 1` supplies the step --
+//! so the effective advance is `n + 1`, i.e. `Jump(n)` skips the next `n` instructions and `Jump(0)` is a Nop.
+//! `JumpIf*` peek the condition (it is NOT consumed) and fall through (advance 1) when not taken.
+//! Truthiness follows Frost: only `null`/`false` are falsy.
 //!
-//! Tests pin behavior by making a skipped vs. executed instruction observable in
-//! the tail value: a `PushInt(999)` that runs only if a jump was *not* taken, or
-//! a distinctive landing instruction.
+//! Tests pin behavior by making a skipped vs. executed instruction observable in the tail value:
+//! a `PushInt(999)` that runs only if a jump was *not* taken, or a distinctive landing instruction.
 
 use std::sync::Arc;
 
@@ -16,15 +14,19 @@ use frost_runtime::{Arity, Bytecode, CompiledFunction, Value, Vm};
 
 /// Run a local-less, constant-less program and return its tail value.
 fn tail(code: Vec<Bytecode>) -> Value {
+    let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
+    body.extend(code);
     let program = Arc::new(CompiledFunction {
         name: "<jumps>".to_string(),
-        code,
+        code: body,
         child_fns: Vec::new(),
         constants: Vec::new(),
         name_table: Vec::new(),
+        num_captures: 0,
         arity: Arity::Exact(0),
     });
-    Vm::new(program).unwrap().run().unwrap().tail().clone()
+    let closure = program.into_closure().unwrap();
+    Vm::new(closure).unwrap().run().unwrap().tail().clone()
 }
 
 use Bytecode::{Jump, JumpIfFalse, JumpIfTrue, Pop, PushFalse, PushInt, PushNull, PushTrue};

@@ -227,8 +227,8 @@ impl Value {
         self.fits_category(Ftc::NonNull)
     }
 
-    /// Frost's `to_int`: Int passes through, Float truncates toward zero,
-    /// String parses as an integer. Everything else returns Null.
+    /// Frost's `to_int`: Int passes through, Float truncates toward zero, String parses as an integer.
+    /// Everything else returns Null.
     pub fn to_frost_int(&self) -> Value {
         match self {
             Value::Int(_) => self.clone(),
@@ -242,8 +242,8 @@ impl Value {
         }
     }
 
-    /// Frost's `to_float`: Float passes through, Int promotes,
-    /// String parses as a float. Everything else returns Null.
+    /// Frost's `to_float`: Float passes through, Int promotes, String parses as a float.
+    /// Everything else returns Null.
     pub fn to_frost_float(&self) -> Value {
         match self {
             Value::Float(_) => self.clone(),

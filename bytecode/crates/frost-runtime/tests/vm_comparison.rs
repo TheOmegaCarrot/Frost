@@ -1,12 +1,10 @@
 //! Tests for the `Compare*` opcode family.
 //!
-//! Equality (`CompareEqual`/`CompareNotEqual`) rides `Value: Eq` and is
-//! infallible. Ordering (`CompareLessThan`, `...OrEqual`, `CompareGreaterThan`,
-//! `...OrEqual`) rides `Value::compare` (`PartialOrd`), where an unorderable pair
-//! is a Frost type error.
+//! Equality (`CompareEqual`/`CompareNotEqual`) rides `Value: Eq` and is infallible.
+//! Ordering (`CompareLessThan`, `...OrEqual`, `CompareGreaterThan`, `...OrEqual`) rides `Value::compare`,
+//! where an unorderable pair is a Frost type error.
 //!
-//! Operands that have no `Push*` opcode (String/Array/Map) are supplied via the
-//! constant table and `LoadConst`.
+//! Operands that have no `Push*` opcode (String/Array/Map) are supplied via the constant table and `LoadConst`.
 
 use std::sync::Arc;
 
@@ -21,15 +19,19 @@ use frost_runtime::{
 /// Run a constants-carrying, local-less top-level program and return its tail
 /// value (or the error it raised).
 fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> {
+    let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
+    body.extend(code);
     let program = Arc::new(CompiledFunction {
         name: "<cmp>".to_string(),
-        code,
+        code: body,
         child_fns: Vec::new(),
         constants,
         name_table: Vec::new(),
+        num_captures: 0,
         arity: Arity::Exact(0),
     });
-    Vm::new(program).unwrap().run().map(|r| r.tail().clone())
+    let closure = program.into_closure().unwrap();
+    Vm::new(closure).unwrap().run().map(|r| r.tail().clone())
 }
 
 /// Evaluate a constant-free program, expecting success.

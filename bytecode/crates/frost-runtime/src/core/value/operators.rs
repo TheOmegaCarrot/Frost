@@ -120,18 +120,8 @@ impl Value {
         }
     }
 
-    /// Frost ordered comparison: the single source of truth for `<`, `<=`, `>`,
-    /// and `>=`. Returns the [`Ordering`] of two values, or a type error when they
-    /// are not orderable -- mismatched types, or inherently unordered ones like
-    /// `Bool`, `Null`, and `Map`. Equality (`==`/`!=`) does not go through here;
-    /// `Value: Eq` makes it infallible.
-    ///
-    /// Numeric `Int`/`Float` compare across types (unlike equality). Arrays order
-    /// lexicographically, comparing corresponding elements *recursively* through
-    /// this method: an incomparable element raises a type error naming the
-    /// *element* types (e.g. `String and Float`), not the enclosing `Array`, and
-    /// the first non-equal pair decides the result -- so a later incomparable pair
-    /// is never reached (`[1, 'x'] < [2, 3.0]` is `true`, not an error).
+    /// Frost ordered comparison, backing `<`, `<=`, `>`, and `>=`.
+    /// Returns the [`Ordering`] of two values, or a type error when they are not orderable.
     pub fn compare(&self, rhs: &Value) -> Result<Ordering, FrostError> {
         match (self, rhs) {
             (Value::Int(l), Value::Int(r)) => Ok(l.cmp(r)),

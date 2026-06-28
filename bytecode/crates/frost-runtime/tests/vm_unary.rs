@@ -1,12 +1,9 @@
 //! Tests for the unary opcodes: `LogicalNot` and `Negate`.
 //!
-//! `LogicalNot` is total -- it maps any value to a `Bool` via Frost truthiness
-//! (only `null`/`false` are falsy). `Negate` is numeric: it wraps `Int` (matching
-//! the codebase's wrapping integer policy), negates `Float`, and is a type error
-//! for everything else.
+//! `LogicalNot` is total -- it maps any value to a `Bool` via Frost truthiness (only `null`/`false` are falsy).
+//! `Negate` is numeric: it wraps `Int` (matching the codebase's wrapping integer policy), negates `Float`, and is a type error for everything else.
 //!
-//! Operands without a `Push*` opcode (String/Array/Map) come from the constant
-//! table via `LoadConst`.
+//! Operands without a `Push*` opcode (String/Array/Map) come from the constant table via `LoadConst`.
 
 use std::sync::Arc;
 
@@ -19,15 +16,19 @@ use frost_runtime::{
 // ============================================================
 
 fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> {
+    let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
+    body.extend(code);
     let program = Arc::new(CompiledFunction {
         name: "<unary>".to_string(),
-        code,
+        code: body,
         child_fns: Vec::new(),
         constants,
         name_table: Vec::new(),
+        num_captures: 0,
         arity: Arity::Exact(0),
     });
-    Vm::new(program).unwrap().run().map(|r| r.tail().clone())
+    let closure = program.into_closure().unwrap();
+    Vm::new(closure).unwrap().run().map(|r| r.tail().clone())
 }
 
 fn val(code: Vec<Bytecode>) -> Value {

@@ -11,12 +11,13 @@
 
 mod common;
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use common::{entry, fn_with_locals, func};
+use common::{entry, func};
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, FrostResult, NativeCtx, NativeFunction,
-    ProgramResult, Value,
+    Arity, Bytecode, CompiledFunction, FrostArray, FrostResult, NameEntry, NativeCtx,
+    NativeFunction, ProgramResult, Value, Vm,
 };
 
 /// Build a native function `Value`.
@@ -28,21 +29,36 @@ fn native(
     Value::NativeFunction(Arc::new(NativeFunction::new(f, name, arity)))
 }
 
-/// Seat each `(name, value)` into a top-level slot (in order, so name `i` is slot
-/// `i`), then run `code` to completion.
+/// Build a top-level closure whose captures are `bindings` (host-provided values,
+/// in order so name `i` is capture slot `i`) plus `children`, then run `code`.
+fn run_with(
+    bindings: Vec<(&str, Value)>,
+    children: Vec<Arc<CompiledFunction>>,
+    code: Vec<Bytecode>,
+) -> ProgramResult {
+    let names: Vec<NameEntry> = bindings.iter().map(|(name, _)| entry(name, false)).collect();
+    let num_captures = names.len();
+    let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
+    body.extend(code);
+    let program = Arc::new(CompiledFunction {
+        name: "<test>".to_string(),
+        code: body,
+        child_fns: children,
+        constants: Vec::new(),
+        name_table: names,
+        num_captures,
+        arity: Arity::Exact(0),
+    });
+    let captures: BTreeMap<String, Value> =
+        bindings.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
+    let closure = program.close(captures).expect("all captures provided");
+    Vm::new(closure).unwrap().run().unwrap()
+}
+
+/// Seat each `(name, value)` as a capture (in order, so name `i` is slot `i`),
+/// then run `code` to completion.
 fn run_with_bindings(bindings: Vec<(&str, Value)>, code: Vec<Bytecode>) -> ProgramResult {
-    let program = fn_with_locals(
-        code,
-        bindings
-            .iter()
-            .map(|(name, _)| entry(name, false))
-            .collect(),
-    );
-    let mut vm = frost_runtime::Vm::new(program).unwrap();
-    for (name, value) in bindings {
-        assert!(vm.set_binding(name, value));
-    }
-    vm.run().unwrap()
+    run_with(bindings, Vec::new(), code)
 }
 
 #[test]
@@ -173,20 +189,7 @@ fn run_native_program(
     children: Vec<Arc<CompiledFunction>>,
     code: Vec<Bytecode>,
 ) -> ProgramResult {
-    let program = func(
-        code,
-        Arity::Exact(0),
-        bindings
-            .iter()
-            .map(|(name, _)| entry(name, false))
-            .collect(),
-        children,
-    );
-    let mut vm = frost_runtime::Vm::new(program).unwrap();
-    for (name, value) in bindings {
-        assert!(vm.set_binding(name, value));
-    }
-    vm.run().unwrap()
+    run_with(bindings, children, code)
 }
 
 /// `apply(f, ...rest)` -- a native that invokes `f` with the rest of its args,

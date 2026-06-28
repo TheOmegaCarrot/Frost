@@ -1,14 +1,11 @@
 //! Tests for the structure opcodes: `MakeArray`, `MakeMap`, and `ExplodeArray`.
 //!
 //!   * `MakeArray(n)` takes the top `n` values; the topmost becomes the *back*.
-//!   * `MakeMap(n)` takes the top `2n` values as `k1, v1, k2, v2, ...` (key
-//!     deeper than its value). Keys must be non-null primitives, so it is
-//!     fallible; duplicate keys keep the last value (right wins).
-//!   * `ExplodeArray` is the inverse of `MakeArray`: it consumes one Array and
-//!     pushes its elements (the back ends up on top). Its operand is
-//!     compiler-guaranteed to be an Array (emitted only in compiled destructuring
-//!     / pattern matching), so a non-array is an IMPOSSIBLE state -- it panics and
-//!     is not tested here.
+//!   * `MakeMap(n)` takes the top `2n` values as `k1, v1, k2, v2, ...` (key deeper than its value).
+//!     Keys must be non-null primitives, so it is fallible; duplicate keys keep the last value (right wins).
+//!   * `ExplodeArray` is the inverse of `MakeArray`: it consumes one Array and pushes its elements (the back ends up on top).
+//!     Its operand is compiler-guaranteed to be an Array (emitted only in compiled destructuring / pattern matching),
+//!     so a non-array is an IMPOSSIBLE state -- it panics and is not tested here.
 //!
 //! Operands without a `Push*` opcode (String/Array/Map) come from the constant
 //! table via `LoadConst`.
@@ -22,15 +19,19 @@ use frost_runtime::{Arity, Bytecode, CompiledFunction, FrostArray, FrostError, M
 // ============================================================
 
 fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> {
+    let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
+    body.extend(code);
     let program = Arc::new(CompiledFunction {
         name: "<structures>".to_string(),
-        code,
+        code: body,
         child_fns: Vec::new(),
         constants,
         name_table: Vec::new(),
+        num_captures: 0,
         arity: Arity::Exact(0),
     });
-    Vm::new(program).unwrap().run().map(|r| r.tail().clone())
+    let closure = program.into_closure().unwrap();
+    Vm::new(closure).unwrap().run().map(|r| r.tail().clone())
 }
 
 fn val(code: Vec<Bytecode>) -> Value {

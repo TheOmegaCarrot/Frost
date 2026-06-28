@@ -1,13 +1,10 @@
 //! Tests for `Value::frost_type`, `FrostType::name`, and `Value::fits_category`
-//! -- the type-classification core that `type_name` and the `is_*` predicates now
-//! delegate to.
+//! -- the type-classification core that `type_name` and the `is_*` predicates now delegate to.
 //!
-//! The existing `value_type_checks` suite covers the `is_*` predicates over the
-//! common variants; this file covers what it doesn't: the `frost_type` /
-//! `name` / `fits_category` surface directly, the `Function` (native *and*
-//! closure) and `Opaque` variants, and every `FrostTypeCategory` -- with concrete
-//! hand-authored expectations (not re-derived from the implementation), so an
-//! inverted category would be caught.
+//! The existing `value_type_checks` suite covers the `is_*` predicates over the common variants;
+//! this file covers what it doesn't: the `frost_type` / `name` / `fits_category` surface directly,
+//! the `Function` (native *and* closure) and `Opaque` variants, and every `FrostTypeCategory`
+//! -- with concrete hand-authored expectations (not re-derived from the implementation), so an inverted category would be caught.
 
 mod common;
 

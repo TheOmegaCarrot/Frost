@@ -9,6 +9,7 @@ mod globals;
 #[cfg(test)]
 mod arg_pool_tests;
 
+use std::collections::BTreeMap;
 use std::debug_assert_matches;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
@@ -114,18 +115,18 @@ pub enum Bytecode {
 pub struct Vm {
     // The working stack of the Vm
     stack: Vec<Value>,
-    // Represents a call frame.
-    // One is pushed by calling,
-    // which is then popped when that call exits.
-    // The bottom StackFrame holds globals (runtime populates predefined globals prior to execution).
+    // The call stack. Empty until `run`/`run_with_args` seats the top-level closure's frame;
+    // a Frost call pushes a `VmFrame`, a native call a `NativeFrame` marker.
+    // After a run, `stack_frames[0]` is the top-level frame, whose locals are the script's bindings/exports.
     stack_frames: Vec<StackFrame>,
     // Used to hold the args of a native function call.
-    // A native call acquires a Vec from this pool,
-    // moves args from the stack to that Vec (or makes a new one), then clears it and returns it.
-    // This allows for re-use of allocations for native args, while allowing a native call to hold
-    // mutable references to their args AND the Vm separately.
+    // A native call acquires a Vec from this pool, moves args from the stack to that Vec (or makes a new one), then clears it and returns it.
+    // This allows for re-use of allocations for native args, while allowing a native call to hold mutable references to their args AND the Vm separately.
     native_arg_pool: Vec<Vec<Value>>,
     globals: Arc<GlobalSet>,
+    // The top-level closure to run. Its captures (host + Frost-internal) are already bound;
+    // `run`/`run_with_args` invoke it like any other closure.
+    top_level: Arc<Closure>,
 }
 
 #[derive(Debug, Clone)]
@@ -146,9 +147,79 @@ pub struct CompiledFunction {
     // Table so that locals can be looked up by name at runtime,
     // or their slot given a name by an error.
     pub name_table: Vec<NameEntry>,
+    // Number of leading `name_table`/slot entries that are captures (slots `0..num_captures`);
+    // the remainder are locals, including params. May be 0.
+    pub num_captures: usize,
     // Arity of top-level is Exact(0)
     pub arity: Arity,
 }
+
+impl CompiledFunction {
+    /// The capture names this function expects.
+    /// Tells a host which names to include in the map passed to [`close`](Self::close).
+    pub fn capture_names(&self) -> impl Iterator<Item = &str> {
+        self.name_table[..self.num_captures]
+            .iter()
+            .map(|entry| entry.name.as_str())
+    }
+
+    /// Bind this function's captures into a runnable [`Closure`].
+    ///
+    /// Required captures are looked up by name in `captures`.
+    /// Extra entries in the map are ignored.
+    /// Any required capture name absent from the map is reported, together, as [`MissingCaptures`].
+    pub fn close(
+        self: Arc<Self>,
+        captures: BTreeMap<String, Value>,
+    ) -> Result<Closure, MissingCaptures> {
+        let mut seated = Vec::with_capacity(self.num_captures);
+        let mut missing = Vec::new();
+        for entry in &self.name_table[..self.num_captures] {
+            match entry.name.as_str() {
+                // Frost-internal capture: runtime-supplied, not overridable.
+                // (Always false for now -- direct execution; the future `import`
+                // path will need to supply `true`.)
+                "imported" => seated.push(Value::Bool(false)),
+                // `import` is intentionally not wired yet (registry NYI), so it
+                // falls through to host resolution below.
+                name => match captures.get(name) {
+                    Some(value) => seated.push(value.clone()),
+                    // Keep scanning so every missing name is reported at once.
+                    None => missing.push(name.to_owned()),
+                },
+            }
+        }
+        if !missing.is_empty() {
+            return Err(MissingCaptures { names: missing });
+        }
+        Ok(Closure {
+            function: self,
+            captures: seated,
+        })
+    }
+
+    /// Convenience for [`close`](Self::close) with no host-supplied captures.
+    /// Succeeds when the function needs no host captures;
+    /// otherwise returns the [`MissingCaptures`] it still requires.
+    pub fn into_closure(self: Arc<Self>) -> Result<Closure, MissingCaptures> {
+        self.close(BTreeMap::new())
+    }
+}
+
+/// One or more required captures were absent from the map passed to [`CompiledFunction::close`];
+/// reports every missing name, not just the first.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MissingCaptures {
+    pub names: Vec<String>,
+}
+
+impl std::fmt::Display for MissingCaptures {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "missing capture(s): {}", self.names.join(", "))
+    }
+}
+
+impl std::error::Error for MissingCaptures {}
 
 #[derive(Debug, Clone)]
 pub struct NameEntry {
@@ -181,8 +252,7 @@ struct VmFrame {
 pub struct ProgramResult(Vm);
 
 /// Representation of the arity of a Frost function.
-/// Every function has a certain number of fixed args,
-/// and may or may not be variadic.
+/// Every function has a certain number of fixed args, and may or may not be variadic.
 /// ```frost
 /// fn a, b, c, ...more -> ...
 /// # at least 3
@@ -215,11 +285,10 @@ impl NativeCtx<'_> {
                 self.0.stack.extend(args);
                 let argc = self.0.stack.len() - base - 1;
 
-                // This native boundary is where an unwinding error stops. On any
-                // error path below, restore the Vm to its pre-call shape before
-                // returning Err -- truncate the operand stack back to `base` and
-                // discard the Frost frames left above our entry floor -- so that a
-                // catching native (e.g. `try_call`) resumes on a clean Vm.
+                // This native boundary is where an unwinding error stops.
+                // On any error path below, restore the Vm to its pre-call shape before returning Err --
+                // truncate the operand stack back to `base` and discard the Frost frames left above our entry floor --
+                // so that a catching native (e.g. `try_call`) resumes on a clean Vm.
                 if let Err(err) =
                     Vm::check_arity(closure.function.arity, argc, &closure.function.name)
                 {
@@ -293,7 +362,7 @@ impl NativeFunction {
 pub struct Closure {
     function: Arc<CompiledFunction>,
 
-    // If nonempty, occupy slots 0..n
+    // If nonempty, these are the captured values, occupying slots 0..n.
     captures: Vec<Value>,
 }
 
@@ -384,87 +453,35 @@ impl ProgramResult {
             })
     }
 
-    /// Prepare the Vm for another execution.
-    /// Any values bound using set_binding are not preserved.
-    /// Any customized globals are preserved.
-    /// The configured importer is preserved.
+    /// Prepare the Vm to run another [`Closure`], reusing its internal allocations rather than building a fresh [`Vm`].
     ///
-    /// The advantage to using this function over creating a new Vm from scratch
-    /// is that this allows the implementation to re-use internal allocations,
-    /// reducing the number of allocation calls.
-    ///
-    /// If you want to optimize for speed and predictable performance characteristics,
-    /// keep re-using a Vm using this method.
-    /// If you'd rather keep total memory consumption at a minimum, even at the cost of performance
-    /// and predictability, just drop the ProgramResult and create a new Vm.
-    pub fn reset(self, program: Arc<CompiledFunction>) -> Vm {
+    /// For predictable scripts run repeatedly, reusing a [`Vm`] this way reduces the number of allocations,
+    /// potentially to zero for some carefully-written scripts.
+    pub fn reset(self, closure: Closure) -> Vm {
         let mut vm = self.0;
         vm.stack.clear();
         vm.stack_frames.clear();
-        vm.stack_frames.push(StackFrame::VmFrame(VmFrame {
-            base_idx: 0,
-            local_slots: vec![None; program.name_table.len()],
-            return_address: None,
-            this_fn: program,
-        }));
+        vm.top_level = Arc::new(closure);
         vm
     }
 }
 
 impl Vm {
-    /// Create a [Vm] instance from a [CompiledFunction].
-    /// The [CompiledFunction] has many invariants which cannot be thoroughly checked,
-    /// and the Frost compiler is relied upon for emitting correct code.
-    /// If the provided [CompiledFunction] is incorrect (indexes a missing slot, pops an empty stack, etc),
-    /// then execution or other Vm methods may panic.
-    /// Any use of a [CompiledFunction] which was not emitted by the compiler is unsupported.
+    /// Create a [Vm] that will run `closure` as its top-level program.
     ///
-    /// A Vm is pretty cheap to construct, and so a Vm will only run one Frost program.
-    pub fn new(program: Arc<CompiledFunction>) -> Result<Vm, FrostError> {
-        Self::new_with_globals(program, GlobalSet::defaults())
-    }
-
-    /// Create a [Vm] with explicit [GlobalSet].
-    /// This function is only useful if you intend to override some default globals,
-    /// otherwise just use [Vm::new].
-    pub fn new_with_globals(
-        program: Arc<CompiledFunction>,
-        globals: Arc<GlobalSet>,
-    ) -> Result<Vm, FrostError> {
+    /// The closure carries its already-bound captures (see [`CompiledFunction::close`]).
+    /// Any referenced [`CompiledFunction`] must be well-formed, and running malformed bytecode may panic.
+    /// Only the Frost compiler emits bytecode which is guaranteed to be well-formed.
+    ///
+    /// A Vm runs a single program; reuse a warm Vm via [`ProgramResult::reset`].
+    pub fn new(closure: Closure) -> Result<Vm, FrostError> {
         Ok(Self {
             stack: Vec::new(),
-            stack_frames: vec![StackFrame::VmFrame(VmFrame {
-                base_idx: 0,
-                local_slots: vec![None; program.name_table.len()],
-                return_address: None,
-                this_fn: program,
-            })],
+            stack_frames: Vec::new(),
             native_arg_pool: Vec::new(),
-            globals,
+            globals: GlobalSet::defaults(),
+            top_level: Arc::new(closure),
         })
-    }
-
-    /// Assign a predefined binding to be used by the script.
-    /// Some scripts may use values provided directly by the host application,
-    /// and this is the mechanism to provide them.
-    /// This method is not necessary if the script only uses bindings that it defines itself or
-    /// that are provided by the Frost runtime.
-    /// Returns true if the script may use the binding, or false if it does not.
-    pub fn set_binding(&mut self, name: &str, value: Value) -> bool {
-        let base_frame = self.base_frame_mut();
-
-        let Some(slot) = base_frame
-            .this_fn
-            .name_table
-            .iter()
-            .position(|entry| entry.name == name)
-        else {
-            return false;
-        };
-
-        base_frame.local_slots[slot] = Some(value);
-
-        true
     }
 
     fn this_frame(&self) -> &VmFrame {
@@ -491,18 +508,9 @@ impl Vm {
         }
     }
 
-    fn base_frame_mut(&mut self) -> &mut VmFrame {
-        match (self.stack_frames.first_mut()) {
-            Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
-            Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: base Vm frame is native frame"),
-            None => panic!("IMPOSSIBLE: Vm has no frame"),
-        }
-    }
-
     fn execute_function(&mut self) -> Result<(), FrostError> {
         let mut pc: usize = 0;
-        let floor = self.stack_frames.len(); // 1 for run(),
-        // or more for native -> Vm re-entrancy
+        let floor = self.stack_frames.len(); // 1 for run(), or more for native -> Vm re-entrancy
 
         loop {
             while let Some(&op) = self.this_frame().this_fn.code.get(pc) {
@@ -543,16 +551,15 @@ impl Vm {
                         .stack
                         .push(self.this_frame().this_fn.constants[idx].clone()),
                     Bytecode::LoadGlobal(idx) => self.stack.push(self.globals.get(idx).clone()),
-                    // Arithmetic delegates to the operators defined on `Value`; a
-                    // type error or division by zero surfaces as an `Err` that `?`
-                    // propagates straight out of this activation (see `unwind_frames`).
+                    // Arithmetic delegates to the operators defined on `Value`;
+                    // a type error or division by zero surfaces as an `Err` that `?` propagates straight out of this activation (see `unwind_frames`).
                     Bytecode::Add => self.do_add()?,
                     Bytecode::Subtract => self.binary_op(Value::subtract)?,
                     Bytecode::Multiply => self.binary_op(Value::multiply)?,
                     Bytecode::Divide => self.binary_op(Value::divide)?,
                     Bytecode::Modulus => self.binary_op(Value::modulus)?,
-                    // Equality is infallible (`Value: Eq`). Ordering delegates to
-                    // `Value::compare`, where an unorderable pair is a type error.
+                    // Equality is infallible (`Value: Eq`).
+                    // Ordering delegates to `Value::compare`, where an unorderable pair is a type error.
                     Bytecode::CompareEqual => self.binary_op(|l, r| Ok(Value::Bool(l == r)))?,
                     Bytecode::CompareNotEqual => self.binary_op(|l, r| Ok(Value::Bool(l != r)))?,
                     Bytecode::CompareLessThan => {
@@ -610,9 +617,8 @@ impl Vm {
                         let base = self.stack.len() - (argc + 1);
                         let function = self.stack[base].clone();
 
-                        // Errors below `?` straight out of `execute_function`; the
-                        // boundary that entered this activation (`invoke` or `run`)
-                        // truncates the abandoned frames and operands.
+                        // Errors `?` straight out of `execute_function`;
+                        // the boundary that entered this activation (`invoke` or `run`) truncates the abandoned frames and operands.
                         match function {
                             Value::NativeFunction(native_fn) => {
                                 self.native_call(&native_fn, argc)?
@@ -637,22 +643,30 @@ impl Vm {
                         let function = self.stack[base].clone();
 
                         match function {
-                            // A native callee adds no VM frame, so there is nothing to
-                            // elide: run it exactly like a plain `Call`. Its result is
-                            // left on the stack and, since `TailCall` sits in tail
-                            // position, the enclosing function returns it via the normal
-                            // end-of-code path on the next loop turn.
+                            // A native callee adds no VM frame, so there is nothing to elide: run it exactly like a plain `Call`.
+                            // Its result is left on the stack and, since `TailCall` sits in tail position,
+                            // the enclosing function returns it via the normal end-of-code path on the next loop turn.
                             Value::NativeFunction(native_fn) => {
                                 self.native_call(&native_fn, argc)?
                             }
                             Value::Closure(closure) => {
-                                // Check arity BEFORE popping the caller frame, so an arity error
-                                // does not destroy the frame the error path still needs.
+                                // Check arity BEFORE popping the caller frame,
+                                // so an arity error does not destroy the frame the error path still needs.
                                 Self::check_arity(
                                     closure.function.arity,
                                     argc,
                                     &closure.function.name,
                                 )?;
+
+                                // A tail call reuses the current frame.
+                                // But the bottom frame (`len == 1`) is the top-level closure whose locals back `exports`; eliding it would orphan them.
+                                // From the bottom frame, degrade to a normal Call: keep the top-level frame and let the callee return into it.
+                                // (Re-entrant `invoke` activations always run with >= 2 frames, so genuine TCO is preserved everywhere else.)
+                                if self.stack_frames.len() == 1 {
+                                    self.push_closure_frame(&closure, base, NonZeroUsize::new(pc + 1));
+                                    pc = 0;
+                                    continue;
+                                }
 
                                 let StackFrame::VmFrame(gone_frame) = self
                                     .stack_frames
@@ -662,8 +676,8 @@ impl Vm {
                                     panic!("IMPOSSIBLE: tail call in native frame");
                                 };
 
-                                // Reuse the popped frame's slot, inheriting its base and return
-                                // address so the callee returns to F's original caller.
+                                // Reuse the popped frame's slot, inheriting its base and return address
+                                // so the callee returns to F's original caller.
                                 // The TCO: one frame popped, one pushed, net zero.
                                 self.push_closure_frame(
                                     &closure,
@@ -807,30 +821,45 @@ impl Vm {
         }
     }
 
-    /// Execute this script.
-    /// Any script errors not handled by the script itself are surfaced in the Err case.
-    pub fn run(mut self) -> Result<ProgramResult, FrostError> {
+    /// Run the top-level closure with no arguments.
+    /// Equivalent to [`run_with_args`](Self::run_with_args) with an empty list.
+    pub fn run(self) -> Result<ProgramResult, FrostError> {
+        self.run_with_args(std::iter::empty())
+    }
+
+    /// Run the top-level closure, passing `args` as its call arguments.
+    ///
+    /// An arity mismatch is a recoverable `Err`.
+    /// On success, returns a [`ProgramResult`] holding the program's tail value and exports.
+    pub fn run_with_args(
+        mut self,
+        args: impl IntoIterator<Item = Value>,
+    ) -> Result<ProgramResult, FrostError> {
+        let closure = self.top_level.clone();
+        self.stack.push(Value::Closure(closure.clone()));
+        self.stack.extend(args);
+        let argc = self.stack.len() - 1;
+        Self::check_arity(closure.function.arity, argc, &closure.function.name)?;
+        self.push_closure_frame(&closure, 0, None);
+
         match self.execute_function() {
-            Ok(_) => Ok(ProgramResult(self)),
-            // No `NativeFrame` exists above the top level, so the error has nowhere
-            // to be caught: accumulate the backtrace across every remaining frame
-            // and surface it to the host. `self` -- now in an unrecoverable state --
-            // is dropped (a `Vm` runs a single program; `reset` lives only on the
-            // success path).
+            Ok(()) => Ok(ProgramResult(self)),
+            // No `NativeFrame` exists above the top level, so the error has nowhere to be caught:
+            // accumulate the backtrace across every remaining frame and surface it to the host.
+            // `self`, now unrecoverable, is dropped.
             Err(err) => Err(self.unwind_frames(0, err)),
         }
     }
 
-    /// Pop the top of the operand stack. A missing operand is a compiler/bytecode
-    /// bug, not a recoverable error, so underflow panics.
+    /// Pop the top of the operand stack.
+    /// A missing operand is a compiler/bytecode bug, not a recoverable error, so underflow panics.
     fn stack_pop(&mut self) -> Value {
         self.stack.pop().expect("FROST STACK UNDERFLOW")
     }
 
     /// Pop the top two operands (rhs on top, lhs below) and push `op(lhs, rhs)`.
-    /// Any operator error `?`-propagates out of the current activation; the
-    /// consumed operands are simply dropped, since the unwind path truncates the
-    /// operand stack back to the boundary floor regardless of its exact height.
+    /// Any operator error `?`-propagates out of the current activation;
+    /// the consumed operands are simply dropped, since the unwind path truncates the operand stack back to the boundary floor regardless of its exact height.
     fn binary_op(
         &mut self,
         op: impl FnOnce(&Value, &Value) -> Result<Value, FrostError>,
@@ -841,12 +870,10 @@ impl Vm {
         Ok(())
     }
 
-    /// The `Add` opcode. `Array + Array` and `Map + Map` are the only overloads
-    /// where the borrowing `Value::add` would clone every element/entry, so for
-    /// those we *steal* the operands' storage -- reusing it in place when the
-    /// `Arc` is uniquely owned (a frequent case for stack temporaries), cloning
-    /// only when shared. Numeric addition, string concat, and every type error
-    /// have nothing worth stealing and fall back to the shared `binary_op` path.
+    /// The `Add` opcode.
+    /// `Array + Array` and `Map + Map` are the only overloads where the borrowing `Value::add` would clone every element/entry,
+    /// so for those we *steal* the operands' storage -- reusing it in place when the `Arc` is uniquely owned (a frequent case for stack temporaries), cloning only when shared.
+    /// Numeric addition, string concat, and every type error have nothing worth stealing and fall back to the shared `binary_op` path.
     fn do_add(&mut self) -> Result<(), FrostError> {
         let n = self.stack.len();
         let both_structural = n >= 2
@@ -879,16 +906,13 @@ impl Vm {
         Ok(())
     }
 
-    /// Append the names of the `VmFrame`s in `stack_frames[floor..]` to `err`'s
-    /// backtrace -- innermost (top of the frame stack) first -- then discard those
-    /// frames.
+    /// Append the names of the `VmFrame`s in `stack_frames[floor..]` to `err`'s backtrace
+    /// -- innermost (top of the frame stack) first -- then discard those frames.
     ///
-    /// This is the only place a Frost frame's name reaches the backtrace: `?`
-    /// propagation has no hook, so the trace is built here as the abandoned frames
-    /// are dropped. Called at each native boundary that catches an unwinding error
-    /// ([`NativeCtx::invoke`]) and at the top-level terminus ([`Vm::run`]).
-    /// `NativeFrame` markers carry no name; a native's own name is recorded by
-    /// [`Vm::run_native`] instead.
+    /// This is the only place a Frost frame's name reaches the backtrace: `?` propagation has no hook,
+    /// so the trace is built here as the abandoned frames are dropped.
+    /// Called at each native boundary that catches an unwinding error ([`NativeCtx::invoke`]) and at the top-level terminus ([`Vm::run`]).
+    /// `NativeFrame` markers carry no name; a native's own name is recorded by [`Vm::run_native`] instead.
     fn unwind_frames(&mut self, floor: usize, mut err: FrostError) -> FrostError {
         for frame in self.stack_frames.drain(floor..).rev() {
             if let StackFrame::VmFrame(vm_frame) = frame {
@@ -928,8 +952,7 @@ impl Vm {
         ))
     }
 
-    /// Push a [VmFrame] to enter `closure`: captures seat into slots `0..n`,
-    /// then variadic args are collapsed into a trailing rest array.
+    /// Push a [VmFrame] to enter `closure`: captures seat into slots `0..n`, then variadic args are collapsed into a trailing rest array.
     /// `base` is the frame base (the closure's slot on the stack);
     /// `return_address` is where the callee returns to.
     /// Arity must already be checked.
@@ -990,8 +1013,8 @@ impl Vm {
         );
 
         // A native that ran and failed contributes its own name to the backtrace.
-        // Its only call-stack presence is a nameless `NativeFrame` marker, so the
-        // frame-walk in `unwind_frames` cannot record it -- do it here.
+        // Its only call-stack presence is a nameless `NativeFrame` marker,
+        // so the frame-walk in `unwind_frames` cannot record it -- do it here.
         result.map_err(|err| err.with_frame(native.name.clone()))
     }
 }

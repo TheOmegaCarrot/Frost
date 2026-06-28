@@ -1,17 +1,11 @@
-//! Error-flow tests for the VM: raising, unwinding, backtrace accumulation, and
-//! `try_call` (Frost's catch primitive).
+//! Error-flow tests for the VM: raising, unwinding, backtrace accumulation, and `try_call` (Frost's catch primitive).
 //!
 //! The model under test:
-//!   * Opcodes and native calls `?`-propagate errors straight out of the current
-//!     `execute_function` activation.
-//!   * The boundary that entered the activation cleans up: `Vm::run` at the top
-//!     level (no `NativeFrame` -- the error reaches the host), or
-//!     `NativeCtx::invoke` at a native re-entry (frames + operand stack are
-//!     truncated back to the entry floor before Err is returned).
-//!   * The backtrace is accumulated as abandoned frames are discarded
-//!     (`unwind_frames`), plus a native's own name in `run_native`.
-//!   * `try_call` is the one native that declines to `?` -- it catches and reifies
-//!     the outcome into a result map.
+//!   * Opcodes and native calls `?`-propagate errors straight out of the current `execute_function` activation.
+//!   * The boundary that entered the activation cleans up: `Vm::run` at the top level (no `NativeFrame` -- the error reaches the host),
+//!     or `NativeCtx::invoke` at a native re-entry (frames + operand stack are truncated back to the entry floor before Err is returned).
+//!   * The backtrace is accumulated as abandoned frames are discarded (`unwind_frames`), plus a native's own name in `run_native`.
+//!   * `try_call` is the one native that declines to `?` -- it catches and reifies the outcome into a result map.
 //!
 //! Error sources used here are all self-contained opcodes/dispatch outcomes:
 //! division/modulus by zero, an `add` type error, calling a non-function, an
@@ -46,6 +40,7 @@ fn named(
         child_fns: children,
         constants: Vec::new(),
         name_table: names,
+        num_captures: 0,
         arity,
     })
 }
@@ -76,20 +71,27 @@ fn try_call_slot() -> usize {
 
 /// Run a program to completion, surfacing the result (Ok or Err).
 fn run(program: Arc<CompiledFunction>) -> Result<ProgramResult, FrostError> {
-    Vm::new(program).unwrap().run()
+    run_with(program, Vec::new())
 }
 
-/// Run a program after seating `bindings` into its top-level slots (slot `i` is
-/// the i-th binding; the program's `name_table` must list them in that order).
+/// Run `program` with `bindings` supplied as captures (slot `i` is the i-th
+/// binding; the program's `name_table` must list them first, in order).
+/// Splices in the leading fn-value `Pop` the top-level needs.
 fn run_with(
     program: Arc<CompiledFunction>,
     bindings: Vec<(&str, Value)>,
 ) -> Result<ProgramResult, FrostError> {
-    let mut vm = Vm::new(program).unwrap();
-    for (name, value) in bindings {
-        assert!(vm.set_binding(name, value), "no slot for binding `{name}`");
-    }
-    vm.run()
+    let top = CompiledFunction {
+        code: std::iter::once(Bytecode::Pop)
+            .chain(program.code.iter().copied())
+            .collect(),
+        num_captures: bindings.len(),
+        ..(*program).clone()
+    };
+    let captures: std::collections::BTreeMap<String, Value> =
+        bindings.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
+    let closure = Arc::new(top).close(captures).expect("all captures provided");
+    Vm::new(closure).unwrap().run()
 }
 
 /// `apply(f, ...rest)` -- a re-entrant native that invokes `f` with the rest of

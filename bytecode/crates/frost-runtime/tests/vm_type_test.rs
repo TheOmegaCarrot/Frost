@@ -1,13 +1,11 @@
-//! Tests for the `TypeTest(FrostTypeCategory)` opcode: `( v -- b )` -- consume a
-//! value, push a `Bool` of whether it fits the category.
+//! Tests for the `TypeTest(FrostTypeCategory)` opcode: `( v -- b )` -- consume a value, push a `Bool` of whether it fits the category.
 //!
-//! The category *logic* is exhaustively covered at the value level in
-//! `value_type_category.rs`; here we only test the opcode wiring: that it
-//! delegates to `fits_category` with the right category, has the right stack
-//! effect, and yields a `Bool`. One true/false case per category suffices.
+//! The category *logic* is exhaustively covered at the value level in `value_type_category.rs`;
+//! here we only test the opcode wiring: that it delegates to `fits_category` with the right category,
+//! has the right stack effect, and yields a `Bool`.
+//! One true/false case per category suffices.
 //!
-//! Operands without a `Push*` opcode (String/Array/Map) come from the constant
-//! table via `LoadConst`.
+//! Operands without a `Push*` opcode (String/Array/Map) come from the constant table via `LoadConst`.
 
 use std::sync::Arc;
 
@@ -20,15 +18,19 @@ type Ft = FrostType;
 type Ftc = FrostTypeCategory;
 
 fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> {
+    let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
+    body.extend(code);
     let program = Arc::new(CompiledFunction {
         name: "<typetest>".to_string(),
-        code,
+        code: body,
         child_fns: Vec::new(),
         constants,
         name_table: Vec::new(),
+        num_captures: 0,
         arity: Arity::Exact(0),
     });
-    Vm::new(program).unwrap().run().map(|r| r.tail().clone())
+    let closure = program.into_closure().unwrap();
+    Vm::new(closure).unwrap().run().map(|r| r.tail().clone())
 }
 
 fn val(code: Vec<Bytecode>) -> Value {

@@ -27,6 +27,7 @@ fn closure(idx: u32) -> Bytecode {
 fn func(
     name: &str,
     code: Vec<Bytecode>,
+    num_captures: usize,
     name_table: Vec<NameEntry>,
     children: Vec<Arc<CompiledFunction>>,
 ) -> Arc<CompiledFunction> {
@@ -36,11 +37,12 @@ fn func(
         child_fns: children,
         constants: Vec::new(),
         name_table,
+        num_captures,
         arity: Arity::Exact(0),
     })
 }
 
-/// `fn -> 1 / 0`
+/// `fn -> 1 / 0`. Built as a closure callee, so its body pops its own fn value.
 fn fail_fn() -> Arc<CompiledFunction> {
     func(
         "fail",
@@ -50,6 +52,7 @@ fn fail_fn() -> Arc<CompiledFunction> {
             Bytecode::PushInt(0),
             Bytecode::Divide,
         ],
+        0,
         vec![],
         vec![],
     )
@@ -79,14 +82,19 @@ fn catch_recycles_native_arg_buffer() {
     let program = func(
         "main",
         vec![
+            Bytecode::Pop, // pop the closure value the runner pushes
             Bytecode::LoadGlobal(try_call_slot()),
             closure(0),
             Bytecode::Call(1),
         ],
+        0,
         vec![],
         vec![fail_fn()],
     );
-    let result = Vm::new(program).unwrap().run().unwrap();
+    let result = Vm::new(program.into_closure().unwrap())
+        .unwrap()
+        .run()
+        .unwrap();
     assert_eq!(
         result.0.native_arg_pool.len(),
         1,
@@ -96,26 +104,29 @@ fn catch_recycles_native_arg_buffer() {
 
 #[test]
 fn catch_recycles_every_intermediate_buffer() {
-    // try_call(apply, fail): two natives each check out a buffer (try_call's and
-    // apply's). Both must be recycled across the caught error -- one through
-    // `run_native`'s Ok arm (try_call), one through its Err arm (apply).
+    // try_call(apply, fail): two natives each check out a buffer (try_call's and apply's).
+    // Both must be recycled across the caught error -- one through `run_native`'s Ok arm (try_call), one through its Err arm (apply).
     let program = func(
         "main",
         vec![
-            Bytecode::LoadGlobal(try_call_slot()),
-            Bytecode::LoadLocal(0), // apply
-            closure(0),             // fail
-            Bytecode::Call(2),      // try_call(apply, fail)
+            Bytecode::Pop,                         // pop the closure value the runner pushes
+            Bytecode::LoadGlobal(try_call_slot()), //
+            Bytecode::LoadLocal(0),                // apply (capture slot 0)
+            closure(0),                            // fail
+            Bytecode::Call(2),                     // try_call(apply, fail)
         ],
+        1,
         vec![NameEntry {
             name: "apply".to_string(),
             exported: false,
         }],
         vec![fail_fn()],
     );
-    let mut vm = Vm::new(program).unwrap();
-    assert!(vm.set_binding("apply", apply_native()));
-    let result = vm.run().unwrap();
+    let captures = BTreeMap::from([("apply".to_string(), apply_native())]);
+    let result = Vm::new(program.close(captures).unwrap())
+        .unwrap()
+        .run()
+        .unwrap();
     assert_eq!(
         result.0.native_arg_pool.len(),
         2,

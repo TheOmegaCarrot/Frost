@@ -1,13 +1,10 @@
-//! Tests for the binary arithmetic opcodes: `Add`, `Subtract`, `Multiply`,
-//! `Divide`, `Modulus`.
+//! Tests for the binary arithmetic opcodes: `Add`, `Subtract`, `Multiply`, `Divide`, `Modulus`.
 //!
-//! These opcodes delegate to the corresponding `Value` operators, whose full
-//! semantics (numeric promotion, overflow wrapping, string/array/map overloads,
-//! every type error) are covered at the value level in `binary_operators.rs`.
+//! These opcodes delegate to the corresponding `Value` operators, whose full semantics
+//! (numeric promotion, overflow wrapping, string/array/map overloads, every type error) are covered at the value level in `binary_operators.rs`.
 //! What only the VM can get wrong lives here:
 //!   * each opcode delegates to the *right* operator (a representative case),
-//!   * operand order -- rhs is the top of the stack, lhs below (decisive for the
-//!     non-commutative `-`, `/`, `%`),
+//!   * operand order -- rhs is the top of the stack, lhs below (decisive for the non-commutative `-`, `/`, `%`),
 //!   * stack effect -- two operands consumed, one result pushed,
 //!   * errors `?`-propagate out through the opcode.
 //!
@@ -27,15 +24,19 @@ use frost_runtime::{
 /// Run a constants-carrying, local-less top-level program; return its tail value
 /// (or the error it raised).
 fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> {
+    let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
+    body.extend(code);
     let program = Arc::new(CompiledFunction {
         name: "<arith>".to_string(),
-        code,
+        code: body,
         child_fns: Vec::new(),
         constants,
         name_table: Vec::new(),
+        num_captures: 0,
         arity: Arity::Exact(0),
     });
-    Vm::new(program).unwrap().run().map(|r| r.tail().clone())
+    let closure = program.into_closure().unwrap();
+    Vm::new(closure).unwrap().run().map(|r| r.tail().clone())
 }
 
 /// Evaluate a constant-free program, expecting success.

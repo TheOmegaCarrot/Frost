@@ -1,19 +1,14 @@
-//! Tests for `SoftIndexStructure` -- the `a[b]` opcode with null-on-missing
-//! semantics. Stack: `( structure index -- result )` (structure deeper).
+//! Tests for `SoftIndexStructure` -- the `a[b]` opcode with null-on-missing semantics.
+//! Stack: `( structure index -- result )` (structure deeper).
 //!
-//! It indexes an Array (by Int) or a Map (by primitive key). Distinguishing
-//! *missing* (-> null) from a *type error* is the whole point, so the tests pin
-//! both outcomes (cross-checked against the C++ oracle):
-//!   * Array + Int -> element, or null when out of bounds (negatives count from
-//!     the end); Array + non-Int -> error.
-//!   * Map + valid key -> value, or null when the key is absent; Map + null or
-//!     structured key -> error.
+//! It indexes an Array (by Int) or a Map (by primitive key).
+//! Distinguishing *missing* (-> null) from a *type error* is the whole point, so the tests pin both outcomes (cross-checked against the C++ oracle):
+//!   * Array + Int -> element, or null when out of bounds (negatives count from the end); Array + non-Int -> error.
+//!   * Map + valid key -> value, or null when the key is absent; Map + null or structured key -> error.
 //!   * Indexing a non-structure (String, Int, ...) -> error.
 //!
-//! `HardIndexMap` (`foo.bar`) is the Map-only counterpart. Stack: `( map -- value )`
-//! -- the key is a String constant read from the const pool, not a stack operand.
-//! A missing key is an ERROR (an intentional deviation from the oracle's
-//! null-on-missing), and non-map operands error too (arrays are not dot-indexable).
+//! `HardIndexMap` (`foo.bar`) is the Map-only counterpart. Stack: `( map -- value )` -- the key is a String constant read from the const pool, not a stack operand.
+//! A missing key is an ERROR (an intentional deviation from the oracle's null-on-missing), and non-map operands error too (arrays are not dot-indexable).
 
 use std::sync::Arc;
 
@@ -22,15 +17,19 @@ use frost_runtime::{
 };
 
 fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> {
+    let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
+    body.extend(code);
     let program = Arc::new(CompiledFunction {
         name: "<index>".to_string(),
-        code,
+        code: body,
         child_fns: Vec::new(),
         constants,
         name_table: Vec::new(),
+        num_captures: 0,
         arity: Arity::Exact(0),
     });
-    Vm::new(program).unwrap().run().map(|r| r.tail().clone())
+    let closure = program.into_closure().unwrap();
+    Vm::new(closure).unwrap().run().map(|r| r.tail().clone())
 }
 
 fn float(x: f64) -> Bytecode {

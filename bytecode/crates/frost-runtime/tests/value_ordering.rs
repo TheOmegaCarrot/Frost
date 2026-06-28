@@ -1,7 +1,6 @@
-//! Ordering tests for `Value::compare` -- the fallible, three-way comparison that
-//! backs `<`/`<=`/`>`/`>=`. Comparable operands yield an `Ordering`; non-orderable
-//! ones (mismatched or inherently unordered types) are a type error, not a silent
-//! `None`. Equality lives separately on `PartialEq` (see `value_equality.rs`).
+//! Ordering tests for `Value::compare` -- the fallible, three-way comparison that backs `<`/`<=`/`>`/`>=`.
+//! Comparable operands yield an `Ordering`; non-orderable ones (mismatched or inherently unordered types) are a type error, not a silent `None`.
+//! Equality lives separately on `PartialEq` (see `value_equality.rs`).
 
 use std::cmp::Ordering;
 

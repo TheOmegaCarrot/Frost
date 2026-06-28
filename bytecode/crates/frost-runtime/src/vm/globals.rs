@@ -11,8 +11,8 @@ macro_rules! define_globals {
     ($($name:literal => $init:expr),* $(,)?) => {
         impl GlobalSet {
             /// Names of all predefined globals.
-            /// Every GlobalSet shares the same names, so it is not a
-            /// field. The single source of truth for global ordering.
+            /// Every `GlobalSet` shares the same names, so it is not a field.
+            /// The ordering here determines the slot indices used by `LoadGlobal`.
             const NAMES: &'static [&'static str] = &[ $($name),* ];
 
             fn build_defaults() -> Self {
@@ -39,15 +39,13 @@ fn try_call_global() -> Value {
     )))
 }
 
-/// `try_call(f, ...args)` -- invoke `f` with `args` and reify the outcome into a
-/// result map rather than letting an error propagate:
+/// `try_call(f, ...args)` -- invoke `f` with `args` and reify the outcome into a result map rather than letting an error propagate:
 ///   success: `{ ok: true,  value: <result> }`
 ///   failure: `{ ok: false, error: <message>, trace: [<frame names>] }`
 ///
-/// This is "the native that declines to `?`": Frost's error model is uniform `?`
-/// propagation through native frames, and `try_call` is the one place that catches
-/// the unwinding error instead of re-raising it. By the time `invoke` returns Err,
-/// the boundary has already restored the Vm, so building the map here is safe.
+/// This is "the native that declines to `?`": Frost's error model is uniform `?` propagation through native frames,
+/// and `try_call` is the one place that catches the unwinding error instead of re-raising it.
+/// By the time `invoke` returns Err, the boundary has already restored the Vm, so building the map here is safe.
 fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
     // Arity::AtLeast(1) guarantees args[0] exists.
     let function = args[0].clone();
@@ -93,24 +91,14 @@ impl GlobalSet {
         DEFAULT_GLOBALS.clone()
     }
 
-    /// Override an existing global by name. Returns the set on
-    /// success, or `None` if `name` is not a known global, the set is closed,
-    /// so new globals cannot be added.
-    pub fn with_override(mut self: Arc<Self>, name: &str, value: Value) -> Option<Arc<GlobalSet>> {
-        let idx = self.index_of(name)?;
-        Arc::make_mut(&mut self).0[idx] = value;
-        Some(self)
-    }
-
-    /// Look up a global's slot index by name, or `None` if it is not a predefined
-    /// global. Stable for a given build, so callers (e.g. the compiler, or a
-    /// `LoadGlobal` emitter) may cache the result.
+    /// Look up a global's slot index by name, or `None` if it is not a predefined global.
+    /// The result is stable for a given build, so callers (e.g. a compiler emitting `LoadGlobal`) may cache it.
     pub fn index_of(&self, name: &str) -> Option<usize> {
         // Yes, this is a linear scan, but this should be a pretty cold path.
         Self::NAMES.iter().position(|&n| n == name)
     }
 
-    /// Get the value at a global slot index. Used by the VM during execution.
+    /// Get the value at a global slot index.
     pub fn get(&self, idx: usize) -> &Value {
         &self.0[idx]
     }

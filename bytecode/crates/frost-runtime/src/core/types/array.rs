@@ -50,9 +50,6 @@ impl PartialEq for FrostArray {
 
 impl Eq for FrostArray {}
 
-// No `PartialOrd`: array ordering is fallible (an incomparable element is a type
-// error) and lives on `Value::compare`, which recurses through element `compare`.
-
 impl Default for FrostArray {
     fn default() -> Self {
         Self::empty()

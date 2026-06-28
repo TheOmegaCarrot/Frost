@@ -7,6 +7,6 @@ pub use core::{
 };
 
 pub use vm::{
-    Arity, Bytecode, CompiledFunction, GlobalSet, NameEntry, NativeCtx, NativeFunction,
-    ProgramResult, Vm,
+    Arity, Bytecode, Closure, CompiledFunction, GlobalSet, MissingCaptures, NameEntry, NativeCtx,
+    NativeFunction, ProgramResult, Vm,
 };
