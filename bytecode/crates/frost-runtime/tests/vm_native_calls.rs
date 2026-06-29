@@ -22,7 +22,7 @@ use frost_runtime::{
 
 /// Build a native function `Value`.
 fn native(
-    name: &str,
+    name: &'static str,
     arity: Arity,
     f: impl Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static,
 ) -> Value {

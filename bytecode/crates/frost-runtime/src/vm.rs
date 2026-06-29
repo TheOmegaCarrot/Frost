@@ -9,7 +9,7 @@ mod globals;
 #[cfg(test)]
 mod arg_pool_tests;
 
-use std::collections::BTreeMap;
+use std::{borrow::Cow, collections::BTreeMap};
 use std::debug_assert_matches;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
@@ -349,7 +349,7 @@ type NativeFn = dyn Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync
 pub struct NativeFunction {
     arity: Arity,
     function: Box<NativeFn>,
-    name: String,
+    name: &'static str,
 }
 
 impl std::fmt::Debug for NativeFunction {
@@ -362,19 +362,19 @@ impl std::fmt::Debug for NativeFunction {
 }
 
 impl NativeFunction {
-    pub fn new<F>(function: F, name: &str, arity: Arity) -> Self
+    pub fn new<F>(function: F, name: &'static str, arity: Arity) -> Self
     where
         F: Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static,
     {
         Self {
             arity,
-            name: name.to_owned(),
+            name,
             function: Box::new(function),
         }
     }
 
     pub fn name(&self) -> &str {
-        self.name.as_str()
+        self.name
     }
 
     pub fn arity(&self) -> Arity {
@@ -1091,7 +1091,7 @@ impl Vm {
     /// Checks arity, brackets the call with a `NativeFrame` marker, and returns the native's result.
     /// `buf` is reclaimed to the pool on every path.
     fn run_native(&mut self, native: &NativeFunction, mut buf: Vec<Value>) -> FrostResult {
-        if let Err(err) = Self::check_arity(native.arity, buf.len(), &native.name) {
+        if let Err(err) = Self::check_arity(native.arity, buf.len(), native.name) {
             buf.clear();
             self.native_arg_pool.push(buf);
             return Err(err);
@@ -1112,6 +1112,6 @@ impl Vm {
         // A native that ran and failed contributes its own name to the backtrace.
         // Its only call-stack presence is a nameless `NativeFrame` marker,
         // so the frame-walk in `unwind_frames` cannot record it -- do it here.
-        result.map_err(|err| err.with_frame(native.name.clone()))
+        result.map_err(|err| err.with_frame(native.name))
     }
 }
