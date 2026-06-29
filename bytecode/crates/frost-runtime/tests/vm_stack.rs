@@ -3,7 +3,7 @@
 mod common;
 
 use common::run;
-use frost_runtime::{Bytecode, FrostFloat, Value};
+use frost_runtime::{Bytecode, FrostArray, FrostFloat, Value};
 
 // ============================================================
 // Empty program
@@ -112,4 +112,53 @@ fn peek_down_copies_deeper() {
         Bytecode::PeekDown(2), // copies 10 (below top)
     ]);
     assert_eq!(result.tail(), &Value::Int(10));
+}
+
+#[test]
+fn drop_below_0_is_pop() {
+    // DropBelow(0) removes the top, exactly like Pop.
+    let result = run(vec![
+        Bytecode::PushInt(1),
+        Bytecode::PushInt(2),
+        Bytecode::DropBelow(0),
+    ]);
+    assert_eq!(result.tail(), &Value::Int(1));
+}
+
+#[test]
+fn drop_below_removes_element_under_top() {
+    // DropBelow(1) removes the element one below the top, keeping the top and the
+    // rest in order: [1, 2, 3] -> [1, 3].
+    let result = run(vec![
+        Bytecode::PushInt(1),
+        Bytecode::PushInt(2),
+        Bytecode::PushInt(3),
+        Bytecode::DropBelow(1),
+        Bytecode::MakeArray(2),
+    ]);
+    assert_eq!(
+        result.tail(),
+        &Value::Array(FrostArray::from(vec![Value::Int(1), Value::Int(3)]))
+    );
+}
+
+#[test]
+fn drop_below_removes_a_deeper_element() {
+    // DropBelow(2) removes the element two below the top: [1, 2, 3, 4] -> [1, 3, 4].
+    let result = run(vec![
+        Bytecode::PushInt(1),
+        Bytecode::PushInt(2),
+        Bytecode::PushInt(3),
+        Bytecode::PushInt(4),
+        Bytecode::DropBelow(2),
+        Bytecode::MakeArray(3),
+    ]);
+    assert_eq!(
+        result.tail(),
+        &Value::Array(FrostArray::from(vec![
+            Value::Int(1),
+            Value::Int(3),
+            Value::Int(4)
+        ]))
+    );
 }

@@ -1,7 +1,10 @@
 use std::sync::{Arc, LazyLock};
 
 use crate::core::FrostResult;
-use crate::{Arity, FrostArray, MapKey, NativeCtx, NativeFunction, Value};
+use crate::{
+    Arity, Bytecode, Closure, CompiledFunction, FrostArray, MapKey, NativeCtx, NativeFunction,
+    Value,
+};
 
 use super::GlobalSet;
 
@@ -23,10 +26,11 @@ macro_rules! define_globals {
 }
 
 define_globals! {
-     // TODO: actually implement these
+     // TODO: actually implement all the globals
     "print"     => Value::Null,
     "transform" => Value::Null,
     "try_call"  => try_call_global(),
+    "call"      => call_global(),
 }
 
 /// Builds the `try_call` global -- Frost's catch primitive, surfaced as a native.
@@ -37,6 +41,42 @@ fn try_call_global() -> Value {
         // At least the function to call; any further args are passed to it.
         Arity::AtLeast(1),
     )))
+}
+
+fn call_global() -> Value {
+    Value::Closure(Arc::new(Closure {
+        captures: Vec::new(),
+        function: Arc::new(CompiledFunction {
+            name: "call".to_string(),
+            arity: Arity::Between(1, 2),
+            num_captures: 0,
+            // Slot-free: an empty name_table means `push_closure_frame` allocates no
+            // local_slots Vec. The body drops `call`'s own value with `DropBelow`
+            // and lets `DynTailCall` validate the operands, so no slots are needed.
+            name_table: Vec::new(),
+            constants: Vec::new(),
+            child_fns: Vec::new(),
+            code: vec![
+                // On entry: ( call_self f a? n ),
+                // where n is the argc (1 or 2) pushed for a Between closure.
+
+                // Normalize to ( call_self f arr ): make an empty array when no
+                // second arg was supplied (n == 1).
+                Bytecode::PushInt(1),
+                Bytecode::CompareEqual,   // 1: n == 1 ? -> needEmpty
+                Bytecode::JumpIfFalse(3), // 2: n == 2 -> a real array was passed (idx 6)
+                Bytecode::Pop,            // 3: drop needEmpty
+                Bytecode::MakeArray(0),   // 4: ( call_self f [] )
+                Bytecode::Jump(1),        // 5: -> idx 7 (skip idx 6)
+                Bytecode::Pop,            // 6: (have_arr) drop needEmpty -> ( call_self f a )
+                // Drop call's own value (2 below the top) so the callee lands at
+                // this frame's base, then hand ( f arr ) to DynTailCall, which
+                // validates that arr is an Array and f is callable.
+                Bytecode::DropBelow(2), // 7: ( f arr )
+                Bytecode::DynTailCall,  // 8
+            ],
+        }),
+    }))
 }
 
 /// `try_call(f, ...args)` -- invoke `f` with `args` and reify the outcome into a result map rather than letting an error propagate:

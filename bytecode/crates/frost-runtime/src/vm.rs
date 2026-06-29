@@ -39,6 +39,10 @@ pub enum Bytecode {
     PeekDown(usize), // Index N down from the top of the stack, and copy that onto the top.
     // PeekDown(1) is just Dup with extra steps.
 
+    // Drop the element N items from the top of the stack.
+    // `DropBelow(0)` has the equivalent effect as `Pop`.
+    DropBelow(usize),
+
     // Slots
     DefLocal(usize),   // Move the top of the stack to local slot N
     LoadLocal(usize),  // Copy local slot N to the top of the stack
@@ -68,6 +72,8 @@ pub enum Bytecode {
 
     // Flow
     // Jump ahead N instructions
+    // N is the number of instructions that are skipped over,
+    // such that `Jump(0)` is a funny way to spell `Nop`
     Jump(usize),        // unconditionally
     JumpIfTrue(usize),  // only if the top of the stack is true (NOT consumed)
     JumpIfFalse(usize), // only if the top of the stack is falsey (NOT consumed)
@@ -553,6 +559,9 @@ impl Vm {
                     Bytecode::PeekDown(idx) => {
                         self.stack.push(self.stack[self.stack.len() - idx].clone());
                     }
+                    Bytecode::DropBelow(idx) => {
+                        self.stack.remove(self.stack.len() - (1 + idx));
+                    }
                     Bytecode::DefLocal(idx) => {
                         self.this_frame_mut().local_slots[idx] = Some(self.stack_pop());
                     }
@@ -665,8 +674,17 @@ impl Vm {
                         }
                     }
                     // Spread the args array on top, then tail-call the function beneath it.
-                    // `call`'s body normalizes and type-checks its args, so a non-Array here is a bug.
+                    // Hand-rolled spreaders (`call`, future combinators) pass user values
+                    // here, so a non-Array args operand is a recoverable error -- the
+                    // callee being non-callable is likewise caught by `tail_call`.
                     Bytecode::DynTailCall => {
+                        let args = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        if !args.is_array() {
+                            return Err(FrostError::new(format!(
+                                "Spread call expects an Array of arguments, but got {}",
+                                args.type_name()
+                            )));
+                        }
                         let argc = self.explode_array();
                         match self.tail_call(argc, NonZeroUsize::new(pc + 1))? {
                             TailFlow::Reenter => {
@@ -955,6 +973,7 @@ impl Vm {
         base: usize,
         return_address: Option<NonZeroUsize>,
     ) {
+        // TODO: perhaps pool local slot vecs to reuse allocations, like with native arg vecs
         let mut local_slots = vec![None; closure.function.name_table.len()];
         for (i, capture) in closure.captures.iter().enumerate() {
             local_slots[i] = Some(capture.clone());
