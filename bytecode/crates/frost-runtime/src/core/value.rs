@@ -160,4 +160,13 @@ impl Value {
             _ => None,
         }
     }
+
+    /// Moves the value out, leaving `Null` in its place.
+    ///
+    /// The idiom for taking ownership of a value held behind a `&mut` -- most often
+    /// a native function consuming one of its arguments to steal its backing storage
+    /// instead of cloning. Shorthand for `std::mem::replace(&mut value, Value::Null)`.
+    pub fn take(&mut self) -> Value {
+        std::mem::replace(self, Value::Null)
+    }
 }

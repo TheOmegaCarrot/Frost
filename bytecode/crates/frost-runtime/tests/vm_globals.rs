@@ -199,7 +199,10 @@ fn to_string_renders_the_compact_form() {
     assert_eq!(g("to_string", vec![Value::Int(42)]), Value::from("42"));
     // Structures render on a single line; strings nested inside are quoted.
     assert_eq!(
-        g("to_string", vec![arr(vec![Value::Int(1), Value::from("a")])]),
+        g(
+            "to_string",
+            vec![arr(vec![Value::Int(1), Value::from("a")])]
+        ),
         Value::from(r#"[ 1, "a" ]"#)
     );
     assert_eq!(

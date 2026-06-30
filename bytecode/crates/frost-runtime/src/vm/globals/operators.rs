@@ -28,8 +28,8 @@ pub(super) fn plus_global() -> Value {
     // steal their backing storage instead of cloning, mirroring `Vm::do_add`;
     // every other case forwards to the scalar `Value::add`.
     Value::native("plus", Arity::Exact(2), |_, args| {
-        let lhs = std::mem::replace(&mut args[0], Value::Null);
-        let rhs = std::mem::replace(&mut args[1], Value::Null);
+        let lhs = args[0].take();
+        let rhs = args[1].take();
         Ok(match (lhs, rhs) {
             (Value::Array(l), Value::Array(r)) => {
                 let mut elems = l.to_owned();

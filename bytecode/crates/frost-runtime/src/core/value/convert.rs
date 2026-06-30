@@ -101,6 +101,12 @@ impl TryFrom<Value> for MapKey {
     }
 }
 
+impl From<&str> for MapKey {
+    fn from(value: &str) -> Self {
+        Self::String(value.as_bytes().into())
+    }
+}
+
 type Ft = FrostType;
 type Ftc = FrostTypeCategory;
 
@@ -258,5 +264,9 @@ impl Value {
                 .unwrap_or(Value::Null),
             _ => Value::Null,
         }
+    }
+
+    pub fn map<K: Into<MapKey>, const N: usize>(entries: [(K, Value); N]) -> Value {
+        Value::Map(entries.into_iter().map(|(k, v)| (k.into(), v)).collect())
     }
 }

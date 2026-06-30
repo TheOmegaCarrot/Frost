@@ -67,9 +67,7 @@ fn apply_native() -> Value {
             let f = args[0].clone();
             ctx.invoke(
                 &f,
-                args[1..]
-                    .iter_mut()
-                    .map(|v| std::mem::replace(v, Value::Null)),
+                args[1..].iter_mut().map(Value::take),
             )
         },
     )))

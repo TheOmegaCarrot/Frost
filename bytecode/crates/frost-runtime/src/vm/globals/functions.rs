@@ -59,9 +59,7 @@ pub(super) fn try_call_global() -> Value {
 fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
     // Arity::AtLeast(1) guarantees args[0] exists.
     let function = args[0].clone();
-    let call_args = args[1..]
-        .iter_mut()
-        .map(|v| std::mem::replace(v, Value::Null));
+    let call_args = args[1..].iter_mut().map(Value::take);
 
     match ctx.invoke(&function, call_args) {
         Ok(value) => Ok(result_map([
