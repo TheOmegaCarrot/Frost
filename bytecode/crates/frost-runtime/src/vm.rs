@@ -12,10 +12,10 @@ pub use params::{Param, ParamSpec};
 #[cfg(test)]
 mod arg_pool_tests;
 
-use std::{borrow::Cow, collections::BTreeMap};
 use std::debug_assert_matches;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
+use std::{borrow::Cow, collections::BTreeMap};
 
 use itertools::Itertools;
 
@@ -291,7 +291,10 @@ enum TailFlow {
 }
 
 #[derive(Debug)]
-pub struct NativeCtx<'a> { pub(crate) vm: &'a mut Vm, function: &'a NativeFunction }
+pub struct NativeCtx<'a> {
+    pub(crate) vm: &'a mut Vm,
+    function: &'a NativeFunction,
+}
 
 impl NativeCtx<'_> {
     pub fn invoke(
@@ -357,11 +360,21 @@ impl NativeCtx<'_> {
     }
 }
 
-type NativeFn = dyn Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static;
+/// The bound every native function must satisfy.
+pub trait NativeFn: Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static {
+    /// Invoke the native with `ctx` and `args`.
+    fn invoke(&self, ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
+        self(ctx, args)
+    }
+}
+impl<F> NativeFn for F where
+    F: Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static
+{
+}
 
 pub struct NativeFunction {
     arity: Arity,
-    function: Box<NativeFn>,
+    function: Box<dyn NativeFn>,
     name: &'static str,
 }
 
@@ -377,7 +390,7 @@ impl std::fmt::Debug for NativeFunction {
 impl NativeFunction {
     pub fn new<F>(function: F, name: &'static str, arity: Arity) -> Self
     where
-        F: Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static,
+        F: NativeFn,
     {
         Self {
             arity,
@@ -391,7 +404,7 @@ impl NativeFunction {
     /// its argument types.
     pub fn checked<F, const N: usize>(name: &'static str, params: [Param; N], body: F) -> Self
     where
-        F: Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static,
+        F: NativeFn,
     {
         Self {
             arity: params.as_slice().arity(),
@@ -433,6 +446,47 @@ impl NativeFunction {
 
     pub fn arity(&self) -> Arity {
         self.arity
+    }
+}
+
+impl Value {
+    /// Build a Frost function value from a Rust closure.
+    ///
+    /// When called from Frost, `function` runs with a [`NativeCtx`] (for calling back
+    /// into the interpreter) and the call's arguments; whatever it returns becomes the
+    /// result. `arity` declares how many arguments the function accepts -- calling it
+    /// with the wrong number produces a Frost error.
+    ///
+    /// Reach for this when the function validates its own arguments: it accepts
+    /// flexible types, or which types are valid depends on more than one argument at
+    /// once. To have argument types checked for you, use [`Value::checked_native`].
+    pub fn native<F>(function: F, name: &'static str, arity: Arity) -> Value
+    where
+        F: NativeFn,
+    {
+        Value::NativeFunction(Arc::new(NativeFunction::new(function, name, arity)))
+    }
+
+    /// Build a Frost function value whose arguments are type-checked for you.
+    ///
+    /// `params` describes each parameter's accepted types and whether it is optional
+    /// (see [`Param`]). The function's arity is derived from it, and every argument is
+    /// validated before `body` runs -- so `body` can assume its arguments already match
+    /// the spec. A bad argument raises a Frost error with an appropriate error message,
+    /// before `body` is ever executed.
+    ///
+    /// This is the usual way to expose a Rust function to Frost. Use [`Value::native`]
+    /// when the valid types can't be described per parameter and the function must
+    /// check them itself.
+    pub fn checked_native<F, const N: usize>(
+        name: &'static str,
+        params: [Param; N],
+        body: F,
+    ) -> Value
+    where
+        F: NativeFn,
+    {
+        Value::NativeFunction(Arc::new(NativeFunction::checked(name, params, body)))
     }
 }
 
@@ -1152,7 +1206,13 @@ impl Vm {
         }
 
         self.stack_frames.push(StackFrame::NativeFrame);
-        let result = (native.function)(NativeCtx { vm: self, function: native }, &mut buf);
+        let result = native.function.invoke(
+            NativeCtx {
+                vm: self,
+                function: native,
+            },
+            &mut buf,
+        );
         buf.clear();
         self.native_arg_pool.push(buf);
 

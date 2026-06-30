@@ -1,16 +1,12 @@
 //! Type checking, conversion, and value serialization.
 
-use std::sync::Arc;
-
-use crate::{NativeFunction, Param, Value};
+use crate::{Param, Value};
 
 /// A one-argument predicate native accepting any value (`checked` derives `Exact(1)`).
 fn predicate(name: &'static str, pred: fn(&Value) -> bool) -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::checked(
-        name,
-        [Param::any()],
-        move |_, args| Ok(pred(&args[0]).into()),
-    )))
+    Value::checked_native(name, [Param::any()], move |_, args| {
+        Ok(pred(&args[0]).into())
+    })
 }
 
 pub(super) fn is_null_global() -> Value {
@@ -62,11 +58,9 @@ pub(super) fn is_structured_global() -> Value {
 }
 
 pub(super) fn type_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::checked(
-        "type",
-        [Param::any()],
-        |_, args| Ok(Value::from(args[0].type_name())),
-    )))
+    Value::checked_native("type", [Param::any()], |_, args| {
+        Ok(Value::from(args[0].type_name()))
+    })
 }
 
 pub(super) fn to_string_global() -> Value {
@@ -78,17 +72,13 @@ pub(super) fn pretty_global() -> Value {
 }
 
 pub(super) fn to_int_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::checked(
-        "to_int",
-        [Param::any()],
-        |_, args| Ok(args[0].to_frost_int()),
-    )))
+    Value::checked_native("to_int", [Param::any()], |_, args| {
+        Ok(args[0].to_frost_int())
+    })
 }
 
 pub(super) fn to_float_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::checked(
-        "to_float",
-        [Param::any()],
-        |_, args| Ok(args[0].to_frost_float()),
-    )))
+    Value::checked_native("to_float", [Param::any()], |_, args| {
+        Ok(args[0].to_frost_float())
+    })
 }

@@ -19,7 +19,7 @@ mod types;
 use std::sync::{Arc, LazyLock};
 
 use crate::core::FrostResult;
-use crate::{Arity, NativeFunction, Value};
+use crate::{Arity, Value};
 
 use super::GlobalSet;
 
@@ -183,13 +183,13 @@ define_globals! {
 /// global panics with a clear message. Replace the matching `*_global()` body with
 /// the real constructor when implementing it.
 fn stub(name: &'static str) -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
+    Value::native(
         move |_ctx, _args: &mut [Value]| -> FrostResult {
             todo!("the `{name}` global is not yet implemented")
         },
         name,
         Arity::AtLeast(0),
-    )))
+    )
 }
 
 static DEFAULT_GLOBALS: LazyLock<Arc<GlobalSet>> =

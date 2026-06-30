@@ -3,10 +3,7 @@
 use std::sync::Arc;
 
 use crate::core::FrostResult;
-use crate::{
-    Arity, Bytecode, Closure, CompiledFunction, FrostArray, MapKey, NativeCtx, NativeFunction,
-    Value,
-};
+use crate::{Arity, Bytecode, Closure, CompiledFunction, FrostArray, MapKey, NativeCtx, Value};
 
 /// `call(f)` / `call(f, args)` -- invoke `f`, spreading the elements of `args` (or
 /// no args) as a tail call. A hand-rolled `Between(1, 2)` closure over `DynTailCall`.
@@ -48,12 +45,8 @@ pub(super) fn call_global() -> Value {
 
 /// Builds the `try_call` global -- Frost's catch primitive, surfaced as a native.
 pub(super) fn try_call_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
-        try_call,
-        "try_call",
-        // At least the function to call; any further args are passed to it.
-        Arity::AtLeast(1),
-    )))
+    // At least the function to call; any further args are passed to it.
+    Value::native(try_call, "try_call", Arity::AtLeast(1))
 }
 
 /// `try_call(f, ...args)` -- invoke `f` with `args` and reify the outcome into a result map rather than letting an error propagate:

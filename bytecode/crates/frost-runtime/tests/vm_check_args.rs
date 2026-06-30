@@ -12,7 +12,11 @@ use frost_runtime::{
 
 /// A throwaway native named `frob`, for testing `check_args` in isolation.
 fn frob() -> NativeFunction {
-    NativeFunction::new(|_, _: &mut [Value]| Ok(Value::Null), "frob", Arity::AtLeast(0))
+    NativeFunction::new(
+        |_, _: &mut [Value]| Ok(Value::Null),
+        "frob",
+        Arity::AtLeast(0),
+    )
 }
 
 fn check(args: &[Value], params: &[Param]) -> Result<(), FrostError> {
@@ -31,7 +35,10 @@ fn accepts_matching_type() {
 #[test]
 fn reports_function_name_type_and_position() {
     let err = check(&[Value::Int(5)], &[Param::of(&[FrostType::Map])]).unwrap_err();
-    assert_eq!(err.message, "Function frob requires Map as argument 1, got Int");
+    assert_eq!(
+        err.message,
+        "Function frob requires Map as argument 1, got Int"
+    );
 }
 
 #[test]

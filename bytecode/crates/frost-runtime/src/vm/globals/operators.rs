@@ -1,37 +1,32 @@
 //! Arithmetic and comparison operators as first-class functions.
 //!
-//! Operators sidestep the `Param` type-check (`NativeFunction::new`, not `checked`):
+//! Operators sidestep the `Param` type-check (`Value::native`, not `checked_native`):
 //! their validity is a *relation* between the two args -- `Int + Int` is fine but
 //! `Int + String` is not, and `String + String` / `Array + Array` are also fine --
 //! which a per-parameter spec can't express. The underlying `Value` method raises
 //! the type error instead.
 
 use std::cmp::Ordering;
-use std::sync::Arc;
 
 use crate::core::FrostResult;
-use crate::{Arity, NativeFunction, Value};
+use crate::{Arity, Value};
 
 /// A two-argument native that forwards to an infix `Value` operator method.
 fn binary(name: &'static str, op: fn(&Value, &Value) -> FrostResult) -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
-        move |_, args| op(&args[0], &args[1]),
-        name,
-        Arity::Exact(2),
-    )))
+    Value::native(move |_, args| op(&args[0], &args[1]), name, Arity::Exact(2))
 }
 
 /// A two-argument comparison native: orders the args and maps the `Ordering` to a Bool.
 fn comparison(name: &'static str, accept: fn(Ordering) -> bool) -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
+    Value::native(
         move |_, args| Ok(accept(args[0].compare(&args[1])?).into()),
         name,
         Arity::Exact(2),
-    )))
+    )
 }
 
 pub(super) fn plus_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
+    Value::native(
         // `+` concatenates Arrays and merges Maps. Consume the args so those cases
         // steal their backing storage instead of cloning, mirroring `Vm::do_add`;
         // every other case forwards to the scalar `Value::add`.
@@ -54,7 +49,7 @@ pub(super) fn plus_global() -> Value {
         },
         "plus",
         Arity::Exact(2),
-    )))
+    )
 }
 
 pub(super) fn minus_global() -> Value {
@@ -74,19 +69,19 @@ pub(super) fn mod_global() -> Value {
 }
 
 pub(super) fn equal_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
+    Value::native(
         |_, args| Ok((args[0] == args[1]).into()),
         "equal",
         Arity::Exact(2),
-    )))
+    )
 }
 
 pub(super) fn not_equal_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(
+    Value::native(
         |_, args| Ok((args[0] != args[1]).into()),
         "not_equal",
         Arity::Exact(2),
-    )))
+    )
 }
 
 pub(super) fn less_than_global() -> Value {

@@ -244,9 +244,18 @@ fn plus_type_mismatch_errors() {
 
 #[test]
 fn minus_times_divide_mod() {
-    assert_eq!(g("minus", vec![Value::Int(5), Value::Int(3)]), Value::Int(2));
-    assert_eq!(g("times", vec![Value::Int(4), Value::Int(3)]), Value::Int(12));
-    assert_eq!(g("divide", vec![Value::Int(10), Value::Int(2)]), Value::Int(5)); // integer division
+    assert_eq!(
+        g("minus", vec![Value::Int(5), Value::Int(3)]),
+        Value::Int(2)
+    );
+    assert_eq!(
+        g("times", vec![Value::Int(4), Value::Int(3)]),
+        Value::Int(12)
+    );
+    assert_eq!(
+        g("divide", vec![Value::Int(10), Value::Int(2)]),
+        Value::Int(5)
+    ); // integer division
     assert_eq!(g("mod", vec![Value::Int(10), Value::Int(3)]), Value::Int(1));
 }
 
@@ -294,8 +303,14 @@ fn ordering_comparisons() {
     assert_eq!(g("less_than", vec![Value::Int(2), Value::Int(1)]), f);
     assert_eq!(g("less_than", vec![Value::Int(1), Value::Int(1)]), f);
 
-    assert_eq!(g("less_than_or_equal", vec![Value::Int(1), Value::Int(1)]), t);
-    assert_eq!(g("less_than_or_equal", vec![Value::Int(2), Value::Int(1)]), f);
+    assert_eq!(
+        g("less_than_or_equal", vec![Value::Int(1), Value::Int(1)]),
+        t
+    );
+    assert_eq!(
+        g("less_than_or_equal", vec![Value::Int(2), Value::Int(1)]),
+        f
+    );
 
     assert_eq!(g("greater_than", vec![Value::Int(2), Value::Int(1)]), t);
     assert_eq!(g("greater_than", vec![Value::Int(1), Value::Int(2)]), f);
@@ -310,7 +325,10 @@ fn ordering_comparisons() {
     );
 
     // `<` also orders Floats and mixed numerics.
-    assert_eq!(g("less_than", vec![Value::Int(1), float(1.5)]), Value::Bool(true));
+    assert_eq!(
+        g("less_than", vec![Value::Int(1), float(1.5)]),
+        Value::Bool(true)
+    );
 }
 
 #[test]
