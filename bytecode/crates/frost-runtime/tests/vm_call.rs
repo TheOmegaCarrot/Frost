@@ -159,11 +159,11 @@ fn call_preserves_argument_order() {
 fn call_spreads_into_a_native() {
     // call(sum, [1, 2, 3]) -> 6 ; the native receives the spread args as a slice.
     let sum = Value::NativeFunction(Arc::new(NativeFunction::new(
+        "sum",
+        Arity::AtLeast(0),
         |_ctx, args: &mut [Value]| -> FrostResult {
             Ok(Value::Int(args.iter().map(|v| v.as_int().unwrap()).sum()))
         },
-        "sum",
-        Arity::AtLeast(0),
     )));
     let r = run_main(
         vec![("f", sum)],

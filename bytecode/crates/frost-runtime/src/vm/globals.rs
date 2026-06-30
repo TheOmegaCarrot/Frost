@@ -183,13 +183,9 @@ define_globals! {
 /// global panics with a clear message. Replace the matching `*_global()` body with
 /// the real constructor when implementing it.
 fn stub(name: &'static str) -> Value {
-    Value::native(
-        move |_ctx, _args: &mut [Value]| -> FrostResult {
-            todo!("the `{name}` global is not yet implemented")
-        },
-        name,
-        Arity::AtLeast(0),
-    )
+    Value::native(name, Arity::AtLeast(0), move |_ctx, _args: &mut [Value]| -> FrostResult {
+        todo!("the `{name}` global is not yet implemented")
+    })
 }
 
 static DEFAULT_GLOBALS: LazyLock<Arc<GlobalSet>> =

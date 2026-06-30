@@ -13,9 +13,9 @@ use frost_runtime::{
 /// A throwaway native named `frob`, for testing `check_args` in isolation.
 fn frob() -> NativeFunction {
     NativeFunction::new(
-        |_, _: &mut [Value]| Ok(Value::Null),
         "frob",
         Arity::AtLeast(0),
+        |_, _: &mut [Value]| Ok(Value::Null),
     )
 }
 

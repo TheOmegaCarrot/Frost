@@ -13,43 +13,37 @@ use crate::{Arity, Value};
 
 /// A two-argument native that forwards to an infix `Value` operator method.
 fn binary(name: &'static str, op: fn(&Value, &Value) -> FrostResult) -> Value {
-    Value::native(move |_, args| op(&args[0], &args[1]), name, Arity::Exact(2))
+    Value::native(name, Arity::Exact(2), move |_, args| op(&args[0], &args[1]))
 }
 
 /// A two-argument comparison native: orders the args and maps the `Ordering` to a Bool.
 fn comparison(name: &'static str, accept: fn(Ordering) -> bool) -> Value {
-    Value::native(
-        move |_, args| Ok(accept(args[0].compare(&args[1])?).into()),
-        name,
-        Arity::Exact(2),
-    )
+    Value::native(name, Arity::Exact(2), move |_, args| {
+        Ok(accept(args[0].compare(&args[1])?).into())
+    })
 }
 
 pub(super) fn plus_global() -> Value {
-    Value::native(
-        // `+` concatenates Arrays and merges Maps. Consume the args so those cases
-        // steal their backing storage instead of cloning, mirroring `Vm::do_add`;
-        // every other case forwards to the scalar `Value::add`.
-        |_, args| {
-            let lhs = std::mem::replace(&mut args[0], Value::Null);
-            let rhs = std::mem::replace(&mut args[1], Value::Null);
-            Ok(match (lhs, rhs) {
-                (Value::Array(l), Value::Array(r)) => {
-                    let mut elems = l.to_owned();
-                    elems.extend(r.to_owned());
-                    Value::Array(elems.into())
-                }
-                (Value::Map(l), Value::Map(r)) => {
-                    let mut entries = l.to_owned();
-                    entries.extend(r.to_owned());
-                    Value::Map(entries.into())
-                }
-                (lhs, rhs) => lhs.add(&rhs)?,
-            })
-        },
-        "plus",
-        Arity::Exact(2),
-    )
+    // `+` concatenates Arrays and merges Maps. Consume the args so those cases
+    // steal their backing storage instead of cloning, mirroring `Vm::do_add`;
+    // every other case forwards to the scalar `Value::add`.
+    Value::native("plus", Arity::Exact(2), |_, args| {
+        let lhs = std::mem::replace(&mut args[0], Value::Null);
+        let rhs = std::mem::replace(&mut args[1], Value::Null);
+        Ok(match (lhs, rhs) {
+            (Value::Array(l), Value::Array(r)) => {
+                let mut elems = l.to_owned();
+                elems.extend(r.to_owned());
+                Value::Array(elems.into())
+            }
+            (Value::Map(l), Value::Map(r)) => {
+                let mut entries = l.to_owned();
+                entries.extend(r.to_owned());
+                Value::Map(entries.into())
+            }
+            (lhs, rhs) => lhs.add(&rhs)?,
+        })
+    })
 }
 
 pub(super) fn minus_global() -> Value {
@@ -69,19 +63,15 @@ pub(super) fn mod_global() -> Value {
 }
 
 pub(super) fn equal_global() -> Value {
-    Value::native(
-        |_, args| Ok((args[0] == args[1]).into()),
-        "equal",
-        Arity::Exact(2),
-    )
+    Value::native("equal", Arity::Exact(2), |_, args| {
+        Ok((args[0] == args[1]).into())
+    })
 }
 
 pub(super) fn not_equal_global() -> Value {
-    Value::native(
-        |_, args| Ok((args[0] != args[1]).into()),
-        "not_equal",
-        Arity::Exact(2),
-    )
+    Value::native("not_equal", Arity::Exact(2), |_, args| {
+        Ok((args[0] != args[1]).into())
+    })
 }
 
 pub(super) fn less_than_global() -> Value {

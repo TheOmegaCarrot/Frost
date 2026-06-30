@@ -61,6 +61,8 @@ fn fail_fn() -> Arc<CompiledFunction> {
 /// `apply(f, ...rest)` -- a re-entrant native that invokes `f` and propagates.
 fn apply_native() -> Value {
     Value::NativeFunction(Arc::new(NativeFunction::new(
+        "apply",
+        Arity::AtLeast(1),
         |mut ctx, args| {
             let f = args[0].clone();
             ctx.invoke(
@@ -70,8 +72,6 @@ fn apply_native() -> Value {
                     .map(|v| std::mem::replace(v, Value::Null)),
             )
         },
-        "apply",
-        Arity::AtLeast(1),
     )))
 }
 

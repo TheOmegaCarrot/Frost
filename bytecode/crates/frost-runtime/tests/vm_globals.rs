@@ -83,9 +83,9 @@ fn fmap(pairs: Vec<(&str, Value)>) -> Value {
 
 fn func_value() -> Value {
     Value::NativeFunction(Arc::new(NativeFunction::new(
-        |_, _: &mut [Value]| Ok(Value::Null),
         "f",
         Arity::Exact(0),
+        |_, _: &mut [Value]| Ok(Value::Null),
     )))
 }
 

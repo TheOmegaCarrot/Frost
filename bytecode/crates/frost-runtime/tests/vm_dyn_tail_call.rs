@@ -85,11 +85,11 @@ fn dyn_tail_call_spreads_array_into_closure() {
 fn dyn_tail_call_spreads_array_into_native() {
     // A native callee takes the spread args as a slice; the count is dynamic.
     let sum = Value::NativeFunction(Arc::new(NativeFunction::new(
+        "sum",
+        Arity::AtLeast(0),
         |_ctx, args: &mut [Value]| -> FrostResult {
             Ok(Value::Int(args.iter().map(|v| v.as_int().unwrap()).sum()))
         },
-        "sum",
-        Arity::AtLeast(0),
     )));
     let result = run_with_f(
         sum,

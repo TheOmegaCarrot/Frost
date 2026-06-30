@@ -51,7 +51,7 @@ fn native(
     arity: Arity,
     f: impl Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static,
 ) -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction::new(f, name, arity)))
+    Value::NativeFunction(Arc::new(NativeFunction::new(name, arity, f)))
 }
 
 /// `CreateClosure` for a capture-less child function at `idx`.

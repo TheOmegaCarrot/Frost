@@ -1,6 +1,6 @@
 //! Type checking, conversion, and value serialization.
 
-use crate::{Param, Value};
+use crate::{Arity, Param, Value};
 
 /// A one-argument predicate native accepting any value (`checked` derives `Exact(1)`).
 fn predicate(name: &'static str, pred: fn(&Value) -> bool) -> Value {

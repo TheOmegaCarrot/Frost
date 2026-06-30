@@ -35,9 +35,9 @@ fn map() -> Value {
 
 fn native() -> Value {
     Value::NativeFunction(Arc::new(NativeFunction::new(
-        |_ctx, _args| Ok(Value::Null),
         "f",
         Arity::Exact(0),
+        |_ctx, _args| Ok(Value::Null),
     )))
 }
 

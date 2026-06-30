@@ -15,9 +15,9 @@ use frost_runtime::{
 /// arg actually reached the slice (not just that the call was accepted).
 fn counting(arity: Arity) -> Value {
     Value::NativeFunction(Arc::new(frost_runtime::NativeFunction::new(
-        |_ctx, args: &mut [Value]| -> FrostResult { Ok(Value::Int(args.len() as i64)) },
         "counter",
         arity,
+        |_ctx, args: &mut [Value]| -> FrostResult { Ok(Value::Int(args.len() as i64)) },
     )))
 }
 

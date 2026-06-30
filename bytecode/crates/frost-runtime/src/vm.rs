@@ -388,7 +388,7 @@ impl std::fmt::Debug for NativeFunction {
 }
 
 impl NativeFunction {
-    pub fn new<F>(function: F, name: &'static str, arity: Arity) -> Self
+    pub fn new<F>(name: &'static str, arity: Arity, function: F) -> Self
     where
         F: NativeFn,
     {
@@ -460,11 +460,11 @@ impl Value {
     /// Reach for this when the function validates its own arguments: it accepts
     /// flexible types, or which types are valid depends on more than one argument at
     /// once. To have argument types checked for you, use [`Value::checked_native`].
-    pub fn native<F>(function: F, name: &'static str, arity: Arity) -> Value
+    pub fn native<F>(name: &'static str, arity: Arity, function: F) -> Value
     where
         F: NativeFn,
     {
-        Value::NativeFunction(Arc::new(NativeFunction::new(function, name, arity)))
+        Value::NativeFunction(Arc::new(NativeFunction::new(name, arity, function)))
     }
 
     /// Build a Frost function value whose arguments are type-checked for you.
