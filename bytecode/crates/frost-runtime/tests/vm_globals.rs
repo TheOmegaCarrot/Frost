@@ -184,6 +184,47 @@ fn to_float_converts_or_nulls() {
 }
 
 // ============================================================
+// Stringification: to_string (compact), pretty (indented)
+//
+// `to_frost_string`/`to_pretty_string` are exhaustively covered in
+// `value_to_string.rs`; these only prove each global reaches the *right* method --
+// the compact form vs. the multi-line pretty form -- through the native-call path.
+// ============================================================
+
+#[test]
+fn to_string_renders_the_compact_form() {
+    // Top-level strings are unquoted; `null` and numbers render as their literal.
+    assert_eq!(g("to_string", vec![Value::from("hi")]), Value::from("hi"));
+    assert_eq!(g("to_string", vec![Value::Null]), Value::from("null"));
+    assert_eq!(g("to_string", vec![Value::Int(42)]), Value::from("42"));
+    // Structures render on a single line; strings nested inside are quoted.
+    assert_eq!(
+        g("to_string", vec![arr(vec![Value::Int(1), Value::from("a")])]),
+        Value::from(r#"[ 1, "a" ]"#)
+    );
+    assert_eq!(
+        g("to_string", vec![fmap(vec![("a", Value::Int(1))])]),
+        Value::from(r#"{ ["a"]: 1 }"#)
+    );
+}
+
+#[test]
+fn pretty_renders_the_indented_form() {
+    // Primitives are identical to the compact form -- only structures differ.
+    assert_eq!(g("pretty", vec![Value::Int(42)]), Value::from("42"));
+    // Structures spread across lines with four-space indentation; identifier-like
+    // map keys use shorthand (no brackets or quotes), unlike the compact form.
+    assert_eq!(
+        g("pretty", vec![arr(vec![Value::Int(1), Value::Int(2)])]),
+        Value::from("[\n    1,\n    2\n]")
+    );
+    assert_eq!(
+        g("pretty", vec![fmap(vec![("a", Value::Int(1))])]),
+        Value::from("{\n    a: 1\n}")
+    );
+}
+
+// ============================================================
 // Arithmetic operators
 // ============================================================
 

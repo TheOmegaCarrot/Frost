@@ -64,11 +64,15 @@ pub(super) fn type_global() -> Value {
 }
 
 pub(super) fn to_string_global() -> Value {
-    super::stub("to_string")
+    Value::native("to_string", Arity::Exact(1), |_, args| {
+        Ok(Value::from(args[0].to_frost_string()))
+    })
 }
 
 pub(super) fn pretty_global() -> Value {
-    super::stub("pretty")
+    Value::native("pretty", Arity::Exact(1), |_, args| {
+        Ok(Value::from(args[0].to_pretty_string()))
+    })
 }
 
 pub(super) fn to_int_global() -> Value {
