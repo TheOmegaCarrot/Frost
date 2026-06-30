@@ -2,113 +2,71 @@
 
 use std::sync::Arc;
 
-use crate::{Arity, NativeFunction, Value};
+use crate::{NativeFunction, Param, Value};
 
-// `unwrap` is safer than usual in a Frost nativeFunction,
-// because once control enters the implementation, arity is already checked.
+/// A one-argument predicate native accepting any value (`checked` derives `Exact(1)`).
+fn predicate(name: &'static str, pred: fn(&Value) -> bool) -> Value {
+    Value::NativeFunction(Arc::new(NativeFunction::checked(
+        name,
+        [Param::any()],
+        move |_, args| Ok(pred(&args[0]).into()),
+    )))
+}
 
 pub(super) fn is_null_global() -> Value {
-    Value::NativeFunction(Arc::new (NativeFunction{
-        arity: Arity::Exact(1),
-        name: "is_null",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_null().into()) )
-    }))
+    predicate("is_null", Value::is_null)
 }
 
 pub(super) fn is_int_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_int",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_int().into())),
-    }))
+    predicate("is_int", Value::is_int)
 }
 
 pub(super) fn is_float_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_float",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_float().into())),
-    }))
+    predicate("is_float", Value::is_float)
 }
 
 pub(super) fn is_bool_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_bool",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_bool().into())),
-    }))
+    predicate("is_bool", Value::is_bool)
 }
 
 pub(super) fn is_string_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_string",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_string().into())),
-    }))
+    predicate("is_string", Value::is_string)
 }
 
 pub(super) fn is_array_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_array",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_array().into())),
-    }))
+    predicate("is_array", Value::is_array)
 }
 
 pub(super) fn is_map_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_map",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_map().into())),
-    }))
+    predicate("is_map", Value::is_map)
 }
 
 pub(super) fn is_function_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_function",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_function().into())),
-    }))
+    predicate("is_function", Value::is_function)
 }
 
 pub(super) fn is_nonnull_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_nonnull",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_nonnull().into())),
-    }))
+    predicate("is_nonnull", Value::is_nonnull)
 }
 
 pub(super) fn is_numeric_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_numeric",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_numeric().into())),
-    }))
+    predicate("is_numeric", Value::is_numeric)
 }
 
 pub(super) fn is_primitive_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_primitive",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_primitive().into())),
-    }))
+    predicate("is_primitive", Value::is_primitive)
 }
 
 pub(super) fn is_structured_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "is_structured",
-        function: Box::new(|_, args| Ok(args.first().unwrap().is_structured().into())),
-    }))
+    predicate("is_structured", Value::is_structured)
 }
 
 pub(super) fn type_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "type",
-        function: Box::new(|_, args| Ok(Value::from(args.first().unwrap().type_name()))),
-    }))
+    Value::NativeFunction(Arc::new(NativeFunction::checked(
+        "type",
+        [Param::any()],
+        |_, args| Ok(Value::from(args[0].type_name())),
+    )))
 }
 
 pub(super) fn to_string_global() -> Value {
@@ -120,17 +78,17 @@ pub(super) fn pretty_global() -> Value {
 }
 
 pub(super) fn to_int_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "to_int",
-        function: Box::new(|_, args| Ok(args.first().unwrap().to_frost_int())),
-    }))
+    Value::NativeFunction(Arc::new(NativeFunction::checked(
+        "to_int",
+        [Param::any()],
+        |_, args| Ok(args[0].to_frost_int()),
+    )))
 }
 
 pub(super) fn to_float_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(1),
-        name: "to_float",
-        function: Box::new(|_, args| Ok(args.first().unwrap().to_frost_float())),
-    }))
+    Value::NativeFunction(Arc::new(NativeFunction::checked(
+        "to_float",
+        [Param::any()],
+        |_, args| Ok(args[0].to_frost_float()),
+    )))
 }

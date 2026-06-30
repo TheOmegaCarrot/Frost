@@ -8,5 +8,5 @@ pub use core::{
 
 pub use vm::{
     Arity, Bytecode, Closure, CompiledFunction, GlobalSet, MissingCaptures, NameEntry, NativeCtx,
-    NativeFunction, ProgramResult, Vm,
+    NativeFunction, Param, ParamSpec, ProgramResult, Vm,
 };

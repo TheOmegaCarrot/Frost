@@ -1,4 +1,10 @@
 //! Arithmetic and comparison operators as first-class functions.
+//!
+//! Operators sidestep the `Param` type-check (`NativeFunction::new`, not `checked`):
+//! their validity is a *relation* between the two args -- `Int + Int` is fine but
+//! `Int + String` is not, and `String + String` / `Array + Array` are also fine --
+//! which a per-parameter spec can't express. The underlying `Value` method raises
+//! the type error instead.
 
 use std::cmp::Ordering;
 use std::sync::Arc;
@@ -8,30 +14,28 @@ use crate::{Arity, NativeFunction, Value};
 
 /// A two-argument native that forwards to an infix `Value` operator method.
 fn binary(name: &'static str, op: fn(&Value, &Value) -> FrostResult) -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(2),
+    Value::NativeFunction(Arc::new(NativeFunction::new(
+        move |_, args| op(&args[0], &args[1]),
         name,
-        function: Box::new(move |_, args| op(&args[0], &args[1])),
-    }))
+        Arity::Exact(2),
+    )))
 }
 
 /// A two-argument comparison native: orders the args and maps the `Ordering` to a Bool.
 fn comparison(name: &'static str, accept: fn(Ordering) -> bool) -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(2),
+    Value::NativeFunction(Arc::new(NativeFunction::new(
+        move |_, args| Ok(accept(args[0].compare(&args[1])?).into()),
         name,
-        function: Box::new(move |_, args| Ok(accept(args[0].compare(&args[1])?).into())),
-    }))
+        Arity::Exact(2),
+    )))
 }
 
 pub(super) fn plus_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(2),
-        name: "plus",
+    Value::NativeFunction(Arc::new(NativeFunction::new(
         // `+` concatenates Arrays and merges Maps. Consume the args so those cases
-        // steal their backing storage instead of cloning, mirroring
-        // `Vm::do_add`; every other case forwards to the scalar `Value::add`.
-        function: Box::new(|_, args| {
+        // steal their backing storage instead of cloning, mirroring `Vm::do_add`;
+        // every other case forwards to the scalar `Value::add`.
+        |_, args| {
             let lhs = std::mem::replace(&mut args[0], Value::Null);
             let rhs = std::mem::replace(&mut args[1], Value::Null);
             Ok(match (lhs, rhs) {
@@ -47,8 +51,10 @@ pub(super) fn plus_global() -> Value {
                 }
                 (lhs, rhs) => lhs.add(&rhs)?,
             })
-        }),
-    }))
+        },
+        "plus",
+        Arity::Exact(2),
+    )))
 }
 
 pub(super) fn minus_global() -> Value {
@@ -68,19 +74,19 @@ pub(super) fn mod_global() -> Value {
 }
 
 pub(super) fn equal_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(2),
-        name: "equal",
-        function: Box::new(|_, args| Ok((args[0] == args[1]).into())),
-    }))
+    Value::NativeFunction(Arc::new(NativeFunction::new(
+        |_, args| Ok((args[0] == args[1]).into()),
+        "equal",
+        Arity::Exact(2),
+    )))
 }
 
 pub(super) fn not_equal_global() -> Value {
-    Value::NativeFunction(Arc::new(NativeFunction {
-        arity: Arity::Exact(2),
-        name: "not_equal",
-        function: Box::new(|_, args| Ok((args[0] != args[1]).into())),
-    }))
+    Value::NativeFunction(Arc::new(NativeFunction::new(
+        |_, args| Ok((args[0] != args[1]).into()),
+        "not_equal",
+        Arity::Exact(2),
+    )))
 }
 
 pub(super) fn less_than_global() -> Value {

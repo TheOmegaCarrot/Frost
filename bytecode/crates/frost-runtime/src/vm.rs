@@ -1,6 +1,9 @@
 #![allow(unused)]
 
 mod globals;
+mod params;
+
+pub use params::{Param, ParamSpec};
 
 // White-box tests for the one unwind invariant not observable through the public
 // API: native-arg-pool buffer recycling. (Operand-stack and frame restoration are
@@ -288,7 +291,7 @@ enum TailFlow {
 }
 
 #[derive(Debug)]
-pub struct NativeCtx<'a>(pub(crate) &'a mut Vm);
+pub struct NativeCtx<'a> { pub(crate) vm: &'a mut Vm, function: &'a NativeFunction }
 
 impl NativeCtx<'_> {
     pub fn invoke(
@@ -298,16 +301,16 @@ impl NativeCtx<'_> {
     ) -> FrostResult {
         match function {
             Value::NativeFunction(native) => {
-                let mut buf = self.0.native_arg_pool.pop().unwrap_or_default();
+                let mut buf = self.vm.native_arg_pool.pop().unwrap_or_default();
                 buf.extend(args);
-                self.0.run_native(native, buf)
+                self.vm.run_native(native, buf)
             }
 
             Value::Closure(closure) => {
-                let base = self.0.stack.len();
-                self.0.stack.push(function.clone());
-                self.0.stack.extend(args);
-                let argc = self.0.stack.len() - base - 1;
+                let base = self.vm.stack.len();
+                self.vm.stack.push(function.clone());
+                self.vm.stack.extend(args);
+                let argc = self.vm.stack.len() - base - 1;
 
                 // This native boundary is where an unwinding error stops.
                 // On any error path below, restore the Vm to its pre-call shape before returning Err --
@@ -318,29 +321,39 @@ impl NativeCtx<'_> {
                 {
                     // The callee never ran: only the function value and its args
                     // (no frame) sit above `base`.
-                    self.0.stack.truncate(base);
+                    self.vm.stack.truncate(base);
                     return Err(err);
                 }
 
-                let frame_floor = self.0.stack_frames.len();
-                self.0.push_closure_frame(closure, base, None);
+                let frame_floor = self.vm.stack_frames.len();
+                self.vm.push_closure_frame(closure, base, None);
 
-                if let Err(err) = self.0.execute_function() {
-                    let err = self.0.unwind_frames(frame_floor, err);
-                    self.0.stack.truncate(base);
+                if let Err(err) = self.vm.execute_function() {
+                    let err = self.vm.unwind_frames(frame_floor, err);
+                    self.vm.stack.truncate(base);
                     return Err(err);
                 }
 
                 let result = self
-                    .0
+                    .vm
                     .stack
                     .pop()
                     .expect("IMPOSSIBLE: closure left no result");
-                self.0.stack_frames.pop();
+                self.vm.stack_frames.pop();
                 Ok(result)
             }
             _ => Err(Vm::not_callable(function)),
         }
+    }
+
+    /// Type-check the running native's args against `params`, attributing the error
+    /// to this native by name. Forwards to [`NativeFunction::check_args`].
+    pub fn check_args(&self, args: &[Value], params: &[Param]) -> Result<(), FrostError> {
+        self.function.check_args(args, params)
+    }
+
+    pub fn name(&self) -> &str {
+        self.function.name
     }
 }
 
@@ -371,6 +384,47 @@ impl NativeFunction {
             name,
             function: Box::new(function),
         }
+    }
+
+    /// Build a native whose [`Arity`] is derived from `params`, and whose arguments
+    /// are type-checked against `params` before `body` runs, so `body` may trust
+    /// its argument types.
+    pub fn checked<F, const N: usize>(name: &'static str, params: [Param; N], body: F) -> Self
+    where
+        F: Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static,
+    {
+        Self {
+            arity: params.as_slice().arity(),
+            name,
+            function: Box::new(move |ctx, args| {
+                ctx.check_args(args, &params)?;
+                body(ctx, args)
+            }),
+        }
+    }
+
+    /// Type-check `args` against `params`, reporting a mismatch as
+    /// `Function {name} requires {types} as argument {N}{ (name)}, got {Type}`.
+    /// A guard to call before trusting argument types in a native body. Arity is
+    /// assumed already validated -- the VM checks a native's `Arity` before its body
+    /// runs -- so only the present arguments' types are checked.
+    pub fn check_args(&self, args: &[Value], params: &[Param]) -> Result<(), FrostError> {
+        for (i, param) in params.iter().enumerate() {
+            let Some(arg) = args.get(i) else { break };
+            if !param.accepts(arg) {
+                let position = match param.name {
+                    Some(label) => format!("argument {} ({label})", i + 1),
+                    None => format!("argument {}", i + 1),
+                };
+                return Err(FrostError::new(format!(
+                    "Function {} requires {} as {position}, got {}",
+                    self.name,
+                    param.expected(),
+                    arg.type_name(),
+                )));
+            }
+        }
+        Ok(())
     }
 
     pub fn name(&self) -> &str {
@@ -1098,7 +1152,7 @@ impl Vm {
         }
 
         self.stack_frames.push(StackFrame::NativeFrame);
-        let result = (native.function)(NativeCtx(self), &mut buf);
+        let result = (native.function)(NativeCtx { vm: self, function: native }, &mut buf);
         buf.clear();
         self.native_arg_pool.push(buf);
 
