@@ -555,13 +555,6 @@ impl ProgramResult {
     /// Get the value of the tail expression of a script.
     /// Often `null`.
     pub fn tail(&self) -> &Value {
-        // Correct bytecode leaves at most one value: the tail expression's result, or
-        // nothing for a program of only `def`/`export def` statements (tail is null).
-        debug_assert!(
-            self.0.stack.len() <= 1,
-            "a completed program must leave at most one value on the stack, found {}",
-            self.0.stack.len()
-        );
         self.0.stack.last().unwrap_or(&Value::Null)
     }
 
@@ -577,7 +570,10 @@ impl ProgramResult {
             .iter()
             .zip(&base.local_slots)
             .find(|(entry, _)| entry.exported && entry.name == name)
-            .and_then(|(_, slot)| slot.as_ref())
+            .map(|(_, slot)| {
+                slot.as_ref()
+                    .expect("IMPOSSIBLE: exported slot unfilled after execution")
+            })
     }
 
     /// Get all values exported by the script.
@@ -971,11 +967,57 @@ impl Vm {
         self.push_closure_frame(&closure, 0, None);
 
         match self.execute_function() {
-            Ok(()) => Ok(ProgramResult(self)),
+            Ok(()) => {
+                #[cfg(debug_assertions)]
+                self.debug_verify_terminal_state();
+                Ok(ProgramResult(self))
+            }
             // No `NativeFrame` exists above the top level, so the error has nowhere to be caught:
             // accumulate the backtrace across every remaining frame and surface it to the host.
             // `self`, now unrecoverable, is dropped.
             Err(err) => Err(self.unwind_frames(0, err)),
+        }
+    }
+
+    /// Debug-only sanity check that a successful run unwound to a valid terminal state.
+    /// A malformed program that trips one of these has violated an invariant the public
+    /// API (`tail`, `exports`) then relies on, so we catch it at the boundary in debug builds.
+    #[cfg(debug_assertions)]
+    fn debug_verify_terminal_state(&self) {
+        // The operand stack holds at most the tail value -- nothing for a program of
+        // only `def`/`export def` statements (whose tail is null).
+        debug_assert!(
+            self.stack.len() <= 1,
+            "a completed program must leave at most one value on the stack, found {}",
+            self.stack.len()
+        );
+        // Exactly the top-level frame remains -- every call has returned, and the
+        // bottom frame is preserved rather than popped.
+        debug_assert_eq!(
+            self.stack_frames.len(),
+            1,
+            "a completed program must leave exactly the top-level frame, found {}",
+            self.stack_frames.len()
+        );
+        // That frame is the pristine top-level closure's frame (base_frame panics if
+        // it is a native frame): based at 0, no caller to return to, right function.
+        let base = self.base_frame();
+        debug_assert_eq!(base.base_idx, 0, "the top-level frame must be based at stack index 0");
+        debug_assert!(
+            base.return_address.is_none(),
+            "the top-level frame must have no return address"
+        );
+        debug_assert!(
+            Arc::ptr_eq(&base.this_fn, &self.top_level.function),
+            "the top-level frame must belong to the top-level closure"
+        );
+        // Every exported binding was assigned -- the invariant `exports`/`get_export` trust.
+        for (entry, slot) in base.this_fn.name_table.iter().zip(&base.local_slots) {
+            debug_assert!(
+                !entry.exported || slot.is_some(),
+                "exported binding `{}` was left unfilled after execution",
+                entry.name
+            );
         }
     }
 
