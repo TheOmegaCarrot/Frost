@@ -50,7 +50,7 @@ fn map(pairs: Vec<(MapKey, Value)>) -> Value {
     Value::Map(pairs.into_iter().collect())
 }
 
-use Bytecode::{ExplodeArray, LoadConst, MakeArray, MakeMap, Pop, PushInt, PushNull};
+use Bytecode::{DropBelow, ExplodeArray, LoadConst, MakeArray, MakeMap, Pop, PushInt, PushNull};
 
 // ============================================================
 // MakeArray
@@ -258,10 +258,11 @@ fn explode_single_element() {
 
 #[test]
 fn explode_puts_array_back_on_top() {
-    // [1, 2, 3] explodes so the back element (3) lands on top of the stack.
+    // [1, 2, 3] explodes so the back element (3) lands on top; drop the two below it
+    // to isolate the top and prove it is 3.
     let out = eval(
         vec![array(vec![Value::Int(1), Value::Int(2), Value::Int(3)])],
-        vec![LoadConst(0), ExplodeArray],
+        vec![LoadConst(0), ExplodeArray, DropBelow(1), DropBelow(1)],
     )
     .unwrap();
     assert_eq!(out, Value::Int(3));

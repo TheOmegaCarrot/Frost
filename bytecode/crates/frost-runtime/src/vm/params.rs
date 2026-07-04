@@ -92,7 +92,7 @@ impl ParamSpec for [Param] {
         if required == total {
             Arity::Exact(total)
         } else {
-            Arity::Between(required as u32, total as u32)
+            Arity::Between(required, total)
         }
     }
 }

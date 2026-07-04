@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, ops::Deref};
+use std::cmp::Ordering;
 
 use crate::core::error::FrostError;
 
@@ -39,13 +39,6 @@ impl From<i64> for FrostFloat {
 impl From<FrostFloat> for f64 {
     fn from(value: FrostFloat) -> Self {
         value.0
-    }
-}
-
-impl Deref for FrostFloat {
-    type Target = f64;
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 

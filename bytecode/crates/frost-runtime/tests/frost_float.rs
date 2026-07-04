@@ -26,9 +26,9 @@ fn accepts_negative_zero() {
 }
 
 #[test]
-fn deref_gives_inner_f64() {
+fn get_returns_inner_f64() {
     let f = FrostFloat::new(3.14).unwrap();
-    assert_eq!(*f, 3.14);
+    assert_eq!(f.get(), 3.14);
 }
 
 #[test]
@@ -64,13 +64,6 @@ fn ordering() {
     assert!(a < b);
     assert!(b < c);
     assert!(a < c);
-}
-
-#[test]
-fn deref_enables_f64_methods() {
-    let f = FrostFloat::new(-2.5).unwrap();
-    assert_eq!(f.abs(), 2.5);
-    assert_eq!(f.floor(), -3.0);
 }
 
 #[test]

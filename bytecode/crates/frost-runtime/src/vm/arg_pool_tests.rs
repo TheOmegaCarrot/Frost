@@ -12,9 +12,7 @@ use std::sync::Arc;
 use super::*;
 
 fn try_call_slot() -> usize {
-    GlobalSet::defaults()
-        .index_of("try_call")
-        .expect("try_call is a predefined global")
+    GlobalSet::index_of("try_call").expect("try_call is a predefined global")
 }
 
 fn closure(idx: u32) -> Bytecode {

@@ -25,9 +25,7 @@ use Bytecode::*;
 // ============================================================
 
 fn slot(name: &str) -> usize {
-    GlobalSet::defaults()
-        .index_of(name)
-        .unwrap_or_else(|| panic!("`{name}` is not a predefined global"))
+    GlobalSet::index_of(name).unwrap_or_else(|| panic!("`{name}` is not a predefined global"))
 }
 
 fn entry(name: &str) -> NameEntry {
@@ -120,6 +118,11 @@ fn a_function() -> Value {
     )))
 }
 
+/// An opaque host value -- also forbidden, since a cell can't see inside it to rule out a cycle.
+fn an_opaque() -> Value {
+    Value::Opaque(Arc::new(42i64))
+}
+
 fn arr(elems: Vec<Value>) -> Value {
     Value::Array(FrostArray::from(elems))
 }
@@ -189,7 +192,7 @@ fn handles_to_the_same_cell_share_state() {
 }
 
 // ============================================================
-// forbid_cycle: Functions may not be stored
+// forbid_cycle: Functions and Opaques may not be stored
 // ============================================================
 
 #[test]
@@ -226,4 +229,21 @@ fn accepts_a_function_free_structure() {
     // The same shapes without a function are fine, and round-trip intact.
     let nested = arr(vec![Value::Int(1), map(vec![("k", Value::from("v"))])]);
     assert_eq!(get(&cell(Some(nested.clone()))), nested);
+}
+
+#[test]
+fn rejects_an_opaque_at_init() {
+    // Opaque can smuggle a cycle we can't inspect, so it's forbidden wholesale.
+    let err = new_cell(Some(an_opaque())).unwrap_err();
+    assert!(
+        err.message.contains("Opaque"),
+        "unexpected message: {}",
+        err.message
+    );
+}
+
+#[test]
+fn rejects_an_opaque_nested_in_a_structure() {
+    assert!(new_cell(Some(arr(vec![an_opaque()]))).is_err());
+    assert!(new_cell(Some(map(vec![("o", an_opaque())]))).is_err());
 }

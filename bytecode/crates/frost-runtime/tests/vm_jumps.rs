@@ -38,15 +38,16 @@ use Bytecode::{Jump, JumpIfFalse, JumpIfTrue, Pop, PushFalse, PushInt, PushNull,
 #[test]
 fn jump_zero_is_nop() {
     // Jump(0) must step to the very next instruction (not self-loop, not skip).
-    // If it self-looped this test would hang; if it skipped, tail would be 1.
-    assert_eq!(tail(vec![PushInt(1), Jump(0), PushInt(2)]), Value::Int(2));
+    // If it self-looped this test would hang; if it skipped PushInt(2) the program
+    // would leave nothing.
+    assert_eq!(tail(vec![Jump(0), PushInt(2)]), Value::Int(2));
 }
 
 #[test]
 fn jump_skips_one_and_lands_on_next() {
     // Jump(1) skips PushInt(999) and lands on PushInt(7): tail is 7, never 999.
     assert_eq!(
-        tail(vec![PushInt(1), Jump(1), PushInt(999), PushInt(7)]),
+        tail(vec![Jump(1), PushInt(999), PushInt(7)]),
         Value::Int(7)
     );
 }
@@ -77,9 +78,9 @@ fn jump_if_true_taken_when_truthy() {
 
 #[test]
 fn jump_if_true_not_taken_when_falsy() {
-    // false -> not taken, falls through to PushInt(7).
+    // false -> not taken, falls through; drop the un-consumed condition, then PushInt(7).
     assert_eq!(
-        tail(vec![PushFalse, JumpIfTrue(1), PushInt(7)]),
+        tail(vec![PushFalse, JumpIfTrue(1), Pop, PushInt(7)]),
         Value::Int(7)
     );
 }
@@ -108,9 +109,9 @@ fn jump_if_false_taken_when_falsy() {
 
 #[test]
 fn jump_if_false_not_taken_when_truthy() {
-    // true -> not taken, falls through to PushInt(7).
+    // true -> not taken, falls through; drop the un-consumed condition, then PushInt(7).
     assert_eq!(
-        tail(vec![PushTrue, JumpIfFalse(1), PushInt(7)]),
+        tail(vec![PushTrue, JumpIfFalse(1), Pop, PushInt(7)]),
         Value::Int(7)
     );
 }

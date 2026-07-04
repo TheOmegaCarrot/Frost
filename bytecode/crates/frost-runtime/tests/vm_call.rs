@@ -17,9 +17,7 @@ use frost_runtime::{
 use Bytecode::*;
 
 fn call_slot() -> usize {
-    GlobalSet::defaults()
-        .index_of("call")
-        .expect("call is a predefined global")
+    GlobalSet::index_of("call").expect("call is a predefined global")
 }
 
 fn entry(name: &str) -> NameEntry {

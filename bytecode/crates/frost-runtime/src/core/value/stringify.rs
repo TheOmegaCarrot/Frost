@@ -78,7 +78,7 @@ fn stringify(value: &Value, buf: &mut String, ctx: &StringifyContext) {
         Value::Bool(b) => buf.push_str(if *b { "true" } else { "false" }),
         // unwrap because writing to a string is infallible
         Value::Int(i) => write!(buf, "{i}").unwrap(),
-        Value::Float(f) => stringify_float(**f, buf),
+        Value::Float(f) => stringify_float(f.get(), buf),
         Value::String(s) => stringify_string(s, buf, ctx),
         Value::Array(arr) => stringify_array(arr.as_slice(), buf, ctx),
         Value::Map(map) => stringify_map(map, buf, ctx),
@@ -209,7 +209,7 @@ fn stringify_map_key(key: &MapKey, buf: &mut String, ctx: &StringifyContext) {
     match key {
         MapKey::Bool(b) => buf.push_str(if *b { "true" } else { "false" }),
         MapKey::Int(i) => write!(buf, "{i}").unwrap(),
-        MapKey::Float(f) => stringify_float(**f, buf),
+        MapKey::Float(f) => stringify_float(f.get(), buf),
         MapKey::String(s) => escape_string(s, buf),
     }
 }

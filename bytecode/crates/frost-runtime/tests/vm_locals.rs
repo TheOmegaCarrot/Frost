@@ -36,15 +36,17 @@ fn def_local_moves_off_stack() {
 
 #[test]
 fn load_local_copies_not_moves() {
-    // LoadLocal copies (clones), so loading the same slot twice works.
+    // LoadLocal copies (clones), so loading the same slot twice works: 5 + 5 = 10
+    // proves both loads read the value (a move would have emptied the slot).
     let program = fn_with_locals(
         vec![
             Bytecode::PushInt(5),
             Bytecode::DefLocal(0),
             Bytecode::LoadLocal(0),
             Bytecode::LoadLocal(0),
+            Bytecode::Add,
         ],
         vec![entry("x", false)],
     );
-    assert_eq!(run_fn(program).tail(), &Value::Int(5));
+    assert_eq!(run_fn(program).tail(), &Value::Int(10));
 }

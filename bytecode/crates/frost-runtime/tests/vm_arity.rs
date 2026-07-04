@@ -116,45 +116,6 @@ fn between_equal_bounds_behaves_like_exact() {
 // its actual `argc` on top of the args, so the prelude can branch on the real count.
 // ============================================================
 
-#[test]
-fn between_closure_pushes_arg_count_on_top() {
-    // An empty-bodied Between(0, 2) runs no prelude, so whatever push_closure_frame
-    // seated is left untouched and tail() reads the top. A non-Int arg proves the
-    // top is the pushed argc, not the argument itself.
-    let probe = Arc::new(CompiledFunction {
-        name: "count".to_string(),
-        code: Vec::new(),
-        child_fns: Vec::new(),
-        constants: Vec::new(),
-        name_table: vec![
-            NameEntry {
-                name: "a".to_string(),
-                exported: false,
-            },
-            NameEntry {
-                name: "b".to_string(),
-                exported: false,
-            },
-        ],
-        num_captures: 0,
-        arity: Arity::Between(0, 2),
-    });
-    let run = |args: Vec<Value>| {
-        Vm::new(probe.clone().into_closure().unwrap())
-            .unwrap()
-            .run_with_args(args)
-            .unwrap()
-            .tail()
-            .clone()
-    };
-    assert_eq!(run(vec![]), Value::Int(0));
-    assert_eq!(run(vec![Value::Bool(true)]), Value::Int(1));
-    assert_eq!(
-        run(vec![Value::Bool(true), Value::Bool(true)]),
-        Value::Int(2)
-    );
-}
-
 /// A hand-rolled `Between(0, 1)` closure that consumes the pushed `argc` to tell an
 /// omitted optional from one explicitly passed as `null`: 0 args -> `Int(-1)`
 /// sentinel; 1 arg -> the argument itself (so an explicit `null` stays `null`).

@@ -50,16 +50,6 @@ fn push_float() {
     assert_eq!(result.tail(), &Value::Float(f));
 }
 
-#[test]
-fn tail_is_top_of_stack() {
-    let result = run(vec![
-        Bytecode::PushInt(1),
-        Bytecode::PushInt(2),
-        Bytecode::PushInt(3),
-    ]);
-    assert_eq!(result.tail(), &Value::Int(3));
-}
-
 // ============================================================
 // Stack manipulation
 // ============================================================
@@ -86,32 +76,54 @@ fn dup_copies_top() {
 
 #[test]
 fn dup_leaves_two_copies() {
-    let result = run(vec![Bytecode::PushInt(7), Bytecode::Dup]);
-    // stack: 7, 7 -- tail is top = 7
-    assert_eq!(result.tail(), &Value::Int(7));
+    // Dup copies the top, leaving two: [7] -> [7, 7] (observed via MakeArray).
+    let result = run(vec![
+        Bytecode::PushInt(7),
+        Bytecode::Dup,
+        Bytecode::MakeArray(2),
+    ]);
+    assert_eq!(
+        result.tail(),
+        &Value::Array(FrostArray::from(vec![Value::Int(7), Value::Int(7)]))
+    );
 }
 
 #[test]
 fn peek_down_1_is_dup() {
-    // PeekDown(1) copies the top item (same as Dup)
+    // PeekDown(1) copies the top item (same as Dup): [10, 20] -> [10, 20, 20].
     let result = run(vec![
         Bytecode::PushInt(10),
         Bytecode::PushInt(20),
         Bytecode::PeekDown(1), // copies 20 (top)
-        Bytecode::Pop,         // pop the copy
+        Bytecode::MakeArray(3),
     ]);
-    assert_eq!(result.tail(), &Value::Int(20));
+    assert_eq!(
+        result.tail(),
+        &Value::Array(FrostArray::from(vec![
+            Value::Int(10),
+            Value::Int(20),
+            Value::Int(20)
+        ]))
+    );
 }
 
 #[test]
 fn peek_down_copies_deeper() {
-    // PeekDown(2) copies the item below the top
+    // PeekDown(2) copies the item below the top: [10, 20] -> [10, 20, 10].
     let result = run(vec![
         Bytecode::PushInt(10),
         Bytecode::PushInt(20),
         Bytecode::PeekDown(2), // copies 10 (below top)
+        Bytecode::MakeArray(3),
     ]);
-    assert_eq!(result.tail(), &Value::Int(10));
+    assert_eq!(
+        result.tail(),
+        &Value::Array(FrostArray::from(vec![
+            Value::Int(10),
+            Value::Int(20),
+            Value::Int(10)
+        ]))
+    );
 }
 
 #[test]

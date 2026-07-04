@@ -278,7 +278,7 @@ pub struct ProgramResult(Vm);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Arity {
     Exact(usize),
-    Between(u32, u32),
+    Between(usize, usize),
     AtLeast(usize),
 }
 
@@ -361,6 +361,10 @@ impl NativeCtx<'_> {
 }
 
 /// The bound every native function must satisfy.
+///
+/// The `&mut [Value]` arguments are the callee's to consume: steal one with
+/// [`Value::take`] (leaving `Null` behind) rather than cloning when you need to own it.
+/// The caller discards the buffer once the call returns, so any values left in it are dropped.
 pub trait NativeFn: Fn(NativeCtx<'_>, &mut [Value]) -> FrostResult + Send + Sync + 'static {
     /// Invoke the native with `ctx` and `args`.
     fn invoke(&self, ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
@@ -455,7 +459,8 @@ impl Value {
     /// When called from Frost, `function` runs with a [`NativeCtx`] (for calling back
     /// into the interpreter) and the call's arguments; whatever it returns becomes the
     /// result. `arity` declares how many arguments the function accepts -- calling it
-    /// with the wrong number produces a Frost error.
+    /// with the wrong number produces a Frost error. The arguments are yours to consume
+    /// -- steal one with [`Value::take`] rather than cloning (see [`NativeFn`]).
     ///
     /// Reach for this when the function validates its own arguments: it accepts
     /// flexible types, or which types are valid depends on more than one argument at
@@ -550,6 +555,13 @@ impl ProgramResult {
     /// Get the value of the tail expression of a script.
     /// Often `null`.
     pub fn tail(&self) -> &Value {
+        // Correct bytecode leaves at most one value: the tail expression's result, or
+        // nothing for a program of only `def`/`export def` statements (tail is null).
+        debug_assert!(
+            self.0.stack.len() <= 1,
+            "a completed program must leave at most one value on the stack, found {}",
+            self.0.stack.len()
+        );
         self.0.stack.last().unwrap_or(&Value::Null)
     }
 
@@ -889,7 +901,10 @@ impl Vm {
                             // TODO: improve error message with "did you mean ...?" hint
                             // (Error message sucks for now, and that's ok for now)
                             None => {
-                                return Err(FrostError::new("Map has no value at key"));
+                                return Err(FrostError::new(format!(
+                                    "Map has no value at key '{}'",
+                                    String::from_utf8_lossy(s)
+                                )));
                             }
                         }
                     }
@@ -1040,7 +1055,7 @@ impl Vm {
     fn check_arity(arity: Arity, argc: usize, name: &str) -> Result<(), FrostError> {
         let ok = match arity {
             Arity::Exact(n) => argc == n,
-            Arity::Between(lo, hi) => (lo..=hi).contains(&(argc as u32)),
+            Arity::Between(lo, hi) => (lo..=hi).contains(&argc),
             Arity::AtLeast(n) => argc >= n,
         };
         if ok {

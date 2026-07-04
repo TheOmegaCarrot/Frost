@@ -1,6 +1,9 @@
+use std::any::Any;
 use std::sync::Arc;
 
-use frost_runtime::{FrostArray, FrostMap, MapKey, Value};
+use frost_runtime::{
+    Arity, Closure, CompiledFunction, FrostArray, FrostMap, MapKey, NativeFunction, Value,
+};
 
 fn str_key(s: &str) -> MapKey {
     MapKey::String(Arc::from(s.as_bytes()))
@@ -189,6 +192,63 @@ fn same_arc_map_is_equal() {
     let a = Value::from(map.clone());
     let b = Value::from(map);
     assert_eq!(a, b);
+}
+
+// -- Function / opaque identity (compared by Arc identity, never structurally) --
+
+fn a_native() -> Arc<NativeFunction> {
+    Arc::new(NativeFunction::new(
+        "f",
+        Arity::Exact(0),
+        |_, _: &mut [Value]| Ok(Value::Null),
+    ))
+}
+
+fn a_closure() -> Arc<Closure> {
+    let f = Arc::new(CompiledFunction {
+        name: "f".to_string(),
+        code: Vec::new(),
+        child_fns: Vec::new(),
+        constants: Vec::new(),
+        name_table: Vec::new(),
+        num_captures: 0,
+        arity: Arity::Exact(0),
+    });
+    Arc::new(f.into_closure().unwrap())
+}
+
+#[test]
+fn native_functions_compare_by_identity() {
+    let n = a_native();
+    assert_eq!(Value::NativeFunction(n.clone()), Value::NativeFunction(n));
+    assert_ne!(
+        Value::NativeFunction(a_native()),
+        Value::NativeFunction(a_native())
+    );
+}
+
+#[test]
+fn closures_compare_by_identity() {
+    let c = a_closure();
+    // The same closure equals itself -- the arm that was missing (used to be `false`).
+    assert_eq!(Value::Closure(c.clone()), Value::Closure(c));
+    // Distinct closures, even structurally identical, are never equal.
+    assert_ne!(Value::Closure(a_closure()), Value::Closure(a_closure()));
+}
+
+#[test]
+fn opaques_compare_by_identity() {
+    let o: Arc<dyn Any + Send + Sync> = Arc::new(42i64);
+    assert_eq!(Value::Opaque(o.clone()), Value::Opaque(o));
+    let a: Arc<dyn Any + Send + Sync> = Arc::new(1i64);
+    let b: Arc<dyn Any + Send + Sync> = Arc::new(1i64);
+    assert_ne!(Value::Opaque(a), Value::Opaque(b));
+}
+
+#[test]
+fn a_function_never_equals_a_non_function() {
+    assert_ne!(Value::Closure(a_closure()), Value::Null);
+    assert_ne!(Value::NativeFunction(a_native()), Value::from(0i64));
 }
 
 // -- Negative zero --

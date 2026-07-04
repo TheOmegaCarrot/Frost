@@ -64,9 +64,7 @@ fn closure(idx: u32) -> Bytecode {
 
 /// Slot index of the `try_call` global (the VM is built with the default set).
 fn try_call_slot() -> usize {
-    GlobalSet::defaults()
-        .index_of("try_call")
-        .expect("try_call must be a predefined global")
+    GlobalSet::index_of("try_call").expect("try_call must be a predefined global")
 }
 
 /// Run a program to completion, surfacing the result (Ok or Err).

@@ -202,7 +202,7 @@ impl GlobalSet {
 
     /// Look up a global's slot index by name, or `None` if it is not a predefined global.
     /// The result is stable for a given build, so callers (e.g. a compiler emitting `LoadGlobal`) may cache it.
-    pub fn index_of(&self, name: &str) -> Option<usize> {
+    pub fn index_of(name: &str) -> Option<usize> {
         // Yes, this is a linear scan, but this should be a pretty cold path.
         Self::NAMES.iter().position(|&n| n == name)
     }

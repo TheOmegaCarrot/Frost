@@ -24,9 +24,8 @@ use Bytecode::*;
 /// The args are seated as captures so any `Value` can be passed; the body loads
 /// them and `Call`s the global, exactly as compiled code would.
 fn run_global(name: &str, args: Vec<Value>) -> Result<Value, FrostError> {
-    let slot = GlobalSet::defaults()
-        .index_of(name)
-        .unwrap_or_else(|| panic!("`{name}` is not a predefined global"));
+    let slot =
+        GlobalSet::index_of(name).unwrap_or_else(|| panic!("`{name}` is not a predefined global"));
     let argc = args.len();
 
     let mut code = vec![Pop, LoadGlobal(slot)];
