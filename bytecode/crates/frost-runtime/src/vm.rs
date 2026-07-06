@@ -132,18 +132,92 @@ pub enum Bytecode {
 pub struct Vm {
     // The working stack of the Vm
     stack: Vec<Value>,
+
     // The call stack. Empty until `run`/`run_with_args` seats the top-level closure's frame;
     // a Frost call pushes a `VmFrame`, a native call a `NativeFrame` marker.
     // After a run, `stack_frames[0]` is the top-level frame, whose locals are the script's bindings/exports.
     stack_frames: Vec<StackFrame>,
+
     // Used to hold the args of a native function call.
     // A native call acquires a Vec from this pool, moves args from the stack to that Vec (or makes a new one), then clears it and returns it.
     // This allows for re-use of allocations for native args, while allowing a native call to hold mutable references to their args AND the Vm separately.
     native_arg_pool: Vec<Vec<Value>>,
+
     globals: Arc<GlobalSet>,
+
     // The top-level closure to run. Its captures (host + Frost-internal) are already bound;
     // `run`/`run_with_args` invoke it like any other closure.
     top_level: Arc<Closure>,
+
+    // Runtime resource limits. Fixed at build time; persists across `reset`.
+    config: VmRuntimeConfiguration,
+
+    // Function calls made so far (the fuel meter). Incremented on every call and
+    // compared against `config.fuel`; zeroed on `reset`.
+    fuel_used: usize,
+
+    // The unrecoverable-error channel.
+    // Once set (e.g. fuel exhaustion) the run is fatally aborting:
+    // unlike an ordinary error this cannot be caught.
+    abort: Option<FrostError>,
+}
+
+/// Runtime resource limits for a [`Vm`]. The [`Default`] imposes no limits.
+#[derive(Debug, Clone, Default)]
+pub struct VmRuntimeConfiguration {
+    /// Maximum call-stack depth (number of frames) before execution fails with a
+    /// recoverable error.
+    /// Tail calls do not contribute to the call depth.
+    /// `None` leaves depth unbounded.
+    pub max_call_depth: Option<NonZeroUsize>,
+
+    /// Call budget ("fuel"): execution fails once this many function calls have been made.
+    /// `None` leaves execution unmetered.
+    /// This call budget does count tail calls.
+    /// Because iteration in Frost is achieved with higher-order functions and/or tail-call
+    /// recursion, a Frost script often involves more function calls than comparable code in a more
+    /// procedural language like Lua. Consider setting this value higher than your intuition may
+    /// lead you.
+    ///
+    /// Frost bytecode has no backward jumps, so each function body runs a bounded number
+    /// of instructions -- bounding the number of *calls* therefore bounds total execution.
+    /// This is what catches unbounded recursion, tail recursion included (which is
+    /// depth-flat, so the depth cap never fires on it). A native function that loops forever
+    /// without returning or re-entering the Vm is outside this guarantee.
+    pub fuel: Option<NonZeroUsize>,
+}
+
+/// Fixed configuration from which [`Vm`]s are built. Obtain one from [`Vm::factory`].
+///
+/// The final [build](VmFactory::build) is what binds the script to execute.
+/// This factory is well-suited to creating several identically-configured Vms.
+#[derive(Debug, Clone, Default)]
+pub struct VmFactory {
+    config: VmRuntimeConfiguration,
+}
+
+impl VmFactory {
+    /// Set the runtime resource limits (depth, fuel) for the Vms this factory builds.
+    /// See [`VmRuntimeConfiguration`] for the defaults,
+    /// which are used if this method is not invoked.
+    pub fn configuration(mut self, config: VmRuntimeConfiguration) -> Self {
+        self.config = config;
+        self
+    }
+
+    /// Build a [`Vm`] to run `closure` under this factory's configuration.
+    pub fn build(&self, closure: Closure) -> Result<Vm, FrostError> {
+        Ok(Vm {
+            stack: Vec::new(),
+            stack_frames: Vec::new(),
+            native_arg_pool: Vec::new(),
+            globals: GlobalSet::defaults(),
+            top_level: Arc::new(closure),
+            config: self.config.clone(),
+            fuel_used: 0,
+            abort: None,
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -302,6 +376,14 @@ impl NativeCtx<'_> {
         function: &Value,
         args: impl IntoIterator<Item = Value>,
     ) -> FrostResult {
+        // Once the run is fatally aborting, refuse to do any more Frost work -- this is
+        // what stops a native that caught the abort and tried to re-enter the Vm.
+        if let Some(err) = self.vm.abort_error() {
+            return Err(err);
+        }
+        // A native calling back into Frost is itself a call: it burns fuel.
+        self.vm.expend_fuel()?;
+
         match function {
             Value::NativeFunction(native) => {
                 let mut buf = self.vm.native_arg_pool.pop().unwrap_or_default();
@@ -329,7 +411,12 @@ impl NativeCtx<'_> {
                 }
 
                 let frame_floor = self.vm.stack_frames.len();
-                self.vm.push_closure_frame(closure, base, None);
+                if let Err(err) = self.vm.push_closure_frame(closure, base, None) {
+                    // No frame was pushed (the depth check runs first), so just clear
+                    // the function value and args left above `base`.
+                    self.vm.stack.truncate(base);
+                    return Err(err);
+                }
 
                 if let Err(err) = self.vm.execute_function() {
                     let err = self.vm.unwind_frames(frame_floor, err);
@@ -593,6 +680,12 @@ impl ProgramResult {
             })
     }
 
+    /// The number of function calls the program made -- the fuel it consumed.
+    /// Reported whether or not a [`fuel`](VmRuntimeConfiguration::fuel) limit was set.
+    pub fn fuel_consumed(&self) -> usize {
+        self.0.fuel_used
+    }
+
     /// Prepare the Vm to run another [`Closure`], reusing its internal allocations rather than building a fresh [`Vm`].
     ///
     /// For predictable scripts run repeatedly, reusing a [`Vm`] this way reduces the number of allocations,
@@ -602,26 +695,23 @@ impl ProgramResult {
         vm.stack.clear();
         vm.stack_frames.clear();
         vm.top_level = Arc::new(closure);
+        vm.fuel_used = 0;
+        vm.abort = None;
         vm
     }
 }
 
 impl Vm {
-    /// Create a [Vm] that will run `closure` as its top-level program.
+    /// A default-configured [`VmFactory`].
     ///
     /// The closure carries its already-bound captures (see [`CompiledFunction::close`]).
-    /// Any referenced [`CompiledFunction`] must be well-formed, and running malformed bytecode may panic.
-    /// Only the Frost compiler emits bytecode which is guaranteed to be well-formed.
+    /// Any referenced [`CompiledFunction`] must be well-formed, and running malformed
+    /// bytecode may panic; only the Frost compiler emits guaranteed-well-formed bytecode.
     ///
-    /// A Vm runs a single program; reuse a warm Vm via [`ProgramResult::reset`].
-    pub fn new(closure: Closure) -> Result<Vm, FrostError> {
-        Ok(Self {
-            stack: Vec::new(),
-            stack_frames: Vec::new(),
-            native_arg_pool: Vec::new(),
-            globals: GlobalSet::defaults(),
-            top_level: Arc::new(closure),
-        })
+    /// A Vm runs a single program; reuse a warm Vm via [`ProgramResult::reset`], or stamp
+    /// out fresh identically-configured Vms by reusing one factory.
+    pub fn factory() -> VmFactory {
+        VmFactory::default()
     }
 
     fn this_frame(&self) -> &VmFrame {
@@ -756,6 +846,7 @@ impl Vm {
                         }
                     }
                     Bytecode::Call(argc) => {
+                        self.expend_fuel()?;
                         let base = self.stack.len() - (argc + 1);
                         let function = self.stack[base].clone();
 
@@ -773,7 +864,7 @@ impl Vm {
                                 )?;
                                 // The next loop iteration enters the closure, whose prelude
                                 // consumes the args on the stack and leaves one return value.
-                                self.push_closure_frame(&closure, base, NonZeroUsize::new(pc + 1));
+                                self.push_closure_frame(&closure, base, NonZeroUsize::new(pc + 1))?;
                                 pc = 0;
                                 continue;
                             }
@@ -964,7 +1055,9 @@ impl Vm {
         self.stack.extend(args);
         let argc = self.stack.len() - 1;
         Self::check_arity(closure.function.arity, argc, &closure.function.name)?;
-        self.push_closure_frame(&closure, 0, None);
+        // The top-level frame is seated at depth 0, so this never trips the depth cap;
+        // it does not consume fuel (the program has not made a call yet).
+        self.push_closure_frame(&closure, 0, None)?;
 
         match self.execute_function() {
             Ok(()) => {
@@ -1002,7 +1095,10 @@ impl Vm {
         // That frame is the pristine top-level closure's frame (base_frame panics if
         // it is a native frame): based at 0, no caller to return to, right function.
         let base = self.base_frame();
-        debug_assert_eq!(base.base_idx, 0, "the top-level frame must be based at stack index 0");
+        debug_assert_eq!(
+            base.base_idx, 0,
+            "the top-level frame must be based at stack index 0"
+        );
         debug_assert!(
             base.return_address.is_none(),
             "the top-level frame must have no return address"
@@ -1084,12 +1180,29 @@ impl Vm {
     /// Called at each native boundary that catches an unwinding error ([`NativeCtx::invoke`]) and at the top-level terminus ([`Vm::run`]).
     /// `NativeFrame` markers carry no name; a native's own name is recorded by [`Vm::run_native`] instead.
     fn unwind_frames(&mut self, floor: usize, mut err: FrostError) -> FrostError {
-        for frame in self.stack_frames.drain(floor..).rev() {
-            if let StackFrame::VmFrame(vm_frame) = frame {
-                err = err.with_frame(vm_frame.this_fn.name.clone());
+        let names: Vec<String> = self
+            .stack_frames
+            .drain(floor..)
+            .rev()
+            .filter_map(|frame| match frame {
+                StackFrame::VmFrame(vm_frame) => Some(vm_frame.this_fn.name.clone()),
+                StackFrame::NativeFrame => None,
+            })
+            .collect();
+        // During an abort the latch is the authoritative fatal error:
+        // append the frame names to it and hand back a copy,
+        // so a native above that swallows this copy can't drop the accumulated trace.
+        // Otherwise grow the ordinary propagating error as it unwinds.
+        match self.abort.as_mut() {
+            Some(abort) => {
+                abort.backtrace.extend(names);
+                abort.clone()
+            }
+            None => {
+                err.backtrace.extend(names);
+                err
             }
         }
-        err
     }
 
     /// Returns an arity-mismatch error if `argc` does not satisfy `arity`, or `Ok(())` if it does.
@@ -1128,6 +1241,60 @@ impl Vm {
         ))
     }
 
+    // ----- Resource limits (`VmRuntimeConfiguration`) -----
+    // Centralized guards + error messages, called from the several call/frame-push sites.
+
+    /// Count one function call against the fuel budget, failing if it is exhausted.
+    /// Called at every call site (`Call`, tail calls, and native re-entry via `invoke`).
+    /// The meter increments even when unmetered, so the consumed count stays reportable.
+    fn expend_fuel(&mut self) -> Result<(), FrostError> {
+        self.fuel_used = self.fuel_used.saturating_add(1);
+        if let Some(budget) = self.config.fuel
+            && self.fuel_used > budget.get()
+        {
+            // Exhaustion is unrecoverable, not an ordinary error -- latch it.
+            return Err(self.abort_with(Self::fuel_exhausted(budget.get())));
+        }
+        Ok(())
+    }
+
+    /// Latch `err` into the unrecoverable-error channel and hand it back to propagate.
+    /// Once latched, `run_native`/`invoke` refuse to let any native resume Frost code.
+    fn abort_with(&mut self, err: FrostError) -> FrostError {
+        self.abort = Some(err.clone());
+        err
+    }
+
+    /// The latched abort error if the run is fatally aborting, else `None`.
+    /// Returns a clone: the slot stays latched so every enclosing native re-asserts it.
+    fn abort_error(&self) -> Option<FrostError> {
+        self.abort.clone()
+    }
+
+    /// Fail if pushing another frame would exceed the configured call-depth limit.
+    /// Called by the frame-push primitives; tail-call frame reuse is net-neutral so it
+    /// never trips, and the top-level frame (depth 0 at entry) is always admitted.
+    fn check_call_depth(&self) -> Result<(), FrostError> {
+        match self.config.max_call_depth {
+            Some(max) if self.stack_frames.len() >= max.get() => {
+                Err(Self::call_depth_exceeded(max.get()))
+            }
+            _ => Ok(()),
+        }
+    }
+
+    fn fuel_exhausted(limit: usize) -> FrostError {
+        FrostError::new(format!(
+            "Execution exceeded its fuel limit of {limit} function calls"
+        ))
+    }
+
+    fn call_depth_exceeded(limit: usize) -> FrostError {
+        FrostError::new(format!(
+            "Execution exceeded the maximum call depth of {limit}"
+        ))
+    }
+
     /// Push a [VmFrame] to enter `closure`: captures seat into slots `0..n`, then variadic args are collapsed into a trailing rest array.
     /// `base` is the frame base (the closure's slot on the stack);
     /// `return_address` is where the callee returns to.
@@ -1137,7 +1304,9 @@ impl Vm {
         closure: &Closure,
         base: usize,
         return_address: Option<NonZeroUsize>,
-    ) {
+    ) -> Result<(), FrostError> {
+        self.check_call_depth()?;
+
         // TODO: perhaps pool local slot vecs to reuse allocations, like with native arg vecs
         let mut local_slots = vec![None; closure.function.name_table.len()];
         for (i, capture) in closure.captures.iter().enumerate() {
@@ -1169,6 +1338,7 @@ impl Vm {
             }
             Arity::Exact(_) => {}
         }
+        Ok(())
     }
 
     /// Pop the top operand (which must be an Array) and push its elements in order,
@@ -1199,6 +1369,7 @@ impl Vm {
         argc: usize,
         return_address: Option<NonZeroUsize>,
     ) -> Result<TailFlow, FrostError> {
+        self.expend_fuel()?;
         let base = self.stack.len() - (argc + 1);
         let function = self.stack[base].clone();
 
@@ -1218,7 +1389,7 @@ impl Vm {
                 // A tail call reuses the current frame -- except the bottom frame,
                 // which is preserved (see the doc comment).
                 if self.stack_frames.len() == 1 {
-                    self.push_closure_frame(&closure, base, return_address);
+                    self.push_closure_frame(&closure, base, return_address)?;
                 } else {
                     let StackFrame::VmFrame(gone_frame) = self
                         .stack_frames
@@ -1234,7 +1405,7 @@ impl Vm {
                         &closure,
                         gone_frame.base_idx,
                         gone_frame.return_address,
-                    );
+                    )?;
                 }
                 Ok(TailFlow::Reenter)
             }
@@ -1256,9 +1427,18 @@ impl Vm {
     /// Checks arity, brackets the call with a `NativeFrame` marker, and returns the native's result.
     /// `buf` is reclaimed to the pool on every path.
     fn run_native(&mut self, native: &NativeFunction, mut buf: Vec<Value>) -> FrostResult {
-        if let Err(err) = Self::check_arity(native.arity, buf.len(), native.name) {
+        let reclaim = |vm: &mut Self, mut buf: Vec<Value>| {
             buf.clear();
-            self.native_arg_pool.push(buf);
+            vm.native_arg_pool.push(buf);
+        };
+
+        if let Err(err) = Self::check_arity(native.arity, buf.len(), native.name) {
+            reclaim(self, buf);
+            return Err(err);
+        }
+        // The `NativeFrame` we are about to push is the Rust-stack growth vector.
+        if let Err(err) = self.check_call_depth() {
+            reclaim(self, buf);
             return Err(err);
         }
 
@@ -1270,8 +1450,7 @@ impl Vm {
             },
             &mut buf,
         );
-        buf.clear();
-        self.native_arg_pool.push(buf);
+        reclaim(self, buf);
 
         let popped = self.stack_frames.pop();
         debug_assert_matches!(
@@ -1279,6 +1458,15 @@ impl Vm {
             Some(StackFrame::NativeFrame),
             "run_native must pop the NativeFrame it pushed"
         );
+
+        // Unrecoverable abort (e.g. fuel exhaustion) is uncatchable: even if this native
+        // swallowed the error and returned `Ok`, override its result. Append this native's
+        // frame to the latched fatal error and re-assert it, so the host still sees the
+        // full trace to wherever the run aborted.
+        if let Some(abort) = self.abort.as_mut() {
+            abort.backtrace.push(native.name.to_string());
+            return Err(abort.clone());
+        }
 
         // A native that ran and failed contributes its own name to the backtrace.
         // Its only call-stack presence is a nameless `NativeFrame` marker,

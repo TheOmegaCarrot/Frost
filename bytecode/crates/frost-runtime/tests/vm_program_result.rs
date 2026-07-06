@@ -1,7 +1,9 @@
 mod common;
 
+use std::num::NonZeroUsize;
+
 use common::{closure, entry, fn_with_locals, run, run_fn};
-use frost_runtime::{Bytecode, Value};
+use frost_runtime::{Bytecode, Value, Vm, VmRuntimeConfiguration};
 
 // ============================================================
 // get_export / exports
@@ -100,4 +102,25 @@ fn reset_replaces_exports_with_the_new_program() {
         .run()
         .unwrap();
     assert_eq!(result_b.get_export("x"), Some(&Value::Int(200)));
+}
+
+// ============================================================
+// builder / configuration
+// ============================================================
+
+#[test]
+fn builder_accepts_configuration_and_builds_a_runnable_vm() {
+    // The configured limits are stored (not yet enforced); the built Vm runs
+    // exactly as `Vm::new` would.
+    let config = VmRuntimeConfiguration {
+        max_call_depth: NonZeroUsize::new(64),
+        fuel: NonZeroUsize::new(10_000),
+    };
+    let result = Vm::factory()
+        .configuration(config)
+        .build(closure(vec![Bytecode::PushInt(7)], vec![]))
+        .unwrap()
+        .run()
+        .unwrap();
+    assert_eq!(result.tail(), &Value::Int(7));
 }

@@ -93,7 +93,7 @@ fn run_with(
     let closure = Arc::new(top)
         .close(captures)
         .expect("all captures provided");
-    Vm::new(closure).unwrap().run()
+    Vm::factory().build(closure).unwrap().run()
 }
 
 /// `apply(f, ...rest)` -- a re-entrant native that invokes `f` with the rest of

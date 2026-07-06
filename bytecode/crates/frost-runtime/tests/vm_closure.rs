@@ -58,7 +58,10 @@ fn close_binds_capture_value() {
     // fn -> <captured x>
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
     let closure = f.close(capmap(vec![("x", Value::Int(42))])).unwrap();
-    assert_eq!(run(Vm::new(closure).unwrap()).tail(), &Value::Int(42));
+    assert_eq!(
+        run(Vm::factory().build(closure).unwrap()).tail(),
+        &Value::Int(42)
+    );
 }
 
 #[test]
@@ -72,7 +75,10 @@ fn close_ignores_extra_map_entries() {
             ("also_unused", Value::Int(3)),
         ]))
         .unwrap();
-    assert_eq!(run(Vm::new(closure).unwrap()).tail(), &Value::Int(1));
+    assert_eq!(
+        run(Vm::factory().build(closure).unwrap()).tail(),
+        &Value::Int(1)
+    );
 }
 
 #[test]
@@ -123,7 +129,10 @@ fn close_seats_each_capture_in_its_own_slot() {
     let closure = f
         .close(capmap(vec![("b", Value::Int(100)), ("a", Value::Int(1))]))
         .unwrap();
-    assert_eq!(run(Vm::new(closure).unwrap()).tail(), &Value::Int(99));
+    assert_eq!(
+        run(Vm::factory().build(closure).unwrap()).tail(),
+        &Value::Int(99)
+    );
 }
 
 // ============================================================
@@ -135,7 +144,10 @@ fn close_injects_imported_capture() {
     // `imported` is runtime-supplied, so an empty map still closes; it reads false.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["imported"]);
     let closure = f.close(BTreeMap::new()).unwrap();
-    assert_eq!(run(Vm::new(closure).unwrap()).tail(), &Value::Bool(false));
+    assert_eq!(
+        run(Vm::factory().build(closure).unwrap()).tail(),
+        &Value::Bool(false)
+    );
 }
 
 #[test]
@@ -145,7 +157,10 @@ fn close_does_not_let_host_override_imported() {
     let closure = f
         .close(capmap(vec![("imported", Value::Bool(true))]))
         .unwrap();
-    assert_eq!(run(Vm::new(closure).unwrap()).tail(), &Value::Bool(false));
+    assert_eq!(
+        run(Vm::factory().build(closure).unwrap()).tail(),
+        &Value::Bool(false)
+    );
 }
 
 #[test]
@@ -161,7 +176,10 @@ fn close_injects_imported_at_its_name_table_slot() {
     let c1 = read_imported
         .close(capmap(vec![("x", Value::Int(7))]))
         .unwrap();
-    assert_eq!(run(Vm::new(c1).unwrap()).tail(), &Value::Bool(false));
+    assert_eq!(
+        run(Vm::factory().build(c1).unwrap()).tail(),
+        &Value::Bool(false)
+    );
 
     // ...and the host capture `x` is seated at slot 0, undisturbed by the injection.
     let read_x = compiled(
@@ -171,7 +189,7 @@ fn close_injects_imported_at_its_name_table_slot() {
         &["x", "imported"],
     );
     let c2 = read_x.close(capmap(vec![("x", Value::Int(7))])).unwrap();
-    assert_eq!(run(Vm::new(c2).unwrap()).tail(), &Value::Int(7));
+    assert_eq!(run(Vm::factory().build(c2).unwrap()).tail(), &Value::Int(7));
 }
 
 // ============================================================
@@ -182,7 +200,10 @@ fn close_injects_imported_at_its_name_table_slot() {
 fn into_closure_for_no_captures() {
     let f = compiled(vec![Pop, PushInt(7)], Arity::Exact(0), 0, &[]);
     let closure = f.into_closure().unwrap();
-    assert_eq!(run(Vm::new(closure).unwrap()).tail(), &Value::Int(7));
+    assert_eq!(
+        run(Vm::factory().build(closure).unwrap()).tail(),
+        &Value::Int(7)
+    );
 }
 
 #[test]
@@ -203,7 +224,10 @@ fn into_closure_ok_for_internal_only_captures() {
     // Captures only `imported` (runtime-supplied), so into_closure still succeeds.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["imported"]);
     let closure = f.into_closure().unwrap();
-    assert_eq!(run(Vm::new(closure).unwrap()).tail(), &Value::Bool(false));
+    assert_eq!(
+        run(Vm::factory().build(closure).unwrap()).tail(),
+        &Value::Bool(false)
+    );
 }
 
 // ============================================================
@@ -245,7 +269,8 @@ fn run_with_args_passes_arguments() {
         0,
         &["a", "b"],
     );
-    let result = Vm::new(f.into_closure().unwrap())
+    let result = Vm::factory()
+        .build(f.into_closure().unwrap())
         .unwrap()
         .run_with_args([Value::Int(10), Value::Int(20)])
         .unwrap();
@@ -264,7 +289,8 @@ fn run_with_args_alongside_captures() {
         &["k", "a"],
     );
     let closure = f.close(capmap(vec![("k", Value::Int(100))])).unwrap();
-    let result = Vm::new(closure)
+    let result = Vm::factory()
+        .build(closure)
         .unwrap()
         .run_with_args([Value::Int(5)])
         .unwrap();
@@ -280,7 +306,8 @@ fn run_with_args_variadic_collects_rest() {
         0,
         &["args"],
     );
-    let result = Vm::new(f.into_closure().unwrap())
+    let result = Vm::factory()
+        .build(f.into_closure().unwrap())
         .unwrap()
         .run_with_args([Value::Int(1), Value::Int(2), Value::Int(3)])
         .unwrap();
@@ -309,7 +336,8 @@ fn run_with_args_too_few_is_arity_error() {
         0,
         &["a", "b"],
     );
-    let err = Vm::new(f.into_closure().unwrap())
+    let err = Vm::factory()
+        .build(f.into_closure().unwrap())
         .unwrap()
         .run_with_args([Value::Int(10)])
         .unwrap_err();
@@ -335,7 +363,8 @@ fn run_with_args_too_many_is_arity_error() {
         0,
         &["a"],
     );
-    let err = Vm::new(f.into_closure().unwrap())
+    let err = Vm::factory()
+        .build(f.into_closure().unwrap())
         .unwrap()
         .run_with_args([Value::Int(1), Value::Int(2)])
         .unwrap_err();
@@ -360,7 +389,8 @@ fn run_with_args_variadic_too_few_is_arity_error() {
         0,
         &["a", "b", "rest"],
     );
-    let err = Vm::new(f.into_closure().unwrap())
+    let err = Vm::factory()
+        .build(f.into_closure().unwrap())
         .unwrap()
         .run_with_args([Value::Int(1)])
         .unwrap_err();
@@ -381,7 +411,8 @@ fn run_no_args_on_parameterized_is_arity_error() {
         0,
         &["a"],
     );
-    let err = Vm::new(f.into_closure().unwrap())
+    let err = Vm::factory()
+        .build(f.into_closure().unwrap())
         .unwrap()
         .run()
         .unwrap_err();

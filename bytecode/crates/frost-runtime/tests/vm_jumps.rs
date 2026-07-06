@@ -26,7 +26,13 @@ fn tail(code: Vec<Bytecode>) -> Value {
         arity: Arity::Exact(0),
     });
     let closure = program.into_closure().unwrap();
-    Vm::new(closure).unwrap().run().unwrap().tail().clone()
+    Vm::factory()
+        .build(closure)
+        .unwrap()
+        .run()
+        .unwrap()
+        .tail()
+        .clone()
 }
 
 use Bytecode::{Jump, JumpIfFalse, JumpIfTrue, Pop, PushFalse, PushInt, PushNull, PushTrue};
@@ -46,10 +52,7 @@ fn jump_zero_is_nop() {
 #[test]
 fn jump_skips_one_and_lands_on_next() {
     // Jump(1) skips PushInt(999) and lands on PushInt(7): tail is 7, never 999.
-    assert_eq!(
-        tail(vec![Jump(1), PushInt(999), PushInt(7)]),
-        Value::Int(7)
-    );
+    assert_eq!(tail(vec![Jump(1), PushInt(999), PushInt(7)]), Value::Int(7));
 }
 
 #[test]

@@ -63,10 +63,7 @@ fn apply_native() -> Value {
         Arity::AtLeast(1),
         |mut ctx, args| {
             let f = args[0].clone();
-            ctx.invoke(
-                &f,
-                args[1..].iter_mut().map(Value::take),
-            )
+            ctx.invoke(&f, args[1..].iter_mut().map(Value::take))
         },
     )))
 }
@@ -87,7 +84,8 @@ fn catch_recycles_native_arg_buffer() {
         vec![],
         vec![fail_fn()],
     );
-    let result = Vm::new(program.into_closure().unwrap())
+    let result = Vm::factory()
+        .build(program.into_closure().unwrap())
         .unwrap()
         .run()
         .unwrap();
@@ -119,7 +117,8 @@ fn catch_recycles_every_intermediate_buffer() {
         vec![fail_fn()],
     );
     let captures = BTreeMap::from([("apply".to_string(), apply_native())]);
-    let result = Vm::new(program.close(captures).unwrap())
+    let result = Vm::factory()
+        .build(program.close(captures).unwrap())
         .unwrap()
         .run()
         .unwrap();

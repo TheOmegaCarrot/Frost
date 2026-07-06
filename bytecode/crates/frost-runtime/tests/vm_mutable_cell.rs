@@ -57,7 +57,8 @@ fn run(
     });
     let captures: BTreeMap<String, Value> =
         caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
-    Vm::new(main.close(captures).unwrap())
+    Vm::factory()
+        .build(main.close(captures).unwrap())
         .unwrap()
         .run()
         .map(|r| r.tail().clone())

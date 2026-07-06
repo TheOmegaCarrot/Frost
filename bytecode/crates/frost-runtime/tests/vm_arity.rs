@@ -45,7 +45,7 @@ fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> 
     let closure = program
         .close(BTreeMap::from([("f".to_string(), native)]))
         .unwrap();
-    Vm::new(closure).unwrap().run()
+    Vm::factory().build(closure).unwrap().run()
 }
 
 #[test]
@@ -154,7 +154,8 @@ fn omitted_vs_present_probe() -> Arc<CompiledFunction> {
 fn between_closure_distinguishes_omitted_from_explicit_null() {
     let probe = omitted_vs_present_probe();
     let run = |args: Vec<Value>| {
-        Vm::new(probe.clone().into_closure().unwrap())
+        Vm::factory()
+            .build(probe.clone().into_closure().unwrap())
             .unwrap()
             .run_with_args(args)
             .unwrap()
@@ -190,7 +191,13 @@ fn between_closure_seating_works_through_call() {
         let closure = wrapper
             .close(BTreeMap::from([("probe".to_string(), probe_val.clone())]))
             .unwrap();
-        Vm::new(closure).unwrap().run().unwrap().tail().clone()
+        Vm::factory()
+            .build(closure)
+            .unwrap()
+            .run()
+            .unwrap()
+            .tail()
+            .clone()
     };
     assert_eq!(call_probe(vec![], 0), Value::Int(-1)); // probe() via Call
     assert_eq!(call_probe(vec![Bytecode::PushNull], 1), Value::Null); // probe(null) via Call

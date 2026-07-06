@@ -86,7 +86,7 @@ pub fn run_fn(program: Arc<CompiledFunction>) -> ProgramResult {
     let closure = Arc::new(top)
         .into_closure()
         .expect("test top-level captures nothing");
-    Vm::new(closure).unwrap().run().unwrap()
+    Vm::factory().build(closure).unwrap().run().unwrap()
 }
 
 /// Build a runnable top-level [`Closure`] (no captures) from `code` plus a name

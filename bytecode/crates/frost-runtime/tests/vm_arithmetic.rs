@@ -36,7 +36,11 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
         arity: Arity::Exact(0),
     });
     let closure = program.into_closure().unwrap();
-    Vm::new(closure).unwrap().run().map(|r| r.tail().clone())
+    Vm::factory()
+        .build(closure)
+        .unwrap()
+        .run()
+        .map(|r| r.tail().clone())
 }
 
 /// Evaluate a constant-free program, expecting success.

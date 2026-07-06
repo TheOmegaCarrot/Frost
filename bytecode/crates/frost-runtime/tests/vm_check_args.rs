@@ -172,7 +172,8 @@ fn invoke(native: Value, args: Vec<Value>) -> Result<Value, FrostError> {
     for (i, v) in args.into_iter().enumerate() {
         captures.insert(format!("a{i}"), v);
     }
-    Vm::new(main.close(captures).unwrap())
+    Vm::factory()
+        .build(main.close(captures).unwrap())
         .unwrap()
         .run()
         .map(|r| r.tail().clone())

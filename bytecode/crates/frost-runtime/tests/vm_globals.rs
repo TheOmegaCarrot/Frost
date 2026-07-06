@@ -52,7 +52,8 @@ fn run_global(name: &str, args: Vec<Value>) -> Result<Value, FrostError> {
         .enumerate()
         .map(|(i, v)| (format!("a{i}"), v))
         .collect();
-    Vm::new(main.close(captures).unwrap())
+    Vm::factory()
+        .build(main.close(captures).unwrap())
         .unwrap()
         .run()
         .map(|r| r.tail().clone())

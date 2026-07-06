@@ -47,7 +47,13 @@ fn run_with_f(f: Value, body: Vec<Bytecode>) -> Value {
         arity: Arity::Exact(0),
     });
     let closure = top.close(BTreeMap::from([("f".to_string(), f)])).unwrap();
-    Vm::new(closure).unwrap().run().unwrap().tail().clone()
+    Vm::factory()
+        .build(closure)
+        .unwrap()
+        .run()
+        .unwrap()
+        .tail()
+        .clone()
 }
 
 #[test]

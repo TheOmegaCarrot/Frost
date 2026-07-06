@@ -57,7 +57,7 @@ fn run_with(
         .map(|(n, v)| (n.to_string(), v))
         .collect();
     let closure = program.close(captures).expect("all captures provided");
-    Vm::new(closure).unwrap().run().unwrap()
+    Vm::factory().build(closure).unwrap().run().unwrap()
 }
 
 /// Seat each `(name, value)` as a capture (in order, so name `i` is slot `i`),
