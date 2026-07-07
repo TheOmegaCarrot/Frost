@@ -8,6 +8,6 @@ pub use core::{
 
 pub use vm::{
     Arity, Bytecode, Closure, CompiledFunction, GlobalSet, MissingCaptures, NameEntry, NativeCtx,
-    NativeFn, NativeFunction, Param, ParamSpec, ProgramResult, Vm, VmFactory,
+    NativeFn, NativeFunction, Param, ParamSpec, ProgramResult, RunError, RunOutcome, Vm, VmFactory,
     VmRuntimeConfiguration,
 };

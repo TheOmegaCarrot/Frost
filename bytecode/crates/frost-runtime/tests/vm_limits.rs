@@ -10,7 +10,7 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostError, NameEntry, ProgramResult, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FrostError, NameEntry, ProgramResult, RunOutcome, Value, Vm,
     VmRuntimeConfiguration,
 };
 
@@ -51,6 +51,7 @@ fn run(
         .build(main.close(captures).unwrap())
         .unwrap()
         .run()
+        .map_err(|e| e.into_error())
 }
 
 fn unlimited() -> VmRuntimeConfiguration {

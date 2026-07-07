@@ -176,6 +176,7 @@ fn invoke(native: Value, args: Vec<Value>) -> Result<Value, FrostError> {
         .build(main.close(captures).unwrap())
         .unwrap()
         .run()
+        .map_err(|e| e.into_error())
         .map(|r| r.tail().clone())
 }
 

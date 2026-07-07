@@ -45,7 +45,7 @@ fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> 
     let closure = program
         .close(BTreeMap::from([("f".to_string(), native)]))
         .unwrap();
-    Vm::factory().build(closure).unwrap().run()
+    Vm::factory().build(closure).unwrap().run().map_err(|e| e.into_error())
 }
 
 #[test]

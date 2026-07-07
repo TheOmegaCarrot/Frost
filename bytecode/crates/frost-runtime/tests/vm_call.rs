@@ -57,7 +57,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<ProgramResu
         arity: Arity::Exact(0),
     });
     let map: BTreeMap<String, Value> = caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
-    Vm::factory().build(main.close(map).unwrap()).unwrap().run()
+    Vm::factory().build(main.close(map).unwrap()).unwrap().run().map_err(|e| e.into_error())
 }
 
 fn add() -> Value {

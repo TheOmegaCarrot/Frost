@@ -3,7 +3,7 @@ mod common;
 use std::num::NonZeroUsize;
 
 use common::{closure, entry, fn_with_locals, run, run_fn};
-use frost_runtime::{Bytecode, Value, Vm, VmRuntimeConfiguration};
+use frost_runtime::{Bytecode, RunOutcome, Value, Vm, VmRuntimeConfiguration};
 
 // ============================================================
 // get_export / exports
@@ -110,8 +110,7 @@ fn reset_replaces_exports_with_the_new_program() {
 
 #[test]
 fn builder_accepts_configuration_and_builds_a_runnable_vm() {
-    // The configured limits are stored (not yet enforced); the built Vm runs
-    // exactly as `Vm::new` would.
+    // The configured limits are stored (not yet enforced); the built Vm runs normally.
     let config = VmRuntimeConfiguration {
         max_call_depth: NonZeroUsize::new(64),
         fuel: NonZeroUsize::new(10_000),
@@ -123,4 +122,32 @@ fn builder_accepts_configuration_and_builds_a_runnable_vm() {
         .run()
         .unwrap();
     assert_eq!(result.tail(), &Value::Int(7));
+}
+
+// ============================================================
+// RunError: a failed run keeps the warm Vm
+// ============================================================
+
+#[test]
+fn a_failed_run_surfaces_its_error_and_recycles_the_vm() {
+    // Program A divides by zero -- a failed run. Its `RunError` carries the error and
+    // still owns the warm Vm, which `reset` recycles to run a fresh program B.
+    let failed = Vm::factory()
+        .build(closure(
+            vec![Bytecode::PushInt(1), Bytecode::PushInt(0), Bytecode::Divide],
+            vec![],
+        ))
+        .unwrap()
+        .run()
+        .unwrap_err();
+
+    assert_eq!(failed.error().message, "Division by zero");
+    assert_eq!(failed.fuel_consumed(), 0); // the failing program made no calls
+
+    // The Vm survives the failure: reset it onto program B and run to success.
+    let recovered = failed
+        .reset(closure(vec![Bytecode::PushInt(42)], vec![]))
+        .run()
+        .unwrap();
+    assert_eq!(recovered.tail(), &Value::Int(42));
 }

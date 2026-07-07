@@ -61,6 +61,7 @@ fn run(
         .build(main.close(captures).unwrap())
         .unwrap()
         .run()
+        .map_err(|e| e.into_error())
         .map(|r| r.tail().clone())
 }
 

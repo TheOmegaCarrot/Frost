@@ -680,24 +680,65 @@ impl ProgramResult {
             })
     }
 
+}
+
+/// The surface common to both outcomes of a run (success or failure): each still owns the
+/// warm [`Vm`], so either can be metered or recycled.
+pub trait RunOutcome {
     /// The number of function calls the program made -- the fuel it consumed.
     /// Reported whether or not a [`fuel`](VmRuntimeConfiguration::fuel) limit was set.
-    pub fn fuel_consumed(&self) -> usize {
+    fn fuel_consumed(&self) -> usize;
+
+    /// Recycle the warm [`Vm`] to run another [`Closure`], reusing its internal allocations
+    /// rather than building a fresh one.
+    fn reset(self, closure: Closure) -> Vm;
+}
+
+impl RunOutcome for ProgramResult {
+    fn fuel_consumed(&self) -> usize {
         self.0.fuel_used
     }
 
-    /// Prepare the Vm to run another [`Closure`], reusing its internal allocations rather than building a fresh [`Vm`].
-    ///
-    /// For predictable scripts run repeatedly, reusing a [`Vm`] this way reduces the number of allocations,
-    /// potentially to zero for some carefully-written scripts.
-    pub fn reset(self, closure: Closure) -> Vm {
-        let mut vm = self.0;
-        vm.stack.clear();
-        vm.stack_frames.clear();
-        vm.top_level = Arc::new(closure);
-        vm.fuel_used = 0;
-        vm.abort = None;
-        vm
+    fn reset(self, closure: Closure) -> Vm {
+        self.0.rearm(closure)
+    }
+}
+
+/// A failed run. Holds the raised [`FrostError`] and the warm [`Vm`], which -- unlike a
+/// [`ProgramResult`] -- exposes no program state (`tail`/`exports`), since a failed run
+/// leaves the Vm indeterminate. Recover the error with [`into_error`](Self::into_error),
+/// or recycle the Vm via [`RunOutcome::reset`].
+pub struct RunError {
+    vm: Vm,
+    error: FrostError,
+}
+
+impl RunError {
+    /// The error that ended the run.
+    pub fn error(&self) -> &FrostError {
+        &self.error
+    }
+
+    /// Take the error, discarding the Vm. The cheap exit for a host that will not reuse it.
+    pub fn into_error(self) -> FrostError {
+        self.error
+    }
+}
+
+impl RunOutcome for RunError {
+    fn fuel_consumed(&self) -> usize {
+        self.vm.fuel_used
+    }
+
+    fn reset(self, closure: Closure) -> Vm {
+        self.vm.rearm(closure)
+    }
+}
+
+impl std::fmt::Debug for RunError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Elide the (large, indeterminate) Vm from `{:?}`/`unwrap` output.
+        f.debug_struct("RunError").field("error", &self.error).finish_non_exhaustive()
     }
 }
 
@@ -712,6 +753,18 @@ impl Vm {
     /// out fresh identically-configured Vms by reusing one factory.
     pub fn factory() -> VmFactory {
         VmFactory::default()
+    }
+
+    /// Scrub a spent Vm back to a runnable state for `closure`, keeping its allocations.
+    /// Clears the operand stack and frames (a failed run leaves both dirty), the fuel
+    /// meter, and the abort latch.
+    fn rearm(mut self, closure: Closure) -> Vm {
+        self.stack.clear();
+        self.stack_frames.clear();
+        self.top_level = Arc::new(closure);
+        self.fuel_used = 0;
+        self.abort = None;
+        self
     }
 
     fn this_frame(&self) -> &VmFrame {
@@ -1038,26 +1091,35 @@ impl Vm {
 
     /// Run the top-level closure with no arguments.
     /// Equivalent to [`run_with_args`](Self::run_with_args) with an empty list.
-    pub fn run(self) -> Result<ProgramResult, FrostError> {
+    // Both variants carry the warm Vm by design (that is the whole point), so the
+    // `Result` is large regardless of the Err -- boxing would only add an allocation.
+    #[allow(clippy::result_large_err)]
+    pub fn run(self) -> Result<ProgramResult, RunError> {
         self.run_with_args(std::iter::empty())
     }
 
     /// Run the top-level closure, passing `args` as its call arguments.
     ///
-    /// An arity mismatch is a recoverable `Err`.
-    /// On success, returns a [`ProgramResult`] holding the program's tail value and exports.
+    /// Success yields a [`ProgramResult`] (tail value + exports); failure a [`RunError`].
+    /// Either outcome still owns the warm Vm (recyclable via [`RunOutcome::reset`]); an
+    /// arity mismatch is a recoverable failure.
+    #[allow(clippy::result_large_err)]
     pub fn run_with_args(
         mut self,
         args: impl IntoIterator<Item = Value>,
-    ) -> Result<ProgramResult, FrostError> {
+    ) -> Result<ProgramResult, RunError> {
         let closure = self.top_level.clone();
         self.stack.push(Value::Closure(closure.clone()));
         self.stack.extend(args);
         let argc = self.stack.len() - 1;
-        Self::check_arity(closure.function.arity, argc, &closure.function.name)?;
+        if let Err(error) = Self::check_arity(closure.function.arity, argc, &closure.function.name) {
+            return Err(RunError { vm: self, error });
+        }
         // The top-level frame is seated at depth 0, so this never trips the depth cap;
         // it does not consume fuel (the program has not made a call yet).
-        self.push_closure_frame(&closure, 0, None)?;
+        if let Err(error) = self.push_closure_frame(&closure, 0, None) {
+            return Err(RunError { vm: self, error });
+        }
 
         match self.execute_function() {
             Ok(()) => {
@@ -1065,10 +1127,13 @@ impl Vm {
                 self.debug_verify_terminal_state();
                 Ok(ProgramResult(self))
             }
-            // No `NativeFrame` exists above the top level, so the error has nowhere to be caught:
-            // accumulate the backtrace across every remaining frame and surface it to the host.
-            // `self`, now unrecoverable, is dropped.
-            Err(err) => Err(self.unwind_frames(0, err)),
+            // No `NativeFrame` exists above the top level, so the error has nowhere to be
+            // caught: accumulate the backtrace across every remaining frame and surface it.
+            // The (now spent, dirty) Vm rides along in the `RunError` for reuse via `reset`.
+            Err(err) => {
+                let error = self.unwind_frames(0, err);
+                Err(RunError { vm: self, error })
+            }
         }
     }
 
