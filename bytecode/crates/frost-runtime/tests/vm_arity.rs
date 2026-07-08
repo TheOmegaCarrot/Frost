@@ -43,6 +43,7 @@ fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> 
         arity: Arity::Exact(0),
     });
     let closure = program
+        .assert_trusted()
         .close(BTreeMap::from([("f".to_string(), native)]))
         .unwrap();
     Vm::factory().build(closure).unwrap().run().map_err(|e| e.into_error())
@@ -155,7 +156,7 @@ fn between_closure_distinguishes_omitted_from_explicit_null() {
     let probe = omitted_vs_present_probe();
     let run = |args: Vec<Value>| {
         Vm::factory()
-            .build(probe.clone().into_closure().unwrap())
+            .build(probe.clone().assert_trusted().into_closure().unwrap())
             .unwrap()
             .run_with_args(args)
             .unwrap()
@@ -171,7 +172,7 @@ fn between_closure_distinguishes_omitted_from_explicit_null() {
 fn between_closure_seating_works_through_call() {
     // The same probe invoked via `Call` from a wrapper (base != 0) -- proves the
     // argc-push is correct on the re-entrant call path, not only at the top level.
-    let probe_val = Value::Closure(Arc::new(omitted_vs_present_probe().into_closure().unwrap()));
+    let probe_val = Value::Closure(Arc::new(omitted_vs_present_probe().assert_trusted().into_closure().unwrap()));
     let call_probe = |arg_pushes: Vec<Bytecode>, argc: usize| -> Value {
         let mut code = vec![Bytecode::Pop, Bytecode::LoadLocal(0)]; // pop own closure, load probe (capture 0)
         code.extend(arg_pushes);
@@ -189,6 +190,7 @@ fn between_closure_seating_works_through_call() {
             arity: Arity::Exact(0),
         });
         let closure = wrapper
+            .assert_trusted()
             .close(BTreeMap::from([("probe".to_string(), probe_val.clone())]))
             .unwrap();
         Vm::factory()

@@ -53,7 +53,7 @@ fn run_global(name: &str, args: Vec<Value>) -> Result<Value, FrostError> {
         .map(|(i, v)| (format!("a{i}"), v))
         .collect();
     Vm::factory()
-        .build(main.close(captures).unwrap())
+        .build(main.assert_trusted().close(captures).unwrap())
         .unwrap()
         .run()
         .map_err(|e| e.into_error())

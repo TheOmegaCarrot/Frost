@@ -56,7 +56,7 @@ fn run_with(
         .into_iter()
         .map(|(n, v)| (n.to_string(), v))
         .collect();
-    let closure = program.close(captures).expect("all captures provided");
+    let closure = program.assert_trusted().close(captures).expect("all captures provided");
     Vm::factory().build(closure).unwrap().run().unwrap()
 }
 

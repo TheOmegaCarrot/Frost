@@ -173,7 +173,7 @@ fn invoke(native: Value, args: Vec<Value>) -> Result<Value, FrostError> {
         captures.insert(format!("a{i}"), v);
     }
     Vm::factory()
-        .build(main.close(captures).unwrap())
+        .build(main.assert_trusted().close(captures).unwrap())
         .unwrap()
         .run()
         .map_err(|e| e.into_error())

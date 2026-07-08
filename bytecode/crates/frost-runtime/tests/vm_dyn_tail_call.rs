@@ -46,7 +46,7 @@ fn run_with_f(f: Value, body: Vec<Bytecode>) -> Value {
         num_captures: 1,
         arity: Arity::Exact(0),
     });
-    let closure = top.close(BTreeMap::from([("f".to_string(), f)])).unwrap();
+    let closure = top.assert_trusted().close(BTreeMap::from([("f".to_string(), f)])).unwrap();
     Vm::factory()
         .build(closure)
         .unwrap()
@@ -72,7 +72,7 @@ fn dyn_tail_call_spreads_array_into_closure() {
         Arity::Exact(2),
         &["a", "b"],
     );
-    let add = Value::Closure(Arc::new(add.into_closure().unwrap()));
+    let add = Value::Closure(Arc::new(add.assert_trusted().into_closure().unwrap()));
     let result = run_with_f(
         add,
         vec![
@@ -116,7 +116,7 @@ fn dyn_tail_call_spreads_array_into_native() {
 fn dyn_tail_call_with_empty_array_calls_with_no_args() {
     // const99 = fn -> 99 ; DynTailCall(const99, []) -> 99 (argc 0 from an empty spread).
     let const99 = func("const99", vec![Pop, PushInt(99)], Arity::Exact(0), &[]);
-    let const99 = Value::Closure(Arc::new(const99.into_closure().unwrap()));
+    let const99 = Value::Closure(Arc::new(const99.assert_trusted().into_closure().unwrap()));
     let result = run_with_f(const99, vec![Pop, LoadLocal(0), MakeArray(0), DynTailCall]);
     assert_eq!(result, Value::Int(99));
 }
@@ -137,7 +137,7 @@ fn dyn_tail_call_preserves_argument_order() {
         Arity::Exact(2),
         &["a", "b"],
     );
-    let sub = Value::Closure(Arc::new(sub.into_closure().unwrap()));
+    let sub = Value::Closure(Arc::new(sub.assert_trusted().into_closure().unwrap()));
     let result = run_with_f(
         sub,
         vec![

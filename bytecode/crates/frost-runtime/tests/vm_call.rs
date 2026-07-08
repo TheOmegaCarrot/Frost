@@ -38,7 +38,7 @@ fn func(name: &str, code: Vec<Bytecode>, arity: Arity, names: &[&str]) -> Value 
         num_captures: 0,
         arity,
     });
-    Value::Closure(Arc::new(f.into_closure().unwrap()))
+    Value::Closure(Arc::new(f.assert_trusted().into_closure().unwrap()))
 }
 
 /// Build and run a top-level "main" that, after popping its own value, runs `body`.
@@ -57,7 +57,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<ProgramResu
         arity: Arity::Exact(0),
     });
     let map: BTreeMap<String, Value> = caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
-    Vm::factory().build(main.close(map).unwrap()).unwrap().run().map_err(|e| e.into_error())
+    Vm::factory().build(main.assert_trusted().close(map).unwrap()).unwrap().run().map_err(|e| e.into_error())
 }
 
 fn add() -> Value {

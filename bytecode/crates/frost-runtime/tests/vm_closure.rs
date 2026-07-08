@@ -57,7 +57,7 @@ fn run(vm: Vm) -> ProgramResult {
 fn close_binds_capture_value() {
     // fn -> <captured x>
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
-    let closure = f.close(capmap(vec![("x", Value::Int(42))])).unwrap();
+    let closure = f.assert_trusted().close(capmap(vec![("x", Value::Int(42))])).unwrap();
     assert_eq!(
         run(Vm::factory().build(closure).unwrap()).tail(),
         &Value::Int(42)
@@ -69,6 +69,7 @@ fn close_ignores_extra_map_entries() {
     // The map may be a superset; unused entries are ignored.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
     let closure = f
+        .assert_trusted()
         .close(capmap(vec![
             ("x", Value::Int(1)),
             ("unused", Value::Int(2)),
@@ -84,7 +85,7 @@ fn close_ignores_extra_map_entries() {
 #[test]
 fn close_missing_capture_is_error() {
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
-    let err = f.close(BTreeMap::new()).unwrap_err();
+    let err = f.assert_trusted().close(BTreeMap::new()).unwrap_err();
     assert_eq!(
         err,
         MissingCaptures {
@@ -105,7 +106,7 @@ fn close_reports_every_missing_capture_in_slot_order() {
         3,
         &["z", "x", "y"],
     );
-    let err = f.close(capmap(vec![("x", Value::Int(1))])).unwrap_err();
+    let err = f.assert_trusted().close(capmap(vec![("x", Value::Int(1))])).unwrap_err();
     assert_eq!(
         err,
         MissingCaptures {
@@ -127,6 +128,7 @@ fn close_seats_each_capture_in_its_own_slot() {
         &["b", "a"],
     );
     let closure = f
+        .assert_trusted()
         .close(capmap(vec![("b", Value::Int(100)), ("a", Value::Int(1))]))
         .unwrap();
     assert_eq!(
@@ -143,7 +145,7 @@ fn close_seats_each_capture_in_its_own_slot() {
 fn close_injects_imported_capture() {
     // `imported` is runtime-supplied, so an empty map still closes; it reads false.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["imported"]);
-    let closure = f.close(BTreeMap::new()).unwrap();
+    let closure = f.assert_trusted().close(BTreeMap::new()).unwrap();
     assert_eq!(
         run(Vm::factory().build(closure).unwrap()).tail(),
         &Value::Bool(false)
@@ -155,6 +157,7 @@ fn close_does_not_let_host_override_imported() {
     // A host `imported` entry is ignored; the injected false wins.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["imported"]);
     let closure = f
+        .assert_trusted()
         .close(capmap(vec![("imported", Value::Bool(true))]))
         .unwrap();
     assert_eq!(
@@ -174,6 +177,7 @@ fn close_injects_imported_at_its_name_table_slot() {
         &["x", "imported"],
     );
     let c1 = read_imported
+        .assert_trusted()
         .close(capmap(vec![("x", Value::Int(7))]))
         .unwrap();
     assert_eq!(
@@ -188,7 +192,7 @@ fn close_injects_imported_at_its_name_table_slot() {
         2,
         &["x", "imported"],
     );
-    let c2 = read_x.close(capmap(vec![("x", Value::Int(7))])).unwrap();
+    let c2 = read_x.assert_trusted().close(capmap(vec![("x", Value::Int(7))])).unwrap();
     assert_eq!(run(Vm::factory().build(c2).unwrap()).tail(), &Value::Int(7));
 }
 
@@ -199,7 +203,7 @@ fn close_injects_imported_at_its_name_table_slot() {
 #[test]
 fn into_closure_for_no_captures() {
     let f = compiled(vec![Pop, PushInt(7)], Arity::Exact(0), 0, &[]);
-    let closure = f.into_closure().unwrap();
+    let closure = f.assert_trusted().into_closure().unwrap();
     assert_eq!(
         run(Vm::factory().build(closure).unwrap()).tail(),
         &Value::Int(7)
@@ -210,7 +214,7 @@ fn into_closure_for_no_captures() {
 fn into_closure_errors_when_host_capture_needed() {
     // into_closure is `close` with an empty map, so a required host capture is missing.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
-    let err = f.into_closure().unwrap_err();
+    let err = f.assert_trusted().into_closure().unwrap_err();
     assert_eq!(
         err,
         MissingCaptures {
@@ -223,7 +227,7 @@ fn into_closure_errors_when_host_capture_needed() {
 fn into_closure_ok_for_internal_only_captures() {
     // Captures only `imported` (runtime-supplied), so into_closure still succeeds.
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["imported"]);
-    let closure = f.into_closure().unwrap();
+    let closure = f.assert_trusted().into_closure().unwrap();
     assert_eq!(
         run(Vm::factory().build(closure).unwrap()).tail(),
         &Value::Bool(false)
@@ -270,7 +274,7 @@ fn run_with_args_passes_arguments() {
         &["a", "b"],
     );
     let result = Vm::factory()
-        .build(f.into_closure().unwrap())
+        .build(f.assert_trusted().into_closure().unwrap())
         .unwrap()
         .run_with_args([Value::Int(10), Value::Int(20)])
         .unwrap();
@@ -288,7 +292,7 @@ fn run_with_args_alongside_captures() {
         1,
         &["k", "a"],
     );
-    let closure = f.close(capmap(vec![("k", Value::Int(100))])).unwrap();
+    let closure = f.assert_trusted().close(capmap(vec![("k", Value::Int(100))])).unwrap();
     let result = Vm::factory()
         .build(closure)
         .unwrap()
@@ -307,7 +311,7 @@ fn run_with_args_variadic_collects_rest() {
         &["args"],
     );
     let result = Vm::factory()
-        .build(f.into_closure().unwrap())
+        .build(f.assert_trusted().into_closure().unwrap())
         .unwrap()
         .run_with_args([Value::Int(1), Value::Int(2), Value::Int(3)])
         .unwrap();
@@ -337,7 +341,7 @@ fn run_with_args_too_few_is_arity_error() {
         &["a", "b"],
     );
     let err = Vm::factory()
-        .build(f.into_closure().unwrap())
+        .build(f.assert_trusted().into_closure().unwrap())
         .unwrap()
         .run_with_args([Value::Int(10)])
         .unwrap_err()
@@ -365,7 +369,7 @@ fn run_with_args_too_many_is_arity_error() {
         &["a"],
     );
     let err = Vm::factory()
-        .build(f.into_closure().unwrap())
+        .build(f.assert_trusted().into_closure().unwrap())
         .unwrap()
         .run_with_args([Value::Int(1), Value::Int(2)])
         .unwrap_err()
@@ -392,7 +396,7 @@ fn run_with_args_variadic_too_few_is_arity_error() {
         &["a", "b", "rest"],
     );
     let err = Vm::factory()
-        .build(f.into_closure().unwrap())
+        .build(f.assert_trusted().into_closure().unwrap())
         .unwrap()
         .run_with_args([Value::Int(1)])
         .unwrap_err()
@@ -415,7 +419,7 @@ fn run_no_args_on_parameterized_is_arity_error() {
         &["a"],
     );
     let err = Vm::factory()
-        .build(f.into_closure().unwrap())
+        .build(f.assert_trusted().into_closure().unwrap())
         .unwrap()
         .run()
         .unwrap_err()

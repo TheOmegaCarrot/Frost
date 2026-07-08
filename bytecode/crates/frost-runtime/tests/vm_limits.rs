@@ -48,7 +48,7 @@ fn run(
         caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
     Vm::factory()
         .configuration(config)
-        .build(main.close(captures).unwrap())
+        .build(main.assert_trusted().close(captures).unwrap())
         .unwrap()
         .run()
         .map_err(|e| e.into_error())

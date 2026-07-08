@@ -27,7 +27,7 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
         num_captures: 0,
         arity: Arity::Exact(0),
     });
-    let closure = program.into_closure().unwrap();
+    let closure = program.assert_trusted().into_closure().unwrap();
     Vm::factory()
         .build(closure)
         .unwrap()

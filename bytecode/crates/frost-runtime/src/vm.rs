@@ -254,18 +254,55 @@ impl CompiledFunction {
             .map(|entry| entry.name.as_str())
     }
 
+    /// Vouch that this compiled-function tree is well-formed, yielding a runnable [`TrustedProgram`].
+    ///
+    /// The VM only runs trusted bytecode: [`Closure`] (hence [`Vm`]) construction goes
+    /// through [`TrustedProgram`], so this is the gate. The Frost compiler's output is trusted by
+    /// construction; a host loading bytecode from elsewhere (deserialized, cached) uses this
+    /// to vouch for it -- e.g. it controls the source and only guards tampering/corruption
+    /// with a version check.
+    ///
+    /// This is an assertion, not a check: malformed bytecode *panics* at runtime. It is
+    /// never memory-unsafe (the VM has no `unsafe`), so this is a safe contract rather than
+    /// an `unsafe` one -- but a real obligation. A future verifier will offer the *checked*
+    /// path (`untrusted -> Result<TrustedProgram, _>`); prefer it for bytecode you did not author.
+    pub fn assert_trusted(self: Arc<Self>) -> TrustedProgram {
+        TrustedProgram(self)
+    }
+}
+
+/// A [`CompiledFunction`] tree asserted (or, in future, verified) well-formed, and therefore
+/// runnable. Mint one via [`CompiledFunction::assert_trusted`]; bind its captures with
+/// [`close`](Self::close) to obtain a [`Closure`].
+///
+/// "Trusted" means the bytecode upholds the Vm's internal invariants -- *not* that the program is
+/// safe or well-behaved. Sandboxing is separate (see [`VmRuntimeConfiguration`]).
+///
+/// Note that this does not imply trust that a program does what it's intended to do, or is
+/// "guaranteed safe" in all senses of "safe", but rather trust that the bytecode within upholds
+/// the necessary invariants of the Vm. A script that spins forever doing nothing is "Trusted" in
+/// the sense that the compiler emitted correct bytecode that never, for example, tries to pop from
+/// an empty working stack, or jump out-of-bounds.
+/// A `TrustedProgram` could do absolutely anything it has the capability
+/// to do within the configuration of the [`Vm`], up to importable code, call stack limits, function call
+/// limits, etc. A malicious script can still be "trusted" after compilation as it does uphold
+/// internal Vm invariants, so sandboxing is necessary when running untrusted scripts in
+/// security-conscious contexts -- and useful even for trusted-authored ones, where a stray infinite
+/// loop becomes a recoverable [`RunError`] (via a [`fuel`](VmRuntimeConfiguration::fuel) limit)
+/// rather than a process hang.
+pub struct TrustedProgram(Arc<CompiledFunction>);
+
+impl TrustedProgram {
     /// Bind this function's captures into a runnable [`Closure`].
     ///
     /// Required captures are looked up by name in `captures`.
     /// Extra entries in the map are ignored.
     /// Any required capture name absent from the map is reported, together, as [`MissingCaptures`].
-    pub fn close(
-        self: Arc<Self>,
-        captures: BTreeMap<String, Value>,
-    ) -> Result<Closure, MissingCaptures> {
-        let mut seated = Vec::with_capacity(self.num_captures);
+    pub fn close(self, captures: BTreeMap<String, Value>) -> Result<Closure, MissingCaptures> {
+        let function = self.0;
+        let mut seated = Vec::with_capacity(function.num_captures);
         let mut missing = Vec::new();
-        for entry in &self.name_table[..self.num_captures] {
+        for entry in &function.name_table[..function.num_captures] {
             match entry.name.as_str() {
                 // Frost-internal capture: runtime-supplied, not overridable.
                 // (Always false for now -- direct execution; the future `import`
@@ -284,7 +321,7 @@ impl CompiledFunction {
             return Err(MissingCaptures { names: missing });
         }
         Ok(Closure {
-            function: self,
+            function,
             captures: seated,
         })
     }
@@ -292,7 +329,7 @@ impl CompiledFunction {
     /// Convenience for [`close`](Self::close) with no host-supplied captures.
     /// Succeeds when the function needs no host captures;
     /// otherwise returns the [`MissingCaptures`] it still requires.
-    pub fn into_closure(self: Arc<Self>) -> Result<Closure, MissingCaptures> {
+    pub fn into_closure(self) -> Result<Closure, MissingCaptures> {
         self.close(BTreeMap::new())
     }
 }

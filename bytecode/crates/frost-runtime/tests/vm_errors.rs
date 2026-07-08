@@ -91,6 +91,7 @@ fn run_with(
         .map(|(n, v)| (n.to_string(), v))
         .collect();
     let closure = Arc::new(top)
+        .assert_trusted()
         .close(captures)
         .expect("all captures provided");
     Vm::factory().build(closure).unwrap().run().map_err(|e| e.into_error())
