@@ -13,9 +13,12 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+mod common;
+
+use common::global_slot as slot;
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, GlobalSet, MapKey, NameEntry,
-    NativeFunction, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, MapKey, NameEntry, NativeFunction,
+    Value, Vm,
 };
 
 use Bytecode::*;
@@ -23,10 +26,6 @@ use Bytecode::*;
 // ============================================================
 // Harness
 // ============================================================
-
-fn slot(name: &str) -> usize {
-    GlobalSet::index_of(name).unwrap_or_else(|| panic!("`{name}` is not a predefined global"))
-}
 
 fn entry(name: &str) -> NameEntry {
     NameEntry {

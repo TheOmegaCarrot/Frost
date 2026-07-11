@@ -9,15 +9,18 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+mod common;
+
+use common::global_slot;
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostResult, GlobalSet, NameEntry,
+    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostResult, NameEntry,
     NativeFunction, ProgramResult, Value, Vm,
 };
 
 use Bytecode::*;
 
 fn call_slot() -> usize {
-    GlobalSet::index_of("call").expect("call is a predefined global")
+    global_slot("call")
 }
 
 fn entry(name: &str) -> NameEntry {

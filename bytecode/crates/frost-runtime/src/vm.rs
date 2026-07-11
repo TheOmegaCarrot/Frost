@@ -3,6 +3,7 @@
 mod globals;
 mod params;
 
+pub use globals::GLOBAL_NAMES;
 pub use params::{Param, ParamSpec};
 
 // White-box tests for the one unwind invariant not observable through the public
@@ -220,8 +221,10 @@ impl VmFactory {
     }
 }
 
+// A fixed, pure-internal set of predefined globals shared by every `Vm` (observation
+// only; never host-configurable). The compiler's seam onto it is [`GLOBAL_NAMES`].
 #[derive(Debug, Clone)]
-pub struct GlobalSet(Vec<Value>);
+pub(crate) struct GlobalSet(Vec<Value>);
 
 /// Compiled representation of a single function.
 /// A script's top-level is also a function.

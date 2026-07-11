@@ -6,7 +6,19 @@
 
 use std::sync::Arc;
 
-use frost_runtime::{Arity, Bytecode, Closure, CompiledFunction, NameEntry, ProgramResult, Vm};
+use frost_runtime::{
+    Arity, Bytecode, Closure, CompiledFunction, GLOBAL_NAMES, NameEntry, ProgramResult, Vm,
+};
+
+/// The `LoadGlobal` slot index of a predefined global, by name. Panics if `name` is not
+/// a predefined global. (The runtime exposes only the ordered [`GLOBAL_NAMES`]; a slot is
+/// just its position.)
+pub fn global_slot(name: &str) -> usize {
+    GLOBAL_NAMES
+        .iter()
+        .position(|&n| n == name)
+        .unwrap_or_else(|| panic!("`{name}` is not a predefined global"))
+}
 
 /// A nameless compiled function with no locals, constants, or child functions.
 /// Arity `Exact(0)` -- suitable for a top-level / thunk.

@@ -16,9 +16,9 @@ mod common;
 
 use std::sync::Arc;
 
-use common::entry;
+use common::{entry, global_slot};
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostError, FrostMap, FrostResult, GlobalSet, NameEntry,
+    Arity, Bytecode, CompiledFunction, FrostError, FrostMap, FrostResult, NameEntry,
     NativeCtx, NativeFunction, ProgramResult, Value, Vm,
 };
 
@@ -64,7 +64,7 @@ fn closure(idx: u32) -> Bytecode {
 
 /// Slot index of the `try_call` global (the VM is built with the default set).
 fn try_call_slot() -> usize {
-    GlobalSet::index_of("try_call").expect("try_call must be a predefined global")
+    global_slot("try_call")
 }
 
 /// Run a program to completion, surfacing the result (Ok or Err).

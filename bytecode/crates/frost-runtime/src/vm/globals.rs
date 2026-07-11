@@ -36,12 +36,13 @@ use types::*;
 // list in the same order, so `names[i]` and `slots[i]` cannot drift apart.
 macro_rules! define_globals {
     ($($name:literal => $init:expr),* $(,)?) => {
-        impl GlobalSet {
-            /// Names of all predefined globals.
-            /// Every `GlobalSet` shares the same names, so it is not a field.
-            /// The ordering here determines the slot indices used by `LoadGlobal`.
-            const NAMES: &'static [&'static str] = &[ $($name),* ];
+        /// The predefined global names, in slot order (an index into this list is the
+        /// `LoadGlobal` slot). This ordered list is the runtime's only globals seam for
+        /// the compiler, which reads it and builds whatever lookup structure it wants --
+        /// the globals themselves are a fixed, pure-internal set (observation only).
+        pub const GLOBAL_NAMES: &[&str] = &[ $($name),* ];
 
+        impl GlobalSet {
             fn build_defaults() -> Self {
                 GlobalSet ( vec![ $($init),* ] )
             }
@@ -198,13 +199,6 @@ static DEFAULT_GLOBALS: LazyLock<Arc<GlobalSet>> =
 impl GlobalSet {
     pub fn defaults() -> Arc<Self> {
         DEFAULT_GLOBALS.clone()
-    }
-
-    /// Look up a global's slot index by name, or `None` if it is not a predefined global.
-    /// The result is stable for a given build, so callers (e.g. a compiler emitting `LoadGlobal`) may cache it.
-    pub fn index_of(name: &str) -> Option<usize> {
-        // Yes, this is a linear scan, but this should be a pretty cold path.
-        Self::NAMES.iter().position(|&n| n == name)
     }
 
     /// Get the value at a global slot index.

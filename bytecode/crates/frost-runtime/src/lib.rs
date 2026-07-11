@@ -7,7 +7,7 @@ pub use core::{
 };
 
 pub use vm::{
-    Arity, Bytecode, Closure, CompiledFunction, GlobalSet, MissingCaptures, NameEntry, NativeCtx,
-    NativeFn, NativeFunction, Param, ParamSpec, ProgramResult, RunError, RunOutcome, TrustedProgram, Vm,
-    VmFactory, VmRuntimeConfiguration,
+    Arity, Bytecode, Closure, CompiledFunction, GLOBAL_NAMES, MissingCaptures, NameEntry, NativeCtx,
+    NativeFn, NativeFunction, Param, ParamSpec, ProgramResult, RunError, RunOutcome, TrustedProgram,
+    Vm, VmFactory, VmRuntimeConfiguration,
 };

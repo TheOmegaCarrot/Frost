@@ -9,9 +9,12 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+mod common;
+
+use common::global_slot;
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostFloat, GlobalSet, MapKey,
-    NameEntry, NativeFunction, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostFloat, MapKey, NameEntry,
+    NativeFunction, Value, Vm,
 };
 
 use Bytecode::*;
@@ -24,8 +27,7 @@ use Bytecode::*;
 /// The args are seated as captures so any `Value` can be passed; the body loads
 /// them and `Call`s the global, exactly as compiled code would.
 fn run_global(name: &str, args: Vec<Value>) -> Result<Value, FrostError> {
-    let slot =
-        GlobalSet::index_of(name).unwrap_or_else(|| panic!("`{name}` is not a predefined global"));
+    let slot = global_slot(name);
     let argc = args.len();
 
     let mut code = vec![Pop, LoadGlobal(slot)];
