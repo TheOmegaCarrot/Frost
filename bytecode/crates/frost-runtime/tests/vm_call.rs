@@ -41,7 +41,7 @@ fn func(name: &str, code: Vec<Bytecode>, arity: Arity, names: &[&str]) -> Value 
         num_captures: 0,
         arity,
     });
-    Value::Closure(Arc::new(f.assert_trusted().into_closure().unwrap()))
+    Value::Closure(f.assert_trusted().into_closure().unwrap())
 }
 
 /// Build and run a top-level "main" that, after popping its own value, runs `body`.

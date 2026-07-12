@@ -105,7 +105,7 @@ pub fn run_fn(program: Arc<CompiledFunction>) -> ProgramResult {
 /// Build a runnable top-level [`Closure`] (no captures) from `code` plus a name
 /// table, splicing in the leading fn-value `Pop`.
 /// For tests that need the closure itself -- e.g. `reset`, or a direct `Vm::new`.
-pub fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Closure {
+pub fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure> {
     let mut body = vec![Bytecode::Pop];
     body.extend(code);
     Arc::new(CompiledFunction {

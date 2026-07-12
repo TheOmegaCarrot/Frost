@@ -207,13 +207,13 @@ impl VmFactory {
     }
 
     /// Build a [`Vm`] to run `closure` under this factory's configuration.
-    pub fn build(&self, closure: Closure) -> Result<Vm, FrostError> {
+    pub fn build(&self, closure: Arc<Closure>) -> Result<Vm, FrostError> {
         Ok(Vm {
             stack: Vec::new(),
             stack_frames: Vec::new(),
             native_arg_pool: Vec::new(),
             globals: GlobalSet::defaults(),
-            top_level: Arc::new(closure),
+            top_level: closure,
             config: self.config.clone(),
             fuel_used: 0,
             abort: None,
@@ -301,7 +301,7 @@ impl TrustedProgram {
     /// Required captures are looked up by name in `captures`.
     /// Extra entries in the map are ignored.
     /// Any required capture name absent from the map is reported, together, as [`MissingCaptures`].
-    pub fn close(self, captures: BTreeMap<String, Value>) -> Result<Closure, MissingCaptures> {
+    pub fn close(self, captures: BTreeMap<String, Value>) -> Result<Arc<Closure>, MissingCaptures> {
         let function = self.0;
         let mut seated = Vec::with_capacity(function.num_captures);
         let mut missing = Vec::new();
@@ -323,16 +323,16 @@ impl TrustedProgram {
         if !missing.is_empty() {
             return Err(MissingCaptures { names: missing });
         }
-        Ok(Closure {
+        Ok(Arc::new(Closure {
             function,
             captures: seated,
-        })
+        }))
     }
 
     /// Convenience for [`close`](Self::close) with no host-supplied captures.
     /// Succeeds when the function needs no host captures;
     /// otherwise returns the [`MissingCaptures`] it still requires.
-    pub fn into_closure(self) -> Result<Closure, MissingCaptures> {
+    pub fn into_closure(self) -> Result<Arc<Closure>, MissingCaptures> {
         self.close(BTreeMap::new())
     }
 }
@@ -738,7 +738,7 @@ pub trait RunOutcome {
 
     /// Recycle the warm [`Vm`] to run another [`Closure`], reusing its internal allocations
     /// rather than building a fresh one.
-    fn reset(self, closure: Closure) -> Vm;
+    fn reset(self, closure: Arc<Closure>) -> Vm;
 }
 
 impl RunOutcome for ProgramResult {
@@ -746,7 +746,7 @@ impl RunOutcome for ProgramResult {
         self.0.fuel_used
     }
 
-    fn reset(self, closure: Closure) -> Vm {
+    fn reset(self, closure: Arc<Closure>) -> Vm {
         self.0.rearm(closure)
     }
 }
@@ -777,7 +777,7 @@ impl RunOutcome for RunError {
         self.vm.fuel_used
     }
 
-    fn reset(self, closure: Closure) -> Vm {
+    fn reset(self, closure: Arc<Closure>) -> Vm {
         self.vm.rearm(closure)
     }
 }
@@ -805,10 +805,10 @@ impl Vm {
     /// Scrub a spent Vm back to a runnable state for `closure`, keeping its allocations.
     /// Clears the operand stack and frames (a failed run leaves both dirty), the fuel
     /// meter, and the abort latch.
-    fn rearm(mut self, closure: Closure) -> Vm {
+    fn rearm(mut self, closure: Arc<Closure>) -> Vm {
         self.stack.clear();
         self.stack_frames.clear();
-        self.top_level = Arc::new(closure);
+        self.top_level = closure;
         self.fuel_used = 0;
         self.abort = None;
         self
