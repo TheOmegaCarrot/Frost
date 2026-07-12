@@ -174,7 +174,6 @@ dependencies = [
  "frost-compile",
  "frost-parse",
  "frost-runtime",
- "frost-stdlib",
  "serde_json",
 ]
 
@@ -203,13 +202,6 @@ dependencies = [
  "ryu",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "frost-stdlib"
-version = "0.0.4"
-dependencies = [
- "frost-runtime",
 ]
 
 [[package]]
