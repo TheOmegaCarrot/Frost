@@ -116,7 +116,7 @@ fn apply_native() -> Value {
 /// A native that always raises.
 fn boom_native() -> Value {
     native("boom", Arity::Exact(0), |_ctx, _args| {
-        Err(FrostError::new("boom!"))
+        Err(FrostError::from_static("boom!"))
     })
 }
 
@@ -147,7 +147,7 @@ fn trace_of(map: &FrostMap) -> Vec<String> {
 
 /// A backtrace as `&str`s, for ergonomic comparison.
 fn backtrace(err: &FrostError) -> Vec<&str> {
-    err.backtrace.iter().map(String::as_str).collect()
+    err.backtrace().iter().map(String::as_str).collect()
 }
 
 // ============================================================
@@ -164,7 +164,7 @@ fn top_level_division_by_zero() {
         vec![],
     );
     let err = run(program).unwrap_err();
-    assert_eq!(err.message, "Division by zero");
+    assert_eq!(err.message(), "Division by zero");
     assert_eq!(backtrace(&err), vec!["main"]);
 }
 
@@ -182,7 +182,7 @@ fn top_level_modulus_by_zero() {
         vec![],
     );
     let err = run(program).unwrap_err();
-    assert_eq!(err.message, "Modulus by zero");
+    assert_eq!(err.message(), "Modulus by zero");
 }
 
 #[test]
@@ -197,9 +197,9 @@ fn top_level_type_error() {
     );
     let err = run(program).unwrap_err();
     assert!(
-        err.message.contains("incompatible types"),
+        err.message().contains("incompatible types"),
         "unexpected message: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -215,9 +215,9 @@ fn top_level_call_non_function() {
     );
     let err = run(program).unwrap_err();
     assert!(
-        err.message.contains("non-function"),
+        err.message().contains("non-function"),
         "unexpected message: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -240,9 +240,9 @@ fn top_level_arity_mismatch() {
     );
     let err = run(program).unwrap_err();
     assert!(
-        err.message.contains("expects 1"),
+        err.message().contains("expects 1"),
         "unexpected message: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -284,7 +284,7 @@ fn backtrace_includes_native_name_at_top_level() {
         vec![],
     );
     let err = run_with(program, vec![("boom", boom_native())]).unwrap_err();
-    assert_eq!(err.message, "boom!");
+    assert_eq!(err.message(), "boom!");
     assert_eq!(backtrace(&err), vec!["boom", "main"]);
 }
 
@@ -414,6 +414,41 @@ fn try_call_catches_non_function() {
     );
     // A non-function never produced a frame.
     assert!(trace_of(map).is_empty());
+}
+
+#[test]
+fn try_call_surfaces_a_non_string_thrown_value() {
+    // A function raises a non-string value (an Int) via `ProduceError`; `try_call` must
+    // surface it as that exact Value -- proving `FrostError` carried the arbitrary payload
+    // through rather than stringifying it.
+    let raiser = named(
+        "raiser",
+        vec![
+            Bytecode::Pop, // drop the closure's own function value
+            Bytecode::PushInt(42),
+            Bytecode::ProduceError,
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    );
+    let program = named(
+        "main",
+        vec![
+            Bytecode::LoadGlobal(try_call_slot()),
+            closure(0),
+            Bytecode::Call(1),
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![raiser],
+    );
+    let result = run(program).unwrap();
+    let map = expect_map(result.tail());
+    assert_eq!(map.get_str("ok"), Some(&Value::Bool(false)));
+    // The caught error is the Int itself, not a rendered string.
+    assert_eq!(map.get_str("error"), Some(&Value::Int(42)));
+    assert_eq!(trace_of(map), vec!["raiser"]);
 }
 
 #[test]
@@ -552,7 +587,7 @@ fn error_propagates_through_native_to_top_level() {
         vec![fail],
     );
     let err = run_with(program, vec![("apply", apply_native())]).unwrap_err();
-    assert_eq!(err.message, "Division by zero");
+    assert_eq!(err.message(), "Division by zero");
     assert_eq!(backtrace(&err), vec!["fail", "apply", "main"]);
 }
 
@@ -633,7 +668,7 @@ fn error_repropagates_through_two_native_frames() {
         vec![fail],
     );
     let err = run_with(program, vec![("apply", apply_native())]).unwrap_err();
-    assert_eq!(err.message, "Division by zero");
+    assert_eq!(err.message(), "Division by zero");
     assert_eq!(backtrace(&err), vec!["fail", "apply", "apply", "main"]);
 }
 
@@ -840,7 +875,7 @@ fn error_after_try_call_still_propagates() {
         vec![safe],
     );
     let err = run(program).unwrap_err();
-    assert_eq!(err.message, "Division by zero");
+    assert_eq!(err.message(), "Division by zero");
     assert_eq!(backtrace(&err), vec!["main"]);
 }
 
@@ -958,7 +993,7 @@ fn produce_error_with_string_raises_that_message() {
         arity: Arity::Exact(0),
     });
     let err = run(program).unwrap_err();
-    assert_eq!(err.message, "boom");
+    assert_eq!(err.message(), "boom");
     assert_eq!(backtrace(&err), vec!["main"]);
 }
 
@@ -974,7 +1009,7 @@ fn produce_error_unwinds_through_calls() {
         vec![raiser_fn("boom")],
     );
     let err = run(program).unwrap_err();
-    assert_eq!(err.message, "boom");
+    assert_eq!(err.message(), "boom");
     assert_eq!(backtrace(&err), vec!["raiser", "main"]);
 }
 

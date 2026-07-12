@@ -34,7 +34,7 @@ fn accepts_matching_type() {
 fn reports_function_name_type_and_position() {
     let err = check(&[Value::Int(5)], &[Param::of(&[FrostType::Map])]).unwrap_err();
     assert_eq!(
-        err.message,
+        err.message(),
         "Function frob requires Map as argument 1, got Int"
     );
 }
@@ -44,7 +44,7 @@ fn lists_alternatives_and_the_label() {
     let params = &[Param::of(&[FrostType::Array, FrostType::String]).named("seq")];
     let err = check(&[Value::Int(5)], params).unwrap_err();
     assert_eq!(
-        err.message,
+        err.message(),
         "Function frob requires Array or String as argument 1 (seq), got Int"
     );
 }
@@ -54,7 +54,7 @@ fn reports_the_offending_position() {
     let params = &[Param::any(), Param::of(&[FrostType::Int])];
     let err = check(&[Value::Null, Value::from("x")], params).unwrap_err();
     assert_eq!(
-        err.message,
+        err.message(),
         "Function frob requires Int as argument 2, got String"
     );
 }
@@ -84,7 +84,7 @@ fn optional_present_is_still_checked() {
     ];
     let err = check(&[Value::Int(1), Value::from("x")], params).unwrap_err();
     assert_eq!(
-        err.message,
+        err.message(),
         "Function frob requires Int as argument 2, got String"
     );
 }
@@ -191,7 +191,7 @@ fn checked_native_emits_full_type_error() {
     )));
     let err = invoke(frob, vec![Value::Int(5)]).unwrap_err();
     assert_eq!(
-        err.message,
+        err.message(),
         "Function frob requires Map as argument 1, got Int"
     );
 }

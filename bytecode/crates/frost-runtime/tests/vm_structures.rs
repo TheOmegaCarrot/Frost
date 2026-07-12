@@ -213,7 +213,7 @@ fn make_map_value_may_be_null() {
 #[test]
 fn make_map_null_key_is_error() {
     let err = eval(vec![], vec![PushNull, PushInt(1), MakeMap(1)]).unwrap_err();
-    assert!(err.message.contains("Map key"), "got: {}", err.message);
+    assert!(err.message().contains("Map key"), "got: {}", err.message());
 }
 
 #[test]
@@ -224,7 +224,7 @@ fn make_map_structured_key_is_error() {
         vec![LoadConst(0), PushInt(1), MakeMap(1)],
     )
     .unwrap_err();
-    assert!(err.message.contains("Map key"), "got: {}", err.message);
+    assert!(err.message().contains("Map key"), "got: {}", err.message());
 }
 
 #[test]

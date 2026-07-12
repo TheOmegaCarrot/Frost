@@ -370,14 +370,14 @@ fn ordering_array_incomparable_element_blames_element_types() {
     )
     .unwrap_err();
     assert!(
-        err.message.contains("String") && err.message.contains("Float"),
+        err.message().contains("String") && err.message().contains("Float"),
         "should name the element types: {}",
-        err.message
+        err.message()
     );
     assert!(
-        !err.message.contains("Array"),
+        !err.message().contains("Array"),
         "should not blame Array: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -415,9 +415,9 @@ fn every_ordering_opcode_errors_on_unorderable_operands() {
     ] {
         let err = eval(vec![], vec![PushTrue, PushFalse, op]).unwrap_err();
         assert!(
-            err.message.contains("Cannot compare"),
+            err.message().contains("Cannot compare"),
             "op {op:?} should be a type error, got: {}",
-            err.message
+            err.message()
         );
     }
 }
@@ -426,9 +426,9 @@ fn every_ordering_opcode_errors_on_unorderable_operands() {
 fn ordering_null_is_type_error() {
     let err = eval(vec![], vec![PushNull, PushNull, CompareLessThan]).unwrap_err();
     assert!(
-        err.message.contains("Cannot compare"),
+        err.message().contains("Cannot compare"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -440,9 +440,9 @@ fn ordering_maps_is_type_error() {
     )
     .unwrap_err();
     assert!(
-        err.message.contains("Cannot compare"),
+        err.message().contains("Cannot compare"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -455,16 +455,16 @@ fn ordering_mismatched_types_is_type_error() {
     )
     .unwrap_err();
     assert!(
-        err.message.contains("incompatible types"),
+        err.message().contains("incompatible types"),
         "got: {}",
-        err.message
+        err.message()
     );
 
     let err = eval(vec![], vec![PushInt(1), PushNull, CompareGreaterThan]).unwrap_err();
     assert!(
-        err.message.contains("incompatible types"),
+        err.message().contains("incompatible types"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 

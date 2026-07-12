@@ -41,7 +41,7 @@ fn value_to_map_key_null_fails() {
 fn value_to_map_key_null_error_has_message() {
     let v = Value::Null;
     let err: Result<MapKey, _> = v.try_into();
-    assert!(!err.unwrap_err().message.is_empty());
+    assert!(!err.unwrap_err().message().is_empty());
 }
 
 #[test]

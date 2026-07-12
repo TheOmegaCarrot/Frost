@@ -72,12 +72,12 @@ fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
         Err(err) => {
             let trace = err
                 .backtrace
-                .into_iter()
-                .map(Value::from)
+                .iter()
+                .map(|name| Value::from(name.as_str()))
                 .collect::<Vec<_>>();
             Ok(result_map([
                 (string_key("ok"), Value::Bool(false)),
-                (string_key("error"), Value::from(err.message)),
+                (string_key("error"), err.into_value()),
                 (string_key("trace"), Value::Array(FrostArray::from(trace))),
             ]))
         }

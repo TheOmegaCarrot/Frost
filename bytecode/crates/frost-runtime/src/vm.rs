@@ -574,7 +574,7 @@ impl NativeFunction {
                     Some(label) => format!("argument {} ({label})", i + 1),
                     None => format!("argument {}", i + 1),
                 };
-                return Err(FrostError::new(format!(
+                return Err(FrostError::from_string(format!(
                     "Function {} requires {} as {position}, got {}",
                     self.name,
                     param.expected(),
@@ -926,7 +926,7 @@ impl Vm {
                             // proven not to be NaN or Inf
                             Value::Float(f) => Value::Float(FrostFloat::new(-f.get()).unwrap()),
                             _ => {
-                                return Err(FrostError::new(format!(
+                                return Err(FrostError::from_string(format!(
                                     "Cannot negate value of type {}",
                                     operand.type_name()
                                 )));
@@ -994,7 +994,7 @@ impl Vm {
                     Bytecode::DynTailCall => {
                         let args = self.stack.last().expect("FROST STACK UNDERFLOW");
                         if !args.is_array() {
-                            return Err(FrostError::new(format!(
+                            return Err(FrostError::from_string(format!(
                                 "Spread call expects an Array of arguments, but got {}",
                                 args.type_name()
                             )));
@@ -1050,7 +1050,7 @@ impl Vm {
                                 arr.frost_get(*i).unwrap_or(&Value::Null)
                             }
                             (Value::Array(_), _) => {
-                                return Err(FrostError::new(format!(
+                                return Err(FrostError::from_string(format!(
                                     "Cannot index Array with value of type {}",
                                     index.type_name()
                                 )));
@@ -1060,7 +1060,7 @@ impl Vm {
                                 map.get(&key).unwrap_or(&Value::Null)
                             }
                             _ => {
-                                return Err(FrostError::new(format!(
+                                return Err(FrostError::from_string(format!(
                                     "Cannot index value of type {}",
                                     structure.type_name()
                                 )));
@@ -1073,7 +1073,7 @@ impl Vm {
                     Bytecode::HardIndexMap(const_pool_idx_of_key) => {
                         let val = self.stack_pop();
                         let Value::Map(map) = val else {
-                            return Err(FrostError::new(format!(
+                            return Err(FrostError::from_string(format!(
                                 "Cannot index value of type {}",
                                 val.type_name()
                             )));
@@ -1095,7 +1095,7 @@ impl Vm {
                             // TODO: improve error message with "did you mean ...?" hint
                             // (Error message sucks for now, and that's ok for now)
                             None => {
-                                return Err(FrostError::new(format!(
+                                return Err(FrostError::from_string(format!(
                                     "Map has no value at key '{}'",
                                     String::from_utf8_lossy(s)
                                 )));
@@ -1106,16 +1106,9 @@ impl Vm {
                         let operand = self.stack_pop();
                         self.stack.push(operand.fits_category(tc).into());
                     }
-                    Bytecode::ProduceError => match self.stack_pop() {
-                        // TODO: enhance FrostError to support attaching an arbitrary Value
-                        // (with an optimization for the most-common case of a UTF-8 string)
-                        Value::String(s) => {
-                            return Err(FrostError::new(String::from_utf8_lossy(&s)));
-                        }
-                        // This error message is kinda lame, but can be removed after
-                        // addressing the above TODO
-                        _ => return Err(FrostError::new("An unknown error occurred")),
-                    },
+                    Bytecode::ProduceError => {
+                        return Err(FrostError::from_value(self.stack_pop()));
+                    }
                 };
                 pc += 1;
             }
@@ -1335,7 +1328,7 @@ impl Vm {
         if ok {
             return Ok(());
         }
-        Err(FrostError::new(match arity {
+        Err(FrostError::from_string(match arity {
             Arity::Exact(n) => {
                 format!("Function {name} expects {n} arguments, but was called with {argc}")
             }
@@ -1354,7 +1347,7 @@ impl Vm {
 
     /// The error produced when a non-callable value is called.
     fn not_callable(value: &Value) -> FrostError {
-        FrostError::new(format!(
+        FrostError::from_string(format!(
             "Attempt to call non-function value of type {}",
             value.type_name()
         ))
@@ -1403,13 +1396,13 @@ impl Vm {
     }
 
     fn fuel_exhausted(limit: usize) -> FrostError {
-        FrostError::new(format!(
+        FrostError::from_string(format!(
             "Execution exceeded its fuel limit of {limit} function calls"
         ))
     }
 
     fn call_depth_exceeded(limit: usize) -> FrostError {
-        FrostError::new(format!(
+        FrostError::from_string(format!(
             "Execution exceeded the maximum call depth of {limit}"
         ))
     }
@@ -1590,6 +1583,9 @@ impl Vm {
         // A native that ran and failed contributes its own name to the backtrace.
         // Its only call-stack presence is a nameless `NativeFrame` marker,
         // so the frame-walk in `unwind_frames` cannot record it -- do it here.
-        result.map_err(|err| err.with_frame(native.name))
+        result.map_err(|mut err| {
+            err.backtrace.push(native.name.to_string());
+            err
+        })
     }
 }

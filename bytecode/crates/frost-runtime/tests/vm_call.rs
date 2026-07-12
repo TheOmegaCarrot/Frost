@@ -244,7 +244,7 @@ fn call_non_array_second_arg_is_type_error() {
         vec![LoadGlobal(call_slot()), LoadLocal(0), PushInt(5), Call(2)],
     )
     .unwrap_err();
-    assert!(err.message.contains("Array"), "got: {}", err.message);
+    assert!(err.message().contains("Array"), "got: {}", err.message());
 }
 
 #[test]
@@ -256,8 +256,8 @@ fn call_non_function_first_arg_is_type_error() {
         vec![LoadGlobal(call_slot()), PushInt(5), MakeArray(0), Call(2)],
     )
     .unwrap_err();
-    assert!(err.message.contains("non-function"), "got: {}", err.message);
-    assert!(err.message.contains("Int"), "got: {}", err.message);
+    assert!(err.message().contains("non-function"), "got: {}", err.message());
+    assert!(err.message().contains("Int"), "got: {}", err.message());
 }
 
 #[test]
@@ -265,9 +265,9 @@ fn call_with_no_args_is_arity_error() {
     // call() -- below the Between(1, 2) lower bound.
     let err = run_main(vec![], vec![LoadGlobal(call_slot()), Call(0)]).unwrap_err();
     assert!(
-        err.message.contains("between 1 and 2"),
+        err.message().contains("between 1 and 2"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -286,9 +286,9 @@ fn call_with_too_many_args_is_arity_error() {
     )
     .unwrap_err();
     assert!(
-        err.message.contains("between 1 and 2"),
+        err.message().contains("between 1 and 2"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 

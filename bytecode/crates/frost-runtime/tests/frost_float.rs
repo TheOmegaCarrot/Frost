@@ -78,5 +78,5 @@ fn try_from_f64() {
 #[test]
 fn rejection_produces_error() {
     let err = FrostFloat::new(f64::NAN).unwrap_err();
-    assert!(!err.message.is_empty());
+    assert!(!err.message().is_empty());
 }

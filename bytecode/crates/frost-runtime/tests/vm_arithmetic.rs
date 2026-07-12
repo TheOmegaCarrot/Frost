@@ -179,9 +179,9 @@ fn add_uniquely_owned_arrays_concat_via_steal_path() {
 fn add_incompatible_types_is_error() {
     let err = eval(vec![], vec![PushInt(1), PushNull, Add]).unwrap_err();
     assert!(
-        err.message.contains("incompatible types"),
+        err.message().contains("incompatible types"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -204,9 +204,9 @@ fn subtract_floats() {
 fn subtract_incompatible_types_is_error() {
     let err = eval(vec![], vec![PushInt(1), PushNull, Subtract]).unwrap_err();
     assert!(
-        err.message.contains("incompatible types"),
+        err.message().contains("incompatible types"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -228,9 +228,9 @@ fn multiply_promotes_int_and_float() {
 fn multiply_incompatible_types_is_error() {
     let err = eval(vec![], vec![PushInt(2), PushNull, Multiply]).unwrap_err();
     assert!(
-        err.message.contains("incompatible types"),
+        err.message().contains("incompatible types"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -258,7 +258,7 @@ fn divide_floats() {
 #[test]
 fn divide_by_zero_is_error() {
     let err = eval(vec![], vec![PushInt(1), PushInt(0), Divide]).unwrap_err();
-    assert_eq!(err.message, "Division by zero");
+    assert_eq!(err.message(), "Division by zero");
 }
 
 // ============================================================
@@ -280,7 +280,7 @@ fn modulus_sign_follows_dividend() {
 #[test]
 fn modulus_by_zero_is_error() {
     let err = eval(vec![], vec![PushInt(1), PushInt(0), Modulus]).unwrap_err();
-    assert_eq!(err.message, "Modulus by zero");
+    assert_eq!(err.message(), "Modulus by zero");
 }
 
 #[test]
@@ -288,9 +288,9 @@ fn modulus_on_floats_is_type_error() {
     // Modulus is Int-only; floats are a type error, not a computation.
     let err = eval(vec![], vec![float(7.0), float(3.0), Modulus]).unwrap_err();
     assert!(
-        err.message.contains("incompatible types"),
+        err.message().contains("incompatible types"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 

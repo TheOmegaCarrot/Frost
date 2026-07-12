@@ -201,9 +201,9 @@ fn handles_to_the_same_cell_share_state() {
 fn rejects_a_function_at_init() {
     let err = new_cell(Some(a_function())).unwrap_err();
     assert!(
-        err.message.contains("Function"),
+        err.message().contains("Function"),
         "unexpected message: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -238,9 +238,9 @@ fn rejects_an_opaque_at_init() {
     // Opaque can smuggle a cycle we can't inspect, so it's forbidden wholesale.
     let err = new_cell(Some(an_opaque())).unwrap_err();
     assert!(
-        err.message.contains("Opaque"),
+        err.message().contains("Opaque"),
         "unexpected message: {}",
-        err.message
+        err.message()
     );
 }
 

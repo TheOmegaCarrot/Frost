@@ -74,14 +74,14 @@ fn between_accepts_interior_count() {
 fn between_below_lower_bound_is_arity_error() {
     let err = call_native(counting(Arity::Between(1, 2)), 0).unwrap_err();
     assert!(
-        err.message.contains("between 1 and 2"),
+        err.message().contains("between 1 and 2"),
         "got: {}",
-        err.message
+        err.message()
     );
     assert!(
-        err.message.contains("called with 0"),
+        err.message().contains("called with 0"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -89,14 +89,14 @@ fn between_below_lower_bound_is_arity_error() {
 fn between_above_upper_bound_is_arity_error() {
     let err = call_native(counting(Arity::Between(1, 2)), 3).unwrap_err();
     assert!(
-        err.message.contains("between 1 and 2"),
+        err.message().contains("between 1 and 2"),
         "got: {}",
-        err.message
+        err.message()
     );
     assert!(
-        err.message.contains("called with 3"),
+        err.message().contains("called with 3"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 

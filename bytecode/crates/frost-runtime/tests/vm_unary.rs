@@ -175,19 +175,19 @@ fn negate_negative_float() {
 #[test]
 fn negate_bool_is_type_error() {
     let err = eval(vec![], vec![PushTrue, Negate]).unwrap_err();
-    assert!(err.message.contains("negate"), "got: {}", err.message);
+    assert!(err.message().contains("negate"), "got: {}", err.message());
 }
 
 #[test]
 fn negate_null_is_type_error() {
     let err = eval(vec![], vec![PushNull, Negate]).unwrap_err();
-    assert!(err.message.contains("negate"), "got: {}", err.message);
+    assert!(err.message().contains("negate"), "got: {}", err.message());
 }
 
 #[test]
 fn negate_string_is_type_error() {
     let err = eval(vec![Value::from("x")], vec![LoadConst(0), Negate]).unwrap_err();
-    assert!(err.message.contains("negate"), "got: {}", err.message);
+    assert!(err.message().contains("negate"), "got: {}", err.message());
 }
 
 #[test]
@@ -197,7 +197,7 @@ fn negate_array_is_type_error() {
         vec![LoadConst(0), Negate],
     )
     .unwrap_err();
-    assert!(err.message.contains("negate"), "got: {}", err.message);
+    assert!(err.message().contains("negate"), "got: {}", err.message());
 }
 
 #[test]

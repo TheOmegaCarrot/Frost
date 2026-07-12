@@ -348,14 +348,14 @@ fn run_with_args_too_few_is_arity_error() {
         .unwrap_err()
         .into_error();
     assert!(
-        err.message.contains("expects 2 arguments"),
+        err.message().contains("expects 2 arguments"),
         "got: {}",
-        err.message
+        err.message()
     );
     assert!(
-        err.message.contains("called with 1"),
+        err.message().contains("called with 1"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -376,14 +376,14 @@ fn run_with_args_too_many_is_arity_error() {
         .unwrap_err()
         .into_error();
     assert!(
-        err.message.contains("expects 1 arguments"),
+        err.message().contains("expects 1 arguments"),
         "got: {}",
-        err.message
+        err.message()
     );
     assert!(
-        err.message.contains("called with 2"),
+        err.message().contains("called with 2"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -402,11 +402,11 @@ fn run_with_args_variadic_too_few_is_arity_error() {
         .run_with_args([Value::Int(1)])
         .unwrap_err()
         .into_error();
-    assert!(err.message.contains("at least 2"), "got: {}", err.message);
+    assert!(err.message().contains("at least 2"), "got: {}", err.message());
     assert!(
-        err.message.contains("called with 1"),
+        err.message().contains("called with 1"),
         "got: {}",
-        err.message
+        err.message()
     );
 }
 
@@ -426,13 +426,13 @@ fn run_no_args_on_parameterized_is_arity_error() {
         .unwrap_err()
         .into_error();
     assert!(
-        err.message.contains("expects 1 arguments"),
+        err.message().contains("expects 1 arguments"),
         "got: {}",
-        err.message
+        err.message()
     );
     assert!(
-        err.message.contains("called with 0"),
+        err.message().contains("called with 0"),
         "got: {}",
-        err.message
+        err.message()
     );
 }

@@ -83,7 +83,7 @@ fn noop() -> Value {
 /// A nullary native that fails with an ordinary (catchable) error.
 fn boom() -> Value {
     Value::native("boom", Arity::Exact(0), |_, _: &mut [Value]| {
-        Err(FrostError::new("boom"))
+        Err(FrostError::from_static("boom"))
     })
 }
 
@@ -188,16 +188,16 @@ fn fuel_exhaustion_carries_the_full_backtrace() {
         with_fuel(1),
     )
     .unwrap_err();
-    assert!(err.message.contains("fuel"), "message: {}", err.message);
+    assert!(err.message().contains("fuel"), "message: {}", err.message());
     assert!(
-        err.backtrace.contains(&"catcher".to_string()),
+        err.backtrace().contains(&"catcher".to_string()),
         "backtrace must reach the swallowing native: {:?}",
-        err.backtrace
+        err.backtrace()
     );
     assert!(
-        err.backtrace.contains(&"main".to_string()),
+        err.backtrace().contains(&"main".to_string()),
         "backtrace must reach the top level: {:?}",
-        err.backtrace
+        err.backtrace()
     );
 }
 

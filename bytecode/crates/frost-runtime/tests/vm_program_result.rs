@@ -141,7 +141,7 @@ fn a_failed_run_surfaces_its_error_and_recycles_the_vm() {
         .run()
         .unwrap_err();
 
-    assert_eq!(failed.error().message, "Division by zero");
+    assert_eq!(failed.error().message(), "Division by zero");
     assert_eq!(failed.fuel_consumed(), 0); // the failing program made no calls
 
     // The Vm survives the failure: reset it onto program B and run to success.

@@ -148,14 +148,14 @@ fn array_incomparable_element_is_error() {
     let b = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
     let err = a.compare(&b).unwrap_err();
     assert!(
-        err.message.contains("String") && err.message.contains("Int"),
+        err.message().contains("String") && err.message().contains("Int"),
         "got: {}",
-        err.message
+        err.message()
     );
     assert!(
-        !err.message.contains("Array"),
+        !err.message().contains("Array"),
         "should blame the element, not Array: {}",
-        err.message
+        err.message()
     );
 }
 

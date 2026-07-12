@@ -120,7 +120,7 @@ fn array_index_with_string_is_error() {
         vec![LoadConst(0), LoadConst(1), SoftIndexStructure],
     )
     .unwrap_err();
-    assert!(err.message.contains("Array"), "got: {}", err.message);
+    assert!(err.message().contains("Array"), "got: {}", err.message());
 }
 
 #[test]
@@ -130,7 +130,7 @@ fn array_index_with_float_is_error() {
         vec![LoadConst(0), float(1.5), SoftIndexStructure],
     )
     .unwrap_err();
-    assert!(err.message.contains("Array"), "got: {}", err.message);
+    assert!(err.message().contains("Array"), "got: {}", err.message());
 }
 
 // ============================================================
@@ -175,7 +175,7 @@ fn map_index_with_null_key_is_error() {
         vec![LoadConst(0), PushNull, SoftIndexStructure],
     )
     .unwrap_err();
-    assert!(err.message.contains("Map key"), "got: {}", err.message);
+    assert!(err.message().contains("Map key"), "got: {}", err.message());
 }
 
 #[test]
@@ -186,7 +186,7 @@ fn map_index_with_structured_key_is_error() {
         vec![LoadConst(0), LoadConst(1), SoftIndexStructure],
     )
     .unwrap_err();
-    assert!(err.message.contains("Map key"), "got: {}", err.message);
+    assert!(err.message().contains("Map key"), "got: {}", err.message());
 }
 
 // ============================================================
@@ -201,13 +201,13 @@ fn index_into_string_is_error() {
         vec![LoadConst(0), PushInt(0), SoftIndexStructure],
     )
     .unwrap_err();
-    assert!(err.message.contains("index"), "got: {}", err.message);
+    assert!(err.message().contains("index"), "got: {}", err.message());
 }
 
 #[test]
 fn index_into_int_is_error() {
     let err = eval(vec![], vec![PushInt(5), PushInt(0), SoftIndexStructure]).unwrap_err();
-    assert!(err.message.contains("index"), "got: {}", err.message);
+    assert!(err.message().contains("index"), "got: {}", err.message());
 }
 
 // ============================================================
@@ -256,7 +256,7 @@ fn hard_index_missing_key_is_error() {
         vec![LoadConst(0), HardIndexMap(1)],
     )
     .unwrap_err();
-    assert!(!err.message.is_empty());
+    assert!(!err.message().is_empty());
 }
 
 #[test]
@@ -275,7 +275,7 @@ fn hard_index_present_key_with_null_value_is_not_missing() {
 fn hard_index_non_map_is_error() {
     // 5.bar -> error: only maps are dot-indexable. (Key const at index 0.)
     let err = eval(vec![Value::from("bar")], vec![PushInt(5), HardIndexMap(0)]).unwrap_err();
-    assert!(err.message.contains("index"), "got: {}", err.message);
+    assert!(err.message().contains("index"), "got: {}", err.message());
 }
 
 #[test]
@@ -286,7 +286,7 @@ fn hard_index_array_is_error() {
         vec![LoadConst(0), HardIndexMap(1)],
     )
     .unwrap_err();
-    assert!(err.message.contains("index"), "got: {}", err.message);
+    assert!(err.message().contains("index"), "got: {}", err.message());
 }
 
 #[test]
