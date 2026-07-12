@@ -519,6 +519,10 @@ impl std::fmt::Debug for NativeFunction {
 }
 
 impl NativeFunction {
+    /// Build a native function with an explicit [`Arity`]; `function` validates its own args.
+    ///
+    /// Most callers want [`Value::native`] instead: it wraps the result in a [`Value`].
+    /// Reach for this only when you specifically need a bare [`NativeFunction`].
     pub fn new<F>(name: &'static str, arity: Arity, function: F) -> Self
     where
         F: NativeFn,
@@ -533,6 +537,9 @@ impl NativeFunction {
     /// Build a native whose [`Arity`] is derived from `params`, and whose arguments
     /// are type-checked against `params` before `body` runs, so `body` may trust
     /// its argument types.
+    ///
+    /// Most callers want [`Value::checked_native`] instead: it wraps the result in a [`Value`].
+    /// Reach for this only when you specifically need a bare [`NativeFunction`].
     pub fn checked<F, const N: usize>(name: &'static str, params: [Param; N], body: F) -> Self
     where
         F: NativeFn,
