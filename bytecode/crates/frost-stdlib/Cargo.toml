@@ -1,7 +1,0 @@
-[package]
-name = "frost-stdlib"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]
-frost-runtime = { path = "../frost-runtime" }

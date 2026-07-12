@@ -3,7 +3,6 @@ members = [
     "crates/frost-parse",
     "crates/frost-compile",
     "crates/frost-runtime",
-    "crates/frost-stdlib",
     "crates/frost-cli",
     "crates/frost-astviz",
 ]
