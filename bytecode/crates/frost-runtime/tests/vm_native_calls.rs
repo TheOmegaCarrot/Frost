@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 use common::{entry, func};
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, FrostResult, NameEntry, NativeCtx,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostResult, NameEntry, NativeCtx,
     NativeFunction, ProgramResult, Value, Vm,
 };
 
@@ -44,6 +44,7 @@ fn run_with(
     let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
     body.extend(code);
     let program = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "<test>".to_string(),
         code: body,
         child_fns: children,

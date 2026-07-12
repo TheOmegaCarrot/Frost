@@ -18,7 +18,7 @@ use std::sync::Arc;
 
 use common::{entry, global_slot};
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostError, FrostMap, FrostResult, NameEntry,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostError, FrostMap, FrostResult, NameEntry,
     NativeCtx, NativeFunction, ProgramResult, Value, Vm,
 };
 
@@ -35,6 +35,7 @@ fn named(
     children: Vec<Arc<CompiledFunction>>,
 ) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: name.to_string(),
         code,
         child_fns: children,
@@ -928,6 +929,7 @@ fn tail_call_chain_error_trace_is_lossy_under_tco() {
 /// `Pop` (own fn value); `LoadConst(0)`; `ProduceError`, with `message` its sole constant.
 fn raiser_fn(message: &str) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "raiser".to_string(),
         code: vec![
             Bytecode::Pop,
@@ -946,6 +948,7 @@ fn raiser_fn(message: &str) -> Arc<CompiledFunction> {
 fn produce_error_with_string_raises_that_message() {
     // error("boom") at the top level reaches the host via run(), message intact.
     let program = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "main".to_string(),
         code: vec![Bytecode::LoadConst(0), Bytecode::ProduceError],
         child_fns: Vec::new(),
@@ -1003,6 +1006,7 @@ fn produce_error_with_non_string_value_still_raises() {
     // non-string payload is an intentional placeholder (pending Value-carrying
     // errors), so assert the flow -- it raises and reaches the host -- not the text.
     let program = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "main".to_string(),
         code: vec![Bytecode::PushInt(42), Bytecode::ProduceError],
         child_fns: Vec::new(),

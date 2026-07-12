@@ -13,13 +13,15 @@
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostFloat, MapKey, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostFloat, MapKey,
+    Value, Vm,
 };
 
 fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> {
     let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
     body.extend(code);
     let program = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "<index>".to_string(),
         code: body,
         child_fns: Vec::new(),

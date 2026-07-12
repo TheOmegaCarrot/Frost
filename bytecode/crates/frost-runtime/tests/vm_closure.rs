@@ -10,8 +10,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, MissingCaptures, NameEntry, ProgramResult,
-    Value, Vm,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, MissingCaptures, NameEntry,
+    ProgramResult, Value, Vm,
 };
 
 use Bytecode::{DefLocal, LoadLocal, Pop, PushInt, Subtract};
@@ -25,6 +25,7 @@ fn compiled(
     names: &[&str],
 ) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "<closure-test>".to_string(),
         code,
         child_fns: Vec::new(),

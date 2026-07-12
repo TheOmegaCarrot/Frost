@@ -10,13 +10,14 @@
 
 use std::sync::Arc;
 
-use frost_runtime::{Arity, Bytecode, CompiledFunction, Value, Vm};
+use frost_runtime::{Arity, Bytecode, CompiledFunction, FormatVersion, Value, Vm};
 
 /// Run a local-less, constant-less program and return its tail value.
 fn tail(code: Vec<Bytecode>) -> Value {
     let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
     body.extend(code);
     let program = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "<jumps>".to_string(),
         code: body,
         child_fns: Vec::new(),

@@ -17,8 +17,8 @@ mod common;
 
 use common::global_slot as slot;
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, MapKey, NameEntry, NativeFunction,
-    Value, Vm,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostError, MapKey, NameEntry,
+    NativeFunction, Value, Vm,
 };
 
 use Bytecode::*;
@@ -46,6 +46,7 @@ fn run(
     let mut code = vec![Pop];
     code.extend(body);
     let main = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "main".to_string(),
         code,
         child_fns: Vec::new(),

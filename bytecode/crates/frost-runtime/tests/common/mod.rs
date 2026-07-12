@@ -7,7 +7,8 @@
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, Closure, CompiledFunction, GLOBAL_NAMES, NameEntry, ProgramResult, Vm,
+    Arity, Bytecode, Closure, CompiledFunction, FormatVersion, GLOBAL_NAMES, NameEntry,
+    ProgramResult, Vm,
 };
 
 /// The `LoadGlobal` slot index of a predefined global, by name. Panics if `name` is not
@@ -24,6 +25,7 @@ pub fn global_slot(name: &str) -> usize {
 /// Arity `Exact(0)` -- suitable for a top-level / thunk.
 pub fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "<test>".to_string(),
         code,
         child_fns: Vec::new(),
@@ -39,6 +41,7 @@ pub fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
 /// Arity `Exact(0)`, no captures.
 pub fn fn_with_locals(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "<test>".to_string(),
         code,
         child_fns: Vec::new(),
@@ -59,6 +62,7 @@ pub fn func(
     child_fns: Vec<Arc<CompiledFunction>>,
 ) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "<test>".to_string(),
         code,
         child_fns,
@@ -109,6 +113,7 @@ pub fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure> {
     let mut body = vec![Bytecode::Pop];
     body.extend(code);
     Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "<test>".to_string(),
         code: body,
         child_fns: Vec::new(),

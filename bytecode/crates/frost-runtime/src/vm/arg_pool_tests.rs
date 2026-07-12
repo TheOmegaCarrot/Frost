@@ -33,6 +33,7 @@ fn func(
     children: Vec<Arc<CompiledFunction>>,
 ) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: name.to_string(),
         code,
         child_fns: children,

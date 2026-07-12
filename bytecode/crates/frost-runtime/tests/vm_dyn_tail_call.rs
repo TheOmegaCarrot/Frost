@@ -10,7 +10,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostResult, NameEntry, NativeFunction, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostResult, NameEntry, NativeFunction,
+    Value, Vm,
 };
 
 use Bytecode::*;
@@ -25,6 +26,7 @@ fn entry(name: &str) -> NameEntry {
 /// A standalone (no-capture) closure function.
 fn func(name: &str, code: Vec<Bytecode>, arity: Arity, names: &[&str]) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: name.to_string(),
         code,
         child_fns: Vec::new(),
@@ -38,6 +40,7 @@ fn func(name: &str, code: Vec<Bytecode>, arity: Arity, names: &[&str]) -> Arc<Co
 /// Run a top-level that captures `f` (slot 0) and executes `body`, returning the tail.
 fn run_with_f(f: Value, body: Vec<Bytecode>) -> Value {
     let top = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "<top>".to_string(),
         code: body,
         child_fns: Vec::new(),

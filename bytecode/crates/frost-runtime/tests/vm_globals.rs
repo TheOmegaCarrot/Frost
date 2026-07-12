@@ -13,8 +13,8 @@ mod common;
 
 use common::global_slot;
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostFloat, MapKey, NameEntry,
-    NativeFunction, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostFloat, MapKey,
+    NameEntry, NativeFunction, Value, Vm,
 };
 
 use Bytecode::*;
@@ -41,6 +41,7 @@ fn run_global(name: &str, args: Vec<Value>) -> Result<Value, FrostError> {
         })
         .collect();
     let main = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "main".to_string(),
         code,
         child_fns: Vec::new(),

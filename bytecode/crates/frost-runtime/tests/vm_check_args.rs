@@ -6,8 +6,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostError, FrostType, NameEntry, NativeFunction, Param,
-    ParamSpec, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostError, FrostType, NameEntry,
+    NativeFunction, Param, ParamSpec, Value, Vm,
 };
 
 /// A throwaway native named `frob`, for testing `check_args` in isolation.
@@ -158,6 +158,7 @@ fn invoke(native: Value, args: Vec<Value>) -> Result<Value, FrostError> {
     name_table.extend((0..argc).map(|i| entry(&format!("a{i}"))));
 
     let main = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "main".to_string(),
         code,
         child_fns: Vec::new(),

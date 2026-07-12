@@ -10,8 +10,8 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostError, NameEntry, ProgramResult, RunOutcome, Value, Vm,
-    VmRuntimeConfiguration,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostError, NameEntry, ProgramResult,
+    RunOutcome, Value, Vm, VmRuntimeConfiguration,
 };
 
 use Bytecode::*;
@@ -36,6 +36,7 @@ fn run(
 ) -> Result<ProgramResult, FrostError> {
     let name_table = caps.iter().map(|(n, _)| entry(n)).collect();
     let main = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "main".to_string(),
         code,
         child_fns: Vec::new(),

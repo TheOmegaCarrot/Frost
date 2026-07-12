@@ -3,7 +3,9 @@
 use std::sync::Arc;
 
 use crate::core::FrostResult;
-use crate::{Arity, Bytecode, Closure, CompiledFunction, FrostArray, MapKey, NativeCtx, Value};
+use crate::{
+    Arity, Bytecode, Closure, CompiledFunction, FormatVersion, FrostArray, MapKey, NativeCtx, Value,
+};
 
 /// `call(f)` / `call(f, args)` -- invoke `f`, spreading the elements of `args` (or
 /// no args) as a tail call. A hand-rolled `Between(1, 2)` closure over `DynTailCall`.
@@ -11,6 +13,7 @@ pub(super) fn call_global() -> Value {
     Value::Closure(Arc::new(Closure {
         captures: Vec::new(),
         function: Arc::new(CompiledFunction {
+            version: FormatVersion,
             name: "call".to_string(),
             arity: Arity::Between(1, 2),
             num_captures: 0,

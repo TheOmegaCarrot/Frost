@@ -2,9 +2,11 @@
 
 mod globals;
 mod params;
+mod serialize;
 
 pub use globals::GLOBAL_NAMES;
 pub use params::{Param, ParamSpec};
+pub use serialize::FormatVersion;
 
 // White-box tests for the one unwind invariant not observable through the public
 // API: native-arg-pool buffer recycling. (Operand-stack and frame restoration are
@@ -28,7 +30,7 @@ use crate::{
 // Bytecode
 // ============================================================
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Bytecode {
     // Constants
     PushNull,
@@ -228,8 +230,11 @@ pub(crate) struct GlobalSet(Vec<Value>);
 
 /// Compiled representation of a single function.
 /// A script's top-level is also a function.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct CompiledFunction {
+    // Version marker: stamps the runtime version on serialize, rejects a mismatch on
+    // deserialize. First, so a mismatched image fails before the rest is decoded.
+    pub version: serialize::FormatVersion,
     // Functions always have a name
     pub name: String,
     pub code: Vec<Bytecode>,
@@ -237,6 +242,8 @@ pub struct CompiledFunction {
     pub child_fns: Vec<Arc<CompiledFunction>>,
     // Constant values that can't be inlined in an opcode.
     // Mostly strings, but can include any structured value the compiler can constant-fold.
+    // Serialized through `ConstValue` (see `serialize`); a function-valued constant is rejected.
+    #[serde(with = "serialize::const_pool")]
     pub constants: Vec<Value>,
     // Table so that locals can be looked up by name at runtime,
     // or their slot given a name by an error.
@@ -352,7 +359,7 @@ impl std::fmt::Display for MissingCaptures {
 
 impl std::error::Error for MissingCaptures {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NameEntry {
     pub name: String,
     pub exported: bool,
@@ -389,7 +396,7 @@ pub struct ProgramResult(Vm);
 /// fn a, b, c, ...more -> ...
 /// # at least 3
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Arity {
     Exact(usize),
     Between(usize, usize),

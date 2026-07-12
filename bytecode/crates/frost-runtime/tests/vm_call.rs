@@ -13,8 +13,8 @@ mod common;
 
 use common::global_slot;
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostArray, FrostError, FrostResult, NameEntry,
-    NativeFunction, ProgramResult, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostResult,
+    NameEntry, NativeFunction, ProgramResult, Value, Vm,
 };
 
 use Bytecode::*;
@@ -33,6 +33,7 @@ fn entry(name: &str) -> NameEntry {
 /// A standalone (no-capture) closure value.
 fn func(name: &str, code: Vec<Bytecode>, arity: Arity, names: &[&str]) -> Value {
     let f = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: name.to_string(),
         code,
         child_fns: Vec::new(),
@@ -51,6 +52,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<ProgramResu
     let mut code = vec![Pop];
     code.extend(body);
     let main = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "main".to_string(),
         code,
         child_fns: Vec::new(),

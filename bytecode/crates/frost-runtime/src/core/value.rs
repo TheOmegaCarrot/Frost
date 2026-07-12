@@ -11,7 +11,7 @@ use crate::vm::Closure;
 use crate::vm::NativeFunction;
 
 /// The possible types of a Frost Value.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum FrostType {
     Null,
     Bool,
@@ -25,7 +25,7 @@ pub enum FrostType {
 }
 
 /// The possible ways to categorize Frost types, as exposed within the language.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum FrostTypeCategory {
     Exact(FrostType),
     Primitive,
@@ -72,7 +72,7 @@ const _: () = {
 };
 
 /// A valid Frost map key. Only non-null primitive types may be keys.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 pub enum MapKey {
     Bool(bool),
     Int(i64),

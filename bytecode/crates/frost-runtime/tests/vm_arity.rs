@@ -8,7 +8,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FrostError, FrostResult, NameEntry, ProgramResult, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostError, FrostResult, NameEntry,
+    ProgramResult, Value, Vm,
 };
 
 /// A native that returns its own argument count, so a test can prove every passed
@@ -31,6 +32,7 @@ fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> 
     code.push(Bytecode::Call(argc));
 
     let program = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "<test>".to_string(),
         code,
         child_fns: Vec::new(),
@@ -125,6 +127,7 @@ fn between_equal_bounds_behaves_like_exact() {
 fn omitted_vs_present_probe() -> Arc<CompiledFunction> {
     use Bytecode::*;
     Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "probe".to_string(),
         // Stack on entry: [ closure, (x?), argc ].
         code: vec![
@@ -178,6 +181,7 @@ fn between_closure_seating_works_through_call() {
         code.extend(arg_pushes);
         code.push(Bytecode::Call(argc));
         let wrapper = Arc::new(CompiledFunction {
+            version: FormatVersion,
             name: "wrapper".to_string(),
             code,
             child_fns: Vec::new(),

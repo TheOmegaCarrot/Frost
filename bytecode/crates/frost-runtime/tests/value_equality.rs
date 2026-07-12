@@ -2,7 +2,8 @@ use std::any::Any;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Closure, CompiledFunction, FrostArray, FrostMap, MapKey, NativeFunction, Value,
+    Arity, Closure, CompiledFunction, FormatVersion, FrostArray, FrostMap, MapKey, NativeFunction,
+    Value,
 };
 
 fn str_key(s: &str) -> MapKey {
@@ -206,6 +207,7 @@ fn a_native() -> Arc<NativeFunction> {
 
 fn a_closure() -> Arc<Closure> {
     let f = Arc::new(CompiledFunction {
+        version: FormatVersion,
         name: "f".to_string(),
         code: Vec::new(),
         child_fns: Vec::new(),
