@@ -298,7 +298,7 @@ fn non_export_def() {
 #[test]
 fn error_missing_equals() {
     let err = parse_err("def x 1");
-    assert!(err.contains("Expected ="), "error was: {err}");
+    assert!(err.contains("expected ="), "error was: {err}");
 }
 
 #[test]

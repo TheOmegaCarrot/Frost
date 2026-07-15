@@ -398,3 +398,61 @@ fn error_points_at_format_string() {
     let err = parse_err("$'bad\\q'");
     assert!(err.contains("format String"), "error was: {err}");
 }
+
+// -- Interpolation diagnostics --
+// Errors from inside `${ ... }` must render against the whole source in
+// whole-source coordinates, keep their labels, and not double up the diagram.
+
+#[test]
+fn interpolation_error_points_into_the_string() {
+    // The failure (running out of input mid-expression) sits inside the
+    // interpolation, past the opening `$'` at offset 0 -- not at a
+    // substring-relative offset near the start.
+    let err = frost_parse::parse_program("test.frst", "$'${x +}'").unwrap_err();
+    assert!(
+        err.primary_span().start >= 2,
+        "primary span should point inside the interpolation, was {:?}",
+        err.primary_span()
+    );
+}
+
+#[test]
+fn interpolation_leftover_token_points_at_token() {
+    // `x y` parses `x`, then `y` is unexpected. The label must land on `y`.
+    let src = "$'${x y}'";
+    let err = frost_parse::parse_program("test.frst", src).unwrap_err();
+    let y = src.find('y').unwrap();
+    assert_eq!(
+        err.primary_span().start,
+        y,
+        "expected the leftover-token label at the `y`; error: {err}"
+    );
+}
+
+#[test]
+fn interpolation_error_labels_the_format_string() {
+    let err = frost_parse::parse_program("test.frst", "$'${x +}'").unwrap_err();
+    assert!(
+        err.labels().iter().any(|l| l.text == "in this format String"),
+        "expected a context label; labels: {:?}",
+        err.labels()
+    );
+}
+
+#[test]
+fn interpolation_error_renders_a_single_diagram() {
+    // The old code flattened an inner rendered report into the outer message,
+    // producing two source diagrams and an "in interpolation:" prefix.
+    let rendered = frost_parse::parse_program("test.frst", "$'${x +}'")
+        .unwrap_err()
+        .to_string();
+    assert_eq!(
+        rendered.matches("╭─[").count(),
+        1,
+        "expected exactly one source diagram; rendered:\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("in interpolation:"),
+        "inner error should not be flattened into the message; rendered:\n{rendered}"
+    );
+}

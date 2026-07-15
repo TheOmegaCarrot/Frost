@@ -1,13 +1,11 @@
-use std::error::Error;
-use std::fmt::Display;
-
-use crate::ast::{self, Binding, SourceSpan};
+use crate::ast::{self, Binding};
 use crate::lex::Token;
 use crate::parse::ctx::ParseCtx;
 use crate::parse::statements::{StatementContext, parse_statements};
 
 mod control_flow;
 mod destructure;
+mod error;
 mod expression;
 mod format_string;
 mod iterative;
@@ -19,44 +17,21 @@ mod structures;
 
 pub(crate) mod ctx;
 
-/// A parser error.
-#[derive(Clone, Debug)]
-pub struct ParseError(String);
+pub use error::{Label, ParseError};
+pub(crate) use error::Diagnostic;
 
-impl Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl Error for ParseError {}
-
-impl From<&str> for ParseError {
-    fn from(value: &str) -> Self {
-        Self::from(value.to_owned())
-    }
-}
-
-impl From<String> for ParseError {
-    fn from(value: String) -> Self {
-        Self(value)
-    }
-}
-
-impl From<miette::Report> for ParseError {
-    fn from(value: miette::Report) -> Self {
-        Self(format!("{:?}", value))
-    }
-}
-
-pub fn parse_program(filename: &str, input: &str) -> ParseResult<ast::Program> {
-    let mut ctx = ParseCtx::new(filename, input)?;
+pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseError> {
+    let mut ctx =
+        ParseCtx::new(filename, input).map_err(|d| ParseError::from_diag(d, filename, input))?;
 
     parse_statements(&mut ctx, StatementContext::TopLevel)
         .map(|statements| ast::Program { statements })
+        .map_err(|d| ParseError::from_diag(d, filename, input))
 }
 
-type ParseResult<T> = Result<T, ParseError>;
+/// The error carried while parsing is the lightweight [`Diagnostic`]; it is rendered
+/// into a public [`ParseError`] only at the [`parse_program`] boundary.
+type ParseResult<T> = Result<T, Diagnostic>;
 
 fn parse_binding(ctx: &mut ParseCtx, context: &str) -> ParseResult<Binding> {
     let peek = ctx.must_peek(context)?;

@@ -1,15 +1,21 @@
 use std::ops::Range;
 
 use crate::lex::Token;
-use crate::parse::{ParseError, ParseResult};
+use crate::parse::{Diagnostic, ParseResult};
 
 use logos::Logos;
-use miette::{LabeledSpan, NamedSource, miette};
 
 #[derive(Debug)]
 pub struct ParseCtx<'src, 'f> {
-    /// The original full source, preserved for diagnostics.
+    /// The source this context was lexed from. For a sub-context (a
+    /// format-string interpolation) this is only the interpolation substring;
+    /// `base_offset` maps its positions back into the whole source.
     full_source: &'src str,
+
+    /// Byte offset of `full_source` within the original source. Zero for the
+    /// top-level context; nonzero for interpolation sub-contexts, so that every
+    /// diagnostic span is in whole-source coordinates.
+    base_offset: usize,
 
     filename: &'f str,
 
@@ -61,13 +67,12 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         while let Some(token) = lexer.next() {
             let span = lexer.span();
+            let shifted = (span.start + base_offset)..(span.end + base_offset);
 
             let Ok(token) = token else {
-                let shifted = (span.start + base_offset)..(span.end + base_offset);
-                return Err(lex_error(filename, src, shifted));
+                return Err(lex_error(shifted));
             };
 
-            let shifted = (span.start + base_offset)..(span.end + base_offset);
             input.push(SrcToken {
                 token,
                 span: shifted,
@@ -76,6 +81,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         Ok(Self {
             full_source: src,
+            base_offset,
             filename,
             input,
             state: ParseState::default(),
@@ -108,15 +114,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             return Err(self.unexpected_eof(format!("{token}").as_str()));
         };
         if current.token != token {
-            return Err(miette!(
-                labels = vec![LabeledSpan::at(
-                    current.span.clone(),
-                    format!("Expected {}, but got {}.", &token, &current.token)
-                )],
-                ""
-            )
-            .with_source_code(self.named_source())
-            .into());
+            return Err(Diagnostic::at(
+                format!("expected {token}, but found {}", current.token),
+                current.span.clone().into(),
+                "unexpected",
+            ));
         }
 
         self.advance(1);
@@ -215,39 +217,25 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self.input.get(pos)
     }
 
-    pub fn unexpected_token(&self, token: &SrcToken, tried_to_parse: &str) -> ParseError {
-        miette!(
-            labels = vec![LabeledSpan::at(token.span.clone(), "unexpected")],
-            "unexpected {} while parsing {tried_to_parse}",
-            token.token
+    pub fn unexpected_token(&self, token: &SrcToken, tried_to_parse: &str) -> Diagnostic {
+        Diagnostic::at(
+            format!("unexpected {} while parsing {tried_to_parse}", token.token),
+            token.span.clone().into(),
+            "unexpected",
         )
-        .with_source_code(self.named_source())
-        .into()
     }
 
-    pub fn unexpected_eof(&self, tried_to_parse: &str) -> ParseError {
-        let end = self.full_source.len();
-        miette!(
-            labels = vec![LabeledSpan::at(end..end, "end of input")],
-            "unexpected end of input while parsing {tried_to_parse}"
+    pub fn unexpected_eof(&self, tried_to_parse: &str) -> Diagnostic {
+        // End of this context's tokens, in whole-source coordinates.
+        let end = self.base_offset + self.full_source.len();
+        Diagnostic::at(
+            format!("unexpected end of input while parsing {tried_to_parse}"),
+            (end..end).into(),
+            "end of input",
         )
-        .with_source_code(self.named_source())
-        .into()
-    }
-
-    /// Expensive: only called in the error case
-    pub fn named_source(&self) -> NamedSource<String> {
-        NamedSource::new(self.filename, self.full_source.to_owned())
     }
 }
 
-fn lex_error(filename: &str, src: &str, span: Range<usize>) -> ParseError {
-    let source = NamedSource::new(filename, src.to_owned());
-
-    miette!(
-        labels = vec![LabeledSpan::at(span, "unrecognized")],
-        "unexpected character"
-    )
-    .with_source_code(source)
-    .into()
+fn lex_error(span: Range<usize>) -> Diagnostic {
+    Diagnostic::at("unexpected character", span.into(), "unrecognized")
 }

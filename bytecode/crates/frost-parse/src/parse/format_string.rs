@@ -1,12 +1,10 @@
 use std::ops::Range;
 
-use miette::{LabeledSpan, miette};
-
 use crate::ast::{Expr, ExprKind, FormatSegment};
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
 use crate::parse::strings::QuoteStyle;
-use crate::parse::{ParseError, ParseResult, ctx::ParseCtx};
+use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 pub fn parse_format_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult<Expr> {
     let peek = ctx.must_peek("format String")?;
@@ -27,14 +25,8 @@ pub fn parse_format_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult
     })
 }
 
-fn format_error(ctx: &ParseCtx, span: &Range<usize>, msg: impl Into<String>) -> ParseError {
-    miette!(
-        labels = vec![LabeledSpan::at(span.clone(), "in this format String")],
-        "{}",
-        msg.into()
-    )
-    .with_source_code(ctx.named_source())
-    .into()
+fn format_error(span: &Range<usize>, msg: impl Into<String>) -> Diagnostic {
+    Diagnostic::at(msg, span.clone().into(), "in this format String")
 }
 
 fn split_format_segments(
@@ -52,11 +44,7 @@ fn split_format_segments(
         match bytes[i] {
             b'\\' => {
                 if i + 1 >= bytes.len() {
-                    return Err(format_error(
-                        ctx,
-                        span,
-                        "unexpected end of String after backslash",
-                    ));
+                    return Err(format_error(span, "unexpected end of String after backslash"));
                 }
                 let escape = bytes[i + 1];
                 match escape {
@@ -94,17 +82,16 @@ fn split_format_segments(
                     }
                     b'x' => {
                         if i + 3 >= bytes.len() {
-                            return Err(format_error(ctx, span, "incomplete \\x escape"));
+                            return Err(format_error(span, "incomplete \\x escape"));
                         }
                         let hex = &raw[i + 2..i + 4];
                         let val = u8::from_str_radix(hex, 16)
-                            .map_err(|_| format_error(ctx, span, "invalid hex escape"))?;
+                            .map_err(|_| format_error(span, "invalid hex escape"))?;
                         literal_buf.push(val);
                         i += 4;
                     }
                     _ => {
                         return Err(format_error(
-                            ctx,
                             span,
                             format!("invalid escape sequence: \\{}", escape as char),
                         ));
@@ -146,11 +133,7 @@ fn split_format_segments(
                 }
 
                 if depth != 0 {
-                    return Err(format_error(
-                        ctx,
-                        span,
-                        "unclosed interpolation in format String",
-                    ));
+                    return Err(format_error(span, "unclosed interpolation in format String"));
                 }
 
                 // The content is between start and i-1 (i is past the closing })
@@ -190,17 +173,22 @@ fn parse_interpolation(
     span: &Range<usize>,
     base_offset: usize,
 ) -> ParseResult<Expr> {
-    let mut sub_ctx = ParseCtx::new_with_offset(ctx.filename(), src, base_offset)
-        .map_err(|e| format_error(ctx, span, e.to_string()))?;
+    // The sub-context lexes `src` with `base_offset`, so every diagnostic it
+    // produces already carries whole-source spans. We propagate those inner
+    // diagnostics directly -- adding an outer "in this format String" label for
+    // context -- rather than flattening them to text, so their labels survive
+    // and render against the real source.
+    let context = |d: Diagnostic| d.with_label(span.clone().into(), "in this format String");
 
-    let expr = parse_expression(&mut sub_ctx)
-        .map_err(|e| format_error(ctx, span, format!("in interpolation: {e}")))?;
+    let mut sub_ctx =
+        ParseCtx::new_with_offset(ctx.filename(), src, base_offset).map_err(context)?;
+
+    let expr = parse_expression(&mut sub_ctx).map_err(context)?;
 
     if !sub_ctx.at_end() {
-        return Err(format_error(
-            ctx,
-            span,
-            "unexpected tokens after interpolation expression",
+        let leftover = sub_ctx.peek().expect("not at end, so a token remains");
+        return Err(context(
+            sub_ctx.unexpected_token(leftover, "interpolation expression"),
         ));
     }
 

@@ -3,7 +3,7 @@ use crate::lex::Token;
 use crate::parse::destructure::parse_destructure;
 use crate::parse::expression::parse_expression;
 use crate::parse::lambda::{parse_fn_body, parse_parenthesized_params};
-use crate::parse::{ParseResult, ctx::ParseCtx, parse_binding};
+use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx, parse_binding};
 
 /// Statements are only allowed in a few contexts,
 /// and the rules differ between contexts.
@@ -113,7 +113,11 @@ fn parse_defn(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
     let name = match parse_binding(ctx, "function name")? {
         Binding::Named(name) => name,
         Binding::Discarded => {
-            return Err("defn requires a function name, not '_'".into());
+            return Err(Diagnostic::at(
+                "defn requires a function name, not '_'",
+                name_span.clone().into(),
+                "expected a name",
+            ));
         }
     };
 

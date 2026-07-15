@@ -2,7 +2,7 @@ use crate::ast::{Binding, Expr, ExprKind, FormatSegment, Statement, StatementKin
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
 use crate::parse::statements::{StatementContext, parse_statements};
-use crate::parse::{ParseError, ParseResult, ctx::ParseCtx, parse_binding};
+use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx, parse_binding};
 
 pub fn parse_lambda(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let start = ctx.expect(Token::KwFn)?.span.start;
@@ -170,28 +170,32 @@ fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
 }
 
 fn parse_block_body(ctx: &mut ParseCtx) -> ParseResult<(Vec<Statement>, Expr, usize)> {
-    ctx.expect(Token::OpenBrace)?;
+    let open_start = ctx.expect(Token::OpenBrace)?.span.start;
 
     let mut body = parse_statements(ctx, StatementContext::Scope)?;
 
-    let close = ctx.expect(Token::CloseBrace)?;
+    let close_end = ctx.expect(Token::CloseBrace)?.span.end;
 
     let Some(last) = body.pop() else {
-        return Err(ParseError::from(
+        return Err(Diagnostic::at(
             "lambda block body must contain at least one expression",
+            (open_start..close_end).into(),
+            "empty block",
         ));
     };
 
     let return_expr = match last.kind {
         StatementKind::Expr(expr) => expr,
         StatementKind::Def { .. } => {
-            return Err(ParseError::from(
+            return Err(Diagnostic::at(
                 "lambda block body must end with an expression, not a definition",
+                last.span,
+                "definition here",
             ));
         }
     };
 
-    Ok((body, return_expr, close.span.end))
+    Ok((body, return_expr, close_end))
 }
 
 /// Parse the tail of a bare param list: `[, param]* [, ...rest]`.

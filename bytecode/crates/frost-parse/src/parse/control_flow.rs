@@ -2,7 +2,7 @@ use crate::ast::{Expr, ExprKind, StatementKind};
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
 use crate::parse::statements::{StatementContext, parse_statements};
-use crate::parse::{ParseError, ParseResult, ctx::ParseCtx};
+use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 pub fn parse_if(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     parse_if_or_elif(ctx, Token::KwIf)
@@ -59,25 +59,29 @@ pub fn parse_do(ctx: &mut ParseCtx) -> ParseResult<Expr> {
 
     let mut body = parse_statements(ctx, StatementContext::Scope)?;
 
-    let close = ctx.expect(Token::CloseBrace)?;
+    let close_end = ctx.expect(Token::CloseBrace)?.span.end;
 
     let Some(last) = body.pop() else {
-        return Err(ParseError::from(
+        return Err(Diagnostic::at(
             "do block must contain at least one expression",
+            (start..close_end).into(),
+            "empty block",
         ));
     };
 
     let value = match last.kind {
         StatementKind::Expr(expr) => expr,
         StatementKind::Def { .. } => {
-            return Err(ParseError::from(
+            return Err(Diagnostic::at(
                 "do block must end with an expression, not a definition",
+                last.span,
+                "definition here",
             ));
         }
     };
 
     Ok(Expr {
-        span: (start..close.span.end).into(),
+        span: (start..close_end).into(),
         kind: ExprKind::Do {
             body,
             value: Box::new(value),

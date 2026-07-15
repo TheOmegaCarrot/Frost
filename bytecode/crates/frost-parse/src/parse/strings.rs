@@ -1,10 +1,8 @@
 use std::ops::Range;
 
-use miette::{LabeledSpan, miette};
-
 use crate::ast::{Expr, ExprKind, Literal};
 use crate::lex::Token;
-use crate::parse::{ParseError, ParseResult, ctx::ParseCtx};
+use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 #[derive(Clone, Copy)]
 pub enum QuoteStyle {
@@ -12,14 +10,8 @@ pub enum QuoteStyle {
     Double,
 }
 
-fn string_error(ctx: &ParseCtx, span: &Range<usize>, msg: impl Into<String>) -> ParseError {
-    miette!(
-        labels = vec![LabeledSpan::at(span.clone(), "in this String literal")],
-        "{}",
-        msg.into()
-    )
-    .with_source_code(ctx.named_source())
-    .into()
+fn string_error(span: &Range<usize>, msg: impl Into<String>) -> Diagnostic {
+    Diagnostic::at(msg, span.clone().into(), "in this String literal")
 }
 
 pub fn parse_simple_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult<Expr> {
@@ -30,7 +22,7 @@ pub fn parse_simple_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult
         _ => return Err(ctx.unexpected_token(peek, "String literal")),
     };
     ctx.advance(1);
-    let bytes = expand_escapes(&raw, quote).map_err(|msg| string_error(ctx, &span, msg))?;
+    let bytes = expand_escapes(&raw, quote).map_err(|msg| string_error(&span, msg))?;
     Ok(Expr {
         span: span.into(),
         kind: ExprKind::Literal(Literal::String(bytes)),
@@ -60,8 +52,8 @@ pub fn parse_multiline_string(ctx: &mut ParseCtx) -> ParseResult<Expr> {
         _ => return Err(ctx.unexpected_token(peek, "multiline String literal")),
     };
     ctx.advance(1);
-    let trimmed = trim_multiline_indentation(&raw).map_err(|msg| string_error(ctx, &span, msg))?;
-    let bytes = expand_multiline_escapes(&trimmed).map_err(|msg| string_error(ctx, &span, msg))?;
+    let trimmed = trim_multiline_indentation(&raw).map_err(|msg| string_error(&span, msg))?;
+    let bytes = expand_multiline_escapes(&trimmed).map_err(|msg| string_error(&span, msg))?;
     Ok(Expr {
         span: span.into(),
         kind: ExprKind::Literal(Literal::String(bytes)),
