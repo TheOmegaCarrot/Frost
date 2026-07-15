@@ -537,20 +537,91 @@ fn not_dot() {
 
 #[test]
 fn newline_before_bracket_is_two_statements() {
+    // `[` can begin a statement, so it does not continue across a newline.
     let program = parse_program("test.frst", "a\n[0]").expect("failed to parse");
     assert_eq!(program.statements.len(), 2);
 }
 
 #[test]
-fn newline_before_dot_is_error() {
-    let err = parse_err("a\n.foo");
-    assert!(err.contains("unexpected"), "error was: {err}");
+fn newline_before_call_is_two_statements() {
+    // `(` can begin a statement, so it does not continue across a newline.
+    let program = parse_program("test.frst", "f\n(1)").expect("failed to parse");
+    assert_eq!(program.statements.len(), 2);
 }
 
 #[test]
-fn newline_before_call_is_two_statements() {
-    let program = parse_program("test.frst", "f\n(1)").expect("failed to parse");
-    assert_eq!(program.statements.len(), 2);
+fn newline_before_dot_continues() {
+    // `.` cannot begin a statement, so it continues the expression.
+    let expr = parse_expr("a\n.foo");
+    match &expr.kind {
+        ExprKind::HardIndex { target, key } => {
+            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+            assert_eq!(key, "foo");
+        }
+        other => panic!("expected HardIndex, got {other:?}"),
+    }
+}
+
+#[test]
+fn newline_before_thread_continues() {
+    // `@` cannot begin a statement, so it continues the expression: a @ f() => f(a).
+    let expr = parse_expr("a\n@ f()");
+    match &expr.kind {
+        ExprKind::Call { callee, args } => {
+            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+            assert_eq!(args.len(), 1);
+            assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+        }
+        other => panic!("expected Call, got {other:?}"),
+    }
+}
+
+#[test]
+fn newline_dot_chain() {
+    // A whole leading-dot chain across newlines: ((a.b).c).d
+    let expr = parse_expr("a\n.b\n.c\n.d");
+    let ExprKind::HardIndex { target: abc, key: d } = &expr.kind else {
+        panic!("expected HardIndex, got {:?}", expr.kind)
+    };
+    assert_eq!(d, "d");
+    let ExprKind::HardIndex { target: ab, key: c } = &abc.kind else {
+        panic!("expected nested HardIndex")
+    };
+    assert_eq!(c, "c");
+    assert!(matches!(&ab.kind, ExprKind::HardIndex { key, .. } if key == "b"));
+}
+
+#[test]
+fn newline_thread_chain() {
+    // Leading-`@` chain across newlines: g(f(x)).
+    let expr = parse_expr("x\n@ f()\n@ g()");
+    let ExprKind::Call { callee: g, args: outer } = &expr.kind else {
+        panic!("expected Call, got {:?}", expr.kind)
+    };
+    assert!(matches!(&g.kind, ExprKind::NameLookup(n) if n == "g"));
+    assert!(matches!(&outer[0].kind, ExprKind::Call { .. }));
+}
+
+#[test]
+fn multiple_newlines_before_dot_continue() {
+    // Blank lines between the operand and the dot are still a continuation.
+    let expr = parse_expr("a\n\n\n.foo");
+    assert!(matches!(&expr.kind, ExprKind::HardIndex { key, .. } if key == "foo"));
+}
+
+#[test]
+fn comment_then_newline_before_dot_continues() {
+    // Comments are lexer-skipped, so a trailing comment does not break the chain.
+    let expr = parse_expr("a # comment\n.foo");
+    assert!(matches!(&expr.kind, ExprKind::HardIndex { key, .. } if key == "foo"));
+}
+
+#[test]
+fn newline_before_dot_inside_delimiters() {
+    // Inside delimiters a dot after a newline continues the inner expression
+    // (previously a parse error -- the newline broke the chain).
+    let expr = parse_expr("(a\n.foo)");
+    assert!(matches!(&expr.kind, ExprKind::HardIndex { key, .. } if key == "foo"));
 }
 
 // -- Postfix error cases --

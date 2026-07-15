@@ -20,9 +20,23 @@ fn parse_expr_bp(ctx: &mut ParseCtx, min_bp: u8) -> ParseResult<Expr> {
     let mut lhs = parse_prefix(ctx)?;
 
     loop {
-        // Postfix operators bind tightest and must appear on the same line
-        // (unless we're inside delimiters where newlines are insignificant).
-        // Check them BEFORE skipping newlines.
+        // `.` and `@` may continue an expression across line breaks (leading-dot
+        // / leading-`@` chaining): neither can begin a statement, so a following
+        // one is unambiguously a continuation. Absorb the intervening newlines
+        // here so the postfix dispatch below treats it as same-line. Call `()`
+        // and index `[]` are NOT continued -- a `(`/`[` on a new line begins a
+        // fresh statement -- so newlines are only skipped for `.`/`@`.
+        if POSTFIX_BP >= min_bp
+            && matches!(
+                ctx.peek_past_nl().map(|t| &t.token),
+                Some(Token::OpDot | Token::OpThread)
+            )
+        {
+            ctx.skip_nl();
+        }
+
+        // Postfix operators bind tightest and sit on the same line as their
+        // operand (after any continuation absorbed above).
         if let Some(peek) = ctx.peek() {
             match peek.token {
                 Token::OpenParen if POSTFIX_BP >= min_bp => {

@@ -13,9 +13,9 @@ fn parse_iterative(ctx: &mut ParseCtx, keyword: Token, kind: IterativeKind) -> P
     let start = ctx.expect(keyword)?.span.start;
 
     let structure = parse_expression(ctx)?;
-    skip_newlines(ctx);
+    ctx.skip_nl();
     ctx.expect(Token::KwWith)?;
-    skip_newlines(ctx);
+    ctx.skip_nl();
     let operation = parse_expression(ctx)?;
 
     let end = operation.span.end;
@@ -56,21 +56,21 @@ pub fn parse_reduce(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     let start = ctx.expect(Token::KwReduce)?.span.start;
 
     let structure = parse_expression(ctx)?;
-    skip_newlines(ctx);
+    ctx.skip_nl();
 
     let init = if matches!(ctx.peek().map(|t| &t.token), Some(Token::KwInit)) {
         ctx.advance(1);
         ctx.expect(Token::Colon)?;
-        skip_newlines(ctx);
+        ctx.skip_nl();
         let expr = parse_expression(ctx)?;
-        skip_newlines(ctx);
+        ctx.skip_nl();
         Some(Box::new(expr))
     } else {
         None
     };
 
     ctx.expect(Token::KwWith)?;
-    skip_newlines(ctx);
+    ctx.skip_nl();
     let operation = parse_expression(ctx)?;
 
     Ok(Expr {
@@ -81,8 +81,4 @@ pub fn parse_reduce(ctx: &mut ParseCtx) -> ParseResult<Expr> {
             init,
         },
     })
-}
-
-fn skip_newlines(ctx: &mut ParseCtx) {
-    ctx.enter_nl_context().maybe_skip_nl().exit_nl_context();
 }

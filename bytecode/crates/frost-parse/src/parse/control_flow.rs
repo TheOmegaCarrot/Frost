@@ -31,7 +31,7 @@ fn parse_if_or_elif(ctx: &mut ParseCtx, keyword: Token) -> ParseResult<Expr> {
 
 fn parse_tail(ctx: &mut ParseCtx) -> ParseResult<Option<Expr>> {
     let checkpoint = ctx.checkpoint();
-    ctx.enter_nl_context().maybe_skip_nl().exit_nl_context();
+    ctx.skip_nl();
 
     let Some(peek) = ctx.peek() else {
         ctx.restore(checkpoint);

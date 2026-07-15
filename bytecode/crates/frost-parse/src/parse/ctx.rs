@@ -145,6 +145,26 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self
     }
 
+    /// Peek the next significant token, skipping any newlines, without
+    /// advancing. Like `peek`, but sees past line breaks.
+    pub fn peek_past_nl(&self) -> Option<&SrcToken<'src>> {
+        let mut pos = self.state.pos;
+        while matches!(self.input.get(pos).map(|t| &t.token), Some(Token::Newline)) {
+            pos += 1;
+        }
+        self.input.get(pos)
+    }
+
+    /// Advance past any run of newlines, regardless of `nl_depth`. The
+    /// unconditional companion to `maybe_skip_nl`, used to commit a
+    /// continuation after `peek_past_nl` confirms the following token.
+    pub fn skip_nl(&mut self) -> &mut Self {
+        while matches!(self.peek().map(|t| &t.token), Some(Token::Newline)) {
+            self.advance(1);
+        }
+        self
+    }
+
     /// Parse a comma-separated list of items inside delimiters.
     /// The opening delimiter must already be consumed and nl context entered.
     /// Consumes the closing delimiter and exits nl context.
