@@ -503,7 +503,7 @@ fn error_le_then_equality() {
 }
 
 // Explicit parentheses are the escape hatch: a grouped relational result may be
-// compared for equality. The chaining ban must NOT reject these -- a parsed
+// compared for equality. The chaining ban must NOT reject these: a parsed
 // Paren/group resets the "previous operator tier" tracking.
 #[test]
 fn parens_allow_relational_then_equality() {

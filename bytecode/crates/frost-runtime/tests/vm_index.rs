@@ -1,4 +1,4 @@
-//! Tests for `SoftIndexStructure` -- the `a[b]` opcode with null-on-missing semantics.
+//! Tests for `SoftIndexStructure`: the `a[b]` opcode with null-on-missing semantics.
 //! Stack: `( structure index -- result )` (structure deeper).
 //!
 //! It indexes an Array (by Int) or a Map (by primitive key).
@@ -7,7 +7,7 @@
 //!   * Map + valid key -> value, or null when the key is absent; Map + null or structured key -> error.
 //!   * Indexing a non-structure (String, Int, ...) -> error.
 //!
-//! `HardIndexMap` (`foo.bar`) is the Map-only counterpart. Stack: `( map -- value )` -- the key is a String constant read from the const pool, not a stack operand.
+//! `HardIndexMap` (`foo.bar`) is the Map-only counterpart. Stack: `( map -- value )`; the key is a String constant read from the const pool, not a stack operand.
 //! A missing key is an ERROR (an intentional deviation from the oracle's null-on-missing), and non-map operands error too (arrays are not dot-indexable).
 
 use std::sync::Arc;
@@ -217,7 +217,7 @@ fn index_into_int_is_error() {
 #[test]
 fn consumes_structure_and_index_pushes_one() {
     // Sentinel below; index op consumes both structure and index, pushes one
-    // result; Pop drops it, revealing the sentinel -- `( structure index -- r )`.
+    // result; Pop drops it, revealing the sentinel: `( structure index -- r )`.
     let out = eval(
         vec![ints(&[7, 8, 9])],
         vec![
@@ -233,7 +233,7 @@ fn consumes_structure_and_index_pushes_one() {
 }
 
 // ============================================================
-// HardIndexMap (`foo.bar`) -- Map-only, compile-time key, error on missing
+// HardIndexMap (`foo.bar`): Map-only, compile-time key, error on missing
 // ============================================================
 
 #[test]
@@ -280,7 +280,7 @@ fn hard_index_non_map_is_error() {
 
 #[test]
 fn hard_index_array_is_error() {
-    // Arrays are not dot-indexable -- the reason this opcode is Map-specific.
+    // Arrays are not dot-indexable: the reason this opcode is Map-specific.
     let err = eval(
         vec![ints(&[1, 2]), Value::from("bar")],
         vec![LoadConst(0), HardIndexMap(1)],
@@ -292,7 +292,7 @@ fn hard_index_array_is_error() {
 #[test]
 fn hard_index_consumes_only_the_map() {
     // Sentinel below; the key is from the const pool, so only the map is
-    // consumed. Pop drops the result, revealing the sentinel -- `( map -- value )`.
+    // consumed. Pop drops the result, revealing the sentinel: `( map -- value )`.
     let out = eval(
         vec![map(vec![(skey("bar"), Value::Int(1))]), Value::from("bar")],
         vec![PushInt(99), LoadConst(0), HardIndexMap(1), Pop],

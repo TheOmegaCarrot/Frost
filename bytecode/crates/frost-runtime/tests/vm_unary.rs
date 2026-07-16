@@ -1,6 +1,6 @@
 //! Tests for the unary opcodes: `LogicalNot` and `Negate`.
 //!
-//! `LogicalNot` is total -- it maps any value to a `Bool` via Frost truthiness (only `null`/`false` are falsy).
+//! `LogicalNot` is total: it maps any value to a `Bool` via Frost truthiness (only `null`/`false` are falsy).
 //! `Negate` is numeric: it wraps `Int` (matching the codebase's wrapping integer policy), negates `Float`, and is a type error for everything else.
 //!
 //! Operands without a `Push*` opcode (String/Array/Map) come from the constant table via `LoadConst`.
@@ -53,7 +53,7 @@ fn float_val(x: f64) -> Value {
 use Bytecode::{LoadConst, LogicalNot, Negate, Pop, PushFalse, PushInt, PushNull, PushTrue};
 
 // ============================================================
-// LogicalNot -- total, always yields a Bool
+// LogicalNot: total, always yields a Bool
 // ============================================================
 
 #[test]
@@ -137,7 +137,7 @@ fn logical_not_leaves_exactly_one_value() {
 }
 
 // ============================================================
-// Negate -- numeric, type error otherwise
+// Negate: numeric, type error otherwise
 // ============================================================
 
 #[test]

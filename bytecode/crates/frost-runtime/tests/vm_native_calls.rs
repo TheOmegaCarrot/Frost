@@ -1,13 +1,9 @@
-//! Happy-path tests for `Call` into a native function.
-//!
-//! Scope is LEAF natives only -- ones that read their args and return a value
-//! without calling back into the VM. Re-entrancy (`NativeCtx::invoke`) does not
-//! exist yet, so higher-order natives are out of scope, as are the error paths
-//! (arity mismatch, non-callable) which still hit `todo!()`.
+//! Happy-path tests for `Call` into a native function: leaf natives (read their
+//! args, return a value) and re-entrancy via `NativeCtx::invoke` (native ->
+//! native, native -> closure). Error paths are covered in `vm_errors.rs`.
 //!
 //! A native is seated the representative way: built with `NativeFunction::new`,
-//! wrapped in a `Value`, and injected into a top-level slot via `set_binding`.
-//! Native bodies are plain Rust, so they need no arithmetic opcodes.
+//! wrapped in a `Value`, and bound as a top-level capture.
 
 mod common;
 
@@ -143,7 +139,7 @@ fn native_variadic_receives_all_args() {
 #[test]
 fn native_call_leaves_exactly_one_value() {
     // A sentinel sits below the call. add(2, 3) consumes the function and both
-    // args and leaves exactly one result; Pop reveals the sentinel -- `( f a.. -- r )`.
+    // args and leaves exactly one result; Pop reveals the sentinel: `( f a.. -- r )`.
     let add = native("add", Arity::Exact(2), |_ctx, args| {
         Ok(Value::from(
             args[0].as_int().unwrap() + args[1].as_int().unwrap(),
@@ -198,7 +194,7 @@ fn run_native_program(
     run_with(bindings, children, code)
 }
 
-/// `apply(f, ...rest)` -- a native that invokes `f` with the rest of its args,
+/// `apply(f, ...rest)`: a native that invokes `f` with the rest of its args,
 /// stealing them. Drives `NativeCtx::invoke` for either a native or closure `f`.
 fn apply_native() -> Value {
     native("apply", Arity::AtLeast(1), |mut ctx, args| {

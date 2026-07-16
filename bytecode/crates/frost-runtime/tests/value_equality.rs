@@ -232,7 +232,7 @@ fn native_functions_compare_by_identity() {
 #[test]
 fn closures_compare_by_identity() {
     let c = a_closure();
-    // The same closure equals itself -- the arm that was missing (used to be `false`).
+    // The same closure equals itself.
     assert_eq!(Value::Closure(c.clone()), Value::Closure(c));
     // Distinct closures, even structurally identical, are never equal.
     assert_ne!(Value::Closure(a_closure()), Value::Closure(a_closure()));

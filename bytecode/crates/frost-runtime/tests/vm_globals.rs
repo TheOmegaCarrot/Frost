@@ -1,6 +1,6 @@
 //! Tests for the currently-implemented globals: the `is_*` type predicates, the
 //! `type`/`to_int`/`to_float` conversions, and the operators. Each is driven the
-//! way real code reaches a global -- `LoadGlobal` + `Call` -- so the test exercises
+//! way real code reaches a global (`LoadGlobal` + `Call`), so the test exercises
 //! the full native-call path, not just the constructor.
 //!
 //! (`call` and `try_call` are implemented too, but already covered in
@@ -191,8 +191,8 @@ fn to_float_converts_or_nulls() {
 // Stringification: to_string (compact), pretty (indented)
 //
 // `to_frost_string`/`to_pretty_string` are exhaustively covered in
-// `value_to_string.rs`; these only prove each global reaches the *right* method --
-// the compact form vs. the multi-line pretty form -- through the native-call path.
+// `value_to_string.rs`; these only prove each global reaches the *right* method
+// (the compact form vs. the multi-line pretty form) through the native-call path.
 // ============================================================
 
 #[test]
@@ -217,7 +217,7 @@ fn to_string_renders_the_compact_form() {
 
 #[test]
 fn pretty_renders_the_indented_form() {
-    // Primitives are identical to the compact form -- only structures differ.
+    // Primitives are identical to the compact form; only structures differ.
     assert_eq!(g("pretty", vec![Value::Int(42)]), Value::from("42"));
     // Structures spread across lines with four-space indentation; identifier-like
     // map keys use shorthand (no brackets or quotes), unlike the compact form.

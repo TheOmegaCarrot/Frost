@@ -1,7 +1,7 @@
 //! Correctness tests for `TailCall` into a VM closure.
 //!
 //! These verify the frame-reuse *mechanics* (arg slide, capture/slot setup,
-//! variadic collapse, and -- crucially -- that the reused frame inherits the
+//! variadic collapse, and, crucially, that the reused frame inherits the
 //! caller's return address so the callee resumes the *original* caller). They
 //! are NOT a TCO proof: at finite depth a correct reuse-the-frame TailCall and a
 //! broken push-a-frame one are observably identical (same result, same resume).
@@ -10,7 +10,7 @@
 //! needs a base case).
 //!
 //! Finite tail-call chains terminate because the last closure simply returns, so
-//! no conditional is required -- everything here uses implemented opcodes only.
+//! no conditional is required: everything here uses implemented opcodes only.
 
 mod common;
 
@@ -152,8 +152,8 @@ fn tail_call_carries_args() {
 
 #[test]
 fn call_then_tail_call_returns_to_original_caller() {
-    // f CALLS g (not a tail call); g TAIL-calls h. h must return to f -- the
-    // frame g elided -- so f resumes its post-call instructions and yields 99.
+    // f CALLS g (not a tail call); g TAIL-calls h. h must return to f (the
+    // frame g elided), so f resumes its post-call instructions and yields 99.
     let h = func(
         vec![Bytecode::Pop, Bytecode::PushInt(7)],
         Arity::Exact(0),
@@ -180,7 +180,7 @@ fn call_then_tail_call_returns_to_original_caller() {
                 num_captures: 0,
                 function: 0,
             },
-            Bytecode::Call(0), // g() -- g tail-calls h, whose result returns HERE
+            Bytecode::Call(0), // g(): g tail-calls h, whose result returns HERE
             Bytecode::Pop,     // discard h's result (7)
             Bytecode::PushInt(99),
         ],
@@ -207,7 +207,7 @@ fn call_then_tail_call_returns_to_original_caller() {
 #[test]
 fn tail_call_leaves_exactly_one_value() {
     // A sentinel sits below the top-level call. A tail-calls B (-> 7); after the
-    // call leaves exactly one result, Pop reveals the sentinel -- so the
+    // call leaves exactly one result, Pop reveals the sentinel, so the
     // tail-calling callee still honored `( f -- r )` and the top level resumed.
     let b = func(
         vec![Bytecode::Pop, Bytecode::PushInt(7)],
@@ -438,7 +438,7 @@ fn tail_called_frame_makes_normal_call() {
 // Call-in-tail-position equivalence
 // ============================================================
 //
-// A Call in tail position and a TailCall must produce the same value -- the only
+// A Call in tail position and a TailCall must produce the same value; the only
 // difference is the frame-reuse optimization. Each test runs the same closure
 // shape both ways and asserts they agree (and match the expected result).
 

@@ -22,7 +22,7 @@ fn def_local_stores_and_load_local_retrieves() {
 
 #[test]
 fn def_local_moves_off_stack() {
-    // After DefLocal, the value is no longer on the stack -- only the 1 remains.
+    // After DefLocal, the value is no longer on the stack; only the 1 remains.
     let program = fn_with_locals(
         vec![
             Bytecode::PushInt(1),

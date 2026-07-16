@@ -54,7 +54,6 @@ fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructur
         }
 
         if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
-            // unexpected eof handled by next loop
             break;
         }
     }

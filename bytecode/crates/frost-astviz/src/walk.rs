@@ -114,7 +114,7 @@ impl<'a> Walker<'a> {
         }
     }
 
-    /// A leaf with no source range -- used only where the AST genuinely carries
+    /// A leaf with no source range, used only where the AST genuinely carries
     /// no span (e.g. format-string literal segments). Rendered with a warning.
     fn no_range(&mut self, label: String) -> Node {
         Node {

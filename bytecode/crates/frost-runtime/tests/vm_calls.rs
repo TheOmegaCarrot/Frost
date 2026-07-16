@@ -1,13 +1,12 @@
 //! Happy-path tests for `Call` into a VM closure.
 //!
 //! Contract under test: a function and its arguments sit on the stack, the call
-//! consumes them, and exactly one value is left behind -- `( f a1..an -- r )`.
+//! consumes them, and exactly one value is left behind: `( f a1..an -- r )`.
 //!
 //! Closures can only be obtained via `CreateClosure` (their fields are private),
 //! so every test builds a parent function whose `child_fns[0]` is the callee and
-//! whose body creates the closure, pushes args, and calls it. Bodies use only
-//! implemented opcodes; nothing here reaches a `todo!()` (no error paths, no
-//! arithmetic).
+//! whose body creates the closure, pushes args, and calls it. Bodies stay on the
+//! happy path; error flows are covered in `vm_errors.rs`.
 //!
 //! The canonical fixed-arity callee is the identity `fn x -> x`, whose body is a
 //! minimal "-O0" prelude: move the arg into a slot, pop the function value, load
@@ -55,7 +54,7 @@ fn call_closure_returns_result() {
 #[test]
 fn call_leaves_exactly_one_value() {
     // A sentinel sits below the call. The call consumes (closure, 42) and leaves
-    // exactly one result on top; popping it reveals the sentinel -- proving
+    // exactly one result on top; popping it reveals the sentinel, proving
     // `( f a.. -- r )` and that the caller resumed to run the trailing Pop.
     let callee = func(
         vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
@@ -391,7 +390,7 @@ fn call_variadic_closure_with_capture() {
     // fn x, ...rest -> rest, with one capture.
     // Slots: 0 = capture, 1 = x (fixed), 2 = rest. The vararg collapse index
     // (base + 1 + fixed_argc) must ignore the capture (captures are not on the
-    // stack and not counted in arity) -- otherwise `rest` comes out wrong.
+    // stack and not counted in arity); otherwise `rest` comes out wrong.
     let callee = func(
         vec![
             Bytecode::DefLocal(2),  // rest array (top) -> slot 2

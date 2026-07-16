@@ -3,9 +3,7 @@
 //! The `define_globals!` invocation below is the single source of truth for the
 //! global names, their slot order (used by `LoadGlobal`), and their constructors.
 //! Each global is built by a `*_global()` constructor that lives in a topic
-//! submodule. Unimplemented ones return [`stub`]: the table still builds (so
-//! `GlobalSet::defaults()` -- and thus every `Vm`) works, but invoking one panics
-//! with a clear message until its constructor is filled in.
+//! submodule; not-yet-implemented ones return [`stub`].
 
 mod collections;
 mod debug;
@@ -36,10 +34,10 @@ use types::*;
 // list in the same order, so `names[i]` and `slots[i]` cannot drift apart.
 macro_rules! define_globals {
     ($($name:literal => $init:expr),* $(,)?) => {
-        /// The predefined global names, in slot order (an index into this list is the
-        /// `LoadGlobal` slot). This ordered list is the runtime's only globals seam for
-        /// the compiler, which reads it and builds whatever lookup structure it wants --
-        /// the globals themselves are a fixed, pure-internal set (observation only).
+        /// The predefined global names, in slot order:
+        /// a name's index in this list is its `LoadGlobal` slot.
+        /// This list is the compiler's only seam onto the globals,
+        /// which are themselves a fixed, runtime-internal set.
         pub const GLOBAL_NAMES: &[&str] = &[ $($name),* ];
 
         impl GlobalSet {

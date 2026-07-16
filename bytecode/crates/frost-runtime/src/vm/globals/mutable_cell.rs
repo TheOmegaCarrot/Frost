@@ -1,4 +1,4 @@
-//! Mutable reference cells -- Frost's only built-in mutable state.
+//! Mutable reference cells: Frost's only built-in mutable state.
 
 use std::sync::{Arc, Mutex};
 
@@ -10,7 +10,7 @@ fn forbid_cycle(value: &Value) -> Result<(), FrostError> {
             "A mutable cell may not store a Function value",
         )),
         // Opaque wraps an arbitrary host value that could itself hold a cycle, and we
-        // cannot see inside it -- reject it wholesale so the guarantee stays sound.
+        // cannot see inside it: reject it wholesale so the guarantee stays sound.
         Value::Opaque(_) => Err(FrostError::from_static(
             "A mutable cell may not store an Opaque value",
         )),

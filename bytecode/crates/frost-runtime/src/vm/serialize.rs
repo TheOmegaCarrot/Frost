@@ -1,17 +1,14 @@
 //! Versioned (de)serialization of a [`CompiledFunction`] tree.
 //!
-//! Every serialized function carries a [`FormatVersion`] marker -- a zero-sized field that
+//! Every serialized function carries a [`FormatVersion`] marker: a zero-sized field that
 //! stamps the runtime's crate version on save, and whose `Deserialize` rejects an image
 //! built by a different version. It is the first field, in the *only* `Deserialize` path, so
 //! a stale or mismatched image fails to load: even a bare `from_bytes::<CompiledFunction>`
 //! gets the check, with no bypass. (Deserialization yields an *untrusted* `CompiledFunction`
-//! regardless -- it still earns trust via `assert_trusted` or a future verifier.)
+//! regardless; it still earns trust via `assert_trusted` or a future verifier.)
 //!
-//! The constant pool serializes through [`const_pool`] as a tagged [`ConstValue`] -- the
-//! trivially-serializable subset of a `Value` -- so it round-trips through any format,
-//! including non-self-describing binary ones, unlike `Value`'s own natural serde. Functions
-//! and opaque handles never appear in a constant pool; serializing one is an error, not a
-//! panic.
+//! The constant pool serializes through [`const_pool`] as tagged [`ConstValue`]s,
+//! so it round-trips through any format, including non-self-describing binary ones.
 
 use std::sync::Arc;
 
@@ -20,11 +17,11 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{FrostError, FrostFloat, MapKey, Value};
 
-/// The runtime version stamped onto -- and required by -- a serialized image.
+/// The runtime version stamped onto (and required by) a serialized image.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// A zero-sized [`CompiledFunction`] field that stamps the runtime version on serialize and
-/// rejects a mismatch on deserialize. Carries no runtime data.
+/// A zero-sized [`CompiledFunction`](crate::CompiledFunction) field that stamps the runtime
+/// version on serialize and rejects a mismatch on deserialize. Carries no runtime data.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct FormatVersion;
 
@@ -51,10 +48,10 @@ impl<'de> Deserialize<'de> for FormatVersion {
 // ConstValue: the trivially-serializable subset of a Value
 // ============================================================
 
-// A constant-pool value, tagged so it round-trips through any format (including
-// non-self-describing binary ones -- unlike `Value`'s own natural, self-describing serde).
-// Functions and opaque handles are excluded: they never appear in a constant pool, and
-// converting one is an error rather than a panic.
+// A constant-pool value: the trivially-serializable subset of a `Value`, tagged so it
+// round-trips through non-self-describing formats (which `Value`'s own self-describing
+// serde cannot). Functions and opaque handles are excluded: they never appear in a
+// constant pool, and converting one is an error rather than a panic.
 #[derive(Serialize, Deserialize)]
 enum ConstValue {
     Null,

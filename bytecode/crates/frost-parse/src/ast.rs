@@ -24,7 +24,7 @@ impl From<Range<usize>> for SourceSpan {
 // -- Spanned --
 
 
-/// Pairs an AST payload with its source span. 
+/// Pairs an AST payload with its source span.
 /// Every node's span encloses the union of its children's spans.
 #[derive(Clone, Debug, Serialize)]
 pub struct Spanned<T> {
@@ -240,7 +240,7 @@ pub enum MatchPattern {
         name: Spanned<Binding>,
         type_constraint: Option<Spanned<TypeConstraint>>,
     },
-    /// `(expr)` or a literal -- compare by value.
+    /// `(expr)` or a literal: compare by value.
     Value(Spanned<Expr>),
     /// `[p1, p2, ...rest]`
     Array {

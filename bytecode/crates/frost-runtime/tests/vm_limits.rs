@@ -1,8 +1,8 @@
 //! Tests for runtime resource limits (`VmRuntimeConfiguration`): the `fuel` call
 //! budget and the `max_call_depth` cap.
 //!
-//! The load-bearing property is that **fuel exhaustion is uncatchable** -- a native
-//! that swallows the error cannot resume Frost execution -- which is what makes the
+//! The load-bearing property is that **fuel exhaustion is uncatchable** (a native
+//! that swallows the error cannot resume Frost execution), which is what makes the
 //! call budget a real termination guarantee for untrusted scripts.
 
 use std::collections::BTreeMap;
@@ -99,7 +99,7 @@ fn catcher() -> Value {
 }
 
 /// `recurse(self, n)`: invokes `self(self, n - 1)` until `n <= 0`, growing one native
-/// frame per level -- an unbounded (non-tail) recursion knob for the depth cap.
+/// frame per level; an unbounded (non-tail) recursion knob for the depth cap.
 fn recurse() -> Value {
     Value::native("recurse", Arity::Exact(2), |mut ctx, args| {
         let n = args[1].as_int().expect("recurse depth must be an Int");
@@ -145,7 +145,7 @@ fn the_call_past_the_budget_fails() {
 // Fuel exhaustion is uncatchable (the sandbox guarantee)
 // ============================================================
 
-// `catcher(target)` -- call the catcher (capture 0) with the target (capture 1).
+// `catcher(target)`: call the catcher (capture 0) with the target (capture 1).
 fn catch_call() -> Vec<Bytecode> {
     vec![Pop, LoadLocal(0), LoadLocal(1), Call(1)]
 }
@@ -205,7 +205,7 @@ fn fuel_exhaustion_carries_the_full_backtrace() {
 // Call depth
 // ============================================================
 
-// `recurse(recurse, n)` -- recurse (capture 0) is both the callee and its own first arg.
+// `recurse(recurse, n)`: recurse (capture 0) is both the callee and its own first arg.
 fn recurse_to(n: i64) -> Vec<Bytecode> {
     vec![Pop, LoadLocal(0), LoadLocal(0), PushInt(n), Call(2)]
 }

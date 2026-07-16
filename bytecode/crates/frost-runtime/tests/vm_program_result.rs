@@ -39,7 +39,7 @@ fn get_export_hides_non_exported_local() {
 
 #[test]
 fn get_export_returns_exported_null_as_some() {
-    // An exported binding defined as null reads back as Some(Null), not None --
+    // An exported binding defined as null reads back as Some(Null), not None:
     // a present null is distinct from an absent name.
     let program = fn_with_locals(
         vec![Bytecode::PushNull, Bytecode::DefLocal(0)],
@@ -87,7 +87,7 @@ fn reset_recycles_into_a_runnable_vm() {
 #[test]
 fn reset_replaces_exports_with_the_new_program() {
     // Program A exports x = 100. After reset, Program B reuses the Vm and the same
-    // slot but exports its own x = 200 -- the result reflects B's run, not A's.
+    // slot but exports its own x = 200; the result reflects B's run, not A's.
     let result_a = run_fn(fn_with_locals(
         vec![Bytecode::PushInt(100), Bytecode::DefLocal(0)],
         vec![entry("x", true)],
@@ -130,7 +130,7 @@ fn builder_accepts_configuration_and_builds_a_runnable_vm() {
 
 #[test]
 fn a_failed_run_surfaces_its_error_and_recycles_the_vm() {
-    // Program A divides by zero -- a failed run. Its `RunError` carries the error and
+    // Program A divides by zero: a failed run. Its `RunError` carries the error and
     // still owns the warm Vm, which `reset` recycles to run a fresh program B.
     let failed = Vm::factory()
         .build(closure(

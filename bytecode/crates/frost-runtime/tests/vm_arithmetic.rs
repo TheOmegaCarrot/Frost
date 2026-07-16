@@ -4,8 +4,8 @@
 //! (numeric promotion, overflow wrapping, string/array/map overloads, every type error) are covered at the value level in `binary_operators.rs`.
 //! What only the VM can get wrong lives here:
 //!   * each opcode delegates to the *right* operator (a representative case),
-//!   * operand order -- rhs is the top of the stack, lhs below (decisive for the non-commutative `-`, `/`, `%`),
-//!   * stack effect -- two operands consumed, one result pushed,
+//!   * operand order: rhs is the top of the stack, lhs below (decisive for the non-commutative `-`, `/`, `%`),
+//!   * stack effect: two operands consumed, one result pushed,
 //!   * errors `?`-propagate out through the opcode.
 //!
 //! Operands without a `Push*` opcode (String/Array/Map) come from the constant
@@ -300,7 +300,7 @@ fn modulus_on_floats_is_type_error() {
 
 #[test]
 fn arithmetic_leaves_exactly_one_value() {
-    // Sentinel below; after the op and a Pop, the sentinel is the tail -- proving
+    // Sentinel below; after the op and a Pop, the sentinel is the tail, proving
     // the opcode consumed two operands and pushed exactly one result.
     assert_eq!(
         val(vec![PushInt(99), PushInt(2), PushInt(3), Add, Pop]),

@@ -1,4 +1,4 @@
-//! Tests for the `call` global -- the hand-rolled `Between(1, 2)` closure that
+//! Tests for the `call` global: the hand-rolled `Between(1, 2)` closure that
 //! normalizes its args to an array, type-checks, and hands off to `DynTailCall`.
 //!
 //! `call(f)`        -> f()
@@ -238,7 +238,7 @@ fn call_leaves_a_balanced_stack() {
 
 #[test]
 fn call_non_array_second_arg_is_type_error() {
-    // call(add, 5) -- the second arg must be an Array.
+    // call(add, 5): the second arg must be an Array.
     let err = run_main(
         vec![("f", add())],
         vec![LoadGlobal(call_slot()), LoadLocal(0), PushInt(5), Call(2)],
@@ -249,7 +249,7 @@ fn call_non_array_second_arg_is_type_error() {
 
 #[test]
 fn call_non_function_first_arg_is_type_error() {
-    // call(5, []) -- the first arg must be callable. The error now comes from
+    // call(5, []): the first arg must be callable. The error comes from
     // DynTailCall's `not_callable`, which names the offending type.
     let err = run_main(
         vec![],
@@ -262,7 +262,7 @@ fn call_non_function_first_arg_is_type_error() {
 
 #[test]
 fn call_with_no_args_is_arity_error() {
-    // call() -- below the Between(1, 2) lower bound.
+    // call(): below the Between(1, 2) lower bound.
     let err = run_main(vec![], vec![LoadGlobal(call_slot()), Call(0)]).unwrap_err();
     assert!(
         err.message().contains("between 1 and 2"),
@@ -273,7 +273,7 @@ fn call_with_no_args_is_arity_error() {
 
 #[test]
 fn call_with_too_many_args_is_arity_error() {
-    // call(add, 1, 2) -- above the Between(1, 2) upper bound (caught before the body).
+    // call(add, 1, 2): above the Between(1, 2) upper bound (caught before the body).
     let err = run_main(
         vec![("f", add())],
         vec![
@@ -299,7 +299,7 @@ fn call_with_too_many_args_is_arity_error() {
 #[test]
 fn call_drives_a_recursive_loop() {
     // loop(self, n) -> if n <= 0: n else: call(self, [self, n - 1])
-    // The recursive step tail-calls `call`, which tail-calls `self` -- two TCO hops
+    // The recursive step tail-calls `call`, which tail-calls `self`: two TCO hops
     // per iteration. A deep count completing proves the loop runs through `call`
     // without growing without bound.
     let loop_fn = func(

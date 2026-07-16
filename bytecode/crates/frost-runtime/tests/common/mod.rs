@@ -22,7 +22,7 @@ pub fn global_slot(name: &str) -> usize {
 }
 
 /// A nameless compiled function with no locals, constants, or child functions.
-/// Arity `Exact(0)` -- suitable for a top-level / thunk.
+/// Arity `Exact(0)`: suitable for a top-level / thunk.
 pub fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
         version: FormatVersion,
@@ -108,7 +108,7 @@ pub fn run_fn(program: Arc<CompiledFunction>) -> ProgramResult {
 
 /// Build a runnable top-level [`Closure`] (no captures) from `code` plus a name
 /// table, splicing in the leading fn-value `Pop`.
-/// For tests that need the closure itself -- e.g. `reset`, or a direct `Vm::new`.
+/// For tests that need the closure itself (e.g. `reset`, or building a `Vm` directly).
 pub fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure> {
     let mut body = vec![Bytecode::Pop];
     body.extend(code);

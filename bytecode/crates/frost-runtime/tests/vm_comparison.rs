@@ -384,7 +384,7 @@ fn ordering_array_incomparable_element_blames_element_types() {
 #[test]
 fn ordering_array_short_circuits_before_incomparable_element() {
     // [1, 'hello'] < [2, 3.14]: decided at element 0 (1 < 2), so the incomparable
-    // second elements are never compared -- result is true, no error.
+    // second elements are never compared: result is true, no error.
     let lhs = Value::Array(FrostArray::from(vec![Value::Int(1), str_val("hello")]));
     let rhs = Value::Array(FrostArray::from(vec![
         Value::Int(2),
@@ -448,7 +448,7 @@ fn ordering_maps_is_type_error() {
 
 #[test]
 fn ordering_mismatched_types_is_type_error() {
-    // Int vs String, and Int vs Null -- both unorderable.
+    // Int vs String, and Int vs Null: both unorderable.
     let err = eval(
         vec![str_val("a")],
         vec![PushInt(1), LoadConst(0), CompareLessThan],
@@ -474,7 +474,7 @@ fn ordering_mismatched_types_is_type_error() {
 
 #[test]
 fn comparison_leaves_exactly_one_value() {
-    // Sentinel below; after the compare and a Pop, the sentinel is the tail --
+    // Sentinel below; after the compare and a Pop, the sentinel is the tail,
     // proving the opcode consumed two operands and pushed exactly one result.
     assert_eq!(
         val(vec![

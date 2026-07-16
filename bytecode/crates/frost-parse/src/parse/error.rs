@@ -36,8 +36,8 @@ impl Diagnostic {
         }
     }
 
-    /// A diagnostic with a headline message and a single labeled span -- the
-    /// common case for a localized parser error.
+    /// A diagnostic with a headline message and a single labeled span:
+    /// the common case for a localized parser error.
     pub(crate) fn at(
         message: impl Into<String>,
         span: SourceSpan,
@@ -73,9 +73,9 @@ impl Diagnostic {
     }
 }
 
-/// A parser error: the structured [`Diagnostic`] plus its rendering against the
-/// source. The diagnostic is retained for programmatic inspection; the render
-/// is produced once, at construction, for `Display`.
+/// A parser error: a structured diagnostic (message plus labeled spans) and its
+/// rendering against the source. The diagnostic is retained for programmatic
+/// inspection; the render is produced once, at construction, for `Display`.
 #[derive(Clone, Debug)]
 pub struct ParseError {
     diagnostic: Diagnostic,

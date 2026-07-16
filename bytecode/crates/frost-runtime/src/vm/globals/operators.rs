@@ -1,8 +1,8 @@
 //! Arithmetic and comparison operators as first-class functions.
 //!
 //! Operators sidestep the `Param` type-check (`Value::native`, not `checked_native`):
-//! their validity is a *relation* between the two args -- `Int + Int` is fine but
-//! `Int + String` is not, and `String + String` / `Array + Array` are also fine --
+//! their validity is a *relation* between the two args (`Int + Int` is fine but
+//! `Int + String` is not, and `String + String` / `Array + Array` are also fine),
 //! which a per-parameter spec can't express. The underlying `Value` method raises
 //! the type error instead.
 

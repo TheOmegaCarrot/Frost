@@ -7,7 +7,7 @@ use crate::{
     Arity, Bytecode, Closure, CompiledFunction, FormatVersion, FrostArray, MapKey, NativeCtx, Value,
 };
 
-/// `call(f)` / `call(f, args)` -- invoke `f`, spreading the elements of `args` (or
+/// `call(f)` / `call(f, args)`: invoke `f`, spreading the elements of `args` (or
 /// no args) as a tail call. A hand-rolled `Between(1, 2)` closure over `DynTailCall`.
 pub(super) fn call_global() -> Value {
     Value::Closure(Arc::new(Closure {
@@ -46,19 +46,20 @@ pub(super) fn call_global() -> Value {
     }))
 }
 
-/// Builds the `try_call` global -- Frost's catch primitive, surfaced as a native.
+/// Builds the `try_call` global: Frost's catch primitive, surfaced as a native.
 pub(super) fn try_call_global() -> Value {
     // At least the function to call; any further args are passed to it.
     Value::native("try_call", Arity::AtLeast(1), try_call)
 }
 
-/// `try_call(f, ...args)` -- invoke `f` with `args` and reify the outcome into a result map rather than letting an error propagate:
+/// `try_call(f, ...args)`: invoke `f` with `args` and reify the outcome into a result map
+/// rather than letting an error propagate:
 ///   success: `{ ok: true,  value: <result> }`
 ///   failure: `{ ok: false, error: <message>, trace: [<frame names>] }`
 ///
-/// This is "the native that declines to `?`": Frost's error model is uniform `?` propagation through native frames,
-/// and `try_call` is the one place that catches the unwinding error instead of re-raising it.
-/// By the time `invoke` returns Err, the boundary has already restored the Vm, so building the map here is safe.
+/// This is the one native that catches an unwinding error instead of re-raising it.
+/// By the time `invoke` returns Err, the boundary has already restored the Vm,
+/// so building the map here is safe.
 fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
     // Arity::AtLeast(1) guarantees args[0] exists.
     let function = args[0].clone();

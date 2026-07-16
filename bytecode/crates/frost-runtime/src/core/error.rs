@@ -18,7 +18,7 @@ pub struct FrostError {
 /// An error's payload: a UTF-8 message (the common case) *xor* an arbitrary thrown value.
 #[derive(Clone, Debug)]
 enum ErrorPayload {
-    /// A UTF-8 message -- what a Rust-side error, or a Frost `error("...")`, produces.
+    /// A UTF-8 message: what a Rust-side error, or a Frost `error("...")`, produces.
     /// A `Cow` so the common static-literal case (`"Division by zero"`) needs no allocation.
     Message(Cow<'static, str>),
     /// An arbitrary thrown Frost value.
@@ -70,7 +70,7 @@ impl FrostError {
         }
     }
 
-    /// The payload as a Frost value -- what `try_call` hands the catcher. A plain message
+    /// The payload as a Frost value: what `try_call` hands the catcher. A plain message
     /// becomes a `String`.
     pub fn into_value(self) -> Value {
         match self.payload {

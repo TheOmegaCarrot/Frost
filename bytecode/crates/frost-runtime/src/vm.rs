@@ -8,10 +8,8 @@ pub use globals::GLOBAL_NAMES;
 pub use params::{Param, ParamSpec};
 pub use serialize::FormatVersion;
 
-// White-box tests for the one unwind invariant not observable through the public
-// API: native-arg-pool buffer recycling. (Operand-stack and frame restoration are
-// covered black-box in tests/vm_errors.rs.) Kept in their own file -- a child
-// module still reaches this module's private `Vm` internals.
+// White-box tests for native-arg-pool recycling (see the module doc);
+// as a child module it reaches this module's private `Vm` internals.
 #[cfg(test)]
 mod arg_pool_tests;
 
@@ -90,7 +88,7 @@ pub enum Bytecode {
     Call(usize),
     TailCall(usize),
 
-    // Dynamic-arity call: ( f arg_arry -- r )
+    // Dynamic-arity call: ( f arg_array -- r )
     // Purpose-built for the `call` builtin
     DynTailCall,
 
@@ -176,17 +174,17 @@ pub struct VmRuntimeConfiguration {
 
     /// Call budget ("fuel"): execution fails once this many function calls have been made.
     /// `None` leaves execution unmetered.
-    /// This call budget does count tail calls.
-    /// Because iteration in Frost is achieved with higher-order functions and/or tail-call
-    /// recursion, a Frost script often involves more function calls than comparable code in a more
-    /// procedural language like Lua. Consider setting this value higher than your intuition may
-    /// lead you.
     ///
-    /// Frost bytecode has no backward jumps, so each function body runs a bounded number
-    /// of instructions -- bounding the number of *calls* therefore bounds total execution.
-    /// This is what catches unbounded recursion, tail recursion included (which is
-    /// depth-flat, so the depth cap never fires on it). A native function that loops forever
-    /// without returning or re-entering the Vm is outside this guarantee.
+    /// Fuel is the limit that catches runaway execution: all iteration in Frost is built
+    /// from function calls (higher-order functions and tail recursion, which fuel does count),
+    /// so bounding calls bounds total execution.
+    /// That includes unbounded tail recursion, which is depth-flat and therefore never trips
+    /// [`max_call_depth`](Self::max_call_depth).
+    /// A native function that loops forever without returning or re-entering the Vm is not covered.
+    ///
+    /// Because iteration is function calls, a Frost script makes many more calls than
+    /// comparable code in a more procedural language like Lua.
+    /// Consider setting this value higher than your intuition may lead you.
     pub fuel: Option<NonZeroUsize>,
 }
 
@@ -223,8 +221,8 @@ impl VmFactory {
     }
 }
 
-// A fixed, pure-internal set of predefined globals shared by every `Vm` (observation
-// only; never host-configurable). The compiler's seam onto it is [`GLOBAL_NAMES`].
+// The fixed set of predefined globals, shared by every `Vm`; never host-configurable.
+// The compiler's seam onto it is `GLOBAL_NAMES`.
 #[derive(Debug, Clone)]
 pub(crate) struct GlobalSet(Vec<Value>);
 
@@ -257,7 +255,7 @@ pub struct CompiledFunction {
 
 impl CompiledFunction {
     /// The capture names this function expects.
-    /// Tells a host which names to include in the map passed to [`close`](Self::close).
+    /// Tells a host which names to include in the map passed to [`close`](TrustedProgram::close).
     pub fn capture_names(&self) -> impl Iterator<Item = &str> {
         self.name_table[..self.num_captures]
             .iter()
@@ -267,15 +265,13 @@ impl CompiledFunction {
     /// Vouch that this compiled-function tree is well-formed, yielding a runnable [`TrustedProgram`].
     ///
     /// The VM only runs trusted bytecode: [`Closure`] (hence [`Vm`]) construction goes
-    /// through [`TrustedProgram`], so this is the gate. The Frost compiler's output is trusted by
-    /// construction; a host loading bytecode from elsewhere (deserialized, cached) uses this
-    /// to vouch for it -- e.g. it controls the source and only guards tampering/corruption
-    /// with a version check.
+    /// through [`TrustedProgram`], so this is the gate.
+    /// The Frost compiler's output is always well-formed;
+    /// call this on deserialized or cached bytecode only when you control its source.
     ///
-    /// This is an assertion, not a check: malformed bytecode *panics* at runtime. It is
-    /// never memory-unsafe (the VM has no `unsafe`), so this is a safe contract rather than
-    /// an `unsafe` one -- but a real obligation. A future verifier will offer the *checked*
-    /// path (`untrusted -> Result<TrustedProgram, _>`); prefer it for bytecode you did not author.
+    /// This is an assertion, not a check: running malformed bytecode *panics*.
+    /// It is never memory-unsafe, so this is a safe function, but the obligation is real.
+    /// A future verifier will offer a *checked* path; prefer it for bytecode you did not author.
     pub fn assert_trusted(self: Arc<Self>) -> TrustedProgram {
         TrustedProgram(self)
     }
@@ -285,21 +281,13 @@ impl CompiledFunction {
 /// runnable. Mint one via [`CompiledFunction::assert_trusted`]; bind its captures with
 /// [`close`](Self::close) to obtain a [`Closure`].
 ///
-/// "Trusted" means the bytecode upholds the Vm's internal invariants -- *not* that the program is
-/// safe or well-behaved. Sandboxing is separate (see [`VmRuntimeConfiguration`]).
-///
-/// Note that this does not imply trust that a program does what it's intended to do, or is
-/// "guaranteed safe" in all senses of "safe", but rather trust that the bytecode within upholds
-/// the necessary invariants of the Vm. A script that spins forever doing nothing is "Trusted" in
-/// the sense that the compiler emitted correct bytecode that never, for example, tries to pop from
-/// an empty working stack, or jump out-of-bounds.
-/// A `TrustedProgram` could do absolutely anything it has the capability
-/// to do within the configuration of the [`Vm`], up to importable code, call stack limits, function call
-/// limits, etc. A malicious script can still be "trusted" after compilation as it does uphold
-/// internal Vm invariants, so sandboxing is necessary when running untrusted scripts in
-/// security-conscious contexts -- and useful even for trusted-authored ones, where a stray infinite
-/// loop becomes a recoverable [`RunError`] (via a [`fuel`](VmRuntimeConfiguration::fuel) limit)
-/// rather than a process hang.
+/// "Trusted" means the bytecode upholds the Vm's internal invariants
+/// (never popping an empty stack, never jumping out-of-bounds),
+/// *not* that the program is benign, correct, or even terminates.
+/// A malicious or runaway script is still "trusted" in this sense, so running untrusted *scripts*
+/// calls for sandboxing, which is separate: see [`VmRuntimeConfiguration`].
+/// Its limits help even for trusted-authored scripts, turning a stray infinite loop into a
+/// recoverable [`RunError`] (via [`fuel`](VmRuntimeConfiguration::fuel)) rather than a process hang.
 pub struct TrustedProgram(Arc<CompiledFunction>);
 
 impl TrustedProgram {
@@ -315,7 +303,7 @@ impl TrustedProgram {
         for entry in &function.name_table[..function.num_captures] {
             match entry.name.as_str() {
                 // Frost-internal capture: runtime-supplied, not overridable.
-                // (Always false for now -- direct execution; the future `import`
+                // (Always false for now: direct execution; the future `import`
                 // path will need to supply `true`.)
                 "imported" => seated.push(Value::Bool(false)),
                 // `import` is intentionally not wired yet (registry NYI), so it
@@ -344,7 +332,7 @@ impl TrustedProgram {
     }
 }
 
-/// One or more required captures were absent from the map passed to [`CompiledFunction::close`];
+/// One or more required captures were absent from the map passed to [`TrustedProgram::close`];
 /// reports every missing name, not just the first.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MissingCaptures {
@@ -411,6 +399,7 @@ enum TailFlow {
     FellThrough,
 }
 
+/// A native function's handle back into the running [`Vm`], passed to every native call.
 #[derive(Debug)]
 pub struct NativeCtx<'a> {
     pub(crate) vm: &'a mut Vm,
@@ -418,12 +407,16 @@ pub struct NativeCtx<'a> {
 }
 
 impl NativeCtx<'_> {
+    /// Call a Frost function value (closure or native) from inside a native function.
+    ///
+    /// Returns the callee's result, or the error it raised; calling a non-function value is an error.
+    /// The Vm is restored before an `Err` is returned, so the caller may catch it and continue.
     pub fn invoke(
         &mut self,
         function: &Value,
         args: impl IntoIterator<Item = Value>,
     ) -> FrostResult {
-        // Once the run is fatally aborting, refuse to do any more Frost work -- this is
+        // Once the run is fatally aborting, refuse to do any more Frost work; this is
         // what stops a native that caught the abort and tried to re-enter the Vm.
         if let Some(err) = self.vm.abort_error() {
             return Err(err);
@@ -445,8 +438,8 @@ impl NativeCtx<'_> {
                 let argc = self.vm.stack.len() - base - 1;
 
                 // This native boundary is where an unwinding error stops.
-                // On any error path below, restore the Vm to its pre-call shape before returning Err --
-                // truncate the operand stack back to `base` and discard the Frost frames left above our entry floor --
+                // On any error path below, restore the Vm to its pre-call shape before returning Err
+                // (truncate the operand stack back to `base`, discard the Frost frames left above our entry floor),
                 // so that a catching native (e.g. `try_call`) resumes on a clean Vm.
                 if let Err(err) =
                     Vm::check_arity(closure.function.arity, argc, &closure.function.name)
@@ -564,8 +557,8 @@ impl NativeFunction {
     /// Type-check `args` against `params`, reporting a mismatch as
     /// `Function {name} requires {types} as argument {N}{ (name)}, got {Type}`.
     /// A guard to call before trusting argument types in a native body. Arity is
-    /// assumed already validated -- the VM checks a native's `Arity` before its body
-    /// runs -- so only the present arguments' types are checked.
+    /// assumed already validated (the VM checks a native's `Arity` before its body
+    /// runs), so only the present arguments' types are checked.
     pub fn check_args(&self, args: &[Value], params: &[Param]) -> Result<(), FrostError> {
         for (i, param) in params.iter().enumerate() {
             let Some(arg) = args.get(i) else { break };
@@ -599,9 +592,9 @@ impl Value {
     ///
     /// When called from Frost, `function` runs with a [`NativeCtx`] (for calling back
     /// into the interpreter) and the call's arguments; whatever it returns becomes the
-    /// result. `arity` declares how many arguments the function accepts -- calling it
-    /// with the wrong number produces a Frost error. The arguments are yours to consume
-    /// -- steal one with [`Value::take`] rather than cloning (see [`NativeFn`]).
+    /// result. `arity` declares how many arguments the function accepts; calling it
+    /// with the wrong number produces a Frost error. The arguments are yours to
+    /// consume: steal one with [`Value::take`] rather than cloning (see [`NativeFn`]).
     ///
     /// Reach for this when the function validates its own arguments: it accepts
     /// flexible types, or which types are valid depends on more than one argument at
@@ -617,7 +610,7 @@ impl Value {
     ///
     /// `params` describes each parameter's accepted types and whether it is optional
     /// (see [`Param`]). The function's arity is derived from it, and every argument is
-    /// validated before `body` runs -- so `body` can assume its arguments already match
+    /// validated before `body` runs, so `body` can assume its arguments already match
     /// the spec. A bad argument raises a Frost error with an appropriate error message,
     /// before `body` is ever executed.
     ///
@@ -640,7 +633,7 @@ impl Value {
 pub struct Closure {
     function: Arc<CompiledFunction>,
 
-    // If nonempty, these are the captured values, occupying slots 0..n.
+    // Captured values, seated into slots 0..num_captures. Empty when nothing is captured.
     captures: Vec<Value>,
 }
 
@@ -676,7 +669,7 @@ impl Closure {
 //
 // VM function path:
 // The VM peeks down (top - 3) and grabs the function,
-// and pushed a new StackFrame whose base_idx is a1.
+// and pushes a new StackFrame whose base_idx is a1.
 // The VM starts interpreting the target function.
 // The function has a prelude that moves from the stack to slots corresponding to params.
 // After it's finished, the function leaves exactly one value on the stack,
@@ -684,9 +677,9 @@ impl Closure {
 //
 // Native function path:
 // The VM peeks down (top - 3) and grabs the function,
-// the args are _moved_ to the first available NativeArgFrame,
-// and the native function is invoked, given a &mut[Value] to the NativeArgFrame.
-// A call increments native_arg_frames.next, and decrements it upon returning.
+// the args are _moved_ into a buffer taken from `native_arg_pool`,
+// and the native function is invoked with a &mut [Value] over that buffer.
+// When the call returns, the buffer is cleared and returned to the pool.
 
 // ============================================================
 // Vm Methods
@@ -739,7 +732,7 @@ impl ProgramResult {
 /// The surface common to both outcomes of a run (success or failure): each still owns the
 /// warm [`Vm`], so either can be metered or recycled.
 pub trait RunOutcome {
-    /// The number of function calls the program made -- the fuel it consumed.
+    /// The number of function calls the program made: the fuel it consumed.
     /// Reported whether or not a [`fuel`](VmRuntimeConfiguration::fuel) limit was set.
     fn fuel_consumed(&self) -> usize;
 
@@ -758,8 +751,8 @@ impl RunOutcome for ProgramResult {
     }
 }
 
-/// A failed run. Holds the raised [`FrostError`] and the warm [`Vm`], which -- unlike a
-/// [`ProgramResult`] -- exposes no program state (`tail`/`exports`), since a failed run
+/// A failed run. Holds the raised [`FrostError`] and the warm [`Vm`], which (unlike a
+/// [`ProgramResult`]) exposes no program state (`tail`/`exports`), since a failed run
 /// leaves the Vm indeterminate. Recover the error with [`into_error`](Self::into_error),
 /// or recycle the Vm via [`RunOutcome::reset`].
 pub struct RunError {
@@ -799,11 +792,7 @@ impl std::fmt::Debug for RunError {
 impl Vm {
     /// A default-configured [`VmFactory`].
     ///
-    /// The closure carries its already-bound captures (see [`CompiledFunction::close`]).
-    /// Any referenced [`CompiledFunction`] must be well-formed, and running malformed
-    /// bytecode may panic; only the Frost compiler emits guaranteed-well-formed bytecode.
-    ///
-    /// A Vm runs a single program; reuse a warm Vm via [`ProgramResult::reset`], or stamp
+    /// A Vm runs a single program; reuse a warm Vm via [`RunOutcome::reset`], or stamp
     /// out fresh identically-configured Vms by reusing one factory.
     pub fn factory() -> VmFactory {
         VmFactory::default()
@@ -922,8 +911,8 @@ impl Vm {
                         let operand = self.stack_pop();
                         let result = match operand {
                             Value::Int(i) => Value::from(i.wrapping_neg()),
-                            // Unwrap is safe here because I'm just negating a float that's already
-                            // proven not to be NaN or Inf
+                            // Negating a float that is already non-NaN and finite
+                            // cannot produce NaN or Infinity, so the unwrap cannot fail.
                             Value::Float(f) => Value::Float(FrostFloat::new(-f.get()).unwrap()),
                             _ => {
                                 return Err(FrostError::from_string(format!(
@@ -934,9 +923,8 @@ impl Vm {
                         };
                         self.stack.push(result);
                     }
-                    // Jump(n) (and conditional variants) skip n instructions.
-                    // The `pc += 1` is intended to still be hit.
-                    // Jump(0) is just a funny way to spell "Nop".
+                    // `pc += n` composes with the shared `pc += 1` below:
+                    // the offset counts skipped instructions, not an absolute target.
                     Bytecode::Jump(n) => {
                         pc += n;
                     }
@@ -989,7 +977,7 @@ impl Vm {
                     }
                     // Spread the args array on top, then tail-call the function beneath it.
                     // Hand-rolled spreaders (`call`, future combinators) pass user values
-                    // here, so a non-Array args operand is a recoverable error -- the
+                    // here, so a non-Array args operand is a recoverable error; the
                     // callee being non-callable is likewise caught by `tail_call`.
                     Bytecode::DynTailCall => {
                         let args = self.stack.last().expect("FROST STACK UNDERFLOW");
@@ -1092,8 +1080,7 @@ impl Vm {
 
                         match map.get(&key) {
                             Some(result) => self.stack.push(result.clone()),
-                            // TODO: improve error message with "did you mean ...?" hint
-                            // (Error message sucks for now, and that's ok for now)
+                            // TODO: improve error message with a "did you mean ...?" hint
                             None => {
                                 return Err(FrostError::from_string(format!(
                                     "Map has no value at key '{}'",
@@ -1139,7 +1126,7 @@ impl Vm {
     /// Run the top-level closure with no arguments.
     /// Equivalent to [`run_with_args`](Self::run_with_args) with an empty list.
     // Both variants carry the warm Vm by design (that is the whole point), so the
-    // `Result` is large regardless of the Err -- boxing would only add an allocation.
+    // `Result` is large regardless of the Err; boxing would only add an allocation.
     #[allow(clippy::result_large_err)]
     pub fn run(self) -> Result<ProgramResult, RunError> {
         self.run_with_args(std::iter::empty())
@@ -1189,14 +1176,14 @@ impl Vm {
     /// API (`tail`, `exports`) then relies on, so we catch it at the boundary in debug builds.
     #[cfg(debug_assertions)]
     fn debug_verify_terminal_state(&self) {
-        // The operand stack holds at most the tail value -- nothing for a program of
+        // The operand stack holds at most the tail value: nothing for a program of
         // only `def`/`export def` statements (whose tail is null).
         debug_assert!(
             self.stack.len() <= 1,
             "a completed program must leave at most one value on the stack, found {}",
             self.stack.len()
         );
-        // Exactly the top-level frame remains -- every call has returned, and the
+        // Exactly the top-level frame remains: every call has returned, and the
         // bottom frame is preserved rather than popped.
         debug_assert_eq!(
             self.stack_frames.len(),
@@ -1219,7 +1206,7 @@ impl Vm {
             Arc::ptr_eq(&base.this_fn, &self.top_level.function),
             "the top-level frame must belong to the top-level closure"
         );
-        // Every exported binding was assigned -- the invariant `exports`/`get_export` trust.
+        // Every exported binding was assigned: the invariant `exports`/`get_export` trust.
         for (entry, slot) in base.this_fn.name_table.iter().zip(&base.local_slots) {
             debug_assert!(
                 !entry.exported || slot.is_some(),
@@ -1250,7 +1237,7 @@ impl Vm {
 
     /// The `Add` opcode.
     /// `Array + Array` and `Map + Map` are the only overloads where the borrowing `Value::add` would clone every element/entry,
-    /// so for those we *steal* the operands' storage -- reusing it in place when the `Arc` is uniquely owned (a frequent case for stack temporaries), cloning only when shared.
+    /// so for those we *steal* the operands' storage: reusing it in place when the `Arc` is uniquely owned (a frequent case for stack temporaries), cloning only when shared.
     /// Numeric addition, string concat, and every type error have nothing worth stealing and fall back to the shared `binary_op` path.
     fn do_add(&mut self) -> Result<(), FrostError> {
         let n = self.stack.len();
@@ -1284,8 +1271,8 @@ impl Vm {
         Ok(())
     }
 
-    /// Append the names of the `VmFrame`s in `stack_frames[floor..]` to `err`'s backtrace
-    /// -- innermost (top of the frame stack) first -- then discard those frames.
+    /// Append the names of the `VmFrame`s in `stack_frames[floor..]` to `err`'s backtrace,
+    /// innermost (top of the frame stack) first, then discard those frames.
     ///
     /// This is the only place a Frost frame's name reaches the backtrace: `?` propagation has no hook,
     /// so the trace is built here as the abandoned frames are dropped.
@@ -1364,7 +1351,7 @@ impl Vm {
         if let Some(budget) = self.config.fuel
             && self.fuel_used > budget.get()
         {
-            // Exhaustion is unrecoverable, not an ordinary error -- latch it.
+            // Exhaustion is unrecoverable, not an ordinary error: latch it.
             return Err(self.abort_with(Self::fuel_exhausted(budget.get())));
         }
         Ok(())
@@ -1498,7 +1485,7 @@ impl Vm {
                 // does not destroy the frame the error path still needs.
                 Self::check_arity(closure.function.arity, argc, &closure.function.name)?;
 
-                // A tail call reuses the current frame -- except the bottom frame,
+                // A tail call reuses the current frame, except the bottom frame,
                 // which is preserved (see the doc comment).
                 if self.stack_frames.len() == 1 {
                     self.push_closure_frame(&closure, base, return_address)?;
@@ -1582,7 +1569,7 @@ impl Vm {
 
         // A native that ran and failed contributes its own name to the backtrace.
         // Its only call-stack presence is a nameless `NativeFrame` marker,
-        // so the frame-walk in `unwind_frames` cannot record it -- do it here.
+        // so the frame-walk in `unwind_frames` cannot record it: do it here.
         result.map_err(|mut err| {
             err.backtrace.push(native.name.to_string());
             err

@@ -1,6 +1,6 @@
 //! Tests for the control-flow opcodes: `Jump`, `JumpIfTrue`, `JumpIfFalse`.
 //!
-//! Convention (forward-only): a taken jump does `pc += n`, and the dispatch loop's trailing `pc += 1` supplies the step --
+//! Convention (forward-only): a taken jump does `pc += n`, and the dispatch loop's trailing `pc += 1` supplies the step,
 //! so the effective advance is `n + 1`, i.e. `Jump(n)` skips the next `n` instructions and `Jump(0)` is a Nop.
 //! `JumpIf*` peek the condition (it is NOT consumed) and fall through (advance 1) when not taken.
 //! Truthiness follows Frost: only `null`/`false` are falsy.
@@ -153,11 +153,11 @@ fn jump_if_does_not_consume_condition() {
 ///
 /// ```text
 /// 0  <cond>
-/// 1  JumpIfFalse(3)   -- taken -> index 5 (else); skips 2,3,4
-/// 2  Pop              -- drop cond (then-branch)
+/// 1  JumpIfFalse(3)   ; taken -> index 5 (else); skips 2,3,4
+/// 2  Pop              ; drop cond (then-branch)
 /// 3  PushInt(100)
-/// 4  Jump(2)          -- skip 5,6 -> end
-/// 5  Pop              -- drop cond (else-branch)
+/// 4  Jump(2)          ; skip 5,6 -> end
+/// 5  Pop              ; drop cond (else-branch)
 /// 6  PushInt(200)
 /// ```
 fn if_else(cond: Bytecode) -> Value {

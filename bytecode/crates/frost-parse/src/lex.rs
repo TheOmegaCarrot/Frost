@@ -46,7 +46,7 @@ pub enum Token<'src> {
     #[token("with")]
     KwWith,
 
-    // -- Punctiation (excludes operators) --
+    // -- Punctuation (excludes operators) --
     #[token(":")]
     Colon,
 

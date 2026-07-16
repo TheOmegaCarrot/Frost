@@ -5,7 +5,7 @@
 //!     Keys must be non-null primitives, so it is fallible; duplicate keys keep the last value (right wins).
 //!   * `ExplodeArray` is the inverse of `MakeArray`: it consumes one Array and pushes its elements (the back ends up on top).
 //!     Its operand is compiler-guaranteed to be an Array (emitted only in compiled destructuring / pattern matching),
-//!     so a non-array is an IMPOSSIBLE state -- it panics and is not tested here.
+//!     so a non-array is an IMPOSSIBLE state: it panics and is not tested here.
 //!
 //! Operands without a `Push*` opcode (String/Array/Map) come from the constant
 //! table via `LoadConst`.
@@ -111,7 +111,7 @@ fn make_array_consumes_exactly_n() {
 
 #[test]
 fn make_array_nests() {
-    // [[1]] -- an array whose only element is itself an array.
+    // [[1]]: an array whose only element is itself an array.
     assert_eq!(
         val(vec![PushInt(1), MakeArray(1), MakeArray(1)]),
         array(vec![array(vec![Value::Int(1)])])
@@ -129,7 +129,7 @@ fn make_map_empty() {
 
 #[test]
 fn make_map_single_pair() {
-    // {a: 1} -- key is deeper, value on top.
+    // {a: 1}: key is deeper, value on top.
     let out = eval(
         vec![Value::from("a")],
         vec![LoadConst(0), PushInt(1), MakeMap(1)],
@@ -140,7 +140,7 @@ fn make_map_single_pair() {
 
 #[test]
 fn make_map_does_not_swap_key_and_value() {
-    // Distinguishes {a: 1} from {1: "a"} -- proves key (deeper) and value (top)
+    // Distinguishes {a: 1} from {1: "a"}: proves key (deeper) and value (top)
     // are not transposed.
     let out = eval(
         vec![Value::from("a")],
@@ -190,7 +190,7 @@ fn make_map_duplicate_key_keeps_last() {
 
 #[test]
 fn make_map_accepts_int_key() {
-    // {1: "one"} -- Int is a valid (primitive) key.
+    // {1: "one"}: Int is a valid (primitive) key.
     let out = eval(
         vec![Value::from("one")],
         vec![PushInt(1), LoadConst(0), MakeMap(1)],
@@ -278,7 +278,7 @@ fn explode_puts_array_back_on_top() {
 
 #[test]
 fn explode_then_make_array_round_trips() {
-    // ExplodeArray followed by MakeArray(n) is the identity -- proves element
+    // ExplodeArray followed by MakeArray(n) is the identity: proves element
     // order is preserved. (Clone path: the constant table still references it.)
     let original = array(vec![Value::Int(1), Value::Int(2), Value::Int(3)]);
     let out = eval(
@@ -292,7 +292,7 @@ fn explode_then_make_array_round_trips() {
 #[test]
 fn explode_consumes_array_and_pushes_each_element() {
     // Sentinel below; explode a 2-element array, re-collect exactly 2, then Pop
-    // the rebuilt array -- the sentinel proves explode pushed exactly two values.
+    // the rebuilt array; the sentinel proves explode pushed exactly two values.
     let out = eval(
         vec![array(vec![Value::Int(1), Value::Int(2)])],
         vec![PushInt(99), LoadConst(0), ExplodeArray, MakeArray(2), Pop],
@@ -331,7 +331,7 @@ fn explode_mixed_types_round_trips() {
 #[test]
 fn explode_is_shallow() {
     // Exploding [[1], [2]] pushes the two inner arrays as single values, not their
-    // contents -- re-collecting yields the original nested structure.
+    // contents; re-collecting yields the original nested structure.
     let original = array(vec![array(vec![Value::Int(1)]), array(vec![Value::Int(2)])]);
     let out = eval(
         vec![original.clone()],

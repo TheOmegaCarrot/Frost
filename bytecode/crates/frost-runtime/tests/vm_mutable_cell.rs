@@ -1,4 +1,4 @@
-//! Tests for the `mutable_cell` global -- Frost's only built-in mutable state.
+//! Tests for the `mutable_cell` global: Frost's only built-in mutable state.
 //!
 //! `mutable_cell()` / `mutable_cell(initial)` returns a Map of two closures over a
 //! shared `Arc<Mutex<Value>>`:
@@ -7,7 +7,7 @@
 //! Functions may not be stored (directly or nested inside a structure).
 //!
 //! Each scenario runs real bytecode: it calls the global to build the cell, then
-//! indexes the returned Map (`HardIndexMap`) and `Call`s the closures -- the same
+//! indexes the returned Map (`HardIndexMap`) and `Call`s the closures: the same
 //! path compiled `cell.get()` / `cell.exchange(x)` would take.
 
 use std::collections::BTreeMap;
@@ -65,7 +65,7 @@ fn run(
         .map(|r| r.tail().clone())
 }
 
-/// `mutable_cell(initial?)` -- returns the cell Map, or the raised error.
+/// `mutable_cell(initial?)`: returns the cell Map, or the raised error.
 fn new_cell(initial: Option<Value>) -> Result<Value, FrostError> {
     let mut body = vec![LoadGlobal(slot("mutable_cell"))];
     let (caps, argc) = match initial {
@@ -84,7 +84,7 @@ fn cell(initial: Option<Value>) -> Value {
     new_cell(initial).unwrap()
 }
 
-/// Invoke `cell.<method>(arg?)` -- indexes the Map for the closure and calls it.
+/// Invoke `cell.<method>(arg?)`: indexes the Map for the closure and calls it.
 /// `get` passes `None`; `exchange` passes `Some(value)`.
 fn invoke(cell: &Value, method: &'static str, arg: Option<Value>) -> Result<Value, FrostError> {
     let mut caps = vec![("cell", cell.clone())];
@@ -111,7 +111,7 @@ fn exchange(cell: &Value, value: Value) -> Value {
     invoke(cell, "exchange", Some(value)).unwrap()
 }
 
-/// A throwaway Function value -- the one thing a cell may not hold.
+/// A throwaway Function value, which a cell may not hold.
 fn a_function() -> Value {
     Value::NativeFunction(Arc::new(NativeFunction::new(
         "noop",
@@ -120,7 +120,7 @@ fn a_function() -> Value {
     )))
 }
 
-/// An opaque host value -- also forbidden, since a cell can't see inside it to rule out a cycle.
+/// An opaque host value, also forbidden since a cell can't see inside it to rule out a cycle.
 fn an_opaque() -> Value {
     Value::Opaque(Arc::new(42i64))
 }
@@ -217,7 +217,7 @@ fn rejects_a_function_via_exchange() {
 
 #[test]
 fn rejects_a_function_nested_in_an_array() {
-    // forbid_cycle recurses into structures -- a function buried in an array is caught.
+    // forbid_cycle recurses into structures: a function buried in an array is caught.
     assert!(new_cell(Some(arr(vec![Value::Int(1), a_function()]))).is_err());
 }
 

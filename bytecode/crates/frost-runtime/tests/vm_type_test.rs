@@ -1,4 +1,4 @@
-//! Tests for the `TypeTest(FrostTypeCategory)` opcode: `( v -- b )` -- consume a value, push a `Bool` of whether it fits the category.
+//! Tests for the `TypeTest(FrostTypeCategory)` opcode, `( v -- b )`: consume a value, push a `Bool` of whether it fits the category.
 //!
 //! The category *logic* is exhaustively covered at the value level in `value_type_category.rs`;
 //! here we only test the opcode wiring: that it delegates to `fits_category` with the right category,
@@ -138,7 +138,7 @@ fn nonnull_false_on_null_true_on_int() {
 #[test]
 fn consumes_operand_and_pushes_one_bool() {
     // Sentinel below; TypeTest consumes the Int and pushes a single Bool, then Pop
-    // drops the Bool, revealing the sentinel -- proving `( v -- b )`.
+    // drops the Bool, revealing the sentinel, proving `( v -- b )`.
     assert_eq!(
         val(vec![
             PushInt(99),

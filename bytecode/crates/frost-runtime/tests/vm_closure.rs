@@ -99,7 +99,7 @@ fn close_missing_capture_is_error() {
 fn close_reports_every_missing_capture_in_slot_order() {
     // Three captures with names deliberately NOT in alphabetical order, only the
     // middle one provided: the error must list the absent names in SLOT order
-    // (["z", "y"]), which differs from sorted order (["y", "z"]) -- so a stray
+    // (["z", "y"]), which differs from sorted order (["y", "z"]), so a stray
     // sort of the missing list would be caught.
     let f = compiled(
         vec![Pop, LoadLocal(0)],

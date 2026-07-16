@@ -1,10 +1,10 @@
-//! Tests for `Value::frost_type`, `FrostType::name`, and `Value::fits_category`
-//! -- the type-classification core that `type_name` and the `is_*` predicates now delegate to.
+//! Tests for `Value::frost_type`, `FrostType::name`, and `Value::fits_category`:
+//! the type-classification core that `type_name` and the `is_*` predicates delegate to.
 //!
-//! The existing `value_type_checks` suite covers the `is_*` predicates over the common variants;
+//! The `value_type_checks` suite covers the `is_*` predicates over the common variants;
 //! this file covers what it doesn't: the `frost_type` / `name` / `fits_category` surface directly,
-//! the `Function` (native *and* closure) and `Opaque` variants, and every `FrostTypeCategory`
-//! -- with concrete hand-authored expectations (not re-derived from the implementation), so an inverted category would be caught.
+//! the `Function` (native *and* closure) and `Opaque` variants, and every `FrostTypeCategory`,
+//! with concrete hand-authored expectations (not re-derived from the implementation), so an inverted category would be caught.
 
 mod common;
 
@@ -41,7 +41,7 @@ fn native() -> Value {
     )))
 }
 
-/// A real `Closure` value -- only obtainable by running `CreateClosure`.
+/// A real `Closure` value, only obtainable by running `CreateClosure`.
 fn closure() -> Value {
     let child = common::func(
         vec![Bytecode::Pop, Bytecode::PushInt(1)],
@@ -96,7 +96,7 @@ fn frost_type_classifies_every_variant() {
 
 #[test]
 fn both_function_variants_are_function() {
-    // The behavior the old is_function missed: a closure is a Function too.
+    // A closure is a Function, not just a native function.
     assert_eq!(native().frost_type(), Ft::Function);
     assert_eq!(closure().frost_type(), Ft::Function);
     assert!(native().is_function());
@@ -131,7 +131,7 @@ fn type_name_delegates_to_frost_type_name() {
 }
 
 // ============================================================
-// fits_category -- Exact
+// fits_category: Exact
 // ============================================================
 
 #[test]
@@ -156,7 +156,7 @@ fn exact_rejects_foreign_type() {
 }
 
 // ============================================================
-// fits_category -- categories (concrete expectations)
+// fits_category: categories (concrete expectations)
 // ============================================================
 
 /// Assert each variant's membership in `category` against a hand-written truth.

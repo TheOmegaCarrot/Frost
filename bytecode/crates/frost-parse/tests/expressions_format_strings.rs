@@ -406,7 +406,7 @@ fn error_points_at_format_string() {
 #[test]
 fn interpolation_error_points_into_the_string() {
     // The failure (running out of input mid-expression) sits inside the
-    // interpolation, past the opening `$'` at offset 0 -- not at a
+    // interpolation, past the opening `$'` at offset 0, not at a
     // substring-relative offset near the start.
     let err = frost_parse::parse_program("test.frst", "$'${x +}'").unwrap_err();
     assert!(

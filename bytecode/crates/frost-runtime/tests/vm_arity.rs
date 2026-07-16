@@ -1,4 +1,4 @@
-//! Tests for `Arity::Between` -- the bounded (min..=max) arity.
+//! Tests for `Arity::Between`: the bounded (min..=max) arity.
 //!
 //! Scope is the arity *check* as enforced for native functions (which receive a
 //! slice, so bounded arity needs no slot seating). The closure seating path
@@ -102,8 +102,8 @@ fn between_above_upper_bound_is_arity_error() {
 
 #[test]
 fn between_equal_bounds_behaves_like_exact() {
-    // A degenerate range Between(2, 2) accepts exactly 2 -- the bounds are inclusive
-    // on both ends -- and rejects 1 and 3.
+    // A degenerate range Between(2, 2) accepts exactly 2 (the bounds are inclusive
+    // on both ends) and rejects 1 and 3.
     assert_eq!(
         call_native(counting(Arity::Between(2, 2)), 2)
             .unwrap()
@@ -122,7 +122,7 @@ fn between_equal_bounds_behaves_like_exact() {
 /// A hand-rolled `Between(0, 1)` closure that consumes the pushed `argc` to tell an
 /// omitted optional from one explicitly passed as `null`: 0 args -> `Int(-1)`
 /// sentinel; 1 arg -> the argument itself (so an explicit `null` stays `null`).
-/// This distinction is only possible *because* `argc` is on the stack -- the slot
+/// This distinction is only possible *because* `argc` is on the stack: the slot
 /// value alone cannot tell "absent" from "null".
 fn omitted_vs_present_probe() -> Arc<CompiledFunction> {
     use Bytecode::*;
@@ -173,7 +173,7 @@ fn between_closure_distinguishes_omitted_from_explicit_null() {
 
 #[test]
 fn between_closure_seating_works_through_call() {
-    // The same probe invoked via `Call` from a wrapper (base != 0) -- proves the
+    // The same probe invoked via `Call` from a wrapper (base != 0); proves the
     // argc-push is correct on the re-entrant call path, not only at the top level.
     let probe_val = Value::Closure(omitted_vs_present_probe().assert_trusted().into_closure().unwrap());
     let call_probe = |arg_pushes: Vec<Bytecode>, argc: usize| -> Value {

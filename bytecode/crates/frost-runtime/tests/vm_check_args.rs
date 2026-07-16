@@ -131,7 +131,7 @@ fn arity_rejects_a_required_param_after_an_optional() {
     let params = [
         Param::of(&[FrostType::Int]),
         Param::of(&[FrostType::Int]).optional(),
-        Param::of(&[FrostType::Int]), // required after optional -- nonsensical
+        Param::of(&[FrostType::Int]), // required after optional: nonsensical
     ];
     let _ = params.arity();
 }

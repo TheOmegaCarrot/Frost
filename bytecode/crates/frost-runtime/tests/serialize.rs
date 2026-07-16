@@ -1,7 +1,7 @@
 //! Versioned (de)serialization of a `CompiledFunction`.
 //!
 //! Round-trips through both a self-describing format (JSON) and a non-self-describing
-//! binary one (postcard -- the case that forces the tagged `ConstValue` representation),
+//! binary one (postcard, the case that forces the tagged `ConstValue` representation),
 //! confirms the version gate rejects a mismatched image, and confirms a function-valued
 //! constant cannot be serialized (an error, never a panic).
 
@@ -54,7 +54,7 @@ fn sample() -> CompiledFunction {
 
 fn assert_matches(original: &CompiledFunction, restored: &CompiledFunction) {
     assert_eq!(restored.name, original.name);
-    // `Value: PartialEq` -- covers the whole `ConstValue` round-trip, including the Int-keyed map.
+    // `Value: PartialEq` covers the whole `ConstValue` round-trip, including the Int-keyed map.
     assert_eq!(restored.constants, original.constants);
     assert_eq!(restored.arity, original.arity);
     assert_eq!(restored.num_captures, original.num_captures);

@@ -1,4 +1,4 @@
-//! astviz -- interactive AST visualizer for Frost (Rust parser).
+//! astviz: interactive AST visualizer for Frost (Rust parser).
 //!
 //! Parses a `.frst` file and emits a self-contained HTML file: source on the
 //! left, AST tree on the right, with bidirectional highlighting and source

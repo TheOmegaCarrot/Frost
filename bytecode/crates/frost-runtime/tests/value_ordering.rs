@@ -1,4 +1,4 @@
-//! Ordering tests for `Value::compare` -- the fallible, three-way comparison that backs `<`/`<=`/`>`/`>=`.
+//! Ordering tests for `Value::compare`: the fallible, three-way comparison that backs `<`/`<=`/`>`/`>=`.
 //! Comparable operands yield an `Ordering`; non-orderable ones (mismatched or inherently unordered types) are a type error, not a silent `None`.
 //! Equality lives separately on `PartialEq` (see `value_equality.rs`).
 
@@ -143,7 +143,7 @@ fn empty_array_less_than_nonempty() {
 #[test]
 fn array_incomparable_element_is_error() {
     // [1, "x"] vs [1, 2]: the second elements (String vs Int) are not orderable,
-    // so comparison fails -- and the error blames the element types, not Array.
+    // so comparison fails, and the error blames the element types, not Array.
     let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from("x")]));
     let b = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
     let err = a.compare(&b).unwrap_err();
@@ -162,7 +162,7 @@ fn array_incomparable_element_is_error() {
 #[test]
 fn array_incomparable_element_short_circuited_away() {
     // [1, "x"] vs [2, 3]: decided at index 0 (1 < 2), so the incomparable second
-    // elements are never reached -- no error.
+    // elements are never reached: no error.
     let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from("x")]));
     let b = Value::from(FrostArray::new(&[Value::from(2i64), Value::from(3i64)]));
     assert_eq!(a.compare(&b).unwrap(), Ordering::Less);

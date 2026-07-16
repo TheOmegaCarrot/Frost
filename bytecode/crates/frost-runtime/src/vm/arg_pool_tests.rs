@@ -2,7 +2,7 @@
 //! the public API: recycling of `native_arg_pool` buffers on the error path.
 //!
 //! Recycling a buffer versus allocating a fresh one produces identical results,
-//! so a black-box test cannot distinguish them -- only a direct check of the
+//! so a black-box test cannot distinguish them; only a direct check of the
 //! private pool can. (Operand-stack and frame-stack restoration *are* observable
 //! and are covered black-box in `tests/vm_errors.rs`.) As a child of `vm`, this
 //! module can read the private `Vm` internals directly.
@@ -60,7 +60,7 @@ fn fail_fn() -> Arc<CompiledFunction> {
     )
 }
 
-/// `apply(f, ...rest)` -- a re-entrant native that invokes `f` and propagates.
+/// `apply(f, ...rest)`: a re-entrant native that invokes `f` and propagates.
 fn apply_native() -> Value {
     Value::NativeFunction(Arc::new(NativeFunction::new(
         "apply",
@@ -103,7 +103,7 @@ fn catch_recycles_native_arg_buffer() {
 #[test]
 fn catch_recycles_every_intermediate_buffer() {
     // try_call(apply, fail): two natives each check out a buffer (try_call's and apply's).
-    // Both must be recycled across the caught error -- one through `run_native`'s Ok arm (try_call), one through its Err arm (apply).
+    // Both must be recycled across the caught error: one through `run_native`'s Ok arm (try_call), one through its Err arm (apply).
     let program = func(
         "main",
         vec![

@@ -618,8 +618,7 @@ fn comment_then_newline_before_dot_continues() {
 
 #[test]
 fn newline_before_dot_inside_delimiters() {
-    // Inside delimiters a dot after a newline continues the inner expression
-    // (previously a parse error -- the newline broke the chain).
+    // Inside delimiters a dot after a newline continues the inner expression.
     let expr = parse_expr("(a\n.foo)");
     assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key == "foo"));
 }

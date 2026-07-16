@@ -144,7 +144,7 @@ fn split_format_segments(
             }
 
             b'$' => {
-                // Bare $ not followed by { -- literal
+                // A bare $ not followed by { is a literal
                 literal_buf.push(b'$');
                 i += 1;
             }
@@ -172,8 +172,8 @@ fn parse_interpolation(
 ) -> ParseResult<Spanned<Expr>> {
     // The sub-context lexes `src` with `base_offset`, so every diagnostic it
     // produces already carries whole-source spans. We propagate those inner
-    // diagnostics directly -- adding an outer "in this format String" label for
-    // context -- rather than flattening them to text, so their labels survive
+    // diagnostics directly (adding an outer "in this format String" label for
+    // context) rather than flattening them to text, so their labels survive
     // and render against the real source.
     let context = |d: Diagnostic| d.with_label(span.clone().into(), "in this format String");
 

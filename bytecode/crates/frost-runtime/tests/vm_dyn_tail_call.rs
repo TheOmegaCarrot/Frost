@@ -1,8 +1,8 @@
 //! Tests for the `DynTailCall` opcode: spread the args array on top of the stack
-//! and tail-call the function beneath it -- `( f arr -- r )`.
+//! and tail-call the function beneath it: `( f arr -- r )`.
 //!
-//! These drive the opcode directly via hand-authored bytecode; the `call` builtin
-//! that will sit on top of it is not implemented yet. The frame-reuse / TCO path is
+//! These drive the opcode directly via hand-authored bytecode; the `call` global
+//! that sits on top of it is covered in `vm_call.rs`. The frame-reuse / TCO path is
 //! shared with `TailCall` (covered in `vm_tail_calls`), so these focus on the part
 //! unique to `DynTailCall`: exploding the array and dispatching on the count.
 

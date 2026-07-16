@@ -2,15 +2,14 @@
 //!
 //! The model under test:
 //!   * Opcodes and native calls `?`-propagate errors straight out of the current `execute_function` activation.
-//!   * The boundary that entered the activation cleans up: `Vm::run` at the top level (no `NativeFrame` -- the error reaches the host),
+//!   * The boundary that entered the activation cleans up: `Vm::run` at the top level (no `NativeFrame`: the error reaches the host),
 //!     or `NativeCtx::invoke` at a native re-entry (frames + operand stack are truncated back to the entry floor before Err is returned).
 //!   * The backtrace is accumulated as abandoned frames are discarded (`unwind_frames`), plus a native's own name in `run_native`.
-//!   * `try_call` is the one native that declines to `?` -- it catches and reifies the outcome into a result map.
+//!   * `try_call` is the one native that declines to `?`: it catches and reifies the outcome into a result map.
 //!
-//! Error sources used here are all self-contained opcodes/dispatch outcomes:
-//! division/modulus by zero, an `add` type error, calling a non-function, an
-//! arity mismatch, plus a couple of native fixtures (`boom`, `apply`). Comparison,
-//! jumps, and data-structure opcodes are still `todo!()` and are never emitted.
+//! Error sources used here: division/modulus by zero, an `add` type error,
+//! calling a non-function, an arity mismatch, `ProduceError`, plus a couple of
+//! native fixtures (`boom`, `apply`).
 
 mod common;
 
@@ -98,7 +97,7 @@ fn run_with(
     Vm::factory().build(closure).unwrap().run().map_err(|e| e.into_error())
 }
 
-/// `apply(f, ...rest)` -- a re-entrant native that invokes `f` with the rest of
+/// `apply(f, ...rest)`: a re-entrant native that invokes `f` with the rest of
 /// its args and *propagates* any error (it does not catch). Used to exercise an
 /// error flowing through a native frame.
 fn apply_native() -> Value {
@@ -187,7 +186,7 @@ fn top_level_modulus_by_zero() {
 
 #[test]
 fn top_level_type_error() {
-    // 1 + null -- incompatible operand types.
+    // 1 + null: incompatible operand types.
     let program = named(
         "main",
         vec![Bytecode::PushInt(1), Bytecode::PushNull, Bytecode::Add],
@@ -316,7 +315,7 @@ fn try_call_success_wraps_value() {
     let map = expect_map(result.tail());
     assert_eq!(map.get_str("ok"), Some(&Value::Bool(true)));
     assert_eq!(map.get_str("value"), Some(&Value::Int(42)));
-    // Exactly { ok, value } -- no error/trace on success.
+    // Exactly { ok, value }: no error/trace on success.
     assert_eq!(map.len(), 2);
     assert!(map.get_str("error").is_none());
     assert!(map.get_str("trace").is_none());
@@ -388,7 +387,7 @@ fn try_call_catches_division_by_zero() {
 
 #[test]
 fn try_call_catches_non_function() {
-    // try_call(42) -- the catchee is not callable.
+    // try_call(42): the catchee is not callable.
     let program = named(
         "main",
         vec![
@@ -419,7 +418,7 @@ fn try_call_catches_non_function() {
 #[test]
 fn try_call_surfaces_a_non_string_thrown_value() {
     // A function raises a non-string value (an Int) via `ProduceError`; `try_call` must
-    // surface it as that exact Value -- proving `FrostError` carried the arbitrary payload
+    // surface it as that exact Value, proving `FrostError` carried the arbitrary payload
     // through rather than stringifying it.
     let raiser = named(
         "raiser",
@@ -453,7 +452,7 @@ fn try_call_surfaces_a_non_string_thrown_value() {
 
 #[test]
 fn try_call_catches_arity_mismatch() {
-    // try_call(identity) with no further args -- identity wants 1.
+    // try_call(identity) with no further args; identity wants 1.
     let identity = named(
         "identity",
         vec![Bytecode::DefLocal(0), Bytecode::Pop, Bytecode::LoadLocal(0)],
@@ -625,7 +624,7 @@ fn handler_nested_in_repropagating_native_is_innermost_catcher() {
             Bytecode::Pop,
             Bytecode::LoadGlobal(try_call_slot()),
             closure(0),        // fail (c's child)
-            Bytecode::Call(1), // try_call(fail) -- caught here, returns the map
+            Bytecode::Call(1), // try_call(fail): caught here, returns the map
         ],
         Arity::Exact(0),
         vec![],
@@ -642,7 +641,7 @@ fn handler_nested_in_repropagating_native_is_innermost_catcher() {
         vec![entry("apply", false)],
         vec![c],
     );
-    // `.unwrap()`: the error did NOT escape -- the inner try_call caught it.
+    // `.unwrap()`: the error did NOT escape; the inner try_call caught it.
     let result = run_with(program, vec![("apply", apply_native())]).unwrap();
     let map = expect_map(result.tail());
     assert_eq!(map.get_str("ok"), Some(&Value::Bool(false)));
@@ -659,7 +658,7 @@ fn error_repropagates_through_two_native_frames() {
         "main",
         vec![
             Bytecode::LoadLocal(0), // apply (outer)
-            Bytecode::LoadLocal(0), // apply (inner -- outer's first arg)
+            Bytecode::LoadLocal(0), // apply (inner: outer's first arg)
             closure(0),             // fail
             Bytecode::Call(2),      // apply(apply, fail)
         ],
@@ -754,7 +753,7 @@ fn frame_stack_restored_after_catch() {
         vec![
             Bytecode::LoadGlobal(try_call_slot()),
             closure(0),        // fail
-            Bytecode::Call(1), // try_call(fail) -- catches
+            Bytecode::Call(1), // try_call(fail): catches
             Bytecode::Pop,     // discard result map
             closure(1),        // identity
             Bytecode::PushInt(7),
@@ -783,12 +782,12 @@ fn native_arg_pool_reused_after_catch() {
         vec![
             Bytecode::LoadGlobal(try_call_slot()),
             closure(0),
-            Bytecode::Call(1), // try_call(fail) -- catches, recycles a buffer
+            Bytecode::Call(1), // try_call(fail): catches, recycles a buffer
             Bytecode::Pop,
             Bytecode::LoadLocal(0), // add
             Bytecode::PushInt(2),
             Bytecode::PushInt(3),
-            Bytecode::Call(2), // add(2, 3) -- reuses a pooled buffer
+            Bytecode::Call(2), // add(2, 3): reuses a pooled buffer
         ],
         Arity::Exact(0),
         vec![entry("add", false)],
@@ -845,7 +844,7 @@ fn nested_try_call_inner_catch_is_independent() {
     let map = expect_map(result.tail());
     assert_eq!(map.get_str("ok"), Some(&Value::Bool(false)));
     assert_eq!(map.get_str("error"), Some(&Value::from("Division by zero")));
-    // Only mid's frame -- inner_fail's error was caught and never propagated here.
+    // Only mid's frame; inner_fail's error was caught and never propagated here.
     assert_eq!(trace_of(map), vec!["mid"]);
 }
 
@@ -957,7 +956,7 @@ fn tail_call_chain_error_trace_is_lossy_under_tco() {
 }
 
 // ============================================================
-// ProduceError: ( e -- ! ) -- unconditional raise, same flow as other errors
+// ProduceError: ( e -- ! ); an unconditional raise, same flow as other errors
 // ============================================================
 
 /// A capture-less child closure whose body is `error(message)`:
@@ -1037,9 +1036,9 @@ fn try_call_catches_produce_error() {
 
 #[test]
 fn produce_error_with_non_string_value_still_raises() {
-    // Any operand raises (stack effect `( e -- ! )`). The exact message for a
-    // non-string payload is an intentional placeholder (pending Value-carrying
-    // errors), so assert the flow -- it raises and reaches the host -- not the text.
+    // Any operand raises (stack effect `( e -- ! )`). This asserts only the flow
+    // (it raises and reaches the host); how the payload surfaces is covered by
+    // `try_call_surfaces_a_non_string_thrown_value`.
     let program = Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "main".to_string(),
