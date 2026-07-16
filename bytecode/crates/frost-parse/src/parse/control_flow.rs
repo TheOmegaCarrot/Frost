@@ -1,14 +1,14 @@
-use crate::ast::{Expr, ExprKind, StatementKind};
+use crate::ast::{Expr, Spanned, Statement};
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
 use crate::parse::statements::{StatementContext, parse_statements};
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
-pub fn parse_if(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_if(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     parse_if_or_elif(ctx, Token::KwIf)
 }
 
-fn parse_if_or_elif(ctx: &mut ParseCtx, keyword: Token) -> ParseResult<Expr> {
+fn parse_if_or_elif(ctx: &mut ParseCtx, keyword: Token) -> ParseResult<Spanned<Expr>> {
     let start = ctx.expect(keyword)?.span.start;
 
     let condition = parse_expression(ctx)?;
@@ -19,17 +19,17 @@ fn parse_if_or_elif(ctx: &mut ParseCtx, keyword: Token) -> ParseResult<Expr> {
 
     let end = alternate.as_ref().unwrap_or(&consequent).span.end;
 
-    Ok(Expr {
-        span: (start..end).into(),
-        kind: ExprKind::If {
+    Ok(Spanned::new(
+        Expr::If {
             condition: Box::new(condition),
             consequent: Box::new(consequent),
             alternate: alternate.map(Box::new),
         },
-    })
+        (start..end).into(),
+    ))
 }
 
-fn parse_tail(ctx: &mut ParseCtx) -> ParseResult<Option<Expr>> {
+fn parse_tail(ctx: &mut ParseCtx) -> ParseResult<Option<Spanned<Expr>>> {
     let checkpoint = ctx.checkpoint();
     ctx.skip_nl();
 
@@ -53,7 +53,7 @@ fn parse_tail(ctx: &mut ParseCtx) -> ParseResult<Option<Expr>> {
     }
 }
 
-pub fn parse_do(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_do(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     let start = ctx.expect(Token::KwDo)?.span.start;
     ctx.expect(Token::OpenBrace)?;
 
@@ -69,9 +69,9 @@ pub fn parse_do(ctx: &mut ParseCtx) -> ParseResult<Expr> {
         ));
     };
 
-    let value = match last.kind {
-        StatementKind::Expr(expr) => expr,
-        StatementKind::Def { .. } => {
+    let value = match last.node {
+        Statement::Expr(expr) => expr,
+        Statement::Def { .. } => {
             return Err(Diagnostic::at(
                 "do block must end with an expression, not a definition",
                 last.span,
@@ -80,11 +80,11 @@ pub fn parse_do(ctx: &mut ParseCtx) -> ParseResult<Expr> {
         }
     };
 
-    Ok(Expr {
-        span: (start..close_end).into(),
-        kind: ExprKind::Do {
+    Ok(Spanned::new(
+        Expr::Do {
             body,
             value: Box::new(value),
         },
-    })
+        (start..close_end).into(),
+    ))
 }

@@ -9,9 +9,9 @@ use helpers::*;
 #[test]
 fn call_no_args() {
     let expr = parse_expr("f()");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+    match &expr.node {
+        Expr::Call { callee, args } => {
+            assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "f"));
             assert!(args.is_empty());
         }
         other => panic!("expected Call, got {other:?}"),
@@ -21,9 +21,9 @@ fn call_no_args() {
 #[test]
 fn call_one_arg() {
     let expr = parse_expr("f(1)");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+    match &expr.node {
+        Expr::Call { callee, args } => {
+            assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "f"));
             assert_eq!(args.len(), 1);
             assert!(is_int(&args[0], 1));
         }
@@ -34,9 +34,9 @@ fn call_one_arg() {
 #[test]
 fn call_multiple_args() {
     let expr = parse_expr("f(1, 2, 3)");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+    match &expr.node {
+        Expr::Call { callee, args } => {
+            assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "f"));
             assert_eq!(args.len(), 3);
             assert!(is_int(&args[0], 1));
             assert!(is_int(&args[1], 2));
@@ -49,9 +49,9 @@ fn call_multiple_args() {
 #[test]
 fn call_trailing_comma() {
     let expr = parse_expr("f(1, 2,)");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+    match &expr.node {
+        Expr::Call { callee, args } => {
+            assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "f"));
             assert_eq!(args.len(), 2);
         }
         other => panic!("expected Call, got {other:?}"),
@@ -61,8 +61,8 @@ fn call_trailing_comma() {
 #[test]
 fn call_with_expression_args() {
     let expr = parse_expr("f(1 + 2, 3 * 4)");
-    match &expr.kind {
-        ExprKind::Call { args, .. } => {
+    match &expr.node {
+        Expr::Call { args, .. } => {
             assert_eq!(args.len(), 2);
             assert!(is_binop(&args[0]).is_some());
             assert!(is_binop(&args[1]).is_some());
@@ -74,8 +74,8 @@ fn call_with_expression_args() {
 #[test]
 fn call_with_newlines() {
     let expr = parse_expr("f(\n1,\n2\n)");
-    match &expr.kind {
-        ExprKind::Call { args, .. } => {
+    match &expr.node {
+        Expr::Call { args, .. } => {
             assert_eq!(args.len(), 2);
         }
         other => panic!("expected Call, got {other:?}"),
@@ -86,16 +86,16 @@ fn call_with_newlines() {
 fn chained_calls() {
     // f(1)(2) == Call(Call(f, [1]), [2])
     let expr = parse_expr("f(1)(2)");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
+    match &expr.node {
+        Expr::Call { callee, args } => {
             assert_eq!(args.len(), 1);
             assert!(is_int(&args[0], 2));
-            match &callee.kind {
-                ExprKind::Call {
+            match &callee.node {
+                Expr::Call {
                     callee: inner,
                     args: inner_args,
                 } => {
-                    assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "f"));
+                    assert!(matches!(&inner.node, Expr::NameLookup(n) if n == "f"));
                     assert_eq!(inner_args.len(), 1);
                     assert!(is_int(&inner_args[0], 1));
                 }
@@ -117,9 +117,9 @@ fn call_newline_not_call() {
 #[test]
 fn index_literal() {
     let expr = parse_expr("a[0]");
-    match &expr.kind {
-        ExprKind::SoftIndex { target, key } => {
-            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+    match &expr.node {
+        Expr::SoftIndex { target, key } => {
+            assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
             assert!(is_int(key, 0));
         }
         other => panic!("expected Index, got {other:?}"),
@@ -129,9 +129,9 @@ fn index_literal() {
 #[test]
 fn index_expression() {
     let expr = parse_expr("a[1 + 2]");
-    match &expr.kind {
-        ExprKind::SoftIndex { target, key } => {
-            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+    match &expr.node {
+        Expr::SoftIndex { target, key } => {
+            assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
             assert!(is_binop(key).is_some());
         }
         other => panic!("expected Index, got {other:?}"),
@@ -141,15 +141,15 @@ fn index_expression() {
 #[test]
 fn chained_index() {
     let expr = parse_expr("a[0][1]");
-    match &expr.kind {
-        ExprKind::SoftIndex { target, key } => {
+    match &expr.node {
+        Expr::SoftIndex { target, key } => {
             assert!(is_int(key, 1));
-            match &target.kind {
-                ExprKind::SoftIndex {
+            match &target.node {
+                Expr::SoftIndex {
                     target: inner,
                     key: inner_key,
                 } => {
-                    assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(matches!(&inner.node, Expr::NameLookup(n) if n == "a"));
                     assert!(is_int(inner_key, 0));
                 }
                 other => panic!("expected inner SoftIndex, got {other:?}"),
@@ -162,9 +162,9 @@ fn chained_index() {
 #[test]
 fn index_with_newlines() {
     let expr = parse_expr("a[\n0\n]");
-    match &expr.kind {
-        ExprKind::SoftIndex { target, key } => {
-            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+    match &expr.node {
+        Expr::SoftIndex { target, key } => {
+            assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
             assert!(is_int(key, 0));
         }
         other => panic!("expected SoftIndex, got {other:?}"),
@@ -176,9 +176,9 @@ fn index_with_newlines() {
 #[test]
 fn dot_access() {
     let expr = parse_expr("a.foo");
-    match &expr.kind {
-        ExprKind::HardIndex { target, key } => {
-            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+    match &expr.node {
+        Expr::HardIndex { target, key } => {
+            assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
             assert!(key == "foo");
         }
         other => panic!("expected HardIndex, got {other:?}"),
@@ -188,15 +188,15 @@ fn dot_access() {
 #[test]
 fn chained_dot() {
     let expr = parse_expr("a.b.c");
-    match &expr.kind {
-        ExprKind::HardIndex { target, key } => {
+    match &expr.node {
+        Expr::HardIndex { target, key } => {
             assert!(key == "c");
-            match &target.kind {
-                ExprKind::HardIndex {
+            match &target.node {
+                Expr::HardIndex {
                     target: inner,
                     key: inner_key,
                 } => {
-                    assert!(matches!(&inner.kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(matches!(&inner.node, Expr::NameLookup(n) if n == "a"));
                     assert!(inner_key == "b");
                 }
                 other => panic!("expected inner HardIndex, got {other:?}"),
@@ -209,13 +209,13 @@ fn chained_dot() {
 #[test]
 fn dot_then_call() {
     let expr = parse_expr("a.foo(1)");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
+    match &expr.node {
+        Expr::Call { callee, args } => {
             assert_eq!(args.len(), 1);
             assert!(is_int(&args[0], 1));
-            match &callee.kind {
-                ExprKind::HardIndex { target, key } => {
-                    assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+            match &callee.node {
+                Expr::HardIndex { target, key } => {
+                    assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
                     assert!(key == "foo");
                 }
                 other => panic!("expected HardIndex inside Call, got {other:?}"),
@@ -230,11 +230,11 @@ fn dot_then_call() {
 #[test]
 fn thread_no_extra_args() {
     let expr = parse_expr("a @ f()");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+    match &expr.node {
+        Expr::Call { callee, args } => {
+            assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "f"));
             assert_eq!(args.len(), 1);
-            assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+            assert!(matches!(&args[0].node, Expr::NameLookup(n) if n == "a"));
         }
         other => panic!("expected Call, got {other:?}"),
     }
@@ -243,11 +243,11 @@ fn thread_no_extra_args() {
 #[test]
 fn thread_with_args() {
     let expr = parse_expr("a @ f(1)");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+    match &expr.node {
+        Expr::Call { callee, args } => {
+            assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "f"));
             assert_eq!(args.len(), 2);
-            assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+            assert!(matches!(&args[0].node, Expr::NameLookup(n) if n == "a"));
             assert!(is_int(&args[1], 1));
         }
         other => panic!("expected Call, got {other:?}"),
@@ -257,11 +257,11 @@ fn thread_with_args() {
 #[test]
 fn thread_multiple_extra_args() {
     let expr = parse_expr("a @ f(1, 2)");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+    match &expr.node {
+        Expr::Call { callee, args } => {
+            assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "f"));
             assert_eq!(args.len(), 3);
-            assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+            assert!(matches!(&args[0].node, Expr::NameLookup(n) if n == "a"));
             assert!(is_int(&args[1], 1));
             assert!(is_int(&args[2], 2));
         }
@@ -273,19 +273,19 @@ fn thread_multiple_extra_args() {
 fn thread_chained() {
     // a @ f(1) @ g(2) == g(f(a, 1), 2)
     let expr = parse_expr("a @ f(1) @ g(2)");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "g"));
+    match &expr.node {
+        Expr::Call { callee, args } => {
+            assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "g"));
             assert_eq!(args.len(), 2);
             assert!(is_int(&args[1], 2));
-            match &args[0].kind {
-                ExprKind::Call {
+            match &args[0].node {
+                Expr::Call {
                     callee: inner_callee,
                     args: inner_args,
                 } => {
-                    assert!(matches!(&inner_callee.kind, ExprKind::NameLookup(n) if n == "f"));
+                    assert!(matches!(&inner_callee.node, Expr::NameLookup(n) if n == "f"));
                     assert_eq!(inner_args.len(), 2);
-                    assert!(matches!(&inner_args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(matches!(&inner_args[0].node, Expr::NameLookup(n) if n == "a"));
                     assert!(is_int(&inner_args[1], 1));
                 }
                 other => panic!("expected inner Call, got {other:?}"),
@@ -298,13 +298,13 @@ fn thread_chained() {
 #[test]
 fn thread_dot_callee() {
     let expr = parse_expr("a @ m.f()");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
+    match &expr.node {
+        Expr::Call { callee, args } => {
             assert_eq!(args.len(), 1);
-            assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
-            match &callee.kind {
-                ExprKind::HardIndex { target, key } => {
-                    assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "m"));
+            assert!(matches!(&args[0].node, Expr::NameLookup(n) if n == "a"));
+            match &callee.node {
+                Expr::HardIndex { target, key } => {
+                    assert!(matches!(&target.node, Expr::NameLookup(n) if n == "m"));
                     assert!(key == "f");
                 }
                 other => panic!("expected HardIndex callee, got {other:?}"),
@@ -318,11 +318,11 @@ fn thread_dot_callee() {
 fn thread_after_postfix() {
     // a.b @ f() == f(Index(a, "b"))
     let expr = parse_expr("a.b @ f()");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+    match &expr.node {
+        Expr::Call { callee, args } => {
+            assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "f"));
             assert_eq!(args.len(), 1);
-            assert!(matches!(&args[0].kind, ExprKind::HardIndex { .. }));
+            assert!(matches!(&args[0].node, Expr::HardIndex { .. }));
         }
         other => panic!("expected Call, got {other:?}"),
     }
@@ -332,14 +332,14 @@ fn thread_after_postfix() {
 fn thread_result_indexed() {
     // a @ f()[0]
     let expr = parse_expr("a @ f()[0]");
-    match &expr.kind {
-        ExprKind::SoftIndex { target, key } => {
+    match &expr.node {
+        Expr::SoftIndex { target, key } => {
             assert!(is_int(key, 0));
-            match &target.kind {
-                ExprKind::Call { callee, args } => {
-                    assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+            match &target.node {
+                Expr::Call { callee, args } => {
+                    assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "f"));
                     assert_eq!(args.len(), 1);
-                    assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+                    assert!(matches!(&args[0].node, Expr::NameLookup(n) if n == "a"));
                 }
                 other => panic!("expected Call, got {other:?}"),
             }
@@ -353,10 +353,10 @@ fn thread_result_indexed() {
 #[test]
 fn call_then_index() {
     let expr = parse_expr("f()[0]");
-    match &expr.kind {
-        ExprKind::SoftIndex { target, key } => {
+    match &expr.node {
+        Expr::SoftIndex { target, key } => {
             assert!(is_int(key, 0));
-            assert!(matches!(&target.kind, ExprKind::Call { .. }));
+            assert!(matches!(&target.node, Expr::Call { .. }));
         }
         other => panic!("expected SoftIndex, got {other:?}"),
     }
@@ -365,11 +365,11 @@ fn call_then_index() {
 #[test]
 fn index_then_call() {
     let expr = parse_expr("a[0](1)");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
+    match &expr.node {
+        Expr::Call { callee, args } => {
             assert_eq!(args.len(), 1);
             assert!(is_int(&args[0], 1));
-            assert!(matches!(&callee.kind, ExprKind::SoftIndex { .. }));
+            assert!(matches!(&callee.node, Expr::SoftIndex { .. }));
         }
         other => panic!("expected Call, got {other:?}"),
     }
@@ -378,10 +378,10 @@ fn index_then_call() {
 #[test]
 fn call_then_dot() {
     let expr = parse_expr("f().bar");
-    match &expr.kind {
-        ExprKind::HardIndex { target, key } => {
+    match &expr.node {
+        Expr::HardIndex { target, key } => {
             assert!(key == "bar");
-            assert!(matches!(&target.kind, ExprKind::Call { .. }));
+            assert!(matches!(&target.node, Expr::Call { .. }));
         }
         other => panic!("expected HardIndex, got {other:?}"),
     }
@@ -390,11 +390,11 @@ fn call_then_dot() {
 #[test]
 fn dot_then_index() {
     let expr = parse_expr("a.b[0]");
-    match &expr.kind {
-        ExprKind::SoftIndex { target, key } => {
+    match &expr.node {
+        Expr::SoftIndex { target, key } => {
             assert!(is_int(key, 0));
-            match &target.kind {
-                ExprKind::HardIndex { key: inner_key, .. } => {
+            match &target.node {
+                Expr::HardIndex { key: inner_key, .. } => {
                     assert!(inner_key == "b");
                 }
                 other => panic!("expected inner HardIndex, got {other:?}"),
@@ -407,11 +407,11 @@ fn dot_then_index() {
 #[test]
 fn index_then_dot() {
     let expr = parse_expr("a[0].bar");
-    match &expr.kind {
-        ExprKind::HardIndex { target, key } => {
+    match &expr.node {
+        Expr::HardIndex { target, key } => {
             assert!(key == "bar");
-            match &target.kind {
-                ExprKind::SoftIndex { key: inner_key, .. } => {
+            match &target.node {
+                Expr::SoftIndex { key: inner_key, .. } => {
                     assert!(is_int(inner_key, 0));
                 }
                 other => panic!("expected inner SoftIndex, got {other:?}"),
@@ -425,24 +425,24 @@ fn index_then_dot() {
 fn long_postfix_chain() {
     // a.b[0].c(1).d
     let expr = parse_expr("a.b[0].c(1).d");
-    match &expr.kind {
-        ExprKind::HardIndex { target, key } => {
+    match &expr.node {
+        Expr::HardIndex { target, key } => {
             assert!(key == "d");
-            match &target.kind {
-                ExprKind::Call { callee, args } => {
+            match &target.node {
+                Expr::Call { callee, args } => {
                     assert_eq!(args.len(), 1);
                     assert!(is_int(&args[0], 1));
-                    match &callee.kind {
-                        ExprKind::HardIndex { target, key } => {
+                    match &callee.node {
+                        Expr::HardIndex { target, key } => {
                             assert!(key == "c");
-                            match &target.kind {
-                                ExprKind::SoftIndex { target, key } => {
+                            match &target.node {
+                                Expr::SoftIndex { target, key } => {
                                     assert!(is_int(key, 0));
-                                    match &target.kind {
-                                        ExprKind::HardIndex { target, key } => {
+                                    match &target.node {
+                                        Expr::HardIndex { target, key } => {
                                             assert!(key == "b");
                                             assert!(
-                                                matches!(&target.kind, ExprKind::NameLookup(n) if n == "a")
+                                                matches!(&target.node, Expr::NameLookup(n) if n == "a")
                                             );
                                         }
                                         other => panic!("expected .b HardIndex, got {other:?}"),
@@ -468,8 +468,8 @@ fn calls_in_arithmetic() {
     let expr = parse_expr("f(1) + g(2)");
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Add));
-    assert!(matches!(&left.kind, ExprKind::Call { .. }));
-    assert!(matches!(&right.kind, ExprKind::Call { .. }));
+    assert!(matches!(&left.node, Expr::Call { .. }));
+    assert!(matches!(&right.node, Expr::Call { .. }));
 }
 
 #[test]
@@ -477,8 +477,8 @@ fn index_in_arithmetic() {
     let expr = parse_expr("a[0] * b[1]");
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Mul));
-    assert!(matches!(&left.kind, ExprKind::SoftIndex { .. }));
-    assert!(matches!(&right.kind, ExprKind::SoftIndex { .. }));
+    assert!(matches!(&left.node, Expr::SoftIndex { .. }));
+    assert!(matches!(&right.node, Expr::SoftIndex { .. }));
 }
 
 #[test]
@@ -486,8 +486,8 @@ fn dot_in_comparison() {
     let expr = parse_expr("a.x == b.y");
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Eq));
-    assert!(matches!(&left.kind, ExprKind::HardIndex { .. }));
-    assert!(matches!(&right.kind, ExprKind::HardIndex { .. }));
+    assert!(matches!(&left.node, Expr::HardIndex { .. }));
+    assert!(matches!(&right.node, Expr::HardIndex { .. }));
 }
 
 // -- Postfix binds tighter than prefix --
@@ -496,12 +496,12 @@ fn dot_in_comparison() {
 fn negate_index() {
     // -a[0] == -(a[0])
     let expr = parse_expr("-a[0]");
-    match &expr.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Negate,
+    match &expr.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Negate, .. },
             operand,
         } => {
-            assert!(matches!(&operand.kind, ExprKind::SoftIndex { .. }));
+            assert!(matches!(&operand.node, Expr::SoftIndex { .. }));
         }
         other => panic!("expected Negate(SoftIndex), got {other:?}"),
     }
@@ -511,11 +511,11 @@ fn negate_index() {
 fn negate_dot() {
     // -a.b == -(a.b): dot indexing binds tighter than prefix negate.
     let expr = parse_expr("-a.b");
-    match &expr.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Negate,
+    match &expr.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Negate, .. },
             operand,
-        } => assert!(matches!(&operand.kind, ExprKind::HardIndex { .. })),
+        } => assert!(matches!(&operand.node, Expr::HardIndex { .. })),
         other => panic!("expected Negate(Index), got {other:?}"),
     }
 }
@@ -524,11 +524,11 @@ fn negate_dot() {
 fn not_dot() {
     // not a.b == not (a.b): dot indexing binds tighter than prefix not.
     let expr = parse_expr("not a.b");
-    match &expr.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Not,
+    match &expr.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Not, .. },
             operand,
-        } => assert!(matches!(&operand.kind, ExprKind::HardIndex { .. })),
+        } => assert!(matches!(&operand.node, Expr::HardIndex { .. })),
         other => panic!("expected Not(Index), got {other:?}"),
     }
 }
@@ -553,9 +553,9 @@ fn newline_before_call_is_two_statements() {
 fn newline_before_dot_continues() {
     // `.` cannot begin a statement, so it continues the expression.
     let expr = parse_expr("a\n.foo");
-    match &expr.kind {
-        ExprKind::HardIndex { target, key } => {
-            assert!(matches!(&target.kind, ExprKind::NameLookup(n) if n == "a"));
+    match &expr.node {
+        Expr::HardIndex { target, key } => {
+            assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
             assert_eq!(key, "foo");
         }
         other => panic!("expected HardIndex, got {other:?}"),
@@ -566,11 +566,11 @@ fn newline_before_dot_continues() {
 fn newline_before_thread_continues() {
     // `@` cannot begin a statement, so it continues the expression: a @ f() => f(a).
     let expr = parse_expr("a\n@ f()");
-    match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            assert!(matches!(&callee.kind, ExprKind::NameLookup(n) if n == "f"));
+    match &expr.node {
+        Expr::Call { callee, args } => {
+            assert!(matches!(&callee.node, Expr::NameLookup(n) if n == "f"));
             assert_eq!(args.len(), 1);
-            assert!(matches!(&args[0].kind, ExprKind::NameLookup(n) if n == "a"));
+            assert!(matches!(&args[0].node, Expr::NameLookup(n) if n == "a"));
         }
         other => panic!("expected Call, got {other:?}"),
     }
@@ -580,40 +580,40 @@ fn newline_before_thread_continues() {
 fn newline_dot_chain() {
     // A whole leading-dot chain across newlines: ((a.b).c).d
     let expr = parse_expr("a\n.b\n.c\n.d");
-    let ExprKind::HardIndex { target: abc, key: d } = &expr.kind else {
-        panic!("expected HardIndex, got {:?}", expr.kind)
+    let Expr::HardIndex { target: abc, key: d } = &expr.node else {
+        panic!("expected HardIndex, got {:?}", expr.node)
     };
     assert_eq!(d, "d");
-    let ExprKind::HardIndex { target: ab, key: c } = &abc.kind else {
+    let Expr::HardIndex { target: ab, key: c } = &abc.node else {
         panic!("expected nested HardIndex")
     };
     assert_eq!(c, "c");
-    assert!(matches!(&ab.kind, ExprKind::HardIndex { key, .. } if key == "b"));
+    assert!(matches!(&ab.node, Expr::HardIndex { key, .. } if key == "b"));
 }
 
 #[test]
 fn newline_thread_chain() {
     // Leading-`@` chain across newlines: g(f(x)).
     let expr = parse_expr("x\n@ f()\n@ g()");
-    let ExprKind::Call { callee: g, args: outer } = &expr.kind else {
-        panic!("expected Call, got {:?}", expr.kind)
+    let Expr::Call { callee: g, args: outer } = &expr.node else {
+        panic!("expected Call, got {:?}", expr.node)
     };
-    assert!(matches!(&g.kind, ExprKind::NameLookup(n) if n == "g"));
-    assert!(matches!(&outer[0].kind, ExprKind::Call { .. }));
+    assert!(matches!(&g.node, Expr::NameLookup(n) if n == "g"));
+    assert!(matches!(&outer[0].node, Expr::Call { .. }));
 }
 
 #[test]
 fn multiple_newlines_before_dot_continue() {
     // Blank lines between the operand and the dot are still a continuation.
     let expr = parse_expr("a\n\n\n.foo");
-    assert!(matches!(&expr.kind, ExprKind::HardIndex { key, .. } if key == "foo"));
+    assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key == "foo"));
 }
 
 #[test]
 fn comment_then_newline_before_dot_continues() {
     // Comments are lexer-skipped, so a trailing comment does not break the chain.
     let expr = parse_expr("a # comment\n.foo");
-    assert!(matches!(&expr.kind, ExprKind::HardIndex { key, .. } if key == "foo"));
+    assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key == "foo"));
 }
 
 #[test]
@@ -621,7 +621,7 @@ fn newline_before_dot_inside_delimiters() {
     // Inside delimiters a dot after a newline continues the inner expression
     // (previously a parse error -- the newline broke the chain).
     let expr = parse_expr("(a\n.foo)");
-    assert!(matches!(&expr.kind, ExprKind::HardIndex { key, .. } if key == "foo"));
+    assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key == "foo"));
 }
 
 // -- Postfix error cases --

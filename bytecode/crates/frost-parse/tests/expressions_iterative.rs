@@ -3,9 +3,9 @@ mod helpers;
 use frost_parse::ast::*;
 use helpers::*;
 
-fn assert_map_iter(expr: &Expr) -> (&Expr, &Expr) {
-    match &expr.kind {
-        ExprKind::MapIter {
+fn assert_map_iter(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &Spanned<Expr>) {
+    match &expr.node {
+        Expr::MapIter {
             structure,
             operation,
         } => (structure, operation),
@@ -13,9 +13,9 @@ fn assert_map_iter(expr: &Expr) -> (&Expr, &Expr) {
     }
 }
 
-fn assert_filter(expr: &Expr) -> (&Expr, &Expr) {
-    match &expr.kind {
-        ExprKind::Filter {
+fn assert_filter(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &Spanned<Expr>) {
+    match &expr.node {
+        Expr::Filter {
             structure,
             operation,
         } => (structure, operation),
@@ -23,9 +23,9 @@ fn assert_filter(expr: &Expr) -> (&Expr, &Expr) {
     }
 }
 
-fn assert_foreach(expr: &Expr) -> (&Expr, &Expr) {
-    match &expr.kind {
-        ExprKind::Foreach {
+fn assert_foreach(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &Spanned<Expr>) {
+    match &expr.node {
+        Expr::Foreach {
             structure,
             operation,
         } => (structure, operation),
@@ -33,9 +33,9 @@ fn assert_foreach(expr: &Expr) -> (&Expr, &Expr) {
     }
 }
 
-fn assert_reduce(expr: &Expr) -> (&Expr, &Expr, Option<&Expr>) {
-    match &expr.kind {
-        ExprKind::Reduce {
+fn assert_reduce(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &Spanned<Expr>, Option<&Spanned<Expr>>) {
+    match &expr.node {
+        Expr::Reduce {
             structure,
             operation,
             init,
@@ -44,12 +44,12 @@ fn assert_reduce(expr: &Expr) -> (&Expr, &Expr, Option<&Expr>) {
     }
 }
 
-fn is_lambda(expr: &Expr) -> bool {
-    matches!(&expr.kind, ExprKind::Lambda { .. })
+fn is_lambda(expr: &Spanned<Expr>) -> bool {
+    matches!(&expr.node, Expr::Lambda { .. })
 }
 
-fn is_array(expr: &Expr) -> bool {
-    matches!(&expr.kind, ExprKind::Array(_))
+fn is_array(expr: &Spanned<Expr>) -> bool {
+    matches!(&expr.node, Expr::Array(_))
 }
 
 // ============================================================
@@ -72,7 +72,7 @@ mod map_iter {
         let expr = parse_expr("map [1, 2] with double");
         let (structure, operation) = assert_map_iter(&expr);
         assert!(is_array(structure));
-        assert!(matches!(&operation.kind, ExprKind::NameLookup(n) if n == "double"));
+        assert!(matches!(&operation.node, Expr::NameLookup(n) if n == "double"));
     }
 
     #[test]
@@ -86,7 +86,7 @@ mod map_iter {
     fn structure_is_variable() {
         let expr = parse_expr("map arr with fn x -> x");
         let (structure, _) = assert_map_iter(&expr);
-        assert!(matches!(&structure.kind, ExprKind::NameLookup(n) if n == "arr"));
+        assert!(matches!(&structure.node, Expr::NameLookup(n) if n == "arr"));
     }
 
     #[test]
@@ -100,8 +100,8 @@ mod map_iter {
     fn in_def() {
         let program = parse("def result = map [1, 2] with fn x -> x * 2");
         assert_eq!(program.statements.len(), 1);
-        match &program.statements[0].kind {
-            StatementKind::Def { expr, .. } => {
+        match &program.statements[0].node {
+            Statement::Def { expr, .. } => {
                 assert_map_iter(expr);
             }
             other => panic!("expected Def, got {other:?}"),
@@ -128,7 +128,7 @@ mod filter {
     fn with_name() {
         let expr = parse_expr("filter arr with is_positive");
         let (_, operation) = assert_filter(&expr);
-        assert!(matches!(&operation.kind, ExprKind::NameLookup(n) if n == "is_positive"));
+        assert!(matches!(&operation.node, Expr::NameLookup(n) if n == "is_positive"));
     }
 
     #[test]
@@ -158,7 +158,7 @@ mod foreach {
     fn with_name() {
         let expr = parse_expr("foreach items with print");
         let (_, operation) = assert_foreach(&expr);
-        assert!(matches!(&operation.kind, ExprKind::NameLookup(n) if n == "print"));
+        assert!(matches!(&operation.node, Expr::NameLookup(n) if n == "print"));
     }
 }
 
@@ -198,7 +198,7 @@ mod reduce {
     fn with_name_operation() {
         let expr = parse_expr("reduce [1, 2, 3] with add");
         let (_, operation, _) = assert_reduce(&expr);
-        assert!(matches!(&operation.kind, ExprKind::NameLookup(n) if n == "add"));
+        assert!(matches!(&operation.node, Expr::NameLookup(n) if n == "add"));
     }
 
     #[test]

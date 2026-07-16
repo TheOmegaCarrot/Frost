@@ -95,13 +95,13 @@ fn and_or_precedence() {
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Or));
     assert!(matches!(
-        &right.kind,
-        ExprKind::Literal(Literal::Bool(true))
+        &right.node,
+        Expr::Literal(Literal::Bool(true))
     ));
     let (ll, lop, lr) = is_binop(left).unwrap();
     assert!(matches!(lop, BinOp::And));
-    assert!(matches!(&ll.kind, ExprKind::Literal(Literal::Bool(true))));
-    assert!(matches!(&lr.kind, ExprKind::Literal(Literal::Bool(false))));
+    assert!(matches!(&ll.node, Expr::Literal(Literal::Bool(true))));
+    assert!(matches!(&lr.node, Expr::Literal(Literal::Bool(false))));
 }
 
 #[test]
@@ -166,9 +166,9 @@ fn and_with_comparison() {
 #[test]
 fn unary_negate() {
     let expr = parse_expr("-5");
-    match &expr.kind {
-        ExprKind::UnaryOp { op, operand } => {
-            assert!(matches!(op, UnaryOp::Negate));
+    match &expr.node {
+        Expr::UnaryOp { op, operand } => {
+            assert!(matches!(op, Spanned { node: UnaryOp::Negate, .. }));
             assert!(is_int(operand, 5));
         }
         other => panic!("expected UnaryOp, got {other:?}"),
@@ -178,12 +178,12 @@ fn unary_negate() {
 #[test]
 fn unary_not() {
     let expr = parse_expr("not true");
-    match &expr.kind {
-        ExprKind::UnaryOp { op, operand } => {
-            assert!(matches!(op, UnaryOp::Not));
+    match &expr.node {
+        Expr::UnaryOp { op, operand } => {
+            assert!(matches!(op, Spanned { node: UnaryOp::Not, .. }));
             assert!(matches!(
-                &operand.kind,
-                ExprKind::Literal(Literal::Bool(true))
+                &operand.node,
+                Expr::Literal(Literal::Bool(true))
             ));
         }
         other => panic!("expected UnaryOp, got {other:?}"),
@@ -196,9 +196,9 @@ fn negate_binds_tighter_than_add() {
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Add));
     assert!(is_int(right, 3));
-    match &left.kind {
-        ExprKind::UnaryOp { op, operand } => {
-            assert!(matches!(op, UnaryOp::Negate));
+    match &left.node {
+        Expr::UnaryOp { op, operand } => {
+            assert!(matches!(op, Spanned { node: UnaryOp::Negate, .. }));
             assert!(is_int(operand, 2));
         }
         other => panic!("expected UnaryOp, got {other:?}"),
@@ -211,15 +211,15 @@ fn not_precedence() {
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Or));
     assert!(matches!(
-        &right.kind,
-        ExprKind::Literal(Literal::Bool(false))
+        &right.node,
+        Expr::Literal(Literal::Bool(false))
     ));
-    match &left.kind {
-        ExprKind::UnaryOp { op, operand } => {
-            assert!(matches!(op, UnaryOp::Not));
+    match &left.node {
+        Expr::UnaryOp { op, operand } => {
+            assert!(matches!(op, Spanned { node: UnaryOp::Not, .. }));
             assert!(matches!(
-                &operand.kind,
-                ExprKind::Literal(Literal::Bool(true))
+                &operand.node,
+                Expr::Literal(Literal::Bool(true))
             ));
         }
         other => panic!("expected UnaryOp, got {other:?}"),
@@ -229,13 +229,13 @@ fn not_precedence() {
 #[test]
 fn double_negate() {
     let expr = parse_expr("--1");
-    match &expr.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Negate,
+    match &expr.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Negate, .. },
             operand,
-        } => match &operand.kind {
-            ExprKind::UnaryOp {
-                op: UnaryOp::Negate,
+        } => match &operand.node {
+            Expr::UnaryOp {
+                op: Spanned { node: UnaryOp::Negate, .. },
                 operand: inner,
             } => {
                 assert!(is_int(inner, 1));
@@ -249,18 +249,18 @@ fn double_negate() {
 #[test]
 fn double_not() {
     let expr = parse_expr("not not true");
-    match &expr.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Not,
+    match &expr.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Not, .. },
             operand,
-        } => match &operand.kind {
-            ExprKind::UnaryOp {
-                op: UnaryOp::Not,
+        } => match &operand.node {
+            Expr::UnaryOp {
+                op: Spanned { node: UnaryOp::Not, .. },
                 operand: inner,
             } => {
                 assert!(matches!(
-                    &inner.kind,
-                    ExprKind::Literal(Literal::Bool(true))
+                    &inner.node,
+                    Expr::Literal(Literal::Bool(true))
                 ));
             }
             other => panic!("expected inner Not, got {other:?}"),
@@ -272,12 +272,12 @@ fn double_not() {
 #[test]
 fn negate_float() {
     let expr = parse_expr("-3.14");
-    match &expr.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Negate,
+    match &expr.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Negate, .. },
             operand,
         } => {
-            assert!(matches!(&operand.kind, ExprKind::Literal(Literal::Float(f)) if *f == 3.14));
+            assert!(matches!(&operand.node, Expr::Literal(Literal::Float(f)) if *f == 3.14));
         }
         other => panic!("expected Negate, got {other:?}"),
     }
@@ -289,12 +289,12 @@ fn not_binds_tighter_than_equality() {
     let expr = parse_expr("not a == b");
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Eq));
-    assert!(matches!(&right.kind, ExprKind::NameLookup(n) if n == "b"));
-    match &left.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Not,
+    assert!(matches!(&right.node, Expr::NameLookup(n) if n == "b"));
+    match &left.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Not, .. },
             operand,
-        } => assert!(matches!(&operand.kind, ExprKind::NameLookup(n) if n == "a")),
+        } => assert!(matches!(&operand.node, Expr::NameLookup(n) if n == "a")),
         other => panic!("expected Not(a), got {other:?}"),
     }
 }
@@ -306,9 +306,9 @@ fn subtract_negative_literal() {
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Sub));
     assert!(is_int(left, 3));
-    match &right.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Negate,
+    match &right.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Negate, .. },
             operand,
         } => assert!(is_int(operand, 2)),
         other => panic!("expected Negate(2), got {other:?}"),
@@ -319,11 +319,11 @@ fn subtract_negative_literal() {
 fn negate_call() {
     // `-f()` is `-(f())`: the call binds tighter than the prefix negate.
     let expr = parse_expr("-f()");
-    match &expr.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Negate,
+    match &expr.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Negate, .. },
             operand,
-        } => assert!(matches!(&operand.kind, ExprKind::Call { .. })),
+        } => assert!(matches!(&operand.node, Expr::Call { .. })),
         other => panic!("expected Negate(Call), got {other:?}"),
     }
 }
@@ -418,14 +418,14 @@ fn negate_newline_is_error() {
 #[test]
 fn prefix_with_newline_in_parens() {
     let expr = parse_expr("(\nnot\ntrue\n)");
-    match &expr.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Not,
+    match &expr.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Not, .. },
             operand,
         } => {
             assert!(matches!(
-                &operand.kind,
-                ExprKind::Literal(Literal::Bool(true))
+                &operand.node,
+                Expr::Literal(Literal::Bool(true))
             ));
         }
         other => panic!("expected Not, got {other:?}"),
@@ -435,9 +435,9 @@ fn prefix_with_newline_in_parens() {
 #[test]
 fn negate_with_newline_in_parens() {
     let expr = parse_expr("(-\n5)");
-    match &expr.kind {
-        ExprKind::UnaryOp {
-            op: UnaryOp::Negate,
+    match &expr.node {
+        Expr::UnaryOp {
+            op: Spanned { node: UnaryOp::Negate, .. },
             operand,
         } => {
             assert!(is_int(operand, 5));

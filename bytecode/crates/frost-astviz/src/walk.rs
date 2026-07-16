@@ -128,9 +128,9 @@ impl<'a> Walker<'a> {
 
     // -- Statements --
 
-    pub fn stmt(&mut self, s: &Statement) -> Node {
-        match &s.kind {
-            StatementKind::Def {
+    pub fn stmt(&mut self, s: &Spanned<Statement>) -> Node {
+        match &s.node {
+            Statement::Def {
                 exported,
                 destructure,
                 expr,
@@ -143,35 +143,35 @@ impl<'a> Walker<'a> {
                 self.ranged(label.to_string(), s.span, vec![binding, value])
             }
             // A bare expression statement renders as the expression itself.
-            StatementKind::Expr(expr) => self.expr(expr),
+            Statement::Expr(expr) => self.expr(expr),
         }
     }
 
     // -- Expressions --
 
-    pub fn expr(&mut self, e: &Expr) -> Node {
+    pub fn expr(&mut self, e: &Spanned<Expr>) -> Node {
         let span = e.span;
-        match &e.kind {
-            ExprKind::Literal(lit) => {
+        match &e.node {
+            Expr::Literal(lit) => {
                 self.ranged(format!("Literal {}", literal_label(lit)), span, vec![])
             }
-            ExprKind::NameLookup(name) => self.ranged(format!("NameLookup {name}"), span, vec![]),
-            ExprKind::BinOp { left, op, right } => {
+            Expr::NameLookup(name) => self.ranged(format!("NameLookup {name}"), span, vec![]),
+            Expr::BinOp { left, op, right } => {
                 let l = self.expr(left);
                 let l = self.wrap("left", vec![l]);
                 let r = self.expr(right);
                 let r = self.wrap("right", vec![r]);
-                self.ranged(format!("BinOp {}", binop_symbol(*op)), span, vec![l, r])
+                self.ranged(format!("BinOp {}", binop_symbol(op.node)), span, vec![l, r])
             }
-            ExprKind::UnaryOp { op, operand } => {
+            Expr::UnaryOp { op, operand } => {
                 let child = self.expr(operand);
                 self.ranged(
-                    format!("UnaryOp {}", unaryop_symbol(*op)),
+                    format!("UnaryOp {}", unaryop_symbol(op.node)),
                     span,
                     vec![child],
                 )
             }
-            ExprKind::If {
+            Expr::If {
                 condition,
                 consequent,
                 alternate,
@@ -187,13 +187,13 @@ impl<'a> Walker<'a> {
                 }
                 self.ranged("If".to_string(), span, children)
             }
-            ExprKind::Do { body, value } => {
+            Expr::Do { body, value } => {
                 let mut children: Vec<Node> = body.iter().map(|st| self.stmt(st)).collect();
                 let v = self.expr(value);
                 children.push(self.wrap("value", vec![v]));
                 self.ranged("Do".to_string(), span, children)
             }
-            ExprKind::Call { callee, args } => {
+            Expr::Call { callee, args } => {
                 let c = self.expr(callee);
                 let mut children = vec![self.wrap("callee", vec![c])];
                 for arg in args {
@@ -201,33 +201,33 @@ impl<'a> Walker<'a> {
                 }
                 self.ranged("Call".to_string(), span, children)
             }
-            ExprKind::SoftIndex { target, key } => {
+            Expr::SoftIndex { target, key } => {
                 let t = self.expr(target);
                 let t = self.wrap("target", vec![t]);
                 let k = self.expr(key);
                 let k = self.wrap("key", vec![k]);
                 self.ranged("SoftIndex".to_string(), span, vec![t, k])
             }
-            ExprKind::HardIndex { target, key } => {
+            Expr::HardIndex { target, key } => {
                 let t = self.expr(target);
                 self.ranged(format!("HardIndex .{key}"), span, vec![t])
             }
-            ExprKind::Array(elems) => {
+            Expr::Array(elems) => {
                 let children = elems.iter().map(|el| self.expr(el)).collect();
                 self.ranged("Array".to_string(), span, children)
             }
-            ExprKind::Map(entries) => {
+            Expr::Map(entries) => {
                 let mut children = vec![];
                 for ent in entries {
-                    let k = self.expr(&ent.key);
+                    let k = self.expr(&ent.node.key);
                     let k = self.wrap("key", vec![k]);
-                    let v = self.expr(&ent.value);
+                    let v = self.expr(&ent.node.value);
                     let v = self.wrap("value", vec![v]);
                     children.push(self.wrap("entry", vec![k, v]));
                 }
                 self.ranged("Map".to_string(), span, children)
             }
-            ExprKind::FormatString(segments) => {
+            Expr::FormatString(segments) => {
                 let mut children = vec![];
                 for seg in segments {
                     match seg {
@@ -243,50 +243,50 @@ impl<'a> Walker<'a> {
                 }
                 self.ranged("FormatString".to_string(), span, children)
             }
-            ExprKind::Lambda {
+            Expr::Lambda {
                 params,
                 variadic_param,
                 self_name,
                 body,
                 return_expr,
             } => {
-                let label = lambda_label(self_name.as_deref(), params, variadic_param.as_ref());
+                let label = lambda_label(self_name.as_ref(), params, variadic_param.as_ref());
                 let mut children: Vec<Node> = body.iter().map(|st| self.stmt(st)).collect();
                 let ret = self.expr(return_expr);
                 children.push(self.wrap("return", vec![ret]));
                 self.ranged(label, span, children)
             }
-            ExprKind::AbbreviatedLambda { body } => {
+            Expr::AbbreviatedLambda { body } => {
                 let inner = self.expr(body);
                 self.ranged("AbbreviatedLambda".to_string(), span, vec![inner])
             }
-            ExprKind::Filter {
+            Expr::Filter {
                 structure,
                 operation,
             } => self.iter_expr("Filter", span, structure, operation, None),
-            ExprKind::MapIter {
+            Expr::MapIter {
                 structure,
                 operation,
             } => self.iter_expr("MapIter", span, structure, operation, None),
-            ExprKind::Foreach {
+            Expr::Foreach {
                 structure,
                 operation,
             } => self.iter_expr("Foreach", span, structure, operation, None),
-            ExprKind::Reduce {
+            Expr::Reduce {
                 structure,
                 operation,
                 init,
             } => self.iter_expr("Reduce", span, structure, operation, init.as_deref()),
-            ExprKind::Match { target, arms } => {
+            Expr::Match { target, arms } => {
                 let t = self.expr(target);
                 let mut children = vec![self.wrap("target", vec![t])];
                 for arm in arms {
-                    let mut arm_children = vec![self.pattern(&arm.pattern)];
-                    if let Some(guard) = &arm.guard {
+                    let mut arm_children = vec![self.pattern(&arm.node.pattern)];
+                    if let Some(guard) = &arm.node.guard {
                         let g = self.expr(guard);
                         arm_children.push(self.wrap("guard", vec![g]));
                     }
-                    let res = self.expr(&arm.result);
+                    let res = self.expr(&arm.node.result);
                     arm_children.push(self.wrap("result", vec![res]));
                     children.push(self.wrap("arm", arm_children));
                 }
@@ -299,9 +299,9 @@ impl<'a> Walker<'a> {
         &mut self,
         label: &str,
         span: SourceSpan,
-        structure: &Expr,
-        operation: &Expr,
-        init: Option<&Expr>,
+        structure: &Spanned<Expr>,
+        operation: &Spanned<Expr>,
+        init: Option<&Spanned<Expr>>,
     ) -> Node {
         let s = self.expr(structure);
         let mut children = vec![self.wrap("structure", vec![s])];
@@ -316,9 +316,9 @@ impl<'a> Walker<'a> {
 
     // -- Match patterns --
 
-    fn pattern(&mut self, p: &MatchPattern) -> Node {
-        match &p.kind {
-            MatchPatternKind::Binding {
+    fn pattern(&mut self, p: &Spanned<MatchPattern>) -> Node {
+        match &p.node {
+            MatchPattern::Binding {
                 name,
                 type_constraint,
             } => {
@@ -328,11 +328,11 @@ impl<'a> Walker<'a> {
                 }
                 self.ranged(label, p.span, vec![])
             }
-            MatchPatternKind::Value(expr) => {
+            MatchPattern::Value(expr) => {
                 let inner = self.expr(expr);
                 self.ranged("Value".to_string(), p.span, vec![inner])
             }
-            MatchPatternKind::Array { elements, rest } => {
+            MatchPattern::Array { elements, rest } => {
                 let children = elements.iter().map(|el| self.pattern(el)).collect();
                 let mut label = "Array".to_string();
                 if let Some(rest) = rest {
@@ -340,15 +340,15 @@ impl<'a> Walker<'a> {
                 }
                 self.ranged(label, p.span, children)
             }
-            MatchPatternKind::Map {
+            MatchPattern::Map {
                 entries,
                 bind_whole,
             } => {
                 let mut children = vec![];
                 for ent in entries {
-                    let k = self.expr(&ent.key);
+                    let k = self.expr(&ent.node.key);
                     let k = self.wrap("key", vec![k]);
-                    let pat = self.pattern(&ent.pattern);
+                    let pat = self.pattern(&ent.node.pattern);
                     children.push(self.wrap("entry", vec![k, pat]));
                 }
                 let mut label = "Map".to_string();
@@ -357,7 +357,7 @@ impl<'a> Walker<'a> {
                 }
                 self.ranged(label, p.span, children)
             }
-            MatchPatternKind::Alternative(patterns) => {
+            MatchPattern::Alternative(patterns) => {
                 let children = patterns.iter().map(|pat| self.pattern(pat)).collect();
                 self.ranged("Alternative".to_string(), p.span, children)
             }
@@ -366,12 +366,12 @@ impl<'a> Walker<'a> {
 
     // -- Destructure patterns (def) --
 
-    fn destructure(&mut self, d: &Destructure) -> Node {
-        match &d.kind {
-            DestructureKind::Binding(b) => {
+    fn destructure(&mut self, d: &Spanned<Destructure>) -> Node {
+        match &d.node {
+            Destructure::Binding(b) => {
                 self.ranged(format!("Binding {}", binding_str(b)), d.span, vec![])
             }
-            DestructureKind::Array { elements, rest } => {
+            Destructure::Array { elements, rest } => {
                 let children = elements.iter().map(|el| self.destructure(el)).collect();
                 let mut label = "Array".to_string();
                 if let Some(rest) = rest {
@@ -379,15 +379,15 @@ impl<'a> Walker<'a> {
                 }
                 self.ranged(label, d.span, children)
             }
-            DestructureKind::Map {
+            Destructure::Map {
                 entries,
                 bind_whole,
             } => {
                 let mut children = vec![];
                 for ent in entries {
-                    let k = self.expr(&ent.key);
+                    let k = self.expr(&ent.node.key);
                     let k = self.wrap("key", vec![k]);
-                    let inner = self.destructure(&ent.destructure);
+                    let inner = self.destructure(&ent.node.destructure);
                     children.push(self.wrap("entry", vec![k, inner]));
                 }
                 let mut label = "Map".to_string();
@@ -402,20 +402,24 @@ impl<'a> Walker<'a> {
 
 // -- Label helpers --
 
-fn binding_str(b: &Binding) -> String {
-    match b {
+fn binding_str(b: &Spanned<Binding>) -> String {
+    match &b.node {
         Binding::Named(name) => name.clone(),
         Binding::Discarded => "_".to_string(),
     }
 }
 
-fn lambda_label(self_name: Option<&str>, params: &[Binding], variadic: Option<&Binding>) -> String {
+fn lambda_label(
+    self_name: Option<&Spanned<String>>,
+    params: &[Spanned<Binding>],
+    variadic: Option<&Spanned<Binding>>,
+) -> String {
     let mut parts: Vec<String> = params.iter().map(binding_str).collect();
     if let Some(v) = variadic {
         parts.push(format!("...{}", binding_str(v)));
     }
     match self_name {
-        Some(name) => format!("Lambda {name}({})", parts.join(", ")),
+        Some(name) => format!("Lambda {}({})", name.node, parts.join(", ")),
         None => format!("Lambda({})", parts.join(", ")),
     }
 }

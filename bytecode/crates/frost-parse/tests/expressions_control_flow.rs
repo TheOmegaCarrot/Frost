@@ -4,9 +4,9 @@ use frost_parse::ast::*;
 use frost_parse::parse_program;
 use helpers::*;
 
-fn assert_if(expr: &Expr) -> (&Expr, &Expr, Option<&Expr>) {
-    match &expr.kind {
-        ExprKind::If {
+fn assert_if(expr: &Spanned<Expr>) -> (&Spanned<Expr>, &Spanned<Expr>, Option<&Spanned<Expr>>) {
+    match &expr.node {
+        Expr::If {
             condition,
             consequent,
             alternate,
@@ -22,7 +22,7 @@ mod if_basic {
     fn if_then() {
         let expr = parse_expr("if true: 1");
         let (cond, then, alt) = assert_if(&expr);
-        assert!(matches!(&cond.kind, ExprKind::Literal(Literal::Bool(true))));
+        assert!(matches!(&cond.node, Expr::Literal(Literal::Bool(true))));
         assert!(is_int(then, 1));
         assert!(alt.is_none());
     }
@@ -31,7 +31,7 @@ mod if_basic {
     fn if_then_else() {
         let expr = parse_expr("if true: 1 else: 2");
         let (cond, then, alt) = assert_if(&expr);
-        assert!(matches!(&cond.kind, ExprKind::Literal(Literal::Bool(true))));
+        assert!(matches!(&cond.node, Expr::Literal(Literal::Bool(true))));
         assert!(is_int(then, 1));
         assert!(is_int(alt.unwrap(), 2));
     }
@@ -44,8 +44,8 @@ mod if_basic {
         let alt = alt.unwrap();
         let (cond2, then2, alt2) = assert_if(alt);
         assert!(matches!(
-            &cond2.kind,
-            ExprKind::Literal(Literal::Bool(false))
+            &cond2.node,
+            Expr::Literal(Literal::Bool(false))
         ));
         assert!(is_int(then2, 2));
         assert!(is_int(alt2.unwrap(), 3));
@@ -98,17 +98,17 @@ mod if_expression_branches {
     fn call_in_branch() {
         let expr = parse_expr("if true: f(1) else: g(2)");
         let (_, then, alt) = assert_if(&expr);
-        assert!(matches!(&then.kind, ExprKind::Call { .. }));
-        assert!(matches!(&alt.unwrap().kind, ExprKind::Call { .. }));
+        assert!(matches!(&then.node, Expr::Call { .. }));
+        assert!(matches!(&alt.unwrap().node, Expr::Call { .. }));
     }
 
     #[test]
     fn if_as_value_in_def() {
         let program = parse("def x = if true: 1 else: 2");
         assert_eq!(program.statements.len(), 1);
-        match &program.statements[0].kind {
-            StatementKind::Def { expr, .. } => {
-                assert!(matches!(&expr.kind, ExprKind::If { .. }));
+        match &program.statements[0].node {
+            Statement::Def { expr, .. } => {
+                assert!(matches!(&expr.node, Expr::If { .. }));
             }
             other => panic!("expected Def, got {other:?}"),
         }
@@ -117,10 +117,10 @@ mod if_expression_branches {
     #[test]
     fn if_in_call_arg() {
         let expr = parse_expr("f(if true: 1 else: 2)");
-        match &expr.kind {
-            ExprKind::Call { args, .. } => {
+        match &expr.node {
+            Expr::Call { args, .. } => {
                 assert_eq!(args.len(), 1);
-                assert!(matches!(&args[0].kind, ExprKind::If { .. }));
+                assert!(matches!(&args[0].node, Expr::If { .. }));
             }
             other => panic!("expected Call, got {other:?}"),
         }
@@ -130,7 +130,7 @@ mod if_expression_branches {
     fn nested_if() {
         let expr = parse_expr("if true: if false: 1 else: 2 else: 3");
         let (_, then, alt) = assert_if(&expr);
-        assert!(matches!(&then.kind, ExprKind::If { .. }));
+        assert!(matches!(&then.node, Expr::If { .. }));
         assert!(is_int(alt.unwrap(), 3));
     }
 }
@@ -237,9 +237,9 @@ mod if_errors {
 // Do blocks
 // ============================================================
 
-fn assert_do(expr: &Expr) -> (&[Statement], &Expr) {
-    match &expr.kind {
-        ExprKind::Do { body, value } => (body, value),
+fn assert_do(expr: &Spanned<Expr>) -> (&[Spanned<Statement>], &Spanned<Expr>) {
+    match &expr.node {
+        Expr::Do { body, value } => (body, value),
         other => panic!("expected Do, got {other:?}"),
     }
 }
@@ -260,8 +260,8 @@ mod do_basic {
         let expr = parse_expr("do { def x = 5; x }");
         let (body, value) = assert_do(&expr);
         assert_eq!(body.len(), 1);
-        assert!(matches!(&body[0].kind, StatementKind::Def { .. }));
-        assert!(matches!(&value.kind, ExprKind::NameLookup(n) if n == "x"));
+        assert!(matches!(&body[0].node, Statement::Def { .. }));
+        assert!(matches!(&value.node, Expr::NameLookup(n) if n == "x"));
     }
 
     #[test]
@@ -272,7 +272,7 @@ mod do_basic {
         assert!(body.is_empty());
         let (inner_body, inner_value) = assert_do(value);
         assert!(inner_body.is_empty());
-        assert!(matches!(&inner_value.kind, ExprKind::NameLookup(n) if n == "x"));
+        assert!(matches!(&inner_value.node, Expr::NameLookup(n) if n == "x"));
     }
 
     #[test]
@@ -296,8 +296,8 @@ mod do_basic {
         let expr = parse_expr("do { f(1); g(2); 42 }");
         let (body, value) = assert_do(&expr);
         assert_eq!(body.len(), 2);
-        assert!(matches!(&body[0].kind, StatementKind::Expr(_)));
-        assert!(matches!(&body[1].kind, StatementKind::Expr(_)));
+        assert!(matches!(&body[0].node, Statement::Expr(_)));
+        assert!(matches!(&body[1].node, Statement::Expr(_)));
         assert!(is_int(value, 42));
     }
 }
@@ -310,7 +310,7 @@ mod do_newlines {
         let expr = parse_expr("do {\n    def x = 5\n    x\n}");
         let (body, value) = assert_do(&expr);
         assert_eq!(body.len(), 1);
-        assert!(matches!(&value.kind, ExprKind::NameLookup(n) if n == "x"));
+        assert!(matches!(&value.node, Expr::NameLookup(n) if n == "x"));
     }
 
     #[test]
@@ -342,9 +342,9 @@ mod do_in_expressions {
     fn do_in_def() {
         let program = parse("def x = do { 42 }");
         assert_eq!(program.statements.len(), 1);
-        match &program.statements[0].kind {
-            StatementKind::Def { expr, .. } => {
-                assert!(matches!(&expr.kind, ExprKind::Do { .. }));
+        match &program.statements[0].node {
+            Statement::Def { expr, .. } => {
+                assert!(matches!(&expr.node, Expr::Do { .. }));
             }
             other => panic!("expected Def, got {other:?}"),
         }
@@ -353,14 +353,14 @@ mod do_in_expressions {
     #[test]
     fn do_in_call() {
         let expr = parse_expr("f(do { 42 })");
-        assert!(matches!(&expr.kind, ExprKind::Call { .. }));
+        assert!(matches!(&expr.node, Expr::Call { .. }));
     }
 
     #[test]
     fn do_in_if_branch() {
         let expr = parse_expr("if true: do { def x = 1; x } else: 0");
         let (_, then, _) = assert_if(&expr);
-        assert!(matches!(&then.kind, ExprKind::Do { .. }));
+        assert!(matches!(&then.node, Expr::Do { .. }));
     }
 
     #[test]
@@ -368,8 +368,8 @@ mod do_in_expressions {
         let expr = parse_expr("do { 1 } + do { 2 }");
         let (left, op, right) = is_binop(&expr).unwrap();
         assert!(matches!(op, BinOp::Add));
-        assert!(matches!(&left.kind, ExprKind::Do { .. }));
-        assert!(matches!(&right.kind, ExprKind::Do { .. }));
+        assert!(matches!(&left.node, Expr::Do { .. }));
+        assert!(matches!(&right.node, Expr::Do { .. }));
     }
 
     #[test]
@@ -377,9 +377,9 @@ mod do_in_expressions {
         let expr = parse_expr("do { def x = do { 5 }; x }");
         let (body, _) = assert_do(&expr);
         assert_eq!(body.len(), 1);
-        match &body[0].kind {
-            StatementKind::Def { expr, .. } => {
-                assert!(matches!(&expr.kind, ExprKind::Do { .. }));
+        match &body[0].node {
+            Statement::Def { expr, .. } => {
+                assert!(matches!(&expr.node, Expr::Do { .. }));
             }
             other => panic!("expected Def, got {other:?}"),
         }

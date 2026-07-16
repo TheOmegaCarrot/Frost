@@ -1,9 +1,9 @@
-use crate::ast::{Expr, ExprKind, Literal, MapEntry};
+use crate::ast::{Expr, Literal, MapEntry, Spanned};
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
 use crate::parse::{ParseResult, ctx::ParseCtx};
 
-pub fn parse_array_literal(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_array_literal(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     let start = ctx.expect(Token::OpenBracket)?.span.start;
     ctx.enter_nl_context();
 
@@ -12,27 +12,28 @@ pub fn parse_array_literal(ctx: &mut ParseCtx) -> ParseResult<Expr> {
             parse_expression(ctx)
         })?;
 
-    Ok(Expr {
-        span: (start..close.span.end).into(),
-        kind: ExprKind::Array(elements),
-    })
+    Ok(Spanned::new(
+        Expr::Array(elements),
+        (start..close.span.end).into(),
+    ))
 }
 
-pub fn parse_map_literal(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_map_literal(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     let start = ctx.expect(Token::OpenBrace)?.span.start;
     ctx.enter_nl_context();
 
     let (entries, close) =
         ctx.parse_comma_separated(Token::CloseBrace, "Map literal", parse_map_entry)?;
 
-    Ok(Expr {
-        span: (start..close.span.end).into(),
-        kind: ExprKind::Map(entries),
-    })
+    Ok(Spanned::new(
+        Expr::Map(entries),
+        (start..close.span.end).into(),
+    ))
 }
 
-fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<MapEntry> {
+fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<Spanned<MapEntry>> {
     let peek = ctx.must_peek("Map entry")?;
+    let start = peek.span.start;
 
     let key = match peek.token {
         Token::OpenBracket => {
@@ -47,10 +48,10 @@ fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<MapEntry> {
             let name = name.to_owned();
             let span = peek.span.clone();
             ctx.advance(1);
-            Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::String(name.into_bytes())),
-            }
+            Spanned::new(
+                Expr::Literal(Literal::String(name.into_bytes())),
+                span.into(),
+            )
         }
         _ => return Err(ctx.unexpected_token(peek, "Map entry key")),
     };
@@ -59,5 +60,6 @@ fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<MapEntry> {
     ctx.maybe_skip_nl();
     let value = parse_expression(ctx)?;
 
-    Ok(MapEntry { key, value })
+    let span = (start..value.span.end).into();
+    Ok(Spanned::new(MapEntry { key, value }, span))
 }

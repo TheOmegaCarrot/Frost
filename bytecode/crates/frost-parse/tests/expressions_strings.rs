@@ -3,9 +3,9 @@ mod helpers;
 use frost_parse::ast::*;
 use helpers::*;
 
-fn str_bytes(expr: &Expr) -> &[u8] {
-    match &expr.kind {
-        ExprKind::Literal(Literal::String(s)) => s,
+fn str_bytes(expr: &Spanned<Expr>) -> &[u8] {
+    match &expr.node {
+        Expr::Literal(Literal::String(s)) => s,
         other => panic!("expected String literal, got {other:?}"),
     }
 }
@@ -297,8 +297,8 @@ fn multiline_only_empty_lines() {
 fn string_in_def() {
     let program = parse("def x = 'hello'");
     assert_eq!(program.statements.len(), 1);
-    match &program.statements[0].kind {
-        StatementKind::Def { expr, .. } => {
+    match &program.statements[0].node {
+        Statement::Def { expr, .. } => {
             assert_eq!(str_bytes(expr), b"hello");
         }
         other => panic!("expected Def, got {other:?}"),
@@ -308,5 +308,5 @@ fn string_in_def() {
 #[test]
 fn string_concatenation_parse() {
     let expr = parse_expr("'hello' + ' ' + 'world'");
-    assert!(matches!(&expr.kind, ExprKind::BinOp { op: BinOp::Add, .. }));
+    assert!(matches!(&expr.node, Expr::BinOp { op: Spanned { node: BinOp::Add, .. }, .. }));
 }

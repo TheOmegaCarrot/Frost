@@ -3,9 +3,9 @@ mod helpers;
 use frost_parse::ast::*;
 use helpers::*;
 
-fn segments(expr: &Expr) -> &[FormatSegment] {
-    match &expr.kind {
-        ExprKind::FormatString(segs) => segs,
+fn segments(expr: &Spanned<Expr>) -> &[FormatSegment] {
+    match &expr.node {
+        Expr::FormatString(segs) => segs,
         other => panic!("expected FormatString, got {other:?}"),
     }
 }
@@ -21,9 +21,9 @@ fn assert_interp_name(seg: &FormatSegment, expected: &str) {
     match seg {
         FormatSegment::Interpolation(expr) => {
             assert!(
-                matches!(&expr.kind, ExprKind::NameLookup(n) if n == expected),
+                matches!(&expr.node, Expr::NameLookup(n) if n == expected),
                 "expected NameLookup({expected}), got {:?}",
-                expr.kind
+                expr.node
             );
         }
         other => panic!("expected Interpolation segment, got {other:?}"),
@@ -114,7 +114,7 @@ fn format_expression_interpolation() {
     assert_literal_seg(&segs[0], b"result: ");
     match &segs[1] {
         FormatSegment::Interpolation(expr) => {
-            assert!(matches!(&expr.kind, ExprKind::BinOp { op: BinOp::Add, .. }));
+            assert!(matches!(&expr.node, Expr::BinOp { op: Spanned { node: BinOp::Add, .. }, .. }));
         }
         other => panic!("expected Interpolation, got {other:?}"),
     }
@@ -128,7 +128,7 @@ fn format_call_in_interpolation() {
     assert_literal_seg(&segs[0], b"upper: ");
     match &segs[1] {
         FormatSegment::Interpolation(expr) => {
-            assert!(matches!(&expr.kind, ExprKind::Call { .. }));
+            assert!(matches!(&expr.node, Expr::Call { .. }));
         }
         other => panic!("expected Interpolation, got {other:?}"),
     }
@@ -301,7 +301,7 @@ fn format_nested_call_in_interpolation() {
     assert_eq!(segs.len(), 1);
     match &segs[0] {
         FormatSegment::Interpolation(expr) => {
-            assert!(matches!(&expr.kind, ExprKind::Call { .. }));
+            assert!(matches!(&expr.node, Expr::Call { .. }));
         }
         other => panic!("expected Interpolation, got {other:?}"),
     }
@@ -314,7 +314,7 @@ fn format_comparison_in_interpolation() {
     assert_eq!(segs.len(), 1);
     match &segs[0] {
         FormatSegment::Interpolation(expr) => {
-            assert!(matches!(&expr.kind, ExprKind::BinOp { op: BinOp::Eq, .. }));
+            assert!(matches!(&expr.node, Expr::BinOp { op: Spanned { node: BinOp::Eq, .. }, .. }));
         }
         other => panic!("expected Interpolation, got {other:?}"),
     }
@@ -363,22 +363,22 @@ fn format_interpolation_then_escape() {
 #[test]
 fn format_string_concatenation() {
     let expr = parse_expr("$'hello' + $' world'");
-    assert!(matches!(&expr.kind, ExprKind::BinOp { op: BinOp::Add, .. }));
+    assert!(matches!(&expr.node, Expr::BinOp { op: Spanned { node: BinOp::Add, .. }, .. }));
 }
 
 #[test]
 fn format_string_in_call() {
     let expr = parse_expr("print($'value: ${x}')");
-    assert!(matches!(&expr.kind, ExprKind::Call { .. }));
+    assert!(matches!(&expr.node, Expr::Call { .. }));
 }
 
 #[test]
 fn format_string_in_def() {
     let program = parse("def msg = $'hello ${name}'");
     assert_eq!(program.statements.len(), 1);
-    match &program.statements[0].kind {
-        StatementKind::Def { expr, .. } => {
-            assert!(matches!(&expr.kind, ExprKind::FormatString(_)));
+    match &program.statements[0].node {
+        Statement::Def { expr, .. } => {
+            assert!(matches!(&expr.node, Expr::FormatString(_)));
         }
         other => panic!("expected Def, got {other:?}"),
     }

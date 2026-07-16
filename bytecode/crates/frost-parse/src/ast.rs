@@ -21,6 +21,23 @@ impl From<Range<usize>> for SourceSpan {
     }
 }
 
+// -- Spanned --
+
+
+/// Pairs an AST payload with its source span. 
+/// Every node's span encloses the union of its children's spans.
+#[derive(Clone, Debug, Serialize)]
+pub struct Spanned<T> {
+    pub node: T,
+    pub span: SourceSpan,
+}
+
+impl<T> Spanned<T> {
+    pub fn new(node: T, span: SourceSpan) -> Self {
+        Self { node, span }
+    }
+}
+
 // -- Binding --
 
 /// A name binding: either a named identifier or a discard (`_`).
@@ -36,119 +53,119 @@ pub enum Binding {
 /// A program is a sequence of statements.
 #[derive(Clone, Debug, Serialize)]
 pub struct Program {
-    pub statements: Vec<Statement>,
+    pub statements: Vec<Spanned<Statement>>,
 }
 
 // -- Statements --
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Statement {
-    pub kind: StatementKind,
-    pub span: SourceSpan,
-}
-
-#[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type", content = "value")]
-pub enum StatementKind {
+pub enum Statement {
     /// `def name = expr` or `export def name = expr`
     Def {
         exported: bool,
-        destructure: Destructure,
-        expr: Expr,
+        destructure: Spanned<Destructure>,
+        expr: Spanned<Expr>,
     },
     /// A bare expression executed for its side effects.
-    Expr(Expr),
+    Expr(Spanned<Expr>),
 }
 
 // -- Expressions --
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Expr {
-    pub kind: ExprKind,
-    pub span: SourceSpan,
-}
-
-#[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type", content = "value")]
-pub enum ExprKind {
+pub enum Expr {
     /// A literal value: `42`, `3.14`, `"hello"`, `true`, `null`.
     Literal(Literal),
     /// A variable reference: `foo`.
     NameLookup(String),
     /// A binary operation: `a + b`, `x == y`, `p and q`.
     BinOp {
-        left: Box<Expr>,
-        op: BinOp,
-        right: Box<Expr>,
+        left: Box<Spanned<Expr>>,
+        op: Spanned<BinOp>,
+        right: Box<Spanned<Expr>>,
     },
     /// A unary operation: `-x`, `not x`.
-    UnaryOp { op: UnaryOp, operand: Box<Expr> },
+    UnaryOp {
+        op: Spanned<UnaryOp>,
+        operand: Box<Spanned<Expr>>,
+    },
     /// `if cond: then elif cond2: then2 else: fallback`
     If {
-        condition: Box<Expr>,
-        consequent: Box<Expr>,
-        alternate: Option<Box<Expr>>,
+        condition: Box<Spanned<Expr>>,
+        consequent: Box<Spanned<Expr>>,
+        alternate: Option<Box<Spanned<Expr>>>,
     },
     /// `do { stmts; final_expr }`
     Do {
-        body: Vec<Statement>,
-        value: Box<Expr>,
+        body: Vec<Spanned<Statement>>,
+        value: Box<Spanned<Expr>>,
     },
     /// `f(a, b, c)`
-    Call { callee: Box<Expr>, args: Vec<Expr> },
+    Call {
+        callee: Box<Spanned<Expr>>,
+        args: Vec<Spanned<Expr>>,
+    },
     /// `a[b]`
-    SoftIndex { target: Box<Expr>, key: Box<Expr> },
+    SoftIndex {
+        target: Box<Spanned<Expr>>,
+        key: Box<Spanned<Expr>>,
+    },
     /// `foo.bar`
-    HardIndex { target: Box<Expr>, key: String },
+    HardIndex {
+        target: Box<Spanned<Expr>>,
+        key: String,
+    },
     /// `[a, b, c]`
-    Array(Vec<Expr>),
+    Array(Vec<Spanned<Expr>>),
     /// `{ [k1]: v1, [k2]: v2 }`
-    Map(Vec<MapEntry>),
+    Map(Vec<Spanned<MapEntry>>),
     /// `$'hello, ${name}'`
     FormatString(Vec<FormatSegment>),
     /// `fn name?(params) -> body`
     Lambda {
         /// Non-variadic parameters, excluding a `...rest` param.
-        params: Vec<Binding>,
+        params: Vec<Spanned<Binding>>,
         /// Variadic param, preceded by `...`.
-        variadic_param: Option<Binding>,
+        variadic_param: Option<Spanned<Binding>>,
         /// Lambdas may or may not have a name for self-recursion.
-        self_name: Option<String>,
+        self_name: Option<Spanned<String>>,
         /// Non-tail statements.
-        body: Vec<Statement>,
+        body: Vec<Spanned<Statement>>,
         /// Tail position expression which evaluates to the return value.
-        return_expr: Box<Expr>,
+        return_expr: Box<Spanned<Expr>>,
     },
     AbbreviatedLambda {
         /// A single body expression that contains dollar identifiers.
         /// This is the only place dollar identifiers are legal (parser-enforced).
-        body: Box<Expr>,
+        body: Box<Spanned<Expr>>,
     },
     /// `filter structure with operation`
     Filter {
-        structure: Box<Expr>,
-        operation: Box<Expr>,
+        structure: Box<Spanned<Expr>>,
+        operation: Box<Spanned<Expr>>,
     },
     /// `map structure with operation`
     MapIter {
-        structure: Box<Expr>,
-        operation: Box<Expr>,
+        structure: Box<Spanned<Expr>>,
+        operation: Box<Spanned<Expr>>,
     },
     /// `reduce structure [init: init_expr] with operation`
     Reduce {
-        structure: Box<Expr>,
-        operation: Box<Expr>,
-        init: Option<Box<Expr>>,
+        structure: Box<Spanned<Expr>>,
+        operation: Box<Spanned<Expr>>,
+        init: Option<Box<Spanned<Expr>>>,
     },
     /// `foreach structure with operation`
     Foreach {
-        structure: Box<Expr>,
-        operation: Box<Expr>,
+        structure: Box<Spanned<Expr>>,
+        operation: Box<Spanned<Expr>>,
     },
     /// `match target { pattern => result, ... }`
     Match {
-        target: Box<Expr>,
-        arms: Vec<MatchArm>,
+        target: Box<Spanned<Expr>>,
+        arms: Vec<Spanned<MatchArm>>,
     },
 }
 
@@ -193,8 +210,8 @@ pub enum UnaryOp {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct MapEntry {
-    pub key: Expr,
-    pub value: Expr,
+    pub key: Spanned<Expr>,
+    pub value: Spanned<Expr>,
 }
 
 // -- Format strings --
@@ -203,52 +220,46 @@ pub struct MapEntry {
 #[serde(tag = "type", content = "value")]
 pub enum FormatSegment {
     Literal(Vec<u8>),
-    Interpolation(Expr),
+    Interpolation(Spanned<Expr>),
 }
 
 // -- Match --
 
 #[derive(Clone, Debug, Serialize)]
 pub struct MatchArm {
-    pub pattern: MatchPattern,
-    pub guard: Option<Expr>,
-    pub result: Expr,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct MatchPattern {
-    pub kind: MatchPatternKind,
-    pub span: SourceSpan,
+    pub pattern: Spanned<MatchPattern>,
+    pub guard: Option<Spanned<Expr>>,
+    pub result: Spanned<Expr>,
 }
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type", content = "value")]
-pub enum MatchPatternKind {
+pub enum MatchPattern {
     /// `name` or `name is Type` or `_` or `_ is Type`.
     Binding {
-        name: Binding,
-        type_constraint: Option<TypeConstraint>,
+        name: Spanned<Binding>,
+        type_constraint: Option<Spanned<TypeConstraint>>,
     },
     /// `(expr)` or a literal -- compare by value.
-    Value(Expr),
+    Value(Spanned<Expr>),
     /// `[p1, p2, ...rest]`
     Array {
-        elements: Vec<MatchPattern>,
-        rest: Option<Binding>,
+        elements: Vec<Spanned<MatchPattern>>,
+        rest: Option<Spanned<Binding>>,
     },
     /// `{key: pattern, ...} as name?`
     Map {
-        entries: Vec<MapPatternEntry>,
-        bind_whole: Option<Binding>,
+        entries: Vec<Spanned<MapPatternEntry>>,
+        bind_whole: Option<Spanned<Binding>>,
     },
     /// `p1 | p2 | p3`
-    Alternative(Vec<MatchPattern>),
+    Alternative(Vec<Spanned<MatchPattern>>),
 }
 
 #[derive(Clone, Debug, Serialize)]
 pub struct MapPatternEntry {
-    pub key: Expr,
-    pub pattern: MatchPattern,
+    pub key: Spanned<Expr>,
+    pub pattern: Spanned<MatchPattern>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -270,30 +281,24 @@ pub enum TypeConstraint {
 // -- Destructuring (for `def`) --
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Destructure {
-    pub kind: DestructureKind,
-    pub span: SourceSpan,
-}
-
-#[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type", content = "value")]
-pub enum DestructureKind {
+pub enum Destructure {
     /// `def name = ...`
-    Binding(Binding),
+    Binding(Spanned<Binding>),
     /// `def [a, b, ...rest] = ...`
     Array {
-        elements: Vec<Destructure>,
-        rest: Option<Binding>,
+        elements: Vec<Spanned<Destructure>>,
+        rest: Option<Spanned<Binding>>,
     },
     /// `def {key: name, ...} as whole? = ...`
     Map {
-        entries: Vec<MapDestructureEntry>,
-        bind_whole: Option<Binding>,
+        entries: Vec<Spanned<MapDestructureEntry>>,
+        bind_whole: Option<Spanned<Binding>>,
     },
 }
 
 #[derive(Clone, Debug, Serialize)]
 pub struct MapDestructureEntry {
-    pub key: Expr,
-    pub destructure: Destructure,
+    pub key: Spanned<Expr>,
+    pub destructure: Spanned<Destructure>,
 }

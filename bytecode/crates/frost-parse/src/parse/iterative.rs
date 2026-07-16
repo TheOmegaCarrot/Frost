@@ -1,4 +1,4 @@
-use crate::ast::{Expr, ExprKind};
+use crate::ast::{Expr, Spanned};
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
 use crate::parse::{ParseResult, ctx::ParseCtx};
@@ -9,7 +9,11 @@ enum IterativeKind {
     Foreach,
 }
 
-fn parse_iterative(ctx: &mut ParseCtx, keyword: Token, kind: IterativeKind) -> ParseResult<Expr> {
+fn parse_iterative(
+    ctx: &mut ParseCtx,
+    keyword: Token,
+    kind: IterativeKind,
+) -> ParseResult<Spanned<Expr>> {
     let start = ctx.expect(keyword)?.span.start;
 
     let structure = parse_expression(ctx)?;
@@ -19,40 +23,37 @@ fn parse_iterative(ctx: &mut ParseCtx, keyword: Token, kind: IterativeKind) -> P
     let operation = parse_expression(ctx)?;
 
     let end = operation.span.end;
-    let expr_kind = match kind {
-        IterativeKind::Map => ExprKind::MapIter {
+    let node = match kind {
+        IterativeKind::Map => Expr::MapIter {
             structure: Box::new(structure),
             operation: Box::new(operation),
         },
-        IterativeKind::Filter => ExprKind::Filter {
+        IterativeKind::Filter => Expr::Filter {
             structure: Box::new(structure),
             operation: Box::new(operation),
         },
-        IterativeKind::Foreach => ExprKind::Foreach {
+        IterativeKind::Foreach => Expr::Foreach {
             structure: Box::new(structure),
             operation: Box::new(operation),
         },
     };
 
-    Ok(Expr {
-        span: (start..end).into(),
-        kind: expr_kind,
-    })
+    Ok(Spanned::new(node, (start..end).into()))
 }
 
-pub fn parse_map_iter(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_map_iter(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     parse_iterative(ctx, Token::KwMap, IterativeKind::Map)
 }
 
-pub fn parse_filter(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_filter(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     parse_iterative(ctx, Token::KwFilter, IterativeKind::Filter)
 }
 
-pub fn parse_foreach(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_foreach(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     parse_iterative(ctx, Token::KwForeach, IterativeKind::Foreach)
 }
 
-pub fn parse_reduce(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_reduce(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     let start = ctx.expect(Token::KwReduce)?.span.start;
 
     let structure = parse_expression(ctx)?;
@@ -72,13 +73,14 @@ pub fn parse_reduce(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     ctx.expect(Token::KwWith)?;
     ctx.skip_nl();
     let operation = parse_expression(ctx)?;
+    let end = operation.span.end;
 
-    Ok(Expr {
-        span: (start..operation.span.end).into(),
-        kind: ExprKind::Reduce {
+    Ok(Spanned::new(
+        Expr::Reduce {
             structure: Box::new(structure),
             operation: Box::new(operation),
             init,
         },
-    })
+        (start..end).into(),
+    ))
 }

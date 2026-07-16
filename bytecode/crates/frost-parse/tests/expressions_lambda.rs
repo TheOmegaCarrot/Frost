@@ -3,9 +3,9 @@ mod helpers;
 use frost_parse::ast::*;
 use helpers::*;
 
-fn assert_lambda(expr: &Expr) -> LambdaParts<'_> {
-    match &expr.kind {
-        ExprKind::Lambda {
+fn assert_lambda(expr: &Spanned<Expr>) -> LambdaParts<'_> {
+    match &expr.node {
+        Expr::Lambda {
             params,
             variadic_param,
             self_name,
@@ -14,7 +14,7 @@ fn assert_lambda(expr: &Expr) -> LambdaParts<'_> {
         } => LambdaParts {
             params,
             variadic_param: variadic_param.as_ref(),
-            self_name: self_name.as_deref(),
+            self_name: self_name.as_ref().map(|s| s.node.as_str()),
             body,
             return_expr,
         },
@@ -23,15 +23,15 @@ fn assert_lambda(expr: &Expr) -> LambdaParts<'_> {
 }
 
 struct LambdaParts<'a> {
-    params: &'a [Binding],
-    variadic_param: Option<&'a Binding>,
+    params: &'a [Spanned<Binding>],
+    variadic_param: Option<&'a Spanned<Binding>>,
     self_name: Option<&'a str>,
-    body: &'a [Statement],
-    return_expr: &'a Expr,
+    body: &'a [Spanned<Statement>],
+    return_expr: &'a Spanned<Expr>,
 }
 
-fn is_named(binding: &Binding, expected: &str) -> bool {
-    matches!(binding, Binding::Named(n) if n == expected)
+fn is_named(binding: &Spanned<Binding>, expected: &str) -> bool {
+    matches!(&binding.node, Binding::Named(n) if n == expected)
 }
 
 // ============================================================
@@ -118,7 +118,7 @@ mod bare_params {
         let expr = parse_expr("fn _ -> 42");
         let lam = assert_lambda(&expr);
         assert_eq!(lam.params.len(), 1);
-        assert_eq!(lam.params[0], Binding::Discarded);
+        assert_eq!(lam.params[0].node, Binding::Discarded);
     }
 }
 
@@ -181,7 +181,7 @@ mod parenthesized_params {
     fn discard_params() {
         let expr = parse_expr("fn(_, y) -> y");
         let lam = assert_lambda(&expr);
-        assert_eq!(lam.params[0], Binding::Discarded);
+        assert_eq!(lam.params[0].node, Binding::Discarded);
         assert!(is_named(&lam.params[1], "y"));
     }
 
@@ -232,7 +232,7 @@ mod named {
         let lam = assert_lambda(&expr);
         assert_eq!(lam.self_name, Some("fact"));
         assert_eq!(lam.params.len(), 1);
-        assert!(matches!(&lam.return_expr.kind, ExprKind::If { .. }));
+        assert!(matches!(&lam.return_expr.node, Expr::If { .. }));
     }
 }
 
@@ -248,8 +248,8 @@ mod block_body {
         let expr = parse_expr("fn x -> { def y = 1; y }");
         let lam = assert_lambda(&expr);
         assert_eq!(lam.body.len(), 1);
-        assert!(matches!(&lam.body[0].kind, StatementKind::Def { .. }));
-        assert!(matches!(&lam.return_expr.kind, ExprKind::NameLookup(n) if n == "y"));
+        assert!(matches!(&lam.body[0].node, Statement::Def { .. }));
+        assert!(matches!(&lam.return_expr.node, Expr::NameLookup(n) if n == "y"));
     }
 
     #[test]
@@ -299,7 +299,7 @@ mod block_body {
         let expr = parse_expr("fn -> {a}");
         let lam = assert_lambda(&expr);
         assert!(lam.body.is_empty());
-        assert!(matches!(&lam.return_expr.kind, ExprKind::NameLookup(n) if n == "a"));
+        assert!(matches!(&lam.return_expr.node, Expr::NameLookup(n) if n == "a"));
     }
 }
 
@@ -315,7 +315,7 @@ mod map_body {
         let expr = parse_expr("fn -> {foo: 1}");
         let lam = assert_lambda(&expr);
         assert!(lam.body.is_empty());
-        assert!(matches!(&lam.return_expr.kind, ExprKind::Map(_)));
+        assert!(matches!(&lam.return_expr.node, Expr::Map(_)));
     }
 
     #[test]
@@ -323,14 +323,14 @@ mod map_body {
         let expr = parse_expr("fn x -> {name: x}");
         let lam = assert_lambda(&expr);
         assert!(lam.body.is_empty());
-        assert!(matches!(&lam.return_expr.kind, ExprKind::Map(_)));
+        assert!(matches!(&lam.return_expr.node, Expr::Map(_)));
     }
 
     #[test]
     fn map_with_multiple_entries() {
         let expr = parse_expr("fn x -> {name: x, age: 30}");
         let lam = assert_lambda(&expr);
-        assert!(matches!(&lam.return_expr.kind, ExprKind::Map(entries) if entries.len() == 2));
+        assert!(matches!(&lam.return_expr.node, Expr::Map(entries) if entries.len() == 2));
     }
 
     // `fn -> {}` is a thunk returning an empty Map, not an empty block.
@@ -342,7 +342,7 @@ mod map_body {
         assert!(lam.variadic_param.is_none());
         assert!(lam.self_name.is_none());
         assert!(lam.body.is_empty());
-        assert!(matches!(&lam.return_expr.kind, ExprKind::Map(entries) if entries.is_empty()));
+        assert!(matches!(&lam.return_expr.node, Expr::Map(entries) if entries.is_empty()));
     }
 }
 
@@ -357,8 +357,8 @@ mod in_expressions {
     fn in_def() {
         let program = parse("def f = fn x -> x");
         assert_eq!(program.statements.len(), 1);
-        match &program.statements[0].kind {
-            StatementKind::Def { expr, .. } => {
+        match &program.statements[0].node {
+            Statement::Def { expr, .. } => {
                 assert_lambda(expr);
             }
             other => panic!("expected Def, got {other:?}"),
@@ -368,8 +368,8 @@ mod in_expressions {
     #[test]
     fn in_call_position() {
         let expr = parse_expr("(fn a -> a)(42)");
-        match &expr.kind {
-            ExprKind::Call { callee, args } => {
+        match &expr.node {
+            Expr::Call { callee, args } => {
                 assert_lambda(callee);
                 assert_eq!(args.len(), 1);
             }
@@ -390,8 +390,8 @@ mod in_expressions {
     #[test]
     fn in_call_arg() {
         let expr = parse_expr("f(fn x -> x)");
-        match &expr.kind {
-            ExprKind::Call { args, .. } => {
+        match &expr.node {
+            Expr::Call { args, .. } => {
                 assert_eq!(args.len(), 1);
                 assert_lambda(&args[0]);
             }
@@ -402,8 +402,8 @@ mod in_expressions {
     #[test]
     fn in_array() {
         let expr = parse_expr("[fn x -> x, fn y -> y]");
-        match &expr.kind {
-            ExprKind::Array(elems) => {
+        match &expr.node {
+            Expr::Array(elems) => {
                 assert_eq!(elems.len(), 2);
                 assert_lambda(&elems[0]);
                 assert_lambda(&elems[1]);
@@ -497,15 +497,15 @@ mod abbreviated {
 
     // The parser preserves the body verbatim with placeholders left as name
     // lookups; param shape (count/variadic) is derived later by the compiler.
-    fn assert_abbreviated(expr: &Expr) -> &Expr {
-        match &expr.kind {
-            ExprKind::AbbreviatedLambda { body } => body,
+    fn assert_abbreviated(expr: &Spanned<Expr>) -> &Spanned<Expr> {
+        match &expr.node {
+            Expr::AbbreviatedLambda { body } => body,
             other => panic!("expected AbbreviatedLambda, got {other:?}"),
         }
     }
 
-    fn is_dollar(expr: &Expr, name: &str) -> bool {
-        matches!(&expr.kind, ExprKind::NameLookup(n) if n == name)
+    fn is_dollar(expr: &Spanned<Expr>, name: &str) -> bool {
+        matches!(&expr.node, Expr::NameLookup(n) if n == name)
     }
 
     #[test]
@@ -562,8 +562,8 @@ mod abbreviated {
     fn dollar_in_call() {
         let expr = parse_expr("$(f($))");
         let body = assert_abbreviated(&expr);
-        match &body.kind {
-            ExprKind::Call { args, .. } => {
+        match &body.node {
+            Expr::Call { args, .. } => {
                 assert_eq!(args.len(), 1);
                 assert!(is_dollar(&args[0], "$"));
             }

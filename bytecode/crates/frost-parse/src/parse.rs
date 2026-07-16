@@ -1,4 +1,4 @@
-use crate::ast::{self, Binding};
+use crate::ast::{self, Binding, Spanned};
 use crate::lex::Token;
 use crate::parse::ctx::ParseCtx;
 use crate::parse::statements::{StatementContext, parse_statements};
@@ -33,17 +33,18 @@ pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseE
 /// into a public [`ParseError`] only at the [`parse_program`] boundary.
 type ParseResult<T> = Result<T, Diagnostic>;
 
-fn parse_binding(ctx: &mut ParseCtx, context: &str) -> ParseResult<Binding> {
+fn parse_binding(ctx: &mut ParseCtx, context: &str) -> ParseResult<Spanned<Binding>> {
     let peek = ctx.must_peek(context)?;
+    let span = peek.span.clone().into();
     match peek.token {
         Token::Identifier("_") => {
             ctx.advance(1);
-            Ok(Binding::Discarded)
+            Ok(Spanned::new(Binding::Discarded, span))
         }
         Token::Identifier(name) => {
             let name = name.to_owned();
             ctx.advance(1);
-            Ok(Binding::Named(name))
+            Ok(Spanned::new(Binding::Named(name), span))
         }
         _ => Err(ctx.unexpected_token(peek, context)),
     }

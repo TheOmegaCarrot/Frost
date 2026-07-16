@@ -1,10 +1,10 @@
-use crate::ast::{Binding, Expr, ExprKind, FormatSegment, Statement, StatementKind};
+use crate::ast::{Binding, Expr, SourceSpan, Spanned, Statement};
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
 use crate::parse::statements::{StatementContext, parse_statements};
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx, parse_binding};
 
-pub fn parse_lambda(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_lambda(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     let start = ctx.expect(Token::KwFn)?.span.start;
 
     let peek = ctx.must_peek("lambda")?;
@@ -25,19 +25,20 @@ pub fn parse_lambda(ctx: &mut ParseCtx) -> ParseResult<Expr> {
 
         Token::Identifier(name) => {
             let name = name.to_owned();
+            let name_span: SourceSpan = peek.span.clone().into();
             ctx.advance(1);
 
             if matches!(ctx.peek().map(|t| &t.token), Some(Token::OpenParen)) {
                 let (params, variadic) = parse_parenthesized_params(ctx)?;
-                (Some(name), params, variadic)
+                (Some(Spanned::new(name, name_span)), params, variadic)
             } else {
-                let first = if name == "_" {
+                let binding = if name == "_" {
                     Binding::Discarded
                 } else {
                     Binding::Named(name)
                 };
                 let (mut params, variadic) = parse_bare_params_tail(ctx)?;
-                params.insert(0, first);
+                params.insert(0, Spanned::new(binding, name_span));
                 (None, params, variadic)
             }
         }
@@ -47,23 +48,24 @@ pub fn parse_lambda(ctx: &mut ParseCtx) -> ParseResult<Expr> {
 
     let (body, return_expr, end) = parse_fn_body(ctx)?;
 
-    Ok(Expr {
-        span: (start..end).into(),
-        kind: ExprKind::Lambda {
+    Ok(Spanned::new(
+        Expr::Lambda {
             params,
             variadic_param,
             self_name,
             body,
             return_expr: Box::new(return_expr),
         },
-    })
+        (start..end).into(),
+    ))
 }
+
+/// A parsed parameter list: the positional params and an optional `...rest`.
+type Params = (Vec<Spanned<Binding>>, Option<Spanned<Binding>>);
 
 /// Parse `(a, b, ...rest)`. Caller has not consumed the `(`.
 /// Reusable for `defn`.
-pub fn parse_parenthesized_params(
-    ctx: &mut ParseCtx,
-) -> ParseResult<(Vec<Binding>, Option<Binding>)> {
+pub fn parse_parenthesized_params(ctx: &mut ParseCtx) -> ParseResult<Params> {
     ctx.expect(Token::OpenParen)?;
     ctx.enter_nl_context().maybe_skip_nl();
 
@@ -108,7 +110,9 @@ pub fn parse_parenthesized_params(
 /// Parse `-> expr` or `-> { stmts; expr }`.
 /// Returns `(body_stmts, return_expr, end_offset)`.
 /// Reusable for `defn`.
-pub fn parse_fn_body(ctx: &mut ParseCtx) -> ParseResult<(Vec<Statement>, Expr, usize)> {
+pub fn parse_fn_body(
+    ctx: &mut ParseCtx,
+) -> ParseResult<(Vec<Spanned<Statement>>, Spanned<Expr>, usize)> {
     ctx.expect(Token::SlimArrow)?;
     ctx.maybe_skip_nl();
 
@@ -169,7 +173,9 @@ fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
     }
 }
 
-fn parse_block_body(ctx: &mut ParseCtx) -> ParseResult<(Vec<Statement>, Expr, usize)> {
+fn parse_block_body(
+    ctx: &mut ParseCtx,
+) -> ParseResult<(Vec<Spanned<Statement>>, Spanned<Expr>, usize)> {
     let open_start = ctx.expect(Token::OpenBrace)?.span.start;
 
     let mut body = parse_statements(ctx, StatementContext::Scope)?;
@@ -184,9 +190,9 @@ fn parse_block_body(ctx: &mut ParseCtx) -> ParseResult<(Vec<Statement>, Expr, us
         ));
     };
 
-    let return_expr = match last.kind {
-        StatementKind::Expr(expr) => expr,
-        StatementKind::Def { .. } => {
+    let return_expr = match last.node {
+        Statement::Expr(expr) => expr,
+        Statement::Def { .. } => {
             return Err(Diagnostic::at(
                 "lambda block body must end with an expression, not a definition",
                 last.span,
@@ -200,7 +206,7 @@ fn parse_block_body(ctx: &mut ParseCtx) -> ParseResult<(Vec<Statement>, Expr, us
 
 /// Parse the tail of a bare param list: `[, param]* [, ...rest]`.
 /// Stops at `->` (which is not consumed).
-fn parse_bare_params_tail(ctx: &mut ParseCtx) -> ParseResult<(Vec<Binding>, Option<Binding>)> {
+fn parse_bare_params_tail(ctx: &mut ParseCtx) -> ParseResult<Params> {
     let mut params = Vec::new();
     let mut variadic = None;
 
@@ -221,7 +227,7 @@ fn parse_bare_params_tail(ctx: &mut ParseCtx) -> ParseResult<(Vec<Binding>, Opti
 
 // -- Abbreviated lambdas: $(expr) --
 
-pub fn parse_abbreviated_lambda(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_abbreviated_lambda(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     let start = ctx.expect(Token::DollarParen)?.span.start;
     ctx.enter_nl_context()
         .maybe_skip_nl()
@@ -235,10 +241,10 @@ pub fn parse_abbreviated_lambda(ctx: &mut ParseCtx) -> ParseResult<Expr> {
 
     let close = ctx.expect(Token::CloseParen)?;
 
-    Ok(Expr {
-        span: (start..close.span.end).into(),
-        kind: ExprKind::AbbreviatedLambda {
+    Ok(Spanned::new(
+        Expr::AbbreviatedLambda {
             body: Box::new(body),
         },
-    })
+        (start..close.span.end).into(),
+    ))
 }

@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use crate::ast::{Expr, ExprKind, Literal};
+use crate::ast::{Expr, Literal, Spanned};
 use crate::lex::Token;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
@@ -14,7 +14,7 @@ fn string_error(span: &Range<usize>, msg: impl Into<String>) -> Diagnostic {
     Diagnostic::at(msg, span.clone().into(), "in this String literal")
 }
 
-pub fn parse_simple_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult<Expr> {
+pub fn parse_simple_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
     let peek = ctx.must_peek("String literal")?;
     let span = peek.span.clone();
     let raw = match peek.token {
@@ -23,13 +23,13 @@ pub fn parse_simple_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult
     };
     ctx.advance(1);
     let bytes = expand_escapes(&raw, quote).map_err(|msg| string_error(&span, msg))?;
-    Ok(Expr {
-        span: span.into(),
-        kind: ExprKind::Literal(Literal::String(bytes)),
-    })
+    Ok(Spanned::new(
+        Expr::Literal(Literal::String(bytes)),
+        span.into(),
+    ))
 }
 
-pub fn parse_raw_string(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_raw_string(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     let peek = ctx.must_peek("raw String literal")?;
     let span = peek.span.clone();
     let raw = match peek.token {
@@ -38,13 +38,13 @@ pub fn parse_raw_string(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     };
     let bytes = raw.as_bytes().to_vec();
     ctx.advance(1);
-    Ok(Expr {
-        span: span.into(),
-        kind: ExprKind::Literal(Literal::String(bytes)),
-    })
+    Ok(Spanned::new(
+        Expr::Literal(Literal::String(bytes)),
+        span.into(),
+    ))
 }
 
-pub fn parse_multiline_string(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_multiline_string(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     let peek = ctx.must_peek("multiline String literal")?;
     let span = peek.span.clone();
     let raw = match peek.token {
@@ -54,10 +54,10 @@ pub fn parse_multiline_string(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     ctx.advance(1);
     let trimmed = trim_multiline_indentation(&raw).map_err(|msg| string_error(&span, msg))?;
     let bytes = expand_multiline_escapes(&trimmed).map_err(|msg| string_error(&span, msg))?;
-    Ok(Expr {
-        span: span.into(),
-        kind: ExprKind::Literal(Literal::String(bytes)),
-    })
+    Ok(Spanned::new(
+        Expr::Literal(Literal::String(bytes)),
+        span.into(),
+    ))
 }
 
 fn expand_escapes(raw: &str, quote: QuoteStyle) -> Result<Vec<u8>, String> {

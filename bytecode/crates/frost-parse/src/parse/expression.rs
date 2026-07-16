@@ -1,4 +1,4 @@
-use crate::ast::{BinOp, Expr, ExprKind, Literal, UnaryOp};
+use crate::ast::{BinOp, Expr, Literal, SourceSpan, Spanned, UnaryOp};
 use crate::lex::Token;
 use crate::parse::control_flow::{parse_do, parse_if};
 use crate::parse::format_string;
@@ -9,14 +9,14 @@ use crate::parse::strings;
 use crate::parse::structures::{parse_array_literal, parse_map_literal};
 use crate::parse::{ParseResult, ctx::ParseCtx};
 
-pub fn parse_expression(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+pub fn parse_expression(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     ctx.maybe_skip_nl();
     parse_expr_bp(ctx, 0)
 }
 
 // bp is short for "binding power"
 
-fn parse_expr_bp(ctx: &mut ParseCtx, min_bp: u8) -> ParseResult<Expr> {
+fn parse_expr_bp(ctx: &mut ParseCtx, min_bp: u8) -> ParseResult<Spanned<Expr>> {
     let mut lhs = parse_prefix(ctx)?;
 
     loop {
@@ -72,19 +72,20 @@ fn parse_expr_bp(ctx: &mut ParseCtx, min_bp: u8) -> ParseResult<Expr> {
         }
 
         let non_chainable = is_non_chainable(&peek.token);
+        let op = Spanned::new(op, peek.span.clone().into());
         ctx.advance(1);
         ctx.maybe_skip_nl();
 
         let rhs = parse_expr_bp(ctx, bp + 1)?;
         let span = (lhs.span.start..rhs.span.end).into();
-        lhs = Expr {
-            span,
-            kind: ExprKind::BinOp {
+        lhs = Spanned::new(
+            Expr::BinOp {
                 left: Box::new(lhs),
                 op,
                 right: Box::new(rhs),
             },
-        };
+            span,
+        );
 
         if non_chainable
             && let Some(next) = ctx.peek()
@@ -101,7 +102,7 @@ fn parse_expr_bp(ctx: &mut ParseCtx, min_bp: u8) -> ParseResult<Expr> {
 
 const POSTFIX_BP: u8 = 16;
 
-fn parse_call(ctx: &mut ParseCtx, callee: Expr) -> ParseResult<Expr> {
+fn parse_call(ctx: &mut ParseCtx, callee: Spanned<Expr>) -> ParseResult<Spanned<Expr>> {
     let start = callee.span.start;
     ctx.expect(Token::OpenParen)?;
     ctx.enter_nl_context();
@@ -111,16 +112,16 @@ fn parse_call(ctx: &mut ParseCtx, callee: Expr) -> ParseResult<Expr> {
             parse_expr_bp(ctx, 0)
         })?;
 
-    Ok(Expr {
-        span: (start..close.span.end).into(),
-        kind: ExprKind::Call {
+    Ok(Spanned::new(
+        Expr::Call {
             callee: Box::new(callee),
             args,
         },
-    })
+        (start..close.span.end).into(),
+    ))
 }
 
-fn parse_index(ctx: &mut ParseCtx, target: Expr) -> ParseResult<Expr> {
+fn parse_index(ctx: &mut ParseCtx, target: Spanned<Expr>) -> ParseResult<Spanned<Expr>> {
     let start = target.span.start;
     ctx.expect(Token::OpenBracket)?;
     ctx.enter_nl_context().maybe_skip_nl();
@@ -130,16 +131,16 @@ fn parse_index(ctx: &mut ParseCtx, target: Expr) -> ParseResult<Expr> {
     ctx.maybe_skip_nl().exit_nl_context();
     let close = ctx.expect(Token::CloseBracket)?;
 
-    Ok(Expr {
-        span: (start..close.span.end).into(),
-        kind: ExprKind::SoftIndex {
+    Ok(Spanned::new(
+        Expr::SoftIndex {
             target: Box::new(target),
             key: Box::new(key),
         },
-    })
+        (start..close.span.end).into(),
+    ))
 }
 
-fn parse_dot_access(ctx: &mut ParseCtx, target: Expr) -> ParseResult<Expr> {
+fn parse_dot_access(ctx: &mut ParseCtx, target: Spanned<Expr>) -> ParseResult<Spanned<Expr>> {
     let start = target.span.start;
     ctx.expect(Token::OpDot)?;
 
@@ -147,19 +148,19 @@ fn parse_dot_access(ctx: &mut ParseCtx, target: Expr) -> ParseResult<Expr> {
     if let Token::Identifier(name) = peek.token {
         let name = name.to_owned();
         let field_span = ctx.next().unwrap().span.clone();
-        Ok(Expr {
-            span: (start..field_span.end).into(),
-            kind: ExprKind::HardIndex {
+        Ok(Spanned::new(
+            Expr::HardIndex {
                 target: Box::new(target),
                 key: name,
             },
-        })
+            (start..field_span.end).into(),
+        ))
     } else {
         Err(ctx.unexpected_token(peek, "dot access (expected identifier)"))
     }
 }
 
-fn parse_thread(ctx: &mut ParseCtx, lhs: Expr) -> ParseResult<Expr> {
+fn parse_thread(ctx: &mut ParseCtx, lhs: Spanned<Expr>) -> ParseResult<Spanned<Expr>> {
     let start = lhs.span.start;
     ctx.expect(Token::OpThread)?;
     ctx.maybe_skip_nl();
@@ -184,16 +185,16 @@ fn parse_thread(ctx: &mut ParseCtx, lhs: Expr) -> ParseResult<Expr> {
 
     args.insert(0, lhs);
 
-    Ok(Expr {
-        span: (start..close.span.end).into(),
-        kind: ExprKind::Call {
+    Ok(Spanned::new(
+        Expr::Call {
             callee: Box::new(callee),
             args,
         },
-    })
+        (start..close.span.end).into(),
+    ))
 }
 
-fn parse_prefix(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+fn parse_prefix(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     let peek = ctx.must_peek("expression")?;
 
     let unary_op = match peek.token {
@@ -203,76 +204,60 @@ fn parse_prefix(ctx: &mut ParseCtx) -> ParseResult<Expr> {
     };
 
     if let Some((token, op)) = unary_op {
-        let start = ctx.expect(token)?.span.start;
+        let op_span: SourceSpan = ctx.expect(token)?.span.clone().into();
+        let start = op_span.start;
         ctx.maybe_skip_nl();
         let operand = parse_expr_bp(ctx, PREFIX_BP)?;
-        return Ok(Expr {
-            span: (start..operand.span.end).into(),
-            kind: ExprKind::UnaryOp {
-                op,
+        let end = operand.span.end;
+        return Ok(Spanned::new(
+            Expr::UnaryOp {
+                op: Spanned::new(op, op_span),
                 operand: Box::new(operand),
             },
-        });
+            (start..end).into(),
+        ));
     }
 
     parse_atom(ctx)
 }
 
-fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
+fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
     let peek = ctx.must_peek("expression")?;
     let span = peek.span.clone();
 
     match peek.token {
         Token::IntLiteral(n) => {
             ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::Int(n)),
-            })
+            Ok(Spanned::new(Expr::Literal(Literal::Int(n)), span.into()))
         }
         Token::FloatLiteral(n) => {
             ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::Float(n)),
-            })
+            Ok(Spanned::new(Expr::Literal(Literal::Float(n)), span.into()))
         }
         Token::KwTrue => {
             ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::Bool(true)),
-            })
+            Ok(Spanned::new(Expr::Literal(Literal::Bool(true)), span.into()))
         }
         Token::KwFalse => {
             ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::Bool(false)),
-            })
+            Ok(Spanned::new(
+                Expr::Literal(Literal::Bool(false)),
+                span.into(),
+            ))
         }
         Token::KwNull => {
             ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::Literal(Literal::Null),
-            })
+            Ok(Spanned::new(Expr::Literal(Literal::Null), span.into()))
         }
         Token::Identifier(name) => {
             let name = name.to_owned();
             ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::NameLookup(name),
-            })
+            Ok(Spanned::new(Expr::NameLookup(name), span.into()))
         }
         Token::DollarIdentifier(name) if ctx.in_abbreviated_lambda() => {
             let name = name.to_owned();
             ctx.advance(1);
-            Ok(Expr {
-                span: span.into(),
-                kind: ExprKind::NameLookup(name),
-            })
+            Ok(Spanned::new(Expr::NameLookup(name), span.into()))
         }
 
         Token::OpenParen => {
@@ -286,12 +271,12 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Expr> {
 
             let close = ctx.expect(Token::CloseParen)?;
 
-            // Parenthesized expression inherits the inner expression's kind,
+            // Parenthesized expression inherits the inner expression's node,
             // but gets the outer span (including parens).
-            Ok(Expr {
-                span: (start..close.span.end).into(),
-                kind: expr.kind,
-            })
+            Ok(Spanned::new(
+                expr.node,
+                (start..close.span.end).into(),
+            ))
         }
 
         // -- Atoms: strings --

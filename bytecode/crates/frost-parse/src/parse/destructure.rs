@@ -1,21 +1,18 @@
 use crate::ast::{
-    Binding, Destructure, DestructureKind, Expr, ExprKind, Literal, MapDestructureEntry,
+    Binding, Destructure, Expr, Literal, MapDestructureEntry, SourceSpan, Spanned,
 };
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
 use crate::parse::{ParseResult, ctx::ParseCtx, parse_binding};
 
-pub fn parse_destructure(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
+pub fn parse_destructure(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructure>> {
     let peek = ctx.must_peek("destructuring")?;
 
     match peek.token {
         Token::Identifier(_) => {
             let span = peek.span.clone();
             let binding = parse_binding(ctx, "destructuring")?;
-            Ok(Destructure {
-                span: span.into(),
-                kind: DestructureKind::Binding(binding),
-            })
+            Ok(Spanned::new(Destructure::Binding(binding), span.into()))
         }
         Token::OpenBracket => parse_destructure_array(ctx),
         Token::OpenBrace => parse_destructure_map(ctx),
@@ -23,7 +20,7 @@ pub fn parse_destructure(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
     }
 }
 
-fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
+fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructure>> {
     let start = ctx.expect(Token::OpenBracket)?.span.start;
 
     let mut elements = Vec::new();
@@ -31,10 +28,10 @@ fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
 
     if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
         let close = ctx.expect(Token::CloseBracket)?;
-        return Ok(Destructure {
-            span: (start..close.span.end).into(),
-            kind: DestructureKind::Array { elements, rest },
-        });
+        return Ok(Spanned::new(
+            Destructure::Array { elements, rest },
+            (start..close.span.end).into(),
+        ));
     }
 
     loop {
@@ -64,13 +61,13 @@ fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
 
     let close = ctx.expect(Token::CloseBracket)?;
 
-    Ok(Destructure {
-        span: (start..close.span.end).into(),
-        kind: DestructureKind::Array { elements, rest },
-    })
+    Ok(Spanned::new(
+        Destructure::Array { elements, rest },
+        (start..close.span.end).into(),
+    ))
 }
 
-fn parse_destructure_map(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
+fn parse_destructure_map(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructure>> {
     let start = ctx.expect(Token::OpenBrace)?.span.start;
 
     let mut entries = Vec::new();
@@ -107,24 +104,22 @@ fn parse_destructure_map(ctx: &mut ParseCtx) -> ParseResult<Destructure> {
         None
     };
 
-    Ok(Destructure {
-        span: (start..end).into(),
-        kind: DestructureKind::Map {
+    Ok(Spanned::new(
+        Destructure::Map {
             entries,
             bind_whole,
         },
-    })
+        (start..end).into(),
+    ))
 }
 
-fn string_key_expr(name: String, span: std::ops::Range<usize>) -> Expr {
-    Expr {
-        span: span.into(),
-        kind: ExprKind::Literal(Literal::String(name.into_bytes())),
-    }
+fn string_key_expr(name: String, span: SourceSpan) -> Spanned<Expr> {
+    Spanned::new(Expr::Literal(Literal::String(name.into_bytes())), span)
 }
 
-fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<MapDestructureEntry> {
+fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<Spanned<MapDestructureEntry>> {
     let peek = ctx.must_peek("Map destructuring entry")?;
+    let start = peek.span.start;
 
     match peek.token {
         Token::OpenBracket => {
@@ -133,33 +128,41 @@ fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<MapDestructureEntry> {
             ctx.expect(Token::CloseBracket)?;
             ctx.expect(Token::Colon)?;
             let destructure = parse_destructure(ctx)?;
-            Ok(MapDestructureEntry { key, destructure })
+            let span = (start..destructure.span.end).into();
+            Ok(Spanned::new(MapDestructureEntry { key, destructure }, span))
         }
         Token::Identifier(name) => {
             let name = name.to_owned();
-            let span = peek.span.clone();
+            let name_span: SourceSpan = peek.span.clone().into();
             ctx.advance(1);
 
             let peek = ctx.must_peek("Map destructuring entry")?;
             if peek.token == Token::Colon {
                 ctx.advance(1);
                 let destructure = parse_destructure(ctx)?;
-                Ok(MapDestructureEntry {
-                    key: string_key_expr(name, span),
-                    destructure,
-                })
+                let span = (start..destructure.span.end).into();
+                Ok(Spanned::new(
+                    MapDestructureEntry {
+                        key: string_key_expr(name, name_span),
+                        destructure,
+                    },
+                    span,
+                ))
             } else {
                 let binding = match name.as_str() {
                     "_" => Binding::Discarded,
                     _ => Binding::Named(name.clone()),
                 };
-                Ok(MapDestructureEntry {
-                    key: string_key_expr(name, span.clone()),
-                    destructure: Destructure {
-                        span: span.into(),
-                        kind: DestructureKind::Binding(binding),
+                Ok(Spanned::new(
+                    MapDestructureEntry {
+                        key: string_key_expr(name, name_span),
+                        destructure: Spanned::new(
+                            Destructure::Binding(Spanned::new(binding, name_span)),
+                            name_span,
+                        ),
                     },
-                })
+                    name_span,
+                ))
             }
         }
         _ => Err(ctx.unexpected_token(peek, "Map destructuring entry")),

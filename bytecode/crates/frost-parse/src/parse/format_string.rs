@@ -1,12 +1,12 @@
 use std::ops::Range;
 
-use crate::ast::{Expr, ExprKind, FormatSegment};
+use crate::ast::{Expr, FormatSegment, Spanned};
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
 use crate::parse::strings::QuoteStyle;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
-pub fn parse_format_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult<Expr> {
+pub fn parse_format_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
     let peek = ctx.must_peek("format String")?;
     let span = peek.span.clone();
     let raw = match peek.token {
@@ -19,10 +19,7 @@ pub fn parse_format_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult
 
     let segments = split_format_segments(&raw, quote, ctx, &span)?;
 
-    Ok(Expr {
-        span: span.into(),
-        kind: ExprKind::FormatString(segments),
-    })
+    Ok(Spanned::new(Expr::FormatString(segments), span.into()))
 }
 
 fn format_error(span: &Range<usize>, msg: impl Into<String>) -> Diagnostic {
@@ -147,7 +144,7 @@ fn split_format_segments(
             }
 
             b'$' => {
-                // Bare $ not followed by { — literal
+                // Bare $ not followed by { -- literal
                 literal_buf.push(b'$');
                 i += 1;
             }
@@ -172,7 +169,7 @@ fn parse_interpolation(
     ctx: &ParseCtx,
     span: &Range<usize>,
     base_offset: usize,
-) -> ParseResult<Expr> {
+) -> ParseResult<Spanned<Expr>> {
     // The sub-context lexes `src` with `base_offset`, so every diagnostic it
     // produces already carries whole-source spans. We propagate those inner
     // diagnostics directly -- adding an outer "in this format String" label for

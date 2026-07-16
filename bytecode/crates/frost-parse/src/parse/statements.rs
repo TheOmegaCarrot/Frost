@@ -1,4 +1,6 @@
-use crate::ast::{Binding, Destructure, DestructureKind, Expr, ExprKind, Statement, StatementKind};
+use crate::ast::{
+    Binding, Destructure, Expr, SourceSpan, Spanned, Statement,
+};
 use crate::lex::Token;
 use crate::parse::destructure::parse_destructure;
 use crate::parse::expression::parse_expression;
@@ -12,7 +14,10 @@ pub enum StatementContext {
     Scope,
 }
 
-pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResult<Vec<Statement>> {
+pub fn parse_statements(
+    ctx: &mut ParseCtx,
+    kind: StatementContext,
+) -> ParseResult<Vec<Spanned<Statement>>> {
     let mut stmts = Vec::new();
 
     let allow_export = matches!(kind, StatementContext::TopLevel);
@@ -43,11 +48,8 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
             Token::KwDefn => stmts.push(parse_defn(ctx, false)?),
             _ => {
                 let expr = parse_expression(ctx)?;
-
-                stmts.push(Statement {
-                    span: expr.span,
-                    kind: StatementKind::Expr(expr),
-                })
+                let span = expr.span;
+                stmts.push(Spanned::new(Statement::Expr(expr), span));
             }
         }
 
@@ -73,7 +75,7 @@ pub fn parse_statements(ctx: &mut ParseCtx, kind: StatementContext) -> ParseResu
     Ok(stmts)
 }
 
-fn parse_def(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
+fn parse_def(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Spanned<Statement>> {
     let start = ctx.must_peek("definition")?.span.start;
 
     if exported {
@@ -87,18 +89,19 @@ fn parse_def(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
     ctx.expect(Token::Assign)?;
 
     let expr = parse_expression(ctx)?;
+    let end = expr.span.end;
 
-    Ok(Statement {
-        span: (start..expr.span.end).into(),
-        kind: StatementKind::Def {
+    Ok(Spanned::new(
+        Statement::Def {
             exported,
             destructure,
             expr,
         },
-    })
+        (start..end).into(),
+    ))
 }
 
-fn parse_defn(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
+fn parse_defn(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Spanned<Statement>> {
     let defn_start = ctx.must_peek("function definition")?.span.start;
 
     if exported {
@@ -108,14 +111,14 @@ fn parse_defn(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
     ctx.expect(Token::KwDefn)?;
 
     // Not yet checked to be a name, but parse_binding below will error if this isn't the case.
-    let name_span = ctx.must_peek("defn function name")?.span.clone();
+    let name_span: SourceSpan = ctx.must_peek("defn function name")?.span.clone().into();
 
-    let name = match parse_binding(ctx, "function name")? {
+    let name = match parse_binding(ctx, "function name")?.node {
         Binding::Named(name) => name,
         Binding::Discarded => {
             return Err(Diagnostic::at(
                 "defn requires a function name, not '_'",
-                name_span.clone().into(),
+                name_span,
                 "expected a name",
             ));
         }
@@ -124,26 +127,26 @@ fn parse_defn(ctx: &mut ParseCtx, exported: bool) -> ParseResult<Statement> {
     let (params, variadic_param) = parse_parenthesized_params(ctx)?;
     let (body, return_expr, end) = parse_fn_body(ctx)?;
 
-    let expr = Expr {
-        span: (name_span.start..end).into(),
-        kind: ExprKind::Lambda {
+    let expr = Spanned::new(
+        Expr::Lambda {
             params,
             variadic_param,
-            self_name: Some(name.clone()),
+            self_name: Some(Spanned::new(name.clone(), name_span)),
             body,
             return_expr: Box::new(return_expr),
         },
-    };
+        (name_span.start..end).into(),
+    );
 
-    Ok(Statement {
-        span: (defn_start..end).into(),
-        kind: StatementKind::Def {
+    Ok(Spanned::new(
+        Statement::Def {
             exported,
-            destructure: Destructure {
-                span: name_span.into(),
-                kind: DestructureKind::Binding(Binding::Named(name)),
-            },
+            destructure: Spanned::new(
+                Destructure::Binding(Spanned::new(Binding::Named(name), name_span)),
+                name_span,
+            ),
             expr,
         },
-    })
+        (defn_start..end).into(),
+    ))
 }
