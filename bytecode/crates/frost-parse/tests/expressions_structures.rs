@@ -93,10 +93,7 @@ mod array_literals {
         let elems = array_elements(&expr);
         assert_eq!(elems.len(), 4);
         assert!(is_int(&elems[0], 1));
-        assert!(matches!(
-            &elems[1].node,
-            Expr::Literal(Literal::Bool(true))
-        ));
+        assert!(matches!(&elems[1].node, Expr::Literal(Literal::Bool(true))));
         assert!(matches!(&elems[2].node, Expr::Literal(Literal::Null)));
         assert!(matches!(&elems[3].node, Expr::NameLookup(n) if n == "foo"));
     }
@@ -364,7 +361,10 @@ mod map_literals {
         assert!(matches!(
             &entries[0].node.key.node,
             Expr::UnaryOp {
-                op: Spanned { node: UnaryOp::Negate, .. },
+                op: Spanned {
+                    node: UnaryOp::Negate,
+                    ..
+                },
                 ..
             }
         ));

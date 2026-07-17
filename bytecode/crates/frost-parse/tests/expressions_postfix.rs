@@ -498,7 +498,10 @@ fn negate_index() {
     let expr = parse_expr("-a[0]");
     match &expr.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Negate, .. },
+            op: Spanned {
+                node: UnaryOp::Negate,
+                ..
+            },
             operand,
         } => {
             assert!(matches!(&operand.node, Expr::SoftIndex { .. }));
@@ -513,7 +516,10 @@ fn negate_dot() {
     let expr = parse_expr("-a.b");
     match &expr.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Negate, .. },
+            op: Spanned {
+                node: UnaryOp::Negate,
+                ..
+            },
             operand,
         } => assert!(matches!(&operand.node, Expr::HardIndex { .. })),
         other => panic!("expected Negate(Index), got {other:?}"),
@@ -526,7 +532,9 @@ fn not_dot() {
     let expr = parse_expr("not a.b");
     match &expr.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Not, .. },
+            op: Spanned {
+                node: UnaryOp::Not, ..
+            },
             operand,
         } => assert!(matches!(&operand.node, Expr::HardIndex { .. })),
         other => panic!("expected Not(Index), got {other:?}"),
@@ -580,7 +588,11 @@ fn newline_before_thread_continues() {
 fn newline_dot_chain() {
     // A whole leading-dot chain across newlines: ((a.b).c).d
     let expr = parse_expr("a\n.b\n.c\n.d");
-    let Expr::HardIndex { target: abc, key: d } = &expr.node else {
+    let Expr::HardIndex {
+        target: abc,
+        key: d,
+    } = &expr.node
+    else {
         panic!("expected HardIndex, got {:?}", expr.node)
     };
     assert_eq!(d, "d");
@@ -595,7 +607,11 @@ fn newline_dot_chain() {
 fn newline_thread_chain() {
     // Leading-`@` chain across newlines: g(f(x)).
     let expr = parse_expr("x\n@ f()\n@ g()");
-    let Expr::Call { callee: g, args: outer } = &expr.node else {
+    let Expr::Call {
+        callee: g,
+        args: outer,
+    } = &expr.node
+    else {
         panic!("expected Call, got {:?}", expr.node)
     };
     assert!(matches!(&g.node, Expr::NameLookup(n) if n == "g"));

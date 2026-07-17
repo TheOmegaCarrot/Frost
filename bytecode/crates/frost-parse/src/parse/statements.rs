@@ -1,6 +1,4 @@
-use crate::ast::{
-    Binding, Destructure, Expr, SourceSpan, Spanned, Statement,
-};
+use crate::ast::{Binding, Destructure, Expr, SourceSpan, Spanned, Statement};
 use crate::lex::Token;
 use crate::parse::destructure::parse_destructure;
 use crate::parse::expression::parse_expression;

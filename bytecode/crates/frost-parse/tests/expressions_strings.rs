@@ -308,5 +308,14 @@ fn string_in_def() {
 #[test]
 fn string_concatenation_parse() {
     let expr = parse_expr("'hello' + ' ' + 'world'");
-    assert!(matches!(&expr.node, Expr::BinOp { op: Spanned { node: BinOp::Add, .. }, .. }));
+    assert!(matches!(
+        &expr.node,
+        Expr::BinOp {
+            op: Spanned {
+                node: BinOp::Add,
+                ..
+            },
+            ..
+        }
+    ));
 }

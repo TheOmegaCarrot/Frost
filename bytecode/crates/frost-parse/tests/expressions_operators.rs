@@ -94,10 +94,7 @@ fn and_or_precedence() {
     let expr = parse_expr("true and false or true");
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Or));
-    assert!(matches!(
-        &right.node,
-        Expr::Literal(Literal::Bool(true))
-    ));
+    assert!(matches!(&right.node, Expr::Literal(Literal::Bool(true))));
     let (ll, lop, lr) = is_binop(left).unwrap();
     assert!(matches!(lop, BinOp::And));
     assert!(matches!(&ll.node, Expr::Literal(Literal::Bool(true))));
@@ -168,7 +165,13 @@ fn unary_negate() {
     let expr = parse_expr("-5");
     match &expr.node {
         Expr::UnaryOp { op, operand } => {
-            assert!(matches!(op, Spanned { node: UnaryOp::Negate, .. }));
+            assert!(matches!(
+                op,
+                Spanned {
+                    node: UnaryOp::Negate,
+                    ..
+                }
+            ));
             assert!(is_int(operand, 5));
         }
         other => panic!("expected UnaryOp, got {other:?}"),
@@ -180,11 +183,14 @@ fn unary_not() {
     let expr = parse_expr("not true");
     match &expr.node {
         Expr::UnaryOp { op, operand } => {
-            assert!(matches!(op, Spanned { node: UnaryOp::Not, .. }));
             assert!(matches!(
-                &operand.node,
-                Expr::Literal(Literal::Bool(true))
+                op,
+                Spanned {
+                    node: UnaryOp::Not,
+                    ..
+                }
             ));
+            assert!(matches!(&operand.node, Expr::Literal(Literal::Bool(true))));
         }
         other => panic!("expected UnaryOp, got {other:?}"),
     }
@@ -198,7 +204,13 @@ fn negate_binds_tighter_than_add() {
     assert!(is_int(right, 3));
     match &left.node {
         Expr::UnaryOp { op, operand } => {
-            assert!(matches!(op, Spanned { node: UnaryOp::Negate, .. }));
+            assert!(matches!(
+                op,
+                Spanned {
+                    node: UnaryOp::Negate,
+                    ..
+                }
+            ));
             assert!(is_int(operand, 2));
         }
         other => panic!("expected UnaryOp, got {other:?}"),
@@ -210,17 +222,17 @@ fn not_precedence() {
     let expr = parse_expr("not true or false");
     let (left, op, right) = is_binop(&expr).unwrap();
     assert!(matches!(op, BinOp::Or));
-    assert!(matches!(
-        &right.node,
-        Expr::Literal(Literal::Bool(false))
-    ));
+    assert!(matches!(&right.node, Expr::Literal(Literal::Bool(false))));
     match &left.node {
         Expr::UnaryOp { op, operand } => {
-            assert!(matches!(op, Spanned { node: UnaryOp::Not, .. }));
             assert!(matches!(
-                &operand.node,
-                Expr::Literal(Literal::Bool(true))
+                op,
+                Spanned {
+                    node: UnaryOp::Not,
+                    ..
+                }
             ));
+            assert!(matches!(&operand.node, Expr::Literal(Literal::Bool(true))));
         }
         other => panic!("expected UnaryOp, got {other:?}"),
     }
@@ -231,11 +243,18 @@ fn double_negate() {
     let expr = parse_expr("--1");
     match &expr.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Negate, .. },
+            op: Spanned {
+                node: UnaryOp::Negate,
+                ..
+            },
             operand,
         } => match &operand.node {
             Expr::UnaryOp {
-                op: Spanned { node: UnaryOp::Negate, .. },
+                op:
+                    Spanned {
+                        node: UnaryOp::Negate,
+                        ..
+                    },
                 operand: inner,
             } => {
                 assert!(is_int(inner, 1));
@@ -251,17 +270,18 @@ fn double_not() {
     let expr = parse_expr("not not true");
     match &expr.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Not, .. },
+            op: Spanned {
+                node: UnaryOp::Not, ..
+            },
             operand,
         } => match &operand.node {
             Expr::UnaryOp {
-                op: Spanned { node: UnaryOp::Not, .. },
+                op: Spanned {
+                    node: UnaryOp::Not, ..
+                },
                 operand: inner,
             } => {
-                assert!(matches!(
-                    &inner.node,
-                    Expr::Literal(Literal::Bool(true))
-                ));
+                assert!(matches!(&inner.node, Expr::Literal(Literal::Bool(true))));
             }
             other => panic!("expected inner Not, got {other:?}"),
         },
@@ -274,7 +294,10 @@ fn negate_float() {
     let expr = parse_expr("-3.14");
     match &expr.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Negate, .. },
+            op: Spanned {
+                node: UnaryOp::Negate,
+                ..
+            },
             operand,
         } => {
             assert!(matches!(&operand.node, Expr::Literal(Literal::Float(f)) if *f == 3.14));
@@ -292,7 +315,9 @@ fn not_binds_tighter_than_equality() {
     assert!(matches!(&right.node, Expr::NameLookup(n) if n == "b"));
     match &left.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Not, .. },
+            op: Spanned {
+                node: UnaryOp::Not, ..
+            },
             operand,
         } => assert!(matches!(&operand.node, Expr::NameLookup(n) if n == "a")),
         other => panic!("expected Not(a), got {other:?}"),
@@ -308,7 +333,10 @@ fn subtract_negative_literal() {
     assert!(is_int(left, 3));
     match &right.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Negate, .. },
+            op: Spanned {
+                node: UnaryOp::Negate,
+                ..
+            },
             operand,
         } => assert!(is_int(operand, 2)),
         other => panic!("expected Negate(2), got {other:?}"),
@@ -321,7 +349,10 @@ fn negate_call() {
     let expr = parse_expr("-f()");
     match &expr.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Negate, .. },
+            op: Spanned {
+                node: UnaryOp::Negate,
+                ..
+            },
             operand,
         } => assert!(matches!(&operand.node, Expr::Call { .. })),
         other => panic!("expected Negate(Call), got {other:?}"),
@@ -420,13 +451,12 @@ fn prefix_with_newline_in_parens() {
     let expr = parse_expr("(\nnot\ntrue\n)");
     match &expr.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Not, .. },
+            op: Spanned {
+                node: UnaryOp::Not, ..
+            },
             operand,
         } => {
-            assert!(matches!(
-                &operand.node,
-                Expr::Literal(Literal::Bool(true))
-            ));
+            assert!(matches!(&operand.node, Expr::Literal(Literal::Bool(true))));
         }
         other => panic!("expected Not, got {other:?}"),
     }
@@ -437,7 +467,10 @@ fn negate_with_newline_in_parens() {
     let expr = parse_expr("(-\n5)");
     match &expr.node {
         Expr::UnaryOp {
-            op: Spanned { node: UnaryOp::Negate, .. },
+            op: Spanned {
+                node: UnaryOp::Negate,
+                ..
+            },
             operand,
         } => {
             assert!(is_int(operand, 5));

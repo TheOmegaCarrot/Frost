@@ -43,10 +43,7 @@ mod if_basic {
         assert!(is_int(then, 1));
         let alt = alt.unwrap();
         let (cond2, then2, alt2) = assert_if(alt);
-        assert!(matches!(
-            &cond2.node,
-            Expr::Literal(Literal::Bool(false))
-        ));
+        assert!(matches!(&cond2.node, Expr::Literal(Literal::Bool(false))));
         assert!(is_int(then2, 2));
         assert!(is_int(alt2.unwrap(), 3));
     }

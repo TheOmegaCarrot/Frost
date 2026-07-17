@@ -41,7 +41,10 @@ fn split_format_segments(
         match bytes[i] {
             b'\\' => {
                 if i + 1 >= bytes.len() {
-                    return Err(format_error(span, "unexpected end of String after backslash"));
+                    return Err(format_error(
+                        span,
+                        "unexpected end of String after backslash",
+                    ));
                 }
                 let escape = bytes[i + 1];
                 match escape {
@@ -130,7 +133,10 @@ fn split_format_segments(
                 }
 
                 if depth != 0 {
-                    return Err(format_error(span, "unclosed interpolation in format String"));
+                    return Err(format_error(
+                        span,
+                        "unclosed interpolation in format String",
+                    ));
                 }
 
                 // The content is between start and i-1 (i is past the closing })

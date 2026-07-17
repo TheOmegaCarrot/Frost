@@ -17,8 +17,8 @@ mod structures;
 
 pub(crate) mod ctx;
 
-pub use error::{Label, ParseError};
 pub(crate) use error::Diagnostic;
+pub use error::{Label, ParseError};
 
 pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseError> {
     let mut ctx =

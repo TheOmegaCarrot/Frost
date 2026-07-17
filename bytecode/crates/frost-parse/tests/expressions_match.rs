@@ -27,14 +27,18 @@ fn assert_value_pattern(pat: &Spanned<MatchPattern>) -> &Spanned<Expr> {
     }
 }
 
-fn assert_array_pattern(pat: &Spanned<MatchPattern>) -> (&[Spanned<MatchPattern>], Option<&Binding>) {
+fn assert_array_pattern(
+    pat: &Spanned<MatchPattern>,
+) -> (&[Spanned<MatchPattern>], Option<&Binding>) {
     match &pat.node {
         MatchPattern::Array { elements, rest } => (elements, rest.as_ref().map(|b| &b.node)),
         other => panic!("expected Array pattern, got {other:?}"),
     }
 }
 
-fn assert_map_pattern(pat: &Spanned<MatchPattern>) -> (&[Spanned<MapPatternEntry>], Option<&Binding>) {
+fn assert_map_pattern(
+    pat: &Spanned<MatchPattern>,
+) -> (&[Spanned<MapPatternEntry>], Option<&Binding>) {
     match &pat.node {
         MatchPattern::Map {
             entries,

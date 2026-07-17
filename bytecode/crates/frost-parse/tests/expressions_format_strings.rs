@@ -114,7 +114,16 @@ fn format_expression_interpolation() {
     assert_literal_seg(&segs[0], b"result: ");
     match &segs[1] {
         FormatSegment::Interpolation(expr) => {
-            assert!(matches!(&expr.node, Expr::BinOp { op: Spanned { node: BinOp::Add, .. }, .. }));
+            assert!(matches!(
+                &expr.node,
+                Expr::BinOp {
+                    op: Spanned {
+                        node: BinOp::Add,
+                        ..
+                    },
+                    ..
+                }
+            ));
         }
         other => panic!("expected Interpolation, got {other:?}"),
     }
@@ -314,7 +323,16 @@ fn format_comparison_in_interpolation() {
     assert_eq!(segs.len(), 1);
     match &segs[0] {
         FormatSegment::Interpolation(expr) => {
-            assert!(matches!(&expr.node, Expr::BinOp { op: Spanned { node: BinOp::Eq, .. }, .. }));
+            assert!(matches!(
+                &expr.node,
+                Expr::BinOp {
+                    op: Spanned {
+                        node: BinOp::Eq,
+                        ..
+                    },
+                    ..
+                }
+            ));
         }
         other => panic!("expected Interpolation, got {other:?}"),
     }
@@ -363,7 +381,16 @@ fn format_interpolation_then_escape() {
 #[test]
 fn format_string_concatenation() {
     let expr = parse_expr("$'hello' + $' world'");
-    assert!(matches!(&expr.node, Expr::BinOp { op: Spanned { node: BinOp::Add, .. }, .. }));
+    assert!(matches!(
+        &expr.node,
+        Expr::BinOp {
+            op: Spanned {
+                node: BinOp::Add,
+                ..
+            },
+            ..
+        }
+    ));
 }
 
 #[test]
@@ -433,7 +460,9 @@ fn interpolation_leftover_token_points_at_token() {
 fn interpolation_error_labels_the_format_string() {
     let err = frost_parse::parse_program("test.frst", "$'${x +}'").unwrap_err();
     assert!(
-        err.labels().iter().any(|l| l.text == "in this format String"),
+        err.labels()
+            .iter()
+            .any(|l| l.text == "in this format String"),
         "expected a context label; labels: {:?}",
         err.labels()
     );

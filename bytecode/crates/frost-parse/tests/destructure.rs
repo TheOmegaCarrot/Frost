@@ -33,7 +33,9 @@ fn def_destructure(src: &str) -> Spanned<Destructure> {
 #[test]
 fn simple_binding() {
     let d = def_destructure("def x = 1");
-    assert!(matches!(d.node, Destructure::Binding(Spanned { node: Binding::Named(ref n), .. }) if n == "x"));
+    assert!(
+        matches!(d.node, Destructure::Binding(Spanned { node: Binding::Named(ref n), .. }) if n == "x")
+    );
 }
 
 #[test]
@@ -41,7 +43,10 @@ fn discard_binding() {
     let d = def_destructure("def _ = 1");
     assert!(matches!(
         d.node,
-        Destructure::Binding(Spanned { node: Binding::Discarded, .. })
+        Destructure::Binding(Spanned {
+            node: Binding::Discarded,
+            ..
+        })
     ));
 }
 
@@ -125,7 +130,13 @@ fn rest_discard() {
     match d.node {
         Destructure::Array { elements, rest } => {
             assert_eq!(elements.len(), 1);
-            assert!(matches!(rest, Some(Spanned { node: Binding::Discarded, .. })));
+            assert!(matches!(
+                rest,
+                Some(Spanned {
+                    node: Binding::Discarded,
+                    ..
+                })
+            ));
         }
         other => panic!("expected Array, got {other:?}"),
     }
@@ -231,7 +242,9 @@ fn nested_with_rest() {
                     assert!(
                         matches!(&inner[0].node, Destructure::Binding(Spanned { node: Binding::Named(n), .. }) if n == "first")
                     );
-                    assert!(matches!(inner_rest, Some(Spanned { node: Binding::Named(n), .. }) if n == "tail"));
+                    assert!(
+                        matches!(inner_rest, Some(Spanned { node: Binding::Named(n), .. }) if n == "tail")
+                    );
                 }
                 other => panic!("expected nested Array, got {other:?}"),
             }
@@ -249,7 +262,10 @@ fn discard_in_nested() {
             assert_eq!(elements.len(), 2);
             assert!(matches!(
                 &elements[0].node,
-                Destructure::Binding(Spanned { node: Binding::Discarded, .. })
+                Destructure::Binding(Spanned {
+                    node: Binding::Discarded,
+                    ..
+                })
             ));
             match &elements[1].node {
                 Destructure::Array {
@@ -258,7 +274,10 @@ fn discard_in_nested() {
                     assert_eq!(inner.len(), 2);
                     assert!(matches!(
                         &inner[0].node,
-                        Destructure::Binding(Spanned { node: Binding::Discarded, .. })
+                        Destructure::Binding(Spanned {
+                            node: Binding::Discarded,
+                            ..
+                        })
                     ));
                     assert!(
                         matches!(&inner[1].node, Destructure::Binding(Spanned { node: Binding::Named(n), .. }) if n == "x")
@@ -456,7 +475,9 @@ fn map_as_binding() {
             bind_whole,
         } => {
             assert_eq!(entries.len(), 2);
-            assert!(matches!(&bind_whole, Some(Spanned { node: Binding::Named(n), .. }) if n == "whole"));
+            assert!(
+                matches!(&bind_whole, Some(Spanned { node: Binding::Named(n), .. }) if n == "whole")
+            );
         }
         other => panic!("expected Map, got {other:?}"),
     }
@@ -471,7 +492,13 @@ fn map_as_discard() {
             bind_whole,
         } => {
             assert_eq!(entries.len(), 1);
-            assert!(matches!(bind_whole, Some(Spanned { node: Binding::Discarded, .. })));
+            assert!(matches!(
+                bind_whole,
+                Some(Spanned {
+                    node: Binding::Discarded,
+                    ..
+                })
+            ));
         }
         other => panic!("expected Map, got {other:?}"),
     }
@@ -559,7 +586,9 @@ fn map_as_nested_in_array() {
                 } => {
                     assert_eq!(entries.len(), 1);
                     assert_eq!(str_key(&entries[0]), b"name");
-                    assert!(matches!(&bind_whole, Some(Spanned { node: Binding::Named(n), .. }) if n == "person"));
+                    assert!(
+                        matches!(&bind_whole, Some(Spanned { node: Binding::Named(n), .. }) if n == "person")
+                    );
                 }
                 other => panic!("expected Map in array element, got {other:?}"),
             }
@@ -634,7 +663,9 @@ fn empty_map_with_as() {
             bind_whole,
         } => {
             assert!(entries.is_empty());
-            assert!(matches!(&bind_whole, Some(Spanned { node: Binding::Named(n), .. }) if n == "m"));
+            assert!(
+                matches!(&bind_whole, Some(Spanned { node: Binding::Named(n), .. }) if n == "m")
+            );
         }
         other => panic!("expected Map, got {other:?}"),
     }

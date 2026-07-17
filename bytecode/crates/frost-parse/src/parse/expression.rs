@@ -236,7 +236,10 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
         }
         Token::KwTrue => {
             ctx.advance(1);
-            Ok(Spanned::new(Expr::Literal(Literal::Bool(true)), span.into()))
+            Ok(Spanned::new(
+                Expr::Literal(Literal::Bool(true)),
+                span.into(),
+            ))
         }
         Token::KwFalse => {
             ctx.advance(1);
@@ -273,10 +276,7 @@ fn parse_atom(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
 
             // Parenthesized expression inherits the inner expression's node,
             // but gets the outer span (including parens).
-            Ok(Spanned::new(
-                expr.node,
-                (start..close.span.end).into(),
-            ))
+            Ok(Spanned::new(expr.node, (start..close.span.end).into()))
         }
 
         // -- Atoms: strings --

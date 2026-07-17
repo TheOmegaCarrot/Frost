@@ -371,10 +371,7 @@ fn parse_map_pattern_entry(ctx: &mut ParseCtx) -> ParseResult<Spanned<MapPattern
 
 fn literal_pattern(start: usize, end: usize, literal: Literal) -> Spanned<MatchPattern> {
     Spanned::new(
-        MatchPattern::Value(Spanned::new(
-            Expr::Literal(literal),
-            (start..end).into(),
-        )),
+        MatchPattern::Value(Spanned::new(Expr::Literal(literal), (start..end).into())),
         (start..end).into(),
     )
 }

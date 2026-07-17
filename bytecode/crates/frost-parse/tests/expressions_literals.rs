@@ -26,10 +26,7 @@ fn bool_true() {
 #[test]
 fn bool_false() {
     let expr = parse_expr("false");
-    assert!(matches!(
-        &expr.node,
-        Expr::Literal(Literal::Bool(false))
-    ));
+    assert!(matches!(&expr.node, Expr::Literal(Literal::Bool(false))));
 }
 
 #[test]
@@ -67,9 +64,7 @@ fn float_scientific() {
 #[test]
 fn float_scientific_negative_exponent() {
     let expr = parse_expr("3.14e-2");
-    assert!(
-        matches!(&expr.node, Expr::Literal(Literal::Float(f)) if (*f - 3.14e-2).abs() < 1e-15)
-    );
+    assert!(matches!(&expr.node, Expr::Literal(Literal::Float(f)) if (*f - 3.14e-2).abs() < 1e-15));
 }
 
 // -- Program-level --

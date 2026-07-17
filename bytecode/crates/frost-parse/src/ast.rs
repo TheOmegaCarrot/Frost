@@ -23,7 +23,6 @@ impl From<Range<usize>> for SourceSpan {
 
 // -- Spanned --
 
-
 /// Pairs an AST payload with its source span.
 /// Every node's span encloses the union of its children's spans.
 #[derive(Clone, Debug, Serialize)]
