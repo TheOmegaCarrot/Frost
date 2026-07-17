@@ -102,7 +102,7 @@ fn catch_recycles_native_arg_buffer() {
 
 #[test]
 fn catch_recycles_every_intermediate_buffer() {
-    // try_call(apply, fail): two natives each check out a buffer (try_call's and apply's).
+    // try_call(apply, [fail]): two natives each check out a buffer (try_call's and apply's).
     // Both must be recycled across the caught error: one through `run_native`'s Ok arm (try_call), one through its Err arm (apply).
     let program = func(
         "main",
@@ -111,7 +111,8 @@ fn catch_recycles_every_intermediate_buffer() {
             Bytecode::LoadGlobal(try_call_slot()), //
             Bytecode::LoadLocal(0),                // apply (capture slot 0)
             closure(0),                            // fail
-            Bytecode::Call(2),                     // try_call(apply, fail)
+            Bytecode::MakeArray(1),                // [fail]
+            Bytecode::Call(2),                     // try_call(apply, [fail])
         ],
         1,
         vec![NameEntry {

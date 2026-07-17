@@ -128,7 +128,7 @@ fn raise(payload: Value) -> FrostError {
     .unwrap_err()
 }
 
-/// `try_call(error, payload)`: raise and catch in one program, returning the result map.
+/// `try_call(error, [payload])`: raise and catch in one program, returning the result map.
 fn catch_raise(payload: Value) -> Value {
     run_main(
         vec![("payload", payload)],
@@ -136,6 +136,7 @@ fn catch_raise(payload: Value) -> Value {
             LoadGlobal(global_slot("try_call")),
             LoadGlobal(global_slot("error")),
             LoadLocal(0),
+            MakeArray(1),
             Call(2),
         ],
     )

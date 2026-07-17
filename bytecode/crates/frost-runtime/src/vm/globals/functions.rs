@@ -49,24 +49,33 @@ pub(super) fn call_global() -> Value {
 
 /// Builds the `try_call` global: Frost's catch primitive, surfaced as a native.
 pub(super) fn try_call_global() -> Value {
-    // At least the function to call; any further args are passed to it.
-    Value::native("try_call", Arity::AtLeast(1), try_call)
+    Value::checked_native(
+        "try_call",
+        [
+            Param::of(&[FrostType::Function]),
+            Param::of(&[FrostType::Array]).optional(),
+        ],
+        try_call,
+    )
 }
 
-/// `try_call(f, ...args)`: invoke `f` with `args` and reify the outcome into a result map
+/// `try_call(f, args)`: invoke `f` with `args` (an array) and reify the outcome into a result map
 /// rather than letting an error propagate:
 ///   success: `{ ok: true,  value: <result> }`
 ///   failure: `{ ok: false, error: <message>, trace: [<frame names>] }`
 ///
-/// This is the one native that catches an unwinding error instead of re-raising it.
-/// By the time `invoke` returns Err, the boundary has already restored the Vm,
-/// so building the map here is safe.
+/// The argument array is interpreted the same as `call`, only the result shape differs.
 fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
-    // Arity::AtLeast(1) guarantees args[0] exists.
+    // Preflight type-checking guarantees the first argument is a Function,
+    // and the second is an Array (if present).
     let function = args[0].clone();
-    let call_args = args[1..].iter_mut().map(Value::take);
+    let call_args = match args.get_mut(1).map(Value::take) {
+        Some(Value::Array(arr)) => arr,
+        None => FrostArray::empty(),
+        _ => unreachable!("Unreachable due to prior type-checking"),
+    };
 
-    match ctx.invoke(&function, call_args) {
+    match ctx.invoke(&function, call_args.to_owned()) {
         Ok(value) => Ok(result_map([
             (string_key("ok"), Value::Bool(true)),
             (string_key("value"), value),

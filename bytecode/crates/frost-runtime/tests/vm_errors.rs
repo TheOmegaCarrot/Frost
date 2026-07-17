@@ -327,7 +327,7 @@ fn try_call_success_wraps_value() {
 
 #[test]
 fn try_call_forwards_arguments() {
-    // try_call(add, 2, 3) -> { ok: true, value: 5 }
+    // try_call(add, [2, 3]) -> { ok: true, value: 5 }: the args array is spread.
     let add = named(
         "add",
         vec![
@@ -349,7 +349,8 @@ fn try_call_forwards_arguments() {
             closure(0),
             Bytecode::PushInt(2),
             Bytecode::PushInt(3),
-            Bytecode::Call(3),
+            Bytecode::MakeArray(2),
+            Bytecode::Call(2),
         ],
         Arity::Exact(0),
         vec![],
@@ -359,6 +360,27 @@ fn try_call_forwards_arguments() {
     let map = expect_map(result.tail());
     assert_eq!(map.get_str("ok"), Some(&Value::Bool(true)));
     assert_eq!(map.get_str("value"), Some(&Value::Int(5)));
+}
+
+#[test]
+fn try_call_non_array_second_arg_is_type_error() {
+    // try_call(add, 5): the args parameter must be an Array. This is try_call's
+    // own type check, so nothing is invoked and the error propagates uncaught.
+    let add = named("add", vec![Bytecode::Pop], Arity::Exact(0), vec![], vec![]);
+    let program = named(
+        "main",
+        vec![
+            Bytecode::LoadGlobal(try_call_slot()),
+            closure(0),
+            Bytecode::PushInt(5),
+            Bytecode::Call(2),
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![add],
+    );
+    let err = run(program).unwrap_err();
+    assert!(err.message().contains("Array"), "got: {}", err.message());
 }
 
 // ============================================================
@@ -390,8 +412,10 @@ fn try_call_catches_division_by_zero() {
 }
 
 #[test]
-fn try_call_catches_non_function() {
-    // try_call(42): the catchee is not callable.
+fn try_call_non_function_first_arg_is_type_error() {
+    // try_call(42): the function parameter is type-checked up front (checked_native),
+    // so a non-function is try_call's own error and propagates uncaught -- it never
+    // reaches the catch, so there is no failure map.
     let program = named(
         "main",
         vec![
@@ -403,20 +427,9 @@ fn try_call_catches_non_function() {
         vec![],
         vec![],
     );
-    let result = run(program).unwrap();
-    let map = expect_map(result.tail());
-    assert_eq!(map.get_str("ok"), Some(&Value::Bool(false)));
-    assert!(
-        map.get_str("error")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .contains("non-function"),
-        "unexpected error: {:?}",
-        map.get_str("error")
-    );
-    // A non-function never produced a frame.
-    assert!(trace_of(map).is_empty());
+    let err = run(program).unwrap_err();
+    assert!(err.message().contains("Function"), "got: {}", err.message());
+    assert!(err.message().contains("Int"), "got: {}", err.message());
 }
 
 #[test]
@@ -514,7 +527,7 @@ fn try_call_catches_native_error() {
 
 #[test]
 fn try_call_catches_native_arity_mismatch() {
-    // try_call(boom, 5): boom is Exact(0). The arity check fails inside run_native
+    // try_call(boom, [5]): boom is Exact(0). The arity check fails inside run_native
     // before the body runs (its own early-return path), and is caught.
     let program = named(
         "main",
@@ -522,7 +535,8 @@ fn try_call_catches_native_arity_mismatch() {
             Bytecode::LoadGlobal(try_call_slot()),
             Bytecode::LoadLocal(0), // boom
             Bytecode::PushInt(5),   // one arg too many
-            Bytecode::Call(2),      // try_call(boom, 5)
+            Bytecode::MakeArray(1),
+            Bytecode::Call(2), // try_call(boom, [5])
         ],
         Arity::Exact(0),
         vec![entry("boom", false)],
@@ -596,7 +610,7 @@ fn error_propagates_through_native_to_top_level() {
 
 #[test]
 fn try_call_catches_error_through_native() {
-    // try_call(apply, fail): error crosses the apply native frame and is caught.
+    // try_call(apply, [fail]): error crosses the apply native frame and is caught.
     let fail = named("fail", div_zero_body(), Arity::Exact(0), vec![], vec![]);
     let program = named(
         "main",
@@ -604,7 +618,8 @@ fn try_call_catches_error_through_native() {
             Bytecode::LoadGlobal(try_call_slot()),
             Bytecode::LoadLocal(0), // apply
             closure(0),             // fail
-            Bytecode::Call(2),      // try_call(apply, fail)
+            Bytecode::MakeArray(1),
+            Bytecode::Call(2), // try_call(apply, [fail])
         ],
         Arity::Exact(0),
         vec![entry("apply", false)],
