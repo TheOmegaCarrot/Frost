@@ -58,7 +58,10 @@ fn run(vm: Vm) -> ProgramResult {
 fn close_binds_capture_value() {
     // fn -> <captured x>
     let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["x"]);
-    let closure = f.assert_trusted().close(capmap(vec![("x", Value::Int(42))])).unwrap();
+    let closure = f
+        .assert_trusted()
+        .close(capmap(vec![("x", Value::Int(42))]))
+        .unwrap();
     assert_eq!(
         run(Vm::factory().build(closure).unwrap()).tail(),
         &Value::Int(42)
@@ -107,7 +110,10 @@ fn close_reports_every_missing_capture_in_slot_order() {
         3,
         &["z", "x", "y"],
     );
-    let err = f.assert_trusted().close(capmap(vec![("x", Value::Int(1))])).unwrap_err();
+    let err = f
+        .assert_trusted()
+        .close(capmap(vec![("x", Value::Int(1))]))
+        .unwrap_err();
     assert_eq!(
         err,
         MissingCaptures {
@@ -193,7 +199,10 @@ fn close_injects_imported_at_its_name_table_slot() {
         2,
         &["x", "imported"],
     );
-    let c2 = read_x.assert_trusted().close(capmap(vec![("x", Value::Int(7))])).unwrap();
+    let c2 = read_x
+        .assert_trusted()
+        .close(capmap(vec![("x", Value::Int(7))]))
+        .unwrap();
     assert_eq!(run(Vm::factory().build(c2).unwrap()).tail(), &Value::Int(7));
 }
 
@@ -293,7 +302,10 @@ fn run_with_args_alongside_captures() {
         1,
         &["k", "a"],
     );
-    let closure = f.assert_trusted().close(capmap(vec![("k", Value::Int(100))])).unwrap();
+    let closure = f
+        .assert_trusted()
+        .close(capmap(vec![("k", Value::Int(100))]))
+        .unwrap();
     let result = Vm::factory()
         .build(closure)
         .unwrap()
@@ -402,7 +414,11 @@ fn run_with_args_variadic_too_few_is_arity_error() {
         .run_with_args([Value::Int(1)])
         .unwrap_err()
         .into_error();
-    assert!(err.message().contains("at least 2"), "got: {}", err.message());
+    assert!(
+        err.message().contains("at least 2"),
+        "got: {}",
+        err.message()
+    );
     assert!(
         err.message().contains("called with 1"),
         "got: {}",

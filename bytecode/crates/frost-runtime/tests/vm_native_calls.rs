@@ -12,8 +12,8 @@ use std::sync::Arc;
 
 use common::{entry, func};
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostResult, NameEntry, NativeCtx,
-    NativeFunction, ProgramResult, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostResult, NameEntry,
+    NativeCtx, NativeFunction, ProgramResult, Value, Vm,
 };
 
 /// Build a native function `Value`.
@@ -53,7 +53,10 @@ fn run_with(
         .into_iter()
         .map(|(n, v)| (n.to_string(), v))
         .collect();
-    let closure = program.assert_trusted().close(captures).expect("all captures provided");
+    let closure = program
+        .assert_trusted()
+        .close(captures)
+        .expect("all captures provided");
     Vm::factory().build(closure).unwrap().run().unwrap()
 }
 

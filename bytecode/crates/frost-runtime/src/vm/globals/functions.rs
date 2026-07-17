@@ -4,7 +4,8 @@ use std::sync::Arc;
 
 use crate::core::FrostResult;
 use crate::{
-    Arity, Bytecode, Closure, CompiledFunction, FormatVersion, FrostArray, MapKey, NativeCtx, Value,
+    Arity, Bytecode, Closure, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostType,
+    MapKey, NativeCtx, Param, Value,
 };
 
 /// `call(f)` / `call(f, args)`: invoke `f`, spreading the elements of `args` (or
@@ -95,18 +96,38 @@ fn result_map<const N: usize>(entries: [(MapKey, Value); N]) -> Value {
     Value::Map(entries.into_iter().collect())
 }
 
-// --- Not yet implemented ---
-
 pub(super) fn error_global() -> Value {
-    super::stub("error")
+    Value::checked_native("error", [Param::any()], |_, args| {
+        Err(FrostError::from_value(args[0].take()))
+    })
 }
 
 pub(super) fn and_then_global() -> Value {
-    super::stub("and_then")
+    Value::checked_native(
+        "and_then",
+        [Param::any(), Param::of(&[FrostType::Function])],
+        |mut ctx, args| {
+            let value = args[0].take();
+            match value {
+                Value::Null => Ok(Value::Null),
+                _ => ctx.invoke(&args[1], [value]),
+            }
+        },
+    )
 }
 
 pub(super) fn or_else_global() -> Value {
-    super::stub("or_else")
+    Value::checked_native(
+        "or_else",
+        [Param::any(), Param::of(&[FrostType::Function])],
+        |mut ctx, args| {
+            let value = args[0].take();
+            match value {
+                Value::Null => ctx.invoke(&args[1], []),
+                _ => Ok(value),
+            }
+        },
+    )
 }
 
 pub(super) fn inv_global() -> Value {

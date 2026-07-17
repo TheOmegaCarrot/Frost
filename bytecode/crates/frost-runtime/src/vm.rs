@@ -726,7 +726,6 @@ impl ProgramResult {
                 )
             })
     }
-
 }
 
 /// The surface common to both outcomes of a run (success or failure): each still owns the
@@ -785,7 +784,9 @@ impl RunOutcome for RunError {
 impl std::fmt::Debug for RunError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Elide the (large, indeterminate) Vm from `{:?}`/`unwrap` output.
-        f.debug_struct("RunError").field("error", &self.error).finish_non_exhaustive()
+        f.debug_struct("RunError")
+            .field("error", &self.error)
+            .finish_non_exhaustive()
     }
 }
 
@@ -1146,7 +1147,8 @@ impl Vm {
         self.stack.push(Value::Closure(closure.clone()));
         self.stack.extend(args);
         let argc = self.stack.len() - 1;
-        if let Err(error) = Self::check_arity(closure.function.arity, argc, &closure.function.name) {
+        if let Err(error) = Self::check_arity(closure.function.arity, argc, &closure.function.name)
+        {
             return Err(RunError { vm: self, error });
         }
         // The top-level frame is seated at depth 0, so this never trips the depth cap;

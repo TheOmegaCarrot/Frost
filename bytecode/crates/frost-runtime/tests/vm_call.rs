@@ -62,7 +62,11 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<ProgramResu
         arity: Arity::Exact(0),
     });
     let map: BTreeMap<String, Value> = caps.into_iter().map(|(n, v)| (n.to_string(), v)).collect();
-    Vm::factory().build(main.assert_trusted().close(map).unwrap()).unwrap().run().map_err(|e| e.into_error())
+    Vm::factory()
+        .build(main.assert_trusted().close(map).unwrap())
+        .unwrap()
+        .run()
+        .map_err(|e| e.into_error())
 }
 
 fn add() -> Value {
@@ -256,7 +260,11 @@ fn call_non_function_first_arg_is_type_error() {
         vec![LoadGlobal(call_slot()), PushInt(5), MakeArray(0), Call(2)],
     )
     .unwrap_err();
-    assert!(err.message().contains("non-function"), "got: {}", err.message());
+    assert!(
+        err.message().contains("non-function"),
+        "got: {}",
+        err.message()
+    );
     assert!(err.message().contains("Int"), "got: {}", err.message());
 }
 

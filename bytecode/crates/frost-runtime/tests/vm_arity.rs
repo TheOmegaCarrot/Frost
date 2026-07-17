@@ -48,7 +48,11 @@ fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> 
         .assert_trusted()
         .close(BTreeMap::from([("f".to_string(), native)]))
         .unwrap();
-    Vm::factory().build(closure).unwrap().run().map_err(|e| e.into_error())
+    Vm::factory()
+        .build(closure)
+        .unwrap()
+        .run()
+        .map_err(|e| e.into_error())
 }
 
 #[test]
@@ -175,7 +179,12 @@ fn between_closure_distinguishes_omitted_from_explicit_null() {
 fn between_closure_seating_works_through_call() {
     // The same probe invoked via `Call` from a wrapper (base != 0); proves the
     // argc-push is correct on the re-entrant call path, not only at the top level.
-    let probe_val = Value::Closure(omitted_vs_present_probe().assert_trusted().into_closure().unwrap());
+    let probe_val = Value::Closure(
+        omitted_vs_present_probe()
+            .assert_trusted()
+            .into_closure()
+            .unwrap(),
+    );
     let call_probe = |arg_pushes: Vec<Bytecode>, argc: usize| -> Value {
         let mut code = vec![Bytecode::Pop, Bytecode::LoadLocal(0)]; // pop own closure, load probe (capture 0)
         code.extend(arg_pushes);

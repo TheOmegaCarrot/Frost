@@ -73,9 +73,11 @@ impl TryFrom<&Value> for ConstValue {
             Value::Int(i) => ConstValue::Int(*i),
             Value::Float(f) => ConstValue::Float(*f),
             Value::String(s) => ConstValue::String(s.clone()),
-            Value::Array(a) => {
-                ConstValue::Array(a.into_iter().map(ConstValue::try_from).collect::<Result<_, _>>()?)
-            }
+            Value::Array(a) => ConstValue::Array(
+                a.into_iter()
+                    .map(ConstValue::try_from)
+                    .collect::<Result<_, _>>()?,
+            ),
             Value::Map(m) => ConstValue::Map(
                 m.into_iter()
                     .map(|(k, v)| Ok((k.clone(), ConstValue::try_from(v)?)))
@@ -96,9 +98,12 @@ impl From<ConstValue> for Value {
             ConstValue::Int(i) => Value::from(i),
             ConstValue::Float(f) => Value::from(f),
             ConstValue::String(s) => Value::from(s),
-            ConstValue::Array(items) => {
-                Value::from(items.into_iter().map(Value::from).collect::<crate::FrostArray>())
-            }
+            ConstValue::Array(items) => Value::from(
+                items
+                    .into_iter()
+                    .map(Value::from)
+                    .collect::<crate::FrostArray>(),
+            ),
             ConstValue::Map(pairs) => Value::from(
                 pairs
                     .into_iter()

@@ -49,7 +49,10 @@ fn run_with_f(f: Value, body: Vec<Bytecode>) -> Value {
         num_captures: 1,
         arity: Arity::Exact(0),
     });
-    let closure = top.assert_trusted().close(BTreeMap::from([("f".to_string(), f)])).unwrap();
+    let closure = top
+        .assert_trusted()
+        .close(BTreeMap::from([("f".to_string(), f)]))
+        .unwrap();
     Vm::factory()
         .build(closure)
         .unwrap()
