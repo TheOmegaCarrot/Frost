@@ -1,16 +1,14 @@
 use frost_runtime::{FrostArray, Value};
 
 fn sample_array() -> FrostArray {
-    FrostArray::new(&[Value::from(10i64), Value::from(20i64), Value::from(30i64)])
+    FrostArray::from(vec![
+        Value::from(10i64),
+        Value::from(20i64),
+        Value::from(30i64),
+    ])
 }
 
 // -- Construction --
-
-#[test]
-fn new_from_slice() {
-    let arr = FrostArray::new(&[Value::from(1i64), Value::from(2i64)]);
-    assert_eq!(arr.len(), 2);
-}
 
 #[test]
 fn from_vec() {
@@ -33,7 +31,7 @@ fn collect_from_iterator() {
 
 #[test]
 fn empty() {
-    let arr = FrostArray::new(&[]);
+    let arr = FrostArray::from(vec![]);
     assert!(arr.is_empty());
     assert_eq!(arr.len(), 0);
 }
@@ -81,7 +79,7 @@ fn frost_get_out_of_bounds() {
 
 #[test]
 fn frost_get_empty_array() {
-    let arr = FrostArray::new(&[]);
+    let arr = FrostArray::from(vec![]);
     assert!(arr.frost_get(0).is_none());
     assert!(arr.frost_get(-1).is_none());
 }
@@ -125,9 +123,9 @@ fn as_slice_subslice() {
 }
 
 #[test]
-fn as_slice_to_new_array() {
+fn from_subslice() {
     let arr = sample_array();
-    let tail = FrostArray::new(&arr.as_slice()[1..]);
+    let tail = FrostArray::from(&arr.as_slice()[1..]);
     assert_eq!(tail.len(), 2);
     assert!(matches!(tail.frost_get(0), Some(Value::Int(20))));
 }
@@ -164,25 +162,25 @@ fn try_extract_shared_then_dropped_succeeds() {
 }
 
 #[test]
-fn to_owned_unique_steals() {
+fn into_vec_unique_steals() {
     let arr = FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]);
-    let vec = arr.to_owned();
+    let vec = arr.into_vec();
     assert_eq!(vec.len(), 2);
 }
 
 #[test]
-fn to_owned_shared_clones() {
+fn into_vec_shared_clones() {
     let arr = sample_array();
     let _alias = arr.clone();
-    let vec = arr.to_owned();
+    let vec = arr.into_vec();
     assert_eq!(vec.len(), 3);
     assert!(matches!(vec[0], Value::Int(10)));
 }
 
 #[test]
-fn to_owned_is_mutable() {
+fn into_vec_is_mutable() {
     let arr = sample_array();
-    let mut vec = arr.to_owned();
+    let mut vec = arr.into_vec();
     vec.push(Value::from(40i64));
     assert_eq!(vec.len(), 4);
 }

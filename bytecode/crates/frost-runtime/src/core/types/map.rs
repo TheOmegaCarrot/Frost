@@ -112,9 +112,9 @@ impl FrostMap {
         }
     }
 
-    /// Extract a BTreeMap from a FrostMap, zero-copy when possible, but quietly copies when not.
-    /// If you want your copy to be explicit, use `try_extract`.
-    pub fn to_owned(self) -> BTreeMap<MapKey, Value> {
+    /// Extract a BTreeMap from a FrostMap.
+    /// Zero-copy when possible, but quietly copies when not.
+    pub fn into_map(self) -> BTreeMap<MapKey, Value> {
         Arc::unwrap_or_clone(self.inner)
     }
 }

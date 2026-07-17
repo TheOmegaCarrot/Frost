@@ -145,11 +145,29 @@ impl Value {
         }
     }
 
+    /// Extract the contained FrostArray, if present.
+    /// Otherwise returns the original value as-is.
+    pub fn try_into_array(self) -> Result<FrostArray, Value> {
+        match self {
+            Self::Array(a) => Ok(a),
+            _ => Err(self),
+        }
+    }
+
     /// Returns a reference to the inner `FrostMap` if this is a `Map`, or `None`.
     pub fn as_map(&self) -> Option<&FrostMap> {
         match self {
             Self::Map(m) => Some(m),
             _ => None,
+        }
+    }
+
+    /// Extract the contained FrostMap, if present.
+    /// Otherwise returns the original value as-is.
+    pub fn try_into_map(self) -> Result<FrostMap, Value> {
+        match self {
+            Self::Map(m) => Ok(m),
+            _ => Err(self),
         }
     }
 

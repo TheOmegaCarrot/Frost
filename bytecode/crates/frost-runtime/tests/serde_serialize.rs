@@ -127,7 +127,7 @@ fn serialize_unit() {
 #[test]
 fn serialize_vec() {
     let v = to_value(&vec![1i64, 2, 3]).unwrap();
-    let expected = Value::from(FrostArray::new(&[
+    let expected = Value::from(FrostArray::from(vec![
         Value::from(1i64),
         Value::from(2i64),
         Value::from(3i64),
@@ -138,22 +138,25 @@ fn serialize_vec() {
 #[test]
 fn serialize_empty_vec() {
     let v = to_value(&Vec::<i32>::new()).unwrap();
-    assert_eq!(v, Value::from(FrostArray::new(&[])));
+    assert_eq!(v, Value::from(FrostArray::from(vec![])));
 }
 
 #[test]
 fn serialize_nested_vec() {
     let v = to_value(&vec![vec![1i64, 2], vec![3]]).unwrap();
-    let inner1 = FrostArray::new(&[Value::from(1i64), Value::from(2i64)]);
-    let inner2 = FrostArray::new(&[Value::from(3i64)]);
-    let expected = Value::from(FrostArray::new(&[Value::from(inner1), Value::from(inner2)]));
+    let inner1 = FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]);
+    let inner2 = FrostArray::from(vec![Value::from(3i64)]);
+    let expected = Value::from(FrostArray::from(vec![
+        Value::from(inner1),
+        Value::from(inner2),
+    ]));
     assert_eq!(v, expected);
 }
 
 #[test]
 fn serialize_tuple() {
     let v = to_value(&(1i64, "hello", true)).unwrap();
-    let expected = Value::from(FrostArray::new(&[
+    let expected = Value::from(FrostArray::from(vec![
         Value::from(1i64),
         Value::from("hello"),
         Value::from(true),
@@ -336,7 +339,7 @@ fn serialize_value_int() {
 
 #[test]
 fn serialize_value_array() {
-    let arr = Value::from(FrostArray::new(&[Value::from(1i64)]));
+    let arr = Value::from(FrostArray::from(vec![Value::from(1i64)]));
     let v = to_value(&arr).unwrap();
     assert_eq!(v, arr);
 }
@@ -381,7 +384,10 @@ fn serialize_tuple_variant() {
     let v = to_value(&Expr::Pair(1, "hello".into())).unwrap();
     if let Value::Map(outer) = v {
         let inner = outer.get_str("Pair").unwrap();
-        let expected = Value::from(FrostArray::new(&[Value::from(1i64), Value::from("hello")]));
+        let expected = Value::from(FrostArray::from(vec![
+            Value::from(1i64),
+            Value::from("hello"),
+        ]));
         assert_eq!(inner, &expected);
     } else {
         panic!("expected Map");

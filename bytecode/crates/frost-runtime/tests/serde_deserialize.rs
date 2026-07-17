@@ -69,30 +69,38 @@ fn deserialize_some_string() {
 
 #[test]
 fn deserialize_vec() {
-    let arr = FrostArray::new(&[Value::from(1i64), Value::from(2i64), Value::from(3i64)]);
+    let arr = FrostArray::from(vec![
+        Value::from(1i64),
+        Value::from(2i64),
+        Value::from(3i64),
+    ]);
     let v: Vec<i64> = from_value(Value::from(arr)).unwrap();
     assert_eq!(v, vec![1, 2, 3]);
 }
 
 #[test]
 fn deserialize_empty_vec() {
-    let arr = FrostArray::new(&[]);
+    let arr = FrostArray::from(vec![]);
     let v: Vec<i64> = from_value(Value::from(arr)).unwrap();
     assert!(v.is_empty());
 }
 
 #[test]
 fn deserialize_nested_vec() {
-    let inner1 = FrostArray::new(&[Value::from(1i64), Value::from(2i64)]);
-    let inner2 = FrostArray::new(&[Value::from(3i64)]);
-    let outer = FrostArray::new(&[Value::from(inner1), Value::from(inner2)]);
+    let inner1 = FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]);
+    let inner2 = FrostArray::from(vec![Value::from(3i64)]);
+    let outer = FrostArray::from(vec![Value::from(inner1), Value::from(inner2)]);
     let v: Vec<Vec<i64>> = from_value(Value::from(outer)).unwrap();
     assert_eq!(v, vec![vec![1, 2], vec![3]]);
 }
 
 #[test]
 fn deserialize_tuple() {
-    let arr = FrostArray::new(&[Value::from(1i64), Value::from("hi"), Value::from(true)]);
+    let arr = FrostArray::from(vec![
+        Value::from(1i64),
+        Value::from("hi"),
+        Value::from(true),
+    ]);
     let v: (i64, String, bool) = from_value(Value::from(arr)).unwrap();
     assert_eq!(v, (1, "hi".to_owned(), true));
 }
@@ -206,7 +214,7 @@ struct Nested {
 
 #[test]
 fn deserialize_struct_with_nested() {
-    let items = FrostArray::new(&[Value::from(1i64), Value::from(2i64)]);
+    let items = FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]);
     let map: FrostMap = vec![
         (str_key("label"), Value::from("test")),
         (str_key("items"), Value::from(items)),
@@ -329,7 +337,7 @@ fn deserialize_value_from_value() {
 
 #[test]
 fn deserialize_value_array() {
-    let arr = Value::from(FrostArray::new(&[Value::from(1i64), Value::from("hi")]));
+    let arr = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from("hi")]));
     let v: Value = from_value(arr.clone()).unwrap();
     assert_eq!(v, arr);
 }
@@ -366,7 +374,7 @@ fn deserialize_vec_from_map_errors() {
 
 #[test]
 fn deserialize_struct_from_array_errors() {
-    let arr = FrostArray::new(&[Value::from(1i64)]);
+    let arr = FrostArray::from(vec![Value::from(1i64)]);
     let r = from_value::<Simple>(Value::from(arr));
     assert!(r.is_err());
 }
@@ -391,7 +399,7 @@ enum Expr {
 
 #[test]
 fn deserialize_tuple_variant() {
-    let inner = FrostArray::new(&[Value::from(1i64), Value::from("hello")]);
+    let inner = FrostArray::from(vec![Value::from(1i64), Value::from("hello")]);
     let map: FrostMap = vec![(str_key("Pair"), Value::from(inner))]
         .into_iter()
         .collect();

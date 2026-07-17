@@ -75,7 +75,7 @@ fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
         _ => unreachable!("Unreachable due to prior type-checking"),
     };
 
-    match ctx.invoke(&function, call_args.to_owned()) {
+    match ctx.invoke(&function, call_args.into_vec()) {
         Ok(value) => Ok(result_map([
             (string_key("ok"), Value::Bool(true)),
             (string_key("value"), value),

@@ -277,9 +277,9 @@ fn add_string_both_empty() {
 
 #[test]
 fn add_array_array() {
-    let l = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
-    let r = Value::from(FrostArray::new(&[Value::from(3i64), Value::from(4i64)]));
-    let expected = Value::from(FrostArray::new(&[
+    let l = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]));
+    let r = Value::from(FrostArray::from(vec![Value::from(3i64), Value::from(4i64)]));
+    let expected = Value::from(FrostArray::from(vec![
         Value::from(1i64),
         Value::from(2i64),
         Value::from(3i64),
@@ -290,29 +290,29 @@ fn add_array_array() {
 
 #[test]
 fn add_array_empty_left() {
-    let l = Value::from(FrostArray::new(&[]));
-    let r = Value::from(FrostArray::new(&[Value::from(1i64)]));
+    let l = Value::from(FrostArray::from(vec![]));
+    let r = Value::from(FrostArray::from(vec![Value::from(1i64)]));
     assert_eq!(
         l.add(&r).unwrap(),
-        Value::from(FrostArray::new(&[Value::from(1i64)]))
+        Value::from(FrostArray::from(vec![Value::from(1i64)]))
     );
 }
 
 #[test]
 fn add_array_empty_right() {
-    let l = Value::from(FrostArray::new(&[Value::from(1i64)]));
-    let r = Value::from(FrostArray::new(&[]));
+    let l = Value::from(FrostArray::from(vec![Value::from(1i64)]));
+    let r = Value::from(FrostArray::from(vec![]));
     assert_eq!(
         l.add(&r).unwrap(),
-        Value::from(FrostArray::new(&[Value::from(1i64)]))
+        Value::from(FrostArray::from(vec![Value::from(1i64)]))
     );
 }
 
 #[test]
 fn add_array_both_empty() {
-    let l = Value::from(FrostArray::new(&[]));
-    let r = Value::from(FrostArray::new(&[]));
-    assert_eq!(l.add(&r).unwrap(), Value::from(FrostArray::new(&[])));
+    let l = Value::from(FrostArray::from(vec![]));
+    let r = Value::from(FrostArray::from(vec![]));
+    assert_eq!(l.add(&r).unwrap(), Value::from(FrostArray::from(vec![])));
 }
 
 // ---- Addition: map merge ----
@@ -421,7 +421,7 @@ fn add_int_string_errors() {
 
 #[test]
 fn add_array_map_errors() {
-    let arr = Value::from(FrostArray::new(&[]));
+    let arr = Value::from(FrostArray::from(vec![]));
     let map = Value::from(FrostMap::empty());
     assert!(arr.add(&map).is_err());
 }

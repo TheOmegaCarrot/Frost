@@ -30,7 +30,9 @@ impl Index<usize> for FrostArray {
 
 impl From<&[Value]> for FrostArray {
     fn from(slice: &[Value]) -> Self {
-        Self::new(slice)
+        Self {
+            inner: Arc::from(Vec::from(slice)),
+        }
     }
 }
 
@@ -57,13 +59,6 @@ impl Default for FrostArray {
 }
 
 impl FrostArray {
-    /// Creates a new FrostArray from a slice of values.
-    pub fn new(elems: &[Value]) -> Self {
-        Self {
-            inner: Arc::from(Vec::from(elems)),
-        }
-    }
-
     /// Creates an empty FrostArray.
     pub fn empty() -> Self {
         Self {
@@ -117,9 +112,9 @@ impl FrostArray {
         }
     }
 
-    /// Extract a Vec from a FrostArray, zero-copy when possible, but quietly copies when not.
-    /// If you want your copy to be explicit, use `try_extract`.
-    pub fn to_owned(self) -> Vec<Value> {
+    /// Extract a Vec from a FrostArray.
+    /// Zero-copy when possible, but quietly copies when not.
+    pub fn into_vec(self) -> Vec<Value> {
         Arc::unwrap_or_clone(self.inner)
     }
 }

@@ -103,15 +103,15 @@ fn string_prefix_is_less() {
 
 #[test]
 fn array_lexicographic() {
-    let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
-    let b = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(3i64)]));
+    let a = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]));
+    let b = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from(3i64)]));
     assert_eq!(a.compare(&b).unwrap(), Ordering::Less);
 }
 
 #[test]
 fn array_prefix_is_less() {
-    let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
-    let b = Value::from(FrostArray::new(&[
+    let a = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]));
+    let b = Value::from(FrostArray::from(vec![
         Value::from(1i64),
         Value::from(2i64),
         Value::from(3i64),
@@ -121,22 +121,22 @@ fn array_prefix_is_less() {
 
 #[test]
 fn array_equal() {
-    let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
-    let b = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
+    let a = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]));
+    let b = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]));
     assert_eq!(a.compare(&b).unwrap(), Ordering::Equal);
 }
 
 #[test]
 fn empty_arrays_equal() {
-    let a = Value::from(FrostArray::new(&[]));
-    let b = Value::from(FrostArray::new(&[]));
+    let a = Value::from(FrostArray::from(vec![]));
+    let b = Value::from(FrostArray::from(vec![]));
     assert_eq!(a.compare(&b).unwrap(), Ordering::Equal);
 }
 
 #[test]
 fn empty_array_less_than_nonempty() {
-    let a = Value::from(FrostArray::new(&[]));
-    let b = Value::from(FrostArray::new(&[Value::from(1i64)]));
+    let a = Value::from(FrostArray::from(vec![]));
+    let b = Value::from(FrostArray::from(vec![Value::from(1i64)]));
     assert_eq!(a.compare(&b).unwrap(), Ordering::Less);
 }
 
@@ -144,8 +144,8 @@ fn empty_array_less_than_nonempty() {
 fn array_incomparable_element_is_error() {
     // [1, "x"] vs [1, 2]: the second elements (String vs Int) are not orderable,
     // so comparison fails, and the error blames the element types, not Array.
-    let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from("x")]));
-    let b = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
+    let a = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from("x")]));
+    let b = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]));
     let err = a.compare(&b).unwrap_err();
     assert!(
         err.message().contains("String") && err.message().contains("Int"),
@@ -163,8 +163,8 @@ fn array_incomparable_element_is_error() {
 fn array_incomparable_element_short_circuited_away() {
     // [1, "x"] vs [2, 3]: decided at index 0 (1 < 2), so the incomparable second
     // elements are never reached: no error.
-    let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from("x")]));
-    let b = Value::from(FrostArray::new(&[Value::from(2i64), Value::from(3i64)]));
+    let a = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from("x")]));
+    let b = Value::from(FrostArray::from(vec![Value::from(2i64), Value::from(3i64)]));
     assert_eq!(a.compare(&b).unwrap(), Ordering::Less);
 }
 
@@ -202,6 +202,6 @@ fn null_vs_int_not_orderable() {
 
 #[test]
 fn string_vs_array_not_orderable() {
-    let arr = Value::from(FrostArray::new(&[]));
+    let arr = Value::from(FrostArray::from(vec![]));
     assert!(Value::from("a").compare(&arr).is_err());
 }

@@ -252,25 +252,25 @@ fn try_extract_shared_then_dropped_succeeds() {
 }
 
 #[test]
-fn to_owned_unique_steals() {
+fn into_map_unique_steals() {
     let map = sample_map();
-    let btree = map.to_owned();
+    let btree = map.into_map();
     assert_eq!(btree.len(), 3);
 }
 
 #[test]
-fn to_owned_shared_clones() {
+fn into_map_shared_clones() {
     let map = sample_map();
     let _alias = map.clone();
-    let btree = map.to_owned();
+    let btree = map.into_map();
     assert_eq!(btree.len(), 3);
     assert!(btree.contains_key(&str_key("name")));
 }
 
 #[test]
-fn to_owned_is_mutable() {
+fn into_map_is_mutable() {
     let map = sample_map();
-    let mut btree = map.to_owned();
+    let mut btree = map.into_map();
     btree.insert(str_key("new_key"), Value::from(99i64));
     assert_eq!(btree.len(), 4);
 }

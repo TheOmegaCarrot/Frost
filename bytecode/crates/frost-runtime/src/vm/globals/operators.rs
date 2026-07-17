@@ -32,13 +32,13 @@ pub(super) fn plus_global() -> Value {
         let rhs = args[1].take();
         Ok(match (lhs, rhs) {
             (Value::Array(l), Value::Array(r)) => {
-                let mut elems = l.to_owned();
-                elems.extend(r.to_owned());
+                let mut elems = l.into_vec();
+                elems.extend(r.into_vec());
                 Value::Array(elems.into())
             }
             (Value::Map(l), Value::Map(r)) => {
-                let mut entries = l.to_owned();
-                entries.extend(r.to_owned());
+                let mut entries = l.into_map();
+                entries.extend(r.into_map());
                 Value::Map(entries.into())
             }
             (lhs, rhs) => lhs.add(&rhs)?,

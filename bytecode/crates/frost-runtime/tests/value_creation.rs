@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use frost_runtime::{FrostFloat, Value};
+use frost_runtime::{FrostFloat, MapKey, Value};
 
 #[test]
 fn from_bool() {
@@ -71,4 +71,46 @@ fn from_frost_float() {
     let f = FrostFloat::new(2.5).unwrap();
     let v: Value = f.into();
     assert!(matches!(v, Value::Float(_)));
+}
+
+// ---- Collection conversions ----
+
+#[test]
+fn from_vec_of_values() {
+    let v: Value = vec![Value::from(1i64), Value::from(2i64)].into();
+    assert!(matches!(&v, Value::Array(a) if a.len() == 2));
+}
+
+#[test]
+fn from_value_slice() {
+    let elems = [Value::from(1i64), Value::from(2i64), Value::from(3i64)];
+    let v: Value = elems.as_slice().into();
+    assert!(matches!(&v, Value::Array(a) if a.len() == 3));
+}
+
+#[test]
+fn collect_values_into_array() {
+    let v: Value = (0..4).map(|i| Value::from(i as i64)).collect();
+    assert!(matches!(&v, Value::Array(a) if a.len() == 4));
+}
+
+#[test]
+fn collect_pairs_into_map() {
+    let v: Value = vec![
+        (MapKey::from("a"), Value::from(1i64)),
+        (MapKey::from("b"), Value::from(2i64)),
+    ]
+    .into_iter()
+    .collect();
+    assert!(matches!(&v, Value::Map(m) if m.len() == 2));
+}
+
+#[test]
+fn array_constructor_maps_elements_in_order() {
+    // Value::array accepts anything Into<Value>, so bare i64s work.
+    let v = Value::array([1i64, 2, 3]);
+    let arr = v.as_array().expect("Value::array builds an Array");
+    assert_eq!(arr.len(), 3);
+    assert!(matches!(arr.frost_get(0), Some(Value::Int(1))));
+    assert!(matches!(arr.frost_get(2), Some(Value::Int(3))));
 }

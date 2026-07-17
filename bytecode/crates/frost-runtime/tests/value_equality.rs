@@ -84,37 +84,37 @@ fn bool_not_equal_to_int() {
 
 #[test]
 fn empty_arrays_equal() {
-    let a = Value::from(FrostArray::new(&[]));
-    let b = Value::from(FrostArray::new(&[]));
+    let a = Value::from(FrostArray::from(vec![]));
+    let b = Value::from(FrostArray::from(vec![]));
     assert_eq!(a, b);
 }
 
 #[test]
 fn arrays_same_elements() {
-    let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
-    let b = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
+    let a = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]));
+    let b = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]));
     assert_eq!(a, b);
 }
 
 #[test]
 fn arrays_different_elements() {
-    let a = Value::from(FrostArray::new(&[Value::from(1i64)]));
-    let b = Value::from(FrostArray::new(&[Value::from(2i64)]));
+    let a = Value::from(FrostArray::from(vec![Value::from(1i64)]));
+    let b = Value::from(FrostArray::from(vec![Value::from(2i64)]));
     assert_ne!(a, b);
 }
 
 #[test]
 fn arrays_different_lengths() {
-    let a = Value::from(FrostArray::new(&[Value::from(1i64), Value::from(2i64)]));
-    let b = Value::from(FrostArray::new(&[Value::from(1i64)]));
+    let a = Value::from(FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]));
+    let b = Value::from(FrostArray::from(vec![Value::from(1i64)]));
     assert_ne!(a, b);
 }
 
 #[test]
 fn nested_array_equality() {
-    let inner = FrostArray::new(&[Value::from(1i64)]);
-    let a = Value::from(FrostArray::new(&[Value::from(inner.clone())]));
-    let b = Value::from(FrostArray::new(&[Value::from(inner)]));
+    let inner = FrostArray::from(vec![Value::from(1i64)]);
+    let a = Value::from(FrostArray::from(vec![Value::from(inner.clone())]));
+    let b = Value::from(FrostArray::from(vec![Value::from(inner)]));
     assert_eq!(a, b);
 }
 
@@ -179,7 +179,7 @@ fn maps_different_sizes() {
 
 #[test]
 fn same_arc_array_is_equal() {
-    let arr = FrostArray::new(&[Value::from(1i64)]);
+    let arr = FrostArray::from(vec![Value::from(1i64)]);
     let a = Value::from(arr.clone());
     let b = Value::from(arr);
     assert_eq!(a, b);

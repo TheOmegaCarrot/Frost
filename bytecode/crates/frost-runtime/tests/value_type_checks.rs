@@ -33,7 +33,7 @@ fn is_string() {
 
 #[test]
 fn is_array() {
-    assert!(Value::from(FrostArray::new(&[])).is_array());
+    assert!(Value::from(FrostArray::from(vec![])).is_array());
     assert!(!Value::Null.is_array());
 }
 
@@ -62,13 +62,13 @@ fn is_primitive() {
     let f: Value = 1.0.try_into().unwrap();
     assert!(f.is_primitive());
     assert!(Value::from("hi").is_primitive());
-    assert!(!Value::from(FrostArray::new(&[])).is_primitive());
+    assert!(!Value::from(FrostArray::from(vec![])).is_primitive());
     assert!(!Value::from(FrostMap::empty()).is_primitive());
 }
 
 #[test]
 fn is_structured() {
-    assert!(Value::from(FrostArray::new(&[])).is_structured());
+    assert!(Value::from(FrostArray::from(vec![])).is_structured());
     assert!(Value::from(FrostMap::empty()).is_structured());
     assert!(!Value::from(1i64).is_structured());
     assert!(!Value::from("hi").is_structured());

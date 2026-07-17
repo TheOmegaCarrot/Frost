@@ -1257,13 +1257,13 @@ impl Vm {
         let lhs = self.stack_pop();
         let combined = match (lhs, rhs) {
             (Value::Array(lhs), Value::Array(rhs)) => {
-                let mut elems = lhs.to_owned(); // steals lhs's Vec when uniquely owned
-                elems.extend(rhs.to_owned()); // steals rhs's elements when uniquely owned
+                let mut elems = lhs.into_vec(); // steals lhs's Vec when uniquely owned
+                elems.extend(rhs.into_vec()); // steals rhs's elements when uniquely owned
                 Value::Array(elems.into())
             }
             (Value::Map(lhs), Value::Map(rhs)) => {
-                let mut entries = lhs.to_owned();
-                entries.extend(rhs.to_owned()); // on key collision rhs wins, matching `+`
+                let mut entries = lhs.into_map();
+                entries.extend(rhs.into_map()); // on key collision rhs wins, matching `+`
                 Value::Map(entries.into())
             }
             // `both_structural` guarantees one of the two arms above.

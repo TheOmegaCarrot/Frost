@@ -70,3 +70,51 @@ fn map_key_ordering_cross_type_is_consistent() {
     assert!(int_key < float_key);
     assert!(float_key < string_key);
 }
+
+// -- T -> MapKey conversions --
+
+#[test]
+fn key_from_str() {
+    let k: MapKey = "hi".into();
+    assert!(matches!(&k, MapKey::String(b) if &**b == b"hi"));
+}
+
+#[test]
+fn key_from_string() {
+    let k: MapKey = String::from("hi").into();
+    assert!(matches!(&k, MapKey::String(b) if &**b == b"hi"));
+}
+
+#[test]
+fn key_from_i64() {
+    let k: MapKey = 42i64.into();
+    assert!(matches!(k, MapKey::Int(42)));
+}
+
+#[test]
+fn key_from_bool() {
+    let k: MapKey = true.into();
+    assert!(matches!(k, MapKey::Bool(true)));
+}
+
+#[test]
+fn key_from_frost_float() {
+    let k: MapKey = FrostFloat::new(2.5).unwrap().into();
+    assert!(matches!(k, MapKey::Float(g) if g == FrostFloat::new(2.5).unwrap()));
+}
+
+#[test]
+fn key_try_from_f64_valid() {
+    let k = MapKey::try_from(2.5).unwrap();
+    assert!(matches!(k, MapKey::Float(_)));
+}
+
+#[test]
+fn key_try_from_f64_nan_fails() {
+    assert!(MapKey::try_from(f64::NAN).is_err());
+}
+
+#[test]
+fn key_try_from_f64_infinity_fails() {
+    assert!(MapKey::try_from(f64::INFINITY).is_err());
+}

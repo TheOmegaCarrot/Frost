@@ -65,9 +65,33 @@ impl From<Arc<[u8]>> for Value {
     }
 }
 
+impl From<Vec<Value>> for Value {
+    fn from(value: Vec<Value>) -> Self {
+        FrostArray::from(value).into()
+    }
+}
+
+impl From<&[Value]> for Value {
+    fn from(value: &[Value]) -> Self {
+        FrostArray::from(value).into()
+    }
+}
+
+impl FromIterator<Value> for Value {
+    fn from_iter<T: IntoIterator<Item = Value>>(iter: T) -> Self {
+        FrostArray::from_iter(iter).into()
+    }
+}
+
 impl From<FrostArray> for Value {
     fn from(a: FrostArray) -> Value {
         Value::Array(a)
+    }
+}
+
+impl FromIterator<(MapKey, Value)> for Value {
+    fn from_iter<T: IntoIterator<Item = (MapKey, Value)>>(iter: T) -> Self {
+        FrostMap::from_iter(iter).into()
     }
 }
 
@@ -104,6 +128,38 @@ impl TryFrom<Value> for MapKey {
 impl From<&str> for MapKey {
     fn from(value: &str) -> Self {
         Self::String(value.as_bytes().into())
+    }
+}
+
+impl From<String> for MapKey {
+    fn from(value: String) -> Self {
+        value.as_str().into()
+    }
+}
+
+impl From<i64> for MapKey {
+    fn from(value: i64) -> Self {
+        Self::Int(value)
+    }
+}
+
+impl From<bool> for MapKey {
+    fn from(value: bool) -> Self {
+        Self::Bool(value)
+    }
+}
+
+impl From<FrostFloat> for MapKey {
+    fn from(value: FrostFloat) -> Self {
+        Self::Float(value)
+    }
+}
+
+impl TryFrom<f64> for MapKey {
+    type Error = FrostError;
+
+    fn try_from(value: f64) -> Result<Self, Self::Error> {
+        Ok(FrostFloat::try_from(value)?.into())
     }
 }
 
@@ -268,5 +324,9 @@ impl Value {
 
     pub fn map<K: Into<MapKey>, const N: usize>(entries: [(K, Value); N]) -> Value {
         Value::Map(entries.into_iter().map(|(k, v)| (k.into(), v)).collect())
+    }
+
+    pub fn array<K: Into<Value>, const N: usize>(elements: [K; N]) -> Value {
+        Value::from_iter(elements.into_iter().map(|e| e.into()))
     }
 }

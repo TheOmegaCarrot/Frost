@@ -167,3 +167,38 @@ fn null_returns_none_for_all() {
     assert!(v.as_map().is_none());
     assert!(v.as_opaque().is_none());
 }
+
+// -- try_into_array --
+
+#[test]
+fn try_into_array_from_array() {
+    let v = Value::from(vec![Value::from(1i64), Value::from(2i64)]);
+    let arr = v.try_into_array().expect("an Array extracts");
+    assert_eq!(arr.len(), 2);
+}
+
+#[test]
+fn try_into_array_from_non_array_returns_the_value() {
+    // The miss hands the original value back unchanged, not a clone or Null.
+    let back = Value::from(42i64)
+        .try_into_array()
+        .expect_err("a non-Array does not extract");
+    assert_eq!(back.as_int(), Some(42));
+}
+
+// -- try_into_map --
+
+#[test]
+fn try_into_map_from_map() {
+    let v = Value::map([("a", Value::from(1i64))]);
+    let map = v.try_into_map().expect("a Map extracts");
+    assert_eq!(map.len(), 1);
+}
+
+#[test]
+fn try_into_map_from_non_map_returns_the_value() {
+    let back = Value::from("nope")
+        .try_into_map()
+        .expect_err("a non-Map does not extract");
+    assert_eq!(back.as_str(), Some("nope"));
+}

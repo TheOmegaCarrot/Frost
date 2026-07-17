@@ -154,7 +154,7 @@ fn debug_int_same_as_to_string() {
 
 #[test]
 fn empty_array() {
-    let v = Value::from(FrostArray::new(&[]));
+    let v = Value::from(FrostArray::from(vec![]));
     assert_eq!(v.to_frost_string(), "[]");
 }
 
@@ -168,20 +168,20 @@ fn empty_map() {
 
 #[test]
 fn array_compact() {
-    let arr = FrostArray::new(&[Value::from(1i64), Value::from("hi"), Value::Null]);
+    let arr = FrostArray::from(vec![Value::from(1i64), Value::from("hi"), Value::Null]);
     assert_eq!(Value::from(arr).to_frost_string(), "[ 1, \"hi\", null ]");
 }
 
 #[test]
 fn array_single_element() {
-    let arr = FrostArray::new(&[Value::from(42i64)]);
+    let arr = FrostArray::from(vec![Value::from(42i64)]);
     assert_eq!(Value::from(arr).to_frost_string(), "[ 42 ]");
 }
 
 #[test]
 fn nested_array_compact() {
-    let inner = FrostArray::new(&[Value::from(2i64), Value::from(3i64)]);
-    let outer = FrostArray::new(&[Value::from(1i64), Value::from(inner)]);
+    let inner = FrostArray::from(vec![Value::from(2i64), Value::from(3i64)]);
+    let outer = FrostArray::from(vec![Value::from(1i64), Value::from(inner)]);
     assert_eq!(Value::from(outer).to_frost_string(), "[ 1, [ 2, 3 ] ]");
 }
 
@@ -221,19 +221,22 @@ fn map_compact_reserved_keyword_key() {
 
 #[test]
 fn array_pretty() {
-    let arr = FrostArray::new(&[Value::from(1i64), Value::from(2i64)]);
+    let arr = FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]);
     assert_eq!(Value::from(arr).to_pretty_string(), "[\n    1,\n    2\n]");
 }
 
 #[test]
 fn empty_array_pretty() {
-    assert_eq!(Value::from(FrostArray::new(&[])).to_pretty_string(), "[]");
+    assert_eq!(
+        Value::from(FrostArray::from(vec![])).to_pretty_string(),
+        "[]"
+    );
 }
 
 #[test]
 fn nested_array_pretty() {
-    let inner = FrostArray::new(&[Value::from(2i64), Value::from(3i64)]);
-    let outer = FrostArray::new(&[Value::from(1i64), Value::from(inner)]);
+    let inner = FrostArray::from(vec![Value::from(2i64), Value::from(3i64)]);
+    let outer = FrostArray::from(vec![Value::from(1i64), Value::from(inner)]);
     assert_eq!(
         Value::from(outer).to_pretty_string(),
         "\
@@ -299,7 +302,7 @@ fn empty_map_pretty() {
 
 #[test]
 fn map_with_nested_array_pretty() {
-    let arr = FrostArray::new(&[Value::from(1i64), Value::from(2i64)]);
+    let arr = FrostArray::from(vec![Value::from(1i64), Value::from(2i64)]);
     let map: FrostMap = vec![(str_key("nums"), Value::from(arr))]
         .into_iter()
         .collect();
@@ -313,13 +316,13 @@ fn map_with_nested_array_pretty() {
 
 #[test]
 fn string_in_array_is_quoted() {
-    let arr = FrostArray::new(&[Value::from("hello")]);
+    let arr = FrostArray::from(vec![Value::from("hello")]);
     assert_eq!(Value::from(arr).to_frost_string(), "[ \"hello\" ]");
 }
 
 #[test]
 fn string_with_escapes_in_array() {
-    let arr = FrostArray::new(&[Value::from("line1\nline2\t\"x\"")]);
+    let arr = FrostArray::from(vec![Value::from("line1\nline2\t\"x\"")]);
     assert_eq!(
         Value::from(arr).to_frost_string(),
         "[ \"line1\\nline2\\t\\\"x\\\"\" ]"
