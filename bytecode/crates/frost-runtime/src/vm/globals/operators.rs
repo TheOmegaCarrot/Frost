@@ -24,25 +24,9 @@ fn comparison(name: &'static str, accept: fn(Ordering) -> bool) -> Value {
 }
 
 pub(super) fn plus_global() -> Value {
-    // `+` concatenates Arrays and merges Maps. Consume the args so those cases
-    // steal their backing storage instead of cloning, mirroring `Vm::do_add`;
-    // every other case forwards to the scalar `Value::add`.
+    // Consume the args so Array/Map `+` can steal their storage (see `Value::add_owned`).
     Value::native("plus", Arity::Exact(2), |_, args| {
-        let lhs = args[0].take();
-        let rhs = args[1].take();
-        Ok(match (lhs, rhs) {
-            (Value::Array(l), Value::Array(r)) => {
-                let mut elems = l.into_vec();
-                elems.extend(r.into_vec());
-                Value::Array(elems.into())
-            }
-            (Value::Map(l), Value::Map(r)) => {
-                let mut entries = l.into_map();
-                entries.extend(r.into_map());
-                Value::Map(entries.into())
-            }
-            (lhs, rhs) => lhs.add(&rhs)?,
-        })
+        Value::add_owned(args[0].take(), args[1].take())
     })
 }
 

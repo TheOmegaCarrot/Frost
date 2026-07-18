@@ -50,7 +50,10 @@ fn float_val(x: f64) -> Value {
     Value::try_from(x).unwrap()
 }
 
-use Bytecode::{LoadConst, LogicalNot, Negate, Pop, PushFalse, PushInt, PushNull, PushTrue};
+mod common;
+
+use Bytecode::{LoadConst, LogicalNot, Negate, PushFalse, PushInt, PushNull, PushTrue};
+use common::Pop;
 
 // ============================================================
 // LogicalNot: total, always yields a Bool

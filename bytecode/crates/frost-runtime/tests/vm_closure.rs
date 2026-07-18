@@ -14,7 +14,10 @@ use frost_runtime::{
     ProgramResult, Value, Vm,
 };
 
-use Bytecode::{DefLocal, LoadLocal, Pop, PushInt, Subtract};
+mod common;
+
+use Bytecode::{DefLocal, LoadLocal, PushInt, Subtract};
+use common::Pop;
 
 /// Build a `CompiledFunction` with an explicit prelude (no auto-`Pop`).
 /// `names` are the slot names; the first `num_captures` are captures.

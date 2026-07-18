@@ -9,6 +9,9 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+mod common;
+
+use common::Pop;
 use frost_runtime::{
     Arity, Bytecode, CompiledFunction, FormatVersion, FrostResult, NameEntry, NativeFunction,
     Value, Vm,

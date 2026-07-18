@@ -47,7 +47,10 @@ fn float(x: f64) -> Bytecode {
     Bytecode::PushFloat(FrostFloat::new(x).unwrap())
 }
 
-use Bytecode::{LoadConst, Pop, PushInt, PushNull, TypeTest};
+mod common;
+
+use Bytecode::{LoadConst, PushInt, PushNull, TypeTest};
+use common::Pop;
 
 // ============================================================
 // Exact

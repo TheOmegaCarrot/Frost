@@ -412,6 +412,101 @@ fn add_map_both_empty() {
     assert_eq!(result, Value::from(FrostMap::empty()));
 }
 
+// ---- Addition: owned form (add_owned) ----
+
+#[test]
+fn add_owned_concatenates_arrays() {
+    let l = Value::from(vec![Value::from(1i64), Value::from(2i64)]);
+    let r = Value::from(vec![Value::from(3i64)]);
+    assert_eq!(
+        Value::add_owned(l, r).unwrap(),
+        Value::from(vec![
+            Value::from(1i64),
+            Value::from(2i64),
+            Value::from(3i64)
+        ])
+    );
+}
+
+#[test]
+fn add_owned_merges_maps_right_wins() {
+    let l: FrostMap = vec![
+        (str_key("a"), Value::from(1i64)),
+        (str_key("b"), Value::from(2i64)),
+    ]
+    .into_iter()
+    .collect();
+    let r: FrostMap = vec![(str_key("b"), Value::from(3i64))]
+        .into_iter()
+        .collect();
+    let expected: FrostMap = vec![
+        (str_key("a"), Value::from(1i64)),
+        (str_key("b"), Value::from(3i64)),
+    ]
+    .into_iter()
+    .collect();
+    assert_eq!(
+        Value::add_owned(Value::from(l), Value::from(r)).unwrap(),
+        Value::from(expected)
+    );
+}
+
+#[test]
+fn add_owned_falls_back_to_scalar_add() {
+    assert_eq!(
+        Value::add_owned(Value::from(1i64), Value::from(2i64)).unwrap(),
+        Value::from(3i64)
+    );
+    assert_eq!(
+        Value::add_owned(Value::from("a"), Value::from("b")).unwrap(),
+        Value::from("ab")
+    );
+    assert!(Value::add_owned(Value::from(1i64), Value::from("a")).is_err());
+}
+
+#[test]
+fn add_owned_leaves_shared_operands_intact() {
+    // Stealing must degrade to copying when the storage is shared:
+    // the originals survive unchanged.
+    let l = Value::from(vec![Value::from(1i64), Value::from(2i64)]);
+    let r = Value::from(vec![Value::from(3i64)]);
+    let sum = Value::add_owned(l.clone(), r.clone()).unwrap();
+    assert_eq!(
+        sum,
+        Value::from(vec![
+            Value::from(1i64),
+            Value::from(2i64),
+            Value::from(3i64)
+        ])
+    );
+    assert_eq!(l, Value::from(vec![Value::from(1i64), Value::from(2i64)]));
+    assert_eq!(r, Value::from(vec![Value::from(3i64)]));
+}
+
+#[test]
+fn add_owned_agrees_with_borrowing_add() {
+    // The borrowing form delegates structural `+` here; both must produce
+    // identical results for the same operands.
+    let al = Value::from(vec![Value::from(1i64)]);
+    let ar = Value::from(vec![Value::from(2i64)]);
+    assert_eq!(
+        al.add(&ar).unwrap(),
+        Value::add_owned(al.clone(), ar.clone()).unwrap()
+    );
+
+    let ml: FrostMap = vec![(str_key("k"), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    let mr: FrostMap = vec![(str_key("k"), Value::from(2i64))]
+        .into_iter()
+        .collect();
+    let (ml, mr) = (Value::from(ml), Value::from(mr));
+    assert_eq!(
+        ml.add(&mr).unwrap(),
+        Value::add_owned(ml.clone(), mr.clone()).unwrap()
+    );
+}
+
 // ---- Addition: type errors ----
 
 #[test]

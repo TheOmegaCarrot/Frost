@@ -74,9 +74,10 @@ fn map_kv(pairs: &[(&str, i64)]) -> Value {
     )
 }
 
-use Bytecode::{
-    Add, Divide, LoadConst, MakeArray, Modulus, Multiply, Pop, PushInt, PushNull, Subtract,
-};
+mod common;
+
+use Bytecode::{Add, Divide, LoadConst, MakeArray, Modulus, Multiply, PushInt, PushNull, Subtract};
+use common::Pop;
 
 // ============================================================
 // Add (numeric, plus string/array/map overloads)

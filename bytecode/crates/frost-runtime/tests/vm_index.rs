@@ -57,7 +57,10 @@ fn map(pairs: Vec<(MapKey, Value)>) -> Value {
     Value::Map(pairs.into_iter().collect())
 }
 
-use Bytecode::{HardIndexMap, LoadConst, Pop, PushInt, PushNull, SoftIndexStructure};
+mod common;
+
+use Bytecode::{HardIndexMap, LoadConst, PushInt, PushNull, SoftIndexStructure};
+use common::Pop;
 
 // ============================================================
 // Array indexing

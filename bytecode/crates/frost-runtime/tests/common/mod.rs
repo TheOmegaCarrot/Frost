@@ -11,6 +11,12 @@ use frost_runtime::{
     ProgramResult, Vm,
 };
 
+/// Free-const re-export of the `Bytecode::Pop` alias.
+/// The alias is an associated constant, which `use Bytecode::*` cannot import;
+/// this lets test bodies keep writing `Pop` bare.
+#[allow(non_upper_case_globals)]
+pub const Pop: Bytecode = Bytecode::Pop;
+
 /// The `LoadGlobal` slot index of a predefined global, by name. Panics if `name` is not
 /// a predefined global. (The runtime exposes only the ordered [`GLOBAL_NAMES`]; a slot is
 /// just its position.)

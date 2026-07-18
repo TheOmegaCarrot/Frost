@@ -8,15 +8,7 @@ pub use globals::GLOBAL_NAMES;
 pub use params::{Param, ParamSpec};
 pub use serialize::FormatVersion;
 
-// White-box tests for native-arg-pool recycling (see the module doc);
-// as a child module it reaches this module's private `Vm` internals.
-#[cfg(test)]
-mod arg_pool_tests;
-
-use std::debug_assert_matches;
-use std::num::NonZeroUsize;
-use std::sync::Arc;
-use std::{borrow::Cow, collections::BTreeMap};
+use std::{collections::BTreeMap, debug_assert_matches, num::NonZeroUsize, sync::Arc};
 
 use itertools::Itertools;
 
@@ -24,11 +16,16 @@ use crate::{
     FrostArray, FrostError, FrostFloat, FrostMap, FrostResult, FrostTypeCategory, MapKey, Value,
 };
 
+// White-box tests for native-arg-pool recycling (see the module doc);
+// as a child module it reaches this module's private `Vm` internals.
+#[cfg(test)]
+mod arg_pool_tests;
+
 // ============================================================
 // Bytecode
 // ============================================================
 
-#[derive(Clone, Debug, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(PartialEq, Eq, Clone, Debug, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Bytecode {
     // Constants
     PushNull,
@@ -37,11 +34,8 @@ pub enum Bytecode {
     PushInt(i64),
     PushFloat(FrostFloat),
 
-    // Stack
-    Pop,
-    Dup,             // Duplicate the top item on the stack
     PeekDown(usize), // Index N down from the top of the stack, and copy that onto the top.
-    // PeekDown(1) is just Dup with extra steps.
+    // PeekDown(0) is just Dup with extra steps.
 
     // Drop the element N items from the top of the stack.
     // `DropBelow(0)` has the equivalent effect as `Pop`.
@@ -104,7 +98,8 @@ pub enum Bytecode {
     // Consume 2N items from the stack, as kv pairs
     // Keys are below their corresponding values
     MakeMap(usize),
-    // Inverse of MakeArray: blast Array contents onto the stack
+    // Inverse of MakeArray: blast Array contents onto the stack.
+    // Operand MUST be an Array, and preceding code MUST validate this.
     ExplodeArray,
 
     // Index a structure, structure is below the index initially (consumed)
@@ -122,6 +117,23 @@ pub enum Bytecode {
     // Consume the value atop the stack and attach it to an error.
     // The error is then produced, and enters the usual flow of a user-code error.
     ProduceError,
+}
+
+impl Bytecode {
+    /// Dup is equivalent to PeekDown(0).
+    /// Alias is available as associated constant.
+    #[allow(non_upper_case_globals)]
+    pub const Dup: Bytecode = Bytecode::PeekDown(0);
+
+    /// Pop is equivalent to DropBelow(0).
+    /// Alias is available as associated constant.
+    #[allow(non_upper_case_globals)]
+    pub const Pop: Bytecode = Bytecode::DropBelow(0);
+
+    /// Nop is equivalent to Jump(0).
+    /// Alias is available as associated constant.
+    #[allow(non_upper_case_globals)]
+    pub const Nop: Bytecode = Bytecode::Jump(0);
 }
 
 // ============================================================
@@ -853,14 +865,9 @@ impl Vm {
                     }
                     Bytecode::PushInt(i) => self.stack.push(Value::Int(i)),
                     Bytecode::PushFloat(f) => self.stack.push(Value::Float(f)),
-                    Bytecode::Pop => {
-                        self.stack_pop();
-                    }
-                    Bytecode::Dup => self
-                        .stack
-                        .push(self.stack.last().expect("FROST STACK UNDERFLOW").clone()),
                     Bytecode::PeekDown(idx) => {
-                        self.stack.push(self.stack[self.stack.len() - idx].clone());
+                        self.stack
+                            .push(self.stack[self.stack.len() - idx - 1].clone());
                     }
                     Bytecode::DropBelow(idx) => {
                         self.stack.remove(self.stack.len() - (1 + idx));
@@ -1237,39 +1244,13 @@ impl Vm {
         Ok(())
     }
 
-    /// The `Add` opcode.
-    /// `Array + Array` and `Map + Map` are the only overloads where the borrowing `Value::add` would clone every element/entry,
-    /// so for those we *steal* the operands' storage: reusing it in place when the `Arc` is uniquely owned (a frequent case for stack temporaries), cloning only when shared.
-    /// Numeric addition, string concat, and every type error have nothing worth stealing and fall back to the shared `binary_op` path.
+    /// The `Add` opcode: pops both operands into the owned [`Value::add_owned`],
+    /// which steals Array/Map storage when it is uniquely owned
+    /// (a frequent case for stack temporaries).
     fn do_add(&mut self) -> Result<(), FrostError> {
-        let n = self.stack.len();
-        let both_structural = n >= 2
-            && matches!(
-                (&self.stack[n - 2], &self.stack[n - 1]),
-                (Value::Array(_), Value::Array(_)) | (Value::Map(_), Value::Map(_))
-            );
-
-        if !both_structural {
-            return self.binary_op(Value::add);
-        }
-
         let rhs = self.stack_pop();
         let lhs = self.stack_pop();
-        let combined = match (lhs, rhs) {
-            (Value::Array(lhs), Value::Array(rhs)) => {
-                let mut elems = lhs.into_vec(); // steals lhs's Vec when uniquely owned
-                elems.extend(rhs.into_vec()); // steals rhs's elements when uniquely owned
-                Value::Array(elems.into())
-            }
-            (Value::Map(lhs), Value::Map(rhs)) => {
-                let mut entries = lhs.into_map();
-                entries.extend(rhs.into_map()); // on key collision rhs wins, matching `+`
-                Value::Map(entries.into())
-            }
-            // `both_structural` guarantees one of the two arms above.
-            _ => unreachable!("add: both_structural implies Array+Array or Map+Map"),
-        };
-        self.stack.push(combined);
+        self.stack.push(Value::add_owned(lhs, rhs)?);
         Ok(())
     }
 

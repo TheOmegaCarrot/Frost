@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
-use std::{collections::BTreeMap, sync::Arc};
+use std::sync::Arc;
 
-use crate::core::{FrostArray, FrostError, FrostFloat, FrostMap, Value};
+use crate::core::{FrostError, FrostFloat, Value};
 
 impl Value {
     /// Frost `+` operator: numeric addition, string/array concatenation, or map merge.
@@ -25,18 +25,38 @@ impl Value {
                 Ok(Value::from(Arc::from([l.as_ref(), r.as_ref()].concat())))
             }
 
-            (Value::Array(l), Value::Array(r)) => Ok(Value::from(FrostArray::from(
-                [l.as_slice(), r.as_slice()].concat(),
-            ))),
-
-            (Value::Map(l), Value::Map(r)) => Ok(Value::Map(
-                l.iter()
-                    .chain(r.iter())
-                    .map(|(k, v)| (k.clone(), v.clone()))
-                    .collect(),
-            )),
+            // Structural `+` has one home: `add_owned`. The clones are Arc bumps,
+            // and the now-shared storage makes it copy exactly as a borrowing merge would.
+            (Value::Array(_), Value::Array(_)) | (Value::Map(_), Value::Map(_)) => {
+                Self::add_owned(self.clone(), rhs.clone())
+            }
 
             _ => Err(binop_type_error("add", "+", self, rhs)),
+        }
+    }
+
+    /// Frost `+` on owned operands.
+    ///
+    /// Same semantics as [`add`](Self::add), but `Array + Array` and `Map + Map` reuse an
+    /// operand's storage instead of copying when it is not shared.
+    /// Prefer this form when the operands are owned and can be given up (e.g. consumed
+    /// native-call arguments); use [`add`](Self::add) when only references are available.
+    pub fn add_owned(lhs: Value, rhs: Value) -> Result<Value, FrostError> {
+        match (lhs, rhs) {
+            (Value::Array(l), Value::Array(r)) => {
+                let mut elems = l.into_vec(); // steals l's Vec when uniquely owned
+                elems.extend(r.into_vec());
+                Ok(Value::Array(elems.into()))
+            }
+
+            (Value::Map(l), Value::Map(r)) => {
+                let mut entries = l.into_map();
+                entries.extend(r.into_map()); // on key collision rhs wins
+                Ok(Value::Map(entries.into()))
+            }
+
+            // Scalars, strings, and type errors have nothing worth stealing.
+            (lhs, rhs) => lhs.add(&rhs),
         }
     }
 

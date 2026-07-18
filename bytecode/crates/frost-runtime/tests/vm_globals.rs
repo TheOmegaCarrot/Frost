@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 mod common;
 
-use common::global_slot;
+use common::{Pop, global_slot};
 use frost_runtime::{
     Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostFloat, MapKey,
     NameEntry, NativeFunction, Value, Vm,

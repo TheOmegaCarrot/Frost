@@ -36,7 +36,10 @@ fn tail(code: Vec<Bytecode>) -> Value {
         .clone()
 }
 
-use Bytecode::{Jump, JumpIfFalse, JumpIfTrue, Pop, PushFalse, PushInt, PushNull, PushTrue};
+mod common;
+
+use Bytecode::{Jump, JumpIfFalse, JumpIfTrue, PushFalse, PushInt, PushNull, PushTrue};
+use common::Pop;
 
 // ============================================================
 // Jump (unconditional)

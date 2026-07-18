@@ -89,12 +89,12 @@ fn dup_leaves_two_copies() {
 }
 
 #[test]
-fn peek_down_1_is_dup() {
-    // PeekDown(1) copies the top item (same as Dup): [10, 20] -> [10, 20, 20].
+fn peek_down_0_is_dup() {
+    // PeekDown(0) copies the top item (same as Dup): [10, 20] -> [10, 20, 20].
     let result = run(vec![
         Bytecode::PushInt(10),
         Bytecode::PushInt(20),
-        Bytecode::PeekDown(1), // copies 20 (top)
+        Bytecode::PeekDown(0), // copies 20 (top)
         Bytecode::MakeArray(3),
     ]);
     assert_eq!(
@@ -109,11 +109,11 @@ fn peek_down_1_is_dup() {
 
 #[test]
 fn peek_down_copies_deeper() {
-    // PeekDown(2) copies the item below the top: [10, 20] -> [10, 20, 10].
+    // PeekDown(1) copies the item below the top: [10, 20] -> [10, 20, 10].
     let result = run(vec![
         Bytecode::PushInt(10),
         Bytecode::PushInt(20),
-        Bytecode::PeekDown(2), // copies 10 (below top)
+        Bytecode::PeekDown(1), // copies 10 (below top)
         Bytecode::MakeArray(3),
     ]);
     assert_eq!(
