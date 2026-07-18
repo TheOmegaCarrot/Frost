@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::core::{FrostMap, MapKey, value::Value};
+use crate::core::{FrostFloat, FrostMap, MapKey, value::Value};
 
 impl From<BTreeMap<MapKey, Value>> for FrostMap {
     fn from(value: BTreeMap<MapKey, Value>) -> Self {
@@ -93,9 +93,24 @@ impl FrostMap {
         self.inner.iter()
     }
 
-    /// Convenience for string-keyed lookups without manually wrapping in MapKey.
+    /// Convenience for String-keyed lookups without manually wrapping in MapKey.
     pub fn get_str(&self, key: &str) -> Option<&Value> {
         self.inner.get(&MapKey::String(Arc::from(key.as_bytes())))
+    }
+
+    /// Convenience for Int-keyed lookups without manually wrapping in MapKey.
+    pub fn get_int(&self, key: i64) -> Option<&Value> {
+        self.inner.get(&MapKey::Int(key))
+    }
+
+    /// Convenience for Bool-keyed lookups without manually wrapping in MapKey.
+    pub fn get_bool(&self, key: bool) -> Option<&Value> {
+        self.inner.get(&MapKey::Bool(key))
+    }
+
+    /// Convenience for Float-keyed lookups without manually wrapping in MapKey.
+    pub fn get_float(&self, key: FrostFloat) -> Option<&Value> {
+        self.inner.get(&MapKey::Float(key))
     }
 
     /// Converts this map into a Value.

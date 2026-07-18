@@ -122,6 +122,66 @@ fn get_str_does_not_find_non_string_keys() {
     assert!(map.get_str("42").is_none());
 }
 
+// -- Typed convenience access --
+
+/// One key of each kind, so cross-kind lookups have a decoy to (not) find.
+fn typed_map() -> FrostMap {
+    vec![
+        (MapKey::Int(1), Value::from("int")),
+        (MapKey::Bool(true), Value::from("bool")),
+        (
+            MapKey::Float(FrostFloat::new(1.5).unwrap()),
+            Value::from("float"),
+        ),
+        (str_key("1"), Value::from("string")),
+    ]
+    .into_iter()
+    .collect()
+}
+
+#[test]
+fn get_int_existing() {
+    assert_eq!(typed_map().get_int(1), Some(&Value::from("int")));
+}
+
+#[test]
+fn get_int_missing() {
+    assert!(typed_map().get_int(2).is_none());
+}
+
+#[test]
+fn get_bool_existing() {
+    assert_eq!(typed_map().get_bool(true), Some(&Value::from("bool")));
+}
+
+#[test]
+fn get_bool_missing() {
+    assert!(typed_map().get_bool(false).is_none());
+}
+
+#[test]
+fn get_float_existing() {
+    let key = FrostFloat::new(1.5).unwrap();
+    assert_eq!(typed_map().get_float(key), Some(&Value::from("float")));
+}
+
+#[test]
+fn get_float_missing() {
+    let key = FrostFloat::new(2.5).unwrap();
+    assert!(typed_map().get_float(key).is_none());
+}
+
+#[test]
+fn typed_getters_do_not_cross_kinds() {
+    let map = typed_map();
+    // Int(1), String("1"), Bool(true), and Float(1.5) are four distinct keys:
+    // each getter finds only its own kind.
+    assert_eq!(map.get_str("1"), Some(&Value::from("string")));
+    assert_eq!(map.get_int(1), Some(&Value::from("int")));
+    assert!(map.get_str("true").is_none());
+    assert!(map.get_int(0).is_none()); // not found via Bool(true) or Float coercion
+}
+
 // -- Size --
 
 #[test]
