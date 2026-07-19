@@ -17,8 +17,8 @@ use crate::vm::NativeFunction;
 /// Sets of types are [`EnumSet<FrostType>`]: build one with `|`
 /// (`FrostType::Int | FrostType::Float`) or use a named category constant.
 // EnumSetType derives Copy, Clone, PartialEq, and Eq itself.
-// The explicit repr unlocks `EnumSet::as_repr`, the const-compatible inspection
-// that spec validation (`Params`) relies on.
+// The explicit repr unlocks `EnumSet::as_repr`: const-compatible inspection,
+// needed for const spec validation.
 #[derive(EnumSetType, Debug, serde::Serialize, serde::Deserialize)]
 #[enumset(repr = "u16")]
 pub enum FrostType {

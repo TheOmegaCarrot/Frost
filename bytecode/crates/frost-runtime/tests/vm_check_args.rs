@@ -65,6 +65,29 @@ fn named_category_sets_use_their_category_name() {
         err.message(),
         "Function frob requires Structured as argument 1, got Null"
     );
+    let err = check(
+        &[Value::from(vec![Value::Int(1)])],
+        [Param::of(FrostType::PRIMITIVE)],
+    )
+    .unwrap_err();
+    assert_eq!(
+        err.message(),
+        "Function frob requires Primitive as argument 1, got Array"
+    );
+    let err = check(&[Value::Null], [Param::of(FrostType::NONNULL)]).unwrap_err();
+    assert_eq!(
+        err.message(),
+        "Function frob requires Nonnull as argument 1, got Null"
+    );
+}
+
+#[test]
+fn args_beyond_the_spec_are_not_type_checked() {
+    // check_args validates the spec's positions only; for a checked native the
+    // VM's arity check bounds the count before the body runs. A manual caller
+    // passing more args than params sees the extras pass untouched.
+    let params = [Param::of(FrostType::Int.into())];
+    assert!(check(&[Value::Int(1), Value::from("extra")], params).is_ok());
 }
 
 #[test]

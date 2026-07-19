@@ -37,10 +37,10 @@ impl Value {
 
     /// Frost `+` on owned operands.
     ///
-    /// Same semantics as [`add`](Self::add), but `Array + Array` and `Map + Map` reuse an
-    /// operand's storage instead of copying when it is not shared.
-    /// Prefer this form when the operands are owned and can be given up (e.g. consumed
-    /// native-call arguments); use [`add`](Self::add) when only references are available.
+    /// Same semantics as [`add`](Self::add),
+    /// but `Array + Array` and `Map + Map` reuse an operand's storage instead of copying when it is not shared.
+    /// Prefer this form when the operands are owned and can be given up;
+    /// use [`add`](Self::add) when only references are available.
     pub fn add_owned(lhs: Value, rhs: Value) -> Result<Value, FrostError> {
         match (lhs, rhs) {
             (Value::Array(l), Value::Array(r)) => {

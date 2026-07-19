@@ -507,6 +507,16 @@ fn add_owned_agrees_with_borrowing_add() {
     );
 }
 
+#[test]
+fn add_owned_structural_mismatch_errors() {
+    // Array + Map matches neither steal arm: it falls through to the scalar
+    // path and errors like the borrowing form.
+    let arr = Value::from(vec![Value::from(1i64)]);
+    let map = Value::from(FrostMap::empty());
+    assert!(Value::add_owned(arr.clone(), map.clone()).is_err());
+    assert!(Value::add_owned(map, arr).is_err());
+}
+
 // ---- Addition: type errors ----
 
 #[test]

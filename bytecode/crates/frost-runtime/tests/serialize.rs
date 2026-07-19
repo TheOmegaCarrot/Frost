@@ -8,12 +8,13 @@
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostMap, MapKey, NameEntry,
-    Value,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostMap, FrostType, MapKey,
+    NameEntry, Value,
 };
 
-/// A function tree exercising every serialized shape: a child fn (recursion), and constants
-/// covering a string, an int, a nested array with a null, and a map with a *non-string* key.
+/// A function tree exercising every serialized shape: a child fn (recursion); constants
+/// covering a string, an int, a nested array with a null, and a map with a *non-string* key;
+/// and code covering payload-bearing opcodes (a float, type sets, an alias).
 fn sample() -> CompiledFunction {
     let child = Arc::new(CompiledFunction {
         version: FormatVersion,
@@ -35,6 +36,9 @@ fn sample() -> CompiledFunction {
             Bytecode::Pop,
             Bytecode::LoadConst(0),
             Bytecode::PushFloat(2.5.try_into().unwrap()),
+            Bytecode::TypeTest(FrostType::NUMERIC),
+            Bytecode::TypeTest(FrostType::Int | FrostType::String),
+            Bytecode::Dup,
         ],
         child_fns: vec![child],
         constants: vec![
@@ -54,6 +58,7 @@ fn sample() -> CompiledFunction {
 
 fn assert_matches(original: &CompiledFunction, restored: &CompiledFunction) {
     assert_eq!(restored.name, original.name);
+    assert_eq!(restored.code, original.code);
     // `Value: PartialEq` covers the whole `ConstValue` round-trip, including the Int-keyed map.
     assert_eq!(restored.constants, original.constants);
     assert_eq!(restored.arity, original.arity);

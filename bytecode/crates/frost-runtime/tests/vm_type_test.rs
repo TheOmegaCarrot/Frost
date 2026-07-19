@@ -10,8 +10,8 @@
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostFloat, FrostMap,
-    FrostType, Value, Vm,
+    Arity, Bytecode, CompiledFunction, EnumSet, FormatVersion, FrostArray, FrostError, FrostFloat,
+    FrostMap, FrostType, Value, Vm,
 };
 
 type Ft = FrostType;
@@ -130,6 +130,19 @@ fn nonnull_false_on_null_true_on_int() {
     assert_eq!(
         val(vec![PushInt(1), TypeTest(Ft::NONNULL)]),
         Value::Bool(true)
+    );
+}
+
+#[test]
+fn empty_set_is_always_false() {
+    // The empty set is representable in the opcode; nothing fits it.
+    assert_eq!(
+        val(vec![PushInt(1), TypeTest(EnumSet::empty())]),
+        Value::Bool(false)
+    );
+    assert_eq!(
+        val(vec![PushNull, TypeTest(EnumSet::empty())]),
+        Value::Bool(false)
     );
 }
 

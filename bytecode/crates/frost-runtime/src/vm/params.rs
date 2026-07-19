@@ -27,8 +27,7 @@ pub struct Param {
 impl Param {
     /// A required parameter accepting the types in `types`: a single type
     /// (`FrostType::Function.into()`), a `|`-built set, or a named category.
-    /// The set must be nonempty: a parameter that accepts no type fails every call,
-    /// and [`Params::try_new`] rejects such a spec.
+    /// The set must be nonempty; [`Params`] construction rejects an empty one.
     /// Use [`Param::any`] instead to construct a `Param` that accepts any type,
     /// but passing [`FrostType::NONNULL`] to this constructor may more often be what you want.
     pub const fn of(types: EnumSet<FrostType>) -> Self {
@@ -73,7 +72,7 @@ impl Param {
     }
 
     /// The accepted types for the error message: a named category (`Any`, `Numeric`, ...)
-    /// when the set is one, else the list of type names, e.g. `Array or String`.
+    /// when the set is one, else the list of type names, e.g. `String or Array`.
     pub(crate) fn expected(&self) -> String {
         match self.types {
             t if t == FrostType::ANY => "Any".to_string(),
@@ -87,7 +86,7 @@ impl Param {
 }
 
 /// A complete parameter spec.
-/// 
+///
 /// Construct with [`Params::new`] for specs written as literals, or
 /// [`Params::try_new`] for specs built from runtime data.
 #[derive(Clone, Debug)]
@@ -193,16 +192,13 @@ impl Params {
         &self.params
     }
 
-    /// Validation core shared by both constructors: every type set must be
-    /// nonempty, and optionals must trail the required parameters.
-    /// Returns the derived arity.
+    /// Validates the spec (nonempty type sets; optionals trail) and derives its arity.
     const fn derive_arity(params: &[Param]) -> Result<Arity, InvalidParams> {
         let mut required = 0;
         let mut seen_optional = false;
         let mut i = 0;
         while i < params.len() {
-            // Emptiness via the raw repr: the const-compatible spelling of
-            // `is_empty` (which is not a const fn).
+            // Emptiness via the raw repr: `is_empty` is not a const fn.
             if params[i].types.as_repr() == 0 {
                 return Err(InvalidParams::EmptyTypeSet { index: i });
             }

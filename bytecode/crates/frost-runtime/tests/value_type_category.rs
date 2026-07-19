@@ -157,6 +157,13 @@ fn fits_an_or_built_set() {
     assert!(!float(1.5).fits(Ft::Int | Ft::String));
 }
 
+#[test]
+fn nothing_fits_the_empty_set() {
+    for (v, _) in samples() {
+        assert!(!v.fits(EnumSet::empty()), "{}", v.type_name());
+    }
+}
+
 // ============================================================
 // The named category sets (concrete expectations)
 // ============================================================

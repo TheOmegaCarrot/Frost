@@ -121,17 +121,14 @@ pub enum Bytecode {
 
 impl Bytecode {
     /// Dup is equivalent to PeekDown(0).
-    /// Alias is available as associated constant.
     #[allow(non_upper_case_globals)]
     pub const Dup: Bytecode = Bytecode::PeekDown(0);
 
     /// Pop is equivalent to DropBelow(0).
-    /// Alias is available as associated constant.
     #[allow(non_upper_case_globals)]
     pub const Pop: Bytecode = Bytecode::DropBelow(0);
 
     /// Nop is equivalent to Jump(0).
-    /// Alias is available as associated constant.
     #[allow(non_upper_case_globals)]
     pub const Nop: Bytecode = Bytecode::Jump(0);
 }
@@ -1240,9 +1237,7 @@ impl Vm {
         Ok(())
     }
 
-    /// The `Add` opcode: pops both operands into the owned [`Value::add_owned`],
-    /// which steals Array/Map storage when it is uniquely owned
-    /// (a frequent case for stack temporaries).
+    /// The `Add` opcode: pops both operands into the owned [`Value::add_owned`].
     fn do_add(&mut self) -> Result<(), FrostError> {
         let rhs = self.stack_pop();
         let lhs = self.stack_pop();

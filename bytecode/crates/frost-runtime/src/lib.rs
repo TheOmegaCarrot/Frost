@@ -1,9 +1,8 @@
 mod core;
 mod vm;
 
-// Type sets (`EnumSet<FrostType>`, built with `|` or `enum_set!`) appear in the
-// public API (`Bytecode::TypeTest`, `Param::of`), so the enumset items are
-// re-exported for consumers.
+// Type sets (`EnumSet<FrostType>`) appear in the public API, so the enumset items
+// are re-exported for consumers.
 pub use enumset::{EnumSet, enum_set};
 
 pub use core::{
