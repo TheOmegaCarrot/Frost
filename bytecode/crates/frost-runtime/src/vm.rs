@@ -5,16 +5,16 @@ mod params;
 mod serialize;
 
 pub use globals::GLOBAL_NAMES;
-pub use params::{Param, ParamSpec};
+pub use params::{InvalidParams, Param, Params};
 pub use serialize::FormatVersion;
 
 use std::{collections::BTreeMap, debug_assert_matches, num::NonZeroUsize, sync::Arc};
 
 use itertools::Itertools;
 
-use crate::{
-    FrostArray, FrostError, FrostFloat, FrostMap, FrostResult, FrostTypeCategory, MapKey, Value,
-};
+use enumset::EnumSet;
+
+use crate::{FrostArray, FrostError, FrostFloat, FrostMap, FrostResult, FrostType, MapKey, Value};
 
 // White-box tests for native-arg-pool recycling (see the module doc);
 // as a child module it reaches this module's private `Vm` internals.
@@ -110,9 +110,9 @@ pub enum Bytecode {
     // The key is in the constant pool at the index stored in this variant.
     HardIndexMap(usize), // Error on missing
 
-    // Consumes the value at the top of the stack, and produces a bool depending if the value fits
-    // the given type category.
-    TypeTest(FrostTypeCategory),
+    // Consumes the value at the top of the stack, and produces a bool depending if the value's
+    // type is in the given set.
+    TypeTest(EnumSet<FrostType>),
 
     // Consume the value atop the stack and attach it to an error.
     // The error is then produced, and enters the usual flow of a user-code error.
@@ -490,7 +490,7 @@ impl NativeCtx<'_> {
 
     /// Type-check the running native's args against `params`, attributing the error
     /// to this native by name. Forwards to [`NativeFunction::check_args`].
-    pub fn check_args(&self, args: &[Value], params: &[Param]) -> Result<(), FrostError> {
+    pub fn check_args(&self, args: &[Value], params: &Params) -> Result<(), FrostError> {
         self.function.check_args(args, params)
     }
 
@@ -546,18 +546,18 @@ impl NativeFunction {
         }
     }
 
-    /// Build a native whose [`Arity`] is derived from `params`, and whose arguments
+    /// Build a native whose [`Arity`] comes from `params`, and whose arguments
     /// are type-checked against `params` before `body` runs, so `body` may trust
     /// its argument types.
     ///
     /// Most callers want [`Value::checked_native`] instead: it wraps the result in a [`Value`].
     /// Reach for this only when you specifically need a bare [`NativeFunction`].
-    pub fn checked<F, const N: usize>(name: &'static str, params: [Param; N], body: F) -> Self
+    pub fn checked<F>(name: &'static str, params: Params, body: F) -> Self
     where
         F: NativeFn,
     {
         Self {
-            arity: params.as_slice().arity(),
+            arity: params.arity(),
             name,
             function: Box::new(move |ctx, args| {
                 ctx.check_args(args, &params)?;
@@ -571,8 +571,8 @@ impl NativeFunction {
     /// A guard to call before trusting argument types in a native body. Arity is
     /// assumed already validated (the VM checks a native's `Arity` before its body
     /// runs), so only the present arguments' types are checked.
-    pub fn check_args(&self, args: &[Value], params: &[Param]) -> Result<(), FrostError> {
-        for (i, param) in params.iter().enumerate() {
+    pub fn check_args(&self, args: &[Value], params: &Params) -> Result<(), FrostError> {
+        for (i, param) in params.as_slice().iter().enumerate() {
             let Some(arg) = args.get(i) else { break };
             if !param.accepts(arg) {
                 let position = match param.name {
@@ -621,19 +621,15 @@ impl Value {
     /// Build a Frost function value whose arguments are type-checked for you.
     ///
     /// `params` describes each parameter's accepted types and whether it is optional
-    /// (see [`Param`]). The function's arity is derived from it, and every argument is
-    /// validated before `body` runs, so `body` can assume its arguments already match
-    /// the spec. A bad argument raises a Frost error with an appropriate error message,
-    /// before `body` is ever executed.
+    /// (see [`Params`]). The function's arity comes from the spec, and every argument
+    /// is validated before `body` runs, so `body` can assume its arguments already
+    /// match the spec. A bad argument raises a Frost error with an appropriate error
+    /// message, before `body` is ever executed.
     ///
     /// This is the usual way to expose a Rust function to Frost. Use [`Value::native`]
     /// when the valid types can't be described per parameter and the function must
     /// check them itself.
-    pub fn checked_native<F, const N: usize>(
-        name: &'static str,
-        params: [Param; N],
-        body: F,
-    ) -> Value
+    pub fn checked_native<F>(name: &'static str, params: Params, body: F) -> Value
     where
         F: NativeFn,
     {
@@ -1097,9 +1093,9 @@ impl Vm {
                             }
                         }
                     }
-                    Bytecode::TypeTest(tc) => {
+                    Bytecode::TypeTest(types) => {
                         let operand = self.stack_pop();
-                        self.stack.push(operand.fits_category(tc).into());
+                        self.stack.push(operand.fits(types).into());
                     }
                     Bytecode::ProduceError => {
                         return Err(FrostError::from_value(self.stack_pop()));

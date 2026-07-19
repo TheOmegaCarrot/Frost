@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use crate::core::value::{
-    FrostArray, FrostError, FrostFloat, FrostMap, FrostType, FrostTypeCategory, MapKey, Value,
-};
+use enumset::EnumSet;
+
+use crate::core::value::{FrostArray, FrostError, FrostFloat, FrostMap, FrostType, MapKey, Value};
 
 impl From<bool> for Value {
     fn from(b: bool) -> Value {
@@ -164,7 +164,6 @@ impl TryFrom<f64> for MapKey {
 }
 
 type Ft = FrostType;
-type Ftc = FrostTypeCategory;
 
 impl FrostType {
     pub fn name(&self) -> &'static str {
@@ -212,81 +211,75 @@ impl Value {
         }
     }
 
-    pub fn fits_category(&self, category: FrostTypeCategory) -> bool {
-        match (self.frost_type(), category) {
-            (t, Ftc::Exact(c)) => t == c,
-            (t, Ftc::NonNull) => !matches!(t, Ft::Null),
-            (t, Ftc::Primitive) => {
-                matches!(t, Ft::Null | Ft::Int | Ft::Float | Ft::Bool | Ft::String)
-            }
-            (t, Ftc::Numeric) => matches!(t, Ft::Int | Ft::Float),
-            (t, Ftc::Structured) => matches!(t, Ft::Array | Ft::Map),
-        }
+    /// Returns true if this value's type is in `types`.
+    /// Use with `|`-built sets or the named categories ([`FrostType::NUMERIC`], etc.).
+    pub fn fits(&self, types: EnumSet<FrostType>) -> bool {
+        types.contains(self.frost_type())
     }
 
     /// Returns true if this value is a Null.
     pub fn is_null(&self) -> bool {
-        self.fits_category(Ftc::Exact(Ft::Null))
+        self.frost_type() == Ft::Null
     }
 
     /// Returns true if this value is a Bool.
     pub fn is_bool(&self) -> bool {
-        self.fits_category(Ftc::Exact(Ft::Bool))
+        self.frost_type() == Ft::Bool
     }
 
     /// Returns true if this value is an Int.
     pub fn is_int(&self) -> bool {
-        self.fits_category(Ftc::Exact(Ft::Int))
+        self.frost_type() == Ft::Int
     }
 
     /// Returns true if this value is a Float.
     pub fn is_float(&self) -> bool {
-        self.fits_category(Ftc::Exact(Ft::Float))
+        self.frost_type() == Ft::Float
     }
 
     /// Returns true if this value is a String.
     pub fn is_string(&self) -> bool {
-        self.fits_category(Ftc::Exact(Ft::String))
+        self.frost_type() == Ft::String
     }
 
     /// Returns true if this value is an Array.
     pub fn is_array(&self) -> bool {
-        self.fits_category(Ftc::Exact(Ft::Array))
+        self.frost_type() == Ft::Array
     }
 
     /// Returns true if this value is a Map.
     pub fn is_map(&self) -> bool {
-        self.fits_category(Ftc::Exact(Ft::Map))
+        self.frost_type() == Ft::Map
     }
 
     /// Returns true if this value is a Function (native or closure).
     pub fn is_function(&self) -> bool {
-        self.fits_category(Ftc::Exact(Ft::Function))
+        self.frost_type() == Ft::Function
     }
 
     /// Returns true if this value is an Opaque.
     pub fn is_opaque(&self) -> bool {
-        self.fits_category(Ftc::Exact(Ft::Opaque))
+        self.frost_type() == Ft::Opaque
     }
 
     /// Returns true if this value is Int or Float.
     pub fn is_numeric(&self) -> bool {
-        self.fits_category(Ftc::Numeric)
+        self.fits(Ft::NUMERIC)
     }
 
     /// Returns true if this value is Null, Bool, Int, Float, or String.
     pub fn is_primitive(&self) -> bool {
-        self.fits_category(Ftc::Primitive)
+        self.fits(Ft::PRIMITIVE)
     }
 
     /// Returns true if this value is Array or Map.
     pub fn is_structured(&self) -> bool {
-        self.fits_category(Ftc::Structured)
+        self.fits(Ft::STRUCTURED)
     }
 
     /// Returns true if this value is not Null.
     pub fn is_nonnull(&self) -> bool {
-        self.fits_category(Ftc::NonNull)
+        self.fits(Ft::NONNULL)
     }
 
     /// Frost's `to_int`: Int passes through, Float truncates toward zero, String parses as an integer.

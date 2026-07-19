@@ -2,10 +2,12 @@
 
 use std::sync::Arc;
 
+use enumset::enum_set;
+
 use crate::core::FrostResult;
 use crate::{
     Arity, Bytecode, Closure, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostType,
-    MapKey, NativeCtx, Param, Value,
+    MapKey, NativeCtx, Param, Params, Value,
 };
 
 /// `call(f)` / `call(f, args)`: invoke `f`, spreading the elements of `args` (or
@@ -49,14 +51,11 @@ pub(super) fn call_global() -> Value {
 
 /// Builds the `try_call` global: Frost's catch primitive, surfaced as a native.
 pub(super) fn try_call_global() -> Value {
-    Value::checked_native(
-        "try_call",
-        [
-            Param::of(&[FrostType::Function]),
-            Param::of(&[FrostType::Array]).optional(),
-        ],
-        try_call,
-    )
+    const PARAMS: Params = Params::new(&[
+        Param::of(enum_set!(FrostType::Function)),
+        Param::of(enum_set!(FrostType::Array)).optional(),
+    ]);
+    Value::checked_native("try_call", PARAMS, try_call)
 }
 
 /// `try_call(f, args)`: invoke `f` with `args` (an array) and reify the outcome into a result map
@@ -106,37 +105,32 @@ fn result_map<const N: usize>(entries: [(MapKey, Value); N]) -> Value {
 }
 
 pub(super) fn error_global() -> Value {
-    Value::checked_native("error", [Param::any()], |_, args| {
+    const PARAMS: Params = Params::new(&[Param::any()]);
+    Value::checked_native("error", PARAMS, |_, args| {
         Err(FrostError::from_value(args[0].take()))
     })
 }
 
 pub(super) fn and_then_global() -> Value {
-    Value::checked_native(
-        "and_then",
-        [Param::any(), Param::of(&[FrostType::Function])],
-        |mut ctx, args| {
-            let value = args[0].take();
-            match value {
-                Value::Null => Ok(Value::Null),
-                _ => ctx.invoke(&args[1], [value]),
-            }
-        },
-    )
+    const PARAMS: Params = Params::new(&[Param::any(), Param::of(enum_set!(FrostType::Function))]);
+    Value::checked_native("and_then", PARAMS, |mut ctx, args| {
+        let value = args[0].take();
+        match value {
+            Value::Null => Ok(Value::Null),
+            _ => ctx.invoke(&args[1], [value]),
+        }
+    })
 }
 
 pub(super) fn or_else_global() -> Value {
-    Value::checked_native(
-        "or_else",
-        [Param::any(), Param::of(&[FrostType::Function])],
-        |mut ctx, args| {
-            let value = args[0].take();
-            match value {
-                Value::Null => ctx.invoke(&args[1], []),
-                _ => Ok(value),
-            }
-        },
-    )
+    const PARAMS: Params = Params::new(&[Param::any(), Param::of(enum_set!(FrostType::Function))]);
+    Value::checked_native("or_else", PARAMS, |mut ctx, args| {
+        let value = args[0].take();
+        match value {
+            Value::Null => ctx.invoke(&args[1], []),
+            _ => Ok(value),
+        }
+    })
 }
 
 pub(super) fn inv_global() -> Value {

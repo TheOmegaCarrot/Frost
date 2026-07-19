@@ -1,12 +1,13 @@
 //! Type checking, conversion, and value serialization.
 
-use crate::{Arity, Param, Value};
+use crate::{Arity, Param, Params, Value};
 
-/// A one-argument predicate native accepting any value (`checked` derives `Exact(1)`).
+/// The shared one-any-argument spec (`Exact(1)`).
+const ONE_ANY: Params = Params::new(&[Param::any()]);
+
+/// A one-argument predicate native accepting any value.
 fn predicate(name: &'static str, pred: fn(&Value) -> bool) -> Value {
-    Value::checked_native(name, [Param::any()], move |_, args| {
-        Ok(pred(&args[0]).into())
-    })
+    Value::checked_native(name, ONE_ANY, move |_, args| Ok(pred(&args[0]).into()))
 }
 
 pub(super) fn is_null_global() -> Value {
@@ -58,7 +59,7 @@ pub(super) fn is_structured_global() -> Value {
 }
 
 pub(super) fn type_global() -> Value {
-    Value::checked_native("type", [Param::any()], |_, args| {
+    Value::checked_native("type", ONE_ANY, |_, args| {
         Ok(Value::from(args[0].type_name()))
     })
 }
@@ -76,13 +77,9 @@ pub(super) fn pretty_global() -> Value {
 }
 
 pub(super) fn to_int_global() -> Value {
-    Value::checked_native("to_int", [Param::any()], |_, args| {
-        Ok(args[0].to_frost_int())
-    })
+    Value::checked_native("to_int", ONE_ANY, |_, args| Ok(args[0].to_frost_int()))
 }
 
 pub(super) fn to_float_global() -> Value {
-    Value::checked_native("to_float", [Param::any()], |_, args| {
-        Ok(args[0].to_frost_float())
-    })
+    Value::checked_native("to_float", ONE_ANY, |_, args| Ok(args[0].to_frost_float()))
 }

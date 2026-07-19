@@ -5,13 +5,22 @@ mod stringify;
 
 use std::{any::Any, collections::BTreeMap, sync::Arc};
 
+use enumset::{EnumSet, EnumSetType, enum_set};
+
 pub use crate::core::error::FrostError;
 pub use crate::core::types::float::FrostFloat;
 use crate::vm::Closure;
 use crate::vm::NativeFunction;
 
 /// The possible types of a Frost Value.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+///
+/// Sets of types are [`EnumSet<FrostType>`]: build one with `|`
+/// (`FrostType::Int | FrostType::Float`) or use a named category constant.
+// EnumSetType derives Copy, Clone, PartialEq, and Eq itself.
+// The explicit repr unlocks `EnumSet::as_repr`, the const-compatible inspection
+// that spec validation (`Params`) relies on.
+#[derive(EnumSetType, Debug, serde::Serialize, serde::Deserialize)]
+#[enumset(repr = "u16")]
 pub enum FrostType {
     Null,
     Bool,
@@ -24,14 +33,33 @@ pub enum FrostType {
     Opaque,
 }
 
-/// The possible ways to categorize Frost types, as exposed within the language.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub enum FrostTypeCategory {
-    Exact(FrostType),
-    Primitive,
-    Numeric,
-    Structured,
-    NonNull,
+/// The type categories exposed within the language, as named sets.
+impl FrostType {
+    /// Every type: the set that accepts any value.
+    pub const ANY: EnumSet<FrostType> = EnumSet::all();
+
+    /// Int or Float.
+    pub const NUMERIC: EnumSet<FrostType> = enum_set!(FrostType::Int | FrostType::Float);
+
+    /// Null, Bool, Int, Float, or String.
+    pub const PRIMITIVE: EnumSet<FrostType> = enum_set!(
+        FrostType::Null | FrostType::Bool | FrostType::Int | FrostType::Float | FrostType::String
+    );
+
+    /// Array or Map.
+    pub const STRUCTURED: EnumSet<FrostType> = enum_set!(FrostType::Array | FrostType::Map);
+
+    /// Every type except Null.
+    pub const NONNULL: EnumSet<FrostType> = enum_set!(
+        FrostType::Bool
+            | FrostType::Int
+            | FrostType::Float
+            | FrostType::String
+            | FrostType::Array
+            | FrostType::Map
+            | FrostType::Function
+            | FrostType::Opaque
+    );
 }
 
 /// The fundamental runtime value type of Frost.

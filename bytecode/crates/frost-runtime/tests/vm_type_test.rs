@@ -1,9 +1,9 @@
-//! Tests for the `TypeTest(FrostTypeCategory)` opcode, `( v -- b )`: consume a value, push a `Bool` of whether it fits the category.
+//! Tests for the `TypeTest(EnumSet<FrostType>)` opcode, `( v -- b )`: consume a value, push a `Bool` of whether its type is in the set.
 //!
-//! The category *logic* is exhaustively covered at the value level in `value_type_category.rs`;
-//! here we only test the opcode wiring: that it delegates to `fits_category` with the right category,
+//! The set/category *logic* is exhaustively covered at the value level in `value_type_category.rs`;
+//! here we only test the opcode wiring: that it delegates to `fits` with the right set,
 //! has the right stack effect, and yields a `Bool`.
-//! One true/false case per category suffices.
+//! One true/false case per set shape suffices.
 //!
 //! Operands without a `Push*` opcode (String/Array/Map) come from the constant table via `LoadConst`.
 
@@ -11,11 +11,10 @@ use std::sync::Arc;
 
 use frost_runtime::{
     Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostFloat, FrostMap,
-    FrostType, FrostTypeCategory, Value, Vm,
+    FrostType, Value, Vm,
 };
 
 type Ft = FrostType;
-type Ftc = FrostTypeCategory;
 
 fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> {
     let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
@@ -53,40 +52,40 @@ use Bytecode::{LoadConst, PushInt, PushNull, TypeTest};
 use common::Pop;
 
 // ============================================================
-// Exact
+// Single-type sets
 // ============================================================
 
 #[test]
-fn exact_true_on_matching_type() {
+fn single_type_true_on_matching_type() {
     assert_eq!(
-        val(vec![PushInt(1), TypeTest(Ftc::Exact(Ft::Int))]),
+        val(vec![PushInt(1), TypeTest(Ft::Int.into())]),
         Value::Bool(true)
     );
 }
 
 #[test]
-fn exact_false_on_other_type() {
+fn single_type_false_on_other_type() {
     let out = eval(
         vec![Value::from("x")],
-        vec![LoadConst(0), TypeTest(Ftc::Exact(Ft::Int))],
+        vec![LoadConst(0), TypeTest(Ft::Int.into())],
     )
     .unwrap();
     assert_eq!(out, Value::Bool(false));
 }
 
 // ============================================================
-// Numeric / Primitive / Structured / NonNull
+// Named category sets and |-built sets
 // ============================================================
 
 #[test]
 fn numeric_true_on_float_false_on_string() {
     assert_eq!(
-        val(vec![float(1.5), TypeTest(Ftc::Numeric)]),
+        val(vec![float(1.5), TypeTest(Ft::NUMERIC)]),
         Value::Bool(true)
     );
     let out = eval(
         vec![Value::from("x")],
-        vec![LoadConst(0), TypeTest(Ftc::Numeric)],
+        vec![LoadConst(0), TypeTest(Ft::NUMERIC)],
     )
     .unwrap();
     assert_eq!(out, Value::Bool(false));
@@ -96,13 +95,13 @@ fn numeric_true_on_float_false_on_string() {
 fn primitive_true_on_null_false_on_array() {
     // null is primitive...
     assert_eq!(
-        val(vec![PushNull, TypeTest(Ftc::Primitive)]),
+        val(vec![PushNull, TypeTest(Ft::PRIMITIVE)]),
         Value::Bool(true)
     );
     // ...an array is not.
     let out = eval(
         vec![Value::Array(FrostArray::empty())],
-        vec![LoadConst(0), TypeTest(Ftc::Primitive)],
+        vec![LoadConst(0), TypeTest(Ft::PRIMITIVE)],
     )
     .unwrap();
     assert_eq!(out, Value::Bool(false));
@@ -112,12 +111,12 @@ fn primitive_true_on_null_false_on_array() {
 fn structured_true_on_map_false_on_int() {
     let out = eval(
         vec![Value::Map(FrostMap::empty())],
-        vec![LoadConst(0), TypeTest(Ftc::Structured)],
+        vec![LoadConst(0), TypeTest(Ft::STRUCTURED)],
     )
     .unwrap();
     assert_eq!(out, Value::Bool(true));
     assert_eq!(
-        val(vec![PushInt(1), TypeTest(Ftc::Structured)]),
+        val(vec![PushInt(1), TypeTest(Ft::STRUCTURED)]),
         Value::Bool(false)
     );
 }
@@ -125,12 +124,25 @@ fn structured_true_on_map_false_on_int() {
 #[test]
 fn nonnull_false_on_null_true_on_int() {
     assert_eq!(
-        val(vec![PushNull, TypeTest(Ftc::NonNull)]),
+        val(vec![PushNull, TypeTest(Ft::NONNULL)]),
         Value::Bool(false)
     );
     assert_eq!(
-        val(vec![PushInt(1), TypeTest(Ftc::NonNull)]),
+        val(vec![PushInt(1), TypeTest(Ft::NONNULL)]),
         Value::Bool(true)
+    );
+}
+
+#[test]
+fn ad_hoc_or_built_set() {
+    // A set with no category name works the same: Int | String.
+    assert_eq!(
+        val(vec![PushInt(1), TypeTest(Ft::Int | Ft::String)]),
+        Value::Bool(true)
+    );
+    assert_eq!(
+        val(vec![PushNull, TypeTest(Ft::Int | Ft::String)]),
+        Value::Bool(false)
     );
 }
 
@@ -143,12 +155,7 @@ fn consumes_operand_and_pushes_one_bool() {
     // Sentinel below; TypeTest consumes the Int and pushes a single Bool, then Pop
     // drops the Bool, revealing the sentinel, proving `( v -- b )`.
     assert_eq!(
-        val(vec![
-            PushInt(99),
-            PushInt(1),
-            TypeTest(Ftc::Exact(Ft::Int)),
-            Pop
-        ]),
+        val(vec![PushInt(99), PushInt(1), TypeTest(Ft::Int.into()), Pop]),
         Value::Int(99)
     );
 }
