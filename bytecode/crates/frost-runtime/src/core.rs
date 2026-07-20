@@ -15,6 +15,10 @@ mod value;
 
 pub use error::{FrostError, FrostResult};
 pub use serde::{from_value, to_value};
+pub use types::array::FrostArray;
 pub use types::float::FrostFloat;
+pub use types::frost_type::FrostType;
+pub use types::map::FrostMap;
+pub use types::map_key::MapKey;
 pub use util::identifier::KEYWORDS;
-pub use value::{FrostArray, FrostMap, FrostType, MapKey, Value};
+pub use value::{FrostOpaque, Value};

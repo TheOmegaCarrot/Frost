@@ -19,8 +19,6 @@ use std::sync::{Arc, LazyLock};
 use crate::core::FrostResult;
 use crate::{Arity, Value};
 
-use super::GlobalSet;
-
 use collections::*;
 use debug::*;
 use functions::*;
@@ -29,6 +27,11 @@ use operators::*;
 use output::*;
 use strings::*;
 use types::*;
+
+// The fixed set of predefined globals, shared by every `Vm`; never host-configurable.
+// The compiler's seam onto it is `GLOBAL_NAMES`.
+#[derive(Debug, Clone)]
+pub(crate) struct GlobalSet(Vec<Value>);
 
 // Sync-only macro: names and slot initializers expand from the same `name => init`
 // list in the same order, so `names[i]` and `slots[i]` cannot drift apart.

@@ -6,8 +6,8 @@ mod vm;
 pub use enumset::{EnumSet, enum_set};
 
 pub use core::{
-    FrostArray, FrostError, FrostFloat, FrostMap, FrostResult, FrostType, KEYWORDS, MapKey, Value,
-    from_value, to_value,
+    FrostArray, FrostError, FrostFloat, FrostMap, FrostOpaque, FrostResult, FrostType, KEYWORDS,
+    MapKey, Value, from_value, to_value,
 };
 
 pub use vm::{

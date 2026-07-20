@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use crate::core::util::identifier::is_identifier_like_and_not_keyword;
-use crate::core::value::{FrostMap, MapKey, Value};
+use crate::core::{FrostMap, MapKey, Value};
 
 impl Value {
     /// Converts to a compact string representation.

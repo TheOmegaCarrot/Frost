@@ -3,7 +3,13 @@ use std::{
     sync::Arc,
 };
 
-use crate::core::{FrostFloat, FrostMap, MapKey, value::Value};
+use crate::core::{FrostFloat, MapKey, Value};
+
+/// Frost's map type. Immutable once created.
+#[derive(Clone, Debug)]
+pub struct FrostMap {
+    pub(crate) inner: Arc<BTreeMap<MapKey, Value>>,
+}
 
 impl From<BTreeMap<MapKey, Value>> for FrostMap {
     fn from(value: BTreeMap<MapKey, Value>) -> Self {

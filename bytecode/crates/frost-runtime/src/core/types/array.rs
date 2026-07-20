@@ -1,7 +1,13 @@
 use std::ops::Index;
 use std::sync::Arc;
 
-use crate::core::value::{FrostArray, Value};
+use crate::core::Value;
+
+/// Frost's array type. Immutable once created.
+#[derive(Clone, Debug)]
+pub struct FrostArray {
+    pub(crate) inner: Arc<Vec<Value>>,
+}
 
 impl<'a> IntoIterator for &'a FrostArray {
     type Item = &'a Value;
