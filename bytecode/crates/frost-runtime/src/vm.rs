@@ -3,6 +3,7 @@
 mod bytecode;
 mod function;
 mod globals;
+mod import;
 mod native;
 mod outcome;
 mod params;
