@@ -104,9 +104,7 @@ fn renaming_resolves_an_extension_collision() {
     let (b, returned) = b
         .with_extension(Extension::new("dup", content(2)).unwrap())
         .unwrap_err();
-    let b = b
-        .with_extension(returned.rename("dup2").unwrap())
-        .unwrap();
+    let b = b.with_extension(returned.rename("dup2").unwrap()).unwrap();
     let ext = ext_submap(&b);
     assert_eq!(ext.get_str("dup"), Some(&content(1)));
     assert_eq!(ext.get_str("dup2"), Some(&content(2)));

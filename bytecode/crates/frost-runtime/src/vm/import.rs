@@ -7,6 +7,8 @@ use crate::{
 // White-box tests for the `import` module.
 #[cfg(test)]
 mod builder_tests;
+#[cfg(test)]
+mod resolve_tests;
 
 /// The resolver behind Frost's `import`: maps an import specification to a [`Value`].
 /// Build one with [`ImporterBuilder`].
@@ -240,20 +242,46 @@ impl ImporterBuilder {
 
 impl Importer {
     fn import(&self, target: &str) -> Result<Value, FrostError> {
-        // `target` is a `.`-separated sequence of names.
-        // Interpret as chained access into the registry,
-        // or, if that misses, try walking the CWD, then file search path,
-        // replacing `.` with path separators
-        //
-        // If registry hit, just return the Value it lands on, regardless of type (usually Map).
-        // If fails over to filesystem, compile the module, run it, and put exports into a Map,
-        // cached in the Importer. Filesystem imports get a separate Importer, with a
-        // reconfigured search path, but a shared registry and filesystem cache.
-        // This all has to be parallel-safe, handle diamond-imports, and weird parallel cases.
-        //
-        // Caveat: if the registry contains the top-level component, or if the top-level component
-        // is `std` or `ext`, then it can *only* resolve inside the registry.
+        // `target` is a `.`-separated path. The first segment selects a top-level
+        // registry entry; the rest descend through nested Maps. A top-level hit is
+        // registry-exclusive and never falls to the filesystem, so `std`/`ext` and
+        // any host component own their whole subtree.
+        if target.is_empty() {
+            return Err(FrostError::from_static(
+                "import requires a non-empty module name",
+            ));
+        }
 
-        todo!();
+        let mut segments = target.split('.');
+        let first = segments
+            .next()
+            .expect("split always yields a first segment");
+
+        let Some(root) = self.registry.get(first) else {
+            // TODO: when the first segment is unclaimed, resolve on the filesystem:
+            // `target` (with `.` as separator) relative to `cwd` first, then the
+            // search path; compile, run, collect exports into a Map, and cache it.
+            // Must be parallel-safe, support diamonds, and reject import cycles.
+            // Blocked by the Frost compiler not existing yet.
+            return Err(FrostError::from_string(format!(
+                "Could not resolve import '{target}'"
+            )));
+        };
+
+        // Bind through each remaining segment: descend into a Map, else fail. A miss
+        // or a non-Map value along the way is a final error, never a filesystem fallback.
+        segments
+            .try_fold((first, root), |(name, current), segment| match current {
+                Value::Map(map) => {
+                    let next = map.get_str(segment).ok_or_else(|| {
+                        FrostError::from_string(format!("Could not resolve import '{target}'"))
+                    })?;
+                    Ok((segment, next))
+                }
+                _ => Err(FrostError::from_string(format!(
+                    "Cannot import '{target}': '{name}' is not a module"
+                ))),
+            })
+            .map(|(_, value)| value.clone())
     }
 }
