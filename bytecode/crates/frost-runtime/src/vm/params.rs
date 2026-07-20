@@ -67,6 +67,21 @@ impl Param {
         }
     }
 
+    /// The parameter's name, when it has one.
+    pub const fn name(&self) -> Option<&'static str> {
+        self.name
+    }
+
+    /// The set of types this parameter accepts.
+    pub const fn types(&self) -> EnumSet<FrostType> {
+        self.types
+    }
+
+    /// Whether this parameter may be omitted.
+    pub const fn is_optional(&self) -> bool {
+        self.optional
+    }
+
     pub(crate) fn accepts(&self, value: &Value) -> bool {
         value.fits(self.types)
     }

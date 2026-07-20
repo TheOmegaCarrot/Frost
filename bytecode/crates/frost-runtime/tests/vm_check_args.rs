@@ -172,6 +172,19 @@ fn arity_multiple_trailing_optionals() {
 // ============================================================
 
 #[test]
+fn param_exposes_its_shape() {
+    let p = Param::of(FrostType::NUMERIC).named("n").optional();
+    assert_eq!(p.name(), Some("n"));
+    assert_eq!(p.types(), FrostType::NUMERIC);
+    assert!(p.is_optional());
+
+    let q = Param::any();
+    assert_eq!(q.name(), None);
+    assert_eq!(q.types(), FrostType::ANY);
+    assert!(!q.is_optional());
+}
+
+#[test]
 fn try_new_rejects_a_required_param_after_an_optional() {
     let result = Params::try_new([
         Param::of(FrostType::Int.into()),
