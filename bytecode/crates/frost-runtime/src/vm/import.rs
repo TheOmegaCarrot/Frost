@@ -4,6 +4,10 @@ use crate::{
     FrostError, MapKey, Value, core::util::identifier::is_identifier_like_and_not_keyword,
 };
 
+// White-box tests for the `import` module.
+#[cfg(test)]
+mod builder_tests;
+
 /// The resolver behind Frost's `import`: maps an import specification to a [`Value`].
 /// Build one with [`ImporterBuilder`].
 #[derive(Debug)]
