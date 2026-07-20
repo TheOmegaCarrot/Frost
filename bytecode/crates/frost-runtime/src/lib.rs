@@ -11,7 +11,8 @@ pub use core::{
 };
 
 pub use vm::{
-    Arity, Bytecode, Closure, CompiledFunction, FormatVersion, GLOBAL_NAMES, InvalidParams,
-    MissingCaptures, NameEntry, NativeCtx, NativeFn, NativeFunction, Param, Params, ProgramResult,
-    RunError, RunOutcome, TrustedProgram, Vm, VmFactory, VmRuntimeConfiguration,
+    Arity, Bytecode, Closure, CompiledFunction, Extension, FormatVersion, GLOBAL_NAMES,
+    HostComponent, Importer, ImporterBuilder, InvalidComponentName, InvalidParams, MissingCaptures,
+    NameEntry, NativeCtx, NativeFn, NativeFunction, Param, Params, ProgramResult, RunError,
+    RunOutcome, Stdlib, StdlibModule, TrustedProgram, Vm, VmFactory, VmRuntimeConfiguration,
 };

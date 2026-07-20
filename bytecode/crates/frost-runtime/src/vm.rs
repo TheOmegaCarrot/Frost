@@ -12,6 +12,9 @@ mod serialize;
 pub use bytecode::Bytecode;
 pub use function::{Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, TrustedProgram};
 pub use globals::GLOBAL_NAMES;
+pub use import::{
+    Extension, HostComponent, Importer, ImporterBuilder, InvalidComponentName, Stdlib, StdlibModule,
+};
 pub use native::{NativeCtx, NativeFn, NativeFunction};
 pub use outcome::{ProgramResult, RunError, RunOutcome};
 pub use params::{InvalidParams, Param, Params};
@@ -51,6 +54,10 @@ pub struct Vm {
     native_arg_pool: Vec<Vec<Value>>,
 
     globals: Arc<GlobalSet>,
+
+    // The module importer backing the `Import` opcode.
+    // Fixed at build time; persists across `reset`.
+    importer: Arc<Importer>,
 
     // The top-level closure to run. Its captures (host + Frost-internal) are already bound;
     // `run`/`run_with_args` invoke it like any other closure.
@@ -101,6 +108,7 @@ pub struct VmRuntimeConfiguration {
 #[derive(Debug, Clone, Default)]
 pub struct VmFactory {
     config: VmRuntimeConfiguration,
+    importer: Arc<Importer>,
 }
 
 impl VmFactory {
@@ -112,6 +120,11 @@ impl VmFactory {
         self
     }
 
+    pub fn with_importer(mut self, importer: Arc<Importer>) -> Self {
+        self.importer = importer;
+        self
+    }
+
     /// Build a [`Vm`] to run `closure` under this factory's configuration.
     pub fn build(&self, closure: Arc<Closure>) -> Result<Vm, FrostError> {
         Ok(Vm {
@@ -119,6 +132,7 @@ impl VmFactory {
             stack_frames: Vec::new(),
             native_arg_pool: Vec::new(),
             globals: GlobalSet::defaults(),
+            importer: self.importer.clone(),
             top_level: closure,
             config: self.config.clone(),
             fuel_used: 0,
@@ -493,6 +507,20 @@ impl Vm {
                     }
                     Bytecode::ProduceError => {
                         return Err(FrostError::from_value(self.stack_pop()));
+                    }
+                    Bytecode::Import => {
+                        let spec_value = self.stack_pop();
+                        let Some(bytes) = spec_value.as_byte_string() else {
+                            return Err(FrostError::from_string(format!(
+                                "import expects a String module spec, got {}",
+                                spec_value.type_name()
+                            )));
+                        };
+                        let spec = std::str::from_utf8(bytes).map_err(|_| {
+                            FrostError::from_static("import module spec is not valid UTF-8")
+                        })?;
+                        let module = self.importer.import(spec)?;
+                        self.stack.push(module);
                     }
                 };
                 pc += 1;

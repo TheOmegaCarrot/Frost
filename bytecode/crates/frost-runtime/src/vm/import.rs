@@ -11,8 +11,8 @@ mod builder_tests;
 mod resolve_tests;
 
 /// The resolver behind Frost's `import`: maps an import specification to a [`Value`].
-/// Build one with [`ImporterBuilder`].
-#[derive(Debug)]
+/// Build one with [`ImporterBuilder`]; the [`Default`] is empty (every import fails).
+#[derive(Debug, Default)]
 pub struct Importer {
     // The tree of importable modules, including the stdlib, any extensions, and host-provided functionality.
     registry: Arc<BTreeMap<String, Value>>,
@@ -271,7 +271,7 @@ impl ImporterBuilder {
 // in-memory *leaf* modules; the resolver is for module *graphs* from non-fs sources.)
 // Blocked on the compiler.
 impl Importer {
-    fn import(&self, target: &str) -> Result<Value, FrostError> {
+    pub(crate) fn import(&self, target: &str) -> Result<Value, FrostError> {
         // `target` is a `.`-separated path. The first segment selects a top-level
         // registry entry; the rest descend through nested Maps. A top-level hit is
         // registry-exclusive and never falls to the filesystem, so `std`/`ext` and

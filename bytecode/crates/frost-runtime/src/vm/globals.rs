@@ -8,6 +8,7 @@
 mod collections;
 mod debug;
 mod functions;
+mod import;
 mod mutable_cell;
 mod operators;
 mod output;
@@ -22,6 +23,7 @@ use crate::{Arity, Value};
 use collections::*;
 use debug::*;
 use functions::*;
+use import::*;
 use mutable_cell::*;
 use operators::*;
 use output::*;
@@ -178,6 +180,9 @@ define_globals! {
 
     // --- Mutable cell ---
     "mutable_cell"          => mutable_cell_global(),
+
+    // --- Import ---
+    "import"                => import_global(),
 }
 
 /// A not-yet-implemented global. The table still builds (so `GlobalSet::defaults()`

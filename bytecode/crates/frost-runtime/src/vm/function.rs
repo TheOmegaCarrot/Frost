@@ -89,8 +89,6 @@ impl TrustedProgram {
                 // (Always false for now: direct execution; the future `import`
                 // path will need to supply `true`.)
                 "imported" => seated.push(Value::Bool(false)),
-                // `import` is intentionally not wired yet (registry NYI), so it
-                // falls through to host resolution below.
                 name => match captures.get(name) {
                     Some(value) => seated.push(value.clone()),
                     // Keep scanning so every missing name is reported at once.

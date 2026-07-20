@@ -96,6 +96,9 @@ pub enum Bytecode {
     // Consume the value atop the stack and attach it to an error.
     // The error is then produced, and enters the usual flow of a user-code error.
     ProduceError,
+
+    // Pop a module spec from the stack, and push the resolved Value
+    Import,
 }
 
 impl Bytecode {
