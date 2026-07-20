@@ -240,6 +240,36 @@ impl ImporterBuilder {
     }
 }
 
+// FUTURE: generalize the filesystem fallback into a source-resolver trait.
+//
+// The only host-specific part of importing is turning a spec into source text.
+// Compiling it, running it in an isolated scope, collecting exports, caching, and
+// cycle/diamond detection are all source-agnostic, so the filesystem is just one
+// resolver among possible others (in-memory, bundled, sandboxed/custom).
+//
+// Shape (object-safe; `Send` is enough since it would live under the cache lock,
+// `Sync` only if ever called outside it; the source return is transient):
+//
+//   trait ModuleResolver: Send {
+//       fn resolve(&self, spec: &str, from: Option<&str>)
+//           -> Result<Option<(Arc<str> /* canonical id */, Arc<str> /* source */)>, FrostError>;
+//   }
+//
+// - Returns a *canonical id*, not just source: the cache and cycle detection key
+//   on module identity, so aliasing specs (relative paths, symlinks) must collapse
+//   to one id, or diamonds recompile and cycles slip.
+// - `from` is the importing module's id, for relative resolution.
+// - `Ok(None)` = not found; `Err` = found but unreadable.
+//
+// The Importer then drops `file_search_path`/`cwd` into a shipped `FilesystemResolver`
+// and holds `Option<Arc<dyn ModuleResolver>>` instead. `None` keeps today's secure
+// default (registry miss with no fallback = error).
+//
+// Worth it mainly for testability: an in-memory resolver is the natural harness for
+// cycle/diamond/transitive-import tests (no tempfiles), at a small marginal cost over
+// the filesystem resolver needed regardless. (A HostComponent already covers isolated
+// in-memory *leaf* modules; the resolver is for module *graphs* from non-fs sources.)
+// Blocked on the compiler.
 impl Importer {
     fn import(&self, target: &str) -> Result<Value, FrostError> {
         // `target` is a `.`-separated path. The first segment selects a top-level
