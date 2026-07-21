@@ -1,6 +1,8 @@
 //! Slicing, grouping, sorting, searching, and transforming arrays and maps.
 
-use crate::{FrostType, Param, Params, Value};
+use std::collections::BTreeMap;
+
+use crate::{FrostError, FrostMap, FrostType, Param, Params, Value};
 
 pub(super) fn keys_global() -> Value {
     super::stub("keys")
@@ -123,7 +125,46 @@ pub(super) fn xprod_with_global() -> Value {
 }
 
 pub(super) fn transform_global() -> Value {
-    super::stub("transform")
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::STRUCTURED),
+        Param::of(FrostType::FUNCTION),
+    ]);
+
+    Value::checked_native("transform", PARAMS, |mut ctx, args| {
+        let structure = args[0].take();
+        let function = args[1].take();
+
+        match structure {
+            Value::Array(arr) => {
+                let mut vec = arr.into_vec();
+                for elem in vec.iter_mut() {
+                    *elem = ctx.invoke(&function, [elem.take()])?;
+                }
+                Ok(vec.into())
+            }
+            Value::Map(map) => {
+                let mut map = map.into_map();
+                let mut result: Value = FrostMap::empty().into();
+                for (k, v) in map.into_iter() {
+                    let invoke_result = ctx.invoke(&function, [k.into(), v])?;
+                    result = Value::add_owned(
+                        result,
+                        match invoke_result {
+                            Value::Map(_) => invoke_result,
+                            _ => {
+                                return Err(FrostError::from_string(format!(
+                                    "When transforming a Map, the function must return a Map, got {}",
+                                    invoke_result.type_name()
+                                )));
+                            }
+                        },
+                    )?;
+                }
+                Ok(result)
+            }
+            _ => unreachable!(),
+        }
+    })
 }
 
 pub(super) fn flat_map_global() -> Value {

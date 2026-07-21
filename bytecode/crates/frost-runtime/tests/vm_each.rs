@@ -258,14 +258,18 @@ fn error_from_the_callback_propagates_and_stops_iteration() {
     // there: `3` is never visited.
     let log: CallLog = Arc::new(Mutex::new(Vec::new()));
     let sink = Arc::clone(&log);
-    let f = native("fail_on_two", Arity::Exact(1), move |_, args: &mut [Value]| {
-        sink.lock().unwrap().push(args.to_vec());
-        if args[0] == Value::Int(2) {
-            Err(FrostError::from_static("stop"))
-        } else {
-            Ok(Value::Null)
-        }
-    });
+    let f = native(
+        "fail_on_two",
+        Arity::Exact(1),
+        move |_, args: &mut [Value]| {
+            sink.lock().unwrap().push(args.to_vec());
+            if args[0] == Value::Int(2) {
+                Err(FrostError::from_static("stop"))
+            } else {
+                Ok(Value::Null)
+            }
+        },
+    );
     let err = each(arr(vec![Value::Int(1), Value::Int(2), Value::Int(3)]), f).unwrap_err();
     assert_eq!(err.message(), "stop");
     assert_eq!(firsts(&log), vec![Value::Int(1), Value::Int(2)]);
