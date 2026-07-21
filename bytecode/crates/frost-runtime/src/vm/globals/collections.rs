@@ -172,7 +172,38 @@ pub(super) fn flat_map_global() -> Value {
 }
 
 pub(super) fn select_global() -> Value {
-    super::stub("select")
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::STRUCTURED),
+        Param::of(FrostType::FUNCTION),
+    ]);
+    Value::checked_native("select", PARAMS, |mut ctx, args| {
+        let structure = args[0].take();
+        let function = args[1].take();
+
+        match structure {
+            Value::Array(arr) => arr
+                .into_vec()
+                .into_iter()
+                .filter_map(|elem| match ctx.invoke_ref(&function, [&elem]) {
+                    Ok(res) if res.is_truthy() => Some(Ok(elem)),
+                    Ok(_) => None,
+                    Err(e) => Some(Err(e)),
+                })
+                .collect(),
+            Value::Map(map) => map
+                .into_map()
+                .into_iter()
+                .filter_map(
+                    |(k, v)| match ctx.invoke(&function, [k.clone().into(), v.clone()]) {
+                        Ok(res) if res.is_truthy() => Some(Ok((k, v))),
+                        Ok(_) => None,
+                        Err(e) => Some(Err(e)),
+                    },
+                )
+                .collect(),
+            _ => unreachable!(),
+        }
+    })
 }
 
 pub(super) fn reject_global() -> Value {

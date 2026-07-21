@@ -125,7 +125,9 @@ fn transform(structure: Value, f: Value) -> Result<Value, FrostError> {
 /// `fn x -> x * 10` as a native. `Exact(1)` doubles as proof of a single argument.
 fn times_ten() -> Value {
     native("times_ten", Arity::Exact(1), |_, args| {
-        Ok(Value::Int(args[0].as_int().expect("times_ten wants an Int") * 10))
+        Ok(Value::Int(
+            args[0].as_int().expect("times_ten wants an Int") * 10,
+        ))
     })
 }
 
@@ -135,7 +137,10 @@ fn times_ten() -> Value {
 
 #[test]
 fn array_applies_f_to_each_element_in_order() {
-    let result = transform(arr(vec![Value::Int(1), Value::Int(2), Value::Int(3)]), times_ten());
+    let result = transform(
+        arr(vec![Value::Int(1), Value::Int(2), Value::Int(3)]),
+        times_ten(),
+    );
     assert_eq!(
         result.unwrap(),
         arr(vec![Value::Int(10), Value::Int(20), Value::Int(30)])
