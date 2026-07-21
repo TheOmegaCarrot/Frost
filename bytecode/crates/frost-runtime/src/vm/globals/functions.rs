@@ -2,8 +2,6 @@
 
 use std::sync::Arc;
 
-use enumset::enum_set;
-
 use crate::core::FrostResult;
 use crate::{
     Arity, Bytecode, Closure, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostType,
@@ -52,8 +50,8 @@ pub(super) fn call_global() -> Value {
 /// Builds the `try_call` global: Frost's catch primitive, surfaced as a native.
 pub(super) fn try_call_global() -> Value {
     const PARAMS: Params = Params::new(&[
-        Param::of(enum_set!(FrostType::Function)),
-        Param::of(enum_set!(FrostType::Array)).optional(),
+        Param::of(FrostType::FUNCTION),
+        Param::of(FrostType::ARRAY).optional(),
     ]);
     Value::checked_native("try_call", PARAMS, try_call)
 }
@@ -112,7 +110,7 @@ pub(super) fn error_global() -> Value {
 }
 
 pub(super) fn and_then_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::any(), Param::of(enum_set!(FrostType::Function))]);
+    const PARAMS: Params = Params::new(&[Param::any(), Param::of(FrostType::FUNCTION)]);
     Value::checked_native("and_then", PARAMS, |mut ctx, args| {
         let value = args[0].take();
         match value {
@@ -123,7 +121,7 @@ pub(super) fn and_then_global() -> Value {
 }
 
 pub(super) fn or_else_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::any(), Param::of(enum_set!(FrostType::Function))]);
+    const PARAMS: Params = Params::new(&[Param::any(), Param::of(FrostType::FUNCTION)]);
     Value::checked_native("or_else", PARAMS, |mut ctx, args| {
         let value = args[0].take();
         match value {

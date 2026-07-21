@@ -23,8 +23,28 @@ pub enum FrostType {
     Opaque,
 }
 
-/// The type categories exposed within the language, as named sets.
+/// Named type sets, for building specs and tests in const context (where a single
+/// [`FrostType`] can't be widened to an [`EnumSet`] via `.into()`).
 impl FrostType {
+    /// The set containing only `Null`.
+    pub const NULL: EnumSet<FrostType> = enum_set!(FrostType::Null);
+    /// The set containing only `Bool`.
+    pub const BOOL: EnumSet<FrostType> = enum_set!(FrostType::Bool);
+    /// The set containing only `Int`.
+    pub const INT: EnumSet<FrostType> = enum_set!(FrostType::Int);
+    /// The set containing only `Float`.
+    pub const FLOAT: EnumSet<FrostType> = enum_set!(FrostType::Float);
+    /// The set containing only `String`.
+    pub const STRING: EnumSet<FrostType> = enum_set!(FrostType::String);
+    /// The set containing only `Array`.
+    pub const ARRAY: EnumSet<FrostType> = enum_set!(FrostType::Array);
+    /// The set containing only `Map`.
+    pub const MAP: EnumSet<FrostType> = enum_set!(FrostType::Map);
+    /// The set containing only `Function`.
+    pub const FUNCTION: EnumSet<FrostType> = enum_set!(FrostType::Function);
+    /// The set containing only `Opaque`.
+    pub const OPAQUE: EnumSet<FrostType> = enum_set!(FrostType::Opaque);
+
     /// Every type: the set that accepts any value.
     pub const ANY: EnumSet<FrostType> = EnumSet::all();
 

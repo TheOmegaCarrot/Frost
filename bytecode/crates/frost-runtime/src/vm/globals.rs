@@ -152,6 +152,7 @@ define_globals! {
     "to_entries"            => to_entries_global(),
     "from_entries"          => from_entries_global(),
     "dissoc"                => dissoc_global(),
+    "each"                  => each_global(),
 
     // --- Output ---
     "print"                 => print_global(),

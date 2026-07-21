@@ -16,7 +16,7 @@ pub(super) fn import_global() -> Value {
             code: vec![
                 Bytecode::DropBelow(1), // Drop the function itself
                 Bytecode::Import,
-            ]
-        })
+            ],
+        }),
     }))
 }

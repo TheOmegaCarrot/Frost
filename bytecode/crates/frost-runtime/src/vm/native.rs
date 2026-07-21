@@ -18,7 +18,7 @@ pub struct NativeCtx<'a> {
 }
 
 impl NativeCtx<'_> {
-    /// Call a Frost function value (closure or native) from inside a native function.
+    /// Call a Frost function value from inside a native function.
     ///
     /// Returns the callee's result, or the error it raised; calling a non-function value is an error.
     /// The Vm is restored before an `Err` is returned, so the caller may catch it and continue.
@@ -85,6 +85,15 @@ impl NativeCtx<'_> {
             }
             _ => Err(Vm::not_callable(function)),
         }
+    }
+
+    /// Invoke a Frost function from within a native function, using an iterable over references.
+    pub fn invoke_ref<'a>(
+        &mut self,
+        function: &Value,
+        args: impl IntoIterator<Item = &'a Value>,
+    ) -> FrostResult {
+        self.invoke(function, args.into_iter().cloned())
     }
 
     /// Type-check the running native's args against `params`, attributing the error

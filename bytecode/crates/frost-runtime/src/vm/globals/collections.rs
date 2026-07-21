@@ -1,6 +1,6 @@
 //! Slicing, grouping, sorting, searching, and transforming arrays and maps.
 
-use crate::Value;
+use crate::{FrostType, Param, Params, Value};
 
 pub(super) fn keys_global() -> Value {
     super::stub("keys")
@@ -204,4 +204,30 @@ pub(super) fn from_entries_global() -> Value {
 
 pub(super) fn dissoc_global() -> Value {
     super::stub("dissoc")
+}
+
+pub(super) fn each_global() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::STRUCTURED),
+        Param::of(FrostType::FUNCTION),
+    ]);
+    Value::checked_native("each", PARAMS, |mut ctx, params| {
+        let structure = params[0].take();
+        let function = params[1].take();
+        match &structure {
+            Value::Array(arr) => {
+                for v in arr.iter() {
+                    ctx.invoke_ref(&function, [v])?;
+                }
+            }
+            Value::Map(map) => {
+                for (k, v) in map.iter() {
+                    ctx.invoke(&function, [k.clone().into(), v.clone()])?;
+                }
+            }
+            _ => unreachable!(),
+        };
+
+        Ok(structure)
+    })
 }
