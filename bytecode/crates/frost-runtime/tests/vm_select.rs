@@ -124,7 +124,9 @@ fn select(structure: Value, f: Value) -> Result<Value, FrostError> {
 /// `fn x -> x % 2 == 0` as a native. `Exact(1)` doubles as proof of a single argument.
 fn is_even() -> Value {
     native("is_even", Arity::Exact(1), |_, args| {
-        Ok(Value::Bool(args[0].as_int().expect("is_even wants an Int") % 2 == 0))
+        Ok(Value::Bool(
+            args[0].as_int().expect("is_even wants an Int") % 2 == 0,
+        ))
     })
 }
 
@@ -141,7 +143,12 @@ fn identity() -> Value {
 #[test]
 fn array_keeps_elements_where_predicate_is_truthy_in_order() {
     let result = select(
-        arr(vec![Value::Int(1), Value::Int(2), Value::Int(3), Value::Int(4)]),
+        arr(vec![
+            Value::Int(1),
+            Value::Int(2),
+            Value::Int(3),
+            Value::Int(4),
+        ]),
         is_even(),
     );
     assert_eq!(result.unwrap(), arr(vec![Value::Int(2), Value::Int(4)]));

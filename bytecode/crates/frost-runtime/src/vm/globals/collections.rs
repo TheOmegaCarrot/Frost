@@ -144,23 +144,19 @@ pub(super) fn transform_global() -> Value {
             }
             Value::Map(map) => {
                 let mut map = map.into_map();
-                let mut result: Value = FrostMap::empty().into();
+                let mut result = BTreeMap::new();
                 for (k, v) in map.into_iter() {
-                    let invoke_result = ctx.invoke(&function, [k.into(), v])?;
-                    result = Value::add_owned(
-                        result,
-                        match invoke_result {
-                            Value::Map(_) => invoke_result,
-                            _ => {
-                                return Err(FrostError::from_string(format!(
-                                    "When transforming a Map, the function must return a Map, got {}",
-                                    invoke_result.type_name()
-                                )));
-                            }
-                        },
-                    )?;
+                    match ctx.invoke(&function, [k.into(), v])? {
+                        Value::Map(m) => result.extend(m.into_map()),
+                        other => {
+                            return Err(FrostError::from_string(format!(
+                                "When transforming a Map, the function must return a Map, got {}",
+                                other.type_name()
+                            )));
+                        }
+                    }
                 }
-                Ok(result)
+                Ok(result.into())
             }
             _ => unreachable!(),
         }
@@ -211,7 +207,38 @@ pub(super) fn reject_global() -> Value {
 }
 
 pub(super) fn fold_global() -> Value {
-    super::stub("fold")
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::STRUCTURED),
+        Param::of(FrostType::FUNCTION),
+        Param::any().optional(),
+    ]);
+    Value::checked_native("fold", PARAMS, |mut ctx, args| {
+        let structure = args[0].take();
+        let function = args[1].take();
+
+        match structure {
+            Value::Array(arr) => {
+                let mut iter = arr.into_vec().into_iter();
+                let mut init = match args.get_mut(2).map(Value::take) {
+                    Some(init) => init,
+                    None => iter.next().unwrap_or(Value::Null),
+                };
+
+                iter.try_fold(init, |acc, elem| ctx.invoke(&function, [acc, elem]))
+            }
+            Value::Map(map) => {
+                let Some(mut init) = args.get_mut(2).map(Value::take) else {
+                    return Err(FrostError::from_static(
+                        "Fold over a Map requires an initializer",
+                    ));
+                };
+                map.into_map().into_iter().try_fold(init, |acc, (k, v)| {
+                    ctx.invoke(&function, [acc, k.into(), v])
+                })
+            }
+            _ => unreachable!(),
+        }
+    })
 }
 
 pub(super) fn sum_global() -> Value {

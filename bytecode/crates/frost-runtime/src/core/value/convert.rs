@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
 use crate::core::{FrostArray, FrostError, FrostFloat, FrostMap, MapKey, Value};
 
@@ -96,6 +96,12 @@ impl FromIterator<(MapKey, Value)> for Value {
 impl From<FrostMap> for Value {
     fn from(a: FrostMap) -> Value {
         Value::Map(a)
+    }
+}
+
+impl From<BTreeMap<MapKey, Value>> for Value {
+    fn from(value: BTreeMap<MapKey, Value>) -> Self {
+        Value::Map(value.into())
     }
 }
 
