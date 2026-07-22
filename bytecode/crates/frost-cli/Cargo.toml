@@ -5,6 +5,5 @@ edition.workspace = true
 
 [dependencies]
 frost-parse = { path = "../frost-parse" }
-frost-compile = { path = "../frost-compile" }
 frost-runtime = { path = "../frost-runtime" }
 serde_json = "1"

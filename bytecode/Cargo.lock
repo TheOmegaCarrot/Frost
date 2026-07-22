@@ -227,17 +227,9 @@ dependencies = [
 name = "frost-cli"
 version = "0.0.4"
 dependencies = [
- "frost-compile",
  "frost-parse",
  "frost-runtime",
  "serde_json",
-]
-
-[[package]]
-name = "frost-compile"
-version = "0.0.4"
-dependencies = [
- "frost-parse",
 ]
 
 [[package]]
