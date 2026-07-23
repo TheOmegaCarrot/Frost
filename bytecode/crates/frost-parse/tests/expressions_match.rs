@@ -664,3 +664,106 @@ mod errors {
         );
     }
 }
+
+// ============================================================
+// String patterns are literal-only
+// ============================================================
+// A bare string token is a complete pattern: no operator may continue it,
+// matching the Int/Float/Bool/Null pattern rule. Expressions require the
+// `(expr)` escape hatch. (Oracle-checked 2026-07-22.)
+//
+// The rejection tests assert only that parsing fails; the error message is
+// deliberately unpinned so the fix is free to choose its wording.
+
+mod string_patterns_are_literal_only {
+    use super::*;
+
+    #[test]
+    fn string_followed_by_binary_operator_is_rejected() {
+        parse_err("match x { 'a' + 'b' => 1 }");
+    }
+
+    #[test]
+    fn string_followed_by_comparison_is_rejected() {
+        parse_err("match x { 'a' == 'b' => 1 }");
+    }
+
+    #[test]
+    fn string_followed_by_index_is_rejected() {
+        parse_err("match x { 'ab'[0] => 1 }");
+    }
+
+    #[test]
+    fn string_followed_by_threading_is_rejected() {
+        parse_err("match x { 'a' @ f() => 1 }");
+    }
+
+    #[test]
+    fn format_string_followed_by_operator_is_rejected() {
+        parse_err("match x { $'a' + 'b' => 1 }");
+    }
+
+    #[test]
+    fn parenthesized_string_expression_is_the_escape_hatch() {
+        let expr = parse_expr("match x { ('a' + 'b') => 1 }");
+        let (_, arms) = assert_match(&expr);
+        let v = assert_value_pattern(&arms[0].node.pattern);
+        assert!(is_binop(v).is_some());
+    }
+
+    #[test]
+    fn bare_format_string_is_a_valid_pattern() {
+        // A format string evaluates at match time and compares by value; it is
+        // a single token, so it stays within the literal-only rule.
+        let expr = parse_expr("match x { $'a${y}' => 1 }");
+        let (_, arms) = assert_match(&expr);
+        let v = assert_value_pattern(&arms[0].node.pattern);
+        assert!(matches!(&v.node, Expr::FormatString(_)));
+    }
+
+    #[test]
+    fn raw_string_is_a_literal_pattern() {
+        // Diverges from the C++ oracle, which rejects raw strings in patterns;
+        // the bytecode parser accepts every string form as a literal pattern.
+        let expr = parse_expr("match x { R'(a)' => 1 }");
+        let (_, arms) = assert_match(&expr);
+        let v = assert_value_pattern(&arms[0].node.pattern);
+        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == b"a"));
+    }
+
+    #[test]
+    fn string_pattern_escapes_are_expanded() {
+        // A string pattern must process escapes exactly as the same literal
+        // does in expression position: 'a\nb' is a-newline-b, not a-backslash-n-b.
+        let expr = parse_expr("match x { 'a\\nb' => 1 }");
+        let (_, arms) = assert_match(&expr);
+        let v = assert_value_pattern(&arms[0].node.pattern);
+        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == b"a\nb"));
+    }
+
+    #[test]
+    fn string_pattern_invalid_escape_is_rejected() {
+        // Invalid escapes are errors in expression position; pattern position
+        // must agree rather than silently passing the bytes through.
+        parse_err("match x { '\\q' => 1 }");
+    }
+
+    #[test]
+    fn string_pattern_with_guard_still_parses() {
+        // The guard keyword after a string pattern must not be mistaken for
+        // an expression continuation.
+        let expr = parse_expr("match x { 'a' if: y => 1 }");
+        let (_, arms) = assert_match(&expr);
+        assert!(arms[0].node.guard.is_some());
+        let v = assert_value_pattern(&arms[0].node.pattern);
+        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == b"a"));
+    }
+
+    #[test]
+    fn string_alternatives_still_parse() {
+        let expr = parse_expr("match x { 'a' | 'b' => 1 }");
+        let (_, arms) = assert_match(&expr);
+        let alts = assert_alternative(&arms[0].node.pattern);
+        assert_eq!(alts.len(), 2);
+    }
+}

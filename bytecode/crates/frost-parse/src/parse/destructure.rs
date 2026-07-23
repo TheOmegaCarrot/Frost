@@ -20,11 +20,13 @@ pub fn parse_destructure(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructure>
 
 fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructure>> {
     let start = ctx.expect(Token::OpenBracket)?.span.start;
+    ctx.enter_nl_context().maybe_skip_nl();
 
     let mut elements = Vec::new();
     let mut rest = None;
 
     if matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBracket)) {
+        ctx.exit_nl_context();
         let close = ctx.expect(Token::CloseBracket)?;
         return Ok(Spanned::new(
             Destructure::Array { elements, rest },
@@ -33,6 +35,8 @@ fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructur
     }
 
     loop {
+        ctx.maybe_skip_nl();
+
         if matches!(ctx.peek().map(|t| &t.token), Some(Token::DotDotDot)) {
             ctx.advance(1);
             rest = Some(parse_binding(ctx, "rest binding")?);
@@ -40,12 +44,14 @@ fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructur
         }
 
         elements.push(parse_destructure(ctx)?);
+        ctx.maybe_skip_nl();
 
         let peek = ctx.must_peek("Array destructuring")?;
 
         match peek.token {
             Token::Comma => {
                 ctx.advance(1);
+                ctx.maybe_skip_nl();
             }
             Token::CloseBracket => break,
             _ => return Err(ctx.unexpected_token(peek, "Array destructuring")),
@@ -56,6 +62,7 @@ fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructur
         }
     }
 
+    ctx.maybe_skip_nl().exit_nl_context();
     let close = ctx.expect(Token::CloseBracket)?;
 
     Ok(Spanned::new(
@@ -66,17 +73,21 @@ fn parse_destructure_array(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructur
 
 fn parse_destructure_map(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructure>> {
     let start = ctx.expect(Token::OpenBrace)?.span.start;
+    ctx.enter_nl_context().maybe_skip_nl();
 
     let mut entries = Vec::new();
 
     if !matches!(ctx.peek().map(|t| &t.token), Some(Token::CloseBrace)) {
         loop {
+            ctx.maybe_skip_nl();
             entries.push(parse_map_entry(ctx)?);
+            ctx.maybe_skip_nl();
 
             let peek = ctx.must_peek("Map destructuring")?;
             match peek.token {
                 Token::Comma => {
                     ctx.advance(1);
+                    ctx.maybe_skip_nl();
                 }
                 Token::CloseBrace => break,
                 _ => return Err(ctx.unexpected_token(peek, "Map destructuring")),
@@ -88,6 +99,7 @@ fn parse_destructure_map(ctx: &mut ParseCtx) -> ParseResult<Spanned<Destructure>
         }
     }
 
+    ctx.maybe_skip_nl().exit_nl_context();
     let mut end = ctx.expect(Token::CloseBrace)?.span.end;
 
     let bind_whole = if matches!(ctx.peek().map(|t| &t.token), Some(Token::KwAs)) {
@@ -121,9 +133,12 @@ fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<Spanned<MapDestructureEntr
     match peek.token {
         Token::OpenBracket => {
             ctx.advance(1);
+            ctx.enter_nl_context().maybe_skip_nl();
             let key = parse_expression(ctx)?;
+            ctx.maybe_skip_nl().exit_nl_context();
             ctx.expect(Token::CloseBracket)?;
             ctx.expect(Token::Colon)?;
+            ctx.maybe_skip_nl();
             let destructure = parse_destructure(ctx)?;
             let span = (start..destructure.span.end).into();
             Ok(Spanned::new(MapDestructureEntry { key, destructure }, span))
@@ -136,6 +151,7 @@ fn parse_map_entry(ctx: &mut ParseCtx) -> ParseResult<Spanned<MapDestructureEntr
             let peek = ctx.must_peek("Map destructuring entry")?;
             if peek.token == Token::Colon {
                 ctx.advance(1);
+                ctx.maybe_skip_nl();
                 let destructure = parse_destructure(ctx)?;
                 let span = (start..destructure.span.end).into();
                 Ok(Spanned::new(

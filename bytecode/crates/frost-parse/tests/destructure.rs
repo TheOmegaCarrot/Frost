@@ -717,3 +717,181 @@ fn error_double_rest() {
         "error was: {err}"
     );
 }
+
+// -- Newlines inside destructuring delimiters --
+// Newlines are insignificant inside `[...]` / `{...}` destructuring, exactly as
+// in array/map literals, call parens, and match patterns. Each test pins one
+// newline position, so a partial fix fails precisely. (Oracle-checked 2026-07-22.)
+
+fn array_names(d: &Spanned<Destructure>) -> Vec<&str> {
+    match &d.node {
+        Destructure::Array { elements, .. } => elements
+            .iter()
+            .map(|e| match &e.node {
+                Destructure::Binding(Spanned {
+                    node: Binding::Named(n),
+                    ..
+                }) => n.as_str(),
+                other => panic!("expected named binding, got {other:?}"),
+            })
+            .collect(),
+        other => panic!("expected Array, got {other:?}"),
+    }
+}
+
+#[test]
+fn array_newline_after_open_bracket() {
+    let d = def_destructure("def [\n  a, b] = 1");
+    assert_eq!(array_names(&d), ["a", "b"]);
+}
+
+#[test]
+fn array_newline_after_comma() {
+    let d = def_destructure("def [a,\n  b] = 1");
+    assert_eq!(array_names(&d), ["a", "b"]);
+}
+
+#[test]
+fn array_newline_before_close_bracket() {
+    let d = def_destructure("def [a, b\n] = 1");
+    assert_eq!(array_names(&d), ["a", "b"]);
+}
+
+#[test]
+fn array_trailing_comma_then_newline() {
+    let d = def_destructure("def [\n  a,\n  b,\n] = 1");
+    assert_eq!(array_names(&d), ["a", "b"]);
+}
+
+#[test]
+fn array_blank_line_between_elements() {
+    let d = def_destructure("def [\n  a,\n\n  b\n] = 1");
+    assert_eq!(array_names(&d), ["a", "b"]);
+}
+
+#[test]
+fn array_rest_on_its_own_line() {
+    let d = def_destructure("def [a,\n  ...rest\n] = 1");
+    match d.node {
+        Destructure::Array { elements, rest } => {
+            assert_eq!(elements.len(), 1);
+            assert!(
+                matches!(rest, Some(Spanned { node: Binding::Named(ref n), .. }) if n == "rest")
+            );
+        }
+        other => panic!("expected Array, got {other:?}"),
+    }
+}
+
+#[test]
+fn empty_array_with_newline() {
+    let d = def_destructure("def [\n] = 1");
+    match d.node {
+        Destructure::Array { elements, rest } => {
+            assert!(elements.is_empty());
+            assert!(rest.is_none());
+        }
+        other => panic!("expected Array, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_newline_after_open_brace() {
+    let d = def_destructure("def {\n  x, y} = 1");
+    match d.node {
+        Destructure::Map { entries, .. } => assert_eq!(entries.len(), 2),
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_newline_after_comma() {
+    let d = def_destructure("def {x,\n  y} = 1");
+    match d.node {
+        Destructure::Map { entries, .. } => assert_eq!(entries.len(), 2),
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_newline_before_close_brace() {
+    let d = def_destructure("def {x, y\n} = 1");
+    match d.node {
+        Destructure::Map { entries, .. } => assert_eq!(entries.len(), 2),
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_trailing_comma_then_newline() {
+    let d = def_destructure("def {\n  x,\n  y,\n} = 1");
+    match d.node {
+        Destructure::Map { entries, .. } => assert_eq!(entries.len(), 2),
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_computed_key_on_its_own_line() {
+    let d = def_destructure("def {\n  ['k']: a\n} = 1");
+    match d.node {
+        Destructure::Map { entries, .. } => {
+            assert_eq!(entries.len(), 1);
+            assert_eq!(str_key(&entries[0]), b"k");
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_entry_newline_after_colon() {
+    let d = def_destructure("def {x:\n  [a]} = 1");
+    match d.node {
+        Destructure::Map { entries, .. } => {
+            assert_eq!(entries.len(), 1);
+            assert!(matches!(
+                &entries[0].node.destructure.node,
+                Destructure::Array { .. }
+            ));
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_computed_key_across_lines() {
+    let d = def_destructure("def {[\n'k'\n]: a} = 1");
+    match d.node {
+        Destructure::Map { entries, .. } => {
+            assert_eq!(entries.len(), 1);
+            assert_eq!(str_key(&entries[0]), b"k");
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn map_as_binding_after_multiline_braces() {
+    let d = def_destructure("def {x\n} as whole = 1");
+    match d.node {
+        Destructure::Map { bind_whole, .. } => {
+            assert!(
+                matches!(bind_whole, Some(Spanned { node: Binding::Named(ref n), .. }) if n == "whole")
+            );
+        }
+        other => panic!("expected Map, got {other:?}"),
+    }
+}
+
+#[test]
+fn nested_destructures_across_lines() {
+    let d = def_destructure("def [\n  {x},\n  [a,\n   b]\n] = 1");
+    match d.node {
+        Destructure::Array { elements, .. } => {
+            assert_eq!(elements.len(), 2);
+            assert!(matches!(&elements[0].node, Destructure::Map { .. }));
+            assert!(matches!(&elements[1].node, Destructure::Array { .. }));
+        }
+        other => panic!("expected Array, got {other:?}"),
+    }
+}

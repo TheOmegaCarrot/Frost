@@ -4,6 +4,10 @@ use crate::ast::{
 };
 use crate::lex::Token;
 use crate::parse::expression::parse_expression;
+use crate::parse::format_string::parse_format_string;
+use crate::parse::strings::{
+    QuoteStyle, parse_multiline_string, parse_raw_string, parse_simple_string,
+};
 use crate::parse::{ParseResult, ctx::ParseCtx, parse_binding};
 
 pub fn parse_match(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
@@ -82,6 +86,11 @@ fn parse_pattern_alternatives(ctx: &mut ParseCtx) -> ParseResult<Spanned<MatchPa
     ))
 }
 
+fn expr_match_pattern(expr: Spanned<Expr>) -> Spanned<MatchPattern> {
+    let span = expr.span;
+    Spanned::new(MatchPattern::Value(expr), span)
+}
+
 fn parse_single_pattern(ctx: &mut ParseCtx) -> ParseResult<Spanned<MatchPattern>> {
     ctx.maybe_skip_nl();
     let peek = ctx.must_peek("match pattern")?;
@@ -128,15 +137,28 @@ fn parse_single_pattern(ctx: &mut ParseCtx) -> ParseResult<Spanned<MatchPattern>
             Ok(literal_pattern(peek_start, peek_end, Literal::Null))
         }
 
-        Token::SingleQuoteStringLiteral(_)
-        | Token::DoubleQuoteStringLiteral(_)
-        | Token::RawStringLiteral(_)
-        | Token::MultilineStringLiteral(_)
-        | Token::SingleQuoteFormatStringLiteral(_)
-        | Token::DoubleQuoteFormatStringLiteral(_) => {
-            let expr = parse_expression(ctx)?;
-            let span = expr.span;
-            Ok(Spanned::new(MatchPattern::Value(expr), span))
+        Token::SingleQuoteStringLiteral(_) => {
+            parse_simple_string(ctx, QuoteStyle::Single).map(expr_match_pattern)
+        }
+
+        Token::DoubleQuoteStringLiteral(_) => {
+            parse_simple_string(ctx, QuoteStyle::Double).map(expr_match_pattern)
+        }
+
+        Token::RawStringLiteral(_) => parse_raw_string(ctx).map(expr_match_pattern),
+
+        Token::MultilineStringLiteral(_) => parse_multiline_string(ctx).map(expr_match_pattern),
+
+        Token::SingleQuoteFormatStringLiteral(_) | Token::DoubleQuoteFormatStringLiteral(_) => {
+            parse_format_string(
+                ctx,
+                match peek.token {
+                    Token::SingleQuoteFormatStringLiteral(_) => QuoteStyle::Single,
+                    Token::DoubleQuoteFormatStringLiteral(_) => QuoteStyle::Double,
+                    _ => unreachable!(),
+                },
+            )
+            .map(expr_match_pattern)
         }
 
         Token::OpMinus => {
