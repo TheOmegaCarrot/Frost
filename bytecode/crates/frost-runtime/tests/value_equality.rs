@@ -1,10 +1,24 @@
-use std::any::Any;
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Closure, CompiledFunction, FormatVersion, FrostArray, FrostMap, MapKey, NativeFunction,
-    Value,
+    Arity, Closure, CompiledFunction, FormatVersion, FrostArray, FrostMap, FrostOpaque, MapKey,
+    NativeFunction, Value,
 };
+
+/// A minimal opaque payload for identity-equality tests.
+#[derive(Debug)]
+struct Marker(i64);
+
+impl FrostOpaque for Marker {
+    fn type_name(&self) -> Cow<'static, str> {
+        Cow::Borrowed("Marker")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        Some(format!("marker {}", self.0))
+    }
+}
 
 fn str_key(s: &str) -> MapKey {
     MapKey::String(Arc::from(s.as_bytes()))
@@ -240,11 +254,10 @@ fn closures_compare_by_identity() {
 
 #[test]
 fn opaques_compare_by_identity() {
-    let o: Arc<dyn Any + Send + Sync> = Arc::new(42i64);
+    let o: Arc<dyn FrostOpaque> = Arc::new(Marker(42));
     assert_eq!(Value::Opaque(o.clone()), Value::Opaque(o));
-    let a: Arc<dyn Any + Send + Sync> = Arc::new(1i64);
-    let b: Arc<dyn Any + Send + Sync> = Arc::new(1i64);
-    assert_ne!(Value::Opaque(a), Value::Opaque(b));
+    // Distinct instances, even with equal payloads, are never equal.
+    assert_ne!(Value::opaque(Marker(1)), Value::opaque(Marker(1)));
 }
 
 #[test]

@@ -9,6 +9,7 @@ use std::{any::Any, sync::Arc};
 use crate::core::{FrostArray, FrostFloat, FrostMap};
 use crate::vm::Closure;
 use crate::vm::NativeFunction;
+use crate::core::types::opaque::FrostOpaque;
 
 /// The fundamental runtime value type of Frost.
 ///
@@ -36,13 +37,9 @@ pub enum Value {
     NativeFunction(Arc<NativeFunction>),
     /// A Frost closure.
     Closure(Arc<Closure>),
-    /// Interpreter-managed opaque data. Native functions downcast to their concrete type.
-    Opaque(FrostOpaque),
+    /// Runtime-managed opaque data. Native functions downcast to their concrete type.
+    Opaque(Arc<dyn FrostOpaque>),
 }
-
-/// The payload of [`Value::Opaque`]: host data carried through Frost untouched.
-/// Store any `Send + Sync` type; retrieve it by downcasting.
-pub type FrostOpaque = Arc<dyn Any + Send + Sync>;
 
 const _: () = {
     const fn assert_send_sync<T: Send + Sync>() {}
@@ -128,11 +125,23 @@ impl Value {
         }
     }
 
-    /// Returns a reference to the inner `Arc<dyn Any + Send + Sync>` if this is `Opaque`, or `None`.
-    pub fn as_opaque(&self) -> Option<&FrostOpaque> {
+    /// Returns a reference to the inner opaque handle if this is `Opaque`, or `None`.
+    ///
+    /// For the concrete payload type rather than the handle, use
+    /// [`downcast_opaque`](Self::downcast_opaque).
+    pub fn as_opaque(&self) -> Option<&Arc<dyn FrostOpaque>> {
         match self {
             Self::Opaque(o) => Some(o),
             _ => None,
+        }
+    }
+
+    /// Extract the contained opaque handle, if present.
+    /// Otherwise returns the original value as-is.
+    pub fn try_into_opaque(self) -> Result<Arc<dyn FrostOpaque>, Value> {
+        match self {
+            Self::Opaque(o) => Ok(o),
+            _ => Err(self),
         }
     }
 
@@ -143,5 +152,19 @@ impl Value {
     /// instead of cloning. Shorthand for `std::mem::replace(&mut value, Value::Null)`.
     pub fn take(&mut self) -> Value {
         std::mem::replace(self, Value::Null)
+    }
+
+    /// Wrap host data as an `Opaque` value.
+    ///
+    /// The usual way to hand a [`FrostOpaque`] instance into Frost; see the
+    /// trait for what Frost does (and refuses to do) with it.
+    pub fn opaque<T: FrostOpaque>(x: T) -> Value {
+        Value::Opaque(Arc::new(x))
+    }
+
+    /// Borrows the concrete `T` inside an `Opaque` value: `None` when this is
+    /// not `Opaque`, or the payload is some other type.
+    pub fn downcast_opaque<T: FrostOpaque>(&self) -> Option<&T> {
+        self.as_opaque()?.downcast_ref::<T>()
     }
 }

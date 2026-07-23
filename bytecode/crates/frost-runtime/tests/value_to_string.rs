@@ -86,9 +86,55 @@ fn function_placeholder() {
     // Can't easily construct a Function value in tests, tested via type_name coverage
 }
 
+// -- Opaque renderings --
+// The exact format is unpinned; these tests hold the two decided properties:
+// every rendering names the payload's type, and an approximation never renders
+// as if it were a bare String value.
+
+/// An opaque payload with no string approximation.
+#[derive(Debug)]
+struct Widget;
+
+impl frost_runtime::FrostOpaque for Widget {
+    fn type_name(&self) -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("Widget")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        None
+    }
+}
+
+/// An opaque payload with a string approximation.
+#[derive(Debug)]
+struct Gizmo;
+
+impl frost_runtime::FrostOpaque for Gizmo {
+    fn type_name(&self) -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("Gizmo")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        Some("running gizmo".to_string())
+    }
+}
+
 #[test]
-fn opaque_placeholder() {
-    // Can't easily construct an Opaque value in tests, tested via type_name coverage
+fn opaque_renderings_show_the_type_name() {
+    let v = Value::opaque(Widget);
+    for s in [v.to_frost_string(), v.to_pretty_string(), v.to_debug_string()] {
+        assert!(s.contains("Widget"), "expected the type name, got: {s}");
+    }
+}
+
+#[test]
+fn opaque_approximation_is_never_a_bare_string() {
+    // A rendering may use try_to_string, but must stay visibly opaque:
+    // never byte-identical to the approximation as a plain String.
+    let v = Value::opaque(Gizmo);
+    for s in [v.to_frost_string(), v.to_pretty_string(), v.to_debug_string()] {
+        assert_ne!(s, "running gizmo", "approximation rendered as a bare String");
+    }
 }
 
 // -- Primitives: to_debug_string --

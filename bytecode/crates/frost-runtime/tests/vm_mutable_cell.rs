@@ -17,8 +17,8 @@ mod common;
 
 use common::{Pop, global_slot as slot};
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostError, MapKey, NameEntry,
-    NativeFunction, Value, Vm,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostOpaque, MapKey,
+    NameEntry, NativeFunction, Value, Vm,
 };
 
 use Bytecode::*;
@@ -122,7 +122,20 @@ fn a_function() -> Value {
 
 /// An opaque host value, also forbidden since a cell can't see inside it to rule out a cycle.
 fn an_opaque() -> Value {
-    Value::Opaque(Arc::new(42i64))
+    #[derive(Debug)]
+    struct Blob;
+
+    impl FrostOpaque for Blob {
+        fn type_name(&self) -> std::borrow::Cow<'static, str> {
+            std::borrow::Cow::Borrowed("Blob")
+        }
+
+        fn try_to_string(&self) -> Option<String> {
+            None
+        }
+    }
+
+    Value::opaque(Blob)
 }
 
 fn arr(elems: Vec<Value>) -> Value {

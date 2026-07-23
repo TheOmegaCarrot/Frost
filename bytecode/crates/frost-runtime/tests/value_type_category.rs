@@ -11,7 +11,7 @@ mod common;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, EnumSet, FrostArray, FrostMap, FrostType, NativeFunction, Value,
+    Arity, Bytecode, EnumSet, FrostArray, FrostMap, FrostOpaque, FrostType, NativeFunction, Value,
 };
 
 type Ft = FrostType;
@@ -61,8 +61,20 @@ fn closure() -> Value {
 }
 
 fn opaque() -> Value {
-    let data: Arc<dyn std::any::Any + Send + Sync> = Arc::new(0u32);
-    Value::Opaque(data)
+    #[derive(Debug)]
+    struct Hidden;
+
+    impl FrostOpaque for Hidden {
+        fn type_name(&self) -> std::borrow::Cow<'static, str> {
+            std::borrow::Cow::Borrowed("Hidden")
+        }
+
+        fn try_to_string(&self) -> Option<String> {
+            None
+        }
+    }
+
+    Value::opaque(Hidden)
 }
 
 /// Every runtime variant paired with its expected `FrostType`. Note both function

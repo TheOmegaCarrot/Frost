@@ -362,6 +362,28 @@ fn serialize_function_errors() {
     // which checks for Function/Opaque
 }
 
+#[test]
+fn serialize_opaque_errors() {
+    #[derive(Debug)]
+    struct Blob;
+
+    impl frost_runtime::FrostOpaque for Blob {
+        fn type_name(&self) -> std::borrow::Cow<'static, str> {
+            std::borrow::Cow::Borrowed("Blob")
+        }
+
+        fn try_to_string(&self) -> Option<String> {
+            None
+        }
+    }
+
+    let err = serde_json::to_string(&Value::opaque(Blob)).unwrap_err();
+    assert!(
+        err.to_string().contains("cannot serialize Opaque"),
+        "got: {err}"
+    );
+}
+
 // ---- Newtype struct ----
 
 #[derive(Serialize)]

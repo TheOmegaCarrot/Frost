@@ -84,7 +84,7 @@ fn stringify(value: &Value, buf: &mut String, ctx: &StringifyContext) {
         Value::Map(map) => stringify_map(map, buf, ctx),
         Value::NativeFunction(_) => buf.push_str("<Function>"),
         Value::Closure(_) => buf.push_str("<Function>"),
-        Value::Opaque(_) => buf.push_str("<Opaque>"),
+        Value::Opaque(o) => write!(buf, "<{}>", o.type_name()).unwrap(),
     }
 }
 

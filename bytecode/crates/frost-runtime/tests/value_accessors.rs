@@ -133,17 +133,41 @@ fn as_map_from_non_map() {
     assert!(Value::Null.as_map().is_none());
 }
 
-// -- as_opaque --
+// -- as_opaque / downcast_opaque / try_into_opaque --
+
+/// A payload type for the opaque accessors.
+#[derive(Debug, PartialEq)]
+struct Sealed(u32);
+
+impl frost_runtime::FrostOpaque for Sealed {
+    fn type_name(&self) -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("Sealed")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        None
+    }
+}
+
+/// A second payload type, so wrong-type downcasts have a real target.
+#[derive(Debug)]
+struct Decoy;
+
+impl frost_runtime::FrostOpaque for Decoy {
+    fn type_name(&self) -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("Decoy")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        None
+    }
+}
 
 #[test]
 fn as_opaque_from_opaque() {
-    let data: Arc<dyn std::any::Any + Send + Sync> = Arc::new(42u32);
-    let v = Value::Opaque(data);
+    let v = Value::opaque(Sealed(42));
     let opaque = v.as_opaque().expect("should be opaque");
-    let downcasted = opaque
-        .downcast_ref::<u32>()
-        .expect("should downcast to u32");
-    assert_eq!(*downcasted, 42u32);
+    assert_eq!(opaque.downcast_ref::<Sealed>(), Some(&Sealed(42)));
 }
 
 #[test]
@@ -151,6 +175,27 @@ fn as_opaque_from_non_opaque() {
     assert!(Value::from(42i64).as_opaque().is_none());
     assert!(Value::Null.as_opaque().is_none());
     assert!(Value::from("hello").as_opaque().is_none());
+}
+
+#[test]
+fn downcast_opaque_by_payload_type() {
+    let v = Value::opaque(Sealed(7));
+    assert_eq!(v.downcast_opaque::<Sealed>(), Some(&Sealed(7)));
+    assert!(v.downcast_opaque::<Decoy>().is_none());
+    assert!(Value::from(7i64).downcast_opaque::<Sealed>().is_none());
+}
+
+#[test]
+fn try_into_opaque_from_opaque() {
+    let v = Value::opaque(Sealed(9));
+    let handle = v.try_into_opaque().expect("an Opaque extracts");
+    assert_eq!(handle.downcast_ref::<Sealed>(), Some(&Sealed(9)));
+}
+
+#[test]
+fn try_into_opaque_from_non_opaque_returns_original() {
+    let back = Value::from(3i64).try_into_opaque().unwrap_err();
+    assert_eq!(back, Value::from(3i64));
 }
 
 // -- wrong-type returns None consistently --

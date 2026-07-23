@@ -20,5 +20,6 @@ pub use types::float::FrostFloat;
 pub use types::frost_type::FrostType;
 pub use types::map::FrostMap;
 pub use types::map_key::MapKey;
+pub use types::opaque::FrostOpaque;
 pub use util::identifier::KEYWORDS;
-pub use value::{FrostOpaque, Value};
+pub use value::Value;
