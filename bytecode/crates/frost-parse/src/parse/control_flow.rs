@@ -1,90 +1,91 @@
 use crate::ast::{Expr, Spanned, Statement};
 use crate::lex::Token;
-use crate::parse::expression::parse_expression;
-use crate::parse::statements::{StatementContext, parse_statements};
+use crate::parse::statements::StatementContext;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
-pub fn parse_if(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
-    parse_if_or_elif(ctx, Token::KwIf)
-}
+impl<'src, 'f> ParseCtx<'src, 'f> {
+    pub fn parse_if(&mut self) -> ParseResult<Spanned<Expr>> {
+        self.parse_if_or_elif(Token::KwIf)
+    }
 
-fn parse_if_or_elif(ctx: &mut ParseCtx, keyword: Token) -> ParseResult<Spanned<Expr>> {
-    let start = ctx.expect(keyword)?.span.start;
+    fn parse_if_or_elif(&mut self, keyword: Token) -> ParseResult<Spanned<Expr>> {
+        let start = self.expect(keyword)?.span.start;
 
-    let condition = parse_expression(ctx)?;
-    ctx.expect(Token::Colon)?;
-    let consequent = parse_expression(ctx)?;
+        let condition = self.parse_expression()?;
+        self.expect(Token::Colon)?;
+        let consequent = self.parse_expression()?;
 
-    let alternate = parse_tail(ctx)?;
+        let alternate = self.parse_tail()?;
 
-    let end = alternate.as_ref().unwrap_or(&consequent).span.end;
+        let end = alternate.as_ref().unwrap_or(&consequent).span.end;
 
-    Ok(Spanned::new(
-        Expr::If {
-            condition: Box::new(condition),
-            consequent: Box::new(consequent),
-            alternate: alternate.map(Box::new),
-        },
-        (start..end).into(),
-    ))
-}
+        Ok(Spanned::new(
+            Expr::If {
+                condition: Box::new(condition),
+                consequent: Box::new(consequent),
+                alternate: alternate.map(Box::new),
+            },
+            (start..end).into(),
+        ))
+    }
 
-fn parse_tail(ctx: &mut ParseCtx) -> ParseResult<Option<Spanned<Expr>>> {
-    let checkpoint = ctx.checkpoint();
-    ctx.skip_nl();
+    fn parse_tail(&mut self) -> ParseResult<Option<Spanned<Expr>>> {
+        let checkpoint = self.checkpoint();
+        self.skip_nl();
 
-    let Some(peek) = ctx.peek() else {
-        ctx.restore(checkpoint);
-        return Ok(None);
-    };
+        let Some(peek) = self.peek() else {
+            self.restore(checkpoint);
+            return Ok(None);
+        };
 
-    match peek.token {
-        Token::KwElif => Ok(Some(parse_if_or_elif(ctx, Token::KwElif)?)),
-        Token::KwElse => {
-            ctx.expect(Token::KwElse)?;
-            ctx.expect(Token::Colon)?;
-            let alternate = parse_expression(ctx)?;
-            Ok(Some(alternate))
-        }
-        _ => {
-            ctx.restore(checkpoint);
-            Ok(None)
+        match peek.token {
+            Token::KwElif => Ok(Some(self.parse_if_or_elif(Token::KwElif)?)),
+            Token::KwElse => {
+                self.expect(Token::KwElse)?;
+                self.expect(Token::Colon)?;
+                let alternate = self.parse_expression()?;
+                Ok(Some(alternate))
+            }
+            _ => {
+                self.restore(checkpoint);
+                Ok(None)
+            }
         }
     }
-}
 
-pub fn parse_do(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
-    let start = ctx.expect(Token::KwDo)?.span.start;
-    ctx.expect(Token::OpenBrace)?;
+    pub fn parse_do(&mut self) -> ParseResult<Spanned<Expr>> {
+        let start = self.expect(Token::KwDo)?.span.start;
+        self.expect(Token::OpenBrace)?;
 
-    let mut body = parse_statements(ctx, StatementContext::Scope)?;
+        let mut body = self.parse_statements(StatementContext::Scope)?;
 
-    let close_end = ctx.expect(Token::CloseBrace)?.span.end;
+        let close_end = self.expect(Token::CloseBrace)?.span.end;
 
-    let Some(last) = body.pop() else {
-        return Err(Diagnostic::at(
-            "do block must contain at least one expression",
-            (start..close_end).into(),
-            "empty block",
-        ));
-    };
-
-    let value = match last.node {
-        Statement::Expr(expr) => expr,
-        Statement::Def { .. } => {
+        let Some(last) = body.pop() else {
             return Err(Diagnostic::at(
-                "do block must end with an expression, not a definition",
-                last.span,
-                "definition here",
+                "do block must contain at least one expression",
+                (start..close_end).into(),
+                "empty block",
             ));
-        }
-    };
+        };
 
-    Ok(Spanned::new(
-        Expr::Do {
-            body,
-            value: Box::new(value),
-        },
-        (start..close_end).into(),
-    ))
+        let value = match last.node {
+            Statement::Expr(expr) => expr,
+            Statement::Def { .. } => {
+                return Err(Diagnostic::at(
+                    "do block must end with an expression, not a definition",
+                    last.span,
+                    "definition here",
+                ));
+            }
+        };
+
+        Ok(Spanned::new(
+            Expr::Do {
+                body,
+                value: Box::new(value),
+            },
+            (start..close_end).into(),
+        ))
+    }
 }

@@ -14,50 +14,54 @@ fn string_error(span: &Range<usize>, msg: impl Into<String>) -> Diagnostic {
     Diagnostic::at(msg, span.clone().into(), "in this String literal")
 }
 
-pub fn parse_simple_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
-    let peek = ctx.must_peek("String literal")?;
-    let span = peek.span.clone();
-    let raw = match peek.token {
-        Token::SingleQuoteStringLiteral(s) | Token::DoubleQuoteStringLiteral(s) => s.to_owned(),
-        _ => return Err(ctx.unexpected_token(peek, "String literal")),
-    };
-    ctx.advance(1);
-    let bytes = expand_escapes(&raw, quote).map_err(|msg| string_error(&span, msg))?;
-    Ok(Spanned::new(
-        Expr::Literal(Literal::String(bytes)),
-        span.into(),
-    ))
-}
+impl<'src, 'f> ParseCtx<'src, 'f> {
+    pub fn parse_simple_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
+        let peek = self.must_peek("String literal")?;
+        let span = peek.span.clone();
+        let raw = match peek.token {
+            Token::SingleQuoteStringLiteral(s) | Token::DoubleQuoteStringLiteral(s) => {
+                s.to_owned()
+            }
+            _ => return Err(self.unexpected_token(peek, "String literal")),
+        };
+        self.advance(1);
+        let bytes = expand_escapes(&raw, quote).map_err(|msg| string_error(&span, msg))?;
+        Ok(Spanned::new(
+            Expr::Literal(Literal::String(bytes)),
+            span.into(),
+        ))
+    }
 
-pub fn parse_raw_string(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
-    let peek = ctx.must_peek("raw String literal")?;
-    let span = peek.span.clone();
-    let raw = match peek.token {
-        Token::RawStringLiteral(s) => s,
-        _ => return Err(ctx.unexpected_token(peek, "raw String literal")),
-    };
-    let bytes = raw.as_bytes().to_vec();
-    ctx.advance(1);
-    Ok(Spanned::new(
-        Expr::Literal(Literal::String(bytes)),
-        span.into(),
-    ))
-}
+    pub fn parse_raw_string(&mut self) -> ParseResult<Spanned<Expr>> {
+        let peek = self.must_peek("raw String literal")?;
+        let span = peek.span.clone();
+        let raw = match peek.token {
+            Token::RawStringLiteral(s) => s,
+            _ => return Err(self.unexpected_token(peek, "raw String literal")),
+        };
+        let bytes = raw.as_bytes().to_vec();
+        self.advance(1);
+        Ok(Spanned::new(
+            Expr::Literal(Literal::String(bytes)),
+            span.into(),
+        ))
+    }
 
-pub fn parse_multiline_string(ctx: &mut ParseCtx) -> ParseResult<Spanned<Expr>> {
-    let peek = ctx.must_peek("multiline String literal")?;
-    let span = peek.span.clone();
-    let raw = match peek.token {
-        Token::MultilineStringLiteral(s) => s.to_owned(),
-        _ => return Err(ctx.unexpected_token(peek, "multiline String literal")),
-    };
-    ctx.advance(1);
-    let trimmed = trim_multiline_indentation(&raw).map_err(|msg| string_error(&span, msg))?;
-    let bytes = expand_multiline_escapes(&trimmed).map_err(|msg| string_error(&span, msg))?;
-    Ok(Spanned::new(
-        Expr::Literal(Literal::String(bytes)),
-        span.into(),
-    ))
+    pub fn parse_multiline_string(&mut self) -> ParseResult<Spanned<Expr>> {
+        let peek = self.must_peek("multiline String literal")?;
+        let span = peek.span.clone();
+        let raw = match peek.token {
+            Token::MultilineStringLiteral(s) => s.to_owned(),
+            _ => return Err(self.unexpected_token(peek, "multiline String literal")),
+        };
+        self.advance(1);
+        let trimmed = trim_multiline_indentation(&raw).map_err(|msg| string_error(&span, msg))?;
+        let bytes = expand_multiline_escapes(&trimmed).map_err(|msg| string_error(&span, msg))?;
+        Ok(Spanned::new(
+            Expr::Literal(Literal::String(bytes)),
+            span.into(),
+        ))
+    }
 }
 
 fn expand_escapes(raw: &str, quote: QuoteStyle) -> Result<Vec<u8>, String> {

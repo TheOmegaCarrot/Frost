@@ -1,7 +1,7 @@
 use crate::ast::{self, Binding, Spanned};
 use crate::lex::Token;
 use crate::parse::ctx::ParseCtx;
-use crate::parse::statements::{StatementContext, parse_statements};
+use crate::parse::statements::StatementContext;
 
 mod control_flow;
 mod destructure;
@@ -24,7 +24,7 @@ pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseE
     let mut ctx =
         ParseCtx::new(filename, input).map_err(|d| ParseError::from_diag(d, filename, input))?;
 
-    parse_statements(&mut ctx, StatementContext::TopLevel)
+    ctx.parse_statements(StatementContext::TopLevel)
         .map(|statements| ast::Program { statements })
         .map_err(|d| ParseError::from_diag(d, filename, input))
 }
@@ -33,19 +33,21 @@ pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseE
 /// into a public [`ParseError`] only at the [`parse_program`] boundary.
 type ParseResult<T> = Result<T, Diagnostic>;
 
-fn parse_binding(ctx: &mut ParseCtx, context: &str) -> ParseResult<Spanned<Binding>> {
-    let peek = ctx.must_peek(context)?;
-    let span = peek.span.clone().into();
-    match peek.token {
-        Token::Identifier("_") => {
-            ctx.advance(1);
-            Ok(Spanned::new(Binding::Discarded, span))
+impl<'src, 'f> ParseCtx<'src, 'f> {
+    fn parse_binding(&mut self, context: &str) -> ParseResult<Spanned<Binding>> {
+        let peek = self.must_peek(context)?;
+        let span = peek.span.clone().into();
+        match peek.token {
+            Token::Identifier("_") => {
+                self.advance(1);
+                Ok(Spanned::new(Binding::Discarded, span))
+            }
+            Token::Identifier(name) => {
+                let name = name.to_owned();
+                self.advance(1);
+                Ok(Spanned::new(Binding::Named(name), span))
+            }
+            _ => Err(self.unexpected_token(peek, context)),
         }
-        Token::Identifier(name) => {
-            let name = name.to_owned();
-            ctx.advance(1);
-            Ok(Spanned::new(Binding::Named(name), span))
-        }
-        _ => Err(ctx.unexpected_token(peek, context)),
     }
 }

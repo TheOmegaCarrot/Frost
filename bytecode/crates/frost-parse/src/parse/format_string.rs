@@ -2,24 +2,24 @@ use std::ops::Range;
 
 use crate::ast::{Expr, FormatSegment, Spanned};
 use crate::lex::Token;
-use crate::parse::expression::parse_expression;
 use crate::parse::strings::QuoteStyle;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
-pub fn parse_format_string(ctx: &mut ParseCtx, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
-    let peek = ctx.must_peek("format String")?;
-    let span = peek.span.clone();
-    let raw = match peek.token {
-        Token::SingleQuoteFormatStringLiteral(s) | Token::DoubleQuoteFormatStringLiteral(s) => {
-            s.to_owned()
-        }
-        _ => return Err(ctx.unexpected_token(peek, "format String")),
-    };
-    ctx.advance(1);
+impl<'src, 'f> ParseCtx<'src, 'f> {
+    pub fn parse_format_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
+        let peek = self.must_peek("format String")?;
+        let span = peek.span.clone();
+        let raw = match peek.token {
+            Token::SingleQuoteFormatStringLiteral(s)
+            | Token::DoubleQuoteFormatStringLiteral(s) => s.to_owned(),
+            _ => return Err(self.unexpected_token(peek, "format String")),
+        };
+        self.advance(1);
 
-    let segments = split_format_segments(&raw, quote, ctx, &span)?;
+        let segments = split_format_segments(&raw, quote, self, &span)?;
 
-    Ok(Spanned::new(Expr::FormatString(segments), span.into()))
+        Ok(Spanned::new(Expr::FormatString(segments), span.into()))
+    }
 }
 
 fn format_error(span: &Range<usize>, msg: impl Into<String>) -> Diagnostic {
@@ -186,7 +186,7 @@ fn parse_interpolation(
     let mut sub_ctx =
         ParseCtx::new_with_offset(ctx.filename(), src, base_offset).map_err(context)?;
 
-    let expr = parse_expression(&mut sub_ctx).map_err(context)?;
+    let expr = sub_ctx.parse_expression().map_err(context)?;
 
     if !sub_ctx.at_end() {
         let leftover = sub_ctx.peek().expect("not at end, so a token remains");
