@@ -10,8 +10,16 @@ use super::function::Closure;
 
 /// The result of executing a CompiledFunction.
 /// Provides access to the top-level defined values and exports of a script.
-#[derive(Debug)]
 pub struct ProgramResult(pub(super) Vm);
+
+impl std::fmt::Debug for ProgramResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Elide the (large, indeterminate) Vm from `{:?}`/`unwrap` output.
+        f.debug_struct("ProgramResult")
+            .field("tail", self.tail())
+            .finish_non_exhaustive()
+    }
+}
 
 impl ProgramResult {
     /// Get the value of the tail expression of a script.

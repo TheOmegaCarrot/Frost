@@ -31,7 +31,6 @@ pub struct CompiledFunction {
     // Number of leading `name_table`/slot entries that are captures (slots `0..num_captures`);
     // the remainder are locals, including params. May be 0.
     pub num_captures: usize,
-    // Arity of top-level is Exact(0)
     pub arity: Arity,
 }
 
