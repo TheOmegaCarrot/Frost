@@ -1,4 +1,4 @@
-use crate::ast::{BinOp, Expr, Literal, SourceSpan, Spanned, UnaryOp};
+use crate::ast::{BinOp, Expr, Literal, LogicalOp, SourceSpan, Spanned, UnaryOp};
 use crate::lex::Token;
 use crate::parse::strings;
 use crate::parse::{ParseResult, ctx::ParseCtx};
@@ -67,17 +67,24 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             }
 
             let non_chainable = is_non_chainable(&peek.token);
-            let op = Spanned::new(op, peek.span.clone().into());
+            let op_span: SourceSpan = peek.span.clone().into();
             self.advance(1);
             self.maybe_skip_nl();
 
             let rhs = self.parse_expr_bp(bp + 1)?;
             let span = (lhs.span.start..rhs.span.end).into();
             lhs = Spanned::new(
-                Expr::BinOp {
-                    left: Box::new(lhs),
-                    op,
-                    right: Box::new(rhs),
+                match op {
+                    Infix::Bin(op) => Expr::BinOp {
+                        left: Box::new(lhs),
+                        op: Spanned::new(op, op_span),
+                        right: Box::new(rhs),
+                    },
+                    Infix::Logical(op) => Expr::Logical {
+                        left: Box::new(lhs),
+                        op: Spanned::new(op, op_span),
+                        right: Box::new(rhs),
+                    },
                 },
                 span,
             );
@@ -319,21 +326,29 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 const POSTFIX_BP: u8 = 16;
 const PREFIX_BP: u8 = 14;
 
-fn infix_bp(token: &Token) -> Option<(BinOp, u8)> {
+/// An infix operator: strict ([`Expr::BinOp`]) or short-circuiting
+/// ([`Expr::Logical`]). The Pratt loop treats both identically for
+/// precedence; only node construction differs.
+enum Infix {
+    Bin(BinOp),
+    Logical(LogicalOp),
+}
+
+fn infix_bp(token: &Token) -> Option<(Infix, u8)> {
     match token {
-        Token::OpOr => Some((BinOp::Or, 2)),
-        Token::OpAnd => Some((BinOp::And, 4)),
-        Token::OpEq => Some((BinOp::Eq, 6)),
-        Token::OpNeq => Some((BinOp::Neq, 6)),
-        Token::OpLt => Some((BinOp::Lt, 6)),
-        Token::OpLte => Some((BinOp::Lte, 6)),
-        Token::OpGt => Some((BinOp::Gt, 6)),
-        Token::OpGte => Some((BinOp::Gte, 6)),
-        Token::OpPlus => Some((BinOp::Add, 8)),
-        Token::OpMinus => Some((BinOp::Sub, 8)),
-        Token::OpTimes => Some((BinOp::Mul, 10)),
-        Token::OpDiv => Some((BinOp::Div, 10)),
-        Token::OpMod => Some((BinOp::Mod, 10)),
+        Token::OpOr => Some((Infix::Logical(LogicalOp::Or), 2)),
+        Token::OpAnd => Some((Infix::Logical(LogicalOp::And), 4)),
+        Token::OpEq => Some((Infix::Bin(BinOp::Eq), 6)),
+        Token::OpNeq => Some((Infix::Bin(BinOp::Neq), 6)),
+        Token::OpLt => Some((Infix::Bin(BinOp::Lt), 6)),
+        Token::OpLte => Some((Infix::Bin(BinOp::Lte), 6)),
+        Token::OpGt => Some((Infix::Bin(BinOp::Gt), 6)),
+        Token::OpGte => Some((Infix::Bin(BinOp::Gte), 6)),
+        Token::OpPlus => Some((Infix::Bin(BinOp::Add), 8)),
+        Token::OpMinus => Some((Infix::Bin(BinOp::Sub), 8)),
+        Token::OpTimes => Some((Infix::Bin(BinOp::Mul), 10)),
+        Token::OpDiv => Some((Infix::Bin(BinOp::Div), 10)),
+        Token::OpMod => Some((Infix::Bin(BinOp::Mod), 10)),
         _ => None,
     }
 }

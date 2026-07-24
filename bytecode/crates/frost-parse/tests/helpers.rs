@@ -33,3 +33,10 @@ pub fn is_binop(expr: &Spanned<Expr>) -> Option<(&Spanned<Expr>, BinOp, &Spanned
         _ => None,
     }
 }
+
+pub fn is_logical(expr: &Spanned<Expr>) -> Option<(&Spanned<Expr>, LogicalOp, &Spanned<Expr>)> {
+    match &expr.node {
+        Expr::Logical { left, op, right } => Some((left, op.node, right)),
+        _ => None,
+    }
+}

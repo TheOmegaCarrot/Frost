@@ -92,11 +92,11 @@ fn mul_is_left_associative() {
 #[test]
 fn and_or_precedence() {
     let expr = parse_expr("true and false or true");
-    let (left, op, right) = is_binop(&expr).unwrap();
-    assert!(matches!(op, BinOp::Or));
+    let (left, op, right) = is_logical(&expr).unwrap();
+    assert!(matches!(op, LogicalOp::Or));
     assert!(matches!(&right.node, Expr::Literal(Literal::Bool(true))));
-    let (ll, lop, lr) = is_binop(left).unwrap();
-    assert!(matches!(lop, BinOp::And));
+    let (ll, lop, lr) = is_logical(left).unwrap();
+    assert!(matches!(lop, LogicalOp::And));
     assert!(matches!(&ll.node, Expr::Literal(Literal::Bool(true))));
     assert!(matches!(&lr.node, Expr::Literal(Literal::Bool(false))));
 }
@@ -116,19 +116,19 @@ fn comparison_lower_than_arithmetic() {
 #[test]
 fn and_is_left_associative() {
     let expr = parse_expr("a and b and c");
-    let (left, op, _) = is_binop(&expr).unwrap();
-    assert!(matches!(op, BinOp::And));
-    let (_, lop, _) = is_binop(left).unwrap();
-    assert!(matches!(lop, BinOp::And));
+    let (left, op, _) = is_logical(&expr).unwrap();
+    assert!(matches!(op, LogicalOp::And));
+    let (_, lop, _) = is_logical(left).unwrap();
+    assert!(matches!(lop, LogicalOp::And));
 }
 
 #[test]
 fn or_is_left_associative() {
     let expr = parse_expr("a or b or c");
-    let (left, op, _) = is_binop(&expr).unwrap();
-    assert!(matches!(op, BinOp::Or));
-    let (_, lop, _) = is_binop(left).unwrap();
-    assert!(matches!(lop, BinOp::Or));
+    let (left, op, _) = is_logical(&expr).unwrap();
+    assert!(matches!(op, LogicalOp::Or));
+    let (_, lop, _) = is_logical(left).unwrap();
+    assert!(matches!(lop, LogicalOp::Or));
 }
 
 #[test]
@@ -150,8 +150,8 @@ fn mixed_precedence_left_assoc() {
 #[test]
 fn and_with_comparison() {
     let expr = parse_expr("x > 0 and x < 100");
-    let (left, op, right) = is_binop(&expr).unwrap();
-    assert!(matches!(op, BinOp::And));
+    let (left, op, right) = is_logical(&expr).unwrap();
+    assert!(matches!(op, LogicalOp::And));
     let (_, lop, _) = is_binop(left).unwrap();
     assert!(matches!(lop, BinOp::Gt));
     let (_, rop, _) = is_binop(right).unwrap();
@@ -220,8 +220,8 @@ fn negate_binds_tighter_than_add() {
 #[test]
 fn not_precedence() {
     let expr = parse_expr("not true or false");
-    let (left, op, right) = is_binop(&expr).unwrap();
-    assert!(matches!(op, BinOp::Or));
+    let (left, op, right) = is_logical(&expr).unwrap();
+    assert!(matches!(op, LogicalOp::Or));
     assert!(matches!(&right.node, Expr::Literal(Literal::Bool(false))));
     match &left.node {
         Expr::UnaryOp { op, operand } => {

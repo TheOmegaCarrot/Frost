@@ -163,6 +163,17 @@ impl<'a> Walker<'a> {
                 let r = self.wrap("right", vec![r]);
                 self.ranged(format!("BinOp {}", binop_symbol(op.node)), span, vec![l, r])
             }
+            Expr::Logical { left, op, right } => {
+                let l = self.expr(left);
+                let l = self.wrap("left", vec![l]);
+                let r = self.expr(right);
+                let r = self.wrap("right", vec![r]);
+                self.ranged(
+                    format!("Logical {}", logical_symbol(op.node)),
+                    span,
+                    vec![l, r],
+                )
+            }
             Expr::UnaryOp { op, operand } => {
                 let child = self.expr(operand);
                 self.ranged(
@@ -451,8 +462,13 @@ fn binop_symbol(op: BinOp) -> &'static str {
         BinOp::Lte => "<=",
         BinOp::Gt => ">",
         BinOp::Gte => ">=",
-        BinOp::And => "and",
-        BinOp::Or => "or",
+    }
+}
+
+fn logical_symbol(op: LogicalOp) -> &'static str {
+    match op {
+        LogicalOp::And => "and",
+        LogicalOp::Or => "or",
     }
 }
 

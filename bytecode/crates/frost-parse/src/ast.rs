@@ -79,10 +79,19 @@ pub enum Expr {
     Literal(Literal),
     /// A variable reference: `foo`.
     NameLookup(String),
-    /// A binary operation: `a + b`, `x == y`, `p and q`.
+    /// A binary operation: `a + b`, `x == y`.
     BinOp {
         left: Box<Spanned<Expr>>,
         op: Spanned<BinOp>,
+        right: Box<Spanned<Expr>>,
+    },
+    /// A short-circuiting logical operation: `p and q`, `p or q`.
+    ///
+    /// Separate from [`Expr::BinOp`] because the right operand is evaluated
+    /// conditionally, so lowering can never share the strict binary path.
+    Logical {
+        left: Box<Spanned<Expr>>,
+        op: Spanned<LogicalOp>,
         right: Box<Spanned<Expr>>,
     },
     /// A unary operation: `-x`, `not x`.
@@ -195,6 +204,11 @@ pub enum BinOp {
     Lte,
     Gt,
     Gte,
+}
+
+/// The short-circuiting logical operators; see [`Expr::Logical`].
+#[derive(Clone, Copy, Debug, Serialize)]
+pub enum LogicalOp {
     And,
     Or,
 }
