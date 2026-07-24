@@ -179,7 +179,20 @@ fn dot_access() {
     match &expr.node {
         Expr::HardIndex { target, key } => {
             assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
-            assert!(key == "foo");
+            assert!(key.node =="foo");
+        }
+        other => panic!("expected HardIndex, got {other:?}"),
+    }
+}
+
+#[test]
+fn dot_access_key_carries_its_own_span() {
+    // "a.foo": the key's span covers exactly `foo`, so a diagnostic can point
+    // at the field rather than the whole access.
+    let expr = parse_expr("a.foo");
+    match &expr.node {
+        Expr::HardIndex { key, .. } => {
+            assert_eq!(key.span, SourceSpan { start: 2, end: 5 });
         }
         other => panic!("expected HardIndex, got {other:?}"),
     }
@@ -190,14 +203,14 @@ fn chained_dot() {
     let expr = parse_expr("a.b.c");
     match &expr.node {
         Expr::HardIndex { target, key } => {
-            assert!(key == "c");
+            assert!(key.node =="c");
             match &target.node {
                 Expr::HardIndex {
                     target: inner,
                     key: inner_key,
                 } => {
                     assert!(matches!(&inner.node, Expr::NameLookup(n) if n == "a"));
-                    assert!(inner_key == "b");
+                    assert!(inner_key.node =="b");
                 }
                 other => panic!("expected inner HardIndex, got {other:?}"),
             }
@@ -216,7 +229,7 @@ fn dot_then_call() {
             match &callee.node {
                 Expr::HardIndex { target, key } => {
                     assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
-                    assert!(key == "foo");
+                    assert!(key.node =="foo");
                 }
                 other => panic!("expected HardIndex inside Call, got {other:?}"),
             }
@@ -305,7 +318,7 @@ fn thread_dot_callee() {
             match &callee.node {
                 Expr::HardIndex { target, key } => {
                     assert!(matches!(&target.node, Expr::NameLookup(n) if n == "m"));
-                    assert!(key == "f");
+                    assert!(key.node =="f");
                 }
                 other => panic!("expected HardIndex callee, got {other:?}"),
             }
@@ -380,7 +393,7 @@ fn call_then_dot() {
     let expr = parse_expr("f().bar");
     match &expr.node {
         Expr::HardIndex { target, key } => {
-            assert!(key == "bar");
+            assert!(key.node =="bar");
             assert!(matches!(&target.node, Expr::Call { .. }));
         }
         other => panic!("expected HardIndex, got {other:?}"),
@@ -395,7 +408,7 @@ fn dot_then_index() {
             assert!(is_int(key, 0));
             match &target.node {
                 Expr::HardIndex { key: inner_key, .. } => {
-                    assert!(inner_key == "b");
+                    assert!(inner_key.node =="b");
                 }
                 other => panic!("expected inner HardIndex, got {other:?}"),
             }
@@ -409,7 +422,7 @@ fn index_then_dot() {
     let expr = parse_expr("a[0].bar");
     match &expr.node {
         Expr::HardIndex { target, key } => {
-            assert!(key == "bar");
+            assert!(key.node =="bar");
             match &target.node {
                 Expr::SoftIndex { key: inner_key, .. } => {
                     assert!(is_int(inner_key, 0));
@@ -427,20 +440,20 @@ fn long_postfix_chain() {
     let expr = parse_expr("a.b[0].c(1).d");
     match &expr.node {
         Expr::HardIndex { target, key } => {
-            assert!(key == "d");
+            assert!(key.node =="d");
             match &target.node {
                 Expr::Call { callee, args } => {
                     assert_eq!(args.len(), 1);
                     assert!(is_int(&args[0], 1));
                     match &callee.node {
                         Expr::HardIndex { target, key } => {
-                            assert!(key == "c");
+                            assert!(key.node =="c");
                             match &target.node {
                                 Expr::SoftIndex { target, key } => {
                                     assert!(is_int(key, 0));
                                     match &target.node {
                                         Expr::HardIndex { target, key } => {
-                                            assert!(key == "b");
+                                            assert!(key.node =="b");
                                             assert!(
                                                 matches!(&target.node, Expr::NameLookup(n) if n == "a")
                                             );
@@ -564,7 +577,7 @@ fn newline_before_dot_continues() {
     match &expr.node {
         Expr::HardIndex { target, key } => {
             assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
-            assert_eq!(key, "foo");
+            assert_eq!(key.node, "foo");
         }
         other => panic!("expected HardIndex, got {other:?}"),
     }
@@ -595,12 +608,12 @@ fn newline_dot_chain() {
     else {
         panic!("expected HardIndex, got {:?}", expr.node)
     };
-    assert_eq!(d, "d");
+    assert_eq!(d.node, "d");
     let Expr::HardIndex { target: ab, key: c } = &abc.node else {
         panic!("expected nested HardIndex")
     };
-    assert_eq!(c, "c");
-    assert!(matches!(&ab.node, Expr::HardIndex { key, .. } if key == "b"));
+    assert_eq!(c.node, "c");
+    assert!(matches!(&ab.node, Expr::HardIndex { key, .. } if key.node =="b"));
 }
 
 #[test]
@@ -622,21 +635,21 @@ fn newline_thread_chain() {
 fn multiple_newlines_before_dot_continue() {
     // Blank lines between the operand and the dot are still a continuation.
     let expr = parse_expr("a\n\n\n.foo");
-    assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key == "foo"));
+    assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key.node =="foo"));
 }
 
 #[test]
 fn comment_then_newline_before_dot_continues() {
     // Comments are lexer-skipped, so a trailing comment does not break the chain.
     let expr = parse_expr("a # comment\n.foo");
-    assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key == "foo"));
+    assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key.node =="foo"));
 }
 
 #[test]
 fn newline_before_dot_inside_delimiters() {
     // Inside delimiters a dot after a newline continues the inner expression.
     let expr = parse_expr("(a\n.foo)");
-    assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key == "foo"));
+    assert!(matches!(&expr.node, Expr::HardIndex { key, .. } if key.node =="foo"));
 }
 
 // -- Postfix error cases --

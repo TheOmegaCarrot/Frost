@@ -151,7 +151,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Ok(Spanned::new(
                 Expr::HardIndex {
                     target: Box::new(target),
-                    key: name,
+                    key: Spanned::new(name, field_span.clone().into()),
                 },
                 (start..field_span.end).into(),
             ))

@@ -138,7 +138,7 @@ pub enum Expr {
     /// `foo.bar`
     HardIndex {
         target: Box<Spanned<Expr>>,
-        key: String,
+        key: Spanned<String>,
     },
     /// `[a, b, c]`
     Array(Vec<Spanned<Expr>>),

@@ -221,7 +221,9 @@ impl<'a> Walker<'a> {
             }
             Expr::HardIndex { target, key } => {
                 let t = self.expr(target);
-                self.ranged(format!("HardIndex .{key}"), span, vec![t])
+                let k = self.ranged(format!(".{}", key.node), key.span, vec![]);
+                let k = self.wrap("key", vec![k]);
+                self.ranged(format!("HardIndex .{}", key.node), span, vec![t, k])
             }
             Expr::Array(elems) => {
                 let children = elems.iter().map(|el| self.expr(el)).collect();
