@@ -25,10 +25,25 @@ impl From<Range<usize>> for SourceSpan {
 
 /// Pairs an AST payload with its source span.
 /// Every node's span encloses the union of its children's spans.
+///
+/// # Equality ignores spans
+///
+/// `==` compares the `node` only: two trees that parse the same modulo
+/// whitespace are equal, even though their spans differ.
+/// Spans are provenance, not content.
+/// Compare `.span` explicitly where position matters.
 #[derive(Clone, Debug, Serialize)]
 pub struct Spanned<T> {
     pub node: T,
     pub span: SourceSpan,
+}
+
+// Hash must not be derived for Spanned: it would hash the span and disagree
+// with this span-ignoring PartialEq.
+impl<T: PartialEq> PartialEq for Spanned<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.node == other.node
+    }
 }
 
 impl<T> Spanned<T> {
@@ -50,14 +65,14 @@ pub enum Binding {
 // -- Program --
 
 /// A program is a sequence of statements.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Program {
     pub statements: Vec<Spanned<Statement>>,
 }
 
 // -- Statements --
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum Statement {
     /// `def name = expr` or `export def name = expr`
@@ -72,7 +87,7 @@ pub enum Statement {
 
 // -- Expressions --
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum Expr {
     /// A literal value: `42`, `3.14`, `"hello"`, `true`, `null`.
@@ -179,7 +194,7 @@ pub enum Expr {
 
 // -- Literals --
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum Literal {
     Null,
@@ -191,7 +206,7 @@ pub enum Literal {
 
 // -- Operators --
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub enum BinOp {
     Add,
     Sub,
@@ -207,13 +222,13 @@ pub enum BinOp {
 }
 
 /// The short-circuiting logical operators; see [`Expr::Logical`].
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub enum LogicalOp {
     And,
     Or,
 }
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub enum UnaryOp {
     Negate,
     Not,
@@ -221,7 +236,7 @@ pub enum UnaryOp {
 
 // -- Map entries --
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct MapEntry {
     pub key: Spanned<Expr>,
     pub value: Spanned<Expr>,
@@ -229,7 +244,7 @@ pub struct MapEntry {
 
 // -- Format strings --
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum FormatSegment {
     Literal(Vec<u8>),
@@ -238,14 +253,14 @@ pub enum FormatSegment {
 
 // -- Match --
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct MatchArm {
     pub pattern: Spanned<MatchPattern>,
     pub guard: Option<Spanned<Expr>>,
     pub result: Spanned<Expr>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum MatchPattern {
     /// `name` or `name is Type` or `_` or `_ is Type`.
@@ -269,13 +284,13 @@ pub enum MatchPattern {
     Alternative(Vec<Spanned<MatchPattern>>),
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct MapPatternEntry {
     pub key: Spanned<Expr>,
     pub pattern: Spanned<MatchPattern>,
 }
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub enum TypeConstraint {
     Null,
     Int,
@@ -293,7 +308,7 @@ pub enum TypeConstraint {
 
 // -- Destructuring (for `def`) --
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum Destructure {
     /// `def name = ...`
@@ -310,7 +325,7 @@ pub enum Destructure {
     },
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct MapDestructureEntry {
     pub key: Spanned<Expr>,
     pub destructure: Spanned<Destructure>,
