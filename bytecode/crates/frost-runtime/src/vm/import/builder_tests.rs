@@ -89,7 +89,8 @@ fn extension_name_collision_is_rejected_intact() {
         .unwrap();
     let (b, returned) = b
         .with_extension(Extension::new("dup", content(2)).unwrap())
-        .unwrap_err();
+        .unwrap_err()
+        .into_parts();
     // The rejected extension comes back for recovery...
     assert_eq!(returned.name(), "dup");
     // ...and the registry is untouched: the first registration stands.
@@ -103,7 +104,8 @@ fn renaming_resolves_an_extension_collision() {
         .unwrap();
     let (b, returned) = b
         .with_extension(Extension::new("dup", content(2)).unwrap())
-        .unwrap_err();
+        .unwrap_err()
+        .into_parts();
     let b = b.with_extension(returned.rename("dup2").unwrap()).unwrap();
     let ext = ext_submap(&b);
     assert_eq!(ext.get_str("dup"), Some(&content(1)));

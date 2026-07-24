@@ -198,6 +198,31 @@ impl Default for ImporterBuilder {
     }
 }
 
+/// Rejection from [`ImporterBuilder::with_extension`]: the name is already
+/// claimed under `ext`. Carries the untouched builder and the rejected
+/// extension back so the caller can [`rename`](Extension::rename) and retry.
+#[derive(Debug)]
+pub struct ExtensionError(ImporterBuilder, Extension);
+
+impl ExtensionError {
+    /// Recovers the builder and the rejected extension.
+    pub fn into_parts(self) -> (ImporterBuilder, Extension) {
+        (self.0, self.1)
+    }
+}
+
+impl std::error::Error for ExtensionError {}
+
+impl std::fmt::Display for ExtensionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "extension name `{}` is already registered",
+            self.1.name()
+        )
+    }
+}
+
 impl ImporterBuilder {
     /// A builder with an empty registry and file-based imports disabled.
     pub fn new() -> ImporterBuilder {
@@ -209,9 +234,9 @@ impl ImporterBuilder {
     }
 
     /// Registers `extension` under `ext` (imported as `ext.{name}`).
-    /// A name already claimed under `ext` returns `Err((builder, extension))` unchanged,
-    /// for the caller to [`rename`](Extension::rename) and retry.
-    pub fn with_extension(mut self, extension: Extension) -> Result<Self, (Self, Extension)> {
+    /// A name already claimed under `ext` is rejected with an [`ExtensionError`]
+    /// handing the builder and the extension back unchanged.
+    pub fn with_extension(mut self, extension: Extension) -> Result<Self, ExtensionError> {
         // Extensions live under the `ext` namespace: a Map of extension-name -> content.
         let key = MapKey::from(extension.name());
 
@@ -220,7 +245,7 @@ impl ImporterBuilder {
         if let Some(Value::Map(ext)) = self.registry.get("ext")
             && ext.contains_key(&key)
         {
-            return Err((self, extension));
+            return Err(ExtensionError(self, extension));
         }
 
         // Take the `ext` submap (or start one), insert, and put it back. The builder
@@ -240,10 +265,7 @@ impl ImporterBuilder {
     /// `std` and `ext` are reserved; a reserved or already-claimed name is
     /// rejected with a [`HostComponentError`] handing the builder and the
     /// component back unchanged.
-    pub fn with_component(
-        mut self,
-        component: HostComponent,
-    ) -> Result<Self, HostComponentError> {
+    pub fn with_component(mut self, component: HostComponent) -> Result<Self, HostComponentError> {
         // A host component claims a top-level registry name. `std` and `ext` are
         // reserved (the stdlib and extensions); every other name is the host's to
         // claim, unless already taken. Reservation is by *name*, not by presence,
