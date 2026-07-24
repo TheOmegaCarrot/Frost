@@ -20,8 +20,6 @@
 //! The labeled spans on a [`ParseError`] (see [`Label`]) follow the same
 //! byte-offset conventions.
 
-#![allow(unused)]
-
 pub mod ast;
 mod lex;
 mod parse;
