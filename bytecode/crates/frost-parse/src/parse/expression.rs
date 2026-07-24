@@ -259,6 +259,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             }
             Token::DollarIdentifier(name) if self.in_abbreviated_lambda() => {
                 let name = name.to_owned();
+                self.record_dollar(&name);
                 self.advance(1);
                 Ok(Spanned::new(Expr::NameLookup(name), span.into()))
             }

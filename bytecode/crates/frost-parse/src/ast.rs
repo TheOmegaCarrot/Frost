@@ -159,8 +159,20 @@ pub enum Expr {
         /// Tail position expression which evaluates to the return value.
         return_expr: Box<Spanned<Expr>>,
     },
+    /// `$(expr)`: an abbreviated lambda.
+    ///
+    /// The parameter list is implied by the dollar identifiers the body uses;
+    /// the parser summarizes them here so a consumer never parses `$n` names.
     AbbreviatedLambda {
-        /// A single body expression that contains dollar identifiers.
+        /// `used_params[i]` == whether `$(i+1)` is referenced in the body
+        /// (`$` counts as `$1`). The length is the parameter count: the
+        /// highest positional referenced. Empty for the zero-arg thunk form,
+        /// and the last entry of a non-empty list is always true.
+        used_params: Vec<bool>,
+        /// Whether the rest parameter `$$` is referenced.
+        uses_rest: bool,
+        /// A single body expression that contains dollar identifiers, kept
+        /// verbatim (`$` is not normalized to `$1`).
         /// This is the only place dollar identifiers are legal (parser-enforced).
         body: Box<Spanned<Expr>>,
     },

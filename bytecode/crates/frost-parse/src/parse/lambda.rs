@@ -194,14 +194,15 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         let body = self.parse_expression()?;
 
-        self.exit_abbreviated_lambda()
-            .maybe_skip_nl()
-            .exit_nl_context();
+        let usage = self.exit_abbreviated_lambda();
+        self.maybe_skip_nl().exit_nl_context();
 
         let close = self.expect(Token::CloseParen)?;
 
         Ok(Spanned::new(
             Expr::AbbreviatedLambda {
+                used_params: usage.used,
+                uses_rest: usage.rest,
                 body: Box::new(body),
             },
             (start..close.span.end).into(),

@@ -496,10 +496,22 @@ mod abbreviated {
     use super::*;
 
     // The parser preserves the body verbatim with placeholders left as name
-    // lookups; param shape (count/variadic) is derived later by the compiler.
+    // lookups, and summarizes dollar usage on the wrapper for the compiler.
     fn assert_abbreviated(expr: &Spanned<Expr>) -> &Spanned<Expr> {
         match &expr.node {
-            Expr::AbbreviatedLambda { body } => body,
+            Expr::AbbreviatedLambda { body, .. } => body,
+            other => panic!("expected AbbreviatedLambda, got {other:?}"),
+        }
+    }
+
+    /// The `(used_params, uses_rest)` summary of an abbreviated lambda.
+    fn usage(expr: &Spanned<Expr>) -> (&[bool], bool) {
+        match &expr.node {
+            Expr::AbbreviatedLambda {
+                used_params,
+                uses_rest,
+                ..
+            } => (used_params, *uses_rest),
             other => panic!("expected AbbreviatedLambda, got {other:?}"),
         }
     }
@@ -637,5 +649,81 @@ mod abbreviated {
             err.contains("unexpected") || err.contains("Expected"),
             "error was: {err}"
         );
+    }
+
+    // -- Usage summaries --
+    // The wrapper reports which positional params the body references (length =
+    // highest referenced) and whether `$$` appears, so the compiler can write
+    // the lambda prelude and drop unused params without inspecting the body.
+
+    #[test]
+    fn summary_single_dollar_is_param_one() {
+        let expr = parse_expr("$($ * 2)");
+        assert_eq!(usage(&expr), (&[true][..], false));
+    }
+
+    #[test]
+    fn summary_skipped_param_is_recorded_unused() {
+        let expr = parse_expr("$($2)");
+        assert_eq!(usage(&expr), (&[false, true][..], false));
+    }
+
+    #[test]
+    fn summary_all_params_used() {
+        let expr = parse_expr("$($1 + $2)");
+        assert_eq!(usage(&expr), (&[true, true][..], false));
+    }
+
+    #[test]
+    fn summary_highest_param_sets_the_length() {
+        let expr = parse_expr("$($9)");
+        let (used, rest) = usage(&expr);
+        assert_eq!(used.len(), 9);
+        assert!(used[8]);
+        assert!(!rest);
+    }
+
+    #[test]
+    fn summary_rest_only() {
+        let expr = parse_expr("$($$)");
+        assert_eq!(usage(&expr), (&[][..], true));
+    }
+
+    #[test]
+    fn summary_positional_plus_rest() {
+        let expr = parse_expr("$(f($1, $$))");
+        assert_eq!(usage(&expr), (&[true][..], true));
+    }
+
+    #[test]
+    fn summary_dollar_free_thunk() {
+        // The uber-terse zero-arg thunk: intended behavior, not an accident.
+        let expr = parse_expr("$(42)");
+        assert_eq!(usage(&expr), (&[][..], false));
+    }
+
+    #[test]
+    fn summary_dollar_aliases_dollar_one() {
+        // `$` and `$1` mark the same parameter; the body keeps each spelling
+        // verbatim (no parse-time normalization).
+        let expr = parse_expr("$($ + $1)");
+        assert_eq!(usage(&expr), (&[true][..], false));
+        let body = assert_abbreviated(&expr);
+        let (l, _, r) = is_binop(body).expect("binop body");
+        assert!(is_dollar(l, "$"));
+        assert!(is_dollar(r, "$1"));
+    }
+
+    #[test]
+    fn summary_nested_attribution() {
+        // A dollar identifier belongs to the innermost abbreviated lambda:
+        // `$2` inside the nested lambda marks the inner summary, not the outer.
+        let expr = parse_expr("$(g($1, $($2)))");
+        assert_eq!(usage(&expr), (&[true][..], false));
+        let body = assert_abbreviated(&expr);
+        let Expr::Call { args, .. } = &body.node else {
+            panic!("expected Call body, got {:?}", body.node)
+        };
+        assert_eq!(usage(&args[1]), (&[false, true][..], false));
     }
 }

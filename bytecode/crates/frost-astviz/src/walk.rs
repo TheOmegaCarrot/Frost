@@ -269,9 +269,28 @@ impl<'a> Walker<'a> {
                 children.push(self.wrap("return", vec![ret]));
                 self.ranged(label, span, children)
             }
-            Expr::AbbreviatedLambda { body } => {
+            Expr::AbbreviatedLambda {
+                used_params,
+                uses_rest,
+                body,
+            } => {
+                let mut params: Vec<String> = used_params
+                    .iter()
+                    .enumerate()
+                    .map(|(i, used)| {
+                        if *used {
+                            format!("${}", i + 1)
+                        } else {
+                            "_".to_string()
+                        }
+                    })
+                    .collect();
+                if *uses_rest {
+                    params.push("...$$".to_string());
+                }
+                let signature = params.join(", ");
                 let inner = self.expr(body);
-                self.ranged("AbbreviatedLambda".to_string(), span, vec![inner])
+                self.ranged(format!("AbbreviatedLambda ({signature})"), span, vec![inner])
             }
             Expr::Filter {
                 structure,

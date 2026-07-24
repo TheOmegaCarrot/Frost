@@ -40,8 +40,30 @@ pub struct ParseState {
     /// When > 0, newlines are not significant (we're inside delimiters).
     pub nl_depth: u32,
 
-    /// When > 0, permit dollar identifiers.
-    pub abbrev_lambda_depth: u32,
+    /// One frame per enclosing abbreviated lambda; dollar identifiers are
+    /// permitted while non-empty and record into the innermost frame.
+    /// Lives in the checkpointed state so backtracking discards speculative marks.
+    pub abbrev_lambdas: Vec<DollarUsage>,
+}
+
+/// Dollar-identifier usage collected for one abbreviated lambda.
+/// Filled in as the body parses; consumed by `exit_abbreviated_lambda`.
+#[derive(Clone, Debug, Default)]
+pub struct DollarUsage {
+    /// `used[i]` == whether `$(i+1)` was referenced (`$` counts as `$1`).
+    /// The length is the highest positional referenced; empty if none.
+    pub used: Vec<bool>,
+    /// Whether the rest parameter `$$` was referenced.
+    pub rest: bool,
+}
+
+impl DollarUsage {
+    fn mark(&mut self, n: usize) {
+        if self.used.len() < n {
+            self.used.resize(n, false);
+        }
+        self.used[n - 1] = true;
+    }
 }
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
@@ -212,17 +234,41 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     pub fn in_abbreviated_lambda(&self) -> bool {
-        self.state.abbrev_lambda_depth > 0
+        !self.state.abbrev_lambdas.is_empty()
     }
 
     pub fn enter_abbreviated_lambda(&mut self) -> &mut Self {
-        self.state.abbrev_lambda_depth += 1;
+        self.state.abbrev_lambdas.push(DollarUsage::default());
         self
     }
 
-    pub fn exit_abbreviated_lambda(&mut self) -> &mut Self {
-        self.state.abbrev_lambda_depth -= 1;
-        self
+    /// Ends the innermost abbreviated lambda, yielding the dollar-identifier
+    /// usage its body recorded.
+    pub fn exit_abbreviated_lambda(&mut self) -> DollarUsage {
+        self.state
+            .abbrev_lambdas
+            .pop()
+            .expect("IMPOSSIBLE: exit_abbreviated_lambda without a matching enter")
+    }
+
+    /// Records a dollar identifier against the innermost abbreviated lambda.
+    /// `name` is the token text: `$`, `$1`..`$9`, or `$$`.
+    pub fn record_dollar(&mut self, name: &str) {
+        let frame = self
+            .state
+            .abbrev_lambdas
+            .last_mut()
+            .expect("IMPOSSIBLE: dollar identifier outside an abbreviated lambda");
+        match name {
+            "$$" => frame.rest = true,
+            "$" => frame.mark(1),
+            _ => {
+                let n = name[1..]
+                    .parse()
+                    .expect("IMPOSSIBLE: the lexer only produces $1..$9 here");
+                frame.mark(n);
+            }
+        }
     }
 
     pub fn at_end(&self) -> bool {
