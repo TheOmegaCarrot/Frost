@@ -306,7 +306,7 @@ fn explode_consumes_array_and_pushes_each_element() {
 
 #[test]
 fn explode_uniquely_owned_array_round_trips() {
-    // Build the array with MakeArray (uniquely owned -> try_extract moves), then
+    // Build the array with MakeArray (uniquely owned -> try_into_vec moves), then
     // explode and rebuild. Exercises the zero-copy steal path.
     assert_eq!(
         val(vec![

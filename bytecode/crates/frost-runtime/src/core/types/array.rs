@@ -110,8 +110,9 @@ impl FrostArray {
     }
 
     /// Extract a mutable array when not shared, or return the FrostArray as-is.
-    /// Zero-copy in the `Ok` case.
-    pub fn try_extract(self) -> Result<Vec<Value>, FrostArray> {
+    /// Zero-copy in the `Ok` case; the fallible counterpart of
+    /// [`into_vec`](Self::into_vec).
+    pub fn try_into_vec(self) -> Result<Vec<Value>, FrostArray> {
         match Arc::try_unwrap(self.inner) {
             Ok(vec) => Ok(vec),
             Err(arc) => Err(FrostArray { inner: arc }),

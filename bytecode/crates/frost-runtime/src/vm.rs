@@ -846,7 +846,7 @@ impl Vm {
             panic!("explode: operand not Array");
         };
         let before = self.stack.len();
-        match arr.try_extract() {
+        match arr.try_into_vec() {
             Ok(vec) => self.stack.extend(vec),
             Err(arr) => self.stack.extend(arr.iter().cloned()),
         }

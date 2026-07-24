@@ -133,30 +133,30 @@ fn from_subslice() {
 // -- Stealing / extraction --
 
 #[test]
-fn try_extract_unique_succeeds() {
+fn try_into_vec_unique_succeeds() {
     let arr = sample_array();
-    let vec = arr.try_extract().expect("unique array should extract");
+    let vec = arr.try_into_vec().expect("unique array should extract");
     assert_eq!(vec.len(), 3);
     assert!(matches!(vec[0], Value::Int(10)));
 }
 
 #[test]
-fn try_extract_shared_fails() {
+fn try_into_vec_shared_fails() {
     let arr = sample_array();
     let _alias = arr.clone();
-    let result = arr.try_extract();
+    let result = arr.try_into_vec();
     assert!(result.is_err());
     let recovered = result.unwrap_err();
     assert_eq!(recovered.len(), 3);
 }
 
 #[test]
-fn try_extract_shared_then_dropped_succeeds() {
+fn try_into_vec_shared_then_dropped_succeeds() {
     let arr = sample_array();
     let alias = arr.clone();
     drop(alias);
     let vec = arr
-        .try_extract()
+        .try_into_vec()
         .expect("should succeed after alias dropped");
     assert_eq!(vec.len(), 3);
 }
@@ -186,9 +186,9 @@ fn into_vec_is_mutable() {
 }
 
 #[test]
-fn try_extract_then_rebuild() {
+fn try_into_vec_then_rebuild() {
     let arr = sample_array();
-    let mut vec = arr.try_extract().unwrap();
+    let mut vec = arr.try_into_vec().unwrap();
     vec.iter_mut().for_each(|v| {
         if let Value::Int(n) = v {
             *v = Value::from(*n * 2);

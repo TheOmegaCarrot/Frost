@@ -283,30 +283,30 @@ fn clone_shares_data() {
 // -- Stealing / extraction --
 
 #[test]
-fn try_extract_unique_succeeds() {
+fn try_into_map_unique_succeeds() {
     let map = sample_map();
-    let btree = map.try_extract().expect("unique map should extract");
+    let btree = map.try_into_map().expect("unique map should extract");
     assert_eq!(btree.len(), 3);
     assert!(btree.contains_key(&str_key("name")));
 }
 
 #[test]
-fn try_extract_shared_fails() {
+fn try_into_map_shared_fails() {
     let map = sample_map();
     let _alias = map.clone();
-    let result = map.try_extract();
+    let result = map.try_into_map();
     assert!(result.is_err());
     let recovered = result.unwrap_err();
     assert_eq!(recovered.len(), 3);
 }
 
 #[test]
-fn try_extract_shared_then_dropped_succeeds() {
+fn try_into_map_shared_then_dropped_succeeds() {
     let map = sample_map();
     let alias = map.clone();
     drop(alias);
     let btree = map
-        .try_extract()
+        .try_into_map()
         .expect("should succeed after alias dropped");
     assert_eq!(btree.len(), 3);
 }
@@ -336,9 +336,9 @@ fn into_map_is_mutable() {
 }
 
 #[test]
-fn try_extract_then_rebuild() {
+fn try_into_map_then_rebuild() {
     let map = sample_map();
-    let mut btree = map.try_extract().unwrap();
+    let mut btree = map.try_into_map().unwrap();
     btree.insert(str_key("extra"), Value::from("added"));
     let map2 = FrostMap::from(btree);
     assert_eq!(map2.len(), 4);
