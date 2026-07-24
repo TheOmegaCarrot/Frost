@@ -359,3 +359,6 @@ impl<'src> std::fmt::Display for Token<'src> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

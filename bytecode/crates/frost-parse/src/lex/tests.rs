@@ -1,5 +1,6 @@
-use frost_parse::lex::Token;
 use logos::Logos;
+
+use super::Token;
 
 fn lex<'a>(input: &'a str) -> Vec<Token<'a>> {
     Token::lexer(input)
