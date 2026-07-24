@@ -726,4 +726,68 @@ mod abbreviated {
         };
         assert_eq!(usage(&args[1]), (&[false, true][..], false));
     }
+
+    // -- Dollar identifiers inside format-string interpolations --
+    // An interpolation is lexed separately from the enclosing source, but
+    // lexically it still sits inside the abbreviated lambda: `$n` is legal there
+    // and counts toward the lambda's parameters. (Oracle-checked 2026-07-24.)
+
+    /// The interpolated expressions of a format-string body, in order.
+    fn interpolations(body: &Spanned<Expr>) -> Vec<&Spanned<Expr>> {
+        let Expr::FormatString(segments) = &body.node else {
+            panic!("expected FormatString body, got {:?}", body.node)
+        };
+        segments
+            .iter()
+            .filter_map(|s| match s {
+                FormatSegment::Interpolation(e) => Some(e),
+                FormatSegment::Literal(_) => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn interpolation_dollar_is_accepted_and_counted() {
+        let expr = parse_expr("$($'v=${$1}')");
+        assert_eq!(usage(&expr), (&[true][..], false));
+        let body = assert_abbreviated(&expr);
+        assert!(is_dollar(interpolations(body)[0], "$1"));
+    }
+
+    #[test]
+    fn interpolation_records_a_skipped_param() {
+        let expr = parse_expr("$($'v=${$2}')");
+        assert_eq!(usage(&expr), (&[false, true][..], false));
+    }
+
+    #[test]
+    fn interpolation_marks_merge_with_the_outer_body() {
+        // The marks made inside the interpolation must survive back into the
+        // enclosing frame; losing them would under-report `used_params` and the
+        // compiler would drop a parameter the body actually reads.
+        let expr = parse_expr("$($'${$1}' + $2)");
+        assert_eq!(usage(&expr), (&[true, true][..], false));
+    }
+
+    #[test]
+    fn interpolation_records_bare_dollar_and_rest() {
+        assert_eq!(usage(&parse_expr("$($'${$}')")), (&[true][..], false));
+        assert_eq!(usage(&parse_expr("$($'${$$}')")), (&[][..], true));
+    }
+
+    #[test]
+    fn interpolation_dollar_outside_a_lambda_is_rejected() {
+        // The gate stays closed: no enclosing abbreviated lambda, no `$n`.
+        parse_err("$'v=${$1}'");
+    }
+
+    #[test]
+    fn nested_lambda_in_interpolation_attributes_to_the_inner_lambda() {
+        // `$1` belongs to the innermost lambda, even across the interpolation
+        // boundary: the outer lambda takes no parameters.
+        let expr = parse_expr("$($'${$($1)}')");
+        assert_eq!(usage(&expr), (&[][..], false));
+        let inner = interpolations(assert_abbreviated(&expr))[0];
+        assert_eq!(usage(inner), (&[true][..], false));
+    }
 }

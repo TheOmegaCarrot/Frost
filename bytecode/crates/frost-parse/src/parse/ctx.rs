@@ -271,6 +271,22 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         }
     }
 
+    /// Moves the abbreviated-lambda frames out, leaving none behind.
+    ///
+    /// Paired with [`restore_abbrev_frames`](Self::restore_abbrev_frames) to lend
+    /// the frames to the sub-context parsing a format-string interpolation. That
+    /// interpolation is lexed separately, but lexically it still sits inside any
+    /// enclosing abbreviated lambda: its dollar identifiers must be accepted and
+    /// recorded against that lambda's frame rather than a fresh one.
+    pub fn take_abbrev_frames(&mut self) -> Vec<DollarUsage> {
+        std::mem::take(&mut self.state.abbrev_lambdas)
+    }
+
+    /// Seats frames obtained from [`take_abbrev_frames`](Self::take_abbrev_frames).
+    pub fn restore_abbrev_frames(&mut self, frames: Vec<DollarUsage>) {
+        self.state.abbrev_lambdas = frames;
+    }
+
     pub fn at_end(&self) -> bool {
         self.peek().is_none()
     }

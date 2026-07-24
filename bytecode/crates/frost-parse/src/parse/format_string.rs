@@ -30,7 +30,7 @@ fn format_error(span: &Range<usize>, msg: impl Into<String>) -> Diagnostic {
 fn split_format_segments(
     raw: &str,
     quote: QuoteStyle,
-    ctx: &ParseCtx,
+    ctx: &mut ParseCtx,
     span: &Range<usize>,
 ) -> ParseResult<Vec<FormatSegment>> {
     let bytes = raw.as_bytes();
@@ -173,7 +173,7 @@ fn split_format_segments(
 
 fn parse_interpolation(
     src: &str,
-    ctx: &ParseCtx,
+    ctx: &mut ParseCtx,
     span: &Range<usize>,
     base_offset: usize,
 ) -> ParseResult<Spanned<Expr>> {
@@ -187,7 +187,15 @@ fn parse_interpolation(
     let mut sub_ctx =
         ParseCtx::new_with_offset(ctx.filename(), src, base_offset).map_err(context)?;
 
-    let expr = sub_ctx.parse_expression().map_err(context)?;
+    // An interpolation is lexed separately but sits lexically inside any enclosing
+    // abbreviated lambda, so the sub-context parses with the outer frames in hand:
+    // `$n` is accepted there, and marks land in the enclosing lambda's frame rather
+    // than being lost (which would under-report `used_params`).
+    sub_ctx.restore_abbrev_frames(ctx.take_abbrev_frames());
+    let parsed = sub_ctx.parse_expression();
+    ctx.restore_abbrev_frames(sub_ctx.take_abbrev_frames());
+
+    let expr = parsed.map_err(context)?;
 
     if !sub_ctx.at_end() {
         let leftover = sub_ctx.peek().expect("not at end, so a token remains");
