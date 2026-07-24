@@ -13,7 +13,8 @@ pub use bytecode::Bytecode;
 pub use function::{Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, TrustedProgram};
 pub use globals::GLOBAL_NAMES;
 pub use import::{
-    Extension, HostComponent, Importer, ImporterBuilder, InvalidComponentName, Stdlib, StdlibModule,
+    Extension, HostComponent, HostComponentError, Importer, ImporterBuilder, InvalidComponentName,
+    Stdlib, StdlibModule,
 };
 pub use native::{NativeCtx, NativeFn, NativeFunction};
 pub use outcome::{ProgramResult, RunError, RunOutcome};

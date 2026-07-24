@@ -122,11 +122,15 @@ fn component_registers_at_top_level() {
 
 #[test]
 fn component_cannot_claim_reserved_names() {
-    // Rejected by name, even though `std`/`ext` are not populated here.
+    // Rejected by name (as ReservedName, not a collision), even though
+    // `std`/`ext` are not populated here.
     for reserved in ["std", "ext"] {
-        let (b, returned) = ImporterBuilder::new()
+        let err = ImporterBuilder::new()
             .with_component(HostComponent::new(reserved, content(1)).unwrap())
             .unwrap_err();
+        let HostComponentError::ReservedName(b, returned) = err else {
+            panic!("expected ReservedName, got {err:?}");
+        };
         assert_eq!(returned.name(), reserved);
         assert!(b.registry.is_empty());
     }
@@ -137,10 +141,26 @@ fn component_name_collision_is_rejected_intact() {
     let b = ImporterBuilder::new()
         .with_component(HostComponent::new("app", content(1)).unwrap())
         .unwrap();
-    let (b, returned) = b
+    let err = b
         .with_component(HostComponent::new("app", content(2)).unwrap())
         .unwrap_err();
+    let HostComponentError::NameCollision(b, returned) = err else {
+        panic!("expected NameCollision, got {err:?}");
+    };
     assert_eq!(returned.name(), "app");
+    assert_eq!(b.registry.get("app"), Some(&content(1)));
+}
+
+#[test]
+fn component_rejection_recovers_via_into_parts() {
+    // Either rejection hands back a usable builder and component: rename and retry.
+    let err = ImporterBuilder::new()
+        .with_component(HostComponent::new("std", content(1)).unwrap())
+        .unwrap_err();
+    let (b, returned) = err.into_parts();
+    let b = b
+        .with_component(returned.rename("app").unwrap())
+        .expect("renamed component registers");
     assert_eq!(b.registry.get("app"), Some(&content(1)));
 }
 

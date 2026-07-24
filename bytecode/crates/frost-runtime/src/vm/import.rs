@@ -124,6 +124,18 @@ impl Extension {
 pub struct HostComponent(Module);
 
 impl HostComponent {
+    /// Returns this component under a new `name`, validated as in [`new`](Self::new).
+    /// The way to resolve a rejection reported by [`ImporterBuilder::with_component`].
+    pub fn rename(mut self, name: impl Into<String>) -> Result<Self, InvalidComponentName> {
+        let name = name.into();
+        if is_identifier_like_and_not_keyword(name.as_bytes()) {
+            self.0.name = name;
+            Ok(self)
+        } else {
+            Err(InvalidComponentName(name))
+        }
+    }
+
     /// The top-level name this component registers under.
     pub fn name(&self) -> &str {
         &self.0.name
@@ -140,6 +152,49 @@ impl HostComponent {
         } else {
             Err(InvalidComponentName(name))
         }
+    }
+}
+
+/// Rejection from [`ImporterBuilder::with_component`]: the component's name is
+/// not claimable. Carries the untouched builder and the rejected component back
+/// so the caller can [`rename`](HostComponent::rename) and retry.
+#[derive(Debug)]
+pub enum HostComponentError {
+    /// The name is reserved for the runtime (`std`, `ext`) and can never be claimed.
+    ReservedName(ImporterBuilder, HostComponent),
+    /// The name was already claimed by an earlier registration.
+    NameCollision(ImporterBuilder, HostComponent),
+}
+
+impl HostComponentError {
+    /// Recovers the builder and the rejected component, whatever the reason.
+    pub fn into_parts(self) -> (ImporterBuilder, HostComponent) {
+        match self {
+            Self::ReservedName(builder, component) | Self::NameCollision(builder, component) => {
+                (builder, component)
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for HostComponentError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ReservedName(_, c) => {
+                write!(f, "component name `{}` is reserved", c.name())
+            }
+            Self::NameCollision(_, c) => {
+                write!(f, "component name `{}` is already registered", c.name())
+            }
+        }
+    }
+}
+
+impl std::error::Error for HostComponentError {}
+
+impl Default for ImporterBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -182,21 +237,23 @@ impl ImporterBuilder {
     }
 
     /// Registers `component` at a top-level name (imported as `{name}`).
-    /// `std` and `ext` are reserved; a reserved or already-claimed name returns
-    /// `Err((builder, component))` unchanged.
+    /// `std` and `ext` are reserved; a reserved or already-claimed name is
+    /// rejected with a [`HostComponentError`] handing the builder and the
+    /// component back unchanged.
     pub fn with_component(
         mut self,
         component: HostComponent,
-    ) -> Result<Self, (Self, HostComponent)> {
+    ) -> Result<Self, HostComponentError> {
         // A host component claims a top-level registry name. `std` and `ext` are
         // reserved (the stdlib and extensions); every other name is the host's to
-        // claim, unless already taken. Rejection is by *name*, not by presence, so
-        // the reservation holds regardless of whether `std`/`ext` are populated yet.
+        // claim, unless already taken. Reservation is by *name*, not by presence,
+        // so it holds regardless of whether `std`/`ext` are populated yet.
         let name = component.name();
-        let unavailable = name == "std" || name == "ext" || self.registry.contains_key(name);
-        if unavailable {
-            // Leave the registry untouched and hand the component back to the caller.
-            return Err((self, component));
+        if name == "std" || name == "ext" {
+            return Err(HostComponentError::ReservedName(self, component));
+        }
+        if self.registry.contains_key(name) {
+            return Err(HostComponentError::NameCollision(self, component));
         }
 
         self.registry.insert(component.0.name, component.0.content);
