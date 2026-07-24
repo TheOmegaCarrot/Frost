@@ -129,13 +129,13 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 Ok(literal_pattern(peek_start, peek_end, Literal::Null))
             }
 
-            Token::SingleQuoteStringLiteral(_) => {
-                self.parse_simple_string(QuoteStyle::Single).map(expr_match_pattern)
-            }
+            Token::SingleQuoteStringLiteral(_) => self
+                .parse_simple_string(QuoteStyle::Single)
+                .map(expr_match_pattern),
 
-            Token::DoubleQuoteStringLiteral(_) => {
-                self.parse_simple_string(QuoteStyle::Double).map(expr_match_pattern)
-            }
+            Token::DoubleQuoteStringLiteral(_) => self
+                .parse_simple_string(QuoteStyle::Double)
+                .map(expr_match_pattern),
 
             Token::RawStringLiteral(_) => self.parse_raw_string().map(expr_match_pattern),
 

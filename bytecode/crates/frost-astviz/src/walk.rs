@@ -290,7 +290,11 @@ impl<'a> Walker<'a> {
                 }
                 let signature = params.join(", ");
                 let inner = self.expr(body);
-                self.ranged(format!("AbbreviatedLambda ({signature})"), span, vec![inner])
+                self.ranged(
+                    format!("AbbreviatedLambda ({signature})"),
+                    span,
+                    vec![inner],
+                )
             }
             Expr::Filter {
                 structure,

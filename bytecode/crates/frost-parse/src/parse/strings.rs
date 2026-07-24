@@ -19,9 +19,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         let peek = self.must_peek("String literal")?;
         let span = peek.span.clone();
         let raw = match peek.token {
-            Token::SingleQuoteStringLiteral(s) | Token::DoubleQuoteStringLiteral(s) => {
-                s.to_owned()
-            }
+            Token::SingleQuoteStringLiteral(s) | Token::DoubleQuoteStringLiteral(s) => s.to_owned(),
             _ => return Err(self.unexpected_token(peek, "String literal")),
         };
         self.advance(1);

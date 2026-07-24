@@ -6,10 +6,10 @@ mod type_checks;
 
 use std::{any::Any, sync::Arc};
 
+use crate::core::types::opaque::FrostOpaque;
 use crate::core::{FrostArray, FrostFloat, FrostMap};
 use crate::vm::Closure;
 use crate::vm::NativeFunction;
-use crate::core::types::opaque::FrostOpaque;
 
 /// The fundamental runtime value type of Frost.
 ///

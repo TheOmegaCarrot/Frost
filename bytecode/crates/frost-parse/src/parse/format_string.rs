@@ -10,8 +10,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         let peek = self.must_peek("format String")?;
         let span = peek.span.clone();
         let raw = match peek.token {
-            Token::SingleQuoteFormatStringLiteral(s)
-            | Token::DoubleQuoteFormatStringLiteral(s) => s.to_owned(),
+            Token::SingleQuoteFormatStringLiteral(s) | Token::DoubleQuoteFormatStringLiteral(s) => {
+                s.to_owned()
+            }
             _ => return Err(self.unexpected_token(peek, "format String")),
         };
         self.advance(1);

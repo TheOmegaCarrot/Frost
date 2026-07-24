@@ -179,7 +179,7 @@ fn dot_access() {
     match &expr.node {
         Expr::HardIndex { target, key } => {
             assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
-            assert!(key.node =="foo");
+            assert!(key.node == "foo");
         }
         other => panic!("expected HardIndex, got {other:?}"),
     }
@@ -203,14 +203,14 @@ fn chained_dot() {
     let expr = parse_expr("a.b.c");
     match &expr.node {
         Expr::HardIndex { target, key } => {
-            assert!(key.node =="c");
+            assert!(key.node == "c");
             match &target.node {
                 Expr::HardIndex {
                     target: inner,
                     key: inner_key,
                 } => {
                     assert!(matches!(&inner.node, Expr::NameLookup(n) if n == "a"));
-                    assert!(inner_key.node =="b");
+                    assert!(inner_key.node == "b");
                 }
                 other => panic!("expected inner HardIndex, got {other:?}"),
             }
@@ -229,7 +229,7 @@ fn dot_then_call() {
             match &callee.node {
                 Expr::HardIndex { target, key } => {
                     assert!(matches!(&target.node, Expr::NameLookup(n) if n == "a"));
-                    assert!(key.node =="foo");
+                    assert!(key.node == "foo");
                 }
                 other => panic!("expected HardIndex inside Call, got {other:?}"),
             }
@@ -318,7 +318,7 @@ fn thread_dot_callee() {
             match &callee.node {
                 Expr::HardIndex { target, key } => {
                     assert!(matches!(&target.node, Expr::NameLookup(n) if n == "m"));
-                    assert!(key.node =="f");
+                    assert!(key.node == "f");
                 }
                 other => panic!("expected HardIndex callee, got {other:?}"),
             }
@@ -393,7 +393,7 @@ fn call_then_dot() {
     let expr = parse_expr("f().bar");
     match &expr.node {
         Expr::HardIndex { target, key } => {
-            assert!(key.node =="bar");
+            assert!(key.node == "bar");
             assert!(matches!(&target.node, Expr::Call { .. }));
         }
         other => panic!("expected HardIndex, got {other:?}"),
@@ -408,7 +408,7 @@ fn dot_then_index() {
             assert!(is_int(key, 0));
             match &target.node {
                 Expr::HardIndex { key: inner_key, .. } => {
-                    assert!(inner_key.node =="b");
+                    assert!(inner_key.node == "b");
                 }
                 other => panic!("expected inner HardIndex, got {other:?}"),
             }
@@ -422,7 +422,7 @@ fn index_then_dot() {
     let expr = parse_expr("a[0].bar");
     match &expr.node {
         Expr::HardIndex { target, key } => {
-            assert!(key.node =="bar");
+            assert!(key.node == "bar");
             match &target.node {
                 Expr::SoftIndex { key: inner_key, .. } => {
                     assert!(is_int(inner_key, 0));
@@ -440,20 +440,20 @@ fn long_postfix_chain() {
     let expr = parse_expr("a.b[0].c(1).d");
     match &expr.node {
         Expr::HardIndex { target, key } => {
-            assert!(key.node =="d");
+            assert!(key.node == "d");
             match &target.node {
                 Expr::Call { callee, args } => {
                     assert_eq!(args.len(), 1);
                     assert!(is_int(&args[0], 1));
                     match &callee.node {
                         Expr::HardIndex { target, key } => {
-                            assert!(key.node =="c");
+                            assert!(key.node == "c");
                             match &target.node {
                                 Expr::SoftIndex { target, key } => {
                                     assert!(is_int(key, 0));
                                     match &target.node {
                                         Expr::HardIndex { target, key } => {
-                                            assert!(key.node =="b");
+                                            assert!(key.node == "b");
                                             assert!(
                                                 matches!(&target.node, Expr::NameLookup(n) if n == "a")
                                             );

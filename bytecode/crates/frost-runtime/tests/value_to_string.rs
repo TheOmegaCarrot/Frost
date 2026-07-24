@@ -122,7 +122,11 @@ impl frost_runtime::FrostOpaque for Gizmo {
 #[test]
 fn opaque_renderings_show_the_type_name() {
     let v = Value::opaque(Widget);
-    for s in [v.to_frost_string(), v.to_pretty_string(), v.to_debug_string()] {
+    for s in [
+        v.to_frost_string(),
+        v.to_pretty_string(),
+        v.to_debug_string(),
+    ] {
         assert!(s.contains("Widget"), "expected the type name, got: {s}");
     }
 }
@@ -132,8 +136,15 @@ fn opaque_approximation_is_never_a_bare_string() {
     // A rendering may use try_to_string, but must stay visibly opaque:
     // never byte-identical to the approximation as a plain String.
     let v = Value::opaque(Gizmo);
-    for s in [v.to_frost_string(), v.to_pretty_string(), v.to_debug_string()] {
-        assert_ne!(s, "running gizmo", "approximation rendered as a bare String");
+    for s in [
+        v.to_frost_string(),
+        v.to_pretty_string(),
+        v.to_debug_string(),
+    ] {
+        assert_ne!(
+            s, "running gizmo",
+            "approximation rendered as a bare String"
+        );
     }
 }
 

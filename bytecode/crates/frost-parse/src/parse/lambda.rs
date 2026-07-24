@@ -107,7 +107,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     /// Parse `-> expr` or `-> { stmts; expr }`.
     /// Returns `(body_stmts, return_expr, end_offset)`.
     /// Reusable for `defn`.
-    pub fn parse_fn_body(&mut self) -> ParseResult<(Vec<Spanned<Statement>>, Spanned<Expr>, usize)> {
+    pub fn parse_fn_body(
+        &mut self,
+    ) -> ParseResult<(Vec<Spanned<Statement>>, Spanned<Expr>, usize)> {
         self.expect(Token::SlimArrow)?;
         self.maybe_skip_nl();
 
