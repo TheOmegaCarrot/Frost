@@ -4,6 +4,7 @@
 //! `resolve_tests`; here the concern is the VM wiring: the opcode's stack effect and
 //! argument errors, and that the global is an ordinary callable `Function` value.
 
+use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 mod common;
@@ -11,7 +12,8 @@ mod common;
 use common::{Pop, global_slot};
 use frost_runtime::{
     Arity, Bytecode, CompiledFunction, Extension, FormatVersion, FrostError, HostComponent,
-    Importer, ImporterBuilder, Value, Vm,
+    ImportCtx, ImportResolver, Importer, ImporterBuilder, ModuleId, Value, Vm,
+    VmRuntimeConfiguration,
 };
 
 use Bytecode::*;
@@ -156,4 +158,113 @@ fn a_default_vm_resolves_nothing() {
     let closure = program.assert_trusted().into_closure().unwrap();
     let result = Vm::factory().build(closure).unwrap().run();
     assert!(result.is_err());
+}
+
+// ============================================================
+// Resolver chain through the VM
+// ============================================================
+
+/// A program that imports `spec` and yields the imported value.
+fn importing_program(spec: &str) -> Arc<CompiledFunction> {
+    Arc::new(CompiledFunction {
+        version: FormatVersion,
+        name: "module".to_string(),
+        code: vec![Pop, LoadConst(0), Import],
+        child_fns: Vec::new(),
+        constants: vec![Value::from(spec)],
+        name_table: Vec::new(),
+        num_captures: 0,
+        arity: Arity::Exact(0),
+    })
+}
+
+/// A resolver that runs every requested module in a child Vm, as a real one would.
+/// The module it serves imports again, so resolving anything recurses until
+/// something stops it.
+#[derive(Debug)]
+struct RecursiveResolver;
+
+impl ImportResolver for RecursiveResolver {
+    fn resolve(&self, ctx: &ImportCtx, module_spec: &str) -> Result<Option<Value>, FrostError> {
+        let closure = importing_program(module_spec)
+            .assert_trusted()
+            .into_closure()
+            .expect("no captures");
+        let value = ctx
+            .child_factory()
+            .build(closure)
+            .map_err(|e| FrostError::from_string(e.message().to_string()))?
+            .with_module_id(ModuleId::new(module_spec))
+            .run()
+            .map_err(|e| e.into_error())?
+            .tail()
+            .clone();
+        Ok(Some(value))
+    }
+}
+
+/// A resolver that reports the importing module's id back as the imported value.
+#[derive(Debug)]
+struct EchoesImporter;
+
+impl ImportResolver for EchoesImporter {
+    fn resolve(&self, ctx: &ImportCtx, _module_spec: &str) -> Result<Option<Value>, FrostError> {
+        Ok(Some(match ctx.importing_module() {
+            Some(id) => Value::from(id.as_str()),
+            None => Value::Null,
+        }))
+    }
+}
+
+fn run_with(
+    resolver: Arc<dyn ImportResolver>,
+    config: VmRuntimeConfiguration,
+    module_id: Option<ModuleId>,
+) -> Result<Value, FrostError> {
+    let closure = importing_program("anything")
+        .assert_trusted()
+        .into_closure()
+        .unwrap();
+    let mut vm = Vm::factory()
+        .with_importer(ImporterBuilder::new().append_resolver(resolver).build())
+        .configuration(config)
+        .build(closure)
+        .unwrap();
+    if let Some(id) = module_id {
+        vm = vm.with_module_id(id);
+    }
+    vm.run()
+        .map_err(|e| e.into_error())
+        .map(|r| r.tail().clone())
+}
+
+#[test]
+fn import_depth_limit_stops_runaway_import_recursion() {
+    // The resolver never terminates on its own (every module it serves imports
+    // again), so only the depth limit can end this. Without it the native stack
+    // would be exhausted, which is not a catchable error.
+    let config = VmRuntimeConfiguration {
+        max_import_depth: NonZeroUsize::new(4),
+        ..Default::default()
+    };
+    let err = run_with(Arc::new(RecursiveResolver), config, None).unwrap_err();
+    assert!(
+        err.message().contains("Import depth limit"),
+        "got: {}",
+        err.message()
+    );
+}
+
+#[test]
+fn a_resolver_sees_the_importing_modules_id() {
+    let id = ModuleId::new("caller-module");
+    let value = run_with(Arc::new(EchoesImporter), Default::default(), Some(id)).unwrap();
+    assert_eq!(value, Value::from("caller-module"));
+}
+
+#[test]
+fn an_unidentified_script_imports_with_no_module_id() {
+    // A REPL or `-e` one-liner has no identity, and a resolver must cope.
+    let value = run_with(Arc::new(EchoesImporter), Default::default(), None).unwrap();
+    assert_eq!(value, Value::Null);
 }

@@ -13,8 +13,8 @@ pub use bytecode::Bytecode;
 pub use function::{Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, TrustedProgram};
 pub use globals::GLOBAL_NAMES;
 pub use import::{
-    Extension, ExtensionError, HostComponent, HostComponentError, Importer, ImporterBuilder,
-    InvalidComponentName, Stdlib, StdlibModule,
+    Extension, ExtensionError, HostComponent, HostComponentError, ImportCtx, ImportResolver,
+    Importer, ImporterBuilder, InvalidComponentName, ModuleId, Stdlib, StdlibModule,
 };
 pub use native::{NativeCtx, NativeFn, NativeFunction};
 pub use outcome::{ProgramResult, RunError, RunOutcome};
@@ -75,14 +75,31 @@ pub struct Vm {
     // Once set (e.g. fuel exhaustion) the run is fatally aborting:
     // unlike an ordinary error this cannot be caught.
     abort: Option<FrostError>,
+
+    // Identity of the module this Vm runs, as assigned by the resolver that loaded it.
+    // `None` for a top-level script the host did not identify.
+    module_id: Option<ModuleId>,
+
+    // How many imports deep this Vm is: 0 for a top-level script, 1 for a module it imported.
+    // Checked against `config.max_import_depth` before importing.
+    import_depth: usize,
 }
 
 /// Runtime resource limits for a [`Vm`]. The [`Default`] imposes no limits.
+///
+/// Each bounds how much work a program may do,
+/// so that a mistake in a script you trust becomes a recoverable [`RunError`]
+/// rather than a hung or crashed process.
+/// Every limit is optional, and unset means unbounded.
+///
+/// They bound how much a script runs, never what it can reach,
+/// so they are not a security boundary:
+/// that is decided by what the host grants it, on [`Importer`].
 #[derive(Debug, Clone, Default)]
 pub struct VmRuntimeConfiguration {
     /// Maximum call-stack depth (number of frames) before execution fails with a
     /// recoverable error.
-    /// Tail calls do not contribute to the call depth.
+    /// Native calls and non-tail Vm calls contribute to the depth; tail calls do not.
     /// `None` leaves depth unbounded.
     pub max_call_depth: Option<NonZeroUsize>,
 
@@ -100,6 +117,15 @@ pub struct VmRuntimeConfiguration {
     /// comparable code in a more procedural language like Lua.
     /// Consider setting this value higher than your intuition may lead you.
     pub fuel: Option<NonZeroUsize>,
+
+    /// How deeply imports may nest:
+    /// a module imported by a module imported by the top-level script is at depth 3.
+    /// `None` leaves import nesting unbounded.
+    ///
+    /// Each level runs in its own Vm, so [`max_call_depth`](Self::max_call_depth)
+    /// bounds each of them separately but not the nesting.
+    /// This is the backstop for an [`ImportResolver`] that does not detect cycles.
+    pub max_import_depth: Option<NonZeroUsize>,
 }
 
 /// Fixed configuration from which [`Vm`]s are built. Obtain one from [`Vm::factory`].
@@ -110,6 +136,9 @@ pub struct VmRuntimeConfiguration {
 pub struct VmFactory {
     config: VmRuntimeConfiguration,
     importer: Arc<Importer>,
+    // Import nesting level for the Vms this factory builds. Non-zero only for a
+    // factory obtained from `Vm::child_factory`.
+    import_depth: usize,
 }
 
 impl VmFactory {
@@ -138,6 +167,8 @@ impl VmFactory {
             config: self.config.clone(),
             fuel_used: 0,
             abort: None,
+            module_id: None,
+            import_depth: self.import_depth,
         })
     }
 }
@@ -214,6 +245,39 @@ impl Vm {
     /// out fresh identically-configured Vms by reusing one factory.
     pub fn factory() -> VmFactory {
         VmFactory::default()
+    }
+
+    /// Identifies the script this Vm runs, for resolvers that care who is importing.
+    /// Set by whatever loaded the script;
+    /// a resolver stamps the id it assigned the module.
+    pub fn with_module_id(mut self, id: ModuleId) -> Self {
+        self.module_id = Some(id);
+        self
+    }
+
+    /// A factory for Vms nested inside this one: same configuration and importer,
+    /// one import level deeper.
+    /// Resource counters start fresh in the child.
+    pub(crate) fn child_factory(&self) -> VmFactory {
+        VmFactory {
+            config: self.config.clone(),
+            importer: self.importer.clone(),
+            import_depth: self.import_depth + 1,
+        }
+    }
+
+    /// Guard the nesting level a child Vm would run at,
+    /// then package what a resolver needs to build one.
+    fn import_ctx(&self) -> Result<ImportCtx<'_>, FrostError> {
+        if let Some(limit) = self.config.max_import_depth
+            && self.import_depth + 1 > limit.get()
+        {
+            return Err(FrostError::from_string(format!(
+                "Import depth limit of {} exceeded",
+                limit.get()
+            )));
+        }
+        Ok(ImportCtx::new(self.child_factory(), self.module_id.clone()))
     }
 
     /// Scrub a spent Vm back to a runnable state for `closure`, keeping its allocations.
@@ -520,7 +584,9 @@ impl Vm {
                         let spec = std::str::from_utf8(bytes).map_err(|_| {
                             FrostError::from_static("import module spec is not valid UTF-8")
                         })?;
-                        let module = self.importer.import(spec)?;
+                        let ctx = self.import_ctx()?;
+                        let importer = self.importer.clone();
+                        let module = importer.import(spec, &ctx)?;
                         self.stack.push(module);
                     }
                 };
@@ -747,6 +813,8 @@ impl Vm {
     /// Called at every call site (`Call`, tail calls, and native re-entry via `invoke`).
     /// The meter increments even when unmetered, so the consumed count stays reportable.
     fn expend_fuel(&mut self) -> Result<(), FrostError> {
+        // Counted unconditionally: `fuel_consumed` reports call counts whether or not
+        // a budget is set, so the increment is not skippable when unmetered.
         self.fuel_used = self.fuel_used.saturating_add(1);
         if let Some(budget) = self.config.fuel
             && self.fuel_used > budget.get()

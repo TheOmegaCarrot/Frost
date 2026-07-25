@@ -1,8 +1,10 @@
-use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
+use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
 
 use crate::{
     FrostError, MapKey, Value, core::util::identifier::is_identifier_like_and_not_keyword,
 };
+
+use super::{Vm, VmFactory};
 
 // White-box tests for the `import` module.
 #[cfg(test)]
@@ -10,27 +12,126 @@ mod builder_tests;
 #[cfg(test)]
 mod resolve_tests;
 
+/// Opaque identity of a loaded module, assigned by whichever resolver loaded it.
+///
+/// The runtime carries a `ModuleId` but never interprets one:
+/// its format belongs to the resolver that produced it.
+/// A resolver handed an id it does not recognize should treat it as foreign
+/// rather than guess at its meaning.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModuleId(Arc<str>);
+
+impl ModuleId {
+    /// Wraps a resolver-assigned identity.
+    pub fn new(id: impl Into<Arc<str>>) -> Self {
+        Self(id.into())
+    }
+
+    /// The identity as the assigning resolver wrote it.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for ModuleId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+/// What a resolver is given for one import: who is importing, and the means to
+/// build the [`Vm`] an imported module runs in.
+///
+/// Borrowed from the importing Vm for the duration of the call:
+/// a resolver may use it while resolving, but cannot retain it.
+#[derive(Debug)]
+pub struct ImportCtx<'vm> {
+    factory: VmFactory,
+    importing: Option<ModuleId>,
+    _vm: PhantomData<&'vm Vm>,
+}
+
+impl ImportCtx<'_> {
+    pub(super) fn new(factory: VmFactory, importing: Option<ModuleId>) -> Self {
+        Self {
+            factory,
+            importing,
+            _vm: PhantomData,
+        }
+    }
+
+    /// A factory for the Vm an imported module runs in:
+    /// the importing Vm's configuration and importer, one import level deeper.
+    ///
+    /// Resource counters start fresh rather than continuing the importing Vm's;
+    /// the limits are a runaway guard, not a budget shared across a module tree.
+    pub fn child_factory(&self) -> VmFactory {
+        self.factory.clone()
+    }
+
+    /// The identity of the module performing this import,
+    /// or `None` when the importing script has none
+    /// (a REPL, `-e`, or a host-run script left unidentified).
+    pub fn importing_module(&self) -> Option<&ModuleId> {
+        self.importing.as_ref()
+    }
+}
+
+/// Resolves module specifications that the import registry does not claim.
+/// Registering one is a capability grant; see [`Importer`].
+///
+/// Implementors own **caching** and **cycle detection**, where applicable.
+/// Both belong here because only the resolver knows module identity:
+/// one spec may name different modules for different importers,
+/// and different specs may name the same module.
+/// The runtime caches nothing,
+/// so a resolver that does not cache re-runs a module on every import,
+/// and one that does not track what it is already loading recurses until
+/// [`max_import_depth`](super::VmRuntimeConfiguration::max_import_depth) stops it.
+pub trait ImportResolver: std::fmt::Debug + Send + Sync {
+    /// Attempt to resolve `module_spec`, which is what the importing script passed to `import`.
+    ///
+    /// `Ok(Some)` produces the value the importing script receives.
+    /// `Ok(None)` means this resolver does not claim the spec, and the next resolver is queried.
+    /// `Err` means the spec was claimed but failed to load;
+    /// it propagates to the importing script and no further resolvers are queried.
+    fn resolve(&self, ctx: &ImportCtx, module_spec: &str) -> Result<Option<Value>, FrostError>;
+}
+
 /// The resolver behind Frost's `import`: maps an import specification to a [`Value`].
 /// Build one with [`ImporterBuilder`]; the [`Default`] is empty (every import fails).
+///
+/// # Imports are the capability boundary
+///
+/// An `Importer` is the whole of what a script can reach beyond the language's own globals.
+/// A [`Stdlib`] module, an [`Extension`], a [`HostComponent`], and whatever an [`ImportResolver`]
+/// serves differ only in how the content arrives:
+/// each ends in native Rust functions, which may do anything.
+///
+/// The default is no capabilities: a default [`ImporterBuilder`] yields an `Importer` that
+/// resolves nothing.
+/// What is registered is therefore the answer to "what may a script do".
+///
+/// Resource limits are a separate concern and not a substitute;
+/// see [`VmRuntimeConfiguration`](super::VmRuntimeConfiguration).
 #[derive(Debug, Default)]
 pub struct Importer {
     // The tree of importable modules, including the stdlib, any extensions, and host-provided functionality.
     registry: Arc<BTreeMap<String, Value>>,
-    // The search path for filesystem imports.
-    file_search_path: Option<Arc<[PathBuf]>>,
-    // Virtual CWD of the Importer.
-    cwd: Option<PathBuf>,
-    // TODO: filesystem import cache
+    // The resolver sequence
+    resolvers: Arc<[Arc<dyn ImportResolver>]>,
 }
 
-/// Builds an [`Importer`] from built-in modules and file-import settings.
+/// Builds an [`Importer`] from an import registry and dynamic import resolvers.
 /// Begin with [`new`](Self::new); finish with [`build`](Self::build).
+///
+/// Everything registered here is a capability grant; see [`Importer`].
 #[derive(Debug)]
 pub struct ImporterBuilder {
     // Partial registry
     registry: BTreeMap<String, Value>,
-    file_search_path: Option<Arc<[PathBuf]>>,
-    cwd: Option<PathBuf>,
+    // Growing list of resolvers
+    resolvers: Vec<Arc<dyn ImportResolver>>,
 }
 
 // Basic type the ImporterBuilder uses to build up the registry
@@ -224,18 +325,18 @@ impl std::fmt::Display for ExtensionError {
 }
 
 impl ImporterBuilder {
-    /// A builder with an empty registry and file-based imports disabled.
+    /// A builder with an empty registry and no dynamic resolvers.
     pub fn new() -> ImporterBuilder {
         Self {
             registry: BTreeMap::new(),
-            file_search_path: None,
-            cwd: None,
+            resolvers: Vec::new(),
         }
     }
 
     /// Registers `extension` under `ext` (imported as `ext.{name}`).
     /// A name already claimed under `ext` is rejected with an [`ExtensionError`]
     /// handing the builder and the extension back unchanged.
+    /// Imports under `ext` are a part of the import registry.
     pub fn with_extension(mut self, extension: Extension) -> Result<Self, ExtensionError> {
         // Extensions live under the `ext` namespace: a Map of extension-name -> content.
         let key = MapKey::from(extension.name());
@@ -265,6 +366,7 @@ impl ImporterBuilder {
     /// `std` and `ext` are reserved; a reserved or already-claimed name is
     /// rejected with a [`HostComponentError`] handing the builder and the
     /// component back unchanged.
+    /// These components are a part of the import registry.
     pub fn with_component(mut self, component: HostComponent) -> Result<Self, HostComponentError> {
         // A host component claims a top-level registry name. `std` and `ext` are
         // reserved (the stdlib and extensions); every other name is the host's to
@@ -283,6 +385,7 @@ impl ImporterBuilder {
     }
 
     /// Installs the standard library into `std`, replacing any already present.
+    /// The stdlib is a part of the import registry.
     pub fn with_stdlib(mut self, stdlib: Stdlib) -> Self {
         // The `std` namespace is a Map of module-name -> content, replaced wholesale:
         // the stdlib is crate-controlled and has a single source.
@@ -296,16 +399,11 @@ impl ImporterBuilder {
         self
     }
 
-    /// Sets the directories searched for file-based imports.
-    /// Unset by default, which disables file-based imports.
-    pub fn with_file_search_path(mut self, path: Arc<[PathBuf]>) -> Self {
-        self.file_search_path = Some(path);
-        self
-    }
-
-    /// Sets the directory file-based imports resolve against first, before the search path.
-    pub fn with_working_directory(mut self, path: PathBuf) -> Self {
-        self.cwd = Some(path);
+    /// Appends a dynamic import resolver.
+    /// Resolvers are queried in registration order, and only for specifications
+    /// the import registry does not claim.
+    pub fn append_resolver(mut self, resolver: Arc<dyn ImportResolver>) -> Self {
+        self.resolvers.push(resolver);
         self
     }
 
@@ -313,48 +411,17 @@ impl ImporterBuilder {
     pub fn build(self) -> Arc<Importer> {
         Arc::new(Importer {
             registry: Arc::new(self.registry),
-            file_search_path: self.file_search_path,
-            cwd: self.cwd,
+            resolvers: Arc::from(self.resolvers),
         })
     }
 }
 
-// FUTURE: generalize the filesystem fallback into a source-resolver trait.
-//
-// The only host-specific part of importing is turning a spec into source text.
-// Compiling it, running it in an isolated scope, collecting exports, caching, and
-// cycle/diamond detection are all source-agnostic, so the filesystem is just one
-// resolver among possible others (in-memory, bundled, sandboxed/custom).
-//
-// Shape (object-safe; `Send` is enough since it would live under the cache lock,
-// `Sync` only if ever called outside it; the source return is transient):
-//
-//   trait ModuleResolver: Send {
-//       fn resolve(&self, spec: &str, from: Option<&str>)
-//           -> Result<Option<(Arc<str> /* canonical id */, Arc<str> /* source */)>, FrostError>;
-//   }
-//
-// - Returns a *canonical id*, not just source: the cache and cycle detection key
-//   on module identity, so aliasing specs (relative paths, symlinks) must collapse
-//   to one id, or diamonds recompile and cycles slip.
-// - `from` is the importing module's id, for relative resolution.
-// - `Ok(None)` = not found; `Err` = found but unreadable.
-//
-// The Importer then drops `file_search_path`/`cwd` into a shipped `FilesystemResolver`
-// and holds `Option<Arc<dyn ModuleResolver>>` instead. `None` keeps today's secure
-// default (registry miss with no fallback = error).
-//
-// Worth it mainly for testability: an in-memory resolver is the natural harness for
-// cycle/diamond/transitive-import tests (no tempfiles), at a small marginal cost over
-// the filesystem resolver needed regardless. (A HostComponent already covers isolated
-// in-memory *leaf* modules; the resolver is for module *graphs* from non-fs sources.)
-// Blocked on the compiler.
 impl Importer {
-    pub(crate) fn import(&self, target: &str) -> Result<Value, FrostError> {
+    pub(crate) fn import(&self, target: &str, ctx: &ImportCtx) -> Result<Value, FrostError> {
         // `target` is a `.`-separated path. The first segment selects a top-level
         // registry entry; the rest descend through nested Maps. A top-level hit is
-        // registry-exclusive and never falls to the filesystem, so `std`/`ext` and
-        // any host component own their whole subtree.
+        // registry-exclusive and never reaches a resolver, so `std`/`ext` and any
+        // host component own their whole subtree and cannot be shadowed.
         if target.is_empty() {
             return Err(FrostError::from_static(
                 "import requires a non-empty module name",
@@ -367,18 +434,11 @@ impl Importer {
             .expect("split always yields a first segment");
 
         let Some(root) = self.registry.get(first) else {
-            // TODO: when the first segment is unclaimed, resolve on the filesystem:
-            // `target` (with `.` as separator) relative to `cwd` first, then the
-            // search path; compile, run, collect exports into a Map, and cache it.
-            // Must be parallel-safe, support diamonds, and reject import cycles.
-            // Blocked by the Frost compiler not existing yet.
-            return Err(FrostError::from_string(format!(
-                "Could not resolve import '{target}'"
-            )));
+            return self.resolve_dynamic(target, ctx);
         };
 
         // Bind through each remaining segment: descend into a Map, else fail. A miss
-        // or a non-Map value along the way is a final error, never a filesystem fallback.
+        // or a non-Map value along the way is a final error, never a resolver fallback.
         segments
             .try_fold((first, root), |(name, current), segment| match current {
                 Value::Map(map) => {
@@ -392,5 +452,18 @@ impl Importer {
                 ))),
             })
             .map(|(_, value)| value.clone())
+    }
+
+    /// Offer an unclaimed specification to each resolver in registration order.
+    /// The first to claim it wins; a resolver's error ends the search.
+    fn resolve_dynamic(&self, target: &str, ctx: &ImportCtx) -> Result<Value, FrostError> {
+        for resolver in self.resolvers.iter() {
+            if let Some(value) = resolver.resolve(ctx, target)? {
+                return Ok(value);
+            }
+        }
+        Err(FrostError::from_string(format!(
+            "Could not resolve import '{target}'"
+        )))
     }
 }

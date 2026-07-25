@@ -1,10 +1,8 @@
 //! White-box tests for the import registry builder.
 //!
 //! The `import` module is not re-exported from the crate root, so this
-//! registration behavior is only reachable from inside the crate. Once
-//! `Importer::import` exists, resolution gets its own black-box coverage.
-
-use std::path::{Path, PathBuf};
+//! registration behavior is only reachable from inside the crate.
+//! Resolution itself is covered in `resolve_tests`.
 
 use crate::{FrostMap, Value};
 
@@ -13,6 +11,16 @@ use super::*;
 /// A distinct sentinel leaf, so registered content can be told apart.
 fn content(n: i64) -> Value {
     Value::from(n)
+}
+
+/// A resolver that claims nothing; its Debug name identifies it in the chain.
+#[derive(Debug)]
+struct NamedResolver(&'static str);
+
+impl ImportResolver for NamedResolver {
+    fn resolve(&self, _ctx: &ImportCtx, _module_spec: &str) -> Result<Option<Value>, FrostError> {
+        Ok(None)
+    }
 }
 
 /// The `ext` namespace submap of a builder's registry.
@@ -39,24 +47,30 @@ fn stdlib_module(name: &str, content: Value) -> StdlibModule {
     })
 }
 
-// -- Builder defaults / filesystem settings --
+// -- Builder defaults / resolver registration --
 
 #[test]
 fn new_builder_is_empty() {
     let b = ImporterBuilder::new();
     assert!(b.registry.is_empty());
-    assert!(b.file_search_path.is_none());
-    assert!(b.cwd.is_none());
+    assert!(b.resolvers.is_empty());
 }
 
 #[test]
-fn filesystem_settings_are_recorded() {
+fn resolvers_are_recorded_in_registration_order() {
     let importer = ImporterBuilder::new()
-        .with_working_directory(PathBuf::from("/scripts"))
-        .with_file_search_path(vec![PathBuf::from("/lib")].into())
+        .append_resolver(Arc::new(NamedResolver("first")))
+        .append_resolver(Arc::new(NamedResolver("second")))
         .build();
-    assert_eq!(importer.cwd.as_deref(), Some(Path::new("/scripts")));
-    assert!(importer.file_search_path.is_some());
+    assert_eq!(importer.resolvers.len(), 2);
+    assert_eq!(
+        format!("{:?}", importer.resolvers[0]),
+        r#"NamedResolver("first")"#
+    );
+    assert_eq!(
+        format!("{:?}", importer.resolvers[1]),
+        r#"NamedResolver("second")"#
+    );
 }
 
 // -- Extensions (under `ext`) --

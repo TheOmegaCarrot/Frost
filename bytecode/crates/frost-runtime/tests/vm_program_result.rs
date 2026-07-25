@@ -114,6 +114,7 @@ fn builder_accepts_configuration_and_builds_a_runnable_vm() {
     let config = VmRuntimeConfiguration {
         max_call_depth: NonZeroUsize::new(64),
         fuel: NonZeroUsize::new(10_000),
+        max_import_depth: NonZeroUsize::new(8),
     };
     let result = Vm::factory()
         .configuration(config)

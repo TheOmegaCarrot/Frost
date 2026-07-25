@@ -65,11 +65,9 @@ impl CompiledFunction {
 /// "Trusted" means the bytecode upholds the Vm's internal invariants
 /// (never popping an empty stack, never jumping out-of-bounds),
 /// *not* that the program is benign, correct, or even terminates.
-/// A malicious or runaway script is still "trusted" in this sense, so running untrusted *scripts*
-/// calls for sandboxing, which is separate: see [`VmRuntimeConfiguration`](super::VmRuntimeConfiguration).
-/// Its limits help even for trusted-authored scripts, turning a stray infinite loop into a
-/// recoverable [`RunError`](super::RunError) (via [`fuel`](super::VmRuntimeConfiguration::fuel))
-/// rather than a process hang.
+/// A malicious or runaway script is still "trusted" in this sense.
+/// What such a script may reach is governed by its [`Importer`](super::Importer),
+/// and how much it may run by [`VmRuntimeConfiguration`](super::VmRuntimeConfiguration).
 pub struct TrustedProgram(Arc<CompiledFunction>);
 
 impl TrustedProgram {
