@@ -335,11 +335,22 @@ impl Vm {
                     Bytecode::PushInt(i) => self.stack.push(Value::Int(i)),
                     Bytecode::PushFloat(f) => self.stack.push(Value::Float(f)),
                     Bytecode::PeekDown(idx) => {
-                        self.stack
-                            .push(self.stack[self.stack.len() - idx - 1].clone());
+                        let from = self
+                            .stack
+                            .len()
+                            .checked_sub(idx + 1)
+                            .expect("FROST STACK UNDERFLOW");
+                        self.debug_assert_own_operand(from, "PeekDown");
+                        self.stack.push(self.stack[from].clone());
                     }
                     Bytecode::DropBelow(idx) => {
-                        self.stack.remove(self.stack.len() - (1 + idx));
+                        let at = self
+                            .stack
+                            .len()
+                            .checked_sub(idx + 1)
+                            .expect("FROST STACK UNDERFLOW");
+                        self.debug_assert_own_operand(at, "DropBelow");
+                        self.stack.remove(at);
                     }
                     Bytecode::DefLocal(idx) => {
                         self.this_frame_mut().local_slots[idx] = Some(self.stack_pop());
@@ -404,17 +415,20 @@ impl Vm {
                     // the offset counts skipped instructions, not an absolute target.
                     Bytecode::Jump(n) => {
                         pc += n;
+                        self.debug_assert_jump_target(pc);
                     }
                     Bytecode::JumpIfTrue(n) => {
                         let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
                         if operand.is_truthy() {
                             pc += n;
+                            self.debug_assert_jump_target(pc);
                         }
                     }
                     Bytecode::JumpIfFalse(n) => {
                         let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
                         if !operand.is_truthy() {
                             pc += n;
+                            self.debug_assert_jump_target(pc);
                         }
                     }
                     Bytecode::Call(argc) => {
@@ -609,6 +623,15 @@ impl Vm {
                 panic!("IMPOSSIBLE: function execution completed through native frame");
             };
 
+            // The callee's result replaces the function value that sat at its base:
+            // the prelude consumed the args and that function value, and the body
+            // left exactly one value behind.
+            debug_assert_eq!(
+                self.stack.len(),
+                frame.base_idx + 1,
+                "a returning function must leave exactly its result at its frame base"
+            );
+
             pc = frame
                 .return_address
                 .expect("IMPOSSIBLE: Callee lacks return address")
@@ -708,6 +731,28 @@ impl Vm {
                 entry.name
             );
         }
+    }
+
+    /// Debug-only check that the operand at `index` belongs to the running frame.
+    /// Reaching below the frame base would read or remove one of the caller's operands,
+    /// which corrupts a frame the running function cannot see.
+    fn debug_assert_own_operand(&self, index: usize, op: &str) {
+        debug_assert!(
+            index >= self.this_frame().base_idx,
+            "{op} reached stack index {index}, below the running frame's base {}",
+            self.this_frame().base_idx
+        );
+    }
+
+    /// Debug-only check that a jump landed inside the running function.
+    /// One past the end is the return position: a function whose control flow falls
+    /// off the end returns, so a jump there is how a branch reaches the exit.
+    fn debug_assert_jump_target(&self, pc: usize) {
+        debug_assert!(
+            pc <= self.this_frame().this_fn.code.len(),
+            "jump to {pc} leaves the function, whose code ends at {}",
+            self.this_frame().this_fn.code.len()
+        );
     }
 
     /// Pop the top of the operand stack.
