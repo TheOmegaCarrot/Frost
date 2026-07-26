@@ -418,6 +418,7 @@ impl Vm {
                         self.debug_assert_jump_target(pc);
                     }
                     Bytecode::JumpIfTrue(n) => {
+                        self.debug_assert_own_top("JumpIfTrue");
                         let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
                         if operand.is_truthy() {
                             pc += n;
@@ -425,6 +426,7 @@ impl Vm {
                         }
                     }
                     Bytecode::JumpIfFalse(n) => {
+                        self.debug_assert_own_top("JumpIfFalse");
                         let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
                         if !operand.is_truthy() {
                             pc += n;
@@ -433,7 +435,14 @@ impl Vm {
                     }
                     Bytecode::Call(argc) => {
                         self.expend_fuel()?;
-                        let base = self.stack.len() - (argc + 1);
+                        let base = self
+                            .stack
+                            .len()
+                            .checked_sub(argc + 1)
+                            .expect("FROST STACK UNDERFLOW");
+                        // The callee and its arguments must be operands this frame
+                        // pushed; reaching lower would call one of the caller's values.
+                        self.debug_assert_own_operand(base, "Call");
                         let function = self.stack[base].clone();
 
                         // Errors `?` straight out of `execute_function`;
@@ -471,6 +480,7 @@ impl Vm {
                     // here, so a non-Array args operand is a recoverable error; the
                     // callee being non-callable is likewise caught by `tail_call`.
                     Bytecode::DynTailCall => {
+                        self.debug_assert_own_top("DynTailCall");
                         let args = self.stack.last().expect("FROST STACK UNDERFLOW");
                         if !args.is_array() {
                             return Err(FrostError::from_string(format!(
@@ -496,20 +506,34 @@ impl Vm {
                     } => {
                         let function =
                             self.this_frame().this_fn.child_fns[function as usize].clone();
-                        let captures = self
+                        let split_point = self
                             .stack
-                            .split_off(self.stack.len() - num_captures as usize);
+                            .len()
+                            .checked_sub(num_captures as usize)
+                            .expect("FROST STACK UNDERFLOW");
+                        self.debug_assert_own_operand(split_point, "CreateClosure");
+                        let captures = self.stack.split_off(split_point);
 
                         self.stack
                             .push(Value::Closure(Arc::new(Closure { function, captures })))
                     }
                     Bytecode::MakeArray(num_elems) => {
-                        let arr: FrostArray =
-                            self.stack.split_off(self.stack.len() - num_elems).into();
+                        let split_point = self
+                            .stack
+                            .len()
+                            .checked_sub(num_elems)
+                            .expect("FROST STACK UNDERFLOW");
+                        self.debug_assert_own_operand(split_point, "MakeArray");
+                        let arr: FrostArray = self.stack.split_off(split_point).into();
                         self.stack.push(arr.into());
                     }
                     Bytecode::MakeMap(num_pairs) => {
-                        let split_point = self.stack.len() - 2 * num_pairs;
+                        let split_point = self
+                            .stack
+                            .len()
+                            .checked_sub(2 * num_pairs)
+                            .expect("FROST STACK UNDERFLOW");
+                        self.debug_assert_own_operand(split_point, "MakeMap");
                         let flat_pairs = self.stack.split_off(split_point);
 
                         let map: FrostMap = flat_pairs
@@ -733,15 +757,33 @@ impl Vm {
         }
     }
 
-    /// Debug-only check that the operand at `index` belongs to the running frame.
-    /// Reaching below the frame base would read or remove one of the caller's operands,
-    /// which corrupts a frame the running function cannot see.
-    fn debug_assert_own_operand(&self, index: usize, op: &str) {
+    /// The running frame's operand floor, or `None` while a native frame is on top
+    /// (a native's stack use is its own, not bounded by a Frost frame).
+    fn frame_base(&self) -> Option<usize> {
+        match self.stack_frames.last() {
+            Some(StackFrame::VmFrame(frame)) => Some(frame.base_idx),
+            _ => None,
+        }
+    }
+
+    /// Debug-only check that operands from `lowest` upward belong to the running frame.
+    /// Below the frame base sit the caller's operands, which the running function must
+    /// not read, consume, or displace: doing so corrupts a frame it cannot see, and
+    /// nothing downstream would attribute the damage to this instruction.
+    ///
+    /// A frame may consume down to its base, where its own function value sits.
+    fn debug_assert_own_operand(&self, lowest: usize, op: &str) {
         debug_assert!(
-            index >= self.this_frame().base_idx,
-            "{op} reached stack index {index}, below the running frame's base {}",
-            self.this_frame().base_idx
+            self.frame_base().is_none_or(|base| lowest >= base),
+            "{op} reached stack index {lowest}, below the running frame's base {}",
+            self.frame_base().unwrap_or(0)
         );
+    }
+
+    /// Debug-only check that the top of the stack belongs to the running frame,
+    /// for the operations that read it without consuming it.
+    fn debug_assert_own_top(&self, op: &str) {
+        self.debug_assert_own_operand(self.stack.len().saturating_sub(1), op);
     }
 
     /// Debug-only check that a jump landed inside the running function.
@@ -757,7 +799,11 @@ impl Vm {
 
     /// Pop the top of the operand stack.
     /// A missing operand is a compiler/bytecode bug, not a recoverable error, so underflow panics.
+    ///
+    /// The single choke point for consuming one operand, so the frame floor is
+    /// checked here on behalf of every instruction that pops.
     fn stack_pop(&mut self) -> Value {
+        self.debug_assert_own_top("pop");
         self.stack.pop().expect("FROST STACK UNDERFLOW")
     }
 
@@ -982,7 +1028,12 @@ impl Vm {
         return_address: Option<NonZeroUsize>,
     ) -> Result<TailFlow, FrostError> {
         self.expend_fuel()?;
-        let base = self.stack.len() - (argc + 1);
+        let base = self
+            .stack
+            .len()
+            .checked_sub(argc + 1)
+            .expect("FROST STACK UNDERFLOW");
+        self.debug_assert_own_operand(base, "TailCall");
         let function = self.stack[base].clone();
 
         match function {

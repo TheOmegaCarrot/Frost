@@ -105,6 +105,40 @@ fn dropping_below_the_frame_base_is_caught() {
 }
 
 #[test]
+#[should_panic(expected = "below the running frame's base")]
+fn popping_below_the_frame_base_is_caught() {
+    // The first pop takes the callee's own function value, leaving it at its base;
+    // the second reaches into the caller. Covers every instruction that pops.
+    let callee = func(vec![Pop, Pop], Arity::Exact(0), vec![], vec![]);
+    run_fn(calling_program(2, callee));
+}
+
+#[test]
+#[should_panic(expected = "below the running frame's base")]
+fn branching_on_a_callers_operand_is_caught() {
+    // A peek rather than a pop: reading the caller's top would branch on a value
+    // this function never produced, and the stack would look untouched afterward.
+    let callee = func(vec![Pop, JumpIfTrue(0)], Arity::Exact(0), vec![], vec![]);
+    run_fn(calling_program(2, callee));
+}
+
+#[test]
+#[should_panic(expected = "below the running frame's base")]
+fn calling_a_callers_operand_is_caught() {
+    // `Call` takes its callee from `argc + 1` below the top; with nothing of its
+    // own on the stack, that lands in the caller's operands.
+    let callee = func(vec![Pop, Call(0)], Arity::Exact(0), vec![], vec![]);
+    run_fn(calling_program(2, callee));
+}
+
+#[test]
+#[should_panic(expected = "below the running frame's base")]
+fn collecting_a_callers_operand_into_a_structure_is_caught() {
+    let callee = func(vec![Pop, MakeArray(1)], Arity::Exact(0), vec![], vec![]);
+    run_fn(calling_program(2, callee));
+}
+
+#[test]
 fn reaching_within_the_frame_is_allowed() {
     // The same shape, but the callee peeks at a value it pushed itself, then
     // discards the copy so it still returns exactly one value.
