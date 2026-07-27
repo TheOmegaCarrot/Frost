@@ -23,6 +23,7 @@ pub(super) fn call_global() -> Value {
             // and lets `DynTailCall` validate the operands, so no slots are needed.
             name_table: Vec::new(),
             constants: Vec::new(),
+            key_constants: Vec::new(),
             child_fns: Vec::new(),
             code: vec![
                 // On entry: ( call_self f a? n ),

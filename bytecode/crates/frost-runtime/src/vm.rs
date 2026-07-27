@@ -581,25 +581,15 @@ impl Vm {
                                 val.type_name()
                             )));
                         };
-                        let key = &self.this_frame().this_fn.constants[const_pool_idx_of_key];
 
-                        // The key constant is compiler-guaranteed to be a String (it is the
-                        // field name from `foo.bar`); any other type is broken bytecode.
-                        let Value::String(s) = key else {
-                            panic!(
-                                "IMPOSSIBLE: HardIndexMap key constant must be a String, but was {}",
-                                key.type_name()
-                            );
-                        };
-                        let key = MapKey::String(s.clone());
+                        let key = &self.this_frame().this_fn.key_constants[const_pool_idx_of_key];
 
-                        match map.get(&key) {
+                        match map.get(key) {
                             Some(result) => self.stack.push(result.clone()),
                             // TODO: improve error message with a "did you mean ...?" hint
                             None => {
                                 return Err(FrostError::from_string(format!(
-                                    "Map has no value at key '{}'",
-                                    String::from_utf8_lossy(s)
+                                    "Map has no value at key '{key}'"
                                 )));
                             }
                         }

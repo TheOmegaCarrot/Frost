@@ -14,7 +14,8 @@ use frost_runtime::{
 
 /// A function tree exercising every serialized shape: a child fn (recursion); constants
 /// covering a string, an int, a nested array with a null, and a map with a *non-string* key;
-/// and code covering payload-bearing opcodes (a float, type sets, an alias).
+/// key constants covering every `MapKey` variant; and code covering payload-bearing
+/// opcodes (a float, type sets, an alias).
 fn sample() -> CompiledFunction {
     let child = Arc::new(CompiledFunction {
         version: FormatVersion,
@@ -22,6 +23,7 @@ fn sample() -> CompiledFunction {
         code: vec![Bytecode::Pop, Bytecode::PushInt(1)],
         child_fns: Vec::new(),
         constants: Vec::new(),
+        key_constants: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
@@ -47,6 +49,12 @@ fn sample() -> CompiledFunction {
             Value::from(FrostArray::from(vec![Value::from(1i64), Value::Null])),
             Value::from(int_keyed_map),
         ],
+        key_constants: vec![
+            MapKey::from("field"),
+            MapKey::Int(7),
+            MapKey::Bool(true),
+            MapKey::Float(1.5.try_into().unwrap()),
+        ],
         name_table: vec![NameEntry {
             name: "x".into(),
             exported: true,
@@ -61,6 +69,8 @@ fn assert_matches(original: &CompiledFunction, restored: &CompiledFunction) {
     assert_eq!(restored.code, original.code);
     // `Value: PartialEq` covers the whole `ConstValue` round-trip, including the Int-keyed map.
     assert_eq!(restored.constants, original.constants);
+    // The key pool serializes as plain `MapKey`s, needing no `ConstValue` guard.
+    assert_eq!(restored.key_constants, original.key_constants);
     assert_eq!(restored.arity, original.arity);
     assert_eq!(restored.num_captures, original.num_captures);
     assert_eq!(restored.child_fns.len(), original.child_fns.len());
@@ -74,6 +84,7 @@ fn a_closure_value() -> Value {
         code: Vec::new(),
         child_fns: Vec::new(),
         constants: Vec::new(),
+        key_constants: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
@@ -119,6 +130,7 @@ fn a_function_valued_constant_cannot_be_serialized() {
         code: Vec::new(),
         child_fns: Vec::new(),
         constants: vec![a_closure_value()],
+        key_constants: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),

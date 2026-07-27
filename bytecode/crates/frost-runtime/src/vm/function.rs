@@ -3,7 +3,7 @@
 
 use std::{collections::BTreeMap, sync::Arc};
 
-use crate::Value;
+use crate::{MapKey, Value};
 
 use super::bytecode::Bytecode;
 use super::serialize;
@@ -25,6 +25,10 @@ pub struct CompiledFunction {
     // Serialized through `ConstValue` (see `serialize`); a function-valued constant is rejected.
     #[serde(with = "serialize::const_pool")]
     pub constants: Vec<Value>,
+    // Constant map keys, in their own pool so a keyed instruction can borrow one
+    // rather than build a `MapKey` per execution. `MapKey` cannot hold a function,
+    // so unlike `constants` this needs no serialization guard.
+    pub key_constants: Vec<MapKey>,
     // Table so that locals can be looked up by name at runtime,
     // or their slot given a name by an error.
     pub name_table: Vec<NameEntry>,

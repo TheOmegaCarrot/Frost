@@ -12,6 +12,7 @@ pub(super) fn import_global() -> Value {
             num_captures: 0,
             name_table: Vec::new(),
             constants: Vec::new(),
+            key_constants: Vec::new(),
             child_fns: Vec::new(),
             code: vec![
                 Bytecode::DropBelow(1), // Drop the function itself

@@ -13,6 +13,20 @@ pub enum MapKey {
     String(Arc<[u8]>),
 }
 
+/// Renders the key as it would be written, unquoted:
+/// a String key prints its own text, so `'{key}'` reads as the source spelled it.
+/// Invalid UTF-8 is replaced rather than refused.
+impl std::fmt::Display for MapKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Bool(b) => write!(f, "{b}"),
+            Self::Int(i) => write!(f, "{i}"),
+            Self::Float(x) => write!(f, "{}", x.get()),
+            Self::String(s) => write!(f, "{}", String::from_utf8_lossy(s)),
+        }
+    }
+}
+
 impl From<MapKey> for Value {
     fn from(k: MapKey) -> Value {
         match k {

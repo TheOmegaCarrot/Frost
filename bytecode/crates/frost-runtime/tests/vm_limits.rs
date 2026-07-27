@@ -44,6 +44,7 @@ fn run(
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
+        key_constants: Vec::new(),
         name_table,
         num_captures: caps.len(),
         arity: Arity::Exact(0),

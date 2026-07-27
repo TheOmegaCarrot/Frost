@@ -46,6 +46,7 @@ fn run_global(name: &str, args: Vec<Value>) -> Result<Value, FrostError> {
         code,
         child_fns: Vec::new(),
         constants: Vec::new(),
+        key_constants: Vec::new(),
         name_table,
         num_captures: argc,
         arity: Arity::Exact(0),

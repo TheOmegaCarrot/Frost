@@ -7,7 +7,7 @@
 //!   * Map + valid key -> value, or null when the key is absent; Map + null or structured key -> error.
 //!   * Indexing a non-structure (String, Int, ...) -> error.
 //!
-//! `HardIndexMap` (`foo.bar`) is the Map-only counterpart. Stack: `( map -- value )`; the key is a String constant read from the const pool, not a stack operand.
+//! `HardIndexMap` (`foo.bar`) is the Map-only counterpart. Stack: `( map -- value )`; the key is read from the key-constant pool, not a stack operand.
 //! A missing key is an ERROR (an intentional deviation from the oracle's null-on-missing), and non-map operands error too (arrays are not dot-indexable).
 
 use std::sync::Arc;
@@ -18,6 +18,16 @@ use frost_runtime::{
 };
 
 fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> {
+    eval_keyed(constants, Vec::new(), code)
+}
+
+/// `eval` with a key-constant pool, for the `HardIndexMap` cases: that opcode's
+/// operand indexes the key pool, not the value pool.
+fn eval_keyed(
+    constants: Vec<Value>,
+    key_constants: Vec<MapKey>,
+    code: Vec<Bytecode>,
+) -> Result<Value, FrostError> {
     let mut body = vec![Bytecode::Pop]; // pop the closure value the runner pushes
     body.extend(code);
     let program = Arc::new(CompiledFunction {
@@ -26,6 +36,7 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
         code: body,
         child_fns: Vec::new(),
         constants,
+        key_constants,
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
@@ -241,10 +252,11 @@ fn consumes_structure_and_index_pushes_one() {
 
 #[test]
 fn hard_index_present_key() {
-    // {bar: 1}.bar -> 1. Key "bar" is the constant at index 1.
-    let out = eval(
-        vec![map(vec![(skey("bar"), Value::Int(1))]), Value::from("bar")],
-        vec![LoadConst(0), HardIndexMap(1)],
+    // {bar: 1}.bar -> 1. Key "bar" is the key constant at index 0.
+    let out = eval_keyed(
+        vec![map(vec![(skey("bar"), Value::Int(1))])],
+        vec![skey("bar")],
+        vec![LoadConst(0), HardIndexMap(0)],
     )
     .unwrap();
     assert_eq!(out, Value::Int(1));
@@ -254,21 +266,23 @@ fn hard_index_present_key() {
 fn hard_index_missing_key_is_error() {
     // {bar: 1}.baz -> error. The oracle returns null here; erroring is the
     // intentional deviation.
-    let err = eval(
-        vec![map(vec![(skey("bar"), Value::Int(1))]), Value::from("baz")],
-        vec![LoadConst(0), HardIndexMap(1)],
+    let err = eval_keyed(
+        vec![map(vec![(skey("bar"), Value::Int(1))])],
+        vec![skey("baz")],
+        vec![LoadConst(0), HardIndexMap(0)],
     )
     .unwrap_err();
-    assert!(!err.message().is_empty());
+    assert!(err.message().contains("baz"), "got: {}", err.message());
 }
 
 #[test]
 fn hard_index_present_key_with_null_value_is_not_missing() {
     // {bar: null}.bar -> null: the key is present, so the stored null is returned
     // rather than erroring. Distinguishes "present but null" from "missing".
-    let out = eval(
-        vec![map(vec![(skey("bar"), Value::Null)]), Value::from("bar")],
-        vec![LoadConst(0), HardIndexMap(1)],
+    let out = eval_keyed(
+        vec![map(vec![(skey("bar"), Value::Null)])],
+        vec![skey("bar")],
+        vec![LoadConst(0), HardIndexMap(0)],
     )
     .unwrap();
     assert_eq!(out, Value::Null);
@@ -276,17 +290,18 @@ fn hard_index_present_key_with_null_value_is_not_missing() {
 
 #[test]
 fn hard_index_non_map_is_error() {
-    // 5.bar -> error: only maps are dot-indexable. (Key const at index 0.)
-    let err = eval(vec![Value::from("bar")], vec![PushInt(5), HardIndexMap(0)]).unwrap_err();
+    // 5.bar -> error: only maps are dot-indexable.
+    let err = eval_keyed(vec![], vec![skey("bar")], vec![PushInt(5), HardIndexMap(0)]).unwrap_err();
     assert!(err.message().contains("index"), "got: {}", err.message());
 }
 
 #[test]
 fn hard_index_array_is_error() {
     // Arrays are not dot-indexable: the reason this opcode is Map-specific.
-    let err = eval(
-        vec![ints(&[1, 2]), Value::from("bar")],
-        vec![LoadConst(0), HardIndexMap(1)],
+    let err = eval_keyed(
+        vec![ints(&[1, 2])],
+        vec![skey("bar")],
+        vec![LoadConst(0), HardIndexMap(0)],
     )
     .unwrap_err();
     assert!(err.message().contains("index"), "got: {}", err.message());
@@ -294,12 +309,26 @@ fn hard_index_array_is_error() {
 
 #[test]
 fn hard_index_consumes_only_the_map() {
-    // Sentinel below; the key is from the const pool, so only the map is
+    // Sentinel below; the key comes from the key pool, so only the map is
     // consumed. Pop drops the result, revealing the sentinel: `( map -- value )`.
-    let out = eval(
-        vec![map(vec![(skey("bar"), Value::Int(1))]), Value::from("bar")],
-        vec![PushInt(99), LoadConst(0), HardIndexMap(1), Pop],
+    let out = eval_keyed(
+        vec![map(vec![(skey("bar"), Value::Int(1))])],
+        vec![skey("bar")],
+        vec![PushInt(99), LoadConst(0), HardIndexMap(0), Pop],
     )
     .unwrap();
     assert_eq!(out, Value::Int(99));
+}
+
+#[test]
+fn hard_index_accepts_a_non_string_key() {
+    // The key pool holds any `MapKey`, not just the field names `foo.bar` produces:
+    // an Int-keyed lookup needs no separate opcode.
+    let out = eval_keyed(
+        vec![map(vec![(MapKey::Int(7), Value::from("seven"))])],
+        vec![MapKey::Int(7)],
+        vec![LoadConst(0), HardIndexMap(0)],
+    )
+    .unwrap();
+    assert_eq!(out, Value::from("seven"));
 }

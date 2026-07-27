@@ -45,6 +45,7 @@ fn run_with(
         code: body,
         child_fns: children,
         constants: Vec::new(),
+        key_constants: Vec::new(),
         name_table: names,
         num_captures,
         arity: Arity::Exact(0),

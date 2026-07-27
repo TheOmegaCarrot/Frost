@@ -85,8 +85,8 @@ pub enum Bytecode {
     // Leaves a single value on the stack
     SoftIndexStructure, // Null on missing
 
-    // Index a Map with a constant String key.
-    // The key is in the constant pool at the index stored in this variant.
+    // Index a Map with a constant key.
+    // The key is in the key-constant pool at the index stored in this variant.
     HardIndexMap(usize), // Error on missing
 
     // Consumes the value at the top of the stack, and produces a bool depending if the value's

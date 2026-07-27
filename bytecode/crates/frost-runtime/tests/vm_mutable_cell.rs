@@ -35,11 +35,11 @@ fn entry(name: &str) -> NameEntry {
 }
 
 /// Run a "main" that pops its own value, runs `body`, with `caps` seated as captures
-/// (slot `i` is the i-th entry) and `constants` available to const-indexed opcodes.
+/// (slot `i` is the i-th entry) and `key_constants` available to `HardIndexMap`.
 /// Returns the tail value, or the raised error.
 fn run(
     caps: Vec<(&str, Value)>,
-    constants: Vec<Value>,
+    key_constants: Vec<MapKey>,
     body: Vec<Bytecode>,
 ) -> Result<Value, FrostError> {
     let name_table = caps.iter().map(|(n, _)| entry(n)).collect();
@@ -50,7 +50,8 @@ fn run(
         name: "main".to_string(),
         code,
         child_fns: Vec::new(),
-        constants,
+        constants: Vec::new(),
+        key_constants,
         name_table,
         num_captures: caps.len(),
         arity: Arity::Exact(0),
@@ -98,7 +99,7 @@ fn invoke(cell: &Value, method: &'static str, arg: Option<Value>) -> Result<Valu
         None => 0,
     };
     body.push(Call(argc));
-    run(caps, vec![Value::from(method)], body)
+    run(caps, vec![MapKey::from(method)], body)
 }
 
 /// `cell.get()`, unwrapping.

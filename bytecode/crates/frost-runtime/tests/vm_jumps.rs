@@ -22,6 +22,7 @@ fn tail(code: Vec<Bytecode>) -> Value {
         code: body,
         child_fns: Vec::new(),
         constants: Vec::new(),
+        key_constants: Vec::new(),
         name_table: Vec::new(),
         num_captures: 0,
         arity: Arity::Exact(0),
