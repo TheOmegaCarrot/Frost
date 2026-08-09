@@ -75,6 +75,7 @@ define_globals! {
     "to_int"                => to_int_global(),
     "to_float"              => to_float_global(),
     "to_bytes"              => to_bytes_global(),
+    "from_utf8"             => from_utf8_global(),
 
     // --- Strings ---
     "split"                 => split_global(),

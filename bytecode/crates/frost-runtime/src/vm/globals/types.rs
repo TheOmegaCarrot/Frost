@@ -108,3 +108,7 @@ pub(super) fn to_float_global() -> Value {
 pub(super) fn to_bytes_global() -> Value {
     super::stub("to_bytes")
 }
+
+pub(super) fn from_utf8_global() -> Value {
+    super::stub("from_utf8")
+}

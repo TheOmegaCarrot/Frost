@@ -265,6 +265,7 @@ mod bindings {
             ("Primitive", TypeConstraint::Primitive),
             ("Numeric", TypeConstraint::Numeric),
             ("Structured", TypeConstraint::Structured),
+            ("Flat", TypeConstraint::Flat),
             ("Nonnull", TypeConstraint::Nonnull),
         ];
 

@@ -15,10 +15,10 @@ pub struct FrostError {
     pub(crate) backtrace: Vec<String>,
 }
 
-/// An error's payload: a UTF-8 message (the common case) *xor* an arbitrary thrown value.
+/// An error's payload: a message (the common case) *xor* an arbitrary thrown value.
 #[derive(Clone, Debug)]
 enum ErrorPayload {
-    /// A UTF-8 message: what a Rust-side error, or a Frost `error("...")`, produces.
+    /// A message: what a Rust-side error, or a Frost `error("...")`, produces.
     /// A `Cow` so the common static-literal case (`"Division by zero"`) needs no allocation.
     Message(Cow<'static, str>),
     /// An arbitrary thrown Frost value.

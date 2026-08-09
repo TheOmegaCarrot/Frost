@@ -80,15 +80,17 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
 /// Decodes the hex body of a `\u{...}` escape into its Unicode scalar value.
 ///
-/// Rust's `\u{...}` takes 1 to 6 hex digits; a longer body is rejected here. The
-/// standard library handles the rest: [`u32::from_str_radix`] rejects an empty or
-/// non-hex body, and [`char::from_u32`] rejects surrogates and values above U+10FFFF.
+/// Rust's `\u{...}` takes 1 to 6 hex digits; anything else in the body (including the
+/// leading `+` that [`u32::from_str_radix`] would tolerate) is rejected here, as is an
+/// empty body. [`char::from_u32`] rejects surrogates and values above U+10FFFF.
 pub(crate) fn decode_unicode_escape(hex: &str) -> Result<char, String> {
+    if hex.is_empty() || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(format!("invalid \\u escape: \\u{{{hex}}}"));
+    }
     if hex.len() > 6 {
         return Err(format!("\\u escape has more than 6 hex digits: \\u{{{hex}}}"));
     }
-    let code =
-        u32::from_str_radix(hex, 16).map_err(|_| format!("invalid \\u escape: \\u{{{hex}}}"))?;
+    let code = u32::from_str_radix(hex, 16).expect("body is 1-6 hex digits");
     char::from_u32(code).ok_or_else(|| format!("\\u{{{hex}}} is not a valid Unicode scalar value"))
 }
 
@@ -212,9 +214,17 @@ fn trim_multiline_indentation(raw: &str) -> Result<String, String> {
 
     let mut trimmed = Vec::new();
     for line in body.split('\n') {
+        // The prefix is checked as bytes: space and tab are single-byte ASCII, so when all
+        // `indent` leading bytes are one of them, `indent` is a char boundary and the slice
+        // below is safe. A multibyte character inside the prefix fails the check instead of
+        // panicking the slice.
         if line.is_empty() {
             trimmed.push("");
-        } else if line.len() >= indent && line[..indent].chars().all(|c| c == ' ' || c == '\t') {
+        } else if line.len() >= indent
+            && line.as_bytes()[..indent]
+                .iter()
+                .all(|&b| b == b' ' || b == b'\t')
+        {
             trimmed.push(&line[indent..]);
         } else {
             return Err(

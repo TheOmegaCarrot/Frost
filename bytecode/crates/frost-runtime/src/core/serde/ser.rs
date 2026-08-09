@@ -453,7 +453,10 @@ struct ValueCarrier<'a>(&'a Value);
 impl Serialize for ValueCarrier<'_> {
     fn serialize<S: ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         if LIFTING_VALUE.with(|f| f.get()) {
-            OUTGOING_VALUE.with(|slot| slot.set(Some(self.0.clone())));
+            let stale = OUTGOING_VALUE.with(|slot| slot.replace(Some(self.0.clone())));
+            // A dirty slot means some middleware forged the token without draining it;
+            // fail loudly in debug, overwrite (identical effect) in release.
+            debug_assert!(stale.is_none(), "Value deposit found the slot occupied");
             // Placeholder; our serializer discards it and takes the value from the slot.
             serializer.serialize_unit()
         } else {

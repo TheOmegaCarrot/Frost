@@ -231,6 +231,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Token::Identifier("Primitive") => TypeConstraint::Primitive,
             Token::Identifier("Numeric") => TypeConstraint::Numeric,
             Token::Identifier("Structured") => TypeConstraint::Structured,
+            Token::Identifier("Flat") => TypeConstraint::Flat,
             Token::Identifier("Nonnull") => TypeConstraint::Nonnull,
             _ => return Err(self.unexpected_token(peek, "type constraint")),
         };

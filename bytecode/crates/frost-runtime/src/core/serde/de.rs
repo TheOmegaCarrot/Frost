@@ -233,7 +233,10 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
             // slot on the way out, including on unwind or a forged token, so no dirty value
             // survives; the dummy deserializer is consulted only if the visitor is not ours.
             let _guard = IncomingGuard;
-            INCOMING_VALUE.with(|slot| slot.set(Some(self.0)));
+            let stale = INCOMING_VALUE.with(|slot| slot.replace(Some(self.0)));
+            // A dirty slot means some middleware forged the token without draining it;
+            // fail loudly in debug, overwrite (identical effect) in release.
+            debug_assert!(stale.is_none(), "Value deposit found the slot occupied");
             return visitor.visit_newtype_struct(ValueDeserializer(Value::Null));
         }
         visitor.visit_newtype_struct(self)

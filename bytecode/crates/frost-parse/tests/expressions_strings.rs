@@ -127,6 +127,13 @@ fn unicode_escape_rejects_more_than_six_digits() {
 }
 
 #[test]
+fn unicode_escape_rejects_a_leading_plus() {
+    // `u32::from_str_radix` would tolerate `+41`; the body must be hex digits only.
+    let err = parse_err(r"'\u{+41}'");
+    assert!(err.contains("invalid \\u escape"), "error was: {err}");
+}
+
+#[test]
 fn unicode_escape_rejects_a_missing_brace() {
     let err = parse_err(r"'\u41'");
     assert!(err.contains("must be followed by"), "error was: {err}");
@@ -270,6 +277,14 @@ fn multiline_escape_unicode() {
 #[test]
 fn error_multiline_content_less_indented() {
     let err = parse_err("\"\"\"\noops\n  \"\"\"");
+    assert!(err.contains("indented less"), "error was: {err}");
+}
+
+#[test]
+fn error_multiline_multibyte_at_indent_boundary() {
+    // A body line starting with a multibyte character under a nonzero closing indent
+    // is an under-indentation error; slicing the indent prefix must not panic mid-char.
+    let err = parse_err("\"\"\"\n\u{20ac}x\n  \"\"\"");
     assert!(err.contains("indented less"), "error was: {err}");
 }
 

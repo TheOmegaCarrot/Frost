@@ -317,6 +317,7 @@ pub enum TypeConstraint {
     Primitive,
     Numeric,
     Structured,
+    Flat,
     Nonnull,
 }
 
