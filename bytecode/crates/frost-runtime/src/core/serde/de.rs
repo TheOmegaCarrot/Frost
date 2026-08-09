@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::fmt;
 use std::sync::Arc;
 
@@ -5,6 +6,24 @@ use serde::de::{self, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
 
 use crate::core::{FrostArray, FrostFloat, FrostMap, MapKey, Value};
+
+thread_local! {
+    /// Carries a whole `Value` from our own [`ValueDeserializer::deserialize_newtype_struct`]
+    /// to [`ValueVisitor::visit_newtype_struct`], so the in-memory bridge preserves the
+    /// Functions and Opaques that the serde data model cannot express. Set and taken within
+    /// one call, with no foreign code in between.
+    static INCOMING_VALUE: Cell<Option<Value>> = const { Cell::new(None) };
+}
+
+/// Clears [`INCOMING_VALUE`] on drop, so a value deposited for the token path leaves no
+/// residue if the visitor does not take it (a forged token) or the call unwinds.
+struct IncomingGuard;
+
+impl Drop for IncomingGuard {
+    fn drop(&mut self) {
+        INCOMING_VALUE.with(|slot| drop(slot.take()));
+    }
+}
 
 // -- Error --
 
@@ -53,10 +72,8 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
             Value::Bool(b) => visitor.visit_bool(b),
             Value::Int(i) => visitor.visit_i64(i),
             Value::Float(f) => visitor.visit_f64(f.get()),
-            Value::String(ref s) => match std::str::from_utf8(s) {
-                Ok(utf8) => visitor.visit_str(utf8),
-                Err(_) => visitor.visit_bytes(s),
-            },
+            Value::String(ref s) => visitor.visit_str(s),
+            Value::Bytes(ref b) => visitor.visit_bytes(b),
             Value::Array(_) => self.deserialize_seq(visitor),
             Value::Map(_) => self.deserialize_map(visitor),
             Value::NativeFunction(_) => Err(de::Error::custom("cannot deserialize Function")),
@@ -122,10 +139,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         visitor: V,
     ) -> Result<V::Value, DeError> {
         match &self.0 {
-            Value::String(s) => {
-                let s = std::str::from_utf8(s).map_err(de::Error::custom)?;
-                visitor.visit_enum(s.into_deserializer())
-            }
+            Value::String(s) => visitor.visit_enum(s.as_ref().into_deserializer()),
             Value::Map(map) => {
                 if map.len() != 1 {
                     return Err(de::Error::custom(
@@ -134,7 +148,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
                 }
                 let (key, value) = map.iter().next().unwrap();
                 let variant_name = match key {
-                    MapKey::String(s) => std::str::from_utf8(s).map_err(de::Error::custom)?,
+                    MapKey::String(s) => s.as_ref(),
                     _ => return Err(de::Error::custom("enum variant key must be a String")),
                 };
                 visitor.visit_enum(EnumAccess {
@@ -149,20 +163,93 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         }
     }
 
+    /// Text targets take a String and nothing else.
+    ///
+    /// Routing these through `deserialize_any` would let serde's default visitors
+    /// accept either type, which would undo the String/Bytes distinction at the
+    /// boundary where a host states which one it wants.
+    ///
+    /// This holds for a field deserialized directly. It cannot hold for `flatten`,
+    /// untagged enums, or internally and adjacently tagged enums: serde buffers those
+    /// through its own `Content` type and replays them through a lenient deserializer
+    /// of its own, which never consults these methods.
+    fn deserialize_str<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        match self.0 {
+            Value::String(ref s) => visitor.visit_str(s),
+            _ => Err(de::Error::custom(format!(
+                "expected String, got {}",
+                self.0.type_name()
+            ))),
+        }
+    }
+
+    fn deserialize_string<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_str(visitor)
+    }
+
+    /// Byte targets take Bytes and nothing else.
+    ///
+    /// A plain `Vec<u8>` asks for a sequence, not for bytes, and so is served by
+    /// [`deserialize_seq`](Self::deserialize_seq) from an Array: the mirror of how
+    /// it serializes. Reaching a Bytes value requires `#[serde(with = "serde_bytes")]`.
+    fn deserialize_bytes<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        match self.0 {
+            Value::Bytes(ref b) => visitor.visit_bytes(b),
+            _ => Err(de::Error::custom(format!(
+                "expected Bytes, got {}",
+                self.0.type_name()
+            ))),
+        }
+    }
+
+    fn deserialize_byte_buf<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_bytes(visitor)
+    }
+
+    /// A field name is text, so binary cannot spell one.
+    ///
+    /// Only Bytes is turned away: serde's derived identifier visitor matches a field
+    /// by its bytes as readily as by its text, which is the one way binary could name
+    /// a String-spelled field. Every other key type keeps reaching its own visitor
+    /// method unchanged.
+    fn deserialize_identifier<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        if self.0.is_bytes() {
+            return Err(de::Error::custom(format!(
+                "expected String, got {}",
+                self.0.type_name()
+            )));
+        }
+        self.deserialize_any(visitor)
+    }
+
     fn deserialize_newtype_struct<V: Visitor<'de>>(
         self,
-        _name: &'static str,
+        name: &'static str,
         visitor: V,
     ) -> Result<V::Value, DeError> {
+        if name == super::VALUE_NEWTYPE_TOKEN {
+            // Our own `Value::deserialize` is asking for the value whole. Deposit it in the
+            // slot for `ValueVisitor::visit_newtype_struct` to lift out. The guard clears the
+            // slot on the way out, including on unwind or a forged token, so no dirty value
+            // survives; the dummy deserializer is consulted only if the visitor is not ours.
+            let _guard = IncomingGuard;
+            INCOMING_VALUE.with(|slot| slot.set(Some(self.0)));
+            return visitor.visit_newtype_struct(ValueDeserializer(Value::Null));
+        }
         visitor.visit_newtype_struct(self)
+    }
+
+    /// An ignored field's value is discarded without inspection, so a Function or Opaque
+    /// in a field the target type does not name is skipped rather than erroring.
+    fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        visitor.visit_unit()
     }
 
     serde::forward_to_deserialize_any! {
         bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64
-        char str string bytes byte_buf
+        char
         unit unit_struct
         tuple tuple_struct
-        identifier ignored_any
     }
 }
 
@@ -286,7 +373,10 @@ impl<'de> de::VariantAccess<'de> for VariantAccess {
 
 impl<'de> serde::Deserialize<'de> for Value {
     fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Value, D::Error> {
-        deserializer.deserialize_any(ValueVisitor)
+        // Route through the token newtype so our own deserializer can hand a Value across
+        // whole (Functions/Opaques included); a foreign deserializer treats it as a
+        // transparent newtype and reaches `visit_newtype_struct` with an empty slot.
+        deserializer.deserialize_newtype_struct(super::VALUE_NEWTYPE_TOKEN, ValueVisitor)
     }
 }
 
@@ -345,6 +435,18 @@ impl<'de> Visitor<'de> for ValueVisitor {
 
     fn visit_some<D: de::Deserializer<'de>>(self, deserializer: D) -> Result<Value, D::Error> {
         Value::deserialize(deserializer)
+    }
+
+    fn visit_newtype_struct<D: de::Deserializer<'de>>(
+        self,
+        deserializer: D,
+    ) -> Result<Value, D::Error> {
+        match INCOMING_VALUE.with(|slot| slot.take()) {
+            // Our own deserializer deposited the value whole, Functions and Opaques included.
+            Some(value) => Ok(value),
+            // A foreign deserializer's transparent newtype: deserialize the inner normally.
+            None => deserializer.deserialize_any(ValueVisitor),
+        }
     }
 
     fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Value, A::Error> {

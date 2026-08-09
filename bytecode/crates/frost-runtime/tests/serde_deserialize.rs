@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use frost_runtime::{FrostArray, FrostFloat, FrostMap, MapKey, Value, from_value, to_value};
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s.as_bytes()))
+    MapKey::String(Arc::from(s))
 }
 
 // ---- Primitives ----
@@ -550,4 +550,122 @@ fn round_trip_vec_of_structs() {
     let value = to_value(&original).unwrap();
     let recovered: Vec<Inner> = from_value(value).unwrap();
     assert_eq!(original, recovered);
+}
+
+// ---- Bytes vs sequence ----
+// The mirror of the serialize side: the Rust target declares which it wants, and
+// the wrong Frost type is an error rather than a silent conversion.
+
+/// A type that deserializes through `deserialize_bytes`, as `serde_bytes` would.
+#[derive(Debug, PartialEq)]
+struct RawBytes(Vec<u8>);
+
+impl Serialize for RawBytes {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_bytes(&self.0)
+    }
+}
+
+impl<'de> Deserialize<'de> for RawBytes {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        struct BytesVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+            type Value = RawBytes;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("bytes")
+            }
+
+            fn visit_bytes<E: serde::de::Error>(self, v: &[u8]) -> Result<RawBytes, E> {
+                Ok(RawBytes(v.to_vec()))
+            }
+        }
+
+        d.deserialize_bytes(BytesVisitor)
+    }
+}
+
+#[test]
+fn deserialize_bytes_from_a_bytes_value() {
+    let v: RawBytes = from_value(Value::from(vec![0xff, 0x00])).unwrap();
+    assert_eq!(v, RawBytes(vec![0xff, 0x00]));
+}
+
+#[test]
+fn deserialize_bytes_rejects_a_string() {
+    // Text is not binary, even when its bytes would decode.
+    let err = from_value::<RawBytes>(Value::from("hi")).unwrap_err();
+    assert!(
+        err.message().contains("expected Bytes, got String"),
+        "{}",
+        err.message()
+    );
+}
+
+#[test]
+fn deserialize_string_rejects_bytes() {
+    // The other direction: valid UTF-8 in a Bytes is still not text.
+    let err = from_value::<String>(Value::from(vec![b'h', b'i'])).unwrap_err();
+    assert!(
+        err.message().contains("expected String, got Bytes"),
+        "{}",
+        err.message()
+    );
+}
+
+#[test]
+fn a_plain_vec_u8_comes_from_an_array() {
+    // `Vec<u8>` asks for a sequence, so an Array serves it and a Bytes does not.
+    let v: Vec<u8> = from_value(Value::array([1i64, 2i64])).unwrap();
+    assert_eq!(v, vec![1u8, 2]);
+
+    let err = from_value::<Vec<u8>>(Value::from(vec![1u8, 2])).unwrap_err();
+    assert!(err.message().contains("expected Array"), "{}", err.message());
+}
+
+#[test]
+fn a_bytes_key_cannot_name_a_struct_field() {
+    // serde's derived identifier visitor matches field names by bytes as well as by
+    // text, so without an explicit guard a binary key would select a text-named field.
+    let map: FrostMap = vec![(MapKey::from(b"x".to_vec()), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    let err = from_value::<Inner>(Value::from(map)).unwrap_err();
+    assert!(
+        err.message().contains("expected String, got Bytes"),
+        "{}",
+        err.message()
+    );
+}
+
+#[test]
+fn a_string_key_still_names_a_struct_field() {
+    let map: FrostMap = vec![
+        (str_key("x"), Value::from(1i64)),
+        (str_key("y"), Value::from(2i64)),
+    ]
+    .into_iter()
+    .collect();
+    let v: Inner = from_value(Value::from(map)).unwrap();
+    assert_eq!(v, Inner { x: 1, y: 2 });
+}
+
+#[test]
+fn deserialize_value_from_bytes_round_trips() {
+    let original = Value::from(vec![0xff, 0x00]);
+    let v: Value = from_value(original.clone()).unwrap();
+    assert_eq!(v, original);
+    assert!(v.is_bytes());
+}
+
+#[test]
+fn bytes_and_array_targets_round_trip_independently() {
+    // Whichever the Rust type declares, it survives a trip through Value and back:
+    // the annotated field stays binary, the plain one stays a sequence.
+    let bytes = from_value::<RawBytes>(to_value(&RawBytes(vec![1, 2])).unwrap()).unwrap();
+    assert_eq!(bytes, RawBytes(vec![1, 2]));
+
+    let seq = from_value::<Vec<u8>>(to_value(&vec![1u8, 2]).unwrap()).unwrap();
+    assert_eq!(seq, vec![1u8, 2]);
 }

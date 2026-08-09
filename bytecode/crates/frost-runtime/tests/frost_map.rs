@@ -4,7 +4,7 @@ use std::sync::Arc;
 use frost_runtime::{FrostFloat, FrostMap, MapKey, Value};
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s.as_bytes()))
+    MapKey::String(Arc::from(s))
 }
 
 fn sample_map() -> FrostMap {

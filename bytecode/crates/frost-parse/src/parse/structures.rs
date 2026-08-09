@@ -48,10 +48,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 let name = name.to_owned();
                 let span = peek.span.clone();
                 self.advance(1);
-                Spanned::new(
-                    Expr::Literal(Literal::String(name.into_bytes())),
-                    span.into(),
-                )
+                Spanned::new(Expr::Literal(Literal::String(name)), span.into())
             }
             _ => return Err(self.unexpected_token(peek, "Map entry key")),
         };

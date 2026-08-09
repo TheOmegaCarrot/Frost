@@ -1,9 +1,20 @@
+use std::cell::Cell;
 use std::fmt;
 use std::sync::Arc;
 
 use serde::ser::{self, Serialize};
 
 use crate::core::{FrostArray, FrostFloat, FrostMap, MapKey, Value};
+
+thread_local! {
+    /// Set while our own serializer is lifting a `Value` out of a [`ValueCarrier`], so the
+    /// carrier deposits the value whole instead of serializing its data.
+    static LIFTING_VALUE: Cell<bool> = const { Cell::new(false) };
+    /// Carries a whole `Value` from a [`ValueCarrier`] to our
+    /// [`ValueSerializer::serialize_newtype_struct`]. Set and taken within one call, with no
+    /// foreign code in between.
+    static OUTGOING_VALUE: Cell<Option<Value>> = const { Cell::new(None) };
+}
 
 // -- Error --
 
@@ -98,7 +109,7 @@ impl ser::Serializer for ValueSerializer {
     fn serialize_char(self, v: char) -> Result<Value, SerError> {
         let mut buf = [0u8; 4];
         let s = v.encode_utf8(&mut buf);
-        Ok(Value::from(s.as_bytes()))
+        Ok(Value::from(&*s))
     }
 
     fn serialize_str(self, v: &str) -> Result<Value, SerError> {
@@ -136,9 +147,22 @@ impl ser::Serializer for ValueSerializer {
 
     fn serialize_newtype_struct<T: ?Sized + Serialize>(
         self,
-        _name: &'static str,
+        name: &'static str,
         value: &T,
     ) -> Result<Value, SerError> {
+        if name == super::VALUE_NEWTYPE_TOKEN {
+            // Our own `Value::serialize` wrapped a `ValueCarrier`. Hold the lifting flag
+            // while the carrier deposits the value whole (Functions/Opaques included), then
+            // take it from the slot. The guard restores the flag and clears the slot on the
+            // way out, including on unwind or a forged token, so no dirty thread-local
+            // survives. A payload that did not deposit (only a forged token can) is a
+            // recoverable error, not a panic.
+            let _guard = LiftGuard::arm();
+            value.serialize(self)?;
+            return OUTGOING_VALUE
+                .with(|slot| slot.take())
+                .ok_or_else(|| ser::Error::custom("expected a Frost Value newtype payload"));
+        }
         value.serialize(self)
     }
 
@@ -150,7 +174,7 @@ impl ser::Serializer for ValueSerializer {
         value: &T,
     ) -> Result<Value, SerError> {
         let inner = value.serialize(ValueSerializer)?;
-        let map: FrostMap = vec![(MapKey::String(Arc::from(variant.as_bytes())), inner)]
+        let map: FrostMap = vec![(MapKey::String(Arc::from(variant)), inner)]
             .into_iter()
             .collect();
         Ok(Value::from(map))
@@ -280,7 +304,7 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
 
     fn end(self) -> Result<Value, SerError> {
         let arr = Value::from(FrostArray::from(self.elements));
-        let map: FrostMap = vec![(MapKey::String(Arc::from(self.variant.as_bytes())), arr)]
+        let map: FrostMap = vec![(MapKey::String(Arc::from(self.variant)), arr)]
             .into_iter()
             .collect();
         Ok(Value::from(map))
@@ -335,7 +359,7 @@ impl ser::SerializeStruct for SerializeStruct {
         value: &T,
     ) -> Result<(), SerError> {
         self.entries.push((
-            MapKey::String(Arc::from(key.as_bytes())),
+            MapKey::String(Arc::from(key)),
             value.serialize(ValueSerializer)?,
         ));
         Ok(())
@@ -365,7 +389,7 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
         value: &T,
     ) -> Result<(), SerError> {
         self.entries.push((
-            MapKey::String(Arc::from(key.as_bytes())),
+            MapKey::String(Arc::from(key)),
             value.serialize(ValueSerializer)?,
         ));
         Ok(())
@@ -377,49 +401,91 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
             .into_iter()
             .collect::<std::collections::BTreeMap<_, _>>()
             .into();
-        let map: FrostMap = vec![(
-            MapKey::String(Arc::from(self.variant.as_bytes())),
-            Value::from(inner),
-        )]
-        .into_iter()
-        .collect();
+        let map: FrostMap = vec![(MapKey::String(Arc::from(self.variant)), Value::from(inner))]
+            .into_iter()
+            .collect();
         Ok(Value::from(map))
     }
 }
 
 // -- Serialize impl for Value itself --
 
+/// Serializes a `Value`'s data through any serializer, erroring on Functions and Opaques.
+/// This is the path a foreign serializer takes for a `Value`; our own serializer lifts the
+/// value whole instead (see [`ValueCarrier`]).
+fn serialize_data<S: ser::Serializer>(value: &Value, serializer: S) -> Result<S::Ok, S::Error> {
+    match value {
+        Value::Null => serializer.serialize_unit(),
+        Value::Bool(b) => serializer.serialize_bool(*b),
+        Value::Int(i) => serializer.serialize_i64(*i),
+        Value::Float(f) => serializer.serialize_f64(f.get()),
+        Value::String(s) => serializer.serialize_str(s),
+        Value::Bytes(b) => serializer.serialize_bytes(b),
+        Value::Array(arr) => {
+            use ser::SerializeSeq;
+            let mut seq = serializer.serialize_seq(Some(arr.len()))?;
+            for elem in arr {
+                seq.serialize_element(elem)?;
+            }
+            seq.end()
+        }
+        Value::Map(map) => {
+            use ser::SerializeMap;
+            let mut m = serializer.serialize_map(Some(map.len()))?;
+            for (k, v) in map {
+                let key_value: Value = k.clone().into();
+                m.serialize_entry(&key_value, v)?;
+            }
+            m.end()
+        }
+        Value::NativeFunction(_) => Err(ser::Error::custom("cannot serialize Function")),
+        Value::Closure(_) => Err(ser::Error::custom("cannot serialize Function")),
+        Value::Opaque(_) => Err(ser::Error::custom("cannot serialize Opaque")),
+    }
+}
+
+/// Wraps a `Value` so it can cross serde's generic `serialize_newtype_struct` boundary,
+/// where the receiving serializer sees only an opaque `&impl Serialize`. A foreign
+/// serializer serializes the value's data (erroring on Functions and Opaques); our own
+/// serializer sets [`LIFTING_VALUE`], and the carrier deposits the value whole instead.
+struct ValueCarrier<'a>(&'a Value);
+
+impl Serialize for ValueCarrier<'_> {
+    fn serialize<S: ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if LIFTING_VALUE.with(|f| f.get()) {
+            OUTGOING_VALUE.with(|slot| slot.set(Some(self.0.clone())));
+            // Placeholder; our serializer discards it and takes the value from the slot.
+            serializer.serialize_unit()
+        } else {
+            serialize_data(self.0, serializer)
+        }
+    }
+}
+
+/// Holds [`LIFTING_VALUE`] for the span of a token lift and restores it on drop, clearing
+/// [`OUTGOING_VALUE`] too. Drop runs even on unwind, so a panic or a forged token cannot
+/// leave the flag set or a value stranded for the next call on this thread.
+struct LiftGuard;
+
+impl LiftGuard {
+    fn arm() -> Self {
+        LIFTING_VALUE.with(|f| f.set(true));
+        LiftGuard
+    }
+}
+
+impl Drop for LiftGuard {
+    fn drop(&mut self) {
+        LIFTING_VALUE.with(|f| f.set(false));
+        OUTGOING_VALUE.with(|slot| drop(slot.take()));
+    }
+}
+
 impl Serialize for Value {
     fn serialize<S: ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Value::Null => serializer.serialize_unit(),
-            Value::Bool(b) => serializer.serialize_bool(*b),
-            Value::Int(i) => serializer.serialize_i64(*i),
-            Value::Float(f) => serializer.serialize_f64(f.get()),
-            Value::String(s) => match std::str::from_utf8(s) {
-                Ok(utf8) => serializer.serialize_str(utf8),
-                Err(_) => serializer.serialize_bytes(s),
-            },
-            Value::Array(arr) => {
-                use ser::SerializeSeq;
-                let mut seq = serializer.serialize_seq(Some(arr.len()))?;
-                for elem in arr {
-                    seq.serialize_element(elem)?;
-                }
-                seq.end()
-            }
-            Value::Map(map) => {
-                use ser::SerializeMap;
-                let mut m = serializer.serialize_map(Some(map.len()))?;
-                for (k, v) in map {
-                    let key_value: Value = k.clone().into();
-                    m.serialize_entry(&key_value, v)?;
-                }
-                m.end()
-            }
-            Value::NativeFunction(_) => Err(ser::Error::custom("cannot serialize Function")),
-            Value::Closure(_) => Err(ser::Error::custom("cannot serialize Function")),
-            Value::Opaque(_) => Err(ser::Error::custom("cannot serialize Opaque")),
-        }
+        // Route through the token newtype so our own serializer can lift a Value across
+        // whole (Functions/Opaques included); a foreign serializer serializes the carrier's
+        // data transparently, which errors on Functions at any nesting depth.
+        serializer.serialize_newtype_struct(super::VALUE_NEWTYPE_TOKEN, &ValueCarrier(self))
     }
 }

@@ -6,6 +6,10 @@ use std::{
 use crate::core::{FrostFloat, MapKey, Value};
 
 /// Frost's map type. Immutable once created.
+///
+/// Entries iterate in key order, as given by [`MapKey`]'s `Ord`.
+/// Keys of different types never interleave: they group by type in the order
+/// Bool, Int, Float, String, Bytes.
 #[derive(Clone, Debug)]
 pub struct FrostMap {
     pub(crate) inner: Arc<BTreeMap<MapKey, Value>>,
@@ -101,7 +105,12 @@ impl FrostMap {
 
     /// Convenience for String-keyed lookups without manually wrapping in MapKey.
     pub fn get_str(&self, key: &str) -> Option<&Value> {
-        self.inner.get(&MapKey::String(Arc::from(key.as_bytes())))
+        self.inner.get(&MapKey::String(Arc::from(key)))
+    }
+
+    /// Convenience for Bytes-keyed lookups without manually wrapping in MapKey.
+    pub fn get_bytes(&self, key: &[u8]) -> Option<&Value> {
+        self.inner.get(&MapKey::Bytes(Arc::from(key)))
     }
 
     /// Convenience for Int-keyed lookups without manually wrapping in MapKey.

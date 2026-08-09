@@ -60,6 +60,7 @@ define_globals! {
     "is_float"              => is_float_global(),
     "is_bool"               => is_bool_global(),
     "is_string"             => is_string_global(),
+    "is_bytes"              => is_bytes_global(),
     "is_array"              => is_array_global(),
     "is_map"                => is_map_global(),
     "is_function"           => is_function_global(),
@@ -67,11 +68,13 @@ define_globals! {
     "is_numeric"            => is_numeric_global(),
     "is_primitive"          => is_primitive_global(),
     "is_structured"         => is_structured_global(),
+    "is_flat"               => is_flat_global(),
     "type"                  => type_global(),
     "to_string"             => to_string_global(),
     "pretty"                => pretty_global(),
     "to_int"                => to_int_global(),
     "to_float"              => to_float_global(),
+    "to_bytes"              => to_bytes_global(),
 
     // --- Strings ---
     "split"                 => split_global(),

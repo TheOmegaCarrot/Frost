@@ -192,6 +192,12 @@ pub enum Token<'src> {
     #[token("$\"", |lex| lex_format_str(lex, b'"'))]
     DoubleQuoteFormatStringLiteral(&'src str),
 
+    // A Bytes literal: hex-digit pairs inside x'...' or x"...". The content is a
+    // regular language, so the regex pins it exactly (even count, hex only).
+    #[regex(r"x'([0-9a-fA-F]{2})*'", bytes_slice)]
+    #[regex(r#"x"([0-9a-fA-F]{2})*""#, bytes_slice)]
+    BytesLiteral(&'src str),
+
     // -- Whitespace and comments (skipped) --
     #[regex(r"[ \t\r\f]+", logos::skip)]
     #[regex(r"#[^\n]*", logos::skip)]
@@ -206,6 +212,13 @@ fn lex_raw<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, closer: &str) -> Opt
     }
     lex.bump(close + closer.len());
     Some(&rest[..close])
+}
+
+/// The hex body of a Bytes literal: the slice minus the `x'`/`x"` prefix and the
+/// closing quote.
+fn bytes_slice<'src>(lex: &logos::Lexer<'src, Token<'src>>) -> &'src str {
+    let s = lex.slice();
+    &s[2..s.len() - 1]
 }
 
 fn slice_str<'src>(lex: &logos::Lexer<'src, Token<'src>>) -> &'src str {
@@ -355,6 +368,7 @@ impl<'src> std::fmt::Display for Token<'src> {
             Token::MultilineStringLiteral(_) => write!(f, "multiline string"),
             Token::SingleQuoteFormatStringLiteral(s) => write!(f, "$'{s}'"),
             Token::DoubleQuoteFormatStringLiteral(s) => write!(f, "$\"{s}\""),
+            Token::BytesLiteral(s) => write!(f, "x'{s}'"),
             Token::Skip => write!(f, ""),
         }
     }

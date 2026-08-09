@@ -6,7 +6,7 @@ use serde::Serialize;
 use frost_runtime::{FrostArray, FrostMap, MapKey, Value, to_value};
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s.as_bytes()))
+    MapKey::String(Arc::from(s))
 }
 
 // ---- Primitives ----
@@ -414,4 +414,40 @@ fn serialize_tuple_variant() {
     } else {
         panic!("expected Map");
     }
+}
+
+// ---- Bytes vs sequence ----
+// serde's own convention decides: `serialize_bytes` yields Bytes, `serialize_seq`
+// yields an Array. The Rust type declares which, so there is nothing to infer.
+
+/// A type that serializes through `serialize_bytes`, as `serde_bytes` would.
+struct RawBytes(Vec<u8>);
+
+impl Serialize for RawBytes {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_bytes(&self.0)
+    }
+}
+
+#[test]
+fn serialize_bytes_produces_bytes() {
+    let v = to_value(&RawBytes(vec![0xff, 0x00])).unwrap();
+    assert_eq!(v, Value::from(vec![0xff, 0x00]));
+    assert!(v.is_bytes());
+}
+
+#[test]
+fn a_plain_vec_u8_produces_an_array_of_ints() {
+    // serde serializes `Vec<u8>` as a sequence, so it lands as an Array. This is
+    // the distinction that a byte-string type could not express.
+    let v = to_value(&vec![1u8, 2]).unwrap();
+    assert!(v.is_array());
+    assert_eq!(v, Value::array([1i64, 2i64]));
+}
+
+#[test]
+fn bytes_and_a_byte_array_are_not_interchangeable() {
+    let as_bytes = to_value(&RawBytes(vec![1, 2])).unwrap();
+    let as_array = to_value(&vec![1u8, 2]).unwrap();
+    assert_ne!(as_bytes, as_array);
 }

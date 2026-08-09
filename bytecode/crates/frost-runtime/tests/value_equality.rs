@@ -21,7 +21,7 @@ impl FrostOpaque for Marker {
 }
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s.as_bytes()))
+    MapKey::String(Arc::from(s))
 }
 
 // -- Same-type equality --

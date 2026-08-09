@@ -92,19 +92,23 @@ fn opcode_errors_on_an_unresolved_spec() {
 
 #[test]
 fn opcode_errors_on_a_non_string_spec() {
+    // The assertion names the operand type: the message's constant prefix already
+    // contains "String", so matching that alone could never fail.
     let err = run(vec![], vec![PushInt(5), Import]).unwrap_err();
-    assert!(err.message().contains("String"), "{}", err.message());
+    assert!(err.message().contains("got Int"), "{}", err.message());
 }
 
 #[test]
-fn opcode_errors_on_a_non_utf8_spec() {
-    // A String constant whose bytes are not valid UTF-8.
+fn opcode_errors_on_a_bytes_spec() {
+    // Binary is not a module name. A String is UTF-8 by construction, so there is
+    // no "String that fails to decode" case left: the only way to hand `Import`
+    // arbitrary bytes is to hand it a Bytes, which is a type error.
     let err = run(
         vec![Value::from(&[0x80u8, 0xff][..])],
         vec![LoadConst(0), Import],
     )
     .unwrap_err();
-    assert!(err.message().contains("UTF-8"), "{}", err.message());
+    assert!(err.message().contains("got Bytes"), "{}", err.message());
 }
 
 // ============================================================
@@ -129,7 +133,7 @@ fn global_errors_on_a_non_string_spec() {
         vec![LoadGlobal(global_slot("import")), PushInt(5), Call(1)],
     )
     .unwrap_err();
-    assert!(err.message().contains("String"), "{}", err.message());
+    assert!(err.message().contains("got Int"), "{}", err.message());
 }
 
 #[test]

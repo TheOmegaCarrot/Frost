@@ -60,7 +60,8 @@ fn as_str_from_empty_string() {
 }
 
 #[test]
-fn as_str_from_non_utf8_string() {
+fn as_str_rejects_bytes() {
+    // `as_str` is the text accessor; binary does not answer to it.
     let v = Value::from(vec![0xff, 0xfe]);
     assert_eq!(v.as_str(), None);
 }
@@ -71,27 +72,41 @@ fn as_str_from_non_string() {
     assert_eq!(Value::Null.as_str(), None);
 }
 
-// -- as_byte_string --
+// -- as_bytes / as_byte_slice --
 
 #[test]
-fn as_byte_string_from_utf8() {
+fn as_bytes_from_bytes() {
+    // A byte sequence is a Bytes, not a String: `From<Vec<u8>>` says so.
+    let bytes = vec![0xff, 0xfe];
+    let v = Value::from(bytes.clone());
+    assert_eq!(v.as_bytes(), Some(bytes.as_slice()));
+}
+
+#[test]
+fn as_bytes_rejects_a_string() {
+    // `as_bytes` is the Bytes accessor; text does not answer to it.
+    assert_eq!(Value::from("hello").as_bytes(), None);
+}
+
+#[test]
+fn as_byte_slice_accepts_either() {
+    // The accessor for byte-oriented operations, which take text or binary alike.
     assert_eq!(
-        Value::from("hello").as_byte_string(),
+        Value::from("hello").as_byte_slice(),
         Some(b"hello".as_slice())
+    );
+    assert_eq!(
+        Value::from(vec![0xff, 0xfe]).as_byte_slice(),
+        Some([0xff, 0xfe].as_slice())
     );
 }
 
 #[test]
-fn as_byte_string_from_non_utf8() {
-    let bytes = vec![0xff, 0xfe];
-    let v = Value::from(bytes.clone());
-    assert_eq!(v.as_byte_string(), Some(bytes.as_slice()));
-}
-
-#[test]
-fn as_byte_string_from_non_string() {
-    assert_eq!(Value::from(42i64).as_byte_string(), None);
-    assert_eq!(Value::Null.as_byte_string(), None);
+fn byte_accessors_reject_other_types() {
+    assert_eq!(Value::from(42i64).as_bytes(), None);
+    assert_eq!(Value::from(42i64).as_byte_slice(), None);
+    assert_eq!(Value::Null.as_bytes(), None);
+    assert_eq!(Value::Null.as_byte_slice(), None);
 }
 
 // -- as_array --
@@ -115,12 +130,9 @@ fn as_array_from_non_array() {
 
 #[test]
 fn as_map_from_map() {
-    let map: FrostMap = vec![(
-        MapKey::String(Arc::from(b"key".as_slice())),
-        Value::from(1i64),
-    )]
-    .into_iter()
-    .collect();
+    let map: FrostMap = vec![(MapKey::String(Arc::from("key")), Value::from(1i64))]
+        .into_iter()
+        .collect();
     let v = Value::from(map);
     assert!(v.as_map().is_some());
     assert_eq!(v.as_map().unwrap().len(), 1);
@@ -207,7 +219,8 @@ fn null_returns_none_for_all() {
     assert!(v.as_float().is_none());
     assert!(v.as_bool().is_none());
     assert!(v.as_str().is_none());
-    assert!(v.as_byte_string().is_none());
+    assert!(v.as_bytes().is_none());
+    assert!(v.as_byte_slice().is_none());
     assert!(v.as_array().is_none());
     assert!(v.as_map().is_none());
     assert!(v.as_opaque().is_none());

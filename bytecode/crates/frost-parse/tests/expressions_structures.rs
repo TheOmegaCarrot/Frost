@@ -17,7 +17,7 @@ fn map_entries(expr: &Spanned<Expr>) -> &[Spanned<MapEntry>] {
     }
 }
 
-fn str_key(entry: &Spanned<MapEntry>) -> &[u8] {
+fn str_key(entry: &Spanned<MapEntry>) -> &str {
     match &entry.node.key.node {
         Expr::Literal(Literal::String(s)) => s,
         other => panic!("expected String key, got {other:?}"),
@@ -323,7 +323,7 @@ mod map_literals {
         let expr = parse_expr("{foo: 42}");
         let entries = map_entries(&expr);
         assert_eq!(entries.len(), 1);
-        assert_eq!(str_key(&entries[0]), b"foo");
+        assert_eq!(str_key(&entries[0]), "foo");
         assert!(is_int(&entries[0].node.value, 42));
     }
 
@@ -332,9 +332,9 @@ mod map_literals {
         let expr = parse_expr("{foo: 1, bar: 2, baz: 3}");
         let entries = map_entries(&expr);
         assert_eq!(entries.len(), 3);
-        assert_eq!(str_key(&entries[0]), b"foo");
-        assert_eq!(str_key(&entries[1]), b"bar");
-        assert_eq!(str_key(&entries[2]), b"baz");
+        assert_eq!(str_key(&entries[0]), "foo");
+        assert_eq!(str_key(&entries[1]), "bar");
+        assert_eq!(str_key(&entries[2]), "baz");
     }
 
     #[test]
@@ -385,9 +385,9 @@ mod map_literals {
         let expr = parse_expr("{foo: 1, [42]: 2, bar: 3}");
         let entries = map_entries(&expr);
         assert_eq!(entries.len(), 3);
-        assert_eq!(str_key(&entries[0]), b"foo");
+        assert_eq!(str_key(&entries[0]), "foo");
         assert!(is_int(&entries[1].node.key, 42));
-        assert_eq!(str_key(&entries[2]), b"bar");
+        assert_eq!(str_key(&entries[2]), "bar");
     }
 
     #[test]
@@ -412,7 +412,7 @@ mod map_literals {
         assert_eq!(entries.len(), 1);
         let inner = map_entries(&entries[0].node.value);
         assert_eq!(inner.len(), 1);
-        assert_eq!(str_key(&inner[0]), b"inner");
+        assert_eq!(str_key(&inner[0]), "inner");
         assert!(is_int(&inner[0].node.value, 42));
     }
 

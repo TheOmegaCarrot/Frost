@@ -64,7 +64,7 @@ fn arr(xs: &[i64]) -> Value {
 /// A single-entry map `{ a: <v> }`.
 fn map_a(v: i64) -> Value {
     Value::Map(
-        [(MapKey::String(Arc::from("a".as_bytes())), Value::Int(v))]
+        [(MapKey::String(Arc::from("a")), Value::Int(v))]
             .into_iter()
             .collect(),
     )

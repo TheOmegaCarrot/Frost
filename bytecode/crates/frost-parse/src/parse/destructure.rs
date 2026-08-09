@@ -180,5 +180,5 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 }
 
 fn string_key_expr(name: String, span: SourceSpan) -> Spanned<Expr> {
-    Spanned::new(Expr::Literal(Literal::String(name.into_bytes())), span)
+    Spanned::new(Expr::Literal(Literal::String(name)), span)
 }

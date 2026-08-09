@@ -17,6 +17,7 @@ pub enum FrostType {
     Int,
     Float,
     String,
+    Bytes,
     Array,
     Map,
     Function,
@@ -36,6 +37,8 @@ impl FrostType {
     pub const FLOAT: EnumSet<FrostType> = enum_set!(FrostType::Float);
     /// The set containing only `String`.
     pub const STRING: EnumSet<FrostType> = enum_set!(FrostType::String);
+    /// The set containing only `Bytes`.
+    pub const BYTES: EnumSet<FrostType> = enum_set!(FrostType::Bytes);
     /// The set containing only `Array`.
     pub const ARRAY: EnumSet<FrostType> = enum_set!(FrostType::Array);
     /// The set containing only `Map`.
@@ -51,13 +54,22 @@ impl FrostType {
     /// Int or Float.
     pub const NUMERIC: EnumSet<FrostType> = enum_set!(FrostType::Int | FrostType::Float);
 
-    /// Null, Bool, Int, Float, or String.
+    /// Null, Bool, Int, Float, String, or Bytes: the types that may be Map keys
+    /// (all but `Null`, which is rejected there).
     pub const PRIMITIVE: EnumSet<FrostType> = enum_set!(
-        FrostType::Null | FrostType::Bool | FrostType::Int | FrostType::Float | FrostType::String
+        FrostType::Null
+            | FrostType::Bool
+            | FrostType::Int
+            | FrostType::Float
+            | FrostType::String
+            | FrostType::Bytes
     );
 
     /// Array or Map.
     pub const STRUCTURED: EnumSet<FrostType> = enum_set!(FrostType::Array | FrostType::Map);
+
+    /// String or Bytes: the flat sequence types.
+    pub const FLAT: EnumSet<FrostType> = enum_set!(FrostType::String | FrostType::Bytes);
 
     /// Every type except Null.
     pub const NONNULL: EnumSet<FrostType> = enum_set!(
@@ -65,6 +77,7 @@ impl FrostType {
             | FrostType::Int
             | FrostType::Float
             | FrostType::String
+            | FrostType::Bytes
             | FrostType::Array
             | FrostType::Map
             | FrostType::Function
@@ -80,6 +93,7 @@ impl FrostType {
             Self::Int => "Int",
             Self::Float => "Float",
             Self::String => "String",
+            Self::Bytes => "Bytes",
             Self::Array => "Array",
             Self::Map => "Map",
             Self::Function => "Function",

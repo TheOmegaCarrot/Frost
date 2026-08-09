@@ -23,9 +23,9 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             _ => return Err(self.unexpected_token(peek, "String literal")),
         };
         self.advance(1);
-        let bytes = expand_escapes(&raw, quote).map_err(|msg| string_error(&span, msg))?;
+        let text = expand_escapes(&raw, quote).map_err(|msg| string_error(&span, msg))?;
         Ok(Spanned::new(
-            Expr::Literal(Literal::String(bytes)),
+            Expr::Literal(Literal::String(text)),
             span.into(),
         ))
     }
@@ -37,10 +37,26 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Token::RawStringLiteral(s) => s,
             _ => return Err(self.unexpected_token(peek, "raw String literal")),
         };
-        let bytes = raw.as_bytes().to_vec();
+        // A raw string is source text taken verbatim, so it is already valid UTF-8:
+        // it has no escapes that could introduce anything else.
+        let text = raw.to_owned();
         self.advance(1);
         Ok(Spanned::new(
-            Expr::Literal(Literal::String(bytes)),
+            Expr::Literal(Literal::String(text)),
+            span.into(),
+        ))
+    }
+
+    pub fn parse_bytes_literal(&mut self) -> ParseResult<Spanned<Expr>> {
+        let peek = self.must_peek("Bytes literal")?;
+        let span = peek.span.clone();
+        let raw = match peek.token {
+            Token::BytesLiteral(s) => s,
+            _ => return Err(self.unexpected_token(peek, "Bytes literal")),
+        };
+        self.advance(1);
+        Ok(Spanned::new(
+            Expr::Literal(Literal::Bytes(decode_bytes_literal(raw))),
             span.into(),
         ))
     }
@@ -54,84 +70,108 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         };
         self.advance(1);
         let trimmed = trim_multiline_indentation(&raw).map_err(|msg| string_error(&span, msg))?;
-        let bytes = expand_multiline_escapes(&trimmed).map_err(|msg| string_error(&span, msg))?;
+        let text = expand_multiline_escapes(&trimmed).map_err(|msg| string_error(&span, msg))?;
         Ok(Spanned::new(
-            Expr::Literal(Literal::String(bytes)),
+            Expr::Literal(Literal::String(text)),
             span.into(),
         ))
     }
 }
 
-fn expand_escapes(raw: &str, quote: QuoteStyle) -> Result<Vec<u8>, String> {
-    let mut out = Vec::with_capacity(raw.len());
-    let mut chars = raw.bytes().enumerate();
+/// Decodes the hex body of a `\u{...}` escape into its Unicode scalar value.
+///
+/// Rust's `\u{...}` takes 1 to 6 hex digits; a longer body is rejected here. The
+/// standard library handles the rest: [`u32::from_str_radix`] rejects an empty or
+/// non-hex body, and [`char::from_u32`] rejects surrogates and values above U+10FFFF.
+pub(crate) fn decode_unicode_escape(hex: &str) -> Result<char, String> {
+    if hex.len() > 6 {
+        return Err(format!("\\u escape has more than 6 hex digits: \\u{{{hex}}}"));
+    }
+    let code =
+        u32::from_str_radix(hex, 16).map_err(|_| format!("invalid \\u escape: \\u{{{hex}}}"))?;
+    char::from_u32(code).ok_or_else(|| format!("\\u{{{hex}}} is not a valid Unicode scalar value"))
+}
 
-    while let Some((_, b)) = chars.next() {
-        if b != b'\\' {
-            out.push(b);
+/// Decodes the body of an `x'..'` Bytes literal into its octets. The lexer's regex
+/// guarantees an even count of hex digits, so [`u8::from_str_radix`] cannot fail.
+fn decode_bytes_literal(hex: &str) -> Vec<u8> {
+    (0..hex.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).expect("lexer guarantees hex digit pairs"))
+        .collect()
+}
+
+fn expand_escapes(raw: &str, quote: QuoteStyle) -> Result<String, String> {
+    let mut out = String::with_capacity(raw.len());
+    let mut chars = raw.chars();
+
+    while let Some(c) = chars.next() {
+        if c != '\\' {
+            out.push(c);
             continue;
         }
 
-        let Some((_, escape)) = chars.next() else {
+        let Some(escape) = chars.next() else {
             return Err("unexpected end of String after backslash".into());
         };
 
         match escape {
-            b'n' => out.push(b'\n'),
-            b't' => out.push(b'\t'),
-            b'r' => out.push(b'\r'),
-            b'\\' => out.push(b'\\'),
-            b'0' => out.push(0),
-            b'\'' if matches!(quote, QuoteStyle::Single) => out.push(b'\''),
-            b'"' if matches!(quote, QuoteStyle::Double) => out.push(b'"'),
-            b'x' => {
-                let hi = chars.next().map(|(_, b)| b);
-                let lo = chars.next().map(|(_, b)| b);
-                match (hi, lo) {
-                    (Some(h), Some(l)) => {
-                        let hex = [h, l];
-                        let s = std::str::from_utf8(&hex)
-                            .map_err(|_| "invalid hex escape".to_owned())?;
-                        let val = u8::from_str_radix(s, 16)
-                            .map_err(|_| "invalid hex escape".to_owned())?;
-                        out.push(val);
-                    }
-                    _ => return Err("incomplete \\x escape".into()),
-                }
-            }
-            _ => {
-                return Err(format!("invalid escape sequence: \\{}", escape as char));
-            }
+            'n' => out.push('\n'),
+            't' => out.push('\t'),
+            'r' => out.push('\r'),
+            '\\' => out.push('\\'),
+            '0' => out.push('\0'),
+            '\'' if matches!(quote, QuoteStyle::Single) => out.push('\''),
+            '"' if matches!(quote, QuoteStyle::Double) => out.push('"'),
+            'u' => out.push(take_unicode_escape(&mut chars)?),
+            _ => return Err(format!("invalid escape sequence: \\{escape}")),
         }
     }
 
     Ok(out)
 }
 
-fn expand_multiline_escapes(raw: &str) -> Result<Vec<u8>, String> {
-    let mut out = Vec::with_capacity(raw.len());
-    let mut chars = raw.bytes().enumerate();
+/// Reads the `{NN..}` body after a `\u` (already consumed) and decodes its scalar.
+/// The next character must be `{`; digits run to the closing `}`.
+fn take_unicode_escape(chars: &mut std::str::Chars) -> Result<char, String> {
+    if chars.next() != Some('{') {
+        return Err("\\u escape must be followed by '{'".into());
+    }
+    let mut hex = String::new();
+    loop {
+        match chars.next() {
+            Some('}') => break,
+            Some(c) => hex.push(c),
+            None => return Err("unterminated \\u escape".into()),
+        }
+    }
+    decode_unicode_escape(&hex)
+}
 
-    while let Some((_, b)) = chars.next() {
-        if b != b'\\' {
-            out.push(b);
+fn expand_multiline_escapes(raw: &str) -> Result<String, String> {
+    let mut out = String::with_capacity(raw.len());
+    let mut chars = raw.chars();
+
+    while let Some(c) = chars.next() {
+        if c != '\\' {
+            out.push(c);
             continue;
         }
 
-        let Some((_, escape)) = chars.next() else {
+        let Some(escape) = chars.next() else {
             return Err("unexpected end of String after backslash".into());
         };
 
         match escape {
-            b'\\' => out.push(b'\\'),
-            b't' => out.push(b'\t'),
-            b'0' => out.push(0),
-            b'\'' => out.push(b'\''),
-            b'"' => out.push(b'"'),
+            '\\' => out.push('\\'),
+            't' => out.push('\t'),
+            '0' => out.push('\0'),
+            '\'' => out.push('\''),
+            '"' => out.push('"'),
+            'u' => out.push(take_unicode_escape(&mut chars)?),
             _ => {
                 return Err(format!(
-                    "invalid escape sequence in multiline String: \\{}",
-                    escape as char
+                    "invalid escape sequence in multiline String: \\{escape}"
                 ));
             }
         }

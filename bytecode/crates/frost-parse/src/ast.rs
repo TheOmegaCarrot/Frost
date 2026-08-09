@@ -213,7 +213,8 @@ pub enum Literal {
     Bool(bool),
     Int(i64),
     Float(f64),
-    String(Vec<u8>),
+    String(String),
+    Bytes(Vec<u8>),
 }
 
 // -- Operators --
@@ -259,7 +260,7 @@ pub struct MapEntry {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum FormatSegment {
-    Literal(Vec<u8>),
+    Literal(String),
     Interpolation(Spanned<Expr>),
 }
 
@@ -309,6 +310,7 @@ pub enum TypeConstraint {
     Float,
     Bool,
     String,
+    Bytes,
     Array,
     Map,
     Function,

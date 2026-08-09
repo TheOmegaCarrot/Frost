@@ -3,7 +3,7 @@ use std::sync::Arc;
 use frost_runtime::{FrostArray, FrostFloat, FrostMap, MapKey, Value};
 
 fn str_key(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s.as_bytes()))
+    MapKey::String(Arc::from(s))
 }
 
 // -- Primitives: to_frost_string --
@@ -76,9 +76,16 @@ fn string_top_level_with_special_chars_is_raw() {
 }
 
 #[test]
-fn string_top_level_non_utf8_falls_back_to_escaped() {
+fn string_top_level_non_ascii_is_raw() {
+    // Text renders as the text it is, whatever its code points.
+    assert_eq!(Value::from("héllo wörld").to_frost_string(), "héllo wörld");
+}
+
+#[test]
+fn bytes_top_level_render_as_a_literal() {
+    // Bytes has no bare form: it renders as its `x'..'` literal at every tier.
     let v: Value = vec![0x80u8, 0xff].into();
-    assert_eq!(v.to_frost_string(), "\"\\x80\\xff\"");
+    assert_eq!(v.to_frost_string(), "x'80ff'");
 }
 
 #[test]
@@ -184,14 +191,37 @@ fn debug_string_escapes_double_quote() {
 }
 
 #[test]
-fn debug_string_hex_escapes_null_byte() {
-    assert_eq!(Value::from("\x00").to_debug_string(), "\"\\x00\"");
+fn debug_string_escapes_null_as_unicode() {
+    assert_eq!(Value::from("\x00").to_debug_string(), "\"\\u{0}\"");
 }
 
 #[test]
-fn debug_string_hex_escapes_high_bytes() {
+fn debug_string_passes_non_ascii_characters_through() {
+    // A String is text, so escaping it byte-wise would both mangle it and make it
+    // indistinguishable from the Bytes holding those same bytes.
+    assert_eq!(Value::from("é").to_debug_string(), "\"é\"");
+    assert_eq!(Value::from("日本").to_debug_string(), "\"日本\"");
+}
+
+#[test]
+fn debug_string_escapes_non_ascii_control_as_unicode() {
+    // U+0085 is a control character with no readable spelling, so it stays escaped
+    // even though it is not ASCII. It escapes as its scalar value, `\u{85}`, not as
+    // its UTF-8 bytes: a String is text, and byte notation belongs to Bytes alone.
+    assert_eq!(Value::from("\u{85}").to_debug_string(), "\"\\u{85}\"");
+}
+
+#[test]
+fn debug_string_escapes_ascii_control_as_unicode() {
+    // Minimal hex digits, matching Rust's `escape_debug`: U+0001 is `\u{1}`.
+    assert_eq!(Value::from("\u{1}").to_debug_string(), "\"\\u{1}\"");
+}
+
+#[test]
+fn debug_bytes_render_as_a_literal() {
+    // Bytes, not String: `From<Vec<u8>>` builds the binary type.
     let v: Value = vec![0x80u8, 0xff].into();
-    assert_eq!(v.to_debug_string(), "\"\\x80\\xff\"");
+    assert_eq!(v.to_debug_string(), "x'80ff'");
 }
 
 #[test]
@@ -264,6 +294,21 @@ fn map_compact_non_string_keys() {
     let s = Value::from(map).to_frost_string();
     assert!(s.contains("[true]: 1"));
     assert!(s.contains("[42]: 2"));
+}
+
+#[test]
+fn map_compact_bytes_key() {
+    // A Bytes key renders in `x'..'` literal form, so it cannot be confused with
+    // the String key spelling the same characters.
+    let map: FrostMap = vec![(MapKey::from(vec![b'h', b'i']), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    assert_eq!(Value::from(map).to_frost_string(), "{ [x'6869']: 1 }");
+
+    let text: FrostMap = vec![(str_key("hi"), Value::from(1i64))]
+        .into_iter()
+        .collect();
+    assert_eq!(Value::from(text).to_frost_string(), r#"{ ["hi"]: 1 }"#);
 }
 
 #[test]

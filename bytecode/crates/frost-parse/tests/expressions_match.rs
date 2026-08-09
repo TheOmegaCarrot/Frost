@@ -172,7 +172,7 @@ mod literals {
         let expr = parse_expr("match x { 'hello' => 1 }");
         let (_, arms) = assert_match(&expr);
         let v = assert_value_pattern(&arms[0].node.pattern);
-        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == b"hello"));
+        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == "hello"));
     }
 
     #[test]
@@ -258,6 +258,7 @@ mod bindings {
             ("Float", TypeConstraint::Float),
             ("Bool", TypeConstraint::Bool),
             ("String", TypeConstraint::String),
+            ("Bytes", TypeConstraint::Bytes),
             ("Array", TypeConstraint::Array),
             ("Map", TypeConstraint::Map),
             ("Function", TypeConstraint::Function),
@@ -461,7 +462,7 @@ mod map_patterns {
         assert!(bind_whole.is_none());
 
         assert!(
-            matches!(&entries[0].node.key.node, Expr::Literal(Literal::String(s)) if s == b"name")
+            matches!(&entries[0].node.key.node, Expr::Literal(Literal::String(s)) if s == "name")
         );
         let (b, _) = assert_binding(&entries[0].node.pattern);
         assert_eq!(*b, Binding::Named("n".into()));
@@ -474,7 +475,7 @@ mod map_patterns {
         let (entries, _) = assert_map_pattern(&arms[0].node.pattern);
         assert_eq!(entries.len(), 1);
         assert!(
-            matches!(&entries[0].node.key.node, Expr::Literal(Literal::String(s)) if s == b"name")
+            matches!(&entries[0].node.key.node, Expr::Literal(Literal::String(s)) if s == "name")
         );
         let (b, _) = assert_binding(&entries[0].node.pattern);
         assert_eq!(*b, Binding::Named("name".into()));
@@ -497,7 +498,7 @@ mod map_patterns {
         let (_, arms) = assert_match(&expr);
         let (entries, _) = assert_map_pattern(&arms[0].node.pattern);
         let v = assert_value_pattern(&entries[0].node.pattern);
-        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == b"admin"));
+        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == "admin"));
     }
 
     #[test]
@@ -728,7 +729,7 @@ mod string_patterns_are_literal_only {
         let expr = parse_expr("match x { R'(a)' => 1 }");
         let (_, arms) = assert_match(&expr);
         let v = assert_value_pattern(&arms[0].node.pattern);
-        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == b"a"));
+        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == "a"));
     }
 
     #[test]
@@ -738,7 +739,7 @@ mod string_patterns_are_literal_only {
         let expr = parse_expr("match x { 'a\\nb' => 1 }");
         let (_, arms) = assert_match(&expr);
         let v = assert_value_pattern(&arms[0].node.pattern);
-        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == b"a\nb"));
+        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == "a\nb"));
     }
 
     #[test]
@@ -756,7 +757,7 @@ mod string_patterns_are_literal_only {
         let (_, arms) = assert_match(&expr);
         assert!(arms[0].node.guard.is_some());
         let v = assert_value_pattern(&arms[0].node.pattern);
-        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == b"a"));
+        assert!(matches!(&v.node, Expr::Literal(Literal::String(s)) if s == "a"));
     }
 
     #[test]

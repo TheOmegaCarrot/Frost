@@ -52,7 +52,7 @@ fn array(vs: Vec<Value>) -> Value {
 }
 
 fn skey(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s.as_bytes()))
+    MapKey::String(Arc::from(s))
 }
 
 fn map(pairs: Vec<(MapKey, Value)>) -> Value {

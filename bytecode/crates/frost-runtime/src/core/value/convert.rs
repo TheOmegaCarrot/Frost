@@ -35,31 +35,39 @@ impl From<FrostFloat> for Value {
 
 impl From<&str> for Value {
     fn from(s: &str) -> Value {
-        Value::String(Arc::from(s.as_bytes()))
+        Value::String(Arc::from(s))
     }
 }
 
 impl From<String> for Value {
     fn from(s: String) -> Value {
-        Value::String(Arc::from(s.into_bytes()))
+        Value::String(Arc::from(s))
     }
 }
 
+impl From<Arc<str>> for Value {
+    fn from(s: Arc<str>) -> Value {
+        Value::String(s)
+    }
+}
+
+// The `[u8]` family produces `Bytes`: a byte sequence with no encoding guarantee
+// is exactly what `Bytes` is for. Text comes from the `str` family above.
 impl From<&[u8]> for Value {
-    fn from(s: &[u8]) -> Value {
-        Value::String(Arc::from(s))
+    fn from(b: &[u8]) -> Value {
+        Value::Bytes(Arc::from(b))
     }
 }
 
 impl From<Vec<u8>> for Value {
-    fn from(s: Vec<u8>) -> Value {
-        Value::String(Arc::from(s))
+    fn from(b: Vec<u8>) -> Value {
+        Value::Bytes(Arc::from(b))
     }
 }
 
 impl From<Arc<[u8]>> for Value {
-    fn from(s: Arc<[u8]>) -> Value {
-        Value::String(s)
+    fn from(b: Arc<[u8]>) -> Value {
+        Value::Bytes(b)
     }
 }
 
@@ -112,9 +120,9 @@ impl Value {
         match self {
             Value::Int(_) => self.clone(),
             Value::Float(f) => Value::from(f.get() as i64),
-            Value::String(s) => std::str::from_utf8(s)
+            Value::String(s) => s
+                .parse::<i64>()
                 .ok()
-                .and_then(|s| s.parse::<i64>().ok())
                 .map(Value::from)
                 .unwrap_or(Value::Null),
             _ => Value::Null,
@@ -129,9 +137,9 @@ impl Value {
             Value::Int(i) => FrostFloat::new(*i as f64)
                 .map(Value::from)
                 .unwrap_or(Value::Null),
-            Value::String(s) => std::str::from_utf8(s)
+            Value::String(s) => s
+                .parse::<f64>()
                 .ok()
-                .and_then(|s| s.parse::<f64>().ok())
                 .and_then(|f| FrostFloat::new(f).ok())
                 .map(Value::from)
                 .unwrap_or(Value::Null),

@@ -10,9 +10,9 @@ fn segments(expr: &Spanned<Expr>) -> &[FormatSegment] {
     }
 }
 
-fn assert_literal_seg(seg: &FormatSegment, expected: &[u8]) {
+fn assert_literal_seg(seg: &FormatSegment, expected: &str) {
     match seg {
-        FormatSegment::Literal(bytes) => assert_eq!(bytes, expected, "literal mismatch"),
+        FormatSegment::Literal(text) => assert_eq!(text, expected, "literal mismatch"),
         other => panic!("expected Literal segment, got {other:?}"),
     }
 }
@@ -37,7 +37,7 @@ fn format_no_interpolation() {
     let expr = parse_expr("$'hello'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"hello");
+    assert_literal_seg(&segs[0], "hello");
 }
 
 #[test]
@@ -52,7 +52,7 @@ fn format_single_interpolation() {
     let expr = parse_expr("$'hello, ${name}'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 2);
-    assert_literal_seg(&segs[0], b"hello, ");
+    assert_literal_seg(&segs[0], "hello, ");
     assert_interp_name(&segs[1], "name");
 }
 
@@ -70,7 +70,7 @@ fn format_multiple_interpolations() {
     let segs = segments(&expr);
     assert_eq!(segs.len(), 3);
     assert_interp_name(&segs[0], "a");
-    assert_literal_seg(&segs[1], b" and ");
+    assert_literal_seg(&segs[1], " and ");
     assert_interp_name(&segs[2], "b");
 }
 
@@ -90,7 +90,7 @@ fn format_trailing_literal() {
     let segs = segments(&expr);
     assert_eq!(segs.len(), 2);
     assert_interp_name(&segs[0], "x");
-    assert_literal_seg(&segs[1], b"!");
+    assert_literal_seg(&segs[1], "!");
 }
 
 // -- Double quote format strings --
@@ -100,7 +100,7 @@ fn format_double_quote() {
     let expr = parse_expr("$\"hello, ${name}\"");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 2);
-    assert_literal_seg(&segs[0], b"hello, ");
+    assert_literal_seg(&segs[0], "hello, ");
     assert_interp_name(&segs[1], "name");
 }
 
@@ -111,7 +111,7 @@ fn format_expression_interpolation() {
     let expr = parse_expr("$'result: ${1 + 2}'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 2);
-    assert_literal_seg(&segs[0], b"result: ");
+    assert_literal_seg(&segs[0], "result: ");
     match &segs[1] {
         FormatSegment::Interpolation(expr) => {
             assert!(matches!(
@@ -134,7 +134,7 @@ fn format_call_in_interpolation() {
     let expr = parse_expr("$'upper: ${to_upper(name)}'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 2);
-    assert_literal_seg(&segs[0], b"upper: ");
+    assert_literal_seg(&segs[0], "upper: ");
     match &segs[1] {
         FormatSegment::Interpolation(expr) => {
             assert!(matches!(&expr.node, Expr::Call { .. }));
@@ -151,7 +151,7 @@ fn format_escape_dollar() {
     let expr = parse_expr("$'literal: \\${name}'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"literal: ${name}");
+    assert_literal_seg(&segs[0], "literal: ${name}");
 }
 
 #[test]
@@ -160,7 +160,7 @@ fn format_bare_dollar() {
     let expr = parse_expr("$'price: $5'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"price: $5");
+    assert_literal_seg(&segs[0], "price: $5");
 }
 
 #[test]
@@ -168,7 +168,7 @@ fn format_escape_newline() {
     let expr = parse_expr("$'line1\\nline2'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"line1\nline2");
+    assert_literal_seg(&segs[0], "line1\nline2");
 }
 
 #[test]
@@ -176,7 +176,7 @@ fn format_escape_backslash() {
     let expr = parse_expr("$'back\\\\slash'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"back\\slash");
+    assert_literal_seg(&segs[0], "back\\slash");
 }
 
 #[test]
@@ -184,15 +184,15 @@ fn format_escape_tab() {
     let expr = parse_expr("$'tab\\there'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"tab\there");
+    assert_literal_seg(&segs[0], "tab\there");
 }
 
 #[test]
-fn format_escape_hex() {
-    let expr = parse_expr("$'byte\\x0a'");
+fn format_escape_unicode() {
+    let expr = parse_expr("$'omega\\u{3a9}'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"byte\x0a");
+    assert_literal_seg(&segs[0], "omega\u{3a9}");
 }
 
 #[test]
@@ -200,7 +200,7 @@ fn format_escape_single_quote_in_single() {
     let expr = parse_expr("$'it\\'s'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"it's");
+    assert_literal_seg(&segs[0], "it's");
 }
 
 #[test]
@@ -208,7 +208,7 @@ fn format_escape_double_quote_in_double() {
     let expr = parse_expr("$\"say \\\"hi\\\"\"");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"say \"hi\"");
+    assert_literal_seg(&segs[0], "say \"hi\"");
 }
 
 // -- Escape errors --
@@ -344,7 +344,7 @@ fn format_only_literal_dollar() {
     let expr = parse_expr("$'$$$'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"$$$");
+    assert_literal_seg(&segs[0], "$$$");
 }
 
 #[test]
@@ -353,7 +353,7 @@ fn format_dollar_before_non_brace() {
     let expr = parse_expr("$'$x $y $z'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 1);
-    assert_literal_seg(&segs[0], b"$x $y $z");
+    assert_literal_seg(&segs[0], "$x $y $z");
 }
 
 #[test]
@@ -362,7 +362,7 @@ fn format_escape_then_interpolation() {
     let expr = parse_expr("$'\\n${x}'");
     let segs = segments(&expr);
     assert_eq!(segs.len(), 2);
-    assert_literal_seg(&segs[0], b"\n");
+    assert_literal_seg(&segs[0], "\n");
     assert_interp_name(&segs[1], "x");
 }
 
@@ -373,7 +373,7 @@ fn format_interpolation_then_escape() {
     let segs = segments(&expr);
     assert_eq!(segs.len(), 2);
     assert_interp_name(&segs[0], "x");
-    assert_literal_seg(&segs[1], b"\n");
+    assert_literal_seg(&segs[1], "\n");
 }
 
 // -- Format strings in expressions --
@@ -414,9 +414,9 @@ fn format_string_in_def() {
 // -- Error cases --
 
 #[test]
-fn error_format_incomplete_hex() {
-    let err = parse_err("$'\\x0'");
-    assert!(err.contains("\\x escape"), "error was: {err}");
+fn format_x_escape_is_no_longer_valid() {
+    let err = parse_err("$'\\x0a'");
+    assert!(err.contains("invalid escape"), "error was: {err}");
 }
 
 #[test]
@@ -484,4 +484,31 @@ fn interpolation_error_renders_a_single_diagram() {
         !rendered.contains("in interpolation:"),
         "inner error should not be flattened into the message; rendered:\n{rendered}"
     );
+}
+
+// -- Unicode escapes --
+// Every escape names a whole scalar, so each literal segment is UTF-8 by
+// construction and no character can straddle an interpolation boundary.
+
+#[test]
+fn format_unicode_escape_produces_a_multibyte_character() {
+    let expr = parse_expr(r"$'\u{e9}'");
+    let segs = segments(&expr);
+    assert_literal_seg(&segs[0], "é");
+}
+
+#[test]
+fn format_unicode_escape_rejects_a_surrogate() {
+    let err = parse_err(r"$'\u{d800}'");
+    assert!(err.contains("scalar value"), "error was: {err}");
+}
+
+#[test]
+fn format_unicode_escape_survives_an_interpolation_boundary() {
+    // A scalar escape lives wholly in one segment, so `${...}` never splits it.
+    let expr = parse_expr(r"$'\u{e9}${x}\u{e9}'");
+    let segs = segments(&expr);
+    assert_eq!(segs.len(), 3);
+    assert_literal_seg(&segs[0], "é");
+    assert_literal_seg(&segs[2], "é");
 }

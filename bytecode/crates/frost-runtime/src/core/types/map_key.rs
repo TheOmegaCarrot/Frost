@@ -5,24 +5,34 @@ use std::sync::Arc;
 use crate::core::{FrostError, FrostFloat, Value};
 
 /// A valid Frost map key. Only non-null primitive types may be keys.
+/// Totally ordered, such that ordering of keys of the same type agrees with Frost's `<` operator.
+/// Ordering across types follows the variant order: Bool < Int < Float < String < Bytes.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 pub enum MapKey {
     Bool(bool),
     Int(i64),
     Float(FrostFloat),
-    String(Arc<[u8]>),
+    String(Arc<str>),
+    Bytes(Arc<[u8]>),
 }
 
 /// Renders the key as it would be written, unquoted:
 /// a String key prints its own text, so `'{key}'` reads as the source spelled it.
-/// Invalid UTF-8 is replaced rather than refused.
+/// A Bytes key renders in Bytes-literal form, `x'6869'`.
 impl std::fmt::Display for MapKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Bool(b) => write!(f, "{b}"),
             Self::Int(i) => write!(f, "{i}"),
             Self::Float(x) => write!(f, "{}", x.get()),
-            Self::String(s) => write!(f, "{}", String::from_utf8_lossy(s)),
+            Self::String(s) => write!(f, "{s}"),
+            Self::Bytes(b) => {
+                f.write_str("x'")?;
+                for byte in b.iter() {
+                    write!(f, "{byte:02x}")?;
+                }
+                f.write_str("'")
+            }
         }
     }
 }
@@ -34,6 +44,7 @@ impl From<MapKey> for Value {
             MapKey::Int(i) => Value::Int(i),
             MapKey::Float(f) => Value::Float(f),
             MapKey::String(s) => Value::String(s),
+            MapKey::Bytes(b) => Value::Bytes(b),
         }
     }
 }
@@ -46,6 +57,7 @@ impl TryFrom<Value> for MapKey {
             Value::Int(i) => Ok(MapKey::Int(i)),
             Value::Float(f) => Ok(MapKey::Float(f)),
             Value::String(s) => Ok(MapKey::String(s)),
+            Value::Bytes(b) => Ok(MapKey::Bytes(b)),
             _ => Err(format!("Type {} is not a valid Map key", v.type_name()).into()),
         }
     }
@@ -53,13 +65,38 @@ impl TryFrom<Value> for MapKey {
 
 impl From<&str> for MapKey {
     fn from(value: &str) -> Self {
-        Self::String(value.as_bytes().into())
+        Self::String(value.into())
     }
 }
 
 impl From<String> for MapKey {
     fn from(value: String) -> Self {
-        value.as_str().into()
+        Self::String(value.into())
+    }
+}
+
+impl From<Arc<str>> for MapKey {
+    fn from(value: Arc<str>) -> Self {
+        Self::String(value)
+    }
+}
+
+/// Byte sequences key as `Bytes`, mirroring `Value`'s `[u8]` conversions.
+impl From<&[u8]> for MapKey {
+    fn from(value: &[u8]) -> Self {
+        Self::Bytes(value.into())
+    }
+}
+
+impl From<Vec<u8>> for MapKey {
+    fn from(value: Vec<u8>) -> Self {
+        Self::Bytes(value.into())
+    }
+}
+
+impl From<Arc<[u8]>> for MapKey {
+    fn from(value: Arc<[u8]>) -> Self {
+        Self::Bytes(value)
     }
 }
 

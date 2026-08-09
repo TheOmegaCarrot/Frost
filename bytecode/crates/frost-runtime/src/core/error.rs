@@ -45,10 +45,7 @@ impl FrostError {
     /// Creates an error from an arbitrary thrown Frost value.
     pub fn from_value(value: Value) -> Self {
         let payload = match value {
-            Value::String(bytes) => match std::str::from_utf8(&bytes) {
-                Ok(text) => ErrorPayload::Message(Cow::Owned(text.to_owned())),
-                Err(_) => ErrorPayload::Value(Value::String(bytes)),
-            },
+            Value::String(text) => ErrorPayload::Message(Cow::Owned(text.to_string())),
             other => ErrorPayload::Value(other),
         };
         Self {

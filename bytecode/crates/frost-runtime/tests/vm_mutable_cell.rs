@@ -147,7 +147,7 @@ fn map(pairs: Vec<(&str, Value)>) -> Value {
     Value::Map(
         pairs
             .into_iter()
-            .map(|(k, v)| (MapKey::String(Arc::from(k.as_bytes())), v))
+            .map(|(k, v)| (MapKey::String(Arc::from(k)), v))
             .collect(),
     )
 }

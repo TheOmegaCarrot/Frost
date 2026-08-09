@@ -81,15 +81,24 @@ fn split_format_segments(
                         literal_buf.push(b'"');
                         i += 2;
                     }
-                    b'x' => {
-                        if i + 3 >= bytes.len() {
-                            return Err(format_error(span, "incomplete \\x escape"));
+                    b'u' => {
+                        // \u{NN..}: braces around hex digits naming a Unicode scalar.
+                        // Slicing on the ASCII `{` and `}` never splits a character.
+                        if bytes.get(i + 2) != Some(&b'{') {
+                            return Err(format_error(span, "\\u escape must be followed by '{'"));
                         }
-                        let hex = &raw[i + 2..i + 4];
-                        let val = u8::from_str_radix(hex, 16)
-                            .map_err(|_| format_error(span, "invalid hex escape"))?;
-                        literal_buf.push(val);
-                        i += 4;
+                        let mut j = i + 3;
+                        while j < bytes.len() && bytes[j] != b'}' {
+                            j += 1;
+                        }
+                        if j >= bytes.len() {
+                            return Err(format_error(span, "unterminated \\u escape"));
+                        }
+                        let ch = crate::parse::strings::decode_unicode_escape(&raw[i + 3..j])
+                            .map_err(|msg| format_error(span, msg))?;
+                        let mut utf8 = [0u8; 4];
+                        literal_buf.extend_from_slice(ch.encode_utf8(&mut utf8).as_bytes());
+                        i = j + 1;
                     }
                     _ => {
                         return Err(format_error(
@@ -103,7 +112,9 @@ fn split_format_segments(
             b'$' if i + 1 < bytes.len() && bytes[i + 1] == b'{' => {
                 // Flush literal buffer
                 if !literal_buf.is_empty() {
-                    segments.push(FormatSegment::Literal(std::mem::take(&mut literal_buf)));
+                    segments.push(FormatSegment::Literal(finish_literal(std::mem::take(
+                        &mut literal_buf,
+                    ))));
                 }
 
                 // Extract interpolation content (brace-depth balanced)
@@ -165,10 +176,17 @@ fn split_format_segments(
 
     // Flush remaining literal
     if !literal_buf.is_empty() {
-        segments.push(FormatSegment::Literal(literal_buf));
+        segments.push(FormatSegment::Literal(finish_literal(literal_buf)));
     }
 
     Ok(segments)
+}
+
+/// Each literal run between interpolations is UTF-8 by construction: the raw source
+/// is valid UTF-8, every escape yields a whole scalar, and a flush only happens at
+/// `${` (an ASCII boundary), so no character is ever split.
+fn finish_literal(bytes: Vec<u8>) -> String {
+    String::from_utf8(bytes).expect("format String literal is UTF-8 by construction")
 }
 
 fn parse_interpolation(

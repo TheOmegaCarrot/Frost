@@ -603,15 +603,12 @@ impl Vm {
                     }
                     Bytecode::Import => {
                         let spec_value = self.stack_pop();
-                        let Some(bytes) = spec_value.as_byte_string() else {
+                        let Some(spec) = spec_value.as_str() else {
                             return Err(FrostError::from_string(format!(
                                 "import expects a String module spec, got {}",
                                 spec_value.type_name()
                             )));
                         };
-                        let spec = std::str::from_utf8(bytes).map_err(|_| {
-                            FrostError::from_static("import module spec is not valid UTF-8")
-                        })?;
                         let ctx = self.import_ctx()?;
                         let importer = self.importer.clone();
                         let module = importer.import(spec, &ctx)?;

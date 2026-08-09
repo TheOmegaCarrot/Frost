@@ -21,5 +21,7 @@ pub use types::frost_type::FrostType;
 pub use types::map::FrostMap;
 pub use types::map_key::MapKey;
 pub use types::opaque::FrostOpaque;
-pub use util::identifier::KEYWORDS;
+pub use util::identifier::{
+    KEYWORDS, is_identifier_like, is_identifier_like_and_not_keyword, is_reserved_keyword,
+};
 pub use value::Value;

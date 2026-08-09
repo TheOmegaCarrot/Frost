@@ -27,8 +27,10 @@ pub enum Value {
     Int(i64),
     /// A 64-bit float, guaranteed non-NaN and non-Infinity.
     Float(FrostFloat),
-    /// A binary-safe byte string. Usually valid UTF-8, but not guaranteed.
-    String(Arc<[u8]>),
+    /// Text, valid UTF-8 by construction.
+    String(Arc<str>),
+    /// An arbitrary byte sequence, carrying no encoding guarantee.
+    Bytes(Arc<[u8]>),
     /// An ordered, immutable sequence of values.
     Array(FrostArray),
     /// An ordered, immutable key-value mapping.
@@ -72,21 +74,30 @@ impl Value {
         }
     }
 
-    /// Returns the string contents as `&str` if this is a valid UTF-8 `String`, or `None`.
-    /// Use [`as_byte_string`](Self::as_byte_string) for strings that may not be valid UTF-8.
+    /// Returns the text if this is a `String`, or `None`.
     pub fn as_str(&self) -> Option<&str> {
         match self {
-            Self::String(s) => std::str::from_utf8(s).ok(),
+            Self::String(s) => Some(s),
             _ => None,
         }
     }
 
-    /// Returns the raw bytes if this is a `String`, or `None`.
-    /// Unlike [`as_str`](Self::as_str), this always succeeds for String values
-    /// regardless of UTF-8 validity.
-    pub fn as_byte_string(&self) -> Option<&[u8]> {
+    /// Returns the bytes if this is a `Bytes`, or `None`.
+    /// For the bytes underlying either text or binary, use
+    /// [`as_byte_slice`](Self::as_byte_slice).
+    pub fn as_bytes(&self) -> Option<&[u8]> {
         match self {
-            Self::String(s) => Some(s),
+            Self::Bytes(b) => Some(b),
+            _ => None,
+        }
+    }
+
+    /// Returns the underlying bytes of a `String` or a `Bytes`, or `None` for
+    /// anything else.
+    pub fn as_byte_slice(&self) -> Option<&[u8]> {
+        match self {
+            Self::String(s) => Some(s.as_bytes()),
+            Self::Bytes(b) => Some(b),
             _ => None,
         }
     }

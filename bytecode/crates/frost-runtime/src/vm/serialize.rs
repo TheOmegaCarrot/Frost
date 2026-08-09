@@ -58,7 +58,8 @@ enum ConstValue {
     Bool(bool),
     Int(i64),
     Float(FrostFloat),
-    String(Arc<[u8]>),
+    String(Arc<str>),
+    Bytes(Arc<[u8]>),
     Array(Vec<ConstValue>),
     Map(Vec<(MapKey, ConstValue)>),
 }
@@ -73,6 +74,7 @@ impl TryFrom<&Value> for ConstValue {
             Value::Int(i) => ConstValue::Int(*i),
             Value::Float(f) => ConstValue::Float(*f),
             Value::String(s) => ConstValue::String(s.clone()),
+            Value::Bytes(b) => ConstValue::Bytes(b.clone()),
             Value::Array(a) => ConstValue::Array(
                 a.into_iter()
                     .map(ConstValue::try_from)
@@ -98,6 +100,7 @@ impl From<ConstValue> for Value {
             ConstValue::Int(i) => Value::from(i),
             ConstValue::Float(f) => Value::from(f),
             ConstValue::String(s) => Value::from(s),
+            ConstValue::Bytes(b) => Value::from(b),
             ConstValue::Array(items) => Value::from(
                 items
                     .into_iter()

@@ -86,6 +86,7 @@ fn samples() -> Vec<(Value, FrostType)> {
         (Value::Int(1), Ft::Int),
         (float(1.5), Ft::Float),
         (Value::from("x"), Ft::String),
+        (Value::from(vec![0xffu8]), Ft::Bytes),
         (array(), Ft::Array),
         (map(), Ft::Map),
         (native(), Ft::Function),
@@ -125,6 +126,7 @@ fn frost_type_name_strings() {
     assert_eq!(Ft::Int.name(), "Int");
     assert_eq!(Ft::Float.name(), "Float");
     assert_eq!(Ft::String.name(), "String");
+    assert_eq!(Ft::Bytes.name(), "Bytes");
     assert_eq!(Ft::Array.name(), "Array");
     assert_eq!(Ft::Map.name(), "Map");
     assert_eq!(Ft::Function.name(), "Function");
@@ -180,6 +182,15 @@ fn nothing_fits_the_empty_set() {
 // The named category sets (concrete expectations)
 // ============================================================
 
+#[test]
+fn samples_cover_every_frost_type() {
+    // The category tests below iterate `samples()`, so a type missing from it would
+    // be skipped in silence and a type named in an `expected_true` list but absent
+    // here would assert nothing at all.
+    let covered: EnumSet<Ft> = samples().iter().map(|(_, t)| *t).collect();
+    assert_eq!(covered, EnumSet::all());
+}
+
 /// Assert each variant's membership in `set` against a hand-written truth.
 fn assert_membership(set: EnumSet<Ft>, expected_true: &[Ft]) {
     for (v, t) in samples() {
@@ -199,6 +210,7 @@ fn any_category() {
             Ft::Int,
             Ft::Float,
             Ft::String,
+            Ft::Bytes,
             Ft::Array,
             Ft::Map,
             Ft::Function,
@@ -218,7 +230,14 @@ fn primitive_category() {
     // Null counts as primitive; Array/Map/Function/Opaque do not.
     assert_membership(
         Ft::PRIMITIVE,
-        &[Ft::Null, Ft::Bool, Ft::Int, Ft::Float, Ft::String],
+        &[
+            Ft::Null,
+            Ft::Bool,
+            Ft::Int,
+            Ft::Float,
+            Ft::String,
+            Ft::Bytes,
+        ],
     );
 }
 
@@ -226,6 +245,12 @@ fn primitive_category() {
 fn structured_category() {
     // Array and Map only.
     assert_membership(Ft::STRUCTURED, &[Ft::Array, Ft::Map]);
+}
+
+#[test]
+fn flat_category() {
+    // String and Bytes only.
+    assert_membership(Ft::FLAT, &[Ft::String, Ft::Bytes]);
 }
 
 #[test]
@@ -238,6 +263,7 @@ fn nonnull_category() {
             Ft::Int,
             Ft::Float,
             Ft::String,
+            Ft::Bytes,
             Ft::Array,
             Ft::Map,
             Ft::Function,
@@ -259,6 +285,9 @@ fn category_consts_relate_as_expected() {
     // per-value membership tests might not exercise it.
     assert_eq!(Ft::NUMERIC, Ft::Int | Ft::Float);
     assert_eq!(Ft::STRUCTURED, Ft::Array | Ft::Map);
+    assert_eq!(Ft::FLAT, Ft::String | Ft::Bytes);
+    // Flat is the sequence half of Primitive; it never overlaps Structured.
+    assert_eq!(Ft::FLAT & Ft::STRUCTURED, EnumSet::empty());
     assert_eq!(Ft::NONNULL, Ft::ANY - Ft::Null);
     assert_eq!(Ft::ANY, EnumSet::all());
     // Primitive and Structured partition NONNULL minus functions/opaques.

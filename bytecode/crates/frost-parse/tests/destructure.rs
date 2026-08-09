@@ -1,7 +1,7 @@
 use frost_parse::ast::*;
 use frost_parse::parse_program;
 
-fn str_key(entry: &Spanned<MapDestructureEntry>) -> &[u8] {
+fn str_key(entry: &Spanned<MapDestructureEntry>) -> &str {
     match &entry.node.key.node {
         Expr::Literal(Literal::String(s)) => s,
         other => panic!("expected string key, got {other:?}"),
@@ -370,11 +370,11 @@ fn map_shorthand() {
             bind_whole,
         } => {
             assert_eq!(entries.len(), 2);
-            assert_eq!(str_key(&entries[0]), b"foo");
+            assert_eq!(str_key(&entries[0]), "foo");
             assert!(
                 matches!(&entries[0].node.destructure.node, Destructure::Binding(Spanned { node: Binding::Named(n), .. }) if n == "foo")
             );
-            assert_eq!(str_key(&entries[1]), b"bar");
+            assert_eq!(str_key(&entries[1]), "bar");
             assert!(
                 matches!(&entries[1].node.destructure.node, Destructure::Binding(Spanned { node: Binding::Named(n), .. }) if n == "bar")
             );
@@ -393,11 +393,11 @@ fn map_explicit_keys() {
             bind_whole,
         } => {
             assert_eq!(entries.len(), 2);
-            assert_eq!(str_key(&entries[0]), b"foo");
+            assert_eq!(str_key(&entries[0]), "foo");
             assert!(
                 matches!(&entries[0].node.destructure.node, Destructure::Binding(Spanned { node: Binding::Named(n), .. }) if n == "a")
             );
-            assert_eq!(str_key(&entries[1]), b"bar");
+            assert_eq!(str_key(&entries[1]), "bar");
             assert!(
                 matches!(&entries[1].node.destructure.node, Destructure::Binding(Spanned { node: Binding::Named(n), .. }) if n == "b")
             );
@@ -435,11 +435,11 @@ fn map_mixed_keys() {
     match d.node {
         Destructure::Map { entries, .. } => {
             assert_eq!(entries.len(), 3);
-            assert_eq!(str_key(&entries[0]), b"foo");
+            assert_eq!(str_key(&entries[0]), "foo");
             assert!(
                 matches!(&entries[0].node.destructure.node, Destructure::Binding(Spanned { node: Binding::Named(n), .. }) if n == "foo")
             );
-            assert_eq!(str_key(&entries[1]), b"bar");
+            assert_eq!(str_key(&entries[1]), "bar");
             assert!(
                 matches!(&entries[1].node.destructure.node, Destructure::Binding(Spanned { node: Binding::Named(n), .. }) if n == "b")
             );
@@ -510,7 +510,7 @@ fn map_nested_array_value() {
     match d.node {
         Destructure::Map { entries, .. } => {
             assert_eq!(entries.len(), 1);
-            assert_eq!(str_key(&entries[0]), b"foo");
+            assert_eq!(str_key(&entries[0]), "foo");
             match &entries[0].node.destructure.node {
                 Destructure::Array { elements, rest } => {
                     assert_eq!(elements.len(), 2);
@@ -535,11 +535,11 @@ fn map_nested_map_value() {
     match d.node {
         Destructure::Map { entries, .. } => {
             assert_eq!(entries.len(), 1);
-            assert_eq!(str_key(&entries[0]), b"outer");
+            assert_eq!(str_key(&entries[0]), "outer");
             match &entries[0].node.destructure.node {
                 Destructure::Map { entries: inner, .. } => {
                     assert_eq!(inner.len(), 1);
-                    assert_eq!(str_key(&inner[0]), b"inner");
+                    assert_eq!(str_key(&inner[0]), "inner");
                     assert!(
                         matches!(&inner[0].node.destructure.node, Destructure::Binding(Spanned { node: Binding::Named(n), .. }) if n == "val")
                     );
@@ -585,7 +585,7 @@ fn map_as_nested_in_array() {
                     bind_whole,
                 } => {
                     assert_eq!(entries.len(), 1);
-                    assert_eq!(str_key(&entries[0]), b"name");
+                    assert_eq!(str_key(&entries[0]), "name");
                     assert!(
                         matches!(&bind_whole, Some(Spanned { node: Binding::Named(n), .. }) if n == "person")
                     );
@@ -837,7 +837,7 @@ fn map_computed_key_on_its_own_line() {
     match d.node {
         Destructure::Map { entries, .. } => {
             assert_eq!(entries.len(), 1);
-            assert_eq!(str_key(&entries[0]), b"k");
+            assert_eq!(str_key(&entries[0]), "k");
         }
         other => panic!("expected Map, got {other:?}"),
     }
@@ -864,7 +864,7 @@ fn map_computed_key_across_lines() {
     match d.node {
         Destructure::Map { entries, .. } => {
             assert_eq!(entries.len(), 1);
-            assert_eq!(str_key(&entries[0]), b"k");
+            assert_eq!(str_key(&entries[0]), "k");
         }
         other => panic!("expected Map, got {other:?}"),
     }

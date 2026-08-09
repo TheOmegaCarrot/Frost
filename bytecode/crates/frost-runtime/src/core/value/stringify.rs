@@ -80,6 +80,7 @@ fn stringify(value: &Value, buf: &mut String, ctx: &StringifyContext) {
         Value::Int(i) => write!(buf, "{i}").unwrap(),
         Value::Float(f) => stringify_float(f.get(), buf),
         Value::String(s) => stringify_string(s, buf, ctx),
+        Value::Bytes(b) => stringify_bytes(b, buf),
         Value::Array(arr) => stringify_array(arr.as_slice(), buf, ctx),
         Value::Map(map) => stringify_map(map, buf, ctx),
         Value::NativeFunction(_) => buf.push_str("<Function>"),
@@ -93,28 +94,41 @@ fn stringify_float(f: f64, buf: &mut String) {
     buf.push_str(ryu_buf.format(f));
 }
 
-fn stringify_string(s: &[u8], buf: &mut String, ctx: &StringifyContext) {
+fn stringify_string(s: &str, buf: &mut String, ctx: &StringifyContext) {
     if ctx.in_structure {
         escape_string(s, buf);
     } else {
-        match std::str::from_utf8(s) {
-            Ok(valid) => buf.push_str(valid),
-            Err(_) => escape_string(s, buf),
-        }
+        buf.push_str(s);
     }
 }
 
-fn escape_string(s: &[u8], buf: &mut String) {
+/// Bytes always render in Bytes-literal form, `x'6869'`, whatever the context, so
+/// binary is never mistaken for text: hex pairs, lowercase, inside `x'...'`.
+fn stringify_bytes(bytes: &[u8], buf: &mut String) {
+    buf.push_str("x'");
+    for &byte in bytes.iter() {
+        write!(buf, "{byte:02x}").unwrap();
+    }
+    buf.push('\'');
+}
+
+/// Escapes a String for display inside a structure.
+/// Printable text passes through as itself, so a non-ASCII character renders as the character it is.
+fn escape_string(s: &str, buf: &mut String) {
     buf.push('"');
-    for &byte in s.iter() {
-        match byte {
-            b'"' => buf.push_str("\\\""),
-            b'\\' => buf.push_str("\\\\"),
-            b'\n' => buf.push_str("\\n"),
-            b'\t' => buf.push_str("\\t"),
-            b'\r' => buf.push_str("\\r"),
-            0x20..=0x7e => buf.push(byte as char),
-            _ => write!(buf, "\\x{byte:02x}").unwrap(),
+    for ch in s.chars() {
+        match ch {
+            '"' => buf.push_str("\\\""),
+            '\\' => buf.push_str("\\\\"),
+            '\n' => buf.push_str("\\n"),
+            '\t' => buf.push_str("\\t"),
+            '\r' => buf.push_str("\\r"),
+            // A control character has no readable spelling, so it escapes as its
+            // scalar value: `\u{NN}`, minimal hex digits, matching Rust's `escape_debug`.
+            c if c.is_control() => {
+                write!(buf, "\\u{{{:x}}}", c as u32).unwrap();
+            }
+            c => buf.push(c),
         }
     }
     buf.push('"');
@@ -186,9 +200,8 @@ fn stringify_map(map: &FrostMap, buf: &mut String, ctx: &StringifyContext) {
 
 fn stringify_map_entry(key: &MapKey, value: &Value, buf: &mut String, ctx: &StringifyContext) {
     let shorthand_name = match key {
-        // Safe: is_identifier_like guarantees ASCII, which is valid UTF-8
         MapKey::String(s) if ctx.pretty && is_identifier_like_and_not_keyword(s) => {
-            Some(std::str::from_utf8(s).unwrap())
+            Some(s.as_ref())
         }
         _ => None,
     };
@@ -211,5 +224,6 @@ fn stringify_map_key(key: &MapKey, buf: &mut String, ctx: &StringifyContext) {
         MapKey::Int(i) => write!(buf, "{i}").unwrap(),
         MapKey::Float(f) => stringify_float(f.get(), buf),
         MapKey::String(s) => escape_string(s, buf),
+        MapKey::Bytes(b) => stringify_bytes(b, buf),
     }
 }

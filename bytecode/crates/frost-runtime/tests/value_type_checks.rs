@@ -76,6 +76,15 @@ fn is_structured() {
 }
 
 #[test]
+fn is_flat() {
+    assert!(Value::from("hi").is_flat());
+    assert!(Value::from(vec![0xffu8]).is_flat());
+    assert!(!Value::from(1i64).is_flat());
+    assert!(!Value::from(FrostArray::from(vec![])).is_flat());
+    assert!(!Value::Null.is_flat());
+}
+
+#[test]
 fn is_nonnull() {
     assert!(!Value::Null.is_nonnull());
     assert!(Value::from(false).is_nonnull());

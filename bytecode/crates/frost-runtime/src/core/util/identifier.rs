@@ -1,27 +1,28 @@
-macro_rules! define_keywords {
-    ($($kw:literal),+ $(,)?) => {
-        /// All Frost reserved keywords, as str slices.
-        pub const KEYWORDS: &[&str] = &[$($kw),+];
-        /// All Frost reserved keywords, as byte strings.
-        const RESERVED_KEYWORDS: &[&[u8]] = &[$($kw.as_bytes()),+];
-    };
-}
-
-define_keywords![
+/// Every word Frost reserves.
+/// A reserved word can never serve as an identifier, so a name matching one of
+/// these is rejected wherever Frost source must be able to refer to it.
+pub const KEYWORDS: &[&str] = &[
     "and", "as", "def", "defn", "do", "elif", "else", "export", "false", "filter", "fn", "foreach",
     "if", "init", "is", "map", "match", "not", "null", "or", "reduce", "true", "with",
 ];
 
-/// Determines if a byte string is a Frost keyword.
-pub fn is_reserved_keyword(s: &[u8]) -> bool {
-    RESERVED_KEYWORDS.contains(&s)
+/// Whether `s` is one of Frost's reserved [`KEYWORDS`].
+pub fn is_reserved_keyword(s: &str) -> bool {
+    KEYWORDS.contains(&s)
 }
 
-/// Determines if a byte string follows Frost identifier rules.
-/// Identifier rules are ASCII-only, so this works on raw bytes.
-/// This function is unaware of keywords.
-pub fn is_identifier_like(s: &[u8]) -> bool {
-    let Some((&first, rest)) = s.split_first() else {
+/// Whether `s` has the shape of a Frost identifier: an ASCII letter or `_`,
+/// followed by any number of ASCII letters, digits, or `_`.
+/// The empty string does not.
+///
+/// Shape only. A reserved word such as `if` is identifier-shaped and answers
+/// `true` here; [`is_identifier_like_and_not_keyword`] is the check for a name
+/// that must actually be usable.
+pub fn is_identifier_like(s: &str) -> bool {
+    // Identifier rules are ASCII-only, so bytes are enough: any multi-byte
+    // character fails the ASCII tests below whichever way it is inspected.
+    let mut bytes = s.bytes();
+    let Some(first) = bytes.next() else {
         return false;
     };
 
@@ -29,10 +30,15 @@ pub fn is_identifier_like(s: &[u8]) -> bool {
         return false;
     }
 
-    rest.iter().all(|b| b.is_ascii_alphanumeric() || *b == b'_')
+    bytes.all(|b| b.is_ascii_alphanumeric() || b == b'_')
 }
 
-/// Determines if a byte string follows Frost identifier rules, rejecting Frost keywords.
-pub fn is_identifier_like_and_not_keyword(s: &[u8]) -> bool {
+/// Whether `s` may be used as a Frost identifier: identifier-shaped, and not
+/// reserved.
+///
+/// The check to apply to a name that Frost source will refer to, such as an
+/// [`Extension`](crate::Extension) or [`HostComponent`](crate::HostComponent)
+/// name.
+pub fn is_identifier_like_and_not_keyword(s: &str) -> bool {
     is_identifier_like(s) && !is_reserved_keyword(s)
 }

@@ -81,7 +81,7 @@ fn fmap(pairs: Vec<(&str, Value)>) -> Value {
     Value::Map(
         pairs
             .into_iter()
-            .map(|(k, v)| (MapKey::String(Arc::from(k.as_bytes())), v))
+            .map(|(k, v)| (MapKey::String(Arc::from(k)), v))
             .collect(),
     )
 }
@@ -105,6 +105,7 @@ fn type_predicates() {
     let int = Value::Int(1);
     let flt = float(1.5);
     let string = Value::from("x");
+    let bytes = Value::from(vec![0xffu8]);
     let array = arr(vec![Value::Int(1)]);
     let map = fmap(vec![("a", Value::Int(1))]);
     let function = func_value();
@@ -120,6 +121,9 @@ fn type_predicates() {
         ("is_float", &int, false),
         ("is_string", &string, true),
         ("is_string", &int, false),
+        ("is_string", &bytes, false),
+        ("is_bytes", &bytes, true),
+        ("is_bytes", &string, false),
         ("is_array", &array, true),
         ("is_array", &map, false),
         ("is_map", &map, true),
@@ -136,12 +140,17 @@ fn type_predicates() {
         ("is_primitive", &int, true),
         ("is_primitive", &flt, true),
         ("is_primitive", &string, true),
+        ("is_primitive", &bytes, true),
         ("is_primitive", &array, false),
         ("is_primitive", &function, false),
         ("is_structured", &array, true),
         ("is_structured", &map, true),
         ("is_structured", &int, false),
         ("is_structured", &string, false),
+        ("is_flat", &string, true),
+        ("is_flat", &bytes, true),
+        ("is_flat", &int, false),
+        ("is_flat", &array, false),
     ];
 
     for &(global, value, expected) in cases {
@@ -169,23 +178,66 @@ fn type_names_the_value_type() {
     assert_eq!(g("type", vec![func_value()]), Value::from("Function"));
 }
 
+// `to_int` and `to_float` read a number from a Numeric or a String.
+// A value of any other type is a type error; a value of an accepted type whose content
+// will not convert is Null. The two outcomes are deliberately distinct.
+
 #[test]
-fn to_int_converts_or_nulls() {
+fn to_int_converts_numerics_and_text() {
     assert_eq!(g("to_int", vec![Value::Int(5)]), Value::Int(5));
     assert_eq!(g("to_int", vec![float(1.9)]), Value::Int(1)); // truncates toward zero
     assert_eq!(g("to_int", vec![Value::from("42")]), Value::Int(42));
-    assert_eq!(g("to_int", vec![Value::from("nope")]), Value::Null);
-    assert_eq!(g("to_int", vec![Value::Null]), Value::Null);
-    assert_eq!(g("to_int", vec![Value::Bool(true)]), Value::Null);
 }
 
 #[test]
-fn to_float_converts_or_nulls() {
+fn to_int_nulls_on_text_that_does_not_parse() {
+    assert_eq!(g("to_int", vec![Value::from("nope")]), Value::Null);
+}
+
+#[test]
+fn to_int_rejects_types_it_cannot_read_a_number_from() {
+    for v in [
+        Value::Null,
+        Value::Bool(true),
+        Value::from(vec![0x34u8, 0x32]), // Bytes spelling "42": still not a number
+        arr(vec![Value::Int(1)]),
+        fmap(vec![("a", Value::Int(1))]),
+    ] {
+        let type_name = v.type_name();
+        assert!(
+            run_global("to_int", vec![v]).is_err(),
+            "to_int({type_name}) should be a type error"
+        );
+    }
+}
+
+#[test]
+fn to_float_converts_numerics_and_text() {
     assert_eq!(g("to_float", vec![float(1.5)]), float(1.5));
     assert_eq!(g("to_float", vec![Value::Int(2)]), float(2.0));
     assert_eq!(g("to_float", vec![Value::from("3.5")]), float(3.5));
+}
+
+#[test]
+fn to_float_nulls_on_text_that_does_not_parse() {
     assert_eq!(g("to_float", vec![Value::from("nope")]), Value::Null);
-    assert_eq!(g("to_float", vec![Value::Null]), Value::Null);
+}
+
+#[test]
+fn to_float_rejects_types_it_cannot_read_a_number_from() {
+    for v in [
+        Value::Null,
+        Value::Bool(true),
+        Value::from(vec![0x33u8, 0x2e, 0x35]), // Bytes spelling "3.5"
+        arr(vec![Value::Int(1)]),
+        fmap(vec![("a", Value::Int(1))]),
+    ] {
+        let type_name = v.type_name();
+        assert!(
+            run_global("to_float", vec![v]).is_err(),
+            "to_float({type_name}) should be a type error"
+        );
+    }
 }
 
 // ============================================================
@@ -397,6 +449,7 @@ fn globals_enforce_arity() {
         "is_float",
         "is_bool",
         "is_string",
+        "is_bytes",
         "is_array",
         "is_map",
         "is_function",
@@ -404,6 +457,7 @@ fn globals_enforce_arity() {
         "is_numeric",
         "is_primitive",
         "is_structured",
+        "is_flat",
         "type",
         "to_int",
         "to_float",

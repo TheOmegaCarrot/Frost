@@ -1,35 +1,14 @@
-// These are pub(crate), so test via the behaviors they enable
-// (pretty-print map key formatting). For now, test the logic
-// directly by re-implementing the same rules and checking agreement
-// with the C++ oracle's output.
-//
-// Once these are pub or reexported, this file can import them directly.
+//! Tests for the identifier rules: what shapes a name may take, and which names
+//! Frost reserves. Expectations are cross-checked against the C++ oracle.
 
-/// Mirror of the identifier rules for testing against the C++ oracle.
-fn is_identifier_like(s: &str) -> bool {
-    let mut chars = s.chars();
-    let Some(first) = chars.next() else {
-        return false;
-    };
-    if !first.is_ascii_alphabetic() && first != '_' {
-        return false;
-    }
-    chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
-}
-
-const RESERVED_KEYWORDS: &[&str] = &[
-    "and", "as", "def", "defn", "do", "elif", "else", "export", "false", "filter", "fn", "foreach",
-    "if", "init", "is", "map", "match", "not", "null", "or", "reduce", "true", "with",
-];
-
-fn is_reserved_keyword(s: &str) -> bool {
-    RESERVED_KEYWORDS.contains(&s)
-}
+use frost_runtime::{
+    KEYWORDS, is_identifier_like, is_identifier_like_and_not_keyword, is_reserved_keyword,
+};
 
 // -- is_identifier_like --
 
 #[test]
-fn simple_identifiers() {
+fn valid_identifiers() {
     assert!(is_identifier_like("foo"));
     assert!(is_identifier_like("x"));
     assert!(is_identifier_like("hello_world"));
@@ -42,7 +21,7 @@ fn simple_identifiers() {
 }
 
 #[test]
-fn not_identifiers() {
+fn invalid_identifiers() {
     assert!(!is_identifier_like(""));
     assert!(!is_identifier_like("123"));
     assert!(!is_identifier_like("1abc"));
@@ -53,16 +32,22 @@ fn not_identifiers() {
     assert!(!is_identifier_like("$var"));
 }
 
+#[test]
+fn non_ascii_is_not_identifier_like() {
+    // The rules are ASCII-only, so letters outside it do not qualify however
+    // letter-like they read.
+    assert!(!is_identifier_like("naïve"));
+    assert!(!is_identifier_like("é"));
+    assert!(!is_identifier_like("日本"));
+}
+
 // -- is_reserved_keyword --
 
 #[test]
-fn all_keywords_recognized() {
-    let keywords = [
-        "and", "as", "def", "defn", "do", "elif", "else", "export", "false", "filter", "fn",
-        "foreach", "if", "init", "is", "map", "match", "not", "null", "or", "reduce", "true",
-        "with",
-    ];
-    for kw in keywords {
+fn every_listed_keyword_is_recognized() {
+    // Drawn from `KEYWORDS` itself rather than a copy, so the list cannot be
+    // extended without this covering the addition.
+    for kw in KEYWORDS {
         assert!(is_reserved_keyword(kw), "{kw} should be a keyword");
     }
 }
@@ -76,20 +61,37 @@ fn non_keywords() {
     assert!(!is_reserved_keyword(""));
 }
 
-// -- Combined: identifier-like but not a keyword --
+#[test]
+fn keywords_are_case_sensitive() {
+    assert!(is_reserved_keyword("if"));
+    assert!(!is_reserved_keyword("If"));
+    assert!(!is_reserved_keyword("IF"));
+}
+
+// -- is_identifier_like_and_not_keyword --
 
 #[test]
-fn identifier_like_keywords_are_keywords() {
-    // These are valid identifiers syntactically but are reserved
-    assert!(is_identifier_like("if"));
-    assert!(is_reserved_keyword("if"));
-    assert!(is_identifier_like("map"));
-    assert!(is_reserved_keyword("map"));
+fn a_keyword_is_identifier_shaped_but_not_usable() {
+    // The distinction between the two checks: shape alone accepts `if`.
+    for kw in KEYWORDS {
+        assert!(is_identifier_like(kw), "{kw} is identifier-shaped");
+        assert!(
+            !is_identifier_like_and_not_keyword(kw),
+            "{kw} is reserved, so it is not a usable identifier"
+        );
+    }
 }
 
 #[test]
-fn identifier_like_non_keywords() {
-    assert!(is_identifier_like("foo") && !is_reserved_keyword("foo"));
-    assert!(is_identifier_like("name") && !is_reserved_keyword("name"));
-    assert!(is_identifier_like("age") && !is_reserved_keyword("age"));
+fn an_ordinary_name_passes_both() {
+    for name in ["foo", "name", "age", "_private", "item42"] {
+        assert!(is_identifier_like_and_not_keyword(name), "{name}");
+    }
+}
+
+#[test]
+fn a_malformed_name_fails_regardless_of_keywords() {
+    assert!(!is_identifier_like_and_not_keyword(""));
+    assert!(!is_identifier_like_and_not_keyword("1abc"));
+    assert!(!is_identifier_like_and_not_keyword("foo-bar"));
 }

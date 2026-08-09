@@ -10,6 +10,7 @@ impl PartialEq for Value {
             (Value::Int(l), Value::Int(r)) => l == r,
             (Value::Float(l), Value::Float(r)) => l == r,
             (Value::String(l), Value::String(r)) => l == r,
+            (Value::Bytes(l), Value::Bytes(r)) => l == r,
             (Value::Array(l), Value::Array(r)) => l == r,
             (Value::Map(l), Value::Map(r)) => l == r,
             (Value::NativeFunction(l), Value::NativeFunction(r)) => Arc::ptr_eq(l, r),

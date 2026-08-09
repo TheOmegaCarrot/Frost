@@ -29,6 +29,7 @@ impl Value {
             Value::Int(_) => Ft::Int,
             Value::Float(_) => Ft::Float,
             Value::String(_) => Ft::String,
+            Value::Bytes(_) => Ft::Bytes,
             Value::Array(_) => Ft::Array,
             Value::Map(_) => Ft::Map,
             Value::NativeFunction(_) => Ft::Function,
@@ -68,6 +69,11 @@ impl Value {
         self.frost_type() == Ft::String
     }
 
+    /// Returns true if this value is a Bytes.
+    pub fn is_bytes(&self) -> bool {
+        self.frost_type() == Ft::Bytes
+    }
+
     /// Returns true if this value is an Array.
     pub fn is_array(&self) -> bool {
         self.frost_type() == Ft::Array
@@ -93,7 +99,7 @@ impl Value {
         self.fits(Ft::NUMERIC)
     }
 
-    /// Returns true if this value is Null, Bool, Int, Float, or String.
+    /// Returns true if this value is Null, Bool, Int, Float, String, or Bytes.
     pub fn is_primitive(&self) -> bool {
         self.fits(Ft::PRIMITIVE)
     }
@@ -101,6 +107,11 @@ impl Value {
     /// Returns true if this value is Array or Map.
     pub fn is_structured(&self) -> bool {
         self.fits(Ft::STRUCTURED)
+    }
+
+    /// Returns true if this value is String or Bytes.
+    pub fn is_flat(&self) -> bool {
+        self.fits(Ft::FLAT)
     }
 
     /// Returns true if this value is not Null.

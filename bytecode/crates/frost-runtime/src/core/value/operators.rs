@@ -21,8 +21,14 @@ impl Value {
                 Ok(Value::from(FrostFloat::try_from(l.get() + *r as f64)?))
             }
 
+            // Concatenation is same-type: text joins text, bytes join bytes.
+            // Mixing them falls to the type error below rather than picking a side.
             (Value::String(l), Value::String(r)) => {
-                Ok(Value::from(Arc::from([l.as_ref(), r.as_ref()].concat())))
+                Ok(Value::String(Arc::from(format!("{l}{r}").as_str())))
+            }
+
+            (Value::Bytes(l), Value::Bytes(r)) => {
+                Ok(Value::Bytes(Arc::from([l.as_ref(), r.as_ref()].concat())))
             }
 
             // Structural `+` has one home: `add_owned`. The clones are Arc bumps,
@@ -149,6 +155,7 @@ impl Value {
             (Value::Int(l), Value::Float(r)) => Ok(FrostFloat::from(*l).cmp(r)),
             (Value::Float(l), Value::Int(r)) => Ok(l.cmp(&FrostFloat::from(*r))),
             (Value::String(l), Value::String(r)) => Ok(l.cmp(r)),
+            (Value::Bytes(l), Value::Bytes(r)) => Ok(l.cmp(r)),
 
             (Value::Array(a), Value::Array(b)) => {
                 for (x, y) in a.iter().zip(b.iter()) {

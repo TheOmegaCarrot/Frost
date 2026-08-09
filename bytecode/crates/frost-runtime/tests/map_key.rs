@@ -63,12 +63,14 @@ fn map_key_ordering_cross_type_is_consistent() {
     let bool_key = MapKey::Bool(false);
     let int_key = MapKey::Int(0);
     let float_key = MapKey::Float(FrostFloat::new(0.0).unwrap());
-    let string_key = MapKey::String(Arc::from(b"" as &[u8]));
+    let string_key = MapKey::String(Arc::from(""));
+    let bytes_key = MapKey::Bytes(Arc::from(b"" as &[u8]));
 
-    // Exact order doesn't matter semantically, but it must be consistent
+    // The documented cross-type order: Bool < Int < Float < String < Bytes.
     assert!(bool_key < int_key);
     assert!(int_key < float_key);
     assert!(float_key < string_key);
+    assert!(string_key < bytes_key);
 }
 
 // -- T -> MapKey conversions --
@@ -76,13 +78,13 @@ fn map_key_ordering_cross_type_is_consistent() {
 #[test]
 fn key_from_str() {
     let k: MapKey = "hi".into();
-    assert!(matches!(&k, MapKey::String(b) if &**b == b"hi"));
+    assert!(matches!(&k, MapKey::String(s) if &**s == "hi"));
 }
 
 #[test]
 fn key_from_string() {
     let k: MapKey = String::from("hi").into();
-    assert!(matches!(&k, MapKey::String(b) if &**b == b"hi"));
+    assert!(matches!(&k, MapKey::String(s) if &**s == "hi"));
 }
 
 #[test]

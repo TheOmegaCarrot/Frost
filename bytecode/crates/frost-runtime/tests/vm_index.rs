@@ -61,7 +61,7 @@ fn ints(xs: &[i64]) -> Value {
 }
 
 fn skey(s: &str) -> MapKey {
-    MapKey::String(Arc::from(s.as_bytes()))
+    MapKey::String(Arc::from(s))
 }
 
 fn map(pairs: Vec<(MapKey, Value)>) -> Value {
@@ -318,6 +318,23 @@ fn hard_index_consumes_only_the_map() {
     )
     .unwrap();
     assert_eq!(out, Value::Int(99));
+}
+
+#[test]
+fn hard_index_reports_a_missing_bytes_key_as_a_literal() {
+    // The miss error renders the key through `Display`, which spells a Bytes key
+    // in `x'..'` literal form, so binary is never mistaken for text in the message.
+    let err = eval_keyed(
+        vec![map(vec![(skey("bar"), Value::Int(1))])],
+        vec![MapKey::from(vec![0xffu8, 0x00])],
+        vec![LoadConst(0), HardIndexMap(0)],
+    )
+    .unwrap_err();
+    assert!(
+        err.message().contains("x'ff00'"),
+        "got: {}",
+        err.message()
+    );
 }
 
 #[test]

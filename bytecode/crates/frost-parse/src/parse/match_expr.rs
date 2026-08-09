@@ -224,6 +224,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Token::Identifier("Float") => TypeConstraint::Float,
             Token::Identifier("Bool") => TypeConstraint::Bool,
             Token::Identifier("String") => TypeConstraint::String,
+            Token::Identifier("Bytes") => TypeConstraint::Bytes,
             Token::Identifier("Array") => TypeConstraint::Array,
             Token::Identifier("Map") => TypeConstraint::Map,
             Token::Identifier("Function") => TypeConstraint::Function,
@@ -396,8 +397,5 @@ fn literal_pattern(start: usize, end: usize, literal: Literal) -> Spanned<MatchP
 }
 
 fn string_key_expr(name: String, start: usize, end: usize) -> Spanned<Expr> {
-    Spanned::new(
-        Expr::Literal(Literal::String(name.into_bytes())),
-        (start..end).into(),
-    )
+    Spanned::new(Expr::Literal(Literal::String(name)), (start..end).into())
 }

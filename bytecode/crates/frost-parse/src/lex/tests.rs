@@ -560,6 +560,41 @@ fn raw_string_preserves_backslashes() {
     );
 }
 
+// ---- Bytes literals ----
+
+#[test]
+fn bytes_literal_single_quote() {
+    assert_eq!(lex_one("x'6869'"), Token::BytesLiteral("6869"));
+}
+
+#[test]
+fn bytes_literal_double_quote() {
+    assert_eq!(lex_one(r#"x"6869""#), Token::BytesLiteral("6869"));
+}
+
+#[test]
+fn bytes_literal_empty() {
+    assert_eq!(lex_one("x''"), Token::BytesLiteral(""));
+}
+
+#[test]
+fn bytes_literal_accepts_mixed_case_hex() {
+    assert_eq!(lex_one("x'FFab'"), Token::BytesLiteral("FFab"));
+}
+
+#[test]
+fn odd_length_is_a_lex_error() {
+    // Three hex digits can't pair, so the Bytes regex declines. logos cannot then
+    // fall back to the shorter identifier, so malformed content is a lex error
+    // rather than a silently misparsed literal.
+    assert!(Token::lexer("x'689'").any(|r| r.is_err()));
+}
+
+#[test]
+fn non_hex_is_a_lex_error() {
+    assert!(Token::lexer("x'zz'").any(|r| r.is_err()));
+}
+
 #[test]
 fn simple_string_single() {
     assert_eq!(lex_one("'hello'"), Token::SingleQuoteStringLiteral("hello"));

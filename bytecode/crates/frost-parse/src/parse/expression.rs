@@ -295,6 +295,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Token::DoubleQuoteFormatStringLiteral(_) => {
                 self.parse_format_string(strings::QuoteStyle::Double)
             }
+            Token::BytesLiteral(_) => self.parse_bytes_literal(),
 
             // -- Atoms: composite literals --
             Token::OpenBracket => self.parse_array_literal(),

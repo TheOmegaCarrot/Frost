@@ -49,21 +49,23 @@ fn from_string() {
 
 #[test]
 fn from_arc_bytes() {
+    // The `[u8]` family builds Bytes: a byte sequence carries no encoding claim,
+    // even when its contents happen to be readable text.
     let arc: Arc<[u8]> = Arc::from(b"hello" as &[u8]);
     let v: Value = arc.into();
-    assert!(matches!(v, Value::String(_)));
+    assert!(matches!(v, Value::Bytes(_)));
 }
 
 #[test]
 fn from_byte_slice() {
     let v: Value = (b"binary" as &[u8]).into();
-    assert!(matches!(v, Value::String(_)));
+    assert!(matches!(v, Value::Bytes(_)));
 }
 
 #[test]
 fn from_vec_u8() {
     let v: Value = vec![0u8, 1, 2, 255].into();
-    assert!(matches!(v, Value::String(_)));
+    assert!(matches!(v, Value::Bytes(_)));
 }
 
 #[test]

@@ -244,9 +244,8 @@ impl<'a> Walker<'a> {
                 let mut children = vec![];
                 for seg in segments {
                     match seg {
-                        FormatSegment::Literal(bytes) => {
-                            children
-                                .push(self.no_range(format!("FmtLiteral {}", bytes_label(bytes))));
+                        FormatSegment::Literal(text) => {
+                            children.push(self.no_range(format!("FmtLiteral {text:?}")));
                         }
                         FormatSegment::Interpolation(expr) => {
                             let inner = self.expr(expr);
@@ -466,12 +465,12 @@ fn literal_label(lit: &Literal) -> String {
         Literal::Bool(b) => format!("Bool({b})"),
         Literal::Int(i) => format!("Int({i})"),
         Literal::Float(f) => format!("Float({f})"),
-        Literal::String(bytes) => format!("String({})", bytes_label(bytes)),
+        Literal::String(text) => format!("String({text:?})"),
+        Literal::Bytes(bytes) => {
+            let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+            format!("Bytes(x'{hex}')")
+        }
     }
-}
-
-fn bytes_label(bytes: &[u8]) -> String {
-    format!("{:?}", String::from_utf8_lossy(bytes))
 }
 
 fn binop_symbol(op: BinOp) -> &'static str {

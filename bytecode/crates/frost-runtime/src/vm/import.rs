@@ -191,7 +191,7 @@ impl Extension {
     /// The way to resolve a collision reported by [`ImporterBuilder::with_extension`].
     pub fn rename(mut self, name: impl Into<String>) -> Result<Self, InvalidComponentName> {
         let name = name.into();
-        if is_identifier_like_and_not_keyword(name.as_bytes()) {
+        if is_identifier_like_and_not_keyword(&name) {
             self.0.name = name;
             Ok(self)
         } else {
@@ -210,7 +210,7 @@ impl Extension {
     /// `content` may be any Frost Value, but is generally a nested Map structure.
     pub fn new(name: impl Into<String>, content: Value) -> Result<Self, InvalidComponentName> {
         let name = name.into();
-        if is_identifier_like_and_not_keyword(name.as_bytes()) {
+        if is_identifier_like_and_not_keyword(&name) {
             Ok(Self(Module { name, content }))
         } else {
             Err(InvalidComponentName(name))
@@ -229,7 +229,7 @@ impl HostComponent {
     /// The way to resolve a rejection reported by [`ImporterBuilder::with_component`].
     pub fn rename(mut self, name: impl Into<String>) -> Result<Self, InvalidComponentName> {
         let name = name.into();
-        if is_identifier_like_and_not_keyword(name.as_bytes()) {
+        if is_identifier_like_and_not_keyword(&name) {
             self.0.name = name;
             Ok(self)
         } else {
@@ -248,7 +248,7 @@ impl HostComponent {
     /// `content` may be any Frost Value, but is generally a nested Map structure.
     pub fn new(name: impl Into<String>, content: Value) -> Result<Self, InvalidComponentName> {
         let name = name.into();
-        if is_identifier_like_and_not_keyword(name.as_bytes()) {
+        if is_identifier_like_and_not_keyword(&name) {
             Ok(Self(Module { name, content }))
         } else {
             Err(InvalidComponentName(name))

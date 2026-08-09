@@ -48,12 +48,20 @@ fn sample() -> CompiledFunction {
             Value::from(42i64),
             Value::from(FrostArray::from(vec![Value::from(1i64), Value::Null])),
             Value::from(int_keyed_map),
+            // Bytes: distinguished from an Array of small Ints by `ConstValue`'s
+            // variant tag, so the pair survives even a non-self-describing format.
+            Value::from(vec![0xffu8, 0x00]),
+            Value::from(FrostArray::from(vec![
+                Value::from(255i64),
+                Value::from(0i64),
+            ])),
         ],
         key_constants: vec![
             MapKey::from("field"),
             MapKey::Int(7),
             MapKey::Bool(true),
             MapKey::Float(1.5.try_into().unwrap()),
+            MapKey::from(vec![0xffu8]),
         ],
         name_table: vec![NameEntry {
             name: "x".into(),

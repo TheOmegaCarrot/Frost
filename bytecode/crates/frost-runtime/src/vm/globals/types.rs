@@ -1,9 +1,18 @@
 //! Type checking, conversion, and value serialization.
 
-use crate::{Arity, Param, Params, Value};
+use enumset::{EnumSet, enum_set};
+
+use crate::{Arity, FrostType, Param, Params, Value};
 
 /// The shared one-any-argument spec (`Exact(1)`).
 const ONE_ANY: Params = Params::new(&[Param::any()]);
+
+/// The spec for the numeric parsers: the types a number can be read from.
+/// A value of any other type is a type error, which is distinct from a value of the
+/// right type whose content will not convert: that returns Null.
+const NUMERIC_OR_STRING: EnumSet<FrostType> =
+    enum_set!(FrostType::Int | FrostType::Float | FrostType::String);
+const ONE_NUMERIC_OR_STRING: Params = Params::new(&[Param::of(NUMERIC_OR_STRING)]);
 
 /// A one-argument predicate native accepting any value.
 fn predicate(name: &'static str, pred: fn(&Value) -> bool) -> Value {
@@ -28,6 +37,10 @@ pub(super) fn is_bool_global() -> Value {
 
 pub(super) fn is_string_global() -> Value {
     predicate("is_string", Value::is_string)
+}
+
+pub(super) fn is_bytes_global() -> Value {
+    predicate("is_bytes", Value::is_bytes)
 }
 
 pub(super) fn is_array_global() -> Value {
@@ -58,6 +71,10 @@ pub(super) fn is_structured_global() -> Value {
     predicate("is_structured", Value::is_structured)
 }
 
+pub(super) fn is_flat_global() -> Value {
+    predicate("is_flat", Value::is_flat)
+}
+
 pub(super) fn type_global() -> Value {
     Value::checked_native("type", ONE_ANY, |_, args| {
         Ok(Value::from(args[0].type_name()))
@@ -77,9 +94,17 @@ pub(super) fn pretty_global() -> Value {
 }
 
 pub(super) fn to_int_global() -> Value {
-    Value::checked_native("to_int", ONE_ANY, |_, args| Ok(args[0].to_frost_int()))
+    Value::checked_native("to_int", ONE_NUMERIC_OR_STRING, |_, args| {
+        Ok(args[0].to_frost_int())
+    })
 }
 
 pub(super) fn to_float_global() -> Value {
-    Value::checked_native("to_float", ONE_ANY, |_, args| Ok(args[0].to_frost_float()))
+    Value::checked_native("to_float", ONE_NUMERIC_OR_STRING, |_, args| {
+        Ok(args[0].to_frost_float())
+    })
+}
+
+pub(super) fn to_bytes_global() -> Value {
+    super::stub("to_bytes")
 }
