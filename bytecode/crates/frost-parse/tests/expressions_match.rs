@@ -176,6 +176,31 @@ mod literals {
     }
 
     #[test]
+    fn bytes_literal() {
+        let expr = parse_expr("match x { x'6869' => 1 }");
+        let (_, arms) = assert_match(&expr);
+        let v = assert_value_pattern(&arms[0].node.pattern);
+        assert!(matches!(&v.node, Expr::Literal(Literal::Bytes(b)) if b == &[0x68, 0x69]));
+    }
+
+    #[test]
+    fn empty_bytes_literal() {
+        let expr = parse_expr("match x { x'' => 1 }");
+        let (_, arms) = assert_match(&expr);
+        let v = assert_value_pattern(&arms[0].node.pattern);
+        assert!(matches!(&v.node, Expr::Literal(Literal::Bytes(b)) if b.is_empty()));
+    }
+
+    #[test]
+    fn bytes_literal_in_alternative() {
+        let expr = parse_expr("match x { x'00' | x'ff' => 1 }");
+        let (_, arms) = assert_match(&expr);
+        let alts = assert_alternative(&arms[0].node.pattern);
+        assert!(matches!(&assert_value_pattern(&alts[0]).node, Expr::Literal(Literal::Bytes(b)) if b == &[0x00]));
+        assert!(matches!(&assert_value_pattern(&alts[1]).node, Expr::Literal(Literal::Bytes(b)) if b == &[0xff]));
+    }
+
+    #[test]
     fn negative_int_literal() {
         let expr = parse_expr("match x { -1 => true }");
         let (_, arms) = assert_match(&expr);

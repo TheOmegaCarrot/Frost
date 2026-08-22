@@ -143,6 +143,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
                 self.parse_multiline_string().map(expr_match_pattern)
             }
 
+            Token::BytesLiteral(_) => self.parse_bytes_literal().map(expr_match_pattern),
+
             Token::SingleQuoteFormatStringLiteral(_) | Token::DoubleQuoteFormatStringLiteral(_) => {
                 self.parse_format_string(match peek.token {
                     Token::SingleQuoteFormatStringLiteral(_) => QuoteStyle::Single,
