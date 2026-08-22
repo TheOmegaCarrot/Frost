@@ -75,6 +75,15 @@ impl NativeCtx<'_> {
                     return Err(err);
                 }
 
+                // Mirror the normal VM return path's guard: the body must leave
+                // exactly its result at the frame base, with no leaked or stolen
+                // caller operand.
+                debug_assert_eq!(
+                    self.vm.stack.len(),
+                    base + 1,
+                    "an invoked closure must leave exactly its result at the frame base"
+                );
+
                 let result = self
                     .vm
                     .stack

@@ -1049,6 +1049,14 @@ impl Vm {
                         panic!("IMPOSSIBLE: tail call in native frame");
                     };
 
+                    // The reused frame inherits gone_frame.base_idx below, so the two
+                    // must already agree: a mismatch means a stray operand sits above
+                    // the callee, which would silently corrupt a variadic rest array.
+                    debug_assert_eq!(
+                        base, gone_frame.base_idx,
+                        "tail call base must match the reused frame's base"
+                    );
+
                     // Reuse the popped frame's slot, inheriting its base and return
                     // address so the callee returns to the original caller.
                     self.push_closure_frame(
