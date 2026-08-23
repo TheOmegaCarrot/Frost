@@ -531,6 +531,23 @@ impl Vm {
 
                         self.stack.push(map.into());
                     }
+                    Bytecode::SplitArray(n) => {
+                        let arr = self.stack_pop().try_into_array().map_err(|v| {
+                            FrostError::from_string(format!("Expected Array, got {}", v.type_name()))
+                        })?;
+
+                        if arr.len() < n {
+                            return Err(FrostError::from_string(format!(
+                                "Array split expected length {n}, but got Array of length {}",
+                                arr.len()
+                            )));
+                        }
+
+                        let mut head = arr.into_vec();
+                        let tail = head.split_off(n);
+                        self.stack.push(Value::from(head));
+                        self.stack.push(Value::from(tail));
+                    }
                     Bytecode::SoftIndexStructure => {
                         let index = self.stack_pop();
                         let structure = self.stack_pop();

@@ -81,6 +81,14 @@ pub enum Bytecode {
     // Operand MUST be an Array, and preceding code MUST validate this.
     ExplodeArray,
 
+    // Split an Array into two Arrays.
+    // The operand is replaced by an Array containing the first N elements of the operand.
+    // The remaining elements are collected into an Array which is at the top of the stack.
+    // The latter Array is permitted to be empty.
+    // Produces an error if its operand is not an Array or is of length less than N.
+    // ( [X] -- [N] [X-N] )
+    SplitArray(usize),
+
     // Index a structure, structure is below the index initially (consumed)
     // Leaves a single value on the stack
     SoftIndexStructure, // Null on missing

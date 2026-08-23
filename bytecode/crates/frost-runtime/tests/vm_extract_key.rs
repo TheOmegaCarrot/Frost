@@ -52,13 +52,19 @@ fn extract_key(map: Value, key: Value) -> Result<Value, FrostError> {
 #[test]
 fn present_string_key_returns_value() {
     let map = Value::map([("a", Value::from(42i64))]);
-    assert_eq!(extract_key(map, Value::from("a")).unwrap(), Value::from(42i64));
+    assert_eq!(
+        extract_key(map, Value::from("a")).unwrap(),
+        Value::from(42i64)
+    );
 }
 
 #[test]
 fn present_int_key_returns_value() {
     let map = Value::map([(1i64, Value::from("x"))]);
-    assert_eq!(extract_key(map, Value::from(1i64)).unwrap(), Value::from("x"));
+    assert_eq!(
+        extract_key(map, Value::from(1i64)).unwrap(),
+        Value::from("x")
+    );
 }
 
 #[test]
