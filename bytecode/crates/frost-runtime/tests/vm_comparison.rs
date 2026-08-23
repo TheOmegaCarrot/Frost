@@ -416,7 +416,7 @@ fn every_ordering_opcode_errors_on_unorderable_operands() {
     ] {
         let err = eval(vec![], vec![PushTrue, PushFalse, op]).unwrap_err();
         assert!(
-            err.message().contains("Cannot compare"),
+            err.message().contains("not orderable"),
             "op {op:?} should be a type error, got: {}",
             err.message()
         );
@@ -427,7 +427,7 @@ fn every_ordering_opcode_errors_on_unorderable_operands() {
 fn ordering_null_is_type_error() {
     let err = eval(vec![], vec![PushNull, PushNull, CompareLessThan]).unwrap_err();
     assert!(
-        err.message().contains("Cannot compare"),
+        err.message().contains("not orderable"),
         "got: {}",
         err.message()
     );
@@ -441,7 +441,7 @@ fn ordering_maps_is_type_error() {
     )
     .unwrap_err();
     assert!(
-        err.message().contains("Cannot compare"),
+        err.message().contains("not orderable"),
         "got: {}",
         err.message()
     );

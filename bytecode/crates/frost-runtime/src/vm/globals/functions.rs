@@ -66,7 +66,7 @@ pub(super) fn try_call_global() -> Value {
 fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {
     // Preflight type-checking guarantees the first argument is a Function,
     // and the second is an Array (if present).
-    let function = args[0].clone();
+    let function = args[0].take();
     let call_args = match args.get_mut(1).map(Value::take) {
         Some(Value::Array(arr)) => arr,
         None => FrostArray::empty(),

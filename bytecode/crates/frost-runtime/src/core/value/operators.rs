@@ -167,12 +167,33 @@ impl Value {
                 Ok(a.len().cmp(&b.len()))
             }
 
+            // Same-type values that have no ordering (Bool, Null, Map, Function, ...)
+            // are unorderable, not mismatched; naming the one type reads better than
+            // "X and X".
+            _ if self.type_name() == rhs.type_name() => {
+                Err(format!("Type {} is not orderable", self.type_name()).into())
+            }
+
             _ => Err(format!(
                 "Cannot compare incompatible types: {} and {}",
                 self.type_name(),
                 rhs.type_name()
             )
             .into()),
+        }
+    }
+
+    /// Frost unary `-`: numeric negation. A non-numeric operand is a type error.
+    pub fn negate(&self) -> Result<Value, FrostError> {
+        match self {
+            Value::Int(i) => Ok(Value::from(i.wrapping_neg())),
+            // Negating a float that is already non-NaN and finite cannot produce
+            // NaN or Infinity, so the unwrap cannot fail.
+            Value::Float(f) => Ok(Value::Float(FrostFloat::new(-f.get()).unwrap())),
+            _ => Err(FrostError::from_string(format!(
+                "Cannot negate value of type {}",
+                self.type_name()
+            ))),
         }
     }
 }

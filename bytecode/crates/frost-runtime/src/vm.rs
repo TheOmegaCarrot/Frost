@@ -392,24 +392,11 @@ impl Vm {
                     }
                     Bytecode::LogicalNot => {
                         let operand = self.stack_pop();
-                        let result = Value::from(!operand.is_truthy());
-                        self.stack.push(result);
+                        self.stack.push(Value::from(!operand.is_truthy()));
                     }
                     Bytecode::Negate => {
                         let operand = self.stack_pop();
-                        let result = match operand {
-                            Value::Int(i) => Value::from(i.wrapping_neg()),
-                            // Negating a float that is already non-NaN and finite
-                            // cannot produce NaN or Infinity, so the unwrap cannot fail.
-                            Value::Float(f) => Value::Float(FrostFloat::new(-f.get()).unwrap()),
-                            _ => {
-                                return Err(FrostError::from_string(format!(
-                                    "Cannot negate value of type {}",
-                                    operand.type_name()
-                                )));
-                            }
-                        };
-                        self.stack.push(result);
+                        self.stack.push(operand.negate()?);
                     }
                     // `pc += n` composes with the shared `pc += 1` below:
                     // the offset counts skipped instructions, not an absolute target.
