@@ -1,5 +1,7 @@
 //! The bytecode instruction set.
 
+use std::num::NonZeroUsize;
+
 use enumset::EnumSet;
 
 use crate::{FrostFloat, FrostType};
@@ -46,6 +48,13 @@ pub enum Bytecode {
     // Unary
     LogicalNot,
     Negate,
+
+    // Concatenate multiple values into one String.
+    // First converts each value as if by the Frost-level `to_string`
+    // (`Value::to_frost_string`): top-level Strings are unquoted.
+    // The top of the stack appears as the last component of the String.
+    // ( x1 x2 ... xN -- s )
+    Concat(NonZeroUsize),
 
     // Flow
     // Jump ahead N instructions

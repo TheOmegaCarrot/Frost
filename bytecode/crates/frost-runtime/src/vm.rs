@@ -398,6 +398,20 @@ impl Vm {
                         let operand = self.stack_pop();
                         self.stack.push(operand.negate()?);
                     }
+                    Bytecode::Concat(n) => {
+                        let base = self.stack.len() - n.get();
+                        let result = self.stack.iter().skip(base).fold(
+                            String::new(),
+                            |mut acc, v| {
+                                acc.push_str(&v.to_frost_string());
+                                acc
+                            },
+                        );
+
+                        self.stack.truncate(base);
+
+                        self.stack.push(Value::from(result));
+                    }
                     // `pc += n` composes with the shared `pc += 1` below:
                     // the offset counts skipped instructions, not an absolute target.
                     Bytecode::Jump(n) => {
@@ -533,7 +547,10 @@ impl Vm {
                     }
                     Bytecode::SplitArray(n) => {
                         let arr = self.stack_pop().try_into_array().map_err(|v| {
-                            FrostError::from_string(format!("Expected Array, got {}", v.type_name()))
+                            FrostError::from_string(format!(
+                                "Expected Array, got {}",
+                                v.type_name()
+                            ))
                         })?;
 
                         if arr.len() < n {
