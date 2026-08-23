@@ -581,6 +581,20 @@ impl Vm {
                             }
                         }
                     }
+                    Bytecode::TestKey => {
+                        let m = &self.stack[self.stack.len() - 2];
+
+                        let has = match m.as_map() {
+                            None => false,
+                            Some(m) => {
+                                let k = self.stack[self.stack.len() - 1].clone();
+                                let k = MapKey::try_from(k)?;
+                                m.contains_key(&k)
+                            }
+                        };
+
+                        self.stack.push(Value::from(has));
+                    }
                     Bytecode::TestArrayLenExact(size) => {
                         self.test_array_len(|len| len == size);
                     }

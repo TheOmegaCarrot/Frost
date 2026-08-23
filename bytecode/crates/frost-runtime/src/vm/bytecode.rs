@@ -89,6 +89,11 @@ pub enum Bytecode {
     // The key is in the key-constant pool at the index stored in this variant.
     HardIndexMap(usize), // Error on missing
 
+    // Test if a map contains a key: ( m k -- m k b )
+    // Pushes true if Map m contains key k, pushes false if absent or if m is not a Map.
+    // Produces an error if k is not a valid Map key.
+    TestKey,
+
     // Consumes the value at the top of the stack, and produces a bool depending if the value's
     // type is in the given set.
     TypeTest(EnumSet<FrostType>),
