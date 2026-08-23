@@ -330,11 +330,7 @@ fn hard_index_reports_a_missing_bytes_key_as_a_literal() {
         vec![LoadConst(0), HardIndexMap(0)],
     )
     .unwrap_err();
-    assert!(
-        err.message().contains("x'ff00'"),
-        "got: {}",
-        err.message()
-    );
+    assert!(err.message().contains("x'ff00'"), "got: {}", err.message());
 }
 
 #[test]

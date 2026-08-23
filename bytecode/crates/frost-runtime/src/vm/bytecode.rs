@@ -93,6 +93,13 @@ pub enum Bytecode {
     // type is in the given set.
     TypeTest(EnumSet<FrostType>),
 
+    // Array length queries: ( x -- x b )
+    // Does not consume its operand, and pushes true if its operand is an Array satisfying the
+    // specified length requirement. Pushes false if the Array size requirement is unsatisfied, or
+    // if its operand is not an Array.
+    TestArrayLenExact(usize),
+    TestArrayLenAtLeast(usize),
+
     // Consume the value atop the stack and attach it to an error.
     // The error is then produced, and enters the usual flow of a user-code error.
     ProduceError,

@@ -196,8 +196,12 @@ mod literals {
         let expr = parse_expr("match x { x'00' | x'ff' => 1 }");
         let (_, arms) = assert_match(&expr);
         let alts = assert_alternative(&arms[0].node.pattern);
-        assert!(matches!(&assert_value_pattern(&alts[0]).node, Expr::Literal(Literal::Bytes(b)) if b == &[0x00]));
-        assert!(matches!(&assert_value_pattern(&alts[1]).node, Expr::Literal(Literal::Bytes(b)) if b == &[0xff]));
+        assert!(
+            matches!(&assert_value_pattern(&alts[0]).node, Expr::Literal(Literal::Bytes(b)) if b == &[0x00])
+        );
+        assert!(
+            matches!(&assert_value_pattern(&alts[1]).node, Expr::Literal(Literal::Bytes(b)) if b == &[0xff])
+        );
     }
 
     #[test]

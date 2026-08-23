@@ -621,7 +621,11 @@ fn a_plain_vec_u8_comes_from_an_array() {
     assert_eq!(v, vec![1u8, 2]);
 
     let err = from_value::<Vec<u8>>(Value::from(vec![1u8, 2])).unwrap_err();
-    assert!(err.message().contains("expected Array"), "{}", err.message());
+    assert!(
+        err.message().contains("expected Array"),
+        "{}",
+        err.message()
+    );
 }
 
 #[test]

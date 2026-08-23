@@ -88,7 +88,9 @@ pub(crate) fn decode_unicode_escape(hex: &str) -> Result<char, String> {
         return Err(format!("invalid \\u escape: \\u{{{hex}}}"));
     }
     if hex.len() > 6 {
-        return Err(format!("\\u escape has more than 6 hex digits: \\u{{{hex}}}"));
+        return Err(format!(
+            "\\u escape has more than 6 hex digits: \\u{{{hex}}}"
+        ));
     }
     let code = u32::from_str_radix(hex, 16).expect("body is 1-6 hex digits");
     char::from_u32(code).ok_or_else(|| format!("\\u{{{hex}}} is not a valid Unicode scalar value"))

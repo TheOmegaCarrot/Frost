@@ -96,10 +96,18 @@ fn mixing_string_and_bytes_under_plus_is_an_error() {
     // The message must name both operand types: "incompatible" alone would pass
     // for every `+` type error and so would prove nothing about this rule.
     let err = Value::from("ab").add(&bytes(b"cd")).unwrap_err();
-    assert!(err.message().contains("String + Bytes"), "{}", err.message());
+    assert!(
+        err.message().contains("String + Bytes"),
+        "{}",
+        err.message()
+    );
 
     let err = bytes(b"cd").add(&Value::from("ab")).unwrap_err();
-    assert!(err.message().contains("Bytes + String"), "{}", err.message());
+    assert!(
+        err.message().contains("Bytes + String"),
+        "{}",
+        err.message()
+    );
 }
 
 // ============================================================

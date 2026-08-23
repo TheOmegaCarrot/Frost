@@ -581,6 +581,12 @@ impl Vm {
                             }
                         }
                     }
+                    Bytecode::TestArrayLenExact(size) => {
+                        self.test_array_len(|len| len == size);
+                    }
+                    Bytecode::TestArrayLenAtLeast(size) => {
+                        self.test_array_len(|len| len >= size);
+                    }
                     Bytecode::TypeTest(types) => {
                         let operand = self.stack_pop();
                         self.stack.push(operand.fits(types).into());
@@ -792,6 +798,18 @@ impl Vm {
         let lhs = self.stack_pop();
         self.stack.push(op(&lhs, &rhs)?);
         Ok(())
+    }
+
+    /// The `TestArrayLen*` opcodes: peek the top operand and push whether it is an
+    /// Array whose length satisfies `matches`. Non-consuming (the operand stays
+    /// beneath the pushed bool); a non-Array operand pushes false.
+    fn test_array_len(&mut self, matches: impl FnOnce(usize) -> bool) {
+        let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
+        let ok = match operand {
+            Value::Array(arr) => matches(arr.len()),
+            _ => false,
+        };
+        self.stack.push(Value::from(ok));
     }
 
     /// The `Add` opcode: pops both operands into the owned [`Value::add_owned`].
