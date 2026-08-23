@@ -489,7 +489,16 @@ impl Vm {
                                 args.type_name()
                             )));
                         }
-                        let argc = self.explode_array();
+                        // Spread the args array in call order: arg 0 deepest, last on top.
+                        let Value::Array(arr) = self.stack_pop() else {
+                            unreachable!("DynTailCall operand checked as Array above")
+                        };
+                        let before = self.stack.len();
+                        match arr.try_into_vec() {
+                            Ok(vec) => self.stack.extend(vec),
+                            Err(arr) => self.stack.extend(arr.iter().cloned()),
+                        }
+                        let argc = self.stack.len() - before;
                         match self.tail_call(argc, NonZeroUsize::new(pc + 1))? {
                             TailFlow::Reenter => {
                                 pc = 0;
@@ -499,7 +508,14 @@ impl Vm {
                         }
                     }
                     Bytecode::ExplodeArray => {
-                        self.explode_array();
+                        let Value::Array(arr) = self.stack_pop() else {
+                            panic!("explode: operand not Array");
+                        };
+                        // Pattern order: first element ends on top, last deepest.
+                        match arr.try_into_vec() {
+                            Ok(vec) => self.stack.extend(vec.into_iter().rev()),
+                            Err(arr) => self.stack.extend(arr.iter().rev().cloned()),
+                        }
                     }
                     Bytecode::CreateClosure {
                         num_captures,
@@ -1054,20 +1070,6 @@ impl Vm {
             Arity::Exact(_) => {}
         }
         Ok(())
-    }
-
-    /// Pop the top operand (which must be an Array) and push its elements in order,
-    /// returning the count. Backs `ExplodeArray` and the arg-spread of `DynTailCall`.
-    fn explode_array(&mut self) -> usize {
-        let Value::Array(arr) = self.stack_pop() else {
-            panic!("explode: operand not Array");
-        };
-        let before = self.stack.len();
-        match arr.try_into_vec() {
-            Ok(vec) => self.stack.extend(vec),
-            Err(arr) => self.stack.extend(arr.iter().cloned()),
-        }
-        self.stack.len() - before
     }
 
     /// Shared dispatch for `TailCall` and `DynTailCall`: with the callee and its

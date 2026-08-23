@@ -86,8 +86,9 @@ pub enum Bytecode {
     // Consume 2N items from the stack, as kv pairs
     // Keys are below their corresponding values
     MakeMap(usize),
-    // Inverse of MakeArray: blast Array contents onto the stack.
-    // Operand MUST be an Array, and preceding code MUST validate this.
+    // Explode an Array's contents onto the stack, but in reverse,
+    // so the first element ends on top. Operand must be an Array (panics otherwise).
+    // ( a -- aN ... a1 a0 )
     ExplodeArray,
 
     // Split an Array into two Arrays.

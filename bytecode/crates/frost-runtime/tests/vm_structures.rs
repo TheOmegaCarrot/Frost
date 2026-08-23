@@ -269,28 +269,27 @@ fn explode_single_element() {
 }
 
 #[test]
-fn explode_puts_array_back_on_top() {
-    // [1, 2, 3] explodes so the back element (3) lands on top; drop the two below it
-    // to isolate the top and prove it is 3.
+fn explode_puts_first_element_on_top() {
+    // [1, 2, 3] explodes in reverse, so the first element (1) lands on top; drop the
+    // two below it to isolate the top and prove it is 1.
     let out = eval(
         vec![array(vec![Value::Int(1), Value::Int(2), Value::Int(3)])],
         vec![LoadConst(0), ExplodeArray, DropBelow(1), DropBelow(1)],
     )
     .unwrap();
-    assert_eq!(out, Value::Int(3));
+    assert_eq!(out, Value::Int(1));
 }
 
 #[test]
-fn explode_then_make_array_round_trips() {
-    // ExplodeArray followed by MakeArray(n) is the identity: proves element
-    // order is preserved. (Clone path: the constant table still references it.)
-    let original = array(vec![Value::Int(1), Value::Int(2), Value::Int(3)]);
+fn explode_then_make_array_reverses() {
+    // ExplodeArray pushes in reverse (first element on top), so MakeArray(n) rebuilds
+    // the array reversed. (Clone path: the constant table still references it.)
     let out = eval(
-        vec![original.clone()],
+        vec![array(vec![Value::Int(1), Value::Int(2), Value::Int(3)])],
         vec![LoadConst(0), ExplodeArray, MakeArray(3)],
     )
     .unwrap();
-    assert_eq!(out, original);
+    assert_eq!(out, array(vec![Value::Int(3), Value::Int(2), Value::Int(1)]));
 }
 
 #[test]
@@ -306,9 +305,10 @@ fn explode_consumes_array_and_pushes_each_element() {
 }
 
 #[test]
-fn explode_uniquely_owned_array_round_trips() {
+fn explode_uniquely_owned_array_reverses() {
     // Build the array with MakeArray (uniquely owned -> try_into_vec moves), then
-    // explode and rebuild. Exercises the zero-copy steal path.
+    // explode and rebuild; the reverse push yields the elements reversed. Exercises
+    // the zero-copy steal path.
     assert_eq!(
         val(vec![
             PushInt(1),
@@ -317,30 +317,31 @@ fn explode_uniquely_owned_array_round_trips() {
             ExplodeArray,
             MakeArray(2)
         ]),
-        array(vec![Value::Int(1), Value::Int(2)])
+        array(vec![Value::Int(2), Value::Int(1)])
     );
 }
 
 #[test]
-fn explode_mixed_types_round_trips() {
-    let original = array(vec![Value::Int(1), Value::from("x"), Value::Null]);
+fn explode_mixed_types_reverses() {
     let out = eval(
-        vec![original.clone()],
+        vec![array(vec![Value::Int(1), Value::from("x"), Value::Null])],
         vec![LoadConst(0), ExplodeArray, MakeArray(3)],
     )
     .unwrap();
-    assert_eq!(out, original);
+    assert_eq!(out, array(vec![Value::Null, Value::from("x"), Value::Int(1)]));
 }
 
 #[test]
 fn explode_is_shallow() {
     // Exploding [[1], [2]] pushes the two inner arrays as single values, not their
-    // contents; re-collecting yields the original nested structure.
-    let original = array(vec![array(vec![Value::Int(1)]), array(vec![Value::Int(2)])]);
+    // contents; re-collecting (explode reverses) yields [[2], [1]], still nested.
     let out = eval(
-        vec![original.clone()],
+        vec![array(vec![array(vec![Value::Int(1)]), array(vec![Value::Int(2)])])],
         vec![LoadConst(0), ExplodeArray, MakeArray(2)],
     )
     .unwrap();
-    assert_eq!(out, original);
+    assert_eq!(
+        out,
+        array(vec![array(vec![Value::Int(2)]), array(vec![Value::Int(1)])])
+    );
 }
