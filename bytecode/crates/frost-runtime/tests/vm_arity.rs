@@ -141,7 +141,7 @@ fn omitted_vs_present_probe() -> Arc<CompiledFunction> {
         code: vec![
             PushInt(1),    //  0: [.., argc, 1]
             CompareEqual,  //  1: argc == 1 ?  -> [.., bool]
-            JumpIfTrue(4), //  2: -> present branch (idx 7); bool not consumed
+            PeekJumpIfTrue(4), //  2: -> present branch (idx 7); bool not consumed
             Pop,           //  3: absent: drop the bool
             Pop,           //  4: drop the closure value at base
             PushInt(-1),   //  5: result sentinel for "omitted"

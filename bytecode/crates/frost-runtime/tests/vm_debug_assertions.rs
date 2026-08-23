@@ -52,7 +52,7 @@ fn a_jump_past_the_end_is_caught() {
 #[should_panic(expected = "leaves the function")]
 fn a_conditional_jump_past_the_end_is_caught() {
     run_fn(func(
-        vec![PushTrue, JumpIfTrue(50)],
+        vec![PushTrue, PeekJumpIfTrue(50)],
         Arity::Exact(0),
         vec![],
         vec![],
@@ -77,7 +77,7 @@ fn a_not_taken_jump_is_never_checked() {
     // The target is only meaningful when the branch is taken; an untaken branch
     // past the end is unreachable code, not a violation.
     run_fn(func(
-        vec![PushFalse, JumpIfTrue(50), Pop],
+        vec![PushFalse, PeekJumpIfTrue(50), Pop],
         Arity::Exact(0),
         vec![],
         vec![],
@@ -118,7 +118,7 @@ fn popping_below_the_frame_base_is_caught() {
 fn branching_on_a_callers_operand_is_caught() {
     // A peek rather than a pop: reading the caller's top would branch on a value
     // this function never produced, and the stack would look untouched afterward.
-    let callee = func(vec![Pop, JumpIfTrue(0)], Arity::Exact(0), vec![], vec![]);
+    let callee = func(vec![Pop, PeekJumpIfTrue(0)], Arity::Exact(0), vec![], vec![]);
     run_fn(calling_program(2, callee));
 }
 

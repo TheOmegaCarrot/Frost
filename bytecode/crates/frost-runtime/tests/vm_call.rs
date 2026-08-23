@@ -321,7 +321,7 @@ fn call_drives_a_recursive_loop() {
             LoadLocal(1),            // 3: n
             PushInt(0),              // 4
             CompareLessThanOrEqual,  // 5: n <= 0 ?
-            JumpIfTrue(9),           // 6: -> base (idx 16)
+            PeekJumpIfTrue(9),           // 6: -> base (idx 16)
             Pop,                     // 7: recurse: drop the comparison bool
             LoadGlobal(call_slot()), // 8: call
             LoadLocal(0),            // 9: self (the function call() will invoke)

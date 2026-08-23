@@ -60,9 +60,15 @@ pub enum Bytecode {
     // Jump ahead N instructions
     // N is the number of instructions that are skipped over,
     // such that `Jump(0)` is a funny way to spell `Nop`
-    Jump(usize),        // unconditionally
-    JumpIfTrue(usize),  // only if the top of the stack is true (NOT consumed)
-    JumpIfFalse(usize), // only if the top of the stack is falsey (NOT consumed)
+    Jump(usize), // unconditionally
+    // Consuming conditional jumps: pop the top of the stack and jump if it was
+    // true / falsey respectively.
+    JumpIfTrue(usize),
+    JumpIfFalse(usize),
+    // Non-consuming conditional jumps: peek the top of the stack (leaving it in
+    // place) and jump if it is true / falsey respectively.
+    PeekJumpIfTrue(usize),
+    PeekJumpIfFalse(usize),
 
     // Functions
     // N args on the stack, with a function under the args

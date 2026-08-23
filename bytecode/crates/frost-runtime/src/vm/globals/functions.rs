@@ -33,7 +33,7 @@ pub(super) fn call_global() -> Value {
                 // second arg was supplied (n == 1).
                 Bytecode::PushInt(1),
                 Bytecode::CompareEqual,   // 1: n == 1 ? -> needEmpty
-                Bytecode::JumpIfFalse(3), // 2: n == 2 -> a real array was passed (idx 6)
+                Bytecode::PeekJumpIfFalse(3), // 2: n == 2 -> a real array was passed (idx 6)
                 Bytecode::Pop,            // 3: drop needEmpty
                 Bytecode::MakeArray(0),   // 4: ( call_self f [] )
                 Bytecode::Jump(1),        // 5: -> idx 7 (skip idx 6)

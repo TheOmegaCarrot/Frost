@@ -418,16 +418,30 @@ impl Vm {
                         pc += n;
                         self.debug_assert_jump_target(pc);
                     }
+                    // Consuming conditional jumps: pop the tested value.
                     Bytecode::JumpIfTrue(n) => {
-                        self.debug_assert_own_top("JumpIfTrue");
+                        if self.stack_pop().is_truthy() {
+                            pc += n;
+                            self.debug_assert_jump_target(pc);
+                        }
+                    }
+                    Bytecode::JumpIfFalse(n) => {
+                        if !self.stack_pop().is_truthy() {
+                            pc += n;
+                            self.debug_assert_jump_target(pc);
+                        }
+                    }
+                    // Non-consuming conditional jumps: peek the tested value, leaving it.
+                    Bytecode::PeekJumpIfTrue(n) => {
+                        self.debug_assert_own_top("PeekJumpIfTrue");
                         let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
                         if operand.is_truthy() {
                             pc += n;
                             self.debug_assert_jump_target(pc);
                         }
                     }
-                    Bytecode::JumpIfFalse(n) => {
-                        self.debug_assert_own_top("JumpIfFalse");
+                    Bytecode::PeekJumpIfFalse(n) => {
+                        self.debug_assert_own_top("PeekJumpIfFalse");
                         let operand = self.stack.last().expect("FROST STACK UNDERFLOW");
                         if !operand.is_truthy() {
                             pc += n;
