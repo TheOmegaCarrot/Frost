@@ -94,6 +94,11 @@ pub enum Bytecode {
     // Produces an error if k is not a valid Map key.
     TestKey,
 
+    // Look up a key in a Map, without consuming the Map.
+    // Produces an error if the key is absent, if m is not a Map, or if k is not a valid Map key.
+    // ( m k -- m v )
+    ExtractKey,
+
     // Consumes the value at the top of the stack, and produces a bool depending if the value's
     // type is in the given set.
     TypeTest(EnumSet<FrostType>),

@@ -92,7 +92,10 @@ fn present_float_key_is_true() {
 #[test]
 fn present_bytes_key_is_true() {
     let map = Value::map([(b"hi".to_vec(), Value::from(1i64))]);
-    assert_eq!(test_key(map, Value::from(b"hi".to_vec())).unwrap(), Value::from(true));
+    assert_eq!(
+        test_key(map, Value::from(b"hi".to_vec())).unwrap(),
+        Value::from(true)
+    );
 }
 
 #[test]
@@ -100,7 +103,10 @@ fn valid_key_of_mismatched_type_is_false() {
     // The map is string-keyed; an Int is a valid key type but not present, so this
     // is a plain false, not a raise. (Int 1 and Float 1.0 are also distinct keys.)
     let map = Value::map([("1", Value::from("x"))]);
-    assert_eq!(test_key(map, Value::from(1i64)).unwrap(), Value::from(false));
+    assert_eq!(
+        test_key(map, Value::from(1i64)).unwrap(),
+        Value::from(false)
+    );
 }
 
 // ---- Non-Map operand: false, never a raise ----
@@ -108,7 +114,10 @@ fn valid_key_of_mismatched_type_is_false() {
 #[test]
 fn non_map_is_false() {
     // Regression: the non-Map branch must fall through and advance pc, not loop.
-    assert_eq!(test_key(Value::from(5i64), Value::from("a")).unwrap(), Value::from(false));
+    assert_eq!(
+        test_key(Value::from(5i64), Value::from("a")).unwrap(),
+        Value::from(false)
+    );
 }
 
 #[test]
@@ -116,7 +125,10 @@ fn non_map_with_invalid_key_type_is_false() {
     // Non-Map short-circuits to false before the key type is validated, so an
     // otherwise-invalid key does not raise here.
     let bad_key = Value::array([Value::from(1i64)]);
-    assert_eq!(test_key(Value::from(5i64), bad_key).unwrap(), Value::from(false));
+    assert_eq!(
+        test_key(Value::from(5i64), bad_key).unwrap(),
+        Value::from(false)
+    );
 }
 
 // ---- Invalid key type against a Map: raises ----

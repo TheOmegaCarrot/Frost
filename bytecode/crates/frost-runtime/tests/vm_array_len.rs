@@ -50,54 +50,84 @@ fn test_len(operand: Value, op: Bytecode) -> Value {
 
 #[test]
 fn exact_matching_length_is_true() {
-    assert_eq!(test_len(arr(2), Bytecode::TestArrayLenExact(2)), Value::from(true));
+    assert_eq!(
+        test_len(arr(2), Bytecode::TestArrayLenExact(2)),
+        Value::from(true)
+    );
 }
 
 #[test]
 fn exact_longer_is_false() {
-    assert_eq!(test_len(arr(3), Bytecode::TestArrayLenExact(2)), Value::from(false));
+    assert_eq!(
+        test_len(arr(3), Bytecode::TestArrayLenExact(2)),
+        Value::from(false)
+    );
 }
 
 #[test]
 fn exact_shorter_is_false() {
-    assert_eq!(test_len(arr(1), Bytecode::TestArrayLenExact(2)), Value::from(false));
+    assert_eq!(
+        test_len(arr(1), Bytecode::TestArrayLenExact(2)),
+        Value::from(false)
+    );
 }
 
 #[test]
 fn exact_zero_matches_empty_array() {
-    assert_eq!(test_len(arr(0), Bytecode::TestArrayLenExact(0)), Value::from(true));
+    assert_eq!(
+        test_len(arr(0), Bytecode::TestArrayLenExact(0)),
+        Value::from(true)
+    );
 }
 
 #[test]
 fn exact_non_array_is_false() {
-    assert_eq!(test_len(Value::from(5i64), Bytecode::TestArrayLenExact(0)), Value::from(false));
+    assert_eq!(
+        test_len(Value::from(5i64), Bytecode::TestArrayLenExact(0)),
+        Value::from(false)
+    );
 }
 
 // ---- AtLeast ----
 
 #[test]
 fn at_least_equal_is_true() {
-    assert_eq!(test_len(arr(2), Bytecode::TestArrayLenAtLeast(2)), Value::from(true));
+    assert_eq!(
+        test_len(arr(2), Bytecode::TestArrayLenAtLeast(2)),
+        Value::from(true)
+    );
 }
 
 #[test]
 fn at_least_more_is_true() {
-    assert_eq!(test_len(arr(3), Bytecode::TestArrayLenAtLeast(2)), Value::from(true));
+    assert_eq!(
+        test_len(arr(3), Bytecode::TestArrayLenAtLeast(2)),
+        Value::from(true)
+    );
 }
 
 #[test]
 fn at_least_fewer_is_false() {
-    assert_eq!(test_len(arr(1), Bytecode::TestArrayLenAtLeast(2)), Value::from(false));
+    assert_eq!(
+        test_len(arr(1), Bytecode::TestArrayLenAtLeast(2)),
+        Value::from(false)
+    );
 }
 
 #[test]
 fn at_least_zero_accepts_any_array() {
-    assert_eq!(test_len(arr(3), Bytecode::TestArrayLenAtLeast(0)), Value::from(true));
+    assert_eq!(
+        test_len(arr(3), Bytecode::TestArrayLenAtLeast(0)),
+        Value::from(true)
+    );
 }
 
 #[test]
 fn at_least_non_array_is_false() {
-    assert_eq!(test_len(Value::from(5i64), Bytecode::TestArrayLenAtLeast(0)), Value::from(false));
+    assert_eq!(
+        test_len(Value::from(5i64), Bytecode::TestArrayLenAtLeast(0)),
+        Value::from(false)
+    );
 }
 
 // ---- Non-consuming contract ( x -- x b ) ----

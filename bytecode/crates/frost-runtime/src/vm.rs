@@ -595,6 +595,23 @@ impl Vm {
 
                         self.stack.push(Value::from(has));
                     }
+                    Bytecode::ExtractKey => {
+                        let k: MapKey = self.stack_pop().try_into()?;
+
+                        let m = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        let m = m.as_map().ok_or_else(|| {
+                            FrostError::from_string(format!("Expected Map, got {}", m.type_name()))
+                        })?;
+
+                        let v = m
+                            .get(&k)
+                            .ok_or_else(|| {
+                                FrostError::from_string(format!("Map has no value at key '{k}'"))
+                            })?
+                            .clone();
+
+                        self.stack.push(v);
+                    }
                     Bytecode::TestArrayLenExact(size) => {
                         self.test_array_len(|len| len == size);
                     }
