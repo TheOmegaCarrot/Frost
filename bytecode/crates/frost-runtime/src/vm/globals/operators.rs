@@ -1,75 +1,60 @@
 //! Arithmetic and comparison operators as first-class functions.
 //!
-//! Operators sidestep the `Param` type-check (`Value::native`, not `checked_native`):
-//! their validity is a *relation* between the two args (`Int + Int` is fine but
-//! `Int + String` is not, and `String + String` / `Array + Array` are also fine),
-//! which a per-parameter spec can't express. The underlying `Value` method raises
-//! the type error instead.
+//! Each is a hand-rolled bytecode closure over the single opcode that implements
+//! the operator, which dispatches to the same `Value` method a native would call.
+//! Operators do no per-parameter type-check: their validity is a *relation* between
+//! the two args (`Int + Int` is fine but `Int + String` is not, and `String + String`
+//! / `Array + Array` are also fine), so the opcode's `Value` method raises the type
+//! error when the operands do not combine.
 
-use std::cmp::Ordering;
+use crate::{Arity, Bytecode, Value};
 
-use crate::core::FrostResult;
-use crate::{Arity, Value};
-
-/// A two-argument native that forwards to an infix `Value` operator method.
-fn binary(name: &'static str, op: fn(&Value, &Value) -> FrostResult) -> Value {
-    Value::native(name, Arity::Exact(2), move |_, args| op(&args[0], &args[1]))
-}
-
-/// A two-argument comparison native: orders the args and maps the `Ordering` to a Bool.
-fn comparison(name: &'static str, accept: fn(Ordering) -> bool) -> Value {
-    Value::native(name, Arity::Exact(2), move |_, args| {
-        Ok(accept(args[0].compare(&args[1])?).into())
-    })
+/// A two-argument operator: `DropBelow(2)` drops the closure's own value, leaving
+/// `( lhs rhs )` for the single binary `op`.
+fn binary_op(name: &'static str, op: Bytecode) -> Value {
+    super::bytecode_global(name, Arity::Exact(2), vec![Bytecode::DropBelow(2), op])
 }
 
 pub(super) fn plus_global() -> Value {
-    // Consume the args so Array/Map `+` can steal their storage (see `Value::add_owned`).
-    Value::native("plus", Arity::Exact(2), |_, args| {
-        Value::add_owned(args[0].take(), args[1].take())
-    })
+    binary_op("plus", Bytecode::Add)
 }
 
 pub(super) fn minus_global() -> Value {
-    binary("minus", Value::subtract)
+    binary_op("minus", Bytecode::Subtract)
 }
 
 pub(super) fn times_global() -> Value {
-    binary("times", Value::multiply)
+    binary_op("times", Bytecode::Multiply)
 }
 
 pub(super) fn divide_global() -> Value {
-    binary("divide", Value::divide)
+    binary_op("divide", Bytecode::Divide)
 }
 
 pub(super) fn mod_global() -> Value {
-    binary("mod", Value::modulus)
+    binary_op("mod", Bytecode::Modulus)
 }
 
 pub(super) fn equal_global() -> Value {
-    Value::native("equal", Arity::Exact(2), |_, args| {
-        Ok((args[0] == args[1]).into())
-    })
+    binary_op("equal", Bytecode::CompareEqual)
 }
 
 pub(super) fn not_equal_global() -> Value {
-    Value::native("not_equal", Arity::Exact(2), |_, args| {
-        Ok((args[0] != args[1]).into())
-    })
+    binary_op("not_equal", Bytecode::CompareNotEqual)
 }
 
 pub(super) fn less_than_global() -> Value {
-    comparison("less_than", |o| o == Ordering::Less)
+    binary_op("less_than", Bytecode::CompareLessThan)
 }
 
 pub(super) fn less_than_or_equal_global() -> Value {
-    comparison("less_than_or_equal", |o| o != Ordering::Greater)
+    binary_op("less_than_or_equal", Bytecode::CompareLessThanOrEqual)
 }
 
 pub(super) fn greater_than_global() -> Value {
-    comparison("greater_than", |o| o == Ordering::Greater)
+    binary_op("greater_than", Bytecode::CompareGreaterThan)
 }
 
 pub(super) fn greater_than_or_equal_global() -> Value {
-    comparison("greater_than_or_equal", |o| o != Ordering::Less)
+    binary_op("greater_than_or_equal", Bytecode::CompareGreaterThanOrEqual)
 }

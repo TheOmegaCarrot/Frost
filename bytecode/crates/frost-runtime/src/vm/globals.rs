@@ -18,7 +18,7 @@ mod types;
 use std::sync::{Arc, LazyLock};
 
 use crate::core::FrostResult;
-use crate::{Arity, Value};
+use crate::{Arity, Bytecode, Closure, CompiledFunction, FormatVersion, Value};
 
 use collections::*;
 use debug::*;
@@ -188,6 +188,27 @@ define_globals! {
 
     // --- Import ---
     "import"                => import_global(),
+}
+
+/// Build a slot-free, capture-free hand-rolled bytecode closure global from `name`,
+/// `arity`, and `code`. The body must leave exactly one value at the frame base:
+/// an `Exact(argc)` closure is entered with `( self, arg0, ..., arg{argc-1} )` (no
+/// arg count is pushed), so drop the closure's own value with `DropBelow(argc)` first.
+fn bytecode_global(name: &'static str, arity: Arity, code: Vec<Bytecode>) -> Value {
+    Value::Closure(Arc::new(Closure {
+        captures: Vec::new(),
+        function: Arc::new(CompiledFunction {
+            version: FormatVersion,
+            name: name.to_string(),
+            arity,
+            num_captures: 0,
+            name_table: Vec::new(),
+            constants: Vec::new(),
+            key_constants: Vec::new(),
+            child_fns: Vec::new(),
+            code,
+        }),
+    }))
 }
 
 /// A not-yet-implemented global. The table still builds (so `GlobalSet::defaults()`

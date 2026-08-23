@@ -1,8 +1,10 @@
 //! Type checking, conversion, and value serialization.
 
+use std::num::NonZeroUsize;
+
 use enumset::{EnumSet, enum_set};
 
-use crate::{Arity, FrostType, Param, Params, Value};
+use crate::{Arity, Bytecode, FrostType, Param, Params, Value};
 
 /// The shared one-any-argument spec (`Exact(1)`).
 const ONE_ANY: Params = Params::new(&[Param::any()]);
@@ -14,65 +16,70 @@ const NUMERIC_OR_STRING: EnumSet<FrostType> =
     enum_set!(FrostType::Int | FrostType::Float | FrostType::String);
 const ONE_NUMERIC_OR_STRING: Params = Params::new(&[Param::of(NUMERIC_OR_STRING)]);
 
-/// A one-argument predicate native accepting any value.
-fn predicate(name: &'static str, pred: fn(&Value) -> bool) -> Value {
-    Value::checked_native(name, ONE_ANY, move |_, args| Ok(pred(&args[0]).into()))
+/// A one-argument type predicate `is_X(v)`, testing whether v's type is in `set`.
+/// Compiles to `DropBelow(1); TypeTest(set)`, identical to `Value::fits(set)`.
+fn type_predicate(name: &'static str, set: EnumSet<FrostType>) -> Value {
+    super::bytecode_global(
+        name,
+        Arity::Exact(1),
+        vec![Bytecode::DropBelow(1), Bytecode::TypeTest(set)],
+    )
 }
 
 pub(super) fn is_null_global() -> Value {
-    predicate("is_null", Value::is_null)
+    type_predicate("is_null", FrostType::NULL)
 }
 
 pub(super) fn is_int_global() -> Value {
-    predicate("is_int", Value::is_int)
+    type_predicate("is_int", FrostType::INT)
 }
 
 pub(super) fn is_float_global() -> Value {
-    predicate("is_float", Value::is_float)
+    type_predicate("is_float", FrostType::FLOAT)
 }
 
 pub(super) fn is_bool_global() -> Value {
-    predicate("is_bool", Value::is_bool)
+    type_predicate("is_bool", FrostType::BOOL)
 }
 
 pub(super) fn is_string_global() -> Value {
-    predicate("is_string", Value::is_string)
+    type_predicate("is_string", FrostType::STRING)
 }
 
 pub(super) fn is_bytes_global() -> Value {
-    predicate("is_bytes", Value::is_bytes)
+    type_predicate("is_bytes", FrostType::BYTES)
 }
 
 pub(super) fn is_array_global() -> Value {
-    predicate("is_array", Value::is_array)
+    type_predicate("is_array", FrostType::ARRAY)
 }
 
 pub(super) fn is_map_global() -> Value {
-    predicate("is_map", Value::is_map)
+    type_predicate("is_map", FrostType::MAP)
 }
 
 pub(super) fn is_function_global() -> Value {
-    predicate("is_function", Value::is_function)
+    type_predicate("is_function", FrostType::FUNCTION)
 }
 
 pub(super) fn is_nonnull_global() -> Value {
-    predicate("is_nonnull", Value::is_nonnull)
+    type_predicate("is_nonnull", FrostType::NONNULL)
 }
 
 pub(super) fn is_numeric_global() -> Value {
-    predicate("is_numeric", Value::is_numeric)
+    type_predicate("is_numeric", FrostType::NUMERIC)
 }
 
 pub(super) fn is_primitive_global() -> Value {
-    predicate("is_primitive", Value::is_primitive)
+    type_predicate("is_primitive", FrostType::PRIMITIVE)
 }
 
 pub(super) fn is_structured_global() -> Value {
-    predicate("is_structured", Value::is_structured)
+    type_predicate("is_structured", FrostType::STRUCTURED)
 }
 
 pub(super) fn is_flat_global() -> Value {
-    predicate("is_flat", Value::is_flat)
+    type_predicate("is_flat", FrostType::FLAT)
 }
 
 pub(super) fn type_global() -> Value {
@@ -82,9 +89,15 @@ pub(super) fn type_global() -> Value {
 }
 
 pub(super) fn to_string_global() -> Value {
-    Value::native("to_string", Arity::Exact(1), |_, args| {
-        Ok(Value::from(args[0].to_frost_string()))
-    })
+    // Concat(1) stringifies its single operand via `to_frost_string`: identical.
+    super::bytecode_global(
+        "to_string",
+        Arity::Exact(1),
+        vec![
+            Bytecode::DropBelow(1),
+            Bytecode::Concat(NonZeroUsize::new(1).unwrap()),
+        ],
+    )
 }
 
 pub(super) fn pretty_global() -> Value {

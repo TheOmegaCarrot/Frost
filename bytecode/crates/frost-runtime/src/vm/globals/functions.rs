@@ -104,10 +104,12 @@ fn result_map<const N: usize>(entries: [(MapKey, Value); N]) -> Value {
 }
 
 pub(super) fn error_global() -> Value {
-    const PARAMS: Params = Params::new(&[Param::any()]);
-    Value::checked_native("error", PARAMS, |_, args| {
-        Err(FrostError::from_value(args[0].take()))
-    })
+    // ProduceError consumes the top value and raises it: identical to `from_value`.
+    super::bytecode_global(
+        "error",
+        Arity::Exact(1),
+        vec![Bytecode::DropBelow(1), Bytecode::ProduceError],
+    )
 }
 
 pub(super) fn and_then_global() -> Value {

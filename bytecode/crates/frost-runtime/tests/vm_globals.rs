@@ -494,3 +494,17 @@ fn globals_enforce_arity() {
         );
     }
 }
+
+// ============================================================
+// id: returns its argument unchanged
+// ============================================================
+
+#[test]
+fn id_returns_its_argument() {
+    assert_eq!(g("id", vec![Value::Int(42)]), Value::Int(42));
+    assert_eq!(g("id", vec![Value::Null]), Value::Null);
+    assert_eq!(
+        g("id", vec![arr(vec![Value::Int(1), Value::Int(2)])]),
+        arr(vec![Value::Int(1), Value::Int(2)])
+    );
+}

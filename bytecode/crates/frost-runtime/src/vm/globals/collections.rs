@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{FrostError, FrostMap, FrostType, Param, Params, Value};
+use crate::{Arity, Bytecode, FrostError, FrostMap, FrostType, Param, Params, Value};
 
 pub(super) fn keys_global() -> Value {
     super::stub("keys")
@@ -37,7 +37,8 @@ pub(super) fn repeat_global() -> Value {
 }
 
 pub(super) fn id_global() -> Value {
-    super::stub("id")
+    // Drop the closure's own value; the sole argument is already the answer.
+    super::bytecode_global("id", Arity::Exact(1), vec![Bytecode::DropBelow(1)])
 }
 
 pub(super) fn has_global() -> Value {
