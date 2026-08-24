@@ -191,3 +191,21 @@ fn returning_without_a_result_is_caught() {
     let callee = func(vec![Pop], Arity::Exact(0), vec![], vec![]);
     run_fn(calling_program(0, callee));
 }
+
+// ============================================================
+// Stack marks balanced at return
+// ============================================================
+
+#[test]
+#[should_panic(expected = "balanced every stack mark")]
+fn returning_with_an_unbalanced_mark_is_caught() {
+    // The callee saves a mark and never drops or rewinds it, yet still returns a
+    // single result: the leaked mark is caught only by the marks-balanced assert.
+    let callee = func(
+        vec![Pop, MarkStack, PushInt(0)],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    );
+    run_fn(calling_program(0, callee));
+}

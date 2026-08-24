@@ -190,6 +190,7 @@ struct VmFrame {
     return_address: Option<NonZeroUsize>,
     // The function represented by this StackFrame.
     this_fn: Arc<CompiledFunction>,
+    marks: Vec<usize>,
 }
 
 /// Control-flow outcome of a tail call, shared by `TailCall` and `DynTailCall`.
@@ -686,6 +687,18 @@ impl Vm {
                         let operand = self.stack_pop();
                         self.stack.push(operand.fits(types).into());
                     }
+                    Bytecode::MarkStack => {
+                        let len = self.stack.len();
+                        self.this_frame_mut().marks.push(len);
+                    }
+                    Bytecode::DropMark => {
+                        self.this_frame_mut().marks.pop().expect("MARKS UNDERFLOW");
+                    }
+                    Bytecode::RewindToMark => {
+                        let mark = self.this_frame_mut().marks.pop().expect("MARKS UNDERFLOW");
+                        debug_assert!(mark <= self.stack.len());
+                        self.stack.truncate(mark);
+                    }
                     Bytecode::ProduceError => {
                         return Err(FrostError::from_value(self.stack_pop()));
                     }
@@ -729,6 +742,10 @@ impl Vm {
                 self.stack.len(),
                 frame.base_idx + 1,
                 "a returning function must leave exactly its result at its frame base"
+            );
+            debug_assert!(
+                frame.marks.is_empty(),
+                "a returning function must have balanced every stack mark it saved"
             );
 
             pc = frame
@@ -1063,6 +1080,7 @@ impl Vm {
             local_slots,
             return_address,
             this_fn: closure.function.clone(),
+            marks: Vec::new(),
         }));
 
         // The incoming argument count: everything on the operand stack above the

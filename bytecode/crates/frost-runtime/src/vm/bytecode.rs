@@ -134,6 +134,19 @@ pub enum Bytecode {
     TestArrayLenExact(usize),
     TestArrayLenAtLeast(usize),
 
+    // Stack marking and truncation
+
+    // Mark the current stack height, with no stack effect.
+    MarkStack,
+
+    // Discard the most recent stack height mark, with no stack effect.
+    // Panics if there is no stack height mark.
+    DropMark,
+
+    // Truncate the stack to the most recent stack height mark, consuming that mark.
+    // Panics if there is no stack height mark.
+    RewindToMark,
+
     // Consume the value atop the stack and attach it to an error.
     // The error is then produced, and enters the usual flow of a user-code error.
     ProduceError,
