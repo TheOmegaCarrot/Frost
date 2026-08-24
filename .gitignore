@@ -1,4 +1,1 @@
-.cache/
-build/
-rel/
-profile/
+target/
