@@ -15,7 +15,7 @@ unsafe extern "C" {
 const LANGUAGE: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_frost) };
 
 const HIGHLIGHTS_SCM: &str =
-    include_str!("../../../../editor/tree-sitter-frost/queries/highlights.scm");
+    include_str!("../../../editor/tree-sitter-frost/queries/highlights.scm");
 
 // Recognized scopes, matching the `@captures` in highlights.scm. The index of
 // each name is the highlight id reported by the highlighter.

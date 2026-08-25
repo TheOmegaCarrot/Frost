@@ -233,6 +233,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "frost-compile"
+version = "0.0.4"
+dependencies = [
+ "frost-parse",
+ "frost-runtime",
+ "miette",
+]
+
+[[package]]
 name = "frost-parse"
 version = "0.0.4"
 dependencies = [

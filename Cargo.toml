@@ -2,6 +2,7 @@
 members = [
     "crates/frost-parse",
     "crates/frost-runtime",
+    "crates/frost-compile",
     "crates/frost-cli",
     "crates/frost-astviz",
 ]
