@@ -2,8 +2,6 @@
 
 use std::{any::Any, borrow::Cow, fmt::Debug, sync::Arc};
 
-use crate::core::Value;
-
 /// Host data carried through Frost as an `Opaque` [`Value`].
 ///
 /// Implementing this trait is all a host type needs to be handed into Frost:

@@ -7,6 +7,7 @@
 //! and are covered black-box in `tests/vm_errors.rs`.) As a child of `vm`, this
 //! module can read the private `Vm` internals directly.
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::*;

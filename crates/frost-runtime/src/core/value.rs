@@ -4,7 +4,7 @@ mod operators;
 mod stringify;
 mod type_checks;
 
-use std::{any::Any, sync::Arc};
+use std::sync::Arc;
 
 use crate::core::types::opaque::FrostOpaque;
 use crate::core::{FrostArray, FrostFloat, FrostMap};

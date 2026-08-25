@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::core::FrostResult;
 use crate::{
-    Arity, Bytecode, Closure, CompiledFunction, FormatVersion, FrostArray, FrostError, FrostType,
+    Arity, Bytecode, Closure, CompiledFunction, FormatVersion, FrostArray, FrostType,
     MapKey, NativeCtx, Param, Params, Value,
 };
 

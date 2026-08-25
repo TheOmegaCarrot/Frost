@@ -5,8 +5,6 @@
 //! [`MapKey`]), error handling ([`FrostError`]), and serialization
 //! ([`to_value`], [`from_value`]).
 
-#![allow(unused)]
-
 mod error;
 mod serde;
 mod types;

@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{Arity, Bytecode, FrostError, FrostMap, FrostType, Param, Params, Value};
+use crate::{Arity, Bytecode, FrostError, FrostType, Param, Params, Value};
 
 pub(super) fn keys_global() -> Value {
     super::stub("keys")
@@ -144,7 +144,7 @@ pub(super) fn transform_global() -> Value {
                 Ok(vec.into())
             }
             Value::Map(map) => {
-                let mut map = map.into_map();
+                let map = map.into_map();
                 let mut result = BTreeMap::new();
                 for (k, v) in map.into_iter() {
                     match ctx.invoke(&function, [k.into(), v])? {
@@ -220,7 +220,7 @@ pub(super) fn fold_global() -> Value {
         match structure {
             Value::Array(arr) => {
                 let mut iter = arr.into_vec().into_iter();
-                let mut init = match args.get_mut(2).map(Value::take) {
+                let init = match args.get_mut(2).map(Value::take) {
                     Some(init) => init,
                     None => iter.next().unwrap_or(Value::Null),
                 };
@@ -228,7 +228,7 @@ pub(super) fn fold_global() -> Value {
                 iter.try_fold(init, |acc, elem| ctx.invoke(&function, [acc, elem]))
             }
             Value::Map(map) => {
-                let Some(mut init) = args.get_mut(2).map(Value::take) else {
+                let Some(init) = args.get_mut(2).map(Value::take) else {
                     return Err(FrostError::from_static(
                         "Fold over a Map requires an initializer",
                     ));

@@ -210,7 +210,7 @@ fn stringify_map_entry(key: &MapKey, value: &Value, buf: &mut String, ctx: &Stri
         buf.push_str(name);
     } else {
         buf.push('[');
-        stringify_map_key(key, buf, ctx);
+        stringify_map_key(key, buf);
         buf.push(']');
     }
 
@@ -218,7 +218,7 @@ fn stringify_map_entry(key: &MapKey, value: &Value, buf: &mut String, ctx: &Stri
     stringify(value, buf, ctx);
 }
 
-fn stringify_map_key(key: &MapKey, buf: &mut String, ctx: &StringifyContext) {
+fn stringify_map_key(key: &MapKey, buf: &mut String) {
     match key {
         MapKey::Bool(b) => buf.push_str(if *b { "true" } else { "false" }),
         MapKey::Int(i) => write!(buf, "{i}").unwrap(),

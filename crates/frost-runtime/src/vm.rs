@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 mod bytecode;
 mod function;
 mod globals;
@@ -21,11 +19,11 @@ pub use outcome::{ProgramResult, RunError, RunOutcome};
 pub use params::{InvalidParams, Param, Params};
 pub use serialize::FormatVersion;
 
-use std::{collections::BTreeMap, debug_assert_matches, num::NonZeroUsize, sync::Arc};
+use std::{debug_assert_matches, num::NonZeroUsize, sync::Arc};
 
 use itertools::Itertools;
 
-use crate::{FrostArray, FrostError, FrostFloat, FrostMap, FrostResult, MapKey, Value};
+use crate::{FrostArray, FrostError, FrostMap, FrostResult, MapKey, Value};
 
 use globals::GlobalSet;
 
@@ -294,7 +292,7 @@ impl Vm {
     }
 
     fn this_frame(&self) -> &VmFrame {
-        match (self.stack_frames.last()) {
+        match self.stack_frames.last() {
             Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
             Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: current Vm frame is native frame"),
             None => panic!("IMPOSSIBLE: Vm has no frame"),
@@ -302,7 +300,7 @@ impl Vm {
     }
 
     fn base_frame(&self) -> &VmFrame {
-        match (self.stack_frames.first()) {
+        match self.stack_frames.first() {
             Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
             Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: base Vm frame is native frame"),
             None => panic!("IMPOSSIBLE: Vm has no frame"),
@@ -310,7 +308,7 @@ impl Vm {
     }
 
     fn this_frame_mut(&mut self) -> &mut VmFrame {
-        match (self.stack_frames.last_mut()) {
+        match self.stack_frames.last_mut() {
             Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
             Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: current Vm frame is native frame"),
             None => panic!("IMPOSSIBLE: Vm has no frame"),

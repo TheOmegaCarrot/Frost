@@ -1,6 +1,5 @@
 use std::cell::Cell;
 use std::fmt;
-use std::sync::Arc;
 
 use serde::de::{self, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
@@ -29,12 +28,6 @@ impl Drop for IncomingGuard {
 
 #[derive(Debug)]
 pub struct DeError(String);
-
-impl DeError {
-    pub fn message(&self) -> &str {
-        &self.0
-    }
-}
 
 impl fmt::Display for DeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

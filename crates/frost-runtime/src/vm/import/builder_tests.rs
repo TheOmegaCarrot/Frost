@@ -15,7 +15,10 @@ fn content(n: i64) -> Value {
 
 /// A resolver that claims nothing; its Debug name identifies it in the chain.
 #[derive(Debug)]
-struct NamedResolver(&'static str);
+struct NamedResolver(
+    #[expect(dead_code, reason = "read only through the derived Debug, which dead-code analysis ignores")]
+    &'static str,
+);
 
 impl ImportResolver for NamedResolver {
     fn resolve(&self, _ctx: &ImportCtx, _module_spec: &str) -> Result<Option<Value>, FrostError> {
