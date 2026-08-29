@@ -4,11 +4,11 @@
 // Silence, Clippy
 
 mod error;
-mod top;
+mod lower;
 
 pub use error::{CompilerError, CompilerErrors};
 use frost_runtime::TrustedProgram;
-pub use top::compile_program;
+pub use lower::compile_program;
 
 // TODO: make some associated functions that just return some "reasonable presets"
 // once I accumulate enough optimization options
