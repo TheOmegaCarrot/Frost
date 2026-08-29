@@ -1,3 +1,5 @@
+mod assemble;
+
 use std::sync::Arc;
 
 use crate::{CompilerErrors, CompilerOptions, CompilerOutput, OptimizationOptions};
@@ -85,12 +87,13 @@ pub fn compile_program(
             Statement::Expr(expr) => ir.extend(fn_builder.compile_expression(expr)?.code),
             Statement::Def { .. } => ir.extend(fn_builder.compile_statement(tail)?.code),
         }
-        ir.extend(fn_builder.compile_statement(tail)?.code);
     }
 
-    // TODO: assemble/fixup
+    let func = fn_builder.assemble(ir);
 
-    todo!()
+    Ok(CompilerOutput {
+        code: func.assert_trusted(),
+    })
 }
 
 impl FunctionBuilder<'_> {
@@ -104,11 +107,7 @@ impl FunctionBuilder<'_> {
         todo!()
     }
 
-    fn compile_expression(
-        &mut self,
-        expr: &Spanned<Expr>,
-    ) -> Result<IrFragment, CompilerErrors> {
-
+    fn compile_expression(&mut self, expr: &Spanned<Expr>) -> Result<IrFragment, CompilerErrors> {
         todo!()
     }
 }

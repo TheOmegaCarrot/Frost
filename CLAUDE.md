@@ -219,8 +219,10 @@ The pipeline-friendly function forms are `transform`, `select`, and `fold`.
 
 - Strongly prefer black-box tests (public API only). Reach for white-box tests only when
   something genuinely prevents a black-box test.
-- Black-box tests live in `crates/*/tests/`. When a white-box test is unavoidable, put it in
-  its own `#[cfg(test)] mod name;` file, not inline in a large source file.
+- Black-box tests live in `crates/*/tests/`. White-box tests are unavoidable only when
+  something genuinely prevents a black-box test.
+- Tests always go in their own file, never inline in a source file. A white-box test module is
+  declared `#[cfg(test)] mod name;` and lives in a sibling file, never an inline `mod tests { ... }`.
 - Tests are deterministic, reliable, thorough, comprehensive, and borderline paranoid.
 - Tests carry internal documentation and give clear assertion failure messages.
 - Test code is clear and easy to read; readability outranks test performance.
