@@ -72,6 +72,7 @@ impl CompiledFunction {
 /// A malicious or runaway script is still "trusted" in this sense.
 /// What such a script may reach is governed by its [`Importer`](super::Importer),
 /// and how much it may run by [`VmRuntimeConfiguration`](super::VmRuntimeConfiguration).
+#[derive(Debug)]
 pub struct TrustedProgram(Arc<CompiledFunction>);
 
 impl TrustedProgram {

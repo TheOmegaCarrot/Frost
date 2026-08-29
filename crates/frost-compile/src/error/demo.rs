@@ -81,12 +81,18 @@ print(foo)
         )
         .code("frost::compile::unexported_import".to_string())
         .source("main.frst".to_string(), main.to_string())
-        .label_primary(span(main, "foo", 0), "required by this destructuring".to_string())
+        .label_primary(
+            span(main, "foo", 0),
+            "required by this destructuring".to_string(),
+        )
         .help("add `export` to the definition in `other`".to_string())
         .related(
             CompilerError::advice("`foo` is defined here, but not exported".to_string())
                 .source("other.frst".to_string(), other.to_string())
-                .label(span(other, "foo", 0), "add `export` before this".to_string()),
+                .label(
+                    span(other, "foo", 0),
+                    "add `export` before this".to_string(),
+                ),
         ),
     );
 
@@ -106,31 +112,39 @@ fn every_part_of_the_api() {
     let first = errors.iter().next().expect("at least one diagnostic");
     let plain = first.render_plain();
     assert!(plain.contains("already bound"), "headline present");
-    assert!(plain.contains("originally bound here"), "related block present");
+    assert!(
+        plain.contains("originally bound here"),
+        "related block present"
+    );
     // `render` (auto) and `Display` agree.
-    assert_eq!(first.render(), first.to_string(), "Display delegates to render");
+    assert_eq!(
+        first.render(),
+        first.to_string(),
+        "Display delegates to render"
+    );
     // `render_pretty` carries color; `render_plain` does not.
     assert!(
         first.render_pretty().contains('\u{1b}'),
         "pretty rendering contains ANSI escapes"
     );
-    assert!(
-        !plain.contains('\u{1b}'),
-        "plain rendering is escape-free"
-    );
+    assert!(!plain.contains('\u{1b}'), "plain rendering is escape-free");
 
     // -- Whole-set rendering, and the plural render wrappers --
     let plain_all = errors.render_plain();
     for needle in [
-        "already bound",              // diagnostic 1
-        "is never used",              // diagnostic 2
-        "not exported",               // diagnostic 3
-        "add `export` before this",   // cross-file related snippet
-        "other.frst",                 // the related block's own source
+        "already bound",            // diagnostic 1
+        "is never used",            // diagnostic 2
+        "not exported",             // diagnostic 3
+        "add `export` before this", // cross-file related snippet
+        "other.frst",               // the related block's own source
     ] {
         assert!(plain_all.contains(needle), "plain set is missing: {needle}");
     }
-    assert_eq!(errors.render(), errors.to_string(), "set Display delegates to render");
+    assert_eq!(
+        errors.render(),
+        errors.to_string(),
+        "set Display delegates to render"
+    );
 
     // -- IntoIterator consumes the set by value --
     let severities_seen = errors.into_iter().count();

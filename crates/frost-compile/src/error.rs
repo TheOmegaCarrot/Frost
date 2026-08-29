@@ -11,7 +11,7 @@
 //! compilation fails.
 
 #![allow(unused)] // These error helpers are being written before any consumers
-                  // Silence, Clippy
+// Silence, Clippy
 
 #[cfg(test)]
 mod demo;
@@ -111,9 +111,11 @@ impl CompilerError {
 
     /// Add a secondary labeled span.
     pub(crate) fn label(mut self, span: SourceSpan, text: String) -> Self {
-        self.0
-            .labels
-            .push(LabeledSpan::new(Some(text), span.start, span.end - span.start));
+        self.0.labels.push(LabeledSpan::new(
+            Some(text),
+            span.start,
+            span.end - span.start,
+        ));
         self
     }
 
