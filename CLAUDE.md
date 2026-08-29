@@ -204,6 +204,9 @@ The pipeline-friendly function forms are `transform`, `select`, and `fold`.
 - `unsafe` requires very strong justification.
 - Take full advantage of strong types. Make invalid states unrepresentable wherever possible.
 - Write idiomatic Rust.
+- Prefer a raw string literal (`r"..."`, `r#"..."#`) over a regular literal that
+  would otherwise need many escapes. `\n` escapes are particularly undesirable. Strings
+  containing `\n` should be raw string literals.
 - Production code is Clippy-clean. Tests are held less strictly: for example
   `clippy::approx_constant` fires often in test data and is fine to ignore there.
 - The Frost core stays dependency-light: pulling in a minimal Frost (runtime plus compiler)
