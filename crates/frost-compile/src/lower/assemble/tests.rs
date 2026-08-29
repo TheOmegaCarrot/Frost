@@ -22,7 +22,8 @@ fn options() -> CompilerOptions {
 }
 
 fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
-    FunctionBuilder::new(options, "<test>".to_string(), Arity::Exact(0))
+    // Assembly never touches the filename or source; only diagnostics do.
+    FunctionBuilder::new(options, "<test>".to_string(), "", "", Arity::Exact(0))
 }
 
 /// A trivial child function, for exercising closure pooling.
@@ -95,7 +96,10 @@ fn single_jump_code(kind: JumpType) -> Vec<Bytecode> {
     let mut b = builder(&options);
     let target = b.next_label();
     b.assemble(vec![
-        Ir::Jump { kind, label: target },
+        Ir::Jump {
+            kind,
+            label: target,
+        },
         Ir::Ready(Bytecode::PushInt(1)),
         Ir::Label(target),
         Ir::Ready(Bytecode::PushNull),
@@ -106,9 +110,18 @@ fn single_jump_code(kind: JumpType) -> Vec<Bytecode> {
 
 #[test]
 fn every_jump_kind_maps_to_its_opcode() {
-    assert_eq!(single_jump_code(JumpType::Unconditional)[0], Bytecode::Jump(1));
-    assert_eq!(single_jump_code(JumpType::IfTrue)[0], Bytecode::JumpIfTrue(1));
-    assert_eq!(single_jump_code(JumpType::IfFalse)[0], Bytecode::JumpIfFalse(1));
+    assert_eq!(
+        single_jump_code(JumpType::Unconditional)[0],
+        Bytecode::Jump(1)
+    );
+    assert_eq!(
+        single_jump_code(JumpType::IfTrue)[0],
+        Bytecode::JumpIfTrue(1)
+    );
+    assert_eq!(
+        single_jump_code(JumpType::IfFalse)[0],
+        Bytecode::JumpIfFalse(1)
+    );
     assert_eq!(
         single_jump_code(JumpType::PeekIfTrue)[0],
         Bytecode::PeekJumpIfTrue(1)
@@ -175,7 +188,11 @@ fn target_one_past_the_end_is_permitted() {
     // end is at index 3 (== len). From site 0: 3 - 1 = 2.
     assert_eq!(
         f.code,
-        vec![Bytecode::Jump(2), Bytecode::PushInt(1), Bytecode::PushInt(2)],
+        vec![
+            Bytecode::Jump(2),
+            Bytecode::PushInt(1),
+            Bytecode::PushInt(2)
+        ],
         "a trailing label resolves to one past the last instruction"
     );
 }
@@ -340,7 +357,7 @@ fn a_body_of_only_labels_is_empty_code() {
 #[test]
 fn function_metadata_passes_through() {
     let options = options();
-    let mut b = FunctionBuilder::new(&options, "greet".to_string(), Arity::Between(1, 3));
+    let mut b = FunctionBuilder::new(&options, "greet".to_string(), "", "", Arity::Between(1, 3));
     b.num_captures = 1;
     b.name_table.push(NameEntry {
         name: "captured".to_string(),
@@ -457,14 +474,14 @@ fn dense_mix_of_jumps_labels_and_payloads() {
             label: a,
         }, // 2
         Ir::KeyIndex(MapKey::from("k")), // 3
-        Ir::Label(a),                    // -> index 4
+        Ir::Label(a),             // -> index 4
         Ir::Closure {
             function: child.clone(),
             num_captures: 1,
         }, // 4
-        Ir::Ready(Bytecode::Pop),        // 5
-        Ir::Label(z),                    // -> index 6
-        Ir::Ready(Bytecode::PushNull),   // 6
+        Ir::Ready(Bytecode::Pop), // 5
+        Ir::Label(z),             // -> index 6
+        Ir::Ready(Bytecode::PushNull), // 6
     ]);
 
     // a is at index 4, z at index 6.
@@ -515,19 +532,19 @@ fn convoluted_program_keeps_every_pool_and_jump_straight() {
             kind: JumpType::IfFalse,
             label: l2,
         }, // 1  -> l2 (7), past l1
-        Ir::Const(Value::Int(10)),      // 2
+        Ir::Const(Value::Int(10)),       // 2
         Ir::KeyIndex(MapKey::from("a")), // 3
         Ir::Closure {
             function: child_a.clone(),
             num_captures: 0,
         }, // 4
-        Ir::Label(l1),                  // -> 5
-        Ir::Const(Value::Int(20)),      // 5
+        Ir::Label(l1),                   // -> 5
+        Ir::Const(Value::Int(20)),       // 5
         Ir::Jump {
             kind: JumpType::Unconditional,
             label: l3,
         }, // 6  -> l3 (12), past l2
-        Ir::Label(l2),                  // -> 7
+        Ir::Label(l2),                   // -> 7
         Ir::KeyIndex(MapKey::from("b")), // 7
         Ir::Closure {
             function: child_b.clone(),
@@ -541,18 +558,18 @@ fn convoluted_program_keeps_every_pool_and_jump_straight() {
             kind: JumpType::PeekIfFalse,
             label: l4,
         }, // 10 -> l4 (13), past l3
-        Ir::Const(Value::Bool(true)),   // 11
-        Ir::Label(l3),                  // -> 12
+        Ir::Const(Value::Bool(true)),    // 11
+        Ir::Label(l3),                   // -> 12
         Ir::KeyIndex(MapKey::from("c")), // 12
-        Ir::Label(l4),                  // -> 13
-        Ir::Ready(Bytecode::PushNull),  // 13
+        Ir::Label(l4),                   // -> 13
+        Ir::Ready(Bytecode::PushNull),   // 13
     ]);
 
     assert_eq!(
         f.code,
         vec![
-            Bytecode::JumpIfTrue(4),      // 5 - (0 + 1)
-            Bytecode::JumpIfFalse(5),     // 7 - (1 + 1)
+            Bytecode::JumpIfTrue(4),  // 5 - (0 + 1)
+            Bytecode::JumpIfFalse(5), // 7 - (1 + 1)
             Bytecode::LoadConst(0),
             Bytecode::HardIndexMap(0),
             Bytecode::CreateClosure {

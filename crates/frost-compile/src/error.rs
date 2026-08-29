@@ -18,6 +18,7 @@ mod demo;
 
 use std::fmt;
 
+use frost_parse::ParseError;
 use frost_parse::ast::SourceSpan;
 use miette::{
     Diagnostic, GraphicalReportHandler, GraphicalTheme, LabeledSpan, NamedSource, Severity,
@@ -134,6 +135,23 @@ impl CompilerError {
         self.0.related.push(related.0);
         self
     }
+
+    /// Lift a parser error into a compiler diagnostic, so parse and compile
+    /// failures reach the caller through one error type. The parser stops at the
+    /// first error, so this is always a single diagnostic; its first label is
+    /// primary, the rest add context.
+    pub(crate) fn from_parse_error(error: &ParseError, filename: &str, source: &str) -> Self {
+        let mut diagnostic = Self::error(error.message().to_string())
+            .source(filename.to_string(), source.to_string());
+        for (i, label) in error.labels().iter().enumerate() {
+            diagnostic = if i == 0 {
+                diagnostic.label_primary(label.span, label.text.clone())
+            } else {
+                diagnostic.label(label.span, label.text.clone())
+            };
+        }
+        diagnostic
+    }
 }
 
 // -- Consumption (public) --
@@ -225,7 +243,7 @@ impl Diagnostic for Diag {
 /// Held on the error channel of the compiler's result. Ordinarily a single hard
 /// error, but the type is plural so a pass can report several at once.
 #[derive(Clone, Debug, Default)]
-pub struct CompilerErrors(Vec<CompilerError>);
+pub struct CompilerErrors(pub Vec<CompilerError>);
 
 // -- Construction (crate-internal) --
 
@@ -238,6 +256,14 @@ impl CompilerErrors {
     /// Append a diagnostic.
     pub(crate) fn push(&mut self, error: CompilerError) {
         self.0.push(error);
+    }
+}
+
+impl From<CompilerError> for CompilerErrors {
+    /// A single diagnostic is a set of one: lets a leaf `CompilerError`
+    /// propagate through `?` where a `CompilerErrors` is expected.
+    fn from(error: CompilerError) -> Self {
+        Self(vec![error])
     }
 }
 
