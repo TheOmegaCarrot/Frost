@@ -62,12 +62,26 @@ pub fn fn_with_locals(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Compile
 
 /// A fully-specified compiled function, for call tests: explicit `arity`,
 /// a `names` table sizing the local slots, and `child_fns` reachable by `CreateClosure`.
-/// No captures (capture-bearing closures are produced at runtime by `CreateClosure`).
+/// No captures. For a callee that a `CreateClosure` site should actually capture
+/// values into, use [`func_with_captures`] instead: `CreateClosure` pops as many
+/// stack values as the callee's own `num_captures` names.
 pub fn func(
     code: Vec<Bytecode>,
     arity: Arity,
     names: Vec<NameEntry>,
     child_fns: Vec<Arc<CompiledFunction>>,
+) -> Arc<CompiledFunction> {
+    func_with_captures(code, arity, names, child_fns, 0)
+}
+
+/// Like [`func`], but with an explicit `num_captures`, for a callee that a
+/// `CreateClosure` site should capture values into.
+pub fn func_with_captures(
+    code: Vec<Bytecode>,
+    arity: Arity,
+    names: Vec<NameEntry>,
+    child_fns: Vec<Arc<CompiledFunction>>,
+    num_captures: usize,
 ) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
         version: FormatVersion,
@@ -77,7 +91,7 @@ pub fn func(
         constants: Vec::new(),
         key_constants: Vec::new(),
         name_table: names,
-        num_captures: 0,
+        num_captures,
         arity,
     })
 }

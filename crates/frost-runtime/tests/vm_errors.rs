@@ -57,10 +57,7 @@ fn native(
 
 /// `CreateClosure` for a capture-less child function at `idx`.
 fn closure(idx: u32) -> Bytecode {
-    Bytecode::CreateClosure {
-        num_captures: 0,
-        function: idx,
-    }
+    Bytecode::CreateClosure(idx as usize)
 }
 
 /// Slot index of the `try_call` global (the VM is built with the default set).

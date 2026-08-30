@@ -245,10 +245,7 @@ fn native_invokes_closure() {
         vec![identity],
         vec![
             Bytecode::LoadLocal(0),
-            Bytecode::CreateClosure {
-                num_captures: 0,
-                function: 0,
-            },
+            Bytecode::CreateClosure(0),
             Bytecode::PushInt(7),
             Bytecode::Call(2),
         ],
@@ -275,10 +272,7 @@ fn native_invokes_closure_multiple_args() {
         vec![first],
         vec![
             Bytecode::LoadLocal(0),
-            Bytecode::CreateClosure {
-                num_captures: 0,
-                function: 0,
-            },
+            Bytecode::CreateClosure(0),
             Bytecode::PushInt(10),
             Bytecode::PushInt(20),
             Bytecode::Call(3),
@@ -301,10 +295,7 @@ fn native_invokes_zero_arg_closure() {
         vec![const99],
         vec![
             Bytecode::LoadLocal(0),
-            Bytecode::CreateClosure {
-                num_captures: 0,
-                function: 0,
-            },
+            Bytecode::CreateClosure(0),
             Bytecode::Call(1),
         ],
     );
@@ -325,10 +316,7 @@ fn native_invokes_variadic_closure() {
         vec![rest],
         vec![
             Bytecode::LoadLocal(0),
-            Bytecode::CreateClosure {
-                num_captures: 0,
-                function: 0,
-            },
+            Bytecode::CreateClosure(0),
             Bytecode::PushInt(1),
             Bytecode::PushInt(2),
             Bytecode::PushInt(3),

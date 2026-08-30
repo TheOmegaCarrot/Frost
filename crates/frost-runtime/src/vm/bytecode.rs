@@ -80,9 +80,10 @@ pub enum Bytecode {
     // Purpose-built for the `call` builtin
     DynTailCall,
 
-    // Move num_captures elements from the stack to a closure capture structure,
-    // as a part of a new closure with code from function (index into function table)
-    CreateClosure { num_captures: u32, function: u32 },
+    // Push a closure over the child function at this index into the enclosing
+    // function's child_fns. The child's own num_captures elements are moved off
+    // the top of the stack into the closure's capture structure.
+    CreateClosure(usize),
 
     // Data structures
 

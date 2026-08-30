@@ -19,10 +19,7 @@ use frost_runtime::{Arity, Bytecode, CompiledFunction};
 use Bytecode::*;
 
 /// `CreateClosure` for the first child function, capturing nothing.
-const MAKE_CHILD: Bytecode = CreateClosure {
-    num_captures: 0,
-    function: 0,
-};
+const MAKE_CHILD: Bytecode = CreateClosure(0);
 
 /// A program that calls `callee` with no arguments, having first left `spare`
 /// values of its own on the operand stack.

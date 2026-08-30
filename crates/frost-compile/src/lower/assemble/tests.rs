@@ -237,10 +237,7 @@ fn closures_drain_into_child_fns() {
 
     assert_eq!(
         f.code,
-        vec![Bytecode::CreateClosure {
-            num_captures: 2,
-            function: 0,
-        }],
+        vec![Bytecode::CreateClosure(0)],
         "the closure op references child slot 0"
     );
     assert_eq!(f.child_fns.len(), 1);
@@ -274,10 +271,7 @@ fn pool_counters_are_independent_under_interleaving() {
             Bytecode::LoadConst(0),
             Bytecode::HardIndexMap(0),
             Bytecode::LoadConst(1),
-            Bytecode::CreateClosure {
-                num_captures: 2,
-                function: 0,
-            },
+            Bytecode::CreateClosure(0),
             Bytecode::HardIndexMap(1),
             Bytecode::LoadConst(2),
         ]
@@ -318,10 +312,7 @@ fn payload_ops_count_toward_jump_offsets() {
             Bytecode::Jump(3),
             Bytecode::LoadConst(0),
             Bytecode::HardIndexMap(0),
-            Bytecode::CreateClosure {
-                num_captures: 0,
-                function: 0,
-            },
+            Bytecode::CreateClosure(0),
             Bytecode::PushNull,
         ]
     );
@@ -493,10 +484,7 @@ fn dense_mix_of_jumps_labels_and_payloads() {
             Bytecode::LoadConst(0),
             Bytecode::Jump(1),
             Bytecode::HardIndexMap(0),
-            Bytecode::CreateClosure {
-                num_captures: 1,
-                function: 0,
-            },
+            Bytecode::CreateClosure(0),
             Bytecode::Pop,
             Bytecode::PushNull,
         ]
@@ -572,17 +560,11 @@ fn convoluted_program_keeps_every_pool_and_jump_straight() {
             Bytecode::JumpIfFalse(5), // 7 - (1 + 1)
             Bytecode::LoadConst(0),
             Bytecode::HardIndexMap(0),
-            Bytecode::CreateClosure {
-                num_captures: 0,
-                function: 0,
-            },
+            Bytecode::CreateClosure(0),
             Bytecode::LoadConst(1),
             Bytecode::Jump(5), // 12 - (6 + 1)
             Bytecode::HardIndexMap(1),
-            Bytecode::CreateClosure {
-                num_captures: 2,
-                function: 1,
-            },
+            Bytecode::CreateClosure(1),
             Bytecode::PeekJumpIfTrue(2),  // 12 - (9 + 1)
             Bytecode::PeekJumpIfFalse(2), // 13 - (10 + 1)
             Bytecode::LoadConst(2),

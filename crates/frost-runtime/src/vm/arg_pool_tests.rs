@@ -20,10 +20,7 @@ fn try_call_slot() -> usize {
 }
 
 fn closure(idx: u32) -> Bytecode {
-    Bytecode::CreateClosure {
-        num_captures: 0,
-        function: idx,
-    }
+    Bytecode::CreateClosure(idx as usize)
 }
 
 fn func(

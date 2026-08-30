@@ -41,14 +41,8 @@ impl FunctionBuilder<'_> {
                     out.push(Bytecode::HardIndexMap(key_constants.len()));
                     key_constants.push(key);
                 }
-                Ir::Closure {
-                    function,
-                    num_captures,
-                } => {
-                    out.push(Bytecode::CreateClosure {
-                        num_captures,
-                        function: child_fns.len() as u32,
-                    });
+                Ir::Closure { function, .. } => {
+                    out.push(Bytecode::CreateClosure(child_fns.len()));
                     child_fns.push(function);
                 }
                 Ir::Jump { kind, label } => {

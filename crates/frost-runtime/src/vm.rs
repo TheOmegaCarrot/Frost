@@ -530,16 +530,12 @@ impl Vm {
                             Err(arr) => self.stack.extend(arr.iter().rev().cloned()),
                         }
                     }
-                    Bytecode::CreateClosure {
-                        num_captures,
-                        function,
-                    } => {
-                        let function =
-                            self.this_frame().this_fn.child_fns[function as usize].clone();
+                    Bytecode::CreateClosure(function) => {
+                        let function = self.this_frame().this_fn.child_fns[function].clone();
                         let split_point = self
                             .stack
                             .len()
-                            .checked_sub(num_captures as usize)
+                            .checked_sub(function.num_captures)
                             .expect("FROST STACK UNDERFLOW");
                         self.debug_assert_own_operand(split_point, "CreateClosure");
                         let captures = self.stack.split_off(split_point);
