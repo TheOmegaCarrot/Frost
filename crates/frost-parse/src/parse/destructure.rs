@@ -3,7 +3,7 @@ use crate::lex::Token;
 use crate::parse::{ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
-    pub fn parse_destructure(&mut self) -> ParseResult<Spanned<Destructure>> {
+    pub(crate) fn parse_destructure(&mut self) -> ParseResult<Spanned<Destructure>> {
         let peek = self.must_peek("destructuring")?;
 
         match peek.token {

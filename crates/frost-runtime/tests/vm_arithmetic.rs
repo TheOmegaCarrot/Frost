@@ -43,7 +43,7 @@ fn eval(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError>
         .build(closure)
         .unwrap()
         .run()
-        .map_err(|e| e.into_error())
+        .map_err(frost_runtime::RunError::into_error)
         .map(|r| r.tail().clone())
 }
 

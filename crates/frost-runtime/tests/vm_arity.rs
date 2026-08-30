@@ -56,7 +56,7 @@ fn call_native(native: Value, argc: usize) -> Result<ProgramResult, FrostError> 
         .build(closure)
         .unwrap()
         .run()
-        .map_err(|e| e.into_error())
+        .map_err(frost_runtime::RunError::into_error)
 }
 
 #[test]

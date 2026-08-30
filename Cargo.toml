@@ -11,3 +11,29 @@ resolver = "3"
 [workspace.package]
 version = "0.0.4"
 edition = "2024"
+
+# Crates opt in with `[lints] workspace = true`.
+[workspace.lints.rust]
+unreachable_pub = "warn"   # a `pub` that no outside crate can reach: say what you mean
+unused_lifetimes = "warn"
+
+[workspace.lints.clippy]
+semicolon_if_nothing_returned = "warn"
+explicit_iter_loop = "warn"
+explicit_into_iter_loop = "warn"
+manual_let_else = "warn"
+match_same_arms = "warn"
+unnested_or_patterns = "warn"
+redundant_closure_for_method_calls = "warn"
+cloned_instead_of_copied = "warn"
+implicit_clone = "warn"
+inefficient_to_string = "warn"
+map_unwrap_or = "warn"
+flat_map_option = "warn"
+stable_sort_primitive = "warn"
+
+# Fires only on 3.14-style float literals in test data (deny by default);
+# low value for a runtime that rarely hardcodes math constants.
+approx_constant = "allow"
+# `assert_eq!(x, false)` reads better than `assert!(!x)` in tests.
+bool_assert_comparison = "allow"

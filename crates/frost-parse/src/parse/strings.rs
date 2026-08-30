@@ -5,7 +5,7 @@ use crate::lex::Token;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 #[derive(Clone, Copy)]
-pub enum QuoteStyle {
+pub(crate) enum QuoteStyle {
     Single,
     Double,
 }
@@ -15,7 +15,7 @@ fn string_error(span: &Range<usize>, msg: impl Into<String>) -> Diagnostic {
 }
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
-    pub fn parse_simple_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_simple_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
         let peek = self.must_peek("String literal")?;
         let span = peek.span.clone();
         let raw = match peek.token {
@@ -30,12 +30,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         ))
     }
 
-    pub fn parse_raw_string(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_raw_string(&mut self) -> ParseResult<Spanned<Expr>> {
         let peek = self.must_peek("raw String literal")?;
         let span = peek.span.clone();
-        let raw = match peek.token {
-            Token::RawStringLiteral(s) => s,
-            _ => return Err(self.unexpected_token(peek, "raw String literal")),
+        let Token::RawStringLiteral(raw) = peek.token else {
+            return Err(self.unexpected_token(peek, "raw String literal"));
         };
         // A raw string is source text taken verbatim, so it is already valid UTF-8:
         // it has no escapes that could introduce anything else.
@@ -47,12 +46,11 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         ))
     }
 
-    pub fn parse_bytes_literal(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_bytes_literal(&mut self) -> ParseResult<Spanned<Expr>> {
         let peek = self.must_peek("Bytes literal")?;
         let span = peek.span.clone();
-        let raw = match peek.token {
-            Token::BytesLiteral(s) => s,
-            _ => return Err(self.unexpected_token(peek, "Bytes literal")),
+        let Token::BytesLiteral(raw) = peek.token else {
+            return Err(self.unexpected_token(peek, "Bytes literal"));
         };
         self.advance(1);
         Ok(Spanned::new(
@@ -61,7 +59,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         ))
     }
 
-    pub fn parse_multiline_string(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_multiline_string(&mut self) -> ParseResult<Spanned<Expr>> {
         let peek = self.must_peek("multiline String literal")?;
         let span = peek.span.clone();
         let raw = match peek.token {

@@ -20,7 +20,7 @@ use super::{FunctionBuilder, Ir, JumpType};
 impl FunctionBuilder<'_> {
     /// Lower this function's fused IR into its [`CompiledFunction`].
     /// Consumes the builder: its metadata moves into the result.
-    pub fn assemble(self, code: Vec<Ir>) -> Arc<CompiledFunction> {
+    pub(super) fn assemble(self, code: Vec<Ir>) -> Arc<CompiledFunction> {
         let label_positions = resolve_labels(&code, self.next_label.0);
 
         let mut out = Vec::new();

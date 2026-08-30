@@ -138,7 +138,7 @@ pub(super) fn transform_global() -> Value {
         match structure {
             Value::Array(arr) => {
                 let mut vec = arr.into_vec();
-                for elem in vec.iter_mut() {
+                for elem in &mut vec {
                     *elem = ctx.invoke(&function, [elem.take()])?;
                 }
                 Ok(vec.into())
@@ -146,7 +146,7 @@ pub(super) fn transform_global() -> Value {
             Value::Map(map) => {
                 let map = map.into_map();
                 let mut result = BTreeMap::new();
-                for (k, v) in map.into_iter() {
+                for (k, v) in map {
                     match ctx.invoke(&function, [k.into(), v])? {
                         Value::Map(m) => result.extend(m.into_map()),
                         other => {
@@ -316,7 +316,7 @@ pub(super) fn each_global() -> Value {
         let function = params[1].take();
         match &structure {
             Value::Array(arr) => {
-                for v in arr.iter() {
+                for v in arr {
                     ctx.invoke_ref(&function, [v])?;
                 }
             }

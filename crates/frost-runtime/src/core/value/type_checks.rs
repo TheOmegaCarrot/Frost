@@ -32,8 +32,7 @@ impl Value {
             Value::Bytes(_) => Ft::Bytes,
             Value::Array(_) => Ft::Array,
             Value::Map(_) => Ft::Map,
-            Value::NativeFunction(_) => Ft::Function,
-            Value::Closure(_) => Ft::Function,
+            Value::NativeFunction(_) | Value::Closure(_) => Ft::Function,
             Value::Opaque(_) => Ft::Opaque,
         }
     }

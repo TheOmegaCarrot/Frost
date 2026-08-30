@@ -123,8 +123,7 @@ impl Value {
             Value::String(s) => s
                 .parse::<i64>()
                 .ok()
-                .map(Value::from)
-                .unwrap_or(Value::Null),
+                .map_or(Value::Null, Value::from),
             _ => Value::Null,
         }
     }
@@ -135,14 +134,12 @@ impl Value {
         match self {
             Value::Float(_) => self.clone(),
             Value::Int(i) => FrostFloat::new(*i as f64)
-                .map(Value::from)
-                .unwrap_or(Value::Null),
+                .map_or(Value::Null, Value::from),
             Value::String(s) => s
                 .parse::<f64>()
                 .ok()
                 .and_then(|f| FrostFloat::new(f).ok())
-                .map(Value::from)
-                .unwrap_or(Value::Null),
+                .map_or(Value::Null, Value::from),
             _ => Value::Null,
         }
     }
@@ -152,6 +149,6 @@ impl Value {
     }
 
     pub fn array<K: Into<Value>, const N: usize>(elements: [K; N]) -> Value {
-        Value::from_iter(elements.into_iter().map(|e| e.into()))
+        Value::from_iter(elements.into_iter().map(std::convert::Into::into))
     }
 }

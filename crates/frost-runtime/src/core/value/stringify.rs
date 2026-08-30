@@ -83,8 +83,7 @@ fn stringify(value: &Value, buf: &mut String, ctx: &StringifyContext) {
         Value::Bytes(b) => stringify_bytes(b, buf),
         Value::Array(arr) => stringify_array(arr.as_slice(), buf, ctx),
         Value::Map(map) => stringify_map(map, buf, ctx),
-        Value::NativeFunction(_) => buf.push_str("<Function>"),
-        Value::Closure(_) => buf.push_str("<Function>"),
+        Value::NativeFunction(_) | Value::Closure(_) => buf.push_str("<Function>"),
         Value::Opaque(o) => write!(buf, "<{}>", o.type_name()).unwrap(),
     }
 }
@@ -106,7 +105,7 @@ fn stringify_string(s: &str, buf: &mut String, ctx: &StringifyContext) {
 /// binary is never mistaken for text: hex pairs, lowercase, inside `x'...'`.
 fn stringify_bytes(bytes: &[u8], buf: &mut String) {
     buf.push_str("x'");
-    for &byte in bytes.iter() {
+    for &byte in bytes {
         write!(buf, "{byte:02x}").unwrap();
     }
     buf.push('\'');

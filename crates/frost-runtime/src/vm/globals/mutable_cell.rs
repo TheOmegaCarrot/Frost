@@ -23,7 +23,7 @@ fn forbid_cycle(value: &Value) -> Result<(), FrostError> {
 pub(super) fn mutable_cell_global() -> Value {
     Value::native("mutable_cell", Arity::Between(0, 1), |_, args| {
         // steal the initial value if present, else default to Null.
-        let initial = args.first_mut().map(Value::take).unwrap_or(Value::Null);
+        let initial = args.first_mut().map_or(Value::Null, Value::take);
         forbid_cycle(&initial)?;
 
         let get_cell = Arc::new(Mutex::new(initial));

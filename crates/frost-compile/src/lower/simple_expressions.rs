@@ -9,7 +9,7 @@ use crate::{
 };
 
 impl FunctionBuilder<'_> {
-    pub fn compile_literal(
+    pub(super) fn compile_literal(
         &self,
         literal: &Literal,
         span: SourceSpan,

@@ -7,7 +7,7 @@ use crate::parse::strings::QuoteStyle;
 use crate::parse::{ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
-    pub fn parse_match(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_match(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwMatch)?.span.start;
 
         let target = self.parse_expression()?;
@@ -202,7 +202,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         };
 
         let end = if type_constraint.is_some() {
-            self.get(self.here() - 1).map(|t| t.span.end).unwrap_or(end)
+            self.get(self.here() - 1).map_or(end, |t| t.span.end)
         } else {
             end
         };

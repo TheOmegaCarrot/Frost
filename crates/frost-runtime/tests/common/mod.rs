@@ -15,12 +15,12 @@ use frost_runtime::{
 /// The alias is an associated constant, which `use Bytecode::*` cannot import;
 /// this lets test bodies keep writing `Pop` bare.
 #[allow(non_upper_case_globals)]
-pub const Pop: Bytecode = Bytecode::Pop;
+pub(crate) const Pop: Bytecode = Bytecode::Pop;
 
 /// The `LoadGlobal` slot index of a predefined global, by name. Panics if `name` is not
 /// a predefined global. (The runtime exposes only the ordered [`GLOBAL_NAMES`]; a slot is
 /// just its position.)
-pub fn global_slot(name: &str) -> usize {
+pub(crate) fn global_slot(name: &str) -> usize {
     GLOBAL_NAMES
         .iter()
         .position(|&n| n == name)
@@ -29,7 +29,7 @@ pub fn global_slot(name: &str) -> usize {
 
 /// A nameless compiled function with no locals, constants, or child functions.
 /// Arity `Exact(0)`: suitable for a top-level / thunk.
-pub fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
+pub(crate) fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<test>".to_string(),
@@ -46,7 +46,7 @@ pub fn empty_fn(code: Vec<Bytecode>) -> Arc<CompiledFunction> {
 /// A nameless compiled function with an explicit name table.
 /// Each entry's position in `names` is its slot index.
 /// Arity `Exact(0)`, no captures.
-pub fn fn_with_locals(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<CompiledFunction> {
+pub(crate) fn fn_with_locals(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<CompiledFunction> {
     Arc::new(CompiledFunction {
         version: FormatVersion,
         name: "<test>".to_string(),
@@ -65,7 +65,7 @@ pub fn fn_with_locals(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Compile
 /// No captures. For a callee that a `CreateClosure` site should actually capture
 /// values into, use [`func_with_captures`] instead: `CreateClosure` pops as many
 /// stack values as the callee's own `num_captures` names.
-pub fn func(
+pub(crate) fn func(
     code: Vec<Bytecode>,
     arity: Arity,
     names: Vec<NameEntry>,
@@ -76,7 +76,7 @@ pub fn func(
 
 /// Like [`func`], but with an explicit `num_captures`, for a callee that a
 /// `CreateClosure` site should capture values into.
-pub fn func_with_captures(
+pub(crate) fn func_with_captures(
     code: Vec<Bytecode>,
     arity: Arity,
     names: Vec<NameEntry>,
@@ -98,7 +98,7 @@ pub fn func_with_captures(
 
 /// Build a name-table entry.
 /// Its index in the slice passed to `fn_with_locals` / `func` is its slot.
-pub fn entry(name: &str, exported: bool) -> NameEntry {
+pub(crate) fn entry(name: &str, exported: bool) -> NameEntry {
     NameEntry {
         name: name.to_string(),
         exported,
@@ -106,7 +106,7 @@ pub fn entry(name: &str, exported: bool) -> NameEntry {
 }
 
 /// Run a nameless, local-less program to completion.
-pub fn run(code: Vec<Bytecode>) -> ProgramResult {
+pub(crate) fn run(code: Vec<Bytecode>) -> ProgramResult {
     run_fn(empty_fn(code))
 }
 
@@ -115,7 +115,7 @@ pub fn run(code: Vec<Bytecode>) -> ProgramResult {
 /// The top-level is invoked like any other closure, so the runner pushes its closure
 /// value and the body must `Pop` it first.
 /// Test programs are written without that leading `Pop`, so it is spliced in here.
-pub fn run_fn(program: Arc<CompiledFunction>) -> ProgramResult {
+pub(crate) fn run_fn(program: Arc<CompiledFunction>) -> ProgramResult {
     let top = CompiledFunction {
         code: std::iter::once(Bytecode::Pop)
             .chain(program.code.iter().copied())
@@ -132,7 +132,7 @@ pub fn run_fn(program: Arc<CompiledFunction>) -> ProgramResult {
 /// Build a runnable top-level [`Closure`] (no captures) from `code` plus a name
 /// table, splicing in the leading fn-value `Pop`.
 /// For tests that need the closure itself (e.g. `reset`, or building a `Vm` directly).
-pub fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure> {
+pub(crate) fn closure(code: Vec<Bytecode>, names: Vec<NameEntry>) -> Arc<Closure> {
     let mut body = vec![Bytecode::Pop];
     body.extend(code);
     Arc::new(CompiledFunction {

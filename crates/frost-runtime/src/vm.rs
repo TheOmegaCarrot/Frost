@@ -378,16 +378,16 @@ impl Vm {
                     Bytecode::CompareEqual => self.binary_op(|l, r| Ok(Value::Bool(l == r)))?,
                     Bytecode::CompareNotEqual => self.binary_op(|l, r| Ok(Value::Bool(l != r)))?,
                     Bytecode::CompareLessThan => {
-                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_lt())))?
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_lt())))?;
                     }
                     Bytecode::CompareLessThanOrEqual => {
-                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_le())))?
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_le())))?;
                     }
                     Bytecode::CompareGreaterThan => {
-                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_gt())))?
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_gt())))?;
                     }
                     Bytecode::CompareGreaterThanOrEqual => {
-                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_ge())))?
+                        self.binary_op(|l, r| Ok(Value::Bool(l.compare(r)?.is_ge())))?;
                     }
                     Bytecode::LogicalNot => {
                         let operand = self.stack_pop();
@@ -463,7 +463,7 @@ impl Vm {
                         // the boundary that entered this activation (`invoke` or `run`) truncates the abandoned frames and operands.
                         match function {
                             Value::NativeFunction(native_fn) => {
-                                self.native_call(&native_fn, argc)?
+                                self.native_call(&native_fn, argc)?;
                             }
                             Value::Closure(closure) => {
                                 Self::check_arity(
@@ -541,7 +541,7 @@ impl Vm {
                         let captures = self.stack.split_off(split_point);
 
                         self.stack
-                            .push(Value::Closure(Arc::new(Closure { function, captures })))
+                            .push(Value::Closure(Arc::new(Closure { function, captures })));
                     }
                     Bytecode::MakeArray(num_elems) => {
                         let split_point = self

@@ -6,7 +6,7 @@ use crate::parse::strings::QuoteStyle;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
-    pub fn parse_format_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_format_string(&mut self, quote: QuoteStyle) -> ParseResult<Spanned<Expr>> {
         let peek = self.must_peek("format String")?;
         let span = peek.span.clone();
         let raw = match peek.token {

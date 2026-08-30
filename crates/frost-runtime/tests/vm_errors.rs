@@ -96,7 +96,7 @@ fn run_with(
         .build(closure)
         .unwrap()
         .run()
-        .map_err(|e| e.into_error())
+        .map_err(frost_runtime::RunError::into_error)
 }
 
 /// `apply(f, ...rest)`: a re-entrant native that invokes `f` with the rest of

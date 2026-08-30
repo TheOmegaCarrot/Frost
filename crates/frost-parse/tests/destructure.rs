@@ -9,7 +9,7 @@ fn str_key(entry: &Spanned<MapDestructureEntry>) -> &str {
 }
 
 fn parse(src: &str) -> Program {
-    parse_program("test.frst", src).expect(&format!("failed to parse: {src}"))
+    parse_program("test.frst", src).unwrap_or_else(|e| panic!("failed to parse: {src}: {e}"))
 }
 
 fn parse_err(src: &str) -> String {

@@ -4,7 +4,7 @@ use crate::parse::statements::StatementContext;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
-    pub fn parse_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwFn)?.span.start;
 
         let peek = self.must_peek("lambda")?;
@@ -62,7 +62,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     /// Parse `(a, b, ...rest)`. Caller has not consumed the `(`.
     /// Reusable for `defn`.
-    pub fn parse_parenthesized_params(&mut self) -> ParseResult<Params> {
+    pub(crate) fn parse_parenthesized_params(&mut self) -> ParseResult<Params> {
         self.expect(Token::OpenParen)?;
         self.enter_nl_context().maybe_skip_nl();
 
@@ -107,7 +107,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     /// Parse `-> expr` or `-> { stmts; expr }`.
     /// Returns `(body_stmts, return_expr, end_offset)`.
     /// Reusable for `defn`.
-    pub fn parse_fn_body(
+    pub(crate) fn parse_fn_body(
         &mut self,
     ) -> ParseResult<(Vec<Spanned<Statement>>, Spanned<Expr>, usize)> {
         self.expect(Token::SlimArrow)?;
@@ -188,7 +188,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     // -- Abbreviated lambdas: $(expr) --
 
-    pub fn parse_abbreviated_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_abbreviated_lambda(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::DollarParen)?.span.start;
         self.enter_nl_context()
             .maybe_skip_nl()

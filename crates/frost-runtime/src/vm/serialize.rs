@@ -129,7 +129,7 @@ pub(crate) mod const_pool {
 
     use super::{ConstValue, Deserialize, Deserializer, Serializer, Value};
 
-    pub fn serialize<S: Serializer>(constants: &[Value], serializer: S) -> Result<S::Ok, S::Error> {
+    pub(crate) fn serialize<S: Serializer>(constants: &[Value], serializer: S) -> Result<S::Ok, S::Error> {
         let mut seq = serializer.serialize_seq(Some(constants.len()))?;
         for value in constants {
             seq.serialize_element(&ConstValue::try_from(value).map_err(S::Error::custom)?)?;
@@ -137,7 +137,7 @@ pub(crate) mod const_pool {
         seq.end()
     }
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<Value>, D::Error> {
+    pub(crate) fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<Value>, D::Error> {
         Ok(Vec::<ConstValue>::deserialize(deserializer)?
             .into_iter()
             .map(Value::from)

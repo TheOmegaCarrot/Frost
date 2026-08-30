@@ -4,7 +4,7 @@ use crate::parse::strings;
 use crate::parse::{ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
-    pub fn parse_expression(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_expression(&mut self) -> ParseResult<Spanned<Expr>> {
         self.maybe_skip_nl();
         self.parse_expr_bp(0)
     }

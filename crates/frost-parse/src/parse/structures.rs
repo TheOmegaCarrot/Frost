@@ -3,7 +3,7 @@ use crate::lex::Token;
 use crate::parse::{ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
-    pub fn parse_array_literal(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_array_literal(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::OpenBracket)?.span.start;
         self.enter_nl_context();
 
@@ -18,7 +18,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         ))
     }
 
-    pub fn parse_map_literal(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_map_literal(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::OpenBrace)?.span.start;
         self.enter_nl_context();
 

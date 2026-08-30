@@ -68,7 +68,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<ProgramResu
         .build(main.assert_trusted().close(map).unwrap())
         .unwrap()
         .run()
-        .map_err(|e| e.into_error())
+        .map_err(frost_runtime::RunError::into_error)
 }
 
 fn add() -> Value {

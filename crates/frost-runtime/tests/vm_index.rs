@@ -46,7 +46,7 @@ fn eval_keyed(
         .build(closure)
         .unwrap()
         .run()
-        .map_err(|e| e.into_error())
+        .map_err(frost_runtime::RunError::into_error)
         .map(|r| r.tail().clone())
 }
 

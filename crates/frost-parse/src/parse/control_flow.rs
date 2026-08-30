@@ -4,7 +4,7 @@ use crate::parse::statements::StatementContext;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
-    pub fn parse_if(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_if(&mut self) -> ParseResult<Spanned<Expr>> {
         self.parse_if_or_elif(Token::KwIf)
     }
 
@@ -53,7 +53,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         }
     }
 
-    pub fn parse_do(&mut self) -> ParseResult<Spanned<Expr>> {
+    pub(crate) fn parse_do(&mut self) -> ParseResult<Spanned<Expr>> {
         let start = self.expect(Token::KwDo)?.span.start;
         self.expect(Token::OpenBrace)?;
 

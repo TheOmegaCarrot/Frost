@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl FunctionBuilder<'_> {
-    pub fn compile_def(
+    pub(super) fn compile_def(
         &mut self,
         expr: &Spanned<Expr>,
         destructure: &Spanned<Destructure>,

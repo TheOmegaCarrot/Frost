@@ -7,3 +7,6 @@ edition.workspace = true
 frost-parse = { path = "../frost-parse" }
 frost-runtime = { path = "../frost-runtime" }
 miette = { version = "7", features = ["fancy"] }
+
+[lints]
+workspace = true

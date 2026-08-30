@@ -55,7 +55,7 @@ fn run(constants: Vec<Value>, code: Vec<Bytecode>) -> Result<Value, FrostError> 
         .build(closure)
         .unwrap()
         .run()
-        .map_err(|e| e.into_error())
+        .map_err(frost_runtime::RunError::into_error)
         .map(|r| r.tail().clone())
 }
 
@@ -203,7 +203,7 @@ impl ImportResolver for RecursiveResolver {
             .map_err(|e| FrostError::from_string(e.message().to_string()))?
             .with_module_id(ModuleId::new(module_spec))
             .run()
-            .map_err(|e| e.into_error())?
+            .map_err(frost_runtime::RunError::into_error)?
             .tail()
             .clone();
         Ok(Some(value))
@@ -241,7 +241,7 @@ fn run_with(
         vm = vm.with_module_id(id);
     }
     vm.run()
-        .map_err(|e| e.into_error())
+        .map_err(frost_runtime::RunError::into_error)
         .map(|r| r.tail().clone())
 }
 

@@ -27,7 +27,7 @@ impl Drop for IncomingGuard {
 // -- Error --
 
 #[derive(Debug)]
-pub struct DeError(String);
+pub(super) struct DeError(String);
 
 impl fmt::Display for DeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -69,8 +69,9 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
             Value::Bytes(ref b) => visitor.visit_bytes(b),
             Value::Array(_) => self.deserialize_seq(visitor),
             Value::Map(_) => self.deserialize_map(visitor),
-            Value::NativeFunction(_) => Err(de::Error::custom("cannot deserialize Function")),
-            Value::Closure(_) => Err(de::Error::custom("cannot deserialize Function")),
+            Value::NativeFunction(_) | Value::Closure(_) => {
+                Err(de::Error::custom("cannot deserialize Function"))
+            }
             Value::Opaque(_) => Err(de::Error::custom("cannot deserialize Opaque")),
         }
     }
@@ -437,7 +438,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
         self,
         deserializer: D,
     ) -> Result<Value, D::Error> {
-        match INCOMING_VALUE.with(|slot| slot.take()) {
+        match INCOMING_VALUE.with(std::cell::Cell::take) {
             // Our own deserializer deposited the value whole, Functions and Opaques included.
             Some(value) => Ok(value),
             // A foreign deserializer's transparent newtype: deserialize the inner normally.

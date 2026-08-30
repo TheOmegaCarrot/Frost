@@ -3,7 +3,7 @@ use logos::Logos;
 #[derive(Logos, Debug, PartialEq)]
 // Re: lifetime: Logos understands this annotation and fills in the rest in its generated code,
 //               so that the lifetime of the Token is tied to the lifetime of the input string.
-pub enum Token<'src> {
+pub(crate) enum Token<'src> {
     // -- Keywords --
     #[token("as")]
     KwAs,
@@ -360,8 +360,7 @@ impl<'src> std::fmt::Display for Token<'src> {
             Token::OpGte => write!(f, ">="),
             Token::IntLiteral(n) => write!(f, "{n}"),
             Token::FloatLiteral(n) => write!(f, "{n}"),
-            Token::Identifier(s) => write!(f, "{s}"),
-            Token::DollarIdentifier(s) => write!(f, "{s}"),
+            Token::Identifier(s) | Token::DollarIdentifier(s) => write!(f, "{s}"),
             Token::RawStringLiteral(s) => write!(f, "R'({s})'"),
             Token::SingleQuoteStringLiteral(s) => write!(f, "'{s}'"),
             Token::DoubleQuoteStringLiteral(s) => write!(f, "\"{s}\""),

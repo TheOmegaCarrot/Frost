@@ -229,12 +229,12 @@ static DEFAULT_GLOBALS: LazyLock<Arc<GlobalSet>> =
     LazyLock::new(|| Arc::new(GlobalSet::build_defaults()));
 
 impl GlobalSet {
-    pub fn defaults() -> Arc<Self> {
+    pub(super) fn defaults() -> Arc<Self> {
         DEFAULT_GLOBALS.clone()
     }
 
     /// Get the value at a global slot index.
-    pub fn get(&self, idx: usize) -> &Value {
+    pub(super) fn get(&self, idx: usize) -> &Value {
         &self.0[idx]
     }
 }

@@ -25,7 +25,7 @@ fn run(source: &str) -> Value {
         .build(closure)
         .expect("closure builds")
         .run()
-        .map_err(|e| e.into_error())
+        .map_err(frost_runtime::RunError::into_error)
         .expect("program should run")
         .tail()
         .clone()

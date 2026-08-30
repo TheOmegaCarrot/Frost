@@ -39,19 +39,18 @@ const NAMES: &[&str] = &[
     "variable.parameter",
 ];
 
-pub fn highlights(source: &str) -> Vec<Highlight> {
+pub(crate) fn highlights(source: &str) -> Vec<Highlight> {
     let language: Language = LANGUAGE.into();
 
-    let mut config = match HighlightConfiguration::new(language, "frost", HIGHLIGHTS_SCM, "", "") {
-        Ok(config) => config,
-        Err(_) => return Vec::new(),
+    let Ok(mut config) = HighlightConfiguration::new(language, "frost", HIGHLIGHTS_SCM, "", "")
+    else {
+        return Vec::new();
     };
     config.configure(NAMES);
 
     let mut highlighter = Highlighter::new();
-    let events = match highlighter.highlight(&config, source.as_bytes(), None, |_| None) {
-        Ok(events) => events,
-        Err(_) => return Vec::new(),
+    let Ok(events) = highlighter.highlight(&config, source.as_bytes(), None, |_| None) else {
+        return Vec::new();
     };
 
     let mut out = Vec::new();

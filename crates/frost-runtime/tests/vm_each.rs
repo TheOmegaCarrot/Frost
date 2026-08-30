@@ -105,7 +105,7 @@ fn run_main(caps: Vec<(&str, Value)>, body: Vec<Bytecode>) -> Result<Value, Fros
         .build(main.assert_trusted().close(map).unwrap())
         .unwrap()
         .run()
-        .map_err(|e| e.into_error())
+        .map_err(frost_runtime::RunError::into_error)
         .map(|r| r.tail().clone())
 }
 

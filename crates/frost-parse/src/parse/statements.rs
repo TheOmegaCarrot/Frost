@@ -4,13 +4,13 @@ use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
 /// Statements are only allowed in a few contexts,
 /// and the rules differ between contexts.
-pub enum StatementContext {
+pub(crate) enum StatementContext {
     TopLevel,
     Scope,
 }
 
 impl<'src, 'f> ParseCtx<'src, 'f> {
-    pub fn parse_statements(
+    pub(crate) fn parse_statements(
         &mut self,
         kind: StatementContext,
     ) -> ParseResult<Vec<Spanned<Statement>>> {

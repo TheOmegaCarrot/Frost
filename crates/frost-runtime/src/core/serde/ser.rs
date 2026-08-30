@@ -19,7 +19,7 @@ thread_local! {
 // -- Error --
 
 #[derive(Debug)]
-pub struct SerError(String);
+pub(super) struct SerError(String);
 
 impl fmt::Display for SerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -160,7 +160,7 @@ impl ser::Serializer for ValueSerializer {
             let _guard = LiftGuard::arm();
             value.serialize(self)?;
             return OUTGOING_VALUE
-                .with(|slot| slot.take())
+                .with(std::cell::Cell::take)
                 .ok_or_else(|| ser::Error::custom("expected a Frost Value newtype payload"));
         }
         value.serialize(self)
@@ -244,7 +244,7 @@ impl ser::Serializer for ValueSerializer {
 
 // -- Compound serializers --
 
-pub struct SerializeArray {
+pub(super) struct SerializeArray {
     elements: Vec<Value>,
 }
 
@@ -288,7 +288,7 @@ impl ser::SerializeTupleStruct for SerializeArray {
     }
 }
 
-pub struct SerializeTupleVariant {
+pub(super) struct SerializeTupleVariant {
     variant: &'static str,
     elements: Vec<Value>,
 }
@@ -311,7 +311,7 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
     }
 }
 
-pub struct SerializeMap {
+pub(super) struct SerializeMap {
     entries: Vec<(MapKey, Value)>,
     pending_key: Option<MapKey>,
 }
@@ -345,7 +345,7 @@ impl ser::SerializeMap for SerializeMap {
     }
 }
 
-pub struct SerializeStruct {
+pub(super) struct SerializeStruct {
     entries: Vec<(MapKey, Value)>,
 }
 
@@ -374,7 +374,7 @@ impl ser::SerializeStruct for SerializeStruct {
     }
 }
 
-pub struct SerializeStructVariant {
+pub(super) struct SerializeStructVariant {
     variant: &'static str,
     entries: Vec<(MapKey, Value)>,
 }
@@ -438,8 +438,9 @@ fn serialize_data<S: ser::Serializer>(value: &Value, serializer: S) -> Result<S:
             }
             m.end()
         }
-        Value::NativeFunction(_) => Err(ser::Error::custom("cannot serialize Function")),
-        Value::Closure(_) => Err(ser::Error::custom("cannot serialize Function")),
+        Value::NativeFunction(_) | Value::Closure(_) => {
+            Err(ser::Error::custom("cannot serialize Function"))
+        }
         Value::Opaque(_) => Err(ser::Error::custom("cannot serialize Opaque")),
     }
 }
@@ -452,7 +453,7 @@ struct ValueCarrier<'a>(&'a Value);
 
 impl Serialize for ValueCarrier<'_> {
     fn serialize<S: ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        if LIFTING_VALUE.with(|f| f.get()) {
+        if LIFTING_VALUE.with(std::cell::Cell::get) {
             let stale = OUTGOING_VALUE.with(|slot| slot.replace(Some(self.0.clone())));
             // A dirty slot means some middleware forged the token without draining it;
             // fail loudly in debug, overwrite (identical effect) in release.

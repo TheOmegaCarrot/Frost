@@ -10,7 +10,7 @@ use serde::Serialize;
 // -- Output shapes --
 
 #[derive(Serialize)]
-pub struct Range {
+pub(crate) struct Range {
     pub sl: usize,
     pub sc: usize,
     pub el: usize,
@@ -18,7 +18,7 @@ pub struct Range {
 }
 
 #[derive(Serialize)]
-pub struct Node {
+pub(crate) struct Node {
     pub id: u32,
     pub label: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -30,7 +30,7 @@ pub struct Node {
 }
 
 #[derive(Serialize)]
-pub struct Highlight {
+pub(crate) struct Highlight {
     pub s: usize,
     pub e: usize,
     pub c: String,
@@ -45,12 +45,12 @@ fn is_false(b: &bool) -> bool {
 /// Resolves half-open byte offsets to 1-based line/column positions. Columns
 /// are byte offsets within the line (matching the template's 1-byte-per-column
 /// rendering); Frost source is ASCII outside string literals.
-pub struct LineIndex {
+pub(crate) struct LineIndex {
     line_starts: Vec<usize>,
 }
 
 impl LineIndex {
-    pub fn new(source: &str) -> Self {
+    pub(crate) fn new(source: &str) -> Self {
         let mut line_starts = vec![0];
         for (i, b) in source.bytes().enumerate() {
             if b == b'\n' {
@@ -75,13 +75,13 @@ impl LineIndex {
 
 // -- Walker --
 
-pub struct Walker<'a> {
+pub(crate) struct Walker<'a> {
     index: &'a LineIndex,
     next_id: u32,
 }
 
 impl<'a> Walker<'a> {
-    pub fn new(index: &'a LineIndex) -> Self {
+    pub(crate) fn new(index: &'a LineIndex) -> Self {
         Self { index, next_id: 0 }
     }
 
@@ -128,7 +128,7 @@ impl<'a> Walker<'a> {
 
     // -- Statements --
 
-    pub fn stmt(&mut self, s: &Spanned<Statement>) -> Node {
+    pub(crate) fn stmt(&mut self, s: &Spanned<Statement>) -> Node {
         match &s.node {
             Statement::Def {
                 exported,
@@ -149,7 +149,7 @@ impl<'a> Walker<'a> {
 
     // -- Expressions --
 
-    pub fn expr(&mut self, e: &Spanned<Expr>) -> Node {
+    pub(crate) fn expr(&mut self, e: &Spanned<Expr>) -> Node {
         let span = e.span;
         match &e.node {
             Expr::Literal(lit) => {

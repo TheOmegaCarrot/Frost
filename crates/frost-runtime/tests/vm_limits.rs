@@ -56,7 +56,7 @@ fn run(
         .build(main.assert_trusted().close(captures).unwrap())
         .unwrap()
         .run()
-        .map_err(|e| e.into_error())
+        .map_err(frost_runtime::RunError::into_error)
 }
 
 fn unlimited() -> VmRuntimeConfiguration {
