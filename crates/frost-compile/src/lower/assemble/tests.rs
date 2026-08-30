@@ -9,7 +9,8 @@
 use super::super::{FunctionBuilder, Ir, JumpType};
 use crate::{CompilerOptions, OptimizationOptions};
 
-use frost_runtime::{Arity, Bytecode, CompiledFunction, MapKey, NameEntry, Value};
+use frost_parse::ast::SourceSpan;
+use frost_runtime::{Arity, Bytecode, CompiledFunction, MapKey, Value};
 
 use std::sync::Arc;
 
@@ -350,14 +351,12 @@ fn function_metadata_passes_through() {
     let options = options();
     let mut b = FunctionBuilder::new(&options, "greet".to_string(), "", "", Arity::Between(1, 3));
     b.num_captures = 1;
-    b.name_table.push(NameEntry {
-        name: "captured".to_string(),
-        exported: false,
-    });
-    b.name_table.push(NameEntry {
-        name: "result".to_string(),
-        exported: true,
-    });
+    b.locals
+        .define("captured".to_string(), SourceSpan::default(), false)
+        .unwrap();
+    b.locals
+        .define("result".to_string(), SourceSpan::default(), true)
+        .unwrap();
 
     let f = b.assemble(vec![Ir::Ready(Bytecode::PushNull)]);
 

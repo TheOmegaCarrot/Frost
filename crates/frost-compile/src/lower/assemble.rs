@@ -65,7 +65,7 @@ impl FunctionBuilder<'_> {
             child_fns,
             constants,
             key_constants,
-            name_table: self.name_table,
+            name_table: self.locals.into_name_table(),
             num_captures: self.num_captures,
             arity: self.arity,
         })

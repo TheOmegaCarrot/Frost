@@ -1,4 +1,6 @@
 mod assemble;
+mod def;
+mod locals;
 mod simple_expressions;
 
 use std::sync::Arc;
@@ -9,7 +11,9 @@ use frost_parse::{
     ast::{Expr, Program, Spanned, Statement},
     parse_program,
 };
-use frost_runtime::{Arity, Bytecode, CompiledFunction, MapKey, NameEntry, Value};
+use frost_runtime::{Arity, Bytecode, CompiledFunction, MapKey, Value};
+
+use locals::Locals;
 
 #[derive(Debug)]
 enum JumpType {
@@ -46,7 +50,7 @@ struct IrFragment {
 
 #[derive(Debug)]
 struct FunctionBuilder<'a> {
-    name_table: Vec<NameEntry>,
+    locals: Locals,
     next_label: Label,
     name: String,
     arity: Arity,
@@ -65,7 +69,7 @@ impl<'a> FunctionBuilder<'a> {
         arity: Arity,
     ) -> Self {
         Self {
-            name_table: Vec::new(),
+            locals: Locals::new(),
             next_label: Label(0),
             name,
             arity,
@@ -135,7 +139,18 @@ impl FunctionBuilder<'_> {
     ) -> Result<IrFragment, CompilerErrors> {
         // match and dispatch
 
-        todo!()
+        match &stmt.node {
+            Statement::Def {
+                exported,
+                destructure,
+                expr,
+            } => self.compile_def(expr, destructure, *exported),
+            Statement::Expr(expr) => {
+                let mut fragment = self.compile_expression(expr)?;
+                fragment.code.push(Ir::Ready(Bytecode::Pop));
+                Ok(fragment)
+            }
+        }
     }
 
     fn compile_expression(&mut self, expr: &Spanned<Expr>) -> Result<IrFragment, CompilerErrors> {

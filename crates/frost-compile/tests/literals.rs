@@ -17,7 +17,10 @@ fn options() -> CompilerOptions {
 /// Compile `source` and run it, returning the tail value.
 fn run(source: &str) -> Value {
     let output = compile_program("test.frst", source, options()).expect("source should compile");
-    let closure = output.code.into_closure().expect("top level needs no captures");
+    let closure = output
+        .code
+        .into_closure()
+        .expect("top level needs no captures");
     Vm::factory()
         .build(closure)
         .expect("closure builds")
