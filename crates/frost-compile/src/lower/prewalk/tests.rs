@@ -223,6 +223,97 @@ fn match_alternatives_bind_the_same_names() {
     assert_captures("fn -> match t { [a] | {foo: a} => a, _ => z }", &["t", "z"]);
 }
 
+#[test]
+fn a_pattern_binding_is_visible_to_later_pattern_elements() {
+    // `(a)` compares against the `a` bound by the first element: no capture.
+    assert_captures("fn a -> match a { [a, (a)] => true, _ => false }", &[]);
+    // A computed key sees a binding from an earlier entry of the same pattern.
+    assert_captures("fn m -> match m { {kind, [kind]: node} => node, _ => 0 }", &[]);
+}
+
+#[test]
+fn a_destructure_binding_is_visible_to_later_computed_keys() {
+    // `[kind]` resolves the `kind` bound by the earlier entry: no capture.
+    assert_captures(
+        "fn -> { def {kind, [kind]: node} = {kind: 'k', other: 42}; node }",
+        &[],
+    );
+}
+
+// -- Corner cases verified against the C++ oracle --
+//
+// Each pins a distinct scope/ordering rule. Visibility within a pattern or
+// destructure is strictly *preceding*: an element sees earlier bindings but not
+// its own or later ones.
+
+#[test]
+fn alternatives_contribute_usages_from_every_branch() {
+    // Value patterns in each branch are usages; both escape. The discriminant
+    // is evaluated before any arm, so `t` is discovered first: the pattern match
+    // logically depends on the discriminant's value.
+    assert_eq!(
+        ordered("fn -> match t { (a) | (b) => 1, _ => 0 }"),
+        ["t", "a", "b"]
+    );
+}
+
+#[test]
+fn a_computed_key_does_not_see_its_own_entry_binding() {
+    // `[a]` is evaluated before this entry binds `a`, so `a` is captured.
+    assert_captures("fn -> { def {[a]: a} = m; a }", &["a", "m"]);
+}
+
+#[test]
+fn a_pattern_element_does_not_see_a_later_binding() {
+    // Reverse of the forward case: the key `[kind]` precedes the `kind`
+    // binding, so it captures.
+    assert_captures("fn -> match m { {[kind]: node, kind} => node, _ => 0 }", &["kind", "m"]);
+}
+
+#[test]
+fn a_lambda_in_a_match_arm_captures_the_arm_binding() {
+    // The inner lambda captures `xs` (the arm binding); only `t` reaches the
+    // outer lambda.
+    assert_captures("fn -> match t { xs => map xs with fn y -> y + xs, _ => 0 }", &["t"]);
+}
+
+#[test]
+fn use_before_definition_inside_a_do_escapes() {
+    // A `do` is its own scoping node; the leading `x` precedes its def.
+    assert_captures("fn -> do { x; def x = 5; x }", &["x"]);
+    assert_captures("fn -> do { def x = xo; x }", &["xo"]);
+}
+
+#[test]
+fn a_guard_sees_an_alternative_binding() {
+    // `a` in the guard is bound by whichever alternative matched.
+    assert_captures("fn -> match t { [a] | {foo: a} if: a > lim => a, _ => 0 }", &["lim", "t"]);
+}
+
+#[test]
+fn a_pattern_element_binding_is_visible_without_a_shadowing_param() {
+    // Isolates the rule: `a` is not a parameter here, so `(a)` can only be
+    // seeing the first element's binding.
+    assert_captures("fn -> match t { [a, (a)] => true, _ => false }", &["t"]);
+}
+
+#[test]
+fn a_whole_map_binding_is_introduced_after_the_subpatterns() {
+    // `[whole]` precedes the `as whole` binding, so it captures.
+    assert_captures("fn -> match m { {[whole]: node} as whole => node, _ => 0 }", &["m", "whole"]);
+}
+
+#[test]
+fn a_named_but_unused_local_does_not_capture_though_its_rhs_does() {
+    assert_captures("fn -> { def x = free; 5 }", &["free"]);
+}
+
+#[test]
+fn abbreviated_lambda_arity_is_the_highest_placeholder() {
+    // `$3` alone makes a three-parameter lambda; `$1` and `$2` are also params.
+    assert_captures("$($3 + q)", &["q"]);
+}
+
 // -- Nested lambdas and capture propagation --
 
 #[test]
