@@ -23,8 +23,6 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::BTreeSet;
-
 use frost_parse::ast::{
     Binding, Destructure, Expr, FormatSegment, MatchArm, MatchPattern, SourceSpan, Spanned,
     Statement,
@@ -89,7 +87,6 @@ pub(super) fn free_names(lambda: &Expr) -> Vec<String> {
 struct Scanner {
     scope: Locals,
     free: Vec<String>,
-    seen: BTreeSet<String>,
 }
 
 impl Scanner {
@@ -97,13 +94,13 @@ impl Scanner {
         Self {
             scope: Locals::new(),
             free: Vec::new(),
-            seen: BTreeSet::new(),
         }
     }
 
-    /// Record a use of `name`: free if it is not in scope.
+    /// Record a use of `name`: free if it is not in scope. A lambda's distinct
+    /// free names are few, so a linear dedup scan beats a separate seen-set.
     fn usage(&mut self, name: &str) {
-        if self.scope.resolve(name).is_none() && self.seen.insert(name.to_owned()) {
+        if self.scope.resolve(name).is_none() && !self.free.iter().any(|n| n == name) {
             self.free.push(name.to_owned());
         }
     }
