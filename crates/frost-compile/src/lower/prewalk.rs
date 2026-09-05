@@ -221,10 +221,10 @@ impl Scanner {
                 init,
             } => {
                 self.expr(structure);
+                self.expr(operation);
                 if let Some(init) = init {
                     self.expr(init);
                 }
-                self.expr(operation);
             }
             Expr::Match { target, arms } => {
                 self.expr(target);

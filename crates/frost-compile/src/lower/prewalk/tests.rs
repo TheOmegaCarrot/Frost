@@ -394,3 +394,87 @@ fn a_repeated_free_name_is_captured_once_at_first_use() {
     assert_eq!(ordered("fn -> a + b + a"), ["a", "b"]);
     assert_eq!(ordered("fn -> g(a, a, b)"), ["g", "a", "b"]);
 }
+
+#[test]
+fn evaluation_order_of_compound_forms() {
+    assert_eq!(ordered("fn -> if c: t else: e"), ["c", "t", "e"]);
+    assert_eq!(ordered("fn -> [a, b, c]"), ["a", "b", "c"]);
+    assert_eq!(ordered("fn -> {[k]: v}"), ["k", "v"]);
+    // Reduce: structure, operation, then the optional init seed.
+    assert_eq!(ordered("fn -> reduce xs init: seed with op"), ["xs", "op", "seed"]);
+    // Match: discriminant, then each arm's pattern, guard, result.
+    assert_eq!(
+        ordered("fn -> match t { (p) if: gd => r, _ => e }"),
+        ["t", "p", "gd", "r", "e"]
+    );
+}
+
+// -- More corner cases --
+
+#[test]
+fn zero_arg_abbreviated_thunk() {
+    assert_captures("$(w)", &["w"]);
+    assert_captures("$(42)", &[]);
+}
+
+#[test]
+fn lambda_in_a_match_guard_captures_the_arm_binding() {
+    assert_captures("fn -> match t { n if: (fn -> n > lim)() => n, _ => 0 }", &["lim", "t"]);
+}
+
+#[test]
+fn do_block_inside_a_pattern_computed_key() {
+    assert_captures("fn a -> match m { {[do { def k = a; k }]: v} => v, _ => 0 }", &["m"]);
+}
+
+#[test]
+fn closure_created_before_the_def_it_needs() {
+    // `inner` closes over `x` before `x` is defined: `x` is a capture.
+    assert_captures("fn -> { def inner = fn -> x; def x = 1; inner }", &["x"]);
+}
+
+#[test]
+fn self_name_used_from_a_nested_lambda() {
+    assert_captures("fn foo() -> fn -> foo", &[]);
+}
+
+#[test]
+fn abbreviated_placeholder_through_a_nested_regular_lambda() {
+    // The inner `fn -> $1` captures `$1` from the enclosing abbreviated lambda.
+    assert_captures("$( (fn -> $1)() )", &[]);
+}
+
+#[test]
+fn nested_abbreviated_lambdas_keep_separate_placeholders() {
+    // Each `$1` belongs to its own lambda; only `g` and `h` are free.
+    assert_captures("$( g($1, $(h($1))) )", &["g", "h"]);
+}
+
+#[test]
+fn dedup_through_the_replay_path() {
+    assert_eq!(ordered("fn -> [fn -> w, fn -> w, w]"), ["w"]);
+}
+
+#[test]
+fn lambda_inside_a_format_interpolation() {
+    assert_captures("fn -> $'${(fn -> w)()}'", &["w"]);
+}
+
+#[test]
+fn match_in_a_def_rhs() {
+    // The arm scope must unwind before `x` is defined.
+    assert_captures("fn -> { def x = match t { n => n, _ => 0 }; x }", &["t"]);
+}
+
+#[test]
+fn guard_only_usage_on_a_discard_arm() {
+    assert_captures("fn -> match t { _ if: g => 1, _ => 2 }", &["g", "t"]);
+}
+
+#[test]
+fn threading_operator_discovers_callee_first() {
+    // `a @ f(b)` desugars to `f(a, b)`; discovery is callee-first, so the order
+    // diverges from source order.
+    assert_captures("fn -> a @ f(b)", &["a", "b", "f"]);
+    assert_eq!(ordered("fn -> a @ f(b)"), ["f", "a", "b"]);
+}
