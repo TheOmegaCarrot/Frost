@@ -3,15 +3,21 @@
 //!
 //! It replicates the C++ oracle's `symbol_sequence()` analysis using the same
 //! [`Locals`] resolver the codegen uses: walk the body in evaluation order,
-//! `define` names as bindings introduce them, and treat any `resolve` miss that
-//! is not a global as a capture. Scoping falls out of `Locals::enter`/`exit`, so
-//! a `do` block absorbs its own definitions; a nested lambda is opaque, so its
-//! own free names are replayed here as usages (a name the inner lambda needs
-//! that this scope cannot supply becomes a capture of this scope too).
+//! `define` names as bindings introduce them, and treat any `resolve` miss as a
+//! free name. Scoping falls out of `Locals::enter`/`exit`, so a `do` block
+//! absorbs its own definitions; a nested lambda is opaque, so its own free names
+//! are replayed here as usages (a name the inner lambda needs that this scope
+//! cannot supply is free in this scope too).
+//!
+//! Globals are deliberately NOT filtered here. Whether a free name is a global
+//! (resolved by `LoadGlobal`) or a real capture depends on the enclosing scope:
+//! an enclosing binding can shadow a global's name, in which case the name is a
+//! capture, not the builtin. Only codegen, which holds the enclosing scope, can
+//! tell them apart, so it does the filtering; this pass returns pure free names.
 //!
 //! The discovery order is evaluation order, which fixes the arbitrary-but-
 //! consistent slot order of the captures. A usage of a name *before* its
-//! definition in the same scope is a capture (a later definition shadows only
+//! definition in the same scope is free (a later definition shadows only
 //! subsequent uses); this is deliberate and matches the oracle.
 
 #[cfg(test)]
@@ -24,14 +30,16 @@ use frost_parse::ast::{
     Statement,
 };
 
-use super::globals::global_slot;
 use super::locals::Locals;
 
-/// The free names a lambda expression captures, in evaluation order, found with
-/// a fresh scope seeded with the lambda's own parameters.
+/// The free names of a lambda expression, in evaluation order, found with a
+/// fresh scope seeded with the lambda's own parameters.
+///
+/// The result includes any global names the lambda uses; codegen filters those
+/// out (against the enclosing scope) to arrive at the actual captures.
 ///
 /// `lambda` must be an [`Expr::Lambda`] or [`Expr::AbbreviatedLambda`].
-pub(super) fn find_captures(lambda: &Expr) -> Vec<String> {
+pub(super) fn free_names(lambda: &Expr) -> Vec<String> {
     let mut scan = Scanner::new();
     match lambda {
         Expr::Lambda {
@@ -71,16 +79,16 @@ pub(super) fn find_captures(lambda: &Expr) -> Vec<String> {
             }
             scan.expr(body);
         }
-        _ => unreachable!("find_captures called on a non-lambda expression"),
+        _ => unreachable!("free_names called on a non-lambda expression"),
     }
-    scan.captures
+    scan.free
 }
 
 /// Walks an expression tree in evaluation order, tracking in-scope names and
 /// collecting the free ones.
 struct Scanner {
     scope: Locals,
-    captures: Vec<String>,
+    free: Vec<String>,
     seen: BTreeSet<String>,
 }
 
@@ -88,18 +96,15 @@ impl Scanner {
     fn new() -> Self {
         Self {
             scope: Locals::new(),
-            captures: Vec::new(),
+            free: Vec::new(),
             seen: BTreeSet::new(),
         }
     }
 
-    /// Record a use of `name`: a capture if it is neither in scope nor a global.
+    /// Record a use of `name`: free if it is not in scope.
     fn usage(&mut self, name: &str) {
-        if self.scope.resolve(name).is_none()
-            && global_slot(name).is_none()
-            && self.seen.insert(name.to_owned())
-        {
-            self.captures.push(name.to_owned());
+        if self.scope.resolve(name).is_none() && self.seen.insert(name.to_owned()) {
+            self.free.push(name.to_owned());
         }
     }
 
@@ -196,7 +201,7 @@ impl Scanner {
             // A nested lambda is opaque: its free names are what it demands of
             // this scope, so replay each as a usage here.
             Expr::Lambda { .. } | Expr::AbbreviatedLambda { .. } => {
-                for name in find_captures(&expr.node) {
+                for name in free_names(&expr.node) {
                     self.usage(&name);
                 }
             }
