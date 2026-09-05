@@ -18,20 +18,18 @@ impl FunctionBuilder<'_> {
         let destructure_fragment = match &destructure.node {
             Destructure::Binding(binding) => match &binding.node {
                 Binding::Named(name) => {
-                    let slot =
-                        self.locals
-                            .define(name.clone(), binding.span, exported)
-                            .map_err(|original| {
-                                self.error(format!("`{name}` is already bound"))
-                                    .code("duplicate binding".into())
-                                    .label_primary(binding.span, "redefined here".into())
-                                    .related(
-                                        CompilerError::advice(format!(
-                                            "`{name}` was first bound here"
-                                        ))
+                    let slot = self
+                        .locals
+                        .define(name.clone(), binding.span, exported)
+                        .map_err(|original| {
+                            self.error(format!("`{name}` is already bound"))
+                                .code("duplicate binding".into())
+                                .label_primary(binding.span, "redefined here".into())
+                                .related(
+                                    CompilerError::advice(format!("`{name}` was first bound here"))
                                         .label(original, "original binding".into()),
-                                    )
-                            })?;
+                                )
+                        })?;
                     IrFragment {
                         code: vec![Ir::Ready(Bytecode::DefLocal(slot))],
                     }

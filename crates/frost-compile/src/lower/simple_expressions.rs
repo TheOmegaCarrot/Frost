@@ -37,4 +37,29 @@ impl FunctionBuilder<'_> {
                 .into()
         })
     }
+
+    pub(super) fn compile_name_lookup(
+        &self,
+        name: &str,
+        span: SourceSpan,
+    ) -> Result<IrFragment, CompilerErrors> {
+        // Locals (including a lambda's seeded captures, and shadowing any global)
+        // win over globals; an unresolved name is a compile error. Inside a
+        // lambda every free name was reserved as a capture by the pre-walk, so
+        // this error only fires at the top level.
+        let load = if let Some(slot) = self.locals.resolve(name) {
+            Bytecode::LoadLocal(slot)
+        } else if let Some(slot) = super::globals::global_slot(name) {
+            Bytecode::LoadGlobal(slot)
+        } else {
+            return Err(self
+                .error(format!("`{name}` is not defined"))
+                .code("unbound name".into())
+                .label_primary(span, "not found in this scope".into())
+                .into());
+        };
+        Ok(IrFragment {
+            code: vec![Ir::Ready(load)],
+        })
+    }
 }

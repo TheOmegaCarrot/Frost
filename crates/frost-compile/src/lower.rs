@@ -1,6 +1,8 @@
 mod assemble;
 mod def;
+mod globals;
 mod locals;
+mod prewalk;
 mod simple_expressions;
 
 use std::sync::Arc;
@@ -156,7 +158,7 @@ impl FunctionBuilder<'_> {
     fn compile_expression(&mut self, expr: &Spanned<Expr>) -> Result<IrFragment, CompilerErrors> {
         match &expr.node {
             Expr::Literal(literal) => self.compile_literal(literal, expr.span),
-            Expr::NameLookup(_) => todo!(),
+            Expr::NameLookup(name) => self.compile_name_lookup(name, expr.span),
             Expr::BinOp { left, op, right } => todo!(),
             Expr::Logical { left, op, right } => todo!(),
             Expr::UnaryOp { op, operand } => todo!(),
