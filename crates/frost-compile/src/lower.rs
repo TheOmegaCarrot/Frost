@@ -1,4 +1,5 @@
 mod assemble;
+mod binary_operations;
 mod def;
 mod globals;
 mod locals;
@@ -46,8 +47,9 @@ enum Ir {
 }
 
 #[derive(Debug)]
-struct IrFragment {
+struct ExprFragment {
     code: Vec<Ir>,
+    foldable: bool,
 }
 
 #[derive(Debug)]
@@ -138,7 +140,7 @@ impl FunctionBuilder<'_> {
     fn compile_statement(
         &mut self,
         stmt: &Spanned<Statement>,
-    ) -> Result<IrFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, CompilerErrors> {
         // match and dispatch
 
         match &stmt.node {
@@ -155,11 +157,11 @@ impl FunctionBuilder<'_> {
         }
     }
 
-    fn compile_expression(&mut self, expr: &Spanned<Expr>) -> Result<IrFragment, CompilerErrors> {
+    fn compile_expression(&mut self, expr: &Spanned<Expr>) -> Result<ExprFragment, CompilerErrors> {
         match &expr.node {
             Expr::Literal(literal) => self.compile_literal(literal, expr.span),
             Expr::NameLookup(name) => self.compile_name_lookup(name, expr.span),
-            Expr::BinOp { left, op, right } => todo!(),
+            Expr::BinOp { left, op, right } => self.compile_binop(left, op, right),
             Expr::Logical { left, op, right } => todo!(),
             Expr::UnaryOp { op, operand } => todo!(),
             Expr::If {

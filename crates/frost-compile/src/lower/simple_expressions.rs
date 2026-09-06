@@ -5,7 +5,7 @@ use frost_runtime::{Bytecode, FrostError, FrostFloat};
 
 use crate::{
     CompilerErrors,
-    lower::{FunctionBuilder, Ir, IrFragment},
+    lower::{ExprFragment, FunctionBuilder, Ir, globals::global_slot},
 };
 
 impl FunctionBuilder<'_> {
@@ -13,8 +13,8 @@ impl FunctionBuilder<'_> {
         &self,
         literal: &Literal,
         span: SourceSpan,
-    ) -> Result<IrFragment, CompilerErrors> {
-        Ok(IrFragment {
+    ) -> Result<ExprFragment, CompilerErrors> {
+        Ok(ExprFragment {
             code: vec![match literal {
                 Literal::Null => Ir::Ready(Bytecode::PushNull),
                 Literal::Bool(b) => Ir::Ready(match b {
@@ -26,6 +26,7 @@ impl FunctionBuilder<'_> {
                 Literal::String(s) => Ir::Const(s.as_str().into()),
                 Literal::Bytes(bytes) => Ir::Const(bytes.clone().into()),
             }],
+            foldable: true,
         })
     }
 
@@ -42,14 +43,14 @@ impl FunctionBuilder<'_> {
         &self,
         name: &str,
         span: SourceSpan,
-    ) -> Result<IrFragment, CompilerErrors> {
+    ) -> Result<ExprFragment, CompilerErrors> {
         // Locals (including a lambda's seeded captures, and shadowing any global)
         // win over globals; an unresolved name is a compile error. Inside a
         // lambda every free name was reserved as a capture by the pre-walk, so
         // this error only fires at the top level.
         let load = if let Some(slot) = self.locals.resolve(name) {
             Bytecode::LoadLocal(slot)
-        } else if let Some(slot) = super::globals::global_slot(name) {
+        } else if let Some(slot) = global_slot(name) {
             Bytecode::LoadGlobal(slot)
         } else {
             return Err(self
@@ -58,8 +59,9 @@ impl FunctionBuilder<'_> {
                 .label_primary(span, "not found in this scope".into())
                 .into());
         };
-        Ok(IrFragment {
+        Ok(ExprFragment {
             code: vec![Ir::Ready(load)],
+            foldable: false,
         })
     }
 }

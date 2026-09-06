@@ -8,8 +8,14 @@ use std::sync::LazyLock;
 use frost_runtime::GLOBAL_NAMES;
 
 // A `BTreeMap` beats hashing at this size (a few dozen fixed names).
-static SLOTS: LazyLock<BTreeMap<&'static str, usize>> =
-    LazyLock::new(|| GLOBAL_NAMES.iter().copied().enumerate().map(|(i, n)| (n, i)).collect());
+static SLOTS: LazyLock<BTreeMap<&'static str, usize>> = LazyLock::new(|| {
+    GLOBAL_NAMES
+        .iter()
+        .copied()
+        .enumerate()
+        .map(|(i, n)| (n, i))
+        .collect()
+});
 
 /// The `LoadGlobal` slot for a global name, or `None` if `name` is not a global.
 pub(super) fn global_slot(name: &str) -> Option<usize> {

@@ -17,7 +17,7 @@
 
 use miette::Severity;
 
-use super::{CompilerError, CompilerErrors};
+use crate::{CompilerError, CompilerErrors};
 use frost_parse::ast::SourceSpan;
 
 /// The span of the `occurrence`-th (0-based) match of `needle` in `src`.

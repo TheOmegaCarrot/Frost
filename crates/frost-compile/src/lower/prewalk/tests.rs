@@ -9,7 +9,7 @@
 //! the sorted set (what matters is *which* names are free); a few assert the
 //! unsorted order, to pin the evaluation-order walk.
 
-use super::free_names;
+use crate::lower::prewalk::free_names;
 use frost_parse::{ast::Statement, parse_program};
 
 /// The lambda expression that is `source`'s single statement.
@@ -76,7 +76,10 @@ fn a_nested_lambda_over_a_shadowed_global_does_not_escape() {
 fn a_global_is_free_again_once_a_shadow_leaves_scope() {
     // The `do` shadows `to_upper`, then exits; the later use is free again
     // (codegen resolves it to the builtin).
-    assert_free("fn s -> { do { def to_upper = 1; 0 }; to_upper(s) }", &["to_upper"]);
+    assert_free(
+        "fn s -> { do { def to_upper = 1; 0 }; to_upper(s) }",
+        &["to_upper"],
+    );
 }
 
 #[test]
@@ -155,7 +158,10 @@ fn a_name_out_of_scope_after_a_do_is_free() {
 
 #[test]
 fn nested_do_blocks_stack_and_unwind() {
-    assert_free("fn -> do { def x = 1; do { def y = 2; x + y + z } }", &["z"]);
+    assert_free(
+        "fn -> do { def x = 1; do { def y = 2; x + y + z } }",
+        &["z"],
+    );
     // Each do's locals leave scope at its own `}`.
     assert_free("fn -> { do { def x = 1; x }; do { def y = 2; y } }", &[]);
 }
@@ -203,7 +209,10 @@ fn a_discard_binds_nothing_but_evaluates_the_rhs() {
 
 #[test]
 fn match_target_and_arms() {
-    assert_free("fn -> match t { n is Int => n + x, _ => y }", &["t", "x", "y"]);
+    assert_free(
+        "fn -> match t { n is Int => n + x, _ => y }",
+        &["t", "x", "y"],
+    );
     assert_free("fn -> match t { n is String => n, _ => z }", &["t", "z"]);
 }
 
@@ -215,7 +224,10 @@ fn match_bindings_scope_to_their_arm() {
 
 #[test]
 fn match_guard_sees_pattern_bindings() {
-    assert_free("fn -> match t { n if: n > lim => n, _ => d }", &["d", "lim", "t"]);
+    assert_free(
+        "fn -> match t { n if: n > lim => n, _ => d }",
+        &["d", "lim", "t"],
+    );
 }
 
 #[test]
@@ -228,14 +240,20 @@ fn match_value_pattern_uses_a_name() {
 #[test]
 fn match_array_pattern() {
     assert_free("fn -> match t { [a, b] => a + b, _ => z }", &["t", "z"]);
-    assert_free("fn -> match t { [a, ...rest] => a + rest, _ => z }", &["t", "z"]);
+    assert_free(
+        "fn -> match t { [a, ...rest] => a + rest, _ => z }",
+        &["t", "z"],
+    );
 }
 
 #[test]
 fn match_map_pattern() {
     assert_free("fn -> match t { {foo: a} => a, _ => z }", &["t", "z"]);
     assert_free("fn -> match t { {[k]: a} => a, _ => z }", &["k", "t", "z"]);
-    assert_free("fn -> match t { {foo: a} as w => a + w, _ => z }", &["t", "z"]);
+    assert_free(
+        "fn -> match t { {foo: a} as w => a + w, _ => z }",
+        &["t", "z"],
+    );
 }
 
 #[test]
@@ -248,7 +266,10 @@ fn a_pattern_binding_is_visible_to_later_pattern_elements() {
     // `(a)` compares against the `a` bound by the first element: no capture.
     assert_free("fn a -> match a { [a, (a)] => true, _ => false }", &[]);
     // A computed key sees a binding from an earlier entry of the same pattern.
-    assert_free("fn m -> match m { {kind, [kind]: node} => node, _ => 0 }", &[]);
+    assert_free(
+        "fn m -> match m { {kind, [kind]: node} => node, _ => 0 }",
+        &[],
+    );
 }
 
 #[test]
@@ -287,14 +308,20 @@ fn a_computed_key_does_not_see_its_own_entry_binding() {
 fn a_pattern_element_does_not_see_a_later_binding() {
     // Reverse of the forward case: the key `[kind]` precedes the `kind`
     // binding, so it captures.
-    assert_free("fn -> match m { {[kind]: node, kind} => node, _ => 0 }", &["kind", "m"]);
+    assert_free(
+        "fn -> match m { {[kind]: node, kind} => node, _ => 0 }",
+        &["kind", "m"],
+    );
 }
 
 #[test]
 fn a_lambda_in_a_match_arm_captures_the_arm_binding() {
     // The inner lambda captures `xs` (the arm binding); only `t` reaches the
     // outer lambda.
-    assert_free("fn -> match t { xs => map xs with fn y -> y + xs, _ => 0 }", &["t"]);
+    assert_free(
+        "fn -> match t { xs => map xs with fn y -> y + xs, _ => 0 }",
+        &["t"],
+    );
 }
 
 #[test]
@@ -307,7 +334,10 @@ fn use_before_definition_inside_a_do_escapes() {
 #[test]
 fn a_guard_sees_an_alternative_binding() {
     // `a` in the guard is bound by whichever alternative matched.
-    assert_free("fn -> match t { [a] | {foo: a} if: a > lim => a, _ => 0 }", &["lim", "t"]);
+    assert_free(
+        "fn -> match t { [a] | {foo: a} if: a > lim => a, _ => 0 }",
+        &["lim", "t"],
+    );
 }
 
 #[test]
@@ -320,7 +350,10 @@ fn a_pattern_element_binding_is_visible_without_a_shadowing_param() {
 #[test]
 fn a_whole_map_binding_is_introduced_after_the_subpatterns() {
     // `[whole]` precedes the `as whole` binding, so it captures.
-    assert_free("fn -> match m { {[whole]: node} as whole => node, _ => 0 }", &["m", "whole"]);
+    assert_free(
+        "fn -> match m { {[whole]: node} as whole => node, _ => 0 }",
+        &["m", "whole"],
+    );
 }
 
 #[test]
@@ -364,10 +397,7 @@ fn a_lambda_inside_a_do_captures_free_names_only() {
 fn self_name_is_an_internal_definition() {
     assert_free("fn foo(a) -> foo(a)", &[]);
     assert_free("fn foo(a) -> foo(a) + b", &["b"]);
-    assert_free(
-        "fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)",
-        &[],
-    );
+    assert_free("fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)", &[]);
 }
 
 // -- Variadic parameter --
@@ -406,7 +436,10 @@ fn captures_are_discovered_in_evaluation_order() {
     // Callee before arguments.
     assert_eq!(ordered("fn -> f(x, y)"), ["f", "x", "y"]);
     // The rhs of a def is evaluated (and its frees discovered) before the body.
-    assert_eq!(ordered("fn -> { def local = seed; local + after }"), ["seed", "after"]);
+    assert_eq!(
+        ordered("fn -> { def local = seed; local + after }"),
+        ["seed", "after"]
+    );
 }
 
 #[test]
@@ -421,7 +454,10 @@ fn evaluation_order_of_compound_forms() {
     assert_eq!(ordered("fn -> [a, b, c]"), ["a", "b", "c"]);
     assert_eq!(ordered("fn -> {[k]: v}"), ["k", "v"]);
     // Reduce: structure, operation, then the optional init seed.
-    assert_eq!(ordered("fn -> reduce xs init: seed with op"), ["xs", "op", "seed"]);
+    assert_eq!(
+        ordered("fn -> reduce xs init: seed with op"),
+        ["xs", "op", "seed"]
+    );
     // Match: discriminant, then each arm's pattern, guard, result.
     assert_eq!(
         ordered("fn -> match t { (p) if: gd => r, _ => e }"),
@@ -439,12 +475,18 @@ fn zero_arg_abbreviated_thunk() {
 
 #[test]
 fn lambda_in_a_match_guard_captures_the_arm_binding() {
-    assert_free("fn -> match t { n if: (fn -> n > lim)() => n, _ => 0 }", &["lim", "t"]);
+    assert_free(
+        "fn -> match t { n if: (fn -> n > lim)() => n, _ => 0 }",
+        &["lim", "t"],
+    );
 }
 
 #[test]
 fn do_block_inside_a_pattern_computed_key() {
-    assert_free("fn a -> match m { {[do { def k = a; k }]: v} => v, _ => 0 }", &["m"]);
+    assert_free(
+        "fn a -> match m { {[do { def k = a; k }]: v} => v, _ => 0 }",
+        &["m"],
+    );
 }
 
 #[test]

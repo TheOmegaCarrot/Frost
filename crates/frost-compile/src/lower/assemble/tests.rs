@@ -6,7 +6,7 @@
 //! jump kind, every payload kind, their interleavings, and the boundary cases
 //! (empty body, target one past the end, large offsets).
 
-use super::super::{FunctionBuilder, Ir, JumpType};
+use crate::lower::{FunctionBuilder, Ir, JumpType};
 use crate::{CompilerOptions, OptimizationOptions};
 
 use frost_parse::ast::SourceSpan;

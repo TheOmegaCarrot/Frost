@@ -1,7 +1,7 @@
 //! Tests for the lexical-scope resolver: slot allocation, shadowing across
 //! nested scopes, same-scope duplicate rejection, and scope unwinding.
 
-use super::Locals;
+use crate::lower::locals::Locals;
 use frost_parse::ast::SourceSpan;
 
 /// A distinct span per test binding, so a duplicate error's returned span is

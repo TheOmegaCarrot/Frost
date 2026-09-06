@@ -3,8 +3,12 @@ use frost_runtime::Bytecode;
 
 use crate::{
     CompilerError, CompilerErrors,
-    lower::{FunctionBuilder, Ir, IrFragment},
+    lower::{FunctionBuilder, Ir},
 };
+
+struct DestructureFragment {
+    code: Vec<Ir>,
+}
 
 impl FunctionBuilder<'_> {
     pub(super) fn compile_def(
@@ -12,7 +16,7 @@ impl FunctionBuilder<'_> {
         expr: &Spanned<Expr>,
         destructure: &Spanned<Destructure>,
         exported: bool,
-    ) -> Result<IrFragment, CompilerErrors> {
+    ) -> Result<DestructureFragment, CompilerErrors> {
         let expr_fragment = self.compile_expression(expr)?;
 
         let destructure_fragment = match &destructure.node {
@@ -30,12 +34,12 @@ impl FunctionBuilder<'_> {
                                         .label(original, "original binding".into()),
                                 )
                         })?;
-                    IrFragment {
+                    DestructureFragment {
                         code: vec![Ir::Ready(Bytecode::DefLocal(slot))],
                     }
                 }
                 // A discard evaluates the expression for its effect, then drops it.
-                Binding::Discarded => IrFragment {
+                Binding::Discarded => DestructureFragment {
                     code: vec![Ir::Ready(Bytecode::Pop)],
                 },
             },
@@ -49,6 +53,6 @@ impl FunctionBuilder<'_> {
         let mut stmt_code = expr_fragment.code;
         stmt_code.extend(destructure_fragment.code);
 
-        Ok(IrFragment { code: stmt_code })
+        Ok(DestructureFragment { code: stmt_code })
     }
 }

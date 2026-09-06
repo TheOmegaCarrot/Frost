@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use frost_runtime::{Bytecode, CompiledFunction, FormatVersion};
 
-use super::{FunctionBuilder, Ir, JumpType};
+use crate::lower::{FunctionBuilder, Ir, JumpType};
 
 impl FunctionBuilder<'_> {
     /// Lower this function's fused IR into its [`CompiledFunction`].
