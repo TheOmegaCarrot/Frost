@@ -16,8 +16,11 @@ impl FunctionBuilder<'_> {
         expr: &Spanned<Expr>,
         destructure: &Spanned<Destructure>,
         exported: bool,
-    ) -> Result<DestructureFragment, CompilerErrors> {
+    ) -> Result<Vec<Ir>, CompilerErrors> {
+        // The rhs is a fold point: a def whose value is compile-time known binds
+        // a folded constant.
         let expr_fragment = self.compile_expression(expr)?;
+        let expr_fragment = self.fold(expr_fragment);
 
         let destructure_fragment = match &destructure.node {
             Destructure::Binding(binding) => match &binding.node {
@@ -53,6 +56,6 @@ impl FunctionBuilder<'_> {
         let mut stmt_code = expr_fragment.code;
         stmt_code.extend(destructure_fragment.code);
 
-        Ok(DestructureFragment { code: stmt_code })
+        Ok(stmt_code)
     }
 }

@@ -13,7 +13,7 @@
 
 use std::sync::Arc;
 
-use frost_runtime::{Bytecode, CompiledFunction, FormatVersion};
+use frost_runtime::{Arity, Bytecode, CompiledFunction, FormatVersion, NameEntry};
 
 use crate::lower::{FunctionBuilder, Ir, JumpType};
 
@@ -21,55 +21,78 @@ impl FunctionBuilder<'_> {
     /// Lower this function's fused IR into its [`CompiledFunction`].
     /// Consumes the builder: its metadata moves into the result.
     pub(super) fn assemble(self, code: Vec<Ir>) -> Arc<CompiledFunction> {
-        let label_positions = resolve_labels(&code, self.next_label.0);
+        assemble_code(
+            code,
+            self.next_label.0,
+            self.name,
+            self.arity,
+            self.locals.into_name_table(),
+            self.num_captures,
+        )
+    }
+}
 
-        let mut out = Vec::new();
-        let mut constants = Vec::new();
-        let mut key_constants = Vec::new();
-        let mut child_fns = Vec::new();
+/// Lower a fused `Vec<Ir>` into a [`CompiledFunction`] with the given metadata.
+///
+/// `num_labels` bounds the label ids the code may reference (ids `< num_labels`);
+/// it may over-count. This is the reusable core of [`FunctionBuilder::assemble`],
+/// also used to assemble a self-contained fragment for constant-folding.
+pub(super) fn assemble_code(
+    code: Vec<Ir>,
+    num_labels: usize,
+    name: String,
+    arity: Arity,
+    name_table: Vec<NameEntry>,
+    num_captures: usize,
+) -> Arc<CompiledFunction> {
+    let label_positions = resolve_labels(&code, num_labels);
 
-        for ir in code {
-            match ir {
-                Ir::Ready(bytecode) => out.push(bytecode),
-                // Zero-width: a label contributes no instruction.
-                Ir::Label(_) => {}
-                Ir::Const(value) => {
-                    out.push(Bytecode::LoadConst(constants.len()));
-                    constants.push(value);
-                }
-                Ir::KeyIndex(key) => {
-                    out.push(Bytecode::HardIndexMap(key_constants.len()));
-                    key_constants.push(key);
-                }
-                Ir::Closure { function, .. } => {
-                    out.push(Bytecode::CreateClosure(child_fns.len()));
-                    child_fns.push(function);
-                }
-                Ir::Jump { kind, label } => {
-                    let target =
-                        label_positions[label.0].expect("jump to a label that was never emitted");
-                    // `Jump(n)` skips n instructions, so from site p it lands at
-                    // p + 1 + n. The site is the next slot to be filled.
-                    let offset = target
-                        .checked_sub(out.len() + 1)
-                        .expect("backward or self jump: the VM only jumps forward");
-                    out.push(jump_bytecode(kind, offset));
-                }
+    let mut out = Vec::new();
+    let mut constants = Vec::new();
+    let mut key_constants = Vec::new();
+    let mut child_fns = Vec::new();
+
+    for ir in code {
+        match ir {
+            Ir::Ready(bytecode) => out.push(bytecode),
+            // Zero-width: a label contributes no instruction.
+            Ir::Label(_) => {}
+            Ir::Const(value) => {
+                out.push(Bytecode::LoadConst(constants.len()));
+                constants.push(value);
+            }
+            Ir::KeyIndex(key) => {
+                out.push(Bytecode::HardIndexMap(key_constants.len()));
+                key_constants.push(key);
+            }
+            Ir::Closure { function, .. } => {
+                out.push(Bytecode::CreateClosure(child_fns.len()));
+                child_fns.push(function);
+            }
+            Ir::Jump { kind, label } => {
+                let target =
+                    label_positions[label.0].expect("jump to a label that was never emitted");
+                // `Jump(n)` skips n instructions, so from site p it lands at
+                // p + 1 + n. The site is the next slot to be filled.
+                let offset = target
+                    .checked_sub(out.len() + 1)
+                    .expect("backward or self jump: the VM only jumps forward");
+                out.push(jump_bytecode(kind, offset));
             }
         }
-
-        Arc::new(CompiledFunction {
-            version: FormatVersion,
-            name: self.name,
-            code: out,
-            child_fns,
-            constants,
-            key_constants,
-            name_table: self.locals.into_name_table(),
-            num_captures: self.num_captures,
-            arity: self.arity,
-        })
     }
+
+    Arc::new(CompiledFunction {
+        version: FormatVersion,
+        name,
+        code: out,
+        child_fns,
+        constants,
+        key_constants,
+        name_table,
+        num_captures,
+        arity,
+    })
 }
 
 /// Map each label to the final index of the instruction it precedes.

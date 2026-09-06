@@ -1,6 +1,7 @@
 mod assemble;
 mod binary_operations;
 mod def;
+mod fold;
 mod globals;
 mod locals;
 mod prewalk;
@@ -18,7 +19,7 @@ use frost_runtime::{Arity, Bytecode, CompiledFunction, MapKey, Value};
 
 use locals::Locals;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum JumpType {
     Unconditional,
     IfTrue,
@@ -30,7 +31,7 @@ enum JumpType {
 #[derive(Clone, Copy, Debug)]
 struct Label(usize);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum Ir {
     Ready(Bytecode),
     Jump {
@@ -119,13 +120,11 @@ pub fn compile_program(
 
     if let Some((tail, body)) = ast.statements.split_last() {
         for stmt in body {
-            ir.extend(fn_builder.compile_statement(stmt)?.code);
+            ir.extend(fn_builder.compile_statement(stmt, false)?);
         }
-
-        match &tail.node {
-            Statement::Expr(expr) => ir.extend(fn_builder.compile_expression(expr)?.code),
-            Statement::Def { .. } => ir.extend(fn_builder.compile_statement(tail)?.code),
-        }
+        // The final statement is in tail position: an expression there is the
+        // program's result value, not dropped.
+        ir.extend(fn_builder.compile_statement(tail, true)?);
     }
 
     let func = fn_builder.assemble(ir);
@@ -136,23 +135,28 @@ pub fn compile_program(
 }
 
 impl FunctionBuilder<'_> {
-    // IrFragment's contract: net zero stack effect
+    /// Compile a statement to its complete code. Net-zero, except a `tail`
+    /// expression statement, which leaves its value (the block's result).
     fn compile_statement(
         &mut self,
         stmt: &Spanned<Statement>,
-    ) -> Result<ExprFragment, CompilerErrors> {
-        // match and dispatch
-
+        tail: bool,
+    ) -> Result<Vec<Ir>, CompilerErrors> {
         match &stmt.node {
             Statement::Def {
                 exported,
                 destructure,
                 expr,
             } => self.compile_def(expr, destructure, *exported),
+            // A bare expression is a fold point. In tail position its value is
+            // kept; otherwise it is evaluated for effect and dropped.
             Statement::Expr(expr) => {
-                let mut fragment = self.compile_expression(expr)?;
-                fragment.code.push(Ir::Ready(Bytecode::Pop));
-                Ok(fragment)
+                let expr_fragment = self.compile_expression(expr)?;
+                let mut folded = self.fold(expr_fragment);
+                if !tail {
+                    folded.code.push(Ir::Ready(Bytecode::Pop));
+                }
+                Ok(folded.code)
             }
         }
     }
