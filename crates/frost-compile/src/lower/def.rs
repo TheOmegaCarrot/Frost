@@ -20,7 +20,7 @@ impl FunctionBuilder<'_> {
         // The rhs is a fold point: a def whose value is compile-time known binds
         // a folded constant.
         let expr_fragment = self.compile_expression(expr)?;
-        let expr_fragment = self.fold(expr_fragment);
+        let expr_fragment = self.fold_if_eligible(expr_fragment);
 
         let destructure_fragment = match &destructure.node {
             Destructure::Binding(binding) => match &binding.node {

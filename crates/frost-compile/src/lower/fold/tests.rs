@@ -2,7 +2,7 @@
 //! hand-built fragments, since the expression compilers that produce foldable
 //! fragments are still being filled in.
 
-use crate::lower::fold::value_to_ir;
+use crate::lower::fold::{FoldVm, value_to_ir};
 use crate::lower::{ExprFragment, FunctionBuilder, Ir};
 use crate::{CompilerOptions, OptimizationOptions};
 
@@ -14,8 +14,8 @@ fn options(constant_fold: bool) -> CompilerOptions {
     }
 }
 
-fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
-    FunctionBuilder::new(options, "<test>".to_string(), "", "", Arity::Exact(0))
+fn builder<'a>(options: &'a CompilerOptions, fold_vm: &'a FoldVm) -> FunctionBuilder<'a> {
+    FunctionBuilder::new(options, "<test>".to_string(), "", "", Some(fold_vm), Arity::Exact(0))
 }
 
 /// A foldable `1 op 2` fragment.
@@ -55,7 +55,8 @@ fn value_to_ir_inlines_scalars_and_pools_structured() {
 #[test]
 fn folds_a_pure_arithmetic_fragment_to_an_inline_push() {
     let options = options(true);
-    let folded = builder(&options).fold(arithmetic(Bytecode::Add));
+    let fold_vm = FoldVm::new();
+    let folded = builder(&options, &fold_vm).fold_if_eligible(arithmetic(Bytecode::Add));
     assert_eq!(folded.code.len(), 1, "collapsed to one op");
     assert!(
         matches!(folded.code[0], Ir::Ready(Bytecode::PushInt(3))),
@@ -75,13 +76,18 @@ fn a_non_foldable_fragment_is_left_alone() {
         ],
         foldable: false,
     };
-    assert_eq!(builder(&options).fold(fragment).code.len(), 3);
+    let fold_vm = FoldVm::new();
+    assert_eq!(builder(&options, &fold_vm).fold_if_eligible(fragment).code.len(), 3);
 }
 
 #[test]
 fn folding_is_skipped_when_the_option_is_off() {
     let options = options(false);
-    assert_eq!(builder(&options).fold(arithmetic(Bytecode::Add)).code.len(), 3);
+    let fold_vm = FoldVm::new();
+    assert_eq!(
+        builder(&options, &fold_vm).fold_if_eligible(arithmetic(Bytecode::Add)).code.len(),
+        3
+    );
 }
 
 #[test]
@@ -92,7 +98,8 @@ fn a_single_op_fragment_is_not_re_folded() {
         code: vec![Ir::Ready(Bytecode::PushInt(42))],
         foldable: true,
     };
-    let folded = builder(&options).fold(fragment);
+    let fold_vm = FoldVm::new();
+    let folded = builder(&options, &fold_vm).fold_if_eligible(fragment);
     assert!(matches!(folded.code[0], Ir::Ready(Bytecode::PushInt(42))));
     assert_eq!(folded.code.len(), 1);
 }
@@ -109,6 +116,7 @@ fn a_fragment_that_errors_when_evaluated_is_kept_as_bytecode() {
         ],
         foldable: true,
     };
-    let folded = builder(&options).fold(fragment);
+    let fold_vm = FoldVm::new();
+    let folded = builder(&options, &fold_vm).fold_if_eligible(fragment);
     assert_eq!(folded.code.len(), 3, "the original bytecode is kept");
 }

@@ -15,6 +15,6 @@ pub use vm::{
     Arity, Bytecode, Closure, CompiledFunction, Extension, ExtensionError, FormatVersion,
     GLOBAL_NAMES, HostComponent, HostComponentError, ImportCtx, ImportResolver, Importer,
     ImporterBuilder, InvalidComponentName, InvalidParams, MissingCaptures, ModuleId, NameEntry,
-    NativeCtx, NativeFn, NativeFunction, Param, Params, ProgramResult, RunError, RunOutcome,
+    IdleVm, NativeCtx, NativeFn, NativeFunction, Param, Params, ProgramResult, RunError,
     Stdlib, StdlibModule, TrustedProgram, Vm, VmFactory, VmRuntimeConfiguration,
 };

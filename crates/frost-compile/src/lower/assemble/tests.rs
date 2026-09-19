@@ -23,8 +23,8 @@ fn options() -> CompilerOptions {
 }
 
 fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
-    // Assembly never touches the filename or source; only diagnostics do.
-    FunctionBuilder::new(options, "<test>".to_string(), "", "", Arity::Exact(0))
+    // Assembly never touches the filename, source, or fold VM.
+    FunctionBuilder::new(options, "<test>".to_string(), "", "", None, Arity::Exact(0))
 }
 
 /// A trivial child function, for exercising closure pooling.
@@ -349,7 +349,7 @@ fn a_body_of_only_labels_is_empty_code() {
 #[test]
 fn function_metadata_passes_through() {
     let options = options();
-    let mut b = FunctionBuilder::new(&options, "greet".to_string(), "", "", Arity::Between(1, 3));
+    let mut b = FunctionBuilder::new(&options, "greet".to_string(), "", "", None, Arity::Between(1, 3));
     b.num_captures = 1;
     b.locals
         .define("captured".to_string(), SourceSpan::default(), false)

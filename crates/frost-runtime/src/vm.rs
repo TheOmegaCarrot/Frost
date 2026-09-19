@@ -15,7 +15,7 @@ pub use import::{
     Importer, ImporterBuilder, InvalidComponentName, ModuleId, Stdlib, StdlibModule,
 };
 pub use native::{NativeCtx, NativeFn, NativeFunction};
-pub use outcome::{ProgramResult, RunError, RunOutcome};
+pub use outcome::{IdleVm, ProgramResult, RunError};
 pub use params::{InvalidParams, Param, Params};
 pub use serialize::FormatVersion;
 
@@ -240,7 +240,7 @@ enum TailFlow {
 impl Vm {
     /// A default-configured [`VmFactory`].
     ///
-    /// A Vm runs a single program; reuse a warm Vm via [`RunOutcome::reset`], or stamp
+    /// A Vm runs a single program; reuse a warm Vm via [`ProgramResult::reset`], or stamp
     /// out fresh identically-configured Vms by reusing one factory.
     pub fn factory() -> VmFactory {
         VmFactory::default()
@@ -761,8 +761,8 @@ impl Vm {
     /// Run the top-level closure, passing `args` as its call arguments.
     ///
     /// Success yields a [`ProgramResult`] (tail value + exports); failure a [`RunError`].
-    /// Either outcome still owns the warm Vm (recyclable via [`RunOutcome::reset`]); an
-    /// arity mismatch is a recoverable failure.
+    /// Either outcome still owns the warm Vm (recyclable via [`reset`](ProgramResult::reset)
+    /// or [`into_idle_vm`](ProgramResult::into_idle_vm)); an arity mismatch is a recoverable failure.
     #[allow(clippy::result_large_err)]
     pub fn run_with_args(
         mut self,

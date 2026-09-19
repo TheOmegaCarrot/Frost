@@ -3,7 +3,7 @@ mod common;
 use std::num::NonZeroUsize;
 
 use common::{closure, entry, fn_with_locals, run, run_fn};
-use frost_runtime::{Bytecode, RunOutcome, Value, Vm, VmRuntimeConfiguration};
+use frost_runtime::{Bytecode, Value, Vm, VmRuntimeConfiguration};
 
 // ============================================================
 // get_export / exports

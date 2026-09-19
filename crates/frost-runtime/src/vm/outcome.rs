@@ -1,5 +1,5 @@
-//! The outcomes of a run: [`ProgramResult`] (success), [`RunError`] (failure),
-//! and the [`RunOutcome`] surface they share.
+//! The outcomes of a run: [`ProgramResult`] (success) and [`RunError`] (failure),
+//! plus [`IdleVm`], the warm VM either can be recycled into.
 
 use std::sync::Arc;
 
@@ -64,24 +64,16 @@ impl ProgramResult {
     }
 }
 
-/// The surface common to both outcomes of a run (success or failure): each still owns the
-/// warm [`Vm`], so either can be metered or recycled.
-pub trait RunOutcome {
+impl ProgramResult {
     /// The number of function calls the program made: the fuel it consumed.
     /// Reported whether or not a [`fuel`](super::VmRuntimeConfiguration::fuel) limit was set.
-    fn fuel_consumed(&self) -> usize;
-
-    /// Recycle the warm [`Vm`] to run another [`Closure`], reusing its internal allocations
-    /// rather than building a fresh one.
-    fn reset(self, closure: Arc<Closure>) -> Vm;
-}
-
-impl RunOutcome for ProgramResult {
-    fn fuel_consumed(&self) -> usize {
+    pub fn fuel_consumed(&self) -> usize {
         self.0.fuel_used
     }
 
-    fn reset(self, closure: Arc<Closure>) -> Vm {
+    /// Recycle the warm [`Vm`] to run another [`Closure`], reusing its internal
+    /// allocations rather than building a fresh one.
+    pub fn reset(self, closure: Arc<Closure>) -> Vm {
         self.0.rearm(closure)
     }
 }
@@ -89,7 +81,7 @@ impl RunOutcome for ProgramResult {
 /// A failed run. Holds the raised [`FrostError`] and the warm [`Vm`], which (unlike a
 /// [`ProgramResult`]) exposes no program state (`tail`/`exports`), since a failed run
 /// leaves the Vm indeterminate. Recover the error with [`into_error`](Self::into_error),
-/// or recycle the Vm via [`RunOutcome::reset`].
+/// or recycle the Vm via [`reset`](Self::reset).
 pub struct RunError {
     pub(super) vm: Vm,
     pub(super) error: FrostError,
@@ -105,15 +97,43 @@ impl RunError {
     pub fn into_error(self) -> FrostError {
         self.error
     }
-}
 
-impl RunOutcome for RunError {
-    fn fuel_consumed(&self) -> usize {
+    /// The number of function calls the program made before it failed.
+    pub fn fuel_consumed(&self) -> usize {
         self.vm.fuel_used
     }
 
-    fn reset(self, closure: Arc<Closure>) -> Vm {
+    /// Recycle the warm [`Vm`] to run another [`Closure`], reusing its internal
+    /// allocations rather than building a fresh one.
+    pub fn reset(self, closure: Arc<Closure>) -> Vm {
         self.vm.rearm(closure)
+    }
+}
+
+/// A warm [`Vm`] with no program loaded: its allocations are kept for reuse,
+/// ready to be rebound to a closure. Recovered from a finished run via
+/// [`ProgramResult::into_idle_vm`] / [`RunError::into_idle_vm`].
+pub struct IdleVm(Vm);
+
+impl IdleVm {
+    /// Bind this warm VM to `closure`, clearing the previous run's stack and
+    /// frames and resetting fuel, yielding a runnable [`Vm`].
+    pub fn build(self, closure: Arc<Closure>) -> Vm {
+        self.0.rearm(closure)
+    }
+}
+
+impl ProgramResult {
+    /// Recover the warm VM as an [`IdleVm`] for reuse, discarding this result.
+    pub fn into_idle_vm(self) -> IdleVm {
+        IdleVm(self.0)
+    }
+}
+
+impl RunError {
+    /// Recover the warm VM as an [`IdleVm`] for reuse, discarding the error.
+    pub fn into_idle_vm(self) -> IdleVm {
+        IdleVm(self.vm)
     }
 }
 

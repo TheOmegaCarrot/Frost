@@ -14,10 +14,59 @@
 #[cfg(test)]
 mod tests;
 
-use frost_runtime::{Arity, Bytecode, Value, Vm};
+use std::cell::RefCell;
+use std::num::NonZeroUsize;
+use std::sync::Arc;
+
+use frost_runtime::{
+    Arity, Bytecode, CompiledFunction, IdleVm, Value, Vm, VmFactory, VmRuntimeConfiguration,
+};
 
 use crate::lower::assemble::assemble_code;
 use crate::lower::{ExprFragment, FunctionBuilder, Ir};
+
+/// A fuel-capped VM reused across a compilation to evaluate constant folds.
+pub(super) struct FoldVm {
+    factory: VmFactory,
+    parked: RefCell<Option<IdleVm>>,
+}
+
+impl std::fmt::Debug for FoldVm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FoldVm").finish_non_exhaustive()
+    }
+}
+
+impl FoldVm {
+    pub(super) fn new() -> Self {
+        // Bounds a runaway fold. Reset per fold; generous because Frost iterates
+        // by function call.
+        let config = VmRuntimeConfiguration {
+            fuel: NonZeroUsize::new(100_000),
+            ..Default::default()
+        };
+        Self {
+            factory: Vm::factory().configuration(config),
+            parked: RefCell::new(None),
+        }
+    }
+
+    /// Run a self-contained fold program, returning its value, or `None` if it
+    /// errors or exhausts fuel.
+    fn evaluate(&self, function: Arc<CompiledFunction>) -> Option<Value> {
+        let closure = function.assert_trusted().into_closure().ok()?;
+        let vm = match self.parked.borrow_mut().take() {
+            Some(core) => core.build(closure),
+            None => self.factory.build(closure).ok()?,
+        };
+        let (value, idle) = match vm.run() {
+            Ok(result) => (Some(result.tail().clone()), result.into_idle_vm()),
+            Err(error) => (None, error.into_idle_vm()),
+        };
+        *self.parked.borrow_mut() = Some(idle);
+        value
+    }
+}
 
 /// Emit the optimal IR for a known [`Value`]: an inline push for a scalar, a
 /// constant-pool load for a structured value.
@@ -46,7 +95,7 @@ pub(super) fn value_to_ir(value: Value) -> Ir {
 impl FunctionBuilder<'_> {
     /// Constant-fold `fragment` if eligible, replacing its code with a load of
     /// the computed value; otherwise return it unchanged.
-    pub(super) fn fold(&self, fragment: ExprFragment) -> ExprFragment {
+    pub(super) fn fold_if_eligible(&self, fragment: ExprFragment) -> ExprFragment {
         // Skip when disabled, ineligible, or already a single op: a one-op
         // fragment is already minimal, so folding it would only spend a VM run.
         if !self.options.optimization_options.constant_fold
@@ -56,9 +105,8 @@ impl FunctionBuilder<'_> {
             return fragment;
         }
         match self.evaluate(fragment.code.clone()) {
-            // A basic-foldable fragment always yields a non-function value, so it
-            // is always constant-representable. (Folding through lambdas will add
-            // a transitive "not a function" check on the value here.)
+            // A foldable fragment always yields a non-function value, so it is
+            // always constant-representable.
             Some(value) => ExprFragment {
                 code: vec![value_to_ir(value)],
                 foldable: true,
@@ -68,8 +116,9 @@ impl FunctionBuilder<'_> {
         }
     }
 
-    /// Evaluate a self-contained `( -- v )` fragment on the VM, returning its
-    /// value, or `None` if the program errors.
+    /// Assemble a self-contained `( -- v )` fragment and evaluate it on the
+    /// shared fold VM, returning its value, or `None` if there is no fold VM or
+    /// the program errors.
     fn evaluate(&self, code: Vec<Ir>) -> Option<Value> {
         // Wrap as a zero-arg top-level function: the runner pushes the closure,
         // which the leading Pop discards; the fragment then leaves the value.
@@ -83,8 +132,6 @@ impl FunctionBuilder<'_> {
             Vec::new(),
             0,
         );
-        let closure = function.assert_trusted().into_closure().ok()?;
-        let result = Vm::factory().build(closure).ok()?.run().ok()?;
-        Some(result.tail().clone())
+        self.fold_vm?.evaluate(function)
     }
 }

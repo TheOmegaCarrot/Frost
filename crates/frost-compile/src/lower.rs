@@ -17,6 +17,7 @@ use frost_parse::{
 };
 use frost_runtime::{Arity, Bytecode, CompiledFunction, MapKey, Value};
 
+use fold::FoldVm;
 use locals::Locals;
 
 #[derive(Clone, Debug)]
@@ -63,6 +64,9 @@ struct FunctionBuilder<'a> {
     source: &'a str,
     filename: &'a str,
     options: &'a CompilerOptions,
+    // The warm VM for constant-folding, shared across the whole compilation.
+    // `None` when there is no folding (e.g. a test that only assembles).
+    fold_vm: Option<&'a FoldVm>,
 }
 
 impl<'a> FunctionBuilder<'a> {
@@ -71,6 +75,7 @@ impl<'a> FunctionBuilder<'a> {
         name: String,
         filename: &'a str,
         source: &'a str,
+        fold_vm: Option<&'a FoldVm>,
         arity: Arity,
     ) -> Self {
         Self {
@@ -82,6 +87,7 @@ impl<'a> FunctionBuilder<'a> {
             source,
             filename,
             options,
+            fold_vm,
         }
     }
 
@@ -106,11 +112,13 @@ pub fn compile_program(
     let ast = parse_program(filename, script)
         .map_err(|err| CompilerError::from_parse_error(&err, filename, script))?;
 
+    let fold_vm = FoldVm::new();
     let mut fn_builder = FunctionBuilder::new(
         &options,
         "<main>".to_string(),
         filename,
         script,
+        Some(&fold_vm),
         Arity::Exact(0),
     );
 
@@ -152,7 +160,7 @@ impl FunctionBuilder<'_> {
             // kept; otherwise it is evaluated for effect and dropped.
             Statement::Expr(expr) => {
                 let expr_fragment = self.compile_expression(expr)?;
-                let mut folded = self.fold(expr_fragment);
+                let mut folded = self.fold_if_eligible(expr_fragment);
                 if !tail {
                     folded.code.push(Ir::Ready(Bytecode::Pop));
                 }
