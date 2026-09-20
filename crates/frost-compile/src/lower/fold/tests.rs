@@ -2,11 +2,25 @@
 //! hand-built fragments, since the expression compilers that produce foldable
 //! fragments are still being filled in.
 
+use crate::lower::assemble::assemble_code;
 use crate::lower::fold::{FoldVm, value_to_ir};
 use crate::lower::{ExprFragment, FunctionBuilder, Ir};
 use crate::{CompilerOptions, OptimizationOptions};
 
 use frost_runtime::{Arity, Bytecode, Value};
+
+/// A function [`Value`], for exercising the const-representability guard.
+fn a_function() -> Value {
+    let function = assemble_code(
+        vec![Ir::Ready(Bytecode::PushNull)],
+        0,
+        "<f>".to_string(),
+        Arity::Exact(0),
+        Vec::new(),
+        0,
+    );
+    Value::Closure(function.assert_trusted().into_closure().unwrap())
+}
 
 fn options(constant_fold: bool) -> CompilerOptions {
     CompilerOptions {
@@ -34,22 +48,34 @@ fn arithmetic(op: Bytecode) -> ExprFragment {
 fn value_to_ir_inlines_scalars_and_pools_structured() {
     assert!(matches!(
         value_to_ir(Value::Null),
-        Ir::Ready(Bytecode::PushNull)
+        Some(Ir::Ready(Bytecode::PushNull))
     ));
     assert!(matches!(
         value_to_ir(Value::Bool(true)),
-        Ir::Ready(Bytecode::PushTrue)
+        Some(Ir::Ready(Bytecode::PushTrue))
     ));
     assert!(matches!(
         value_to_ir(Value::Bool(false)),
-        Ir::Ready(Bytecode::PushFalse)
+        Some(Ir::Ready(Bytecode::PushFalse))
     ));
     assert!(matches!(
         value_to_ir(Value::Int(7)),
-        Ir::Ready(Bytecode::PushInt(7))
+        Some(Ir::Ready(Bytecode::PushInt(7)))
     ));
     // A string cannot be inlined, so it goes to the constant pool.
-    assert!(matches!(value_to_ir(Value::from("hi")), Ir::Const(_)));
+    assert!(matches!(value_to_ir(Value::from("hi")), Some(Ir::Const(_))));
+}
+
+#[test]
+fn value_to_ir_rejects_functions_transitively() {
+    // A bare function is not const-representable.
+    assert!(value_to_ir(a_function()).is_none());
+    // Nor is a structure that transitively holds one.
+    let array = Value::from(vec![Value::Int(1), a_function()]);
+    assert!(value_to_ir(array).is_none());
+    // A function-free structure still pools.
+    let clean = Value::from(vec![Value::Int(1), Value::Int(2)]);
+    assert!(matches!(value_to_ir(clean), Some(Ir::Const(_))));
 }
 
 #[test]

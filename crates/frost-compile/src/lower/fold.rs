@@ -68,27 +68,33 @@ impl FoldVm {
     }
 }
 
-/// Emit the optimal IR for a known [`Value`]: an inline push for a scalar, a
+/// The optimal IR for a known [`Value`]: an inline push for a scalar, a
 /// constant-pool load for a structured value.
 ///
-/// Panics on a function or opaque value: those cannot be constants, so reaching
-/// here with one means the fold's eligibility check admitted a non-representable
-/// value. That is an internal compiler bug, and failing loudly beats emitting
-/// bad bytecode.
-pub(super) fn value_to_ir(value: Value) -> Ir {
-    match value {
+/// `None` if the value is not const-representable: the pool cannot hold a
+/// function or opaque, or a structure that transitively contains one.
+pub(super) fn value_to_ir(value: Value) -> Option<Ir> {
+    let ir = match value {
         Value::Null => Ir::Ready(Bytecode::PushNull),
         Value::Bool(true) => Ir::Ready(Bytecode::PushTrue),
         Value::Bool(false) => Ir::Ready(Bytecode::PushFalse),
         Value::Int(int) => Ir::Ready(Bytecode::PushInt(int)),
         Value::Float(float) => Ir::Ready(Bytecode::PushFloat(float)),
-        // Structured, but the pool can hold these: not inlinable in an opcode.
-        value @ (Value::String(_) | Value::Bytes(_) | Value::Array(_) | Value::Map(_)) => {
-            Ir::Const(value)
-        }
-        Value::NativeFunction(_) | Value::Closure(_) | Value::Opaque(_) => {
-            panic!("ICE: constant-folded to a function or opaque, which cannot be a constant")
-        }
+        // Structured (String, Bytes, Array, Map): not inlinable,
+        // so put it in the constant pool (if eligible)
+        other if is_const_representable(&other) => Ir::Const(other),
+        _ => return None,
+    };
+    Some(ir)
+}
+
+/// Whether `value` can be a constant: neither a function nor opaque, and, for a
+/// structure, holding no function or opaque at any depth.
+fn is_const_representable(value: &Value) -> bool {
+    match value {
+        Value::Array(array) => array.iter().all(is_const_representable),
+        Value::Map(map) => map.values().all(is_const_representable),
+        other => !(other.is_function() || other.is_opaque()),
     }
 }
 
@@ -104,14 +110,13 @@ impl FunctionBuilder<'_> {
         {
             return fragment;
         }
-        match self.evaluate(fragment.code.clone()) {
-            // A foldable fragment always yields a non-function value, so it is
-            // always constant-representable.
-            Some(value) => ExprFragment {
-                code: vec![value_to_ir(value)],
+        match self.evaluate(fragment.code.clone()).and_then(value_to_ir) {
+            Some(ir) => ExprFragment {
+                code: vec![ir],
                 foldable: true,
             },
-            // Provably-erroring user code: keep the bytecode to error at runtime.
+            // The fragment errored, or its value cannot be a constant (holds a
+            // function): keep the bytecode.
             None => fragment,
         }
     }
