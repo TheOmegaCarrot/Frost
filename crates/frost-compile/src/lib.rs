@@ -15,6 +15,9 @@ pub use lower::compile_program;
 #[derive(Debug)]
 pub struct OptimizationOptions {
     pub constant_fold: bool,
+    // Propagate a binding whose value is compile-time known: a lookup of it loads
+    // the value directly, so it is itself fold-eligible.
+    pub constant_propagate: bool,
 }
 
 #[derive(Debug)]

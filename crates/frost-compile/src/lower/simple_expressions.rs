@@ -5,7 +5,7 @@ use frost_runtime::{Bytecode, FrostError, FrostFloat};
 
 use crate::{
     CompilerErrors,
-    lower::{ExprFragment, FunctionBuilder, Ir, globals::global_slot},
+    lower::{ExprFragment, FunctionBuilder, Ir, fold::value_to_ir, globals::global_slot},
 };
 
 impl FunctionBuilder<'_> {
@@ -48,20 +48,30 @@ impl FunctionBuilder<'_> {
         // win over globals; an unresolved name is a compile error. Inside a
         // lambda every free name was reserved as a capture by the pre-walk, so
         // this error only fires at the top level.
-        let load = if let Some(slot) = self.locals.resolve(name) {
-            Bytecode::LoadLocal(slot)
-        } else if let Some(slot) = global_slot(name) {
-            Bytecode::LoadGlobal(slot)
-        } else {
-            return Err(self
-                .error(format!("`{name}` is not defined"))
-                .code("unbound name".into())
-                .label_primary(span, "not found in this scope".into())
-                .into());
-        };
-        Ok(ExprFragment {
-            code: vec![Ir::Ready(load)],
-            foldable: false,
-        })
+        if let Some(id) = self.locals.resolve(name) {
+            // A compile-time-known binding is propagated as its constant, and so
+            // is itself fold-eligible; otherwise it is an ordinary local load.
+            return Ok(match self.locals.constant(id) {
+                Some(value) => ExprFragment {
+                    code: vec![value_to_ir(value.clone()).expect("a stored constant is representable")],
+                    foldable: true,
+                },
+                None => ExprFragment {
+                    code: vec![Ir::LoadLocal(id)],
+                    foldable: false,
+                },
+            });
+        }
+        if let Some(slot) = global_slot(name) {
+            return Ok(ExprFragment {
+                code: vec![Ir::Ready(Bytecode::LoadGlobal(slot))],
+                foldable: false,
+            });
+        }
+        Err(self
+            .error(format!("`{name}` is not defined"))
+            .code("unbound name".into())
+            .label_primary(span, "not found in this scope".into())
+            .into())
     }
 }

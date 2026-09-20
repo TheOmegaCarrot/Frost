@@ -32,6 +32,12 @@ enum JumpType {
 #[derive(Clone, Copy, Debug)]
 struct Label(usize);
 
+/// A local's identity within a function, assigned when it is defined. Concrete
+/// slots are assigned at assembly, so the IR refers to locals by id: a later
+/// pass can add or drop a local without renumbering the rest.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct LocalId(usize);
+
 #[derive(Clone, Debug)]
 enum Ir {
     Ready(Bytecode),
@@ -42,6 +48,8 @@ enum Ir {
     Label(Label),
     Const(Value),
     KeyIndex(MapKey),
+    LoadLocal(LocalId),
+    DefLocal(LocalId),
     Closure {
         function: Arc<CompiledFunction>,
         num_captures: u32,
@@ -60,7 +68,6 @@ struct FunctionBuilder<'a> {
     next_label: Label,
     name: String,
     arity: Arity,
-    num_captures: usize,
     source: &'a str,
     filename: &'a str,
     options: &'a CompilerOptions,
@@ -83,7 +90,6 @@ impl<'a> FunctionBuilder<'a> {
             next_label: Label(0),
             name,
             arity,
-            num_captures: 0,
             source,
             filename,
             options,

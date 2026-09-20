@@ -6,6 +6,7 @@
 //! jump kind, every payload kind, their interleavings, and the boundary cases
 //! (empty body, target one past the end, large offsets).
 
+use crate::lower::locals::{LocalInfo, LocalKind};
 use crate::lower::{FunctionBuilder, Ir, JumpType};
 use crate::{CompilerOptions, OptimizationOptions};
 
@@ -18,6 +19,7 @@ fn options() -> CompilerOptions {
     CompilerOptions {
         optimization_options: OptimizationOptions {
             constant_fold: false,
+            constant_propagate: false,
         },
     }
 }
@@ -349,23 +351,41 @@ fn a_body_of_only_labels_is_empty_code() {
 #[test]
 fn function_metadata_passes_through() {
     let options = options();
-    let mut b = FunctionBuilder::new(&options, "greet".to_string(), "", "", None, Arity::Between(1, 3));
-    b.num_captures = 1;
+    let mut b =
+        FunctionBuilder::new(&options, "greet".to_string(), "", "", None, Arity::Between(1, 3));
     b.locals
-        .define("captured".to_string(), SourceSpan::default(), false)
+        .define(LocalInfo {
+            name: "captured".to_string(),
+            span: SourceSpan::default(),
+            exported: false,
+            constant: None,
+            kind: LocalKind::Capture,
+        })
         .unwrap();
-    b.locals
-        .define("result".to_string(), SourceSpan::default(), true)
+    let result = b
+        .locals
+        .define(LocalInfo {
+            name: "result".to_string(),
+            span: SourceSpan::default(),
+            exported: true,
+            constant: None,
+            kind: LocalKind::Binding,
+        })
         .unwrap();
 
-    let f = b.assemble(vec![Ir::Ready(Bytecode::PushNull)]);
+    // The capture is seated by the VM, so it needs no `DefLocal` yet still leads
+    // the slot table; `result` earns its slot by being defined in the code.
+    let f = b.assemble(vec![Ir::Ready(Bytecode::PushNull), Ir::DefLocal(result)]);
 
     assert_eq!(f.name, "greet");
     assert_eq!(f.arity, Arity::Between(1, 3));
-    assert_eq!(f.num_captures, 1);
+    assert_eq!(f.num_captures, 1, "the lone capture leads the slot table");
     assert_eq!(f.name_table.len(), 2);
+    assert_eq!(f.name_table[0].name, "captured");
     assert_eq!(f.name_table[1].name, "result");
     assert!(f.name_table[1].exported);
+    // `result` sits in the slot after the capture.
+    assert_eq!(f.code, vec![Bytecode::PushNull, Bytecode::DefLocal(1)]);
 }
 
 // -- Compiler-bug panics --

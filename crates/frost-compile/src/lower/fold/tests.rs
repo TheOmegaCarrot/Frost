@@ -3,8 +3,9 @@
 //! fragments are still being filled in.
 
 use crate::lower::assemble::assemble_code;
-use crate::lower::fold::{FoldVm, value_to_ir};
-use crate::lower::{ExprFragment, FunctionBuilder, Ir};
+use crate::lower::fold::{FoldVm, constant_of, value_to_ir};
+use crate::lower::locals::SlotPlan;
+use crate::lower::{ExprFragment, FunctionBuilder, Ir, LocalId};
 use crate::{CompilerOptions, OptimizationOptions};
 
 use frost_runtime::{Arity, Bytecode, Value};
@@ -16,15 +17,17 @@ fn a_function() -> Value {
         0,
         "<f>".to_string(),
         Arity::Exact(0),
-        Vec::new(),
-        0,
+        SlotPlan::empty(),
     );
     Value::Closure(function.assert_trusted().into_closure().unwrap())
 }
 
 fn options(constant_fold: bool) -> CompilerOptions {
     CompilerOptions {
-        optimization_options: OptimizationOptions { constant_fold },
+        optimization_options: OptimizationOptions {
+            constant_fold,
+            constant_propagate: false,
+        },
     }
 }
 
@@ -79,6 +82,39 @@ fn value_to_ir_rejects_functions_transitively() {
 }
 
 #[test]
+fn constant_of_reads_a_lone_value_op() {
+    // Every inline scalar push, and a pooled value.
+    assert_eq!(constant_of(&[Ir::Ready(Bytecode::PushNull)]), Some(Value::Null));
+    assert_eq!(
+        constant_of(&[Ir::Ready(Bytecode::PushTrue)]),
+        Some(Value::Bool(true))
+    );
+    assert_eq!(
+        constant_of(&[Ir::Ready(Bytecode::PushInt(5))]),
+        Some(Value::Int(5))
+    );
+    assert_eq!(
+        constant_of(&[Ir::Const(Value::from("hi"))]),
+        Some(Value::from("hi"))
+    );
+}
+
+#[test]
+fn constant_of_rejects_anything_but_a_lone_value_op() {
+    // Empty, multi-op, and a non-value op are all not compile-time known here.
+    assert_eq!(constant_of(&[]), None);
+    assert_eq!(
+        constant_of(&[
+            Ir::Ready(Bytecode::PushInt(1)),
+            Ir::Ready(Bytecode::PushInt(2)),
+            Ir::Ready(Bytecode::Add),
+        ]),
+        None
+    );
+    assert_eq!(constant_of(&[Ir::LoadLocal(LocalId(0))]), None);
+}
+
+#[test]
 fn folds_a_pure_arithmetic_fragment_to_an_inline_push() {
     let options = options(true);
     let fold_vm = FoldVm::new();
@@ -96,7 +132,7 @@ fn a_non_foldable_fragment_is_left_alone() {
     let options = options(true);
     let fragment = ExprFragment {
         code: vec![
-            Ir::Ready(Bytecode::LoadLocal(0)),
+            Ir::LoadLocal(LocalId(0)),
             Ir::Ready(Bytecode::PushInt(1)),
             Ir::Ready(Bytecode::Add),
         ],

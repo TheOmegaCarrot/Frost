@@ -28,7 +28,7 @@ use frost_parse::ast::{
     Statement,
 };
 
-use crate::lower::locals::Locals;
+use crate::lower::locals::{LocalInfo, LocalKind, Locals};
 
 /// The free names of a lambda expression, in evaluation order, found with a
 /// fresh scope seeded with the lambda's own parameters.
@@ -108,9 +108,13 @@ impl Scanner {
     /// Introduce `name` into the current scope. Duplicate-binding errors are the
     /// codegen pass's concern; capture discovery only needs the name in scope.
     fn define(&mut self, name: &str) {
-        let _ = self
-            .scope
-            .define(name.to_owned(), SourceSpan::default(), false);
+        let _ = self.scope.define(LocalInfo {
+            name: name.to_owned(),
+            span: SourceSpan::default(),
+            exported: false,
+            constant: None,
+            kind: LocalKind::Binding,
+        });
     }
 
     fn define_binding(&mut self, binding: &Binding) {

@@ -13,22 +13,17 @@
 
 use std::sync::Arc;
 
-use frost_runtime::{Arity, Bytecode, CompiledFunction, FormatVersion, NameEntry};
+use frost_runtime::{Arity, Bytecode, CompiledFunction, FormatVersion};
 
+use crate::lower::locals::SlotPlan;
 use crate::lower::{FunctionBuilder, Ir, JumpType};
 
 impl FunctionBuilder<'_> {
     /// Lower this function's fused IR into its [`CompiledFunction`].
     /// Consumes the builder: its metadata moves into the result.
     pub(super) fn assemble(self, code: Vec<Ir>) -> Arc<CompiledFunction> {
-        assemble_code(
-            code,
-            self.next_label.0,
-            self.name,
-            self.arity,
-            self.locals.into_name_table(),
-            self.num_captures,
-        )
+        let plan = self.locals.plan_slots(&code);
+        assemble_code(code, self.next_label.0, self.name, self.arity, plan)
     }
 }
 
@@ -42,8 +37,7 @@ pub(super) fn assemble_code(
     num_labels: usize,
     name: String,
     arity: Arity,
-    name_table: Vec<NameEntry>,
-    num_captures: usize,
+    plan: SlotPlan,
 ) -> Arc<CompiledFunction> {
     let label_positions = resolve_labels(&code, num_labels);
 
@@ -54,7 +48,13 @@ pub(super) fn assemble_code(
 
     for ir in code {
         match ir {
-            Ir::Ready(bytecode) => out.push(bytecode),
+            Ir::Ready(bytecode) => {
+                debug_assert!(
+                    !is_symbolic_opcode(&bytecode),
+                    "Ir::Ready holds {bytecode:?}, an opcode another Ir variant owns"
+                );
+                out.push(bytecode);
+            }
             // Zero-width: a label contributes no instruction.
             Ir::Label(_) => {}
             Ir::Const(value) => {
@@ -65,6 +65,8 @@ pub(super) fn assemble_code(
                 out.push(Bytecode::HardIndexMap(key_constants.len()));
                 key_constants.push(key);
             }
+            Ir::LoadLocal(id) => out.push(Bytecode::LoadLocal(plan.slot_of(id))),
+            Ir::DefLocal(id) => out.push(Bytecode::DefLocal(plan.slot_of(id))),
             Ir::Closure { function, .. } => {
                 out.push(Bytecode::CreateClosure(child_fns.len()));
                 child_fns.push(function);
@@ -89,10 +91,29 @@ pub(super) fn assemble_code(
         child_fns,
         constants,
         key_constants,
-        name_table,
-        num_captures,
+        num_captures: plan.num_captures(),
+        name_table: plan.into_name_table(),
         arity,
     })
+}
+
+/// Whether an opcode carries an index or offset that some other `Ir` variant
+/// assigns at assembly. `Ir::Ready` is for already-final opcodes, so it must
+/// never hold one of these.
+fn is_symbolic_opcode(bytecode: &Bytecode) -> bool {
+    matches!(
+        bytecode,
+        Bytecode::LoadLocal(_)
+            | Bytecode::DefLocal(_)
+            | Bytecode::LoadConst(_)
+            | Bytecode::HardIndexMap(_)
+            | Bytecode::CreateClosure(_)
+            | Bytecode::Jump(_)
+            | Bytecode::JumpIfTrue(_)
+            | Bytecode::JumpIfFalse(_)
+            | Bytecode::PeekJumpIfTrue(_)
+            | Bytecode::PeekJumpIfFalse(_)
+    )
 }
 
 /// Map each label to the final index of the instruction it precedes.

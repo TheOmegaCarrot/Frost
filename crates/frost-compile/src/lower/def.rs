@@ -3,7 +3,11 @@ use frost_runtime::Bytecode;
 
 use crate::{
     CompilerError, CompilerErrors,
-    lower::{FunctionBuilder, Ir},
+    lower::{
+        FunctionBuilder, Ir,
+        fold::constant_of,
+        locals::{LocalInfo, LocalKind},
+    },
 };
 
 struct DestructureFragment {
@@ -25,9 +29,23 @@ impl FunctionBuilder<'_> {
         let destructure_fragment = match &destructure.node {
             Destructure::Binding(binding) => match &binding.node {
                 Binding::Named(name) => {
-                    let slot = self
+                    // With propagation on, a binding whose rhs is compile-time
+                    // known records its value so name lookups can propagate it.
+                    let constant = self
+                        .options
+                        .optimization_options
+                        .constant_propagate
+                        .then(|| constant_of(&expr_fragment.code))
+                        .flatten();
+                    let id = self
                         .locals
-                        .define(name.clone(), binding.span, exported)
+                        .define(LocalInfo {
+                            name: name.clone(),
+                            span: binding.span,
+                            exported,
+                            constant,
+                            kind: LocalKind::Binding,
+                        })
                         .map_err(|original| {
                             self.error(format!("`{name}` is already bound"))
                                 .code("duplicate binding".into())
@@ -38,7 +56,7 @@ impl FunctionBuilder<'_> {
                                 )
                         })?;
                     DestructureFragment {
-                        code: vec![Ir::Ready(Bytecode::DefLocal(slot))],
+                        code: vec![Ir::DefLocal(id)],
                     }
                 }
                 // A discard evaluates the expression for its effect, then drops it.

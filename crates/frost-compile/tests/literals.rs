@@ -10,6 +10,7 @@ fn options() -> CompilerOptions {
     CompilerOptions {
         optimization_options: OptimizationOptions {
             constant_fold: false,
+            constant_propagate: false,
         },
     }
 }

@@ -23,6 +23,7 @@ use frost_runtime::{
 };
 
 use crate::lower::assemble::assemble_code;
+use crate::lower::locals::SlotPlan;
 use crate::lower::{ExprFragment, FunctionBuilder, Ir};
 
 /// A fuel-capped VM reused across a compilation to evaluate constant folds.
@@ -88,6 +89,23 @@ pub(super) fn value_to_ir(value: Value) -> Option<Ir> {
     Some(ir)
 }
 
+/// The compile-time constant a fragment loads, if its code is a single
+/// value-producing op (a literal, a fold result, or a propagated constant).
+pub(super) fn constant_of(code: &[Ir]) -> Option<Value> {
+    let [op] = code else {
+        return None;
+    };
+    match op {
+        Ir::Ready(Bytecode::PushNull) => Some(Value::Null),
+        Ir::Ready(Bytecode::PushTrue) => Some(Value::Bool(true)),
+        Ir::Ready(Bytecode::PushFalse) => Some(Value::Bool(false)),
+        Ir::Ready(Bytecode::PushInt(int)) => Some(Value::Int(*int)),
+        Ir::Ready(Bytecode::PushFloat(float)) => Some(Value::Float(*float)),
+        Ir::Const(value) => Some(value.clone()),
+        _ => None,
+    }
+}
+
 /// Whether `value` can be a constant: neither a function nor opaque, and, for a
 /// structure, holding no function or opaque at any depth.
 fn is_const_representable(value: &Value) -> bool {
@@ -129,13 +147,13 @@ impl FunctionBuilder<'_> {
         // which the leading Pop discards; the fragment then leaves the value.
         let mut wrapped = vec![Ir::Ready(Bytecode::Pop)];
         wrapped.extend(code);
+        // A foldable fragment references no locals, so its slot plan is empty.
         let function = assemble_code(
             wrapped,
             self.next_label.0,
             "<fold>".to_string(),
             Arity::Exact(0),
-            Vec::new(),
-            0,
+            SlotPlan::empty(),
         );
         self.fold_vm?.evaluate(function)
     }
