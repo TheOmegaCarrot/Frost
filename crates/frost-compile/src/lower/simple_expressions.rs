@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::num::FpCategory;
 
 use frost_parse::ast::{Literal, SourceSpan};
@@ -5,7 +8,11 @@ use frost_runtime::{Bytecode, FrostError, FrostFloat};
 
 use crate::{
     CompilerErrors,
-    lower::{ExprFragment, FunctionBuilder, Ir, fold::value_to_ir, globals::global_slot},
+    lower::{
+        ExprFragment, FunctionBuilder, Ir,
+        fold::value_to_ir,
+        globals::{global_pure, global_slot},
+    },
 };
 
 impl FunctionBuilder<'_> {
@@ -63,9 +70,11 @@ impl FunctionBuilder<'_> {
             });
         }
         if let Some(slot) = global_slot(name) {
+            // A pure global is fold-eligible: a call to it over foldable
+            // arguments can be evaluated at compile time.
             return Ok(ExprFragment {
                 code: vec![Ir::Ready(Bytecode::LoadGlobal(slot))],
-                foldable: false,
+                foldable: global_pure(slot),
             });
         }
         Err(self

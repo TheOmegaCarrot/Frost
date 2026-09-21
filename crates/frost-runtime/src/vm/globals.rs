@@ -30,20 +30,39 @@ use output::*;
 use strings::*;
 use types::*;
 
+/// Whether a predefined global may be evaluated at compile time.
+///
+/// A `Pure` global is deterministic and free of side effects, host interaction,
+/// and mutable state, so a call to it over constant arguments can be constant
+/// folded. `Impure` globals (I/O, mutation, and imports) are never folded.
+/// Purity of a callback argument is a separate matter: an impure callback keeps
+/// its own call site unfoldable regardless of this flag.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Purity {
+    Pure,
+    Impure,
+}
+
 // The fixed set of predefined globals, shared by every `Vm`; never host-configurable.
-// The compiler's seam onto it is `GLOBAL_NAMES`.
+// The compiler's seam onto it is `GLOBAL_NAMES` and `GLOBAL_PURITY`.
 #[derive(Debug, Clone)]
 pub(crate) struct GlobalSet(Vec<Value>);
 
-// Sync-only macro: names and slot initializers expand from the same `name => init`
-// list in the same order, so `names[i]` and `slots[i]` cannot drift apart.
+// Sync-only macro: each `name [purity] => init` entry expands into the name,
+// purity, and slot initializer lists in the same order, so a global's slot in
+// `GLOBAL_NAMES`, `GLOBAL_PURITY`, and the value vector cannot drift apart.
 macro_rules! define_globals {
-    ($($name:literal => $init:expr),* $(,)?) => {
+    ($($name:literal [$purity:ident] => $init:expr),* $(,)?) => {
         /// The predefined global names, in slot order:
         /// a name's index in this list is its `LoadGlobal` slot.
         /// This list is the compiler's only seam onto the globals,
         /// which are themselves a fixed, runtime-internal set.
         pub const GLOBAL_NAMES: &[&str] = &[ $($name),* ];
+
+        /// The [`Purity`] of each global, in the same slot order as
+        /// [`GLOBAL_NAMES`]: the compiler's seam for deciding whether a call to
+        /// a global is a candidate for constant folding.
+        pub const GLOBAL_PURITY: &[Purity] = &[ $(Purity::$purity),* ];
 
         impl GlobalSet {
             fn build_defaults() -> Self {
@@ -53,141 +72,147 @@ macro_rules! define_globals {
     };
 }
 
+// The `[Pure]`/`[Impure]` tag is each global's compile-time-fold eligibility;
+// see `Purity`. Default to `Pure`; `Impure` marks the only globals with an
+// effect of their own: the I/O of print/mprint, mutable_cell's mutable state,
+// and import (the gateway to every other effect). A higher-order global stays
+// `Pure` (an impure callback stops its own fold), and so does a raising one
+// (error/assert): a fold that reaches a raise just abandons.
 define_globals! {
     // --- Types ---
-    "is_null"               => is_null_global(),
-    "is_int"                => is_int_global(),
-    "is_float"              => is_float_global(),
-    "is_bool"               => is_bool_global(),
-    "is_string"             => is_string_global(),
-    "is_bytes"              => is_bytes_global(),
-    "is_array"              => is_array_global(),
-    "is_map"                => is_map_global(),
-    "is_function"           => is_function_global(),
-    "is_nonnull"            => is_nonnull_global(),
-    "is_numeric"            => is_numeric_global(),
-    "is_primitive"          => is_primitive_global(),
-    "is_structured"         => is_structured_global(),
-    "is_flat"               => is_flat_global(),
-    "type"                  => type_global(),
-    "to_string"             => to_string_global(),
-    "pretty"                => pretty_global(),
-    "to_int"                => to_int_global(),
-    "to_float"              => to_float_global(),
-    "to_bytes"              => to_bytes_global(),
-    "from_utf8"             => from_utf8_global(),
+    "is_null"               [Pure]   => is_null_global(),
+    "is_int"                [Pure]   => is_int_global(),
+    "is_float"              [Pure]   => is_float_global(),
+    "is_bool"               [Pure]   => is_bool_global(),
+    "is_string"             [Pure]   => is_string_global(),
+    "is_bytes"              [Pure]   => is_bytes_global(),
+    "is_array"              [Pure]   => is_array_global(),
+    "is_map"                [Pure]   => is_map_global(),
+    "is_function"           [Pure]   => is_function_global(),
+    "is_nonnull"            [Pure]   => is_nonnull_global(),
+    "is_numeric"            [Pure]   => is_numeric_global(),
+    "is_primitive"          [Pure]   => is_primitive_global(),
+    "is_structured"         [Pure]   => is_structured_global(),
+    "is_flat"               [Pure]   => is_flat_global(),
+    "type"                  [Pure]   => type_global(),
+    "to_string"             [Pure]   => to_string_global(),
+    "pretty"                [Pure]   => pretty_global(),
+    "to_int"                [Pure]   => to_int_global(),
+    "to_float"              [Pure]   => to_float_global(),
+    "to_bytes"              [Pure]   => to_bytes_global(),
+    "from_utf8"             [Pure]   => from_utf8_global(),
 
     // --- Strings ---
-    "split"                 => split_global(),
-    "lines"                 => lines_global(),
-    "join"                  => join_global(),
-    "replace"               => replace_global(),
-    "trim"                  => trim_global(),
-    "trim_left"             => trim_left_global(),
-    "trim_right"            => trim_right_global(),
-    "to_upper"              => to_upper_global(),
-    "to_lower"              => to_lower_global(),
-    "contains"              => contains_global(),
-    "starts_with"           => starts_with_global(),
-    "ends_with"             => ends_with_global(),
+    "split"                 [Pure]   => split_global(),
+    "lines"                 [Pure]   => lines_global(),
+    "join"                  [Pure]   => join_global(),
+    "replace"               [Pure]   => replace_global(),
+    "trim"                  [Pure]   => trim_global(),
+    "trim_left"             [Pure]   => trim_left_global(),
+    "trim_right"            [Pure]   => trim_right_global(),
+    "to_upper"              [Pure]   => to_upper_global(),
+    "to_lower"              [Pure]   => to_lower_global(),
+    "contains"              [Pure]   => contains_global(),
+    "starts_with"           [Pure]   => starts_with_global(),
+    "ends_with"             [Pure]   => ends_with_global(),
 
     // --- Operators ---
-    "plus"                  => plus_global(),
-    "minus"                 => minus_global(),
-    "times"                 => times_global(),
-    "divide"                => divide_global(),
-    "mod"                   => mod_global(),
-    "equal"                 => equal_global(),
-    "not_equal"             => not_equal_global(),
-    "less_than"             => less_than_global(),
-    "less_than_or_equal"    => less_than_or_equal_global(),
-    "greater_than"          => greater_than_global(),
-    "greater_than_or_equal" => greater_than_or_equal_global(),
+    "plus"                  [Pure]   => plus_global(),
+    "minus"                 [Pure]   => minus_global(),
+    "times"                 [Pure]   => times_global(),
+    "divide"                [Pure]   => divide_global(),
+    "mod"                   [Pure]   => mod_global(),
+    "equal"                 [Pure]   => equal_global(),
+    "not_equal"             [Pure]   => not_equal_global(),
+    "less_than"             [Pure]   => less_than_global(),
+    "less_than_or_equal"    [Pure]   => less_than_or_equal_global(),
+    "greater_than"          [Pure]   => greater_than_global(),
+    "greater_than_or_equal" [Pure]   => greater_than_or_equal_global(),
 
     // --- Collections ---
-    "keys"                  => keys_global(),
-    "values"                => values_global(),
-    "map_keys"              => map_keys_global(),
-    "map_values"            => map_values_global(),
-    "len"                   => len_global(),
-    "range"                 => range_global(),
-    "nulls"                 => nulls_global(),
-    "repeat"                => repeat_global(),
-    "id"                    => id_global(),
-    "has"                   => has_global(),
-    "includes"              => includes_global(),
-    "index"                 => index_global(),
-    "dig"                   => dig_global(),
-    "slice"                 => slice_global(),
-    "stride"                => stride_global(),
-    "take"                  => take_global(),
-    "drop"                  => drop_global(),
-    "tail"                  => tail_global(),
-    "drop_tail"             => drop_tail_global(),
-    "slide"                 => slide_global(),
-    "chunk"                 => chunk_global(),
-    "reverse"               => reverse_global(),
-    "take_while"            => take_while_global(),
-    "drop_while"            => drop_while_global(),
-    "chunk_by"              => chunk_by_global(),
-    "flatten"               => flatten_global(),
-    "zip"                   => zip_global(),
-    "zip_with"              => zip_with_global(),
-    "xprod"                 => xprod_global(),
-    "xprod_with"            => xprod_with_global(),
-    "transform"             => transform_global(),
-    "flat_map"              => flat_map_global(),
-    "select"                => select_global(),
-    "reject"                => reject_global(),
-    "fold"                  => fold_global(),
-    "sum"                   => sum_global(),
-    "product"               => product_global(),
-    "sorted"                => sorted_global(),
-    "sort_by"               => sort_by_global(),
-    "any"                   => any_global(),
-    "all"                   => all_global(),
-    "none"                  => none_global(),
-    "find"                  => find_global(),
-    "group_by"              => group_by_global(),
-    "count_by"              => count_by_global(),
-    "scan"                  => scan_global(),
-    "partition"             => partition_global(),
-    "map_into"              => map_into_global(),
-    "to_entries"            => to_entries_global(),
-    "from_entries"          => from_entries_global(),
-    "dissoc"                => dissoc_global(),
-    "each"                  => each_global(),
+    "keys"                  [Pure]   => keys_global(),
+    "values"                [Pure]   => values_global(),
+    "map_keys"              [Pure]   => map_keys_global(),
+    "map_values"            [Pure]   => map_values_global(),
+    "len"                   [Pure]   => len_global(),
+    "range"                 [Pure]   => range_global(),
+    "nulls"                 [Pure]   => nulls_global(),
+    "repeat"                [Pure]   => repeat_global(),
+    "id"                    [Pure]   => id_global(),
+    "has"                   [Pure]   => has_global(),
+    "includes"              [Pure]   => includes_global(),
+    "index"                 [Pure]   => index_global(),
+    "dig"                   [Pure]   => dig_global(),
+    "slice"                 [Pure]   => slice_global(),
+    "stride"                [Pure]   => stride_global(),
+    "take"                  [Pure]   => take_global(),
+    "drop"                  [Pure]   => drop_global(),
+    "tail"                  [Pure]   => tail_global(),
+    "drop_tail"             [Pure]   => drop_tail_global(),
+    "slide"                 [Pure]   => slide_global(),
+    "chunk"                 [Pure]   => chunk_global(),
+    "reverse"               [Pure]   => reverse_global(),
+    "take_while"            [Pure]   => take_while_global(),
+    "drop_while"            [Pure]   => drop_while_global(),
+    "chunk_by"              [Pure]   => chunk_by_global(),
+    "flatten"               [Pure]   => flatten_global(),
+    "zip"                   [Pure]   => zip_global(),
+    "zip_with"              [Pure]   => zip_with_global(),
+    "xprod"                 [Pure]   => xprod_global(),
+    "xprod_with"            [Pure]   => xprod_with_global(),
+    "transform"             [Pure]   => transform_global(),
+    "flat_map"              [Pure]   => flat_map_global(),
+    "select"                [Pure]   => select_global(),
+    "reject"                [Pure]   => reject_global(),
+    "fold"                  [Pure]   => fold_global(),
+    "sum"                   [Pure]   => sum_global(),
+    "product"               [Pure]   => product_global(),
+    "sorted"                [Pure]   => sorted_global(),
+    "sort_by"               [Pure]   => sort_by_global(),
+    "any"                   [Pure]   => any_global(),
+    "all"                   [Pure]   => all_global(),
+    "none"                  [Pure]   => none_global(),
+    "find"                  [Pure]   => find_global(),
+    "group_by"              [Pure]   => group_by_global(),
+    "count_by"              [Pure]   => count_by_global(),
+    "scan"                  [Pure]   => scan_global(),
+    "partition"             [Pure]   => partition_global(),
+    "map_into"              [Pure]   => map_into_global(),
+    "to_entries"            [Pure]   => to_entries_global(),
+    "from_entries"          [Pure]   => from_entries_global(),
+    "dissoc"                [Pure]   => dissoc_global(),
+    "each"                  [Pure]   => each_global(),
 
     // --- Output ---
-    "print"                 => print_global(),
-    "mformat"               => mformat_global(),
-    "mprint"                => mprint_global(),
+    "print"                 [Impure] => print_global(),
+    "mformat"               [Pure]   => mformat_global(),
+    "mprint"                [Impure] => mprint_global(),
 
     // --- Functions / combinators ---
-    "call"                  => call_global(),
-    "try_call"              => try_call_global(),
-    "error"                 => error_global(),
-    "and_then"              => and_then_global(),
-    "or_else"               => or_else_global(),
-    "inv"                   => inv_global(),
-    "curry"                 => curry_global(),
-    "bcurry"                => bcurry_global(),
-    "collect"               => collect_global(),
-    "spread"                => spread_global(),
-    "rev_args"              => rev_args_global(),
-    "tap"                   => tap_global(),
-    "const"                 => const_global(),
-    "compose"               => compose_global(),
+    "call"                  [Pure]   => call_global(),
+    "try_call"              [Pure]   => try_call_global(),
+    "error"                 [Pure]   => error_global(),
+    "and_then"              [Pure]   => and_then_global(),
+    "or_else"               [Pure]   => or_else_global(),
+    "inv"                   [Pure]   => inv_global(),
+    "curry"                 [Pure]   => curry_global(),
+    "bcurry"                [Pure]   => bcurry_global(),
+    "collect"               [Pure]   => collect_global(),
+    "spread"                [Pure]   => spread_global(),
+    "rev_args"              [Pure]   => rev_args_global(),
+    "tap"                   [Pure]   => tap_global(),
+    "const"                 [Pure]   => const_global(),
+    "compose"               [Pure]   => compose_global(),
 
     // --- Debug ---
-    "assert"                => assert_global(),
-    "debug_dump"            => debug_dump_global(),
+    "assert"                [Pure]   => assert_global(),
+    "debug_dump"            [Pure]   => debug_dump_global(),
 
     // --- Mutable cell ---
-    "mutable_cell"          => mutable_cell_global(),
+    "mutable_cell"          [Impure] => mutable_cell_global(),
 
     // --- Import ---
-    "import"                => import_global(),
+    "import"                [Impure] => import_global(),
 }
 
 /// Build a slot-free, capture-free hand-rolled bytecode closure global from `name`,

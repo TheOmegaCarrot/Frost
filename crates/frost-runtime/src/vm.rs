@@ -9,7 +9,7 @@ mod serialize;
 
 pub use bytecode::Bytecode;
 pub use function::{Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, TrustedProgram};
-pub use globals::GLOBAL_NAMES;
+pub use globals::{GLOBAL_NAMES, GLOBAL_PURITY, Purity};
 pub use import::{
     Extension, ExtensionError, HostComponent, HostComponentError, ImportCtx, ImportResolver,
     Importer, ImporterBuilder, InvalidComponentName, ModuleId, Stdlib, StdlibModule,

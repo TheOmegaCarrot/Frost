@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
-use frost_runtime::GLOBAL_NAMES;
+use frost_runtime::{GLOBAL_NAMES, GLOBAL_PURITY, Purity};
 
 // A `BTreeMap` beats hashing at this size (a few dozen fixed names).
 static SLOTS: LazyLock<BTreeMap<&'static str, usize>> = LazyLock::new(|| {
@@ -20,4 +20,10 @@ static SLOTS: LazyLock<BTreeMap<&'static str, usize>> = LazyLock::new(|| {
 /// The `LoadGlobal` slot for a global name, or `None` if `name` is not a global.
 pub(super) fn global_slot(name: &str) -> Option<usize> {
     SLOTS.get(name).copied()
+}
+
+/// Whether the global at `slot` is pure, and so a call to it may be constant
+/// folded. `slot` must be a valid global slot (from [`global_slot`]).
+pub(super) fn global_pure(slot: usize) -> bool {
+    GLOBAL_PURITY[slot] == Purity::Pure
 }
