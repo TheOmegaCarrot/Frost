@@ -85,6 +85,12 @@ impl Locals {
         self.info(id).constant.as_ref()
     }
 
+    /// Whether the current scope is the function's outermost (no nested scope
+    /// open), i.e. a binding defined now is a top-level one.
+    pub(super) fn at_top_scope(&self) -> bool {
+        self.marks.is_empty()
+    }
+
     /// Open a nested scope (a `do` block or a `match` arm).
     pub(super) fn enter(&mut self) {
         self.marks.push(self.live.len());

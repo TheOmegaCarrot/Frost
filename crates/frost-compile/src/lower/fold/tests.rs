@@ -4,8 +4,8 @@
 
 use crate::lower::assemble::assemble_code;
 use crate::lower::fold::{FoldVm, constant_of, value_to_ir};
-use crate::lower::locals::SlotPlan;
-use crate::lower::{ExprFragment, FunctionBuilder, Ir, LocalId};
+use crate::lower::locals::{Locals, SlotPlan};
+use crate::lower::{ExprFragment, FunctionBuilder, Ir, Label, LocalId};
 use crate::{CompilerOptions, OptimizationOptions};
 
 use frost_runtime::{Arity, Bytecode, Value};
@@ -28,11 +28,22 @@ fn options(constant_fold: bool) -> CompilerOptions {
             constant_fold,
             constant_propagate: false,
         },
+        implicit_export: false,
     }
 }
 
 fn builder<'a>(options: &'a CompilerOptions, fold_vm: &'a FoldVm) -> FunctionBuilder<'a> {
-    FunctionBuilder::new(options, "<test>".to_string(), "", "", Some(fold_vm), Arity::Exact(0))
+    FunctionBuilder {
+        locals: Locals::new(),
+        next_label: Label(0),
+        name: "<test>".to_string(),
+        arity: Arity::Exact(0),
+        source: "",
+        filename: "",
+        options,
+        fold_vm: Some(fold_vm),
+        top_level: false,
+    }
 }
 
 /// A foldable `1 op 2` fragment.

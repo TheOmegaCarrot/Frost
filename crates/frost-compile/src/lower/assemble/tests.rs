@@ -6,8 +6,8 @@
 //! jump kind, every payload kind, their interleavings, and the boundary cases
 //! (empty body, target one past the end, large offsets).
 
-use crate::lower::locals::{LocalInfo, LocalKind};
-use crate::lower::{FunctionBuilder, Ir, JumpType};
+use crate::lower::locals::{LocalInfo, LocalKind, Locals};
+use crate::lower::{FunctionBuilder, Ir, JumpType, Label};
 use crate::{CompilerOptions, OptimizationOptions};
 
 use frost_parse::ast::SourceSpan;
@@ -21,12 +21,28 @@ fn options() -> CompilerOptions {
             constant_fold: false,
             constant_propagate: false,
         },
+        implicit_export: false,
     }
 }
 
 fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
     // Assembly never touches the filename, source, or fold VM.
-    FunctionBuilder::new(options, "<test>".to_string(), "", "", None, Arity::Exact(0))
+    with_name(options, "<test>".to_string(), Arity::Exact(0))
+}
+
+/// A builder with a chosen name and arity, for the metadata-passthrough test.
+fn with_name(options: &CompilerOptions, name: String, arity: Arity) -> FunctionBuilder<'_> {
+    FunctionBuilder {
+        locals: Locals::new(),
+        next_label: Label(0),
+        name,
+        arity,
+        source: "",
+        filename: "",
+        options,
+        fold_vm: None,
+        top_level: false,
+    }
 }
 
 /// A trivial child function, for exercising closure pooling.
@@ -351,8 +367,7 @@ fn a_body_of_only_labels_is_empty_code() {
 #[test]
 fn function_metadata_passes_through() {
     let options = options();
-    let mut b =
-        FunctionBuilder::new(&options, "greet".to_string(), "", "", None, Arity::Between(1, 3));
+    let mut b = with_name(&options, "greet".to_string(), Arity::Between(1, 3));
     b.locals
         .define(LocalInfo {
             name: "captured".to_string(),

@@ -12,13 +12,13 @@ use std::sync::Arc;
 use crate::{CompilerError, CompilerErrors, CompilerOptions, CompilerOutput, OptimizationOptions};
 
 use frost_parse::{
-    ast::{Expr, Program, Spanned, Statement},
+    ast::{Expr, Program, SourceSpan, Spanned, Statement},
     parse_program,
 };
 use frost_runtime::{Arity, Bytecode, CompiledFunction, MapKey, Value};
 
 use fold::FoldVm;
-use locals::Locals;
+use locals::{LocalInfo, LocalKind, Locals};
 
 #[derive(Clone, Debug)]
 enum JumpType {
@@ -74,29 +74,12 @@ struct FunctionBuilder<'a> {
     // The warm VM for constant-folding, shared across the whole compilation.
     // `None` when there is no folding (e.g. a test that only assembles).
     fold_vm: Option<&'a FoldVm>,
+    // True only for a script's top-level function. Gates implicit export, which
+    // applies to top-level bindings, not those inside a nested function.
+    top_level: bool,
 }
 
-impl<'a> FunctionBuilder<'a> {
-    fn new(
-        options: &'a CompilerOptions,
-        name: String,
-        filename: &'a str,
-        source: &'a str,
-        fold_vm: Option<&'a FoldVm>,
-        arity: Arity,
-    ) -> Self {
-        Self {
-            locals: Locals::new(),
-            next_label: Label(0),
-            name,
-            arity,
-            source,
-            filename,
-            options,
-            fold_vm,
-        }
-    }
-
+impl FunctionBuilder<'_> {
     fn next_label(&mut self) -> Label {
         let label = self.next_label;
         self.next_label.0 += 1;
@@ -110,23 +93,45 @@ impl<'a> FunctionBuilder<'a> {
     }
 }
 
+/// Compile a standalone script: a top-level with no enclosing scope, so every
+/// free name must resolve to a global or is an error.
 pub fn compile_program(
     filename: &str,
     script: &str,
     options: CompilerOptions,
 ) -> Result<CompilerOutput, CompilerErrors> {
+    compile_in_scope(filename, script, options, &[])
+}
+
+/// Compile a top-level nested within an enclosing scope: a free name found in
+/// `outer_scope` becomes a capture, and its value is supplied at
+/// [`close`](frost_runtime::TrustedProgram::close).
+/// This is what an embedder uses to run a fragment
+/// against an accumulated environment; `outer_scope` carries that environment's
+/// names, and the empty slice is exactly [`compile_program`].
+/// The order of names is irrelevant.
+pub fn compile_in_scope(
+    filename: &str,
+    script: &str,
+    options: CompilerOptions,
+    outer_scope: &[&str],
+) -> Result<CompilerOutput, CompilerErrors> {
     let ast = parse_program(filename, script)
         .map_err(|err| CompilerError::from_parse_error(&err, filename, script))?;
 
     let fold_vm = FoldVm::new();
-    let mut fn_builder = FunctionBuilder::new(
-        &options,
-        "<main>".to_string(),
+    let mut fn_builder = FunctionBuilder {
+        locals: Locals::new(),
+        next_label: Label(0),
+        name: "<main>".to_string(),
+        arity: Arity::Exact(0),
+        source: script,
         filename,
-        script,
-        Some(&fold_vm),
-        Arity::Exact(0),
-    );
+        options: &options,
+        fold_vm: Some(&fold_vm),
+        top_level: true,
+    };
+    fn_builder.seed_captures(&ast, outer_scope);
 
     // The runtime starts by pushing the top-level function itself to the stack
     // Pop it
@@ -146,6 +151,34 @@ pub fn compile_program(
     Ok(CompilerOutput {
         code: func.assert_trusted(),
     })
+}
+
+impl FunctionBuilder<'_> {
+    /// Whether a binding compiled now is implicitly exported: the option is on,
+    /// and this is a top-level binding of the top-level function (not one inside
+    /// a nested scope or a lambda).
+    fn exports_implicitly(&self) -> bool {
+        self.top_level && self.options.implicit_export && self.locals.at_top_scope()
+    }
+
+    /// Reserve a capture for each free name of the program that the enclosing
+    /// scope supplies. Only names actually used are captured; a free name absent
+    /// from `outer_scope` is left to resolve as a global (or to error).
+    fn seed_captures(&mut self, ast: &Program, outer_scope: &[&str]) {
+        for name in prewalk::free_names_of_program(&ast.statements) {
+            if outer_scope.contains(&name.as_str()) {
+                self.locals
+                    .define(LocalInfo {
+                        name,
+                        span: SourceSpan::default(),
+                        exported: false,
+                        constant: None,
+                        kind: LocalKind::Capture,
+                    })
+                    .expect("free names are distinct, so no capture collides");
+            }
+        }
+    }
 }
 
 impl FunctionBuilder<'_> {

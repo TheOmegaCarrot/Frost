@@ -6,7 +6,8 @@
 use frost_parse::ast::SourceSpan;
 use frost_runtime::Arity;
 
-use crate::lower::FunctionBuilder;
+use crate::lower::locals::Locals;
+use crate::lower::{FunctionBuilder, Label};
 use crate::{CompilerOptions, OptimizationOptions};
 
 fn options() -> CompilerOptions {
@@ -15,12 +16,23 @@ fn options() -> CompilerOptions {
             constant_fold: false,
             constant_propagate: false,
         },
+        implicit_export: false,
     }
 }
 
 fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
     // A name lookup touches neither the source nor the fold VM.
-    FunctionBuilder::new(options, "<test>".to_string(), "", "", None, Arity::Exact(0))
+    FunctionBuilder {
+        locals: Locals::new(),
+        next_label: Label(0),
+        name: "<test>".to_string(),
+        arity: Arity::Exact(0),
+        source: "",
+        filename: "",
+        options,
+        fold_vm: None,
+        top_level: false,
+    }
 }
 
 #[test]

@@ -23,12 +23,27 @@
 #[cfg(test)]
 mod tests;
 
+use std::collections::BTreeSet;
+
 use frost_parse::ast::{
     Binding, Destructure, Expr, FormatSegment, MatchArm, MatchPattern, SourceSpan, Spanned,
     Statement,
 };
 
 use crate::lower::locals::{LocalInfo, LocalKind, Locals};
+
+/// The free names of a whole program (a top-level statement sequence): a name
+/// used before any binding introduces it. The program's own top-level bindings
+/// are not free. An embedder intersects these with the enclosing scope it
+/// supplies to decide the top-level's captures; a set, since order is irrelevant
+/// there (captures are seated by name) and it makes their distinctness structural.
+pub(super) fn free_names_of_program(statements: &[Spanned<Statement>]) -> BTreeSet<String> {
+    let mut scan = Scanner::new();
+    for statement in statements {
+        scan.statement(statement);
+    }
+    scan.free.into_iter().collect()
+}
 
 /// The free names of a lambda expression, in evaluation order, found with a
 /// fresh scope seeded with the lambda's own parameters.

@@ -12,6 +12,7 @@ fn options() -> CompilerOptions {
             constant_fold: false,
             constant_propagate: false,
         },
+        implicit_export: false,
     }
 }
 

@@ -8,21 +8,23 @@ mod lower;
 
 pub use error::{CompilerError, CompilerErrors};
 use frost_runtime::TrustedProgram;
-pub use lower::compile_program;
+pub use lower::{compile_in_scope, compile_program};
 
 // TODO: make some associated functions that just return some "reasonable presets"
 // once I accumulate enough optimization options
 #[derive(Debug)]
 pub struct OptimizationOptions {
     pub constant_fold: bool,
-    // Propagate a binding whose value is compile-time known: a lookup of it loads
-    // the value directly, so it is itself fold-eligible.
+    /// Propagate a binding whose value is compile-time known: a lookup of it loads
+    /// the value directly, so it is itself fold-eligible.
     pub constant_propagate: bool,
 }
 
 #[derive(Debug)]
 pub struct CompilerOptions {
     pub optimization_options: OptimizationOptions,
+    /// Export every top-level binding, as if each carried `export`.
+    pub implicit_export: bool,
 }
 
 #[derive(Debug)]

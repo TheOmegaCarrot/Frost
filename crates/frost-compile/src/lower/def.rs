@@ -21,6 +21,9 @@ impl FunctionBuilder<'_> {
         destructure: &Spanned<Destructure>,
         exported: bool,
     ) -> Result<Vec<Ir>, CompilerErrors> {
+        // A top-level binding is implicitly exported when the option is on.
+        let exported = exported || self.exports_implicitly();
+
         // The rhs is a fold point: a def whose value is compile-time known binds
         // a folded constant.
         let expr_fragment = self.compile_expression(expr)?;
