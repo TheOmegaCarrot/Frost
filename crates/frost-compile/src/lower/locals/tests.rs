@@ -129,7 +129,10 @@ fn a_shadow_constant_is_independent_of_the_binding_it_shadows() {
     locals.enter();
     // The shadow is a non-constant binding; it must not inherit the outer's value.
     let inner = bind(&mut locals, "x", span(1)).unwrap();
-    assert!(locals.constant(inner).is_none(), "shadow carries no constant");
+    assert!(
+        locals.constant(inner).is_none(),
+        "shadow carries no constant"
+    );
     locals.exit();
 
     assert!(
@@ -154,7 +157,11 @@ fn a_binding_may_shadow_a_same_scope_capture() {
     // binding shadows the capture rather than colliding with it.
     let bound = bind(&mut locals, "x", span(1)).unwrap();
     assert_ne!(captured, bound);
-    assert_eq!(locals.resolve("x"), Some(bound), "the binding wins once defined");
+    assert_eq!(
+        locals.resolve("x"),
+        Some(bound),
+        "the binding wins once defined"
+    );
     // A second real binding of the same name is still a duplicate.
     assert_eq!(bind(&mut locals, "x", span(2)), Err(span(1)));
 }
@@ -223,7 +230,11 @@ fn a_binding_the_code_never_defines_is_left_out_without_a_hole() {
     // The survivors pack densely: no slot is wasted on the gap.
     let plan = locals.plan_slots(&[def(a), def(c)]);
     assert_eq!(plan.slot_of(a), 0);
-    assert_eq!(plan.slot_of(c), 1, "c fills the slot the gap would have held");
+    assert_eq!(
+        plan.slot_of(c),
+        1,
+        "c fills the slot the gap would have held"
+    );
     assert_eq!(plan.into_name_table().len(), 2);
     let _ = dropped;
 }

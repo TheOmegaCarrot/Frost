@@ -60,7 +60,9 @@ impl FunctionBuilder<'_> {
             // is itself fold-eligible; otherwise it is an ordinary local load.
             return Ok(match self.locals.constant(id) {
                 Some(value) => ExprFragment {
-                    code: vec![value_to_ir(value.clone()).expect("a stored constant is representable")],
+                    code: vec![
+                        value_to_ir(value.clone()).expect("a stored constant is representable"),
+                    ],
                     foldable: true,
                 },
                 None => ExprFragment {

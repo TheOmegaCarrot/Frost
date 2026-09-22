@@ -2,10 +2,6 @@
 //! needs: a top-level compiled against an enclosing scope captures the names it
 //! uses from that scope, and implicit export lets the caller harvest every
 //! top-level binding afterward.
-//!
-//! Expressions are kept to name lookups and defs, since arithmetic lowering is
-//! not implemented yet; the concern here is capture and export wiring, not
-//! evaluation.
 
 use std::collections::BTreeMap;
 

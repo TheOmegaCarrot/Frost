@@ -58,6 +58,28 @@ fn arithmetic(op: Bytecode) -> ExprFragment {
     }
 }
 
+/// A non-foldable `x + 1` fragment, reading a local.
+fn local_plus_one() -> ExprFragment {
+    ExprFragment {
+        code: vec![
+            Ir::LoadLocal(LocalId(0)),
+            Ir::Ready(Bytecode::PushInt(1)),
+            Ir::Ready(Bytecode::Add),
+        ],
+        foldable: false,
+    }
+}
+
+/// Whether `fragment` was folded to the lone `PushInt(value)`.
+fn is_folded_to(fragment: &ExprFragment, value: i64) -> bool {
+    matches!(fragment.code.as_slice(), [Ir::Ready(Bytecode::PushInt(v))] if *v == value)
+}
+
+/// Whether `fragment` is still the unfolded `1 op 2` or `x + 1` (three ops).
+fn is_intact(fragment: &ExprFragment) -> bool {
+    fragment.code.len() == 3
+}
+
 #[test]
 fn value_to_ir_inlines_scalars_and_pools_structured() {
     assert!(matches!(
@@ -95,7 +117,10 @@ fn value_to_ir_rejects_functions_transitively() {
 #[test]
 fn constant_of_reads_a_lone_value_op() {
     // Every inline scalar push, and a pooled value.
-    assert_eq!(constant_of(&[Ir::Ready(Bytecode::PushNull)]), Some(Value::Null));
+    assert_eq!(
+        constant_of(&[Ir::Ready(Bytecode::PushNull)]),
+        Some(Value::Null)
+    );
     assert_eq!(
         constant_of(&[Ir::Ready(Bytecode::PushTrue)]),
         Some(Value::Bool(true))
@@ -150,7 +175,13 @@ fn a_non_foldable_fragment_is_left_alone() {
         foldable: false,
     };
     let fold_vm = FoldVm::new();
-    assert_eq!(builder(&options, &fold_vm).fold_if_eligible(fragment).code.len(), 3);
+    assert_eq!(
+        builder(&options, &fold_vm)
+            .fold_if_eligible(fragment)
+            .code
+            .len(),
+        3
+    );
 }
 
 #[test]
@@ -158,7 +189,10 @@ fn folding_is_skipped_when_the_option_is_off() {
     let options = options(false);
     let fold_vm = FoldVm::new();
     assert_eq!(
-        builder(&options, &fold_vm).fold_if_eligible(arithmetic(Bytecode::Add)).code.len(),
+        builder(&options, &fold_vm)
+            .fold_if_eligible(arithmetic(Bytecode::Add))
+            .code
+            .len(),
         3
     );
 }
@@ -192,4 +226,158 @@ fn a_fragment_that_errors_when_evaluated_is_kept_as_bytecode() {
     let fold_vm = FoldVm::new();
     let folded = builder(&options, &fold_vm).fold_if_eligible(fragment);
     assert_eq!(folded.code.len(), 3, "the original bytecode is kept");
+}
+
+// --- fold_siblings / fold_sibling_list ---
+//
+// The rule under test: siblings that are all foldable are left for an ancestor
+// to fold whole; otherwise each foldable sibling folds now.
+
+#[test]
+fn all_foldable_siblings_are_deferred() {
+    let options = options(true);
+    let fold_vm = FoldVm::new();
+    let builder = builder(&options, &fold_vm);
+
+    let ([add, mul], foldable) =
+        builder.fold_siblings([arithmetic(Bytecode::Add), arithmetic(Bytecode::Multiply)]);
+    assert!(foldable, "all siblings foldable, so the parent is");
+    assert!(is_intact(&add), "left for the parent to fold: {add:?}");
+    assert!(is_intact(&mul), "left for the parent to fold: {mul:?}");
+
+    let (list, foldable) = builder.fold_sibling_list(vec![
+        arithmetic(Bytecode::Add),
+        arithmetic(Bytecode::Multiply),
+    ]);
+    assert!(foldable, "all siblings foldable, so the parent is");
+    assert!(
+        list.iter().all(is_intact),
+        "left for the parent to fold: {list:?}"
+    );
+}
+
+#[test]
+fn a_non_foldable_sibling_makes_the_foldable_ones_fold() {
+    let options = options(true);
+    let fold_vm = FoldVm::new();
+    let builder = builder(&options, &fold_vm);
+
+    // The foldable sibling folds on either side of the non-foldable one.
+    let ([add, local], foldable) =
+        builder.fold_siblings([arithmetic(Bytecode::Add), local_plus_one()]);
+    assert!(
+        !foldable,
+        "a non-foldable sibling makes the parent non-foldable"
+    );
+    assert!(is_folded_to(&add, 3), "the foldable sibling folds: {add:?}");
+    assert!(
+        is_intact(&local),
+        "the non-foldable sibling is untouched: {local:?}"
+    );
+
+    let ([local, add], foldable) =
+        builder.fold_siblings([local_plus_one(), arithmetic(Bytecode::Add)]);
+    assert!(!foldable);
+    assert!(
+        is_intact(&local),
+        "the non-foldable sibling is untouched: {local:?}"
+    );
+    assert!(is_folded_to(&add, 3), "the foldable sibling folds: {add:?}");
+}
+
+#[test]
+fn a_sibling_list_folds_each_foldable_member_in_place() {
+    let options = options(true);
+    let fold_vm = FoldVm::new();
+    let builder = builder(&options, &fold_vm);
+
+    let (list, foldable) = builder.fold_sibling_list(vec![
+        arithmetic(Bytecode::Add),
+        local_plus_one(),
+        arithmetic(Bytecode::Multiply),
+        local_plus_one(),
+    ]);
+    assert!(!foldable);
+    assert_eq!(list.len(), 4, "no sibling is added or dropped");
+    assert!(
+        is_folded_to(&list[0], 3),
+        "1 + 2 folds in place: {:?}",
+        list[0]
+    );
+    assert!(is_intact(&list[1]), "untouched: {:?}", list[1]);
+    assert!(
+        is_folded_to(&list[2], 2),
+        "1 * 2 folds in place: {:?}",
+        list[2]
+    );
+    assert!(is_intact(&list[3]), "untouched: {:?}", list[3]);
+}
+
+#[test]
+fn no_foldable_siblings_are_left_alone() {
+    let options = options(true);
+    let fold_vm = FoldVm::new();
+    let builder = builder(&options, &fold_vm);
+
+    let ([a, b], foldable) = builder.fold_siblings([local_plus_one(), local_plus_one()]);
+    assert!(!foldable);
+    assert!(is_intact(&a) && is_intact(&b));
+
+    let (list, foldable) = builder.fold_sibling_list(vec![local_plus_one(), local_plus_one()]);
+    assert!(!foldable);
+    assert!(list.iter().all(is_intact));
+}
+
+#[test]
+fn no_siblings_is_foldable() {
+    // A node with no children (e.g. an empty array literal) has nothing
+    // stopping it from folding.
+    let options = options(true);
+    let fold_vm = FoldVm::new();
+    let builder = builder(&options, &fold_vm);
+
+    let ([], foldable) = builder.fold_siblings([]);
+    assert!(foldable);
+
+    let (list, foldable) = builder.fold_sibling_list(Vec::new());
+    assert!(foldable);
+    assert!(list.is_empty());
+}
+
+#[test]
+fn a_failing_sibling_fold_keeps_its_bytecode() {
+    // `1 / 0` is due to fold, but errors, so it stays for runtime.
+    let options = options(true);
+    let fold_vm = FoldVm::new();
+    let zero_division = ExprFragment {
+        code: vec![
+            Ir::Ready(Bytecode::PushInt(1)),
+            Ir::Ready(Bytecode::PushInt(0)),
+            Ir::Ready(Bytecode::Divide),
+        ],
+        foldable: true,
+    };
+    let ([divide, _], _) =
+        builder(&options, &fold_vm).fold_siblings([zero_division, local_plus_one()]);
+    assert!(
+        is_intact(&divide),
+        "the erroring fold is abandoned: {divide:?}"
+    );
+}
+
+#[test]
+fn sibling_folding_respects_the_option() {
+    // With folding off, the rule still reports foldability but folds nothing.
+    let options = options(false);
+    let fold_vm = FoldVm::new();
+    let builder = builder(&options, &fold_vm);
+
+    let ([add, _], foldable) = builder.fold_siblings([arithmetic(Bytecode::Add), local_plus_one()]);
+    assert!(!foldable);
+    assert!(is_intact(&add), "folding is off: {add:?}");
+
+    let (list, foldable) =
+        builder.fold_sibling_list(vec![arithmetic(Bytecode::Add), local_plus_one()]);
+    assert!(!foldable);
+    assert!(is_intact(&list[0]), "folding is off: {:?}", list[0]);
 }

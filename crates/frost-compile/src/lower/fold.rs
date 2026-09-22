@@ -6,6 +6,12 @@
 //! code replaced by a push of the result. Evaluating on the VM (rather than a
 //! separate interpreter) keeps folding bit-for-bit consistent with runtime.
 //!
+//! Each maximal foldable subtree is folded exactly once, at its root. A node
+//! whose children are all foldable is itself foldable, so it defers: an ancestor
+//! folds it whole. A node with any non-foldable child cannot fold, so each of
+//! its foldable children is a maximal subtree and folds there. A fold point
+//! (e.g. a statement or a `def` rhs) folds whatever reaches it still foldable.
+//!
 //! If evaluation errors (e.g. division by zero), the fold is abandoned and the
 //! original bytecode kept, so the error surfaces at runtime, and only if that
 //! code actually executes. A VM *panic*, by contrast, is an internal compiler
@@ -137,6 +143,38 @@ impl FunctionBuilder<'_> {
             // function): keep the bytecode.
             None => fragment,
         }
+    }
+
+    /// Apply the folding rule (see the module doc) to one node's children: if any
+    /// is not foldable, fold each that is. Also returns whether all are foldable.
+    pub(super) fn fold_siblings<const N: usize>(
+        &self,
+        siblings: [ExprFragment; N],
+    ) -> ([ExprFragment; N], bool) {
+        let all_foldable = siblings.iter().all(|sibling| sibling.foldable);
+        if all_foldable {
+            return (siblings, true);
+        }
+        (
+            siblings.map(|sibling| self.fold_if_eligible(sibling)),
+            false,
+        )
+    }
+
+    /// [`fold_siblings`](Self::fold_siblings) for a variable number of children.
+    pub(super) fn fold_sibling_list(
+        &self,
+        siblings: Vec<ExprFragment>,
+    ) -> (Vec<ExprFragment>, bool) {
+        let all_foldable = siblings.iter().all(|sibling| sibling.foldable);
+        if all_foldable {
+            return (siblings, true);
+        }
+        let folded = siblings
+            .into_iter()
+            .map(|sibling| self.fold_if_eligible(sibling))
+            .collect();
+        (folded, false)
     }
 
     /// Assemble a self-contained `( -- v )` fragment and evaluate it on the
