@@ -138,6 +138,27 @@ fn a_shadow_constant_is_independent_of_the_binding_it_shadows() {
     );
 }
 
+#[test]
+fn a_binding_may_shadow_a_same_scope_capture() {
+    let mut locals = Locals::new();
+    let captured = locals
+        .define(LocalInfo {
+            name: "x".to_string(),
+            span: span(0),
+            exported: false,
+            constant: None,
+            kind: LocalKind::Capture,
+        })
+        .unwrap();
+    // `def x = x`: the rhs reads the capture, then a fresh `x` is bound. The
+    // binding shadows the capture rather than colliding with it.
+    let bound = bind(&mut locals, "x", span(1)).unwrap();
+    assert_ne!(captured, bound);
+    assert_eq!(locals.resolve("x"), Some(bound), "the binding wins once defined");
+    // A second real binding of the same name is still a duplicate.
+    assert_eq!(bind(&mut locals, "x", span(2)), Err(span(1)));
+}
+
 // -- Slot plan --
 
 /// A `DefLocal` of `id`, the way body code introduces a binding.

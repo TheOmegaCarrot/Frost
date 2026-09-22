@@ -59,10 +59,13 @@ impl Locals {
     /// allocates a fresh id.
     pub(super) fn define(&mut self, info: LocalInfo) -> Result<LocalId, SourceSpan> {
         let floor = self.marks.last().copied().unwrap_or(0);
-        if let Some(id) = self.live[floor..]
-            .iter()
-            .find(|id| self.info(**id).name == info.name)
-        {
+        // A binding may shadow a same-named capture: the capture is the enclosing
+        // scope's value (used by an rhs before the binding exists), the binding a
+        // fresh local. Only another binding in this scope is a real duplicate.
+        if let Some(id) = self.live[floor..].iter().find(|id| {
+            let existing = self.info(**id);
+            existing.name == info.name && existing.kind != LocalKind::Capture
+        }) {
             return Err(self.info(*id).span);
         }
         let id = LocalId(self.infos.len());

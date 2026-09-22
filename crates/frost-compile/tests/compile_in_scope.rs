@@ -93,6 +93,19 @@ fn implicit_export_exports_every_top_level_binding() {
 }
 
 #[test]
+fn a_top_level_binding_may_shadow_a_capture_of_the_same_name() {
+    // `def x = x`: the rhs captures the enclosing `x`, and the def binds a new
+    // `x` from it. The capture must not read as a duplicate binding.
+    let result = run_in_scope("def x = x\nx", &["x"], vec![("x", Value::Int(7))], true);
+    assert_eq!(result.tail(), &Value::Int(7));
+    assert_eq!(
+        exports(&result).get("x"),
+        Some(&Value::Int(7)),
+        "the redefined `x` is what gets exported"
+    );
+}
+
+#[test]
 fn without_implicit_export_a_plain_def_is_not_exported() {
     // The same program, implicit export off: `y` runs but is not harvested.
     let result = run_in_scope("def y = x\ny", &["x"], vec![("x", Value::Int(5))], false);
