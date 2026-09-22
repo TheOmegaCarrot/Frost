@@ -254,6 +254,12 @@ impl Vm {
         self
     }
 
+    /// Whether the running script is being imported by another module (import
+    /// depth above zero) rather than run directly. Backs the `imported()` global.
+    pub(crate) fn is_imported(&self) -> bool {
+        self.import_depth > 0
+    }
+
     /// A factory for Vms nested inside this one: same configuration and importer,
     /// one import level deeper.
     /// Resource counters start fresh in the child.

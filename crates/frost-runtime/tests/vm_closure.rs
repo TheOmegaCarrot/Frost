@@ -152,64 +152,6 @@ fn close_seats_each_capture_in_its_own_slot() {
 // close: the internal `imported` capture
 // ============================================================
 
-#[test]
-fn close_injects_imported_capture() {
-    // `imported` is runtime-supplied, so an empty map still closes; it reads false.
-    let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["imported"]);
-    let closure = f.assert_trusted().close(BTreeMap::new()).unwrap();
-    assert_eq!(
-        run(Vm::factory().build(closure).unwrap()).tail(),
-        &Value::Bool(false)
-    );
-}
-
-#[test]
-fn close_does_not_let_host_override_imported() {
-    // A host `imported` entry is ignored; the injected false wins.
-    let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["imported"]);
-    let closure = f
-        .assert_trusted()
-        .close(capmap(vec![("imported", Value::Bool(true))]))
-        .unwrap();
-    assert_eq!(
-        run(Vm::factory().build(closure).unwrap()).tail(),
-        &Value::Bool(false)
-    );
-}
-
-#[test]
-fn close_injects_imported_at_its_name_table_slot() {
-    // `imported` is at slot 1, after host capture `x`. The injected false must
-    // land at slot 1 (its name-table position), not a fixed slot 0.
-    let read_imported = compiled(
-        vec![Pop, LoadLocal(1)],
-        Arity::Exact(0),
-        2,
-        &["x", "imported"],
-    );
-    let c1 = read_imported
-        .assert_trusted()
-        .close(capmap(vec![("x", Value::Int(7))]))
-        .unwrap();
-    assert_eq!(
-        run(Vm::factory().build(c1).unwrap()).tail(),
-        &Value::Bool(false)
-    );
-
-    // ...and the host capture `x` is seated at slot 0, undisturbed by the injection.
-    let read_x = compiled(
-        vec![Pop, LoadLocal(0)],
-        Arity::Exact(0),
-        2,
-        &["x", "imported"],
-    );
-    let c2 = read_x
-        .assert_trusted()
-        .close(capmap(vec![("x", Value::Int(7))]))
-        .unwrap();
-    assert_eq!(run(Vm::factory().build(c2).unwrap()).tail(), &Value::Int(7));
-}
-
 // ============================================================
 // into_closure
 // ============================================================
@@ -234,17 +176,6 @@ fn into_closure_errors_when_host_capture_needed() {
         MissingCaptures {
             names: vec!["x".to_string()]
         }
-    );
-}
-
-#[test]
-fn into_closure_ok_for_internal_only_captures() {
-    // Captures only `imported` (runtime-supplied), so into_closure still succeeds.
-    let f = compiled(vec![Pop, LoadLocal(0)], Arity::Exact(0), 1, &["imported"]);
-    let closure = f.assert_trusted().into_closure().unwrap();
-    assert_eq!(
-        run(Vm::factory().build(closure).unwrap()).tail(),
-        &Value::Bool(false)
     );
 }
 

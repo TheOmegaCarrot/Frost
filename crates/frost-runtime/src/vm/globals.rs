@@ -212,6 +212,7 @@ define_globals! {
     "mutable_cell"          [Impure] => mutable_cell_global(),
 
     // --- Import ---
+    "imported"              [Impure] => imported_global(),
     "import"                [Impure] => import_global(),
 }
 

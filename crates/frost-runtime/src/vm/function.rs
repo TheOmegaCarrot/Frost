@@ -86,16 +86,10 @@ impl TrustedProgram {
         let mut seated = Vec::with_capacity(function.num_captures);
         let mut missing = Vec::new();
         for entry in &function.name_table[..function.num_captures] {
-            match entry.name.as_str() {
-                // Frost-internal capture: runtime-supplied, not overridable.
-                // (Always false for now: direct execution; the future `import`
-                // path will need to supply `true`.)
-                "imported" => seated.push(Value::Bool(false)),
-                name => match captures.get(name) {
-                    Some(value) => seated.push(value.clone()),
-                    // Keep scanning so every missing name is reported at once.
-                    None => missing.push(name.to_owned()),
-                },
+            match captures.get(entry.name.as_str()) {
+                Some(value) => seated.push(value.clone()),
+                // Keep scanning so every missing name is reported at once.
+                None => missing.push(entry.name.clone()),
             }
         }
         if !missing.is_empty() {

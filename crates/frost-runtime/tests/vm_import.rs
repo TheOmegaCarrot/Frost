@@ -275,3 +275,61 @@ fn an_unidentified_script_imports_with_no_module_id() {
     let value = run_with(Arc::new(EchoesImporter), Default::default(), None).unwrap();
     assert_eq!(value, Value::Null);
 }
+
+// ============================================================
+// The `imported()` global
+// ============================================================
+
+/// A module whose body is `imported()`: it reports whether the Vm running it is
+/// at import depth above zero.
+fn reports_imported() -> Arc<CompiledFunction> {
+    Arc::new(CompiledFunction {
+        version: FormatVersion,
+        name: "module".to_string(),
+        code: vec![Pop, LoadGlobal(global_slot("imported")), Call(0)],
+        child_fns: Vec::new(),
+        constants: Vec::new(),
+        key_constants: Vec::new(),
+        name_table: Vec::new(),
+        num_captures: 0,
+        arity: Arity::Exact(0),
+    })
+}
+
+/// Serves every requested module by running [`reports_imported`] in a child Vm,
+/// exactly as a real resolver runs an imported module.
+#[derive(Debug)]
+struct RunsImportedReporter;
+
+impl ImportResolver for RunsImportedReporter {
+    fn resolve(&self, ctx: &ImportCtx, _module_spec: &str) -> Result<Option<Value>, FrostError> {
+        let closure = reports_imported()
+            .assert_trusted()
+            .into_closure()
+            .expect("no captures");
+        let value = ctx
+            .child_factory()
+            .build(closure)
+            .map_err(|e| FrostError::from_string(e.message().to_string()))?
+            .run()
+            .map_err(frost_runtime::RunError::into_error)?
+            .tail()
+            .clone();
+        Ok(Some(value))
+    }
+}
+
+#[test]
+fn imported_is_false_when_run_directly() {
+    // A top-level script runs at depth 0, so it observes itself as not imported.
+    let v = run(vec![], vec![LoadGlobal(global_slot("imported")), Call(0)]).unwrap();
+    assert_eq!(v, Value::Bool(false));
+}
+
+#[test]
+fn imported_is_true_inside_an_imported_module() {
+    // The outer program imports a module whose body is `imported()`. That module
+    // runs in a child Vm (depth 1), so it observes itself as imported.
+    let v = run_with(Arc::new(RunsImportedReporter), Default::default(), None).unwrap();
+    assert_eq!(v, Value::Bool(true));
+}

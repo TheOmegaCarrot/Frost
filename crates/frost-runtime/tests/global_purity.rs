@@ -60,8 +60,9 @@ fn representative_pure_globals_are_pure() {
 
 #[test]
 fn side_effecting_globals_are_impure() {
-    // The only globals with an effect of their own: I/O, mutable state, imports.
-    for name in ["print", "mprint", "mutable_cell", "import"] {
+    // The only globals with an effect of their own: I/O, mutable state, imports,
+    // and `imported`, which reads live Vm state and so is never a constant.
+    for name in ["print", "mprint", "mutable_cell", "import", "imported"] {
         assert_eq!(purity(name), Purity::Impure, "`{name}` should be Impure");
     }
 }

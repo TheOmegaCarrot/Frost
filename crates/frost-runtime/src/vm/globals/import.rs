@@ -2,6 +2,15 @@ use std::sync::Arc;
 
 use crate::{Arity, Bytecode, Closure, CompiledFunction, FormatVersion, Value};
 
+/// The `imported()` global: `true` when the running script is being imported by
+/// another module, `false` when it is run directly. It reads the running Vm's
+/// import depth, so it is never a compile-time constant.
+pub(super) fn imported_global() -> Value {
+    Value::native("imported", Arity::Exact(0), |ctx, _args| {
+        Ok(Value::Bool(ctx.vm.is_imported()))
+    })
+}
+
 pub(super) fn import_global() -> Value {
     Value::Closure(Arc::new(Closure {
         captures: Vec::new(),
