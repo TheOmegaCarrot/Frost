@@ -39,11 +39,13 @@ A workspace of focused crates:
 |---|---|
 | `frost-parse` | Source text to AST: lexer, recursive-descent parser, diagnostics. Grammar only; semantics belong to the compiler. Intentionally lax in what it accepts, deferring many errors to the compiler. |
 | `frost-runtime` | The `core` (the `Value` type, its variants, operators, conversions) and the `vm` (bytecode execution, globals, native functions, arity/type params, import, serialization). |
+| `frost-compile` | AST to bytecode: scope resolution, capture discovery, constant folding and propagation, assembly. |
 | `frost-cli` | The `frost` binary; runs a `.frst` file. |
 | `frost-astviz` | AST visualization; compiles the tree-sitter Frost grammar from `editor/`. |
 
-The compiler (AST to bytecode) is planned as its own crate and is not yet present; some
-globals are intentionally stubbed until it lands.
+The compiler is under active development: unimplemented lowerings are `todo!()`. Some
+globals are intentionally stubbed until the compiler can compile the Frost-source tests that
+will cover them.
 
 Design documents and working scratch live in `tmp/` (git-ignored) at the repo root.
 
