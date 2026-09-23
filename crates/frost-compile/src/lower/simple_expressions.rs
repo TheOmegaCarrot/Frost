@@ -3,7 +3,7 @@ mod tests;
 
 use std::num::FpCategory;
 
-use frost_parse::ast::{Literal, SourceSpan};
+use frost_parse::ast::{Expr, Literal, SourceSpan, Spanned, UnaryOp};
 use frost_runtime::{Bytecode, FrostError, FrostFloat};
 
 use crate::{
@@ -84,5 +84,23 @@ impl FunctionBuilder<'_> {
             .code("unbound name".into())
             .label_primary(span, "not found in this scope".into())
             .into())
+    }
+
+    pub(super) fn compile_unary(
+        &mut self,
+        op: &Spanned<UnaryOp>,
+        operand: &Spanned<Expr>,
+    ) -> Result<ExprFragment, CompilerErrors> {
+        let operand = self.compile_expression(operand)?;
+
+        let operation = Ir::Ready(match op.node {
+            UnaryOp::Negate => Bytecode::Negate,
+            UnaryOp::Not => Bytecode::LogicalNot,
+        });
+
+        Ok(ExprFragment {
+            code: operand.code.into_iter().chain([operation]).collect(),
+            foldable: operand.foldable,
+        })
     }
 }

@@ -214,7 +214,7 @@ impl FunctionBuilder<'_> {
             Expr::NameLookup(name) => self.compile_name_lookup(name, expr.span),
             Expr::BinOp { left, op, right } => self.compile_binop(left, op, right),
             Expr::Logical { left, op, right } => self.compile_logical(left, op, right),
-            Expr::UnaryOp { op, operand } => todo!(),
+            Expr::UnaryOp { op, operand } => self.compile_unary(op, operand),
             Expr::If {
                 condition,
                 consequent,
