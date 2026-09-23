@@ -166,6 +166,18 @@ impl Script {
         baseline
     }
 
+    /// The top-level function's code under exactly `optimization`.
+    ///
+    /// A code-shape test pins the options it is about and leaves the rest off,
+    /// e.g. `OptimizationOptions { branch_eliminate: true, ..UNOPTIMIZED }`, so no
+    /// other optimization, present or future, changes the code it inspects.
+    pub(crate) fn code(&self, optimization: OptimizationOptions) -> Emitted {
+        Emitted {
+            code: self.code_under(optimization),
+            optimization,
+        }
+    }
+
     /// The top-level function's code under each optimization permutation that
     /// `select` accepts.
     pub(crate) fn code_where(&self, select: impl Fn(&OptimizationOptions) -> bool) -> Vec<Emitted> {

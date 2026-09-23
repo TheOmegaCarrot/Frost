@@ -3,7 +3,7 @@ use frost_runtime::Bytecode;
 
 use crate::{
     CompilerErrors,
-    lower::{ExprFragment, FunctionBuilder, Ir, JumpType},
+    lower::{ExprFragment, FunctionBuilder, Ir, JumpType, fold::constant_of},
 };
 
 impl FunctionBuilder<'_> {
@@ -27,7 +27,16 @@ impl FunctionBuilder<'_> {
         let ([condition, consequent, alternate], foldable) =
             self.fold_siblings([condition, consequent, alternate]);
 
-        // TODO: branch elimination handling
+        if self.options.optimization_options.branch_eliminate
+            && let Some(condition_value) = constant_of(&condition.code)
+        {
+            // TODO: possibly wasting a fold of the discarded branch
+            return Ok(if condition_value.is_truthy() {
+                consequent
+            } else {
+                alternate
+            });
+        }
 
         let to_alternate = self.next_label();
         let past_alternate = self.next_label();

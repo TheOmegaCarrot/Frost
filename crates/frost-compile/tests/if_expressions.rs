@@ -14,7 +14,7 @@
 
 mod common;
 
-use common::{Emitted, Script, raises, run};
+use common::{Emitted, Script, UNOPTIMIZED, raises, run};
 use frost_compile::OptimizationOptions;
 use frost_runtime::{Bytecode, Value};
 
@@ -474,4 +474,215 @@ fn a_constant_if_folds_as_a_sibling() {
         assert_eq!(emitted.count(&Bytecode::PushInt(2)), 1, "{emitted:?}");
         assert_eq!(emitted.count(&Bytecode::Multiply), 1, "{emitted:?}");
     }
+}
+
+// --- Branch elimination ---
+//
+// Each test pins exactly the options it is about, so no other optimization
+// changes the code it inspects.
+
+const ELIMINATE: OptimizationOptions = OptimizationOptions {
+    branch_eliminate: true,
+    ..UNOPTIMIZED
+};
+
+/// The code of `source`, with `x` a runtime-only capture, under exactly
+/// `optimization`.
+fn code(source: &str, optimization: OptimizationOptions) -> Emitted {
+    Script::new(source)
+        .capture("x", Value::Null)
+        .code(optimization)
+}
+
+/// Whether the code reads the runtime-only `x`.
+fn loads_x(emitted: &Emitted) -> bool {
+    emitted
+        .code
+        .iter()
+        .any(|op| matches!(op, Bytecode::LoadLocal(_)))
+}
+
+#[test]
+fn a_truthy_constant_condition_leaves_only_the_consequent() {
+    for (source, condition) in [
+        ("if true: x else: 2", Bytecode::PushTrue),
+        ("if 0: x else: 2", Bytecode::PushInt(0)),
+    ] {
+        let emitted = code(source, ELIMINATE);
+        assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+        assert!(loads_x(&emitted), "the consequent remains: {emitted:?}");
+        assert_eq!(
+            emitted.count(&condition),
+            0,
+            "the condition is dropped: {emitted:?}"
+        );
+        assert_eq!(
+            emitted.count(&Bytecode::PushInt(2)),
+            0,
+            "the alternate is dropped: {emitted:?}"
+        );
+    }
+}
+
+#[test]
+fn a_falsy_constant_condition_leaves_only_the_alternate() {
+    for (source, condition) in [
+        ("if false: 1 else: x", Bytecode::PushFalse),
+        ("if null: 1 else: x", Bytecode::PushNull),
+    ] {
+        let emitted = code(source, ELIMINATE);
+        assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+        assert!(loads_x(&emitted), "the alternate remains: {emitted:?}");
+        assert_eq!(
+            emitted.count(&condition),
+            0,
+            "the condition is dropped: {emitted:?}"
+        );
+        assert_eq!(
+            emitted.count(&Bytecode::PushInt(1)),
+            0,
+            "the consequent is dropped: {emitted:?}"
+        );
+    }
+}
+
+#[test]
+fn a_falsy_constant_condition_without_else_leaves_null() {
+    let emitted = code("if false: x", ELIMINATE);
+    assert_eq!(jumps(&emitted), 0, "{emitted:?}");
+    assert!(!loads_x(&emitted), "the consequent is dropped: {emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushFalse), 0, "{emitted:?}");
+    assert_eq!(
+        emitted.count(&Bytecode::PushNull),
+        1,
+        "the implicit null: {emitted:?}"
+    );
+}
+
+#[test]
+fn elimination_needs_no_folding() {
+    // Both branches are constant, but folding is off: elimination alone picks one.
+    let emitted = code("if true: 1 else: 2", ELIMINATE);
+    assert_eq!(jumps(&emitted), 0, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(1)), 1, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(2)), 0, "{emitted:?}");
+}
+
+#[test]
+fn a_discarded_raising_branch_is_gone() {
+    for source in [
+        format!("if true: x else: {RAISE}"),
+        format!("if false: {RAISE} else: x"),
+        format!("if false: {RAISE}"),
+    ] {
+        let emitted = code(&source, ELIMINATE);
+        assert_eq!(jumps(&emitted), 0, "{emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::Divide), 0, "{emitted:?}");
+    }
+}
+
+#[test]
+fn a_taken_raising_branch_is_kept_for_runtime() {
+    let emitted = code(&format!("if true: {RAISE} else: x"), ELIMINATE);
+    assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+    assert_eq!(
+        emitted.count(&Bytecode::Divide),
+        1,
+        "the division remains, to raise at runtime: {emitted:?}"
+    );
+    assert!(!loads_x(&emitted), "the alternate is dropped: {emitted:?}");
+}
+
+#[test]
+fn a_folded_condition_decides() {
+    // A computed condition beside a runtime branch folds as a sibling, which
+    // makes it a known constant.
+    let eliminate_and_fold = OptimizationOptions {
+        constant_fold: true,
+        ..ELIMINATE
+    };
+    for (source, keeps_x) in [
+        ("if 1 == 1: x else: 2", true),
+        ("if 1 == 2: x else: 2", false),
+    ] {
+        let emitted = code(source, eliminate_and_fold);
+        assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::CompareEqual), 0, "{emitted:?}");
+        assert_eq!(loads_x(&emitted), keeps_x, "{emitted:?}");
+    }
+}
+
+#[test]
+fn a_propagated_condition_decides() {
+    let eliminate_and_propagate = OptimizationOptions {
+        constant_propagate: true,
+        ..ELIMINATE
+    };
+    for (source, keeps_x) in [
+        ("def c = true; if c: x else: 2", true),
+        ("def c = null; if c: x else: 2", false),
+    ] {
+        let emitted = code(source, eliminate_and_propagate);
+        assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+        assert_eq!(loads_x(&emitted), keeps_x, "{emitted:?}");
+    }
+}
+
+#[test]
+fn elimination_cascades_through_elif() {
+    // An `elif` is an `if` nested in the alternate, so it is eliminated first and
+    // its result is what the outer test chooses between.
+    let emitted = code("if false: 1 elif true: x else: 3", ELIMINATE);
+    assert_eq!(jumps(&emitted), 0, "every test is eliminated: {emitted:?}");
+    assert!(loads_x(&emitted), "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(1)), 0, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(3)), 0, "{emitted:?}");
+
+    let emitted = code("if false: 1 elif false: 2", ELIMINATE);
+    assert_eq!(jumps(&emitted), 0, "every test is eliminated: {emitted:?}");
+    assert_eq!(
+        emitted.count(&Bytecode::PushNull),
+        1,
+        "the implicit null: {emitted:?}"
+    );
+}
+
+#[test]
+fn a_constant_elif_under_a_runtime_condition_is_eliminated() {
+    // The outer test depends on `x` and stays; the inner `elif true` does not.
+    let emitted = code("if x: 1 elif true: 2 else: 3", ELIMINATE);
+    assert_eq!(
+        jumps(&emitted),
+        2,
+        "only the outer test's jumps stay: {emitted:?}"
+    );
+    assert_eq!(emitted.count(&Bytecode::PushInt(2)), 1, "{emitted:?}");
+    assert_eq!(
+        emitted.count(&Bytecode::PushInt(3)),
+        0,
+        "the inner alternate is dropped: {emitted:?}"
+    );
+}
+
+#[test]
+fn a_nested_runtime_if_survives_its_parent_elimination() {
+    let emitted = code("if true: (if x: 1 else: 2) else: 3", ELIMINATE);
+    assert_eq!(
+        jumps(&emitted),
+        2,
+        "only the inner test's jumps stay: {emitted:?}"
+    );
+    assert_eq!(emitted.count(&Bytecode::PushInt(3)), 0, "{emitted:?}");
+}
+
+#[test]
+fn a_runtime_condition_is_never_eliminated() {
+    let emitted = code("if x: 1 else: 2", ELIMINATE);
+    assert_eq!(jumps(&emitted), 2, "{emitted:?}");
+}
+
+#[test]
+fn without_elimination_a_constant_condition_is_still_tested() {
+    let emitted = code("if true: x else: 2", UNOPTIMIZED);
+    assert_eq!(jumps(&emitted), 2, "{emitted:?}");
 }
