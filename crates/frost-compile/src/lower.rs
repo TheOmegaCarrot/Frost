@@ -3,6 +3,7 @@ mod binary_operations;
 mod def;
 mod fold;
 mod globals;
+mod if_expression;
 mod locals;
 mod prewalk;
 mod simple_expressions;
@@ -219,7 +220,7 @@ impl FunctionBuilder<'_> {
                 condition,
                 consequent,
                 alternate,
-            } => todo!(),
+            } => self.compile_if_expression(condition, consequent, alternate),
             Expr::Do { body, value } => todo!(),
             Expr::Call { callee, args } => todo!(),
             Expr::SoftIndex { target, key } => todo!(),
