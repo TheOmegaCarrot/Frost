@@ -3,40 +3,10 @@
 //! to the right value, not to emit a particular opcode (which optimization is
 //! free to change).
 
-use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_program};
-use frost_runtime::{Value, Vm};
+mod common;
 
-fn options() -> CompilerOptions {
-    CompilerOptions {
-        optimization_options: OptimizationOptions {
-            constant_fold: false,
-            constant_propagate: false,
-        },
-        implicit_export: false,
-    }
-}
-
-/// Compile `source` and run it, returning the tail value.
-fn run(source: &str) -> Value {
-    let output = compile_program("test.frst", source, options()).expect("source should compile");
-    let closure = output
-        .code
-        .into_closure()
-        .expect("top level needs no captures");
-    Vm::factory()
-        .build(closure)
-        .expect("closure builds")
-        .run()
-        .map_err(frost_runtime::RunError::into_error)
-        .expect("program should run")
-        .tail()
-        .clone()
-}
-
-/// Compile `source`, expecting a compile error.
-fn compile_error(source: &str) -> CompilerErrors {
-    compile_program("test.frst", source, options()).expect_err("source should not compile")
-}
+use common::{compile_errors, run};
+use frost_runtime::Value;
 
 #[test]
 fn int_literal() {
@@ -93,7 +63,7 @@ fn float_that_overflows_to_infinity_is_a_compile_error() {
     // A finite-looking literal whose magnitude overflows f64 is rejected at
     // compile time by the Float validator (the reachable path, since `NaN`
     // and `Infinity` are not writable literals).
-    let rendered = compile_error("1e400").render_plain();
+    let rendered = compile_errors("1e400").render_plain();
     assert!(
         rendered.contains("Float"),
         "the diagnostic names the Float validator that rejected it:\n{rendered}"

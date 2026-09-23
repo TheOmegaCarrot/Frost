@@ -12,120 +12,50 @@
 //! every mix of these forms through each chain shape, against a reference
 //! evaluator of the Lua semantics.
 //!
-//! Every case runs under each combination of optimization options, which must
-//! all agree: optimization never changes a result.
+//! The harness runs every behavioral case under every optimization permutation.
 
-use std::collections::BTreeMap;
+mod common;
 
-use frost_compile::{CompilerOptions, OptimizationOptions, compile_in_scope};
-use frost_runtime::{Bytecode, Value, Vm};
-
-/// Every `(constant_fold, constant_propagate)` combination.
-const ALL_OPTIONS: [(bool, bool); 4] = [(false, false), (false, true), (true, false), (true, true)];
+use common::{Emitted, Script, run};
+use frost_runtime::{Bytecode, Value};
 
 /// The operand that raises when evaluated, and the message it raises.
 const RAISE: &str = "(1 / 0)";
 const RAISE_MESSAGE: &str = "Division by zero";
 
-fn options(constant_fold: bool, constant_propagate: bool) -> CompilerOptions {
-    CompilerOptions {
-        optimization_options: OptimizationOptions {
-            constant_fold,
-            constant_propagate,
-        },
-        implicit_export: false,
-    }
-}
-
-/// Compile `source` with `captures` as its enclosing scope, close over them, and
-/// run it: the tail value, or the runtime error's message.
-fn outcome(
-    source: &str,
-    captures: &[(&str, Value)],
-    (fold, propagate): (bool, bool),
-) -> Result<Value, String> {
-    let names: Vec<&str> = captures.iter().map(|(name, _)| *name).collect();
-    let output = compile_in_scope("test.frst", source, options(fold, propagate), &names)
-        .unwrap_or_else(|errors| {
-            panic!(
-                "{source:?} should compile (fold: {fold}, propagate: {propagate}):\n{}",
-                errors.render_plain()
-            )
-        });
-    let values: BTreeMap<String, Value> = captures
-        .iter()
-        .map(|(name, value)| (name.to_string(), value.clone()))
-        .collect();
-    let closure = output
-        .code
-        .close(values)
-        .expect("every capture is supplied");
-    Vm::factory()
-        .build(closure)
-        .expect("closure builds")
-        .run()
-        .map(|result| result.tail().clone())
-        .map_err(|error| error.into_error().message().into_owned())
-}
-
-/// Run `source` under every option combination, requiring them all to agree.
-fn evaluate(source: &str, captures: &[(&str, Value)]) -> Result<Value, String> {
-    let baseline = outcome(source, captures, ALL_OPTIONS[0]);
-    for option_set in &ALL_OPTIONS[1..] {
-        assert_eq!(
-            outcome(source, captures, *option_set),
-            baseline,
-            "{source:?} with {captures:?}: (fold, propagate) = {option_set:?} \
-             disagrees with no optimization"
-        );
-    }
-    baseline
-}
-
-/// The value of `source` with `captures`, which must run without error.
+/// The value of `source` with `captures` in scope, which must run.
 fn run_with(source: &str, captures: &[(&str, Value)]) -> Value {
-    evaluate(source, captures).unwrap_or_else(|message| {
-        panic!("{source:?} with {captures:?} should run, but raised: {message}")
-    })
+    Script::new(source).captures(captures).run()
 }
 
-/// The value of `source`, which must run without error.
-fn run(source: &str) -> Value {
-    run_with(source, &[])
+/// Assert that `source`, with `captures` in scope, raises the [`RAISE`]
+/// operand's error.
+fn assert_raises_with(source: &str, captures: &[(&str, Value)]) {
+    let message = Script::new(source).captures(captures).raises();
+    assert!(
+        message.contains(RAISE_MESSAGE),
+        "{source:?} with {captures:?} raised the wrong error: {message}"
+    );
 }
 
-/// Assert that `source` raises the [`RAISE`] operand's error.
 fn assert_raises(source: &str) {
-    match evaluate(source, &[]) {
-        Ok(value) => panic!("{source:?} should raise, but produced {value:?}"),
-        Err(message) => assert!(
-            message.contains(RAISE_MESSAGE),
-            "{source:?} raised the wrong error: {message}"
-        ),
-    }
+    assert_raises_with(source, &[]);
 }
 
-/// The top-level function's emitted bytecode, with `x` as a runtime-only
-/// capture and propagation off.
-fn code(source: &str, fold: bool) -> Vec<Bytecode> {
-    compile_in_scope("test.frst", source, options(fold, false), &["x"])
-        .expect("source should compile")
+/// The code of `source`, with `x` a runtime-only capture, under every
+/// optimization permutation with constant folding on (or off, if `fold` is
+/// false).
+fn emitted(source: &str, fold: bool) -> Vec<Emitted> {
+    Script::new(source)
+        .capture("x", Value::Null)
+        .code_where(|optimization| optimization.constant_fold == fold)
+}
+
+/// How many conditional jumps (the short-circuit tests) remain in the code.
+fn jumps(emitted: &Emitted) -> usize {
+    emitted
         .code
-        .close(BTreeMap::from([("x".to_string(), Value::Null)]))
-        .expect("`x` is supplied")
-        .inner_fn()
-        .code
-        .clone()
-}
-
-/// How many times `op` appears in `code`.
-fn count(code: &[Bytecode], op: &Bytecode) -> usize {
-    code.iter().filter(|candidate| *candidate == op).count()
-}
-
-/// How many conditional jumps (the short-circuit tests) remain in `code`.
-fn jumps(code: &[Bytecode]) -> usize {
-    code.iter()
+        .iter()
         .filter(|op| {
             matches!(
                 op,
@@ -212,14 +142,9 @@ fn a_runtime_operand_short_circuits() {
     let or_source = format!("x or {RAISE}");
     assert_eq!(run_with(&and_source, &[("x", Value::Null)]), Value::Null);
     assert_eq!(run_with(&or_source, &[("x", Value::Int(3))]), Value::Int(3));
-    for (source, x) in [(and_source, Value::Int(3)), (or_source, Value::Null)] {
-        let message = evaluate(&source, &[("x", x.clone())])
-            .expect_err("the undecided right operand runs, and raises");
-        assert!(
-            message.contains(RAISE_MESSAGE),
-            "{source:?} with x = {x:?}: {message}"
-        );
-    }
+    // Undecided, so the right operand runs, and raises.
+    assert_raises_with(&and_source, &[("x", Value::Int(3))]);
+    assert_raises_with(&or_source, &[("x", Value::Null)]);
 }
 
 // --- Lua idioms ---
@@ -245,22 +170,18 @@ fn or_supplies_a_default() {
 #[test]
 fn and_or_is_a_conditional_expression() {
     let source = r#"cond and "yes" or "no""#;
-    assert_eq!(
-        run_with(source, &[("cond", Value::Bool(true))]),
-        Value::from("yes")
-    );
-    assert_eq!(
-        run_with(source, &[("cond", Value::Bool(false))]),
-        Value::from("no")
-    );
-    assert_eq!(
-        run_with(source, &[("cond", Value::Null)]),
-        Value::from("no")
-    );
-    assert_eq!(
-        run_with(source, &[("cond", Value::Int(0))]),
-        Value::from("yes")
-    );
+    for (cond, expected) in [
+        (Value::Bool(true), "yes"),
+        (Value::Bool(false), "no"),
+        (Value::Null, "no"),
+        (Value::Int(0), "yes"),
+    ] {
+        assert_eq!(
+            run_with(source, &[("cond", cond.clone())]),
+            Value::from(expected),
+            "cond = {cond:?}"
+        );
+    }
 }
 
 #[test]
@@ -415,7 +336,7 @@ fn literal_source(value: &Value) -> &'static str {
 }
 
 /// Check `template` (with `{0}`, `{1}`, ... for operands) against `chain`, for
-/// every assignment of operand forms, under every option set.
+/// every assignment of operand forms.
 fn check_chain(template: &str, chain: &Chain, arity: usize) {
     let forms = forms();
     // Every assignment of forms to the `arity` operands: counting in base
@@ -443,22 +364,21 @@ fn check_chain(template: &str, chain: &Chain, arity: usize) {
             };
             source = source.replace(&format!("{{{index}}}"), &text);
         }
-        let captures: Vec<(&str, Value)> = captures
+        let script = captures
             .iter()
-            .map(|(name, value)| (name.as_str(), value.clone()))
-            .collect();
+            .fold(Script::new(&source), |script, (name, value)| {
+                script.capture(name, value.clone())
+            });
 
         let expected = reference(chain, &chosen);
-        for option_set in ALL_OPTIONS {
-            let actual = outcome(&source, &captures, option_set);
-            match (&expected, &actual) {
-                (Some(expected), Ok(actual)) if expected == actual => {}
-                (None, Err(message)) if message.contains(RAISE_MESSAGE) => {}
-                _ => panic!(
-                    "{source:?} with {captures:?}, (fold, propagate) = {option_set:?}: \
-                     expected {expected:?} (None: raises), got {actual:?}"
-                ),
-            }
+        let actual = script.outcome().map(|finished| finished.tail);
+        match (&expected, &actual) {
+            (Some(expected), Ok(actual)) if expected == actual => {}
+            (None, Err(message)) if message.contains(RAISE_MESSAGE) => {}
+            _ => panic!(
+                "{source:?} with {captures:?}: expected {expected:?} (None: raises), \
+                 got {actual:?}"
+            ),
         }
     }
 }
@@ -556,15 +476,16 @@ fn a_constant_logical_folds_to_its_value() {
         ("null or false or 5", Bytecode::PushInt(5)),
         ("1 and 2 and null", Bytecode::PushNull),
     ] {
-        let folded = code(source, true);
-        assert_eq!(jumps(&folded), 0, "{source:?}: the test is folded away");
-        assert_eq!(count(&folded, &value), 1, "{source:?}: its value is pushed");
-
-        let unfolded = code(source, false);
-        assert!(
-            jumps(&unfolded) > 0,
-            "{source:?}: with folding off the test stays"
-        );
+        for emitted in emitted(source, true) {
+            assert_eq!(jumps(&emitted), 0, "the test is folded away: {emitted:?}");
+            assert_eq!(emitted.count(&value), 1, "its value is pushed: {emitted:?}");
+        }
+        for emitted in emitted(source, false) {
+            assert!(
+                jumps(&emitted) > 0,
+                "with folding off the test stays: {emitted:?}"
+            );
+        }
     }
 }
 
@@ -572,65 +493,74 @@ fn a_constant_logical_folds_to_its_value() {
 fn a_fold_short_circuits_past_a_raising_operand() {
     // The skipped `1 / 0` never runs in the fold VM either, so the whole
     // expression folds.
-    let folded = code(&format!("false and {RAISE}"), true);
-    assert_eq!(jumps(&folded), 0);
-    assert_eq!(count(&folded, &Bytecode::Divide), 0);
-    assert_eq!(count(&folded, &Bytecode::PushFalse), 1);
+    for emitted in emitted(&format!("false and {RAISE}"), true) {
+        assert_eq!(jumps(&emitted), 0, "{emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::Divide), 0, "{emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::PushFalse), 1, "{emitted:?}");
+    }
 }
 
 #[test]
 fn a_fold_that_reaches_a_raising_operand_is_left_for_runtime() {
-    let unfolded = code(&format!("true and {RAISE}"), true);
-    assert_eq!(jumps(&unfolded), 1, "the test is kept");
-    assert_eq!(
-        count(&unfolded, &Bytecode::Divide),
-        1,
-        "the division is kept"
-    );
+    for emitted in emitted(&format!("true and {RAISE}"), true) {
+        assert_eq!(jumps(&emitted), 1, "the test is kept: {emitted:?}");
+        assert_eq!(
+            emitted.count(&Bytecode::Divide),
+            1,
+            "the division is kept: {emitted:?}"
+        );
+    }
 }
 
 #[test]
 fn the_constant_side_of_a_runtime_logical_folds() {
-    for (source, jump) in [
-        ("x and (1 + 2)", "and"),
-        ("(1 + 2) or x", "or"),
-        ("x or (1 + 2)", "or"),
-        ("(1 + 2) and x", "and"),
+    for source in [
+        "x and (1 + 2)",
+        "(1 + 2) or x",
+        "x or (1 + 2)",
+        "(1 + 2) and x",
     ] {
-        let folded = code(source, true);
-        assert_eq!(jumps(&folded), 1, "{source:?}: the runtime {jump} stays");
-        assert_eq!(
-            count(&folded, &Bytecode::Add),
-            0,
-            "{source:?}: the constant side folds"
-        );
-        assert_eq!(count(&folded, &Bytecode::PushInt(3)), 1, "{source:?}");
+        for emitted in emitted(source, true) {
+            assert_eq!(jumps(&emitted), 1, "the runtime test stays: {emitted:?}");
+            assert_eq!(
+                emitted.count(&Bytecode::Add),
+                0,
+                "the constant side folds: {emitted:?}"
+            );
+            assert_eq!(emitted.count(&Bytecode::PushInt(3)), 1, "{emitted:?}");
+        }
     }
 }
 
 #[test]
 fn constant_operands_fold_throughout_a_runtime_chain() {
     // `x and (1 + 2)` cannot fold, so the outer `and` folds its constant side.
-    let folded = code("x and (1 + 2) and (3 + 4)", true);
-    assert_eq!(jumps(&folded), 2, "both runtime tests stay");
-    assert_eq!(
-        count(&folded, &Bytecode::Add),
-        0,
-        "every constant operand folds"
-    );
-    assert_eq!(count(&folded, &Bytecode::PushInt(3)), 1);
-    assert_eq!(count(&folded, &Bytecode::PushInt(7)), 1);
+    for emitted in emitted("x and (1 + 2) and (3 + 4)", true) {
+        assert_eq!(jumps(&emitted), 2, "both runtime tests stay: {emitted:?}");
+        assert_eq!(
+            emitted.count(&Bytecode::Add),
+            0,
+            "every constant operand folds: {emitted:?}"
+        );
+        assert_eq!(emitted.count(&Bytecode::PushInt(3)), 1, "{emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::PushInt(7)), 1, "{emitted:?}");
+    }
 }
 
 #[test]
 fn a_constant_prefix_of_a_runtime_chain_folds_whole() {
     // `null or false` is a constant subtree under the runtime `or x`.
-    let folded = code("null or false or x", true);
-    assert_eq!(jumps(&folded), 1, "only the test against `x` stays");
-    assert_eq!(
-        count(&folded, &Bytecode::PushNull),
-        0,
-        "the constant prefix folds"
-    );
-    assert_eq!(count(&folded, &Bytecode::PushFalse), 1);
+    for emitted in emitted("null or false or x", true) {
+        assert_eq!(
+            jumps(&emitted),
+            1,
+            "only the test against `x` stays: {emitted:?}"
+        );
+        assert_eq!(
+            emitted.count(&Bytecode::PushNull),
+            0,
+            "the constant prefix folds: {emitted:?}"
+        );
+        assert_eq!(emitted.count(&Bytecode::PushFalse), 1, "{emitted:?}");
+    }
 }

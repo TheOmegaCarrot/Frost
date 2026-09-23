@@ -2,27 +2,19 @@
 //! compiler's error channel: the parser's diagnostic is lifted into a
 //! `CompilerErrors` and rendered with the compiler's own formatting.
 //!
-//! These drive that path black-box through `compile_program`. They assert
+//! These drive that path black-box through the public compile API. They assert
 //! structural facts (one diagnostic, filename attached, the offending snippet
 //! shown, the label preserved) rather than the parser's exact wording, which is
 //! free to change.
 
-use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_program};
+mod common;
 
-fn options() -> CompilerOptions {
-    CompilerOptions {
-        optimization_options: OptimizationOptions {
-            constant_fold: false,
-            constant_propagate: false,
-        },
-        implicit_export: false,
-    }
-}
+use common::Script;
+use frost_compile::CompilerErrors;
 
 /// Compile `source`, expecting a failure, and return the diagnostics.
 fn errors(source: &str) -> CompilerErrors {
-    compile_program("script.frst", source, options())
-        .expect_err("source with a parse error should not compile")
+    Script::new(source).filename("script.frst").compile_errors()
 }
 
 #[test]
@@ -90,7 +82,6 @@ fn multiple_labels_survive_the_lift() {
 
 #[test]
 fn valid_source_compiles() {
-    // A well-formed program reaches compilation and produces output (running it
-    // is covered elsewhere; here we only assert parsing did not reject it).
-    assert!(compile_program("ok.frst", "42", options()).is_ok());
+    // A well-formed program is not rejected: it compiles and runs.
+    assert_eq!(Script::new("42").run(), frost_runtime::Value::Int(42));
 }
