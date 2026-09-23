@@ -17,6 +17,7 @@
 mod common;
 
 use common::{Emitted, Script, run};
+use frost_compile::OptimizationOptions;
 use frost_runtime::{Bytecode, Value};
 
 /// The operand that raises when evaluated, and the message it raises.
@@ -42,13 +43,39 @@ fn assert_raises(source: &str) {
     assert_raises_with(source, &[]);
 }
 
-/// The code of `source`, with `x` a runtime-only capture, under every
-/// optimization permutation with constant folding on (or off, if `fold` is
-/// false).
-fn emitted(source: &str, fold: bool) -> Vec<Emitted> {
+/// The code of `source`, with `x` a runtime-only capture, under each
+/// optimization permutation `select` accepts.
+fn emitted(source: &str, select: impl Fn(&OptimizationOptions) -> bool) -> Vec<Emitted> {
     Script::new(source)
         .capture("x", Value::Null)
-        .code_where(|optimization| optimization.constant_fold == fold)
+        .code_where(select)
+}
+
+/// Folding in isolation from branch elimination.
+fn folding_only(optimization: &OptimizationOptions) -> bool {
+    optimization.constant_fold && !optimization.branch_eliminate
+}
+
+/// Neither folding nor branch elimination: every test is emitted.
+fn neither_folding_nor_eliminating(optimization: &OptimizationOptions) -> bool {
+    !optimization.constant_fold && !optimization.branch_eliminate
+}
+
+fn eliminating(optimization: &OptimizationOptions) -> bool {
+    optimization.branch_eliminate
+}
+
+/// Branch elimination in isolation from folding.
+fn eliminating_only(optimization: &OptimizationOptions) -> bool {
+    optimization.branch_eliminate && !optimization.constant_fold
+}
+
+/// Whether the code reads the runtime-only `x`.
+fn loads_x(emitted: &Emitted) -> bool {
+    emitted
+        .code
+        .iter()
+        .any(|op| matches!(op, Bytecode::LoadLocal(_)))
 }
 
 /// How many conditional jumps (the short-circuit tests) remain in the code.
@@ -476,11 +503,11 @@ fn a_constant_logical_folds_to_its_value() {
         ("null or false or 5", Bytecode::PushInt(5)),
         ("1 and 2 and null", Bytecode::PushNull),
     ] {
-        for emitted in emitted(source, true) {
+        for emitted in emitted(source, folding_only) {
             assert_eq!(jumps(&emitted), 0, "the test is folded away: {emitted:?}");
             assert_eq!(emitted.count(&value), 1, "its value is pushed: {emitted:?}");
         }
-        for emitted in emitted(source, false) {
+        for emitted in emitted(source, neither_folding_nor_eliminating) {
             assert!(
                 jumps(&emitted) > 0,
                 "with folding off the test stays: {emitted:?}"
@@ -493,7 +520,7 @@ fn a_constant_logical_folds_to_its_value() {
 fn a_fold_short_circuits_past_a_raising_operand() {
     // The skipped `1 / 0` never runs in the fold VM either, so the whole
     // expression folds.
-    for emitted in emitted(&format!("false and {RAISE}"), true) {
+    for emitted in emitted(&format!("false and {RAISE}"), folding_only) {
         assert_eq!(jumps(&emitted), 0, "{emitted:?}");
         assert_eq!(emitted.count(&Bytecode::Divide), 0, "{emitted:?}");
         assert_eq!(emitted.count(&Bytecode::PushFalse), 1, "{emitted:?}");
@@ -502,7 +529,7 @@ fn a_fold_short_circuits_past_a_raising_operand() {
 
 #[test]
 fn a_fold_that_reaches_a_raising_operand_is_left_for_runtime() {
-    for emitted in emitted(&format!("true and {RAISE}"), true) {
+    for emitted in emitted(&format!("true and {RAISE}"), folding_only) {
         assert_eq!(jumps(&emitted), 1, "the test is kept: {emitted:?}");
         assert_eq!(
             emitted.count(&Bytecode::Divide),
@@ -520,7 +547,7 @@ fn the_constant_side_of_a_runtime_logical_folds() {
         "x or (1 + 2)",
         "(1 + 2) and x",
     ] {
-        for emitted in emitted(source, true) {
+        for emitted in emitted(source, folding_only) {
             assert_eq!(jumps(&emitted), 1, "the runtime test stays: {emitted:?}");
             assert_eq!(
                 emitted.count(&Bytecode::Add),
@@ -535,7 +562,7 @@ fn the_constant_side_of_a_runtime_logical_folds() {
 #[test]
 fn constant_operands_fold_throughout_a_runtime_chain() {
     // `x and (1 + 2)` cannot fold, so the outer `and` folds its constant side.
-    for emitted in emitted("x and (1 + 2) and (3 + 4)", true) {
+    for emitted in emitted("x and (1 + 2) and (3 + 4)", folding_only) {
         assert_eq!(jumps(&emitted), 2, "both runtime tests stay: {emitted:?}");
         assert_eq!(
             emitted.count(&Bytecode::Add),
@@ -550,7 +577,7 @@ fn constant_operands_fold_throughout_a_runtime_chain() {
 #[test]
 fn a_constant_prefix_of_a_runtime_chain_folds_whole() {
     // `null or false` is a constant subtree under the runtime `or x`.
-    for emitted in emitted("null or false or x", true) {
+    for emitted in emitted("null or false or x", folding_only) {
         assert_eq!(
             jumps(&emitted),
             1,
@@ -562,5 +589,170 @@ fn a_constant_prefix_of_a_runtime_chain_folds_whole() {
             "the constant prefix folds: {emitted:?}"
         );
         assert_eq!(emitted.count(&Bytecode::PushFalse), 1, "{emitted:?}");
+    }
+}
+
+// --- Branch elimination ---
+
+#[test]
+fn a_constant_left_operand_that_decides_is_all_that_remains() {
+    for (source, left) in [
+        ("false and x", Bytecode::PushFalse),
+        ("null and x", Bytecode::PushNull),
+        ("true or x", Bytecode::PushTrue),
+        ("0 or x", Bytecode::PushInt(0)),
+    ] {
+        for emitted in emitted(source, eliminating) {
+            assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+            assert!(
+                !loads_x(&emitted),
+                "the right operand is dropped: {emitted:?}"
+            );
+            assert_eq!(
+                emitted.count(&left),
+                1,
+                "the left operand remains: {emitted:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_constant_left_operand_that_defers_leaves_only_the_right() {
+    for (source, left) in [
+        ("true and x", Bytecode::PushTrue),
+        ("0 and x", Bytecode::PushInt(0)),
+        ("false or x", Bytecode::PushFalse),
+        ("null or x", Bytecode::PushNull),
+    ] {
+        for emitted in emitted(source, eliminating) {
+            assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+            assert!(loads_x(&emitted), "the right operand remains: {emitted:?}");
+            assert_eq!(
+                emitted.count(&left),
+                0,
+                "the left operand is dropped: {emitted:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn without_elimination_a_constant_left_operand_is_still_tested() {
+    for emitted in emitted("true and x", |optimization| !optimization.branch_eliminate) {
+        assert_eq!(jumps(&emitted), 1, "{emitted:?}");
+    }
+}
+
+#[test]
+fn a_right_operand_that_would_raise_is_dropped_unevaluated() {
+    // No folding is needed: the literal `false` decides alone.
+    for emitted in emitted(&format!("false and {RAISE}"), eliminating_only) {
+        assert_eq!(jumps(&emitted), 0, "{emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::Divide), 0, "{emitted:?}");
+    }
+}
+
+#[test]
+fn a_right_operand_that_raises_is_kept_for_runtime() {
+    // The fold of the whole raises, so folding keeps the test; elimination
+    // still removes it, leaving just the raising operand.
+    for emitted in emitted(&format!("true and {RAISE}"), eliminating) {
+        assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+        assert_eq!(
+            emitted.count(&Bytecode::Divide),
+            1,
+            "the division remains, to raise at runtime: {emitted:?}"
+        );
+    }
+}
+
+#[test]
+fn a_kept_right_operand_is_still_folded() {
+    for emitted in emitted("true and (1 + 2)", eliminating_only) {
+        assert_eq!(jumps(&emitted), 0, "{emitted:?}");
+        assert_eq!(
+            emitted.count(&Bytecode::Add),
+            1,
+            "folding is off: {emitted:?}"
+        );
+    }
+    for emitted in emitted("true and (1 + 2)", |optimization| {
+        optimization.branch_eliminate && optimization.constant_fold
+    }) {
+        assert_eq!(jumps(&emitted), 0, "{emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::Add), 0, "{emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::PushInt(3)), 1, "{emitted:?}");
+    }
+}
+
+#[test]
+fn a_folded_left_operand_decides() {
+    // A computed left operand beside a runtime right one folds as a sibling,
+    // which makes it a known constant.
+    let eliminating_and_folding = |optimization: &OptimizationOptions| {
+        optimization.branch_eliminate && optimization.constant_fold
+    };
+    for source in ["(1 == 1) and x", "(1 == 2) or x"] {
+        for emitted in emitted(source, eliminating_and_folding) {
+            assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+            assert!(loads_x(&emitted), "only `x` remains: {emitted:?}");
+        }
+    }
+    for source in ["(1 == 2) and x", "(1 == 1) or x"] {
+        for emitted in emitted(source, eliminating_and_folding) {
+            assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+            assert!(!loads_x(&emitted), "`x` is dropped: {emitted:?}");
+        }
+    }
+    // Unfolded, a computed operand is not a known constant.
+    for emitted in emitted("(1 == 1) and x", eliminating_only) {
+        assert_eq!(jumps(&emitted), 1, "{emitted:?}");
+    }
+}
+
+#[test]
+fn a_propagated_left_operand_decides() {
+    let emitted = Script::new("def t = true; t and x")
+        .capture("x", Value::Null)
+        .code_where(|optimization| {
+            optimization.branch_eliminate && optimization.constant_propagate
+        });
+    for emitted in emitted {
+        assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
+    }
+}
+
+#[test]
+fn elimination_cascades_through_a_chain() {
+    // Each eliminated test leaves a constant, which decides the next one.
+    for source in [
+        "true and true and x",
+        "null or false or x",
+        "true and 0 and x",
+    ] {
+        for emitted in emitted(source, eliminating) {
+            assert_eq!(jumps(&emitted), 0, "every test is eliminated: {emitted:?}");
+            assert!(loads_x(&emitted), "only `x` remains: {emitted:?}");
+        }
+    }
+    for source in ["false and true and x", "1 or null or x"] {
+        for emitted in emitted(source, eliminating) {
+            assert_eq!(jumps(&emitted), 0, "every test is eliminated: {emitted:?}");
+            assert!(!loads_x(&emitted), "`x` is dropped: {emitted:?}");
+        }
+    }
+}
+
+#[test]
+fn only_tests_with_a_constant_left_operand_are_eliminated() {
+    // The outer test's left operand is the runtime `x`, so it stays; the inner
+    // one is eliminated.
+    for emitted in emitted("x and (true and x)", eliminating) {
+        assert_eq!(jumps(&emitted), 1, "{emitted:?}");
+    }
+    // A runtime left operand is never eliminated, even when the right is constant.
+    for emitted in emitted("x or true", eliminating) {
+        assert_eq!(jumps(&emitted), 1, "{emitted:?}");
     }
 }

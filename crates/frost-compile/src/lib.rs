@@ -18,6 +18,9 @@ pub struct OptimizationOptions {
     /// Propagate a binding whose value is compile-time known: a lookup of it loads
     /// the value directly, so it is itself fold-eligible.
     pub constant_propagate: bool,
+    /// Resolve a branch whose condition is compile-time known, emitting only the
+    /// path taken.
+    pub branch_eliminate: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

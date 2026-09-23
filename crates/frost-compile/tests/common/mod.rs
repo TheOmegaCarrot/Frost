@@ -27,10 +27,11 @@ use frost_runtime::{Bytecode, Value, Vm};
 pub(crate) const UNOPTIMIZED: OptimizationOptions = OptimizationOptions {
     constant_fold: false,
     constant_propagate: false,
+    branch_eliminate: false,
 };
 
 /// How many options [`OptimizationOptions`] has.
-const OPTION_COUNT: u32 = 2;
+const OPTION_COUNT: u32 = 3;
 
 /// Every permutation of the optimization options, starting with [`UNOPTIMIZED`].
 pub(crate) fn every_optimization() -> impl Iterator<Item = OptimizationOptions> {
@@ -41,6 +42,7 @@ pub(crate) fn every_optimization() -> impl Iterator<Item = OptimizationOptions> 
         OptimizationOptions {
             constant_fold: on(0),
             constant_propagate: on(1),
+            branch_eliminate: on(2),
         }
     })
 }

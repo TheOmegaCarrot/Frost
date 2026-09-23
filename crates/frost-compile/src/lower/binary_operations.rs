@@ -3,7 +3,7 @@ use frost_runtime::Bytecode;
 
 use crate::{
     CompilerErrors,
-    lower::{ExprFragment, FunctionBuilder, Ir, JumpType},
+    lower::{ExprFragment, FunctionBuilder, Ir, JumpType, fold::constant_of},
 };
 
 impl FunctionBuilder<'_> {
@@ -52,6 +52,18 @@ impl FunctionBuilder<'_> {
         let rhs = self.compile_expression(right)?;
         let ([lhs, rhs], foldable) = self.fold_siblings([lhs, rhs]);
 
+        // A constant left operand decides the test now: emit only the operand
+        // the expression yields.
+        if self.options.optimization_options.branch_eliminate
+            && let Some(left_value) = constant_of(&lhs.code)
+        {
+            let left_decides = match op.node {
+                LogicalOp::And => !left_value.is_truthy(),
+                LogicalOp::Or => left_value.is_truthy(),
+            };
+            return Ok(if left_decides { lhs } else { rhs });
+        }
+
         let past = self.next_label();
 
         let jump_over = Ir::Jump {
@@ -61,13 +73,6 @@ impl FunctionBuilder<'_> {
                 LogicalOp::Or => JumpType::PeekIfTrue,
             },
         };
-
-        // TODO: separate optimization: branch elimination
-        // If lhs is a known constant, its truthiness can be determined at compile time,
-        // and thus drop the test, and *just* insert the lhs or rhs as appropriate.
-        //
-        // Nontrivial cases would require unconditionally folding lhs,
-        // even if it's not the maximal subtree, but that's ok.
 
         Ok(ExprFragment {
             code: lhs

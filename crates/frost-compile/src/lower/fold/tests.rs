@@ -27,6 +27,7 @@ fn options(constant_fold: bool) -> CompilerOptions {
         optimization_options: OptimizationOptions {
             constant_fold,
             constant_propagate: false,
+            branch_eliminate: false,
         },
         implicit_export: false,
     }

@@ -20,6 +20,7 @@ fn options() -> CompilerOptions {
         optimization_options: OptimizationOptions {
             constant_fold: false,
             constant_propagate: false,
+            branch_eliminate: false,
         },
         implicit_export: false,
     }
