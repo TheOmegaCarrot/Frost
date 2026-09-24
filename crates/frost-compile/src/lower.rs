@@ -10,6 +10,7 @@ mod index_expressions;
 mod locals;
 mod prewalk;
 mod simple_expressions;
+mod structure_literals;
 
 use std::sync::Arc;
 
@@ -267,8 +268,8 @@ impl FunctionBuilder<'_> {
             Expr::Call { callee, args } => self.compile_call_expression(callee, args, position),
             Expr::SoftIndex { target, key } => self.compile_soft_index(target, key),
             Expr::HardIndex { target, key } => self.compile_hard_index(target, key),
-            Expr::Array(spanneds) => todo!(),
-            Expr::Map(spanneds) => todo!(),
+            Expr::Array(elements) => self.compile_array_literal(elements),
+            Expr::Map(entries) => self.compile_map_literal(entries),
             Expr::FormatString(format_segments) => todo!(),
             Expr::Lambda {
                 params,

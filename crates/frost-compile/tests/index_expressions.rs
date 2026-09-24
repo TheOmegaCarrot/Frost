@@ -14,8 +14,6 @@ use common::{Emitted, Script, UNOPTIMIZED, raises};
 use frost_compile::OptimizationOptions;
 use frost_runtime::{Arity, Bytecode, MapKey, Value};
 
-// TODO: add fold tests over constant structures once Array and Map literals lower.
-
 const FOLD: OptimizationOptions = OptimizationOptions {
     constant_fold: true,
     ..UNOPTIMIZED
@@ -315,10 +313,42 @@ fn a_raising_constant_index_is_left_for_runtime() {
     );
 
     let emitted = code("5.x", FOLD);
-    let hard_indexes = emitted
+    assert_eq!(hard_indexes(&emitted), 1, "{emitted:?}");
+
+    let emitted = code("{a: 1}.b", FOLD);
+    assert_eq!(hard_indexes(&emitted), 1, "a missing field: {emitted:?}");
+}
+
+fn hard_indexes(emitted: &Emitted) -> usize {
+    emitted
         .code
         .iter()
         .filter(|op| matches!(op, Bytecode::HardIndexMap(_)))
-        .count();
-    assert_eq!(hard_indexes, 1, "{emitted:?}");
+        .count()
+}
+
+#[test]
+fn an_index_into_a_constant_structure_folds() {
+    for (source, value) in [
+        ("[10, 20, 30][1]", Bytecode::PushInt(20)),
+        ("[10, 20, 30][-1]", Bytecode::PushInt(30)),
+        ("[10][5]", Bytecode::PushNull),
+        (r#"{a: 5}["a"]"#, Bytecode::PushInt(5)),
+        (r#"{a: 5}["b"]"#, Bytecode::PushNull),
+    ] {
+        let emitted = code(source, FOLD);
+        assert_eq!(
+            emitted.count(&Bytecode::SoftIndexStructure),
+            0,
+            "{source:?}: {emitted:?}"
+        );
+        assert_eq!(emitted.count(&value), 1, "{source:?}: {emitted:?}");
+    }
+}
+
+#[test]
+fn a_field_of_a_constant_map_folds() {
+    let emitted = code("{a: {b: 5}}.a.b", FOLD);
+    assert_eq!(hard_indexes(&emitted), 0, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(5)), 1, "{emitted:?}");
 }
