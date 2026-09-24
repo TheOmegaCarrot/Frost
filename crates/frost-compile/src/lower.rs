@@ -6,6 +6,7 @@ mod do_expression;
 mod fold;
 mod globals;
 mod if_expression;
+mod index_expressions;
 mod locals;
 mod prewalk;
 mod simple_expressions;
@@ -264,8 +265,8 @@ impl FunctionBuilder<'_> {
             } => self.compile_if_expression(condition, consequent, alternate, position),
             Expr::Do { body, value } => self.compile_do_expression(body, value, position),
             Expr::Call { callee, args } => self.compile_call_expression(callee, args, position),
-            Expr::SoftIndex { target, key } => todo!(),
-            Expr::HardIndex { target, key } => todo!(),
+            Expr::SoftIndex { target, key } => self.compile_soft_index(target, key),
+            Expr::HardIndex { target, key } => self.compile_hard_index(target, key),
             Expr::Array(spanneds) => todo!(),
             Expr::Map(spanneds) => todo!(),
             Expr::FormatString(format_segments) => todo!(),
