@@ -116,17 +116,31 @@ impl Locals {
     /// A `LoadLocal` of a local that is neither a capture nor defined here has no
     /// slot, and [`SlotPlan::slot_of`] will catch it.
     pub(super) fn plan_slots(&self, code: &[Ir]) -> SlotPlan {
-        let mut plan = SlotPlan {
-            slots: vec![None; self.infos.len()],
-            name_table: Vec::new(),
-            num_captures: 0,
-        };
+        let mut plan = SlotPlan::sized(self.infos.len());
         for (index, info) in self.infos.iter().enumerate() {
             if info.kind == LocalKind::Capture {
                 plan.assign(LocalId(index), info);
             }
         }
         plan.num_captures = plan.name_table.len();
+        self.assign_defined(&mut plan, code);
+        plan
+    }
+
+    /// [`plan_slots`](Self::plan_slots) for a fragment evaluated on its own, as
+    /// in a constant fold: no captures, since there is no closure to seat them,
+    /// so only the locals the fragment itself defines get a slot. A fragment that
+    /// reads a local it does not define has no business being evaluated alone,
+    /// and [`SlotPlan::slot_of`] will catch it.
+    pub(super) fn plan_fragment_slots(&self, code: &[Ir]) -> SlotPlan {
+        let mut plan = SlotPlan::sized(self.infos.len());
+        self.assign_defined(&mut plan, code);
+        plan
+    }
+
+    /// Give each local `code` defines, and that has no slot yet, the next slot,
+    /// in first-definition order.
+    fn assign_defined(&self, plan: &mut SlotPlan, code: &[Ir]) {
         for ir in code {
             if let Ir::DefLocal(id) = ir
                 && plan.slots[id.0].is_none()
@@ -134,7 +148,6 @@ impl Locals {
                 plan.assign(*id, self.info(*id));
             }
         }
-        plan
     }
 
     fn info(&self, id: LocalId) -> &LocalInfo {
@@ -153,10 +166,15 @@ pub(super) struct SlotPlan {
 }
 
 impl SlotPlan {
-    /// The layout for code with no locals, e.g. a constant-fold fragment.
+    /// The layout for code with no locals.
     pub(super) fn empty() -> Self {
+        Self::sized(0)
+    }
+
+    /// A plan with no slots assigned yet, for `num_locals` locals.
+    fn sized(num_locals: usize) -> Self {
         Self {
-            slots: Vec::new(),
+            slots: vec![None; num_locals],
             name_table: Vec::new(),
             num_captures: 0,
         }

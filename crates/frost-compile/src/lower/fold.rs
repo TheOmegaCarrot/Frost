@@ -29,7 +29,6 @@ use frost_runtime::{
 };
 
 use crate::lower::assemble::assemble_code;
-use crate::lower::locals::SlotPlan;
 use crate::lower::{ExprFragment, FunctionBuilder, Ir};
 
 /// A fuel-capped VM reused across a compilation to evaluate constant folds.
@@ -185,13 +184,15 @@ impl FunctionBuilder<'_> {
         // which the leading Pop discards; the fragment then leaves the value.
         let mut wrapped = vec![Ir::Ready(Bytecode::Pop)];
         wrapped.extend(code);
-        // A foldable fragment references no locals, so its slot plan is empty.
+        // A foldable fragment reads only locals it defines itself (e.g. a `do`
+        // block's bindings), so those are the only ones it needs slots for.
+        let plan = self.locals.plan_fragment_slots(&wrapped);
         let function = assemble_code(
             wrapped,
             self.next_label.0,
             "<fold>".to_string(),
             Arity::Exact(0),
-            SlotPlan::empty(),
+            plan,
         );
         self.fold_vm?.evaluate(function)
     }

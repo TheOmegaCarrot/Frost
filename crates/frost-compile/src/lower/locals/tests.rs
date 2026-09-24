@@ -239,6 +239,59 @@ fn a_binding_the_code_never_defines_is_left_out_without_a_hole() {
     let _ = dropped;
 }
 
+/// Define a capture, the way a function's enclosing-scope names are seeded.
+fn capture(locals: &mut Locals, name: &str) -> LocalId {
+    locals
+        .define(LocalInfo {
+            name: name.to_string(),
+            span: span(0),
+            exported: false,
+            constant: None,
+            kind: LocalKind::Capture,
+        })
+        .unwrap()
+}
+
+#[test]
+fn a_fragment_plan_seats_no_captures() {
+    // A fragment evaluated alone (a constant fold) has no closure to seat
+    // captures from, so only the locals it defines get slots, starting at 0.
+    let mut locals = Locals::new();
+    capture(&mut locals, "captured");
+    let a = bind(&mut locals, "a", span(1)).unwrap();
+
+    let plan = locals.plan_fragment_slots(&[def(a)]);
+    assert_eq!(plan.num_captures(), 0);
+    assert_eq!(plan.slot_of(a), 0, "the fragment's own local leads");
+    let table = plan.into_name_table();
+    let names: Vec<&str> = table.iter().map(|e| e.name.as_str()).collect();
+    assert_eq!(names, vec!["a"], "no capture in the name table");
+}
+
+#[test]
+#[should_panic(expected = "no slot")]
+fn a_fragment_plan_gives_a_capture_no_slot() {
+    // A fragment reading a capture cannot be evaluated alone; that is a bug.
+    let mut locals = Locals::new();
+    let captured = capture(&mut locals, "captured");
+    locals.plan_fragment_slots(&[]).slot_of(captured);
+}
+
+#[test]
+fn a_fragment_plan_orders_locals_by_first_definition() {
+    let mut locals = Locals::new();
+    let a = bind(&mut locals, "a", span(0)).unwrap();
+    let b = bind(&mut locals, "b", span(1)).unwrap();
+    let unused = bind(&mut locals, "unused", span(2)).unwrap();
+
+    // `b` is defined first, and twice; `unused` is never defined.
+    let plan = locals.plan_fragment_slots(&[def(b), def(a), def(b)]);
+    assert_eq!(plan.slot_of(b), 0);
+    assert_eq!(plan.slot_of(a), 1);
+    assert_eq!(plan.into_name_table().len(), 2, "one slot each, no hole");
+    let _ = unused;
+}
+
 #[test]
 #[should_panic(expected = "no slot")]
 fn slot_of_a_local_with_no_slot_panics() {

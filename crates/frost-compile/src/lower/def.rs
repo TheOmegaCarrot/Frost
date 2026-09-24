@@ -4,7 +4,7 @@ use frost_runtime::Bytecode;
 use crate::{
     CompilerError, CompilerErrors,
     lower::{
-        FunctionBuilder, Ir,
+        FunctionBuilder, Ir, StatementFragment,
         fold::constant_of,
         locals::{LocalInfo, LocalKind},
     },
@@ -20,7 +20,7 @@ impl FunctionBuilder<'_> {
         expr: &Spanned<Expr>,
         destructure: &Spanned<Destructure>,
         exported: bool,
-    ) -> Result<Vec<Ir>, CompilerErrors> {
+    ) -> Result<StatementFragment, CompilerErrors> {
         // A top-level binding is implicitly exported when the option is on.
         let exported = exported || self.exports_implicitly();
 
@@ -74,9 +74,14 @@ impl FunctionBuilder<'_> {
             } => todo!(),
         };
 
-        let mut stmt_code = expr_fragment.code;
-        stmt_code.extend(destructure_fragment.code);
-
-        Ok(stmt_code)
+        // Binding a value adds no runtime input, so the def is as foldable as its rhs.
+        Ok(StatementFragment {
+            code: expr_fragment
+                .code
+                .into_iter()
+                .chain(destructure_fragment.code)
+                .collect(),
+            foldable: expr_fragment.foldable,
+        })
     }
 }

@@ -1,6 +1,7 @@
 mod assemble;
 mod binary_operations;
 mod def;
+mod do_expression;
 mod fold;
 mod globals;
 mod if_expression;
@@ -59,6 +60,15 @@ enum Ir {
 
 #[derive(Debug)]
 struct ExprFragment {
+    code: Vec<Ir>,
+    foldable: bool,
+}
+
+/// A compiled statement. Unlike an [`ExprFragment`] it leaves nothing on the
+/// stack (bar a tail expression statement), so it is never folded on its own;
+/// `foldable` only lets an enclosing block fold as a whole.
+#[derive(Debug)]
+struct StatementFragment {
     code: Vec<Ir>,
     foldable: bool,
 }
@@ -140,11 +150,11 @@ pub fn compile_in_scope(
 
     if let Some((tail, body)) = ast.statements.split_last() {
         for stmt in body {
-            ir.extend(fn_builder.compile_statement(stmt, false)?);
+            ir.extend(fn_builder.compile_statement(stmt, false)?.code);
         }
         // The final statement is in tail position: an expression there is the
         // program's result value, not dropped.
-        ir.extend(fn_builder.compile_statement(tail, true)?);
+        ir.extend(fn_builder.compile_statement(tail, true)?.code);
     }
 
     let func = fn_builder.assemble(ir);
@@ -160,6 +170,15 @@ impl FunctionBuilder<'_> {
     /// a nested scope or a lambda).
     fn exports_implicitly(&self) -> bool {
         self.top_level && self.options.implicit_export && self.locals.at_top_scope()
+    }
+
+    /// Run `compile` in a fresh nested scope (a `do` block or a `match` arm),
+    /// closing it afterward whether `compile` succeeds or fails.
+    fn in_scope<T>(&mut self, compile: impl FnOnce(&mut Self) -> T) -> T {
+        self.locals.enter();
+        let result = compile(self);
+        self.locals.exit();
+        result
     }
 
     /// Reserve a capture for each free name of the program that the enclosing
@@ -189,7 +208,7 @@ impl FunctionBuilder<'_> {
         &mut self,
         stmt: &Spanned<Statement>,
         tail: bool,
-    ) -> Result<Vec<Ir>, CompilerErrors> {
+    ) -> Result<StatementFragment, CompilerErrors> {
         match &stmt.node {
             Statement::Def {
                 exported,
@@ -204,7 +223,10 @@ impl FunctionBuilder<'_> {
                 if !tail {
                     folded.code.push(Ir::Ready(Bytecode::Pop));
                 }
-                Ok(folded.code)
+                Ok(StatementFragment {
+                    code: folded.code,
+                    foldable: folded.foldable,
+                })
             }
         }
     }
@@ -221,7 +243,7 @@ impl FunctionBuilder<'_> {
                 consequent,
                 alternate,
             } => self.compile_if_expression(condition, consequent, alternate),
-            Expr::Do { body, value } => todo!(),
+            Expr::Do { body, value } => self.compile_do_expression(body, value),
             Expr::Call { callee, args } => todo!(),
             Expr::SoftIndex { target, key } => todo!(),
             Expr::HardIndex { target, key } => todo!(),
