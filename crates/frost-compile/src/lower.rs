@@ -1,5 +1,6 @@
 mod assemble;
 mod binary_operations;
+mod call_expression;
 mod def;
 mod do_expression;
 mod fold;
@@ -244,7 +245,7 @@ impl FunctionBuilder<'_> {
                 alternate,
             } => self.compile_if_expression(condition, consequent, alternate),
             Expr::Do { body, value } => self.compile_do_expression(body, value),
-            Expr::Call { callee, args } => todo!(),
+            Expr::Call { callee, args } => self.compile_call_expression(callee, args),
             Expr::SoftIndex { target, key } => todo!(),
             Expr::HardIndex { target, key } => todo!(),
             Expr::Array(spanneds) => todo!(),
