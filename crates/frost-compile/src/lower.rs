@@ -4,6 +4,7 @@ mod call_expression;
 mod def;
 mod do_expression;
 mod fold;
+mod format_string;
 mod globals;
 mod if_expression;
 mod index_expressions;
@@ -270,7 +271,7 @@ impl FunctionBuilder<'_> {
             Expr::HardIndex { target, key } => self.compile_hard_index(target, key),
             Expr::Array(elements) => self.compile_array_literal(elements),
             Expr::Map(entries) => self.compile_map_literal(entries),
-            Expr::FormatString(format_segments) => todo!(),
+            Expr::FormatString(segments) => self.compile_format_string(segments),
             Expr::Lambda {
                 params,
                 variadic_param,
