@@ -4,7 +4,7 @@ use frost_runtime::Bytecode;
 use crate::{
     CompilerError, CompilerErrors,
     lower::{
-        FunctionBuilder, Ir, StatementFragment,
+        FunctionBuilder, Ir, Position, StatementFragment,
         fold::constant_of,
         locals::{LocalInfo, LocalKind},
     },
@@ -26,7 +26,7 @@ impl FunctionBuilder<'_> {
 
         // The rhs is a fold point: a def whose value is compile-time known binds
         // a folded constant.
-        let expr_fragment = self.compile_expression(expr)?;
+        let expr_fragment = self.compile_expression(expr, Position::Inner)?;
         let expr_fragment = self.fold_if_eligible(expr_fragment);
 
         let destructure_fragment = match &destructure.node {

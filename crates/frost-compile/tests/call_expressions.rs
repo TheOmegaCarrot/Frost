@@ -84,12 +84,12 @@ fn code(source: &str, optimization: OptimizationOptions) -> Emitted {
         .code(optimization)
 }
 
-/// How many calls remain in the code.
+/// How many calls, tail or not, remain in the code.
 fn calls(emitted: &Emitted) -> usize {
     emitted
         .code
         .iter()
-        .filter(|op| matches!(op, Bytecode::Call(_)))
+        .filter(|op| matches!(op, Bytecode::Call(_) | Bytecode::TailCall(_)))
         .count()
 }
 

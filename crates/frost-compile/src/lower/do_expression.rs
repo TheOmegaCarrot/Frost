@@ -2,7 +2,7 @@ use frost_parse::ast::{Expr, Spanned, Statement};
 
 use crate::{
     CompilerErrors,
-    lower::{ExprFragment, FunctionBuilder},
+    lower::{ExprFragment, FunctionBuilder, Position},
 };
 
 impl FunctionBuilder<'_> {
@@ -10,13 +10,14 @@ impl FunctionBuilder<'_> {
         &mut self,
         body: &[Spanned<Statement>],
         value: &Spanned<Expr>,
+        position: Position,
     ) -> Result<ExprFragment, CompilerErrors> {
         self.in_scope(|this| {
             let statements = body
                 .iter()
-                .map(|stmt| this.compile_statement(stmt, false))
+                .map(|stmt| this.compile_statement(stmt, Position::Inner))
                 .collect::<Result<Vec<_>, _>>()?;
-            let tail = this.compile_expression(value)?;
+            let tail = this.compile_expression(value, position)?;
 
             let foldable = tail.foldable && statements.iter().all(|stmt| stmt.foldable);
             // A body that cannot fold blocks the tail folding any higher, so the

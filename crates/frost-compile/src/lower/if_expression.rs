@@ -3,7 +3,7 @@ use frost_runtime::Bytecode;
 
 use crate::{
     CompilerErrors,
-    lower::{ExprFragment, FunctionBuilder, Ir, JumpType, fold::constant_of},
+    lower::{ExprFragment, FunctionBuilder, Ir, JumpType, Position, fold::constant_of},
 };
 
 impl FunctionBuilder<'_> {
@@ -12,12 +12,15 @@ impl FunctionBuilder<'_> {
         condition: &Spanned<Expr>,
         consequent: &Spanned<Expr>,
         alternate: &Option<Box<Spanned<Expr>>>,
+        position: Position,
     ) -> Result<ExprFragment, CompilerErrors> {
-        let condition = self.compile_expression(condition)?;
-        let consequent = self.compile_expression(consequent)?;
+        // Each branch is the last code its path runs: the consequent is followed
+        // only by the jump past the alternate, the alternate only by the end.
+        let condition = self.compile_expression(condition, Position::Inner)?;
+        let consequent = self.compile_expression(consequent, position)?;
         let alternate = alternate
             .as_deref()
-            .map(|expr| self.compile_expression(expr))
+            .map(|expr| self.compile_expression(expr, position))
             .transpose()?
             .unwrap_or(ExprFragment {
                 code: vec![Ir::Ready(Bytecode::PushNull)],

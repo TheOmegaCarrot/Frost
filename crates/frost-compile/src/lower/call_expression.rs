@@ -5,7 +5,7 @@ use frost_runtime::Bytecode;
 
 use crate::{
     CompilerErrors,
-    lower::{ExprFragment, FunctionBuilder, Ir},
+    lower::{ExprFragment, FunctionBuilder, Ir, Position},
 };
 
 impl FunctionBuilder<'_> {
@@ -13,23 +13,29 @@ impl FunctionBuilder<'_> {
         &mut self,
         callee: &Spanned<Expr>,
         args: &[Spanned<Expr>],
+        position: Position,
     ) -> Result<ExprFragment, CompilerErrors> {
         let arity = args.len();
 
-        let callee = self.compile_expression(callee)?;
+        let callee = self.compile_expression(callee, Position::Inner)?;
         let args = args
             .iter()
-            .map(|expr| self.compile_expression(expr))
+            .map(|expr| self.compile_expression(expr, Position::Inner))
             .collect::<Result<Vec<_>, _>>()?;
 
         let (exprs, foldable) = self.fold_sibling_list(iter::once(callee).chain(args).collect());
+
+        let call = match position {
+            Position::Tail => Bytecode::TailCall(arity),
+            Position::Inner => Bytecode::Call(arity),
+        };
 
         Ok(ExprFragment {
             foldable,
             code: exprs
                 .into_iter()
                 .flat_map(|expr| expr.code)
-                .chain([Ir::Ready(Bytecode::Call(arity))])
+                .chain([Ir::Ready(call)])
                 .collect(),
         })
     }

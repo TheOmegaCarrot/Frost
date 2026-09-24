@@ -3,7 +3,7 @@ use frost_runtime::Bytecode;
 
 use crate::{
     CompilerErrors,
-    lower::{ExprFragment, FunctionBuilder, Ir, JumpType, fold::constant_of},
+    lower::{ExprFragment, FunctionBuilder, Ir, JumpType, Position, fold::constant_of},
 };
 
 impl FunctionBuilder<'_> {
@@ -13,8 +13,8 @@ impl FunctionBuilder<'_> {
         op: &Spanned<BinOp>,
         right: &Spanned<Expr>,
     ) -> Result<ExprFragment, CompilerErrors> {
-        let lhs = self.compile_expression(left)?;
-        let rhs = self.compile_expression(right)?;
+        let lhs = self.compile_expression(left, Position::Inner)?;
+        let rhs = self.compile_expression(right, Position::Inner)?;
         let ([lhs, rhs], foldable) = self.fold_siblings([lhs, rhs]);
 
         let operation = Ir::Ready(match op.node {
@@ -47,9 +47,12 @@ impl FunctionBuilder<'_> {
         left: &Spanned<Expr>,
         op: &Spanned<LogicalOp>,
         right: &Spanned<Expr>,
+        position: Position,
     ) -> Result<ExprFragment, CompilerErrors> {
-        let lhs = self.compile_expression(left)?;
-        let rhs = self.compile_expression(right)?;
+        // When the right operand runs, its value is the result: nothing follows
+        // it but the join label.
+        let lhs = self.compile_expression(left, Position::Inner)?;
+        let rhs = self.compile_expression(right, position)?;
         let ([lhs, rhs], foldable) = self.fold_siblings([lhs, rhs]);
 
         // A constant left operand decides the test now: emit only the operand

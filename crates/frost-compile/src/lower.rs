@@ -74,6 +74,16 @@ struct StatementFragment {
     foldable: bool,
 }
 
+/// Where an expression's code sits within its function.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Position {
+    /// Nothing in the function executes after this expression: its value is
+    /// the function's result, so a call here is a tail call.
+    Tail,
+    /// Some code of the function executes after this expression.
+    Inner,
+}
+
 #[derive(Debug)]
 struct FunctionBuilder<'a> {
     locals: Locals,
@@ -151,11 +161,9 @@ pub fn compile_in_scope(
 
     if let Some((tail, body)) = ast.statements.split_last() {
         for stmt in body {
-            ir.extend(fn_builder.compile_statement(stmt, false)?.code);
+            ir.extend(fn_builder.compile_statement(stmt, Position::Inner)?.code);
         }
-        // The final statement is in tail position: an expression there is the
-        // program's result value, not dropped.
-        ir.extend(fn_builder.compile_statement(tail, true)?.code);
+        ir.extend(fn_builder.compile_statement(tail, Position::Tail)?.code);
     }
 
     let func = fn_builder.assemble(ir);
@@ -203,12 +211,13 @@ impl FunctionBuilder<'_> {
 }
 
 impl FunctionBuilder<'_> {
-    /// Compile a statement to its complete code. Net-zero, except a `tail`
-    /// expression statement, which leaves its value (the block's result).
+    /// Compile a statement to its complete code. Net-zero, except an expression
+    /// statement in [`Position::Tail`], which is its function's last statement
+    /// and leaves its value as the result.
     fn compile_statement(
         &mut self,
         stmt: &Spanned<Statement>,
-        tail: bool,
+        position: Position,
     ) -> Result<StatementFragment, CompilerErrors> {
         match &stmt.node {
             Statement::Def {
@@ -219,9 +228,9 @@ impl FunctionBuilder<'_> {
             // A bare expression is a fold point. In tail position its value is
             // kept; otherwise it is evaluated for effect and dropped.
             Statement::Expr(expr) => {
-                let expr_fragment = self.compile_expression(expr)?;
+                let expr_fragment = self.compile_expression(expr, position)?;
                 let mut folded = self.fold_if_eligible(expr_fragment);
-                if !tail {
+                if position == Position::Inner {
                     folded.code.push(Ir::Ready(Bytecode::Pop));
                 }
                 Ok(StatementFragment {
@@ -232,20 +241,29 @@ impl FunctionBuilder<'_> {
         }
     }
 
-    fn compile_expression(&mut self, expr: &Spanned<Expr>) -> Result<ExprFragment, CompilerErrors> {
+    /// Compile an expression to code leaving its value on the stack.
+    ///
+    /// A node may pass [`Position::Tail`] on to a child only if that child's
+    /// code is the last the node executes; if the node emits anything after it,
+    /// the child is [`Position::Inner`].
+    fn compile_expression(
+        &mut self,
+        expr: &Spanned<Expr>,
+        position: Position,
+    ) -> Result<ExprFragment, CompilerErrors> {
         match &expr.node {
             Expr::Literal(literal) => self.compile_literal(literal, expr.span),
             Expr::NameLookup(name) => self.compile_name_lookup(name, expr.span),
             Expr::BinOp { left, op, right } => self.compile_binop(left, op, right),
-            Expr::Logical { left, op, right } => self.compile_logical(left, op, right),
+            Expr::Logical { left, op, right } => self.compile_logical(left, op, right, position),
             Expr::UnaryOp { op, operand } => self.compile_unary(op, operand),
             Expr::If {
                 condition,
                 consequent,
                 alternate,
-            } => self.compile_if_expression(condition, consequent, alternate),
-            Expr::Do { body, value } => self.compile_do_expression(body, value),
-            Expr::Call { callee, args } => self.compile_call_expression(callee, args),
+            } => self.compile_if_expression(condition, consequent, alternate, position),
+            Expr::Do { body, value } => self.compile_do_expression(body, value, position),
+            Expr::Call { callee, args } => self.compile_call_expression(callee, args, position),
             Expr::SoftIndex { target, key } => todo!(),
             Expr::HardIndex { target, key } => todo!(),
             Expr::Array(spanneds) => todo!(),

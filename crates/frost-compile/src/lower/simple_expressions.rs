@@ -9,7 +9,7 @@ use frost_runtime::{Bytecode, FrostError, FrostFloat};
 use crate::{
     CompilerErrors,
     lower::{
-        ExprFragment, FunctionBuilder, Ir,
+        ExprFragment, FunctionBuilder, Ir, Position,
         fold::value_to_ir,
         globals::{global_pure, global_slot},
     },
@@ -91,7 +91,7 @@ impl FunctionBuilder<'_> {
         op: &Spanned<UnaryOp>,
         operand: &Spanned<Expr>,
     ) -> Result<ExprFragment, CompilerErrors> {
-        let operand = self.compile_expression(operand)?;
+        let operand = self.compile_expression(operand, Position::Inner)?;
 
         let operation = Ir::Ready(match op.node {
             UnaryOp::Negate => Bytecode::Negate,
