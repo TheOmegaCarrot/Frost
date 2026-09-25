@@ -33,6 +33,35 @@ fn options(constant_fold: bool) -> CompilerOptions {
     }
 }
 
+#[test]
+fn a_fragment_ending_in_closure_creation_is_not_evaluated() {
+    // Its value is a Function, which can never be a constant. This fragment
+    // reads a local it never defines, so assembling it for evaluation would
+    // panic: the test passing proves no evaluation is attempted.
+    let options = options(true);
+    let fold_vm = FoldVm::new();
+    let child = assemble_code(
+        vec![Ir::Ready(Bytecode::PushNull)],
+        0,
+        "<child>".to_string(),
+        Arity::Exact(0),
+        SlotPlan::empty(),
+    );
+    let fragment = ExprFragment {
+        code: vec![
+            Ir::LoadLocal(LocalId(0)),
+            Ir::Closure {
+                function: child,
+                num_captures: 1,
+            },
+        ],
+        foldable: true,
+    };
+    let result = builder(&options, &fold_vm).fold_if_eligible(fragment);
+    assert_eq!(result.code.len(), 2, "the fragment is kept as is");
+    assert!(result.foldable, "it stays usable within an enclosing fold");
+}
+
 fn builder<'a>(options: &'a CompilerOptions, fold_vm: &'a FoldVm) -> FunctionBuilder<'a> {
     FunctionBuilder {
         locals: Locals::new(),
@@ -44,6 +73,7 @@ fn builder<'a>(options: &'a CompilerOptions, fold_vm: &'a FoldVm) -> FunctionBui
         options,
         fold_vm: Some(fold_vm),
         top_level: false,
+        effectful: false,
     }
 }
 

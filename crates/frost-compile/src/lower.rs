@@ -103,6 +103,9 @@ struct FunctionBuilder<'a> {
     // True only for a script's top-level function. Gates implicit export, which
     // applies to top-level bindings, not those inside a nested function.
     top_level: bool,
+    // Whether this function's body loads an impure global. Every effect starts
+    // at one, so a function that loads none is safe to call during a fold.
+    effectful: bool,
 }
 
 impl FunctionBuilder<'_> {
@@ -156,6 +159,7 @@ pub fn compile_in_scope(
         options: &options,
         fold_vm: Some(&fold_vm),
         top_level: true,
+        effectful: false,
     };
     fn_builder.seed_captures(&ast, outer_scope);
 

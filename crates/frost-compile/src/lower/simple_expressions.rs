@@ -47,7 +47,7 @@ impl FunctionBuilder<'_> {
     }
 
     pub(super) fn compile_name_lookup(
-        &self,
+        &mut self,
         name: &str,
         span: SourceSpan,
     ) -> Result<ExprFragment, CompilerErrors> {
@@ -73,10 +73,13 @@ impl FunctionBuilder<'_> {
         }
         if let Some(slot) = global_slot(name) {
             // A pure global is fold-eligible: a call to it over foldable
-            // arguments can be evaluated at compile time.
+            // arguments can be evaluated at compile time. An impure one makes
+            // the whole function effectful.
+            let pure = global_pure(slot);
+            self.effectful |= !pure;
             return Ok(ExprFragment {
                 code: vec![Ir::Ready(Bytecode::LoadGlobal(slot))],
-                foldable: global_pure(slot),
+                foldable: pure,
             });
         }
         Err(self

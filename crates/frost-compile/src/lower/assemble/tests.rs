@@ -43,6 +43,7 @@ fn with_name(options: &CompilerOptions, name: String, arity: Arity) -> FunctionB
         options,
         fold_vm: None,
         top_level: false,
+        effectful: false,
     }
 }
 

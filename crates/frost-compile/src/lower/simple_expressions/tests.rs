@@ -33,6 +33,7 @@ fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
         options,
         fold_vm: None,
         top_level: false,
+        effectful: false,
     }
 }
 
@@ -55,4 +56,39 @@ fn an_impure_global_lookup_is_not_foldable() {
         !fragment.foldable,
         "an impure global must never be fold-eligible"
     );
+}
+
+#[test]
+fn loading_an_impure_global_makes_the_function_effectful() {
+    let options = options();
+    let mut builder = builder(&options);
+    assert!(!builder.effectful, "a fresh function is not effectful");
+
+    builder
+        .compile_name_lookup("transform", SourceSpan::default())
+        .expect("`transform` is a global");
+    assert!(!builder.effectful, "a pure global adds no effect");
+
+    builder
+        .compile_name_lookup("print", SourceSpan::default())
+        .expect("`print` is a global");
+    assert!(builder.effectful, "an impure global is an effect");
+
+    builder
+        .compile_name_lookup("transform", SourceSpan::default())
+        .expect("`transform` is a global");
+    assert!(builder.effectful, "once effectful, a function stays so");
+}
+
+#[test]
+fn every_impure_global_makes_the_function_effectful() {
+    // The effect sources: output, mutable state, and imports.
+    let options = options();
+    for name in ["print", "mprint", "mutable_cell", "import", "imported"] {
+        let mut builder = builder(&options);
+        builder
+            .compile_name_lookup(name, SourceSpan::default())
+            .unwrap_or_else(|_| panic!("`{name}` is a global"));
+        assert!(builder.effectful, "`{name}` is an effect");
+    }
 }
