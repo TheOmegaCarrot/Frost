@@ -17,7 +17,10 @@ impl FunctionBuilder<'_> {
         let segment_count = segments.len();
 
         if segment_count == 0 {
-            return Ok(ExprFragment { code: vec![Ir::Const(Value::from(""))], foldable: true });
+            return Ok(ExprFragment {
+                code: vec![Ir::Const(Value::from(""))],
+                foldable: true,
+            });
         }
 
         let segment_exprs = segments
@@ -40,9 +43,8 @@ impl FunctionBuilder<'_> {
             code: segment_exprs
                 .into_iter()
                 .flat_map(|segment| segment.code)
-                // Safety: The zero-length case handled above
                 .chain([Ir::Ready(Bytecode::Concat(
-                    NonZeroUsize::try_from(segment_count).unwrap(),
+                    NonZeroUsize::try_from(segment_count).expect("0 segment case can't reach here"),
                 ))])
                 .collect(),
         })

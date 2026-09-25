@@ -8,6 +8,7 @@ mod format_string;
 mod globals;
 mod if_expression;
 mod index_expressions;
+mod lambda_expression;
 mod locals;
 mod prewalk;
 mod simple_expressions;
@@ -272,18 +273,7 @@ impl FunctionBuilder<'_> {
             Expr::Array(elements) => self.compile_array_literal(elements),
             Expr::Map(entries) => self.compile_map_literal(entries),
             Expr::FormatString(segments) => self.compile_format_string(segments),
-            Expr::Lambda {
-                params,
-                variadic_param,
-                self_name,
-                body,
-                return_expr,
-            } => todo!(),
-            Expr::AbbreviatedLambda {
-                used_params,
-                uses_rest,
-                body,
-            } => todo!(),
+            Expr::Lambda { .. } | Expr::AbbreviatedLambda { .. } => self.compile_lambda(expr),
             Expr::Filter {
                 structure,
                 operation,
