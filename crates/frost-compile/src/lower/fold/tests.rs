@@ -13,7 +13,7 @@ use frost_runtime::{Arity, Bytecode, Value};
 /// A function [`Value`], for exercising the const-representability guard.
 fn a_function() -> Value {
     let function = assemble_code(
-        vec![Ir::Ready(Bytecode::PushNull)],
+        &[Ir::Ready(Bytecode::PushNull)],
         0,
         "<f>".to_string(),
         Arity::Exact(0),
@@ -40,21 +40,9 @@ fn a_fragment_ending_in_closure_creation_is_not_evaluated() {
     // panic: the test passing proves no evaluation is attempted.
     let options = options(true);
     let fold_vm = FoldVm::new();
-    let child = assemble_code(
-        vec![Ir::Ready(Bytecode::PushNull)],
-        0,
-        "<child>".to_string(),
-        Arity::Exact(0),
-        SlotPlan::empty(),
-    );
+    let child = builder(&options, &fold_vm).finish(vec![Ir::Ready(Bytecode::PushNull)]);
     let fragment = ExprFragment {
-        code: vec![
-            Ir::LoadLocal(LocalId(0)),
-            Ir::Closure {
-                function: child,
-                num_captures: 1,
-            },
-        ],
+        code: vec![Ir::LoadLocal(LocalId(0)), Ir::closure(child)],
         foldable: true,
     };
     let result = builder(&options, &fold_vm).fold_if_eligible(fragment);

@@ -19,15 +19,21 @@ use std::sync::Arc;
 use crate::{CompilerError, CompilerErrors, CompilerOptions, CompilerOutput, OptimizationOptions};
 
 use frost_parse::{
-    ast::{Expr, Program, SourceSpan, Spanned, Statement},
+    ast::{Expr, SourceSpan, Spanned, Statement},
     parse_program,
 };
 use frost_runtime::{Arity, Bytecode, CompiledFunction, MapKey, Value};
 
 use fold::FoldVm;
-use locals::{LocalInfo, LocalKind, Locals};
+use locals::Locals;
 
-#[derive(Clone, Debug)]
+/// A name as scope resolution sees it. `$` is shorthand for `$1`, so every use
+/// of `$` resolves as `$1`.
+fn canonical_name(name: &str) -> &str {
+    if name == "$" { "$1" } else { name }
+}
+
+#[derive(Clone, Copy, Debug)]
 enum JumpType {
     Unconditional,
     IfTrue,
@@ -57,10 +63,38 @@ enum Ir {
     KeyIndex(MapKey),
     LoadLocal(LocalId),
     DefLocal(LocalId),
+    /// Create a closure over a nested function. Both forms are kept: `compiled`
+    /// is what assembly pools, `lowered` is the IR it was assembled from.
+    /// Build with [`Ir::closure`] so the two always match.
     Closure {
-        function: Arc<CompiledFunction>,
-        num_captures: u32,
+        lowered: Arc<LoweredFunction>,
+        compiled: Arc<CompiledFunction>,
     },
+}
+
+impl Ir {
+    /// The closure-creation op for a nested function, assembled once here.
+    fn closure(lowered: LoweredFunction) -> Self {
+        let compiled = lowered.assemble();
+        Ir::Closure {
+            lowered: Arc::new(lowered),
+            compiled,
+        }
+    }
+}
+
+/// A function after lowering, before assembly: its IR and everything needed to
+/// assemble, inspect, or rewrite it.
+#[derive(Debug)]
+struct LoweredFunction {
+    name: String,
+    arity: Arity,
+    code: Vec<Ir>,
+    locals: Locals,
+    // Bounds the label ids `code` references (ids `< num_labels`).
+    num_labels: usize,
+    // See `FunctionBuilder::effectful`.
+    effectful: bool,
 }
 
 #[derive(Debug)]
@@ -108,7 +142,25 @@ struct FunctionBuilder<'a> {
     effectful: bool,
 }
 
-impl FunctionBuilder<'_> {
+impl<'a> FunctionBuilder<'a> {
+    /// A builder for a function nested in this one, with `captures` seated in
+    /// order. It shares this builder's source, options, and fold VM, but holds
+    /// no borrow of this builder itself.
+    fn child(&self, name: String, arity: Arity, captures: Vec<String>) -> FunctionBuilder<'a> {
+        FunctionBuilder {
+            locals: Locals::with_captures(captures),
+            next_label: Label(0),
+            name,
+            arity,
+            source: self.source,
+            filename: self.filename,
+            options: self.options,
+            fold_vm: self.fold_vm,
+            top_level: false,
+            effectful: false,
+        }
+    }
+
     fn next_label(&mut self) -> Label {
         let label = self.next_label;
         self.next_label.0 += 1;
@@ -119,6 +171,23 @@ impl FunctionBuilder<'_> {
     /// Routing every error through here keeps any from being emitted sourceless.
     fn error(&self, message: String) -> CompilerError {
         CompilerError::error(message).source(self.filename.to_owned(), self.source.to_owned())
+    }
+
+    /// The error for binding `name` at `span` in a scope that already binds it
+    /// at `original`.
+    fn duplicate_binding(
+        &self,
+        name: &str,
+        span: SourceSpan,
+        original: SourceSpan,
+    ) -> CompilerError {
+        self.error(format!("`{name}` is already bound"))
+            .code("duplicate binding".into())
+            .label_primary(span, "redefined here".into())
+            .related(
+                CompilerError::advice(format!("`{name}` was first bound here"))
+                    .label(original, "original binding".into()),
+            )
     }
 }
 
@@ -148,9 +217,16 @@ pub fn compile_in_scope(
     let ast = parse_program(filename, script)
         .map_err(|err| CompilerError::from_parse_error(&err, filename, script))?;
 
+    // A free name the enclosing scope supplies becomes a capture. Only names
+    // actually used are captured; any other free name is left to resolve as a
+    // global (or to error).
+    let captures = prewalk::free_names_of_program(&ast.statements)
+        .into_iter()
+        .filter(|name| outer_scope.contains(&name.as_str()));
+
     let fold_vm = FoldVm::new();
     let mut fn_builder = FunctionBuilder {
-        locals: Locals::new(),
+        locals: Locals::with_captures(captures),
         next_label: Label(0),
         name: "<main>".to_string(),
         arity: Arity::Exact(0),
@@ -161,7 +237,6 @@ pub fn compile_in_scope(
         top_level: true,
         effectful: false,
     };
-    fn_builder.seed_captures(&ast, outer_scope);
 
     // The runtime starts by pushing the top-level function itself to the stack
     // Pop it
@@ -174,7 +249,7 @@ pub fn compile_in_scope(
         ir.extend(fn_builder.compile_statement(tail, Position::Tail)?.code);
     }
 
-    let func = fn_builder.assemble(ir);
+    let func = fn_builder.finish(ir).assemble();
 
     Ok(CompilerOutput {
         code: func.assert_trusted(),
@@ -196,25 +271,6 @@ impl FunctionBuilder<'_> {
         let result = compile(self);
         self.locals.exit();
         result
-    }
-
-    /// Reserve a capture for each free name of the program that the enclosing
-    /// scope supplies. Only names actually used are captured; a free name absent
-    /// from `outer_scope` is left to resolve as a global (or to error).
-    fn seed_captures(&mut self, ast: &Program, outer_scope: &[&str]) {
-        for name in prewalk::free_names_of_program(&ast.statements) {
-            if outer_scope.contains(&name.as_str()) {
-                self.locals
-                    .define(LocalInfo {
-                        name,
-                        span: SourceSpan::default(),
-                        exported: false,
-                        constant: None,
-                        kind: LocalKind::Capture,
-                    })
-                    .expect("free names are distinct, so no capture collides");
-            }
-        }
     }
 }
 

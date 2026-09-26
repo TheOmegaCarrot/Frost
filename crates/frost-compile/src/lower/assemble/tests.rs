@@ -47,9 +47,18 @@ fn with_name(options: &CompilerOptions, name: String, arity: Arity) -> FunctionB
     }
 }
 
-/// A trivial child function, for exercising closure pooling.
-fn child_fn(options: &CompilerOptions) -> Arc<CompiledFunction> {
-    builder(options).assemble(vec![Ir::Ready(Bytecode::PushNull)])
+/// The closure-creation op for a trivial child function, for exercising
+/// closure pooling.
+fn child_closure(options: &CompilerOptions) -> Ir {
+    Ir::closure(builder(options).finish(vec![Ir::Ready(Bytecode::PushNull)]))
+}
+
+/// The assembled child function a closure op carries.
+fn compiled(closure: &Ir) -> &Arc<CompiledFunction> {
+    match closure {
+        Ir::Closure { compiled, .. } => compiled,
+        other => panic!("not a closure op: {other:?}"),
+    }
 }
 
 // -- Jumps --
@@ -247,14 +256,45 @@ fn inline_payloads_drain_into_their_pools() {
 }
 
 #[test]
+fn finishing_a_builder_keeps_its_metadata() {
+    let options = options();
+    let mut b = with_name(&options, "named".to_string(), Arity::AtLeast(1));
+    b.next_label();
+    b.next_label();
+    b.effectful = true;
+
+    let lowered = b.finish(vec![Ir::Ready(Bytecode::PushNull)]);
+    assert_eq!(lowered.name, "named");
+    assert_eq!(lowered.arity, Arity::AtLeast(1));
+    assert_eq!(
+        lowered.num_labels, 2,
+        "every minted label stays addressable"
+    );
+    assert!(lowered.effectful);
+    assert_eq!(lowered.code.len(), 1);
+}
+
+#[test]
+fn a_closure_op_carries_its_lowered_form_and_that_form_assembled() {
+    let options = options();
+    let closure = child_closure(&options);
+    let Ir::Closure { lowered, compiled } = &closure else {
+        panic!("not a closure op: {closure:?}");
+    };
+    assert_eq!(lowered.code.len(), 1, "the lowered IR is kept");
+    assert_eq!(
+        compiled.code,
+        lowered.assemble().code,
+        "the compiled form is the lowered form, assembled"
+    );
+}
+
+#[test]
 fn closures_drain_into_child_fns() {
     let options = options();
-    let child = child_fn(&options);
+    let child = child_closure(&options);
 
-    let f = builder(&options).assemble(vec![Ir::Closure {
-        function: child.clone(),
-        num_captures: 2,
-    }]);
+    let f = builder(&options).assemble(vec![child.clone()]);
 
     assert_eq!(
         f.code,
@@ -263,7 +303,7 @@ fn closures_drain_into_child_fns() {
     );
     assert_eq!(f.child_fns.len(), 1);
     assert!(
-        Arc::ptr_eq(&f.child_fns[0], &child),
+        Arc::ptr_eq(&f.child_fns[0], compiled(&child)),
         "the exact child Arc is pooled, not a copy"
     );
 }
@@ -271,16 +311,13 @@ fn closures_drain_into_child_fns() {
 #[test]
 fn pool_counters_are_independent_under_interleaving() {
     let options = options();
-    let child = child_fn(&options);
+    let child = child_closure(&options);
 
     let f = builder(&options).assemble(vec![
         Ir::Const(Value::Int(10)),
         Ir::KeyIndex(MapKey::from("a")),
         Ir::Const(Value::Bool(true)),
-        Ir::Closure {
-            function: child.clone(),
-            num_captures: 2,
-        },
+        child,
         Ir::KeyIndex(MapKey::from("b")),
         Ir::Const(Value::Int(20)),
     ]);
@@ -305,7 +342,7 @@ fn pool_counters_are_independent_under_interleaving() {
 #[test]
 fn payload_ops_count_toward_jump_offsets() {
     let options = options();
-    let child = child_fn(&options);
+    let child = child_closure(&options);
     let mut b = builder(&options);
     let end = b.next_label();
 
@@ -318,10 +355,7 @@ fn payload_ops_count_toward_jump_offsets() {
         },
         Ir::Const(Value::Int(1)),
         Ir::KeyIndex(MapKey::from("k")),
-        Ir::Closure {
-            function: child,
-            num_captures: 0,
-        },
+        child,
         Ir::Label(end),
         Ir::Ready(Bytecode::PushNull),
     ]);
@@ -485,7 +519,7 @@ fn long_forward_jump_offset() {
 #[test]
 fn dense_mix_of_jumps_labels_and_payloads() {
     let options = options();
-    let child = child_fn(&options);
+    let child = child_closure(&options);
     let mut b = builder(&options);
     let a = b.next_label();
     let z = b.next_label();
@@ -502,10 +536,7 @@ fn dense_mix_of_jumps_labels_and_payloads() {
         }, // 2
         Ir::KeyIndex(MapKey::from("k")), // 3
         Ir::Label(a),             // -> index 4
-        Ir::Closure {
-            function: child.clone(),
-            num_captures: 1,
-        }, // 4
+        child,                    // 4
         Ir::Ready(Bytecode::Pop), // 5
         Ir::Label(z),             // -> index 6
         Ir::Ready(Bytecode::PushNull), // 6
@@ -533,8 +564,8 @@ fn dense_mix_of_jumps_labels_and_payloads() {
 #[test]
 fn convoluted_program_keeps_every_pool_and_jump_straight() {
     let options = options();
-    let child_a = child_fn(&options);
-    let child_b = child_fn(&options);
+    let child_a = child_closure(&options);
+    let child_b = child_closure(&options);
     let mut b = builder(&options);
     let (l1, l2, l3, l4) = (
         b.next_label(),
@@ -558,10 +589,7 @@ fn convoluted_program_keeps_every_pool_and_jump_straight() {
         }, // 1  -> l2 (7), past l1
         Ir::Const(Value::Int(10)),       // 2
         Ir::KeyIndex(MapKey::from("a")), // 3
-        Ir::Closure {
-            function: child_a.clone(),
-            num_captures: 0,
-        }, // 4
+        child_a.clone(),                 // 4
         Ir::Label(l1),                   // -> 5
         Ir::Const(Value::Int(20)),       // 5
         Ir::Jump {
@@ -570,10 +598,7 @@ fn convoluted_program_keeps_every_pool_and_jump_straight() {
         }, // 6  -> l3 (12), past l2
         Ir::Label(l2),                   // -> 7
         Ir::KeyIndex(MapKey::from("b")), // 7
-        Ir::Closure {
-            function: child_b.clone(),
-            num_captures: 2,
-        }, // 8
+        child_b.clone(),                 // 8
         Ir::Jump {
             kind: JumpType::PeekIfTrue,
             label: l3,
@@ -618,6 +643,12 @@ fn convoluted_program_keeps_every_pool_and_jump_straight() {
         vec![MapKey::from("a"), MapKey::from("b"), MapKey::from("c")]
     );
     assert_eq!(f.child_fns.len(), 2);
-    assert!(Arc::ptr_eq(&f.child_fns[0], &child_a), "slot 0 is child_a");
-    assert!(Arc::ptr_eq(&f.child_fns[1], &child_b), "slot 1 is child_b");
+    assert!(
+        Arc::ptr_eq(&f.child_fns[0], compiled(&child_a)),
+        "slot 0 is child_a"
+    );
+    assert!(
+        Arc::ptr_eq(&f.child_fns[1], compiled(&child_b)),
+        "slot 1 is child_b"
+    );
 }

@@ -9,7 +9,7 @@ use frost_runtime::{Bytecode, FrostError, FrostFloat};
 use crate::{
     CompilerErrors,
     lower::{
-        ExprFragment, FunctionBuilder, Ir, Position,
+        ExprFragment, FunctionBuilder, Ir, Position, canonical_name,
         fold::value_to_ir,
         globals::{global_pure, global_slot},
     },
@@ -51,10 +51,9 @@ impl FunctionBuilder<'_> {
         name: &str,
         span: SourceSpan,
     ) -> Result<ExprFragment, CompilerErrors> {
-        // Locals (including a lambda's seeded captures, and shadowing any global)
-        // win over globals; an unresolved name is a compile error. Inside a
-        // lambda every free name was reserved as a capture by the pre-walk, so
-        // this error only fires at the top level.
+        // Locals (including a function's captures, and shadowing any global)
+        // win over globals; a name that is neither is a compile error.
+        let name = canonical_name(name);
         if let Some(id) = self.locals.resolve(name) {
             // A compile-time-known binding is propagated as its constant, and so
             // is itself fold-eligible; otherwise it is an ordinary local load.

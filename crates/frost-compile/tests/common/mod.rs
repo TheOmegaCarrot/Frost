@@ -5,9 +5,12 @@
 //! permutation to agree. Optimization must never change what a program does, so
 //! most tests get that assurance for free just by going through [`Script`].
 //!
-//! Runs are unmetered. Fuel use is the one thing optimization may change (it
-//! may lower it), so under a fuel limit the permutations could legitimately
-//! disagree on whether a script exhausts it.
+//! Runs are unmetered. Fuel use and call depth are the things optimization may
+//! change (it may lower either, e.g. by folding or inlining a call), so under a
+//! limit the permutations could legitimately disagree on whether a script
+//! exceeds it. A [`Script::max_call_depth`] is only for scripts that stay far
+//! under the limit whatever optimization does (such as tail recursion) or blow
+//! far past it (such as unbounded recursion).
 //!
 //! Tests about what optimization *emits* select the permutations they apply to
 //! and read the code with [`Script::code_where`].
@@ -16,11 +19,13 @@
 #![allow(dead_code)]
 
 use std::collections::BTreeMap;
+use std::num::NonZeroUsize;
+use std::sync::Arc;
 
 use frost_compile::{
     CompilerErrors, CompilerOptions, CompilerOutput, OptimizationOptions, compile_in_scope,
 };
-use frost_runtime::{Bytecode, Value, Vm};
+use frost_runtime::{Bytecode, CompiledFunction, Value, Vm, VmRuntimeConfiguration};
 
 /// Every optimization off. A base for picking options explicitly:
 /// `OptimizationOptions { constant_fold: true, ..UNOPTIMIZED }`.
@@ -62,6 +67,7 @@ pub(crate) struct Script {
     scope: Vec<String>,
     captures: BTreeMap<String, Value>,
     implicit_export: bool,
+    max_call_depth: Option<NonZeroUsize>,
 }
 
 impl Script {
@@ -72,7 +78,14 @@ impl Script {
             scope: Vec::new(),
             captures: BTreeMap::new(),
             implicit_export: false,
+            max_call_depth: None,
         }
+    }
+
+    /// Run with the VM's call depth limited to `depth` frames.
+    pub(crate) fn max_call_depth(mut self, depth: usize) -> Self {
+        self.max_call_depth = Some(NonZeroUsize::new(depth).expect("a depth limit is positive"));
+        self
     }
 
     pub(crate) fn filename(mut self, filename: &str) -> Self {
@@ -172,10 +185,7 @@ impl Script {
     /// e.g. `OptimizationOptions { branch_eliminate: true, ..UNOPTIMIZED }`, so no
     /// other optimization, present or future, changes the code it inspects.
     pub(crate) fn code(&self, optimization: OptimizationOptions) -> Emitted {
-        Emitted {
-            code: self.code_under(optimization),
-            optimization,
-        }
+        Emitted::new(self.function_under(optimization), optimization)
     }
 
     /// The top-level function's code under each optimization permutation that
@@ -183,10 +193,7 @@ impl Script {
     pub(crate) fn code_where(&self, select: impl Fn(&OptimizationOptions) -> bool) -> Vec<Emitted> {
         let emitted: Vec<Emitted> = every_optimization()
             .filter(select)
-            .map(|optimization| Emitted {
-                code: self.code_under(optimization),
-                optimization,
-            })
+            .map(|optimization| Emitted::new(self.function_under(optimization), optimization))
             .collect();
         assert!(
             !emitted.is_empty(),
@@ -195,7 +202,7 @@ impl Script {
         emitted
     }
 
-    fn code_under(&self, optimization: OptimizationOptions) -> Vec<Bytecode> {
+    fn function_under(&self, optimization: OptimizationOptions) -> Arc<CompiledFunction> {
         let output = self.compile(optimization).unwrap_or_else(|errors| {
             panic!(
                 "{:?} should compile under {optimization:?}:\n{}",
@@ -203,13 +210,11 @@ impl Script {
                 errors.render_plain()
             )
         });
-        output
+        let closure = output
             .code
             .close(self.captures.clone())
-            .expect("every capture the script uses is supplied")
-            .inner_fn()
-            .code
-            .clone()
+            .expect("every capture the script uses is supplied");
+        Arc::new(closure.inner_fn().clone())
     }
 
     fn compile(&self, optimization: OptimizationOptions) -> Result<CompilerOutput, CompilerErrors> {
@@ -233,7 +238,12 @@ impl Script {
             .code
             .close(self.captures.clone())
             .expect("every capture the script uses is supplied");
+        let config = VmRuntimeConfiguration {
+            max_call_depth: self.max_call_depth,
+            ..Default::default()
+        };
         let result = Vm::factory()
+            .configuration(config)
             .build(closure)
             .expect("closure builds")
             .run()
@@ -273,15 +283,41 @@ pub(crate) fn compile_errors(source: &str) -> CompilerErrors {
     Script::new(source).compile_errors()
 }
 
-/// The top-level function's code under one optimization permutation. Its
-/// `Debug` form names the permutation, for assertion messages.
+/// A compiled function's code under one optimization permutation. Its `Debug`
+/// form names the permutation, for assertion messages.
 #[derive(Debug)]
 pub(crate) struct Emitted {
     pub(crate) optimization: OptimizationOptions,
     pub(crate) code: Vec<Bytecode>,
+    function: Arc<CompiledFunction>,
 }
 
 impl Emitted {
+    fn new(function: Arc<CompiledFunction>, optimization: OptimizationOptions) -> Self {
+        Self {
+            optimization,
+            code: function.code.clone(),
+            function,
+        }
+    }
+
+    /// The function nested at `index` in this one (the `index`-th closure it
+    /// creates, in code order), such as a lambda's body.
+    pub(crate) fn nested(&self, index: usize) -> Emitted {
+        let child = self.function.child_fns.get(index).unwrap_or_else(|| {
+            panic!(
+                "there is no nested function {index}; the function has {}",
+                self.function.child_fns.len()
+            )
+        });
+        Emitted::new(Arc::clone(child), self.optimization)
+    }
+
+    /// The function's name.
+    pub(crate) fn name(&self) -> &str {
+        &self.function.name
+    }
+
     /// How many times `op` appears in the code.
     pub(crate) fn count(&self, op: &Bytecode) -> usize {
         self.code

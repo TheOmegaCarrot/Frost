@@ -2,7 +2,7 @@ use frost_parse::ast::{Binding, Destructure, Expr, Spanned};
 use frost_runtime::Bytecode;
 
 use crate::{
-    CompilerError, CompilerErrors,
+    CompilerErrors,
     lower::{
         FunctionBuilder, Ir, Position, StatementFragment,
         fold::constant_of,
@@ -49,15 +49,7 @@ impl FunctionBuilder<'_> {
                             constant,
                             kind: LocalKind::Binding,
                         })
-                        .map_err(|original| {
-                            self.error(format!("`{name}` is already bound"))
-                                .code("duplicate binding".into())
-                                .label_primary(binding.span, "redefined here".into())
-                                .related(
-                                    CompilerError::advice(format!("`{name}` was first bound here"))
-                                        .label(original, "original binding".into()),
-                                )
-                        })?;
+                        .map_err(|original| self.duplicate_binding(name, binding.span, original))?;
                     DestructureFragment {
                         code: vec![Ir::DefLocal(id)],
                     }

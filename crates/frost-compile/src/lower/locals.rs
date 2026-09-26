@@ -52,6 +52,24 @@ impl Locals {
         Self::default()
     }
 
+    /// The locals of a function whose captures are `names`, live from the start
+    /// and seated in this order (see [`plan_slots`](Self::plan_slots)).
+    pub(super) fn with_captures(names: impl IntoIterator<Item = String>) -> Self {
+        let mut locals = Self::new();
+        for name in names {
+            locals
+                .define(LocalInfo {
+                    name,
+                    span: SourceSpan::default(),
+                    exported: false,
+                    constant: None,
+                    kind: LocalKind::Capture,
+                })
+                .expect("a capture never collides: only a binding can");
+        }
+        locals
+    }
+
     /// Introduce a local in the current scope, returning its [`LocalId`].
     ///
     /// Errors with the original binding's span when the name is already bound in

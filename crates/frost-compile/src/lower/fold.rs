@@ -192,7 +192,7 @@ impl FunctionBuilder<'_> {
         // block's bindings), so those are the only ones it needs slots for.
         let plan = self.locals.plan_fragment_slots(&wrapped);
         let function = assemble_code(
-            wrapped,
+            &wrapped,
             self.next_label.0,
             "<fold>".to_string(),
             Arity::Exact(0),

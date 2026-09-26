@@ -30,7 +30,10 @@ use frost_parse::ast::{
     Statement,
 };
 
-use crate::lower::locals::{LocalInfo, LocalKind, Locals};
+use crate::lower::{
+    canonical_name,
+    locals::{LocalInfo, LocalKind, Locals},
+};
 
 /// The free names of a whole program (a top-level statement sequence): a name
 /// used before any binding introduces it. The program's own top-level bindings
@@ -79,13 +82,10 @@ pub(super) fn free_names(lambda: &Expr) -> Vec<String> {
             uses_rest,
             body,
         } => {
-            // The implicit parameters are `$1..$n`, with `$` a runtime alias for
-            // `$1` and `$$` the rest parameter.
+            // The implicit parameters are `$1..$n` and the rest parameter `$$`.
+            // A use of `$` is a use of `$1` (see `canonical_name`).
             for i in 0..used_params.len() {
                 scan.define(&format!("${}", i + 1));
-            }
-            if !used_params.is_empty() {
-                scan.define("$");
             }
             if *uses_rest {
                 scan.define("$$");
@@ -115,6 +115,7 @@ impl Scanner {
     /// Record a use of `name`: free if it is not in scope. A lambda's distinct
     /// free names are few, so a linear dedup scan beats a separate seen-set.
     fn usage(&mut self, name: &str) {
+        let name = canonical_name(name);
         if self.scope.resolve(name).is_none() && !self.free.iter().any(|n| n == name) {
             self.free.push(name.to_owned());
         }

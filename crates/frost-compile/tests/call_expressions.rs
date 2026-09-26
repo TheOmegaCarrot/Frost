@@ -215,6 +215,16 @@ fn arguments_are_evaluated_before_arity_is_checked() {
 }
 
 #[test]
+fn arguments_are_evaluated_before_the_callee_is_checked_to_be_a_function() {
+    // The callee is evaluated first, but whether it can be called is checked
+    // only at the call, after the arguments.
+    let message = raises("def not_a_fn = 5; not_a_fn(1 / 0)");
+    assert!(message.contains("Division by zero"), "{message}");
+    let message = raises("5(1 % 0)");
+    assert!(message.contains("Modulus by zero"), "{message}");
+}
+
+#[test]
 fn an_argument_error_prevents_the_call() {
     let probe = Probe::new();
     let message = Script::new("f(1, 1 / 0)")

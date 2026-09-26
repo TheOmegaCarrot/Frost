@@ -16,30 +16,55 @@ use std::sync::Arc;
 use frost_runtime::{Arity, Bytecode, CompiledFunction, FormatVersion};
 
 use crate::lower::locals::SlotPlan;
-use crate::lower::{FunctionBuilder, Ir, JumpType};
+use crate::lower::{FunctionBuilder, Ir, JumpType, LoweredFunction};
 
 impl FunctionBuilder<'_> {
-    /// Lower this function's fused IR into its [`CompiledFunction`].
-    /// Consumes the builder: its metadata moves into the result.
+    /// End lowering: package this function's fused IR with its metadata.
+    pub(super) fn finish(self, code: Vec<Ir>) -> LoweredFunction {
+        LoweredFunction {
+            name: self.name,
+            arity: self.arity,
+            code,
+            locals: self.locals,
+            num_labels: self.next_label.0,
+            effectful: self.effectful,
+        }
+    }
+
+    /// [`finish`](Self::finish) then [`LoweredFunction::assemble`], for a
+    /// function whose lowered form is not otherwise needed.
     pub(super) fn assemble(self, code: Vec<Ir>) -> Arc<CompiledFunction> {
-        let plan = self.locals.plan_slots(&code);
-        assemble_code(code, self.next_label.0, self.name, self.arity, plan)
+        self.finish(code).assemble()
     }
 }
 
-/// Lower a fused `Vec<Ir>` into a [`CompiledFunction`] with the given metadata.
+impl LoweredFunction {
+    /// Assemble this function into its runnable [`CompiledFunction`].
+    pub(super) fn assemble(&self) -> Arc<CompiledFunction> {
+        let plan = self.locals.plan_slots(&self.code);
+        assemble_code(
+            &self.code,
+            self.num_labels,
+            self.name.clone(),
+            self.arity,
+            plan,
+        )
+    }
+}
+
+/// Lower fused IR into a [`CompiledFunction`] with the given metadata.
 ///
 /// `num_labels` bounds the label ids the code may reference (ids `< num_labels`);
-/// it may over-count. This is the reusable core of [`FunctionBuilder::assemble`],
+/// it may over-count. This is the reusable core of [`LoweredFunction::assemble`],
 /// also used to assemble a self-contained fragment for constant-folding.
 pub(super) fn assemble_code(
-    code: Vec<Ir>,
+    code: &[Ir],
     num_labels: usize,
     name: String,
     arity: Arity,
     plan: SlotPlan,
 ) -> Arc<CompiledFunction> {
-    let label_positions = resolve_labels(&code, num_labels);
+    let label_positions = resolve_labels(code, num_labels);
 
     let mut out = Vec::new();
     let mut constants = Vec::new();
@@ -50,26 +75,26 @@ pub(super) fn assemble_code(
         match ir {
             Ir::Ready(bytecode) => {
                 debug_assert!(
-                    !is_symbolic_opcode(&bytecode),
+                    !is_symbolic_opcode(bytecode),
                     "Ir::Ready holds {bytecode:?}, an opcode another Ir variant owns"
                 );
-                out.push(bytecode);
+                out.push(*bytecode);
             }
             // Zero-width: a label contributes no instruction.
             Ir::Label(_) => {}
             Ir::Const(value) => {
                 out.push(Bytecode::LoadConst(constants.len()));
-                constants.push(value);
+                constants.push(value.clone());
             }
             Ir::KeyIndex(key) => {
                 out.push(Bytecode::HardIndexMap(key_constants.len()));
-                key_constants.push(key);
+                key_constants.push(key.clone());
             }
-            Ir::LoadLocal(id) => out.push(Bytecode::LoadLocal(plan.slot_of(id))),
-            Ir::DefLocal(id) => out.push(Bytecode::DefLocal(plan.slot_of(id))),
-            Ir::Closure { function, .. } => {
+            Ir::LoadLocal(id) => out.push(Bytecode::LoadLocal(plan.slot_of(*id))),
+            Ir::DefLocal(id) => out.push(Bytecode::DefLocal(plan.slot_of(*id))),
+            Ir::Closure { compiled, .. } => {
                 out.push(Bytecode::CreateClosure(child_fns.len()));
-                child_fns.push(function);
+                child_fns.push(Arc::clone(compiled));
             }
             Ir::Jump { kind, label } => {
                 let target =
@@ -79,7 +104,7 @@ pub(super) fn assemble_code(
                 let offset = target
                     .checked_sub(out.len() + 1)
                     .expect("backward or self jump: the VM only jumps forward");
-                out.push(jump_bytecode(kind, offset));
+                out.push(jump_bytecode(*kind, offset));
             }
         }
     }
