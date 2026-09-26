@@ -8,6 +8,7 @@ mod format_string;
 mod globals;
 mod if_expression;
 mod index_expressions;
+mod iterative_expressions;
 mod lambda_expression;
 mod locals;
 mod prewalk;
@@ -25,6 +26,7 @@ use frost_parse::{
 use frost_runtime::{Arity, Bytecode, CompiledFunction, MapKey, Value};
 
 use fold::FoldVm;
+use iterative_expressions::Iteration;
 use locals::Locals;
 
 /// A name as scope resolution sees it. `$` is shorthand for `$1`, so every use
@@ -344,20 +346,26 @@ impl FunctionBuilder<'_> {
             Expr::Filter {
                 structure,
                 operation,
-            } => todo!(),
+            } => self.compile_iteration(Iteration::Filter, structure, operation, None, position),
             Expr::MapIter {
                 structure,
                 operation,
-            } => todo!(),
+            } => self.compile_iteration(Iteration::Map, structure, operation, None, position),
             Expr::Reduce {
                 structure,
                 operation,
                 init,
-            } => todo!(),
+            } => self.compile_iteration(
+                Iteration::Reduce,
+                structure,
+                operation,
+                init.as_deref(),
+                position,
+            ),
             Expr::Foreach {
                 structure,
                 operation,
-            } => todo!(),
+            } => self.compile_iteration(Iteration::Foreach, structure, operation, None, position),
             Expr::Match { target, arms } => todo!(),
         }
     }

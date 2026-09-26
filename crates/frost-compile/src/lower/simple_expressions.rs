@@ -71,21 +71,25 @@ impl FunctionBuilder<'_> {
             });
         }
         if let Some(slot) = global_slot(name) {
-            // A pure global is fold-eligible: a call to it over foldable
-            // arguments can be evaluated at compile time. An impure one makes
-            // the whole function effectful.
-            let pure = global_pure(slot);
-            self.effectful |= !pure;
-            return Ok(ExprFragment {
-                code: vec![Ir::Ready(Bytecode::LoadGlobal(slot))],
-                foldable: pure,
-            });
+            return Ok(self.load_global(slot));
         }
         Err(self
             .error(format!("`{name}` is not defined"))
             .code("unbound name".into())
             .label_primary(span, "not found in this scope".into())
             .into())
+    }
+
+    /// Load the global at `slot`. A pure global is fold-eligible: a call to it
+    /// over foldable arguments can be evaluated at compile time. An impure one
+    /// makes the whole function effectful.
+    pub(super) fn load_global(&mut self, slot: usize) -> ExprFragment {
+        let pure = global_pure(slot);
+        self.effectful |= !pure;
+        ExprFragment {
+            code: vec![Ir::Ready(Bytecode::LoadGlobal(slot))],
+            foldable: pure,
+        }
     }
 
     pub(super) fn compile_unary(
