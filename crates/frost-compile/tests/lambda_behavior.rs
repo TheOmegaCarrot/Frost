@@ -1,6 +1,6 @@
 //! Lambda behavior, end to end: definition, calling, arity, both lambda forms,
-//! captures and scoping, recursion, higher-order use, and the errors a lambda
-//! can raise or fail to compile with.
+//! `defn`, captures and scoping, recursion, higher-order use, closures as
+//! values, and the errors a lambda can raise or fail to compile with.
 //!
 //! Most cases are drawn from the C++ implementation's lambda, closure, call,
 //! `do`, and `defn` suites, or from probing its behavior, and were checked
@@ -110,6 +110,53 @@ fn any_number_of_parameters_may_be_discarded() {
         ("(fn _, b, _ -> b)(1, 2, 3)", "2"),
         ("(fn _, ..._ -> 1)(2, 3, 4)", "1"),
         ("$($3)(1, 2, 3)", "3"),
+    ]);
+}
+
+#[test]
+fn every_parameter_list_shape_binds_its_arguments() {
+    // Unparenthesized, parenthesized, and named, each with discards, a variadic
+    // parameter, and a block body in turn.
+    assert_values(&[
+        ("(fn _ -> 1)(2)", "1"),
+        ("(fn ...rest -> rest)(1, 2)", "[1, 2]"),
+        ("(fn ..._ -> 1)(2, 3)", "1"),
+        ("(fn a, _, ...rest -> [a, rest])(1, 2, 3, 4)", "[1, [3, 4]]"),
+        ("(fn(_) -> 1)(2)", "1"),
+        ("(fn(_, b, ..._) -> b)(1, 2, 3)", "2"),
+        (
+            "(fn(a, _, ...rest) -> { def n = [a, rest]; n })(1, 2, 3)",
+            "[1, [3]]",
+        ),
+        ("(fn f(_) -> 1)(2)", "1"),
+        ("(fn f(_, _) -> 1)(2, 3)", "1"),
+        ("(fn f(...rest) -> rest)(1, 2)", "[1, 2]"),
+        ("(fn f(..._) -> 1)()", "1"),
+        ("(fn f(a, _, ...rest) -> [a, rest])(1, 2, 3)", "[1, [3]]"),
+        (
+            "(fn f(a, ...rest) -> { def s = [a, rest]; s })(1, 2)",
+            "[1, [2]]",
+        ),
+        ("(fn f() -> { def a = 1; a + 1 })()", "2"),
+    ]);
+}
+
+#[test]
+fn a_parameter_list_may_end_in_a_trailing_comma() {
+    assert_values(&[
+        ("(fn(x, y,) -> x + y)(1, 2)", "3"),
+        ("(fn f(a, b,) -> a + b)(1, 2)", "3"),
+        ("defn f(a, b,) -> a - b; f(3, 1)", "2"),
+    ]);
+}
+
+#[test]
+fn a_braced_single_expression_is_the_body() {
+    // `{a}` holds no `key: value` pair, so it is a block, not a Map.
+    assert_values(&[
+        ("(fn -> { 42 })()", "42"),
+        ("def a = 3; (fn -> {a})()", "3"),
+        ("(fn a -> {a})(4)", "4"),
     ]);
 }
 
@@ -224,6 +271,51 @@ fn a_variadic_lambda_still_requires_its_fixed_parameters() {
     ]);
 }
 
+#[test]
+fn a_discarded_parameter_still_counts_toward_arity() {
+    assert_raises(&[
+        ("(fn _, _ -> 1)(1)", "expects 2 arguments"),
+        ("(fn f(_, _) -> 1)(1, 2, 3)", "expects 2 arguments"),
+        ("(fn _, ..._ -> 1)()", "expects at least 1 arguments"),
+        ("$($3)(1, 2)", "expects 3 arguments"),
+    ]);
+}
+
+#[test]
+fn a_named_lambda_is_checked_for_arity_like_any_other() {
+    assert_raises(&[
+        (
+            "defn f(a, ...rest) -> rest; f()",
+            "expects at least 1 arguments",
+        ),
+        ("defn f() -> 1; f(1)", "expects 0 arguments"),
+        // A recursive call is checked too.
+        ("defn f(n) -> f(); f(1)", "expects 1 arguments"),
+        (
+            "defn f(n) -> if n == 0: 0 else: f(n - 1, 0); f(2)",
+            "expects 1 arguments",
+        ),
+    ]);
+}
+
+#[test]
+fn arity_is_checked_when_a_higher_order_function_calls_a_lambda() {
+    assert_raises(&[
+        ("call(fn x -> x, [])", "expects 1 arguments"),
+        ("call($($2), [1])", "expects 2 arguments"),
+        (
+            "call(fn a, ...rest -> rest, [])",
+            "expects at least 1 arguments",
+        ),
+        ("transform([1], fn a, b -> a)", "expects 2 arguments"),
+        ("and_then(1, fn -> 1)", "expects 0 arguments"),
+    ]);
+    assert_values(&[
+        ("call(fn _, ...rest -> rest, [1, 2, 3])", "[2, 3]"),
+        ("try_call(fn x -> x, []).ok", "false"),
+    ]);
+}
+
 // --- Abbreviated lambdas ---
 
 #[test]
@@ -259,6 +351,57 @@ fn double_dollar_is_the_rest_of_the_arguments() {
 }
 
 #[test]
+fn every_placeholder_combination_binds_by_position() {
+    assert_values(&[
+        ("$([$1, $3])(1, 2, 3)", "[1, 3]"),
+        ("$([$3, $1])(1, 2, 3)", "[3, 1]"),
+        ("$($9)(1, 2, 3, 4, 5, 6, 7, 8, 9)", "9"),
+        ("$([$2, $$])(1, 2, 3, 4)", "[2, [3, 4]]"),
+        ("$([$2, $$])(1, 2)", "[2, []]"),
+        ("$([$, $$])(1)", "[1, []]"),
+        ("$([$$, $1])(1, 2)", "[[2], 1]"),
+        // A placeholder may be used any number of times.
+        ("$($ * $)(3)", "9"),
+        ("$([$1, $, $1])(7)", "[7, 7, 7]"),
+    ]);
+    assert_raises(&[
+        ("$($1 + $3)(1, 2)", "expects 3 arguments"),
+        ("$($9)(1, 2, 3, 4, 5, 6, 7, 8)", "expects 9 arguments"),
+        ("$([$2, $$])(1)", "expects at least 2 arguments"),
+        ("$([$, $$])()", "expects at least 1 arguments"),
+    ]);
+}
+
+#[test]
+fn an_abbreviated_lambda_body_may_be_any_expression() {
+    assert_values(&[
+        ("$(do { def y = $ + 1; y * 2 })(3)", "8"),
+        (r#"$({[$1]: $2})("a", 1)"#, "{a: 1}"),
+        ("$(if $2: $1 else: $3)(1, false, 3)", "3"),
+        (r#"$($'<${$}>')("a")"#, r#""<a>""#),
+        ("$(-$)(3)", "-3"),
+        ("$(not $)(false)", "true"),
+        ("$($1.a)({a: 5})", "5"),
+        ("$($1[$2])([10, 20], 1)", "20"),
+        ("$($1 @ $2())(3, fn v -> v * 2)", "6"),
+        ("$(map $1 with $2)([1, 2], fn v -> v + 1)", "[2, 3]"),
+        ("$($1 and $2)(1, 2)", "2"),
+        ("$($1 or $2)(null, 2)", "2"),
+    ]);
+}
+
+#[test]
+fn an_abbreviated_lambda_captures_the_names_around_it() {
+    assert_values(&[
+        ("(fn k -> $($ + k))(10)(1)", "11"),
+        ("defn adder(k) -> $($ + k); adder(2)(3)", "5"),
+        ("(fn ...rest -> $([$, rest]))(1, 2)(0)", "[0, [1, 2]]"),
+        ("def g = fn me() -> $(me); g()() == g", "true"),
+        ("def k = 3; def f = $($ * k); f(2)", "6"),
+    ]);
+}
+
+#[test]
 fn a_nested_abbreviated_lambda_has_its_own_placeholders() {
     // The inner `$($1)` claims `$1`, so the outer takes no arguments.
     assert_values(&[("def f = $($($1)); f()(7)", "7")]);
@@ -273,7 +416,13 @@ fn a_placeholder_is_captured_by_a_plain_lambda_inside() {
         ("def f = $(fn -> $); f(5)()", "5"),
         // Within a nested abbreviated lambda, it is that one's.
         ("$($(fn -> $1)(7)())()", "7"),
+        // It counts toward the enclosing one's arity.
+        ("$(fn -> $2)(1, 2)()", "2"),
+        ("$(fn -> $$)(1, 2)()", "[1, 2]"),
+        ("$(fn v -> v + $1)(1)(2)", "3"),
+        ("$(fn -> fn -> $1)(4)()()", "4"),
     ]);
+    assert_raises(&[("$(fn -> $2)(1)", "expects 2 arguments")]);
 }
 
 #[test]
@@ -507,6 +656,183 @@ fn a_lambda_captures_block_locals() {
 }
 
 #[test]
+fn a_capture_passes_through_any_number_of_lambdas() {
+    // Parameters are known only at runtime, so these are captured whatever the
+    // optimization; `k` is a constant, and so may be hoisted instead.
+    assert_values(&[
+        ("(fn a -> fn -> fn -> fn -> fn -> a)(1)()()()()", "1"),
+        (
+            "(fn a -> fn b -> fn -> fn c -> fn -> [a, b, c])(1)(2)()(3)()",
+            "[1, 2, 3]",
+        ),
+        ("def k = 5; (fn a -> fn -> fn -> [a, k])(1)()()", "[1, 5]"),
+        ("def k = 5; (fn -> fn -> fn -> fn -> k)()()()()", "5"),
+        // A middle lambda that uses the name itself, as well as passing it on.
+        ("(fn a -> fn -> [a, fn -> a])(1)()[1]()", "1"),
+    ]);
+}
+
+#[test]
+fn many_captures_each_keep_their_own_value() {
+    assert_values(&[
+        (
+            "(fn a, b, c, d, e, f, g, h -> fn -> [h, a, g, b, f, c, e, d])(1, 2, 3, 4, 5, 6, 7, 8)()",
+            "[8, 1, 7, 2, 6, 3, 5, 4]",
+        ),
+        // Constants, which may be hoisted, interleaved with runtime values.
+        (
+            "def k1 = 10; def k2 = 20; def k3 = 30; (fn a, b -> fn -> [k2, a, k1, b, k3, a])(1, 2)()",
+            "[20, 1, 10, 2, 30, 1]",
+        ),
+        // Each nested lambda captures a different subset.
+        (
+            "(fn a, b, c -> fn -> [c, (fn -> [b, (fn -> a)()])()])(1, 2, 3)()",
+            "[3, [2, 1]]",
+        ),
+    ]);
+}
+
+#[test]
+fn a_lambda_captures_destructured_bindings() {
+    assert_values(&[
+        ("def [a, b] = [1, 2]; def f = fn -> a + b; f()", "3"),
+        ("def {k, v: w} = {k: 1, v: 2}; (fn -> [k, w])()", "[1, 2]"),
+        (
+            "def f = fn p -> { def [h, ...t] = p; fn -> [h, t] }; f([1, 2, 3])()",
+            "[1, [2, 3]]",
+        ),
+        (
+            "def f = fn m -> { def {a} as whole = m; fn -> fn -> [a, whole] }; f({a: 1})()()",
+            "[1, {a: 1}]",
+        ),
+        (
+            "def f = fn p -> do { def [x1, x2] = p; fn -> fn -> x1 * x2 }; f([3, 4])()()",
+            "12",
+        ),
+    ]);
+}
+
+#[test]
+fn a_capture_may_supply_a_computed_key() {
+    assert_values(&[
+        (r#"def f = fn k -> fn v -> ({[k]: v}); f("a")(1)"#, "{a: 1}"),
+        // A key used only in a destructuring pattern is still captured.
+        (
+            r#"def f = fn k, m -> fn -> { def {[k]: found} = m; found }; f("b", {b: 7})()"#,
+            "7",
+        ),
+        (
+            r#"def f = fn key -> fn m -> { def {[key]: v} = m; v }; f(1)({[1]: "one"})"#,
+            r#""one""#,
+        ),
+        ("def f = fn m, k -> fn -> m[k]; f([5, 6], 1)()", "6"),
+    ]);
+}
+
+#[test]
+fn a_capture_is_read_in_every_kind_of_expression() {
+    assert_values(&[
+        ("(fn p -> fn -> not p)(false)()", "true"),
+        ("(fn p -> fn -> -p)(2)()", "-2"),
+        ("(fn p, q -> fn -> p and q)(1, 2)()", "2"),
+        ("(fn p, q -> fn -> p or q)(null, 2)()", "2"),
+        ("(fn p -> fn -> if p: 1 else: 2)(false)()", "2"),
+        (r#"(fn n -> fn -> $'hi ${n}')("you")()"#, r#""hi you""#),
+        ("(fn m -> fn -> m.a)({a: 1})()", "1"),
+        ("(fn f -> fn -> f(1))(fn v -> v + 1)()", "2"),
+        ("(fn f -> fn -> 2 @ f())(fn v -> v * 5)()", "10"),
+        (
+            "(fn k -> fn -> map [1, 2] with fn v -> v * k)(3)()",
+            "[3, 6]",
+        ),
+        (
+            "(fn lim -> fn -> filter [1, 2, 3] with fn v -> v > lim)(1)()",
+            "[2, 3]",
+        ),
+        (
+            "(fn k -> fn -> reduce [1, 2] with fn a, b -> a + b + k)(10)()",
+            "13",
+        ),
+        (
+            "(fn a, b -> fn -> {x: a, y: [b]})(1, 2)()",
+            "{x: 1, y: [2]}",
+        ),
+    ]);
+}
+
+#[test]
+fn a_capture_named_like_a_global_is_the_capture() {
+    assert_values(&[
+        ("def len = 5; def f = fn -> len; f()", "5"),
+        ("(fn print -> fn -> print(1))(fn v -> v + 1)()", "2"),
+        ("(fn type -> fn -> fn -> type)(7)()()", "7"),
+        (
+            r#"def f = fn len(n) -> if n == 0: "done" else: len(n - 1); f(3)"#,
+            r#""done""#,
+        ),
+        // Outside the shadowing scope, the name is the global again.
+        ("def f = fn type -> type; [f(1), type(1)]", r#"[1, "Int"]"#),
+        (
+            "def g = do { def type = 5; fn -> type }; [g(), type(g)]",
+            r#"[5, "Function"]"#,
+        ),
+    ]);
+}
+
+#[test]
+fn a_lambda_captures_a_name_from_the_enclosing_scope() {
+    // `x` and `len` come from the scope the script is compiled in, known only
+    // when the script runs.
+    for (source, expected) in [
+        ("def f = fn -> fn -> x; f()()", Value::Int(7)),
+        ("def f = fn x -> fn -> x; f(2)()", Value::Int(2)),
+        ("(fn -> len)()", Value::Int(3)),
+        ("(fn -> fn a -> [a, x, len])()(1)", run("[1, 7, 3]")),
+    ] {
+        let tail = Script::new(source)
+            .capture("x", Value::Int(7))
+            .capture("len", Value::Int(3))
+            .run();
+        assert_eq!(tail, expected, "{source:?}");
+    }
+}
+
+#[test]
+fn a_name_a_lambda_binds_itself_is_not_taken_from_the_enclosing_scope() {
+    // `x` is in the enclosing scope with no value supplied, so the script fails
+    // to run if anything captures it.
+    for (source, expected) in [
+        ("(fn x -> x)(1)", "1"),
+        ("(fn ...x -> x)(1)", "[1]"),
+        ("is_function((fn x() -> x)())", "true"),
+        ("(fn -> { def x = 2; x })()", "2"),
+        ("(fn -> fn x -> x)()(3)", "3"),
+        ("(fn -> do { def [x] = [4]; x })()", "4"),
+    ] {
+        let tail = Script::new(source).in_scope("x").run();
+        assert_eq!(tail, run(expected), "{source:?} is {expected}");
+    }
+}
+
+#[test]
+fn a_nested_scope_may_rebind_a_parameter_or_self_name() {
+    // A `do` block is its own scope, and a nested lambda its own function.
+    assert_values(&[
+        ("(fn x -> do { def x = 2; x })(1)", "2"),
+        ("(fn x -> do { def x = x * 10; x })(2)", "20"),
+        ("(fn x -> fn -> { def x = x + 1; x })(1)()", "2"),
+        ("(fn f() -> do { def f = 1; f })()", "1"),
+        ("(fn x -> do { defn x() -> 5; x() })(1)", "5"),
+        ("is_function((fn f -> fn f() -> f)(1)())", "true"),
+        ("(fn f() -> fn f -> f)()(5)", "5"),
+        (
+            "def h = (fn -> { def g = 1; fn g() -> g })(); h() == h",
+            "true",
+        ),
+    ]);
+}
+
+#[test]
 fn a_use_before_a_later_definition_reads_the_outer_name() {
     // A definition shadows only the uses after it.
     assert_values(&[
@@ -562,6 +888,55 @@ fn a_closure_created_before_a_shadowing_definition_keeps_the_outer_name() {
 #[test]
 fn a_parameter_may_be_used_only_in_a_definition() {
     assert_values(&[("def f = fn p -> { def x = p + 1; x }; f(10)", "11")]);
+}
+
+// --- `defn` ---
+
+#[test]
+fn defn_works_in_every_scope() {
+    assert_values(&[
+        ("(fn -> { defn g(v) -> v * 2; g(3) })()", "6"),
+        ("(fn -> do { defn g(v) -> v * 2; g(4) })()", "8"),
+        ("(fn -> fn -> { defn g() -> 1; g() })()()", "1"),
+        ("if true: do { defn g() -> 1; g() } else: 0", "1"),
+        ("$(do { defn g(v) -> v * 2; g($) })(5)", "10"),
+        ("{a: do { defn g() -> 1; g }}.a()", "1"),
+        (
+            "transform([1, 2], do { defn dbl(v) -> v * 2; dbl })",
+            "[2, 4]",
+        ),
+        (r#"$'${do { defn g() -> 1; g() }}'"#, r#""1""#),
+    ]);
+}
+
+#[test]
+fn defn_takes_every_parameter_shape() {
+    assert_values(&[
+        ("defn f(_) -> 1; f(2)", "1"),
+        ("defn f(_, ...rest) -> rest; f(1, 2, 3)", "[2, 3]"),
+        ("defn f(..._) -> 1; f(1, 2)", "1"),
+        ("defn f() -> { def a = 1; a }; f()", "1"),
+        ("defn f(a, _, ...rest) -> [a, rest]; f(1, 2)", "[1, []]"),
+    ]);
+}
+
+#[test]
+fn a_defn_captures_the_enclosing_lambdas_parameters() {
+    assert_values(&[(
+        "def sum_to = fn n -> { defn go(i, acc) -> if i > n: acc else: go(i + 1, acc + i); go(1, 0) }; sum_to(4)",
+        "10",
+    )]);
+}
+
+#[test]
+fn a_defn_in_a_nested_scope_shadows_an_outer_name() {
+    assert_values(&[
+        ("def f = 1; do { defn f() -> 2; f() }", "2"),
+        (
+            r#"def f = 1; def g = do { defn f(n) -> if n == 0: "base" else: f(n - 1); f(2) }; [g, f]"#,
+            r#"["base", 1]"#,
+        ),
+    ]);
 }
 
 // --- Recursion ---
@@ -775,6 +1150,48 @@ fn recursion_works_through_a_nested_named_lambda() {
 }
 
 #[test]
+fn a_named_lambda_recurses_from_nested_lambdas_at_any_depth() {
+    assert_values(&[
+        (
+            "defn f(n) -> if n == 0: 0 else: (fn -> (fn -> f(n - 1))())(); f(5)",
+            "0",
+        ),
+        ("defn f(n) -> if n == 0: 0 else: $(f($))(n - 1); f(5)", "0"),
+    ]);
+}
+
+#[test]
+fn a_named_lambda_recurses_through_a_higher_order_function() {
+    assert_values(&[
+        (
+            "defn sum(n) -> if n == 0: 0 else: n + transform([n - 1], sum)[0]; sum(4)",
+            "10",
+        ),
+        (
+            r"defn depth(t) -> if is_array(t): 1 + fold(transform(t, depth), fn a, b -> if a > b: a else: b, 0) else: 0
+            depth([[1], [[2]]])",
+            "3",
+        ),
+        (
+            "defn f(n) -> if n == 0: 0 else: 1 + call(f, [n - 1]); f(3)",
+            "3",
+        ),
+    ]);
+}
+
+#[test]
+fn a_variadic_lambda_recurses_over_its_arguments() {
+    assert_values(&[(
+        r"defn total(...xs) -> if xs == []: 0 else: do {
+            def [head, ...tail] = xs
+            head + call(total, tail)
+        }
+        total(1, 2, 3)",
+        "6",
+    )]);
+}
+
+#[test]
 fn anonymous_lambdas_may_recurse_by_self_application() {
     assert_values(&[
         (
@@ -876,6 +1293,24 @@ fn a_lambda_is_a_function_value() {
 }
 
 #[test]
+fn a_function_is_truthy() {
+    assert_values(&[
+        ("not (fn -> false)", "false"),
+        ("(fn -> null) and 2", "2"),
+        ("if $(false): 1 else: 2", "1"),
+    ]);
+}
+
+#[test]
+fn a_function_is_not_an_operand_of_ordering_or_arithmetic() {
+    assert_raises(&[
+        ("def f = fn -> 1; f < f", "Function is not orderable"),
+        ("(fn -> 1) + 1", "Function + Int"),
+        ("-(fn -> 1)", "Function"),
+    ]);
+}
+
+#[test]
 fn a_closure_equals_only_itself() {
     assert_values(&[
         ("def f = fn -> 1; [f == f, equal(f, f)]", "[true, true]"),
@@ -883,7 +1318,33 @@ fn a_closure_equals_only_itself() {
             "def f = fn -> 1; def g = fn -> 1; [f == g, equal(f, g)]",
             "[false, false]",
         ),
+        ("def f = fn -> 1; [f != f, f != fn -> 1]", "[false, true]"),
+        ("[(fn -> 1) == 1, (fn -> 1) == null]", "[false, false]"),
+        ("def f = $(1); [f == f, $(1) == $(1)]", "[true, false]"),
     ]);
+}
+
+#[test]
+fn each_evaluation_of_a_lambda_makes_a_distinct_closure() {
+    // Whatever it captures, and even if it captures nothing.
+    assert_values(&[
+        ("def make = fn -> fn -> 1; make() == make()", "false"),
+        ("def make = fn p -> fn -> p; make(1) == make(1)", "false"),
+        ("def make = fn -> $($); make() == make()", "false"),
+        (
+            "def fs = transform([1, 2], fn _ -> fn -> 1); fs[0] == fs[1]",
+            "false",
+        ),
+        ("(fn -> 1) == (fn -> 1)", "false"),
+    ]);
+}
+
+#[test]
+fn a_closure_equals_itself_wherever_it_is_stored() {
+    assert_values(&[(
+        "def f = fn -> 1; [[f] == [f], {a: f} == {a: f}, id(f) == f, transform([f], fn g -> g)[0] == f]",
+        "[true, true, true, true]",
+    )]);
 }
 
 // --- Runtime errors ---
@@ -917,6 +1378,31 @@ fn an_error_in_a_lambda_propagates_to_its_caller() {
 }
 
 #[test]
+fn an_error_propagates_out_of_nested_lambdas() {
+    assert_raises(&[
+        (
+            "def f = fn -> (fn -> (fn -> 1 / 0)())(); f()",
+            "Division by zero",
+        ),
+        ("transform([1, 0], fn v -> 1 / v)", "Division by zero"),
+        (
+            "defn f(n) -> if n == 0: 1 / 0 else: f(n - 1); f(3)",
+            "Division by zero",
+        ),
+        ("(fn -> 1)()()", "Int"),
+    ]);
+}
+
+#[test]
+fn a_lambdas_body_errors_only_when_called() {
+    assert_values(&[
+        ("def f = fn -> 1 / 0; 5", "5"),
+        ("if false: (fn -> 1 / 0)() else: 1", "1"),
+        ("def f = fn -> fn -> 1 / 0; is_function(f())", "true"),
+    ]);
+}
+
+#[test]
 fn a_function_is_not_a_map_key() {
     assert_raises(&[(r#"{[fn -> 1]: "x"}"#, "Function")]);
 }
@@ -936,6 +1422,52 @@ fn an_unbound_name_is_a_compile_error_wherever_it_appears() {
             "`missing` is not defined",
         ),
         ("if false: missing else: 2", "`missing` is not defined"),
+    ]);
+}
+
+#[test]
+fn an_unbound_name_is_a_compile_error_in_any_lambda_form() {
+    assert_compile_errors(&[
+        ("def f = $($ + missing); 1", "`missing` is not defined"),
+        ("defn f() -> missing; 1", "`missing` is not defined"),
+        (
+            "def f = fn ...rest -> missing; 1",
+            "`missing` is not defined",
+        ),
+        ("def f = fn -> { missing; 1 }", "`missing` is not defined"),
+        (
+            "def f = fn -> { def y = missing; y }",
+            "`missing` is not defined",
+        ),
+        ("def f = fn -> missing(1)", "`missing` is not defined"),
+        ("def f = fn -> $'${missing}'", "`missing` is not defined"),
+        (
+            "def f = fn m -> { def {[missing]: v} = m; v }",
+            "`missing` is not defined",
+        ),
+        ("{[(fn -> missing)()]: 1}", "`missing` is not defined"),
+        (
+            "def f = fn -> if true: 1 else: fn -> missing",
+            "`missing` is not defined",
+        ),
+    ]);
+}
+
+#[test]
+fn a_lambdas_bindings_are_not_visible_outside_it() {
+    assert_compile_errors(&[
+        ("(fn p -> p)(1); p", "`p` is not defined"),
+        ("def g = fn f() -> 1; f()", "`f` is not defined"),
+        (
+            "def f = fn -> { def local = 1; local }; local",
+            "`local` is not defined",
+        ),
+        (
+            "def f = fn -> { def g = fn y -> y; y }",
+            "`y` is not defined",
+        ),
+        ("[fn a -> a, fn -> a]", "`a` is not defined"),
+        ("def f = fn ...rest -> rest; rest", "`rest` is not defined"),
     ]);
 }
 
@@ -988,6 +1520,56 @@ fn a_name_bound_twice_in_a_lambdas_scope_is_a_compile_error() {
         (
             "def g = fn f() -> { def f = 1; null }",
             "`f` is already bound",
+        ),
+    ]);
+}
+
+#[test]
+fn every_way_of_binding_a_name_twice_in_a_lambda_is_a_compile_error() {
+    assert_compile_errors(&[
+        // Among parameters, however far apart.
+        ("def f = fn a, b, a -> a", "`a` is already bound"),
+        ("def g = fn f(x, f) -> 1", "`f` is already bound"),
+        ("def g = fn f(a, ...f) -> 1", "`f` is already bound"),
+        ("defn f(a, a) -> a", "`a` is already bound"),
+        ("defn f(f) -> 1", "`f` is already bound"),
+        // Among the body's own definitions.
+        (
+            "def f = fn -> { def y = 1; def y = 2; y }",
+            "`y` is already bound",
+        ),
+        (
+            "def f = fn -> { defn g() -> 1; defn g() -> 2; g() }",
+            "`g` is already bound",
+        ),
+        // A body definition against a parameter or the self-name.
+        (
+            "def f = fn x -> { def [x, y] = [1, 2]; y }",
+            "`x` is already bound",
+        ),
+        (
+            "def f = fn x -> { def {x} = {x: 1}; x }",
+            "`x` is already bound",
+        ),
+        (
+            "def h = fn f(x) -> { def [a, f] = [1, 2]; a }",
+            "`f` is already bound",
+        ),
+        (
+            "def f = fn g -> { defn g() -> 1; g() }",
+            "`g` is already bound",
+        ),
+        (
+            "def h = fn f() -> { defn f() -> 1; f }",
+            "`f` is already bound",
+        ),
+        // Top-level `defn`s are definitions in one scope, too.
+        ("defn f() -> 1; defn f() -> 2; f()", "`f` is already bound"),
+        // In a nested lambda, even one never created.
+        ("def f = fn -> fn x, x -> x", "`x` is already bound"),
+        (
+            "if false: (fn y -> { def y = 1; y }) else: 1",
+            "`y` is already bound",
         ),
     ]);
 }

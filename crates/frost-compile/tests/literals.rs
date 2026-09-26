@@ -59,6 +59,21 @@ fn bytes_literal() {
 }
 
 #[test]
+fn float_that_underflows_to_zero_is_not_an_error() {
+    // The Float validator only rejects NaN and Infinity. A magnitude too small
+    // to represent underflows to zero, a perfectly ordinary Float, unlike the
+    // overflow case below.
+    assert_eq!(run("1e-400"), Value::try_from(0.0).unwrap());
+}
+
+#[test]
+fn string_literal_holds_non_ascii_utf8_content() {
+    // `String` is UTF-8 by construction; the compiler must carry non-ASCII
+    // bytes through unchanged.
+    assert_eq!(run(r#""héllo, 世界""#), Value::from("héllo, 世界"));
+}
+
+#[test]
 fn float_that_overflows_to_infinity_is_a_compile_error() {
     // A finite-looking literal whose magnitude overflows f64 is rejected at
     // compile time by the Float validator (the reachable path, since `NaN`

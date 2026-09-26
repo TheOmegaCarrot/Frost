@@ -123,6 +123,18 @@ fn a_call_may_take_no_arguments() {
 }
 
 #[test]
+fn a_call_may_take_many_arguments() {
+    let args: Vec<i64> = (1..=8).collect();
+    let list = args
+        .iter()
+        .map(i64::to_string)
+        .collect::<Vec<_>>()
+        .join(", ");
+    let (_, calls) = run_probed(&format!("f({list})"));
+    assert_eq!(calls, vec![ints(&args)]);
+}
+
+#[test]
 fn arguments_are_expressions() {
     let (_, calls) = run_probed("f(1 + 2, if true: 4 else: 5, do { def y = 6; y })");
     assert_eq!(calls, vec![ints(&[3, 4, 6])]);
@@ -164,6 +176,58 @@ fn a_call_is_an_operand() {
     assert_eq!(run("plus(1, 2) * 10"), Value::Int(30));
     assert_eq!(run("not is_int(1.5)"), Value::Bool(true));
     assert_eq!(run("def y = plus(1, 2); y + y"), Value::Int(6));
+}
+
+// --- Threading (`@`) ---
+//
+// `a @ f(x)` parses to `f(a, x)` (see `frost-parse`'s postfix tests), so these
+// tests exercise the same call lowering through the threading spelling.
+
+#[test]
+fn threading_calls_the_function_with_the_threaded_value_first() {
+    let (_, calls) = run_probed("1 @ f()");
+    assert_eq!(calls, vec![ints(&[1])], "a @ f() is f(a)");
+
+    let (_, calls) = run_probed("1 @ f(2, 3)");
+    assert_eq!(calls, vec![ints(&[1, 2, 3])], "a @ f(x, y) is f(a, x, y)");
+}
+
+#[test]
+fn threading_chains_left_to_right() {
+    // 1 @ f(2) @ f(3) == f(f(1, 2), 3): the inner threaded call runs first.
+    let (tail, calls) = run_probed("1 @ f(2) @ f(3)");
+    let inner = Value::from(ints(&[1, 2]));
+    assert_eq!(
+        calls,
+        vec![ints(&[1, 2]), vec![inner.clone(), Value::Int(3)]],
+        "the first threaded call's result feeds the second"
+    );
+    assert_eq!(tail, Value::from(vec![inner, Value::Int(3)]));
+}
+
+#[test]
+fn threading_continues_across_a_leading_newline() {
+    // `@` cannot start a statement, so a newline before it is a continuation.
+    let (_, calls) = run_probed("1\n@ f(2)");
+    assert_eq!(calls, vec![ints(&[1, 2])]);
+}
+
+#[test]
+fn threading_into_an_indexed_callee() {
+    let add = Value::native("add", Arity::Exact(2), |_, args| {
+        let (Value::Int(a), Value::Int(b)) = (&args[0], &args[1]) else {
+            panic!("expected two Ints");
+        };
+        Ok(Value::Int(a + b))
+    });
+    let tail = Script::new("5 @ m.add(2)")
+        .capture("m", Value::map([("add", add)]))
+        .run();
+    assert_eq!(
+        tail,
+        Value::Int(7),
+        "threading reaches through a hard index to find its callee"
+    );
 }
 
 // --- Evaluation ---
@@ -350,4 +414,12 @@ fn a_folded_call_is_a_constant_for_its_parent() {
     assert_eq!(calls(&emitted), 0, "{emitted:?}");
     assert_eq!(emitted.count(&Bytecode::PushInt(3)), 1, "{emitted:?}");
     assert_eq!(emitted.count(&Bytecode::Multiply), 1, "{emitted:?}");
+}
+
+#[test]
+fn threading_over_pure_globals_folds() {
+    // `1 @ plus(2)` parses to `plus(1, 2)`, so it folds the same way.
+    let emitted = code("1 @ plus(2)", FOLD);
+    assert_eq!(calls(&emitted), 0, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(3)), 1, "{emitted:?}");
 }

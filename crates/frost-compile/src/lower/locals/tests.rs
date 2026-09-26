@@ -2,7 +2,7 @@
 //! scopes, same-scope duplicate rejection, scope unwinding, the constant
 //! metadata a binding carries, and the slot plan assembly derives from the code.
 
-use crate::lower::locals::{LocalInfo, LocalKind, Locals};
+use crate::lower::locals::{LocalInfo, LocalKind, Locals, SlotPlan};
 use crate::lower::{Ir, LocalId};
 
 use frost_parse::ast::SourceSpan;
@@ -142,6 +142,106 @@ fn a_shadow_constant_is_independent_of_the_binding_it_shadows() {
 }
 
 #[test]
+fn at_top_scope_reflects_the_open_scope_depth() {
+    let mut locals = Locals::new();
+    assert!(locals.at_top_scope(), "no nested scope open yet");
+    locals.enter();
+    assert!(!locals.at_top_scope(), "inside a nested scope");
+    locals.enter();
+    assert!(!locals.at_top_scope(), "still nested, two levels deep");
+    locals.exit();
+    assert!(!locals.at_top_scope(), "one level is still open");
+    locals.exit();
+    assert!(locals.at_top_scope(), "back to the top after both exits");
+}
+
+#[test]
+#[should_panic(expected = "exit without a matching enter")]
+fn exit_without_a_matching_enter_panics() {
+    let mut locals = Locals::new();
+    locals.exit();
+}
+
+#[test]
+fn two_inherited_locals_of_the_same_name_do_not_collide() {
+    // Only a binding is checked for duplicates; two inherited locals (captures
+    // here) sharing a name is not itself flagged, since the caller is trusted to
+    // supply distinct capture names.
+    let mut locals = Locals::new();
+    let first = locals
+        .define(LocalInfo {
+            name: "x".to_string(),
+            span: span(0),
+            exported: false,
+            constant: None,
+            kind: LocalKind::Capture,
+        })
+        .unwrap();
+    let second = locals
+        .define(LocalInfo {
+            name: "x".to_string(),
+            span: span(1),
+            exported: false,
+            constant: None,
+            kind: LocalKind::Capture,
+        })
+        .unwrap();
+    assert_ne!(first, second);
+    assert_eq!(
+        locals.resolve("x"),
+        Some(second),
+        "the more recently defined inherited local wins resolution"
+    );
+}
+
+#[test]
+fn a_binding_may_shadow_a_same_scope_hoisted_capture() {
+    // A hoisted capture is inherited, just like a plain capture, so it too is
+    // exempt from the duplicate check when a real binding shadows it.
+    let mut locals = Locals::new();
+    let hoisted = locals
+        .define(LocalInfo {
+            name: "x".to_string(),
+            span: span(0),
+            exported: false,
+            constant: Some(Value::Int(1)),
+            kind: LocalKind::Hoisted,
+        })
+        .unwrap();
+    let bound = bind(&mut locals, "x", span(1)).unwrap();
+    assert_ne!(hoisted, bound);
+    assert_eq!(
+        locals.resolve("x"),
+        Some(bound),
+        "the binding wins once defined"
+    );
+    assert_eq!(
+        bind(&mut locals, "x", span(2)),
+        Err(span(1)),
+        "a second real binding is still a duplicate"
+    );
+}
+
+#[test]
+fn with_captures_seeds_hoisted_constants_but_not_plain_captures() {
+    let locals = Locals::with_captures(
+        ["plain".to_string()],
+        [("known".to_string(), Value::Int(99))],
+    );
+    let plain = locals
+        .resolve("plain")
+        .expect("a capture is live from the start");
+    let known = locals
+        .resolve("known")
+        .expect("a hoisted capture is live from the start");
+    assert!(
+        locals.constant(plain).is_none(),
+        "a plain capture carries no compile-time value"
+    );
+    assert!(matches!(locals.constant(known), Some(Value::Int(99))));
+}
+
+#[test]
 fn a_binding_may_shadow_a_same_scope_capture() {
     let mut locals = Locals::new();
     let captured = locals
@@ -198,6 +298,51 @@ fn plan_lists_captures_first_then_defined_locals() {
     let table = plan.into_name_table();
     let names: Vec<&str> = table.iter().map(|e| e.name.as_str()).collect();
     assert_eq!(names, vec!["captured", "a", "b"]);
+}
+
+#[test]
+fn plan_slots_orders_body_locals_by_first_definition_not_creation() {
+    // `a` and `b` are created in that order, but the code defines `b` first:
+    // the slot order follows the code, not `infos`.
+    let mut locals = Locals::new();
+    let captured = capture(&mut locals, "captured");
+    let a = bind(&mut locals, "a", span(1)).unwrap();
+    let b = bind(&mut locals, "b", span(2)).unwrap();
+
+    let plan = locals.plan_slots(&[def(b), def(a)]);
+    assert_eq!(plan.num_captures(), 1);
+    assert_eq!(plan.slot_of(captured), 0, "the capture always leads");
+    assert_eq!(plan.slot_of(b), 1, "b is defined first in the code");
+    assert_eq!(plan.slot_of(a), 2);
+}
+
+#[test]
+fn a_hoisted_capture_is_not_counted_or_seated_as_a_capture() {
+    // A hoisted constant is built into the function body; it never occupies a
+    // frame slot, unlike an ordinary (seated) capture.
+    let locals = Locals::with_captures([], [("h".to_string(), Value::Int(1))]);
+    let plan = locals.plan_slots(&[]);
+    assert_eq!(
+        plan.num_captures(),
+        0,
+        "a hoisted constant does not count as a seated capture"
+    );
+    assert!(plan.into_name_table().is_empty());
+}
+
+#[test]
+#[should_panic(expected = "no slot")]
+fn a_hoisted_capture_has_no_slot_to_ask_for() {
+    let locals = Locals::with_captures([], [("h".to_string(), Value::Int(1))]);
+    let hoisted = locals.resolve("h").unwrap();
+    locals.plan_slots(&[]).slot_of(hoisted);
+}
+
+#[test]
+fn empty_slot_plan_has_no_captures_or_names() {
+    let plan = SlotPlan::empty();
+    assert_eq!(plan.num_captures(), 0);
+    assert!(plan.into_name_table().is_empty());
 }
 
 #[test]

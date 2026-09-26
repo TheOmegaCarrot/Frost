@@ -82,6 +82,24 @@ fn loading_an_impure_global_makes_the_function_effectful() {
 }
 
 #[test]
+fn an_unbound_name_lookup_reports_its_canonical_form() {
+    // `$` is only ever produced by the parser inside an abbreviated lambda,
+    // where it is always defined as a parameter; an unbound `$` is unreachable
+    // through real source, so this drives `compile_name_lookup` directly to
+    // pin that the error names the canonical `$1`, not the literal `$`.
+    let options = options();
+    let mut builder = builder(&options);
+    let errors = builder
+        .compile_name_lookup("$", SourceSpan::default())
+        .expect_err("nothing defines `$1` here");
+    let rendered = errors.render_plain();
+    assert!(
+        rendered.contains("`$1` is not defined"),
+        "the error names the canonical form: {rendered}"
+    );
+}
+
+#[test]
 fn every_impure_global_makes_the_function_effectful() {
     // The effect sources: output, mutable state, and imports.
     let options = options();

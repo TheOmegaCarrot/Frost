@@ -4,7 +4,8 @@
 //! A `do` block runs its statements in order, then yields its final expression.
 //! It is its own scope: its bindings are visible only inside it, and may shadow
 //! enclosing ones. The harness runs every behavioral case under every
-//! optimization permutation.
+//! optimization permutation; code-shape cases pin exactly the options they are
+//! about.
 
 mod common;
 
@@ -107,7 +108,116 @@ fn a_block_statement_leaves_the_stack_balanced() {
     assert_eq!(tail, Value::Int(5));
 }
 
+/// Defines `note(v)`, which appends `v` to a log and returns it, and `log()`,
+/// the values noted so far, in order. A script appends its own statements.
+const NOTE: &str = r"def cell = mutable_cell([])
+defn note(v) -> { cell.exchange(cell.get() + [v]); v }
+defn log() -> cell.get()
+";
+
+#[test]
+fn every_statement_runs_once_in_order() {
+    let source = format!("{NOTE}do {{ note(1); note(2); def a = note(3); note(a + 1) }}; log()");
+    assert_eq!(run(&source), run("[1, 2, 3, 4]"));
+    // A block bound to a name runs once, not at each use of the name.
+    let source = format!("{NOTE}def y = do {{ note(1) }}; [y, y, log()]");
+    assert_eq!(run(&source), run("[1, 1, [1]]"));
+    // A nested block's statements run where the block is reached.
+    let source = format!(
+        "{NOTE}do {{ note(1); do {{ note(2); note(3) }}; note(4); do {{ note(5) }} }}; log()"
+    );
+    assert_eq!(run(&source), run("[1, 2, 3, 4, 5]"));
+}
+
+#[test]
+fn a_block_may_yield_any_value() {
+    assert_eq!(run("do { null }"), Value::Null);
+    assert_eq!(run("do { def y = 1; [y, {y: y}] }"), run("[1, {y: 1}]"));
+    assert_eq!(
+        run("(do { def y = 1; fn -> y })()"),
+        Value::Int(1),
+        "a Function closing over the block's binding"
+    );
+}
+
+#[test]
+fn a_block_in_a_lambda_runs_afresh_on_each_call() {
+    assert_eq!(
+        run("def f = fn n -> do { def m = n * 2; m + 1 }; [f(1), f(2)]"),
+        run("[3, 5]")
+    );
+}
+
+#[test]
+fn a_block_leaves_exactly_its_value_among_others() {
+    for (source, expected) in [
+        ("[1, do { def a = x; def b = a + 1; b }, 3]", "[1, 11, 3]"),
+        ("do { do { def a = 1; a }; do { def b = x; b }; 5 }", "5"),
+        ("do { if x: 1 else: 2; x and 3; x or 4; 5 }", "5"),
+        ("10 * do { def a = x; do { def b = a; b } - 9 }", "10"),
+        (
+            r#"{[do { def k = "a"; k }]: do { def v = x; v }}"#,
+            "{a: 10}",
+        ),
+    ] {
+        let tail = Script::new(source).capture("x", Value::Int(10)).run();
+        assert_eq!(tail, run(expected), "{source:?}");
+    }
+}
+
 // --- Scope ---
+
+#[test]
+fn a_nested_block_binding_is_not_visible_in_the_enclosing_block() {
+    let rendered = compile_errors("do { do { def z = 1; z }; z }").render_plain();
+    assert!(rendered.contains("`z` is not defined"), "{rendered}");
+}
+
+#[test]
+fn bindings_resolve_through_several_enclosing_blocks() {
+    // The innermost `a` shadows the top-level one only inside its own block.
+    assert_eq!(
+        run("def a = 1; do { def b = a + 1; do { def a = 10; a + b } + a }"),
+        Value::Int(13)
+    );
+}
+
+#[test]
+fn a_use_before_a_shadowing_definition_reads_the_enclosing_name() {
+    assert_eq!(
+        run("def y = 1; do { def z = y; def y = 2; z + y }"),
+        Value::Int(3)
+    );
+}
+
+#[test]
+fn a_name_used_before_its_definition_in_the_block_is_unbound() {
+    for (source, name) in [
+        ("do { def z = w; def w = 1; z }", "w"),
+        ("do { def q = q; q }", "q"),
+    ] {
+        let rendered = compile_errors(source).render_plain();
+        assert!(
+            rendered.contains(&format!("`{name}` is not defined")),
+            "{source:?}: {rendered}"
+        );
+    }
+}
+
+#[test]
+fn a_block_binding_may_shadow_a_global() {
+    assert_eq!(
+        run("[do { def type = 5; type + 1 }, type(1)]"),
+        run(r#"[6, "Int"]"#),
+        "the global is back in view after the block"
+    );
+}
+
+#[test]
+fn a_block_may_not_export() {
+    let rendered = compile_errors("do { export def y = 1; y }").render_plain();
+    assert!(rendered.contains("unexpected export"), "{rendered}");
+}
 
 #[test]
 fn a_block_binding_is_not_visible_after_the_block() {
@@ -238,6 +348,144 @@ fn a_raising_block_is_left_for_runtime() {
     let emitted = code("do { def y = 1 / 0; 5 }", FOLD);
     assert_eq!(emitted.count(&Bytecode::Divide), 1, "{emitted:?}");
     assert_eq!(definitions(&emitted), 1, "{emitted:?}");
+}
+
+#[test]
+fn a_block_binding_a_lambda_folds_whole() {
+    // Creating a pure lambda is safe in a fold; the block's value is constant.
+    let emitted = code("do { def g = fn a -> a + 1; 5 }", FOLD);
+    assert_eq!(definitions(&emitted), 0, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(5)), 1, "{emitted:?}");
+}
+
+#[test]
+fn an_effectful_binding_keeps_the_block() {
+    // The lambda would call `print`, so creating it keeps the block from folding,
+    // even though it is never called.
+    let source = "do { def g = fn -> print(1); 5 }";
+    assert_eq!(run(source), Value::Int(5));
+    let emitted = code(source, FOLD);
+    assert_eq!(definitions(&emitted), 1, "{emitted:?}");
+}
+
+#[test]
+fn nested_constant_blocks_fold_whole() {
+    let emitted = code("do { def a = 1; do { def a = 2; 5 } }", FOLD);
+    assert_eq!(definitions(&emitted), 0, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(5)), 1, "{emitted:?}");
+}
+
+#[test]
+fn a_constant_inner_block_folds_inside_a_runtime_one() {
+    // As the tail and as an operand, the inner block folds on its own; the outer
+    // block's runtime binding stays.
+    for source in [
+        "do { def a = x; do { def b = 2; 5 } }",
+        "do { def a = x; do { def b = 2; 5 } + a }",
+    ] {
+        let emitted = code(source, FOLD);
+        assert_eq!(definitions(&emitted), 1, "only `a`: {emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::PushInt(5)), 1, "{emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::PushInt(2)), 0, "{emitted:?}");
+    }
+    assert_eq!(
+        Script::new("do { def a = x; do { def b = 2; 5 } + a }")
+            .capture("x", Value::Int(10))
+            .run(),
+        Value::Int(15)
+    );
+}
+
+#[test]
+fn a_folded_block_may_shadow_a_runtime_binding() {
+    let source = "def y = x; do { def y = 2; 5 } + y";
+    let tail = Script::new(source).capture("x", Value::Int(10)).run();
+    assert_eq!(tail, Value::Int(15));
+    let emitted = code(source, FOLD);
+    assert_eq!(definitions(&emitted), 1, "only the outer `y`: {emitted:?}");
+}
+
+#[test]
+fn a_block_folds_inside_a_lambda() {
+    let source = "fn n -> do { def y = 2; 5 } + n";
+    assert_eq!(run(&format!("({source})(1)")), Value::Int(6));
+    let body = code(source, FOLD).nested(0);
+    assert_eq!(body.count(&Bytecode::PushInt(5)), 1, "{body:?}");
+    assert_eq!(
+        body.count(&Bytecode::PushInt(2)),
+        0,
+        "the block's binding is gone: {body:?}"
+    );
+}
+
+#[test]
+fn propagation_reaches_into_nested_blocks() {
+    let emitted = code(
+        "do { def a = 2; do { def b = a * 3; b + 1 } }",
+        FOLD_AND_PROPAGATE,
+    );
+    assert_eq!(definitions(&emitted), 0, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(7)), 1, "{emitted:?}");
+}
+
+#[test]
+fn propagation_stops_at_a_runtime_shadow() {
+    let source = "do { def a = 2; do { def a = x; a + 1 } }";
+    let tail = Script::new(source).capture("x", Value::Int(10)).run();
+    assert_eq!(tail, Value::Int(11), "the inner `a` is `x`");
+    let emitted = code(source, FOLD_AND_PROPAGATE);
+    assert_eq!(
+        emitted.count(&Bytecode::Add),
+        1,
+        "the inner `a` is runtime: {emitted:?}"
+    );
+}
+
+#[test]
+fn a_runtime_bodys_constant_if_tail_folds_alone() {
+    let emitted = code("do { def y = x; if true: 1 else: 2 }", FOLD);
+    assert!(
+        !emitted
+            .code
+            .iter()
+            .any(|op| matches!(op, Bytecode::Jump(_) | Bytecode::JumpIfFalse(_))),
+        "the tail folds: {emitted:?}"
+    );
+    assert_eq!(emitted.count(&Bytecode::PushInt(1)), 1, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::PushInt(2)), 0, "{emitted:?}");
+}
+
+#[test]
+fn a_folded_block_may_decide_a_branch() {
+    let emitted = code(
+        "if do { def c = 1; c == 1 }: x else: 2",
+        OptimizationOptions {
+            branch_eliminate: true,
+            ..FOLD_AND_PROPAGATE
+        },
+    );
+    assert_eq!(definitions(&emitted), 0, "the block folded: {emitted:?}");
+    assert_eq!(
+        emitted.count(&Bytecode::PushInt(2)),
+        0,
+        "the alternate is dropped: {emitted:?}"
+    );
+    assert!(
+        !emitted
+            .code
+            .iter()
+            .any(|op| matches!(op, Bytecode::Jump(_) | Bytecode::JumpIfFalse(_))),
+        "the test is eliminated: {emitted:?}"
+    );
+}
+
+#[test]
+fn a_raising_block_in_an_untaken_branch_never_raises() {
+    let source = "if x: do { def y = 1 / 0; y } else: 5";
+    let tail = Script::new(source).capture("x", Value::Bool(false)).run();
+    assert_eq!(tail, Value::Int(5));
+    let message = Script::new(source).capture("x", Value::Bool(true)).raises();
+    assert!(message.contains("Division by zero"), "{message}");
 }
 
 #[test]

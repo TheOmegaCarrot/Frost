@@ -81,6 +81,74 @@ fn without_implicit_export_a_plain_def_is_not_exported() {
 }
 
 #[test]
+fn explicit_export_works_even_without_the_implicit_export_option() {
+    // `export` on a binding is independent of the compiler option: it always
+    // harvests that binding, implicit export or not.
+    let finished = Script::new("export def y = x; y")
+        .capture("x", Value::Int(5))
+        .finish();
+    assert_eq!(
+        finished.exports.get("y"),
+        Some(&Value::Int(5)),
+        "an explicit export is harvested with the option off"
+    );
+}
+
+#[test]
+fn multiple_outer_names_are_each_captured_independently() {
+    // Two free names, both in the outer scope: each becomes its own capture,
+    // seated with its own supplied value.
+    let tail = Script::new("x - y")
+        .captures(&[("x", Value::Int(10)), ("y", Value::Int(3))])
+        .run();
+    assert_eq!(tail, Value::Int(7));
+}
+
+#[test]
+fn an_outer_name_the_script_never_uses_may_still_have_a_value_supplied() {
+    // An embedder need not filter its environment down to exactly what a
+    // fragment captures: a supplied value for an unused outer name is simply
+    // ignored, not an error.
+    let tail = Script::new("x")
+        .captures(&[("x", Value::Int(1)), ("y", Value::Int(2))])
+        .run();
+    assert_eq!(tail, Value::Int(1));
+}
+
+#[test]
+fn implicit_export_does_not_reach_inside_a_nested_scope() {
+    // `z` is bound inside a `do` block, not at the top level, so implicit
+    // export leaves it out even though `y`, the top-level binding around it,
+    // is exported.
+    let finished = Script::new("def y = do { def z = 1; z + 1 }; y")
+        .implicit_export()
+        .finish();
+    assert_eq!(finished.tail, Value::Int(2));
+    assert_eq!(finished.exports.get("y"), Some(&Value::Int(2)));
+    assert!(
+        !finished.exports.contains_key("z"),
+        "a nested-scope binding is never implicitly exported: {:?}",
+        finished.exports
+    );
+}
+
+#[test]
+fn a_duplicate_top_level_binding_is_rejected_even_after_shadowing_a_capture() {
+    // The capture-shadowing def is allowed once (see
+    // `a_top_level_binding_may_shadow_a_capture_of_the_same_name`), but it is
+    // itself an ordinary binding: a further `def x` in the same scope collides
+    // with it, not with the capture.
+    let rendered = Script::new("def x = x; def x = 2; x")
+        .capture("x", Value::Int(7))
+        .compile_errors()
+        .render_plain();
+    assert!(
+        rendered.contains("already bound"),
+        "the second `def x` is a duplicate binding:\n{rendered}"
+    );
+}
+
+#[test]
 fn a_free_name_absent_from_the_outer_scope_is_a_compile_error() {
     // Neither a local, nor an outer-scope name, nor a global: an unbound name.
     let rendered = compile_errors("nope").render_plain();

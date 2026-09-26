@@ -79,6 +79,8 @@ fn negating_a_non_number_raises() {
         ("-null", "Null"),
         ("-x'00'", "Bytes"),
         ("-len", "Function"),
+        ("-[1]", "Array"),
+        ("-{}", "Map"),
     ] {
         let message = raises(source);
         assert!(
@@ -106,7 +108,7 @@ fn not_inverts_truthiness() {
             "not {falsy}"
         );
     }
-    for truthy in ["true", "0", "0.0", r#""""#, "x''", "len"] {
+    for truthy in ["true", "0", "0.0", r#""""#, "x''", "len", "[]", "{}"] {
         assert_eq!(
             run(&format!("not {truthy}")),
             Value::Bool(false),
@@ -209,6 +211,8 @@ fn a_constant_not_folds_to_its_value() {
         ("not true", Bytecode::PushFalse),
         ("not null", Bytecode::PushTrue),
         ("not (1 == 1)", Bytecode::PushFalse),
+        ("not []", Bytecode::PushFalse),
+        ("not {}", Bytecode::PushFalse),
     ] {
         for emitted in emitted(source, folding) {
             assert_eq!(
@@ -262,6 +266,7 @@ fn a_failing_fold_is_left_for_runtime() {
     for (source, op) in [
         (r#"-"a""#, Bytecode::Negate),
         ("-true", Bytecode::Negate),
+        ("-[1]", Bytecode::Negate),
         ("not (1 / 0)", Bytecode::Divide),
     ] {
         for emitted in emitted(source, folding) {

@@ -13,7 +13,7 @@
 mod common;
 
 use common::{Emitted, Script, raises, run};
-use frost_runtime::{Bytecode, Value};
+use frost_runtime::{Bytecode, MapKey, Value};
 
 fn float(f: f64) -> Value {
     Value::try_from(f).expect("test floats are finite")
@@ -44,6 +44,23 @@ fn add() {
         run("x'01' + x'02'"),
         Value::from(vec![0x01u8, 0x02]),
         "operand order kept"
+    );
+    assert_eq!(
+        run("[1, 2] + [3, 4]"),
+        Value::from(vec![
+            Value::Int(1),
+            Value::Int(2),
+            Value::Int(3),
+            Value::Int(4)
+        ]),
+        "Array + Array concatenates, left elements first"
+    );
+    assert_eq!(
+        run("{a: 1} + {a: 2}"),
+        [(MapKey::from("a"), Value::Int(2))]
+            .into_iter()
+            .collect::<Value>(),
+        "Map + Map merges, and the right side wins a key collision"
     );
 }
 
@@ -206,12 +223,26 @@ fn a_type_error_names_the_operand_types_in_order() {
         message.contains("String - Int"),
         "operand types, left first: {message}"
     );
+    let message = raises("1.5 % 2");
+    assert!(
+        message.contains("Float % Int"),
+        "modulus names its operand types too: {message}"
+    );
+    let message = raises("[1] + {}");
+    assert!(
+        message.contains("Array + Map"),
+        "structured operands are named like any other: {message}"
+    );
 }
 
 #[test]
 fn division_and_modulus_by_zero_raise() {
     assert!(raises("1 / 0").contains("Division by zero"));
     assert!(raises("1.0 / 0.0").contains("Division by zero"));
+    assert!(
+        raises("1 / 0.0").contains("Division by zero"),
+        "Int / Float(0.0)"
+    );
     assert!(raises("1 % 0").contains("Modulus by zero"));
 }
 
@@ -219,8 +250,26 @@ fn division_and_modulus_by_zero_raise() {
 fn an_unorderable_comparison_raises() {
     let message = raises("true < false");
     assert!(message.contains("not orderable"), "{message}");
+    let message = raises("{} < {}");
+    assert!(
+        message.contains("not orderable"),
+        "Map has no ordering either: {message}"
+    );
     let message = raises(r#"1 < "a""#);
     assert!(message.contains("incompatible"), "{message}");
+}
+
+#[test]
+fn ordering_extends_to_bytes_and_arrays() {
+    // Comparison is not just Int/Float/String; the compiler routes every
+    // operand type through the same opcode.
+    assert_eq!(run("x'01' < x'02'"), Value::Bool(true));
+    assert_eq!(run("[1, 2] < [1, 3]"), Value::Bool(true));
+    assert_eq!(
+        run("[1] < [1, 2]"),
+        Value::Bool(true),
+        "a prefix is less than its extension"
+    );
 }
 
 #[test]
@@ -261,15 +310,21 @@ fn a_nested_constant_operation_folds_whole() {
 
 #[test]
 fn a_structured_result_folds_to_a_constant() {
-    for emitted in folded(r#""ab" + "cd""#) {
-        assert_eq!(emitted.count(&Bytecode::Add), 0, "folded away: {emitted:?}");
-        assert!(
-            emitted
-                .code
-                .iter()
-                .any(|op| matches!(op, Bytecode::LoadConst(_))),
-            "the String result is loaded from the pool: {emitted:?}"
-        );
+    for source in [r#""ab" + "cd""#, "[1, 2] + [3, 4]", "{a: 1} + {b: 2}"] {
+        for emitted in folded(source) {
+            assert_eq!(
+                emitted.count(&Bytecode::Add),
+                0,
+                "folded away: {source:?}: {emitted:?}"
+            );
+            assert!(
+                emitted
+                    .code
+                    .iter()
+                    .any(|op| matches!(op, Bytecode::LoadConst(_))),
+                "the result is loaded from the pool: {source:?}: {emitted:?}"
+            );
+        }
     }
 }
 
@@ -352,6 +407,7 @@ fn a_failing_fold_is_left_for_runtime() {
         ("1 % 0", Bytecode::Modulus),
         (r#"1 + "a""#, Bytecode::Add),
         ("len + 1", Bytecode::Add),
+        ("true < false", Bytecode::CompareLessThan),
     ] {
         for emitted in folded(source) {
             assert_eq!(

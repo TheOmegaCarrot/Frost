@@ -475,6 +475,32 @@ fn backward_jump_panics() {
     ]);
 }
 
+// The next two guards are `debug_assert!`s, so they only fire in debug builds.
+#[test]
+#[cfg(debug_assertions)]
+#[should_panic(expected = "another Ir variant owns")]
+fn ir_ready_wrapping_a_symbolic_opcode_panics() {
+    // `LoadLocal` is `Ir::LoadLocal`'s opcode, not a plain `Ir::Ready`; wrapping
+    // it bypasses the pass that resolves its slot, which is a compiler bug.
+    let options = options();
+    let _ = builder(&options).assemble(vec![Ir::Ready(Bytecode::LoadLocal(0))]);
+}
+
+#[test]
+#[cfg(debug_assertions)]
+#[should_panic(expected = "emitted more than once")]
+fn a_label_emitted_twice_panics() {
+    let options = options();
+    let mut b = builder(&options);
+    let l = b.next_label();
+
+    let _ = b.assemble(vec![
+        Ir::Label(l),
+        Ir::Ready(Bytecode::PushNull),
+        Ir::Label(l),
+    ]);
+}
+
 #[test]
 #[should_panic(expected = "only jumps forward")]
 fn self_jump_panics() {

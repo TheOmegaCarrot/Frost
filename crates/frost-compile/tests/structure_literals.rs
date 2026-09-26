@@ -97,6 +97,20 @@ fn array_elements_are_evaluated_left_to_right() {
     assert!(message.contains("Division by zero"), "{message}");
 }
 
+#[test]
+fn a_large_array_literal_builds_correctly() {
+    let elements: Vec<i64> = (0..200).collect();
+    let source = format!(
+        "[{}]",
+        elements
+            .iter()
+            .map(i64::to_string)
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+    assert_eq!(run(&source), ints(&elements));
+}
+
 // --- Maps ---
 
 #[test]
@@ -111,6 +125,22 @@ fn a_map_holds_its_entries() {
         Value::map([("a", Value::Int(1))]),
         "a trailing comma"
     );
+}
+
+#[test]
+fn a_large_map_literal_builds_correctly() {
+    let entries: Vec<(i64, i64)> = (0..100).map(|n| (n, n * 2)).collect();
+    let source = format!(
+        "{{{}}}",
+        entries
+            .iter()
+            .map(|(k, v)| format!("[{k}]: {v}"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+    for (k, v) in &entries {
+        assert_eq!(run(&format!("{source}[{k}]")), Value::Int(*v), "key {k}");
+    }
 }
 
 #[test]
@@ -212,6 +242,8 @@ fn a_repeated_key_keeps_its_last_value() {
         (r#"{["a"]: 42, a: 10}"#, "{a: 10}"),
         ("{a: 42, b: 0, a: 10}", "{a: 10, b: 0}"),
         ("{[1]: 42, [1]: 10}", "{[1]: 10}"),
+        ("{[true]: 42, [true]: 10}", "{[true]: 10}"),
+        ("{[x'00']: 42, [x'00']: 10}", "{[x'00']: 10}"),
     ] {
         assert_eq!(
             run(&format!("{source} == {expected}")),
@@ -316,6 +348,15 @@ fn a_structure_holding_a_function_is_built_at_runtime() {
 fn a_raising_literal_is_left_for_runtime() {
     let emitted = code("{[null]: 1}", FOLD);
     assert_eq!(builds(&emitted), 1, "{emitted:?}");
+
+    // A raising literal nested inside an outer one aborts the outer fold too:
+    // both structures are built at runtime, unfolded.
+    let emitted = code("[1, {[null]: 1}]", FOLD);
+    assert_eq!(
+        builds(&emitted),
+        2,
+        "the outer Array, unfolded: {emitted:?}"
+    );
 }
 
 #[test]

@@ -185,7 +185,10 @@ impl FunctionBuilder<'_> {
             .map(|stmt| child.compile_statement(stmt, Position::Inner))
             .collect::<Result<Vec<_>, _>>()?;
 
+        // The return expression is the root of the body's expression tree, so it
+        // is a fold point, as a tail statement is.
         let compiled_tail = child.compile_expression(lambda.return_expr, Position::Tail)?;
+        let compiled_tail = child.fold_if_eligible(compiled_tail);
 
         let child_ir: Vec<Ir> = prelude
             .into_iter()

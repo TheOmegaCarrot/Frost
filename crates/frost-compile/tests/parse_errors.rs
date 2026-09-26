@@ -81,6 +81,43 @@ fn multiple_labels_survive_the_lift() {
 }
 
 #[test]
+fn an_unterminated_string_is_a_single_diagnostic() {
+    // A lexer-level failure (no closing quote) is lifted the same way as a
+    // grammar-level one.
+    let diagnostics = errors(r#""unterminated"#);
+    assert_eq!(diagnostics.len(), 1);
+    assert!(
+        diagnostics.render_plain().contains("script.frst"),
+        "the filename is attached:\n{}",
+        diagnostics.render_plain()
+    );
+}
+
+#[test]
+fn a_stray_closing_bracket_is_a_parse_error() {
+    let diagnostics = errors("]");
+    assert_eq!(diagnostics.len(), 1);
+}
+
+#[test]
+fn an_error_on_a_later_line_points_at_that_line() {
+    // A raw string literal with real newlines: the CLAUDE.md rule against `\n`
+    // escapes in Frost source is about statement separators, not this.
+    let source = r#"
+def x = 1
+1 +
+"#;
+    let rendered = Script::new(source)
+        .filename("script.frst")
+        .compile_errors()
+        .render_plain();
+    assert!(
+        rendered.contains("1 +"),
+        "the snippet frames the offending line, not the first one:\n{rendered}"
+    );
+}
+
+#[test]
 fn valid_source_compiles() {
     // A well-formed program is not rejected: it compiles and runs.
     assert_eq!(Script::new("42").run(), frost_runtime::Value::Int(42));

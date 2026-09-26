@@ -2,7 +2,8 @@
 //!
 //! The value must be an Array of exactly as many elements as the pattern names,
 //! or at least as many when there is a rest, which then binds an Array of the
-//! remainder. Parts bind in source order and may nest; `_` discards a part.
+//! remainder. Parts bind in source order and may nest, as Array or Map
+//! patterns, each destructuring completely before the next; `_` discards a part.
 //! Cases were checked against the C++ implementation; error messages are the
 //! bytecode compiler's own.
 //!
@@ -36,6 +37,26 @@ fn assert_raises(cases: &[(&str, &str)]) {
             "{source:?} raises about {message:?}, but raised: {raised}"
         );
     }
+}
+
+/// Assert each `source` fails to compile, with a diagnostic mentioning `message`.
+fn assert_compile_errors(cases: &[(&str, &str)]) {
+    for (source, message) in cases {
+        let rendered = compile_errors(source).render_plain();
+        assert!(
+            rendered.contains(message),
+            "{source:?} is rejected for {message:?}, but the diagnostic is:\n{rendered}"
+        );
+    }
+}
+
+/// `source` after a prelude defining `note(x)`, which appends `x` to the Array
+/// in the cell `log` and returns it, so a script can observe the order in which
+/// its expressions run.
+fn noting(source: &str) -> String {
+    format!(
+        "def log = mutable_cell([]); defn note(x) -> {{ log.exchange(log.get() + [x]); x }}; {source}"
+    )
 }
 
 fn definitions(emitted: &Emitted) -> usize {
@@ -83,6 +104,116 @@ fn a_discard_skips_a_part() {
         ("def [_, b, _] = [1, 2, 3]; b", "2"),
         ("def [a, ..._] = [1, 2, 3]; a", "1"),
         ("def [_, ..._] = [1, 2, 3]; 0", "0"),
+    ]);
+}
+
+#[test]
+fn discards_never_collide() {
+    assert_values(&[
+        ("def [_, _, _] = [1, 2, 3]; 0", "0"),
+        ("def [_, [_, _], ..._] = [1, [2, 3], 4, 5]; 0", "0"),
+        ("def [_, a, _, b, ..._] = [1, 2, 3, 4]; [a, b]", "[2, 4]"),
+        ("def [_] = [1]; def [_] = [2]; 0", "0"),
+    ]);
+}
+
+#[test]
+fn a_discarded_rest_may_appear_at_every_level() {
+    assert_values(&[
+        ("def [..._] = [1, 2]; 0", "0"),
+        ("def [..._] = []; 0", "0"),
+        ("def [[a, ..._], ..._] = [[1, 2], 3]; a", "1"),
+        ("def [a, [..._]] = [1, [2, 3]]; a", "1"),
+    ]);
+    // A discarded rest still requires the elements before it.
+    assert_raises(&[("def [[a, ..._]] = [[]]; a", "at least 1 element")]);
+}
+
+#[test]
+fn a_wide_pattern_binds_every_element() {
+    assert_values(&[
+        (
+            "def [a, b, c, d, e, f, g, h, i, j, k, l] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; [l, k, j, i, h, g, f, e, d, c, b, a]",
+            "[12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]",
+        ),
+        (
+            "def [a, b, c, d, e, f, g, h, ...rest] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; [h, g, f, e, d, c, b, a, rest]",
+            "[8, 7, 6, 5, 4, 3, 2, 1, [9, 10]]",
+        ),
+    ]);
+}
+
+#[test]
+fn a_trailing_comma_is_allowed() {
+    assert_values(&[
+        ("def [a, b,] = [1, 2]; [b, a]", "[2, 1]"),
+        ("def [a,] = [1]; a", "1"),
+        ("def [[a, b,], c,] = [[1, 2], 3]; [a, b, c]", "[1, 2, 3]"),
+    ]);
+    // A trailing comma adds no element: the pattern still needs exactly two.
+    assert_raises(&[("def [a, b,] = [1, 2, 3]; a", "exactly 2 elements")]);
+}
+
+#[test]
+fn a_pattern_may_span_lines() {
+    assert_values(&[
+        (
+            r"def [
+                a, b] = [1, 2]
+            [a, b]",
+            "[1, 2]",
+        ),
+        (
+            r"def [a,
+                b] = [1, 2]
+            [a, b]",
+            "[1, 2]",
+        ),
+        (
+            r"def [a, b
+            ] = [1, 2]
+            [a, b]",
+            "[1, 2]",
+        ),
+        (
+            r"def [
+                a,
+                b,
+            ] = [1, 2]
+            [a, b]",
+            "[1, 2]",
+        ),
+        (
+            r"def [
+                a,
+
+                b
+            ] = [1, 2]
+            [a, b]",
+            "[1, 2]",
+        ),
+        (
+            r"def [a,
+                ...rest
+            ] = [1, 2, 3]
+            [a, rest]",
+            "[1, [2, 3]]",
+        ),
+        (
+            r"def [
+            ] = []
+            0",
+            "0",
+        ),
+        (
+            r"def [
+                {x},
+                [a,
+                 b]
+            ] = [{x: 1}, [2, 3]]
+            [x, a, b]",
+            "[1, 2, 3]",
+        ),
     ]);
 }
 
@@ -140,6 +271,25 @@ fn a_rest_may_appear_at_every_level() {
 }
 
 #[test]
+fn map_patterns_nest_in_array_patterns_at_any_depth() {
+    assert_values(&[
+        (
+            "def [{a: [b, {c: [d, ...e]}]}, ...f] = [{a: [1, {c: [2, 3, 4]}]}, 5]; [b, d, e, f]",
+            "[1, 2, [3, 4], [5]]",
+        ),
+        (
+            r#"def [{name} as person, ...rest] = [{name: "n", age: 1}, 2]; [name, person, rest]"#,
+            r#"["n", {name: "n", age: 1}, [2]]"#,
+        ),
+        (
+            "def [[{x} as p], [{y}]] = [[{x: 1}], [{y: 2}]]; [x, p, y]",
+            "[1, {x: 1}, 2]",
+        ),
+        ("def [{}, {} as m] = [{a: 1}, {b: 2}]; m", "{b: 2}"),
+    ]);
+}
+
+#[test]
 fn a_nested_pattern_may_be_empty() {
     assert_values(&[
         ("def [[], a] = [[], 1]; a", "1"),
@@ -177,6 +327,8 @@ fn a_nested_mismatch_raises_at_any_depth() {
             "exactly 1 element",
         ),
         ("def [a, [b, [c]]] = [1, [2, null]]; a", "Array"),
+        (r#"def [a, [b, ...c]] = [1, "s"]; a"#, "at least 1 element"),
+        ("def [a, {b}] = [1, [2]]; a", "expected a Map"),
     ]);
 }
 
@@ -192,6 +344,37 @@ fn nested_patterns_are_checked_left_to_right() {
     assert_raises(&[
         ("def [[a], [b, c]] = [[1, 2], [3]]; a", "exactly 1 element"),
         ("def [[a, b], [c]] = [[1], [2, 3]]; a", "exactly 2 elements"),
+        // A nested Map pattern takes its turn among the Array ones.
+        ("def [{a}, [b]] = [{}, 5]; b", "no value at key 'a'"),
+        ("def [[b], {a}] = [5, {}]; b", "exactly 1 element"),
+        ("def [{a}, {b}] = [{a: 1}, 5]; b", "expected a Map"),
+    ]);
+}
+
+#[test]
+fn each_part_destructures_completely_before_the_next() {
+    // `note` records each computed key as it is evaluated.
+    assert_values(&[
+        (
+            &noting(
+                r#"def [{[note("a")]: x}, [{[note("b")]: y}]] = [{a: 1}, [{b: 2}]]; [x, y, log.get()]"#,
+            ),
+            r#"[1, 2, ["a", "b"]]"#,
+        ),
+        // The second part's shape fails after the first part's key ran.
+        (
+            &noting(
+                r#"def r = try_call(fn -> { def [{[note("a")]: x}, [y]] = [{a: 1}, 5]; 0 }); [r.ok, log.get()]"#,
+            ),
+            r#"[false, ["a"]]"#,
+        ),
+        // The outer shape fails before any part is destructured.
+        (
+            &noting(
+                r#"def r = try_call(fn -> { def [{[note("a")]: x}] = [{a: 1}, 2]; 0 }); [r.ok, log.get()]"#,
+            ),
+            "[false, []]",
+        ),
     ]);
 }
 
@@ -218,12 +401,78 @@ fn elements_may_be_any_value() {
     ]);
 }
 
+#[test]
+fn elements_may_be_closures_and_natives() {
+    assert_values(&[
+        (
+            "def [inc, dec] = do { def n = 1; [fn x -> x + n, fn x -> x - n] }; [inc(5), dec(5)]",
+            "[6, 4]",
+        ),
+        // A named lambda still recurses by its own name once destructured.
+        (
+            "def [fact] = [fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)]; fact(5)",
+            "120",
+        ),
+        (
+            "def [f, ...fs] = [plus, minus, times]; [f(6, 2), fs[0](6, 2), fs[1](6, 2)]",
+            "[8, 4, 12]",
+        ),
+    ]);
+}
+
+#[test]
+fn the_value_may_be_any_expression() {
+    assert_values(&[
+        ("def [a, b] = (fn -> [1, 2])(); [b, a]", "[2, 1]"),
+        ("def [a] = if true: [1] else: [2]; a", "1"),
+        ("def [a, ...r] = [[1, 2, 3], [4]][0]; [a, r]", "[1, [2, 3]]"),
+        ("def [h, ...t] = [1, 2] + [3]; [h, t]", "[1, [2, 3]]"),
+        ("def [a] = [1, 2] @ select(fn x -> x > 1); a", "2"),
+        ("def [a, b] = null or [1, 2]; [a, b]", "[1, 2]"),
+    ]);
+}
+
+#[test]
+fn destructuring_leaves_the_value_intact() {
+    // The destructured Array is still whole for every other use of it.
+    assert_values(&[
+        (
+            "def xs = [1, [2, 3]]; def [a, [b, ...c]] = xs; def [d, ...e] = xs; [xs, a, b, c, d, e]",
+            "[[1, [2, 3]], 1, 2, [3], 1, [[2, 3]]]",
+        ),
+        (
+            "def xs = [1, 2]; def [a, b] = xs; def [c, d] = xs; [a, b, c, d, xs]",
+            "[1, 2, 1, 2, [1, 2]]",
+        ),
+    ]);
+    let tail = Script::new("def [a, ...r] = pair; [pair, a, r]")
+        .capture("pair", Value::from_iter([Value::Int(1), Value::Int(2)]))
+        .run();
+    assert_eq!(tail, run("[[1, 2], 1, [2]]"), "the capture is intact");
+}
+
 // --- Scope ---
 
 #[test]
 fn the_value_is_evaluated_before_the_names_are_bound() {
     // The rhs `x` is the outer one; the pattern's `x` shadows it only after.
     assert_values(&[("def x = 9; do { def [x, y] = [x, 1]; [x, y] }", "[9, 1]")]);
+}
+
+#[test]
+fn a_pattern_may_shadow_a_capture_its_value_reads() {
+    let tail = Script::new("def [x, y] = x; [y, x]")
+        .capture("x", Value::from_iter([Value::Int(1), Value::Int(2)]))
+        .run();
+    assert_eq!(tail, run("[2, 1]"));
+}
+
+#[test]
+fn a_pattern_may_shadow_a_global() {
+    assert_values(&[
+        ("def [type, ...plus] = [1, 2]; [type, plus]", "[1, [2]]"),
+        ("def [[to_string]] = [[5]]; to_string + 1", "6"),
+    ]);
 }
 
 #[test]
@@ -253,6 +502,37 @@ fn every_part_is_implicitly_exported() {
 }
 
 #[test]
+fn discarded_parts_are_not_exported() {
+    let finished = Script::new("def [_, a, [_, b], ..._] = [1, 2, [3, 4], 5]; 0")
+        .implicit_export()
+        .finish();
+    assert_eq!(
+        finished.exports,
+        [("a", run("2")), ("b", run("4"))]
+            .into_iter()
+            .map(|(name, value)| (name.to_string(), value))
+            .collect(),
+        "{finished:?}"
+    );
+}
+
+#[test]
+fn an_exported_pattern_exports_every_named_part() {
+    // No implicit export: only the `export def` parts are exported.
+    let finished =
+        Script::new("export def [a, _, [b, ...c], ..._] = [1, 2, [3, 4], 5]; def [d] = [6]; 0")
+            .finish();
+    assert_eq!(
+        finished.exports,
+        [("a", run("1")), ("b", run("3")), ("c", run("[4]"))]
+            .into_iter()
+            .map(|(name, value)| (name.to_string(), value))
+            .collect(),
+        "{finished:?}"
+    );
+}
+
+#[test]
 fn a_name_bound_twice_in_a_pattern_is_a_compile_error() {
     for source in [
         "def [a, a] = [1, 2]",
@@ -266,6 +546,29 @@ fn a_name_bound_twice_in_a_pattern_is_a_compile_error() {
             "{source:?}:\n{rendered}"
         );
     }
+}
+
+#[test]
+fn a_name_bound_twice_across_array_and_map_parts_is_a_compile_error() {
+    assert_compile_errors(&[
+        ("def [{a}, a] = [{a: 1}, 2]", "`a` is already bound"),
+        ("def [a, {b} as a] = [1, {b: 2}]", "`a` is already bound"),
+        ("def [{b: a}, ...a] = [{b: 1}, 2]", "`a` is already bound"),
+        (
+            "def [{a} as m, {b} as m] = [{a: 1}, {b: 2}]",
+            "`m` is already bound",
+        ),
+        ("def [a] = [1]; def {a} = {a: 2}", "`a` is already bound"),
+    ]);
+}
+
+#[test]
+fn a_part_may_not_be_read_before_the_pattern_binds_it() {
+    // The value is evaluated before any part is bound.
+    assert_compile_errors(&[
+        ("def [a, b] = [1, a]", "`a` is not defined"),
+        ("def [a, ...r] = r", "`r` is not defined"),
+    ]);
 }
 
 // --- Mismatches ---
@@ -289,6 +592,16 @@ fn a_non_array_raises() {
         assert!(message.contains("Array"), "{value}: {message}");
         let message = raises(&format!("def [a, ...r] = {value}; a"));
         assert!(message.contains("Array"), "{value}: {message}");
+    }
+}
+
+#[test]
+fn a_pattern_with_no_elements_still_requires_an_array() {
+    for pattern in ["[]", "[..._]", "[...r]", "[[]]"] {
+        for value in ["5", "null", r#""""#, "{}"] {
+            let message = raises(&format!("def {pattern} = {value}; 0"));
+            assert!(message.contains("Array"), "{pattern} = {value}: {message}");
+        }
     }
 }
 
@@ -323,6 +636,18 @@ fn a_block_whose_destructuring_fails_is_left_for_runtime() {
         emitted.count(&Bytecode::ProduceError),
         1,
         "the shape check is kept: {emitted:?}"
+    );
+    assert_raises(&[(source, "exactly 1 element")]);
+}
+
+#[test]
+fn a_block_whose_nested_destructuring_fails_is_left_for_runtime() {
+    let source = "do { def [a, [b]] = [1, [2, 3]]; 5 }";
+    let emitted = Script::new(source).code(FOLD);
+    assert_eq!(
+        emitted.count(&Bytecode::ProduceError),
+        2,
+        "both shape checks are kept: {emitted:?}"
     );
     assert_raises(&[(source, "exactly 1 element")]);
 }

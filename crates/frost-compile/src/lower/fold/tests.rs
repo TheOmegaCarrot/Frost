@@ -8,7 +8,7 @@ use crate::lower::locals::{Locals, SlotPlan};
 use crate::lower::{ExprFragment, FunctionBuilder, Ir, Label, LocalId};
 use crate::{CompilerOptions, OptimizationOptions};
 
-use frost_runtime::{Arity, Bytecode, Value};
+use frost_runtime::{Arity, Bytecode, FrostFloat, MapKey, Value};
 
 /// A function [`Value`], for exercising the const-representability guard.
 fn a_function() -> Value {
@@ -120,6 +120,12 @@ fn value_to_ir_inlines_scalars_and_pools_structured() {
     ));
     // A string cannot be inlined, so it goes to the constant pool.
     assert!(matches!(value_to_ir(Value::from("hi")), Some(Ir::Const(_))));
+    // A float is also an inline push, like the other scalars.
+    let float = FrostFloat::new(1.5).expect("1.5 is a valid Frost float");
+    assert!(matches!(
+        value_to_ir(Value::Float(float)),
+        Some(Ir::Ready(Bytecode::PushFloat(f))) if f.get() == 1.5
+    ));
 }
 
 #[test]
@@ -132,6 +138,22 @@ fn value_to_ir_rejects_functions_transitively() {
     // A function-free structure still pools.
     let clean = Value::from(vec![Value::Int(1), Value::Int(2)]);
     assert!(matches!(value_to_ir(clean), Some(Ir::Const(_))));
+}
+
+#[test]
+fn value_to_ir_rejects_a_map_holding_a_function() {
+    // The transitive check applies to a Map's values just as it does to an
+    // Array's elements.
+    let map = Value::from_iter([(MapKey::from("f"), a_function())]);
+    assert!(
+        value_to_ir(map).is_none(),
+        "a function nested in a map is not const-representable"
+    );
+    let clean = Value::from_iter([(MapKey::from("n"), Value::Int(1))]);
+    assert!(
+        matches!(value_to_ir(clean), Some(Ir::Const(_))),
+        "a function-free map still pools"
+    );
 }
 
 #[test]
@@ -152,6 +174,11 @@ fn constant_of_reads_a_lone_value_op() {
     assert_eq!(
         constant_of(&[Ir::Const(Value::from("hi"))]),
         Some(Value::from("hi"))
+    );
+    let float = FrostFloat::new(2.5).expect("2.5 is a valid Frost float");
+    assert_eq!(
+        constant_of(&[Ir::Ready(Bytecode::PushFloat(float))]),
+        Some(Value::Float(float))
     );
 }
 
@@ -229,6 +256,32 @@ fn a_single_op_fragment_is_not_re_folded() {
     let folded = builder(&options, &fold_vm).fold_if_eligible(fragment);
     assert!(matches!(folded.code[0], Ir::Ready(Bytecode::PushInt(42))));
     assert_eq!(folded.code.len(), 1);
+}
+
+#[test]
+fn folding_without_a_fold_vm_leaves_the_fragment_unchanged() {
+    // A builder with no fold VM (e.g. a test that only assembles) must skip
+    // evaluation entirely, regardless of eligibility or the option.
+    let options = options(true);
+    let no_fold_vm = FunctionBuilder {
+        locals: Locals::new(),
+        next_label: Label(0),
+        name: "<test>".to_string(),
+        arity: Arity::Exact(0),
+        source: "",
+        filename: "",
+        options: &options,
+        fold_vm: None,
+        top_level: false,
+        effectful: false,
+    };
+    let folded = no_fold_vm.fold_if_eligible(arithmetic(Bytecode::Add));
+    assert_eq!(
+        folded.code.len(),
+        3,
+        "no fold VM means no evaluation happens"
+    );
+    assert!(folded.foldable, "eligibility itself is unaffected");
 }
 
 #[test]

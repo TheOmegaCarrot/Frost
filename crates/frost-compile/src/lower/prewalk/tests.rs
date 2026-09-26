@@ -9,7 +9,7 @@
 //! the sorted set (what matters is *which* names are free); a few assert the
 //! unsorted order, to pin the evaluation-order walk.
 
-use crate::lower::prewalk::free_names;
+use crate::lower::prewalk::{free_names, free_names_of_program};
 use frost_parse::{ast::Statement, parse_program};
 
 /// The lambda expression that is `source`'s single statement.
@@ -539,4 +539,45 @@ fn threading_operator_discovers_callee_first() {
     // diverges from source order.
     assert_free("fn -> a @ f(b)", &["a", "b", "f"]);
     assert_eq!(ordered("fn -> a @ f(b)"), ["f", "a", "b"]);
+}
+
+// -- Program-level free names --
+//
+// `free_names_of_program` shares the same scanner as `free_names`, but starts
+// with an empty scope (no parameters) and returns a set, since an embedder
+// only cares which names it must supply, not their order.
+
+/// Free names of `source` parsed as a whole program (not wrapped in a lambda).
+fn program_free(source: &str) -> Vec<String> {
+    let program = parse_program("test.frst", source).expect("source should parse");
+    free_names_of_program(&program.statements)
+        .into_iter()
+        .collect()
+}
+
+#[test]
+fn program_top_level_bindings_are_not_free() {
+    assert_eq!(program_free("def x = 1; x + y"), vec!["y"]);
+}
+
+#[test]
+fn program_use_before_a_top_level_def_is_free() {
+    // Mirrors the lambda-body rule: a name used before its own definition in
+    // the same scope is free.
+    assert_eq!(program_free("y; def y = 1; y"), vec!["y"]);
+}
+
+#[test]
+fn program_frees_are_a_deduplicated_sorted_set() {
+    assert_eq!(program_free("d + b + d + a"), vec!["a", "b", "d"]);
+}
+
+#[test]
+fn program_level_lambda_frees_propagate_but_not_its_own_params() {
+    assert_eq!(program_free("fn x -> x + outer"), vec!["outer"]);
+}
+
+#[test]
+fn a_program_with_no_free_names_is_empty() {
+    assert!(program_free("def x = 1; x").is_empty());
 }

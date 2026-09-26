@@ -94,9 +94,24 @@ fn a_negative_index_counts_from_the_end() {
 
 #[test]
 fn an_out_of_bounds_array_index_is_null() {
-    for source in ["a[3]", "a[-4]", "a[9223372036854775807]"] {
+    for source in [
+        "a[3]",
+        "a[-4]",
+        "a[9223372036854775807]",
+        // The most negative Int, computed since its literal overflows as a
+        // positive token before negation applies.
+        "a[-9223372036854775807 - 1]",
+    ] {
         assert_eq!(run_with_data(source), Value::Null, "{source:?}");
     }
+}
+
+#[test]
+fn indexing_an_empty_array_is_always_null() {
+    let tail = Script::new("[][0]").run();
+    assert_eq!(tail, Value::Null);
+    let tail = Script::new("[][-1]").run();
+    assert_eq!(tail, Value::Null);
 }
 
 #[test]
@@ -130,6 +145,11 @@ fn a_missing_map_key_is_null() {
         Value::Null,
         "a valid key type, absent"
     );
+}
+
+#[test]
+fn indexing_an_empty_map_is_always_null() {
+    assert_eq!(run_with_data(r#"{}["anything"]"#), Value::Null);
 }
 
 #[test]
@@ -250,6 +270,14 @@ fn targets_and_keys_are_expressions() {
 }
 
 #[test]
+fn the_target_may_be_a_call_result() {
+    let tail = Script::new("def get_a = fn -> a; get_a()[1]")
+        .capture("a", array())
+        .run();
+    assert_eq!(tail, Value::Int(20));
+}
+
+#[test]
 fn an_index_is_an_operand() {
     assert_eq!(run_with_data("a[0] + a[1]"), Value::Int(30));
     assert_eq!(run_with_data("m.age * 2"), Value::Int(72));
@@ -304,6 +332,31 @@ fn a_constant_key_of_a_runtime_target_folds() {
 }
 
 #[test]
+fn a_constant_key_of_any_valid_type_folds() {
+    // Each key expression folds down to its value, whatever its type; the
+    // SoftIndexStructure itself stays, since the target (`m`) is runtime-only.
+    for source in [
+        r#"m["a" + "ge"]"#,
+        "m[true == true]",
+        "m[1 + 0]",
+        "m[1.5 + 0.0]",
+    ] {
+        let emitted = code(source, FOLD);
+        assert_eq!(
+            emitted.count(&Bytecode::SoftIndexStructure),
+            1,
+            "the runtime index stays: {source:?}: {emitted:?}"
+        );
+        assert_eq!(emitted.count(&Bytecode::Add), 0, "{source:?}: {emitted:?}");
+        assert_eq!(
+            emitted.count(&Bytecode::CompareEqual),
+            0,
+            "{source:?}: {emitted:?}"
+        );
+    }
+}
+
+#[test]
 fn a_raising_constant_index_is_left_for_runtime() {
     let emitted = code(r#""abc"[0]"#, FOLD);
     assert_eq!(
@@ -351,4 +404,22 @@ fn a_field_of_a_constant_map_folds() {
     let emitted = code("{a: {b: 5}}.a.b", FOLD);
     assert_eq!(hard_indexes(&emitted), 0, "{emitted:?}");
     assert_eq!(emitted.count(&Bytecode::PushInt(5)), 1, "{emitted:?}");
+}
+
+#[test]
+fn a_propagated_array_constant_folds_through_indexing() {
+    // An Array bound once and read by constant index: both the binding and the
+    // index fold away entirely.
+    let fold_and_propagate = OptimizationOptions {
+        constant_propagate: true,
+        ..FOLD
+    };
+    let emitted = code("def xs = [10, 20, 30]; xs[0] + xs[2]", fold_and_propagate);
+    assert_eq!(emitted.count(&Bytecode::PushInt(40)), 1, "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::Add), 0, "{emitted:?}");
+    assert_eq!(
+        emitted.count(&Bytecode::SoftIndexStructure),
+        0,
+        "{emitted:?}"
+    );
 }

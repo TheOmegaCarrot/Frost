@@ -63,6 +63,7 @@ fn filter_keeps_the_elements_its_operation_accepts() {
         ("filter [1, 2, 3, 4] with fn x -> x > 2", "[3, 4]"),
         ("filter [] with fn x -> true", "[]"),
         ("filter {a: 1, b: 2} with fn k, v -> v > 1", "{b: 2}"),
+        ("filter {} with fn k, v -> true", "{}"),
     ]);
 }
 
@@ -75,7 +76,18 @@ fn map_transforms_each_element() {
             "map {a: 1, b: 2} with fn k, v -> {[k]: v * 10}",
             "{a: 10, b: 20}",
         ),
+        ("map {} with fn k, v -> {[k]: v}", "{}"),
     ]);
+}
+
+#[test]
+fn map_over_a_map_requires_the_operation_to_return_a_map() {
+    // Each call's result is merged in, so it must itself be a Map entry set.
+    let message = raises("map {a: 1} with fn k, v -> v");
+    assert!(
+        message.contains("must return a Map") && message.contains("Int"),
+        "{message}"
+    );
 }
 
 #[test]
@@ -99,6 +111,23 @@ fn reduce_of_nothing_is_its_init_or_null() {
     assert_values(&[
         ("reduce [] init: 5 with fn acc, x -> acc + x", "5"),
         ("reduce [] with fn acc, x -> acc + x", "null"),
+        ("reduce {} init: 5 with fn acc, k, v -> acc + v", "5"),
+    ]);
+}
+
+#[test]
+fn reduce_over_a_map_always_requires_an_init() {
+    // Unlike an Array, a Map has no intrinsic "first element" to seed the
+    // accumulator with, so folding one without `init:` is an error.
+    assert_raises(&[
+        (
+            "reduce {a: 1} with fn acc, k, v -> acc + v",
+            "requires an initializer",
+        ),
+        (
+            "reduce {} with fn acc, k, v -> acc + v",
+            "requires an initializer",
+        ),
     ]);
 }
 
@@ -121,6 +150,8 @@ fn foreach_yields_its_structure() {
     assert_values(&[
         ("foreach [1, 2] with fn x -> x * 100", "[1, 2]"),
         ("foreach {a: 1} with fn k, v -> null", "{a: 1}"),
+        ("foreach [] with fn x -> x", "[]"),
+        ("foreach {} with fn k, v -> null", "{}"),
     ]);
 }
 
@@ -205,6 +236,8 @@ fn forms_compose() {
 fn operands_are_evaluated_structure_then_operation_then_init() {
     assert_raises(&[
         ("map (1 / 0) with (1 % 0)", "Division by zero"),
+        ("filter (1 / 0) with (1 % 0)", "Division by zero"),
+        ("foreach (1 / 0) with (1 % 0)", "Division by zero"),
         (
             "reduce (1 / 0) init: (1 % 0) with (null + true)",
             "Division by zero",
@@ -250,8 +283,15 @@ fn a_constant_form_folds_away() {
 
 #[test]
 fn a_runtime_structure_keeps_the_call() {
-    let emitted = code("map xs with fn x -> x * 2", FOLD);
-    assert_eq!(calls(&emitted), 1, "{emitted:?}");
+    for source in [
+        "map xs with fn x -> x * 2",
+        "filter xs with fn x -> x > 1",
+        "reduce xs init: 0 with fn a, x -> a + x",
+        "foreach xs with fn x -> x",
+    ] {
+        let emitted = code(source, FOLD);
+        assert_eq!(calls(&emitted), 1, "{source:?}: {emitted:?}");
+    }
 }
 
 #[test]

@@ -73,6 +73,25 @@ fn a_do_block_may_destructure() {
 }
 
 #[test]
+fn a_do_block_may_destructure_across_lines() {
+    assert_values(&[(
+        r"do {
+            def [
+                a,
+                ...rest
+            ] = [1, 2, 3]
+            def {
+                b: [c],
+                [a]: d,
+            } as m = {b: [4], [1]: 5}
+
+            [a, rest, c, d, m]
+        }",
+        "[1, [2, 3], 4, 5, {b: [4], [1]: 5}]",
+    )]);
+}
+
+#[test]
 fn a_destructure_may_use_an_earlier_one_in_the_block() {
     assert_values(&[
         ("do { def [a, b] = [1, 2]; def {c} = {c: a + b}; c }", "3"),
@@ -89,6 +108,12 @@ fn a_do_blocks_bindings_stay_inside_it() {
     assert_compile_errors(&[
         ("do { def [a] = [1]; a }; a", "`a` is not defined"),
         ("do { def {a} as m = {a: 1}; a }; m", "`m` is not defined"),
+        ("do { def [a, ...r] = [1]; a }; r", "`r` is not defined"),
+        ("do { def {a: [b]} = {a: [1]}; b }; b", "`b` is not defined"),
+        (
+            "def f = fn p -> { def [a, ...r] = p; a }; f([1]); r",
+            "`r` is not defined",
+        ),
     ]);
 }
 
@@ -147,6 +172,60 @@ fn block_destructuring_leaves_the_stack_balanced() {
 }
 
 #[test]
+fn block_destructuring_leaves_the_stack_balanced_in_every_expression_context() {
+    assert_values(&[
+        (
+            "[0, do { def [a, [b, ...c]] = [1, [2, 3]]; def {d} as m = {d: a}; [a, b, c, d] }, 9]",
+            "[0, [1, 2, [3], 1], 9]",
+        ),
+        (
+            "plus(do { def [a, ...r] = [1, 2]; a }, do { def {b: [c]} = {b: [2]}; c })",
+            "3",
+        ),
+        ("10 + do { def [a, [b]] = [1, [2]]; a + b }", "13"),
+        (
+            "{x: do { def {k} as m = {k: 1}; k }, y: do { def [_, v] = [0, 2]; v }}",
+            "{x: 1, y: 2}",
+        ),
+        (
+            r#"$'<${do { def [s, ...r] = ["a", "b"]; s }}${do { def {t} = {t: "c"}; t }}>'"#,
+            r#""<ac>""#,
+        ),
+        (
+            "if do { def [a] = [true]; a }: do { def {b} = {b: 1}; b } else: 2",
+            "1",
+        ),
+        (
+            "[[10, 20], [30]][do { def [i, ..._] = [1, 0]; i }][0]",
+            "30",
+        ),
+    ]);
+}
+
+#[test]
+fn a_caught_destructuring_failure_leaves_the_stack_balanced() {
+    // Each failure is partway through a pattern, with parts laid out on the stack.
+    assert_values(&[
+        (
+            "[1, try_call(fn -> { def [a, [b, c], d] = [1, [2], 3]; a }).ok, 3]",
+            "[1, false, 3]",
+        ),
+        (
+            "[1, try_call(fn -> { def [a, ...r] = [1, 2]; def {b, c} = {b: 2}; a }).ok, 3]",
+            "[1, false, 3]",
+        ),
+        (
+            "[1, try_call(fn -> { def {a: {b: [c, d]}} as m = {a: {b: [1]}}; c }).ok, 3]",
+            "[1, false, 3]",
+        ),
+        (
+            "[1, try_call(fn -> { def {a, [null]: b} = {a: 1}; a }).ok, 3]",
+            "[1, false, 3]",
+        ),
+    ]);
+}
+
+#[test]
 fn a_failed_destructure_ends_the_block() {
     assert_raises(&[
         ("do { def [a] = [1, 2]; a }", "exactly 1 element"),
@@ -164,10 +243,30 @@ fn a_do_blocks_bindings_are_not_implicitly_exported() {
 }
 
 #[test]
+fn a_lambdas_bindings_are_not_implicitly_exported() {
+    // The lambda is called in place rather than bound: an exported Closure would
+    // differ between the optimization permutations' compilations.
+    let finished = Script::new(
+        "def [x] = [(fn p -> { def [a, ...r] = p; def {b} as m = {b: a}; [a, r, b, m] })([1])]; 0",
+    )
+    .implicit_export()
+    .finish();
+    assert_eq!(
+        finished.exports.keys().collect::<Vec<_>>(),
+        vec!["x"],
+        "{finished:?}"
+    );
+    assert_eq!(finished.exports["x"], run("[1, [], 1, {b: 1}]"));
+}
+
+#[test]
 fn a_constant_destructuring_block_folds_whole() {
     for source in [
         "do { def [a, b] = [1, 2]; 5 }",
         "do { def {a} as m = {a: 1}; def [x, ...y] = [1, 2]; 5 }",
+        "do { def [{a: [b, ...c]}, {d} as e] = [{a: [1, 2]}, {d: 3}]; 5 }",
+        "do { def {[1 + 1]: v, [\"k\"]: w} = {[2]: 0, k: 1}; 5 }",
+        "do { def [_, ..._] = [1, 2]; def {a: _} as _ = {a: 1}; 5 }",
     ] {
         let emitted = Script::new(source).code(FOLD);
         assert!(
@@ -207,6 +306,32 @@ fn a_lambda_may_destructure_its_arguments() {
 }
 
 #[test]
+fn a_lambda_may_destructure_its_rest_argument() {
+    assert_values(&[
+        (
+            "(fn first, ...others -> { def [second, ...more] = others; [first, second, more] })(1, 2, 3, 4)",
+            "[1, 2, [3, 4]]",
+        ),
+        (
+            "(fn ...args -> { def [{k}, [v]] = args; [k, v] })({k: 1}, [2])",
+            "[1, 2]",
+        ),
+    ]);
+    assert_raises(&[(
+        "(fn ...args -> { def [a, b] = args; a })(1)",
+        "exactly 2 elements",
+    )]);
+}
+
+#[test]
+fn a_lambda_may_destructure_in_nested_blocks() {
+    assert_values(&[(
+        "(fn p -> do { def [a] = p; do { def [b] = [a + 1]; def {c} = {c: b + 1}; [a, b, c] } })([1])",
+        "[1, 2, 3]",
+    )]);
+}
+
+#[test]
 fn a_lambda_destructures_afresh_on_each_call() {
     assert_values(&[(
         "def f = fn p -> { def [a, ...r] = p; [a, r] }; [f([1]), f([2, 3, 4]), f([5, 6])]",
@@ -233,11 +358,51 @@ fn a_destructured_binding_may_be_captured() {
 }
 
 #[test]
+fn a_destructured_binding_may_be_captured_at_any_depth() {
+    assert_values(&[
+        (
+            "def make = fn p -> { def {a: [x, ...ys]} = p; fn -> fn -> [x, ys] }; make({a: [1, 2]})()()",
+            "[1, [2]]",
+        ),
+        (
+            "def make = fn p -> { def [k] = p; fn m -> { def {[k]: v} = m; v } }; make([\"z\"])({z: 5})",
+            "5",
+        ),
+    ]);
+}
+
+#[test]
 fn a_lambdas_computed_key_may_read_a_capture() {
     assert_values(&[(
         r#"def key = "x"; (fn m -> { def {[key]: v} = m; v })({x: 1})"#,
         "1",
     )]);
+}
+
+#[test]
+fn a_lambdas_pattern_may_shadow_a_capture() {
+    assert_values(&[
+        // The pattern's `a` is the lambda's own; the enclosing `a` is untouched.
+        (
+            "def a = 1; def f = fn p -> { def [a] = p; a }; [f([5]), a]",
+            "[5, 1]",
+        ),
+        // The value reads the capture its pattern then shadows.
+        (
+            "def x = 1; (fn p -> { def [x, y] = [x, p]; [x, y] })(2)",
+            "[1, 2]",
+        ),
+        // So does a computed key before the entry that shadows it.
+        (
+            r#"def b = "x"; (fn m -> { def {[b]: a, b} = m; [a, b] })({x: 1, b: 2})"#,
+            "[1, 2]",
+        ),
+        // `as` binds last, so a computed key reads the enclosing name it shadows.
+        (
+            r#"def m = {k: "a"}; (fn v -> { def {[m.k]: x} as m = v; [x, m] })({a: 1})"#,
+            "[1, {a: 1}]",
+        ),
+    ]);
 }
 
 #[test]
@@ -268,6 +433,61 @@ fn tail_recursion_through_destructuring_runs_in_bounded_depth() {
 }
 
 #[test]
+fn tail_recursion_through_map_destructuring_runs_in_bounded_depth() {
+    let source = r"defn count(state) -> {
+            def {n, acc: [total, ...seen]} as whole = state
+            if n == 0: [total, seen, whole.n]
+            else: count({n: n - 1, acc: [total + n, n]})
+        }
+        count({n: 2000, acc: [0]})";
+    let tail = Script::new(source).max_call_depth(100).run();
+    assert_eq!(tail, run("[2001000, [1], 0]"));
+}
+
+#[test]
+fn a_lambda_passed_to_a_higher_order_function_may_destructure() {
+    assert_values(&[
+        (
+            "select([{n: 1}, {n: 5}, {n: 3}], fn m -> { def {n} = m; n > 2 })",
+            "[{n: 5}, {n: 3}]",
+        ),
+        (
+            "fold([[1, 2], [3, 4]], fn acc, p -> { def [a, b] = p; acc + a * b }, 0)",
+            "14",
+        ),
+        (
+            "def c = mutable_cell(0); each([{v: [1]}, {v: [2]}], fn m -> { def {v: [x]} = m; c.exchange(c.get() + x) }); c.get()",
+            "3",
+        ),
+        (
+            "call(fn p -> { def [a, ...r] = p; [a, r] }, [[1, 2]])",
+            "[1, [2]]",
+        ),
+        (
+            "map {a: [1, 2], b: [3, 4]} with fn k, v -> { def [x, y] = v; {[k]: x + y} }",
+            "{a: 3, b: 7}",
+        ),
+        (
+            "filter [[1, 2], [3, 1]] with fn p -> { def [a, b] = p; a < b }",
+            "[[1, 2]]",
+        ),
+        (
+            "reduce [{x: 1}, {x: 2}] init: 10 with fn acc, m -> { def {x} as _ = m; acc + x }",
+            "13",
+        ),
+        (
+            "[[1, 2], [3, 4]] @ transform(fn p -> { def [a, b] = p; [b, a] })",
+            "[[2, 1], [4, 3]]",
+        ),
+    ]);
+    // A mismatch inside the operation raises out of the iteration.
+    assert_raises(&[(
+        "transform([[1, 2], [3]], fn p -> { def [a, b] = p; a })",
+        "exactly 2 elements",
+    )]);
+}
+
+#[test]
 fn an_abbreviated_lambda_may_destructure_in_a_do_block() {
     assert_values(&[(
         "transform([[1, 2], [3, 4]], $(do { def [a, b] = $; a * b }))",
@@ -284,6 +504,24 @@ fn a_destructure_may_not_rebind_a_parameter() {
             "fn m -> { def {k} as m = {k: 1}; k }",
             "`m` is already bound",
         ),
+        (
+            "fn a, ...rest -> { def {rest} = a; rest }",
+            "`rest` is already bound",
+        ),
+        (
+            "fn p -> { def [{q: [p]}] = [{q: [1]}]; p }",
+            "`p` is already bound",
+        ),
+        // A named lambda's own name is bound in the same scope as its parameters.
+        ("defn f(p) -> { def [f] = p; f }", "`f` is already bound"),
+    ]);
+}
+
+#[test]
+fn a_nested_block_in_a_lambda_may_rebind_a_parameter() {
+    assert_values(&[
+        ("(fn a -> do { def [a] = [a + 1]; a })(1)", "2"),
+        ("defn f(p) -> do { def {f} = p; f }; f({f: 3})", "3"),
     ]);
 }
 
