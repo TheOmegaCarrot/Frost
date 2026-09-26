@@ -593,8 +593,8 @@ impl Vm {
 
                         let mut head = arr.into_vec();
                         let tail = head.split_off(n);
-                        self.stack.push(Value::from(head));
                         self.stack.push(Value::from(tail));
+                        self.stack.push(Value::from(head));
                     }
                     Bytecode::SoftIndexStructure => {
                         let index = self.stack_pop();

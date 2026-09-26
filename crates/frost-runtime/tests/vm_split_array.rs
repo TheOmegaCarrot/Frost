@@ -1,7 +1,7 @@
 //! Tests for the `SplitArray` opcode.
 //!
-//! `SplitArray(N)` `( [X] -- [N] [X-N] )` consumes an Array and pushes two Arrays:
-//! the first N elements (beneath) and the remaining X-N (on top, possibly empty).
+//! `SplitArray(N)` `( [X] -- [X-N] [N] )` consumes an Array and pushes two Arrays:
+//! the elements after the first N (beneath, possibly empty) and the first N (on top).
 //! It raises when the operand is not an Array, or is shorter than N.
 
 use std::sync::Arc;
@@ -36,8 +36,9 @@ fn iarr(xs: &[i64]) -> Value {
     Value::from(xs.iter().copied().map(Value::from).collect::<Vec<_>>())
 }
 
-/// Split `operand` at `n` and fold the two resulting Arrays into one Array `[head, tail]`
-/// so both outputs, and their order, are observable as a single tail value.
+/// Split `operand` at `n` and fold the two resulting Arrays into one Array
+/// `[beneath, top]`, i.e. `[tail, head]`, so both outputs, and their order on the
+/// stack, are observable as a single tail value.
 fn split(operand: Value, n: usize) -> Result<Value, FrostError> {
     eval(
         vec![operand],
@@ -49,13 +50,13 @@ fn split(operand: Value, n: usize) -> Result<Value, FrostError> {
     )
 }
 
-// ---- Splitting: head below, tail on top ----
+// ---- Splitting: tail below, head on top ----
 
 #[test]
 fn splits_in_the_middle() {
     assert_eq!(
         split(iarr(&[10, 20, 30, 40]), 2).unwrap(),
-        Value::array([iarr(&[10, 20]), iarr(&[30, 40])])
+        Value::array([iarr(&[30, 40]), iarr(&[10, 20])])
     );
 }
 
@@ -63,7 +64,7 @@ fn splits_in_the_middle() {
 fn split_of_one_leaves_the_rest_as_tail() {
     assert_eq!(
         split(iarr(&[10, 20, 30]), 1).unwrap(),
-        Value::array([iarr(&[10]), iarr(&[20, 30])])
+        Value::array([iarr(&[20, 30]), iarr(&[10])])
     );
 }
 
@@ -71,7 +72,7 @@ fn split_of_one_leaves_the_rest_as_tail() {
 fn split_at_full_length_gives_empty_tail() {
     assert_eq!(
         split(iarr(&[10, 20]), 2).unwrap(),
-        Value::array([iarr(&[10, 20]), iarr(&[])])
+        Value::array([iarr(&[]), iarr(&[10, 20])])
     );
 }
 
@@ -79,7 +80,27 @@ fn split_at_full_length_gives_empty_tail() {
 fn split_at_zero_gives_empty_head() {
     assert_eq!(
         split(iarr(&[10, 20]), 0).unwrap(),
-        Value::array([iarr(&[]), iarr(&[10, 20])])
+        Value::array([iarr(&[10, 20]), iarr(&[])])
+    );
+}
+
+#[test]
+fn the_head_on_top_is_ready_to_explode() {
+    // The destructuring sequence: split, then explode the head so its first
+    // element is on top, with the tail beneath all of them.
+    let stacked = eval(
+        vec![iarr(&[10, 20, 30])],
+        vec![
+            Bytecode::LoadConst(0),
+            Bytecode::SplitArray(2),
+            Bytecode::ExplodeArray,
+            Bytecode::MakeArray(3),
+        ],
+    )
+    .unwrap();
+    assert_eq!(
+        stacked,
+        Value::array([iarr(&[30]), Value::from(20i64), Value::from(10i64)])
     );
 }
 

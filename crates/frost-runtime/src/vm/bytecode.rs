@@ -99,11 +99,10 @@ pub enum Bytecode {
     ExplodeArray,
 
     // Split an Array into two Arrays.
-    // The operand is replaced by an Array containing the first N elements of the operand.
-    // The remaining elements are collected into an Array which is at the top of the stack.
-    // The latter Array is permitted to be empty.
+    // The operand is replaced by an Array of its elements after the first N, which is
+    // permitted to be empty. An Array of the first N elements goes on top of it.
     // Produces an error if its operand is not an Array or is of length less than N.
-    // ( [X] -- [N] [X-N] )
+    // ( [X] -- [X-N] [N] )
     SplitArray(usize),
 
     // Index a structure, structure is below the index initially (consumed)
