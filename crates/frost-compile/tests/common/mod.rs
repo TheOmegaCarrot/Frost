@@ -33,10 +33,11 @@ pub(crate) const UNOPTIMIZED: OptimizationOptions = OptimizationOptions {
     constant_fold: false,
     constant_propagate: false,
     branch_eliminate: false,
+    capture_hoist: false,
 };
 
 /// How many options [`OptimizationOptions`] has.
-const OPTION_COUNT: u32 = 3;
+const OPTION_COUNT: u32 = 4;
 
 /// Every permutation of the optimization options, starting with [`UNOPTIMIZED`].
 pub(crate) fn every_optimization() -> impl Iterator<Item = OptimizationOptions> {
@@ -48,6 +49,7 @@ pub(crate) fn every_optimization() -> impl Iterator<Item = OptimizationOptions> 
             constant_fold: on(0),
             constant_propagate: on(1),
             branch_eliminate: on(2),
+            capture_hoist: on(3),
         }
     })
 }
@@ -316,6 +318,11 @@ impl Emitted {
     /// The function's name.
     pub(crate) fn name(&self) -> &str {
         &self.function.name
+    }
+
+    /// How many captured values a closure over this function is created with.
+    pub(crate) fn num_captures(&self) -> usize {
+        self.function.num_captures
     }
 
     /// How many times `op` appears in the code.

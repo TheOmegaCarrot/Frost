@@ -9,6 +9,7 @@ use crate::{
     CompilerErrors,
     lower::{
         ExprFragment, FunctionBuilder, Ir, Position,
+        fold::constant_of,
         locals::{LocalInfo, LocalKind},
         prewalk,
     },
@@ -124,21 +125,32 @@ impl FunctionBuilder<'_> {
         // `free_names` finds them; the order is arbitrary, but both sides of the
         // closure must agree on it. Any other free name is the child's to
         // resolve: a global, or an unbound-name error.
-        let captures: Vec<String> = prewalk::free_names(&lambda.node)
+        let free_names: Vec<String> = prewalk::free_names(&lambda.node)
             .into_iter()
             .filter(|name| self.locals.resolve(name).is_some())
             .collect();
 
-        // The pushes that seat each capture, in the same order the child seats
+        // The push that seats each capture, in the same order the child seats
         // them. A captured constant is pushed directly, so a lambda over
-        // constants can still be evaluated in a fold.
-        let capture_pushes = captures
-            .iter()
-            .map(|name| self.compile_name_lookup(name, SourceSpan::default()))
-            .collect::<Result<Vec<_>, _>>()?;
+        // constants can still be evaluated in a fold; hoisted, it is built into
+        // the child instead and not pushed at all.
+        let hoist = self.options.optimization_options.capture_hoist;
+        let mut captures = Vec::new();
+        let mut capture_pushes = Vec::new();
+        let mut hoisted = Vec::new();
+        for name in free_names {
+            let push = self.compile_name_lookup(&name, SourceSpan::default())?;
+            match constant_of(&push.code) {
+                Some(value) if hoist => hoisted.push((name, value)),
+                _ => {
+                    captures.push(name);
+                    capture_pushes.push(push);
+                }
+            }
+        }
 
         let lambda = NormalizedLambda::new(&lambda.node);
-        let mut child = self.child(lambda.name.to_owned(), lambda.arity(), captures);
+        let mut child = self.child(lambda.name.to_owned(), lambda.arity(), captures, hoisted);
 
         // The call leaves `[closure, arg1 .. argN, rest?]` on the stack, which is
         // also source order. Define the names in that order, so a duplicate is

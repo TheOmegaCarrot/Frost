@@ -28,6 +28,7 @@ fn options(constant_fold: bool) -> CompilerOptions {
             constant_fold,
             constant_propagate: false,
             branch_eliminate: false,
+            capture_hoist: false,
         },
         implicit_export: false,
     }

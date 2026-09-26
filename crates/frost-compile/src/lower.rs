@@ -144,11 +144,17 @@ struct FunctionBuilder<'a> {
 
 impl<'a> FunctionBuilder<'a> {
     /// A builder for a function nested in this one, with `captures` seated in
-    /// order. It shares this builder's source, options, and fold VM, but holds
-    /// no borrow of this builder itself.
-    fn child(&self, name: String, arity: Arity, captures: Vec<String>) -> FunctionBuilder<'a> {
+    /// order and `hoisted` captures built in. It shares this builder's source,
+    /// options, and fold VM, but holds no borrow of this builder itself.
+    fn child(
+        &self,
+        name: String,
+        arity: Arity,
+        captures: Vec<String>,
+        hoisted: Vec<(String, Value)>,
+    ) -> FunctionBuilder<'a> {
         FunctionBuilder {
-            locals: Locals::with_captures(captures),
+            locals: Locals::with_captures(captures, hoisted),
             next_label: Label(0),
             name,
             arity,
@@ -226,7 +232,8 @@ pub fn compile_in_scope(
 
     let fold_vm = FoldVm::new();
     let mut fn_builder = FunctionBuilder {
-        locals: Locals::with_captures(captures),
+        // The host supplies a script's captures at runtime: none is known now.
+        locals: Locals::with_captures(captures, []),
         next_label: Label(0),
         name: "<main>".to_string(),
         arity: Arity::Exact(0),

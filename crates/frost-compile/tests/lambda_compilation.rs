@@ -1,6 +1,7 @@
 //! What the compiler does with lambdas beyond their behavior: when a lambda is
-//! usable in a constant fold, how effects stop folding, tail calls in a lambda's
-//! body, and the names compiled functions carry.
+//! usable in a constant fold, how effects stop folding, hoisting constant
+//! captures, tail calls in a lambda's body, and the names compiled functions
+//! carry.
 //!
 //! A lambda is usable in a fold when calling it has no effects (its body, and
 //! any lambda it creates, loads no impure global) and every value it captures is
@@ -24,6 +25,17 @@ const FOLD: OptimizationOptions = OptimizationOptions {
 const FOLD_AND_PROPAGATE: OptimizationOptions = OptimizationOptions {
     constant_propagate: true,
     ..FOLD
+};
+
+const PROPAGATE: OptimizationOptions = OptimizationOptions {
+    constant_propagate: true,
+    ..UNOPTIMIZED
+};
+
+/// Hoisting has effect only with propagation, which makes a capture's value known.
+const PROPAGATE_AND_HOIST: OptimizationOptions = OptimizationOptions {
+    capture_hoist: true,
+    ..PROPAGATE
 };
 
 fn ints(values: &[i64]) -> Value {
@@ -155,6 +167,100 @@ fn a_lambda_capturing_a_propagated_constant_folds() {
     assert_folds(source, FOLD_AND_PROPAGATE);
     // Without propagation, `k` is read from its slot at runtime.
     assert_does_not_fold(source, FOLD);
+}
+
+// --- Capture hoisting ---
+
+/// The top-level code of `source` under exactly `optimization`, and its lambda.
+fn lambda_of(source: &str, optimization: OptimizationOptions) -> (Emitted, Emitted) {
+    let top = code(source, optimization);
+    let lambda = top.nested(0);
+    (top, lambda)
+}
+
+#[test]
+fn a_constant_capture_is_hoisted_into_the_lambda() {
+    let source = "def k = 10; fn v -> v * k";
+    let (top, lambda) = lambda_of(source, PROPAGATE_AND_HOIST);
+    assert_eq!(lambda.num_captures(), 0, "`k` is not captured: {lambda:?}");
+    assert_eq!(
+        lambda.count(&Bytecode::PushInt(10)),
+        1,
+        "the lambda loads `k` itself: {lambda:?}"
+    );
+    assert_eq!(
+        top.count(&Bytecode::PushInt(10)),
+        1,
+        "only the `def` pushes 10; none is pushed for the closure: {top:?}"
+    );
+}
+
+#[test]
+fn without_hoisting_a_constant_capture_is_pushed_at_creation() {
+    let (top, lambda) = lambda_of("def k = 10; fn v -> v * k", PROPAGATE);
+    assert_eq!(lambda.num_captures(), 1, "{lambda:?}");
+    assert_eq!(
+        top.count(&Bytecode::PushInt(10)),
+        2,
+        "the `def`, then the propagated capture push: {top:?}"
+    );
+}
+
+#[test]
+fn without_propagation_there_is_nothing_to_hoist() {
+    let hoist_only = OptimizationOptions {
+        capture_hoist: true,
+        ..UNOPTIMIZED
+    };
+    let (_, lambda) = lambda_of("def k = 10; fn v -> v * k", hoist_only);
+    assert_eq!(lambda.num_captures(), 1, "{lambda:?}");
+}
+
+#[test]
+fn only_constant_captures_are_hoisted() {
+    // `x` is known only at runtime, so it is still captured.
+    let (_, lambda) = lambda_of("def k = 10; fn v -> v + k + x", PROPAGATE_AND_HOIST);
+    assert_eq!(lambda.num_captures(), 1, "only `x` is captured: {lambda:?}");
+    assert_eq!(lambda.count(&Bytecode::PushInt(10)), 1, "{lambda:?}");
+}
+
+#[test]
+fn a_structured_constant_is_hoisted_into_the_lambdas_pool() {
+    let (_, lambda) = lambda_of(r#"def s = "text"; fn -> s"#, PROPAGATE_AND_HOIST);
+    assert_eq!(lambda.num_captures(), 0, "{lambda:?}");
+    assert!(
+        lambda
+            .code
+            .iter()
+            .any(|op| matches!(op, Bytecode::LoadConst(_))),
+        "{lambda:?}"
+    );
+}
+
+#[test]
+fn hoisting_carries_through_nested_lambdas() {
+    let (_, outer) = lambda_of("def k = 10; fn -> fn -> k", PROPAGATE_AND_HOIST);
+    let inner = outer.nested(0);
+    assert_eq!(outer.num_captures(), 0, "{outer:?}");
+    assert_eq!(inner.num_captures(), 0, "{inner:?}");
+    assert_eq!(inner.count(&Bytecode::PushInt(10)), 1, "{inner:?}");
+}
+
+#[test]
+fn a_hoisted_capture_may_be_rebound_after_use() {
+    // Like any capture, the lambda may use it, then shadow it with a binding.
+    let source = "def k = 1; (fn -> { def a = k; def k = 2; a + k })()";
+    assert_eq!(run(source), Value::Int(3));
+    let (_, lambda) = lambda_of(source, PROPAGATE_AND_HOIST);
+    assert_eq!(lambda.num_captures(), 0, "{lambda:?}");
+}
+
+#[test]
+fn hoisting_keeps_each_closure_distinct() {
+    // A lambda left with no captures is still created afresh each time its
+    // expression is evaluated, so two closures from it are never equal.
+    let source = "def k = 1; def make = fn -> fn -> k; make() == make()";
+    assert_eq!(run(source), Value::Bool(false));
 }
 
 // --- Folding limits ---

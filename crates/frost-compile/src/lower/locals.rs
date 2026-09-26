@@ -23,8 +23,20 @@ use crate::lower::{Ir, LocalId};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum LocalKind {
     Capture,
+    /// A capture whose value is compile-time known, built into the function
+    /// instead of seated: every lookup of it loads the constant, so it never
+    /// occupies a slot.
+    Hoisted,
     Param,
     Binding,
+}
+
+impl LocalKind {
+    /// Whether the local comes from the enclosing scope, which a binding in this
+    /// function may shadow.
+    fn is_inherited(self) -> bool {
+        matches!(self, LocalKind::Capture | LocalKind::Hoisted)
+    }
 }
 
 /// A local's metadata: its runtime name-table fields, its role, the span that
@@ -53,19 +65,29 @@ impl Locals {
     }
 
     /// The locals of a function whose captures are `names`, live from the start
-    /// and seated in this order (see [`plan_slots`](Self::plan_slots)).
-    pub(super) fn with_captures(names: impl IntoIterator<Item = String>) -> Self {
+    /// and seated in this order (see [`plan_slots`](Self::plan_slots)), and whose
+    /// `hoisted` captures are built in as constants.
+    pub(super) fn with_captures(
+        names: impl IntoIterator<Item = String>,
+        hoisted: impl IntoIterator<Item = (String, Value)>,
+    ) -> Self {
+        let captured = names
+            .into_iter()
+            .map(|name| (name, None, LocalKind::Capture));
+        let hoisted = hoisted
+            .into_iter()
+            .map(|(name, value)| (name, Some(value), LocalKind::Hoisted));
         let mut locals = Self::new();
-        for name in names {
+        for (name, constant, kind) in captured.chain(hoisted) {
             locals
                 .define(LocalInfo {
                     name,
                     span: SourceSpan::default(),
                     exported: false,
-                    constant: None,
-                    kind: LocalKind::Capture,
+                    constant,
+                    kind,
                 })
-                .expect("a capture never collides: only a binding can");
+                .expect("an inherited local never collides: only a binding can");
         }
         locals
     }
@@ -82,7 +104,7 @@ impl Locals {
         // fresh local. Only another binding in this scope is a real duplicate.
         if let Some(id) = self.live[floor..].iter().find(|id| {
             let existing = self.info(**id);
-            existing.name == info.name && existing.kind != LocalKind::Capture
+            existing.name == info.name && !existing.kind.is_inherited()
         }) {
             return Err(self.info(*id).span);
         }

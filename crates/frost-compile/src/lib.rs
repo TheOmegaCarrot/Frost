@@ -21,6 +21,12 @@ pub struct OptimizationOptions {
     /// Resolve a branch whose condition is compile-time known, emitting only the
     /// path taken.
     pub branch_eliminate: bool,
+    /// Build a captured value that is compile-time known into the capturing
+    /// function itself, rather than passing it in each time a closure is
+    /// created. A captured binding's value is known only through
+    /// [`constant_propagate`](Self::constant_propagate), so this has effect only
+    /// alongside it.
+    pub capture_hoist: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
