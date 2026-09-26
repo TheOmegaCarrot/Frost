@@ -2,6 +2,7 @@ mod assemble;
 mod binary_operations;
 mod call_expression;
 mod def;
+mod destructure;
 mod do_expression;
 mod fold;
 mod format_string;
