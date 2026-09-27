@@ -6,12 +6,13 @@
 //! parts after it.
 
 use frost_parse::ast::{Binding, Destructure, MapDestructureEntry, Spanned};
-use frost_runtime::{Bytecode, FrostType, Value};
+use frost_runtime::{Bytecode, FrostArray, FrostType, MapKey, Value};
 
 use crate::{
     CompilerErrors,
     lower::{
         FunctionBuilder, Ir, JumpType, Label, Position,
+        fold::constant_of,
         locals::{LocalInfo, LocalKind},
     },
 };
@@ -34,8 +35,8 @@ pub(super) enum Mismatch {
 
 impl FunctionBuilder<'_> {
     /// Destructure a value into `destructure`'s bindings, each `exported` or not.
-    /// `constant` is the value if it is compile-time known; a plain binding
-    /// records it for propagation.
+    /// `constant` is the value if it is compile-time known; each binding records
+    /// its part of it for propagation.
     pub(super) fn compile_destructure(
         &mut self,
         destructure: &Spanned<Destructure>,
@@ -44,15 +45,13 @@ impl FunctionBuilder<'_> {
     ) -> Result<DestructureFragment, CompilerErrors> {
         match &destructure.node {
             Destructure::Binding(binding) => self.compile_binding(binding, exported, constant),
-            // TODO: record a constant for each part of a compile-time-known value,
-            // so destructured bindings propagate too.
             Destructure::Array { elements, rest } => {
-                self.compile_array_destructure(elements, rest.as_ref(), exported)
+                self.compile_array_destructure(elements, rest.as_ref(), exported, constant)
             }
             Destructure::Map {
                 entries,
                 bind_whole,
-            } => self.compile_map_destructure(entries, bind_whole.as_ref(), exported),
+            } => self.compile_map_destructure(entries, bind_whole.as_ref(), exported, constant),
         }
     }
 
@@ -138,8 +137,18 @@ impl FunctionBuilder<'_> {
         elements: &[Spanned<Destructure>],
         rest: Option<&Spanned<Binding>>,
         exported: bool,
+        constant: Option<Value>,
     ) -> Result<DestructureFragment, CompilerErrors> {
         let count = elements.len();
+        // A known value of the wrong shape raises, so its parts are never bound.
+        let known = constant
+            .as_ref()
+            .and_then(Value::as_array)
+            .map(FrostArray::as_slice)
+            .filter(|values| match rest {
+                Some(_) => values.len() >= count,
+                None => values.len() == count,
+            });
         let bound = if rest.is_some() {
             "at least"
         } else {
@@ -151,10 +160,15 @@ impl FunctionBuilder<'_> {
 
         let mut parts = elements
             .iter()
-            .map(|element| self.compile_destructure(element, exported, None))
+            .enumerate()
+            .map(|(index, element)| {
+                let part = known.map(|values| values[index].clone());
+                self.compile_destructure(element, exported, part)
+            })
             .collect::<Result<Vec<_>, _>>()?;
         if let Some(rest) = rest {
-            parts.push(self.compile_binding(rest, exported, None)?);
+            let tail = known.map(|values| Value::from(values[count..].to_vec()));
+            parts.push(self.compile_binding(rest, exported, tail)?);
         }
 
         Ok(DestructureFragment {
@@ -175,7 +189,10 @@ impl FunctionBuilder<'_> {
         entries: &[Spanned<MapDestructureEntry>],
         bind_whole: Option<&Spanned<Binding>>,
         exported: bool,
+        constant: Option<Value>,
     ) -> Result<DestructureFragment, CompilerErrors> {
+        // A known value that is not a Map raises, so its parts are never bound.
+        let known = constant.filter(|value| value.as_map().is_some());
         let mut code = self.check_shape(
             [
                 Ir::Ready(Bytecode::Dup),
@@ -190,7 +207,11 @@ impl FunctionBuilder<'_> {
             // later: a constant key is what lets its part propagate.
             let key = self.compile_expression(&entry.node.key, Position::Inner)?;
             let key = self.fold_if_eligible(key);
-            let part = self.compile_destructure(&entry.node.destructure, exported, None)?;
+            let value = known.as_ref().and_then(Value::as_map).and_then(|map| {
+                let key = MapKey::try_from(constant_of(&key.code)?).ok()?;
+                map.get(&key).cloned()
+            });
+            let part = self.compile_destructure(&entry.node.destructure, exported, value)?;
             foldable &= key.foldable && part.foldable;
             code.extend(key.code);
             code.push(Ir::Ready(Bytecode::ExtractKey));
@@ -198,7 +219,7 @@ impl FunctionBuilder<'_> {
         }
 
         let whole = match bind_whole {
-            Some(binding) => self.compile_binding(binding, exported, None)?,
+            Some(binding) => self.compile_binding(binding, exported, known)?,
             None => DestructureFragment {
                 code: vec![Ir::Ready(Bytecode::Pop)],
                 foldable: true,

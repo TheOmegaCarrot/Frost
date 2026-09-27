@@ -7,7 +7,7 @@
 
 mod common;
 
-use common::{Emitted, Script, run};
+use common::{Emitted, Script, raises, run};
 use frost_runtime::{Bytecode, MapKey, Value};
 
 /// The code of `source` under every optimization permutation with constant
@@ -148,4 +148,77 @@ fn an_empty_structure_propagates_without_folding() {
     }
     assert_eq!(run("def a = []; [a, a + [1]]"), run("[[], [1]]"));
     assert_eq!(run("def m = {}; [m, m + {k: 1}]"), run("[{}, {k: 1}]"));
+}
+
+// --- Destructured bindings ---
+
+/// Destructures of a known value, reading back every part they bind, and the
+/// value they read.
+const KNOWN_DESTRUCTURES: [(&str, &str); 6] = [
+    ("def [a, b] = [1, 2]; [b, a]", "[2, 1]"),
+    ("def [a, ...r] = [1, 2, 3]; [a, r]", "[1, [2, 3]]"),
+    ("def [_, ...r] = [1]; r", "[]"),
+    (
+        "def {x, y: [z]} as m = {x: 1, y: [2]}; [x, z, m]",
+        "[1, 2, {x: 1, y: [2]}]",
+    ),
+    ("def [[a], {b}] = [[1], {b: 2}]; [a, b]", "[1, 2]"),
+    // A computed key reading an earlier part is itself known.
+    (r#"def {a, [a]: b} = {a: "c", c: 3}; [a, b]"#, r#"["c", 3]"#),
+];
+
+#[test]
+fn propagation_preserves_destructured_values() {
+    for (source, expected) in KNOWN_DESTRUCTURES {
+        assert_eq!(run(source), run(expected), "{source:?}");
+    }
+}
+
+#[test]
+fn each_part_of_a_known_value_propagates() {
+    // A structure literal is a known value once folded.
+    for (source, _) in KNOWN_DESTRUCTURES {
+        for emitted in Script::new(source).code_where(|o| o.constant_propagate && o.constant_fold) {
+            assert!(
+                !loads_a_local(&emitted),
+                "{source:?}: every lookup pushes its part's constant: {emitted:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_propagated_part_folds_where_it_is_used() {
+    let source = "def [a, {b}] = [6, {b: 7}]; a * b";
+    for emitted in Script::new(source).code_where(|o| o.constant_propagate && o.constant_fold) {
+        assert_eq!(emitted.count(&Bytecode::Multiply), 0, "{emitted:?}");
+        assert_eq!(emitted.count(&Bytecode::PushInt(42)), 1, "{emitted:?}");
+    }
+    assert_eq!(run(source), Value::Int(42));
+}
+
+#[test]
+fn a_part_of_a_runtime_value_is_not_propagated() {
+    for source in ["def [a] = x; a", "def {k} = y; k"] {
+        let script = Script::new(source).captures(&[("x", run("[1]")), ("y", run("{k: 1}"))]);
+        assert_eq!(script.run(), Value::Int(1), "{source:?}");
+        for emitted in script.code_where(|o| o.constant_propagate) {
+            assert!(loads_a_local(&emitted), "{source:?}: {emitted:?}");
+        }
+    }
+}
+
+#[test]
+fn a_known_value_of_the_wrong_shape_still_raises() {
+    // No part is bound, so none propagates; the destructure raises as ever.
+    for (source, message) in [
+        ("def [a, b] = [1]; a", "exactly 2 elements"),
+        ("def [a, b, ...r] = [1]; a", "at least 2 elements"),
+        ("def {a} = [1]; a", "expected a Map"),
+        ("def [a] = {a: 1}; a", "expected an Array"),
+        ("def {a, b} = {a: 1}; a", "no value at key 'b'"),
+    ] {
+        let raised = raises(source);
+        assert!(raised.contains(message), "{source:?}: {raised}");
+    }
 }
