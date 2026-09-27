@@ -20,7 +20,7 @@
 
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use frost_compile::{
     CompilerErrors, CompilerOptions, CompilerOutput, OptimizationOptions, compile_in_scope,
@@ -54,6 +54,13 @@ pub(crate) fn every_optimization() -> impl Iterator<Item = OptimizationOptions> 
 pub(crate) struct Finished {
     pub(crate) tail: Value,
     pub(crate) exports: BTreeMap<String, Value>,
+}
+
+/// All a run does: its outcome, and the text of each `print` it makes.
+#[derive(Debug, PartialEq)]
+struct Observed {
+    outcome: Result<Finished, String>,
+    printed: Vec<String>,
 }
 
 /// A script to compile and run, with the enclosing scope it compiles against.
@@ -117,18 +124,29 @@ impl Script {
     }
 
     /// The run's outcome, `Err` holding a runtime error's message. Every
-    /// optimization permutation must compile the script and agree on this.
+    /// optimization permutation must compile the script and agree on this, and
+    /// on what it prints.
     pub(crate) fn outcome(&self) -> Result<Finished, String> {
+        self.observe().outcome
+    }
+
+    /// The text of each `print` the run makes, whether it completes or raises.
+    /// Every permutation must agree on this, and on the outcome.
+    pub(crate) fn printed(&self) -> Vec<String> {
+        self.observe().printed
+    }
+
+    fn observe(&self) -> Observed {
         let mut permutations = every_optimization();
         let first = permutations
             .next()
             .expect("there is always one permutation");
-        let baseline = self.outcome_under(first);
+        let baseline = self.observe_under(first);
         for optimization in permutations {
             assert_eq!(
-                self.outcome_under(optimization),
+                self.observe_under(optimization),
                 baseline,
-                "{:?}: the outcome under {optimization:?} differs from under {first:?}",
+                "{:?}: the run under {optimization:?} differs from under {first:?}",
                 self.source
             );
         }
@@ -223,7 +241,7 @@ impl Script {
         compile_in_scope(&self.filename, &self.source, options, &scope)
     }
 
-    fn outcome_under(&self, optimization: OptimizationOptions) -> Result<Finished, String> {
+    fn observe_under(&self, optimization: OptimizationOptions) -> Observed {
         let output = self.compile(optimization).unwrap_or_else(|errors| {
             panic!(
                 "{:?} should compile under {optimization:?}:\n{}",
@@ -235,23 +253,31 @@ impl Script {
             .code
             .close(self.captures.clone())
             .expect("every capture the script uses is supplied");
+        let printed = Arc::new(Mutex::new(Vec::new()));
+        let sink = {
+            let printed = Arc::clone(&printed);
+            move |text: &str| printed.lock().unwrap().push(text.to_string())
+        };
         let config = VmRuntimeConfiguration {
             max_call_depth: self.max_call_depth,
+            print_sink: Arc::new(sink),
             ..Default::default()
         };
-        let result = Vm::factory()
+        let outcome = Vm::factory()
             .configuration(config)
             .build(closure)
             .expect("closure builds")
             .run()
-            .map_err(|error| error.into_error().message().into_owned())?;
-        Ok(Finished {
-            tail: result.tail().clone(),
-            exports: result
-                .exports()
-                .map(|(name, value)| (name.to_string(), value.clone()))
-                .collect(),
-        })
+            .map(|result| Finished {
+                tail: result.tail().clone(),
+                exports: result
+                    .exports()
+                    .map(|(name, value)| (name.to_string(), value.clone()))
+                    .collect(),
+            })
+            .map_err(|error| error.into_error().message().into_owned());
+        let printed = printed.lock().unwrap().clone();
+        Observed { outcome, printed }
     }
 
     fn compile_error_under(&self, optimization: OptimizationOptions) -> CompilerErrors {

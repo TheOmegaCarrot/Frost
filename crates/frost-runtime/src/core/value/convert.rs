@@ -120,10 +120,7 @@ impl Value {
         match self {
             Value::Int(_) => self.clone(),
             Value::Float(f) => Value::from(f.get() as i64),
-            Value::String(s) => s
-                .parse::<i64>()
-                .ok()
-                .map_or(Value::Null, Value::from),
+            Value::String(s) => s.parse::<i64>().ok().map_or(Value::Null, Value::from),
             _ => Value::Null,
         }
     }
@@ -133,8 +130,7 @@ impl Value {
     pub fn to_frost_float(&self) -> Value {
         match self {
             Value::Float(_) => self.clone(),
-            Value::Int(i) => FrostFloat::new(*i as f64)
-                .map_or(Value::Null, Value::from),
+            Value::Int(i) => FrostFloat::new(*i as f64).map_or(Value::Null, Value::from),
             Value::String(s) => s
                 .parse::<f64>()
                 .ok()

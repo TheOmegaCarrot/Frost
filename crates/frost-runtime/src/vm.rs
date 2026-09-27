@@ -5,6 +5,7 @@ mod import;
 mod native;
 mod outcome;
 mod params;
+mod print_sink;
 mod serialize;
 
 pub use bytecode::Bytecode;
@@ -17,6 +18,7 @@ pub use import::{
 pub use native::{NativeCtx, NativeFn, NativeFunction};
 pub use outcome::{IdleVm, ProgramResult, RunError};
 pub use params::{InvalidParams, Param, Params};
+pub use print_sink::{PrintSink, StdoutSink};
 pub use serialize::FormatVersion;
 
 use std::{debug_assert_matches, num::NonZeroUsize, sync::Arc};
@@ -83,17 +85,19 @@ pub struct Vm {
     import_depth: usize,
 }
 
-/// Runtime resource limits for a [`Vm`]. The [`Default`] imposes no limits.
+/// Runtime configuration for a [`Vm`]: its resource limits, and where its printed
+/// output goes.
+/// The [`Default`] imposes no limits and prints to standard output.
 ///
-/// Each bounds how much work a program may do,
+/// Each limit bounds how much work a program may do,
 /// so that a mistake in a script you trust becomes a recoverable [`RunError`]
 /// rather than a hung or crashed process.
 /// Every limit is optional, and unset means unbounded.
 ///
-/// They bound how much a script runs, never what it can reach,
+/// The limits bound how much a script runs, never what it can reach,
 /// so they are not a security boundary:
 /// that is decided by what the host grants it, on [`Importer`].
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct VmRuntimeConfiguration {
     /// Maximum call-stack depth (number of frames) before execution fails with a
     /// recoverable error.
@@ -124,6 +128,21 @@ pub struct VmRuntimeConfiguration {
     /// bounds each of them separately but not the nesting.
     /// This is the backstop for an [`ImportResolver`] that does not detect cycles.
     pub max_import_depth: Option<NonZeroUsize>,
+
+    /// Receives the text of each `print`,
+    /// in this Vm and in every Vm that runs a module it imports.
+    pub print_sink: Arc<dyn PrintSink>,
+}
+
+impl Default for VmRuntimeConfiguration {
+    fn default() -> Self {
+        Self {
+            max_call_depth: None,
+            fuel: None,
+            max_import_depth: None,
+            print_sink: Arc::new(StdoutSink),
+        }
+    }
 }
 
 /// Fixed configuration from which [`Vm`]s are built. Obtain one from [`Vm::factory`].
@@ -140,7 +159,7 @@ pub struct VmFactory {
 }
 
 impl VmFactory {
-    /// Set the runtime resource limits (depth, fuel) for the Vms this factory builds.
+    /// Set the runtime configuration (limits, print sink) for the Vms this factory builds.
     /// See [`VmRuntimeConfiguration`] for the defaults,
     /// which are used if this method is not invoked.
     pub fn configuration(mut self, config: VmRuntimeConfiguration) -> Self {
@@ -405,13 +424,14 @@ impl Vm {
                     }
                     Bytecode::Concat(n) => {
                         let base = self.stack.len() - n.get();
-                        let result = self.stack.iter().skip(base).fold(
-                            String::new(),
-                            |mut acc, v| {
-                                acc.push_str(&v.to_frost_string());
-                                acc
-                            },
-                        );
+                        let result =
+                            self.stack
+                                .iter()
+                                .skip(base)
+                                .fold(String::new(), |mut acc, v| {
+                                    acc.push_str(&v.to_frost_string());
+                                    acc
+                                });
 
                         self.stack.truncate(base);
 

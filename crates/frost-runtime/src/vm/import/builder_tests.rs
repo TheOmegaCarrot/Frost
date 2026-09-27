@@ -16,7 +16,10 @@ fn content(n: i64) -> Value {
 /// A resolver that claims nothing; its Debug name identifies it in the chain.
 #[derive(Debug)]
 struct NamedResolver(
-    #[expect(dead_code, reason = "read only through the derived Debug, which dead-code analysis ignores")]
+    #[expect(
+        dead_code,
+        reason = "read only through the derived Debug, which dead-code analysis ignores"
+    )]
     &'static str,
 );
 

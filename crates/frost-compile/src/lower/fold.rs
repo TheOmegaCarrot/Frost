@@ -54,6 +54,8 @@ impl FoldVm {
         // by function call.
         let config = VmRuntimeConfiguration {
             fuel: NonZeroUsize::new(100_000),
+            // `print` is impure, so no fold ever reaches it.
+            print_sink: Arc::new(|_: &str| unreachable!("a constant fold printed")),
             ..Default::default()
         };
         Self {

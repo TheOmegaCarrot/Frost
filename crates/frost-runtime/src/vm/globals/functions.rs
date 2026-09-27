@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use crate::core::FrostResult;
 use crate::{
-    Arity, Bytecode, Closure, CompiledFunction, FormatVersion, FrostArray, FrostType,
-    MapKey, NativeCtx, Param, Params, Value,
+    Arity, Bytecode, Closure, CompiledFunction, FormatVersion, FrostArray, FrostType, MapKey,
+    NativeCtx, Param, Params, Value,
 };
 
 /// `call(f)` / `call(f, args)`: invoke `f`, spreading the elements of `args` (or
@@ -32,12 +32,12 @@ pub(super) fn call_global() -> Value {
                 // Normalize to ( call_self f arr ): make an empty array when no
                 // second arg was supplied (n == 1).
                 Bytecode::PushInt(1),
-                Bytecode::CompareEqual,   // 1: n == 1 ? -> needEmpty
+                Bytecode::CompareEqual,       // 1: n == 1 ? -> needEmpty
                 Bytecode::PeekJumpIfFalse(3), // 2: n == 2 -> a real array was passed (idx 6)
-                Bytecode::Pop,            // 3: drop needEmpty
-                Bytecode::MakeArray(0),   // 4: ( call_self f [] )
-                Bytecode::Jump(1),        // 5: -> idx 7 (skip idx 6)
-                Bytecode::Pop,            // 6: (have_arr) drop needEmpty -> ( call_self f a )
+                Bytecode::Pop,                // 3: drop needEmpty
+                Bytecode::MakeArray(0),       // 4: ( call_self f [] )
+                Bytecode::Jump(1),            // 5: -> idx 7 (skip idx 6)
+                Bytecode::Pop,                // 6: (have_arr) drop needEmpty -> ( call_self f a )
                 // Drop call's own value (2 below the top) so the callee lands at
                 // this frame's base, then hand ( f arr ) to DynTailCall, which
                 // validates that arr is an Array and f is callable.
