@@ -29,12 +29,7 @@ use frost_runtime::{Bytecode, CompiledFunction, Value, Vm, VmRuntimeConfiguratio
 
 /// Every optimization off. A base for picking options explicitly:
 /// `OptimizationOptions { constant_fold: true, ..UNOPTIMIZED }`.
-pub(crate) const UNOPTIMIZED: OptimizationOptions = OptimizationOptions {
-    constant_fold: false,
-    constant_propagate: false,
-    branch_eliminate: false,
-    capture_hoist: false,
-};
+pub(crate) const UNOPTIMIZED: OptimizationOptions = OptimizationOptions::NONE;
 
 /// How many options [`OptimizationOptions`] has.
 const OPTION_COUNT: u32 = 4;

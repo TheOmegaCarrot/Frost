@@ -131,3 +131,21 @@ fn a_propagated_map_lookup_loads_a_constant_not_the_local() {
         );
     }
 }
+
+#[test]
+fn an_empty_structure_propagates_without_folding() {
+    // An empty literal is a single op, so it is a known constant as written.
+    for source in ["def a = []; a", "def m = {}; m"] {
+        for emitted in emitted(source, true) {
+            assert!(
+                !loads_a_local(&emitted),
+                "{source:?}: the lookup pushes the constant, with no slot read: {emitted:?}"
+            );
+        }
+        for emitted in emitted(source, false) {
+            assert!(loads_a_local(&emitted), "{source:?}: {emitted:?}");
+        }
+    }
+    assert_eq!(run("def a = []; [a, a + [1]]"), run("[[], [1]]"));
+    assert_eq!(run("def m = {}; [m, m + {k: 1}]"), run("[{}, {k: 1}]"));
+}

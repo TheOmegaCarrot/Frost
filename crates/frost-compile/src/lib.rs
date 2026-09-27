@@ -10,10 +10,12 @@ pub use error::{CompilerError, CompilerErrors};
 use frost_runtime::TrustedProgram;
 pub use lower::{compile_in_scope, compile_program};
 
-// TODO: make some associated functions that just return some "reasonable presets"
-// once I accumulate enough optimization options
+/// Which optimizations the compiler applies. None changes what a program
+/// computes, only how it computes it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OptimizationOptions {
+    /// Evaluate an expression built only from compile-time-known values and pure
+    /// operations at compile time, emitting just its value.
     pub constant_fold: bool,
     /// Propagate a binding whose value is compile-time known: a lookup of it loads
     /// the value directly, so it is itself fold-eligible.
@@ -27,6 +29,24 @@ pub struct OptimizationOptions {
     /// [`constant_propagate`](Self::constant_propagate), so this has effect only
     /// alongside it.
     pub capture_hoist: bool,
+}
+
+impl OptimizationOptions {
+    /// Every optimization off: the program compiles as written.
+    pub const NONE: Self = Self {
+        constant_fold: false,
+        constant_propagate: false,
+        branch_eliminate: false,
+        capture_hoist: false,
+    };
+
+    /// Every optimization on.
+    pub const ALL: Self = Self {
+        constant_fold: true,
+        constant_propagate: true,
+        branch_eliminate: true,
+        capture_hoist: true,
+    };
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

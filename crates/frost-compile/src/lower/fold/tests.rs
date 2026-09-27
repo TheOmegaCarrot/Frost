@@ -183,6 +183,21 @@ fn constant_of_reads_a_lone_value_op() {
 }
 
 #[test]
+fn constant_of_reads_an_empty_structure_literal() {
+    assert_eq!(
+        constant_of(&[Ir::Ready(Bytecode::MakeArray(0))]),
+        Some(Value::from_iter(std::iter::empty::<Value>()))
+    );
+    assert_eq!(
+        constant_of(&[Ir::Ready(Bytecode::MakeMap(0))]),
+        Some(Value::from_iter(std::iter::empty::<(MapKey, Value)>()))
+    );
+    // A nonempty one consumes operands, so alone it is no value.
+    assert_eq!(constant_of(&[Ir::Ready(Bytecode::MakeArray(1))]), None);
+    assert_eq!(constant_of(&[Ir::Ready(Bytecode::MakeMap(1))]), None);
+}
+
+#[test]
 fn constant_of_rejects_anything_but_a_lone_value_op() {
     // Empty, multi-op, and a non-value op are all not compile-time known here.
     assert_eq!(constant_of(&[]), None);

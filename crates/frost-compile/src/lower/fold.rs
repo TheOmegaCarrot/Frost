@@ -21,6 +21,7 @@
 mod tests;
 
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 
@@ -31,17 +32,6 @@ use frost_runtime::{
 use crate::lower::assemble::assemble_code;
 use crate::lower::{ExprFragment, FunctionBuilder, Ir};
 
-// Known conservative misses, each safe but leaving a fold on the table:
-//
-// TODO: An empty `[]` or `{}` is a single op (`MakeArray(0)`, `MakeMap(0)`),
-// so `fold_if_eligible` skips it and `constant_of` does not recognize it. It is
-// never a known constant: `[] or x` and `if {}: ...` keep their test, and
-// `def e = []` does not propagate.
-//
-// TODO: A structure literal is several ops until folded, so `constant_of` only
-// recognizes it once `constant_fold` has collapsed it. With `constant_propagate`
-// alone, `def a = [1, 2]` does not propagate.
-//
 // TODO: A function is effectful once it loads an impure global, even if branch
 // elimination later discards that load. A lambda whose only `print` sits in an
 // eliminated branch is never foldable.
@@ -121,6 +111,9 @@ pub(super) fn constant_of(code: &[Ir]) -> Option<Value> {
         Ir::Ready(Bytecode::PushFalse) => Some(Value::Bool(false)),
         Ir::Ready(Bytecode::PushInt(int)) => Some(Value::Int(*int)),
         Ir::Ready(Bytecode::PushFloat(float)) => Some(Value::Float(*float)),
+        // An empty literal builds its structure from nothing.
+        Ir::Ready(Bytecode::MakeArray(0)) => Some(Value::from(Vec::<Value>::new())),
+        Ir::Ready(Bytecode::MakeMap(0)) => Some(Value::from(BTreeMap::new())),
         Ir::Const(value) => Some(value.clone()),
         _ => None,
     }

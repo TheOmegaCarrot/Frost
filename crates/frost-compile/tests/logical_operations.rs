@@ -252,8 +252,53 @@ fn and_guards_an_operation_on_a_null() {
     }
 }
 
-// TODO: add Lua's nested-field guard `foo and foo.bar and foo.bar.baz` once
-// hard indexing lowers.
+#[test]
+fn and_guards_a_nested_lookup() {
+    // Lua's nested-field guard. With a soft index, a missing key is a Null
+    // like any other, so the chain stops there.
+    let source = r#"foo and foo["bar"] and foo["bar"]["baz"]"#;
+    for (foo, expected) in [
+        ("null", "null"),
+        ("{}", "null"),
+        ("{bar: null}", "null"),
+        ("{bar: false}", "false"),
+        ("{bar: {}}", "null"),
+        ("{bar: {baz: 3}}", "3"),
+        ("{bar: {baz: false}}", "false"),
+    ] {
+        assert_eq!(
+            run_with(source, &[("foo", run(foo))]),
+            run(expected),
+            "foo = {foo}"
+        );
+    }
+}
+
+#[test]
+fn and_does_not_guard_a_hard_index_of_a_missing_key() {
+    // A hard index raises on a missing key, which no guard on the value
+    // before it catches; it guards only a Null or false the key holds.
+    let source = "foo and foo.bar and foo.bar.baz";
+    for (foo, expected) in [
+        ("null", "null"),
+        ("{bar: null}", "null"),
+        ("{bar: false}", "false"),
+        ("{bar: {baz: 3}}", "3"),
+    ] {
+        assert_eq!(
+            run_with(source, &[("foo", run(foo))]),
+            run(expected),
+            "foo = {foo}"
+        );
+    }
+    for (foo, missing) in [("{}", "bar"), ("{bar: {}}", "baz")] {
+        let message = Script::new(source).captures(&[("foo", run(foo))]).raises();
+        assert!(
+            message.contains("no value at key") && message.contains(missing),
+            "foo = {foo}: {message}"
+        );
+    }
+}
 
 #[test]
 fn or_picks_the_first_truthy_of_many() {
@@ -1013,6 +1058,19 @@ fn a_constant_string_left_operand_decides() {
     let emitted = code(r#""" and x"#, ELIMINATE);
     assert_eq!(jumps(&emitted), 0, "{emitted:?}");
     assert!(loads_x(&emitted), "only `x` remains: {emitted:?}");
+}
+
+#[test]
+fn an_empty_structure_left_operand_decides() {
+    // An empty literal is known without folding: nothing goes into it.
+    for left in ["[]", "{}"] {
+        let emitted = code(&format!("{left} or x"), ELIMINATE);
+        assert_eq!(jumps(&emitted), 0, "{left}: {emitted:?}");
+        assert!(!loads_x(&emitted), "`x` is dropped: {emitted:?}");
+        let emitted = code(&format!("{left} and x"), ELIMINATE);
+        assert_eq!(jumps(&emitted), 0, "{left}: {emitted:?}");
+        assert!(loads_x(&emitted), "only `x` remains: {emitted:?}");
+    }
 }
 
 #[test]

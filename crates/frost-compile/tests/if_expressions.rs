@@ -956,6 +956,21 @@ fn a_constant_string_condition_decides() {
 }
 
 #[test]
+fn an_empty_structure_condition_decides() {
+    // An empty literal is known without folding: nothing goes into it.
+    for condition in ["[]", "{}"] {
+        let emitted = code(&format!("if {condition}: x else: 2"), ELIMINATE);
+        assert_eq!(jumps(&emitted), 0, "{condition}: {emitted:?}");
+        assert!(loads_x(&emitted), "{condition}: {emitted:?}");
+        assert_eq!(
+            emitted.count(&Bytecode::PushInt(2)),
+            0,
+            "{condition}: {emitted:?}"
+        );
+    }
+}
+
+#[test]
 fn folding_and_elimination_together_leave_only_the_taken_value() {
     // The condition folds beside the runtime alternate and decides; the
     // consequent folds too.
