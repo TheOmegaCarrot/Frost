@@ -638,12 +638,7 @@ impl Vm {
 
                         match map.get(key) {
                             Some(result) => self.stack.push(result.clone()),
-                            // TODO: improve error message with a "did you mean ...?" hint
-                            None => {
-                                return Err(FrostError::from_string(format!(
-                                    "Map has no value at key '{key}'"
-                                )));
-                            }
+                            None => return Err(missing_key(&map, key)),
                         }
                     }
                     Bytecode::TestKey => {
@@ -668,12 +663,7 @@ impl Vm {
                             FrostError::from_string(format!("Expected Map, got {}", m.type_name()))
                         })?;
 
-                        let v = m
-                            .get(&k)
-                            .ok_or_else(|| {
-                                FrostError::from_string(format!("Map has no value at key '{k}'"))
-                            })?
-                            .clone();
+                        let v = m.get(&k).ok_or_else(|| missing_key(m, &k))?.clone();
 
                         self.stack.push(v);
                     }
@@ -1238,4 +1228,17 @@ impl Vm {
             err
         })
     }
+}
+
+/// The error for `map` having no value at `key`, suggesting the key a mistyped
+/// String most likely meant.
+fn missing_key(map: &FrostMap, key: &MapKey) -> FrostError {
+    let similar = match key {
+        MapKey::String(name) => map.closest_string_key(name),
+        _ => None,
+    };
+    FrostError::from_string(match similar {
+        Some(similar) => format!("Map has no value at key '{key}'; did you mean '{similar}'?"),
+        None => format!("Map has no value at key '{key}'"),
+    })
 }

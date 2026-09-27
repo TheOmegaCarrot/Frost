@@ -103,6 +103,27 @@ impl FrostMap {
         self.inner.iter()
     }
 
+    /// The String key most like `name`, if one is close enough to be what a
+    /// mistyped `name` meant: the fewest single-character edits away, a swap of
+    /// neighbouring characters counting as one. Ties go to the first in key order.
+    pub(crate) fn closest_string_key(&self, name: &str) -> Option<&str> {
+        let length = name.chars().count();
+        // As rustc suggests names: within a third of the name's length, at
+        // least one edit.
+        let limit = length.max(3) / 3;
+        self.keys()
+            .filter_map(|key| match key {
+                MapKey::String(candidate) => Some(&**candidate),
+                _ => None,
+            })
+            // Each differing character is an edit: skip hopeless candidates cheaply.
+            .filter(|candidate| candidate.chars().count().abs_diff(length) <= limit)
+            .map(|candidate| (strsim::osa_distance(name, candidate), candidate))
+            .filter(|(distance, _)| *distance <= limit)
+            .min_by_key(|(distance, _)| *distance)
+            .map(|(_, candidate)| candidate)
+    }
+
     /// Convenience for String-keyed lookups without manually wrapping in MapKey.
     pub fn get_str(&self, key: &str) -> Option<&Value> {
         self.inner.get(&MapKey::String(Arc::from(key)))

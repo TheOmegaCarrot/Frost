@@ -333,6 +333,108 @@ fn hard_index_reports_a_missing_bytes_key_as_a_literal() {
     assert!(err.message().contains("x'ff00'"), "got: {}", err.message());
 }
 
+/// The error from hard-indexing a Map of `keys` (each to Null) with `missing`.
+fn hard_index_miss(keys: &[&str], missing: MapKey) -> String {
+    let pairs = keys.iter().map(|key| (skey(key), Value::Null)).collect();
+    eval_keyed(
+        vec![map(pairs)],
+        vec![missing],
+        vec![LoadConst(0), HardIndexMap(0)],
+    )
+    .unwrap_err()
+    .message()
+    .to_string()
+}
+
+#[test]
+fn hard_index_miss_suggests_a_similar_key() {
+    let message = hard_index_miss(&["bla", "other"], skey("ble"));
+    assert_eq!(
+        message,
+        "Map has no value at key 'ble'; did you mean 'bla'?"
+    );
+}
+
+#[test]
+fn hard_index_miss_suggests_a_key_only_if_close_enough() {
+    // Within a third of the missing key's length, and at least one edit.
+    for (keys, missing, suggested) in [
+        (&["bla"][..], "ble", Some("bla")),
+        (&["color"], "colour", Some("color")),
+        (&["café"], "cafe", Some("café")),
+        // Swapping neighbouring characters is a single edit.
+        (&["name"], "nmae", Some("name")),
+        (&["abcdef"], "abxyef", Some("abcdef")),
+        (&["abcdef"], "axyzef", None),
+        (&["abc"], "xyz", None),
+        (&["bar"], "BAR", None),
+        (&["field"], "f", None),
+        (&[], "bar", None),
+    ] {
+        let message = hard_index_miss(keys, skey(missing));
+        match suggested {
+            Some(key) => assert!(
+                message.ends_with(&format!("did you mean '{key}'?")),
+                "{missing} among {keys:?}: {message}"
+            ),
+            None => assert!(
+                !message.contains("did you mean"),
+                "{missing} among {keys:?}: {message}"
+            ),
+        }
+    }
+}
+
+#[test]
+fn hard_index_miss_suggests_the_closest_key() {
+    // The closest wins over one earlier in key order; a tie goes to the earlier.
+    for (keys, missing, suggested) in [
+        (&["abcaaf", "abcdez"][..], "abcdef", "abcdez"),
+        (&["bag", "bar"], "bat", "bag"),
+        (&["bar", "bag"], "bat", "bag"),
+    ] {
+        let message = hard_index_miss(keys, skey(missing));
+        assert!(
+            message.ends_with(&format!("did you mean '{suggested}'?")),
+            "{missing} among {keys:?}: {message}"
+        );
+    }
+}
+
+#[test]
+fn hard_index_miss_suggests_only_string_keys() {
+    // A Bytes key spelling the same text is not a String key.
+    let err = eval_keyed(
+        vec![map(vec![
+            (MapKey::from(b"bla".to_vec()), Value::Null),
+            (MapKey::Int(1), Value::Null),
+        ])],
+        vec![skey("ble")],
+        vec![LoadConst(0), HardIndexMap(0)],
+    )
+    .unwrap_err();
+    assert!(
+        !err.message().contains("did you mean"),
+        "got: {}",
+        err.message()
+    );
+    // Nor is a missing non-String key matched against anything.
+    let err = eval_keyed(
+        vec![map(vec![
+            (MapKey::Int(1), Value::Null),
+            (skey("2"), Value::Null),
+        ])],
+        vec![MapKey::Int(2)],
+        vec![LoadConst(0), HardIndexMap(0)],
+    )
+    .unwrap_err();
+    assert!(
+        !err.message().contains("did you mean"),
+        "got: {}",
+        err.message()
+    );
+}
+
 #[test]
 fn hard_index_accepts_a_non_string_key() {
     // The key pool holds any `MapKey`, not just the field names `foo.bar` produces:

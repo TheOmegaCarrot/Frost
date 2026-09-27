@@ -220,6 +220,23 @@ fn a_missing_field_raises() {
 }
 
 #[test]
+fn a_mistyped_field_suggests_the_intended_one() {
+    for (source, suggested) in [
+        ("m.nmae", "name"),
+        ("m.inner.dep", "deep"),
+        ("m.people[0].nam", "name"),
+    ] {
+        let message = raises_with_data(source);
+        assert!(
+            message.contains(&format!("did you mean '{suggested}'?")),
+            "{source:?}: {message}"
+        );
+    }
+    let message = raises_with_data("m.nope");
+    assert!(!message.contains("did you mean"), "{message}");
+}
+
+#[test]
 fn a_hard_index_only_indexes_a_map() {
     for (source, type_name) in [("a.x", "Array"), ("m.age.x", "Int"), ("null.x", "Null")] {
         let message = raises_with_data(source);

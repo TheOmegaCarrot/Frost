@@ -85,6 +85,24 @@ fn absent_key_raises() {
 }
 
 #[test]
+fn absent_key_suggests_a_similar_string_key() {
+    let map = Value::map([("name", Value::from(1i64))]);
+    let err = extract_key(map, Value::from("nmae")).unwrap_err();
+    assert_eq!(
+        err.message(),
+        "Map has no value at key 'nmae'; did you mean 'name'?"
+    );
+    // Only a String key is matched against the Map's String keys.
+    let map = Value::map([("12", Value::from(1i64))]);
+    let err = extract_key(map, Value::from(1i64)).unwrap_err();
+    assert!(
+        !err.message().contains("did you mean"),
+        "got: {}",
+        err.message()
+    );
+}
+
+#[test]
 fn absent_in_empty_map_raises() {
     let map = Value::Map(Default::default());
     assert!(extract_key(map, Value::from("a")).is_err());

@@ -648,6 +648,20 @@ fn a_missing_key_is_named_in_the_error() {
 }
 
 #[test]
+fn a_mistyped_key_suggests_the_intended_one() {
+    assert_raises(&[
+        (
+            "def {nmae} = {name: 1}; nmae",
+            "no value at key 'nmae'; did you mean 'name'?",
+        ),
+        (
+            "def {a: {widht}} = {a: {width: 1}}; widht",
+            "did you mean 'width'?",
+        ),
+    ]);
+}
+
+#[test]
 fn the_value_is_checked_before_any_key_is_evaluated() {
     assert_raises(&[
         ("def {[1 / 0]: x} = 5; x", "expected a Map"),
