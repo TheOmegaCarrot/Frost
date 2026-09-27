@@ -296,10 +296,13 @@ impl Scanner {
                     self.define_binding(&whole.node);
                 }
             }
-            // Every alternative binds the same names; walking all is safe since
-            // re-defining a name in scope is a no-op here.
+            // Each branch sees only the names in view before the alternative and
+            // its own. Every branch binds the same names, so those the last one
+            // leaves in view are the alternative's.
             MatchPattern::Alternative(branches) => {
+                let before = self.scope.checkpoint();
                 for branch in branches {
+                    self.scope.rewind(before);
                     self.pattern(branch);
                 }
             }

@@ -12,6 +12,7 @@ mod index_expressions;
 mod iterative_expressions;
 mod lambda_expression;
 mod locals;
+mod match_expression;
 mod prewalk;
 mod simple_expressions;
 mod structure_literals;
@@ -367,7 +368,7 @@ impl FunctionBuilder<'_> {
                 structure,
                 operation,
             } => self.compile_iteration(Iteration::Foreach, structure, operation, None, position),
-            Expr::Match { target, arms } => todo!(),
+            Expr::Match { target, arms } => self.compile_match_expression(target, arms, position),
         }
     }
 }

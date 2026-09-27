@@ -262,6 +262,20 @@ fn match_alternatives_bind_the_same_names() {
 }
 
 #[test]
+fn an_alternative_branch_does_not_see_an_earlier_branchs_bindings() {
+    // In the second branch, `(x)` is used before that branch binds `x`: free.
+    assert_free("fn v -> match v { [x, 1] | [(x), x] => x }", &["x"]);
+    assert_free("fn v -> match v { {a: y} | {[y]: y} => y }", &["y"]);
+    // Likewise for an alternative nested in a later branch.
+    assert_free(
+        "fn v -> match v { [1, y] | [0, [y] | [(y), y]] => y }",
+        &["y"],
+    );
+    // A branch's own earlier binding is not free.
+    assert_free("fn v -> match v { [x, 1] | [x, (x)] => x }", &[]);
+}
+
+#[test]
 fn a_pattern_binding_is_visible_to_later_pattern_elements() {
     // `(a)` compares against the `a` bound by the first element: no capture.
     assert_free("fn a -> match a { [a, (a)] => true, _ => false }", &[]);

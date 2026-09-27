@@ -146,6 +146,28 @@ impl Locals {
         self.live.truncate(mark);
     }
 
+    /// The bindings in view now, to return to with [`rewind`](Self::rewind).
+    pub(super) fn checkpoint(&self) -> Checkpoint {
+        Checkpoint(self.live.len())
+    }
+
+    /// Drop from view every binding made since `checkpoint`, which must be in the
+    /// current scope. The ids they allocated stay in `infos`.
+    pub(super) fn rewind(&mut self, checkpoint: Checkpoint) {
+        let floor = self.marks.last().copied().unwrap_or(0);
+        assert!(
+            (floor..=self.live.len()).contains(&checkpoint.0),
+            "a checkpoint is rewound to within its own scope"
+        );
+        self.live.truncate(checkpoint.0);
+    }
+
+    /// Bring an existing local back into view in the current scope, as if it were
+    /// defined again.
+    pub(super) fn revive(&mut self, id: LocalId) {
+        self.live.push(id);
+    }
+
     /// Assign each local a concrete frame slot and build the parallel name table,
     /// both from one traversal of `code` so they cannot disagree.
     ///
@@ -194,6 +216,10 @@ impl Locals {
         &self.infos[id.0]
     }
 }
+
+/// The bindings in view at some point, from [`Locals::checkpoint`].
+#[derive(Clone, Copy, Debug)]
+pub(super) struct Checkpoint(usize);
 
 /// A function's frame layout: the slot each local occupies and the parallel name
 /// table, derived together by [`Locals::plan_slots`].

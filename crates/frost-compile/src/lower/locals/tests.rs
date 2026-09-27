@@ -89,6 +89,51 @@ fn a_name_freed_by_scope_exit_can_be_defined_again() {
 }
 
 #[test]
+fn rewinding_hides_bindings_made_since_the_checkpoint() {
+    let mut locals = Locals::new();
+    let outer = bind(&mut locals, "x", span(0)).unwrap();
+    locals.enter();
+    let checkpoint = locals.checkpoint();
+    bind(&mut locals, "x", span(1)).unwrap();
+    bind(&mut locals, "y", span(2)).unwrap();
+    locals.rewind(checkpoint);
+    assert_eq!(
+        locals.resolve("x"),
+        Some(outer),
+        "the shadowed `x` shows again"
+    );
+    assert_eq!(locals.resolve("y"), None);
+    // Hidden, the names may be defined again without colliding.
+    assert!(bind(&mut locals, "y", span(3)).is_ok());
+}
+
+#[test]
+fn a_revived_local_resolves_again_under_its_old_id() {
+    let mut locals = Locals::new();
+    locals.enter();
+    let checkpoint = locals.checkpoint();
+    let x = bind(&mut locals, "x", span(0)).unwrap();
+    locals.rewind(checkpoint);
+    locals.revive(x);
+    assert_eq!(locals.resolve("x"), Some(x));
+    // It is in view in the current scope, so a redefinition is a duplicate.
+    assert_eq!(bind(&mut locals, "x", span(1)), Err(span(0)));
+    // And it leaves with that scope.
+    locals.exit();
+    assert_eq!(locals.resolve("x"), None);
+}
+
+#[test]
+#[should_panic(expected = "within its own scope")]
+fn rewinding_past_the_current_scope_panics() {
+    let mut locals = Locals::new();
+    let checkpoint = locals.checkpoint();
+    bind(&mut locals, "x", span(0)).unwrap();
+    locals.enter();
+    locals.rewind(checkpoint);
+}
+
+#[test]
 fn duplicate_within_a_nested_scope_is_still_rejected() {
     let mut locals = Locals::new();
     locals.enter();

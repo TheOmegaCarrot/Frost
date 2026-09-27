@@ -11,7 +11,7 @@ use frost_runtime::{Bytecode, FrostType, Value};
 use crate::{
     CompilerErrors,
     lower::{
-        FunctionBuilder, Ir, JumpType, Position,
+        FunctionBuilder, Ir, JumpType, Label, Position,
         locals::{LocalInfo, LocalKind},
     },
 };
@@ -22,6 +22,14 @@ pub(super) struct DestructureFragment {
     /// Whether destructuring uses no runtime input, so a statement made of it
     /// and a foldable value may fold as a whole.
     pub(super) foldable: bool,
+}
+
+/// What a failed shape check does.
+pub(super) enum Mismatch {
+    /// Raise an error with this message.
+    Raise(String),
+    /// Jump to this label, leaving the stack as the check found it.
+    Jump(Label),
 }
 
 impl FunctionBuilder<'_> {
@@ -48,21 +56,35 @@ impl FunctionBuilder<'_> {
         }
     }
 
-    /// Check the shape of the value being destructured: `test` is `( x -- x b )`,
-    /// and a false result raises `message`. `( x -- x )`.
-    fn check_shape(&mut self, test: impl IntoIterator<Item = Ir>, message: String) -> Vec<Ir> {
-        let shaped = self.next_label();
-        test.into_iter()
-            .chain([
-                Ir::Jump {
-                    kind: JumpType::IfTrue,
-                    label: shaped,
-                },
-                Ir::Const(Value::from(message)),
-                Ir::Ready(Bytecode::ProduceError),
-                Ir::Label(shaped),
-            ])
-            .collect()
+    /// Check the shape of a value: `test` is `( x -- x b )`, and a false result
+    /// is handled by `mismatch`. `( x -- x )`.
+    pub(super) fn check_shape(
+        &mut self,
+        test: impl IntoIterator<Item = Ir>,
+        mismatch: Mismatch,
+    ) -> Vec<Ir> {
+        let test = test.into_iter();
+        match mismatch {
+            Mismatch::Raise(message) => {
+                let shaped = self.next_label();
+                test.chain([
+                    Ir::Jump {
+                        kind: JumpType::IfTrue,
+                        label: shaped,
+                    },
+                    Ir::Const(Value::from(message)),
+                    Ir::Ready(Bytecode::ProduceError),
+                    Ir::Label(shaped),
+                ])
+                .collect()
+            }
+            Mismatch::Jump(label) => test
+                .chain([Ir::Jump {
+                    kind: JumpType::IfFalse,
+                    label,
+                }])
+                .collect(),
+        }
     }
 
     fn compile_binding(
@@ -93,10 +115,24 @@ impl FunctionBuilder<'_> {
         })
     }
 
-    /// `[e1, e2, ...rest]`: check the value is an Array of the right length, then
+    /// Check the value is an Array of `count` elements (at least, if `rest`), then
     /// lay it out for the parts to consume in source order. A rest splits the
     /// Array, its tail beneath the elements; the elements are exploded, the first
-    /// on top.
+    /// on top. `( a -- rest? aN ... a1 a0 )`
+    pub(super) fn array_layout(&mut self, count: usize, rest: bool, mismatch: Mismatch) -> Vec<Ir> {
+        let test = if rest {
+            Bytecode::TestArrayLenAtLeast(count)
+        } else {
+            Bytecode::TestArrayLenExact(count)
+        };
+        self.check_shape([Ir::Ready(test)], mismatch)
+            .into_iter()
+            .chain(rest.then_some(Ir::Ready(Bytecode::SplitArray(count))))
+            .chain([Ir::Ready(Bytecode::ExplodeArray)])
+            .collect()
+    }
+
+    /// `[e1, e2, ...rest]`: see [`array_layout`](Self::array_layout).
     fn compile_array_destructure(
         &mut self,
         elements: &[Spanned<Destructure>],
@@ -104,18 +140,14 @@ impl FunctionBuilder<'_> {
         exported: bool,
     ) -> Result<DestructureFragment, CompilerErrors> {
         let count = elements.len();
-        let (test, bound) = match rest {
-            None => (Bytecode::TestArrayLenExact(count), "exactly"),
-            Some(_) => (Bytecode::TestArrayLenAtLeast(count), "at least"),
+        let bound = if rest.is_some() {
+            "at least"
+        } else {
+            "exactly"
         };
         let noun = if count == 1 { "element" } else { "elements" };
         let message = format!("Cannot destructure: expected an Array of {bound} {count} {noun}");
-
-        let layout = self
-            .check_shape([Ir::Ready(test)], message)
-            .into_iter()
-            .chain(rest.map(|_| Ir::Ready(Bytecode::SplitArray(count))))
-            .chain([Ir::Ready(Bytecode::ExplodeArray)]);
+        let layout = self.array_layout(count, rest.is_some(), Mismatch::Raise(message));
 
         let mut parts = elements
             .iter()
@@ -128,6 +160,7 @@ impl FunctionBuilder<'_> {
         Ok(DestructureFragment {
             foldable: parts.iter().all(|part| part.foldable),
             code: layout
+                .into_iter()
                 .chain(parts.into_iter().flat_map(|part| part.code))
                 .collect(),
         })
@@ -148,7 +181,7 @@ impl FunctionBuilder<'_> {
                 Ir::Ready(Bytecode::Dup),
                 Ir::Ready(Bytecode::TypeTest(FrostType::MAP)),
             ],
-            "Cannot destructure: expected a Map".to_string(),
+            Mismatch::Raise("Cannot destructure: expected a Map".to_string()),
         );
         let mut foldable = true;
 
