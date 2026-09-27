@@ -37,8 +37,8 @@ use crate::lower::{
 
 /// The free names of a whole program (a top-level statement sequence): a name
 /// used before any binding introduces it. The program's own top-level bindings
-/// are not free. An embedder intersects these with the enclosing scope it
-/// supplies to decide the top-level's captures; a set, since order is irrelevant
+/// are not free. [`compile_in_scope`](crate::compile_in_scope) intersects these with the enclosing scope
+/// to decide the top-level's captures; a set, since order is irrelevant
 /// there (captures are seated by name) and it makes their distinctness structural.
 pub(super) fn free_names_of_program(statements: &[Spanned<Statement>]) -> BTreeSet<String> {
     let mut scan = Scanner::new();
@@ -50,9 +50,6 @@ pub(super) fn free_names_of_program(statements: &[Spanned<Statement>]) -> BTreeS
 
 /// The free names of a lambda expression, in evaluation order, found with a
 /// fresh scope seeded with the lambda's own parameters.
-///
-/// The result includes any global names the lambda uses; codegen filters those
-/// out (against the enclosing scope) to arrive at the actual captures.
 ///
 /// `lambda` must be an [`Expr::Lambda`] or [`Expr::AbbreviatedLambda`].
 pub(super) fn free_names(lambda: &Expr) -> Vec<String> {

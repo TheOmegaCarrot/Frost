@@ -701,7 +701,7 @@ mod errors {
 // ============================================================
 // A bare string token is a complete pattern: no operator may continue it,
 // matching the Int/Float/Bool/Null pattern rule. Expressions require the
-// `(expr)` escape hatch. (Oracle-checked 2026-07-22.)
+// `(expr)` escape hatch.
 //
 // The rejection tests assert only that parsing fails; the error message is
 // deliberately unpinned so the fix is free to choose its wording.

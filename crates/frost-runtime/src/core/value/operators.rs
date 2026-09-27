@@ -4,7 +4,8 @@ use std::sync::Arc;
 use crate::core::{FrostError, FrostFloat, Value};
 
 impl Value {
-    /// Frost `+` operator: numeric addition, string/array concatenation, or map merge.
+    /// Frost `+` operator: numeric addition, String/Bytes/Array concatenation,
+    /// or Map merge (the right operand wins on a key collision).
     pub fn add(&self, rhs: &Value) -> Result<Value, FrostError> {
         match (self, rhs) {
             (Value::Int(l), Value::Int(r)) => Ok(Value::from(l.wrapping_add(*r))),

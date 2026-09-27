@@ -721,7 +721,7 @@ fn error_double_rest() {
 // -- Newlines inside destructuring delimiters --
 // Newlines are insignificant inside `[...]` / `{...}` destructuring, exactly as
 // in array/map literals, call parens, and match patterns. Each test pins one
-// newline position, so a partial fix fails precisely. (Oracle-checked 2026-07-22.)
+// newline position, so a partial fix fails precisely.
 
 fn array_names(d: &Spanned<Destructure>) -> Vec<&str> {
     match &d.node {

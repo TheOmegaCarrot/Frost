@@ -49,6 +49,7 @@ impl OptimizationOptions {
     };
 }
 
+/// Options for [`compile_program`] and [`compile_in_scope`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompilerOptions {
     pub optimization_options: OptimizationOptions,
@@ -56,7 +57,9 @@ pub struct CompilerOptions {
     pub implicit_export: bool,
 }
 
+/// The result of a successful compilation.
 #[derive(Debug)]
 pub struct CompilerOutput {
+    /// The compiled program; [`close`](TrustedProgram::close) it to run it.
     pub code: TrustedProgram,
 }

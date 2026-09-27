@@ -7,8 +7,8 @@
 //! bounded-depth tests run under every permutation, checking that tail calls
 //! through each construct really reuse their frame.
 //!
-//! Each probed call site is a distinct capture (`f`, `g`, ...) given a distinct
-//! argument count, so the emitted call opcode identifies which site it is.
+//! Each probed call site calls `f` with a distinct argument count, so the
+//! emitted call opcode identifies which site it is.
 
 mod common;
 

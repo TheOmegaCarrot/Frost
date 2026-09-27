@@ -70,8 +70,7 @@ impl ImportCtx<'_> {
     }
 
     /// The identity of the module performing this import,
-    /// or `None` when the importing script has none
-    /// (a REPL, `-e`, or a host-run script left unidentified).
+    /// or `None` when the importing script was given none (see [`Vm::with_module_id`]).
     pub fn importing_module(&self) -> Option<&ModuleId> {
         self.importing.as_ref()
     }
@@ -341,8 +340,6 @@ impl ImporterBuilder {
         // Extensions live under the `ext` namespace: a Map of extension-name -> content.
         let key = MapKey::from(extension.name());
 
-        // A name already claimed under `ext` is a collision. Leave the registry
-        // untouched and hand the extension back for the caller to `rename` and retry.
         if let Some(Value::Map(ext)) = self.registry.get("ext")
             && ext.contains_key(&key)
         {
@@ -368,9 +365,7 @@ impl ImporterBuilder {
     /// component back unchanged.
     /// These components are a part of the import registry.
     pub fn with_component(mut self, component: HostComponent) -> Result<Self, HostComponentError> {
-        // A host component claims a top-level registry name. `std` and `ext` are
-        // reserved (the stdlib and extensions); every other name is the host's to
-        // claim, unless already taken. Reservation is by *name*, not by presence,
+        // Reservation is by *name*, not by presence,
         // so it holds regardless of whether `std`/`ext` are populated yet.
         let name = component.name();
         if name == "std" || name == "ext" {

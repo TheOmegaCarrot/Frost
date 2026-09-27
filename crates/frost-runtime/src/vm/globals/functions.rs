@@ -60,7 +60,7 @@ pub(super) fn try_call_global() -> Value {
 /// `try_call(f, args)`: invoke `f` with `args` (an array) and reify the outcome into a result map
 /// rather than letting an error propagate:
 ///   success: `{ ok: true,  value: <result> }`
-///   failure: `{ ok: false, error: <message>, trace: [<frame names>] }`
+///   failure: `{ ok: false, error: <error value>, trace: [<frame names>] }`
 ///
 /// The argument array is interpreted the same as `call`, only the result shape differs.
 fn try_call(mut ctx: NativeCtx<'_>, args: &mut [Value]) -> FrostResult {

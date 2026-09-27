@@ -110,7 +110,6 @@ fn split_format_segments(
             }
 
             b'$' if i + 1 < bytes.len() && bytes[i + 1] == b'{' => {
-                // Flush literal buffer
                 if !literal_buf.is_empty() {
                     segments.push(FormatSegment::Literal(finish_literal(std::mem::take(
                         &mut literal_buf,
@@ -174,7 +173,6 @@ fn split_format_segments(
         }
     }
 
-    // Flush remaining literal
     if !literal_buf.is_empty() {
         segments.push(FormatSegment::Literal(finish_literal(literal_buf)));
     }
@@ -195,11 +193,8 @@ fn parse_interpolation(
     span: &Range<usize>,
     base_offset: usize,
 ) -> ParseResult<Spanned<Expr>> {
-    // The sub-context lexes `src` with `base_offset`, so every diagnostic it
-    // produces already carries whole-source spans. We propagate those inner
-    // diagnostics directly (adding an outer "in this format String" label for
-    // context) rather than flattening them to text, so their labels survive
-    // and render against the real source.
+    // The sub-context lexes `src` with `base_offset`, so its diagnostics already carry whole-source spans.
+    // Propagate them as-is, plus an outer "in this format String" label, so their labels render against the real source.
     let context = |d: Diagnostic| d.with_label(span.clone().into(), "in this format String");
 
     let mut sub_ctx =

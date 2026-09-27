@@ -470,8 +470,8 @@ fn interpolation_error_labels_the_format_string() {
 
 #[test]
 fn interpolation_error_renders_a_single_diagram() {
-    // The old code flattened an inner rendered report into the outer message,
-    // producing two source diagrams and an "in interpolation:" prefix.
+    // An inner rendered report must not be flattened into the outer message:
+    // that would produce two source diagrams and an "in interpolation:" prefix.
     let rendered = frost_parse::parse_program("test.frst", "$'${x +}'")
         .unwrap_err()
         .to_string();

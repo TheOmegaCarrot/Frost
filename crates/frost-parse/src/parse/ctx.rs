@@ -50,8 +50,7 @@ pub(crate) struct ParseState {
 /// Filled in as the body parses; consumed by `exit_abbreviated_lambda`.
 #[derive(Clone, Debug, Default)]
 pub(crate) struct DollarUsage {
-    /// `used[i]` == whether `$(i+1)` was referenced (`$` counts as `$1`).
-    /// The length is the highest positional referenced; empty if none.
+    /// Becomes `used_params` of [`Expr::AbbreviatedLambda`](crate::ast::Expr::AbbreviatedLambda).
     pub used: Vec<bool>,
     /// Whether the rest parameter `$$` was referenced.
     pub rest: bool,
@@ -273,11 +272,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     /// Moves the abbreviated-lambda frames out, leaving none behind.
     ///
-    /// Paired with [`restore_abbrev_frames`](Self::restore_abbrev_frames) to lend
-    /// the frames to the sub-context parsing a format-string interpolation. That
-    /// interpolation is lexed separately, but lexically it still sits inside any
-    /// enclosing abbreviated lambda: its dollar identifiers must be accepted and
-    /// recorded against that lambda's frame rather than a fresh one.
+    /// Paired with [`restore_abbrev_frames`](Self::restore_abbrev_frames) to lend the frames to a format-string interpolation's sub-context (see `parse_interpolation`).
     pub(crate) fn take_abbrev_frames(&mut self) -> Vec<DollarUsage> {
         std::mem::take(&mut self.state.abbrev_lambdas)
     }

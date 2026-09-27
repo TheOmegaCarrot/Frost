@@ -55,8 +55,7 @@ macro_rules! define_globals {
     ($($name:literal [$purity:ident] => $init:expr),* $(,)?) => {
         /// The predefined global names, in slot order:
         /// a name's index in this list is its `LoadGlobal` slot.
-        /// This list is the compiler's only seam onto the globals,
-        /// which are themselves a fixed, runtime-internal set.
+        /// The set is fixed: a host supplies its own values through captures or imports instead.
         pub const GLOBAL_NAMES: &[&str] = &[ $($name),* ];
 
         /// The [`Purity`] of each global, in the same slot order as
@@ -72,12 +71,12 @@ macro_rules! define_globals {
     };
 }
 
-// The `[Pure]`/`[Impure]` tag is each global's compile-time-fold eligibility;
-// see `Purity`. Default to `Pure`; `Impure` marks the only globals with an
-// effect of their own: the I/O of print/mprint, mutable_cell's mutable state,
-// and import (the gateway to every other effect). A higher-order global stays
-// `Pure` (an impure callback stops its own fold), and so does a raising one
-// (error/assert): a fold that reaches a raise just abandons.
+// The `[Pure]`/`[Impure]` tag is each global's compile-time-fold eligibility; see `Purity`.
+// Default to `Pure`; `Impure` marks the only globals with an effect or context of their own:
+// the I/O of print/mprint, mutable_cell's mutable state,
+// import (the gateway to every other effect), and imported (which reads the running Vm).
+// A higher-order global stays `Pure` (an impure callback stops its own fold),
+// and so does a raising one (error/assert): a fold that reaches a raise just abandons.
 define_globals! {
     // --- Types ---
     "is_null"               [Pure]   => is_null_global(),

@@ -730,7 +730,7 @@ mod abbreviated {
     // -- Dollar identifiers inside format-string interpolations --
     // An interpolation is lexed separately from the enclosing source, but
     // lexically it still sits inside the abbreviated lambda: `$n` is legal there
-    // and counts toward the lambda's parameters. (Oracle-checked 2026-07-24.)
+    // and counts toward the lambda's parameters.
 
     /// The interpolated expressions of a format-string body, in order.
     fn interpolations(body: &Spanned<Expr>) -> Vec<&Spanned<Expr>> {

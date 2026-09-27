@@ -6,6 +6,7 @@ use enumset::EnumSet;
 
 use crate::{FrostFloat, FrostType};
 
+/// One VM instruction; a [`CompiledFunction`](crate::CompiledFunction)'s `code` is a sequence of them.
 #[derive(PartialEq, Eq, Clone, Debug, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Bytecode {
     // Constants
@@ -62,11 +63,11 @@ pub enum Bytecode {
     // such that `Jump(0)` is a funny way to spell `Nop`
     Jump(usize), // unconditionally
     // Consuming conditional jumps: pop the top of the stack and jump if it was
-    // true / falsey respectively.
+    // truthy / falsy respectively.
     JumpIfTrue(usize),
     JumpIfFalse(usize),
     // Non-consuming conditional jumps: peek the top of the stack (leaving it in
-    // place) and jump if it is true / falsey respectively.
+    // place) and jump if it is truthy / falsy respectively.
     PeekJumpIfTrue(usize),
     PeekJumpIfFalse(usize),
 

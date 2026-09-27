@@ -54,8 +54,8 @@ impl FrostType {
     /// Int or Float.
     pub const NUMERIC: EnumSet<FrostType> = enum_set!(FrostType::Int | FrostType::Float);
 
-    /// Null, Bool, Int, Float, String, or Bytes: the types that may be Map keys
-    /// (all but `Null`, which is rejected there).
+    /// Null, Bool, Int, Float, String, or Bytes.
+    /// All but Null may be Map keys.
     pub const PRIMITIVE: EnumSet<FrostType> = enum_set!(
         FrostType::Null
             | FrostType::Bool

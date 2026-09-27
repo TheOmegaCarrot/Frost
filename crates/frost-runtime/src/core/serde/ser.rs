@@ -151,12 +151,9 @@ impl ser::Serializer for ValueSerializer {
         value: &T,
     ) -> Result<Value, SerError> {
         if name == super::VALUE_NEWTYPE_TOKEN {
-            // Our own `Value::serialize` wrapped a `ValueCarrier`. Hold the lifting flag
-            // while the carrier deposits the value whole (Functions/Opaques included), then
-            // take it from the slot. The guard restores the flag and clears the slot on the
-            // way out, including on unwind or a forged token, so no dirty thread-local
-            // survives. A payload that did not deposit (only a forged token can) is a
-            // recoverable error, not a panic.
+            // Our own `Value::serialize` wrapped a `ValueCarrier`.
+            // Hold the lifting flag while the carrier deposits the value whole, then take it from the slot.
+            // A payload that did not deposit (only a forged token can) is a recoverable error, not a panic.
             let _guard = LiftGuard::arm();
             value.serialize(self)?;
             return OUTGOING_VALUE

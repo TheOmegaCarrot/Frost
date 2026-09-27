@@ -20,6 +20,9 @@ pub(crate) mod ctx;
 pub(crate) use error::Diagnostic;
 pub use error::{Label, ParseError};
 
+/// Parses `input`, the source of a whole Frost program, into an [`ast::Program`].
+///
+/// `filename` labels the source in [`ParseError::rendered`]; it is used only for display.
 pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseError> {
     let mut ctx =
         ParseCtx::new(filename, input).map_err(|d| ParseError::from_diag(d, filename, input))?;
@@ -29,8 +32,6 @@ pub fn parse_program(filename: &str, input: &str) -> Result<ast::Program, ParseE
         .map_err(|d| ParseError::from_diag(d, filename, input))
 }
 
-/// The error carried while parsing is the lightweight [`Diagnostic`]; it is rendered
-/// into a public [`ParseError`] only at the [`parse_program`] boundary.
 type ParseResult<T> = Result<T, Diagnostic>;
 
 impl<'src, 'f> ParseCtx<'src, 'f> {

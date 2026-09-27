@@ -1,6 +1,6 @@
 //! Core value types and operations for the Frost language runtime.
 //!
-//! This crate defines [`Value`], the fundamental runtime type of Frost,
+//! This module defines [`Value`], the fundamental runtime type of Frost,
 //! along with supporting types ([`FrostArray`], [`FrostMap`], [`FrostFloat`],
 //! [`MapKey`]), error handling ([`FrostError`]), and serialization
 //! ([`to_value`], [`from_value`]).

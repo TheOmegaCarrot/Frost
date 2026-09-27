@@ -179,7 +179,7 @@ fn error_double_quote_escape_in_single() {
 
 #[test]
 fn x_escape_is_no_longer_valid() {
-    // Byte escapes belong to Bytes literals now; a String is text only.
+    // There is no `\x` escape in String literals; Bytes literals use hex-pair syntax (`x'..'`) instead.
     let err = parse_err(r"'\x0a'");
     assert!(err.contains("invalid escape"), "error was: {err}");
 }

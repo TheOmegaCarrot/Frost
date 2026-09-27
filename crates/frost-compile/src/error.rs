@@ -10,7 +10,7 @@
 //! [`CompilerErrors`] is the plural: the set returned on the error channel when
 //! compilation fails.
 
-#![allow(unused)] // These error helpers are being written before any consumers
+#![allow(unused)] // Some builders have no consumer yet
 // Silence, Clippy
 
 #[cfg(test)]
@@ -27,11 +27,9 @@ use miette::{
 
 /// A single compiler diagnostic: an error, a warning, or advice.
 ///
-/// Constructed by the compiler; the caller consumes one by rendering it, either
-/// through [`Display`](fmt::Display) (a human-friendly rendering, colored when
-/// the output is a terminal) or through the explicit
-/// [`render_colored`](Self::render_colored) and [`render_plain`](Self::render_plain)
-/// wrappers.
+/// Constructed by the compiler; consume one by rendering it,
+/// through [`Display`](fmt::Display) (the same as [`render`](Self::render)),
+/// or through [`render_pretty`](Self::render_pretty) or [`render_plain`](Self::render_plain) for a fixed style.
 #[derive(Clone, Debug)]
 pub struct CompilerError(Diag);
 
@@ -157,9 +155,9 @@ impl CompilerError {
 // -- Consumption (public) --
 
 impl CompilerError {
-    /// Render for humans: unicode box-drawing, colored when the output is a
-    /// terminal and monochrome otherwise (honoring `NO_COLOR`). This is what
-    /// [`Display`](fmt::Display) uses.
+    /// Render for humans, adapting to the output:
+    /// unicode and color at a terminal (monochrome under `NO_COLOR`), monochrome ASCII otherwise.
+    /// This is what [`Display`](fmt::Display) uses.
     pub fn render(&self) -> String {
         self.0.render_themed(GraphicalTheme::default())
     }
@@ -194,7 +192,6 @@ impl Diag {
 }
 
 impl fmt::Display for Diag {
-    // The bare headline only. Whole-report rendering is on `CompilerError`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.message)
     }
@@ -291,8 +288,8 @@ impl CompilerErrors {
         self.render_each(CompilerError::render)
     }
 
-    /// Render every diagnostic with color (see
-    /// [`CompilerError::render_colored`]), back to back.
+    /// Render every diagnostic with color and unicode (see
+    /// [`CompilerError::render_pretty`]), back to back.
     pub fn render_pretty(&self) -> String {
         self.render_each(CompilerError::render_pretty)
     }

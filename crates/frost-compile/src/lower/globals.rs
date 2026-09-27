@@ -7,7 +7,7 @@ use std::sync::LazyLock;
 
 use frost_runtime::{GLOBAL_NAMES, GLOBAL_PURITY, Purity};
 
-// A `BTreeMap` beats hashing at this size (a few dozen fixed names).
+// A `BTreeMap` beats hashing at this size.
 static SLOTS: LazyLock<BTreeMap<&'static str, usize>> = LazyLock::new(|| {
     GLOBAL_NAMES
         .iter()

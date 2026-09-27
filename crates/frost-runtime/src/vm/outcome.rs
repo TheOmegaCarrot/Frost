@@ -8,8 +8,8 @@ use crate::{FrostError, Value};
 use super::Vm;
 use super::function::Closure;
 
-/// The result of executing a CompiledFunction.
-/// Provides access to the top-level defined values and exports of a script.
+/// A successful run.
+/// Provides the script's tail value and exports, and holds the warm [`Vm`] for reuse.
 pub struct ProgramResult(pub(super) Vm);
 
 impl std::fmt::Debug for ProgramResult {

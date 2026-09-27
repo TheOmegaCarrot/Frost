@@ -20,7 +20,7 @@ impl Value {
         buf
     }
 
-    /// Converts to a string representation where all values are quoted/escaped.
+    /// Converts to a compact string representation with Strings quoted and escaped, even at the top level.
     pub fn to_debug_string(&self) -> String {
         let mut buf = String::new();
         stringify(self, &mut buf, &StringifyContext::debug());

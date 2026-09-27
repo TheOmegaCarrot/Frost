@@ -5,7 +5,7 @@ use miette::{LabeledSpan, NamedSource, miette};
 
 use crate::ast::SourceSpan;
 
-/// A single labeled span within a diagnostic.
+/// A labeled source span within a [`ParseError`].
 /// Spans are absolute byte offsets into the original source.
 #[derive(Clone, Debug)]
 pub struct Label {
@@ -61,8 +61,7 @@ impl Diagnostic {
         &self.message
     }
 
-    /// All labeled spans, in the order they were attached. The first is the
-    /// primary location; later labels add context.
+    /// All labeled spans, in the order they were attached.
     pub(crate) fn labels(&self) -> &[Label] {
         &self.labels
     }
@@ -73,9 +72,9 @@ impl Diagnostic {
     }
 }
 
-/// A parser error: a structured diagnostic (message plus labeled spans) and its
-/// rendering against the source. The diagnostic is retained for programmatic
-/// inspection; the render is produced once, at construction, for `Display`.
+/// A parse error: a message plus labeled source spans, and a pretty-printed report of them.
+/// Inspect it with [`message`](Self::message) and [`labels`](Self::labels);
+/// display it with [`rendered`](Self::rendered) or `Display`.
 #[derive(Clone, Debug)]
 pub struct ParseError {
     diagnostic: Diagnostic,

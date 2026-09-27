@@ -412,7 +412,7 @@ fn try_call_catches_division_by_zero() {
 #[test]
 fn try_call_non_function_first_arg_is_type_error() {
     // try_call(42): the function parameter is type-checked up front (checked_native),
-    // so a non-function is try_call's own error and propagates uncaught -- it never
+    // so a non-function is try_call's own error and propagates uncaught: it never
     // reaches the catch, so there is no failure map.
     let program = named(
         "main",

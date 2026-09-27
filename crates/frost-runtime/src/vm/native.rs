@@ -132,6 +132,7 @@ impl<F> NativeFn for F where
 {
 }
 
+/// A Rust-implemented Frost function, as held by [`Value::NativeFunction`].
 pub struct NativeFunction {
     pub(super) arity: Arity,
     pub(super) function: Box<dyn NativeFn>,
@@ -240,8 +241,7 @@ impl Value {
     /// `params` describes each parameter's accepted types and whether it is optional
     /// (see [`Params`]). The function's arity comes from the spec, and every argument
     /// is validated before `body` runs, so `body` can assume its arguments already
-    /// match the spec. A bad argument raises a Frost error with an appropriate error
-    /// message, before `body` is ever executed.
+    /// match the spec. A bad argument raises a Frost error instead.
     ///
     /// This is the usual way to expose a Rust function to Frost. Use [`Value::native`]
     /// when the valid types can't be described per parameter and the function must

@@ -2,14 +2,14 @@
 
 use std::{any::Any, borrow::Cow, fmt::Debug, sync::Arc};
 
-/// Host data carried through Frost as an `Opaque` [`Value`].
+/// Host data carried through Frost as an `Opaque` [`Value`](crate::Value).
 ///
 /// Implementing this trait is all a host type needs to be handed into Frost:
-/// wrap an instance with [`Value::opaque`] and it flows through scripts as an
+/// wrap an instance with [`Value::opaque`](crate::Value::opaque) and it flows through scripts as an
 /// inert value of Frost type `Opaque`. Frost code can store it and pass it
 /// around, but never looks inside; equality is identity, and opaque values
 /// refuse serialization. A native function receiving it back recovers the
-/// concrete type with [`Value::downcast_opaque`], or steals it back out with
+/// concrete type with [`Value::downcast_opaque`](crate::Value::downcast_opaque), or steals it back out with
 /// `try_extract`.
 pub trait FrostOpaque: Any + Debug + Send + Sync {
     /// The host-facing name of this kind of value.

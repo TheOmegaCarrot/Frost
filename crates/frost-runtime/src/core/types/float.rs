@@ -5,8 +5,7 @@ use crate::core::error::FrostError;
 /// A validated f64 that is guaranteed to never be NaN or Infinity.
 /// This makes it safe to impl Eq and Ord.
 ///
-/// Serialized as a plain `f64`; deserialization re-runs the NaN/Infinity check
-/// (`try_from`), so a tampered image cannot smuggle in an invalid float.
+/// Serialized as a plain `f64`; deserialization rejects NaN and Infinity.
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(into = "f64", try_from = "f64")]
 pub struct FrostFloat(f64);

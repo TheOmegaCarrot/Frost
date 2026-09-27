@@ -663,7 +663,7 @@ fn multiline_string_double() {
 
 #[test]
 fn multiline_string_single() {
-    let input = "'''\n    hello\n    world\n    '''"; // can't use raw string here — ''' conflicts
+    let input = "'''\n    hello\n    world\n    '''";
     let tok = lex_one(input);
     assert!(matches!(tok, Token::MultilineStringLiteral(_)));
 }

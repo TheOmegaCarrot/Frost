@@ -1,3 +1,5 @@
+//! The Frost runtime: the [`Value`] type and its operations, and the [`Vm`] that runs compiled Frost code.
+
 mod core;
 mod vm;
 

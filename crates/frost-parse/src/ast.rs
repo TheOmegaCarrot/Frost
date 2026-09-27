@@ -4,10 +4,9 @@ use std::ops::Range;
 
 use serde::Serialize;
 
-/// A range in source code, from start (inclusive) to end (exclusive).
+/// A byte range in the source, from `start` (inclusive) to `end` (exclusive).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct SourceSpan {
-    // byte offsets into the source
     pub start: usize,
     pub end: usize,
 }
@@ -24,7 +23,7 @@ impl From<Range<usize>> for SourceSpan {
 // -- Spanned --
 
 /// Pairs an AST payload with its source span.
-/// Every node's span encloses the union of its children's spans.
+/// Its span obeys the [crate-level span invariants](crate#span-invariants).
 ///
 /// # Equality ignores spans
 ///
@@ -102,8 +101,7 @@ pub enum Expr {
     },
     /// A short-circuiting logical operation: `p and q`, `p or q`.
     ///
-    /// Separate from [`Expr::BinOp`] because the right operand is evaluated
-    /// conditionally, so lowering can never share the strict binary path.
+    /// Separate from [`Expr::BinOp`] because the right operand is evaluated conditionally.
     Logical {
         left: Box<Spanned<Expr>>,
         op: Spanned<LogicalOp>,

@@ -1,7 +1,7 @@
 //! White-box tests for the import registry builder.
 //!
-//! The `import` module is not re-exported from the crate root, so this
-//! registration behavior is only reachable from inside the crate.
+//! These inspect the builder's private registry and construct `Stdlib`s directly,
+//! which only the crate can do.
 //! Resolution itself is covered in `resolve_tests`.
 
 use crate::{FrostMap, Value};

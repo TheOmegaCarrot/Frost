@@ -1,6 +1,5 @@
 //! Tests for constant folding. These drive the fold machinery directly with
-//! hand-built fragments, since the expression compilers that produce foldable
-//! fragments are still being filled in.
+//! hand-built fragments.
 
 use crate::lower::assemble::assemble_code;
 use crate::lower::fold::{FoldVm, constant_of, value_to_ir};

@@ -222,10 +222,9 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         visitor: V,
     ) -> Result<V::Value, DeError> {
         if name == super::VALUE_NEWTYPE_TOKEN {
-            // Our own `Value::deserialize` is asking for the value whole. Deposit it in the
-            // slot for `ValueVisitor::visit_newtype_struct` to lift out. The guard clears the
-            // slot on the way out, including on unwind or a forged token, so no dirty value
-            // survives; the dummy deserializer is consulted only if the visitor is not ours.
+            // Our own `Value::deserialize` is asking for the value whole.
+            // Deposit it in the slot for `ValueVisitor::visit_newtype_struct` to lift out;
+            // the dummy deserializer is consulted only if the visitor is not ours.
             let _guard = IncomingGuard;
             let stale = INCOMING_VALUE.with(|slot| slot.replace(Some(self.0)));
             // A dirty slot means some middleware forged the token without draining it;

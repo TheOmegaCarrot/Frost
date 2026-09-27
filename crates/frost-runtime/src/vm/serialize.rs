@@ -1,4 +1,4 @@
-//! Versioned (de)serialization of a [`CompiledFunction`] tree.
+//! Versioned (de)serialization of a [`CompiledFunction`](crate::CompiledFunction) tree.
 //!
 //! Every serialized function carries a [`FormatVersion`] marker: a zero-sized field that
 //! stamps the runtime's crate version on save, and whose `Deserialize` rejects an image
@@ -121,9 +121,8 @@ impl From<ConstValue> for Value {
 // const_pool: the `#[serde(with)]` adapter for `constants: Vec<Value>`
 // ============================================================
 
-/// Serialize/deserialize a constant pool through [`ConstValue`]. Referenced by
-/// `#[serde(with = "serialize::const_pool")]` on `CompiledFunction::constants`; serializing a
-/// function-valued constant is an error.
+/// Serialize/deserialize a constant pool through [`ConstValue`];
+/// serializing a function or Opaque constant is an error.
 pub(crate) mod const_pool {
     use serde::ser::{Error as _, SerializeSeq};
 

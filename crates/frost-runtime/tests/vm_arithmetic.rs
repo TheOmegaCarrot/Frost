@@ -132,7 +132,7 @@ fn add_merges_maps() {
 #[test]
 fn add_map_overlapping_keys_right_wins() {
     // {a: 1, b: 2} + {b: 99, c: 3} -> {a: 1, b: 99, c: 3}: the rhs value wins on a
-    // key collision. (The Add opcode now merges in its own steal path, so pin it.)
+    // key collision. (The Add opcode merges via its own steal path; pin it here.)
     let out = eval(
         vec![
             map_kv(&[("a", 1), ("b", 2)]),

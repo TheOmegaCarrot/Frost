@@ -110,7 +110,8 @@ fn reset_replaces_exports_with_the_new_program() {
 
 #[test]
 fn builder_accepts_configuration_and_builds_a_runnable_vm() {
-    // The configured limits are stored (not yet enforced); the built Vm runs normally.
+    // The configured limits are well above what this program needs, so it runs
+    // normally; their enforcement is covered in vm_limits.rs.
     let config = VmRuntimeConfiguration {
         max_call_depth: NonZeroUsize::new(64),
         fuel: NonZeroUsize::new(10_000),

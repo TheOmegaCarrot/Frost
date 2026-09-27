@@ -15,12 +15,10 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         let mut lhs = self.parse_prefix()?;
 
         loop {
-            // `.` and `@` may continue an expression across line breaks (leading-dot
-            // / leading-`@` chaining): neither can begin a statement, so a following
-            // one is unambiguously a continuation. Absorb the intervening newlines
-            // here so the postfix dispatch below treats it as same-line. Call `()`
-            // and index `[]` are NOT continued (a `(`/`[` on a new line begins a
-            // fresh statement), so newlines are only skipped for `.`/`@`.
+            // `.` and `@` may continue an expression across line breaks:
+            // neither can begin a statement, so a following one is unambiguously a continuation.
+            // Absorb the intervening newlines so the postfix dispatch below treats it as same-line.
+            // Call `()` and index `[]` are not continued: a `(`/`[` on a new line begins a fresh statement.
             if POSTFIX_BP >= min_bp
                 && matches!(
                     self.peek_past_nl().map(|t| &t.token),

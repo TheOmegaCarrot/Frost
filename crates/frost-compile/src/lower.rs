@@ -214,10 +214,9 @@ pub fn compile_program(
 /// Compile a top-level nested within an enclosing scope: a free name found in
 /// `outer_scope` becomes a capture, and its value is supplied at
 /// [`close`](frost_runtime::TrustedProgram::close).
-/// This is what an embedder uses to run a fragment
-/// against an accumulated environment; `outer_scope` carries that environment's
-/// names, and the empty slice is exactly [`compile_program`].
-/// The order of names is irrelevant.
+/// Use this to run a fragment against an accumulated environment,
+/// passing that environment's names, in any order, as `outer_scope`.
+/// With an empty `outer_scope`, this is exactly [`compile_program`].
 pub fn compile_in_scope(
     filename: &str,
     script: &str,
@@ -249,8 +248,7 @@ pub fn compile_in_scope(
         effectful: false,
     };
 
-    // The runtime starts by pushing the top-level function itself to the stack
-    // Pop it
+    // The runtime starts by pushing the top-level function itself to the stack; pop it.
     let mut ir: Vec<Ir> = vec![Ir::Ready(Bytecode::Pop)];
 
     if let Some((tail, body)) = ast.statements.split_last() {

@@ -22,7 +22,7 @@ pub struct CompiledFunction {
     pub child_fns: Vec<Arc<CompiledFunction>>,
     // Constant values that can't be inlined in an opcode.
     // Mostly strings, but can include any structured value the compiler can constant-fold.
-    // Serialized through `ConstValue` (see `serialize`); a function-valued constant is rejected.
+    // Serialized through `ConstValue` (see `serialize`), which rejects functions and Opaque values.
     #[serde(with = "serialize::const_pool")]
     pub constants: Vec<Value>,
     // Constant map keys, in their own pool so a keyed instruction can borrow one
@@ -144,6 +144,8 @@ pub enum Arity {
     AtLeast(usize),
 }
 
+/// A runnable function: a [`CompiledFunction`] with its captures bound.
+/// Obtain one from [`TrustedProgram::close`] and run it on a Vm built by [`VmFactory::build`](crate::VmFactory::build).
 #[derive(Debug)]
 pub struct Closure {
     pub(super) function: Arc<CompiledFunction>,

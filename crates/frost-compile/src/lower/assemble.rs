@@ -6,6 +6,7 @@
 //!   offset (the VM only ever jumps forward).
 //! - Inline payloads (`Const`, `KeyIndex`, `Closure`) are drained into their
 //!   pools, and the op is rewritten to reference the assigned pool slot.
+//! - `LoadLocal` and `DefLocal` ids resolve to their frame slots per the [`SlotPlan`].
 //!
 //! Assembly is infallible. The IR is compiler-produced and already well-formed,
 //! so an undefined label or a backward jump is a compiler bug, not a user error:

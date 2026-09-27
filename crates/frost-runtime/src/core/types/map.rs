@@ -8,8 +8,6 @@ use crate::core::{FrostFloat, MapKey, Value};
 /// Frost's map type. Immutable once created.
 ///
 /// Entries iterate in key order, as given by [`MapKey`]'s `Ord`.
-/// Keys of different types never interleave: they group by type in the order
-/// Bool, Int, Float, String, Bytes.
 #[derive(Clone, Debug)]
 pub struct FrostMap {
     pub(crate) inner: Arc<BTreeMap<MapKey, Value>>,

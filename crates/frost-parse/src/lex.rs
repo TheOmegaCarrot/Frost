@@ -250,10 +250,10 @@ fn lex_format_str<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, quote: u8) ->
 
     while i < bytes.len() {
         match bytes[i] {
-            // Escaped character — skip both the backslash and the next byte
+            // Escaped character: skip both the backslash and the next byte
             b'\\' if i + 1 < bytes.len() => i += 2,
 
-            // Interpolation — scan forward with brace depth counting
+            // Interpolation: scan forward with brace depth counting
             b'$' if i + 1 < bytes.len() && bytes[i + 1] == b'{' => {
                 i += 2; // skip past ${
                 let mut depth = 1u32;
@@ -261,7 +261,7 @@ fn lex_format_str<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, quote: u8) ->
                     match bytes[i] {
                         b'{' => depth += 1,
                         b'}' => depth -= 1,
-                        // String literal inside interpolation — skip its contents
+                        // String literal inside interpolation: skip its contents
                         q @ (b'\'' | b'"') => {
                             i += 1;
                             while i < bytes.len() {
@@ -285,14 +285,14 @@ fn lex_format_str<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, quote: u8) ->
                 }
             }
 
-            // Closing quote — done
+            // Closing quote: done
             c if c == quote => {
                 let content = &lex.remainder()[..i];
                 lex.bump(i + 1); // consume content + closing quote
                 return Some(content);
             }
 
-            // Newline — format strings are single-line
+            // Newline: format strings are single-line
             b'\n' => return None,
 
             // Any other byte

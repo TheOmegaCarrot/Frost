@@ -29,8 +29,7 @@ use crate::{FrostArray, FrostError, FrostMap, FrostResult, MapKey, Value};
 
 use globals::GlobalSet;
 
-// White-box tests for native-arg-pool recycling (see the module doc);
-// as a child module it reaches this module's private `Vm` internals.
+// White-box tests for native-arg-pool recycling.
 #[cfg(test)]
 mod arg_pool_tests;
 
@@ -109,7 +108,7 @@ pub struct VmRuntimeConfiguration {
     /// `None` leaves execution unmetered.
     ///
     /// Fuel is the limit that catches runaway execution: all iteration in Frost is built
-    /// from function calls (higher-order functions and tail recursion, which fuel does count),
+    /// from function calls (higher-order functions and tail recursion),
     /// so bounding calls bounds total execution.
     /// That includes unbounded tail recursion, which is depth-flat and therefore never trips
     /// [`max_call_depth`](Self::max_call_depth).
@@ -121,7 +120,7 @@ pub struct VmRuntimeConfiguration {
     pub fuel: Option<NonZeroUsize>,
 
     /// How deeply imports may nest:
-    /// a module imported by a module imported by the top-level script is at depth 3.
+    /// a module imported by a module imported by the top-level script is at depth 2.
     /// `None` leaves import nesting unbounded.
     ///
     /// Each level runs in its own Vm, so [`max_call_depth`](Self::max_call_depth)
@@ -167,6 +166,8 @@ impl VmFactory {
         self
     }
 
+    /// Set the [`Importer`] that resolves imports for the Vms this factory builds.
+    /// Without one, every import fails.
     pub fn with_importer(mut self, importer: Arc<Importer>) -> Self {
         self.importer = importer;
         self
@@ -210,7 +211,7 @@ struct VmFrame {
     marks: Vec<usize>,
 }
 
-/// Control-flow outcome of a tail call, shared by `TailCall` and `DynTailCall`.
+/// Control-flow outcome of a tail call.
 enum TailFlow {
     /// Closure callee: the loop must re-enter at the callee's frame (`pc = 0`).
     Reenter,
@@ -240,11 +241,11 @@ enum TailFlow {
 //
 // VM function path:
 // The VM peeks down (top - 3) and grabs the function,
-// and pushes a new StackFrame whose base_idx is a1.
+// and pushes a new VmFrame whose base_idx is f's index.
 // The VM starts interpreting the target function.
-// The function has a prelude that moves from the stack to slots corresponding to params.
-// After it's finished, the function leaves exactly one value on the stack,
-// and the VM jumps back to the next instruction after the Call
+// Its prelude consumes f and moves the args into their parameter slots.
+// When it finishes, its result sits at base_idx in place of f,
+// and the VM jumps back to the next instruction after the Call.
 //
 // Native function path:
 // The VM peeks down (top - 3) and grabs the function,
@@ -281,7 +282,6 @@ impl Vm {
 
     /// A factory for Vms nested inside this one: same configuration and importer,
     /// one import level deeper.
-    /// Resource counters start fresh in the child.
     pub(crate) fn child_factory(&self) -> VmFactory {
         VmFactory {
             config: self.config.clone(),
@@ -486,7 +486,7 @@ impl Vm {
                         let function = self.stack[base].clone();
 
                         // Errors `?` straight out of `execute_function`;
-                        // the boundary that entered this activation (`invoke` or `run`) truncates the abandoned frames and operands.
+                        // the abandoned frames and operands are the entry boundary's to clean up.
                         match function {
                             Value::NativeFunction(native_fn) => {
                                 self.native_call(&native_fn, argc)?;
@@ -516,9 +516,8 @@ impl Vm {
                         }
                     }
                     // Spread the args array on top, then tail-call the function beneath it.
-                    // Hand-rolled spreaders (`call`, future combinators) pass user values
-                    // here, so a non-Array args operand is a recoverable error; the
-                    // callee being non-callable is likewise caught by `tail_call`.
+                    // Both operands are user values: a non-Array args operand is a recoverable error,
+                    // as is a non-callable callee (caught by `tail_call`).
                     Bytecode::DynTailCall => {
                         self.debug_assert_own_top("DynTailCall");
                         let args = self.stack.last().expect("FROST STACK UNDERFLOW");
@@ -730,8 +729,7 @@ impl Vm {
             }
 
             if self.stack_frames.len() == floor {
-                // We're done!
-                // Return back to either `run()` or native function re-entrancy handling
+                // The entry frame finished: return to `run_with_args` or `NativeCtx::invoke`.
                 return Ok(());
             }
 
@@ -910,8 +908,7 @@ impl Vm {
     }
 
     /// Pop the top two operands (rhs on top, lhs below) and push `op(lhs, rhs)`.
-    /// Any operator error `?`-propagates out of the current activation;
-    /// the consumed operands are simply dropped, since the unwind path truncates the operand stack back to the boundary floor regardless of its exact height.
+    /// On an operator error the operands are dropped, not restored: the error abandons the whole activation.
     fn binary_op(
         &mut self,
         op: impl FnOnce(&Value, &Value) -> Result<Value, FrostError>,
@@ -947,7 +944,6 @@ impl Vm {
     ///
     /// This is the only place a Frost frame's name reaches the backtrace: `?` propagation has no hook,
     /// so the trace is built here as the abandoned frames are dropped.
-    /// Called at each native boundary that catches an unwinding error ([`NativeCtx::invoke`]) and at the top-level terminus ([`Vm::run`]).
     /// `NativeFrame` markers carry no name; a native's own name is recorded by [`Vm::run_native`] instead.
     fn unwind_frames(&mut self, floor: usize, mut err: FrostError) -> FrostError {
         let names: Vec<String> = self
@@ -1016,7 +1012,6 @@ impl Vm {
 
     /// Count one function call against the fuel budget, failing if it is exhausted.
     /// Called at every call site (`Call`, tail calls, and native re-entry via `invoke`).
-    /// The meter increments even when unmetered, so the consumed count stays reportable.
     fn expend_fuel(&mut self) -> Result<(), FrostError> {
         // Counted unconditionally: `fuel_consumed` reports call counts whether or not
         // a budget is set, so the increment is not skippable when unmetered.
@@ -1114,9 +1109,8 @@ impl Vm {
         Ok(())
     }
 
-    /// Shared dispatch for `TailCall` and `DynTailCall`: with the callee and its
-    /// `argc` operands on top of the stack, run a native inline or set up a closure
-    /// frame for tail-call reuse. The returned [`TailFlow`] tells the caller whether
+    /// Dispatch a tail call: with the callee and its `argc` operands on top of the stack,
+    /// run a native inline or set up a closure frame for tail-call reuse. The returned [`TailFlow`] tells the caller whether
     /// to re-enter the loop in the callee's frame (closure) or fall through (native).
     ///
     /// `return_address` is consulted only by the bottom-frame guard: the top-level
@@ -1195,7 +1189,7 @@ impl Vm {
         Ok(())
     }
 
-    /// Invoke `native` with its args already collected in `buf`, then recycle `buf`.
+    /// Invoke `native` with its args already collected in `buf`.
     /// Checks arity, brackets the call with a `NativeFrame` marker, and returns the native's result.
     /// `buf` is reclaimed to the pool on every path.
     fn run_native(&mut self, native: &NativeFunction, mut buf: Vec<Value>) -> FrostResult {

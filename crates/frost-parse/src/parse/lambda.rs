@@ -61,7 +61,6 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
     }
 
     /// Parse `(a, b, ...rest)`. Caller has not consumed the `(`.
-    /// Reusable for `defn`.
     pub(crate) fn parse_parenthesized_params(&mut self) -> ParseResult<Params> {
         self.expect(Token::OpenParen)?;
         self.enter_nl_context().maybe_skip_nl();
@@ -106,7 +105,6 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
     /// Parse `-> expr` or `-> { stmts; expr }`.
     /// Returns `(body_stmts, return_expr, end_offset)`.
-    /// Reusable for `defn`.
     pub(crate) fn parse_fn_body(
         &mut self,
     ) -> ParseResult<(Vec<Spanned<Statement>>, Spanned<Expr>, usize)> {
@@ -222,11 +220,11 @@ enum BraceKind {
 }
 
 /// Disambiguate `{` after `->`:
-/// - `{ identifier :` → map literal (expression)
-/// - `{ [` → probably map, try expression first, backtrack to block on failure
-/// - `{ }` → empty map (rare in practice, but there's nothing else that makes sense)
-/// - `{ <anything else>` → block body
-/// - no `{` → plain expression
+/// - `{ identifier :` is a map literal (expression)
+/// - `{ [` is probably a map: try expression first, backtrack to block on failure
+/// - `{ }` is an empty map (the only sensible reading)
+/// - `{ <anything else>` is a block body
+/// - no `{` is a plain expression
 fn brace_disambiguation(ctx: &ParseCtx) -> BraceKind {
     let Some(peek) = ctx.peek() else {
         return BraceKind::Expression;

@@ -16,9 +16,8 @@ pub enum MapKey {
     Bytes(Arc<[u8]>),
 }
 
-/// Renders the key exactly as the [`Value`] it stands for renders compactly.
-/// A MapKey is a subset of Value, so its display mirrors that Value's: a String
-/// prints its own text (unquoted), a Float as `3.0`, a Bytes key as `x'6869'`.
+/// Renders the key as [`Value::to_frost_string`] renders the equivalent Value:
+/// a String prints its own text (unquoted), a Float as `3.0`, a Bytes key as `x'6869'`.
 impl std::fmt::Display for MapKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&Value::from(self.clone()).to_frost_string())

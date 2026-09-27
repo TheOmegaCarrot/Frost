@@ -32,7 +32,7 @@ fn builder(options: &CompilerOptions) -> FunctionBuilder<'_> {
     with_name(options, "<test>".to_string(), Arity::Exact(0))
 }
 
-/// A builder with a chosen name and arity, for the metadata-passthrough test.
+/// A builder with a chosen name and arity.
 fn with_name(options: &CompilerOptions, name: String, arity: Arity) -> FunctionBuilder<'_> {
     FunctionBuilder {
         locals: Locals::new(),

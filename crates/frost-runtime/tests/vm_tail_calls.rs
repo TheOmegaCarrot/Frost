@@ -5,9 +5,8 @@
 //! caller's return address so the callee resumes the *original* caller). They
 //! are NOT a TCO proof: at finite depth a correct reuse-the-frame TailCall and a
 //! broken push-a-frame one are observably identical (same result, same resume).
-//! The bound itself can only be asserted by a deep "don't go boom" test, which
-//! is deferred until conditionals + arithmetic exist (a terminating recursion
-//! needs a base case).
+//! The deep "don't go boom" bound is proven in `frost-compile`'s tail-call
+//! tests, which compile a terminating recursion from Frost source.
 //!
 //! Finite tail-call chains terminate because the last closure simply returns, so
 //! no conditional is required: everything here uses implemented opcodes only.
