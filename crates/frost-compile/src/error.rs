@@ -43,7 +43,7 @@ pub struct CompilerError(Diag);
 struct Diag {
     severity: Severity,
     message: String,
-    /// Machine-readable code, e.g. `frost::compile::unbound_name`.
+    /// A short name for the kind of diagnostic, e.g. `unbound name`.
     code: Option<String>,
     /// A closing hint on how to fix the problem.
     help: Option<String>,
@@ -90,7 +90,7 @@ impl CompilerError {
         Self::new(Severity::Advice, message)
     }
 
-    /// Set the machine-readable code.
+    /// Set the code naming the kind of diagnostic.
     pub(crate) fn code(mut self, code: String) -> Self {
         self.0.code = Some(code);
         self

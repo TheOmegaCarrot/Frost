@@ -253,36 +253,8 @@ fn lex_format_str<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, quote: u8) ->
             // Escaped character: skip both the backslash and the next byte
             b'\\' if i + 1 < bytes.len() => i += 2,
 
-            // Interpolation: scan forward with brace depth counting
             b'$' if i + 1 < bytes.len() && bytes[i + 1] == b'{' => {
-                i += 2; // skip past ${
-                let mut depth = 1u32;
-                while i < bytes.len() && depth > 0 {
-                    match bytes[i] {
-                        b'{' => depth += 1,
-                        b'}' => depth -= 1,
-                        // String literal inside interpolation: skip its contents
-                        q @ (b'\'' | b'"') => {
-                            i += 1;
-                            while i < bytes.len() {
-                                match bytes[i] {
-                                    b'\\' if i + 1 < bytes.len() => i += 2,
-                                    c if c == q => {
-                                        i += 1;
-                                        break;
-                                    }
-                                    _ => i += 1,
-                                }
-                            }
-                            continue;
-                        }
-                        _ => {}
-                    }
-                    i += 1;
-                }
-                if depth != 0 {
-                    return None; // unclosed interpolation
-                }
+                i = skip_interpolation(bytes, i + 2)?;
             }
 
             // Closing quote: done
@@ -301,6 +273,36 @@ fn lex_format_str<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, quote: u8) ->
     }
 
     None // unclosed string
+}
+
+/// Scans a format-string interpolation, starting at `i`, just past its `${`.
+/// Returns the index just past the matching `}`, or `None` if the interpolation is unclosed.
+/// Braces inside a quoted string within the interpolation do not count.
+pub(crate) fn skip_interpolation(bytes: &[u8], mut i: usize) -> Option<usize> {
+    let mut depth = 1u32;
+    while depth > 0 {
+        match *bytes.get(i)? {
+            b'{' => depth += 1,
+            b'}' => depth -= 1,
+            q @ (b'\'' | b'"') => {
+                i += 1;
+                while i < bytes.len() {
+                    match bytes[i] {
+                        b'\\' if i + 1 < bytes.len() => i += 2,
+                        c if c == q => {
+                            i += 1;
+                            break;
+                        }
+                        _ => i += 1,
+                    }
+                }
+                continue;
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    Some(i)
 }
 
 impl<'src> std::fmt::Display for Token<'src> {

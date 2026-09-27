@@ -39,10 +39,7 @@ fn single_tail_call() {
         vec![b],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -82,10 +79,7 @@ fn chain_of_tail_calls() {
         vec![b],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -116,10 +110,7 @@ fn tail_call_carries_args() {
         vec![b],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -161,10 +152,7 @@ fn call_then_tail_call_returns_to_original_caller() {
         vec![g],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![f],
@@ -233,10 +221,7 @@ fn variadic_tail_call() {
         vec![b],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -273,10 +258,7 @@ fn tail_call_to_closure_with_capture() {
         vec![b],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -314,10 +296,7 @@ fn variadic_tail_call_splits_fixed_and_rest() {
         vec![b],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -359,10 +338,7 @@ fn tail_called_frame_makes_normal_call() {
         vec![b],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -390,10 +366,7 @@ fn tail_position_result(
     body.push(final_op);
     let a = func(body, Arity::Exact(0), vec![], children);
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -410,10 +383,7 @@ fn call_eq_tail_call_no_args() {
         vec![],
         vec![],
     );
-    let setup = vec![
-        Bytecode::Pop,
-        Bytecode::CreateClosure(0),
-    ];
+    let setup = vec![Bytecode::Pop, Bytecode::CreateClosure(0)];
     let via_call = tail_position_result(setup.clone(), Bytecode::Call(0), vec![callee.clone()]);
     let via_tail = tail_position_result(setup, Bytecode::TailCall(0), vec![callee]);
     assert_eq!(via_call, via_tail);
@@ -502,10 +472,7 @@ fn call_eq_tail_call_variadic_empty() {
         vec![entry("rest", false)],
         vec![],
     );
-    let setup = vec![
-        Bytecode::Pop,
-        Bytecode::CreateClosure(0),
-    ];
+    let setup = vec![Bytecode::Pop, Bytecode::CreateClosure(0)];
     let via_call = tail_position_result(setup.clone(), Bytecode::Call(0), vec![callee.clone()]);
     let via_tail = tail_position_result(setup, Bytecode::TailCall(0), vec![callee]);
     assert_eq!(via_call, via_tail);

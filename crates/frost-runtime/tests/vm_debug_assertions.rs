@@ -115,7 +115,12 @@ fn popping_below_the_frame_base_is_caught() {
 fn branching_on_a_callers_operand_is_caught() {
     // A peek rather than a pop: reading the caller's top would branch on a value
     // this function never produced, and the stack would look untouched afterward.
-    let callee = func(vec![Pop, PeekJumpIfTrue(0)], Arity::Exact(0), vec![], vec![]);
+    let callee = func(
+        vec![Pop, PeekJumpIfTrue(0)],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    );
     run_fn(calling_program(2, callee));
 }
 

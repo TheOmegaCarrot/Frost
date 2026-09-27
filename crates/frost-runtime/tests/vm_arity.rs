@@ -139,17 +139,17 @@ fn omitted_vs_present_probe() -> Arc<CompiledFunction> {
         name: "probe".to_string(),
         // Stack on entry: [ closure, (x?), argc ].
         code: vec![
-            PushInt(1),    //  0: [.., argc, 1]
-            CompareEqual,  //  1: argc == 1 ?  -> [.., bool]
+            PushInt(1),        //  0: [.., argc, 1]
+            CompareEqual,      //  1: argc == 1 ?  -> [.., bool]
             PeekJumpIfTrue(4), //  2: -> present branch (idx 7); bool not consumed
-            Pop,           //  3: absent: drop the bool
-            Pop,           //  4: drop the closure value at base
-            PushInt(-1),   //  5: result sentinel for "omitted"
-            Jump(4),       //  6: -> end (past idx 10)
-            Pop,           //  7: present: drop the bool
-            DefLocal(0),   //  8: x -> slot 0
-            Pop,           //  9: drop the closure value at base
-            LoadLocal(0),  // 10: result is x (an explicit null stays null)
+            Pop,               //  3: absent: drop the bool
+            Pop,               //  4: drop the closure value at base
+            PushInt(-1),       //  5: result sentinel for "omitted"
+            Jump(4),           //  6: -> end (past idx 10)
+            Pop,               //  7: present: drop the bool
+            DefLocal(0),       //  8: x -> slot 0
+            Pop,               //  9: drop the closure value at base
+            LoadLocal(0),      // 10: result is x (an explicit null stays null)
         ],
         child_fns: Vec::new(),
         constants: Vec::new(),

@@ -1,9 +1,11 @@
+mod common;
+
 use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde::Serialize;
 
-use frost_runtime::{FrostArray, FrostMap, MapKey, Value, to_value};
+use frost_runtime::{Arity, Bytecode, FrostArray, FrostMap, MapKey, Value, to_value};
 
 fn str_key(s: &str) -> MapKey {
     MapKey::String(Arc::from(s))
@@ -356,10 +358,19 @@ fn serialize_value_map() {
 
 // ---- Errors ----
 
+/// Both kinds of Function value refuse a foreign serializer.
 #[test]
 fn serialize_function_errors() {
-    // Can't easily construct a Function, but test through Value::Serialize
-    // which checks for Function/Opaque
+    let native = Value::native("f", Arity::Exact(0), |_ctx, _args| Ok(Value::Null));
+    let closure = Value::Closure(common::closure(vec![Bytecode::PushNull], vec![]));
+
+    for (kind, function) in [("native", native), ("closure", closure)] {
+        let err = serde_json::to_string(&function).unwrap_err();
+        assert!(
+            err.to_string().contains("cannot serialize Function"),
+            "{kind}: got: {err}"
+        );
+    }
 }
 
 #[test]

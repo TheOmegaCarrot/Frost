@@ -20,6 +20,7 @@
 //! The labeled spans on a [`ParseError`] (see [`Label`]) follow the same
 //! byte-offset conventions.
 
+/// The syntax tree [`parse_program`] produces, rooted at [`Program`](ast::Program).
 pub mod ast;
 mod lex;
 mod parse;

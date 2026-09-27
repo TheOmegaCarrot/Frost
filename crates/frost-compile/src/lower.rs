@@ -248,7 +248,7 @@ pub fn compile_in_scope(
         effectful: false,
     };
 
-    // The runtime starts by pushing the top-level function itself to the stack; pop it.
+    // Consume the top-level's own function value (see the calling convention on `Bytecode`).
     let mut ir: Vec<Ir> = vec![Ir::Ready(Bytecode::Pop)];
 
     if let Some((tail, body)) = ast.statements.split_last() {

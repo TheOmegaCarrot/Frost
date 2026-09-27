@@ -114,8 +114,9 @@ impl From<BTreeMap<MapKey, Value>> for Value {
 }
 
 impl Value {
-    /// Frost's `to_int`: Int passes through, Float truncates toward zero, String parses as an integer.
-    /// Everything else returns Null.
+    /// The conversion behind Frost's `to_int` for Numeric and String values:
+    /// Int passes through, Float truncates toward zero, String parses as an integer.
+    /// Any other type returns Null.
     pub fn to_frost_int(&self) -> Value {
         match self {
             Value::Int(_) => self.clone(),
@@ -125,8 +126,9 @@ impl Value {
         }
     }
 
-    /// Frost's `to_float`: Float passes through, Int promotes, String parses as a float.
-    /// Everything else returns Null.
+    /// The conversion behind Frost's `to_float` for Numeric and String values:
+    /// Float passes through, Int promotes, String parses as a float.
+    /// Any other type returns Null.
     pub fn to_frost_float(&self) -> Value {
         match self {
             Value::Float(_) => self.clone(),
@@ -140,10 +142,13 @@ impl Value {
         }
     }
 
+    /// Builds a Map from key-value pairs, as in `Value::map([("a", Value::from(1))])`.
+    /// A later duplicate key replaces an earlier one.
     pub fn map<K: Into<MapKey>, const N: usize>(entries: [(K, Value); N]) -> Value {
         Value::Map(entries.into_iter().map(|(k, v)| (k.into(), v)).collect())
     }
 
+    /// Builds an Array from elements convertible to [`Value`], as in `Value::array([1, 2, 3])`.
     pub fn array<K: Into<Value>, const N: usize>(elements: [K; N]) -> Value {
         Value::from_iter(elements.into_iter().map(std::convert::Into::into))
     }

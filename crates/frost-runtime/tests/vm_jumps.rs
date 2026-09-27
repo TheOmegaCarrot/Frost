@@ -105,7 +105,10 @@ fn jump_if_true_not_taken_when_falsy() {
 fn jump_if_true_consumes_condition_when_not_taken() {
     // false -> not taken, then the program ends. 42 is the tail only because the
     // condition was popped (a peeking jump would leave the false as the tail).
-    assert_eq!(tail(vec![PushInt(42), PushFalse, JumpIfTrue(9)]), Value::Int(42));
+    assert_eq!(
+        tail(vec![PushInt(42), PushFalse, JumpIfTrue(9)]),
+        Value::Int(42)
+    );
 }
 
 #[test]
@@ -145,7 +148,10 @@ fn jump_if_false_not_taken_when_truthy() {
 fn jump_if_false_consumes_condition_when_not_taken() {
     // true -> not taken, then the program ends; 42 is the tail only because the
     // condition was popped.
-    assert_eq!(tail(vec![PushInt(42), PushTrue, JumpIfFalse(9)]), Value::Int(42));
+    assert_eq!(
+        tail(vec![PushInt(42), PushTrue, JumpIfFalse(9)]),
+        Value::Int(42)
+    );
 }
 
 #[test]

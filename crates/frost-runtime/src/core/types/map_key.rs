@@ -9,10 +9,15 @@ use crate::core::{FrostError, FrostFloat, Value};
 /// Ordering across types follows the variant order: Bool < Int < Float < String < Bytes.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 pub enum MapKey {
+    /// A Bool key.
     Bool(bool),
+    /// An Int key.
     Int(i64),
+    /// A Float key.
     Float(FrostFloat),
+    /// A String key.
     String(Arc<str>),
+    /// A Bytes key.
     Bytes(Arc<[u8]>),
 }
 

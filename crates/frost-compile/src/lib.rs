@@ -52,6 +52,7 @@ impl OptimizationOptions {
 /// Options for [`compile_program`] and [`compile_in_scope`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompilerOptions {
+    /// Which optimizations to apply.
     pub optimization_options: OptimizationOptions,
     /// Export every top-level binding, as if each carried `export`.
     pub implicit_export: bool,

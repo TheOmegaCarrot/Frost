@@ -111,6 +111,7 @@ impl NativeCtx<'_> {
         self.function.check_args(args, params)
     }
 
+    /// The running native's name.
     pub fn name(&self) -> &str {
         self.function.name
     }
@@ -208,10 +209,12 @@ impl NativeFunction {
         Ok(())
     }
 
+    /// The function's name, as reported in errors and backtraces.
     pub fn name(&self) -> &str {
         self.name
     }
 
+    /// The number of arguments the function accepts.
     pub fn arity(&self) -> Arity {
         self.arity
     }

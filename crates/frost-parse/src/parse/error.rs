@@ -9,7 +9,9 @@ use crate::ast::SourceSpan;
 /// Spans are absolute byte offsets into the original source.
 #[derive(Clone, Debug)]
 pub struct Label {
+    /// The labeled source range.
     pub span: SourceSpan,
+    /// The text shown at the span.
     pub text: String,
 }
 

@@ -7,152 +7,197 @@ use enumset::EnumSet;
 use crate::{FrostFloat, FrostType};
 
 /// One VM instruction; a [`CompiledFunction`](crate::CompiledFunction)'s `code` is a sequence of them.
+///
+/// Stack effects are written `( before -- after )`, with the top of the stack rightmost.
+/// A binary operator's effect is `( lhs rhs -- result )`: the right operand is on top.
+///
+/// An instruction that errors raises a recoverable Frost error.
+/// One that panics has been given malformed bytecode
+/// (see [`CompiledFunction::assert_trusted`](crate::CompiledFunction::assert_trusted)).
+///
+/// # Calling convention
+///
+/// To call a function, push it, then its arguments in order, then [`Call`](Self::Call)`(N)`.
+/// A native callee receives the arguments as a slice (see [`NativeFn`](crate::NativeFn)).
+///
+/// A closure callee runs in a new frame, with its captures already seated in slots `0..num_captures`.
+/// The frame's stack starts as `( f a1 ... aN )`, with `f` the callee itself,
+/// adjusted by the callee's [`Arity`](crate::Arity):
+///
+/// - `Exact`: unchanged.
+/// - `AtLeast(k)`: the arguments after the first `k` are collected into a rest Array: `( f a1 ... ak rest )`.
+/// - `Between`: the argument count is pushed as an Int: `( f a1 ... aN N )`.
+///   This lets the callee tell an omitted argument from one passed as `null`.
+///
+/// The callee's code must consume all of these, `f` included,
+/// and end with exactly its result on the stack.
+/// That result replaces `f` in the caller.
 #[derive(PartialEq, Eq, Clone, Debug, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Bytecode {
     // Constants
+    /// Push `null`.
     PushNull,
+    /// Push `true`.
     PushTrue,
+    /// Push `false`.
     PushFalse,
+    /// Push the given Int.
     PushInt(i64),
+    /// Push the given Float.
     PushFloat(FrostFloat),
 
-    PeekDown(usize), // Index N down from the top of the stack, and copy that onto the top.
-    // PeekDown(0) is just Dup with extra steps.
+    /// Copy the value N below the top of the stack onto the top: `( xN ... x0 -- xN ... x0 xN )`.
+    /// `PeekDown(0)` is [`Dup`](Self::Dup).
+    PeekDown(usize),
 
-    // Drop the element N items from the top of the stack.
-    // `DropBelow(0)` has the equivalent effect as `Pop`.
+    /// Remove the value N below the top of the stack, keeping the values above it.
+    /// `DropBelow(0)` is [`Pop`](Self::Pop).
     DropBelow(usize),
 
     // Slots
-    DefLocal(usize),   // Move the top of the stack to local slot N
-    LoadLocal(usize),  // Copy local slot N to the top of the stack
-    LoadConst(usize),  // Copy constant slot N to the top of the stack
-    LoadGlobal(usize), // Copy global slot N to the top of the stack
+    /// Move the top of the stack into local slot N: `( x -- )`.
+    /// Slots are indexed like the current function's [`name_table`](crate::CompiledFunction::name_table).
+    DefLocal(usize),
+    /// Copy local slot N onto the stack: `( -- x )`.
+    LoadLocal(usize),
+    /// Copy entry N of the current function's [`constants`](crate::CompiledFunction::constants) onto the stack.
+    LoadConst(usize),
+    /// Copy predefined global N onto the stack; [`GLOBAL_NAMES`](crate::GLOBAL_NAMES) gives the slot order.
+    LoadGlobal(usize),
 
     // Arithmetic
-    // Consume 2 stack items, and the rhs is the top item, result is one item on the stack
+    /// `lhs + rhs`; see [`Value::add`](crate::Value::add).
     Add,
+    /// `lhs - rhs`; see [`Value::subtract`](crate::Value::subtract).
     Subtract,
+    /// `lhs * rhs`; see [`Value::multiply`](crate::Value::multiply).
     Multiply,
+    /// `lhs / rhs`; see [`Value::divide`](crate::Value::divide).
     Divide,
+    /// `lhs % rhs`; see [`Value::modulus`](crate::Value::modulus).
     Modulus,
 
     // Comparison
-    // Same stack conventions as arithmetic
+    /// `lhs == rhs`; never errors.
     CompareEqual,
+    /// `lhs != rhs`; never errors.
     CompareNotEqual,
+    /// `lhs < rhs`; see [`Value::compare`](crate::Value::compare).
     CompareLessThan,
+    /// `lhs <= rhs`; see [`Value::compare`](crate::Value::compare).
     CompareLessThanOrEqual,
+    /// `lhs > rhs`; see [`Value::compare`](crate::Value::compare).
     CompareGreaterThan,
+    /// `lhs >= rhs`; see [`Value::compare`](crate::Value::compare).
     CompareGreaterThanOrEqual,
 
     // Unary
+    /// `not x`: `( x -- b )`, where `b` is true when `x` is falsy.
     LogicalNot,
+    /// Unary `-x`; see [`Value::negate`](crate::Value::negate).
     Negate,
 
-    // Concatenate multiple values into one String.
-    // First converts each value as if by the Frost-level `to_string`
-    // (`Value::to_frost_string`): top-level Strings are unquoted.
-    // The top of the stack appears as the last component of the String.
-    // ( x1 x2 ... xN -- s )
+    /// Concatenate the top N values, deepest first, into one String: `( x1 ... xN -- s )`.
+    /// Each value is converted as by the Frost `to_string` global
+    /// ([`Value::to_frost_string`](crate::Value::to_frost_string)): top-level Strings are unquoted.
     Concat(NonZeroUsize),
 
     // Flow
-    // Jump ahead N instructions
-    // N is the number of instructions that are skipped over,
-    // such that `Jump(0)` is a funny way to spell `Nop`
-    Jump(usize), // unconditionally
-    // Consuming conditional jumps: pop the top of the stack and jump if it was
-    // truthy / falsy respectively.
+    /// Skip the next N instructions.
+    /// `Jump(0)` is [`Nop`](Self::Nop).
+    Jump(usize),
+    /// Pop the top of the stack, and skip the next N instructions if it is truthy: `( x -- )`.
     JumpIfTrue(usize),
+    /// Pop the top of the stack, and skip the next N instructions if it is falsy: `( x -- )`.
     JumpIfFalse(usize),
-    // Non-consuming conditional jumps: peek the top of the stack (leaving it in
-    // place) and jump if it is truthy / falsy respectively.
+    /// Skip the next N instructions if the top of the stack is truthy, leaving it in place: `( x -- x )`.
     PeekJumpIfTrue(usize),
+    /// Skip the next N instructions if the top of the stack is falsy, leaving it in place: `( x -- x )`.
     PeekJumpIfFalse(usize),
 
     // Functions
-    // N args on the stack, with a function under the args
-    // The last argument is the top of the stack
+    /// Call a function with N arguments, the last on top: `( f a1 ... aN -- r )`.
+    /// Errors if `f` is not a function or does not accept N arguments.
+    /// See the [calling convention](Self#calling-convention).
     Call(usize),
+    /// [`Call`](Self::Call) in tail position: the callee's result becomes the current function's result,
+    /// and the call does not grow the call stack.
+    /// Emit it only where the call's result is the function's result: the instructions after it may or may not run.
     TailCall(usize),
 
-    // Dynamic-arity call: ( f arg_array -- r )
-    // Purpose-built for the `call` builtin
+    // Purpose-built for the `call` builtin.
+    /// [`TailCall`](Self::TailCall) with the arguments spread from an Array: `( f args -- r )`.
+    /// Errors if `args` is not an Array.
     DynTailCall,
 
-    // Push a closure over the child function at this index into the enclosing
-    // function's child_fns. The child's own num_captures elements are moved off
-    // the top of the stack into the closure's capture structure.
+    /// Create a closure over entry N of the current function's [`child_fns`](crate::CompiledFunction::child_fns):
+    /// `( c1 ... cK -- f )`, where K is the child's [`num_captures`](crate::CompiledFunction::num_captures).
+    /// The top K values become its captures, deepest first.
     CreateClosure(usize),
 
     // Data structures
-
-    // Consume N items from the stack, pushing an Array to the stack
-    // The top of the stack is the back of the array
+    /// Collect the top N values, deepest first, into an Array: `( x1 ... xN -- a )`.
     MakeArray(usize),
-    // Consume 2N items from the stack, as kv pairs
-    // Keys are below their corresponding values
+    /// Collect the top N key-value pairs into a Map, each key below its value: `( k1 v1 ... kN vN -- m )`.
+    /// Errors if a key is not a valid Map key.
     MakeMap(usize),
-    // Explode an Array's contents onto the stack, but in reverse,
-    // so the first element ends on top. Operand must be an Array (panics otherwise).
-    // ( a -- aN ... a1 a0 )
+    /// Push an Array's elements in reverse, so the first element ends on top: `( a -- aN ... a1 a0 )`.
+    /// Panics if the operand is not an Array.
     ExplodeArray,
 
-    // Split an Array into two Arrays.
-    // The operand is replaced by an Array of its elements after the first N, which is
-    // permitted to be empty. An Array of the first N elements goes on top of it.
-    // Produces an error if its operand is not an Array or is of length less than N.
-    // ( [X] -- [X-N] [N] )
+    /// Split an Array after its first N elements: `( [X] -- [X-N] [N] )`.
+    /// The remaining elements (possibly none) replace the operand, and an Array of the first N goes on top of it.
+    /// Errors if the operand is not an Array or has fewer than N elements.
     SplitArray(usize),
 
-    // Index a structure, structure is below the index initially (consumed)
-    // Leaves a single value on the stack
-    SoftIndexStructure, // Null on missing
+    /// Index an Array or Map, yielding `null` for a missing element or key: `( s i -- v )`.
+    /// Errors if `s` is neither, or if `i` is not an Int (for an Array) or a valid Map key (for a Map).
+    SoftIndexStructure,
 
-    // Index a Map with a constant key.
-    // The key is in the key-constant pool at the index stored in this variant.
-    HardIndexMap(usize), // Error on missing
+    /// Look up a constant key in a Map: `( m -- v )`.
+    /// The key is entry N of the current function's [`key_constants`](crate::CompiledFunction::key_constants).
+    /// Errors if `m` is not a Map or lacks the key.
+    HardIndexMap(usize),
 
-    // Test if a map contains a key: ( m k -- m k b )
-    // Pushes true if Map m contains key k, pushes false if absent or if m is not a Map.
-    // Produces an error if k is not a valid Map key.
+    /// Test whether a Map contains a key, consuming neither: `( m k -- m k b )`.
+    /// `b` is false if the key is absent or `m` is not a Map.
+    /// Errors if `m` is a Map and `k` is not a valid Map key.
     TestKey,
 
-    // Look up a key in a Map, without consuming the Map.
-    // Produces an error if the key is absent, if m is not a Map, or if k is not a valid Map key.
-    // ( m k -- m v )
+    /// Look up a key in a Map, keeping the Map: `( m k -- m v )`.
+    /// Errors if the key is absent, `m` is not a Map, or `k` is not a valid Map key.
     ExtractKey,
 
-    // Consumes the value at the top of the stack, and produces a bool depending if the value's
-    // type is in the given set.
+    /// Test whether a value's type is in the given set: `( x -- b )`.
     TypeTest(EnumSet<FrostType>),
 
-    // Array length queries: ( x -- x b )
-    // Does not consume its operand, and pushes true if its operand is an Array satisfying the
-    // specified length requirement. Pushes false if the Array size requirement is unsatisfied, or
-    // if its operand is not an Array.
+    /// Test whether a value is an Array of exactly N elements, keeping it: `( x -- x b )`.
+    /// `b` is false if `x` is not an Array.
     TestArrayLenExact(usize),
+    /// Test whether a value is an Array of at least N elements, keeping it: `( x -- x b )`.
+    /// `b` is false if `x` is not an Array.
     TestArrayLenAtLeast(usize),
 
     // Stack marking and truncation
-
-    // Mark the current stack height, with no stack effect.
+    /// Mark the current stack height, with no stack effect.
+    /// Marks belong to the current function call,
+    /// and each must be consumed by [`DropMark`](Self::DropMark) or [`RewindToMark`](Self::RewindToMark) before that call returns.
     MarkStack,
 
-    // Discard the most recent stack height mark, with no stack effect.
-    // Panics if there is no stack height mark.
+    /// Discard the most recent stack height mark, with no stack effect.
+    /// Panics if there is no mark.
     DropMark,
 
-    // Truncate the stack to the most recent stack height mark, consuming that mark.
-    // Panics if there is no stack height mark.
+    /// Truncate the stack to the most recent stack height mark, consuming that mark.
+    /// Panics if there is no mark.
     RewindToMark,
 
-    // Consume the value atop the stack and attach it to an error.
-    // The error is then produced, and enters the usual flow of a user-code error.
+    /// Raise the top of the stack as a Frost error: `( x -- )`.
+    /// It propagates like any other runtime error.
     ProduceError,
 
-    // Pop a module spec from the stack, and push the resolved Value
+    /// Resolve a module spec through the Vm's [`Importer`](crate::Importer): `( spec -- module )`.
+    /// Errors if `spec` is not a String or the import fails.
     Import,
 }
 

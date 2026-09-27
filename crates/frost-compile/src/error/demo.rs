@@ -52,7 +52,7 @@ print(foo)
     //    omits its own source, so it inherits `main.frst` from the parent.
     errors.push(
         CompilerError::error("`x` is already bound".to_string())
-            .code("frost::compile::duplicate_binding".to_string())
+            .code("duplicate binding".to_string())
             .source("main.frst".to_string(), main.to_string())
             .label_primary(span(main, "x", 1), "`x` redefined here".to_string())
             .help("bindings are immutable; choose a different name".to_string())
@@ -65,7 +65,7 @@ print(foo)
     // 2. A warning: one label, a code and a help, no related block.
     errors.push(
         CompilerError::warning("`y` is never used".to_string())
-            .code("frost::compile::unused_binding".to_string())
+            .code("unused binding".to_string())
             .source("main.frst".to_string(), main.to_string())
             .label(span(main, "y", 0), "bound but never read".to_string())
             .help("remove the binding if it is not needed".to_string()),
@@ -79,7 +79,7 @@ print(foo)
             Severity::Error,
             "`foo` is not exported by module `other`".to_string(),
         )
-        .code("frost::compile::unexported_import".to_string())
+        .code("unexported import".to_string())
         .source("main.frst".to_string(), main.to_string())
         .label_primary(
             span(main, "foo", 0),

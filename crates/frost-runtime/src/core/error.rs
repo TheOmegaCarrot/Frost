@@ -97,4 +97,5 @@ impl From<&'static str> for FrostError {
     }
 }
 
+/// The result of a Frost operation: a [`Value`], or the [`FrostError`] it raised.
 pub type FrostResult = Result<Value, FrostError>;

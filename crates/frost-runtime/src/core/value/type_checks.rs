@@ -22,6 +22,7 @@ impl Value {
         self.frost_type().name()
     }
 
+    /// Returns the Frost type of this value.
     pub fn frost_type(&self) -> FrostType {
         match self {
             Value::Null => Ft::Null,

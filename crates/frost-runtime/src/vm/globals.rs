@@ -39,7 +39,9 @@ use types::*;
 /// its own call site unfoldable regardless of this flag.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Purity {
+    /// Eligible for constant folding.
     Pure,
+    /// Never constant folded.
     Impure,
 }
 
@@ -216,9 +218,7 @@ define_globals! {
 }
 
 /// Build a slot-free, capture-free hand-rolled bytecode closure global from `name`,
-/// `arity`, and `code`. The body must leave exactly one value at the frame base:
-/// an `Exact(argc)` closure is entered with `( self, arg0, ..., arg{argc-1} )` (no
-/// arg count is pushed), so drop the closure's own value with `DropBelow(argc)` first.
+/// `arity`, and `code`, which follows the calling convention (see [`Bytecode`]).
 fn bytecode_global(name: &'static str, arity: Arity, code: Vec<Bytecode>) -> Value {
     Value::Closure(Arc::new(Closure {
         captures: Vec::new(),

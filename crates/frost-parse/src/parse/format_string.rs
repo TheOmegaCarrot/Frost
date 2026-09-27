@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use crate::ast::{Expr, FormatSegment, Spanned};
-use crate::lex::Token;
+use crate::lex::{Token, skip_interpolation};
 use crate::parse::strings::QuoteStyle;
 use crate::parse::{Diagnostic, ParseResult, ctx::ParseCtx};
 
@@ -116,41 +116,10 @@ fn split_format_segments(
                     ))));
                 }
 
-                // Extract interpolation content (brace-depth balanced)
-                i += 2; // skip ${
-                let start = i;
-                let mut depth = 1u32;
-                while i < bytes.len() && depth > 0 {
-                    match bytes[i] {
-                        b'{' => depth += 1,
-                        b'}' => depth -= 1,
-                        q @ (b'\'' | b'"') => {
-                            i += 1;
-                            while i < bytes.len() {
-                                match bytes[i] {
-                                    b'\\' if i + 1 < bytes.len() => i += 2,
-                                    c if c == q => {
-                                        i += 1;
-                                        break;
-                                    }
-                                    _ => i += 1,
-                                }
-                            }
-                            continue;
-                        }
-                        _ => {}
-                    }
-                    i += 1;
-                }
-
-                if depth != 0 {
-                    return Err(format_error(
-                        span,
-                        "unclosed interpolation in format String",
-                    ));
-                }
-
-                // The content is between start and i-1 (i is past the closing })
+                let start = i + 2; // past `${`
+                i = skip_interpolation(bytes, start)
+                    .ok_or_else(|| format_error(span, "unclosed interpolation in format String"))?;
+                // `i` is past the closing `}`.
                 let interp_src = &raw[start..i - 1];
 
                 // Re-lex and parse the interpolation content as an expression.

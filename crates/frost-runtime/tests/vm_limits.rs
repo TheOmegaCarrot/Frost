@@ -13,8 +13,8 @@ mod common;
 
 use common::Pop;
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, FormatVersion, FrostError, NameEntry, ProgramResult,
-    Value, Vm, VmRuntimeConfiguration,
+    Arity, Bytecode, CompiledFunction, FormatVersion, FrostError, NameEntry, ProgramResult, Value,
+    Vm, VmRuntimeConfiguration,
 };
 
 use Bytecode::*;

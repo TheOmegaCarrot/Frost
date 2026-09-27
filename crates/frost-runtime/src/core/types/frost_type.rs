@@ -12,15 +12,25 @@ use enumset::{EnumSet, EnumSetType, enum_set};
 #[derive(EnumSetType, Debug, serde::Serialize, serde::Deserialize)]
 #[enumset(repr = "u16")]
 pub enum FrostType {
+    /// The absence of a value.
     Null,
+    /// `true` or `false`.
     Bool,
+    /// A 64-bit signed integer.
     Int,
+    /// A finite 64-bit float; see [`FrostFloat`](crate::FrostFloat).
     Float,
+    /// UTF-8 text.
     String,
+    /// A byte sequence.
     Bytes,
+    /// An ordered sequence of values.
     Array,
+    /// A mapping from [`MapKey`](crate::MapKey) keys to values.
     Map,
+    /// A callable: native or defined in Frost.
     Function,
+    /// Host data; see [`FrostOpaque`](crate::FrostOpaque).
     Opaque,
 }
 
@@ -86,6 +96,7 @@ impl FrostType {
 }
 
 impl FrostType {
+    /// The type's name as Frost spells it, e.g. `"Int"`.
     pub fn name(&self) -> &'static str {
         match self {
             Self::Null => "Null",

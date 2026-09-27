@@ -289,7 +289,10 @@ fn explode_then_make_array_reverses() {
         vec![LoadConst(0), ExplodeArray, MakeArray(3)],
     )
     .unwrap();
-    assert_eq!(out, array(vec![Value::Int(3), Value::Int(2), Value::Int(1)]));
+    assert_eq!(
+        out,
+        array(vec![Value::Int(3), Value::Int(2), Value::Int(1)])
+    );
 }
 
 #[test]
@@ -328,7 +331,10 @@ fn explode_mixed_types_reverses() {
         vec![LoadConst(0), ExplodeArray, MakeArray(3)],
     )
     .unwrap();
-    assert_eq!(out, array(vec![Value::Null, Value::from("x"), Value::Int(1)]));
+    assert_eq!(
+        out,
+        array(vec![Value::Null, Value::from("x"), Value::Int(1)])
+    );
 }
 
 #[test]
@@ -336,7 +342,10 @@ fn explode_is_shallow() {
     // Exploding [[1], [2]] pushes the two inner arrays as single values, not their
     // contents; re-collecting (explode reverses) yields [[2], [1]], still nested.
     let out = eval(
-        vec![array(vec![array(vec![Value::Int(1)]), array(vec![Value::Int(2)])])],
+        vec![array(vec![
+            array(vec![Value::Int(1)]),
+            array(vec![Value::Int(2)]),
+        ])],
         vec![LoadConst(0), ExplodeArray, MakeArray(2)],
     )
     .unwrap();

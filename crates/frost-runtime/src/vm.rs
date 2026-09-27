@@ -37,7 +37,8 @@ mod arg_pool_tests;
 // VM Types
 // ============================================================
 
-/// VM state and execution context.
+/// Runs one Frost program: a top-level [`Closure`].
+/// Build one with [`Vm::factory`] and [`VmFactory::build`], then [`run`](Vm::run) it.
 #[derive(Debug)]
 pub struct Vm {
     // The working stack of the Vm
@@ -218,40 +219,6 @@ enum TailFlow {
     /// Native callee: it ran inline, so fall through to the next instruction.
     FellThrough,
 }
-
-// ============================================================
-// Calling Convention
-// ============================================================
-
-// In all below stack diagrams, left == deeper
-// PushInt(1),PushInt(2),PushInt(3) results in:
-// stack: 1, 2, 3
-//
-// VM calling convention:
-//
-// f: function
-// an: args
-//
-// A function is looked up (whether by computing a subexpression or direct name lookup).
-// Then its arguments are evaluated in lexical order.
-// Then:
-//
-// Call(3)
-// stack: f, a1, a2, a3
-//
-// VM function path:
-// The VM peeks down (top - 3) and grabs the function,
-// and pushes a new VmFrame whose base_idx is f's index.
-// The VM starts interpreting the target function.
-// Its prelude consumes f and moves the args into their parameter slots.
-// When it finishes, its result sits at base_idx in place of f,
-// and the VM jumps back to the next instruction after the Call.
-//
-// Native function path:
-// The VM peeks down (top - 3) and grabs the function,
-// the args are _moved_ into a buffer taken from `native_arg_pool`,
-// and the native function is invoked with a &mut [Value] over that buffer.
-// When the call returns, the buffer is cleared and returned to the pool.
 
 // ============================================================
 // Vm Methods
@@ -497,8 +464,7 @@ impl Vm {
                                     argc,
                                     &closure.function.name,
                                 )?;
-                                // The next loop iteration enters the closure, whose prelude
-                                // consumes the args on the stack and leaves one return value.
+                                // The next loop iteration runs the closure.
                                 self.push_closure_frame(&closure, base, NonZeroUsize::new(pc + 1))?;
                                 pc = 0;
                                 continue;
@@ -547,7 +513,7 @@ impl Vm {
                     }
                     Bytecode::ExplodeArray => {
                         let Value::Array(arr) = self.stack_pop() else {
-                            panic!("explode: operand not Array");
+                            panic!("IMPOSSIBLE: ExplodeArray operand is not an Array");
                         };
                         // Pattern order: first element ends on top, last deepest.
                         match arr.try_into_vec() {
@@ -743,9 +709,6 @@ impl Vm {
                 panic!("IMPOSSIBLE: function execution completed through native frame");
             };
 
-            // The callee's result replaces the function value that sat at its base:
-            // the prelude consumed the args and that function value, and the body
-            // left exactly one value behind.
             debug_assert_eq!(
                 self.stack.len(),
                 frame.base_idx + 1,
@@ -1062,7 +1025,7 @@ impl Vm {
         ))
     }
 
-    /// Push a [VmFrame] to enter `closure`: captures seat into slots `0..n`, then variadic args are collapsed into a trailing rest array.
+    /// Push a [VmFrame] to enter `closure`, per the calling convention (see [`Bytecode`]).
     /// `base` is the frame base (the closure's slot on the stack);
     /// `return_address` is where the callee returns to.
     /// Arity must already be checked.
@@ -1093,14 +1056,11 @@ impl Vm {
         let argc = self.stack.len() - (base + 1);
 
         match closure.function.arity {
-            // Surplus args beyond the fixed params collapse into the rest array.
             Arity::AtLeast(fixed_argc) => {
                 let varargs = self.stack.split_off(base + 1 + fixed_argc);
                 self.stack.push(Value::Array(varargs.into()));
             }
-            // A `Between` closure is always hand-rolled bytecode. Hand its prelude the
-            // actual arg count on top of the args, so it can tell an omitted optional
-            // from one explicitly passed as null and seat its slots accordingly.
+            // Only hand-written bytecode has a `Between` closure; the compiler never emits one.
             Arity::Between(..) => {
                 self.stack.push(Value::Int(argc as i64));
             }

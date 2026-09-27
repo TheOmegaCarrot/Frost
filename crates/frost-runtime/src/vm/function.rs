@@ -12,29 +12,33 @@ use super::serialize;
 /// A script's top-level is also a function.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct CompiledFunction {
-    // Version marker: stamps the runtime version on serialize, rejects a mismatch on
-    // deserialize. First, so a mismatched image fails before the rest is decoded.
+    /// Stamps the runtime version into a serialized image; see [`FormatVersion`](crate::FormatVersion).
+    // First, so a mismatched image fails before the rest is decoded.
     pub version: serialize::FormatVersion,
-    // Functions always have a name
+    /// The function's name, as reported in errors and backtraces.
     pub name: String,
+    /// The function body.
     pub code: Vec<Bytecode>,
-    // Functions which are defined in this function's body
+    /// Functions defined in this function's body, indexed by [`Bytecode::CreateClosure`].
     pub child_fns: Vec<Arc<CompiledFunction>>,
-    // Constant values that can't be inlined in an opcode.
-    // Mostly strings, but can include any structured value the compiler can constant-fold.
-    // Serialized through `ConstValue` (see `serialize`), which rejects functions and Opaque values.
+    /// Constant values that cannot be inlined in an instruction, indexed by [`Bytecode::LoadConst`].
+    /// Serialization fails if one is a function or an Opaque value, or contains one.
+    // Mostly Strings, but can include any structured value the compiler can constant-fold.
+    // Serialized through `ConstValue` (see `serialize`).
     #[serde(with = "serialize::const_pool")]
     pub constants: Vec<Value>,
-    // Constant map keys, in their own pool so a keyed instruction can borrow one
+    /// Constant Map keys, indexed by [`Bytecode::HardIndexMap`].
+    // In their own pool so a keyed instruction can borrow one
     // rather than build a `MapKey` per execution. `MapKey` cannot hold a function,
     // so unlike `constants` this needs no serialization guard.
     pub key_constants: Vec<MapKey>,
-    // Table so that locals can be looked up by name at runtime,
-    // or their slot given a name by an error.
+    /// The name of each slot, in slot order,
+    /// so a binding can be looked up by name or a slot named in an error.
     pub name_table: Vec<NameEntry>,
-    // Number of leading `name_table`/slot entries that are captures (slots `0..num_captures`);
-    // the remainder are locals, including params. May be 0.
+    /// How many leading slots (`0..num_captures`) are captures;
+    /// the remaining slots are locals, including parameters.
     pub num_captures: usize,
+    /// The number of arguments the function accepts.
     pub arity: Arity,
 }
 
@@ -113,6 +117,7 @@ impl TrustedProgram {
 /// reports every missing name, not just the first.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MissingCaptures {
+    /// The missing capture names, in capture order.
     pub names: Vec<String>,
 }
 
@@ -124,9 +129,12 @@ impl std::fmt::Display for MissingCaptures {
 
 impl std::error::Error for MissingCaptures {}
 
+/// One slot's entry in a [`CompiledFunction`]'s [`name_table`](CompiledFunction::name_table).
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NameEntry {
+    /// The binding's name.
     pub name: String,
+    /// Whether the binding is exported (see [`ProgramResult::exports`](crate::ProgramResult::exports)).
     pub exported: bool,
 }
 
@@ -139,8 +147,11 @@ pub struct NameEntry {
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Arity {
+    /// Exactly this many arguments.
     Exact(usize),
+    /// From the first bound to the second, inclusive.
     Between(usize, usize),
+    /// At least this many arguments.
     AtLeast(usize),
 }
 
@@ -155,10 +166,12 @@ pub struct Closure {
 }
 
 impl Closure {
+    /// The [`CompiledFunction`] this closure runs.
     pub fn inner_fn(&self) -> &CompiledFunction {
         &self.function
     }
 
+    /// Like [`inner_fn`](Self::inner_fn), but returns a shared handle.
     pub fn inner_fn_arc(&self) -> Arc<CompiledFunction> {
         self.function.clone()
     }

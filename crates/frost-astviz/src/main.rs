@@ -52,7 +52,8 @@ fn main() -> ExitCode {
     let highlights = highlight::highlights(&source);
 
     let filename = Path::new(path)
-        .file_name().map_or_else(|| path.clone(), |s| s.to_string_lossy().into_owned());
+        .file_name()
+        .map_or_else(|| path.clone(), |s| s.to_string_lossy().into_owned());
 
     let data = FrostData {
         filename: filename.clone(),

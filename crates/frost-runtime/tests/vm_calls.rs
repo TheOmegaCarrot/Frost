@@ -179,10 +179,7 @@ fn call_variadic_empty_rest() {
         vec![],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![callee],
@@ -247,10 +244,7 @@ fn call_nested_closures() {
         vec![b],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![a],
@@ -490,30 +484,19 @@ fn call_deeply_nested_closures() {
         vec![],
     );
     let b = func(
-        vec![
-            Bytecode::Pop,
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::Pop, Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![c],
     );
     let a = func(
-        vec![
-            Bytecode::Pop,
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::Pop, Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![b],
     );
     let program = func(
-        vec![
-            Bytecode::CreateClosure(0),
-            Bytecode::Call(0),
-        ],
+        vec![Bytecode::CreateClosure(0), Bytecode::Call(0)],
         Arity::Exact(0),
         vec![],
         vec![a],

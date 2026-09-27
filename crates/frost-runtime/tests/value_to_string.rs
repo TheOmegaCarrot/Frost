@@ -1,6 +1,8 @@
+mod common;
+
 use std::sync::Arc;
 
-use frost_runtime::{FrostArray, FrostFloat, FrostMap, MapKey, Value};
+use frost_runtime::{Arity, Bytecode, FrostArray, FrostFloat, FrostMap, MapKey, Value};
 
 fn str_key(s: &str) -> MapKey {
     MapKey::String(Arc::from(s))
@@ -88,9 +90,29 @@ fn bytes_top_level_render_as_a_literal() {
     assert_eq!(v.to_frost_string(), "x'80ff'");
 }
 
+/// Both kinds of Function value render as the same placeholder, in every rendering.
 #[test]
 fn function_placeholder() {
-    // Can't easily construct a Function value in tests, tested via type_name coverage
+    let native = Value::native("f", Arity::Exact(0), |_ctx, _args| Ok(Value::Null));
+    let closure = Value::Closure(common::closure(vec![Bytecode::PushNull], vec![]));
+
+    for (kind, function) in [("native", native), ("closure", closure)] {
+        assert_eq!(
+            function.to_frost_string(),
+            "<Function>",
+            "{kind}: to_frost_string"
+        );
+        assert_eq!(
+            function.to_debug_string(),
+            "<Function>",
+            "{kind}: to_debug_string"
+        );
+        assert_eq!(
+            Value::from(vec![function]).to_frost_string(),
+            "[ <Function> ]",
+            "{kind}: nested in an Array"
+        );
+    }
 }
 
 // -- Opaque renderings --
