@@ -12,12 +12,7 @@ use crate::{CompilerOptions, OptimizationOptions};
 
 fn options() -> CompilerOptions {
     CompilerOptions {
-        optimization_options: OptimizationOptions {
-            constant_fold: false,
-            constant_propagate: false,
-            branch_eliminate: false,
-            capture_hoist: false,
-        },
+        optimization_options: OptimizationOptions::NONE,
         implicit_export: false,
     }
 }

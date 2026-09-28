@@ -17,19 +17,22 @@ use std::sync::Arc;
 use frost_runtime::{Arity, Bytecode, CompiledFunction, FormatVersion};
 
 use crate::lower::locals::SlotPlan;
+use crate::lower::passes::run_passes;
 use crate::lower::{FunctionBuilder, Ir, JumpType, LoweredFunction};
 
 impl FunctionBuilder<'_> {
-    /// End lowering: package this function's fused IR with its metadata.
+    /// End lowering: package this function's fused IR with its metadata, and
+    /// run the IR passes over it.
     pub(super) fn finish(self, code: Vec<Ir>) -> LoweredFunction {
-        LoweredFunction {
+        let function = LoweredFunction {
             name: self.name,
             arity: self.arity,
             code,
             locals: self.locals,
             num_labels: self.next_label.0,
             effectful: self.effectful,
-        }
+        };
+        run_passes(function, &self.options.optimization_options)
     }
 
     /// [`finish`](Self::finish) then [`LoweredFunction::assemble`], for a

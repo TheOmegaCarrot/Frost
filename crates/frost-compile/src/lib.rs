@@ -29,6 +29,9 @@ pub struct OptimizationOptions {
     /// [`constant_propagate`](Self::constant_propagate), so this has effect only
     /// alongside it.
     pub capture_hoist: bool,
+    /// Move a local's value out on its last use, rather than copying it, so a
+    /// structure held only by that local can be updated in place.
+    pub consume_locals: bool,
 }
 
 impl OptimizationOptions {
@@ -38,6 +41,7 @@ impl OptimizationOptions {
         constant_propagate: false,
         branch_eliminate: false,
         capture_hoist: false,
+        consume_locals: false,
     };
 
     /// Every optimization on.
@@ -46,6 +50,7 @@ impl OptimizationOptions {
         constant_propagate: true,
         branch_eliminate: true,
         capture_hoist: true,
+        consume_locals: true,
     };
 }
 

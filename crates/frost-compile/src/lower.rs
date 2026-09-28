@@ -13,6 +13,7 @@ mod iterative_expressions;
 mod lambda_expression;
 mod locals;
 mod match_expression;
+mod passes;
 mod prewalk;
 mod simple_expressions;
 mod structure_literals;

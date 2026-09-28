@@ -263,6 +263,30 @@ fn the_drivers_default_optimizations_apply_without_a_preset() {
 }
 
 #[test]
+fn every_optimization_has_a_switch() {
+    // No `..`: a new option fails to compile here until its switch is listed.
+    let OptimizationOptions {
+        constant_fold: _,
+        constant_propagate: _,
+        branch_eliminate: _,
+        capture_hoist: _,
+        consume_locals: _,
+    } = OptimizationOptions::ALL;
+    for name in [
+        "constant-fold",
+        "constant-propagate",
+        "branch-eliminate",
+        "capture-hoist",
+        "consume-locals",
+    ] {
+        for switch in ["--enable", "--disable"] {
+            let ran = run(&[switch, name, "-e", "1"]);
+            assert_eq!(ran.exit, Exit::Success, "{switch} {name}: {ran:?}");
+        }
+    }
+}
+
+#[test]
 fn an_optimization_both_enabled_and_disabled_is_a_usage_error() {
     let ran = run(&[
         "--enable",

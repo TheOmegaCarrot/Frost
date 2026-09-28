@@ -151,6 +151,7 @@ enum Optimization {
     ConstantPropagate,
     BranchEliminate,
     CaptureHoist,
+    ConsumeLocals,
 }
 
 impl Optimization {
@@ -172,6 +173,7 @@ impl Optimization {
             Optimization::ConstantPropagate => &mut options.constant_propagate,
             Optimization::BranchEliminate => &mut options.branch_eliminate,
             Optimization::CaptureHoist => &mut options.capture_hoist,
+            Optimization::ConsumeLocals => &mut options.consume_locals,
         }
     }
 }
