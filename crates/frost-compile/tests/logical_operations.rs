@@ -76,7 +76,7 @@ fn loads_x(emitted: &Emitted) -> bool {
     emitted
         .code
         .iter()
-        .any(|op| matches!(op, Bytecode::LoadLocal(_)))
+        .any(|op| matches!(op, Bytecode::LoadLocal(_) | Bytecode::ConsumeLocal(_)))
 }
 
 /// How many conditional jumps (the short-circuit tests) remain in the code.

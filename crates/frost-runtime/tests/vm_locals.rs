@@ -1,7 +1,10 @@
 mod common;
 
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
 use common::{entry, fn_with_locals, run_fn};
-use frost_runtime::{Bytecode, Value};
+use frost_runtime::{Arity, Bytecode, CompiledFunction, FormatVersion, Value, Vm};
 
 // ============================================================
 // Local slots
@@ -49,4 +52,87 @@ fn load_local_copies_not_moves() {
         vec![entry("x", false)],
     );
     assert_eq!(run_fn(program).tail(), &Value::Int(10));
+}
+
+#[test]
+fn consume_local_pushes_the_slots_value() {
+    let program = fn_with_locals(
+        vec![
+            Bytecode::PushInt(7),
+            Bytecode::DefLocal(0),
+            Bytecode::ConsumeLocal(0),
+        ],
+        vec![entry("x", false)],
+    );
+    assert_eq!(run_fn(program).tail(), &Value::Int(7));
+}
+
+#[test]
+fn a_consumed_slot_may_be_defined_and_read_again() {
+    let program = fn_with_locals(
+        vec![
+            Bytecode::PushInt(1),
+            Bytecode::DefLocal(0),
+            Bytecode::ConsumeLocal(0),
+            Bytecode::PushInt(2),
+            Bytecode::DefLocal(0),
+            Bytecode::LoadLocal(0),
+            Bytecode::Add,
+        ],
+        vec![entry("x", false)],
+    );
+    assert_eq!(run_fn(program).tail(), &Value::Int(3));
+}
+
+/// Store an Array in a local, then pass it, loaded with `load`, to a native
+/// that reports whether it holds the Array's only reference.
+fn passed_unshared(load: Bytecode) -> Value {
+    let probe = Value::native("probe", Arity::Exact(1), |_, args| {
+        let array = args[0].take().try_into_array().expect("an Array");
+        Ok(Value::Bool(array.try_into_vec().is_ok()))
+    });
+    let program = Arc::new(CompiledFunction {
+        version: FormatVersion,
+        name: "<test>".to_string(),
+        code: vec![
+            Bytecode::Pop,
+            Bytecode::PushInt(1),
+            Bytecode::MakeArray(1),
+            Bytecode::DefLocal(1),
+            Bytecode::LoadLocal(0),
+            load,
+            Bytecode::Call(1),
+        ],
+        child_fns: Vec::new(),
+        constants: Vec::new(),
+        key_constants: Vec::new(),
+        name_table: vec![entry("probe", false), entry("xs", false)],
+        num_captures: 1,
+        arity: Arity::Exact(0),
+    });
+    let closure = program
+        .assert_trusted()
+        .close(BTreeMap::from([("probe".to_string(), probe)]))
+        .unwrap();
+    Vm::factory()
+        .build(closure)
+        .unwrap()
+        .run()
+        .unwrap()
+        .tail()
+        .clone()
+}
+
+#[test]
+fn a_consumed_value_is_no_longer_shared_with_its_slot() {
+    assert_eq!(
+        passed_unshared(Bytecode::ConsumeLocal(1)),
+        Value::Bool(true),
+        "consumed: the slot gives up its reference"
+    );
+    assert_eq!(
+        passed_unshared(Bytecode::LoadLocal(1)),
+        Value::Bool(false),
+        "loaded: the slot keeps its reference"
+    );
 }

@@ -354,6 +354,12 @@ impl Vm {
                                 .clone(),
                         );
                     }
+                    Bytecode::ConsumeLocal(idx) => {
+                        let value = self.this_frame_mut().local_slots[idx]
+                            .take()
+                            .expect("IMPOSSIBLE: local value is undefined");
+                        self.stack.push(value);
+                    }
                     Bytecode::LoadConst(idx) => self
                         .stack
                         .push(self.this_frame().this_fn.constants[idx].clone()),

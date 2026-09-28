@@ -128,6 +128,11 @@ impl Locals {
         self.info(id).constant.as_ref()
     }
 
+    /// Whether a local is exported: its slot is read once the function finishes.
+    pub(super) fn is_exported(&self, id: LocalId) -> bool {
+        self.info(id).exported
+    }
+
     /// Whether the current scope is the function's outermost (no nested scope
     /// open), i.e. a binding defined now is a top-level one.
     pub(super) fn at_top_scope(&self) -> bool {

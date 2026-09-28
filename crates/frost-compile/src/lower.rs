@@ -53,7 +53,7 @@ struct Label(usize);
 /// A local's identity within a function, assigned when it is defined. Concrete
 /// slots are assigned at assembly, so the IR refers to locals by id: a later
 /// pass can add or drop a local without renumbering the rest.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct LocalId(usize);
 
 #[derive(Clone, Debug)]
@@ -67,6 +67,9 @@ enum Ir {
     Const(Value),
     KeyIndex(MapKey),
     LoadLocal(LocalId),
+    /// A `LoadLocal` that moves the value out of its slot; see the
+    /// `consume_locals` pass.
+    ConsumeLocal(LocalId),
     DefLocal(LocalId),
     /// Create a closure over a nested function. Both forms are kept: `compiled`
     /// is what assembly pools, `lowered` is the IR it was assembled from.

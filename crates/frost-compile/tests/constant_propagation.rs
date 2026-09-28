@@ -16,11 +16,12 @@ fn emitted(source: &str, propagate: bool) -> Vec<Emitted> {
     Script::new(source).code_where(|optimization| optimization.constant_propagate == propagate)
 }
 
+/// Whether the code reads a local slot, by copy or by move.
 fn loads_a_local(emitted: &Emitted) -> bool {
     emitted
         .code
         .iter()
-        .any(|op| matches!(op, Bytecode::LoadLocal(_)))
+        .any(|op| matches!(op, Bytecode::LoadLocal(_) | Bytecode::ConsumeLocal(_)))
 }
 
 #[test]

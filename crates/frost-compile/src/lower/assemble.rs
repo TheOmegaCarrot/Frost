@@ -6,7 +6,8 @@
 //!   offset (the VM only ever jumps forward).
 //! - Inline payloads (`Const`, `KeyIndex`, `Closure`) are drained into their
 //!   pools, and the op is rewritten to reference the assigned pool slot.
-//! - `LoadLocal` and `DefLocal` ids resolve to their frame slots per the [`SlotPlan`].
+//! - `LoadLocal`, `ConsumeLocal`, and `DefLocal` ids resolve to their frame
+//!   slots per the [`SlotPlan`].
 //!
 //! Assembly is infallible. The IR is compiler-produced and already well-formed,
 //! so an undefined label or a backward jump is a compiler bug, not a user error:
@@ -95,6 +96,7 @@ pub(super) fn assemble_code(
                 key_constants.push(key.clone());
             }
             Ir::LoadLocal(id) => out.push(Bytecode::LoadLocal(plan.slot_of(*id))),
+            Ir::ConsumeLocal(id) => out.push(Bytecode::ConsumeLocal(plan.slot_of(*id))),
             Ir::DefLocal(id) => out.push(Bytecode::DefLocal(plan.slot_of(*id))),
             Ir::Closure { compiled, .. } => {
                 out.push(Bytecode::CreateClosure(child_fns.len()));
@@ -133,6 +135,7 @@ fn is_symbolic_opcode(bytecode: &Bytecode) -> bool {
     matches!(
         bytecode,
         Bytecode::LoadLocal(_)
+            | Bytecode::ConsumeLocal(_)
             | Bytecode::DefLocal(_)
             | Bytecode::LoadConst(_)
             | Bytecode::HardIndexMap(_)

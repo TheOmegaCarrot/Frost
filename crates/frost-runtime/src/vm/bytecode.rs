@@ -60,6 +60,11 @@ pub enum Bytecode {
     DefLocal(usize),
     /// Copy local slot N onto the stack: `( -- x )`.
     LoadLocal(usize),
+    /// Move local slot N onto the stack, leaving the slot empty: `( -- x )`.
+    /// The value is not shared with the slot, so a structure held nowhere else
+    /// can then be updated in place. The slot must not be read again unless it is
+    /// defined anew.
+    ConsumeLocal(usize),
     /// Copy entry N of the current function's [`constants`](crate::CompiledFunction::constants) onto the stack.
     LoadConst(usize),
     /// Copy predefined global N onto the stack; [`GLOBAL_NAMES`](crate::GLOBAL_NAMES) gives the slot order.
