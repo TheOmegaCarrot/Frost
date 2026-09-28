@@ -1,0 +1,12 @@
+[package]
+name = "frost-driver"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+clap = { version = "4.6", features = ["derive", "string"] }
+frost-compile = { path = "../frost-compile" }
+frost-runtime = { path = "../frost-runtime" }
+
+[lints]
+workspace = true

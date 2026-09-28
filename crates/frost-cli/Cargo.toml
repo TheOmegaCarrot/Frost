@@ -3,10 +3,12 @@ name = "frost-cli"
 version.workspace = true
 edition.workspace = true
 
+[[bin]]
+name = "frost"
+path = "src/main.rs"
+
 [dependencies]
-frost-parse = { path = "../frost-parse" }
-frost-runtime = { path = "../frost-runtime" }
-serde_json = "1"
+frost-driver = { path = "../frost-driver" }
 
 [lints]
 workspace = true

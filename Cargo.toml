@@ -3,13 +3,14 @@ members = [
     "crates/frost-parse",
     "crates/frost-runtime",
     "crates/frost-compile",
+    "crates/frost-driver",
     "crates/frost-cli",
     "crates/frost-astviz",
 ]
 resolver = "3"
 
 [workspace.package]
-version = "0.0.4"
+version = "0.0.1"
 edition = "2024"
 
 # Crates opt in with `[lints] workspace = true`.
