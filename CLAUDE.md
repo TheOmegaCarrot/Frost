@@ -116,6 +116,9 @@ fn x -> fn y -> x + y            # curried
 fn fact(n) -> if n <= 1: 1 else: n * fact(n - 1)   # named lambda (name usable for recursion)
 ```
 
+A block body needs no `do`: write `fn x -> { ... }`, not `fn x -> do { ... }`. `do` is for a
+block in expression position, such as an `if` branch.
+
 `defn name(params) -> body` is sugar for `def name = fn name(params) -> body`:
 
 ```frost
