@@ -151,7 +151,10 @@ fn a_slot_rebound_by_a_match_alternative_is_read_correctly() {
     // Both branches store to the same local; a failed branch may have consumed it.
     for (source, expected) in [
         ("match [1, 2] { [x, 3] | [1, x] => [x, x] }", "[2, 2]"),
-        ("match [[1], [1], 5] { [x, (x), 2] | [x, _, _] => x + [0] }", "[1, 0]"),
+        (
+            "match [[1], [1], 5] { [x, (x), 2] | [x, _, _] => x + [0] }",
+            "[1, 0]",
+        ),
     ] {
         assert_eq!(run(source), run(expected), "{source:?}");
     }

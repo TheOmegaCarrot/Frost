@@ -6,13 +6,13 @@
 //! parts after it.
 
 use frost_parse::ast::{Binding, Destructure, MapDestructureEntry, Spanned};
-use frost_runtime::{Bytecode, FrostArray, FrostType, MapKey, Value};
+use frost_runtime::{Bytecode, FrostArray, FrostType, Value};
 
 use crate::{
     CompilerErrors,
     lower::{
-        FunctionBuilder, Ir, JumpType, Label, Position,
-        fold::constant_of,
+        ConstKeyOp, FunctionBuilder, Ir, JumpType, Label, Position,
+        fold::constant_key_of,
         locals::{LocalInfo, LocalKind},
     },
 };
@@ -181,9 +181,10 @@ impl FunctionBuilder<'_> {
     }
 
     /// `{key: part, ...} as whole`: check the value is a Map, then take each key
-    /// in source order, the Map staying beneath. A key is evaluated in place,
-    /// `( m -- m k )`, then looked up, `( m k -- m v )`, raising if absent; its
-    /// part consumes the value. The Map left at the end is bound whole, or dropped.
+    /// in source order, the Map staying beneath. A key is looked up, raising if
+    /// absent: a known key directly, `( m -- m v )`; any other is evaluated in
+    /// place first, `( m -- m k )`, then looked up, `( m k -- m v )`. Its part
+    /// consumes the value. The Map left at the end is bound whole, or dropped.
     fn compile_map_destructure(
         &mut self,
         entries: &[Spanned<MapDestructureEntry>],
@@ -204,17 +205,28 @@ impl FunctionBuilder<'_> {
 
         for entry in entries {
             // A computed key is folded now, even if the whole statement folds
-            // later: a constant key is what lets its part propagate.
+            // later: a known key is looked up directly, and lets its part propagate.
             let key = self.compile_expression(&entry.node.key, Position::Inner)?;
             let key = self.fold_if_eligible(key);
-            let value = known.as_ref().and_then(Value::as_map).and_then(|map| {
-                let key = MapKey::try_from(constant_of(&key.code)?).ok()?;
-                map.get(&key).cloned()
-            });
+            let known_key = constant_key_of(&key.code);
+            let value = known
+                .as_ref()
+                .and_then(Value::as_map)
+                .zip(known_key.as_ref())
+                .and_then(|(map, known_key)| map.get(known_key).cloned());
             let part = self.compile_destructure(&entry.node.destructure, exported, value)?;
             foldable &= key.foldable && part.foldable;
-            code.extend(key.code);
-            code.push(Ir::Ready(Bytecode::ExtractKey));
+            match known_key {
+                Some(known_key) => code.push(Ir::ConstKey {
+                    op: ConstKeyOp::Extract,
+                    key: known_key,
+                }),
+                None => code.extend(
+                    key.code
+                        .into_iter()
+                        .chain([Ir::Ready(Bytecode::ExtractKey)]),
+                ),
+            }
             code.extend(part.code);
         }
 

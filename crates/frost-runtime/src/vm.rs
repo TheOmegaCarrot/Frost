@@ -658,6 +658,21 @@ impl Vm {
 
                         self.stack.push(v);
                     }
+                    Bytecode::TestConstKey(const_pool_idx_of_key) => {
+                        let m = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        let key = &self.this_frame().this_fn.key_constants[const_pool_idx_of_key];
+                        let has = m.as_map().is_some_and(|m| m.contains_key(key));
+                        self.stack.push(Value::from(has));
+                    }
+                    Bytecode::ExtractConstKey(const_pool_idx_of_key) => {
+                        let m = self.stack.last().expect("FROST STACK UNDERFLOW");
+                        let m = m.as_map().ok_or_else(|| {
+                            FrostError::from_string(format!("Expected Map, got {}", m.type_name()))
+                        })?;
+                        let key = &self.this_frame().this_fn.key_constants[const_pool_idx_of_key];
+                        let v = m.get(key).ok_or_else(|| missing_key(m, key))?.clone();
+                        self.stack.push(v);
+                    }
                     Bytecode::TestArrayLenExact(size) => {
                         self.test_array_len(|len| len == size);
                     }

@@ -26,7 +26,7 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, IdleVm, Value, Vm, VmFactory, VmRuntimeConfiguration,
+    Arity, Bytecode, CompiledFunction, IdleVm, MapKey, Value, Vm, VmFactory, VmRuntimeConfiguration,
 };
 
 use crate::lower::assemble::assemble_code;
@@ -119,6 +119,12 @@ pub(super) fn constant_of(code: &[Ir]) -> Option<Value> {
         Ir::Const(value) => Some(value.clone()),
         _ => None,
     }
+}
+
+/// The compile-time key a fragment loads: its [`constant_of`], if that is a valid
+/// Map key.
+pub(super) fn constant_key_of(code: &[Ir]) -> Option<MapKey> {
+    MapKey::try_from(constant_of(code)?).ok()
 }
 
 /// Whether `value` can be a constant: neither a function nor opaque, and, for a

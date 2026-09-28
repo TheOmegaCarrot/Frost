@@ -3,7 +3,7 @@ use frost_runtime::{Bytecode, MapKey};
 
 use crate::{
     CompilerErrors,
-    lower::{ExprFragment, FunctionBuilder, Ir, Position},
+    lower::{ConstKeyOp, ExprFragment, FunctionBuilder, Ir, Position},
 };
 
 impl FunctionBuilder<'_> {
@@ -42,7 +42,10 @@ impl FunctionBuilder<'_> {
             code: target
                 .code
                 .into_iter()
-                .chain([Ir::KeyIndex(MapKey::from(key.node.clone()))])
+                .chain([Ir::ConstKey {
+                    op: ConstKeyOp::HardIndex,
+                    key: MapKey::from(key.node.clone()),
+                }])
                 .collect(),
         })
     }

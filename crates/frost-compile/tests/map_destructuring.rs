@@ -16,7 +16,7 @@ mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, compile_errors, raises, run};
 use frost_compile::OptimizationOptions;
-use frost_runtime::{Bytecode, Value};
+use frost_runtime::{Bytecode, MapKey, Value};
 
 const FOLD: OptimizationOptions = OptimizationOptions {
     constant_fold: true,
@@ -744,13 +744,11 @@ fn a_block_destructuring_a_constant_folds_whole() {
 #[test]
 fn a_computed_key_folds_even_when_the_value_is_runtime() {
     let emitted = Script::new("def {[1 + 1]: v} = m; v")
-        .capture(
-            "m",
-            Value::map([(frost_runtime::MapKey::Int(2), Value::Int(9))]),
-        )
+        .capture("m", Value::map([(MapKey::Int(2), Value::Int(9))]))
         .code(FOLD);
     assert_eq!(emitted.count(&Bytecode::Add), 0, "{emitted:?}");
-    assert_eq!(emitted.count(&Bytecode::PushInt(2)), 1, "{emitted:?}");
+    assert_eq!(emitted.key_constants(), [MapKey::Int(2)], "{emitted:?}");
+    assert_eq!(emitted.count(&Bytecode::ExtractKey), 0, "{emitted:?}");
 }
 
 #[test]
@@ -760,12 +758,17 @@ fn a_nested_computed_key_folds_even_when_the_value_is_runtime() {
             "m",
             Value::map([(
                 "a",
-                Value::from_iter([Value::map([(frost_runtime::MapKey::Int(2), Value::Int(9))])]),
+                Value::from_iter([Value::map([(MapKey::Int(2), Value::Int(9))])]),
             )]),
         )
         .code(FOLD);
     assert_eq!(emitted.count(&Bytecode::Add), 0, "{emitted:?}");
-    assert_eq!(emitted.count(&Bytecode::PushInt(2)), 1, "{emitted:?}");
+    assert_eq!(
+        emitted.key_constants(),
+        [MapKey::from("a"), MapKey::Int(2)],
+        "{emitted:?}"
+    );
+    assert_eq!(emitted.count(&Bytecode::ExtractKey), 0, "{emitted:?}");
 }
 
 #[test]
@@ -807,9 +810,44 @@ fn a_block_whose_destructuring_fails_is_left_for_runtime() {
     let source = "do { def {a} = {b: 1}; 5 }";
     let emitted = Script::new(source).code(FOLD);
     assert_eq!(
-        emitted.count(&Bytecode::ExtractKey),
+        emitted.count(&Bytecode::ExtractConstKey(0)),
         1,
         "the lookup is kept: {emitted:?}"
     );
     assert_raises(&[(source, "no value at key 'a'")]);
+}
+
+#[test]
+fn a_known_key_is_looked_up_as_a_constant() {
+    // A literal key is known as written, without folding.
+    for source in [
+        "def {a} = m; a",
+        "def {a: v} = m; v",
+        r#"def {["a"]: v} = m; v"#,
+    ] {
+        let emitted = Script::new(source)
+            .capture("m", Value::map([("a", Value::Int(1))]))
+            .code(UNOPTIMIZED);
+        assert_eq!(
+            emitted.count(&Bytecode::ExtractConstKey(0)),
+            1,
+            "{source:?}: {emitted:?}"
+        );
+        assert_eq!(
+            emitted.count(&Bytecode::ExtractKey),
+            0,
+            "{source:?}: {emitted:?}"
+        );
+        assert_eq!(emitted.key_constants(), [MapKey::from("a")], "{source:?}");
+    }
+}
+
+#[test]
+fn a_key_known_only_at_runtime_is_looked_up_dynamically() {
+    let emitted = Script::new("def {[k]: v} = m; v")
+        .capture("m", Value::map([("a", Value::Int(1))]))
+        .capture("k", Value::from("a"))
+        .code(UNOPTIMIZED);
+    assert_eq!(emitted.count(&Bytecode::ExtractKey), 1, "{emitted:?}");
+    assert!(emitted.key_constants().is_empty(), "{emitted:?}");
 }

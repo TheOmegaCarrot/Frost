@@ -25,7 +25,7 @@ use std::sync::{Arc, Mutex};
 use frost_compile::{
     CompilerErrors, CompilerOptions, CompilerOutput, OptimizationOptions, compile_in_scope,
 };
-use frost_runtime::{Bytecode, CompiledFunction, Value, Vm, VmRuntimeConfiguration};
+use frost_runtime::{Bytecode, CompiledFunction, MapKey, Value, Vm, VmRuntimeConfiguration};
 
 /// Every optimization off. A base for picking options explicitly:
 /// `OptimizationOptions { constant_fold: true, ..UNOPTIMIZED }`.
@@ -345,6 +345,11 @@ impl Emitted {
     /// How many captured values a closure over this function is created with.
     pub(crate) fn num_captures(&self) -> usize {
         self.function.num_captures
+    }
+
+    /// The Map keys the function's constant-key ops look up.
+    pub(crate) fn key_constants(&self) -> &[MapKey] {
+        &self.function.key_constants
     }
 
     /// How many times `op` appears in the code.

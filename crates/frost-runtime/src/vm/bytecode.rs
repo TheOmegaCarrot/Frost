@@ -173,6 +173,16 @@ pub enum Bytecode {
     /// Errors if the key is absent, `m` is not a Map, or `k` is not a valid Map key.
     ExtractKey,
 
+    /// Test whether a Map contains a constant key, keeping the Map: `( m -- m b )`.
+    /// The key is entry N of the current function's [`key_constants`](crate::CompiledFunction::key_constants).
+    /// `b` is false if the key is absent or `m` is not a Map.
+    TestConstKey(usize),
+
+    /// Look up a constant key in a Map, keeping the Map: `( m -- m v )`.
+    /// The key is entry N of the current function's [`key_constants`](crate::CompiledFunction::key_constants).
+    /// Errors if the key is absent or `m` is not a Map.
+    ExtractConstKey(usize),
+
     /// Test whether a value's type is in the given set: `( x -- b )`.
     TypeTest(EnumSet<FrostType>),
 

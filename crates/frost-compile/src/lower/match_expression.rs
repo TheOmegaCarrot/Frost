@@ -23,8 +23,9 @@ use frost_runtime::{Bytecode, FrostType, Value};
 use crate::{
     CompilerError, CompilerErrors,
     lower::{
-        ExprFragment, FunctionBuilder, Ir, JumpType, Label, LocalId, Position,
+        ConstKeyOp, ExprFragment, FunctionBuilder, Ir, JumpType, Label, LocalId, Position,
         destructure::Mismatch,
+        fold::constant_key_of,
         locals::{LocalInfo, LocalKind},
     },
 };
@@ -277,20 +278,34 @@ impl FunctionBuilder<'_> {
         let mut foldable = true;
 
         for entry in entries {
-            // Folded now, as a destructure's key is.
+            // Folded now, as a destructure's key is, so a known key is looked up
+            // directly.
             let key = self.compile_expression(&entry.node.key, Position::Inner)?;
             let key = self.fold_if_eligible(key);
             let part = self.compile_pattern(&entry.node.pattern, fail, mode, bound)?;
             foldable &= key.foldable && part.foldable;
-            code.extend(key.code);
-            code.extend([
-                Ir::Ready(Bytecode::TestKey),
-                Ir::Jump {
-                    kind: JumpType::IfFalse,
-                    label: fail,
-                },
-                Ir::Ready(Bytecode::ExtractKey),
-            ]);
+            let missing = Ir::Jump {
+                kind: JumpType::IfFalse,
+                label: fail,
+            };
+            match constant_key_of(&key.code) {
+                Some(known_key) => code.extend([
+                    Ir::ConstKey {
+                        op: ConstKeyOp::Test,
+                        key: known_key.clone(),
+                    },
+                    missing,
+                    Ir::ConstKey {
+                        op: ConstKeyOp::Extract,
+                        key: known_key,
+                    },
+                ]),
+                None => code.extend(key.code.into_iter().chain([
+                    Ir::Ready(Bytecode::TestKey),
+                    missing,
+                    Ir::Ready(Bytecode::ExtractKey),
+                ])),
+            }
             code.extend(part.code);
         }
 

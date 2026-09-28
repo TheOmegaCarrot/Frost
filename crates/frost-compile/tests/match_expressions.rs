@@ -15,7 +15,7 @@ mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, compile_errors, every_optimization, raises, run};
 use frost_compile::OptimizationOptions;
-use frost_runtime::{Bytecode, Value};
+use frost_runtime::{Bytecode, MapKey, Value};
 
 const FOLD: OptimizationOptions = OptimizationOptions {
     constant_fold: true,
@@ -1042,13 +1042,19 @@ fn with_a_runtime_target_each_part_folds_on_its_own() {
     for op in [Bytecode::Multiply, Bytecode::Add, Bytecode::CompareLessThan] {
         assert_eq!(emitted.count(&op), 0, "no {op:?} is left: {emitted:?}");
     }
-    for folded in [6, 12, 2, 30, 56] {
+    for folded in [6, 12, 30, 56] {
         assert_eq!(
             emitted.count(&Bytecode::PushInt(folded)),
             1,
             "{folded} is folded: {emitted:?}"
         );
     }
+    // The folded key is looked up as a constant.
+    assert_eq!(
+        emitted.key_constants(),
+        [MapKey::Int(2), MapKey::Int(2)],
+        "{emitted:?}"
+    );
     assert_eq!(
         Script::new(source).capture("x", Value::Int(6)).run(),
         Value::Int(12)
@@ -1070,4 +1076,55 @@ fn without_folding_nothing_is_folded() {
     let emitted = Script::new("match 3 { 1 => 10, 3 => 2 * 15 }").code(UNOPTIMIZED);
     assert_eq!(emitted.count(&Bytecode::MarkStack), 2, "{emitted:?}");
     assert_eq!(emitted.count(&Bytecode::Multiply), 1, "{emitted:?}");
+}
+
+#[test]
+fn a_known_key_is_tested_and_looked_up_as_a_constant() {
+    // A literal key is known as written, without folding.
+    for source in [
+        "match x { {a} => a, _ => 0 }",
+        "match x { {a: v} => v, _ => 0 }",
+        r#"match x { {["a"]: v} => v, _ => 0 }"#,
+    ] {
+        let emitted = Script::new(source)
+            .capture("x", Value::Null)
+            .code(UNOPTIMIZED);
+        for op in [Bytecode::TestConstKey(0), Bytecode::ExtractConstKey(1)] {
+            assert_eq!(emitted.count(&op), 1, "{source:?}: {op:?} in {emitted:?}");
+        }
+        for op in [Bytecode::TestKey, Bytecode::ExtractKey] {
+            assert_eq!(emitted.count(&op), 0, "{source:?}: {op:?} in {emitted:?}");
+        }
+        assert_eq!(
+            emitted.key_constants(),
+            [MapKey::from("a"), MapKey::from("a")],
+            "{source:?}"
+        );
+    }
+}
+
+#[test]
+fn a_key_not_known_as_a_valid_key_is_looked_up_dynamically() {
+    // One known only at runtime, and one whose constant is not a valid key.
+    for source in [
+        "match x { {[x]: v} => v, _ => 0 }",
+        "match x { {[null]: v} => v, _ => 0 }",
+    ] {
+        let emitted = Script::new(source)
+            .capture("x", Value::Null)
+            .code(UNOPTIMIZED);
+        for op in [Bytecode::TestKey, Bytecode::ExtractKey] {
+            assert_eq!(emitted.count(&op), 1, "{source:?}: {op:?} in {emitted:?}");
+        }
+        assert!(
+            emitted.key_constants().is_empty(),
+            "{source:?}: {emitted:?}"
+        );
+    }
+    // The invalid key still raises, once reached against a Map.
+    assert_raises(&[(
+        "match {a: 1} { {[null]: v} => v, _ => 0 }",
+        "not a valid Map key",
+    )]);
+    assert_values(&[("match 5 { {[null]: v} => v, _ => 0 }", "0")]);
 }

@@ -50,6 +50,18 @@ enum JumpType {
 #[derive(Clone, Copy, Debug)]
 struct Label(usize);
 
+/// An operation on a Map with a key known at compile time, which assembly
+/// places in the function's key constants.
+#[derive(Clone, Copy, Debug)]
+enum ConstKeyOp {
+    /// `HardIndexMap`: `( m -- v )`.
+    HardIndex,
+    /// `TestConstKey`: `( m -- m b )`.
+    Test,
+    /// `ExtractConstKey`: `( m -- m v )`.
+    Extract,
+}
+
 /// A local's identity within a function, assigned when it is defined. Concrete
 /// slots are assigned at assembly, so the IR refers to locals by id: a later
 /// pass can add or drop a local without renumbering the rest.
@@ -65,7 +77,10 @@ enum Ir {
     },
     Label(Label),
     Const(Value),
-    KeyIndex(MapKey),
+    ConstKey {
+        op: ConstKeyOp,
+        key: MapKey,
+    },
     LoadLocal(LocalId),
     /// A `LoadLocal` that moves the value out of its slot; see the
     /// `consume_locals` pass.

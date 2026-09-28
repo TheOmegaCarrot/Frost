@@ -7,13 +7,21 @@
 //! (empty body, target one past the end, large offsets).
 
 use crate::lower::locals::{LocalInfo, LocalKind, Locals};
-use crate::lower::{FunctionBuilder, Ir, JumpType, Label};
+use crate::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, Label};
 use crate::{CompilerOptions, OptimizationOptions};
 
 use frost_parse::ast::SourceSpan;
 use frost_runtime::{Arity, Bytecode, CompiledFunction, MapKey, Value};
 
 use std::sync::Arc;
+
+/// A hard index of `m.key`, for `key`.
+fn hard_index(key: MapKey) -> Ir {
+    Ir::ConstKey {
+        op: ConstKeyOp::HardIndex,
+        key,
+    }
+}
 
 fn options() -> CompilerOptions {
     CompilerOptions {
@@ -231,7 +239,7 @@ fn inline_payloads_drain_into_their_pools() {
     let f = builder(&options).assemble(vec![
         Ir::Const(Value::Int(42)),
         Ir::Const(Value::Bool(true)),
-        Ir::KeyIndex(MapKey::from("name")),
+        hard_index(MapKey::from("name")),
         Ir::Ready(Bytecode::Pop),
     ]);
 
@@ -249,6 +257,37 @@ fn inline_payloads_drain_into_their_pools() {
     assert!(matches!(f.constants[1], Value::Bool(true)));
     assert_eq!(f.constants.len(), 2, "no dedup: one slot per inline const");
     assert_eq!(f.key_constants, vec![MapKey::from("name")]);
+}
+
+#[test]
+fn every_constant_key_op_shares_the_key_pool() {
+    let options = options();
+    let const_key = |op, key: &str| Ir::ConstKey {
+        op,
+        key: MapKey::from(key),
+    };
+    let f = builder(&options).assemble(vec![
+        const_key(ConstKeyOp::Test, "a"),
+        const_key(ConstKeyOp::Extract, "b"),
+        const_key(ConstKeyOp::HardIndex, "c"),
+        const_key(ConstKeyOp::Extract, "a"),
+    ]);
+
+    assert_eq!(
+        f.code,
+        vec![
+            Bytecode::TestConstKey(0),
+            Bytecode::ExtractConstKey(1),
+            Bytecode::HardIndexMap(2),
+            Bytecode::ExtractConstKey(3),
+        ],
+        "each op references the key slot assigned in emission order"
+    );
+    assert_eq!(
+        f.key_constants,
+        ["a", "b", "c", "a"].map(MapKey::from).to_vec(),
+        "no dedup: one slot per key"
+    );
 }
 
 #[test]
@@ -311,10 +350,10 @@ fn pool_counters_are_independent_under_interleaving() {
 
     let f = builder(&options).assemble(vec![
         Ir::Const(Value::Int(10)),
-        Ir::KeyIndex(MapKey::from("a")),
+        hard_index(MapKey::from("a")),
         Ir::Const(Value::Bool(true)),
         child,
-        Ir::KeyIndex(MapKey::from("b")),
+        hard_index(MapKey::from("b")),
         Ir::Const(Value::Int(20)),
     ]);
 
@@ -342,7 +381,7 @@ fn payload_ops_count_toward_jump_offsets() {
     let mut b = builder(&options);
     let end = b.next_label();
 
-    // A jump over a Const, a KeyIndex, and a Closure must skip all three: each
+    // A jump over a Const, a ConstKey, and a Closure must skip all three: each
     // lowers to exactly one instruction, so they count like any other op.
     let f = b.assemble(vec![
         Ir::Jump {
@@ -350,7 +389,7 @@ fn payload_ops_count_toward_jump_offsets() {
             label: end,
         },
         Ir::Const(Value::Int(1)),
-        Ir::KeyIndex(MapKey::from("k")),
+        hard_index(MapKey::from("k")),
         child,
         Ir::Label(end),
         Ir::Ready(Bytecode::PushNull),
@@ -556,7 +595,7 @@ fn dense_mix_of_jumps_labels_and_payloads() {
             kind: JumpType::Unconditional,
             label: a,
         }, // 2
-        Ir::KeyIndex(MapKey::from("k")), // 3
+        hard_index(MapKey::from("k")), // 3
         Ir::Label(a),             // -> index 4
         child,                    // 4
         Ir::Ready(Bytecode::Pop), // 5
@@ -609,18 +648,18 @@ fn convoluted_program_keeps_every_pool_and_jump_straight() {
             kind: JumpType::IfFalse,
             label: l2,
         }, // 1  -> l2 (7), past l1
-        Ir::Const(Value::Int(10)),       // 2
-        Ir::KeyIndex(MapKey::from("a")), // 3
-        child_a.clone(),                 // 4
-        Ir::Label(l1),                   // -> 5
-        Ir::Const(Value::Int(20)),       // 5
+        Ir::Const(Value::Int(10)),     // 2
+        hard_index(MapKey::from("a")), // 3
+        child_a.clone(),               // 4
+        Ir::Label(l1),                 // -> 5
+        Ir::Const(Value::Int(20)),     // 5
         Ir::Jump {
             kind: JumpType::Unconditional,
             label: l3,
         }, // 6  -> l3 (12), past l2
-        Ir::Label(l2),                   // -> 7
-        Ir::KeyIndex(MapKey::from("b")), // 7
-        child_b.clone(),                 // 8
+        Ir::Label(l2),                 // -> 7
+        hard_index(MapKey::from("b")), // 7
+        child_b.clone(),               // 8
         Ir::Jump {
             kind: JumpType::PeekIfTrue,
             label: l3,
@@ -629,11 +668,11 @@ fn convoluted_program_keeps_every_pool_and_jump_straight() {
             kind: JumpType::PeekIfFalse,
             label: l4,
         }, // 10 -> l4 (13), past l3
-        Ir::Const(Value::Bool(true)),    // 11
-        Ir::Label(l3),                   // -> 12
-        Ir::KeyIndex(MapKey::from("c")), // 12
-        Ir::Label(l4),                   // -> 13
-        Ir::Ready(Bytecode::PushNull),   // 13
+        Ir::Const(Value::Bool(true)),  // 11
+        Ir::Label(l3),                 // -> 12
+        hard_index(MapKey::from("c")), // 12
+        Ir::Label(l4),                 // -> 13
+        Ir::Ready(Bytecode::PushNull), // 13
     ]);
 
     assert_eq!(

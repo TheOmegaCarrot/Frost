@@ -4,7 +4,7 @@
 //! This is the single pass that turns symbolic IR into final bytecode:
 //! - `Label` markers are zero-width; each `Jump` resolves to a forward relative
 //!   offset (the VM only ever jumps forward).
-//! - Inline payloads (`Const`, `KeyIndex`, `Closure`) are drained into their
+//! - Inline payloads (`Const`, `ConstKey`, `Closure`) are drained into their
 //!   pools, and the op is rewritten to reference the assigned pool slot.
 //! - `LoadLocal`, `ConsumeLocal`, and `DefLocal` ids resolve to their frame
 //!   slots per the [`SlotPlan`].
@@ -19,7 +19,7 @@ use frost_runtime::{Arity, Bytecode, CompiledFunction, FormatVersion};
 
 use crate::lower::locals::SlotPlan;
 use crate::lower::passes::run_passes;
-use crate::lower::{FunctionBuilder, Ir, JumpType, LoweredFunction};
+use crate::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, LoweredFunction};
 
 impl FunctionBuilder<'_> {
     /// End lowering: package this function's fused IR with its metadata, and
@@ -91,8 +91,13 @@ pub(super) fn assemble_code(
                 out.push(Bytecode::LoadConst(constants.len()));
                 constants.push(value.clone());
             }
-            Ir::KeyIndex(key) => {
-                out.push(Bytecode::HardIndexMap(key_constants.len()));
+            Ir::ConstKey { op, key } => {
+                let index = key_constants.len();
+                out.push(match op {
+                    ConstKeyOp::HardIndex => Bytecode::HardIndexMap(index),
+                    ConstKeyOp::Test => Bytecode::TestConstKey(index),
+                    ConstKeyOp::Extract => Bytecode::ExtractConstKey(index),
+                });
                 key_constants.push(key.clone());
             }
             Ir::LoadLocal(id) => out.push(Bytecode::LoadLocal(plan.slot_of(*id))),
@@ -139,6 +144,8 @@ fn is_symbolic_opcode(bytecode: &Bytecode) -> bool {
             | Bytecode::DefLocal(_)
             | Bytecode::LoadConst(_)
             | Bytecode::HardIndexMap(_)
+            | Bytecode::TestConstKey(_)
+            | Bytecode::ExtractConstKey(_)
             | Bytecode::CreateClosure(_)
             | Bytecode::Jump(_)
             | Bytecode::JumpIfTrue(_)
