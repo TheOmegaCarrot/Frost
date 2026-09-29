@@ -89,7 +89,7 @@ impl NativeCtx<'_> {
                     .stack
                     .pop()
                     .expect("IMPOSSIBLE: closure left no result");
-                self.vm.stack_frames.pop();
+                self.vm.pop_vm_frame();
                 Ok(result)
             }
             _ => Err(Vm::not_callable(function)),

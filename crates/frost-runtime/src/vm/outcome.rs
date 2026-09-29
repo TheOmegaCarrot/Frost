@@ -38,7 +38,7 @@ impl ProgramResult {
         base.this_fn
             .name_table
             .iter()
-            .zip(&base.local_slots)
+            .zip(self.0.frame_slots(base))
             .find(|(entry, _)| entry.exported && entry.name == name)
             .map(|(_, slot)| {
                 slot.as_ref()
@@ -52,7 +52,7 @@ impl ProgramResult {
         base.this_fn
             .name_table
             .iter()
-            .zip(&base.local_slots)
+            .zip(self.0.frame_slots(base))
             .filter(|(entry, _)| entry.exported)
             .map(|(entry, slot)| {
                 (

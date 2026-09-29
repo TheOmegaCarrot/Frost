@@ -3,7 +3,7 @@ mod common;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use common::{entry, fn_with_locals, run_fn};
+use common::{entry, fn_with_locals, func, run_fn};
 use frost_runtime::{Arity, Bytecode, CompiledFunction, FormatVersion, Value, Vm};
 
 // ============================================================
@@ -135,4 +135,42 @@ fn a_consumed_value_is_no_longer_shared_with_its_slot() {
         Value::Bool(false),
         "loaded: the slot keeps its reference"
     );
+}
+
+#[test]
+#[should_panic(expected = "local value is undefined")]
+fn a_call_never_sees_a_finished_calls_locals() {
+    // `define` fills its slot 0 and returns; `read` then runs in the same place
+    // and reads its own slot 0, which it never defined. It must find it empty,
+    // not holding `define`'s 5.
+    let define = func(
+        vec![
+            Bytecode::Pop,
+            Bytecode::PushInt(5),
+            Bytecode::DefLocal(0),
+            Bytecode::PushNull,
+        ],
+        Arity::Exact(0),
+        vec![entry("x", false)],
+        vec![],
+    );
+    let read = func(
+        vec![Bytecode::Pop, Bytecode::LoadLocal(0)],
+        Arity::Exact(0),
+        vec![entry("x", false)],
+        vec![],
+    );
+    let program = func(
+        vec![
+            Bytecode::CreateClosure(0),
+            Bytecode::Call(0),
+            Bytecode::Pop,
+            Bytecode::CreateClosure(1),
+            Bytecode::Call(0),
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![define, read],
+    );
+    run_fn(program);
 }

@@ -33,9 +33,13 @@ use globals::GlobalSet;
 #[cfg(test)]
 mod arg_pool_tests;
 
-// White-box tests for the marks a failed or recycled Vm is left with.
+// White-box tests for the marks and slots a failed or recycled Vm is left with.
 #[cfg(test)]
 mod rearm_tests;
+
+// White-box tests for reuse of the local-slot allocation.
+#[cfg(test)]
+mod slot_reuse_tests;
 
 // ============================================================
 // VM Types
@@ -91,6 +95,11 @@ pub struct Vm {
     // Stack heights saved by `MarkStack`, for every frame: each frame's own marks
     // sit above its `mark_base`.
     marks: Vec<usize>,
+
+    // The local slots of every Frost frame, contiguous: each frame's run from its
+    // `slot_base`, one per entry of its function's name table. A frame's slots are
+    // truncated away as it ends, so later calls reuse the allocation.
+    slots: Vec<Option<Value>>,
 }
 
 /// Runtime configuration for a [`Vm`]: its resource limits, and where its printed
@@ -197,6 +206,7 @@ impl VmFactory {
             module_id: None,
             import_depth: self.import_depth,
             marks: Vec::new(),
+            slots: Vec::new(),
         })
     }
 }
@@ -211,8 +221,9 @@ enum StackFrame {
 struct VmFrame {
     // Absolute stack index of the base of a frame
     base_idx: usize,
-    // Storage for local variables.
-    local_slots: Vec<Option<Value>>,
+    // Index in the Vm's `slots` of this frame's first local; local N is at
+    // `slot_base + N`.
+    slot_base: usize,
     // Index into the code of the calling function which should be jumped back to.
     // The instruction _after_ the Call that pushed this StackFrame.
     return_address: Option<NonZeroUsize>,
@@ -283,12 +294,13 @@ impl Vm {
     }
 
     /// Scrub a spent Vm back to a runnable state for `closure`, keeping its allocations.
-    /// Clears the operand stack, frames, and marks (a failed run leaves them dirty), the
-    /// fuel meter, and the abort latch.
+    /// Clears the operand stack, frames, marks, and local slots (a failed run leaves them
+    /// dirty), the fuel meter, and the abort latch.
     fn rearm(mut self, closure: Arc<Closure>) -> Vm {
         self.stack.clear();
         self.stack_frames.clear();
         self.marks.clear();
+        self.slots.clear();
         self.top_level = closure;
         self.fuel_used = 0;
         self.abort = None;
@@ -311,12 +323,58 @@ impl Vm {
         }
     }
 
-    fn this_frame_mut(&mut self) -> &mut VmFrame {
-        match self.stack_frames.last_mut() {
-            Some(StackFrame::VmFrame(vm_frame)) => vm_frame,
-            Some(StackFrame::NativeFrame) => panic!("IMPOSSIBLE: current Vm frame is native frame"),
-            None => panic!("IMPOSSIBLE: Vm has no frame"),
-        }
+    /// The index in `slots` of the running frame's local `idx`.
+    fn local_slot(&self, idx: usize) -> usize {
+        let frame = self.this_frame();
+        debug_assert!(
+            idx < frame.this_fn.name_table.len(),
+            "local {idx} is outside `{}`'s {} slots",
+            frame.this_fn.name,
+            frame.this_fn.name_table.len()
+        );
+        frame.slot_base + idx
+    }
+
+    /// `frame`'s local slots, in name-table order.
+    fn frame_slots(&self, frame: &VmFrame) -> &[Option<Value>] {
+        &self.slots[frame.slot_base..][..frame.this_fn.name_table.len()]
+    }
+
+    /// End the innermost frame, which must be a Frost frame: pop it and release
+    /// its local slots.
+    fn pop_vm_frame(&mut self) -> VmFrame {
+        let Some(StackFrame::VmFrame(frame)) = self.stack_frames.pop() else {
+            panic!("IMPOSSIBLE: the innermost frame is not a Frost frame");
+        };
+        debug_assert_eq!(
+            frame.mark_base,
+            self.marks.len(),
+            "a frame must have balanced every stack mark it saved before it ends"
+        );
+        self.slots.truncate(frame.slot_base);
+        self.debug_assert_slots_fit_frames();
+        frame
+    }
+
+    /// Check that `slots` ends exactly where the innermost Frost frame's slots do:
+    /// no ended frame has left slots behind, and no live frame has lost any.
+    fn debug_assert_slots_fit_frames(&self) {
+        let end = self
+            .stack_frames
+            .iter()
+            .rev()
+            .find_map(|frame| match frame {
+                StackFrame::VmFrame(vm_frame) => {
+                    Some(vm_frame.slot_base + vm_frame.this_fn.name_table.len())
+                }
+                StackFrame::NativeFrame => None,
+            })
+            .unwrap_or(0);
+        debug_assert_eq!(
+            self.slots.len(),
+            end,
+            "the local slots must end where the innermost Frost frame's do"
+        );
     }
 
     fn execute_function(&mut self) -> Result<(), FrostError> {
@@ -356,18 +414,20 @@ impl Vm {
                         self.stack.remove(at);
                     }
                     Bytecode::DefLocal(idx) => {
-                        self.this_frame_mut().local_slots[idx] = Some(self.stack_pop());
+                        let slot = self.local_slot(idx);
+                        self.slots[slot] = Some(self.stack_pop());
                     }
                     Bytecode::LoadLocal(idx) => {
-                        self.stack.push(
-                            self.this_frame().local_slots[idx]
-                                .as_ref()
-                                .expect("IMPOSSIBLE: local value is undefined")
-                                .clone(),
-                        );
+                        let slot = self.local_slot(idx);
+                        let value = self.slots[slot]
+                            .as_ref()
+                            .expect("IMPOSSIBLE: local value is undefined")
+                            .clone();
+                        self.stack.push(value);
                     }
                     Bytecode::ConsumeLocal(idx) => {
-                        let value = self.this_frame_mut().local_slots[idx]
+                        let slot = self.local_slot(idx);
+                        let value = self.slots[slot]
                             .take()
                             .expect("IMPOSSIBLE: local value is undefined");
                         self.stack.push(value);
@@ -734,22 +794,12 @@ impl Vm {
 
             // Vm function return path
 
-            let StackFrame::VmFrame(frame) = self
-                .stack_frames
-                .pop()
-                .expect("IMPOSSIBLE: Vm has no stack frame")
-            else {
-                panic!("IMPOSSIBLE: function execution completed through native frame");
-            };
+            let frame = self.pop_vm_frame();
 
             debug_assert_eq!(
                 self.stack.len(),
                 frame.base_idx + 1,
                 "a returning function must leave exactly its result at its frame base"
-            );
-            debug_assert!(
-                frame.mark_base == self.marks.len(),
-                "a returning function must have balanced every stack mark it saved"
             );
 
             pc = frame
@@ -844,7 +894,8 @@ impl Vm {
             "the top-level frame must belong to the top-level closure"
         );
         // Every exported binding was assigned: the invariant `exports`/`get_export` trust.
-        for (entry, slot) in base.this_fn.name_table.iter().zip(&base.local_slots) {
+        self.debug_assert_slots_fit_frames();
+        for (entry, slot) in base.this_fn.name_table.iter().zip(self.frame_slots(base)) {
             debug_assert!(
                 !entry.exported || slot.is_some(),
                 "exported binding `{}` was left unfilled after execution",
@@ -937,21 +988,23 @@ impl Vm {
 
     /// Append the names of the `VmFrame`s in `stack_frames[floor..]` to `err`'s backtrace,
     /// innermost (top of the frame stack) first, then discard those frames and the marks
-    /// they still held.
+    /// and local slots they still held.
     ///
     /// This is the only place a Frost frame's name reaches the backtrace: `?` propagation has no hook,
     /// so the trace is built here as the abandoned frames are dropped.
     /// `NativeFrame` markers carry no name; a native's own name is recorded by [`Vm::run_native`] instead.
     fn unwind_frames(&mut self, floor: usize, mut err: FrostError) -> FrostError {
-        // The outermost abandoned frame entered with every surviving mark in place.
-        let surviving_marks = self.stack_frames[floor..]
+        // The outermost abandoned frame entered with every surviving mark and slot
+        // in place.
+        let outermost = self.stack_frames[floor..]
             .iter()
             .find_map(|frame| match frame {
-                StackFrame::VmFrame(vm_frame) => Some(vm_frame.mark_base),
+                StackFrame::VmFrame(vm_frame) => Some((vm_frame.mark_base, vm_frame.slot_base)),
                 StackFrame::NativeFrame => None,
             });
-        if let Some(surviving_marks) = surviving_marks {
+        if let Some((surviving_marks, surviving_slots)) = outermost {
             self.marks.truncate(surviving_marks);
+            self.slots.truncate(surviving_slots);
         }
         let names: Vec<String> = self
             .stack_frames
@@ -962,6 +1015,7 @@ impl Vm {
                 StackFrame::NativeFrame => None,
             })
             .collect();
+        self.debug_assert_slots_fit_frames();
         // During an abort the latch is the authoritative fatal error:
         // append the frame names to it and hand back a copy,
         // so a native above that swallows this copy can't drop the accumulated trace.
@@ -1080,16 +1134,19 @@ impl Vm {
         return_address: Option<NonZeroUsize>,
     ) -> Result<(), FrostError> {
         self.check_call_depth()?;
+        self.debug_assert_slots_fit_frames();
 
-        // TODO: perhaps pool local slot vecs to reuse allocations, like with native arg vecs
-        let mut local_slots = vec![None; closure.function.name_table.len()];
-        for (i, capture) in closure.captures.iter().enumerate() {
-            local_slots[i] = Some(capture.clone());
-        }
+        // The frame's slots go on the end: its captures seated first, the rest empty
+        // until the body defines them.
+        let slot_base = self.slots.len();
+        self.slots
+            .extend(closure.captures.iter().cloned().map(Some));
+        self.slots
+            .resize(slot_base + closure.function.name_table.len(), None);
 
         self.stack_frames.push(StackFrame::VmFrame(VmFrame {
             base_idx: base,
-            local_slots,
+            slot_base,
             return_address,
             this_fn: closure.function.clone(),
             mark_base: self.marks.len(),
@@ -1153,13 +1210,9 @@ impl Vm {
                 if self.stack_frames.len() == 1 {
                     self.push_closure_frame(&closure, base, return_address)?;
                 } else {
-                    let StackFrame::VmFrame(gone_frame) = self
-                        .stack_frames
-                        .pop()
-                        .expect("IMPOSSIBLE: Vm has no frame")
-                    else {
-                        panic!("IMPOSSIBLE: tail call in native frame");
-                    };
+                    // The callee's operands are all on the operand stack, so the
+                    // ending frame's slots can go first: the callee's take their place.
+                    let gone_frame = self.pop_vm_frame();
 
                     // The reused frame inherits gone_frame.base_idx below, so the two
                     // must already agree: a mismatch means a stray operand sits above
@@ -1169,7 +1222,7 @@ impl Vm {
                         "tail call base must match the reused frame's base"
                     );
 
-                    // Reuse the popped frame's slot, inheriting its base and return
+                    // Reuse the popped frame's place, inheriting its base and return
                     // address so the callee returns to the original caller.
                     self.push_closure_frame(
                         &closure,

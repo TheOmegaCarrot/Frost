@@ -18,9 +18,9 @@ pub(super) fn call_global() -> Value {
             name: "call".to_string(),
             arity: Arity::Between(1, 2),
             num_captures: 0,
-            // Slot-free: an empty name_table means `push_closure_frame` allocates no
-            // local_slots Vec. The body drops `call`'s own value with `DropBelow`
-            // and lets `DynTailCall` validate the operands, so no slots are needed.
+            // Slot-free: an empty name_table gives the frame no local slots. The body
+            // drops `call`'s own value with `DropBelow` and lets `DynTailCall`
+            // validate the operands, so no slots are needed.
             name_table: Vec::new(),
             constants: Vec::new(),
             key_constants: Vec::new(),
