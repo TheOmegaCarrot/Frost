@@ -1,5 +1,5 @@
 //! Tests for the identifier rules: what shapes a name may take, and which names
-//! Frost reserves. Expectations are cross-checked against the C++ oracle.
+//! Frost reserves.
 
 use frost_runtime::{
     KEYWORDS, is_identifier_like, is_identifier_like_and_not_keyword, is_reserved_keyword,

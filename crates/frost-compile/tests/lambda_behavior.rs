@@ -2,13 +2,10 @@
 //! `defn`, captures and scoping, recursion, higher-order use, closures as
 //! values, and the errors a lambda can raise or fail to compile with.
 //!
-//! Most cases are drawn from the C++ implementation's lambda, closure, call,
-//! `do`, and `defn` suites, or from probing its behavior, and were checked
-//! against it. The bytecode compiler reports some errors at compile time that
-//! the C++ implementation raises at runtime: any unbound name (even in a lambda
-//! never called, or a branch never taken), and a name bound twice in one scope
-//! (duplicate parameters, a parameter or local `def` shadowing the self-name or
-//! another parameter). Error messages are the bytecode compiler's own.
+//! Some errors are reported at compile time rather than runtime: any unbound
+//! name (even in a lambda never called, or a branch never taken), and a name
+//! bound twice in one scope (duplicate parameters, a parameter or local `def`
+//! shadowing the self-name or another parameter).
 //!
 //! Expected values are written as Frost expressions. The harness runs every case
 //! under every optimization permutation. What the compiler emits for lambdas

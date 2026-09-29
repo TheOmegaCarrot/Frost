@@ -5,8 +5,6 @@
 //! the result, and no matching arm raises. A pattern is a name (optionally
 //! type-constrained), a value to compare with, an Array or Map pattern, or
 //! alternatives, which must all bind the same names. Each arm is its own scope.
-//! Cases were checked against the C++ implementation; error messages are the
-//! bytecode compiler's own.
 //!
 //! The harness runs every behavioral case under every optimization permutation;
 //! code-shape cases pin exactly the options they are about.

@@ -1,8 +1,7 @@
 //! Capture discovery: the pre-walk that finds a lambda's free names before any
 //! opcode is emitted.
 //!
-//! It replicates the C++ oracle's `symbol_sequence()` analysis using the same
-//! [`Locals`] resolver the codegen uses: walk the body in evaluation order,
+//! It uses the same [`Locals`] resolver the codegen uses: walk the body in evaluation order,
 //! `define` names as bindings introduce them, and treat any `resolve` miss as a
 //! free name. Scoping falls out of `Locals::enter`/`exit`, so a `do` block
 //! absorbs its own definitions; a nested lambda is opaque, so its own free names
@@ -18,7 +17,7 @@
 //! The discovery order is evaluation order, which fixes the arbitrary-but-
 //! consistent slot order of the captures. A usage of a name *before* its
 //! definition in the same scope is free (a later definition shadows only
-//! subsequent uses); this is deliberate and matches the oracle.
+//! subsequent uses); this is deliberate.
 
 #[cfg(test)]
 mod tests;

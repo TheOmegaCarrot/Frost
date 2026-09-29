@@ -234,7 +234,7 @@ fn entries_are_evaluated_in_order() {
 
 #[test]
 fn a_repeated_key_keeps_its_last_value() {
-    // As in Lua (and the C++ oracle), a later entry overwrites an earlier one
+    // As in Lua, a later entry overwrites an earlier one
     // with the same key, however either key is written.
     for (source, expected) in [
         ("{a: 42, a: 10}", "{a: 10}"),

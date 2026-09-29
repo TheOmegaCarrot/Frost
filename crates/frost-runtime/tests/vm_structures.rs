@@ -259,7 +259,8 @@ fn make_map_duplicate_keys_keep_their_last_value_at_any_size() {
     for size in [3, 8, 9, 16, 17, 20, 100] {
         let mut keys: Vec<i64> = (0..size).collect();
         keys.extend([0, size / 2, size - 1]);
-        // std's BTreeMap, which also keeps a repeated key's last value, as the oracle.
+        // The expected Map comes from std's BTreeMap, which also keeps a repeated
+        // key's last value.
         let last_values: BTreeMap<_, _> = keys
             .iter()
             .enumerate()

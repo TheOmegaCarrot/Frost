@@ -754,8 +754,7 @@ mod string_patterns_are_literal_only {
 
     #[test]
     fn raw_string_is_a_literal_pattern() {
-        // Diverges from the C++ oracle, which rejects raw strings in patterns;
-        // the bytecode parser accepts every string form as a literal pattern.
+        // The parser accepts every string form as a literal pattern.
         let expr = parse_expr("match x { R'(a)' => 1 }");
         let (_, arms) = assert_match(&expr);
         let v = assert_value_pattern(&arms[0].node.pattern);

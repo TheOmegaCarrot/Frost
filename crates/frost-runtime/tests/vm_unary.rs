@@ -162,7 +162,7 @@ fn negate_zero_int() {
 #[test]
 fn negate_int_min_wraps_to_itself() {
     // -i64::MIN overflows; the wrapping policy yields i64::MIN unchanged (matches
-    // the oracle and the wrapping_* integer ops).
+    // the wrapping_* integer ops).
     assert_eq!(val(vec![PushInt(i64::MIN), Negate]), Value::Int(i64::MIN));
 }
 

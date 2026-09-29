@@ -2,13 +2,13 @@
 //! Stack: `( structure index -- result )` (structure deeper).
 //!
 //! It indexes an Array (by Int) or a Map (by primitive key).
-//! Distinguishing *missing* (-> null) from a *type error* is the whole point, so the tests pin both outcomes (cross-checked against the C++ oracle):
+//! Distinguishing *missing* (-> null) from a *type error* is the whole point, so the tests pin both outcomes:
 //!   * Array + Int -> element, or null when out of bounds (negatives count from the end); Array + non-Int -> error.
 //!   * Map + valid key -> value, or null when the key is absent; Map + null or structured key -> error.
 //!   * Indexing a non-structure (String, Int, ...) -> error.
 //!
 //! `HardIndexMap` (`foo.bar`) is the Map-only counterpart. Stack: `( map -- value )`; the key is read from the key-constant pool, not a stack operand.
-//! A missing key is an ERROR (an intentional deviation from the oracle's null-on-missing), and non-map operands error too (arrays are not dot-indexable).
+//! A missing key is an ERROR, not null, and non-map operands error too (arrays are not dot-indexable).
 
 use std::sync::Arc;
 
@@ -264,8 +264,7 @@ fn hard_index_present_key() {
 
 #[test]
 fn hard_index_missing_key_is_error() {
-    // {bar: 1}.baz -> error. The oracle returns null here; erroring is the
-    // intentional deviation.
+    // {bar: 1}.baz -> error, not null.
     let err = eval_keyed(
         vec![map(vec![(skey("bar"), Value::Int(1))])],
         vec![skey("baz")],

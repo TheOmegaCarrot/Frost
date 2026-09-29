@@ -295,7 +295,7 @@ fn a_destructure_binding_is_visible_to_later_computed_keys() {
     );
 }
 
-// -- Corner cases verified against the C++ oracle --
+// -- Corner cases --
 //
 // Each pins a distinct scope/ordering rule. Visibility within a pattern or
 // destructure is strictly *preceding*: an element sees earlier bindings but not

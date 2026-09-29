@@ -5,9 +5,7 @@
 //! it), a name mapped to a part, or a computed expression; `as` binds the whole
 //! Map. Parts bind in source order and may nest: each entry's key is evaluated,
 //! looked up, and its part destructured before the next entry's key, so a
-//! computed key may read the bindings before it. `as` binds last. Cases were
-//! checked against the C++ implementation; error messages are the bytecode
-//! compiler's own.
+//! computed key may read the bindings before it. `as` binds last.
 //!
 //! The harness runs every behavioral case under every optimization permutation;
 //! code-shape cases pin exactly the options they are about.

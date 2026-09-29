@@ -4,8 +4,6 @@
 //! or at least as many when there is a rest, which then binds an Array of the
 //! remainder. Parts bind in source order and may nest, as Array or Map
 //! patterns, each destructuring completely before the next; `_` discards a part.
-//! Cases were checked against the C++ implementation; error messages are the
-//! bytecode compiler's own.
 //!
 //! The harness runs every behavioral case under every optimization permutation;
 //! code-shape cases pin exactly the options they are about.
