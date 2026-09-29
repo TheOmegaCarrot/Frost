@@ -159,6 +159,19 @@ impl Script {
         self.finish().tail
     }
 
+    /// The tail value of a run under exactly `optimization`, which must complete.
+    /// Only for a script whose result may rightly depend on the options, such as
+    /// one probing whether a value is shared; others use [`run`](Self::run).
+    pub(crate) fn run_under(&self, optimization: OptimizationOptions) -> Value {
+        match self.observe_under(optimization).outcome {
+            Ok(finished) => finished.tail,
+            Err(message) => panic!(
+                "{:?} should run under {optimization:?}, but raised: {message}",
+                self.source
+            ),
+        }
+    }
+
     /// A run that must complete.
     pub(crate) fn finish(&self) -> Finished {
         self.outcome()
@@ -340,6 +353,15 @@ impl Emitted {
     /// The function's name.
     pub(crate) fn name(&self) -> &str {
         &self.function.name
+    }
+
+    /// The local slot holding the binding `name`.
+    pub(crate) fn slot_named(&self, name: &str) -> usize {
+        self.function
+            .name_table
+            .iter()
+            .position(|entry| entry.name == name)
+            .unwrap_or_else(|| panic!("the function has no local `{name}`"))
     }
 
     /// How many captured values a closure over this function is created with.

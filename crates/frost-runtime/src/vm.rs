@@ -630,13 +630,12 @@ impl Vm {
                             .expect("FROST STACK UNDERFLOW");
                         self.debug_assert_own_operand(split_point, "MakeMap");
 
-                        // Pairs move straight off the stack into the Map.
-                        let map = self
-                            .stack
-                            .drain(split_point..)
-                            .tuples()
-                            .map(|(key, value)| Ok((MapKey::try_from(key)?, value)))
-                            .collect::<Result<ValueMap, FrostError>>()?;
+                        // Pairs move straight off the stack into the Map. A plain loop:
+                        // collecting through a `Result` measured markedly slower here.
+                        let mut map = ValueMap::new();
+                        for (key, value) in self.stack.drain(split_point..).tuples() {
+                            map.insert(MapKey::try_from(key)?, value);
+                        }
 
                         self.stack.push(Value::from(map));
                     }

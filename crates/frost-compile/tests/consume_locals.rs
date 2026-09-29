@@ -11,7 +11,7 @@ mod common;
 
 use common::{Emitted, Script, UNOPTIMIZED, run};
 use frost_compile::OptimizationOptions;
-use frost_runtime::{Bytecode, Value};
+use frost_runtime::{Arity, Bytecode, Value};
 
 const CONSUME: OptimizationOptions = OptimizationOptions {
     consume_locals: true,
@@ -73,14 +73,110 @@ fn an_exported_local_is_never_consumed() {
     assert_eq!(reads(&emitted), [false, true, false], "{emitted:?}");
 }
 
+/// The reads of the local `name` in `emitted`, in order: `true` for a consuming
+/// read.
+fn reads_of(emitted: &Emitted, name: &str) -> Vec<bool> {
+    let slot = emitted.slot_named(name);
+    emitted
+        .code
+        .iter()
+        .filter_map(|op| match *op {
+            Bytecode::LoadLocal(at) if at == slot => Some(false),
+            Bytecode::ConsumeLocal(at) if at == slot => Some(true),
+            _ => None,
+        })
+        .collect()
+}
+
 #[test]
-fn of_reads_in_separate_branches_only_the_latest_is_consumed() {
-    // Either branch's read is the last to run, but only the later one in code
-    // order is known to be last whichever way the branch goes.
-    let emitted = Script::new("fn c, x -> if c: x else: x")
-        .code(CONSUME)
-        .nested(0);
-    assert_eq!(reads(&emitted), [true, false, true], "{emitted:?}");
+fn a_last_read_in_each_branch_is_consumed() {
+    // Reads of `c`, then of `x` in each branch.
+    for source in [
+        "fn c, x -> if c: x else: x",
+        "fn c, x -> if c: [x] else: [x, 1]",
+    ] {
+        let emitted = Script::new(source).code(CONSUME).nested(0);
+        assert_eq!(
+            reads(&emitted),
+            [true, true, true],
+            "{source:?}: {emitted:?}"
+        );
+    }
+}
+
+#[test]
+fn a_read_before_a_branch_that_reads_again_is_a_copy() {
+    for (source, expected) in [
+        // Reads of `x`, then `c`, then `x` in the branch that reads it again.
+        ("fn c, x -> [x, if c: x else: 0]", vec![false, true, true]),
+        ("fn c, x -> [x, if c: 0 else: x]", vec![false, true, true]),
+        // No branch reads `x` again.
+        ("fn c, x -> [x, if c: 0 else: 1]", vec![true, true]),
+    ] {
+        let emitted = Script::new(source).code(CONSUME).nested(0);
+        assert_eq!(reads(&emitted), expected, "{source:?}: {emitted:?}");
+    }
+}
+
+#[test]
+fn a_read_in_a_branch_before_a_later_read_is_a_copy() {
+    // Reads of `c`, then `x` in the consequent, then `x` after the `if`.
+    let source = "fn c, x -> [if c: x else: 0, x]";
+    let emitted = Script::new(source).code(CONSUME).nested(0);
+    assert_eq!(
+        reads(&emitted),
+        [true, false, true],
+        "{source:?}: {emitted:?}"
+    );
+}
+
+#[test]
+fn a_short_circuit_that_may_read_again_copies_its_first_read() {
+    // `or` keeps a truthy `x` and otherwise reads `x` again; `and` the reverse.
+    for source in ["fn x -> x or x", "fn x -> x and x"] {
+        let emitted = Script::new(source).code(CONSUME).nested(0);
+        assert_eq!(reads(&emitted), [false, true], "{source:?}: {emitted:?}");
+    }
+}
+
+#[test]
+fn a_last_read_in_each_match_arm_is_consumed() {
+    let source = r"fn v, x -> match v {
+        1 => x,
+        2 => [x],
+        _ => [x, x]
+    }";
+    let emitted = Script::new(source).code(CONSUME).nested(0);
+    assert_eq!(
+        reads_of(&emitted, "x"),
+        [true, true, false, true],
+        "{emitted:?}"
+    );
+}
+
+/// `unshared(structure)`: whether the Array or Map passed in is referenced by
+/// nothing but the argument itself.
+fn unshared() -> Value {
+    Value::native("unshared", Arity::Exact(1), |_, args| {
+        let unshared = match args[0].take() {
+            Value::Array(array) => array.try_into_vec().is_ok(),
+            Value::Map(map) => map.try_into_map().is_ok(),
+            other => panic!("`unshared` takes an Array or Map, not {other:?}"),
+        };
+        Ok(Value::Bool(unshared))
+    })
+}
+
+#[test]
+fn a_last_read_in_either_branch_hands_over_the_only_reference() {
+    // The Array is built at runtime, so only `xs` holds it.
+    let source = r"defn probe(c, xs) -> if c: unshared(xs) else: unshared(xs)
+        def make = fn n -> [n]
+        [probe(true, make(1)), probe(false, make(2))]";
+    let tail = Script::new(source)
+        .capture("unshared", unshared())
+        .run_under(CONSUME);
+    assert_eq!(tail, Value::array([true, true]));
 }
 
 #[test]
