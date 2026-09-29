@@ -33,6 +33,10 @@ use globals::GlobalSet;
 #[cfg(test)]
 mod arg_pool_tests;
 
+// White-box tests for the marks a failed or recycled Vm is left with.
+#[cfg(test)]
+mod rearm_tests;
+
 // ============================================================
 // VM Types
 // ============================================================
@@ -83,6 +87,10 @@ pub struct Vm {
     // How many imports deep this Vm is: 0 for a top-level script, 1 for a module it imported.
     // Checked against `config.max_import_depth` before importing.
     import_depth: usize,
+
+    // Stack heights saved by `MarkStack`, for every frame: each frame's own marks
+    // sit above its `mark_base`.
+    marks: Vec<usize>,
 }
 
 /// Runtime configuration for a [`Vm`]: its resource limits, and where its printed
@@ -188,6 +196,7 @@ impl VmFactory {
             abort: None,
             module_id: None,
             import_depth: self.import_depth,
+            marks: Vec::new(),
         })
     }
 }
@@ -209,7 +218,9 @@ struct VmFrame {
     return_address: Option<NonZeroUsize>,
     // The function represented by this StackFrame.
     this_fn: Arc<CompiledFunction>,
-    marks: Vec<usize>,
+    // How many marks the Vm held when this frame was entered; the frame's own marks
+    // are those above it, and unwinding the frame truncates back to it.
+    mark_base: usize,
 }
 
 /// Control-flow outcome of a tail call.
@@ -272,11 +283,12 @@ impl Vm {
     }
 
     /// Scrub a spent Vm back to a runnable state for `closure`, keeping its allocations.
-    /// Clears the operand stack and frames (a failed run leaves both dirty), the fuel
-    /// meter, and the abort latch.
+    /// Clears the operand stack, frames, and marks (a failed run leaves them dirty), the
+    /// fuel meter, and the abort latch.
     fn rearm(mut self, closure: Arc<Closure>) -> Vm {
         self.stack.clear();
         self.stack_frames.clear();
+        self.marks.clear();
         self.top_level = closure;
         self.fuel_used = 0;
         self.abort = None;
@@ -685,13 +697,13 @@ impl Vm {
                     }
                     Bytecode::MarkStack => {
                         let len = self.stack.len();
-                        self.this_frame_mut().marks.push(len);
+                        self.marks.push(len);
                     }
                     Bytecode::DropMark => {
-                        self.this_frame_mut().marks.pop().expect("MARKS UNDERFLOW");
+                        self.marks.pop().expect("MARKS UNDERFLOW");
                     }
                     Bytecode::RewindToMark => {
-                        let mark = self.this_frame_mut().marks.pop().expect("MARKS UNDERFLOW");
+                        let mark = self.marks.pop().expect("MARKS UNDERFLOW");
                         debug_assert!(mark <= self.stack.len());
                         self.stack.truncate(mark);
                     }
@@ -736,7 +748,7 @@ impl Vm {
                 "a returning function must leave exactly its result at its frame base"
             );
             debug_assert!(
-                frame.marks.is_empty(),
+                frame.mark_base == self.marks.len(),
                 "a returning function must have balanced every stack mark it saved"
             );
 
@@ -924,12 +936,23 @@ impl Vm {
     }
 
     /// Append the names of the `VmFrame`s in `stack_frames[floor..]` to `err`'s backtrace,
-    /// innermost (top of the frame stack) first, then discard those frames.
+    /// innermost (top of the frame stack) first, then discard those frames and the marks
+    /// they still held.
     ///
     /// This is the only place a Frost frame's name reaches the backtrace: `?` propagation has no hook,
     /// so the trace is built here as the abandoned frames are dropped.
     /// `NativeFrame` markers carry no name; a native's own name is recorded by [`Vm::run_native`] instead.
     fn unwind_frames(&mut self, floor: usize, mut err: FrostError) -> FrostError {
+        // The outermost abandoned frame entered with every surviving mark in place.
+        let surviving_marks = self.stack_frames[floor..]
+            .iter()
+            .find_map(|frame| match frame {
+                StackFrame::VmFrame(vm_frame) => Some(vm_frame.mark_base),
+                StackFrame::NativeFrame => None,
+            });
+        if let Some(surviving_marks) = surviving_marks {
+            self.marks.truncate(surviving_marks);
+        }
         let names: Vec<String> = self
             .stack_frames
             .drain(floor..)
@@ -1069,7 +1092,7 @@ impl Vm {
             local_slots,
             return_address,
             this_fn: closure.function.clone(),
-            marks: Vec::new(),
+            mark_base: self.marks.len(),
         }));
 
         // The incoming argument count: everything on the operand stack above the

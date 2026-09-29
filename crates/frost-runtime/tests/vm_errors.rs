@@ -814,6 +814,191 @@ fn native_arg_pool_reused_after_catch() {
     assert_eq!(result.tail(), &Value::Int(5));
 }
 
+/// A program that saves a mark, pushes a value above it, catches `raiser`'s
+/// error with `try_call`, then rewinds to its own mark. `raiser` (child 0) must
+/// raise while it holds marks of its own. Tail: the value below the mark, 10.
+fn rewind_after_catching(raiser: Arc<CompiledFunction>) -> Result<ProgramResult, FrostError> {
+    let program = named(
+        "main",
+        vec![
+            Bytecode::PushInt(10),
+            Bytecode::MarkStack,
+            Bytecode::PushInt(20),
+            Bytecode::LoadGlobal(try_call_slot()),
+            closure(0),
+            Bytecode::Call(1),
+            Bytecode::Pop,
+            Bytecode::RewindToMark,
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![raiser],
+    );
+    run(program)
+}
+
+#[test]
+fn catch_discards_the_marks_the_abandoned_frame_held() {
+    // Were the raiser's mark left behind, main's rewind would take it for its own.
+    let raiser = named(
+        "raiser",
+        vec![
+            Bytecode::MarkStack,
+            Bytecode::PushInt(1),
+            Bytecode::MarkStack,
+            Bytecode::PushInt(2),
+            Bytecode::ProduceError,
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    );
+    let result = rewind_after_catching(raiser).unwrap();
+    assert_eq!(result.tail(), &Value::Int(10));
+}
+
+#[test]
+fn catch_discards_the_marks_of_every_abandoned_frame() {
+    let inner = named(
+        "inner",
+        vec![
+            Bytecode::MarkStack,
+            Bytecode::PushInt(2),
+            Bytecode::ProduceError,
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    );
+    let outer = named(
+        "outer",
+        vec![Bytecode::MarkStack, closure(0), Bytecode::Call(0)],
+        Arity::Exact(0),
+        vec![],
+        vec![inner],
+    );
+    let result = rewind_after_catching(outer).unwrap();
+    assert_eq!(result.tail(), &Value::Int(10));
+}
+
+#[test]
+fn catch_through_a_native_frame_discards_the_marks_above_it() {
+    // `apply` propagates the raiser's error; `try_call` beneath it catches.
+    let raiser = named(
+        "raiser",
+        vec![
+            Bytecode::MarkStack,
+            Bytecode::PushInt(2),
+            Bytecode::ProduceError,
+        ],
+        Arity::Exact(0),
+        vec![],
+        vec![],
+    );
+    let via_apply = named(
+        "via_apply",
+        vec![
+            Bytecode::MarkStack,
+            Bytecode::LoadLocal(0),
+            closure(0),
+            Bytecode::Call(1),
+        ],
+        Arity::Exact(0),
+        vec![entry("apply", false)],
+        vec![raiser],
+    );
+    let via_apply = Arc::new(CompiledFunction {
+        num_captures: 1,
+        ..(*via_apply).clone()
+    });
+    // `via_apply` captures `apply` from main, which holds it in slot 0.
+    let program = named(
+        "main",
+        vec![
+            Bytecode::PushInt(10),
+            Bytecode::MarkStack,
+            Bytecode::PushInt(20),
+            Bytecode::LoadGlobal(try_call_slot()),
+            Bytecode::LoadLocal(0),
+            closure(0),
+            Bytecode::Call(1),
+            Bytecode::Pop,
+            Bytecode::RewindToMark,
+        ],
+        Arity::Exact(0),
+        vec![entry("apply", false)],
+        vec![via_apply],
+    );
+    let result = run_with(program, vec![("apply", apply_native())]).unwrap();
+    assert_eq!(result.tail(), &Value::Int(10));
+}
+
+#[test]
+fn catch_of_a_native_error_keeps_the_catchers_marks() {
+    // `boom` raises from native code, caught with no Frost frame in between:
+    // nothing is abandoned, so every mark survives.
+    let program = named(
+        "main",
+        vec![
+            Bytecode::PushInt(10),
+            Bytecode::MarkStack,
+            Bytecode::PushInt(20),
+            Bytecode::LoadGlobal(try_call_slot()),
+            Bytecode::LoadLocal(0),
+            Bytecode::Call(1),
+            Bytecode::Pop,
+            Bytecode::RewindToMark,
+        ],
+        Arity::Exact(0),
+        vec![entry("boom", false)],
+        vec![],
+    );
+    let result = run_with(program, vec![("boom", boom_native())]).unwrap();
+    assert_eq!(result.tail(), &Value::Int(10));
+}
+
+#[test]
+fn catch_of_a_native_error_discards_only_the_abandoned_frames_marks() {
+    // `boom` raises from native code inside a frame holding marks of its own.
+    let raiser = Arc::new(CompiledFunction {
+        num_captures: 1,
+        ..(*named(
+            "raiser",
+            vec![
+                Bytecode::MarkStack,
+                Bytecode::PushInt(1),
+                Bytecode::MarkStack,
+                Bytecode::LoadLocal(0),
+                Bytecode::Call(0),
+            ],
+            Arity::Exact(0),
+            vec![entry("boom", false)],
+            vec![],
+        ))
+        .clone()
+    });
+    // `raiser` captures `boom` from main, which holds it in slot 0.
+    let program = named(
+        "main",
+        vec![
+            Bytecode::PushInt(10),
+            Bytecode::MarkStack,
+            Bytecode::PushInt(20),
+            Bytecode::LoadGlobal(try_call_slot()),
+            Bytecode::LoadLocal(0),
+            closure(0),
+            Bytecode::Call(1),
+            Bytecode::Pop,
+            Bytecode::RewindToMark,
+        ],
+        Arity::Exact(0),
+        vec![entry("boom", false)],
+        vec![raiser],
+    );
+    let result = run_with(program, vec![("boom", boom_native())]).unwrap();
+    assert_eq!(result.tail(), &Value::Int(10));
+}
+
 // ============================================================
 // Nested and adjacent try_call
 // ============================================================

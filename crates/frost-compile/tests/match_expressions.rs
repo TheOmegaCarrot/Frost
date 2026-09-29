@@ -949,6 +949,34 @@ fn an_error_inside_a_match_can_be_caught() {
     ]);
 }
 
+#[test]
+fn a_caught_error_leaves_no_arm_of_its_frames_behind() {
+    // Both matches hold an arm open when the error is caught: the catcher's arm
+    // must go on to fail cleanly and fall through to its next arm.
+    assert_values(&[
+        // The raising match's own arm is open.
+        (
+            r#"match [1] { [x] if: try_call(fn -> match 1 { y if: error("boom") => 0 }).ok => 0, [x] => x }"#,
+            "1",
+        ),
+        // An alternative's branch is open inside the raising arm.
+        (
+            r#"match [1] { [x] if: try_call(fn -> match [1, 2] { [a, (error("boom"))] | [a, 0] => 0 }).ok => 0, [x] => x }"#,
+            "1",
+        ),
+        // Arms are open in two abandoned frames.
+        (
+            r#"match [1] { [x] if: try_call(fn -> match 2 { y if: (fn -> match 3 { z if: error("boom") => 0 })() => 0 }).ok => 0, [x] => x }"#,
+            "1",
+        ),
+        // Repeated, as any leftover would pile up.
+        (
+            r#"defn f(n) -> if n == 0: "done" else: match [n] { [k] if: try_call(fn -> match k { j if: error("boom") => 0 }).ok => 0, [k] => f(k - 1) }; f(50)"#,
+            r#""done""#,
+        ),
+    ]);
+}
+
 // --- Recursion and tail calls ---
 
 #[test]
