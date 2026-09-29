@@ -21,12 +21,12 @@
 mod tests;
 
 use std::cell::RefCell;
-use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use frost_runtime::{
-    Arity, Bytecode, CompiledFunction, IdleVm, MapKey, Value, Vm, VmFactory, VmRuntimeConfiguration,
+    Arity, Bytecode, CompiledFunction, IdleVm, MapKey, Value, ValueMap, Vm, VmFactory,
+    VmRuntimeConfiguration,
 };
 
 use crate::lower::assemble::assemble_code;
@@ -115,7 +115,7 @@ pub(super) fn constant_of(code: &[Ir]) -> Option<Value> {
         Ir::Ready(Bytecode::PushFloat(float)) => Some(Value::Float(*float)),
         // An empty literal builds its structure from nothing.
         Ir::Ready(Bytecode::MakeArray(0)) => Some(Value::from(Vec::<Value>::new())),
-        Ir::Ready(Bytecode::MakeMap(0)) => Some(Value::from(BTreeMap::new())),
+        Ir::Ready(Bytecode::MakeMap(0)) => Some(Value::from(ValueMap::new())),
         Ir::Const(value) => Some(value.clone()),
         _ => None,
     }

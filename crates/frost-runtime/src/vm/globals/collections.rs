@@ -1,8 +1,6 @@
 //! Slicing, grouping, sorting, searching, and transforming arrays and maps.
 
-use std::collections::BTreeMap;
-
-use crate::{Arity, Bytecode, FrostError, FrostType, Param, Params, Value};
+use crate::{Arity, Bytecode, FrostError, FrostType, Param, Params, Value, ValueMap};
 
 pub(super) fn keys_global() -> Value {
     super::stub("keys")
@@ -145,7 +143,7 @@ pub(super) fn transform_global() -> Value {
             }
             Value::Map(map) => {
                 let map = map.into_map();
-                let mut result = BTreeMap::new();
+                let mut result = ValueMap::new();
                 for (k, v) in map {
                     match ctx.invoke(&function, [k.into(), v])? {
                         Value::Map(m) => result.extend(m.into_map()),
@@ -321,7 +319,7 @@ pub(super) fn each_global() -> Value {
                 }
             }
             Value::Map(map) => {
-                for (k, v) in map.iter() {
+                for (k, v) in map {
                     ctx.invoke(&function, [k.clone().into(), v.clone()])?;
                 }
             }

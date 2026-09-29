@@ -1,6 +1,6 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::sync::Arc;
 
-use crate::core::{FrostArray, FrostError, FrostFloat, FrostMap, MapKey, Value};
+use crate::core::{FrostArray, FrostError, FrostFloat, FrostMap, MapKey, Value, ValueMap};
 
 impl From<bool> for Value {
     fn from(b: bool) -> Value {
@@ -107,8 +107,8 @@ impl From<FrostMap> for Value {
     }
 }
 
-impl From<BTreeMap<MapKey, Value>> for Value {
-    fn from(value: BTreeMap<MapKey, Value>) -> Self {
+impl From<ValueMap> for Value {
+    fn from(value: ValueMap) -> Self {
         Value::Map(value.into())
     }
 }
@@ -143,7 +143,7 @@ impl Value {
     }
 
     /// Builds a Map from key-value pairs, as in `Value::map([("a", Value::from(1))])`.
-    /// A later duplicate key replaces an earlier one.
+    /// Each entry is [inserted](ValueMap::insert) in turn.
     pub fn map<K: Into<MapKey>, const N: usize>(entries: [(K, Value); N]) -> Value {
         Value::Map(entries.into_iter().map(|(k, v)| (k.into(), v)).collect())
     }

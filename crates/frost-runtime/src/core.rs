@@ -1,8 +1,8 @@
 //! Core value types and operations for the Frost language runtime.
 //!
 //! This module defines [`Value`], the fundamental runtime type of Frost,
-//! along with supporting types ([`FrostArray`], [`FrostMap`], [`FrostFloat`],
-//! [`MapKey`]), error handling ([`FrostError`]), and serialization
+//! along with supporting types ([`FrostArray`], [`FrostMap`], [`ValueMap`],
+//! [`FrostFloat`], [`MapKey`]), error handling ([`FrostError`]), and serialization
 //! ([`to_value`], [`from_value`]).
 
 mod error;
@@ -19,6 +19,7 @@ pub use types::frost_type::FrostType;
 pub use types::map::FrostMap;
 pub use types::map_key::MapKey;
 pub use types::opaque::FrostOpaque;
+pub use types::value_map::{self, ValueMap};
 pub use util::identifier::{
     KEYWORDS, is_identifier_like, is_identifier_like_and_not_keyword, is_reserved_keyword,
 };

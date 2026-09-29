@@ -1,7 +1,6 @@
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use frost_runtime::{FrostFloat, FrostMap, MapKey, Value};
+use frost_runtime::{FrostFloat, FrostMap, MapKey, Value, ValueMap};
 
 fn str_key(s: &str) -> MapKey {
     MapKey::String(Arc::from(s))
@@ -33,20 +32,19 @@ fn default_is_empty() {
 }
 
 #[test]
-fn from_btreemap() {
-    let mut bt = BTreeMap::new();
-    bt.insert(MapKey::Int(1), Value::from("one"));
-    bt.insert(MapKey::Int(2), Value::from("two"));
-    let map = FrostMap::from(bt);
-    assert_eq!(map.len(), 2);
+fn from_value_map() {
+    let mut entries = ValueMap::new();
+    entries.insert(MapKey::Int(1), Value::from("one"));
+    entries.insert(MapKey::Int(2), Value::from("two"));
+    let map = FrostMap::from(entries.clone());
+    assert_eq!(*map, entries);
 }
 
 #[test]
-fn from_arc_btreemap() {
-    let mut bt = BTreeMap::new();
-    bt.insert(MapKey::Int(1), Value::from("one"));
-    let arc = Arc::new(bt);
-    let map = FrostMap::from(arc);
+fn from_arc_value_map() {
+    let mut entries = ValueMap::new();
+    entries.insert(MapKey::Int(1), Value::from("one"));
+    let map = FrostMap::from(Arc::new(entries));
     assert_eq!(map.len(), 1);
     assert!(map.get(&MapKey::Int(1)).is_some());
 }
@@ -66,6 +64,7 @@ fn collect_duplicate_keys_last_wins() {
     .into_iter()
     .collect();
     assert_eq!(map.len(), 1);
+    assert_eq!(map.get_int(1), Some(&Value::from("second")));
 }
 
 // -- Access --
@@ -230,27 +229,29 @@ fn for_loop_borrows() {
     assert_eq!(map.len(), 3);
 }
 
-// -- Key ordering --
+// -- Order --
+//
+// The iteration order is unspecified, but the same every time for a given Map.
 
 #[test]
-fn iteration_order_is_deterministic() {
-    let map: FrostMap = vec![
-        (str_key("b"), Value::from(2i64)),
-        (str_key("a"), Value::from(1i64)),
-        (str_key("c"), Value::from(3i64)),
-    ]
-    .into_iter()
-    .collect();
-
-    let keys: Vec<_> = map.keys().collect();
-    assert_eq!(keys[0], &str_key("a"));
-    assert_eq!(keys[1], &str_key("b"));
-    assert_eq!(keys[2], &str_key("c"));
+fn a_map_iterates_in_the_same_order_every_time() {
+    for size in [3, 30] {
+        let map: FrostMap = (0..size)
+            .rev()
+            .map(|i| (str_key(&format!("k{i}")), Value::from(i)))
+            .collect();
+        let first: Vec<_> = map.keys().collect();
+        let again: Vec<_> = map.keys().collect();
+        let shared = map.clone();
+        let through_clone: Vec<_> = shared.keys().collect();
+        assert_eq!(first, again, "size {size}");
+        assert_eq!(first, through_clone, "size {size}");
+    }
 }
 
 #[test]
-fn cross_type_keys_have_consistent_order() {
-    let map: FrostMap = vec![
+fn equality_does_not_depend_on_order() {
+    let entries = [
         (str_key("z"), Value::from("str")),
         (MapKey::Bool(false), Value::from("bool")),
         (MapKey::Int(99), Value::from("int")),
@@ -258,15 +259,10 @@ fn cross_type_keys_have_consistent_order() {
             MapKey::Float(FrostFloat::new(1.5).unwrap()),
             Value::from("float"),
         ),
-    ]
-    .into_iter()
-    .collect();
-
-    let keys: Vec<_> = map.keys().collect();
-    assert!(matches!(keys[0], MapKey::Bool(_)));
-    assert!(matches!(keys[1], MapKey::Int(_)));
-    assert!(matches!(keys[2], MapKey::Float(_)));
-    assert!(matches!(keys[3], MapKey::String(_)));
+    ];
+    let forward: FrostMap = entries.iter().cloned().collect();
+    let backward: FrostMap = entries.iter().rev().cloned().collect();
+    assert_eq!(forward, backward);
 }
 
 // -- Clone semantics --
@@ -285,9 +281,9 @@ fn clone_shares_data() {
 #[test]
 fn try_into_map_unique_succeeds() {
     let map = sample_map();
-    let btree = map.try_into_map().expect("unique map should extract");
-    assert_eq!(btree.len(), 3);
-    assert!(btree.contains_key(&str_key("name")));
+    let entries = map.try_into_map().expect("unique map should extract");
+    assert_eq!(entries.len(), 3);
+    assert!(entries.contains_key(&str_key("name")));
 }
 
 #[test]
@@ -305,42 +301,42 @@ fn try_into_map_shared_then_dropped_succeeds() {
     let map = sample_map();
     let alias = map.clone();
     drop(alias);
-    let btree = map
+    let entries = map
         .try_into_map()
         .expect("should succeed after alias dropped");
-    assert_eq!(btree.len(), 3);
+    assert_eq!(entries.len(), 3);
 }
 
 #[test]
 fn into_map_unique_steals() {
     let map = sample_map();
-    let btree = map.into_map();
-    assert_eq!(btree.len(), 3);
+    let entries = map.into_map();
+    assert_eq!(entries.len(), 3);
 }
 
 #[test]
 fn into_map_shared_clones() {
     let map = sample_map();
     let _alias = map.clone();
-    let btree = map.into_map();
-    assert_eq!(btree.len(), 3);
-    assert!(btree.contains_key(&str_key("name")));
+    let entries = map.into_map();
+    assert_eq!(entries.len(), 3);
+    assert!(entries.contains_key(&str_key("name")));
 }
 
 #[test]
 fn into_map_is_mutable() {
     let map = sample_map();
-    let mut btree = map.into_map();
-    btree.insert(str_key("new_key"), Value::from(99i64));
-    assert_eq!(btree.len(), 4);
+    let mut entries = map.into_map();
+    entries.insert(str_key("new_key"), Value::from(99i64));
+    assert_eq!(entries.len(), 4);
 }
 
 #[test]
 fn try_into_map_then_rebuild() {
     let map = sample_map();
-    let mut btree = map.try_into_map().unwrap();
-    btree.insert(str_key("extra"), Value::from("added"));
-    let map2 = FrostMap::from(btree);
+    let mut entries = map.try_into_map().unwrap();
+    entries.insert(str_key("extra"), Value::from("added"));
+    let map2 = FrostMap::from(entries);
     assert_eq!(map2.len(), 4);
     assert!(map2.get_str("extra").is_some());
 }

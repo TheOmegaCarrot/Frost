@@ -9,8 +9,8 @@ pub use enumset::{EnumSet, enum_set};
 
 pub use core::{
     FrostArray, FrostError, FrostFloat, FrostMap, FrostOpaque, FrostResult, FrostType, KEYWORDS,
-    MapKey, Value, from_value, is_identifier_like, is_identifier_like_and_not_keyword,
-    is_reserved_keyword, to_value,
+    MapKey, Value, ValueMap, from_value, is_identifier_like, is_identifier_like_and_not_keyword,
+    is_reserved_keyword, to_value, value_map,
 };
 
 pub use vm::{

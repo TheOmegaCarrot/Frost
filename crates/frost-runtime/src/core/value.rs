@@ -33,7 +33,7 @@ pub enum Value {
     Bytes(Arc<[u8]>),
     /// An ordered, immutable sequence of values.
     Array(FrostArray),
-    /// An ordered, immutable key-value mapping.
+    /// An immutable key-value mapping.
     Map(FrostMap),
     /// A native-backed function.
     NativeFunction(Arc<NativeFunction>),

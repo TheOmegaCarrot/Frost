@@ -341,6 +341,75 @@ fn map_compact_reserved_keyword_key() {
     assert_eq!(Value::from(map).to_frost_string(), "{ [\"if\"]: 1 }");
 }
 
+// -- Maps: key order --
+
+/// String keys `k00`, `k01`, ... to their index, inserted in the order `indices`
+/// gives. The padding makes String order match index order.
+fn map_inserted_in(indices: impl Iterator<Item = i64>) -> Value {
+    indices
+        .map(|i| (str_key(&format!("k{i:02}")), Value::from(i)))
+        .collect::<FrostMap>()
+        .into()
+}
+
+/// Sizes on both sides of any change in how a Map stores its entries.
+const PRINT_SIZES: [i64; 8] = [2, 7, 8, 9, 15, 16, 17, 30];
+
+#[test]
+fn map_prints_in_key_order_however_it_was_built() {
+    for size in PRINT_SIZES {
+        let entries: Vec<String> = (0..size).map(|i| format!(r#"["k{i:02}"]: {i}"#)).collect();
+        let expected = format!("{{ {} }}", entries.join(", "));
+        let ascending = map_inserted_in(0..size);
+        let descending = map_inserted_in((0..size).rev());
+        assert_eq!(
+            ascending.to_frost_string(),
+            expected,
+            "size {size}, ascending"
+        );
+        assert_eq!(
+            descending.to_frost_string(),
+            expected,
+            "size {size}, descending"
+        );
+    }
+}
+
+#[test]
+fn equal_maps_pretty_print_alike() {
+    for size in PRINT_SIZES {
+        let ascending = map_inserted_in(0..size);
+        let descending = map_inserted_in((0..size).rev());
+        assert_eq!(ascending, descending, "size {size}");
+        assert_eq!(
+            ascending.to_pretty_string(),
+            descending.to_pretty_string(),
+            "size {size}"
+        );
+    }
+}
+
+#[test]
+fn equal_maps_with_keys_of_mixed_types_print_alike() {
+    let keys = [
+        MapKey::from("a"),
+        MapKey::Int(1),
+        MapKey::Bool(true),
+        MapKey::Float(FrostFloat::new(0.5).unwrap()),
+        MapKey::from(vec![b'a']),
+    ];
+    let forward: FrostMap = keys.iter().map(|key| (key.clone(), Value::Null)).collect();
+    let backward: FrostMap = keys
+        .iter()
+        .rev()
+        .map(|key| (key.clone(), Value::Null))
+        .collect();
+    assert_eq!(
+        Value::from(forward).to_frost_string(),
+        Value::from(backward).to_frost_string()
+    );
+}
+
 // -- Arrays: pretty --
 
 #[test]
@@ -372,9 +441,10 @@ fn nested_array_pretty() {
 
 #[test]
 fn map_pretty_identifier_keys() {
+    // Inserted out of key order, printed in key order.
     let map: FrostMap = vec![
-        (str_key("a"), Value::from(1i64)),
         (str_key("b"), Value::from(2i64)),
+        (str_key("a"), Value::from(1i64)),
     ]
     .into_iter()
     .collect();

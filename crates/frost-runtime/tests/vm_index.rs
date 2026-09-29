@@ -387,16 +387,20 @@ fn hard_index_miss_suggests_a_key_only_if_close_enough() {
 
 #[test]
 fn hard_index_miss_suggests_the_closest_key() {
-    // The closest wins over one earlier in key order; a tie goes to the earlier.
-    for (keys, missing, suggested) in [
-        (&["abcaaf", "abcdez"][..], "abcdef", "abcdez"),
-        (&["bag", "bar"], "bat", "bag"),
-        (&["bar", "bag"], "bat", "bag"),
-    ] {
-        let message = hard_index_miss(keys, skey(missing));
+    // The closest wins, whatever the order.
+    for keys in [["abcaaf", "abcdez"], ["abcdez", "abcaaf"]] {
+        let message = hard_index_miss(&keys, skey("abcdef"));
         assert!(
-            message.ends_with(&format!("did you mean '{suggested}'?")),
-            "{missing} among {keys:?}: {message}"
+            message.ends_with("did you mean 'abcdez'?"),
+            "among {keys:?}: {message}"
+        );
+    }
+    // A tie suggests one of the closest.
+    for keys in [["bag", "bar"], ["bar", "bag"]] {
+        let message = hard_index_miss(&keys, skey("bat"));
+        assert!(
+            message.ends_with("did you mean 'bag'?") || message.ends_with("did you mean 'bar'?"),
+            "among {keys:?}: {message}"
         );
     }
 }

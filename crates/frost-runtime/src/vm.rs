@@ -25,7 +25,7 @@ use std::{debug_assert_matches, num::NonZeroUsize, sync::Arc};
 
 use itertools::Itertools;
 
-use crate::{FrostArray, FrostError, FrostMap, FrostResult, MapKey, Value};
+use crate::{FrostArray, FrostError, FrostMap, FrostResult, MapKey, Value, ValueMap};
 
 use globals::GlobalSet;
 
@@ -629,15 +629,16 @@ impl Vm {
                             .checked_sub(2 * num_pairs)
                             .expect("FROST STACK UNDERFLOW");
                         self.debug_assert_own_operand(split_point, "MakeMap");
-                        let flat_pairs = self.stack.split_off(split_point);
 
-                        let map: FrostMap = flat_pairs
-                            .into_iter()
+                        // Pairs move straight off the stack into the Map.
+                        let map = self
+                            .stack
+                            .drain(split_point..)
                             .tuples()
-                            .map(|(k, v)| Ok((MapKey::try_from(k)?, v)))
-                            .collect::<Result<_, FrostError>>()?;
+                            .map(|(key, value)| Ok((MapKey::try_from(key)?, value)))
+                            .collect::<Result<ValueMap, FrostError>>()?;
 
-                        self.stack.push(map.into());
+                        self.stack.push(Value::from(map));
                     }
                     Bytecode::SplitArray(n) => {
                         let arr = self.stack_pop().try_into_array().map_err(|v| {

@@ -10,7 +10,7 @@
 //! Operands without a `Push*` opcode (String/Array/Map) come from the constant
 //! table via `LoadConst`.
 
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
 use frost_runtime::{
     Arity, Bytecode, CompiledFunction, FormatVersion, FrostArray, FrostError, MapKey, Value, Vm,
@@ -228,6 +228,53 @@ fn make_map_structured_key_is_error() {
         vec![LoadConst(0), PushInt(1), MakeMap(1)],
     )
     .unwrap_err();
+    assert!(err.message().contains("Map key"), "got: {}", err.message());
+}
+
+/// `MakeMap` over `keys` in order, each paired with its position.
+fn make_map_of(keys: &[i64]) -> Value {
+    let pushes = keys
+        .iter()
+        .enumerate()
+        .flat_map(|(at, &key)| [PushInt(key), PushInt(at as i64)]);
+    val(pushes.chain([MakeMap(keys.len())]).collect())
+}
+
+#[test]
+fn make_map_of_many_pairs() {
+    // Small and large literals, whatever size a Map changes form at.
+    for size in [3, 8, 9, 16, 17, 20, 100] {
+        let keys: Vec<i64> = (0..size).collect();
+        let expected = map(keys
+            .iter()
+            .map(|&key| (MapKey::Int(key), Value::Int(key)))
+            .collect());
+        assert_eq!(make_map_of(&keys), expected, "size {size}");
+    }
+}
+
+#[test]
+fn make_map_duplicate_keys_keep_their_last_value_at_any_size() {
+    // A repeated key at the start, middle, and end of literals of every size.
+    for size in [3, 8, 9, 16, 17, 20, 100] {
+        let mut keys: Vec<i64> = (0..size).collect();
+        keys.extend([0, size / 2, size - 1]);
+        // std's BTreeMap, which also keeps a repeated key's last value, as the oracle.
+        let last_values: BTreeMap<_, _> = keys
+            .iter()
+            .enumerate()
+            .map(|(at, &key)| (MapKey::Int(key), Value::Int(at as i64)))
+            .collect();
+        let expected = map(last_values.into_iter().collect());
+        assert_eq!(make_map_of(&keys), expected, "size {size}");
+    }
+}
+
+#[test]
+fn make_map_invalid_key_in_a_later_pair_is_error() {
+    let mut code: Vec<_> = (0..20).flat_map(|key| [PushInt(key), PushNull]).collect();
+    code.extend([PushNull, PushNull, MakeMap(21)]);
+    let err = eval(vec![], code).unwrap_err();
     assert!(err.message().contains("Map key"), "got: {}", err.message());
 }
 

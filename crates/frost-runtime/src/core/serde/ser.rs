@@ -1,10 +1,9 @@
 use std::cell::Cell;
 use std::fmt;
-use std::sync::Arc;
 
 use serde::ser::{self, Serialize};
 
-use crate::core::{FrostArray, FrostFloat, FrostMap, MapKey, Value};
+use crate::core::{FrostArray, FrostFloat, MapKey, Value, ValueMap};
 
 thread_local! {
     /// Set while our own serializer is lifting a `Value` out of a [`ValueCarrier`], so the
@@ -171,10 +170,7 @@ impl ser::Serializer for ValueSerializer {
         value: &T,
     ) -> Result<Value, SerError> {
         let inner = value.serialize(ValueSerializer)?;
-        let map: FrostMap = vec![(MapKey::String(Arc::from(variant)), inner)]
-            .into_iter()
-            .collect();
-        Ok(Value::from(map))
+        Ok(Value::map([(variant, inner)]))
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<SerializeArray, SerError> {
@@ -208,9 +204,9 @@ impl ser::Serializer for ValueSerializer {
         })
     }
 
-    fn serialize_map(self, len: Option<usize>) -> Result<SerializeMap, SerError> {
+    fn serialize_map(self, _len: Option<usize>) -> Result<SerializeMap, SerError> {
         Ok(SerializeMap {
-            entries: Vec::with_capacity(len.unwrap_or(0)),
+            entries: ValueMap::new(),
             pending_key: None,
         })
     }
@@ -218,10 +214,10 @@ impl ser::Serializer for ValueSerializer {
     fn serialize_struct(
         self,
         _name: &'static str,
-        len: usize,
+        _len: usize,
     ) -> Result<SerializeStruct, SerError> {
         Ok(SerializeStruct {
-            entries: Vec::with_capacity(len),
+            entries: ValueMap::new(),
         })
     }
 
@@ -230,11 +226,11 @@ impl ser::Serializer for ValueSerializer {
         _name: &'static str,
         _variant_index: u32,
         variant: &'static str,
-        len: usize,
+        _len: usize,
     ) -> Result<SerializeStructVariant, SerError> {
         Ok(SerializeStructVariant {
             variant,
-            entries: Vec::with_capacity(len),
+            entries: ValueMap::new(),
         })
     }
 }
@@ -301,15 +297,12 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
 
     fn end(self) -> Result<Value, SerError> {
         let arr = Value::from(FrostArray::from(self.elements));
-        let map: FrostMap = vec![(MapKey::String(Arc::from(self.variant)), arr)]
-            .into_iter()
-            .collect();
-        Ok(Value::from(map))
+        Ok(Value::map([(self.variant, arr)]))
     }
 }
 
 pub(super) struct SerializeMap {
-    entries: Vec<(MapKey, Value)>,
+    entries: ValueMap,
     pending_key: Option<MapKey>,
 }
 
@@ -329,21 +322,17 @@ impl ser::SerializeMap for SerializeMap {
             .pending_key
             .take()
             .expect("serialize_value called before serialize_key");
-        self.entries.push((key, value.serialize(ValueSerializer)?));
+        self.entries.insert(key, value.serialize(ValueSerializer)?);
         Ok(())
     }
 
     fn end(self) -> Result<Value, SerError> {
-        Ok(Value::from(FrostMap::from(
-            self.entries
-                .into_iter()
-                .collect::<std::collections::BTreeMap<_, _>>(),
-        )))
+        Ok(Value::from(self.entries))
     }
 }
 
 pub(super) struct SerializeStruct {
-    entries: Vec<(MapKey, Value)>,
+    entries: ValueMap,
 }
 
 impl ser::SerializeStruct for SerializeStruct {
@@ -355,25 +344,19 @@ impl ser::SerializeStruct for SerializeStruct {
         key: &'static str,
         value: &T,
     ) -> Result<(), SerError> {
-        self.entries.push((
-            MapKey::String(Arc::from(key)),
-            value.serialize(ValueSerializer)?,
-        ));
+        self.entries
+            .insert(MapKey::from(key), value.serialize(ValueSerializer)?);
         Ok(())
     }
 
     fn end(self) -> Result<Value, SerError> {
-        Ok(Value::from(FrostMap::from(
-            self.entries
-                .into_iter()
-                .collect::<std::collections::BTreeMap<_, _>>(),
-        )))
+        Ok(Value::from(self.entries))
     }
 }
 
 pub(super) struct SerializeStructVariant {
     variant: &'static str,
-    entries: Vec<(MapKey, Value)>,
+    entries: ValueMap,
 }
 
 impl ser::SerializeStructVariant for SerializeStructVariant {
@@ -385,23 +368,13 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
         key: &'static str,
         value: &T,
     ) -> Result<(), SerError> {
-        self.entries.push((
-            MapKey::String(Arc::from(key)),
-            value.serialize(ValueSerializer)?,
-        ));
+        self.entries
+            .insert(MapKey::from(key), value.serialize(ValueSerializer)?);
         Ok(())
     }
 
     fn end(self) -> Result<Value, SerError> {
-        let inner: FrostMap = self
-            .entries
-            .into_iter()
-            .collect::<std::collections::BTreeMap<_, _>>()
-            .into();
-        let map: FrostMap = vec![(MapKey::String(Arc::from(self.variant)), Value::from(inner))]
-            .into_iter()
-            .collect();
-        Ok(Value::from(map))
+        Ok(Value::map([(self.variant, Value::from(self.entries))]))
     }
 }
 

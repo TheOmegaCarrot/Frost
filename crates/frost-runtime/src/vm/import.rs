@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
 
 use crate::{
-    FrostError, MapKey, Value, core::util::identifier::is_identifier_like_and_not_keyword,
+    FrostError, MapKey, Value, ValueMap, core::util::identifier::is_identifier_like_and_not_keyword,
 };
 
 use super::{Vm, VmFactory};
@@ -350,7 +350,7 @@ impl ImporterBuilder {
         // holds the only reference to it, so `into_map` steals rather than copies.
         let mut ext = match self.registry.remove("ext") {
             Some(Value::Map(ext)) => ext.into_map(),
-            None => BTreeMap::new(),
+            None => ValueMap::new(),
             Some(_) => unreachable!("the `ext` registry entry is always a Map"),
         };
         ext.insert(key, extension.0.content);
@@ -388,7 +388,7 @@ impl ImporterBuilder {
             .modules
             .into_iter()
             .map(|StdlibModule(module)| (MapKey::from(module.name), module.content))
-            .collect::<BTreeMap<MapKey, Value>>();
+            .collect::<ValueMap>();
         self.registry
             .insert("std".to_string(), Value::Map(modules.into()));
         self

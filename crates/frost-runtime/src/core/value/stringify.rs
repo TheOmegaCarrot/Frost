@@ -173,9 +173,10 @@ fn stringify_map(map: &FrostMap, buf: &mut String, ctx: &StringifyContext) {
 
     let nested = ctx.nested();
 
+    // Key order, so equal Maps print alike.
     if ctx.pretty {
         buf.push_str("{\n");
-        for (i, (key, value)) in map.iter().enumerate() {
+        for (i, (key, value)) in map.iter_by_key().enumerate() {
             if i > 0 {
                 buf.push_str(",\n");
             }
@@ -187,7 +188,7 @@ fn stringify_map(map: &FrostMap, buf: &mut String, ctx: &StringifyContext) {
         buf.push('}');
     } else {
         buf.push_str("{ ");
-        for (i, (key, value)) in map.iter().enumerate() {
+        for (i, (key, value)) in map.iter_by_key().enumerate() {
             if i > 0 {
                 buf.push_str(", ");
             }

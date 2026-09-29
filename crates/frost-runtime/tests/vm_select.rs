@@ -263,25 +263,27 @@ fn map_decides_by_truthiness_not_just_bool() {
 }
 
 #[test]
-fn map_invokes_predicate_with_each_pair_in_mapkey_order() {
-    let (f, log) = keep_all_recorder(Arity::Exact(2));
-    // Int keys inserted out of order must be visited numerically ascending.
-    let input = map_of(vec![
-        (MapKey::from(3i64), Value::from("c")),
-        (MapKey::from(1i64), Value::from("a")),
-        (MapKey::from(2i64), Value::from("b")),
-    ]);
-    let result = select(input.clone(), f).unwrap();
-    assert_eq!(
-        calls(&log),
-        vec![
-            vec![Value::Int(1), Value::from("a")],
-            vec![Value::Int(2), Value::from("b")],
-            vec![Value::Int(3), Value::from("c")],
-        ]
-    );
-    // Keeping everything returns the map unchanged.
-    assert_eq!(result, input);
+fn map_invokes_predicate_with_each_pair_once_in_the_maps_iteration_order() {
+    // Small and large Maps, their keys inserted out of any order.
+    for size in [3, 30] {
+        let (f, log) = keep_all_recorder(Arity::Exact(2));
+        let input = map_of(
+            (0..size)
+                .rev()
+                .map(|i| (MapKey::from(i), Value::from(format!("v{i}"))))
+                .collect(),
+        );
+        let expected: Vec<Vec<Value>> = input
+            .as_map()
+            .expect("a Map")
+            .iter()
+            .map(|(key, value)| vec![Value::from(key.clone()), value.clone()])
+            .collect();
+        let result = select(input.clone(), f).unwrap();
+        assert_eq!(calls(&log), expected, "size {size}");
+        // Keeping everything returns the map unchanged.
+        assert_eq!(result, input, "size {size}");
+    }
 }
 
 #[test]

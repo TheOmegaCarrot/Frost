@@ -82,6 +82,16 @@ fn map_of(pairs: Vec<(MapKey, Value)>) -> Value {
     Value::Map(pairs.into_iter().collect())
 }
 
+/// The keys of Map `m`, as Values, in the Map's iteration order.
+fn keys_in_order(m: &Value) -> Vec<Value> {
+    m.as_map()
+        .expect("a Map")
+        .keys()
+        .cloned()
+        .map(Value::from)
+        .collect()
+}
+
 /// Run a top-level "main" that pops its own value then runs `body`, with `caps`
 /// seated as captures (slot `i` is the i-th entry). Returns the tail value or the
 /// raised error.
@@ -186,36 +196,22 @@ fn map_calls_function_with_each_key_value_pair() {
 }
 
 #[test]
-fn map_visits_entries_in_mapkey_order_not_insertion_order() {
-    // Int keys inserted out of order must be visited numerically ascending.
-    let (f, log) = recorder(Arity::Exact(2));
-    let m = map_of(vec![
-        (MapKey::from(3i64), Value::Null),
-        (MapKey::from(1i64), Value::Null),
-        (MapKey::from(2i64), Value::Null),
-    ]);
-    each(m, f).unwrap();
-    assert_eq!(
-        firsts(&log),
-        vec![Value::Int(1), Value::Int(2), Value::Int(3)]
-    );
-}
-
-#[test]
-fn map_visits_mixed_key_types_in_total_order() {
-    // MapKey's total order is Bool < Int < Float < String, regardless of the order
-    // the keys were inserted.
-    let (f, log) = recorder(Arity::Exact(2));
-    let m = map_of(vec![
-        (MapKey::from("z"), Value::Null),
-        (MapKey::from(1i64), Value::Null),
-        (MapKey::from(true), Value::Null),
-    ]);
-    each(m, f).unwrap();
-    assert_eq!(
-        firsts(&log),
-        vec![Value::Bool(true), Value::Int(1), Value::from("z")]
-    );
+fn map_visits_each_entry_once_in_the_maps_iteration_order() {
+    // Small and large Maps, with keys of every type, inserted out of any order.
+    for size in [3, 30] {
+        let (f, log) = recorder(Arity::Exact(2));
+        let m = map_of(
+            (0..size)
+                .rev()
+                .flat_map(|i| [MapKey::from(i), MapKey::from(format!("k{i}"))])
+                .chain([MapKey::from(true)])
+                .map(|key| (key, Value::Null))
+                .collect(),
+        );
+        let expected = keys_in_order(&m);
+        each(m, f).unwrap();
+        assert_eq!(firsts(&log), expected, "size {size}");
+    }
 }
 
 #[test]

@@ -4,7 +4,7 @@ use std::fmt;
 use serde::de::{self, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
 
-use crate::core::{FrostArray, FrostFloat, FrostMap, MapKey, Value};
+use crate::core::{FrostArray, FrostFloat, MapKey, Value, ValueMap};
 
 thread_local! {
     /// Carries a whole `Value` from our own [`ValueDeserializer::deserialize_newtype_struct`]
@@ -454,15 +454,11 @@ impl<'de> Visitor<'de> for ValueVisitor {
     }
 
     fn visit_map<A: de::MapAccess<'de>>(self, mut map: A) -> Result<Value, A::Error> {
-        let mut entries = Vec::with_capacity(map.size_hint().unwrap_or(0));
+        let mut entries = ValueMap::new();
         while let Some((key, value)) = map.next_entry::<Value, Value>()? {
             let map_key = MapKey::try_from(key).map_err(de::Error::custom)?;
-            entries.push((map_key, value));
+            entries.insert(map_key, value);
         }
-        Ok(Value::from(FrostMap::from(
-            entries
-                .into_iter()
-                .collect::<std::collections::BTreeMap<_, _>>(),
-        )))
+        Ok(Value::from(entries))
     }
 }

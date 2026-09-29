@@ -206,23 +206,25 @@ fn map_applies_f_to_each_key_value_pair() {
 }
 
 #[test]
-fn map_invokes_f_with_each_pair_in_mapkey_order() {
-    let (f, log) = recorder();
-    // Int keys inserted out of order must be visited numerically ascending.
-    let input = map_of(vec![
-        (MapKey::from(3i64), Value::from("c")),
-        (MapKey::from(1i64), Value::from("a")),
-        (MapKey::from(2i64), Value::from("b")),
-    ]);
-    transform(input, f).unwrap();
-    assert_eq!(
-        calls(&log),
-        vec![
-            vec![Value::Int(1), Value::from("a")],
-            vec![Value::Int(2), Value::from("b")],
-            vec![Value::Int(3), Value::from("c")],
-        ]
-    );
+fn map_invokes_f_with_each_pair_once_in_the_maps_iteration_order() {
+    // Small and large Maps, their keys inserted out of any order.
+    for size in [3, 30] {
+        let (f, log) = recorder();
+        let input = map_of(
+            (0..size)
+                .rev()
+                .map(|i| (MapKey::from(i), Value::from(format!("v{i}"))))
+                .collect(),
+        );
+        let expected: Vec<Vec<Value>> = input
+            .as_map()
+            .expect("a Map")
+            .iter()
+            .map(|(key, value)| vec![Value::from(key.clone()), value.clone()])
+            .collect();
+        transform(input, f).unwrap();
+        assert_eq!(calls(&log), expected, "size {size}");
+    }
 }
 
 #[test]

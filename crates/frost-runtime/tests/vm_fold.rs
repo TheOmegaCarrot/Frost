@@ -212,10 +212,9 @@ fn map_folds_over_entries_with_accumulator_key_value() {
 }
 
 #[test]
-fn map_visits_entries_in_mapkey_order() {
-    // Collect each key into an array accumulator. Int keys inserted out of order
-    // must come out numerically ascending, proving both the key argument and the
-    // MapKey iteration order.
+fn map_visits_each_entry_once_in_the_maps_iteration_order() {
+    // Collect each key into an array accumulator: the keys come out as the Map
+    // iterates them, proving both the key argument and the visiting order.
     let collect_keys = native("collect_keys", Arity::Exact(3), |_, args| {
         let mut acc = args[0]
             .take()
@@ -225,16 +224,24 @@ fn map_visits_entries_in_mapkey_order() {
         acc.push(args[1].take());
         Ok(Value::from(acc))
     });
-    let input = map_of(vec![
-        (MapKey::from(3i64), Value::Null),
-        (MapKey::from(1i64), Value::Null),
-        (MapKey::from(2i64), Value::Null),
-    ]);
-    let result = fold(input, collect_keys, Some(arr(vec![])));
-    assert_eq!(
-        result.unwrap(),
-        arr(vec![Value::Int(1), Value::Int(2), Value::Int(3)])
-    );
+    // Small and large Maps, their keys inserted out of any order.
+    for size in [3, 30] {
+        let input = map_of(
+            (0..size)
+                .rev()
+                .map(|i| (MapKey::from(i), Value::Null))
+                .collect(),
+        );
+        let expected: Vec<Value> = input
+            .as_map()
+            .expect("a Map")
+            .keys()
+            .cloned()
+            .map(Value::from)
+            .collect();
+        let result = fold(input, collect_keys.clone(), Some(arr(vec![])));
+        assert_eq!(result.unwrap(), arr(expected), "size {size}");
+    }
 }
 
 #[test]

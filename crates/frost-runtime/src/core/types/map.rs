@@ -1,29 +1,34 @@
-use std::{
-    collections::{BTreeMap, btree_map},
-    sync::Arc,
-};
+use std::{ops::Deref, sync::Arc};
 
-use crate::core::{FrostFloat, MapKey, Value};
+use crate::core::{MapKey, Value, ValueMap, types::value_map};
 
 /// Frost's map type. Immutable once created.
 ///
-/// Entries iterate in key order, as given by [`MapKey`]'s `Ord`.
+/// It reads as a [`ValueMap`], its mutable form, through [`Deref`].
 #[derive(Clone, Debug)]
 pub struct FrostMap {
-    pub(crate) inner: Arc<BTreeMap<MapKey, Value>>,
+    pub(crate) inner: Arc<ValueMap>,
 }
 
-impl From<BTreeMap<MapKey, Value>> for FrostMap {
-    fn from(value: BTreeMap<MapKey, Value>) -> Self {
+impl From<ValueMap> for FrostMap {
+    fn from(value: ValueMap) -> Self {
         Self {
-            inner: Arc::from(value),
+            inner: Arc::new(value),
         }
     }
 }
 
-impl From<Arc<BTreeMap<MapKey, Value>>> for FrostMap {
-    fn from(value: Arc<BTreeMap<MapKey, Value>>) -> Self {
+impl From<Arc<ValueMap>> for FrostMap {
+    fn from(value: Arc<ValueMap>) -> Self {
         Self { inner: value }
+    }
+}
+
+impl Deref for FrostMap {
+    type Target = ValueMap;
+
+    fn deref(&self) -> &ValueMap {
+        &self.inner
     }
 }
 
@@ -42,16 +47,15 @@ impl Default for FrostMap {
 }
 
 impl FromIterator<(MapKey, Value)> for FrostMap {
+    /// A Map of the entries, each [inserted](ValueMap::insert) in turn.
     fn from_iter<T: IntoIterator<Item = (MapKey, Value)>>(iter: T) -> Self {
-        Self {
-            inner: Arc::new(iter.into_iter().collect()),
-        }
+        ValueMap::from_iter(iter).into()
     }
 }
 
 impl<'a> IntoIterator for &'a FrostMap {
     type Item = (&'a MapKey, &'a Value);
-    type IntoIter = btree_map::Iter<'a, MapKey, Value>;
+    type IntoIter = value_map::Iter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.inner.iter()
@@ -61,49 +65,12 @@ impl<'a> IntoIterator for &'a FrostMap {
 impl FrostMap {
     /// Creates an empty FrostMap.
     pub fn empty() -> Self {
-        Self {
-            inner: Arc::from(BTreeMap::new()),
-        }
-    }
-
-    /// Returns the number of entries.
-    pub fn len(&self) -> usize {
-        self.inner.len()
-    }
-
-    /// Returns true if the map has no entries.
-    pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
-    }
-
-    /// Returns the value associated with the given key, or None.
-    pub fn get(&self, key: &MapKey) -> Option<&Value> {
-        self.inner.get(key)
-    }
-
-    /// Returns true if the map contains the given key.
-    pub fn contains_key(&self, key: &MapKey) -> bool {
-        self.inner.contains_key(key)
-    }
-
-    /// Returns an iterator over the keys.
-    pub fn keys(&self) -> impl Iterator<Item = &MapKey> {
-        self.inner.keys()
-    }
-
-    /// Returns an iterator over the values.
-    pub fn values(&self) -> impl Iterator<Item = &Value> {
-        self.inner.values()
-    }
-
-    /// Returns an iterator over key-value pairs.
-    pub fn iter(&self) -> impl Iterator<Item = (&MapKey, &Value)> {
-        self.inner.iter()
+        ValueMap::new().into()
     }
 
     /// The String key most like `name`, if one is close enough to be what a
     /// mistyped `name` meant: the fewest single-character edits away, a swap of
-    /// neighbouring characters counting as one. Ties go to the first in key order.
+    /// neighbouring characters counting as one.
     pub(crate) fn closest_string_key(&self, name: &str) -> Option<&str> {
         let length = name.chars().count();
         // As rustc suggests names: within a third of the name's length, at
@@ -122,31 +89,6 @@ impl FrostMap {
             .map(|(_, candidate)| candidate)
     }
 
-    /// Convenience for String-keyed lookups without manually wrapping in MapKey.
-    pub fn get_str(&self, key: &str) -> Option<&Value> {
-        self.inner.get(&MapKey::String(Arc::from(key)))
-    }
-
-    /// Convenience for Bytes-keyed lookups without manually wrapping in MapKey.
-    pub fn get_bytes(&self, key: &[u8]) -> Option<&Value> {
-        self.inner.get(&MapKey::Bytes(Arc::from(key)))
-    }
-
-    /// Convenience for Int-keyed lookups without manually wrapping in MapKey.
-    pub fn get_int(&self, key: i64) -> Option<&Value> {
-        self.inner.get(&MapKey::Int(key))
-    }
-
-    /// Convenience for Bool-keyed lookups without manually wrapping in MapKey.
-    pub fn get_bool(&self, key: bool) -> Option<&Value> {
-        self.inner.get(&MapKey::Bool(key))
-    }
-
-    /// Convenience for Float-keyed lookups without manually wrapping in MapKey.
-    pub fn get_float(&self, key: FrostFloat) -> Option<&Value> {
-        self.inner.get(&MapKey::Float(key))
-    }
-
     /// Converts this map into a Value.
     pub fn into_value(self) -> Value {
         Value::from(self)
@@ -155,16 +97,16 @@ impl FrostMap {
     /// Extract a mutable map when not shared, or return the FrostMap as-is.
     /// Zero-copy in the `Ok` case; the fallible counterpart of
     /// [`into_map`](Self::into_map).
-    pub fn try_into_map(self) -> Result<BTreeMap<MapKey, Value>, FrostMap> {
+    pub fn try_into_map(self) -> Result<ValueMap, FrostMap> {
         match Arc::try_unwrap(self.inner) {
             Ok(map) => Ok(map),
             Err(arc) => Err(FrostMap { inner: arc }),
         }
     }
 
-    /// Extract a BTreeMap from a FrostMap.
+    /// Extract a [`ValueMap`] from a FrostMap.
     /// Zero-copy when possible, but quietly copies when not.
-    pub fn into_map(self) -> BTreeMap<MapKey, Value> {
+    pub fn into_map(self) -> ValueMap {
         Arc::unwrap_or_clone(self.inner)
     }
 }
