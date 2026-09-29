@@ -528,14 +528,11 @@ impl Vm {
                         // The callee and its arguments must be operands this frame
                         // pushed; reaching lower would call one of the caller's values.
                         self.debug_assert_own_operand(base, "Call");
-                        let function = self.stack[base].clone();
 
                         // Errors `?` straight out of `execute_function`;
                         // the abandoned frames and operands are the entry boundary's to clean up.
-                        match function {
-                            Value::NativeFunction(native_fn) => {
-                                self.native_call(&native_fn, argc)?;
-                            }
+                        match &self.stack[base] {
+                            Value::NativeFunction(_) => self.native_call(argc)?,
                             Value::Closure(closure) => {
                                 Self::check_arity(
                                     closure.function.arity,
@@ -543,11 +540,11 @@ impl Vm {
                                     &closure.function.name,
                                 )?;
                                 // The next loop iteration runs the closure.
-                                self.push_closure_frame(&closure, base, NonZeroUsize::new(pc + 1))?;
+                                self.push_closure_frame(base, NonZeroUsize::new(pc + 1))?;
                                 pc = 0;
                                 continue;
                             }
-                            _ => return Err(Self::not_callable(&function)),
+                            function => return Err(Self::not_callable(function)),
                         }
                     }
                     Bytecode::TailCall(argc) => {
@@ -838,7 +835,7 @@ impl Vm {
         }
         // The top-level frame is seated at depth 0, so this never trips the depth cap;
         // it does not consume fuel (the program has not made a call yet).
-        if let Err(error) = self.push_closure_frame(&closure, 0, None) {
+        if let Err(error) = self.push_closure_frame(0, None) {
             return Err(RunError { vm: self, error });
         }
 
@@ -1123,18 +1120,21 @@ impl Vm {
         ))
     }
 
-    /// Push a [VmFrame] to enter `closure`, per the calling convention (see [`Bytecode`]).
-    /// `base` is the frame base (the closure's slot on the stack);
+    /// Push a [VmFrame] to enter the closure at stack index `base`, its frame base,
+    /// per the calling convention (see [`Bytecode`]).
     /// `return_address` is where the callee returns to.
     /// Arity must already be checked.
     fn push_closure_frame(
         &mut self,
-        closure: &Closure,
         base: usize,
         return_address: Option<NonZeroUsize>,
     ) -> Result<(), FrostError> {
         self.check_call_depth()?;
         self.debug_assert_slots_fit_frames();
+
+        let Value::Closure(closure) = &self.stack[base] else {
+            panic!("IMPOSSIBLE: the frame base holds no closure");
+        };
 
         // The frame's slots go on the end: its captures seated first, the rest empty
         // until the body defines them.
@@ -1143,12 +1143,14 @@ impl Vm {
             .extend(closure.captures.iter().cloned().map(Some));
         self.slots
             .resize(slot_base + closure.function.name_table.len(), None);
+        let this_fn = Arc::clone(&closure.function);
+        let arity = this_fn.arity;
 
         self.stack_frames.push(StackFrame::VmFrame(VmFrame {
             base_idx: base,
             slot_base,
             return_address,
-            this_fn: closure.function.clone(),
+            this_fn,
             mark_base: self.marks.len(),
         }));
 
@@ -1156,7 +1158,7 @@ impl Vm {
         // function value at `base`, captured before the rearrangement below.
         let argc = self.stack.len() - (base + 1);
 
-        match closure.function.arity {
+        match arity {
             Arity::AtLeast(fixed_argc) => {
                 let varargs = self.stack.split_off(base + 1 + fixed_argc);
                 self.stack.push(Value::Array(varargs.into()));
@@ -1190,14 +1192,13 @@ impl Vm {
             .checked_sub(argc + 1)
             .expect("FROST STACK UNDERFLOW");
         self.debug_assert_own_operand(base, "TailCall");
-        let function = self.stack[base].clone();
 
-        match function {
+        match &self.stack[base] {
             // A native callee adds no VM frame: run it inline like a plain Call.
             // Its result is left on the stack; in tail position the enclosing
             // function returns it via the normal end-of-code path next turn.
-            Value::NativeFunction(native_fn) => {
-                self.native_call(&native_fn, argc)?;
+            Value::NativeFunction(_) => {
+                self.native_call(argc)?;
                 Ok(TailFlow::FellThrough)
             }
             Value::Closure(closure) => {
@@ -1208,7 +1209,7 @@ impl Vm {
                 // A tail call reuses the current frame, except the bottom frame,
                 // which is preserved (see the doc comment).
                 if self.stack_frames.len() == 1 {
-                    self.push_closure_frame(&closure, base, return_address)?;
+                    self.push_closure_frame(base, return_address)?;
                 } else {
                     // The callee's operands are all on the operand stack, so the
                     // ending frame's slots can go first: the callee's take their place.
@@ -1224,24 +1225,24 @@ impl Vm {
 
                     // Reuse the popped frame's place, inheriting its base and return
                     // address so the callee returns to the original caller.
-                    self.push_closure_frame(
-                        &closure,
-                        gone_frame.base_idx,
-                        gone_frame.return_address,
-                    )?;
+                    self.push_closure_frame(gone_frame.base_idx, gone_frame.return_address)?;
                 }
                 Ok(TailFlow::Reenter)
             }
-            _ => Err(Self::not_callable(&function)),
+            function => Err(Self::not_callable(function)),
         }
     }
 
-    fn native_call(&mut self, function: &NativeFunction, argc: usize) -> Result<(), FrostError> {
+    /// Call the native function beneath the top `argc` operands, replacing it and
+    /// them with its result.
+    fn native_call(&mut self, argc: usize) -> Result<(), FrostError> {
         let mut buf = self.native_arg_pool.pop().unwrap_or_default();
         buf.extend(self.stack.drain((self.stack.len() - argc)..));
-        self.stack_pop(); // pop the function value off the stack
+        let Value::NativeFunction(function) = self.stack_pop() else {
+            panic!("IMPOSSIBLE: no native function beneath its arguments");
+        };
 
-        let result = self.run_native(function, buf)?;
+        let result = self.run_native(&function, buf)?;
         self.stack.push(result);
         Ok(())
     }

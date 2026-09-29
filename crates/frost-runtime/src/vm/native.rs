@@ -62,7 +62,7 @@ impl NativeCtx<'_> {
                 }
 
                 let frame_floor = self.vm.stack_frames.len();
-                if let Err(err) = self.vm.push_closure_frame(closure, base, None) {
+                if let Err(err) = self.vm.push_closure_frame(base, None) {
                     // No frame was pushed (the depth check runs first), so just clear
                     // the function value and args left above `base`.
                     self.vm.stack.truncate(base);
