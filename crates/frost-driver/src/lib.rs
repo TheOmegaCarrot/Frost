@@ -117,11 +117,40 @@ impl Driver {
     /// as a process's arguments are.
     /// A script's printed output, and help and version text, go to `stdout`;
     /// errors and diagnostics go to `stderr`. Both are flushed before this returns.
+    /// Neither is taken to be a terminal, so `--color auto` writes no color.
     pub fn run<I, T>(
         &self,
         args: I,
         stdout: impl Write + Send + 'static,
+        stderr: impl Write + Send + 'static,
+    ) -> Exit
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<OsString> + Clone,
+    {
+        let terminals = Terminals {
+            stdout: false,
+            stderr: false,
+        };
+        self.run_on(args, stdout, stderr, terminals)
+    }
+
+    /// [`run`](Self::run) the process's own command line, with its standard
+    /// output and error. `--color auto` colors whichever of them is a terminal.
+    pub fn run_from_env(&self) -> Exit {
+        let terminals = Terminals {
+            stdout: io::stdout().is_terminal(),
+            stderr: io::stderr().is_terminal(),
+        };
+        self.run_on(std::env::args_os(), io::stdout(), io::stderr(), terminals)
+    }
+
+    fn run_on<I, T>(
+        &self,
+        args: I,
+        stdout: impl Write + Send + 'static,
         mut stderr: impl Write + Send + 'static,
+        terminals: Terminals,
     ) -> Exit
     where
         I: IntoIterator<Item = T>,
@@ -129,19 +158,19 @@ impl Driver {
     {
         // Shared by the print sink and the driver's own output.
         let stdout = Arc::new(Mutex::new(stdout));
-        let exit = self.carry_out(args, &stdout, &mut stderr);
+        let exit = self.carry_out(args, &stdout, &mut stderr, terminals);
         let _ = lock(&stdout).flush();
         let _ = stderr.flush();
         exit
     }
 
-    /// [`run`](Self::run) the process's own command line, with its standard
-    /// output and error.
-    pub fn run_from_env(&self) -> Exit {
-        self.run(std::env::args_os(), io::stdout(), io::stderr())
-    }
-
-    fn carry_out<I, T, W>(&self, args: I, stdout: &Arc<Mutex<W>>, stderr: &mut dyn Write) -> Exit
+    fn carry_out<I, T, W>(
+        &self,
+        args: I,
+        stdout: &Arc<Mutex<W>>,
+        stderr: &mut dyn Write,
+        terminals: Terminals,
+    ) -> Exit
     where
         I: IntoIterator<Item = T>,
         T: Into<OsString> + Clone,
@@ -186,6 +215,7 @@ impl Driver {
                 implicit_export: false,
             },
             color: cli.options.color,
+            terminals,
             stderr,
         };
         match cli.action() {
@@ -250,12 +280,20 @@ impl Termination for Exit {
     }
 }
 
+/// Which of a run's output streams are terminals, for `--color auto`.
+#[derive(Debug, Clone, Copy)]
+struct Terminals {
+    stdout: bool,
+    stderr: bool,
+}
+
 /// One command line being carried out.
 struct Session<'a> {
     importer: &'a Arc<Importer>,
     configuration: VmRuntimeConfiguration,
     options: CompilerOptions,
     color: Color,
+    terminals: Terminals,
     stderr: &'a mut dyn Write,
 }
 
@@ -338,7 +376,7 @@ impl Session<'_> {
         let color = match self.color {
             Color::Always => true,
             Color::Never => false,
-            Color::Auto => io::stdout().is_terminal(),
+            Color::Auto => self.terminals.stdout,
         };
         match write!(output, "{}", function.disassemble().with_color(color)) {
             Ok(()) => Exit::Success,
@@ -416,9 +454,10 @@ impl Session<'_> {
 
     fn report_diagnostics(&mut self, errors: &CompilerErrors) -> Exit {
         let rendered = match self.color {
-            Color::Auto => errors.render(),
+            // `render` also defers to the environment, such as `NO_COLOR`.
+            Color::Auto if self.terminals.stderr => errors.render(),
+            Color::Auto | Color::Never => errors.render_plain(),
             Color::Always => errors.render_pretty(),
-            Color::Never => errors.render_plain(),
         };
         write_out(self.stderr, &rendered);
         Exit::ScriptFailed

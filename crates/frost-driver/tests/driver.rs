@@ -202,6 +202,25 @@ fn diagnostics_color_on_request_only() {
     assert!(!ran.stderr.contains(escape), "plain: {:?}", ran.stderr);
 }
 
+/// `--color auto` goes by the streams the driver writes to, which here are
+/// buffers, not by whether the test process itself is attached to a terminal.
+#[test]
+fn auto_color_writes_no_color_to_a_non_terminal() {
+    let escape = '\u{1b}';
+    let broken = script("auto-color.frst", "nope");
+    for args in [vec!["-e", "nope"], vec!["--color", "auto", "-e", "nope"]] {
+        let ran = run(&args);
+        assert!(!ran.stderr.is_empty(), "{args:?}: {ran:?}");
+        assert!(!ran.stderr.contains(escape), "{args:?}: {:?}", ran.stderr);
+    }
+    let ran = run(&["list", "--color", "auto", &broken]);
+    assert!(!ran.stderr.contains(escape), "list: {:?}", ran.stderr);
+    let listed = script("auto-color-list.frst", "1");
+    let ran = run(&["list", "--color", "auto", &listed]);
+    assert!(!ran.stdout.is_empty(), "{ran:?}");
+    assert!(!ran.stdout.contains(escape), "list: {:?}", ran.stdout);
+}
+
 #[test]
 fn an_unreadable_file_is_a_usage_error() {
     let ran = run(&["no-such-script.frst"]);
