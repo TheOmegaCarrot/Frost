@@ -332,6 +332,64 @@ mod do_newlines {
     }
 }
 
+/// Inside `()`, `[]`, or a Map literal's `{}`, newlines are insignificant, but a
+/// block nested there is a scope of its own, where they end statements again.
+mod blocks_inside_delimiters {
+    use super::*;
+
+    /// The one argument of the call `expr` must be.
+    fn only_argument(expr: &Spanned<Expr>) -> &Spanned<Expr> {
+        match &expr.node {
+            Expr::Call { args, .. } if args.len() == 1 => &args[0],
+            other => panic!("expected a call with one argument, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_multiline_do_block_in_a_call() {
+        let expr = parse_expr("f(do {\n    def x = 1\n    def y = 2\n    x + y\n})");
+        let (body, value) = assert_do(only_argument(&expr));
+        assert_eq!(body.len(), 2);
+        assert!(is_binop(value).is_some());
+    }
+
+    #[test]
+    fn a_multiline_do_block_in_an_array_or_map() {
+        for source in [
+            "[do {\n    def x = 1\n    x\n}]",
+            "{a: do {\n    def x = 1\n    x\n}}",
+            "f(g(do {\n    def x = 1\n    x\n}))",
+        ] {
+            let program = parse(source);
+            assert_eq!(program.statements.len(), 1, "{source:?}");
+        }
+    }
+
+    #[test]
+    fn a_multiline_lambda_body_in_a_call() {
+        let expr = parse_expr("f(fn x -> {\n    def y = x + 1\n    y * 2\n})");
+        assert!(
+            matches!(&only_argument(&expr).node, Expr::Lambda { .. }),
+            "{expr:?}"
+        );
+    }
+
+    #[test]
+    fn newlines_around_the_block_are_still_insignificant() {
+        let expr = parse_expr("f(\n    do {\n        def x = 1\n        x\n    }\n    ,\n    2\n)");
+        match &expr.node {
+            Expr::Call { args, .. } => assert_eq!(args.len(), 2),
+            other => panic!("expected a call, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_line_break_mid_expression_in_the_block_is_still_an_error() {
+        // As it is for a block anywhere else: the line ends the statement.
+        parse_err("f(do {\n    x +\n    y\n})");
+    }
+}
+
 mod do_in_expressions {
     use super::*;
 

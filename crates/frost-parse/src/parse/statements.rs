@@ -14,6 +14,15 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         &mut self,
         kind: StatementContext,
     ) -> ParseResult<Vec<Spanned<Statement>>> {
+        // A block's newlines end its statements, even when the block sits inside
+        // delimiters that make newlines insignificant around it.
+        self.with_significant_newlines(|ctx| ctx.parse_statement_list(kind))
+    }
+
+    fn parse_statement_list(
+        &mut self,
+        kind: StatementContext,
+    ) -> ParseResult<Vec<Spanned<Statement>>> {
         let mut stmts = Vec::new();
 
         let allow_export = matches!(kind, StatementContext::TopLevel);

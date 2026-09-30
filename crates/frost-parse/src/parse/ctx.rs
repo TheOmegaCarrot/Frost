@@ -156,6 +156,18 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         self
     }
 
+    /// Run `parse` with newlines significant, whatever delimiters enclose it,
+    /// then restore the enclosing newline context however `parse` ends.
+    pub(crate) fn with_significant_newlines<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> ParseResult<T>,
+    ) -> ParseResult<T> {
+        let outer = std::mem::take(&mut self.state.nl_depth);
+        let result = parse(self);
+        self.state.nl_depth = outer;
+        result
+    }
+
     /// Skip newlines only when inside delimiters (nl_depth > 0).
     pub(crate) fn maybe_skip_nl(&mut self) -> &mut Self {
         if self.state.nl_depth > 0 {
