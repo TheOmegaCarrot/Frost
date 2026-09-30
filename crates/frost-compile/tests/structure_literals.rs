@@ -77,9 +77,13 @@ fn array_elements_may_be_any_value() {
 
 #[test]
 fn array_elements_are_expressions() {
-    let tail = Script::new("[x, x + 1, if x > 5: 10 else: 0, do { def y = 2; y }]")
-        .capture("x", Value::Int(7))
-        .run();
+    let source = r"
+        [x, x + 1, if x > 5: 10 else: 0, do {
+            def y = 2
+            y
+        }]
+    ";
+    let tail = Script::new(source).capture("x", Value::Int(7)).run();
     assert_eq!(tail, ints(&[7, 8, 10, 2]));
 }
 
@@ -159,19 +163,28 @@ fn a_computed_key_may_be_any_valid_key_type() {
         (r#"m["s"]"#, "string"),
         ("m[x'00']", "bytes"),
     ] {
-        assert_eq!(
-            run(&format!("{source}; {lookup}")),
-            Value::from(expected),
-            "{lookup}"
+        let program = format!(
+            r"
+            {source}
+            {lookup}
+            "
         );
+        assert_eq!(run(&program), Value::from(expected), "{lookup}");
     }
 }
 
 #[test]
 fn an_int_key_and_a_float_key_are_distinct() {
     let source = r#"def m = {[1]: "int", [1.0]: "float"}"#;
-    assert_eq!(run(&format!("{source}; m[1]")), Value::from("int"));
-    assert_eq!(run(&format!("{source}; m[1.0]")), Value::from("float"));
+    for (lookup, expected) in [("m[1]", "int"), ("m[1.0]", "float")] {
+        let program = format!(
+            r"
+            {source}
+            {lookup}
+            "
+        );
+        assert_eq!(run(&program), Value::from(expected), "{lookup}");
+    }
 }
 
 #[test]
@@ -269,7 +282,14 @@ fn an_overwritten_value_is_still_evaluated() {
 
 #[test]
 fn a_literal_statement_leaves_the_stack_balanced() {
-    assert_eq!(run("[1, 2]; {a: 1}; []; {}; 5"), Value::Int(5));
+    let source = r"
+        [1, 2]
+        {a: 1}
+        []
+        {}
+        5
+    ";
+    assert_eq!(run(source), Value::Int(5));
 }
 
 // --- Constant folding ---
@@ -367,7 +387,10 @@ fn a_propagated_options_map_folds_through_field_access() {
         ..FOLD
     };
     let emitted = code(
-        "def opts = {width: 80, height: 24}; opts.width * opts.height",
+        r"
+        def opts = {width: 80, height: 24}
+        opts.width * opts.height
+        ",
         fold_and_propagate,
     );
     assert_eq!(emitted.count(&Bytecode::PushInt(1920)), 1, "{emitted:?}");

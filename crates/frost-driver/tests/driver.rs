@@ -108,7 +108,11 @@ fn image(name: &str, source: &str, options: &[&str]) -> String {
 
 #[test]
 fn run_runs_a_script_file() {
-    let path = script("run.frst", r#"print("hello"); print(1 + 2)"#);
+    let source = r#"
+        print("hello")
+        print(1 + 2)
+    "#;
+    let path = script("run.frst", source);
     for args in [vec!["run", path.as_str()], vec![path.as_str()]] {
         let ran = run(&args);
         assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
@@ -135,10 +139,13 @@ fn a_scripts_value_is_not_printed() {
 
 #[test]
 fn a_runtime_error_fails_the_script_with_its_message_and_backtrace() {
-    let ran = run(&[
-        "-e",
-        r#"print("before"); defn f() -> 1 / 0; f(); print("after")"#,
-    ]);
+    let source = r#"
+        print("before")
+        defn f() -> 1 / 0
+        f()
+        print("after")
+    "#;
+    let ran = run(&["-e", source]);
     assert_eq!(ran.exit, Exit::ScriptFailed);
     assert_eq!(ran.printed(), ["before"], "output before the error stands");
     assert!(
@@ -153,16 +160,20 @@ fn a_runtime_error_fails_the_script_with_its_message_and_backtrace() {
 #[test]
 fn a_compile_error_fails_the_script_with_its_diagnostics() {
     let path = script("broken.frst", "def x = ; 1");
+    let unbound = r"
+        print(1)
+        nope
+    ";
     for args in [
         vec!["--color", "never", path.as_str()],
-        vec!["--color", "never", "-e", "print(1); nope"],
+        vec!["--color", "never", "-e", unbound],
     ] {
         let ran = run(&args);
         assert_eq!(ran.exit, Exit::ScriptFailed, "{args:?}");
         assert!(ran.printed().is_empty(), "nothing runs: {ran:?}");
         assert!(!ran.stderr.is_empty(), "{args:?}");
     }
-    let ran = run(&["--color", "never", "-e", "print(1); nope"]);
+    let ran = run(&["--color", "never", "-e", unbound]);
     assert!(
         ran.stderr.contains("`nope` is not defined"),
         "{}",
@@ -232,9 +243,11 @@ fn check_reports_diagnostics() {
 
 #[test]
 fn an_image_runs_as_its_script_does() {
-    let source = r#"defn fib(n) -> if n < 2: n else: fib(n - 1) + fib(n - 2)
+    let source = r#"
+        defn fib(n) -> if n < 2: n else: fib(n - 1) + fib(n - 2)
         print(fib(15))
-        print([0.0, -0.0, {a: [1, "two"]}, x'00ff'])"#;
+        print([0.0, -0.0, {a: [1, "two"]}, x'00ff'])
+    "#;
     let script = script("image-source.frst", source);
     let image = image("image-runs", source, &[]);
     let from_script = run(&[&script]);
@@ -519,7 +532,11 @@ fn a_seed_name_frost_cannot_refer_to_is_refused() {
 
 #[test]
 fn list_shows_a_scripts_bytecode_without_running_it() {
-    let path = script("list.frst", "def x = [1, 2]\nprint(x)");
+    let source = r"
+        def x = [1, 2]
+        print(x)
+    ";
+    let path = script("list.frst", source);
     let ran = run(&["list", &path]);
     assert_eq!(ran.exit, Exit::Success, "{ran:?}");
     assert!(
@@ -548,7 +565,10 @@ fn list_follows_the_optimization_switches() {
 
 #[test]
 fn list_shows_an_images_bytecode_as_compiled() {
-    let source = "defn f(n) -> n + 1\nf(2)";
+    let source = r"
+        defn f(n) -> n + 1
+        f(2)
+    ";
     let script = script("list-image.frst", source);
     let image = image("list-image", source, &["-O", "none"]);
     // Whatever the command line now asks for, the image lists as it was compiled.

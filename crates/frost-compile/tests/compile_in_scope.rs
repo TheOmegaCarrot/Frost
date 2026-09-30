@@ -39,7 +39,11 @@ fn an_unused_outer_name_is_not_captured() {
 #[test]
 fn implicit_export_exports_every_top_level_binding() {
     // `def y = x` is not written `export`, but implicit export makes it harvestable.
-    let finished = Script::new("def y = x; y")
+    let source = r"
+        def y = x
+        y
+    ";
+    let finished = Script::new(source)
         .capture("x", Value::Int(5))
         .implicit_export()
         .finish();
@@ -55,7 +59,11 @@ fn implicit_export_exports_every_top_level_binding() {
 fn a_top_level_binding_may_shadow_a_capture_of_the_same_name() {
     // `def x = x`: the rhs captures the enclosing `x`, and the def binds a new
     // `x` from it. The capture must not read as a duplicate binding.
-    let finished = Script::new("def x = x; x")
+    let source = r"
+        def x = x
+        x
+    ";
+    let finished = Script::new(source)
         .capture("x", Value::Int(7))
         .implicit_export()
         .finish();
@@ -70,9 +78,11 @@ fn a_top_level_binding_may_shadow_a_capture_of_the_same_name() {
 #[test]
 fn without_implicit_export_a_plain_def_is_not_exported() {
     // The same program, implicit export off: `y` runs but is not harvested.
-    let finished = Script::new("def y = x; y")
-        .capture("x", Value::Int(5))
-        .finish();
+    let source = r"
+        def y = x
+        y
+    ";
+    let finished = Script::new(source).capture("x", Value::Int(5)).finish();
     assert_eq!(finished.tail, Value::Int(5));
     assert!(
         finished.exports.is_empty(),
@@ -84,9 +94,11 @@ fn without_implicit_export_a_plain_def_is_not_exported() {
 fn explicit_export_works_even_without_the_implicit_export_option() {
     // `export` on a binding is independent of the compiler option: it always
     // harvests that binding, implicit export or not.
-    let finished = Script::new("export def y = x; y")
-        .capture("x", Value::Int(5))
-        .finish();
+    let source = r"
+        export def y = x
+        y
+    ";
+    let finished = Script::new(source).capture("x", Value::Int(5)).finish();
     assert_eq!(
         finished.exports.get("y"),
         Some(&Value::Int(5)),
@@ -120,9 +132,14 @@ fn implicit_export_does_not_reach_inside_a_nested_scope() {
     // `z` is bound inside a `do` block, not at the top level, so implicit
     // export leaves it out even though `y`, the top-level binding around it,
     // is exported.
-    let finished = Script::new("def y = do { def z = 1; z + 1 }; y")
-        .implicit_export()
-        .finish();
+    let source = r"
+        def y = do {
+            def z = 1
+            z + 1
+        }
+        y
+    ";
+    let finished = Script::new(source).implicit_export().finish();
     assert_eq!(finished.tail, Value::Int(2));
     assert_eq!(finished.exports.get("y"), Some(&Value::Int(2)));
     assert!(
@@ -138,7 +155,12 @@ fn a_duplicate_top_level_binding_is_rejected_even_after_shadowing_a_capture() {
     // `a_top_level_binding_may_shadow_a_capture_of_the_same_name`), but it is
     // itself an ordinary binding: a further `def x` in the same scope collides
     // with it, not with the capture.
-    let rendered = Script::new("def x = x; def x = 2; x")
+    let source = r"
+        def x = x
+        def x = 2
+        x
+    ";
+    let rendered = Script::new(source)
         .capture("x", Value::Int(7))
         .compile_errors()
         .render_plain();

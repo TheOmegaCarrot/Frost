@@ -135,11 +135,19 @@ fn reduce_over_a_map_always_requires_an_init() {
 fn foreach_runs_its_operation_on_each_element() {
     assert_values(&[
         (
-            "def c = mutable_cell(0); foreach [1, 2, 3] with fn x -> c.exchange(c.get() + x); c.get()",
+            r"
+            def c = mutable_cell(0)
+            foreach [1, 2, 3] with fn x -> c.exchange(c.get() + x)
+            c.get()
+            ",
             "6",
         ),
         (
-            "def c = mutable_cell(0); foreach {a: 1, b: 2} with fn k, v -> c.exchange(c.get() + v); c.get()",
+            r"
+            def c = mutable_cell(0)
+            foreach {a: 1, b: 2} with fn k, v -> c.exchange(c.get() + v)
+            c.get()
+            ",
             "3",
         ),
     ]);
@@ -188,10 +196,34 @@ fn each_form_equals_its_direct_call() {
 #[test]
 fn a_binding_named_like_the_global_does_not_change_the_form() {
     assert_values(&[
-        ("def select = 5; filter [1, 2] with fn x -> x > 1", "[2]"),
-        ("def transform = 5; map [1, 2] with fn x -> x + 1", "[2, 3]"),
-        ("def fold = 5; reduce [1, 2] with fn a, x -> a + x", "3"),
-        ("def each = 5; foreach [1, 2] with fn x -> x", "[1, 2]"),
+        (
+            r"
+            def select = 5
+            filter [1, 2] with fn x -> x > 1
+            ",
+            "[2]",
+        ),
+        (
+            r"
+            def transform = 5
+            map [1, 2] with fn x -> x + 1
+            ",
+            "[2, 3]",
+        ),
+        (
+            r"
+            def fold = 5
+            reduce [1, 2] with fn a, x -> a + x
+            ",
+            "3",
+        ),
+        (
+            r"
+            def each = 5
+            foreach [1, 2] with fn x -> x
+            ",
+            "[1, 2]",
+        ),
         (
             "(fn transform -> map [1] with fn x -> x + transform)(10)",
             "[11]",
@@ -205,10 +237,19 @@ fn the_operation_may_be_any_function() {
         ("map [1, 2] with $($ + 1)", "[2, 3]"),
         ("map [1, 2] with to_string", r#"["1", "2"]"#),
         (
-            "def double = fn x -> x * 2; map [1, 2] with double",
+            r"
+            def double = fn x -> x * 2
+            map [1, 2] with double
+            ",
             "[2, 4]",
         ),
-        ("def k = 3; map [1, 2] with fn x -> x * k", "[3, 6]"),
+        (
+            r"
+            def k = 3
+            map [1, 2] with fn x -> x * k
+            ",
+            "[3, 6]",
+        ),
         ("reduce [1, 2, 3] with plus", "6"),
         ("filter [1, null, 2] with is_int", "[1, 2]"),
     ]);
@@ -226,7 +267,13 @@ fn forms_compose() {
             "map [[1, 2], [3]] with fn row -> reduce row init: 0 with plus",
             "[3, 3]",
         ),
-        ("def xs = map [1, 2] with fn x -> x + 1; xs[1]", "3"),
+        (
+            r"
+            def xs = map [1, 2] with fn x -> x + 1
+            xs[1]
+            ",
+            "3",
+        ),
     ]);
 }
 

@@ -136,7 +136,13 @@ fn a_call_may_take_many_arguments() {
 
 #[test]
 fn arguments_are_expressions() {
-    let (_, calls) = run_probed("f(1 + 2, if true: 4 else: 5, do { def y = 6; y })");
+    let source = r"
+        f(1 + 2, if true: 4 else: 5, do {
+            def y = 6
+            y
+        })
+    ";
+    let (_, calls) = run_probed(source);
     assert_eq!(calls, vec![ints(&[3, 4, 6])]);
 }
 
@@ -168,14 +174,24 @@ fn the_callee_is_an_expression() {
         Value::Int(5),
         "a call's result is called"
     );
-    assert_eq!(run("do { def g = times; g }(4, 5)"), Value::Int(20));
+    let block_callee = r"
+        do {
+            def g = times
+            g
+        }(4, 5)
+    ";
+    assert_eq!(run(block_callee), Value::Int(20));
 }
 
 #[test]
 fn a_call_is_an_operand() {
     assert_eq!(run("plus(1, 2) * 10"), Value::Int(30));
     assert_eq!(run("not is_int(1.5)"), Value::Bool(true));
-    assert_eq!(run("def y = plus(1, 2); y + y"), Value::Int(6));
+    let bound_call = r"
+        def y = plus(1, 2)
+        y + y
+    ";
+    assert_eq!(run(bound_call), Value::Int(6));
 }
 
 // --- Threading (`@`) ---
@@ -234,7 +250,12 @@ fn threading_into_an_indexed_callee() {
 
 #[test]
 fn each_evaluated_call_runs_exactly_once() {
-    let (tail, calls) = run_probed("f(1); f(2); 3");
+    let statements = r"
+        f(1)
+        f(2)
+        3
+    ";
+    let (tail, calls) = run_probed(statements);
     assert_eq!(
         calls,
         vec![ints(&[1]), ints(&[2])],
@@ -242,7 +263,14 @@ fn each_evaluated_call_runs_exactly_once() {
     );
     assert_eq!(tail, Value::Int(3));
 
-    let (_, calls) = run_probed("do { f(1); def y = f(2); f(3) }");
+    let block = r"
+        do {
+            f(1)
+            def y = f(2)
+            f(3)
+        }
+    ";
+    let (_, calls) = run_probed(block);
     assert_eq!(calls, vec![ints(&[1]), ints(&[2]), ints(&[3])]);
 }
 
@@ -282,7 +310,12 @@ fn arguments_are_evaluated_before_arity_is_checked() {
 fn arguments_are_evaluated_before_the_callee_is_checked_to_be_a_function() {
     // The callee is evaluated first, but whether it can be called is checked
     // only at the call, after the arguments.
-    let message = raises("def not_a_fn = 5; not_a_fn(1 / 0)");
+    let message = raises(
+        r"
+        def not_a_fn = 5
+        not_a_fn(1 / 0)
+        ",
+    );
     assert!(message.contains("Division by zero"), "{message}");
     let message = raises("5(1 % 0)");
     assert!(message.contains("Modulus by zero"), "{message}");
@@ -332,8 +365,18 @@ fn an_error_raised_by_the_callee_propagates() {
 
 #[test]
 fn a_call_statement_leaves_the_stack_balanced() {
-    assert_eq!(run("plus(1, 2); id(3); 5"), Value::Int(5));
-    let (tail, _) = run_probed("f(); f(1, 2); 5");
+    let pure_calls = r"
+        plus(1, 2)
+        id(3)
+        5
+    ";
+    assert_eq!(run(pure_calls), Value::Int(5));
+    let probed_calls = r"
+        f()
+        f(1, 2)
+        5
+    ";
+    let (tail, _) = run_probed(probed_calls);
     assert_eq!(tail, Value::Int(5));
 }
 

@@ -210,8 +210,9 @@ The pipeline-friendly function forms are `transform`, `select`, and `fold`.
 - Take full advantage of strong types. Make invalid states unrepresentable wherever possible.
 - Write idiomatic Rust.
 - Prefer a raw string literal (`r"..."`, `r#"..."#`) over a regular literal that
-  would otherwise need many escapes. `\n` escapes are particularly undesirable. Strings
-  containing `\n` should be raw string literals.
+  would otherwise need many escapes. Multiline text is much preferred as a raw literal
+  spanning real lines, not a one-line string with `\n` escapes. This includes Frost source
+  in tests: one statement per line, idiomatically formatted, not joined by `;`.
 - Production code is Clippy-clean. Tests are held less strictly: for example
   `clippy::approx_constant` fires often in test data and is fine to ignore there.
 - The Frost core stays dependency-light: pulling in a minimal Frost (runtime plus compiler)

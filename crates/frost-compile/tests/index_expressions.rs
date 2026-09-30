@@ -276,10 +276,13 @@ fn targets_and_keys_are_expressions() {
     assert_eq!(run_with_data("a[1 + 1]"), Value::Int(30));
     assert_eq!(run_with_data("a[0 - 1]"), Value::Int(30));
     assert_eq!(run_with_data("(if true: a else: m)[0]"), Value::Int(10));
-    assert_eq!(
-        run_with_data("do { def t = m; t }.name"),
-        Value::from("ada")
-    );
+    let block_target = r"
+        do {
+            def t = m
+            t
+        }.name
+    ";
+    assert_eq!(run_with_data(block_target), Value::from("ada"));
     assert_eq!(
         run_with_data(r#"a[if m["age"] > 30: 2 else: 0]"#),
         Value::Int(30)
@@ -288,9 +291,11 @@ fn targets_and_keys_are_expressions() {
 
 #[test]
 fn the_target_may_be_a_call_result() {
-    let tail = Script::new("def get_a = fn -> a; get_a()[1]")
-        .capture("a", array())
-        .run();
+    let source = r"
+        def get_a = fn -> a
+        get_a()[1]
+    ";
+    let tail = Script::new(source).capture("a", array()).run();
     assert_eq!(tail, Value::Int(20));
 }
 
@@ -324,10 +329,13 @@ fn a_hard_index_target_error_surfaces() {
 
 #[test]
 fn an_index_statement_leaves_the_stack_balanced() {
-    assert_eq!(
-        run_with_data("m.name; a[0]; m.inner.deep; 5"),
-        Value::Int(5)
-    );
+    let source = r"
+        m.name
+        a[0]
+        m.inner.deep
+        5
+    ";
+    assert_eq!(run_with_data(source), Value::Int(5));
 }
 
 // --- Constant folding ---
@@ -431,7 +439,11 @@ fn a_propagated_array_constant_folds_through_indexing() {
         constant_propagate: true,
         ..FOLD
     };
-    let emitted = code("def xs = [10, 20, 30]; xs[0] + xs[2]", fold_and_propagate);
+    let source = r"
+        def xs = [10, 20, 30]
+        xs[0] + xs[2]
+    ";
+    let emitted = code(source, fold_and_propagate);
     assert_eq!(emitted.count(&Bytecode::PushInt(40)), 1, "{emitted:?}");
     assert_eq!(emitted.count(&Bytecode::Add), 0, "{emitted:?}");
     assert_eq!(

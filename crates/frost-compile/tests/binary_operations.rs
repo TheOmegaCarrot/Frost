@@ -200,10 +200,24 @@ fn nested_operations_follow_the_tree() {
 
 #[test]
 fn operands_may_be_bindings() {
-    assert_eq!(run("def x = 4; def y = 3; x - y"), Value::Int(1));
-    assert_eq!(run("def x = 4; x * x"), Value::Int(16));
+    let two_bindings = r"
+        def x = 4
+        def y = 3
+        x - y
+    ";
+    assert_eq!(run(two_bindings), Value::Int(1));
+    let repeated_binding = r"
+        def x = 4
+        x * x
+    ";
+    assert_eq!(run(repeated_binding), Value::Int(16));
+    let computed_bindings = r"
+        def x = 2 + 3
+        def y = x * 2
+        y - x
+    ";
     assert_eq!(
-        run("def x = 2 + 3; def y = x * 2; y - x"),
+        run(computed_bindings),
         Value::Int(5),
         "bindings of computed values"
     );
@@ -364,7 +378,11 @@ fn the_largest_constant_subtree_folds_as_one() {
 
 #[test]
 fn a_propagated_binding_folds() {
-    let emitted = Script::new("def x = 2; x * 3")
+    let source = r"
+        def x = 2
+        x * 3
+    ";
+    let emitted = Script::new(source)
         .code_where(|optimization| optimization.constant_fold && optimization.constant_propagate);
     for emitted in emitted {
         assert_eq!(emitted.count(&Bytecode::Multiply), 0, "{emitted:?}");
@@ -375,7 +393,11 @@ fn a_propagated_binding_folds() {
 #[test]
 fn a_computed_binding_propagates_its_folded_value() {
     // `x` binds a folded constant, so propagation makes `x + 1` foldable too.
-    let emitted = Script::new("def x = 2 * 3; x + 1")
+    let source = r"
+        def x = 2 * 3
+        x + 1
+    ";
+    let emitted = Script::new(source)
         .code_where(|optimization| optimization.constant_fold && optimization.constant_propagate);
     for emitted in emitted {
         assert_eq!(emitted.count(&Bytecode::Multiply), 0, "{emitted:?}");

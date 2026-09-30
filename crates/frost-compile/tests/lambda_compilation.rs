@@ -200,7 +200,12 @@ fn an_effect_anywhere_in_a_lambda_stops_it_folding() {
         // However deeply the effectful lambda is nested.
         "transform([1], (fn -> fn -> fn -> fn v -> if false: print(v) else: v)()()())",
         // In a lambda the body creates but never calls.
-        "transform([1], fn v -> { def unused = fn -> print(v); v })",
+        r"
+        transform([1], fn v -> {
+            def unused = fn -> print(v)
+            v
+        })
+        ",
         // In a callback the body passes on.
         "transform([1], fn v -> transform([v], fn w -> if false: print(w) else: w)[0])",
         // Creating mutable state is an effect too.
@@ -218,7 +223,10 @@ fn a_name_shadowing_an_impure_global_is_not_an_effect() {
     assert_eq!(run(source), ints(&[2, 4]));
     assert_folds(source, FOLD);
 
-    let source = "def print = 3; transform([1], fn v -> v + print)";
+    let source = r"
+        def print = 3
+        transform([1], fn v -> v + print)
+        ";
     assert_eq!(run(source), ints(&[4]));
     assert_folds(source, FOLD_AND_PROPAGATE);
 }
@@ -229,19 +237,37 @@ fn an_effect_runs_exactly_once_per_call() {
     // cell would not see it.
     for (source, expected) in [
         (
-            "def c = mutable_cell(0); transform([1, 2, 3], fn v -> c.exchange(c.get() + v)); c.get()",
+            r"
+            def c = mutable_cell(0)
+            transform([1, 2, 3], fn v -> c.exchange(c.get() + v))
+            c.get()
+            ",
             6,
         ),
         (
-            "def c = mutable_cell(0); (fn -> c.exchange(5))(); c.get()",
+            r"
+            def c = mutable_cell(0)
+            (fn -> c.exchange(5))()
+            c.get()
+            ",
             5,
         ),
         (
-            "def c = mutable_cell(0); def f = fn -> c.exchange(c.get() + 1); f(); f(); c.get()",
+            r"
+            def c = mutable_cell(0)
+            def f = fn -> c.exchange(c.get() + 1)
+            f()
+            f()
+            c.get()
+            ",
             2,
         ),
         (
-            "def c = mutable_cell(0); (fn -> fn -> c.exchange(c.get() + 1))()(); c.get()",
+            r"
+            def c = mutable_cell(0)
+            (fn -> fn -> c.exchange(c.get() + 1))()()
+            c.get()
+            ",
             1,
         ),
     ] {
@@ -269,7 +295,10 @@ fn a_lambda_capturing_a_runtime_value_does_not_fold() {
 
 #[test]
 fn a_lambda_capturing_a_propagated_constant_folds() {
-    let source = "def k = 10; transform([1, 2], fn v -> v * k)";
+    let source = r"
+        def k = 10
+        transform([1, 2], fn v -> v * k)
+        ";
     assert_eq!(run(source), ints(&[10, 20]));
     assert_folds(source, FOLD_AND_PROPAGATE);
     // Without propagation, `k` is read from its slot at runtime.
@@ -281,22 +310,65 @@ fn a_lambda_captures_only_the_outer_names_it_uses() {
     for (source, captures) in [
         ("fn -> x", 1),
         ("fn -> x + x + x", 1),
-        ("def y = x; fn -> [x, y]", 2),
+        (
+            r"
+            def y = x
+            fn -> [x, y]
+            ",
+            2,
+        ),
         ("fn a, b -> fn -> x", 1),
         ("$($ + x)", 1),
         // A global is not captured, but a binding shadowing one is.
         ("fn -> type(1)", 0),
-        ("def type = x; fn -> type", 1),
+        (
+            r"
+            def type = x
+            fn -> type
+            ",
+            1,
+        ),
         // Nor is a name the lambda binds itself before using it.
-        ("fn -> { def x = 1; x }", 0),
-        ("fn -> do { def x = 1; x }", 0),
+        (
+            r"
+            fn -> {
+                def x = 1
+                x
+            }
+            ",
+            0,
+        ),
+        (
+            r"
+            fn -> do {
+                def x = 1
+                x
+            }
+            ",
+            0,
+        ),
         ("fn x -> x", 0),
         ("fn x(n) -> x", 0),
         ("fn -> fn x -> x", 0),
         // But a use before the binding is of the outer name.
-        ("fn -> { x; def x = 1; x }", 1),
+        (
+            r"
+            fn -> {
+                x
+                def x = 1
+                x
+            }
+            ",
+            1,
+        ),
         // A field name is not a use of a binding of that name.
-        ("def a = x; fn m -> m.a", 0),
+        (
+            r"
+            def a = x
+            fn m -> m.a
+            ",
+            0,
+        ),
         // A nested lambda's needs are the outer one's too.
         ("fn -> fn -> x", 1),
         ("fn -> fn -> fn -> x", 1),
@@ -331,7 +403,10 @@ fn lambda_of(source: &str, optimization: OptimizationOptions) -> (Emitted, Emitt
 
 #[test]
 fn a_constant_capture_is_hoisted_into_the_lambda() {
-    let source = "def k = 10; fn v -> v * k";
+    let source = r"
+        def k = 10
+        fn v -> v * k
+        ";
     let (top, lambda) = lambda_of(source, PROPAGATE_AND_HOIST);
     assert_eq!(lambda.num_captures(), 0, "`k` is not captured: {lambda:?}");
     assert_eq!(
@@ -348,7 +423,11 @@ fn a_constant_capture_is_hoisted_into_the_lambda() {
 
 #[test]
 fn without_hoisting_a_constant_capture_is_pushed_at_creation() {
-    let (top, lambda) = lambda_of("def k = 10; fn v -> v * k", PROPAGATE);
+    let source = r"
+        def k = 10
+        fn v -> v * k
+        ";
+    let (top, lambda) = lambda_of(source, PROPAGATE);
     assert_eq!(lambda.num_captures(), 1, "{lambda:?}");
     assert_eq!(
         top.count(&Bytecode::PushInt(10)),
@@ -363,21 +442,33 @@ fn without_propagation_there_is_nothing_to_hoist() {
         capture_hoist: true,
         ..UNOPTIMIZED
     };
-    let (_, lambda) = lambda_of("def k = 10; fn v -> v * k", hoist_only);
+    let source = r"
+        def k = 10
+        fn v -> v * k
+        ";
+    let (_, lambda) = lambda_of(source, hoist_only);
     assert_eq!(lambda.num_captures(), 1, "{lambda:?}");
 }
 
 #[test]
 fn only_constant_captures_are_hoisted() {
     // `x` is known only at runtime, so it is still captured.
-    let (_, lambda) = lambda_of("def k = 10; fn v -> v + k + x", PROPAGATE_AND_HOIST);
+    let source = r"
+        def k = 10
+        fn v -> v + k + x
+        ";
+    let (_, lambda) = lambda_of(source, PROPAGATE_AND_HOIST);
     assert_eq!(lambda.num_captures(), 1, "only `x` is captured: {lambda:?}");
     assert_eq!(lambda.count(&Bytecode::PushInt(10)), 1, "{lambda:?}");
 }
 
 #[test]
 fn a_structured_constant_is_hoisted_into_the_lambdas_pool() {
-    let (_, lambda) = lambda_of(r#"def s = "text"; fn -> s"#, PROPAGATE_AND_HOIST);
+    let source = r#"
+        def s = "text"
+        fn -> s
+        "#;
+    let (_, lambda) = lambda_of(source, PROPAGATE_AND_HOIST);
     assert_eq!(lambda.num_captures(), 0, "{lambda:?}");
     assert!(
         lambda
@@ -390,7 +481,11 @@ fn a_structured_constant_is_hoisted_into_the_lambdas_pool() {
 
 #[test]
 fn hoisting_carries_through_nested_lambdas() {
-    let (_, outer) = lambda_of("def k = 10; fn -> fn -> k", PROPAGATE_AND_HOIST);
+    let source = r"
+        def k = 10
+        fn -> fn -> k
+        ";
+    let (_, outer) = lambda_of(source, PROPAGATE_AND_HOIST);
     let inner = outer.nested(0);
     assert_eq!(outer.num_captures(), 0, "{outer:?}");
     assert_eq!(inner.num_captures(), 0, "{inner:?}");
@@ -400,7 +495,14 @@ fn hoisting_carries_through_nested_lambdas() {
 #[test]
 fn a_hoisted_capture_may_be_rebound_after_use() {
     // Like any capture, the lambda may use it, then shadow it with a binding.
-    let source = "def k = 1; (fn -> { def a = k; def k = 2; a + k })()";
+    let source = r"
+        def k = 1
+        (fn -> {
+            def a = k
+            def k = 2
+            a + k
+        })()
+        ";
     assert_eq!(run(source), Value::Int(3));
     let (_, lambda) = lambda_of(source, PROPAGATE_AND_HOIST);
     assert_eq!(lambda.num_captures(), 0, "{lambda:?}");
@@ -417,7 +519,10 @@ fn pool_loads(emitted: &Emitted) -> usize {
 
 #[test]
 fn hoisting_moves_a_pooled_capture_from_the_creator_into_the_lambda() {
-    let source = r#"def s = "text"; fn -> s"#;
+    let source = r#"
+        def s = "text"
+        fn -> s
+        "#;
     let (top, lambda) = lambda_of(source, PROPAGATE);
     let (hoisted_top, hoisted_lambda) = lambda_of(source, PROPAGATE_AND_HOIST);
     assert_eq!(
@@ -439,9 +544,21 @@ fn hoisting_moves_a_pooled_capture_from_the_creator_into_the_lambda() {
 
 #[test]
 fn every_kind_of_constant_is_hoisted() {
-    let constants = r#"def n = null; def t = true; def fl = 1.5; def s = "s"; def a = [1, [2]]; def m = {k: [3]}"#;
+    let constants = r#"
+        def n = null
+        def t = true
+        def fl = 1.5
+        def s = "s"
+        def a = [1, [2]]
+        def m = {k: [3]}
+        "#;
     assert_eq!(
-        run(&format!("{constants}; (fn -> [n, t, fl, s, a, m])()")),
+        run(&format!(
+            r"
+            {constants}
+            (fn -> [n, t, fl, s, a, m])()
+            "
+        )),
         run(r#"[null, true, 1.5, "s", [1, [2]], {k: [3]}]"#),
     );
     // The structures are constants only once folded.
@@ -450,7 +567,12 @@ fn every_kind_of_constant_is_hoisted() {
         ..FOLD_AND_PROPAGATE
     };
     let (_, lambda) = lambda_of(
-        &format!("{constants}; fn -> [n, t, fl, s, a, m]"),
+        &format!(
+            r"
+            {constants}
+            fn -> [n, t, fl, s, a, m]
+            "
+        ),
         fold_propagate_and_hoist,
     );
     assert_eq!(lambda.num_captures(), 0, "{lambda:?}");
@@ -458,7 +580,12 @@ fn every_kind_of_constant_is_hoisted() {
 
 #[test]
 fn a_constant_bound_in_a_lambda_is_hoisted_into_its_nested_lambdas() {
-    let source = "fn -> { def k = 5; fn -> k }";
+    let source = r"
+        fn -> {
+            def k = 5
+            fn -> k
+        }
+        ";
     let (_, outer) = lambda_of(source, PROPAGATE_AND_HOIST);
     assert_eq!(outer.nested(0).num_captures(), 0, "{outer:?}");
     let (_, outer) = lambda_of(source, PROPAGATE);
@@ -471,30 +598,55 @@ fn only_constants_are_hoisted() {
     // when the parameter shadows a constant.
     let capturing = [
         // The second closure the top level creates captures the first.
-        code("def g = fn -> 1; fn -> g()", PROPAGATE_AND_HOIST).nested(1),
+        code(
+            r"
+            def g = fn -> 1
+            fn -> g()
+            ",
+            PROPAGATE_AND_HOIST,
+        )
+        .nested(1),
         code("fn me() -> fn -> me", PROPAGATE_AND_HOIST)
             .nested(0)
             .nested(0),
-        code("def k = 1; fn k -> fn -> k", PROPAGATE_AND_HOIST)
-            .nested(0)
-            .nested(0),
+        code(
+            r"
+            def k = 1
+            fn k -> fn -> k
+            ",
+            PROPAGATE_AND_HOIST,
+        )
+        .nested(0)
+        .nested(0),
     ];
     for lambda in capturing {
         assert_eq!(lambda.num_captures(), 1, "{lambda:?}");
     }
-    assert_eq!(run("def k = 1; (fn k -> fn -> k)(5)()"), Value::Int(5));
+    assert_eq!(
+        run(r"
+            def k = 1
+            (fn k -> fn -> k)(5)()
+            "),
+        Value::Int(5)
+    );
 }
 
 #[test]
 fn a_lambda_mixes_hoisted_and_captured_names() {
-    let (_, outer) = lambda_of("def k = 10; fn -> fn -> k + x", PROPAGATE_AND_HOIST);
+    let source = r"
+        def k = 10
+        fn -> fn -> k + x
+        ";
+    let (_, outer) = lambda_of(source, PROPAGATE_AND_HOIST);
     let inner = outer.nested(0);
     assert_eq!(outer.num_captures(), 1, "only `x`: {outer:?}");
     assert_eq!(inner.num_captures(), 1, "only `x`: {inner:?}");
     assert_eq!(inner.count(&Bytecode::PushInt(10)), 1, "{inner:?}");
-    let tail = Script::new("def k = 10; (fn -> fn -> k + x)()()")
-        .capture("x", Value::Int(1))
-        .run();
+    let source = r"
+        def k = 10
+        (fn -> fn -> k + x)()()
+        ";
+    let tail = Script::new(source).capture("x", Value::Int(1)).run();
     assert_eq!(tail, Value::Int(11));
 }
 
@@ -506,8 +658,17 @@ fn a_hoisted_capture_folds_within_the_lambda() {
         ..FOLD_AND_PROPAGATE
     };
     for source in [
-        "def k = 2 * 3; fn -> k * 7",
-        "def k = 2 * 3; fn -> { def product = k * 7; product }",
+        r"
+        def k = 2 * 3
+        fn -> k * 7
+        ",
+        r"
+        def k = 2 * 3
+        fn -> {
+            def product = k * 7
+            product
+        }
+        ",
     ] {
         let (_, lambda) = lambda_of(source, every_optimization);
         assert!(
@@ -539,9 +700,15 @@ fn a_hoisted_condition_eliminates_a_branch_in_the_lambda() {
         capture_hoist: true,
         ..eliminate
     };
-    let source = "def c = false; fn -> if c: 100 else: 200";
+    let source = r"
+        def c = false
+        fn -> if c: 100 else: 200
+        ";
     assert_eq!(
-        run("def c = false; (fn -> if c: 100 else: 200)()"),
+        run(r"
+            def c = false
+            (fn -> if c: 100 else: 200)()
+            "),
         Value::Int(200)
     );
 
@@ -570,7 +737,11 @@ fn a_hoisted_condition_eliminates_a_branch_in_the_lambda() {
 fn hoisting_keeps_each_closure_distinct() {
     // A lambda left with no captures is still created afresh each time its
     // expression is evaluated, so two closures from it are never equal.
-    let source = "def k = 1; def make = fn -> fn -> k; make() == make()";
+    let source = r"
+        def k = 1
+        def make = fn -> fn -> k
+        make() == make()
+        ";
     assert_eq!(run(source), Value::Bool(false));
 }
 
@@ -584,9 +755,24 @@ fn a_lambdas_return_expression_folds() {
         "fn f() -> 6 * 7",
         "$(6 * 7)",
         "fn -> do { 6 * 7 }",
-        "fn -> { 1; 6 * 7 }",
-        "fn -> { def a = 1; 6 * 7 }",
-        "fn ...args -> { args; 6 * 7 }",
+        r"
+        fn -> {
+            1
+            6 * 7
+        }
+        ",
+        r"
+        fn -> {
+            def a = 1
+            6 * 7
+        }
+        ",
+        r"
+        fn ...args -> {
+            args
+            6 * 7
+        }
+        ",
         "fn -> if true: 6 * 7 else: 0",
         "fn -> plus(6, 36)",
         "fn -> (fn -> 6 * 7)()",
@@ -619,7 +805,11 @@ fn without_folding_a_lambdas_return_expression_is_kept() {
 
 #[test]
 fn a_raising_return_expression_is_left_for_runtime() {
-    let message = Script::new("def f = fn -> 1 / 0; f()").raises();
+    let source = r"
+        def f = fn -> 1 / 0
+        f()
+        ";
+    let message = Script::new(source).raises();
     assert!(message.contains("Division by zero"), "{message}");
     let (_, lambda) = lambda_of("fn -> 1 / 0", FOLD);
     assert_eq!(lambda.count(&Bytecode::Divide), 1, "{lambda:?}");
@@ -662,9 +852,25 @@ fn a_call_in_a_lambdas_tail_position_is_a_tail_call() {
     for (source, tail) in [
         ("fn n -> x(n)", true),
         ("fn n -> if n: x(n) else: x(0)", true),
-        ("fn n -> { def m = n; x(m) }", true),
+        (
+            r"
+            fn n -> {
+                def m = n
+                x(m)
+            }
+            ",
+            true,
+        ),
         ("fn n -> x(n) + 1", false),
-        ("fn n -> { x(n); 1 }", false),
+        (
+            r"
+            fn n -> {
+                x(n)
+                1
+            }
+            ",
+            false,
+        ),
     ] {
         let body = code(source, UNOPTIMIZED).nested(0);
         let tail_calls = body
@@ -694,14 +900,41 @@ fn tail_position_in_a_lambda_passes_through_every_construct() {
         ("fn n -> x(n) or n", 1, 0),
         ("fn n -> if n: 1 elif n: x(n) else: 2", 0, 1),
         ("fn n -> if n: x(1) elif n: x(2) else: x(3)", 0, 3),
-        ("fn n -> do { def m = n; x(m) }", 0, 1),
-        ("fn n -> { def m = n; do { x(m) } }", 0, 1),
+        (
+            r"
+            fn n -> do {
+                def m = n
+                x(m)
+            }
+            ",
+            0,
+            1,
+        ),
+        (
+            r"
+            fn n -> {
+                def m = n
+                do { x(m) }
+            }
+            ",
+            0,
+            1,
+        ),
         ("fn n -> n @ x()", 0, 1),
         ("fn n -> map n with x", 0, 1),
         ("$(x($))", 0, 1),
         // The callee is called in tail position; the call producing it is not.
         ("fn n -> x(n)(n)", 1, 1),
-        ("fn n -> do { def m = x(n); m }", 1, 0),
+        (
+            r"
+            fn n -> do {
+                def m = x(n)
+                m
+            }
+            ",
+            1,
+            0,
+        ),
         ("fn n -> if x(n): 1 else: 2", 1, 0),
         ("fn n -> [x(n)]", 1, 0),
         ("fn n -> {a: x(n)}", 1, 0),
@@ -723,7 +956,13 @@ fn tail_position_in_a_lambda_passes_through_every_construct() {
 
 #[test]
 fn a_nested_lambda_has_its_own_tail_position() {
-    let outer = code("fn n -> { def g = fn -> x(n); g() }", UNOPTIMIZED).nested(0);
+    let source = r"
+        fn n -> {
+            def g = fn -> x(n)
+            g()
+        }
+        ";
+    let outer = code(source, UNOPTIMIZED).nested(0);
     assert_eq!(calls_by_kind(&outer), (0, 1), "{outer:?}");
     let inner = outer.nested(0);
     assert_eq!(calls_by_kind(&inner), (0, 1), "{inner:?}");
@@ -731,8 +970,11 @@ fn a_nested_lambda_has_its_own_tail_position() {
 
 #[test]
 fn tail_position_in_a_lambda_holds_under_every_optimization() {
-    let script =
-        Script::new("def k = 1; fn n -> if n: x(n + k) else: x(k)").capture("x", Value::Int(1));
+    let source = r"
+        def k = 1
+        fn n -> if n: x(n + k) else: x(k)
+        ";
+    let script = Script::new(source).capture("x", Value::Int(1));
     for emitted in script.code_where(|_| true) {
         let body = emitted.nested(0);
         assert_eq!(calls_by_kind(&body), (0, 2), "{body:?}");
@@ -742,18 +984,46 @@ fn tail_position_in_a_lambda_holds_under_every_optimization() {
 #[test]
 fn tail_calls_through_every_construct_run_in_bounded_depth() {
     for source in [
-        "defn f(n) -> n == 0 or f(n - 1); f(100000)",
-        "defn f(n) -> n != 0 and f(n - 1); f(100000) == false",
-        r#"defn f(n) -> if n == 0: true elif n < 0: "never" else: f(n - 1); f(100000)"#,
-        "defn f(n) -> do { def m = n - 1; if m < 0: true else: f(m) }; f(100000)",
-        "defn f(n) -> if n == 0: true else: (n - 1) @ f(); f(100000)",
+        r"
+        defn f(n) -> n == 0 or f(n - 1)
+        f(100000)
+        ",
+        r"
+        defn f(n) -> n != 0 and f(n - 1)
+        f(100000) == false
+        ",
+        r#"
+        defn f(n) -> if n == 0: true elif n < 0: "never" else: f(n - 1)
+        f(100000)
+        "#,
+        r"
+        defn f(n) -> do {
+            def m = n - 1
+            if m < 0: true else: f(m)
+        }
+        f(100000)
+        ",
+        r"
+        defn f(n) -> if n == 0: true else: (n - 1) @ f()
+        f(100000)
+        ",
         // Through an abbreviated lambda, called in tail position.
-        "defn f(n) -> if n == 0: true else: $(f($))(n - 1); f(100000)",
+        r"
+        defn f(n) -> if n == 0: true else: $(f($))(n - 1)
+        f(100000)
+        ",
         // Mutually, through a nested named lambda.
-        r"def even = fn even(n) -> if n == 0: true else: (fn odd(m) -> if m == 0: false else: even(m - 1))(n - 1)
-        even(100000)",
+        r"
+        def even = fn even(n) -> if n == 0: true else: (fn odd(m) -> if m == 0: false else: even(m - 1))(n - 1)
+        even(100000)
+        ",
         // In a `defn` within a lambda, over a captured limit.
-        "(fn limit -> { defn go(i) -> if i == limit: true else: go(i + 1); go(0) })(100000)",
+        r"
+        (fn limit -> {
+            defn go(i) -> if i == limit: true else: go(i + 1)
+            go(0)
+        })(100000)
+        ",
     ] {
         let tail = Script::new(source).max_call_depth(100).run();
         assert_eq!(tail, Value::Bool(true), "{source:?}");
@@ -764,15 +1034,20 @@ fn tail_calls_through_every_construct_run_in_bounded_depth() {
 fn tail_recursion_runs_in_bounded_depth() {
     // A hundred thousand iterations under a depth limit of a hundred frames:
     // only possible if each recursive call reuses its frame.
-    let source = r#"defn count(n) -> if n == 0: "done" else: count(n - 1); count(100000)"#;
+    let source = r#"
+        defn count(n) -> if n == 0: "done" else: count(n - 1)
+        count(100000)
+        "#;
     let tail = Script::new(source).max_call_depth(100).run();
     assert_eq!(tail, Value::from("done"));
 }
 
 #[test]
 fn accumulating_tail_recursion_runs_in_bounded_depth() {
-    let source =
-        "defn sum(n, total) -> if n == 0: total else: sum(n - 1, total + n); sum(10000, 0)";
+    let source = r"
+        defn sum(n, total) -> if n == 0: total else: sum(n - 1, total + n)
+        sum(10000, 0)
+        ";
     let tail = Script::new(source).max_call_depth(100).run();
     assert_eq!(tail, Value::Int(50_005_000));
 }
@@ -781,7 +1056,10 @@ fn accumulating_tail_recursion_runs_in_bounded_depth() {
 fn non_tail_recursion_grows_the_stack() {
     // Far past the limit, so no optimization that lowers call depth can bring
     // it back under.
-    let source = "defn depth(n) -> if n == 0: 0 else: 1 + depth(n - 1); depth(100000)";
+    let source = r"
+        defn depth(n) -> if n == 0: 0 else: 1 + depth(n - 1)
+        depth(100000)
+        ";
     let message = Script::new(source).max_call_depth(100).raises();
     assert!(message.contains("maximum call depth"), "{message}");
 }
@@ -806,7 +1084,13 @@ fn each_nested_function_carries_its_own_name() {
     assert_eq!(outer.name(), "outer");
     assert_eq!(outer.nested(0).name(), "inner");
 
-    let outer = code("fn -> { defn helper() -> 1; helper }", UNOPTIMIZED).nested(0);
+    let source = r"
+        fn -> {
+            defn helper() -> 1
+            helper
+        }
+        ";
+    let outer = code(source, UNOPTIMIZED).nested(0);
     assert_eq!(outer.nested(0).name(), "helper");
 
     // An unnamed lambda does not take its enclosing function's name.

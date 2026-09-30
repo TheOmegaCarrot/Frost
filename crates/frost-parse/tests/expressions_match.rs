@@ -601,22 +601,43 @@ mod newlines {
 
     #[test]
     fn arms_on_separate_lines() {
-        let expr = parse_expr("match x {\n    1 => 'one',\n    2 => 'two',\n    _ => 'other'\n}");
+        let source = r"
+            match x {
+                1 => 'one',
+                2 => 'two',
+                _ => 'other'
+            }
+        ";
+        let expr = parse_expr(source);
         let (_, arms) = assert_match(&expr);
         assert_eq!(arms.len(), 3);
     }
 
     #[test]
     fn newline_after_fat_arrow() {
-        let expr = parse_expr("match x {\n    _ =>\n        42\n}");
+        let source = r"
+            match x {
+                _ =>
+                    42
+            }
+        ";
+        let expr = parse_expr(source);
         let (_, arms) = assert_match(&expr);
         assert!(is_int(&arms[0].node.result, 42));
     }
 
     #[test]
     fn multiline_array_pattern() {
-        let expr =
-            parse_expr("match x {\n    [\n        a,\n        b,\n        ...rest\n    ] => a\n}");
+        let source = r"
+            match x {
+                [
+                    a,
+                    b,
+                    ...rest
+                ] => a
+            }
+        ";
+        let expr = parse_expr(source);
         let (_, arms) = assert_match(&expr);
         let (elements, rest) = assert_array_pattern(&arms[0].node.pattern);
         assert_eq!(elements.len(), 2);
@@ -625,7 +646,15 @@ mod newlines {
 
     #[test]
     fn multiline_map_pattern() {
-        let expr = parse_expr("match x {\n    {\n        name: n,\n        age: a\n    } => n\n}");
+        let source = r"
+            match x {
+                {
+                    name: n,
+                    age: a
+                } => n
+            }
+        ";
+        let expr = parse_expr(source);
         let (_, arms) = assert_match(&expr);
         let (entries, _) = assert_map_pattern(&arms[0].node.pattern);
         assert_eq!(entries.len(), 2);

@@ -187,7 +187,13 @@ mod parenthesized_params {
 
     #[test]
     fn multiline() {
-        let expr = parse_expr("fn(\n    x,\n    y\n) -> x + y");
+        let source = r"
+            fn(
+                x,
+                y
+            ) -> x + y
+        ";
+        let expr = parse_expr(source);
         let lam = assert_lambda(&expr);
         assert_eq!(lam.params.len(), 2);
     }
@@ -278,7 +284,14 @@ mod block_body {
 
     #[test]
     fn multiline_block() {
-        let expr = parse_expr("fn x -> {\n    def a = 1\n    def b = 2\n    a + b + x\n}");
+        let source = r"
+            fn x -> {
+                def a = 1
+                def b = 2
+                a + b + x
+            }
+        ";
+        let expr = parse_expr(source);
         let lam = assert_lambda(&expr);
         assert_eq!(lam.body.len(), 2);
     }
@@ -461,7 +474,11 @@ mod errors {
 
     #[test]
     fn dollar_id_outside_abbreviated_lambda() {
-        let err = parse_err("def a = $($ + 2) ; def $3 = 2");
+        let source = r"
+            def a = $($ + 2)
+            def $3 = 2
+        ";
+        let err = parse_err(source);
         assert!(err.contains("unexpected"), "error was: {err}");
     }
 

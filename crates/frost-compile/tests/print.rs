@@ -50,22 +50,38 @@ fn each_print_is_one_text_without_a_line_terminator() {
     // A newline inside the text is passed through; none is added.
     let two_lines = r"b
 c";
-    assert_eq!(printed(r#"print("a"); print("b\nc")"#), ["a", two_lines]);
+    let source = r#"
+        print("a")
+        print("b\nc")
+    "#;
+    assert_eq!(printed(source), ["a", two_lines]);
 }
 
 #[test]
 fn prints_happen_in_evaluation_order() {
-    assert_eq!(printed("print(1); print(2); print(3)"), ["1", "2", "3"]);
+    let sequential = r"
+        print(1)
+        print(2)
+        print(3)
+    ";
+    assert_eq!(printed(sequential), ["1", "2", "3"]);
     assert_eq!(printed("[print(1), print(2)]"), ["1", "2"]);
     assert_eq!(printed("plus(print(1) or 1, print(2) or 2)"), ["1", "2"]);
-    assert_eq!(
-        printed("transform([1, 2, 3], fn x -> { print(x); x })"),
-        ["1", "2", "3"]
-    );
-    assert_eq!(
-        printed("defn count(n) -> if n == 0: 0 else: do { print(n); count(n - 1) }; count(3)"),
-        ["3", "2", "1"]
-    );
+    let in_transform = r"
+        transform([1, 2, 3], fn x -> {
+            print(x)
+            x
+        })
+    ";
+    assert_eq!(printed(in_transform), ["1", "2", "3"]);
+    let recursive = r"
+        defn count(n) -> if n == 0: 0 else: do {
+            print(n)
+            count(n - 1)
+        }
+        count(3)
+    ";
+    assert_eq!(printed(recursive), ["3", "2", "1"]);
 }
 
 #[test]
@@ -75,10 +91,11 @@ fn only_the_prints_that_run_happen() {
         Vec::<String>::new()
     );
     assert_eq!(printed(r#"true or print("no")"#), Vec::<String>::new());
-    assert_eq!(
-        printed(r#"def f = fn -> print("no"); 1"#),
-        Vec::<String>::new()
-    );
+    let unused_function = r#"
+        def f = fn -> print("no")
+        1
+    "#;
+    assert_eq!(printed(unused_function), Vec::<String>::new());
     assert_eq!(
         printed(r#"match 2 { 1 => print("one"), 2 => print("two") }"#),
         ["two"]
@@ -87,17 +104,28 @@ fn only_the_prints_that_run_happen() {
 
 #[test]
 fn a_bound_print_happens_once() {
-    assert_eq!(printed("def x = print(1); [x, x]"), ["1"]);
-    assert_eq!(
-        printed("def f = fn -> print(1); f(); f()"),
-        ["1", "1"],
-        "once per call"
-    );
+    let bound_value = r"
+        def x = print(1)
+        [x, x]
+    ";
+    assert_eq!(printed(bound_value), ["1"]);
+    let bound_function = r"
+        def f = fn -> print(1)
+        f()
+        f()
+    ";
+    assert_eq!(printed(bound_function), ["1", "1"], "once per call");
 }
 
 #[test]
 fn prints_before_an_error_still_happen() {
-    let script = Script::new(r#"print("before"); error("boom"); print("after")"#);
+    let script = Script::new(
+        r#"
+        print("before")
+        error("boom")
+        print("after")
+        "#,
+    );
     assert_eq!(script.printed(), ["before"]);
     assert!(script.raises().contains("boom"));
 }

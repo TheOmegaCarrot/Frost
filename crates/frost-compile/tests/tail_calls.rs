@@ -62,7 +62,11 @@ fn assert_calls(source: &str, ordinary: &[usize], tail: &[usize]) {
 #[test]
 fn the_final_statement_is_in_tail_position() {
     assert_calls("f(1)", &[], &[1]);
-    assert_calls("f(1); f(2, 2)", &[1], &[2]);
+    let source = r"
+        f(1)
+        f(2, 2)
+    ";
+    assert_calls(source, &[1], &[2]);
 }
 
 #[test]
@@ -78,7 +82,14 @@ fn both_branches_of_an_if_in_tail_position_are() {
 
 #[test]
 fn the_final_expression_of_a_do_in_tail_position_is() {
-    assert_calls("do { f(1); def y = f(2, 2); f(3, 3, 3) }", &[1, 2], &[3]);
+    let source = r"
+        do {
+            f(1)
+            def y = f(2, 2)
+            f(3, 3, 3)
+        }
+    ";
+    assert_calls(source, &[1, 2], &[3]);
 }
 
 #[test]
@@ -90,11 +101,14 @@ fn the_right_operand_of_a_logical_in_tail_position_is() {
 
 #[test]
 fn tail_position_propagates_through_nesting() {
-    assert_calls(
-        "if x: (x and f(1)) else: do { f(2, 2); (if x: f(3, 3, 3) else: f()) }",
-        &[2],
-        &[0, 1, 3],
-    );
+    let source = r"
+        if x: (x and f(1))
+        else: do {
+            f(2, 2)
+            (if x: f(3, 3, 3) else: f())
+        }
+    ";
+    assert_calls(source, &[2], &[0, 1, 3]);
 }
 
 #[test]
@@ -124,7 +138,14 @@ fn an_elif_branch_in_tail_position_is_but_its_condition_is_not() {
 fn a_lambda_body_has_its_own_tail_position() {
     // Wherever the lambda expression sits, its body's final call is the last
     // code its own function runs.
-    for source in ["[fn -> f(1), 2]", "def h = fn -> f(1); h", "fn -> f(1)"] {
+    for source in [
+        "[fn -> f(1), 2]",
+        r"
+        def h = fn -> f(1)
+        h
+        ",
+        "fn -> f(1)",
+    ] {
         let emitted = code(source);
         assert_eq!(
             calls_by_arity(&emitted),
@@ -142,7 +163,14 @@ fn a_lambda_body_has_its_own_tail_position() {
 
 #[test]
 fn tail_position_propagates_through_a_lambda_body() {
-    let body = code("fn -> if x: do { f(1); x and f(3, 3, 3) } else: map x with f").nested(0);
+    let source = r"
+        fn -> if x: do {
+            f(1)
+            x and f(3, 3, 3)
+        }
+        else: map x with f
+    ";
+    let body = code(source).nested(0);
     assert_eq!(calls_by_arity(&body), (vec![1], vec![2, 3]), "{body:?}");
 }
 
@@ -150,8 +178,16 @@ fn tail_position_propagates_through_a_lambda_body() {
 
 #[test]
 fn a_non_final_statement_is_not_in_tail_position() {
-    assert_calls("f(1); 2", &[1], &[]);
-    assert_calls("def y = f(1); y", &[1], &[]);
+    let call_then_value = r"
+        f(1)
+        2
+    ";
+    assert_calls(call_then_value, &[1], &[]);
+    let bound_then_read = r"
+        def y = f(1)
+        y
+    ";
+    assert_calls(bound_then_read, &[1], &[]);
 }
 
 #[test]
@@ -184,18 +220,46 @@ fn a_selection_in_inner_position_passes_inner_on() {
     // The same shapes as the tail-position tests, used as an operand: code runs
     // after them, so none of their calls is a tail call.
     assert_calls("(if x: f(1) else: f(2, 2)) + 1", &[1, 2], &[]);
-    assert_calls("do { f(1); f(2, 2) } + 1", &[1, 2], &[]);
+    let block = r"
+        do {
+            f(1)
+            f(2, 2)
+        } + 1
+    ";
+    assert_calls(block, &[1, 2], &[]);
     assert_calls("(x and f(1)) + 1", &[1], &[]);
     assert_calls("f(if x: f(1) else: f(2, 2))", &[1, 2], &[1]);
 }
 
 #[test]
 fn a_selection_statement_that_is_not_final_passes_inner_on() {
-    assert_calls("if x: f(1) else: f(2, 2); 5", &[1, 2], &[]);
-    assert_calls("x or f(1); 5", &[1], &[]);
-    assert_calls("do { f(1) }; 5", &[1], &[]);
-    assert_calls("map x with f; 5", &[2], &[]);
-    assert_calls("do { if x: f(1) else: f(2, 2); f(3, 3, 3) }", &[1, 2], &[3]);
+    let selection = r"
+        if x: f(1) else: f(2, 2)
+        5
+    ";
+    assert_calls(selection, &[1, 2], &[]);
+    let logical = r"
+        x or f(1)
+        5
+    ";
+    assert_calls(logical, &[1], &[]);
+    let block = r"
+        do { f(1) }
+        5
+    ";
+    assert_calls(block, &[1], &[]);
+    let iteration = r"
+        map x with f
+        5
+    ";
+    assert_calls(iteration, &[2], &[]);
+    let nested_selection = r"
+        do {
+            if x: f(1) else: f(2, 2)
+            f(3, 3, 3)
+        }
+    ";
+    assert_calls(nested_selection, &[1, 2], &[3]);
 }
 
 #[test]
@@ -204,8 +268,16 @@ fn a_def_rhs_is_not_in_tail_position_even_as_the_final_statement() {
     assert_calls("def y = f(1)", &[1], &[]);
     assert_calls("def [a, b] = f(1)", &[1], &[]);
     assert_calls("def {a} = f(1)", &[1], &[]);
-    assert_calls("def y = if x: f(1) else: do { f(2, 2) }; y", &[1, 2], &[]);
-    assert_calls("def y = x and f(1); y", &[1], &[]);
+    let selection = r"
+        def y = if x: f(1) else: do { f(2, 2) }
+        y
+    ";
+    assert_calls(selection, &[1, 2], &[]);
+    let logical = r"
+        def y = x and f(1)
+        y
+    ";
+    assert_calls(logical, &[1], &[]);
 }
 
 #[test]
@@ -268,10 +340,24 @@ fn a_tail_call_survives_propagated_elimination() {
         ..UNOPTIMIZED
     };
     for source in [
-        "def c = true; if c: f(1) else: f(2, 2)",
-        "def c = false; if c: f(2, 2) elif c: f(3, 3, 3) else: f(1)",
-        "def c = null; c or f(1)",
-        "do { def c = 0; c and f(1) }",
+        r"
+        def c = true
+        if c: f(1) else: f(2, 2)
+        ",
+        r"
+        def c = false
+        if c: f(2, 2) elif c: f(3, 3, 3) else: f(1)
+        ",
+        r"
+        def c = null
+        c or f(1)
+        ",
+        r"
+        do {
+            def c = 0
+            c and f(1)
+        }
+        ",
     ] {
         let emitted = code_under(source, propagate_and_eliminate);
         assert_eq!(
@@ -298,7 +384,15 @@ fn a_tail_call_survives_folding_around_it() {
         constant_fold: true,
         ..UNOPTIMIZED
     };
-    for source in ["if x: f(1) else: 1 + 2", "do { def y = 2 * 3; f(1) }"] {
+    for source in [
+        "if x: f(1) else: 1 + 2",
+        r"
+        do {
+            def y = 2 * 3
+            f(1)
+        }
+        ",
+    ] {
         let emitted = code_under(source, fold);
         assert_eq!(
             calls_by_arity(&emitted),
@@ -306,8 +400,14 @@ fn a_tail_call_survives_folding_around_it() {
             "{source:?}: {emitted:?}"
         );
     }
+    let folded_argument = r"
+        do {
+            def y = 2 * 3
+            f(y)
+        }
+    ";
     let emitted = code_under(
-        "do { def y = 2 * 3; f(y) }",
+        folded_argument,
         OptimizationOptions {
             constant_propagate: true,
             ..fold
@@ -324,7 +424,12 @@ fn a_tail_call_survives_folding_around_it() {
 #[test]
 fn a_pure_tail_call_folds_to_its_value() {
     // In tail position the call is a tail call, and the fold evaluates it as one.
-    let source = "do { def y = x; to_string(1 + 2) }";
+    let source = r"
+        do {
+            def y = x
+            to_string(1 + 2)
+        }
+    ";
     assert_calls(source, &[], &[1]);
     let emitted = code_under(
         source,
@@ -354,30 +459,39 @@ fn run_shallow(source: &str) -> Value {
 
 #[test]
 fn tail_recursion_through_a_logical_runs_in_bounded_depth() {
-    assert_eq!(
-        run_shallow("defn down(n) -> n == 0 or down(n - 1); down(100000)"),
-        Value::Bool(true)
-    );
-    assert_eq!(
-        run_shallow("defn down(n) -> n > 0 and down(n - 1); down(100000)"),
-        Value::Bool(false)
-    );
+    let or = r"
+        defn down(n) -> n == 0 or down(n - 1)
+        down(100000)
+    ";
+    assert_eq!(run_shallow(or), Value::Bool(true));
+    let and = r"
+        defn down(n) -> n > 0 and down(n - 1)
+        down(100000)
+    ";
+    assert_eq!(run_shallow(and), Value::Bool(false));
 }
 
 #[test]
 fn tail_recursion_through_elif_and_do_runs_in_bounded_depth() {
-    let source = r"defn down(n, acc) -> if n == 0: acc
-            elif n % 2 == 0: do { def m = n - 1; down(m, acc + 2) }
+    let source = r"
+        defn down(n, acc) -> if n == 0: acc
+            elif n % 2 == 0: do {
+                def m = n - 1
+                down(m, acc + 2)
+            }
             else: down(n - 1, acc + 1)
-        down(100000, 0)";
+        down(100000, 0)
+    ";
     assert_eq!(run_shallow(source), Value::Int(150_000));
 }
 
 #[test]
 fn mutual_tail_recursion_runs_in_bounded_depth() {
     // Each function tail-calls the other, passed in as an argument.
-    let source = r#"defn ping(n, other) -> if n == 0: "ping" else: other(n - 1, ping)
+    let source = r#"
+        defn ping(n, other) -> if n == 0: "ping" else: other(n - 1, ping)
         defn pong(n, other) -> if n == 0: "pong" else: other(n - 1, pong)
-        ping(100001, pong)"#;
+        ping(100001, pong)
+    "#;
     assert_eq!(run_shallow(source), Value::from("pong"));
 }

@@ -137,14 +137,23 @@ mod if_newlines {
 
     #[test]
     fn newline_before_else() {
-        let expr = parse_expr("if true: 1\nelse: 2");
+        let source = r"
+            if true: 1
+            else: 2
+        ";
+        let expr = parse_expr(source);
         let (_, _, alt) = assert_if(&expr);
         assert!(is_int(alt.unwrap(), 2));
     }
 
     #[test]
     fn newline_before_elif() {
-        let expr = parse_expr("if true: 1\nelif false: 2\nelse: 3");
+        let source = r"
+            if true: 1
+            elif false: 2
+            else: 3
+        ";
+        let expr = parse_expr(source);
         let (_, _, alt) = assert_if(&expr);
         let (_, _, alt2) = assert_if(alt.unwrap());
         assert!(is_int(alt2.unwrap(), 3));
@@ -152,14 +161,26 @@ mod if_newlines {
 
     #[test]
     fn multiple_newlines_before_else() {
-        let expr = parse_expr("if true: 1\n\n\nelse: 2");
+        let source = r"
+            if true: 1
+
+
+            else: 2
+        ";
+        let expr = parse_expr(source);
         let (_, _, alt) = assert_if(&expr);
         assert!(is_int(alt.unwrap(), 2));
     }
 
     #[test]
     fn all_clauses_on_separate_lines() {
-        let expr = parse_expr("if a: 1\nelif b: 2\nelif c: 3\nelse: 4");
+        let source = r"
+            if a: 1
+            elif b: 2
+            elif c: 3
+            else: 4
+        ";
+        let expr = parse_expr(source);
         let (_, _, alt1) = assert_if(&expr);
         let (_, _, alt2) = assert_if(alt1.unwrap());
         let (_, _, alt3) = assert_if(alt2.unwrap());
@@ -168,7 +189,15 @@ mod if_newlines {
 
     #[test]
     fn if_in_parens_with_newlines() {
-        let expr = parse_expr("(\nif true:\n1\nelse:\n2\n)");
+        let source = r"
+            (
+                if true:
+                    1
+                else:
+                    2
+            )
+        ";
+        let expr = parse_expr(source);
         let (_, then, alt) = assert_if(&expr);
         assert!(is_int(then, 1));
         assert!(is_int(alt.unwrap(), 2));
@@ -176,7 +205,11 @@ mod if_newlines {
 
     #[test]
     fn if_without_else_then_newline_statement() {
-        let program = parse_program("test.frst", "if true: 1\n2").expect("failed to parse");
+        let source = r"
+            if true: 1
+            2
+        ";
+        let program = parse_program("test.frst", source).expect("failed to parse");
         assert_eq!(program.statements.len(), 2);
     }
 }
@@ -304,7 +337,13 @@ mod do_newlines {
 
     #[test]
     fn multiline() {
-        let expr = parse_expr("do {\n    def x = 5\n    x\n}");
+        let source = r"
+            do {
+                def x = 5
+                x
+            }
+        ";
+        let expr = parse_expr(source);
         let (body, value) = assert_do(&expr);
         assert_eq!(body.len(), 1);
         assert!(matches!(&value.node, Expr::NameLookup(n) if n == "x"));
@@ -312,21 +351,41 @@ mod do_newlines {
 
     #[test]
     fn multiline_multiple_defs() {
-        let expr = parse_expr("do {\n    def a = 1\n    def b = 2\n    a + b\n}");
+        let source = r"
+            do {
+                def a = 1
+                def b = 2
+                a + b
+            }
+        ";
+        let expr = parse_expr(source);
         let (body, _) = assert_do(&expr);
         assert_eq!(body.len(), 2);
     }
 
     #[test]
     fn blank_lines() {
-        let expr = parse_expr("do {\n    def x = 1\n\n    x\n}");
+        let source = r"
+            do {
+                def x = 1
+
+                x
+            }
+        ";
+        let expr = parse_expr(source);
         let (body, _) = assert_do(&expr);
         assert_eq!(body.len(), 1);
     }
 
     #[test]
     fn semicolons_and_newlines_mixed() {
-        let expr = parse_expr("do {\n    def x = 1; def y = 2\n    x + y\n}");
+        let source = r"
+            do {
+                def x = 1; def y = 2
+                x + y
+            }
+        ";
+        let expr = parse_expr(source);
         let (body, _) = assert_do(&expr);
         assert_eq!(body.len(), 2);
     }
@@ -347,7 +406,14 @@ mod blocks_inside_delimiters {
 
     #[test]
     fn a_multiline_do_block_in_a_call() {
-        let expr = parse_expr("f(do {\n    def x = 1\n    def y = 2\n    x + y\n})");
+        let source = r"
+            f(do {
+                def x = 1
+                def y = 2
+                x + y
+            })
+        ";
+        let expr = parse_expr(source);
         let (body, value) = assert_do(only_argument(&expr));
         assert_eq!(body.len(), 2);
         assert!(is_binop(value).is_some());
@@ -356,9 +422,24 @@ mod blocks_inside_delimiters {
     #[test]
     fn a_multiline_do_block_in_an_array_or_map() {
         for source in [
-            "[do {\n    def x = 1\n    x\n}]",
-            "{a: do {\n    def x = 1\n    x\n}}",
-            "f(g(do {\n    def x = 1\n    x\n}))",
+            r"
+            [do {
+                def x = 1
+                x
+            }]
+            ",
+            r"
+            {a: do {
+                def x = 1
+                x
+            }}
+            ",
+            r"
+            f(g(do {
+                def x = 1
+                x
+            }))
+            ",
         ] {
             let program = parse(source);
             assert_eq!(program.statements.len(), 1, "{source:?}");
@@ -367,7 +448,13 @@ mod blocks_inside_delimiters {
 
     #[test]
     fn a_multiline_lambda_body_in_a_call() {
-        let expr = parse_expr("f(fn x -> {\n    def y = x + 1\n    y * 2\n})");
+        let source = r"
+            f(fn x -> {
+                def y = x + 1
+                y * 2
+            })
+        ";
+        let expr = parse_expr(source);
         assert!(
             matches!(&only_argument(&expr).node, Expr::Lambda { .. }),
             "{expr:?}"
@@ -376,7 +463,17 @@ mod blocks_inside_delimiters {
 
     #[test]
     fn newlines_around_the_block_are_still_insignificant() {
-        let expr = parse_expr("f(\n    do {\n        def x = 1\n        x\n    }\n    ,\n    2\n)");
+        let source = r"
+            f(
+                do {
+                    def x = 1
+                    x
+                }
+                ,
+                2
+            )
+        ";
+        let expr = parse_expr(source);
         match &expr.node {
             Expr::Call { args, .. } => assert_eq!(args.len(), 2),
             other => panic!("expected a call, got {other:?}"),
@@ -386,7 +483,13 @@ mod blocks_inside_delimiters {
     #[test]
     fn a_line_break_mid_expression_in_the_block_is_still_an_error() {
         // As it is for a block anywhere else: the line ends the statement.
-        parse_err("f(do {\n    x +\n    y\n})");
+        let source = r"
+            f(do {
+                x +
+                y
+            })
+        ";
+        parse_err(source);
     }
 }
 
@@ -413,7 +516,14 @@ mod do_in_expressions {
 
     #[test]
     fn do_in_if_branch() {
-        let expr = parse_expr("if true: do { def x = 1; x } else: 0");
+        let source = r"
+            if true: do {
+                def x = 1
+                x
+            }
+            else: 0
+        ";
+        let expr = parse_expr(source);
         let (_, then, _) = assert_if(&expr);
         assert!(matches!(&then.node, Expr::Do { .. }));
     }
@@ -429,7 +539,13 @@ mod do_in_expressions {
 
     #[test]
     fn nested_do() {
-        let expr = parse_expr("do { def x = do { 5 }; x }");
+        let source = r"
+            do {
+                def x = do { 5 }
+                x
+            }
+        ";
+        let expr = parse_expr(source);
         let (body, _) = assert_do(&expr);
         assert_eq!(body.len(), 1);
         match &body[0].node {
@@ -458,7 +574,13 @@ mod do_errors {
 
     #[test]
     fn export_in_do() {
-        let err = parse_err("do { export def x = 5; x }");
+        let source = r"
+            do {
+                export def x = 5
+                x
+            }
+        ";
+        let err = parse_err(source);
         assert!(err.contains("unexpected"), "error was: {err}");
     }
 
@@ -496,7 +618,13 @@ mod do_errors {
     // mirror that.
     #[test]
     fn operator_continuation_across_newline() {
-        let err = parse_err("do {\n  x +\n  y\n}");
+        let source = r"
+            do {
+                x +
+                y
+            }
+        ";
+        let err = parse_err(source);
         assert!(
             err.contains("unexpected") || err.contains("Expected"),
             "error was: {err}"

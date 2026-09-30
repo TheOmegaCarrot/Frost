@@ -137,7 +137,13 @@ fn unequal_constants_and_opposite_zeros_stay_apart() {
 
 #[test]
 fn map_keys_that_print_differently_stay_apart() {
-    let source = "fn m -> match m { {[0.0]: a} => a, {[-0.0]: b} => b, _ => 0 }";
+    let source = r"
+        fn m -> match m {
+            {[0.0]: a} => a,
+            {[-0.0]: b} => b,
+            _ => 0
+        }
+    ";
     let emitted = Script::new(source).code(FOLD_AND_DEDUPLICATE).nested(0);
     let keys = emitted.key_constants();
     assert_eq!(keys.len(), 2, "{emitted:?}");
@@ -155,8 +161,10 @@ fn map_keys_that_print_differently_stay_apart() {
 
 #[test]
 fn opposite_zeros_keep_printing_differently() {
-    let source = r"def show = fn x -> $'${[x, [0.0], [-0.0], {a: 0.0}, {a: -0.0}, {[0.0]: 1}, {[-0.0]: 1}]}'
-        show(1)";
+    let source = r"
+        def show = fn x -> $'${[x, [0.0], [-0.0], {a: 0.0}, {a: -0.0}, {[0.0]: 1}, {[-0.0]: 1}]}'
+        show(1)
+    ";
     assert_eq!(
         run(source),
         Value::from(
@@ -169,7 +177,9 @@ fn opposite_zeros_keep_printing_differently() {
 fn a_shared_constant_is_never_changed_through_one_of_its_uses() {
     // Each use builds on the constant; a use that changed it in place would
     // change what the others see.
-    let source = r#"def f = fn x -> [[1] + [x], [1] + [2], [1]]
-        f(0)"#;
+    let source = r"
+        def f = fn x -> [[1] + [x], [1] + [2], [1]]
+        f(0)
+    ";
     assert_eq!(run(source), run("[[1, 0], [1, 2], [1]]"));
 }

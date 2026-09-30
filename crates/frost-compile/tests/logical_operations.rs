@@ -389,10 +389,26 @@ fn structures_functions_and_negative_numbers_are_truthy() {
 
 #[test]
 fn a_block_may_be_an_operand() {
-    let source = "do { def y = x; y } or do { def z = 2; z * 3 }";
+    let source = r"
+        do {
+            def y = x
+            y
+        } or do {
+            def z = 2
+            z * 3
+        }
+    ";
     assert_eq!(run_with(source, &[("x", Value::Null)]), Value::Int(6));
     assert_eq!(run_with(source, &[("x", Value::Int(1))]), Value::Int(1));
-    let source = "do { def y = x; y } and do { def z = 2; z * 3 }";
+    let source = r"
+        do {
+            def y = x
+            y
+        } and do {
+            def z = 2
+            z * 3
+        }
+    ";
     assert_eq!(run_with(source, &[("x", Value::Null)]), Value::Null);
     assert_eq!(run_with(source, &[("x", Value::Int(1))]), Value::Int(6));
 }
@@ -401,9 +417,13 @@ fn a_block_may_be_an_operand() {
 
 /// Defines `note(v)`, which appends `v` to a log and returns it, and `log()`,
 /// the values noted so far, in order. A script appends its own statements.
-const NOTE: &str = r"def cell = mutable_cell([])
-defn note(v) -> { cell.exchange(cell.get() + [v]); v }
-defn log() -> cell.get()
+const NOTE: &str = r"
+    def cell = mutable_cell([])
+    defn note(v) -> {
+        cell.exchange(cell.get() + [v])
+        v
+    }
+    defn log() -> cell.get()
 ";
 
 #[test]
@@ -421,7 +441,13 @@ fn operands_are_evaluated_once_each_left_to_right() {
         ),
         ("note(null) or (note(1) and note(2))", "[null, 1, 2]"),
     ] {
-        let source = format!("{NOTE}{statement}; log()");
+        let source = format!(
+            r"
+            {NOTE}
+            {statement}
+            log()
+            "
+        );
         assert_eq!(
             run(&source),
             run(expected),
@@ -442,10 +468,26 @@ fn a_logical_statement_leaves_the_stack_balanced() {
         Value::Int(0),
     ] {
         for source in [
-            "x and 1; 5",
-            "x or 1; 5",
-            "x and 1 or 2; x or x and 3; 5",
-            "true and x; false or x; null and x; 0 or x; 5",
+            r"
+            x and 1
+            5
+            ",
+            r"
+            x or 1
+            5
+            ",
+            r"
+            x and 1 or 2
+            x or x and 3
+            5
+            ",
+            r"
+            true and x
+            false or x
+            null and x
+            0 or x
+            5
+            ",
         ] {
             assert_eq!(
                 run_with(source, &[("x", x.clone())]),
@@ -482,34 +524,54 @@ fn a_logical_leaves_exactly_its_value_among_others() {
 
 #[test]
 fn a_logical_value_may_be_bound_and_reused() {
-    let source = "def y = x or 3; def z = y and y + 1; [y, z]";
+    let source = r"
+        def y = x or 3
+        def z = y and y + 1
+        [y, z]
+    ";
     assert_eq!(run_with(source, &[("x", Value::Null)]), run("[3, 4]"));
     assert_eq!(run_with(source, &[("x", Value::Int(7))]), run("[7, 8]"));
 }
 
 #[test]
 fn a_logical_in_a_lambda_decides_on_each_call() {
-    assert_eq!(
-        run("def pick = fn a, b -> a or b; [pick(null, 1), pick(2, 1), pick(false, null)]"),
-        run("[1, 2, null]")
-    );
-    assert_eq!(
-        run("def guard = fn a -> a and a + 1; [guard(null), guard(false), guard(1)]"),
-        run("[null, false, 2]")
-    );
+    let pick = r"
+        def pick = fn a, b -> a or b
+        [pick(null, 1), pick(2, 1), pick(false, null)]
+    ";
+    assert_eq!(run(pick), run("[1, 2, null]"));
+    let guard = r"
+        def guard = fn a -> a and a + 1
+        [guard(null), guard(false), guard(1)]
+    ";
+    assert_eq!(run(guard), run("[null, false, 2]"));
 }
 
 #[test]
 fn a_skipped_operand_in_a_lambda_never_runs() {
     let define = format!("def f = fn a -> a or {RAISE}");
-    assert_eq!(run(&format!("{define}; f(1)")), Value::Int(1));
-    assert_raises(&format!("{define}; f(null)"));
+    let call_with = |argument: &str| {
+        format!(
+            r"
+            {define}
+            f({argument})
+            "
+        )
+    };
+    assert_eq!(run(&call_with("1")), Value::Int(1));
+    assert_raises(&call_with("null"));
 }
 
 #[test]
 fn a_runtime_binding_shadowing_a_constant_decides_at_runtime() {
     // The inner `t` is the runtime `x`, not the outer constant `true`.
-    let source = "def t = true; do { def t = x; t and 1 }";
+    let source = r"
+        def t = true
+        do {
+            def t = x
+            t and 1
+        }
+    ";
     assert_eq!(run_with(source, &[("x", Value::Null)]), Value::Null);
     assert_eq!(
         run_with(source, &[("x", Value::Bool(false))]),
@@ -517,7 +579,14 @@ fn a_runtime_binding_shadowing_a_constant_decides_at_runtime() {
     );
     assert_eq!(run_with(source, &[("x", Value::Int(0))]), Value::Int(1));
     // Once the block ends, the outer constant is back in view.
-    let source = "def t = null; def inner = do { def t = x; t or 2 }; [inner, t or 3]";
+    let source = r"
+        def t = null
+        def inner = do {
+            def t = x
+            t or 2
+        }
+        [inner, t or 3]
+    ";
     assert_eq!(run_with(source, &[("x", Value::Int(1))]), run("[1, 3]"));
 }
 
@@ -990,7 +1059,11 @@ fn a_folded_left_operand_decides() {
 
 #[test]
 fn a_propagated_left_operand_decides() {
-    let emitted = Script::new("def t = true; t and x")
+    let source = r"
+        def t = true
+        t and x
+    ";
+    let emitted = Script::new(source)
         .capture("x", Value::Null)
         .code_where(|optimization| {
             optimization.branch_eliminate && optimization.constant_propagate
@@ -1121,10 +1194,22 @@ fn a_propagated_left_operand_decides_inside_a_block() {
         constant_propagate: true,
         ..ELIMINATE
     };
-    let emitted = code("do { def t = null; t or x }", propagate_and_eliminate);
+    let null_constant = r"
+        do {
+            def t = null
+            t or x
+        }
+    ";
+    let emitted = code(null_constant, propagate_and_eliminate);
     assert_eq!(jumps(&emitted), 0, "{emitted:?}");
     assert!(loads_x(&emitted), "only `x` remains: {emitted:?}");
-    let emitted = code("do { def t = 0; t or x }", propagate_and_eliminate);
+    let truthy_constant = r"
+        do {
+            def t = 0
+            t or x
+        }
+    ";
+    let emitted = code(truthy_constant, propagate_and_eliminate);
     assert_eq!(jumps(&emitted), 0, "{emitted:?}");
     assert!(!loads_x(&emitted), "`x` is dropped: {emitted:?}");
 }
@@ -1132,7 +1217,13 @@ fn a_propagated_left_operand_decides_inside_a_block() {
 #[test]
 fn a_runtime_shadow_of_a_constant_keeps_the_test() {
     let emitted = code(
-        "def t = true; do { def t = x; t and 1 }",
+        r"
+        def t = true
+        do {
+            def t = x
+            t and 1
+        }
+        ",
         OptimizationOptions {
             constant_propagate: true,
             ..ELIMINATE
@@ -1154,7 +1245,10 @@ fn elimination_applies_inside_a_lambda() {
 #[test]
 fn a_hoisted_constant_decides_inside_a_lambda() {
     let emitted = code(
-        "def t = false; fn -> t and x",
+        r"
+        def t = false
+        fn -> t and x
+        ",
         OptimizationOptions {
             constant_propagate: true,
             capture_hoist: true,

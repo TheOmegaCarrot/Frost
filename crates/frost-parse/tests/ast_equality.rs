@@ -10,9 +10,15 @@ use helpers::*;
 fn whitespace_does_not_affect_equality() {
     assert_eq!(parse_expr("1+2"), parse_expr("1 + 2"));
     assert_eq!(parse_expr("[1,2,3]"), parse_expr("[ 1, 2, 3 ]"));
+    let multiline = r"
+        f(
+            a,
+            b,
+        )
+    ";
     assert_eq!(
         parse_expr("f(a, b)"),
-        parse_expr("f(\n  a,\n  b,\n)"),
+        parse_expr(multiline),
         "newlines and a trailing comma shift spans but not structure"
     );
 }
@@ -53,9 +59,17 @@ fn spans_remain_explicitly_comparable() {
 
 #[test]
 fn full_programs_compare() {
-    let a = parse("def x = 1\ndef y = x + 1");
-    let b = parse("def x = 1\ndef y = x + 1");
-    let c = parse("def x = 1\ndef y = x + 2");
+    let original = r"
+        def x = 1
+        def y = x + 1
+    ";
+    let changed = r"
+        def x = 1
+        def y = x + 2
+    ";
+    let a = parse(original);
+    let b = parse(original);
+    let c = parse(changed);
     assert_eq!(a, b);
     assert_ne!(a, c);
 }

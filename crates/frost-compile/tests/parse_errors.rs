@@ -101,12 +101,10 @@ fn a_stray_closing_bracket_is_a_parse_error() {
 
 #[test]
 fn an_error_on_a_later_line_points_at_that_line() {
-    // A raw string literal with real newlines: the CLAUDE.md rule against `\n`
-    // escapes in Frost source is about statement separators, not this.
-    let source = r#"
-def x = 1
-1 +
-"#;
+    let source = r"
+        def x = 1
+        1 +
+    ";
     let rendered = Script::new(source)
         .filename("script.frst")
         .compile_errors()

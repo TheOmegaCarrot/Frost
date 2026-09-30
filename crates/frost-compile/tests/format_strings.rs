@@ -187,9 +187,13 @@ fn interpolations_are_evaluated_left_to_right() {
 
 #[test]
 fn a_format_string_statement_leaves_the_stack_balanced() {
-    let tail = Script::new("$'a${x}b'; $''; $'c'; 5")
-        .capture("x", Value::Int(7))
-        .run();
+    let source = r"
+        $'a${x}b'
+        $''
+        $'c'
+        5
+    ";
+    let tail = Script::new(source).capture("x", Value::Int(7)).run();
     assert_eq!(tail, Value::Int(5));
 }
 

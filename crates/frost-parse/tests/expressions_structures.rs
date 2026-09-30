@@ -152,19 +152,38 @@ mod array_multiline {
 
     #[test]
     fn simple() {
-        let expr = parse_expr("[\n  1,\n  2,\n  3\n]");
+        let source = r"
+            [
+                1,
+                2,
+                3
+            ]
+        ";
+        let expr = parse_expr(source);
         assert_eq!(array_elements(&expr).len(), 3);
     }
 
     #[test]
     fn trailing_comma_then_newline() {
-        let expr = parse_expr("[\n  1,\n  2,\n]");
+        let source = r"
+            [
+                1,
+                2,
+            ]
+        ";
+        let expr = parse_expr(source);
         assert_eq!(array_elements(&expr).len(), 2);
     }
 
     #[test]
     fn nested() {
-        let expr = parse_expr("[\n  [1, 2],\n  [3, 4],\n]");
+        let source = r"
+            [
+                [1, 2],
+                [3, 4],
+            ]
+        ";
+        let expr = parse_expr(source);
         let elems = array_elements(&expr);
         assert_eq!(elems.len(), 2);
         assert_eq!(array_elements(&elems[0]).len(), 2);
@@ -173,7 +192,13 @@ mod array_multiline {
 
     #[test]
     fn with_expressions() {
-        let expr = parse_expr("[\n  1 + 2,\n  3 * 4,\n]");
+        let source = r"
+            [
+                1 + 2,
+                3 * 4,
+            ]
+        ";
+        let expr = parse_expr(source);
         let elems = array_elements(&expr);
         assert_eq!(elems.len(), 2);
         assert!(is_binop(&elems[0]).is_some());
@@ -182,7 +207,13 @@ mod array_multiline {
 
     #[test]
     fn with_calls() {
-        let expr = parse_expr("[\n  f(1),\n  g(2),\n]");
+        let source = r"
+            [
+                f(1),
+                g(2),
+            ]
+        ";
+        let expr = parse_expr(source);
         let elems = array_elements(&expr);
         assert_eq!(elems.len(), 2);
         assert!(matches!(&elems[0].node, Expr::Call { .. }));
@@ -191,7 +222,16 @@ mod array_multiline {
 
     #[test]
     fn blank_lines_between_elements() {
-        let expr = parse_expr("[\n  1,\n\n  2,\n\n  3\n]");
+        let source = r"
+            [
+                1,
+
+                2,
+
+                3
+            ]
+        ";
+        let expr = parse_expr(source);
         assert_eq!(array_elements(&expr).len(), 3);
     }
 
@@ -256,7 +296,13 @@ mod call_trailing_comma_and_newlines {
 
     #[test]
     fn trailing_comma_multiline() {
-        let expr = parse_expr("f(\n  1,\n  2,\n)");
+        let source = r"
+            f(
+                1,
+                2,
+            )
+        ";
+        let expr = parse_expr(source);
         match &expr.node {
             Expr::Call { args, .. } => assert_eq!(args.len(), 2),
             other => panic!("expected Call, got {other:?}"),
@@ -265,7 +311,13 @@ mod call_trailing_comma_and_newlines {
 
     #[test]
     fn multiline_no_trailing_comma() {
-        let expr = parse_expr("f(\n  1,\n  2\n)");
+        let source = r"
+            f(
+                1,
+                2
+            )
+        ";
+        let expr = parse_expr(source);
         match &expr.node {
             Expr::Call { args, .. } => assert_eq!(args.len(), 2),
             other => panic!("expected Call, got {other:?}"),
@@ -301,7 +353,13 @@ mod call_trailing_comma_and_newlines {
 
     #[test]
     fn thread_multiline_args() {
-        let expr = parse_expr("a @ f(\n  1,\n  2,\n)");
+        let source = r"
+            a @ f(
+                1,
+                2,
+            )
+        ";
+        let expr = parse_expr(source);
         match &expr.node {
             Expr::Call { args, .. } => assert_eq!(args.len(), 3),
             other => panic!("expected Call, got {other:?}"),
@@ -472,25 +530,50 @@ mod map_multiline {
 
     #[test]
     fn simple() {
-        let expr = parse_expr("{\n  foo: 1,\n  bar: 2\n}");
+        let source = r"
+            {
+                foo: 1,
+                bar: 2
+            }
+        ";
+        let expr = parse_expr(source);
         assert_eq!(map_entries(&expr).len(), 2);
     }
 
     #[test]
     fn trailing_comma() {
-        let expr = parse_expr("{\n  foo: 1,\n  bar: 2,\n}");
+        let source = r"
+            {
+                foo: 1,
+                bar: 2,
+            }
+        ";
+        let expr = parse_expr(source);
         assert_eq!(map_entries(&expr).len(), 2);
     }
 
     #[test]
     fn computed_keys() {
-        let expr = parse_expr("{\n  [1]: 'one',\n  [2]: 'two',\n}");
+        let source = r"
+            {
+                [1]: 'one',
+                [2]: 'two',
+            }
+        ";
+        let expr = parse_expr(source);
         assert_eq!(map_entries(&expr).len(), 2);
     }
 
     #[test]
     fn blank_lines() {
-        let expr = parse_expr("{\n  foo: 1,\n\n  bar: 2,\n}");
+        let source = r"
+            {
+                foo: 1,
+
+                bar: 2,
+            }
+        ";
+        let expr = parse_expr(source);
         assert_eq!(map_entries(&expr).len(), 2);
     }
 

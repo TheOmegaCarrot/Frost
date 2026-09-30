@@ -25,7 +25,12 @@ fn lex_error_points_at_bad_character() {
 
 #[test]
 fn lex_error_on_invalid_character_mid_input() {
-    let result = parse_program("test.frst", "def x = 42\ndef y = ~\ndef z = 1");
+    let source = r"
+        def x = 42
+        def y = ~
+        def z = 1
+    ";
+    let result = parse_program("test.frst", source);
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("unexpected character"), "error was: {err}");

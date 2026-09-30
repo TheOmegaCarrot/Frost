@@ -212,9 +212,13 @@ fn every_truthy_elif_after_the_first_is_passed_over() {
 
 /// Defines `note(v)`, which appends `v` to a log and returns it, and `log()`,
 /// the values noted so far, in order. A script appends its own statements.
-const NOTE: &str = r"def cell = mutable_cell([])
-defn note(v) -> { cell.exchange(cell.get() + [v]); v }
-defn log() -> cell.get()
+const NOTE: &str = r"
+    def cell = mutable_cell([])
+    defn note(v) -> {
+        cell.exchange(cell.get() + [v])
+        v
+    }
+    defn log() -> cell.get()
 ";
 
 #[test]
@@ -242,7 +246,13 @@ fn conditions_are_evaluated_once_each_in_order_until_one_is_truthy() {
             "[null, 2, 3]",
         ),
     ] {
-        let source = format!("{NOTE}{statement}; log()");
+        let source = format!(
+            r"
+            {NOTE}
+            {statement}
+            log()
+            "
+        );
         assert_eq!(
             run(&source),
             run(expected),
@@ -253,7 +263,12 @@ fn conditions_are_evaluated_once_each_in_order_until_one_is_truthy() {
 
 #[test]
 fn the_taken_branchs_value_follows_its_conditions_evaluation() {
-    let source = format!("{NOTE}[if note(null): note(1) elif note(2): note(3), log()]");
+    let source = format!(
+        r"
+        {NOTE}
+        [if note(null): note(1) elif note(2): note(3), log()]
+        "
+    );
     assert_eq!(run(&source), run("[3, [null, 2, 3]]"));
 }
 
@@ -286,7 +301,11 @@ fn a_raising_condition_raises() {
 fn an_if_is_an_expression() {
     assert_eq!(run("(if true: 1 else: 2) + 10"), Value::Int(11));
     assert_eq!(run("10 + (if false: 1 else: 2)"), Value::Int(12));
-    assert_eq!(run("def y = if true: 1 else: 2; y * 3"), Value::Int(3));
+    let source = r"
+        def y = if true: 1 else: 2
+        y * 3
+    ";
+    assert_eq!(run(source), Value::Int(3));
 }
 
 #[test]
@@ -336,9 +355,19 @@ fn an_if_statement_leaves_the_stack_balanced() {
     // tail value must be unaffected.
     for condition in [Value::Bool(true), Value::Bool(false)] {
         for source in [
-            "if x: 1 else: 2; 5",
-            "if x: 1; 5",
-            "if x: 1 elif x: 2 else: 3; if x: 4; 5",
+            r"
+            if x: 1 else: 2
+            5
+            ",
+            r"
+            if x: 1
+            5
+            ",
+            r"
+            if x: 1 elif x: 2 else: 3
+            if x: 4
+            5
+            ",
         ] {
             assert_eq!(
                 run_with(source, &[("x", condition.clone())]),
@@ -355,7 +384,12 @@ fn an_if_leaves_exactly_its_value_among_others() {
     // leave one value on top of those already on the stack.
     for (source, if_false, if_true) in [
         (
-            "[0, if x: do { def a = 1; a + 1 } else: [1, 2], 9]",
+            r"
+            [0, if x: do {
+                def a = 1
+                a + 1
+            } else: [1, 2], 9]
+            ",
             "[0, [1, 2], 9]",
             "[0, 2, 9]",
         ),
@@ -389,10 +423,27 @@ fn an_if_leaves_exactly_its_value_among_others() {
 fn an_if_statement_with_differently_shaped_branches_leaves_the_stack_balanced() {
     for condition in [Value::Bool(true), Value::Bool(false)] {
         for source in [
-            "if x: do { def a = 1; a } else: [1, 2]; 5",
-            "if x: (x and 1) else: (if x: 2 else: 3); 5",
-            "if x: fn -> 1 else: {a: 2}; 5",
-            "if true: x; if false: x; if null: x else: x; 5",
+            r"
+            if x: do {
+                def a = 1
+                a
+            } else: [1, 2]
+            5
+            ",
+            r"
+            if x: (x and 1) else: (if x: 2 else: 3)
+            5
+            ",
+            r"
+            if x: fn -> 1 else: {a: 2}
+            5
+            ",
+            r"
+            if true: x
+            if false: x
+            if null: x else: x
+            5
+            ",
         ] {
             assert_eq!(
                 run_with(source, &[("x", condition.clone())]),
@@ -405,38 +456,73 @@ fn an_if_statement_with_differently_shaped_branches_leaves_the_stack_balanced() 
 
 #[test]
 fn a_condition_may_be_a_block() {
-    let source = "if do { def y = x; not y }: 1 else: 2";
+    let source = r"
+        if do {
+            def y = x
+            not y
+        }: 1 else: 2
+    ";
     assert_eq!(run_with(source, &[("x", Value::Bool(true))]), Value::Int(2));
     assert_eq!(run_with(source, &[("x", Value::Null)]), Value::Int(1));
 }
 
 #[test]
 fn an_if_in_a_lambda_chooses_on_each_call() {
-    assert_eq!(
-        run("def sign = fn n -> if n < 0: -1 elif n == 0: 0 else: 1; [sign(-5), sign(0), sign(5)]"),
-        run("[-1, 0, 1]")
-    );
+    let sign = r"
+        def sign = fn n -> if n < 0: -1 elif n == 0: 0 else: 1
+        [sign(-5), sign(0), sign(5)]
+    ";
+    assert_eq!(run(sign), run("[-1, 0, 1]"));
     let define = format!("def f = fn n -> if n: n else: {RAISE}");
-    assert_eq!(run(&format!("{define}; f(4)")), Value::Int(4));
-    assert_raises(&format!("{define}; f(null)"));
+    let call_with = |argument: &str| {
+        format!(
+            r"
+            {define}
+            f({argument})
+            "
+        )
+    };
+    assert_eq!(run(&call_with("4")), Value::Int(4));
+    assert_raises(&call_with("null"));
 }
 
 // --- Scope ---
 
 #[test]
 fn each_branch_block_is_its_own_scope() {
-    let source = "if x: do { def y = 1; y } else: do { def y = 2; y + 10 }";
+    let source = r"
+        if x: do {
+            def y = 1
+            y
+        } else: do {
+            def y = 2
+            y + 10
+        }
+    ";
     assert_eq!(run_with(source, &[("x", Value::Bool(true))]), Value::Int(1));
     assert_eq!(run_with(source, &[("x", Value::Null)]), Value::Int(12));
     // A branch's binding shadows the enclosing one only inside its block.
-    let source = "def y = 5; (if x: do { def y = 1; y } else: y) + y";
+    let source = r"
+        def y = 5
+        (if x: do {
+            def y = 1
+            y
+        } else: y) + y
+    ";
     assert_eq!(run_with(source, &[("x", Value::Bool(true))]), Value::Int(6));
     assert_eq!(run_with(source, &[("x", Value::Null)]), Value::Int(10));
 }
 
 #[test]
 fn a_branch_binding_is_not_visible_after_the_if() {
-    let rendered = Script::new("if x: do { def y = 1; y } else: 2; y")
+    let source = r"
+        if x: do {
+            def y = 1
+            y
+        } else: 2
+        y
+    ";
+    let rendered = Script::new(source)
         .capture("x", Value::Null)
         .compile_errors()
         .render_plain();
@@ -445,7 +531,14 @@ fn a_branch_binding_is_not_visible_after_the_if() {
 
 #[test]
 fn a_branch_block_rejects_a_duplicate_binding() {
-    let rendered = Script::new("if x: do { def y = 1; def y = 2; y } else: 0")
+    let source = r"
+        if x: do {
+            def y = 1
+            def y = 2
+            y
+        } else: 0
+    ";
+    let rendered = Script::new(source)
         .capture("x", Value::Null)
         .compile_errors()
         .render_plain();
@@ -473,30 +566,53 @@ fn an_unbound_name_is_a_compile_error_even_where_never_evaluated() {
 #[test]
 fn a_runtime_binding_shadowing_a_constant_decides_at_runtime() {
     // The inner `c` is the runtime `x`, not the outer constant `true`.
-    let source = "def c = true; do { def c = x; if c: 1 else: 2 }";
+    let source = r"
+        def c = true
+        do {
+            def c = x
+            if c: 1 else: 2
+        }
+    ";
     assert_eq!(
         run_with(source, &[("x", Value::Bool(false))]),
         Value::Int(2)
     );
     assert_eq!(run_with(source, &[("x", Value::Int(0))]), Value::Int(1));
     // And the reverse: a constant inner `c` shadows the runtime outer one.
-    let source = "def c = x; do { def c = false; if c: 1 else: 2 }";
+    let source = r"
+        def c = x
+        do {
+            def c = false
+            if c: 1 else: 2
+        }
+    ";
     assert_eq!(run_with(source, &[("x", Value::Bool(true))]), Value::Int(2));
     // Once the block ends, the outer constant is back in view.
-    let source = "def c = true; def d = do { def c = false; if c: 1 else: 2 }; if c: d else: 3";
+    let source = r"
+        def c = true
+        def d = do {
+            def c = false
+            if c: 1 else: 2
+        }
+        if c: d else: 3
+    ";
     assert_eq!(run(source), Value::Int(2));
 }
 
 #[test]
 fn a_constant_captured_by_a_lambda_decides_inside_it() {
-    assert_eq!(
-        run("def c = false; def f = fn -> if c: 1 else: 2; f()"),
-        Value::Int(2)
-    );
-    assert_eq!(
-        run("def c = 0; def f = fn n -> if c: n elif n: 1 else: 2; f(7)"),
-        Value::Int(7)
-    );
+    let falsy = r"
+        def c = false
+        def f = fn -> if c: 1 else: 2
+        f()
+    ";
+    assert_eq!(run(falsy), Value::Int(2));
+    let truthy = r"
+        def c = 0
+        def f = fn n -> if c: n elif n: 1 else: 2
+        f(7)
+    ";
+    assert_eq!(run(truthy), Value::Int(7));
 }
 
 #[test]
@@ -884,8 +1000,20 @@ fn a_propagated_condition_decides() {
         ..ELIMINATE
     };
     for (source, keeps_x) in [
-        ("def c = true; if c: x else: 2", true),
-        ("def c = null; if c: x else: 2", false),
+        (
+            r"
+            def c = true
+            if c: x else: 2
+            ",
+            true,
+        ),
+        (
+            r"
+            def c = null
+            if c: x else: 2
+            ",
+            false,
+        ),
     ] {
         let emitted = code(source, eliminate_and_propagate);
         assert_eq!(jumps(&emitted), 0, "the test is eliminated: {emitted:?}");
@@ -1005,7 +1133,12 @@ fn a_raising_condition_is_not_a_known_constant() {
 #[test]
 fn a_propagated_condition_decides_inside_a_block() {
     let emitted = code(
-        "do { def c = false; if c: x else: 2 }",
+        r"
+        do {
+            def c = false
+            if c: x else: 2
+        }
+        ",
         OptimizationOptions {
             constant_propagate: true,
             ..ELIMINATE
@@ -1019,7 +1152,13 @@ fn a_propagated_condition_decides_inside_a_block() {
 #[test]
 fn a_runtime_shadow_of_a_constant_keeps_the_test() {
     let emitted = code(
-        "def c = true; do { def c = x; if c: 1 else: 2 }",
+        r"
+        def c = true
+        do {
+            def c = x
+            if c: 1 else: 2
+        }
+        ",
         OptimizationOptions {
             constant_propagate: true,
             ..ELIMINATE
@@ -1031,7 +1170,10 @@ fn a_runtime_shadow_of_a_constant_keeps_the_test() {
 #[test]
 fn a_propagated_elif_condition_decides() {
     let emitted = code(
-        "def c = 0; if x: 1 elif c: 2 else: 3",
+        r"
+        def c = 0
+        if x: 1 elif c: 2 else: 3
+        ",
         OptimizationOptions {
             constant_propagate: true,
             ..ELIMINATE
@@ -1060,7 +1202,10 @@ fn elimination_applies_inside_a_lambda() {
 #[test]
 fn a_hoisted_constant_decides_inside_a_lambda() {
     let emitted = code(
-        "def c = null; fn -> if c: x else: 2",
+        r"
+        def c = null
+        fn -> if c: x else: 2
+        ",
         OptimizationOptions {
             constant_propagate: true,
             capture_hoist: true,
@@ -1075,17 +1220,25 @@ fn a_hoisted_constant_decides_inside_a_lambda() {
 #[test]
 fn elimination_applies_inside_a_branch_block() {
     // The outer test is runtime and stays; the one inside its block does not.
-    let emitted = code(
-        "if x: do { def y = 1; if true: y else: 2 } else: 3",
-        ELIMINATE,
-    );
+    let source = r"
+        if x: do {
+            def y = 1
+            if true: y else: 2
+        } else: 3
+    ";
+    let emitted = code(source, ELIMINATE);
     assert_eq!(jumps(&emitted), 2, "{emitted:?}");
     assert_eq!(emitted.count(&Bytecode::PushInt(2)), 0, "{emitted:?}");
 }
 
 #[test]
 fn an_eliminated_if_statement_leaves_no_test() {
-    let emitted = code("if false: x; if true: x else: 1; 5", ELIMINATE);
+    let source = r"
+        if false: x
+        if true: x else: 1
+        5
+    ";
+    let emitted = code(source, ELIMINATE);
     assert_eq!(jumps(&emitted), 0, "{emitted:?}");
     assert_eq!(emitted.count(&Bytecode::PushInt(1)), 0, "{emitted:?}");
 }

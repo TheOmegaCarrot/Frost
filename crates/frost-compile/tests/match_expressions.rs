@@ -22,9 +22,13 @@ const FOLD: OptimizationOptions = OptimizationOptions {
 
 /// Defines `note(v)`, which appends `v` to a log and returns it, and `log()`,
 /// the values noted so far, in order. A script appends its own statements.
-const NOTE: &str = r"def cell = mutable_cell([])
-defn note(v) -> { cell.exchange(cell.get() + [v]); v }
-defn log() -> cell.get()
+const NOTE: &str = r"
+    def cell = mutable_cell([])
+    defn note(v) -> {
+        cell.exchange(cell.get() + [v])
+        v
+    }
+    defn log() -> cell.get()
 ";
 
 /// Assert each `source` runs to the value of the Frost expression `expected`.
@@ -93,11 +97,17 @@ fn the_first_matching_arm_is_taken() {
 fn the_target_is_evaluated_once_before_any_arm() {
     assert_noted(&[
         (
-            "def r = match note(5) { 1 => 0, 2 => 0, x => x }; [r, log()]",
+            r"
+            def r = match note(5) { 1 => 0, 2 => 0, x => x }
+            [r, log()]
+            ",
             "[5, [5]]",
         ),
         (
-            "def r = match note(5) { x if: note(x) == 0 => 0, _ => 1 }; [r, log()]",
+            r"
+            def r = match note(5) { x if: note(x) == 0 => 0, _ => 1 }
+            [r, log()]
+            ",
             "[1, [5, 5]]",
         ),
     ]);
@@ -107,11 +117,22 @@ fn the_target_is_evaluated_once_before_any_arm() {
 fn arms_are_tried_in_order_and_only_the_taken_result_is_evaluated() {
     assert_noted(&[
         (
-            r#"match 2 { 1 => note("a"), 2 => note("b"), _ => note("c") }; log()"#,
+            r#"
+            match 2 { 1 => note("a"), 2 => note("b"), _ => note("c") }
+            log()
+            "#,
             r#"["b"]"#,
         ),
         (
-            "match 3 { x if: note(1) == 0 => 0, y if: note(2) == 0 => 0, z if: note(3) == 3 => z, _ if: note(4) => 0 }; log()",
+            r"
+            match 3 {
+                x if: note(1) == 0 => 0,
+                y if: note(2) == 0 => 0,
+                z if: note(3) == 3 => z,
+                _ if: note(4) => 0
+            }
+            log()
+            ",
             "[1, 2, 3]",
         ),
     ]);
@@ -153,7 +174,17 @@ fn a_match_leaves_exactly_its_value_among_others() {
         ("match match 1 { x => [x, x] } { [a, b] => a + b }", "2"),
         // Arms abandoned partway through their patterns leave nothing behind.
         (
-            "[match [1, [2, 3]] { [x, [y]] => 0, [x, [y, z, w]] => 0, {a} => 0, [x, [y, z]] => x + y + z }, 4]",
+            r"
+            [
+                match [1, [2, 3]] {
+                    [x, [y]] => 0,
+                    [x, [y, z, w]] => 0,
+                    {a} => 0,
+                    [x, [y, z]] => x + y + z
+                },
+                4
+            ]
+            ",
             "[6, 4]",
         ),
     ]);
@@ -163,16 +194,31 @@ fn a_match_leaves_exactly_its_value_among_others() {
 fn a_match_statement_leaves_the_stack_balanced() {
     assert_values(&[
         (
-            "match [1, 2] { [a, ...r] => a }; match {a: 1} { {a: x} => x }; 7",
+            r"
+            match [1, 2] { [a, ...r] => a }
+            match {a: 1} { {a: x} => x }
+            7
+            ",
             "7",
         ),
         (
-            "match [1, [2]] { [x, [0]] => 0, [x, [y]] => y }; match 3 { 1 | 2 => 0, _ => 1 }; 7",
+            r"
+            match [1, [2]] { [x, [0]] => 0, [x, [y]] => y }
+            match 3 { 1 | 2 => 0, _ => 1 }
+            7
+            ",
             "7",
         ),
         // Repeated many times over, any imbalance would accumulate.
         (
-            "defn go(n) -> if n == 0: 0 else: do { match [n, n] { [a, b] | {a, b} => a }; match n { 1 | 2 => null, _ => null }; go(n - 1) }; go(1000)",
+            r"
+            defn go(n) -> if n == 0: 0 else: do {
+                match [n, n] { [a, b] | {a, b} => a }
+                match n { 1 | 2 => null, _ => null }
+                go(n - 1)
+            }
+            go(1000)
+            ",
             "0",
         ),
     ]);
@@ -181,7 +227,10 @@ fn a_match_statement_leaves_the_stack_balanced() {
 #[test]
 fn a_match_in_a_lambda_matches_afresh_on_each_call() {
     assert_values(&[(
-        "def f = fn v -> match v { [x] => x, {x} => x, _ => 0 }; [f([1]), f({x: 2}), f(3), f([4])]",
+        r"
+        def f = fn v -> match v { [x] => x, {x} => x, _ => 0 }
+        [f([1]), f({x: 2}), f(3), f([4])]
+        ",
         "[1, 2, 0, 4]",
     )]);
 }
@@ -247,17 +296,42 @@ fn a_constrained_name_binds_the_value() {
 #[test]
 fn a_name_may_shadow_an_enclosing_name_or_global() {
     assert_values(&[
-        ("def x = 1; [match 2 { x => x }, x]", "[2, 1]"),
+        (
+            r"
+            def x = 1
+            [match 2 { x => x }, x]
+            ",
+            "[2, 1]",
+        ),
         ("match 5 { plus => plus }", "5"),
-        ("def x = [1]; match x { [x] => x }", "1"),
+        (
+            r"
+            def x = [1]
+            match x { [x] => x }
+            ",
+            "1",
+        ),
         ("(fn v -> match v { [v] | {v} => v })([4])", "4"),
         // A hoisted capture, shadowed by the arm, and read by values and keys.
         (
-            "def k = 3; def f = fn v -> match v { k if: k > 5 => k, _ => k }; [f(9), f(1)]",
+            r"
+            def k = 3
+            def f = fn v -> match v { k if: k > 5 => k, _ => k }
+            [f(9), f(1)]
+            ",
             "[9, 3]",
         ),
         (
-            r#"def k = 3; def f = fn v -> match v { (k) => "k", [(k), k2] => k2, {[k]: z} => z, _ => 0 }; [f(3), f([3, 4]), f({[3]: 5}), f(1)]"#,
+            r#"
+            def k = 3
+            def f = fn v -> match v {
+                (k) => "k",
+                [(k), k2] => k2,
+                {[k]: z} => z,
+                _ => 0
+            }
+            [f(3), f([3, 4]), f({[3]: 5}), f(1)]
+            "#,
             r#"["k", 4, 5, 0]"#,
         ),
     ]);
@@ -303,16 +377,28 @@ fn a_literal_matches_only_its_own_type() {
 fn a_parenthesized_expression_is_compared_by_value() {
     assert_values(&[
         (
-            r#"def k = 3; match 3 { (k) => "k", _ => "other" }"#,
+            r#"
+            def k = 3
+            match 3 { (k) => "k", _ => "other" }
+            "#,
             r#""k""#,
         ),
         (
-            r#"def k = 4; match 3 { (k) => "k", _ => "other" }"#,
+            r#"
+            def k = 4
+            match 3 { (k) => "k", _ => "other" }
+            "#,
             r#""other""#,
         ),
         ("match 4 { (2 + 2) => 1, _ => 0 }", "1"),
         ("match [1, {a: 2}] { ([1, {a: 2}]) => 1, _ => 0 }", "1"),
-        ("def f = fn -> 1; match f { (f) => 1, _ => 0 }", "1"),
+        (
+            r"
+            def f = fn -> 1
+            match f { (f) => 1, _ => 0 }
+            ",
+            "1",
+        ),
         // Two evaluations of a lambda are two distinct closures.
         ("match (fn -> 1) { (fn -> 1) => 1, _ => 0 }", "0"),
     ]);
@@ -338,7 +424,13 @@ fn a_value_may_be_an_earlier_binding_of_the_same_pattern() {
 fn a_value_is_evaluated_only_when_its_pattern_reaches_it() {
     assert_noted(&[
         (
-            "match [1, 2] { [(note(0)), _] => 0, [_, (note(3))] => 0, [(note(1)), (note(2))] => log() }",
+            r"
+            match [1, 2] {
+                [(note(0)), _] => 0,
+                [_, (note(3))] => 0,
+                [(note(1)), (note(2))] => log()
+            }
+            ",
             "[0, 3, 1, 2]",
         ),
         ("match 1 { 2 => 0, _ => log(), (note(9)) => 0 }", "[]"),
@@ -432,11 +524,21 @@ fn a_map_pattern_matches_the_keys_it_names() {
 fn a_computed_key_matches_by_value() {
     assert_values(&[
         (
-            r#"match {[1]: "i", [true]: "t", [x'00']: "b", [1.5]: "f"} { {[1]: i, [true]: t, [x'00']: b, [1.5]: f} => [i, t, b, f] }"#,
+            r#"
+            match {[1]: "i", [true]: "t", [x'00']: "b", [1.5]: "f"} {
+                {[1]: i, [true]: t, [x'00']: b, [1.5]: f} => [i, t, b, f]
+            }
+            "#,
             r#"["i", "t", "b", "f"]"#,
         ),
         ("match {[1.0]: 2} { {[1]: x} => x, _ => 0 }", "0"),
-        (r#"def k = "b"; match {b: 5} { {[k]: v} => v }"#, "5"),
+        (
+            r#"
+            def k = "b"
+            match {b: 5} { {[k]: v} => v }
+            "#,
+            "5",
+        ),
         (r#"match {a: "c", c: 3} { {a, [a]: b} => b }"#, "3"),
         (r#"match {a: "z", c: 3} { {a, [a]: b} => b, _ => 0 }"#, "0"),
     ]);
@@ -533,7 +635,13 @@ fn a_guard_is_tested_for_truthiness() {
 fn a_guard_runs_only_after_its_pattern_matches() {
     assert_noted(&[
         (
-            r#"match [1] { [a, b] if: note("two") => 0, [a] if: note("one") => log(), _ if: note("any") => 0 }"#,
+            r#"
+            match [1] {
+                [a, b] if: note("two") => 0,
+                [a] if: note("one") => log(),
+                _ if: note("any") => 0
+            }
+            "#,
             r#"["one"]"#,
         ),
         (
@@ -546,7 +654,16 @@ fn a_guard_runs_only_after_its_pattern_matches() {
 #[test]
 fn a_failed_guard_falls_through_with_the_stack_restored() {
     assert_values(&[(
-        "[match [1, [2, 3]] { [a, [b, c]] if: false => 0, {a} => 0, [a, [b, c]] => a + b + c }, 9]",
+        r"
+        [
+            match [1, [2, 3]] {
+                [a, [b, c]] if: false => 0,
+                {a} => 0,
+                [a, [b, c]] => a + b + c
+            },
+            9
+        ]
+        ",
         "[6, 9]",
     )]);
 }
@@ -633,25 +750,40 @@ fn a_branch_sees_only_its_own_bindings() {
     // earlier branch bound.
     assert_values(&[
         (
-            "def x = 7; match [5, 7, 3] { [x, 1, _] | [_, (x), x] => x, _ => 0 }",
+            r"
+            def x = 7
+            match [5, 7, 3] { [x, 1, _] | [_, (x), x] => x, _ => 0 }
+            ",
             "3",
         ),
         (
-            "def x = 7; match [7, 3] { [(x), x] | [x, 0] => x, _ => 0 }",
+            r"
+            def x = 7
+            match [7, 3] { [(x), x] | [x, 0] => x, _ => 0 }
+            ",
             "3",
         ),
         // Its own binding, once made, is the one it reads.
         (
-            "def x = 7; match [5, 5] { [x, 1] | [x, (x)] => x, _ => 0 }",
+            r"
+            def x = 7
+            match [5, 5] { [x, 1] | [x, (x)] => x, _ => 0 }
+            ",
             "5",
         ),
         (
-            "def x = 7; match [5, 6] { [x, 1] | [x, (x)] => x, _ => 0 }",
+            r"
+            def x = 7
+            match [5, 6] { [x, 1] | [x, (x)] => x, _ => 0 }
+            ",
             "0",
         ),
         // Likewise within an alternative nested in a later branch.
         (
-            "def x = 7; match [0, [7, 2]] { [x, 1] | [0, [(x), x] | {x}] => x, _ => 0 }",
+            r"
+            def x = 7
+            match [0, [7, 2]] { [x, 1] | [0, [(x), x] | {x}] => x, _ => 0 }
+            ",
             "2",
         ),
     ]);
@@ -726,20 +858,34 @@ fn a_later_branch_captures_the_enclosing_name_an_earlier_branch_shadows() {
     // the lambda capture it.
     assert_values(&[
         (
-            "def x = 7; def f = fn v -> match v { [x, 1, _] | [_, (x), x] => x, _ => 0 }; f([5, 7, 3])",
+            r"
+            def x = 7
+            def f = fn v -> match v { [x, 1, _] | [_, (x), x] => x, _ => 0 }
+            f([5, 7, 3])
+            ",
             "3",
         ),
         // Were `plus` not captured, the branch would compare with the global.
         (
-            "def plus = 5; def g = fn v -> match v { [plus, 1] | [(plus), plus] => plus, _ => 0 }; g([5, 9])",
+            r"
+            def plus = 5
+            def g = fn v -> match v { [plus, 1] | [(plus), plus] => plus, _ => 0 }
+            g([5, 9])
+            ",
             "9",
         ),
         (
-            "def y = 2; (fn v -> match v { [1, [y, 0] | [(y), y]] => y, _ => -1 })([1, [2, 8]])",
+            r"
+            def y = 2
+            (fn v -> match v { [1, [y, 0] | [(y), y]] => y, _ => -1 })([1, [2, 8]])
+            ",
             "8",
         ),
         (
-            "def y = 1; (fn v -> match v { {a: y, b: 0} | {[y]: y} => y, _ => -1 })({[1]: 5})",
+            r"
+            def y = 1
+            (fn v -> match v { {a: y, b: 0} | {[y]: y} => y, _ => -1 })({[1]: 5})
+            ",
             "5",
         ),
     ]);
@@ -803,10 +949,28 @@ fn alternatives_must_bind_the_same_names() {
 #[test]
 fn an_arms_bindings_are_visible_only_in_that_arm() {
     assert_compile_errors(&[
-        ("match 1 { x => x }; x", "`x` is not defined"),
+        (
+            r"
+            match 1 { x => x }
+            x
+            ",
+            "`x` is not defined",
+        ),
         ("match 1 { x if: false => 0, _ => x }", "`x` is not defined"),
-        ("match {a: 1} { {a} as m => 0 }; m", "`m` is not defined"),
-        ("match [1] { [x] => fn -> x }; x", "`x` is not defined"),
+        (
+            r"
+            match {a: 1} { {a} as m => 0 }
+            m
+            ",
+            "`m` is not defined",
+        ),
+        (
+            r"
+            match [1] { [x] => fn -> x }
+            x
+            ",
+            "`x` is not defined",
+        ),
     ]);
 }
 
@@ -853,7 +1017,13 @@ fn an_unbound_name_is_a_compile_error_even_in_an_arm_never_taken() {
 #[test]
 fn an_arm_may_capture_its_bindings() {
     assert_values(&[
-        ("def f = match [1, 2] { [a, b] => fn -> a + b }; f()", "3"),
+        (
+            r"
+            def f = match [1, 2] { [a, b] => fn -> a + b }
+            f()
+            ",
+            "3",
+        ),
         (
             "transform([[1, 2], [3, 4]], fn p -> match p { [a, b] => a * b })",
             "[2, 12]",
@@ -864,7 +1034,10 @@ fn an_arm_may_capture_its_bindings() {
             "[1, 2, 3]",
         ),
         (
-            "def fs = transform([[1, 0], [0, 2]], fn p -> match p { [x, 0] | [0, x] => fn -> x }); [fs[0](), fs[1]()]",
+            r"
+            def fs = transform([[1, 0], [0, 2]], fn p -> match p { [x, 0] | [0, x] => fn -> x })
+            [fs[0](), fs[1]()]
+            ",
             "[1, 2]",
         ),
     ]);
@@ -882,24 +1055,44 @@ fn a_match_may_appear_in_any_part_of_another() {
             r#""two""#,
         ),
         ("match [1, [2]] { [a, b] => match b { [c] => a + c } }", "3"),
-        ("do { def v = [1]; match v { [x] => x } }", "1"),
-        ("(fn v -> { def w = [v]; match w { [x] => x } })(4)", "4"),
+        (
+            r"
+            do {
+                def v = [1]
+                match v { [x] => x }
+            }
+            ",
+            "1",
+        ),
+        (
+            r"
+            (fn v -> {
+                def w = [v]
+                match w { [x] => x }
+            })(4)
+            ",
+            "4",
+        ),
     ]);
 }
 
 #[test]
 fn a_matchs_bindings_are_not_implicitly_exported() {
-    let finished = Script::new("def r = match [1] { [a] => a }; r")
-        .implicit_export()
-        .finish();
+    let source = r"
+        def r = match [1] { [a] => a }
+        r
+    ";
+    let finished = Script::new(source).implicit_export().finish();
     assert_eq!(finished.exports.keys().collect::<Vec<_>>(), vec!["r"]);
 
     // A pattern binding shadowing a top-level name leaves that name's export.
-    let finished = Script::new(
-        "def x = 1; def r = match [2, 3] { [x, 1] | [_, x] => x }; export def e = match {a: 4} { {a} => a }; [x, r]",
-    )
-    .implicit_export()
-    .finish();
+    let source = r"
+        def x = 1
+        def r = match [2, 3] { [x, 1] | [_, x] => x }
+        export def e = match {a: 4} { {a} => a }
+        [x, r]
+    ";
+    let finished = Script::new(source).implicit_export().finish();
     assert_eq!(finished.tail, run("[1, 3]"));
     assert_eq!(
         finished.exports.keys().collect::<Vec<_>>(),
@@ -920,15 +1113,30 @@ fn an_error_inside_a_match_can_be_caught() {
             "[false, 9]",
         ),
         (
-            r#"[try_call(fn -> match [1] { [x] if: error("boom") => 0 }).ok, match [1] { [x] => x }]"#,
+            r#"
+            [
+                try_call(fn -> match [1] { [x] if: error("boom") => 0 }).ok,
+                match [1] { [x] => x }
+            ]
+            "#,
             "[false, 1]",
         ),
         (
-            "[try_call(fn -> match [1, 2] { [x, (1 / 0)] => 0 }).ok, match [1] { [x] => x }]",
+            r"
+            [
+                try_call(fn -> match [1, 2] { [x, (1 / 0)] => 0 }).ok,
+                match [1] { [x] => x }
+            ]
+            ",
             "[false, 1]",
         ),
         (
-            "[try_call(fn -> match [1, 2] { [x, 0] | [x, (1 / 0)] => 0 }).ok, match [1] { [x] => x }]",
+            r"
+            [
+                try_call(fn -> match [1, 2] { [x, 0] | [x, (1 / 0)] => 0 }).ok,
+                match [1] { [x] => x }
+            ]
+            ",
             "[false, 1]",
         ),
         // Caught inside a guard or a value, while this frame's marks are open.
@@ -941,7 +1149,14 @@ fn an_error_inside_a_match_can_be_caught() {
             "1",
         ),
         (
-            "defn f(v) -> [match v { [x] | {x} => x, _ => null }, try_call(fn -> match v { 5 => 0 }).ok, match v { _ => 9 }]; [f([1]), f({x: 2}), f(5), f(6)]",
+            r"
+            defn f(v) -> [
+                match v { [x] | {x} => x, _ => null },
+                try_call(fn -> match v { 5 => 0 }).ok,
+                match v { _ => 9 }
+            ]
+            [f([1]), f({x: 2}), f(5), f(6)]
+            ",
             "[[1, false, 9], [2, false, 9], [null, true, 9], [null, false, 9]]",
         ),
     ]);
@@ -954,22 +1169,45 @@ fn a_caught_error_leaves_no_arm_of_its_frames_behind() {
     assert_values(&[
         // The raising match's own arm is open.
         (
-            r#"match [1] { [x] if: try_call(fn -> match 1 { y if: error("boom") => 0 }).ok => 0, [x] => x }"#,
+            r#"
+            match [1] {
+                [x] if: try_call(fn -> match 1 { y if: error("boom") => 0 }).ok => 0,
+                [x] => x
+            }
+            "#,
             "1",
         ),
         // An alternative's branch is open inside the raising arm.
         (
-            r#"match [1] { [x] if: try_call(fn -> match [1, 2] { [a, (error("boom"))] | [a, 0] => 0 }).ok => 0, [x] => x }"#,
+            r#"
+            match [1] {
+                [x] if: try_call(fn -> match [1, 2] { [a, (error("boom"))] | [a, 0] => 0 }).ok => 0,
+                [x] => x
+            }
+            "#,
             "1",
         ),
         // Arms are open in two abandoned frames.
         (
-            r#"match [1] { [x] if: try_call(fn -> match 2 { y if: (fn -> match 3 { z if: error("boom") => 0 })() => 0 }).ok => 0, [x] => x }"#,
+            r#"
+            match [1] {
+                [x] if: try_call(fn -> match 2 {
+                    y if: (fn -> match 3 { z if: error("boom") => 0 })() => 0
+                }).ok => 0,
+                [x] => x
+            }
+            "#,
             "1",
         ),
         // Repeated, as any leftover would pile up.
         (
-            r#"defn f(n) -> if n == 0: "done" else: match [n] { [k] if: try_call(fn -> match k { j if: error("boom") => 0 }).ok => 0, [k] => f(k - 1) }; f(50)"#,
+            r#"
+            defn f(n) -> if n == 0: "done" else: match [n] {
+                [k] if: try_call(fn -> match k { j if: error("boom") => 0 }).ok => 0,
+                [k] => f(k - 1)
+            }
+            f(50)
+            "#,
             r#""done""#,
         ),
     ]);
@@ -981,15 +1219,30 @@ fn a_caught_error_leaves_no_arm_of_its_frames_behind() {
 fn a_recursive_function_may_match_on_its_argument() {
     assert_values(&[
         (
-            "defn sum(xs) -> match xs { [] => 0, [h, ...t] => h + sum(t) }; sum([1, 2, 3, 4])",
+            r"
+            defn sum(xs) -> match xs { [] => 0, [h, ...t] => h + sum(t) }
+            sum([1, 2, 3, 4])
+            ",
             "10",
         ),
         (
-            "defn size(t) -> match t { {left, right} => 1 + size(left) + size(right), _ => 0 }; size({left: {left: null, right: null}, right: null})",
+            r"
+            defn size(t) -> match t {
+                {left, right} => 1 + size(left) + size(right),
+                _ => 0
+            }
+            size({left: {left: null, right: null}, right: null})
+            ",
             "2",
         ),
         (
-            "defn count(xs, n) -> match xs { [] => n, [[a, 0] | [0, a] | a, ...rest] => count(rest, n + a) }; count([[1, 0], [0, 2], 3], 0)",
+            r"
+            defn count(xs, n) -> match xs {
+                [] => n,
+                [[a, 0] | [0, a] | a, ...rest] => count(rest, n + a)
+            }
+            count([[1, 0], [0, 2], 3], 0)
+            ",
             "6",
         ),
     ]);
@@ -998,9 +1251,21 @@ fn a_recursive_function_may_match_on_its_argument() {
 #[test]
 fn tail_recursion_through_a_match_runs_in_bounded_depth() {
     for source in [
-        r#"defn count(n) -> match n { 0 => "done", k => count(k - 1) }; count(100000)"#,
-        r#"defn count(n) -> match [n, n] { [0, _] | [_, 0] => "done", [k, _] if: k > 0 => count(k - 1) }; count(100000)"#,
-        r#"defn count(n) -> match {n: n} { {n: 0} => "done", {n} as m => count(m.n - 1) }; count(100000)"#,
+        r#"
+        defn count(n) -> match n { 0 => "done", k => count(k - 1) }
+        count(100000)
+        "#,
+        r#"
+        defn count(n) -> match [n, n] {
+            [0, _] | [_, 0] => "done",
+            [k, _] if: k > 0 => count(k - 1)
+        }
+        count(100000)
+        "#,
+        r#"
+        defn count(n) -> match {n: n} { {n: 0} => "done", {n} as m => count(m.n - 1) }
+        count(100000)
+        "#,
     ] {
         let tail = Script::new(source).max_call_depth(100).run();
         assert_eq!(tail, Value::from("done"), "{source}");
@@ -1058,12 +1323,24 @@ fn a_constant_match_that_raises_is_left_for_runtime() {
     assert_eq!(emitted.count(&Bytecode::ProduceError), 1, "{emitted:?}");
     assert_raises(&[(source, "No match arm matches the value: 1")]);
     // It raises only if it runs.
-    assert_values(&[("def f = fn -> match 1 { 2 => 0 }; 5", "5")]);
+    assert_values(&[(
+        r"
+        def f = fn -> match 1 { 2 => 0 }
+        5
+        ",
+        "5",
+    )]);
 }
 
 #[test]
 fn with_a_runtime_target_each_part_folds_on_its_own() {
-    let source = "match x { (2 * 3) => 3 * 4, {[1 + 1]: v} => 5 * 6, _ if: 1 < 2 => 7 * 8 }";
+    let source = r"
+        match x {
+            (2 * 3) => 3 * 4,
+            {[1 + 1]: v} => 5 * 6,
+            _ if: 1 < 2 => 7 * 8
+        }
+    ";
     let emitted = Script::new(source).capture("x", Value::Int(6)).code(FOLD);
     for op in [Bytecode::Multiply, Bytecode::Add, Bytecode::CompareLessThan] {
         assert_eq!(emitted.count(&op), 0, "no {op:?} is left: {emitted:?}");
