@@ -213,6 +213,8 @@ impl FunctionBuilder<'_> {
             "<fold>".to_string(),
             Arity::Exact(0),
             plan,
+            // Run once and discarded: a smaller pool would save nothing.
+            false,
         );
         self.fold_vm?.evaluate(function)
     }

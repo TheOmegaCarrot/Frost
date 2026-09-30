@@ -118,6 +118,8 @@ struct LoweredFunction {
     num_labels: usize,
     // See `FunctionBuilder::effectful`.
     effectful: bool,
+    // See `OptimizationOptions::deduplicate_constants`.
+    deduplicate_constants: bool,
 }
 
 #[derive(Debug)]

@@ -17,6 +17,7 @@ fn a_function() -> Value {
         "<f>".to_string(),
         Arity::Exact(0),
         SlotPlan::empty(),
+        false,
     );
     Value::Closure(function.assert_trusted().into_closure().unwrap())
 }

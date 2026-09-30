@@ -5,7 +5,9 @@
 //! - `Label` markers are zero-width; each `Jump` resolves to a forward relative
 //!   offset (the VM only ever jumps forward).
 //! - Inline payloads (`Const`, `ConstKey`, `Closure`) are drained into their
-//!   pools, and the op is rewritten to reference the assigned pool slot.
+//!   pools, and the op is rewritten to reference the assigned pool slot. With
+//!   [`deduplicate_constants`](crate::OptimizationOptions::deduplicate_constants),
+//!   constants that are the same share a slot (see [`pool`]).
 //! - `LoadLocal`, `ConsumeLocal`, and `DefLocal` ids resolve to their frame
 //!   slots per the [`SlotPlan`].
 //!
@@ -13,10 +15,13 @@
 //! so an undefined label or a backward jump is a compiler bug, not a user error:
 //! it panics rather than returning a diagnostic.
 
+mod pool;
+
 use std::sync::Arc;
 
 use frost_runtime::{Arity, Bytecode, CompiledFunction, FormatVersion};
 
+use crate::lower::assemble::pool::Pool;
 use crate::lower::locals::SlotPlan;
 use crate::lower::passes::run_passes;
 use crate::lower::{ConstKeyOp, FunctionBuilder, Ir, JumpType, LoweredFunction};
@@ -32,6 +37,7 @@ impl FunctionBuilder<'_> {
             locals: self.locals,
             num_labels: self.next_label.0,
             effectful: self.effectful,
+            deduplicate_constants: self.options.optimization_options.deduplicate_constants,
         };
         run_passes(function, &self.options.optimization_options)
     }
@@ -53,6 +59,7 @@ impl LoweredFunction {
             self.name.clone(),
             self.arity,
             plan,
+            self.deduplicate_constants,
         )
     }
 }
@@ -68,12 +75,13 @@ pub(super) fn assemble_code(
     name: String,
     arity: Arity,
     plan: SlotPlan,
+    deduplicate_constants: bool,
 ) -> Arc<CompiledFunction> {
     let label_positions = resolve_labels(code, num_labels);
 
     let mut out = Vec::new();
-    let mut constants = Vec::new();
-    let mut key_constants = Vec::new();
+    let mut constants = Pool::new(deduplicate_constants);
+    let mut key_constants = Pool::new(deduplicate_constants);
     let mut child_fns = Vec::new();
 
     for ir in code {
@@ -87,18 +95,14 @@ pub(super) fn assemble_code(
             }
             // Zero-width: a label contributes no instruction.
             Ir::Label(_) => {}
-            Ir::Const(value) => {
-                out.push(Bytecode::LoadConst(constants.len()));
-                constants.push(value.clone());
-            }
+            Ir::Const(value) => out.push(Bytecode::LoadConst(constants.add(value))),
             Ir::ConstKey { op, key } => {
-                let index = key_constants.len();
+                let index = key_constants.add(key);
                 out.push(match op {
                     ConstKeyOp::HardIndex => Bytecode::HardIndexMap(index),
                     ConstKeyOp::Test => Bytecode::TestConstKey(index),
                     ConstKeyOp::Extract => Bytecode::ExtractConstKey(index),
                 });
-                key_constants.push(key.clone());
             }
             Ir::LoadLocal(id) => out.push(Bytecode::LoadLocal(plan.slot_of(*id))),
             Ir::ConsumeLocal(id) => out.push(Bytecode::ConsumeLocal(plan.slot_of(*id))),
@@ -125,8 +129,8 @@ pub(super) fn assemble_code(
         name,
         code: out,
         child_fns,
-        constants,
-        key_constants,
+        constants: constants.into_entries(),
+        key_constants: key_constants.into_entries(),
         num_captures: plan.num_captures(),
         name_table: plan.into_name_table(),
         arity,

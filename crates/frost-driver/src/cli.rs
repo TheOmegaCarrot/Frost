@@ -152,6 +152,7 @@ enum Optimization {
     BranchEliminate,
     CaptureHoist,
     ConsumeLocals,
+    DeduplicateConstants,
 }
 
 impl Optimization {
@@ -174,6 +175,7 @@ impl Optimization {
             Optimization::BranchEliminate => &mut options.branch_eliminate,
             Optimization::CaptureHoist => &mut options.capture_hoist,
             Optimization::ConsumeLocals => &mut options.consume_locals,
+            Optimization::DeduplicateConstants => &mut options.deduplicate_constants,
         }
     }
 }

@@ -271,6 +271,7 @@ fn every_optimization_has_a_switch() {
         branch_eliminate: _,
         capture_hoist: _,
         consume_locals: _,
+        deduplicate_constants: _,
     } = OptimizationOptions::ALL;
     for name in [
         "constant-fold",
@@ -278,6 +279,7 @@ fn every_optimization_has_a_switch() {
         "branch-eliminate",
         "capture-hoist",
         "consume-locals",
+        "deduplicate-constants",
     ] {
         for switch in ["--enable", "--disable"] {
             let ran = run(&[switch, name, "-e", "1"]);

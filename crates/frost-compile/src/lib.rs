@@ -32,6 +32,9 @@ pub struct OptimizationOptions {
     /// Move a local's value out on its last use, rather than copying it, so a
     /// structure held only by that local can be updated in place.
     pub consume_locals: bool,
+    /// Store identical constants once per function, however many places use
+    /// them, making the compiled program smaller.
+    pub deduplicate_constants: bool,
 }
 
 impl OptimizationOptions {
@@ -42,6 +45,7 @@ impl OptimizationOptions {
         branch_eliminate: false,
         capture_hoist: false,
         consume_locals: false,
+        deduplicate_constants: false,
     };
 
     /// Every optimization on.
@@ -51,6 +55,7 @@ impl OptimizationOptions {
         branch_eliminate: true,
         capture_hoist: true,
         consume_locals: true,
+        deduplicate_constants: true,
     };
 }
 

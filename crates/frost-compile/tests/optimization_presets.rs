@@ -11,6 +11,7 @@ fn none_turns_every_optimization_off() {
         branch_eliminate,
         capture_hoist,
         consume_locals,
+        deduplicate_constants,
     } = OptimizationOptions::NONE;
     let options = [
         constant_fold,
@@ -18,6 +19,7 @@ fn none_turns_every_optimization_off() {
         branch_eliminate,
         capture_hoist,
         consume_locals,
+        deduplicate_constants,
     ];
     assert!(options.iter().all(|on| !on), "{options:?}");
 }
@@ -31,6 +33,7 @@ fn all_turns_every_optimization_on() {
         branch_eliminate,
         capture_hoist,
         consume_locals,
+        deduplicate_constants,
     } = OptimizationOptions::ALL;
     let options = [
         constant_fold,
@@ -38,6 +41,7 @@ fn all_turns_every_optimization_on() {
         branch_eliminate,
         capture_hoist,
         consume_locals,
+        deduplicate_constants,
     ];
     assert!(options.iter().all(|on| *on), "{options:?}");
 }

@@ -32,7 +32,7 @@ use frost_runtime::{Bytecode, CompiledFunction, MapKey, Value, Vm, VmRuntimeConf
 pub(crate) const UNOPTIMIZED: OptimizationOptions = OptimizationOptions::NONE;
 
 /// How many options [`OptimizationOptions`] has.
-const OPTION_COUNT: u32 = 5;
+const OPTION_COUNT: u32 = 6;
 
 /// Every permutation of the optimization options, starting with [`UNOPTIMIZED`].
 pub(crate) fn every_optimization() -> impl Iterator<Item = OptimizationOptions> {
@@ -46,6 +46,7 @@ pub(crate) fn every_optimization() -> impl Iterator<Item = OptimizationOptions> 
             branch_eliminate: on(2),
             capture_hoist: on(3),
             consume_locals: on(4),
+            deduplicate_constants: on(5),
         }
     })
 }
@@ -367,6 +368,11 @@ impl Emitted {
     /// How many captured values a closure over this function is created with.
     pub(crate) fn num_captures(&self) -> usize {
         self.function.num_captures
+    }
+
+    /// The function's constant pool, which `LoadConst` indexes.
+    pub(crate) fn constants(&self) -> &[Value] {
+        &self.function.constants
     }
 
     /// The Map keys the function's constant-key ops look up.
