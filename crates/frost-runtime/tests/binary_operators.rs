@@ -484,6 +484,23 @@ fn add_owned_leaves_shared_operands_intact() {
 }
 
 #[test]
+fn add_owned_leaves_shared_map_operands_intact() {
+    // As for Arrays: a shared Map is copied, not merged into.
+    let l = Value::map([("a", Value::from(1i64)), ("b", Value::from(2i64))]);
+    let r = Value::map([("b", Value::from(3i64))]);
+    let sum = Value::add_owned(l.clone(), r.clone()).unwrap();
+    assert_eq!(
+        sum,
+        Value::map([("a", Value::from(1i64)), ("b", Value::from(3i64))])
+    );
+    assert_eq!(
+        l,
+        Value::map([("a", Value::from(1i64)), ("b", Value::from(2i64))])
+    );
+    assert_eq!(r, Value::map([("b", Value::from(3i64))]));
+}
+
+#[test]
 fn add_owned_agrees_with_borrowing_add() {
     // The borrowing form delegates structural `+` here; both must produce
     // identical results for the same operands.

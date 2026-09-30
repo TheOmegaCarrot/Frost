@@ -50,16 +50,16 @@ impl Value {
     /// use [`add`](Self::add) when only references are available.
     pub fn add_owned(lhs: Value, rhs: Value) -> Result<Value, FrostError> {
         match (lhs, rhs) {
-            (Value::Array(l), Value::Array(r)) => {
-                let mut elems = l.into_vec(); // steals l's Vec when uniquely owned
-                elems.extend(r.into_vec());
-                Ok(Value::Array(elems.into()))
+            // `make_mut` extends a uniquely-owned lhs where it is, allocation and all,
+            // and copies it only when shared.
+            (Value::Array(mut l), Value::Array(r)) => {
+                Arc::make_mut(&mut l.inner).extend(r.into_vec());
+                Ok(Value::Array(l))
             }
 
-            (Value::Map(l), Value::Map(r)) => {
-                let mut entries = l.into_map();
-                entries.extend(r.into_map()); // on key collision rhs wins
-                Ok(Value::Map(entries.into()))
+            (Value::Map(mut l), Value::Map(r)) => {
+                Arc::make_mut(&mut l.inner).extend(r.into_map()); // on key collision rhs wins
+                Ok(Value::Map(l))
             }
 
             // Scalars, strings, and type errors have nothing worth stealing.
