@@ -30,7 +30,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use clap::FromArgMatches;
 use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_program};
-use frost_repl::{LineInput, Repl, ReplInput};
+use frost_repl::{Repl, ReplInput};
 use frost_runtime::{FrostError, Importer, RunError, TrustedProgram, Vm, VmRuntimeConfiguration};
 
 use cli::{Action, Cli, Color};
@@ -70,7 +70,7 @@ impl Default for Driver {
 impl Driver {
     /// A driver named `frost`, with nothing importable, the default
     /// [`VmRuntimeConfiguration`], every optimization on, and interactive
-    /// sessions reading lines from standard input ([`LineInput::stdin`]).
+    /// sessions reading [`frost_repl::default_input`].
     pub fn new() -> Self {
         Self {
             name: "frost".to_string(),
@@ -78,7 +78,7 @@ impl Driver {
             importer: Arc::default(),
             configuration: VmRuntimeConfiguration::default(),
             optimization: OptimizationOptions::ALL,
-            repl_input: ReplInputFactory(Arc::new(|| Box::new(LineInput::stdin()))),
+            repl_input: ReplInputFactory(Arc::new(frost_repl::default_input)),
         }
     }
 

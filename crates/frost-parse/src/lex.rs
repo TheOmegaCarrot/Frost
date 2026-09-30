@@ -1,165 +1,245 @@
+//! The lexer: source text to [`Token`]s.
+
+use std::ops::Range;
+
 use logos::Logos;
 
+/// The tokens of `source`, each with its byte span, in order.
+///
+/// Whitespace other than newlines, and comments, produce no tokens. An `Err`
+/// covers bytes that begin no token, such as a string missing its closing
+/// quote or a character Frost does not use; tokens resume after it.
+pub fn tokens(source: &str) -> impl Iterator<Item = (Result<Token<'_>, LexError>, Range<usize>)> {
+    Token::lexer(source)
+        .spanned()
+        .map(|(token, span)| (token.map_err(|()| LexError), span))
+}
+
+/// Bytes of source that begin no [`Token`]; see [`tokens`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LexError;
+
+/// One token of Frost source. See [`tokens`].
+///
+/// A literal's payload is its text as written, between its delimiters: escape
+/// sequences are not yet expanded, nor indentation trimmed.
 #[derive(Logos, Debug, PartialEq)]
 // Re: lifetime: Logos understands this annotation and fills in the rest in its generated code,
 //               so that the lifetime of the Token is tied to the lifetime of the input string.
-pub(crate) enum Token<'src> {
+#[logos(skip r"[ \t\r\f]+")]
+#[logos(skip r"#[^\n]*")]
+pub enum Token<'src> {
     // -- Keywords --
+    /// `as`
     #[token("as")]
     KwAs,
+    /// `def`
     #[token("def")]
     KwDef,
+    /// `defn`
     #[token("defn")]
     KwDefn,
+    /// `do`
     #[token("do")]
     KwDo,
+    /// `elif`
     #[token("elif")]
     KwElif,
+    /// `else`
     #[token("else")]
     KwElse,
+    /// `export`
     #[token("export")]
     KwExport,
+    /// `false`
     #[token("false")]
     KwFalse,
+    /// `filter`
     #[token("filter")]
     KwFilter,
+    /// `fn`
     #[token("fn")]
     KwFn,
+    /// `foreach`
     #[token("foreach")]
     KwForeach,
+    /// `if`
     #[token("if")]
     KwIf,
+    /// `init`
     #[token("init")]
     KwInit,
+    /// `is`
     #[token("is")]
     KwIs,
+    /// `map`
     #[token("map")]
     KwMap,
+    /// `match`
     #[token("match")]
     KwMatch,
+    /// `null`
     #[token("null")]
     KwNull,
+    /// `reduce`
     #[token("reduce")]
     KwReduce,
+    /// `true`
     #[token("true")]
     KwTrue,
+    /// `with`
     #[token("with")]
     KwWith,
 
     // -- Punctuation (excludes operators) --
+    /// `:`
     #[token(":")]
     Colon,
 
+    /// `;`
     #[token(";")]
     Semicolon,
 
+    /// `,`
     #[token(",")]
     Comma,
 
+    /// `->`
     #[token("->")]
     SlimArrow,
 
+    /// `=>`
     #[token("=>")]
     FatArrow,
 
+    /// `$(`, opening an abbreviated lambda.
     #[token("$(")]
     DollarParen,
 
+    /// `(`
     #[token("(")]
     OpenParen,
 
+    /// `)`
     #[token(")")]
     CloseParen,
 
+    /// `[`
     #[token("[")]
     OpenBracket,
 
+    /// `]`
     #[token("]")]
     CloseBracket,
 
+    /// `{`
     #[token("{")]
     OpenBrace,
 
+    /// `}`
     #[token("}")]
     CloseBrace,
 
+    /// `...`
     #[token("...")]
     DotDotDot,
 
+    /// `=`
     #[token("=")]
     Assign,
 
+    /// A line break.
     #[token("\n")]
     Newline,
 
     // part of punctuation because it's used to separate match alternative patterns,
     // rather than as an operator
+    /// `|`
     #[token("|")]
     Pipe,
 
     // -- Operators (including keyword operators) --
+    /// `and`
     #[token("and")]
     OpAnd,
 
+    /// `or`
     #[token("or")]
     OpOr,
 
+    /// `not`
     #[token("not")]
     OpNot,
 
+    /// `+`
     #[token("+")]
     OpPlus,
 
+    /// `-`
     #[token("-")]
     OpMinus,
 
+    /// `*`
     #[token("*")]
     OpTimes,
 
+    /// `/`
     #[token("/")]
     OpDiv,
 
+    /// `%`
     #[token("%")]
     OpMod,
 
+    /// `.`
     #[token(".")]
     OpDot,
 
+    /// `@`
     #[token("@")]
     OpThread,
 
+    /// `==`
     #[token("==")]
     OpEq,
 
+    /// `!=`
     #[token("!=")]
     OpNeq,
 
+    /// `<`
     #[token("<")]
     OpLt,
 
+    /// `<=`
     #[token("<=")]
     OpLte,
 
+    /// `>`
     #[token(">")]
     OpGt,
 
+    /// `>=`
     #[token(">=")]
     OpGte,
 
     // -- Literals --
+    /// An Int literal.
     #[regex(r"[0-9]+", |lex| lex.slice().parse::<i64>().ok())]
     IntLiteral(i64),
 
+    /// A Float literal.
     #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
     #[regex(r"[0-9]+[eE][+-]?[0-9]+", |lex| lex.slice().parse::<f64>().ok())]
     #[regex(r"\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
     FloatLiteral(f64),
 
     // -- Identifiers --
+    /// A name.
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice())]
     Identifier(&'src str),
 
-    // As appear in abbreviated lambdas.
+    /// An abbreviated lambda's parameter: `$`, `$1` to `$9`, or `$$`.
     #[regex(r"\$[1-9$]?")]
     DollarIdentifier(&'src str),
 
@@ -167,41 +247,43 @@ pub(crate) enum Token<'src> {
 
     // No escape sequences to expand. Uses #[token] + callback because
     // logos' DFA can't disambiguate the R' prefix from identifier + simple string.
+    /// A raw String literal: `R'(...)'` or `R"(...)"`.
     #[token("R'(", |lex| lex_raw(lex, ")'"))]
     #[token(r#"R"("#, |lex| lex_raw(lex, r#")""#))]
     RawStringLiteral(&'src str),
 
     // Consumer is responsible for expanding escape sequences,
     // and for complaining about invalid sequences.
+    /// A String literal in single quotes.
     #[regex(r"'([^'\\]|\\.)*'", slice_str)] // '...'
     SingleQuoteStringLiteral(&'src str),
 
+    /// A String literal in double quotes.
     #[regex(r#""([^"\\]|\\.)*""#, slice_str)] // "..."
     DoubleQuoteStringLiteral(&'src str),
 
     // Consumer is responsible for trimming indentation and expanding
     // the restricted set of escape sequences.
+    /// A String literal in triple quotes: `'''...'''` or `"""..."""`.
     #[token("\"\"\"", lex_multiline_double)]
     #[token("'''", lex_multiline_single)]
     MultilineStringLiteral(&'src str),
 
     // Consumer is responsible for splitting into segments, expanding
     // escape sequences, and re-lexing/parsing interpolation expressions.
+    /// A format String literal in single quotes: `$'...'`.
     #[token("$'", |lex| lex_format_str(lex, b'\''))]
     SingleQuoteFormatStringLiteral(&'src str),
+    /// A format String literal in double quotes: `$"..."`.
     #[token("$\"", |lex| lex_format_str(lex, b'"'))]
     DoubleQuoteFormatStringLiteral(&'src str),
 
     // A Bytes literal: hex-digit pairs inside x'...' or x"...". The content is a
     // regular language, so the regex pins it exactly (even count, hex only).
+    /// A Bytes literal: `x'...'` or `x"..."`, holding hex digit pairs.
     #[regex(r"x'([0-9a-fA-F]{2})*'", bytes_slice)]
     #[regex(r#"x"([0-9a-fA-F]{2})*""#, bytes_slice)]
     BytesLiteral(&'src str),
-
-    // -- Whitespace and comments (skipped) --
-    #[regex(r"[ \t\r\f]+", logos::skip)]
-    #[regex(r"#[^\n]*", logos::skip)]
-    Skip,
 }
 
 fn lex_raw<'src>(lex: &mut logos::Lexer<'src, Token<'src>>, closer: &str) -> Option<&'src str> {
@@ -370,7 +452,6 @@ impl<'src> std::fmt::Display for Token<'src> {
             Token::SingleQuoteFormatStringLiteral(s) => write!(f, "$'{s}'"),
             Token::DoubleQuoteFormatStringLiteral(s) => write!(f, "$\"{s}\""),
             Token::BytesLiteral(s) => write!(f, "x'{s}'"),
-            Token::Skip => write!(f, ""),
         }
     }
 }

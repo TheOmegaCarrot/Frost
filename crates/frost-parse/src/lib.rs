@@ -1,7 +1,8 @@
 //! Frost's parser.
 //!
-//! The API is a single function, [`parse_program`];
-//! the real surface of this crate is the [`ast`] it produces.
+//! The API is [`parse_program`], and the real surface of this crate is the
+//! [`ast`] it produces. For tools that work below the level of syntax, such as
+//! highlighting, [`tokens`] exposes the lexer.
 //! Parsing yields either a complete [`ast::Program`] or a single [`ParseError`]:
 //! the parser stops at the first error and never attempts recovery,
 //! so there is never more than one diagnostic.
@@ -25,4 +26,5 @@ pub mod ast;
 mod lex;
 mod parse;
 
+pub use lex::{LexError, Token, tokens};
 pub use parse::{Label, ParseError, parse_program};

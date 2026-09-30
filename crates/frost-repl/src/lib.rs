@@ -7,16 +7,28 @@
 //! ```no_run
 //! use std::io;
 //!
-//! use frost_repl::{LineInput, Repl};
+//! use frost_repl::Repl;
 //!
 //! fn main() -> io::Result<()> {
-//!     Repl::new().run(&mut LineInput::stdin(), &mut io::stdout(), &mut io::stderr())
+//!     let mut input = frost_repl::default_input();
+//!     Repl::new().run(&mut *input, &mut io::stdout(), &mut io::stderr())
 //! }
 //! ```
+//!
+//! # Features
+//!
+//! - `line-editor` (default): [`TerminalInput`], with line editing, history,
+//!   and syntax highlighting.
 
 mod input;
+#[cfg(feature = "line-editor")]
+mod syntax;
+#[cfg(feature = "line-editor")]
+mod terminal;
 
 pub use input::{LineInput, ReplInput};
+#[cfg(feature = "line-editor")]
+pub use terminal::TerminalInput;
 
 use std::collections::BTreeMap;
 use std::io::{self, Write};
@@ -27,6 +39,29 @@ use frost_runtime::{FrostError, IdleVm, Importer, Value, Vm, VmRuntimeConfigurat
 
 /// The name diagnostics give an input.
 const INPUT_NAME: &str = "<repl>";
+
+/// The input a command-line REPL most likely wants. With the `line-editor`
+/// feature, and a terminal on standard input and output, that is a
+/// [`TerminalInput`] keeping history in `~/.frost_history`. Otherwise it is
+/// [`LineInput::stdin`].
+pub fn default_input() -> Box<dyn ReplInput> {
+    #[cfg(feature = "line-editor")]
+    {
+        use std::io::IsTerminal;
+
+        if io::stdin().is_terminal() && io::stdout().is_terminal() {
+            let history = std::env::var_os("HOME")
+                .map(|home| std::path::PathBuf::from(home).join(".frost_history"));
+            // Without a home, or with its history unreadable, history lasts
+            // the session only.
+            let input = history
+                .and_then(|path| TerminalInput::new().with_history_file(path).ok())
+                .unwrap_or_default();
+            return Box::new(input);
+        }
+    }
+    Box::new(LineInput::stdin())
+}
 
 /// A read-eval-print loop: [`evaluate`](Self::evaluate) inputs one at a time,
 /// or [`run`](Self::run) a whole session.
