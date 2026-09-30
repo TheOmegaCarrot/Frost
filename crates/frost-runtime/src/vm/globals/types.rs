@@ -119,9 +119,11 @@ pub(super) fn to_float_global() -> Value {
 }
 
 pub(super) fn to_bytes_global() -> Value {
-    super::stub("to_bytes")
+    const PARAMS: Params = Params::new(&[Param::of(FrostType::FLAT)]);
+    Value::checked_native("to_bytes", PARAMS, |_, args| Ok(args[0].to_frost_bytes()))
 }
 
 pub(super) fn from_utf8_global() -> Value {
-    super::stub("from_utf8")
+    const PARAMS: Params = Params::new(&[Param::of(FrostType::BYTES)]);
+    Value::checked_native("from_utf8", PARAMS, |_, args| Ok(args[0].decode_utf8()))
 }

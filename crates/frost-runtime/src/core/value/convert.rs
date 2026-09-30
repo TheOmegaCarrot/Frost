@@ -142,6 +142,27 @@ impl Value {
         }
     }
 
+    /// The conversion behind Frost's `to_bytes`: a String becomes its UTF-8 bytes,
+    /// and Bytes pass through.
+    /// Any other type returns Null.
+    pub fn to_frost_bytes(&self) -> Value {
+        match self {
+            Value::String(s) => Value::Bytes(Arc::from(Arc::clone(s))),
+            Value::Bytes(_) => self.clone(),
+            _ => Value::Null,
+        }
+    }
+
+    /// The conversion behind Frost's `from_utf8`: Bytes holding valid UTF-8 become
+    /// the String they encode, and invalid UTF-8 returns Null.
+    /// Any other type returns Null.
+    pub fn decode_utf8(&self) -> Value {
+        match self {
+            Value::Bytes(b) => std::str::from_utf8(b).map_or(Value::Null, Value::from),
+            _ => Value::Null,
+        }
+    }
+
     /// Builds a Map from key-value pairs, as in `Value::map([("a", Value::from(1))])`.
     /// Each entry is [inserted](ValueMap::insert) in turn.
     pub fn map<K: Into<MapKey>, const N: usize>(entries: [(K, Value); N]) -> Value {
