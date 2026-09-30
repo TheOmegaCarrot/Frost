@@ -1,4 +1,5 @@
 mod bytecode;
+mod disassemble;
 mod function;
 mod globals;
 mod import;
@@ -9,6 +10,7 @@ mod print_sink;
 mod serialize;
 
 pub use bytecode::Bytecode;
+pub use disassemble::Disassembly;
 pub use function::{Arity, Closure, CompiledFunction, MissingCaptures, NameEntry, TrustedProgram};
 pub use globals::{GLOBAL_NAMES, GLOBAL_PURITY, Purity};
 pub use import::{

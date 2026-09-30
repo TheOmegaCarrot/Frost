@@ -515,6 +515,79 @@ fn a_seed_name_frost_cannot_refer_to_is_refused() {
     }
 }
 
+// --- Listing bytecode ---
+
+#[test]
+fn list_shows_a_scripts_bytecode_without_running_it() {
+    let path = script("list.frst", "def x = [1, 2]\nprint(x)");
+    let ran = run(&["list", &path]);
+    assert_eq!(ran.exit, Exit::Success, "{ran:?}");
+    assert!(
+        ran.stdout.starts_with("function <main>\n"),
+        "{}",
+        ran.stdout
+    );
+    assert!(ran.stdout.contains("; print"), "{}", ran.stdout);
+    assert!(
+        !ran.stdout.contains('\x1b'),
+        "no color by default: {}",
+        ran.stdout
+    );
+    assert_eq!(ran.stderr, "");
+}
+
+#[test]
+fn list_follows_the_optimization_switches() {
+    // Folded, FOLDABLE compiles to its value alone; unfolded, it calls.
+    let path = script("list-foldable.frst", FOLDABLE);
+    let folded = run(&["list", &path]);
+    let unfolded = run(&["list", "-O", "none", &path]);
+    assert!(!folded.stdout.contains("Call"), "{}", folded.stdout);
+    assert!(unfolded.stdout.contains("Call"), "{}", unfolded.stdout);
+}
+
+#[test]
+fn list_shows_an_images_bytecode_as_compiled() {
+    let source = "defn f(n) -> n + 1\nf(2)";
+    let script = script("list-image.frst", source);
+    let image = image("list-image", source, &["-O", "none"]);
+    // Whatever the command line now asks for, the image lists as it was compiled.
+    let from_image = run(&["list", &image]);
+    let from_script = run(&["list", "-O", "none", &script]);
+    assert_eq!(from_image.exit, Exit::Success, "{from_image:?}");
+    assert_eq!(from_image.stdout, from_script.stdout);
+}
+
+#[test]
+fn list_colors_on_request() {
+    let path = script("list-color.frst", "1");
+    let ran = run(&["list", "--color", "always", &path]);
+    assert!(ran.stdout.contains("\x1b["), "{:?}", ran.stdout);
+}
+
+#[test]
+fn list_reports_a_script_that_does_not_compile() {
+    let path = script("list-broken.frst", "nope");
+    let ran = run(&["list", "--color", "never", &path]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(
+        ran.stderr.contains("`nope` is not defined"),
+        "{}",
+        ran.stderr
+    );
+    assert_eq!(ran.stdout, "");
+}
+
+#[test]
+fn list_refuses_a_damaged_image() {
+    let path = image("list-damaged", r#"print("a fairly long script")"#, &[]);
+    let bytes = fs::read(&path).unwrap();
+    fs::write(&path, &bytes[..bytes.len() / 2]).unwrap();
+    let ran = run(&["list", &path]);
+    assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
+    assert!(ran.stderr.contains("cannot list"), "{}", ran.stderr);
+}
+
 // --- Optimizations ---
 
 /// A pure recursion that folds away entirely when constant folding is on, and

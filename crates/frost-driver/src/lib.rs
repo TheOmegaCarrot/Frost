@@ -25,7 +25,7 @@ pub use repl::ReplSettings;
 
 use std::ffi::OsString;
 use std::fs;
-use std::io::{self, Write};
+use std::io::{self, IsTerminal, Write};
 use std::path::Path;
 use std::process::{ExitCode, Termination};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -194,6 +194,7 @@ impl Driver {
             Action::Compile { file, output } => session.compile_file(&file, &output),
             Action::Eval(code) => session.run_source("<eval>", &code),
             Action::Repl => session.run_repl(&self.repl, &mut Shared(Arc::clone(stdout))),
+            Action::List(path) => session.list_file(&path, &mut Shared(Arc::clone(stdout))),
         }
     }
 }
@@ -305,6 +306,43 @@ impl Session<'_> {
         match fs::write(output, image::encode(closure.inner_fn())) {
             Ok(()) => Exit::Success,
             Err(error) => self.usage_error(&format!("cannot write {}: {error}", output.display())),
+        }
+    }
+
+    fn list_file(mut self, path: &Path, output: &mut dyn Write) -> Exit {
+        let contents = match self.read(path) {
+            Ok(contents) => contents,
+            Err(exit) => return exit,
+        };
+        let function = if image::is_image(&contents) {
+            match image::decode(&contents) {
+                Ok(function) => Arc::new(function),
+                Err(reason) => {
+                    return self.usage_error(&format!("cannot list {}: {reason}", path.display()));
+                }
+            }
+        } else {
+            let source = match self.source(path, contents) {
+                Ok(source) => source,
+                Err(exit) => return exit,
+            };
+            match compile_program(&path.to_string_lossy(), &source, self.options) {
+                Ok(output) => output
+                    .code
+                    .into_closure()
+                    .expect("a standalone script captures nothing")
+                    .inner_fn_arc(),
+                Err(errors) => return self.report_diagnostics(&errors),
+            }
+        };
+        let color = match self.color {
+            Color::Always => true,
+            Color::Never => false,
+            Color::Auto => io::stdout().is_terminal(),
+        };
+        match write!(output, "{}", function.disassemble().with_color(color)) {
+            Ok(()) => Exit::Success,
+            Err(error) => self.usage_error(&format!("cannot write the listing: {error}")),
         }
     }
 

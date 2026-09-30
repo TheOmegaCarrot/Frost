@@ -77,6 +77,8 @@ enum Command {
     },
     /// Start an interactive session (also what no arguments do)
     Repl,
+    /// List the bytecode a script compiles to, or an image holds
+    List { file: PathBuf },
 }
 
 #[derive(Debug, Args)]
@@ -115,6 +117,7 @@ pub(crate) enum Action {
     Compile { file: PathBuf, output: PathBuf },
     Eval(String),
     Repl,
+    List(PathBuf),
 }
 
 impl Cli {
@@ -125,6 +128,7 @@ impl Cli {
             (Some(Command::Compile { file, output }), ..) => Action::Compile { file, output },
             (None, None, Some(code)) => Action::Eval(code),
             (Some(Command::Repl), ..) | (None, None, None) => Action::Repl,
+            (Some(Command::List { file }), ..) => Action::List(file),
         }
     }
 }
