@@ -36,7 +36,7 @@ fn describe(options: OptimizationOptions) -> String {
 }
 
 #[derive(Debug, Parser)]
-#[command(args_conflicts_with_subcommands = true, arg_required_else_help = true)]
+#[command(args_conflicts_with_subcommands = true)]
 pub(crate) struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
@@ -75,6 +75,8 @@ enum Command {
         #[arg(short, long, value_name = "IMAGE")]
         output: PathBuf,
     },
+    /// Start an interactive session (also what no arguments do)
+    Repl,
 }
 
 #[derive(Debug, Args)]
@@ -112,6 +114,7 @@ pub(crate) enum Action {
     Check(PathBuf),
     Compile { file: PathBuf, output: PathBuf },
     Eval(String),
+    Repl,
 }
 
 impl Cli {
@@ -121,7 +124,7 @@ impl Cli {
             (Some(Command::Check { file }), ..) => Action::Check(file),
             (Some(Command::Compile { file, output }), ..) => Action::Compile { file, output },
             (None, None, Some(code)) => Action::Eval(code),
-            (None, None, None) => unreachable!("clap requires an action"),
+            (Some(Command::Repl), ..) | (None, None, None) => Action::Repl,
         }
     }
 }

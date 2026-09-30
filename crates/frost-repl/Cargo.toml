@@ -1,14 +1,11 @@
 [package]
-name = "frost-driver"
+name = "frost-repl"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-clap = { version = "4.6", features = ["derive", "string"] }
 frost-compile = { path = "../frost-compile" }
-frost-repl = { path = "../frost-repl" }
 frost-runtime = { path = "../frost-runtime" }
-postcard = { version = "1", features = ["alloc"] }
 
 [lints]
 workspace = true

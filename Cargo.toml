@@ -4,6 +4,7 @@ members = [
     "crates/frost-runtime",
     "crates/frost-compile",
     "crates/frost-driver",
+    "crates/frost-repl",
     "crates/frost-cli",
     "crates/frost-astviz",
 ]

@@ -2,7 +2,8 @@
 //!
 //! A [`Driver`] holds what a Frost program runs with: the [`Importer`] that
 //! decides what it may import, the [`VmRuntimeConfiguration`] that bounds it,
-//! and the optimizations it compiles with by default.
+//! and the optimizations it compiles with by default. It also holds where an
+//! interactive session reads its input.
 //! [`Driver::run`] then parses a command line and carries it out.
 //!
 //! ```no_run
@@ -20,6 +21,7 @@ mod cli;
 mod image;
 
 use std::ffi::OsString;
+use std::fmt;
 use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
@@ -28,6 +30,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use clap::FromArgMatches;
 use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_program};
+use frost_repl::{LineInput, Repl, ReplInput};
 use frost_runtime::{FrostError, Importer, RunError, TrustedProgram, Vm, VmRuntimeConfiguration};
 
 use cli::{Action, Cli, Color};
@@ -36,7 +39,8 @@ use cli::{Action, Cli, Color};
 /// command line.
 ///
 /// A script's printed output goes to the `stdout` given to [`run`](Self::run),
-/// as do help and version text; errors and diagnostics go to its `stderr`.
+/// as do help and version text, and an interactive session's results; errors
+/// and diagnostics go to its `stderr`.
 #[derive(Debug, Clone)]
 pub struct Driver {
     name: String,
@@ -44,6 +48,17 @@ pub struct Driver {
     importer: Arc<Importer>,
     configuration: VmRuntimeConfiguration,
     optimization: OptimizationOptions,
+    repl_input: ReplInputFactory,
+}
+
+/// Makes the input for each interactive session.
+#[derive(Clone)]
+struct ReplInputFactory(Arc<dyn Fn() -> Box<dyn ReplInput> + Send + Sync>);
+
+impl fmt::Debug for ReplInputFactory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ReplInputFactory").finish_non_exhaustive()
+    }
 }
 
 impl Default for Driver {
@@ -54,7 +69,8 @@ impl Default for Driver {
 
 impl Driver {
     /// A driver named `frost`, with nothing importable, the default
-    /// [`VmRuntimeConfiguration`], and every optimization on.
+    /// [`VmRuntimeConfiguration`], every optimization on, and interactive
+    /// sessions reading lines from standard input ([`LineInput::stdin`]).
     pub fn new() -> Self {
         Self {
             name: "frost".to_string(),
@@ -62,7 +78,18 @@ impl Driver {
             importer: Arc::default(),
             configuration: VmRuntimeConfiguration::default(),
             optimization: OptimizationOptions::ALL,
+            repl_input: ReplInputFactory(Arc::new(|| Box::new(LineInput::stdin()))),
         }
+    }
+
+    /// Set where interactive sessions read their input: `make` is called for a
+    /// new input at the start of each session.
+    pub fn with_repl_input(
+        mut self,
+        make: impl Fn() -> Box<dyn ReplInput> + Send + Sync + 'static,
+    ) -> Self {
+        self.repl_input = ReplInputFactory(Arc::new(make));
+        self
     }
 
     /// Set the name shown in help and usage messages.
@@ -178,6 +205,9 @@ impl Driver {
             Action::Check(path) => session.check_file(&path),
             Action::Compile { file, output } => session.compile_file(&file, &output),
             Action::Eval(code) => session.run_source("<eval>", &code),
+            Action::Repl => {
+                session.run_repl((self.repl_input.0)(), &mut Shared(Arc::clone(stdout)))
+            }
         }
     }
 }
@@ -188,6 +218,20 @@ fn lock<W>(mutex: &Mutex<W>) -> MutexGuard<'_, W> {
     mutex.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
+/// A writer shared with the print sink, locked for each write so the two
+/// interleave in order.
+struct Shared<W>(Arc<Mutex<W>>);
+
+impl<W: Write> Write for Shared<W> {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        lock(&self.0).write(bytes)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        lock(&self.0).flush()
+    }
+}
+
 /// How a [`Driver`] run ended, and so the process's exit status.
 /// Return it from `main` to exit with that status.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -196,8 +240,9 @@ pub enum Exit {
     Success,
     /// The script did not compile, or raised an error. Exit status 1.
     ScriptFailed,
-    /// The command line was invalid, or a file could not be read, written, or
-    /// loaded as an image. Exit status 2.
+    /// The command line was invalid; a file could not be read, written, or
+    /// loaded as an image; or an interactive session's input or output failed.
+    /// Exit status 2.
     UsageError,
 }
 
@@ -274,6 +319,17 @@ impl Session<'_> {
         match fs::write(output, image::encode(closure.inner_fn())) {
             Ok(()) => Exit::Success,
             Err(error) => self.usage_error(&format!("cannot write {}: {error}", output.display())),
+        }
+    }
+
+    fn run_repl(mut self, mut input: Box<dyn ReplInput>, output: &mut dyn Write) -> Exit {
+        let mut repl = Repl::new()
+            .with_configuration(self.configuration.clone())
+            .with_importer(Arc::clone(self.importer))
+            .with_optimization(self.options.optimization_options);
+        match repl.run(&mut *input, output, self.stderr) {
+            Ok(()) => Exit::Success,
+            Err(error) => self.usage_error(&format!("the session ended: {error}")),
         }
     }
 
