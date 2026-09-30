@@ -342,6 +342,7 @@ dependencies = [
  "clap",
  "frost-compile",
  "frost-runtime",
+ "postcard",
 ]
 
 [[package]]

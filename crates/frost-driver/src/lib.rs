@@ -17,6 +17,7 @@
 //! ```
 
 mod cli;
+mod image;
 
 use std::ffi::OsString;
 use std::fs;
@@ -27,7 +28,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use clap::FromArgMatches;
 use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_program};
-use frost_runtime::{FrostError, Importer, RunError, Vm, VmRuntimeConfiguration};
+use frost_runtime::{FrostError, Importer, RunError, TrustedProgram, Vm, VmRuntimeConfiguration};
 
 use cli::{Action, Cli, Color};
 
@@ -175,6 +176,7 @@ impl Driver {
         match cli.action() {
             Action::Run(path) => session.run_file(&path),
             Action::Check(path) => session.check_file(&path),
+            Action::Compile { file, output } => session.compile_file(&file, &output),
             Action::Eval(code) => session.run_source("<eval>", &code),
         }
     }
@@ -194,7 +196,8 @@ pub enum Exit {
     Success,
     /// The script did not compile, or raised an error. Exit status 1.
     ScriptFailed,
-    /// The command line was invalid, or a file could not be read. Exit status 2.
+    /// The command line was invalid, or a file could not be read, written, or
+    /// loaded as an image. Exit status 2.
     UsageError,
 }
 
@@ -226,14 +229,27 @@ struct Session<'a> {
 
 impl Session<'_> {
     fn run_file(mut self, path: &Path) -> Exit {
-        match self.read(path) {
+        let contents = match self.read(path) {
+            Ok(contents) => contents,
+            Err(exit) => return exit,
+        };
+        if image::is_image(&contents) {
+            return match image::decode(&contents) {
+                // The user chose to run this image; see `Command::Run`.
+                Ok(function) => self.run_program(Arc::new(function).assert_trusted()),
+                Err(reason) => {
+                    self.usage_error(&format!("cannot run {}: {reason}", path.display()))
+                }
+            };
+        }
+        match self.source(path, contents) {
             Ok(source) => self.run_source(&path.to_string_lossy(), &source),
             Err(exit) => exit,
         }
     }
 
     fn check_file(mut self, path: &Path) -> Exit {
-        let source = match self.read(path) {
+        let source = match self.read_source(path) {
             Ok(source) => source,
             Err(exit) => return exit,
         };
@@ -243,11 +259,32 @@ impl Session<'_> {
         }
     }
 
-    fn run_source(mut self, filename: &str, source: &str) -> Exit {
-        let program = match compile_program(filename, source, self.options) {
+    fn compile_file(mut self, path: &Path, output: &Path) -> Exit {
+        let source = match self.read_source(path) {
+            Ok(source) => source,
+            Err(exit) => return exit,
+        };
+        let program = match compile_program(&path.to_string_lossy(), &source, self.options) {
             Ok(output) => output.code,
             Err(errors) => return self.report_diagnostics(&errors),
         };
+        let closure = program
+            .into_closure()
+            .expect("a standalone script captures nothing");
+        match fs::write(output, image::encode(closure.inner_fn())) {
+            Ok(()) => Exit::Success,
+            Err(error) => self.usage_error(&format!("cannot write {}: {error}", output.display())),
+        }
+    }
+
+    fn run_source(mut self, filename: &str, source: &str) -> Exit {
+        match compile_program(filename, source, self.options) {
+            Ok(output) => self.run_program(output.code),
+            Err(errors) => self.report_diagnostics(&errors),
+        }
+    }
+
+    fn run_program(mut self, program: TrustedProgram) -> Exit {
         let closure = program
             .into_closure()
             .expect("a standalone script captures nothing");
@@ -262,15 +299,37 @@ impl Session<'_> {
         }
     }
 
-    /// The contents of the script at `path`, or the exit for failing to read it.
-    fn read(&mut self, path: &Path) -> Result<String, Exit> {
-        fs::read_to_string(path).map_err(|error| {
-            write_out(
-                self.stderr,
-                &format!("error: cannot read {}: {error}\n", path.display()),
-            );
-            Exit::UsageError
+    /// The contents of the file at `path`, or the exit for failing to read it.
+    fn read(&mut self, path: &Path) -> Result<Vec<u8>, Exit> {
+        fs::read(path)
+            .map_err(|error| self.usage_error(&format!("cannot read {}: {error}", path.display())))
+    }
+
+    /// The script at `path`, or the exit for failing to read it as one.
+    fn read_source(&mut self, path: &Path) -> Result<String, Exit> {
+        let contents = self.read(path)?;
+        if image::is_image(&contents) {
+            return Err(self.usage_error(&format!(
+                "{} is a compiled image, not a script",
+                path.display()
+            )));
+        }
+        self.source(path, contents)
+    }
+
+    /// `contents`, read from `path`, as script source.
+    fn source(&mut self, path: &Path, contents: Vec<u8>) -> Result<String, Exit> {
+        String::from_utf8(contents).map_err(|_| {
+            self.usage_error(&format!(
+                "cannot read {}: it is not UTF-8 text",
+                path.display()
+            ))
         })
+    }
+
+    fn usage_error(&mut self, message: &str) -> Exit {
+        write_out(self.stderr, &format!("error: {message}\n"));
+        Exit::UsageError
     }
 
     fn report_diagnostics(&mut self, errors: &CompilerErrors) -> Exit {

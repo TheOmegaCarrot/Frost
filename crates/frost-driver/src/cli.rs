@@ -41,7 +41,7 @@ pub(crate) struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
 
-    /// Run this script (shorthand for `run FILE`)
+    /// Run this script or compiled image (shorthand for `run FILE`)
     file: Option<PathBuf>,
 
     /// Run CODE as a script
@@ -59,10 +59,22 @@ pub(crate) struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Run a script
+    /// Run a script, or an image written by `compile`
+    ///
+    /// An image runs as compiled, whatever optimizations the command line
+    /// selects. Run only images you trust: a damaged one may crash.
     Run { file: PathBuf },
     /// Compile a script and report its diagnostics, without running it
     Check { file: PathBuf },
+    /// Compile a script to an image, which `run` runs without compiling again
+    ///
+    /// Only the same version of Frost can run the image.
+    Compile {
+        file: PathBuf,
+        /// Write the image here
+        #[arg(short, long, value_name = "IMAGE")]
+        output: PathBuf,
+    },
 }
 
 #[derive(Debug, Args)]
@@ -98,6 +110,7 @@ pub(crate) struct Options {
 pub(crate) enum Action {
     Run(PathBuf),
     Check(PathBuf),
+    Compile { file: PathBuf, output: PathBuf },
     Eval(String),
 }
 
@@ -106,6 +119,7 @@ impl Cli {
         match (self.command, self.file, self.eval) {
             (Some(Command::Run { file }), ..) | (None, Some(file), _) => Action::Run(file),
             (Some(Command::Check { file }), ..) => Action::Check(file),
+            (Some(Command::Compile { file, output }), ..) => Action::Compile { file, output },
             (None, None, Some(code)) => Action::Eval(code),
             (None, None, None) => unreachable!("clap requires an action"),
         }

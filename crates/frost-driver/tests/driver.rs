@@ -74,11 +74,32 @@ fn run(args: &[&str]) -> Ran {
 
 /// Write `source` to a script file named `name`, returning its path.
 fn script(name: &str, source: &str) -> String {
+    let path = scratch_path(name);
+    fs::write(&path, source).unwrap();
+    path
+}
+
+/// A path named `name` in the tests' scratch directory, with nothing written
+/// there yet.
+fn scratch_path(name: &str) -> String {
     let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("frost-driver-tests");
     fs::create_dir_all(&dir).unwrap();
     let path = dir.join(name);
-    fs::write(&path, source).unwrap();
+    let _ = fs::remove_file(&path);
     path.to_string_lossy().into_owned()
+}
+
+/// Compile `source` to an image named `name`, returning the image's path.
+fn image(name: &str, source: &str, options: &[&str]) -> String {
+    let script = script(&format!("{name}.frst"), source);
+    let image = scratch_path(name);
+    let args: Vec<&str> = ["compile", script.as_str(), "-o", image.as_str()]
+        .into_iter()
+        .chain(options.iter().copied())
+        .collect();
+    let ran = run(&args);
+    assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
+    image
 }
 
 // --- Running scripts ---
@@ -203,6 +224,163 @@ fn check_reports_diagnostics() {
     // A runtime error is not a diagnostic: check passes it.
     let path = script("check-raises.frst", "1 / 0");
     assert_eq!(run(&["check", &path]).exit, Exit::Success);
+}
+
+// --- Compiled images ---
+
+#[test]
+fn an_image_runs_as_its_script_does() {
+    let source = r#"defn fib(n) -> if n < 2: n else: fib(n - 1) + fib(n - 2)
+        print(fib(15))
+        print([0.0, -0.0, {a: [1, "two"]}, x'00ff'])"#;
+    let script = script("image-source.frst", source);
+    let image = image("image-runs", source, &[]);
+    let from_script = run(&[&script]);
+    assert_eq!(from_script.exit, Exit::Success, "{from_script:?}");
+    for args in [vec!["run", image.as_str()], vec![image.as_str()]] {
+        let ran = run(&args);
+        assert_eq!(ran.exit, Exit::Success, "{args:?}: {ran:?}");
+        assert_eq!(ran.stdout, from_script.stdout, "{args:?}");
+        assert_eq!(ran.stderr, "", "{args:?}");
+    }
+}
+
+#[test]
+fn compile_writes_an_image_without_running_the_script() {
+    let image = image("image-quiet", r#"print("should not print")"#, &[]);
+    assert!(fs::metadata(&image).is_ok_and(|file| file.len() > 0));
+    // Only running the image prints.
+    assert_eq!(run(&[&image]).printed(), ["should not print"]);
+}
+
+#[test]
+fn an_image_runs_as_compiled_whatever_the_optimizations_asked_for() {
+    let run_under_small_budget = |args: &[&str]| {
+        run_configured(
+            Driver::new(),
+            |configuration| configuration.fuel = NonZeroUsize::new(5),
+            args,
+        )
+        .exit
+    };
+    // Unfolded, FOLDABLE exceeds the budget; folded, it fits.
+    let unfolded = image("image-unfolded", FOLDABLE, &["-O", "none"]);
+    let folded = image("image-folded", FOLDABLE, &["-O", "all"]);
+    assert_eq!(
+        run_under_small_budget(&["run", "-O", "all", &unfolded]),
+        Exit::ScriptFailed
+    );
+    assert_eq!(
+        run_under_small_budget(&["run", "-O", "none", &folded]),
+        Exit::Success
+    );
+}
+
+#[test]
+fn a_runtime_error_in_an_image_fails_it() {
+    let image = image("image-raises", "1 / 0", &[]);
+    let ran = run(&[&image]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(ran.stderr.contains("Division by zero"), "{}", ran.stderr);
+}
+
+#[test]
+fn compile_reports_diagnostics_and_writes_nothing() {
+    let script = script("image-broken.frst", "nope");
+    let output = scratch_path("image-broken");
+    let ran = run(&["compile", "--color", "never", &script, "-o", &output]);
+    assert_eq!(ran.exit, Exit::ScriptFailed, "{ran:?}");
+    assert!(
+        ran.stderr.contains("`nope` is not defined"),
+        "{}",
+        ran.stderr
+    );
+    assert!(fs::metadata(&output).is_err(), "no image is written");
+}
+
+#[test]
+fn compile_needs_an_output() {
+    let script = script("image-no-output.frst", "1");
+    let ran = run(&["compile", &script]);
+    assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
+}
+
+#[test]
+fn an_unwritable_output_is_a_usage_error() {
+    let script = script("image-unwritable.frst", "1");
+    let output = scratch_path("no-such-dir/image");
+    let ran = run(&["compile", &script, "-o", &output]);
+    assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
+    assert!(ran.stderr.contains("cannot write"), "{}", ran.stderr);
+}
+
+#[test]
+fn check_and_compile_take_scripts_not_images() {
+    let image = image("image-not-a-script", "1", &[]);
+    let output = scratch_path("image-recompiled");
+    for args in [
+        vec!["check", image.as_str()],
+        vec!["compile", image.as_str(), "-o", output.as_str()],
+    ] {
+        let ran = run(&args);
+        assert_eq!(ran.exit, Exit::UsageError, "{args:?}: {ran:?}");
+        assert!(
+            ran.stderr.contains("is a compiled image, not a script"),
+            "{args:?}: {}",
+            ran.stderr
+        );
+    }
+}
+
+#[test]
+fn an_image_from_another_version_is_a_usage_error() {
+    let path = image("image-other-version", "1", &[]);
+    // Swap the version the image records for another of the same length.
+    let version = env!("CARGO_PKG_VERSION").as_bytes();
+    let other: Vec<u8> = version
+        .iter()
+        .map(|&byte| if byte.is_ascii_digit() { b'9' } else { byte })
+        .collect();
+    assert_ne!(
+        version,
+        other.as_slice(),
+        "the test needs a different version"
+    );
+    let mut bytes = fs::read(&path).unwrap();
+    let at = bytes
+        .windows(version.len())
+        .position(|window| window == version)
+        .expect("an image records its version");
+    bytes[at..at + version.len()].copy_from_slice(&other);
+    fs::write(&path, bytes).unwrap();
+
+    let ran = run(&[&path]);
+    assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
+    let other = String::from_utf8(other).unwrap();
+    assert!(
+        ran.stderr.contains(&format!("compiled by Frost {other}")),
+        "{}",
+        ran.stderr
+    );
+}
+
+#[test]
+fn a_damaged_image_is_a_usage_error() {
+    let path = image("image-damaged", r#"print("a fairly long script")"#, &[]);
+    let bytes = fs::read(&path).unwrap();
+    fs::write(&path, &bytes[..bytes.len() / 2]).unwrap();
+    let ran = run(&[&path]);
+    assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
+    assert!(ran.stderr.contains("it is damaged"), "{}", ran.stderr);
+}
+
+#[test]
+fn a_script_that_is_not_text_is_a_usage_error() {
+    let path = scratch_path("not-text.frst");
+    fs::write(&path, [0x66, 0xff, 0xfe]).unwrap();
+    let ran = run(&[&path]);
+    assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
+    assert!(ran.stderr.contains("not UTF-8 text"), "{}", ran.stderr);
 }
 
 // --- Optimizations ---
