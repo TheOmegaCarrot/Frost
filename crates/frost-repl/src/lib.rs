@@ -31,10 +31,12 @@ pub use input::{LineInput, ReplInput};
 pub use terminal::TerminalInput;
 
 use std::collections::BTreeMap;
+use std::fmt;
 use std::io::{self, Write};
 use std::sync::Arc;
 
 use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_in_scope};
+use frost_parse::{Token, tokens};
 use frost_runtime::{FrostError, IdleVm, Importer, Value, Vm, VmRuntimeConfiguration};
 
 /// The name diagnostics give an input.
@@ -109,6 +111,31 @@ impl Repl {
     pub fn with_optimization(mut self, optimization: OptimizationOptions) -> Self {
         self.optimization = optimization;
         self
+    }
+
+    /// Bind `name` to `value`, as though an earlier input had defined it.
+    /// Fails if `name` is not one Frost source can refer to (see
+    /// [`check_name`]).
+    pub fn with_binding(
+        mut self,
+        name: impl Into<String>,
+        value: Value,
+    ) -> Result<Self, InvalidName> {
+        let name = name.into();
+        check_name(&name)?;
+        self.bindings.insert(name, value);
+        Ok(self)
+    }
+
+    /// [`with_binding`](Self::with_binding) for each of `bindings` in turn: a
+    /// name given twice takes its last value.
+    pub fn with_bindings<N: Into<String>>(
+        self,
+        bindings: impl IntoIterator<Item = (N, Value)>,
+    ) -> Result<Self, InvalidName> {
+        bindings
+            .into_iter()
+            .try_fold(self, |repl, (name, value)| repl.with_binding(name, value))
     }
 
     /// Run `source` as the next input, returning its value: the value of its
@@ -208,3 +235,36 @@ pub enum ReplError {
     /// The input raised an error while running.
     Run(FrostError),
 }
+
+/// Check that Frost source can refer to `name`, so that binding it is of use:
+/// it must be an identifier, and not a keyword such as `if` or `and`.
+pub fn check_name(name: &str) -> Result<(), InvalidName> {
+    let mut lexed = tokens(name);
+    match (lexed.next(), lexed.next()) {
+        (Some((Ok(Token::Identifier(_)), span)), None) if span == (0..name.len()) => Ok(()),
+        _ => Err(InvalidName {
+            name: name.to_string(),
+        }),
+    }
+}
+
+/// A name Frost source cannot refer to; see [`check_name`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InvalidName {
+    name: String,
+}
+
+impl InvalidName {
+    /// The name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+impl fmt::Display for InvalidName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "`{}` is not a name Frost source can refer to", self.name)
+    }
+}
+
+impl std::error::Error for InvalidName {}

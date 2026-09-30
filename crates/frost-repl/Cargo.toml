@@ -6,11 +6,11 @@ edition.workspace = true
 [features]
 default = ["line-editor"]
 # A terminal input with line editing, history, and highlighting.
-line-editor = ["dep:reedline", "dep:nu-ansi-term", "dep:frost-parse"]
+line-editor = ["dep:reedline", "dep:nu-ansi-term"]
 
 [dependencies]
 frost-compile = { path = "../frost-compile" }
-frost-parse = { path = "../frost-parse", optional = true }
+frost-parse = { path = "../frost-parse" }
 frost-runtime = { path = "../frost-runtime" }
 # The version reedline uses, for the styles its highlighter takes.
 nu-ansi-term = { version = "0.50", optional = true }

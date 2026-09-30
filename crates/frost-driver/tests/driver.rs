@@ -9,8 +9,8 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use frost_compile::OptimizationOptions;
-use frost_driver::{Driver, Exit};
-use frost_repl::ReplInput;
+use frost_driver::{Driver, Exit, ReplSettings};
+use frost_repl::{InvalidName, ReplInput};
 use frost_runtime::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
 
 /// What one run produced.
@@ -396,10 +396,15 @@ impl ReplInput for Segments {
     }
 }
 
+/// Settings for sessions that read `segments`.
+fn reading(segments: &[&str]) -> ReplSettings {
+    let segments: Vec<String> = segments.iter().map(ToString::to_string).collect();
+    ReplSettings::new().with_input(move || Box::new(Segments(segments.iter().cloned().collect())))
+}
+
 /// `driver`, its interactive sessions reading `segments`.
 fn with_session(driver: Driver, segments: &[&str]) -> Driver {
-    let segments: Vec<String> = segments.iter().map(ToString::to_string).collect();
-    driver.with_repl_input(move || Box::new(Segments(segments.iter().cloned().collect())))
+    driver.with_repl(reading(segments))
 }
 
 #[test]
@@ -474,10 +479,40 @@ fn a_session_whose_input_fails_is_a_usage_error() {
             Err(io::Error::other("input is gone"))
         }
     }
-    let driver = Driver::new().with_repl_input(|| Box::new(Broken));
+    let driver = Driver::new().with_repl(ReplSettings::new().with_input(|| Box::new(Broken)));
     let ran = run_configured(driver, |_| {}, &["repl"]);
     assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
     assert!(ran.stderr.contains("input is gone"), "{}", ran.stderr);
+}
+
+#[test]
+fn every_session_starts_with_the_seeded_bindings() -> Result<(), InvalidName> {
+    // A seed shadows a global, and a session may rebind it; the next session
+    // starts from the seed again.
+    let settings = reading(&["[answer, id]", "def answer = answer + 1", "answer"])
+        .with_binding("answer", Value::Int(41))?
+        .with_bindings([("id", Value::from("seeded"))])?;
+    let driver = Driver::new().with_repl(settings);
+    for _ in 0..2 {
+        let ran = run_configured(driver.clone(), |_| {}, &["repl"]);
+        assert_eq!(ran.stderr, "", "{ran:?}");
+        assert_eq!(
+            ran.printed(),
+            ["[", "    41,", r#"    "seeded""#, "]", "42"],
+            "{ran:?}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn a_seed_name_frost_cannot_refer_to_is_refused() {
+    for name in ["if", "and", "$1", "two words", "my-name", "1x", ""] {
+        let refused = ReplSettings::new()
+            .with_binding(name, Value::Null)
+            .expect_err(name);
+        assert_eq!(refused.name(), name);
+    }
 }
 
 // --- Optimizations ---

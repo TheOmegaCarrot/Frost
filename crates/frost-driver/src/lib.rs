@@ -2,8 +2,8 @@
 //!
 //! A [`Driver`] holds what a Frost program runs with: the [`Importer`] that
 //! decides what it may import, the [`VmRuntimeConfiguration`] that bounds it,
-//! and the optimizations it compiles with by default. It also holds where an
-//! interactive session reads its input.
+//! and the optimizations it compiles with by default. It also holds how
+//! interactive sessions start, in [`ReplSettings`].
 //! [`Driver::run`] then parses a command line and carries it out.
 //!
 //! ```no_run
@@ -19,9 +19,11 @@
 
 mod cli;
 mod image;
+mod repl;
+
+pub use repl::ReplSettings;
 
 use std::ffi::OsString;
-use std::fmt;
 use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
@@ -30,7 +32,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use clap::FromArgMatches;
 use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_program};
-use frost_repl::{Repl, ReplInput};
+use frost_repl::Repl;
 use frost_runtime::{FrostError, Importer, RunError, TrustedProgram, Vm, VmRuntimeConfiguration};
 
 use cli::{Action, Cli, Color};
@@ -48,17 +50,7 @@ pub struct Driver {
     importer: Arc<Importer>,
     configuration: VmRuntimeConfiguration,
     optimization: OptimizationOptions,
-    repl_input: ReplInputFactory,
-}
-
-/// Makes the input for each interactive session.
-#[derive(Clone)]
-struct ReplInputFactory(Arc<dyn Fn() -> Box<dyn ReplInput> + Send + Sync>);
-
-impl fmt::Debug for ReplInputFactory {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ReplInputFactory").finish_non_exhaustive()
-    }
+    repl: ReplSettings,
 }
 
 impl Default for Driver {
@@ -69,8 +61,8 @@ impl Default for Driver {
 
 impl Driver {
     /// A driver named `frost`, with nothing importable, the default
-    /// [`VmRuntimeConfiguration`], every optimization on, and interactive
-    /// sessions reading [`frost_repl::default_input`].
+    /// [`VmRuntimeConfiguration`], every optimization on, and the default
+    /// [`ReplSettings`].
     pub fn new() -> Self {
         Self {
             name: "frost".to_string(),
@@ -78,17 +70,13 @@ impl Driver {
             importer: Arc::default(),
             configuration: VmRuntimeConfiguration::default(),
             optimization: OptimizationOptions::ALL,
-            repl_input: ReplInputFactory(Arc::new(frost_repl::default_input)),
+            repl: ReplSettings::new(),
         }
     }
 
-    /// Set where interactive sessions read their input: `make` is called for a
-    /// new input at the start of each session.
-    pub fn with_repl_input(
-        mut self,
-        make: impl Fn() -> Box<dyn ReplInput> + Send + Sync + 'static,
-    ) -> Self {
-        self.repl_input = ReplInputFactory(Arc::new(make));
+    /// Set how interactive sessions start.
+    pub fn with_repl(mut self, settings: ReplSettings) -> Self {
+        self.repl = settings;
         self
     }
 
@@ -205,9 +193,7 @@ impl Driver {
             Action::Check(path) => session.check_file(&path),
             Action::Compile { file, output } => session.compile_file(&file, &output),
             Action::Eval(code) => session.run_source("<eval>", &code),
-            Action::Repl => {
-                session.run_repl((self.repl_input.0)(), &mut Shared(Arc::clone(stdout)))
-            }
+            Action::Repl => session.run_repl(&self.repl, &mut Shared(Arc::clone(stdout))),
         }
     }
 }
@@ -322,11 +308,13 @@ impl Session<'_> {
         }
     }
 
-    fn run_repl(mut self, mut input: Box<dyn ReplInput>, output: &mut dyn Write) -> Exit {
-        let mut repl = Repl::new()
-            .with_configuration(self.configuration.clone())
-            .with_importer(Arc::clone(self.importer))
-            .with_optimization(self.options.optimization_options);
+    fn run_repl(mut self, settings: &ReplSettings, output: &mut dyn Write) -> Exit {
+        let (mut input, mut repl) = settings.start(
+            Repl::new()
+                .with_configuration(self.configuration.clone())
+                .with_importer(Arc::clone(self.importer))
+                .with_optimization(self.options.optimization_options),
+        );
         match repl.run(&mut *input, output, self.stderr) {
             Ok(()) => Exit::Success,
             Err(error) => self.usage_error(&format!("the session ended: {error}")),

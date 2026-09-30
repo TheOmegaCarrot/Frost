@@ -7,7 +7,7 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
 use frost_compile::OptimizationOptions;
-use frost_repl::{Repl, ReplError, ReplInput};
+use frost_repl::{InvalidName, Repl, ReplError, ReplInput, check_name};
 use frost_runtime::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
 
 /// Evaluate each of `inputs` in turn on a fresh REPL, returning the last
@@ -186,6 +186,109 @@ fn inputs_run_normally_after_a_failure() {
 fn a_runtime_error_reports_its_message() {
     assert!(raises(&["1 / 0"]).contains("Division by zero"));
     assert_eq!(raises(&["def msg = 'boom'", "error(msg)"]), "boom");
+}
+
+// --- Seeded bindings ---
+
+#[test]
+fn a_seeded_binding_is_bound_as_if_an_input_had_defined_it() -> Result<(), InvalidName> {
+    let mut repl = Repl::new()
+        .with_binding("x", Value::Int(20))?
+        .with_binding("id", Value::from("seeded"))?;
+    // Seen by inputs, shadowing the global `id`, and listed.
+    assert_eq!(
+        repl.evaluate("[x + 1, id]").unwrap(),
+        Value::array([Value::Int(21), Value::from("seeded")])
+    );
+    let bound: Vec<&str> = repl.bindings().map(|(name, _)| name).collect();
+    assert_eq!(bound, ["id", "x"]);
+    // Rebound like any binding.
+    repl.evaluate("def x = x * 2").unwrap();
+    assert_eq!(repl.evaluate("x").unwrap(), Value::Int(40));
+    Ok(())
+}
+
+#[test]
+fn a_seeded_binding_survives_a_failed_input() -> Result<(), InvalidName> {
+    let mut repl = Repl::new().with_binding("x", Value::Int(1))?;
+    assert!(repl.evaluate("def x = 2; 1 / 0").is_err());
+    assert_eq!(repl.evaluate("x").unwrap(), Value::Int(1));
+    Ok(())
+}
+
+#[test]
+fn seeding_several_bindings_keeps_a_repeated_names_last_value() -> Result<(), InvalidName> {
+    let mut repl = Repl::new().with_bindings([
+        ("a", Value::Int(1)),
+        ("b", Value::Int(2)),
+        ("a", Value::Int(3)),
+    ])?;
+    assert_eq!(repl.evaluate("[a, b]").unwrap(), Value::array([3, 2]));
+    Ok(())
+}
+
+#[test]
+fn a_name_frost_source_cannot_refer_to_cannot_be_seeded() {
+    for name in [
+        "",
+        "if",
+        "def",
+        "and",
+        "init",
+        "$",
+        "$1",
+        "1x",
+        "my-name",
+        "two words",
+        " x",
+        "x ",
+        "x.y",
+        "'x'",
+    ] {
+        assert_eq!(
+            check_name(name).map_err(|invalid| invalid.name().to_string()),
+            Err(name.to_string()),
+            "{name:?}"
+        );
+        let refused = Repl::new().with_binding(name, Value::Null).err();
+        assert_eq!(
+            refused.as_ref().map(InvalidName::name),
+            Some(name),
+            "{name:?}"
+        );
+        let refused = Repl::new()
+            .with_bindings([("fine", Value::Null), (name, Value::Null)])
+            .err();
+        assert_eq!(
+            refused.as_ref().map(InvalidName::name),
+            Some(name),
+            "{name:?}"
+        );
+    }
+}
+
+#[test]
+fn any_identifier_can_be_seeded() {
+    for name in [
+        "x",
+        "_",
+        "_private",
+        "snake_case_2",
+        "CamelCase",
+        "iffy",
+        "define",
+    ] {
+        assert_eq!(check_name(name), Ok(()), "{name:?}");
+    }
+}
+
+#[test]
+fn a_refused_name_explains_itself() {
+    let refused = check_name("if").unwrap_err();
+    assert_eq!(
+        refused.to_string(),
+        "`if` is not a name Frost source can refer to"
+    );
 }
 
 // --- Configuration ---
