@@ -4,10 +4,12 @@
 //! global names, their slot order (used by `LoadGlobal`), and their constructors.
 //! Each global is built by a `*_global()` constructor that lives in a topic
 //! submodule; not-yet-implemented ones return [`stub`].
+//! Some globals are written in Frost; see [`generated`].
 
 mod collections;
 mod debug;
 mod functions;
+mod generated;
 mod import;
 mod mutable_cell;
 mod operators;

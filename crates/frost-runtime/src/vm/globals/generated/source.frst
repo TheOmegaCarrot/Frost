@@ -1,0 +1,41 @@
+# Globals written in Frost. See generated.rs for how they are compiled and loaded.
+#
+# Each top-level function becomes the global of the same name.
+# A function may refer only to its parameters, its own name, and globals.
+# A function a global returns is named `<global>_fn`, for errors and backtraces.
+
+defn inv(f) -> fn inv_fn(...args) -> not f @ call(args)
+
+defn curry(f, ...outer) -> fn curry_fn(...inner) -> f @ call(outer + inner)
+
+defn bcurry(f, ...outer) -> fn bcurry_fn(...inner) -> f @ call(inner + outer)
+
+defn collect(...e) -> e
+
+defn spread(f) -> fn spread_fn(arr) -> call(f, arr)
+
+# TODO: reverse with the `reverse` global once it is implemented.
+defn rev_args(f) -> fn rev_args_fn(...args) -> {
+    defn prepend(acc, arg) -> [arg] + acc
+    call(f, reduce args init: [] with prepend)
+}
+
+defn tap(a, f) -> {
+    f(a)
+    a
+}
+
+defn const(v) -> fn const_fn(..._) -> v
+
+defn compose(f, g, ...rest) -> {
+    defn require_fn(h) -> assert(is_function(h), $'Compose requires functions, got ${type(h)}')
+
+    foreach [f, g] + rest with require_fn
+
+    defn compose2(f1, f2) -> fn compose_fn(...args) -> f2(call(f1, args))
+
+    match rest {
+        [] => compose2(f, g),
+        _ => call(compose, [compose2(f, g)] + rest),
+    }
+}

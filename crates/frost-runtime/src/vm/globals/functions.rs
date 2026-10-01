@@ -135,37 +135,37 @@ pub(super) fn or_else_global() -> Value {
 }
 
 pub(super) fn inv_global() -> Value {
-    super::stub("inv")
+    super::generated::global("inv")
 }
 
 pub(super) fn curry_global() -> Value {
-    super::stub("curry")
+    super::generated::global("curry")
 }
 
 pub(super) fn bcurry_global() -> Value {
-    super::stub("bcurry")
+    super::generated::global("bcurry")
 }
 
 pub(super) fn collect_global() -> Value {
-    super::stub("collect")
+    super::generated::global("collect")
 }
 
 pub(super) fn spread_global() -> Value {
-    super::stub("spread")
+    super::generated::global("spread")
 }
 
 pub(super) fn rev_args_global() -> Value {
-    super::stub("rev_args")
+    super::generated::global("rev_args")
 }
 
 pub(super) fn tap_global() -> Value {
-    super::stub("tap")
+    super::generated::global("tap")
 }
 
 pub(super) fn const_global() -> Value {
-    super::stub("const")
+    super::generated::global("const")
 }
 
 pub(super) fn compose_global() -> Value {
-    super::stub("compose")
+    super::generated::global("compose")
 }
