@@ -716,6 +716,221 @@ fn find_returns_the_first_matching_element() {
     assert_arity("find", "2", &[0, 1, 3]);
 }
 
+// --- slice, take, drop, tail, drop_tail, stride ---
+//
+// A String's elements are its code points, and Bytes' its bytes.
+
+/// The type a sequence argument must have, as type errors name it.
+const SEQUENCE: &str = "String or Bytes or Array";
+
+#[test]
+fn slice_takes_a_range_of_an_array() {
+    assert_values(&[
+        ("slice([1, 2, 3, 4, 5], 1, 3)", "[2, 3]"),
+        ("slice([1, 2, 3, 4, 5], 2)", "[3, 4, 5]"),
+        ("slice([1, 2, 3, 4, 5], 0)", "[1, 2, 3, 4, 5]"),
+        ("slice([1, 2, 3, 4, 5], 2, 2)", "[]"),
+        ("slice([], 0)", "[]"),
+        // A negative index counts from the end.
+        ("slice([1, 2, 3, 4, 5], -2)", "[4, 5]"),
+        ("slice([1, 2, 3, 4, 5], 1, -1)", "[2, 3, 4]"),
+        ("slice([1, 2, 3, 4, 5], -3, -1)", "[3, 4]"),
+    ]);
+}
+
+#[test]
+fn slice_clamps_an_index_out_of_range() {
+    assert_values(&[
+        ("slice([1, 2, 3], 5)", "[]"),
+        ("slice([1, 2, 3], 0, 100)", "[1, 2, 3]"),
+        ("slice([1, 2, 3], -100)", "[1, 2, 3]"),
+        ("slice([1, 2, 3], -100, -99)", "[]"),
+        ("slice([1, 2, 3], -9223372036854775807 - 1)", "[1, 2, 3]"),
+        ("slice([1, 2, 3], 0, 9223372036854775807)", "[1, 2, 3]"),
+        // A start at or past the end is empty, never reversed.
+        ("slice([1, 2, 3], 2, 1)", "[]"),
+        ("slice([1, 2, 3], -1, 0)", "[]"),
+    ]);
+}
+
+#[test]
+fn slice_takes_a_range_of_a_string_by_code_point() {
+    assert_values(&[
+        ("slice('hello', 1, 4)", "'ell'"),
+        ("slice('hello', -3)", "'llo'"),
+        (r"slice('h\u{e9}llo', 1, 3)", r"'\u{e9}l'"),
+        (r"slice('\u{1f600}\u{e9}x', -2)", r"'\u{e9}x'"),
+        (r"slice('\u{1f600}\u{e9}x', 0, 1)", r"'\u{1f600}'"),
+        ("slice('abc', 3)", "''"),
+        ("slice('abc', 1, 1)", "''"),
+        ("slice('', 0)", "''"),
+        // An empty range is still a String.
+        ("is_string(slice('abc', 5))", "true"),
+    ]);
+}
+
+#[test]
+fn slice_takes_a_range_of_bytes_by_byte() {
+    assert_values(&[
+        ("slice(x'00010203', 1, 3)", "x'0102'"),
+        ("slice(x'00010203', -1)", "x'03'"),
+        // Bytes have no characters to keep whole.
+        ("slice(x'c3a9', 1)", "x'a9'"),
+        ("slice(x'', 0)", "x''"),
+    ]);
+}
+
+#[test]
+fn slicing_leaves_the_original_unchanged() {
+    let source = r"
+        def a = [1, 2, 3, 4]
+        def s = 'abcd'
+        [slice(a, 1), take(a, 1), drop_tail(a, 1), stride(a, 2), a, slice(s, 1), s]
+    ";
+    assert_values(&[(
+        source,
+        "[[2, 3, 4], [1], [1, 2, 3], [1, 3], [1, 2, 3, 4], 'bcd', 'abcd']",
+    )]);
+}
+
+#[test]
+fn slice_checks_its_arguments() {
+    assert_type_errors(
+        "slice",
+        &[
+            ("slice({}, 0)", SEQUENCE, "argument 1", "Map"),
+            ("slice(5, 0)", SEQUENCE, "argument 1", "Int"),
+            ("slice('a', '0')", "Int", "argument 2 (start)", "String"),
+            ("slice('a', 0, 1.0)", "Int", "argument 3 (end)", "Float"),
+            ("slice('a', 0, null)", "Int", "argument 3 (end)", "Null"),
+        ],
+    );
+    assert_arity("slice", "between 2 and 3", &[0, 1, 4]);
+}
+
+#[test]
+fn take_drop_tail_and_drop_tail_keep_one_end() {
+    assert_values(&[
+        ("take([1, 2, 3], 2)", "[1, 2]"),
+        ("drop([1, 2, 3], 2)", "[3]"),
+        ("tail([1, 2, 3], 2)", "[2, 3]"),
+        ("drop_tail([1, 2, 3], 2)", "[1]"),
+        // Zero: `tail` keeps nothing, where `slice(s, -0)` would keep everything.
+        ("take([1, 2, 3], 0)", "[]"),
+        ("drop([1, 2, 3], 0)", "[1, 2, 3]"),
+        ("tail([1, 2, 3], 0)", "[]"),
+        ("drop_tail([1, 2, 3], 0)", "[1, 2, 3]"),
+        // A count past the length is clamped to it.
+        ("take([1, 2, 3], 5)", "[1, 2, 3]"),
+        ("drop([1, 2, 3], 5)", "[]"),
+        ("tail([1, 2, 3], 5)", "[1, 2, 3]"),
+        ("drop_tail([1, 2, 3], 5)", "[]"),
+        ("take([], 1)", "[]"),
+        ("tail([], 1)", "[]"),
+    ]);
+}
+
+#[test]
+fn take_drop_tail_and_drop_tail_count_code_points_and_bytes() {
+    assert_values(&[
+        (r"take('h\u{e9}llo', 2)", r"'h\u{e9}'"),
+        (r"drop('\u{1f600}ab', 1)", "'ab'"),
+        (r"tail('\u{1f600}ab', 2)", "'ab'"),
+        (r"drop_tail('ab\u{1f600}', 1)", "'ab'"),
+        ("take('', 3)", "''"),
+        ("take(x'010203', 2)", "x'0102'"),
+        ("drop(x'010203', 2)", "x'03'"),
+        ("tail(x'010203', 1)", "x'03'"),
+        ("drop_tail(x'010203', 1)", "x'0102'"),
+        ("take(x'c3a9', 1)", "x'c3'"),
+    ]);
+}
+
+#[test]
+fn take_and_drop_split_a_sequence_as_drop_tail_and_tail_do() {
+    for sequence in ["[1, 2, 3]", r"'a\u{e9}\u{1f600}'", "x'010203'"] {
+        for n in 0..=4 {
+            assert_values(&[
+                (
+                    &format!("take({sequence}, {n}) + drop({sequence}, {n})"),
+                    sequence,
+                ),
+                (
+                    &format!("drop_tail({sequence}, {n}) + tail({sequence}, {n})"),
+                    sequence,
+                ),
+            ]);
+        }
+    }
+}
+
+#[test]
+fn take_drop_tail_and_drop_tail_check_their_arguments() {
+    for function in ["take", "drop", "tail", "drop_tail"] {
+        assert_raises(&[(
+            &format!("{function}([1], -1)"),
+            &format!("Function {function} requires argument 2 to be at least 0, got -1"),
+        )]);
+        assert_type_errors(
+            function,
+            &[
+                (
+                    &format!("{function}({{}}, 1)"),
+                    SEQUENCE,
+                    "argument 1",
+                    "Map",
+                ),
+                (
+                    &format!("{function}([1], 1.0)"),
+                    "Int",
+                    "argument 2",
+                    "Float",
+                ),
+                (
+                    &format!("{function}([1], null)"),
+                    "Int",
+                    "argument 2",
+                    "Null",
+                ),
+            ],
+        );
+        assert_arity(function, "2", &[0, 1, 3]);
+    }
+}
+
+#[test]
+fn stride_takes_every_nth_element() {
+    assert_values(&[
+        ("stride([1, 2, 3, 4, 5, 6], 2)", "[1, 3, 5]"),
+        ("stride([1, 2, 3, 4, 5, 6], 4)", "[1, 5]"),
+        ("stride([1, 2, 3], 1)", "[1, 2, 3]"),
+        ("stride([1, 2, 3], 10)", "[1]"),
+        ("stride([], 3)", "[]"),
+        ("stride('abcdef', 2)", "'ace'"),
+        (r"stride('\u{e9}x\u{1f600}y', 2)", r"'\u{e9}\u{1f600}'"),
+        ("stride('', 2)", "''"),
+        ("stride(x'00010203', 3)", "x'0003'"),
+    ]);
+}
+
+#[test]
+fn stride_checks_its_arguments() {
+    for step in ["0", "-1"] {
+        assert_raises(&[(
+            &format!("stride([1], {step})"),
+            &format!("Function stride requires argument 2 to be at least 1, got {step}"),
+        )]);
+    }
+    assert_type_errors(
+        "stride",
+        &[
+            ("stride({}, 1)", SEQUENCE, "argument 1", "Map"),
+            ("stride([1], 1.0)", "Int", "argument 2", "Float"),
+        ],
+    );
+    assert_arity("stride", "2", &[0, 1, 3]);
+}
+
 // --- slide, chunk ---
 
 #[test]

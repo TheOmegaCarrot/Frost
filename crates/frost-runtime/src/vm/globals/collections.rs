@@ -1,6 +1,7 @@
 //! Slicing, grouping, sorting, searching, and transforming arrays and maps.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use enumset::{EnumSet, enum_set};
 
@@ -13,6 +14,11 @@ use crate::{
 const MAP_KEY: EnumSet<FrostType> = enum_set!(
     FrostType::Bool | FrostType::Int | FrostType::Float | FrostType::String | FrostType::Bytes
 );
+
+/// The types with elements in order: a String's are its code points, and
+/// Bytes' its bytes. See [`Sequence`].
+const SEQUENCE: EnumSet<FrostType> =
+    enum_set!(FrostType::String | FrostType::Bytes | FrostType::Array);
 
 const ONE_ARRAY: Params = Params::new(&[Param::of(FrostType::ARRAY)]);
 const ONE_MAP: Params = Params::new(&[Param::of(FrostType::MAP)]);
@@ -240,8 +246,6 @@ pub(super) fn repeat_global() -> Value {
 }
 
 pub(super) fn tile_global() -> Value {
-    const SEQUENCE: EnumSet<FrostType> =
-        enum_set!(FrostType::String | FrostType::Bytes | FrostType::Array);
     const PARAMS: Params = Params::new(&[Param::of(SEQUENCE), Param::of(FrostType::INT)]);
     Value::checked_native("tile", PARAMS, |_, args| {
         let count = count_arg("tile", 2, int_arg(&args[1]), 0)?;
@@ -397,28 +401,158 @@ pub(super) fn find_global() -> Value {
 
 // --- Slicing ---
 
-pub(super) fn slice_global() -> Value {
-    super::stub("slice")
+/// A [`SEQUENCE`] argument, taken apart for slicing by element.
+enum Sequence {
+    /// Elements are code points.
+    Text(Arc<str>),
+    Binary(Arc<[u8]>),
+    Array(FrostArray),
 }
 
+impl Sequence {
+    /// The sequence in a type-checked argument, taken from it.
+    fn take(arg: &mut Value) -> Self {
+        match arg.take() {
+            Value::String(text) => Sequence::Text(text),
+            Value::Bytes(octets) => Sequence::Binary(octets),
+            Value::Array(array) => Sequence::Array(array),
+            other => unreachable!("type-checked as a sequence, got {}", other.type_name()),
+        }
+    }
+
+    /// How many elements it has. A String's count takes a scan.
+    fn len(&self) -> usize {
+        match self {
+            Sequence::Text(text) => text.chars().count(),
+            Sequence::Binary(octets) => octets.len(),
+            Sequence::Array(array) => array.len(),
+        }
+    }
+
+    /// Elements `start..end`, which must lie within it, as a value of its type.
+    /// The whole sequence is returned as is, without a copy.
+    fn range(self, start: usize, end: usize) -> Value {
+        match self {
+            Sequence::Text(text) => {
+                // The byte offset of each code point, then of the end.
+                let mut offsets = text.char_indices().map(|(offset, _)| offset);
+                let start_offset = offsets.nth(start).unwrap_or(text.len());
+                let end_offset = match end - start {
+                    0 => start_offset,
+                    n => offsets.nth(n - 1).unwrap_or(text.len()),
+                };
+                if start_offset == 0 && end_offset == text.len() {
+                    Value::String(text)
+                } else {
+                    Value::from(&text[start_offset..end_offset])
+                }
+            }
+            Sequence::Binary(octets) if start == 0 && end == octets.len() => Value::Bytes(octets),
+            Sequence::Binary(octets) => Value::from(&octets[start..end]),
+            Sequence::Array(array) if start == 0 && end == array.len() => Value::Array(array),
+            Sequence::Array(array) => match array.try_into_vec() {
+                // Uniquely owned: cut it down where it is.
+                Ok(mut elements) => {
+                    elements.truncate(end);
+                    elements.drain(..start);
+                    elements.into()
+                }
+                Err(shared) => Value::from(&shared.as_slice()[start..end]),
+            },
+        }
+    }
+
+    /// Every `step`th element, starting with the first.
+    fn stride(self, step: usize) -> Value {
+        if step == 1 {
+            return self.into_value();
+        }
+        match self {
+            Sequence::Text(text) => text.chars().step_by(step).collect::<String>().into(),
+            Sequence::Binary(octets) => octets
+                .iter()
+                .step_by(step)
+                .copied()
+                .collect::<Vec<u8>>()
+                .into(),
+            Sequence::Array(array) => array.iter().step_by(step).cloned().collect(),
+        }
+    }
+
+    fn into_value(self) -> Value {
+        match self {
+            Sequence::Text(text) => Value::String(text),
+            Sequence::Binary(octets) => Value::Bytes(octets),
+            Sequence::Array(array) => Value::Array(array),
+        }
+    }
+}
+
+/// `index` as a position in a sequence of `len` elements: a negative index
+/// counts from the end, and one out of range is clamped to it.
+fn clamp_index(index: i64, len: usize) -> usize {
+    let len = i64::try_from(len).expect("a length fits in an Int");
+    let index = if index < 0 {
+        index.saturating_add(len)
+    } else {
+        index
+    };
+    usize::try_from(index.clamp(0, len)).expect("a clamped index is not negative")
+}
+
+pub(super) fn slice_global() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(SEQUENCE),
+        Param::of(FrostType::INT).named("start"),
+        Param::of(FrostType::INT).named("end").optional(),
+    ]);
+    Value::checked_native("slice", PARAMS, |_, args| {
+        let sequence = Sequence::take(&mut args[0]);
+        let len = sequence.len();
+        let start = clamp_index(int_arg(&args[1]), len);
+        let end = args
+            .get(2)
+            .map_or(len, |end| clamp_index(int_arg(end), len));
+        Ok(sequence.range(start, end.max(start)))
+    })
+}
+
+const SEQUENCE_AND_COUNT: Params = Params::new(&[Param::of(SEQUENCE), Param::of(FrostType::INT)]);
+
 pub(super) fn stride_global() -> Value {
-    super::stub("stride")
+    Value::checked_native("stride", SEQUENCE_AND_COUNT, |_, args| {
+        let step = count_arg("stride", 2, int_arg(&args[1]), 1)?;
+        Ok(Sequence::take(&mut args[0]).stride(step))
+    })
+}
+
+/// A `function(sequence, n)` global over the first or last `n` elements, `n`
+/// clamped to the length. `range` maps the length and the clamped `n` to the
+/// range of elements to keep.
+fn end_slice(function: &'static str, range: fn(usize, usize) -> (usize, usize)) -> Value {
+    Value::checked_native(function, SEQUENCE_AND_COUNT, move |_, args| {
+        let n = count_arg(function, 2, int_arg(&args[1]), 0)?;
+        let sequence = Sequence::take(&mut args[0]);
+        let len = sequence.len();
+        let (start, end) = range(len, n.min(len));
+        Ok(sequence.range(start, end))
+    })
 }
 
 pub(super) fn take_global() -> Value {
-    super::stub("take")
+    end_slice("take", |_, n| (0, n))
 }
 
 pub(super) fn drop_global() -> Value {
-    super::stub("drop")
+    end_slice("drop", |len, n| (n, len))
 }
 
 pub(super) fn tail_global() -> Value {
-    super::stub("tail")
+    end_slice("tail", |len, n| (len - n, len))
 }
 
 pub(super) fn drop_tail_global() -> Value {
-    super::stub("drop_tail")
+    end_slice("drop_tail", |len, n| (0, len - n))
 }
 
 const ARRAY_AND_SIZE: Params =
@@ -441,8 +575,6 @@ pub(super) fn chunk_global() -> Value {
 }
 
 pub(super) fn reverse_global() -> Value {
-    const SEQUENCE: EnumSet<FrostType> =
-        enum_set!(FrostType::String | FrostType::Bytes | FrostType::Array);
     const PARAMS: Params = Params::new(&[Param::of(SEQUENCE)]);
     Value::checked_native("reverse", PARAMS, |_, args| {
         Ok(match args[0].take() {
