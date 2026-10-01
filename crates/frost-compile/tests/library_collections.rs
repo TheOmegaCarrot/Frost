@@ -1218,6 +1218,185 @@ fn sum_and_product_check_their_argument() {
     }
 }
 
+// --- sorted, sort_by ---
+
+#[test]
+fn sorted_orders_by_less_than() {
+    assert_values(&[
+        ("sorted([3, 1, 2])", "[1, 2, 3]"),
+        ("sorted([])", "[]"),
+        ("sorted([1])", "[1]"),
+        ("sorted([2, 1.5, 1, -0.5])", "[-0.5, 1, 1.5, 2]"),
+        ("sorted(['b', 'c', 'a'])", "['a', 'b', 'c']"),
+        ("sorted([x'02', x'01ff', x'01'])", "[x'01', x'01ff', x'02']"),
+        ("sorted([[2], [1, 5], [1]])", "[[1], [1, 5], [2]]"),
+    ]);
+}
+
+#[test]
+fn sorted_orders_a_long_array() {
+    assert_values(&[
+        ("sorted(reverse(range(1000))) == range(1000)", "true"),
+        // A permutation of 0 to 199, as 73 and 200 are coprime.
+        (
+            "sorted(map range(200) with fn i -> i * 73 % 200) == range(200)",
+            "true",
+        ),
+    ]);
+}
+
+#[test]
+fn sorted_is_stable() {
+    assert_values(&[
+        // An Int and a Float of equal value are neither less than the other.
+        ("sorted([1.0, 1, 0])", "[0, 1.0, 1]"),
+        ("sorted([1, 1.0, 0])", "[0, 1, 1.0]"),
+        (
+            "sorted([[1, 'a'], [0, 'b'], [1, 'c'], [0, 'd']], fn x, y -> x[0] < y[0])",
+            "[[0, 'b'], [0, 'd'], [1, 'a'], [1, 'c']]",
+        ),
+    ]);
+}
+
+#[test]
+fn sorted_orders_by_a_comparator() {
+    assert_values(&[
+        ("sorted([1, 3, 2], fn a, b -> a > b)", "[3, 2, 1]"),
+        (
+            "sorted(['bb', 'a', 'ccc'], fn a, b -> len(a) < len(b))",
+            "['a', 'bb', 'ccc']",
+        ),
+        // The comparator's answer is tested for truthiness.
+        (
+            "sorted([3, 1, 2], fn a, b -> if a < b: 0 else: null)",
+            "[1, 2, 3]",
+        ),
+    ]);
+}
+
+#[test]
+fn sorted_survives_an_inconsistent_comparator() {
+    assert_values(&[
+        // Never "before": every element stays where it was.
+        ("sorted([3, 1, 2], fn a, b -> false)", "[3, 1, 2]"),
+        // Any answer still yields every element exactly once.
+        (
+            "sorted(sorted([3, 1, 2, 5, 4], fn a, b -> true))",
+            "[1, 2, 3, 4, 5]",
+        ),
+        (
+            "sorted(sorted(range(100), fn a, b -> (a * 7 + b * 3) % 5 < 2)) == range(100)",
+            "true",
+        ),
+    ]);
+}
+
+#[test]
+fn sorted_raises_when_elements_cannot_be_ordered() {
+    assert_raises(&[
+        ("sorted([null, null])", "Type Null is not orderable"),
+        ("sorted([{}, {a: 1}])", "Type Map is not orderable"),
+    ]);
+    let raised = raises("sorted([1, 'a'])");
+    assert!(
+        raised.starts_with("Cannot compare incompatible types:"),
+        "mixed types raise as `<` does: {raised}"
+    );
+}
+
+#[test]
+fn sorted_raises_what_its_comparator_raises() {
+    assert_raises(&[("sorted([1, 2], fn a, b -> error('boom'))", "boom")]);
+    assert_raises_as(&[("sorted([1, 2], fn a -> true)", "(fn a -> true)(1, 2)")]);
+    // The first error ends the sort: the comparator is not called again.
+    let script = Script::new("sorted([4, 3, 2, 1], fn a, b -> { print('called'); error('boom') })");
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["called"]);
+}
+
+#[test]
+fn sorted_checks_its_arguments() {
+    assert_type_errors(
+        "sorted",
+        &[
+            ("sorted({})", "Array", "argument 1", "Map"),
+            ("sorted('cba')", "Array", "argument 1", "String"),
+            (
+                "sorted([1], 1)",
+                "Function",
+                "argument 2 (comparator)",
+                "Int",
+            ),
+        ],
+    );
+    assert_arity("sorted", "between 1 and 2", &[0, 3]);
+}
+
+#[test]
+fn sort_by_orders_by_a_projection() {
+    assert_values(&[
+        (
+            "sort_by([{n: 'b'}, {n: 'a'}], index('n'))",
+            "[{n: 'a'}, {n: 'b'}]",
+        ),
+        ("sort_by(['ccc', 'a', 'bb'], len)", "['a', 'bb', 'ccc']"),
+        ("sort_by([1, 3, 2], fn x -> -x)", "[3, 2, 1]"),
+        ("sort_by([], id)", "[]"),
+        // Stable: elements with equal keys keep their order.
+        (
+            "sort_by(['bb', 'a', 'cc', 'd'], len)",
+            "['a', 'd', 'bb', 'cc']",
+        ),
+    ]);
+}
+
+#[test]
+fn sort_by_projects_each_element_once() {
+    assert_eq!(
+        printed("sort_by([3, 1, 2], fn x -> { print(x); x })"),
+        ["3", "1", "2"]
+    );
+}
+
+#[test]
+fn sort_by_raises_when_keys_cannot_be_ordered() {
+    assert_raises(&[
+        (
+            "sort_by([1, 2], fn x -> null)",
+            "Type Null is not orderable",
+        ),
+        ("sort_by([1, 2], fn x -> error('boom'))", "boom"),
+    ]);
+    // A single key is never compared, so it need not be orderable.
+    assert_values(&[("sort_by([1], fn x -> null)", "[1]")]);
+}
+
+#[test]
+fn sort_by_checks_its_arguments() {
+    assert_type_errors(
+        "sort_by",
+        &[
+            ("sort_by({}, id)", "Array", "argument 1", "Map"),
+            (
+                "sort_by([1], 1)",
+                "Function",
+                "argument 2 (projection)",
+                "Int",
+            ),
+        ],
+    );
+    assert_arity("sort_by", "2", &[0, 1, 3]);
+}
+
+#[test]
+fn sorting_leaves_the_original_unchanged() {
+    let source = r"
+        def a = [3, 1, 2]
+        [sorted(a), sort_by(a, id), a]
+    ";
+    assert_values(&[(source, "[[1, 2, 3], [1, 2, 3], [3, 1, 2]]")]);
+}
+
 // --- group_by, count_by ---
 
 #[test]

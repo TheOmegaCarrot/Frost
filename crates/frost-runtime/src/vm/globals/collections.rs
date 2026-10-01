@@ -823,12 +823,77 @@ pub(super) fn product_global() -> Value {
     })
 }
 
+/// Stable-sort `items` by `before`, which answers whether its first argument
+/// must come before its second.
+///
+/// The standard library's sorts cannot serve Frost: their comparison cannot
+/// fail, and they may panic when it is not a consistent total order, which
+/// neither `<` nor a script's comparator promises. Here, `before`'s first
+/// error ends the sort with no further calls, and an inconsistent `before`
+/// still yields some ordering of `items`.
+fn merge_sort<T>(
+    mut items: Vec<T>,
+    before: &mut impl FnMut(&T, &T) -> Result<bool, FrostError>,
+) -> Result<Vec<T>, FrostError> {
+    if items.len() <= 1 {
+        return Ok(items);
+    }
+    let right = items.split_off(items.len() / 2);
+    let left = merge_sort(items, before)?;
+    let right = merge_sort(right, before)?;
+
+    let mut merged = Vec::with_capacity(left.len() + right.len());
+    let mut left = left.into_iter().peekable();
+    let mut right = right.into_iter().peekable();
+    while let (Some(l), Some(r)) = (left.peek(), right.peek()) {
+        // Taking from the left unless the right must come first keeps the sort stable.
+        let next = if before(r, l)? { &mut right } else { &mut left };
+        merged.extend(next.next());
+    }
+    merged.extend(left);
+    merged.extend(right);
+    Ok(merged)
+}
+
+/// Whether `a` comes before `b` under Frost's `<`.
+fn less_than(a: &Value, b: &Value) -> Result<bool, FrostError> {
+    Ok(a.compare(b)?.is_lt())
+}
+
 pub(super) fn sorted_global() -> Value {
-    super::stub("sorted")
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::ARRAY),
+        Param::of(FrostType::FUNCTION)
+            .named("comparator")
+            .optional(),
+    ]);
+    Value::checked_native("sorted", PARAMS, |mut ctx, args| {
+        let elements = take_array(&mut args[0]).into_vec();
+        let sorted = match args.get(1) {
+            Some(comparator) => merge_sort(elements, &mut |a, b| {
+                Ok(ctx.invoke_ref(comparator, [a, b])?.is_truthy())
+            })?,
+            None => merge_sort(elements, &mut less_than)?,
+        };
+        Ok(sorted.into())
+    })
 }
 
 pub(super) fn sort_by_global() -> Value {
-    super::stub("sort_by")
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::ARRAY),
+        Param::of(FrostType::FUNCTION).named("projection"),
+    ]);
+    Value::checked_native("sort_by", PARAMS, |mut ctx, args| {
+        let elements = take_array(&mut args[0]).into_vec();
+        // Each element's key, from one projection call apiece.
+        let keyed = elements
+            .into_iter()
+            .map(|element| Ok((ctx.invoke_ref(&args[1], [&element])?, element)))
+            .collect::<Result<Vec<_>, FrostError>>()?;
+        let sorted = merge_sort(keyed, &mut |(a, _), (b, _)| less_than(a, b))?;
+        Ok(sorted.into_iter().map(|(_, element)| element).collect())
+    })
 }
 
 // --- Grouping ---
