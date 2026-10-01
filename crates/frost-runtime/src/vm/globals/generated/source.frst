@@ -14,11 +14,7 @@ defn collect(...e) -> e
 
 defn spread(f) -> fn spread_fn(arr) -> call(f, arr)
 
-# TODO: reverse with the `reverse` global once it is implemented.
-defn rev_args(f) -> fn rev_args_fn(...args) -> {
-    defn prepend(acc, arg) -> [arg] + acc
-    call(f, reduce args init: [] with prepend)
-}
+defn rev_args(f) -> fn rev_args_fn(...args) -> call(f, reverse(args))
 
 defn tap(a, f) -> {
     f(a)
@@ -38,4 +34,12 @@ defn compose(f, g, ...rest) -> {
         [] => compose2(f, g),
         _ => call(compose, [compose2(f, g)] + rest),
     }
+}
+
+defn index(key) -> fn index_fn(structure) -> structure[key]
+
+# Each step indexes as `structure[key]` does, but a Null stays Null.
+defn dig(structure, ...keys) -> {
+    defn step(found, key) -> if is_null(found): null else: found[key]
+    reduce keys init: structure with step
 }
