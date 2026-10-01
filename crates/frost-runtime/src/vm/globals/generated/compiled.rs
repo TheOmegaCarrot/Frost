@@ -22,11 +22,11 @@
 //        1  args
 //        2  inv_fn
 //   code
-//        0  DefLocal      1   ; args
-//        1  DefLocal      2   ; inv_fn
-//        2  LoadGlobal    99  ; call
-//        3  ConsumeLocal  0   ; f
-//        4  ConsumeLocal  1   ; args
+//        0  DefLocal      1    ; args
+//        1  DefLocal      2    ; inv_fn
+//        2  LoadGlobal    100  ; call
+//        3  ConsumeLocal  0    ; f
+//        4  ConsumeLocal  1    ; args
 //        5  Call          2
 //        6  LogicalNot
 //
@@ -54,12 +54,12 @@
 //        2  inner
 //        3  curry_fn
 //   code
-//        0  DefLocal      2   ; inner
-//        1  DefLocal      3   ; curry_fn
-//        2  LoadGlobal    99  ; call
-//        3  ConsumeLocal  0   ; f
-//        4  ConsumeLocal  1   ; outer
-//        5  ConsumeLocal  2   ; inner
+//        0  DefLocal      2    ; inner
+//        1  DefLocal      3    ; curry_fn
+//        2  LoadGlobal    100  ; call
+//        3  ConsumeLocal  0    ; f
+//        4  ConsumeLocal  1    ; outer
+//        5  ConsumeLocal  2    ; inner
 //        6  Add
 //        7  TailCall      2
 //
@@ -87,12 +87,12 @@
 //        2  inner
 //        3  bcurry_fn
 //   code
-//        0  DefLocal      2   ; inner
-//        1  DefLocal      3   ; bcurry_fn
-//        2  LoadGlobal    99  ; call
-//        3  ConsumeLocal  0   ; f
-//        4  ConsumeLocal  2   ; inner
-//        5  ConsumeLocal  1   ; outer
+//        0  DefLocal      2    ; inner
+//        1  DefLocal      3    ; bcurry_fn
+//        2  LoadGlobal    100  ; call
+//        3  ConsumeLocal  0    ; f
+//        4  ConsumeLocal  2    ; inner
+//        5  ConsumeLocal  1    ; outer
 //        6  Add
 //        7  TailCall      2
 //
@@ -126,11 +126,11 @@
 //        1  arr
 //        2  spread_fn
 //   code
-//        0  DefLocal      1   ; arr
-//        1  DefLocal      2   ; spread_fn
-//        2  LoadGlobal    99  ; call
-//        3  ConsumeLocal  0   ; f
-//        4  ConsumeLocal  1   ; arr
+//        0  DefLocal      1    ; arr
+//        1  DefLocal      2    ; spread_fn
+//        2  LoadGlobal    100  ; call
+//        3  ConsumeLocal  0    ; f
+//        4  ConsumeLocal  1    ; arr
 //        5  TailCall      2
 //
 // function rev_args
@@ -153,12 +153,12 @@
 //        1  args
 //        2  rev_args_fn
 //   code
-//        0  DefLocal      1   ; args
-//        1  DefLocal      2   ; rev_args_fn
-//        2  LoadGlobal    99  ; call
-//        3  ConsumeLocal  0   ; f
-//        4  LoadGlobal    65  ; reverse
-//        5  ConsumeLocal  1   ; args
+//        0  DefLocal      1    ; args
+//        1  DefLocal      2    ; rev_args_fn
+//        2  LoadGlobal    100  ; call
+//        3  ConsumeLocal  0    ; f
+//        4  LoadGlobal    66   ; reverse
+//        5  ConsumeLocal  1    ; args
 //        6  Call          1
 //        7  TailCall      2
 //
@@ -216,36 +216,36 @@
 //        0  require_fn (child 0)
 //        1  compose2 (child 1)
 //   code
-//        0  DefLocal           0   ; rest
-//        1  DefLocal           1   ; g
-//        2  DefLocal           2   ; f
-//        3  DefLocal           3   ; compose
-//        4  CreateClosure      0   ; require_fn, 0 captures
-//        5  DefLocal           4   ; require_fn
-//        6  LoadGlobal         95  ; each
-//        7  LoadLocal          2   ; f
-//        8  LoadLocal          1   ; g
+//        0  DefLocal           0    ; rest
+//        1  DefLocal           1    ; g
+//        2  DefLocal           2    ; f
+//        3  DefLocal           3    ; compose
+//        4  CreateClosure      0    ; require_fn, 0 captures
+//        5  DefLocal           4    ; require_fn
+//        6  LoadGlobal         96   ; each
+//        7  LoadLocal          2    ; f
+//        8  LoadLocal          1    ; g
 //        9  MakeArray          2
-//       10  LoadLocal          0   ; rest
+//       10  LoadLocal          0    ; rest
 //       11  Add
-//       12  ConsumeLocal       4   ; require_fn
+//       12  ConsumeLocal       4    ; require_fn
 //       13  Call               2
 //       14  DropBelow          0
-//       15  CreateClosure      1   ; compose2, 0 captures
-//       16  DefLocal           5   ; compose2
-//       17  LoadLocal          0   ; rest
+//       15  CreateClosure      1    ; compose2, 0 captures
+//       16  DefLocal           5    ; compose2
+//       17  LoadLocal          0    ; rest
 //       18  MarkStack
 //       19  PeekDown           0
 //       20  TestArrayLenExact  0
-//       21  JumpIfFalse        L0  ; +8
+//       21  JumpIfFalse        L0   ; +8
 //       22  ExplodeArray
 //       23  DropMark
 //       24  DropBelow          0
-//       25  ConsumeLocal       5   ; compose2
-//       26  ConsumeLocal       2   ; f
-//       27  ConsumeLocal       1   ; g
+//       25  ConsumeLocal       5    ; compose2
+//       26  ConsumeLocal       2    ; f
+//       27  ConsumeLocal       1    ; g
 //       28  TailCall           2
-//       29  Jump               L1  ; +22
+//       29  Jump               L1   ; +22
 //   L0:
 //       30  RewindToMark
 //       31  MarkStack
@@ -253,19 +253,19 @@
 //       33  DropBelow          0
 //       34  DropMark
 //       35  DropBelow          0
-//       36  LoadGlobal         99  ; call
-//       37  ConsumeLocal       3   ; compose
-//       38  ConsumeLocal       5   ; compose2
-//       39  ConsumeLocal       2   ; f
-//       40  ConsumeLocal       1   ; g
+//       36  LoadGlobal         100  ; call
+//       37  ConsumeLocal       3    ; compose
+//       38  ConsumeLocal       5    ; compose2
+//       39  ConsumeLocal       2    ; f
+//       40  ConsumeLocal       1    ; g
 //       41  Call               2
 //       42  MakeArray          1
-//       43  ConsumeLocal       0   ; rest
+//       43  ConsumeLocal       0    ; rest
 //       44  Add
 //       45  TailCall           2
-//       46  Jump               L1  ; +5
+//       46  Jump               L1   ; +5
 //       47  RewindToMark
-//       48  LoadConst          0   ; "No match arm matches the value: "
+//       48  LoadConst          0    ; "No match arm matches the value: "
 //       49  PeekDown           1
 //       50  Concat             2
 //       51  ProduceError
@@ -282,7 +282,7 @@
 //   code
 //        0  DefLocal      0    ; h
 //        1  DefLocal      1    ; require_fn
-//        2  LoadGlobal    113  ; assert
+//        2  LoadGlobal    114  ; assert
 //        3  LoadGlobal    8    ; is_function
 //        4  LoadLocal     0    ; h
 //        5  Call          1
@@ -317,12 +317,12 @@
 //        2  args
 //        3  compose_fn
 //   code
-//        0  DefLocal      2   ; args
-//        1  DefLocal      3   ; compose_fn
-//        2  ConsumeLocal  0   ; f2
-//        3  LoadGlobal    99  ; call
-//        4  ConsumeLocal  1   ; f1
-//        5  ConsumeLocal  2   ; args
+//        0  DefLocal      2    ; args
+//        1  DefLocal      3    ; compose_fn
+//        2  ConsumeLocal  0    ; f2
+//        3  LoadGlobal    100  ; call
+//        4  ConsumeLocal  1    ; f1
+//        5  ConsumeLocal  2    ; args
 //        6  Call          2
 //        7  TailCall      1
 //
@@ -367,7 +367,7 @@
 //        2  DefLocal       2   ; dig
 //        3  CreateClosure  0   ; step, 0 captures
 //        4  DefLocal       3   ; step
-//        5  LoadGlobal     78  ; fold
+//        5  LoadGlobal     79  ; fold
 //        6  ConsumeLocal   0   ; keys
 //        7  ConsumeLocal   3   ; step
 //        8  ConsumeLocal   1   ; structure
@@ -411,7 +411,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(2))]),
                         map([(string("DefLocal"), int(3))]),
-                        map([(string("LoadGlobal"), int(99))]),
+                        map([(string("LoadGlobal"), int(100))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(2))]),
                         map([(string("ConsumeLocal"), int(1))]),
@@ -486,7 +486,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(0))]),
                         map([(string("DefLocal"), int(1))]),
-                        map([(string("LoadGlobal"), int(113))]),
+                        map([(string("LoadGlobal"), int(114))]),
                         map([(string("LoadGlobal"), int(8))]),
                         map([(string("LoadLocal"), int(0))]),
                         map([(string("Call"), int(1))]),
@@ -520,7 +520,7 @@ pub(super) fn functions() -> Value {
                                 map([(string("DefLocal"), int(2))]),
                                 map([(string("DefLocal"), int(3))]),
                                 map([(string("ConsumeLocal"), int(0))]),
-                                map([(string("LoadGlobal"), int(99))]),
+                                map([(string("LoadGlobal"), int(100))]),
                                 map([(string("ConsumeLocal"), int(1))]),
                                 map([(string("ConsumeLocal"), int(2))]),
                                 map([(string("Call"), int(2))]),
@@ -581,7 +581,7 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(3))]),
                 map([(string("CreateClosure"), int(0))]),
                 map([(string("DefLocal"), int(4))]),
-                map([(string("LoadGlobal"), int(95))]),
+                map([(string("LoadGlobal"), int(96))]),
                 map([(string("LoadLocal"), int(2))]),
                 map([(string("LoadLocal"), int(1))]),
                 map([(string("MakeArray"), int(2))]),
@@ -611,7 +611,7 @@ pub(super) fn functions() -> Value {
                 map([(string("DropBelow"), int(0))]),
                 string("DropMark"),
                 map([(string("DropBelow"), int(0))]),
-                map([(string("LoadGlobal"), int(99))]),
+                map([(string("LoadGlobal"), int(100))]),
                 map([(string("ConsumeLocal"), int(3))]),
                 map([(string("ConsumeLocal"), int(5))]),
                 map([(string("ConsumeLocal"), int(2))]),
@@ -692,7 +692,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(2))]),
                         map([(string("DefLocal"), int(3))]),
-                        map([(string("LoadGlobal"), int(99))]),
+                        map([(string("LoadGlobal"), int(100))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("ConsumeLocal"), int(2))]),
@@ -784,7 +784,7 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(2))]),
                 map([(string("CreateClosure"), int(0))]),
                 map([(string("DefLocal"), int(3))]),
-                map([(string("LoadGlobal"), int(78))]),
+                map([(string("LoadGlobal"), int(79))]),
                 map([(string("ConsumeLocal"), int(0))]),
                 map([(string("ConsumeLocal"), int(3))]),
                 map([(string("ConsumeLocal"), int(1))]),
@@ -858,7 +858,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
                         map([(string("DefLocal"), int(2))]),
-                        map([(string("LoadGlobal"), int(99))]),
+                        map([(string("LoadGlobal"), int(100))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("Call"), int(2))]),
@@ -907,9 +907,9 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
                         map([(string("DefLocal"), int(2))]),
-                        map([(string("LoadGlobal"), int(99))]),
+                        map([(string("LoadGlobal"), int(100))]),
                         map([(string("ConsumeLocal"), int(0))]),
-                        map([(string("LoadGlobal"), int(65))]),
+                        map([(string("LoadGlobal"), int(66))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("Call"), int(1))]),
                         map([(string("TailCall"), int(2))]),
@@ -957,7 +957,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
                         map([(string("DefLocal"), int(2))]),
-                        map([(string("LoadGlobal"), int(99))]),
+                        map([(string("LoadGlobal"), int(100))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("TailCall"), int(2))]),

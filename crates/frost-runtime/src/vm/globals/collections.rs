@@ -232,7 +232,44 @@ pub(super) fn nulls_global() -> Value {
 }
 
 pub(super) fn repeat_global() -> Value {
-    super::stub("repeat")
+    const PARAMS: Params = Params::new(&[Param::any(), Param::of(FrostType::INT)]);
+    Value::checked_native("repeat", PARAMS, |_, args| {
+        let count = count_arg("repeat", 2, int_arg(&args[1]), 0)?;
+        Ok(vec![args[0].take(); count].into())
+    })
+}
+
+pub(super) fn tile_global() -> Value {
+    const SEQUENCE: EnumSet<FrostType> =
+        enum_set!(FrostType::String | FrostType::Bytes | FrostType::Array);
+    const PARAMS: Params = Params::new(&[Param::of(SEQUENCE), Param::of(FrostType::INT)]);
+    Value::checked_native("tile", PARAMS, |_, args| {
+        let count = count_arg("tile", 2, int_arg(&args[1]), 0)?;
+        let size = match &args[0] {
+            Value::String(text) => text.len(),
+            Value::Bytes(octets) => octets.len(),
+            Value::Array(array) => array.len() * size_of::<Value>(),
+            other => unreachable!("type-checked, got {}", other.type_name()),
+        };
+        // Past `isize::MAX` bytes, allocating the result would panic.
+        let fits = size
+            .checked_mul(count)
+            .is_some_and(|total| isize::try_from(total).is_ok());
+        if !fits {
+            return Err(FrostError::from_static(
+                "Function tile cannot make a sequence that long",
+            ));
+        }
+        Ok(match args[0].take() {
+            Value::String(text) => text.repeat(count).into(),
+            Value::Bytes(octets) => octets.repeat(count).into(),
+            Value::Array(array) => std::iter::repeat_n(array.as_slice(), count)
+                .flatten()
+                .cloned()
+                .collect(),
+            other => unreachable!("type-checked, got {}", other.type_name()),
+        })
+    })
 }
 
 pub(super) fn id_global() -> Value {

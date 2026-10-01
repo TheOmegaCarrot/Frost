@@ -141,6 +141,7 @@ define_globals! {
     "range"                 [Pure]   => range_global(),
     "nulls"                 [Pure]   => nulls_global(),
     "repeat"                [Pure]   => repeat_global(),
+    "tile"                  [Pure]   => tile_global(),
     "id"                    [Pure]   => id_global(),
     "has"                   [Pure]   => has_global(),
     "includes"              [Pure]   => includes_global(),

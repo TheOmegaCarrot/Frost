@@ -403,6 +403,106 @@ fn nulls_makes_an_array_of_nulls() {
     assert_arity("nulls", "1", &[0, 2]);
 }
 
+// --- repeat ---
+
+#[test]
+fn repeat_makes_an_array_of_copies() {
+    assert_values(&[
+        ("repeat(0, 3)", "[0, 0, 0]"),
+        ("repeat('x', 4)", "['x', 'x', 'x', 'x']"),
+        ("repeat(null, 0)", "[]"),
+        ("repeat(7, 1)", "[7]"),
+        // A sequence or structure is one element, not spliced in.
+        ("repeat('ab', 2)", "['ab', 'ab']"),
+        ("repeat(x'ff', 2)", "[x'ff', x'ff']"),
+        ("repeat([1, 2], 2)", "[[1, 2], [1, 2]]"),
+        ("repeat({a: 1}, 2)", "[{a: 1}, {a: 1}]"),
+        ("0 @ repeat(2)", "[0, 0]"),
+        ("repeat(null, 2) == nulls(2)", "true"),
+    ]);
+}
+
+#[test]
+fn repeat_copies_a_function() {
+    assert_values(&[("map repeat(id, 2) with fn f -> f(5)", "[5, 5]")]);
+}
+
+#[test]
+fn repeat_checks_its_arguments() {
+    assert_raises(&[(
+        "repeat(0, -1)",
+        "Function repeat requires argument 2 to be at least 0, got -1",
+    )]);
+    assert_type_errors(
+        "repeat",
+        &[
+            ("repeat(0, '3')", "Int", "argument 2", "String"),
+            ("repeat(0, 3.0)", "Int", "argument 2", "Float"),
+            ("repeat(0, null)", "Int", "argument 2", "Null"),
+        ],
+    );
+    assert_arity("repeat", "2", &[0, 1, 3]);
+}
+
+// --- tile ---
+
+#[test]
+fn tile_joins_copies_of_a_sequence() {
+    assert_values(&[
+        ("tile('ab', 3)", "'ababab'"),
+        ("tile('ab', 1)", "'ab'"),
+        ("tile('ab', 0)", "''"),
+        ("tile('', 5)", "''"),
+        (r"tile('\u{e9}-', 2)", r"'\u{e9}-\u{e9}-'"),
+        ("tile(x'ff00', 2)", "x'ff00ff00'"),
+        ("tile(x'ff', 0)", "x''"),
+        ("tile([1, [2]], 2)", "[1, [2], 1, [2]]"),
+        ("tile([], 3)", "[]"),
+        ("tile([1], 0)", "[]"),
+        ("'-' @ tile(3)", "'---'"),
+    ]);
+}
+
+#[test]
+fn tile_relates_to_repeat() {
+    assert_values(&[
+        // Tiling a one-element Array is repeating its element.
+        ("tile([7], 3) == repeat(7, 3)", "true"),
+        // Tiling joins what repeating keeps apart.
+        ("flatten(repeat([1, 2], 3), 1) == tile([1, 2], 3)", "true"),
+    ]);
+}
+
+#[test]
+fn tile_checks_its_arguments() {
+    assert_raises(&[
+        (
+            "tile('ab', -1)",
+            "Function tile requires argument 2 to be at least 0, got -1",
+        ),
+        // A length past what memory can address is an error, not a crash.
+        (
+            "tile('ab', 9223372036854775807)",
+            "Function tile cannot make a sequence that long",
+        ),
+        (
+            "tile([1], 9223372036854775807)",
+            "Function tile cannot make a sequence that long",
+        ),
+    ]);
+    let sequence = "String or Bytes or Array";
+    assert_type_errors(
+        "tile",
+        &[
+            ("tile({a: 1}, 2)", sequence, "argument 1", "Map"),
+            ("tile(5, 2)", sequence, "argument 1", "Int"),
+            ("tile('a', 2.0)", "Int", "argument 2", "Float"),
+            ("tile('a', null)", "Int", "argument 2", "Null"),
+        ],
+    );
+    assert_arity("tile", "2", &[0, 1, 3]);
+}
+
 // --- has, includes ---
 
 #[test]
