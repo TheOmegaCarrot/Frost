@@ -3,12 +3,11 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use enumset::{EnumSet, enum_set};
-
 use crate::{
-    Arity, Bytecode, FrostArray, FrostError, FrostMap, FrostType, MapKey, NativeCtx, Param, Params,
-    Value, ValueMap,
+    Arity, Bytecode, FrostArray, FrostError, FrostMap, FrostResult, FrostType, MapKey, NativeCtx,
+    Param, Params, Value, ValueMap,
 };
+use enumset::{EnumSet, enum_set};
 
 /// The types a Map key may have.
 const MAP_KEY: EnumSet<FrostType> = enum_set!(
@@ -625,7 +624,25 @@ pub(super) fn drop_while_global() -> Value {
 }
 
 pub(super) fn chunk_by_global() -> Value {
-    super::stub("chunk_by")
+    Value::checked_native("chunk_by", ARRAY_AND_FUNCTION, |mut ctx, args| {
+        let elements = take_array(&mut args[0]).into_vec();
+        let mut chunks: Vec<Vec<Value>> = Vec::new();
+        for element in elements {
+            // Each adjacent pair is asked once: does the next element join the chunk?
+            let joins = match chunks.last() {
+                Some(chunk) => {
+                    let previous = chunk.last().expect("a chunk is never empty");
+                    ctx.invoke_ref(&args[1], [previous, &element])?.is_truthy()
+                }
+                None => false,
+            };
+            match chunks.last_mut() {
+                Some(chunk) if joins => chunk.push(element),
+                _ => chunks.push(vec![element]),
+            }
+        }
+        Ok(chunks.into_iter().map(Value::from).collect())
+    })
 }
 
 /// Append `elements` to `out`, splicing in the elements of each Array among them
@@ -657,20 +674,129 @@ pub(super) fn flatten_global() -> Value {
     })
 }
 
+/// The Arrays in `args[from..]`, taken from them, where `function` takes any
+/// number of Arrays there.
+fn rest_arrays(
+    function: &str,
+    args: &mut [Value],
+    from: usize,
+) -> Result<Vec<FrostArray>, FrostError> {
+    args.iter_mut()
+        .enumerate()
+        .skip(from)
+        .map(|(i, arg)| match arg.take() {
+            Value::Array(array) => Ok(array),
+            other => Err(FrostError::from_string(format!(
+                "Function {function} requires Array as argument {}, got {}",
+                i + 1,
+                other.type_name()
+            ))),
+        })
+        .collect()
+}
+
+// A row of `zip` or `xprod` is never built on its own: each element goes
+// straight from its Array into the row's Array, or into the call that
+// `zip_with` or `xprod_with` makes with it.
+
+/// The element at `index` of each of `arrays`: a row of `zip`.
+fn zip_row(arrays: &[FrostArray], index: usize) -> impl Iterator<Item = Value> + '_ {
+    arrays.iter().map(move |array| array[index].clone())
+}
+
+/// `each` applied to each row index of `arrays` zipped, up to the length of the
+/// shortest, stopping at its first error.
+fn map_zip_rows(
+    arrays: &[FrostArray],
+    each: impl FnMut(usize) -> FrostResult,
+) -> Result<Vec<Value>, FrostError> {
+    let shortest = arrays.iter().map(FrostArray::len).min().unwrap_or(0);
+    (0..shortest).map(each).collect()
+}
+
+/// The element at each of `indices` in the corresponding one of `arrays`:
+/// a row of `xprod`.
+fn xprod_row<'a>(
+    arrays: &'a [FrostArray],
+    indices: &'a [usize],
+) -> impl Iterator<Item = Value> + 'a {
+    arrays
+        .iter()
+        .zip(indices)
+        .map(|(array, &i)| array[i].clone())
+}
+
+/// `each` applied to the indices of each row of the cartesian product of
+/// `arrays`, the last Array varying fastest, stopping at its first error.
+/// There are no rows if any Array is empty.
+fn map_xprod_rows(
+    arrays: &[FrostArray],
+    mut each: impl FnMut(&[usize]) -> FrostResult,
+) -> Result<Vec<Value>, FrostError> {
+    let mut results = Vec::new();
+    if arrays.iter().any(FrostArray::is_empty) {
+        return Ok(results);
+    }
+    let mut indices = vec![0; arrays.len()];
+    loop {
+        results.push(each(&indices)?);
+        if !advance_odometer(&mut indices, arrays) {
+            return Ok(results);
+        }
+    }
+}
+
+/// Step `indices` to the next row of the cartesian product of `arrays`, like
+/// an odometer: the last index counts fastest, carrying into the one before it.
+/// False when every index rolls over, after the last row.
+fn advance_odometer(indices: &mut [usize], arrays: &[FrostArray]) -> bool {
+    for (index, array) in indices.iter_mut().zip(arrays).rev() {
+        *index += 1;
+        if *index < array.len() {
+            return true;
+        }
+        *index = 0;
+    }
+    false
+}
+
+/// The spec of the leading Function of `zip_with` and `xprod_with`.
+const LEADING_FUNCTION: Params = Params::new(&[Param::of(FrostType::FUNCTION)]);
+
 pub(super) fn zip_global() -> Value {
-    super::stub("zip")
+    Value::native("zip", Arity::AtLeast(2), |_, args| {
+        let arrays = rest_arrays("zip", args, 0)?;
+        let rows = map_zip_rows(&arrays, |i| Ok(zip_row(&arrays, i).collect()))?;
+        Ok(rows.into())
+    })
 }
 
 pub(super) fn zip_with_global() -> Value {
-    super::stub("zip_with")
+    Value::native("zip_with", Arity::AtLeast(3), |mut ctx, args| {
+        ctx.check_args(args, &LEADING_FUNCTION)?;
+        let arrays = rest_arrays("zip_with", args, 1)?;
+        let results = map_zip_rows(&arrays, |i| ctx.invoke(&args[0], zip_row(&arrays, i)))?;
+        Ok(results.into())
+    })
 }
 
 pub(super) fn xprod_global() -> Value {
-    super::stub("xprod")
+    Value::native("xprod", Arity::AtLeast(2), |_, args| {
+        let arrays = rest_arrays("xprod", args, 0)?;
+        let rows = map_xprod_rows(&arrays, |indices| Ok(xprod_row(&arrays, indices).collect()))?;
+        Ok(rows.into())
+    })
 }
 
 pub(super) fn xprod_with_global() -> Value {
-    super::stub("xprod_with")
+    Value::native("xprod_with", Arity::AtLeast(3), |mut ctx, args| {
+        ctx.check_args(args, &LEADING_FUNCTION)?;
+        let arrays = rest_arrays("xprod_with", args, 1)?;
+        let results = map_xprod_rows(&arrays, |indices| {
+            ctx.invoke(&args[0], xprod_row(&arrays, indices))
+        })?;
+        Ok(results.into())
+    })
 }
 
 // --- Transforming ---

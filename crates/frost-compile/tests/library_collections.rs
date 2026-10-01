@@ -1536,3 +1536,226 @@ fn map_into_merges_the_maps_its_function_returns() {
     );
     assert_arity("map_into", "2", &[0, 1, 3]);
 }
+
+// --- chunk_by ---
+
+#[test]
+fn chunk_by_groups_runs_of_adjacent_elements() {
+    assert_values(&[
+        (
+            "chunk_by([1, 1, 2, 2, 1], fn a, b -> a == b)",
+            "[[1, 1], [2, 2], [1]]",
+        ),
+        (
+            "chunk_by([1, 2, 3, 2, 3, 1], fn a, b -> a < b)",
+            "[[1, 2, 3], [2, 3], [1]]",
+        ),
+        ("chunk_by([1, 2, 3], fn a, b -> true)", "[[1, 2, 3]]"),
+        ("chunk_by([1, 2, 3], fn a, b -> false)", "[[1], [2], [3]]"),
+        ("chunk_by([5], fn a, b -> false)", "[[5]]"),
+        ("chunk_by([], fn a, b -> true)", "[]"),
+    ]);
+}
+
+#[test]
+fn chunk_by_asks_about_each_adjacent_pair_once() {
+    assert_eq!(
+        printed(r"chunk_by([1, 2, 3], fn a, b -> { print($'${a},${b}'); true })"),
+        ["1,2", "2,3"]
+    );
+    assert!(
+        printed("chunk_by([1], fn a, b -> { print('called'); true })").is_empty(),
+        "a single element has no pair to ask about"
+    );
+}
+
+#[test]
+fn chunk_by_checks_its_arguments() {
+    assert_raises(&[("chunk_by([1, 2], fn a, b -> error('boom'))", "boom")]);
+    assert_type_errors(
+        "chunk_by",
+        &[
+            ("chunk_by({}, id)", "Array", "argument 1", "Map"),
+            ("chunk_by([1], 1)", "Function", "argument 2", "Int"),
+        ],
+    );
+    assert_arity("chunk_by", "2", &[0, 1, 3]);
+}
+
+// --- zip, zip_with ---
+
+#[test]
+fn zip_pairs_up_elements() {
+    assert_values(&[
+        (
+            "zip([1, 2, 3], ['a', 'b', 'c'])",
+            "[[1, 'a'], [2, 'b'], [3, 'c']]",
+        ),
+        ("zip([1, 2], [3, 4], [5, 6])", "[[1, 3, 5], [2, 4, 6]]"),
+        // Rows stop at the shortest Array.
+        ("zip([1, 2, 3], [4])", "[[1, 4]]"),
+        ("zip([1], [2, 3], [4, 5, 6])", "[[1, 2, 4]]"),
+        ("zip([], [1])", "[]"),
+        // Elements are taken whole.
+        ("zip([[1]], [2])", "[[[1], 2]]"),
+    ]);
+}
+
+#[test]
+fn zip_with_combines_elements() {
+    assert_values(&[
+        (
+            "zip_with(fn a, b -> a + b, [1, 2, 3], [10, 20, 30])",
+            "[11, 22, 33]",
+        ),
+        (
+            "zip_with(fn a, b, c -> a * b + c, [2, 3, 4], [10, 20, 30], [1, 1])",
+            "[21, 61]",
+        ),
+        (
+            "zip_with(collect, [1, 2], [3, 4]) == zip([1, 2], [3, 4])",
+            "true",
+        ),
+        ("zip_with(plus, [], [1])", "[]"),
+    ]);
+    assert_eq!(
+        printed("zip_with(fn a, b -> print(a + b), [1, 2], [10, 20])"),
+        ["11", "22"]
+    );
+}
+
+#[test]
+fn zip_with_raises_what_its_function_raises() {
+    assert_raises(&[("zip_with(fn a, b -> error('boom'), [1], [2])", "boom")]);
+    assert_raises_as(&[("zip_with(fn a -> a, [1], [2])", "(fn a -> a)(1, 2)")]);
+}
+
+// --- xprod, xprod_with ---
+
+#[test]
+fn xprod_makes_every_combination() {
+    assert_values(&[
+        (
+            "xprod([1, 2], ['a', 'b'])",
+            "[[1, 'a'], [1, 'b'], [2, 'a'], [2, 'b']]",
+        ),
+        (
+            "xprod([1, 2], [3], [4, 5])",
+            "[[1, 3, 4], [1, 3, 5], [2, 3, 4], [2, 3, 5]]",
+        ),
+        ("len(xprod(range(3), range(4), range(5)))", "60"),
+        // Any empty Array leaves no combinations.
+        ("xprod([1], [])", "[]"),
+        ("xprod([], [1])", "[]"),
+        ("xprod([1, 2], [3], [])", "[]"),
+        // Elements are taken whole.
+        ("xprod([[1]], [2])", "[[[1], 2]]"),
+    ]);
+}
+
+#[test]
+fn xprod_with_combines_every_combination() {
+    assert_values(&[
+        (
+            "xprod_with(fn a, b -> a + b, [10, 20], [1, 2])",
+            "[11, 12, 21, 22]",
+        ),
+        (
+            "xprod_with(fn a, b -> a + b, ['a', 'b'], ['1', '2'])",
+            "['a1', 'a2', 'b1', 'b2']",
+        ),
+        (
+            "xprod_with(collect, [1, 2], [3], [4, 5]) == xprod([1, 2], [3], [4, 5])",
+            "true",
+        ),
+    ]);
+    assert!(
+        printed("xprod_with(fn a, b -> print('called'), [1], [])").is_empty(),
+        "no combination, no call"
+    );
+}
+
+#[test]
+fn xprod_with_raises_what_its_function_raises() {
+    assert_raises(&[("xprod_with(fn a, b -> error('boom'), [1], [2])", "boom")]);
+    assert_raises_as(&[("xprod_with(fn a -> a, [1], [2])", "(fn a -> a)(1, 2)")]);
+}
+
+// --- zip, zip_with, xprod, xprod_with: arguments ---
+
+#[test]
+fn zip_and_xprod_require_arrays() {
+    for function in ["zip", "xprod"] {
+        assert_type_errors(
+            function,
+            &[
+                (&format!("{function}(1, [2])"), "Array", "argument 1", "Int"),
+                (
+                    &format!("{function}([1], {{}})"),
+                    "Array",
+                    "argument 2",
+                    "Map",
+                ),
+                (
+                    &format!("{function}([1], [2], 'x')"),
+                    "Array",
+                    "argument 3",
+                    "String",
+                ),
+            ],
+        );
+        assert_arity(function, "at least 2", &[0, 1]);
+    }
+}
+
+#[test]
+fn zip_with_and_xprod_with_require_a_function_and_arrays() {
+    for function in ["zip_with", "xprod_with"] {
+        assert_type_errors(
+            function,
+            &[
+                (
+                    &format!("{function}(1, [1], [2])"),
+                    "Function",
+                    "argument 1",
+                    "Int",
+                ),
+                (
+                    &format!("{function}(id, 1, [2])"),
+                    "Array",
+                    "argument 2",
+                    "Int",
+                ),
+                (
+                    &format!("{function}(id, [1], [2], null)"),
+                    "Array",
+                    "argument 4",
+                    "Null",
+                ),
+            ],
+        );
+        assert_arity(function, "at least 3", &[0, 1, 2]);
+    }
+}
+
+#[test]
+fn zip_with_and_xprod_with_stop_at_the_first_error() {
+    // Each call prints its first argument, and the first with a 2 raises.
+    let probe = "fn a, b -> { print(a); if a == 2: error('boom') else: a }";
+
+    // Of 1000 rows, the third raises.
+    let script = Script::new(&format!("zip_with({probe}, range(1000), range(1000))"));
+    assert_eq!(script.raises(), "boom");
+    assert_eq!(script.printed(), ["0", "1", "2"], "zip_with stops at row 3");
+
+    // Of a million rows, row 2001 raises: the first Array's 0 and 1 each pair
+    // with all 1000 of the second's elements before its 2 comes up.
+    let script = Script::new(&format!("xprod_with({probe}, range(1000), range(1000))"));
+    assert_eq!(script.raises(), "boom");
+    let expected: Vec<&str> = ["0"; 1000]
+        .into_iter()
+        .chain(["1"; 1000])
+        .chain(["2"])
+        .collect();
+    assert_eq!(script.printed(), expected, "xprod_with stops at row 2001");
+}

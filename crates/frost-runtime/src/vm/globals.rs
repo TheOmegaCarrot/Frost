@@ -3,8 +3,7 @@
 //! The `define_globals!` invocation below is the single source of truth for the
 //! global names, their slot order (used by `LoadGlobal`), and their constructors.
 //! Each global is built by a `*_global()` constructor that lives in a topic
-//! submodule; not-yet-implemented ones return [`stub`].
-//! Some globals are written in Frost; see [`generated`].
+//! submodule. Some globals are written in Frost; see [`generated`].
 
 mod collections;
 mod debug;
@@ -19,7 +18,6 @@ mod types;
 
 use std::sync::{Arc, LazyLock};
 
-use crate::core::FrostResult;
 use crate::{Arity, Bytecode, Closure, CompiledFunction, FormatVersion, Value};
 
 use collections::*;
@@ -237,20 +235,6 @@ fn bytecode_global(name: &'static str, arity: Arity, code: Vec<Bytecode>) -> Val
             code,
         }),
     }))
-}
-
-/// A not-yet-implemented global. The table still builds (so `GlobalSet::defaults()`
-/// and every `Vm` keep working, and the test suite stays green), but invoking the
-/// global panics with a clear message. Replace the matching `*_global()` body with
-/// the real constructor when implementing it.
-fn stub(name: &'static str) -> Value {
-    Value::native(
-        name,
-        Arity::AtLeast(0),
-        move |_ctx, _args: &mut [Value]| -> FrostResult {
-            todo!("the `{name}` global is not yet implemented")
-        },
-    )
 }
 
 static DEFAULT_GLOBALS: LazyLock<Arc<GlobalSet>> =
