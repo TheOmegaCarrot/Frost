@@ -52,12 +52,12 @@ fn names(stdlib: &Stdlib) -> Vec<&str> {
 
 #[test]
 fn the_pure_preset_holds_the_pure_modules() {
-    assert_eq!(names(&Stdlib::pure()), ["encoding"]);
+    assert_eq!(names(&Stdlib::pure()), ["encoding", "math"]);
 }
 
 #[test]
 fn the_complete_preset_holds_every_module() {
-    assert_eq!(names(&Stdlib::complete()), ["encoding", "os"]);
+    assert_eq!(names(&Stdlib::complete()), ["encoding", "math", "os"]);
 }
 
 #[test]
