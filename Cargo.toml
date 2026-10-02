@@ -39,3 +39,9 @@ stable_sort_primitive = "warn"
 approx_constant = "allow"
 # `assert_eq!(x, false)` reads better than `assert!(!x)` in tests.
 bool_assert_comparison = "allow"
+
+[profile.dev]
+debug = "line-tables-only"  # cut down on the amount of debug info
+
+[profile.dev.package."*"]
+debug = false               # no debug info in third-party crates

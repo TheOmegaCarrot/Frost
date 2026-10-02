@@ -1,5 +1,6 @@
-//! The `print` global, end to end: `print(value)` hands `value`, rendered as
-//! `to_string` renders it, to the Vm's print sink, and returns Null.
+//! Effects under compilation, observed through `print`, which stands for any
+//! impure global: a script's effects happen in evaluation order, exactly when
+//! the code making them runs.
 //!
 //! The harness captures what each run prints, and requires every optimization
 //! permutation to print the same, so no optimization may drop, repeat, or reorder
@@ -7,54 +8,10 @@
 
 mod common;
 
-use common::{Script, raises, run};
-use frost_runtime::Value;
+use common::Script;
 
 fn printed(source: &str) -> Vec<String> {
     Script::new(source).printed()
-}
-
-#[test]
-fn a_string_prints_as_its_text() {
-    assert_eq!(printed(r#"print("hello")"#), ["hello"]);
-    assert_eq!(printed(r#"print("")"#), [""]);
-    assert_eq!(printed(r#"print("héllo, 世界")"#), ["héllo, 世界"]);
-}
-
-#[test]
-fn any_value_prints_as_to_string_renders_it() {
-    for value in [
-        "null",
-        "true",
-        "-5",
-        "1.5",
-        "x'00ff'",
-        r#"[1, "a", [null]]"#,
-        r#"{a: "b"}"#,
-        "plus",
-        "fn -> 1",
-    ] {
-        let rendered = run(&format!("to_string({value})")).to_frost_string();
-        assert_eq!(printed(&format!("print({value})")), [rendered], "{value}");
-    }
-}
-
-#[test]
-fn print_returns_null() {
-    assert_eq!(run("print(1)"), Value::Null);
-    assert_eq!(run("[print(1), print(2)]"), run("[null, null]"));
-}
-
-#[test]
-fn each_print_is_one_text_without_a_line_terminator() {
-    // A newline inside the text is passed through; none is added.
-    let two_lines = r"b
-c";
-    let source = r#"
-        print("a")
-        print("b\nc")
-    "#;
-    assert_eq!(printed(source), ["a", two_lines]);
 }
 
 #[test]
@@ -128,14 +85,4 @@ fn prints_before_an_error_still_happen() {
     );
     assert_eq!(script.printed(), ["before"]);
     assert!(script.raises().contains("boom"));
-}
-
-#[test]
-fn print_takes_exactly_one_argument() {
-    for source in ["print()", "print(1, 2)"] {
-        let message = raises(source);
-        assert!(message.contains("expects"), "{source:?}: {message}");
-    }
-    // An arity error prints nothing.
-    assert_eq!(Script::new("print(1, 2)").printed(), Vec::<String>::new());
 }

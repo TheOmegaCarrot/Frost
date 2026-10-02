@@ -1,13 +1,13 @@
 //! Globals written in Frost, compiled ahead of time and embedded as data.
 //!
 //! `generated/source.frst` is their source, and `generated/compiled.rs` its
-//! compiled form. The runtime cannot depend on the compiler, so `compiled.rs` is
-//! written by the `generated_globals` test in `frost-compile`, which fails while
-//! the file is stale. To regenerate it after a change to the source or to the
-//! compiler:
+//! compiled form. The runtime can use the compiler only in its tests, so
+//! `compiled.rs` is written by this crate's `generated_globals` test, which fails
+//! while the file is stale. To regenerate it after a change to the source or to
+//! the compiler:
 //!
 //! ```text
-//! UPDATE_GENERATED=1 cargo test -p frost-compile --test generated_globals
+//! UPDATE_GENERATED=1 cargo test -p frost-runtime --test generated_globals
 //! ```
 //!
 //! `compiled.rs` is a [`Value`] tree: a Map from each function's name to that
