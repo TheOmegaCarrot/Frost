@@ -25,7 +25,9 @@ use std::sync::{Arc, Mutex};
 use frost_compile::{
     CompilerErrors, CompilerOptions, CompilerOutput, OptimizationOptions, compile_in_scope,
 };
-use frost_runtime::{Bytecode, CompiledFunction, MapKey, Value, Vm, VmRuntimeConfiguration};
+use frost_runtime::{
+    Bytecode, CompiledFunction, Importer, MapKey, Value, Vm, VmRuntimeConfiguration,
+};
 
 /// Every optimization off. A base for picking options explicitly:
 /// `OptimizationOptions { constant_fold: true, ..UNOPTIMIZED }`.
@@ -74,6 +76,7 @@ pub(crate) struct Script {
     captures: BTreeMap<String, Value>,
     implicit_export: bool,
     max_call_depth: Option<NonZeroUsize>,
+    importer: Arc<Importer>,
 }
 
 impl Script {
@@ -85,7 +88,14 @@ impl Script {
             captures: BTreeMap::new(),
             implicit_export: false,
             max_call_depth: None,
+            importer: Arc::default(),
         }
+    }
+
+    /// Run with `importer` resolving imports; without one, every import fails.
+    pub(crate) fn importer(mut self, importer: Arc<Importer>) -> Self {
+        self.importer = importer;
+        self
     }
 
     /// Run with the VM's call depth limited to `depth` frames.
@@ -280,6 +290,7 @@ impl Script {
         };
         let outcome = Vm::factory()
             .configuration(config)
+            .with_importer(Arc::clone(&self.importer))
             .build(closure)
             .expect("closure builds")
             .run()

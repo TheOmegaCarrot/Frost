@@ -23,7 +23,7 @@ fn leaf(n: i64) -> Value {
 }
 
 /// A small importer: `ext.sqlite = { open: 1 }` and top-level `myapp = 2`.
-/// (Stdlib is crate-constructed only, so it is exercised in `resolve_tests`, not here.)
+/// (A `StdlibModule` is crate-constructed only, so `std` is exercised in `resolve_tests`, not here.)
 fn importer() -> Arc<Importer> {
     ImporterBuilder::new()
         .with_extension(Extension::new("sqlite", Value::map([("open", leaf(1))])).unwrap())

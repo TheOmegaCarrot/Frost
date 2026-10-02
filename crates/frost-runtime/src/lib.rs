@@ -1,6 +1,7 @@
 //! The Frost runtime: the [`Value`] type and its operations, and the [`Vm`] that runs compiled Frost code.
 
 mod core;
+pub mod stdlib;
 mod vm;
 
 // Type sets (`EnumSet<FrostType>`) appear in the public API, so the enumset items
@@ -18,6 +19,6 @@ pub use vm::{
     FormatVersion, GLOBAL_NAMES, GLOBAL_PURITY, HostComponent, HostComponentError, IdleVm,
     ImportCtx, ImportResolver, Importer, ImporterBuilder, InvalidComponentName, InvalidParams,
     MissingCaptures, ModuleId, NameEntry, NativeCtx, NativeFn, NativeFunction, Param, Params,
-    PrintSink, ProgramResult, Purity, RunError, Stdlib, StdlibModule, StdoutSink, TrustedProgram,
-    Vm, VmFactory, VmRuntimeConfiguration,
+    PrintSink, ProgramResult, Purity, RunError, Stdlib, StdlibError, StdlibModule, StdoutSink,
+    TrustedProgram, Vm, VmFactory, VmRuntimeConfiguration,
 };

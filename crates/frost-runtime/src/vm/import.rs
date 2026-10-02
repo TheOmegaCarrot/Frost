@@ -142,17 +142,96 @@ struct Module {
 
 /// One standard-library module, such as the one imported as `std.math`.
 /// A [`Stdlib`] is a collection of them.
-// Intentionally not constructible outside this crate.
+///
+/// Each module has its own constructor, which takes that module's options.
+// Intentionally not constructible outside this crate: the `std` namespace is the runtime's.
 #[derive(Debug)]
 pub struct StdlibModule(Module);
 
-// TODO: configuration API for building a Stdlib
-// Blocked by: a stdlib (developed in this crate to specially-reserve the `std` import prefix)
+impl StdlibModule {
+    /// A module imported as `std.{name}`.
+    pub(crate) fn new(name: &'static str, content: Value) -> Self {
+        debug_assert!(
+            is_identifier_like_and_not_keyword(name),
+            "a stdlib module name is identifier-like: {name:?}"
+        );
+        Self(Module {
+            name: name.to_string(),
+            content,
+        })
+    }
 
-/// The complete standard library, installed with [`ImporterBuilder::with_stdlib`].
-#[derive(Debug)]
+    /// The name this module registers under (imported as `std.{name}`).
+    pub fn name(&self) -> &str {
+        &self.0.name
+    }
+
+    /// The module's content: the value a script receives from `import('std.{name}')`.
+    pub fn content(&self) -> &Value {
+        &self.0.content
+    }
+}
+
+/// The standard library a host chooses to provide, module by module,
+/// installed with [`ImporterBuilder::with_stdlib`].
+///
+/// Begin with [`new`](Self::new), which provides no modules,
+/// and add each wanted module with [`with_module`](Self::with_module).
+/// Every module is a capability grant; see [`Importer`].
+#[derive(Debug, Default)]
 pub struct Stdlib {
     modules: Vec<StdlibModule>,
+}
+
+impl Stdlib {
+    /// A standard library with no modules.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Adds `module`.
+    /// A module whose name is already present is rejected with a [`StdlibError`]
+    /// handing this library and the module back unchanged.
+    pub fn with_module(mut self, module: StdlibModule) -> Result<Self, StdlibError> {
+        if self
+            .modules
+            .iter()
+            .any(|present| present.name() == module.name())
+        {
+            return Err(StdlibError(self, module));
+        }
+        self.modules.push(module);
+        Ok(self)
+    }
+
+    /// The modules added so far, in the order they were added.
+    pub fn modules(&self) -> &[StdlibModule] {
+        &self.modules
+    }
+}
+
+/// Rejection from [`Stdlib::with_module`]: a module of the same name is already
+/// present. Carries the untouched library and the rejected module back.
+#[derive(Debug)]
+pub struct StdlibError(Stdlib, StdlibModule);
+
+impl StdlibError {
+    /// Recovers the library and the rejected module.
+    pub fn into_parts(self) -> (Stdlib, StdlibModule) {
+        (self.0, self.1)
+    }
+}
+
+impl std::error::Error for StdlibError {}
+
+impl std::fmt::Display for StdlibError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "standard library module `{}` is already present",
+            self.1.name()
+        )
+    }
 }
 
 /// Third-party library module, registerable within the import registry.
