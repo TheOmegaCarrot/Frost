@@ -1,0 +1,226 @@
+//! `std.string`: searching, splitting into characters, classifying, and padding
+//! text.
+//!
+//! Positions and widths count code points. The searching functions and
+//! `is_empty` also take Bytes, in any mix with a String, as the global `contains`
+//! does; where Bytes are involved, positions count bytes instead.
+
+use crate::{FrostError, FrostType, Param, Params, StdlibModule, Value};
+
+/// The `std.string` module: finding and counting substrings, splitting into
+/// characters, classifying characters, and padding and centering text.
+///
+/// It only computes: it reads and changes nothing outside the script.
+pub fn string() -> StdlibModule {
+    StdlibModule::new(
+        "string",
+        Value::map([
+            ("index_of", index_of("string.index_of", First)),
+            ("last_index_of", index_of("string.last_index_of", Last)),
+            ("count", count()),
+            ("chars", chars()),
+            ("is_empty", is_empty()),
+            ("is_ascii", classifier("string.is_ascii", is_ascii)),
+            ("is_digit", classifier("string.is_digit", is_digit)),
+            (
+                "is_alpha",
+                classifier("string.is_alpha", char::is_alphabetic),
+            ),
+            (
+                "is_alphanumeric",
+                classifier("string.is_alphanumeric", char::is_alphanumeric),
+            ),
+            (
+                "is_whitespace",
+                classifier("string.is_whitespace", char::is_whitespace),
+            ),
+            (
+                "is_uppercase",
+                case_classifier("string.is_uppercase", char::is_lowercase),
+            ),
+            (
+                "is_lowercase",
+                case_classifier("string.is_lowercase", char::is_uppercase),
+            ),
+            ("pad_left", padder("string.pad_left", Side::Left)),
+            ("pad_right", padder("string.pad_right", Side::Right)),
+            ("center", padder("string.center", Side::Both)),
+        ]),
+    )
+}
+
+const ONE_STRING: Params = Params::new(&[Param::of(FrostType::STRING)]);
+const TWO_FLATS: Params = Params::new(&[Param::of(FrostType::FLAT), Param::of(FrostType::FLAT)]);
+
+/// The text of a type-checked String argument.
+fn string_arg(arg: &Value) -> &str {
+    arg.as_str().expect("type-checked as a String")
+}
+
+// --- Searching ---
+
+/// Which occurrence `index_of` finds.
+#[derive(Clone, Copy)]
+enum Occurrence {
+    First,
+    Last,
+}
+use Occurrence::{First, Last};
+
+/// The start of the `occurrence` of `needle` in `haystack`, by byte.
+fn find_bytes(haystack: &[u8], needle: &[u8], occurrence: Occurrence) -> Option<usize> {
+    if needle.len() > haystack.len() {
+        return None;
+    }
+    let mut starts = 0..=haystack.len() - needle.len();
+    let matches = |&start: &usize| &haystack[start..start + needle.len()] == needle;
+    match occurrence {
+        First => starts.find(matches),
+        Last => starts.rev().find(matches),
+    }
+}
+
+fn index_of(name: &'static str, occurrence: Occurrence) -> Value {
+    Value::checked_native(name, TWO_FLATS, move |_, args| {
+        let index = match (&args[0], &args[1]) {
+            (Value::String(text), Value::String(needle)) => {
+                let byte = match occurrence {
+                    First => text.find(&**needle),
+                    Last => text.rfind(&**needle),
+                };
+                byte.map(|byte| text[..byte].chars().count())
+            }
+            (haystack, needle) => find_bytes(
+                haystack.as_byte_slice().expect("type-checked as Flat"),
+                needle.as_byte_slice().expect("type-checked as Flat"),
+                occurrence,
+            ),
+        };
+        Ok(index.map_or(Value::Null, |index| {
+            Value::Int(i64::try_from(index).expect("an index fits in an Int"))
+        }))
+    })
+}
+
+fn count() -> Value {
+    Value::checked_native("string.count", TWO_FLATS, |_, args| {
+        let haystack = args[0].as_byte_slice().expect("type-checked as Flat");
+        let needle = args[1].as_byte_slice().expect("type-checked as Flat");
+        if needle.is_empty() {
+            return Err(FrostError::from_static(
+                "Function string.count requires argument 2 to be non-empty",
+            ));
+        }
+        // Counting by byte is exact for text too: a UTF-8 needle matches only
+        // at character boundaries of UTF-8 text.
+        let mut count = 0;
+        let mut rest = haystack;
+        while let Some(start) = find_bytes(rest, needle, First) {
+            count += 1;
+            rest = &rest[start + needle.len()..];
+        }
+        Ok(Value::Int(count))
+    })
+}
+
+fn is_empty() -> Value {
+    const PARAMS: Params = Params::new(&[Param::of(FrostType::FLAT)]);
+    Value::checked_native("string.is_empty", PARAMS, |_, args| {
+        let content = args[0].as_byte_slice().expect("type-checked as Flat");
+        Ok(Value::Bool(content.is_empty()))
+    })
+}
+
+// --- Characters ---
+
+fn chars() -> Value {
+    Value::checked_native("string.chars", ONE_STRING, |_, args| {
+        Ok(string_arg(&args[0])
+            .chars()
+            .map(|c| Value::from(c.to_string()))
+            .collect())
+    })
+}
+
+fn is_ascii(c: char) -> bool {
+    c.is_ascii()
+}
+
+fn is_digit(c: char) -> bool {
+    c.is_ascii_digit()
+}
+
+/// A function testing whether every character of a String passes `test`;
+/// the empty String passes.
+fn classifier(name: &'static str, test: fn(char) -> bool) -> Value {
+    Value::checked_native(name, ONE_STRING, move |_, args| {
+        Ok(Value::Bool(string_arg(&args[0]).chars().all(test)))
+    })
+}
+
+/// A function testing whether no character of a String is of the other case,
+/// `other_case`. A character without case is ignored.
+fn case_classifier(name: &'static str, other_case: fn(char) -> bool) -> Value {
+    Value::checked_native(name, ONE_STRING, move |_, args| {
+        Ok(Value::Bool(!string_arg(&args[0]).chars().any(other_case)))
+    })
+}
+
+// --- Padding ---
+
+/// Where padding goes.
+#[derive(Clone, Copy)]
+enum Side {
+    Left,
+    Right,
+    /// Split between the two, the extra character on the right.
+    Both,
+}
+
+fn padder(name: &'static str, side: Side) -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::STRING),
+        Param::of(FrostType::INT).named("width"),
+        Param::of(FrostType::STRING).named("fill").optional(),
+    ]);
+    Value::checked_native(name, PARAMS, move |_, args| {
+        let width = args[1].as_int().expect("type-checked as an Int");
+        let Ok(width) = usize::try_from(width) else {
+            return Err(FrostError::from_string(format!(
+                "Function {name} requires argument 2 (width) to be at least 0, got {width}"
+            )));
+        };
+        let fill = match args.get(2).map(string_arg) {
+            None => ' ',
+            Some(fill) => {
+                let mut chars = fill.chars();
+                match (chars.next(), chars.next()) {
+                    (Some(c), None) => c,
+                    _ => {
+                        return Err(FrostError::from_string(format!(
+                            "Function {name} requires a single character as argument 3 (fill), \
+                             got {}",
+                            args[2].to_debug_string()
+                        )));
+                    }
+                }
+            }
+        };
+
+        let text = string_arg(&args[0]);
+        let padding = width.saturating_sub(text.chars().count());
+        if padding == 0 {
+            return Ok(args[0].take());
+        }
+        let (left, right) = match side {
+            Side::Left => (padding, 0),
+            Side::Right => (0, padding),
+            Side::Both => (padding / 2, padding - padding / 2),
+        };
+        let mut padded = String::with_capacity(text.len() + padding * fill.len_utf8());
+        padded.extend(std::iter::repeat_n(fill, left));
+        padded.push_str(text);
+        padded.extend(std::iter::repeat_n(fill, right));
+        Ok(padded.into())
+    })
+}
