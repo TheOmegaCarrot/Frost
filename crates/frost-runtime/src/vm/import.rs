@@ -175,8 +175,9 @@ impl StdlibModule {
 /// The standard library a host chooses to provide, module by module,
 /// installed with [`ImporterBuilder::with_stdlib`].
 ///
-/// Begin with [`new`](Self::new), which provides no modules,
-/// and add each wanted module with [`with_module`](Self::with_module).
+/// Begin with a preset, such as [`pure`](Self::pure) or [`complete`](Self::complete),
+/// or with [`new`](Self::new), which provides no modules.
+/// Add further modules, from [`stdlib`](crate::stdlib), with [`with_module`](Self::with_module).
 /// Every module is a capability grant; see [`Importer`].
 #[derive(Debug, Default)]
 pub struct Stdlib {

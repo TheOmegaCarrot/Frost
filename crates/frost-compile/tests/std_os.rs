@@ -1,0 +1,301 @@
+//! `std.os`, from Frost source: environment variables, the process ID,
+//! sleeping, and running programs.
+//!
+//! Each case runs with only `std.os` installed, bound as `os`. The cases that
+//! run programs use POSIX tools, so they run only on Unix.
+
+mod common;
+
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+
+use common::Script;
+use frost_runtime::{Importer, ImporterBuilder, Stdlib, Value, stdlib};
+
+/// An importer providing only `std.os`.
+fn importer() -> Arc<Importer> {
+    let stdlib = Stdlib::new()
+        .with_module(stdlib::os())
+        .expect("a lone module is accepted");
+    ImporterBuilder::new().with_stdlib(stdlib).build()
+}
+
+/// `expression`, run with `std.os` bound as `os`.
+fn script(expression: &str) -> Script {
+    Script::new(&format!("def os = import('std.os')\n{expression}")).importer(importer())
+}
+
+/// Assert each `expression` runs to the value of the Frost expression `expected`.
+fn assert_values(cases: &[(&str, &str)]) {
+    for (expression, expected) in cases {
+        assert_eq!(
+            script(expression).run(),
+            script(expected).run(),
+            "{expression:?} is {expected}"
+        );
+    }
+}
+
+/// Assert each `expression` raises exactly `message`.
+fn assert_raises(cases: &[(&str, &str)]) {
+    for (expression, message) in cases {
+        assert_eq!(script(expression).raises(), *message, "{expression:?}");
+    }
+}
+
+/// Assert `function` raises its arity error when called with each count in
+/// `counts`, where `expects` is how the error states its arity.
+fn assert_arity(function: &str, expects: &str, counts: &[usize]) {
+    for &argc in counts {
+        let expression = format!("os.{function}({})", vec!["null"; argc].join(", "));
+        assert_raises(&[(
+            &expression,
+            &format!(
+                "Function os.{function} expects {expects} arguments, but was called with {argc}"
+            ),
+        )]);
+    }
+}
+
+// --- The module ---
+
+#[test]
+fn the_module_holds_its_functions() {
+    assert_values(&[("sorted(keys(os))", "['getenv', 'pid', 'run', 'sleep']")]);
+}
+
+#[test]
+fn the_module_is_not_pure() {
+    let pure = ImporterBuilder::new().with_stdlib(Stdlib::pure()).build();
+    let raised = Script::new("import('std.os')").importer(pure).raises();
+    assert_eq!(raised, "Could not resolve import 'std.os'");
+}
+
+// --- getenv ---
+
+#[test]
+fn getenv_reads_a_variable() {
+    // Cargo sets this for every test process it runs.
+    let expected = std::env::var("CARGO_PKG_NAME").map_or(Value::Null, Value::from);
+    assert_eq!(script("os.getenv('CARGO_PKG_NAME')").run(), expected);
+}
+
+#[test]
+fn getenv_returns_null_for_a_variable_that_is_not_set() {
+    assert_eq!(
+        script("os.getenv('FROST_TEST_SURELY_UNSET_9C1E')").run(),
+        Value::Null
+    );
+    // No variable can have these names.
+    for name in ["''", "'A=B'", r"'A\u{0}B'"] {
+        let expression = format!("os.getenv({name})");
+        assert_eq!(script(&expression).run(), Value::Null, "{expression}");
+    }
+}
+
+#[test]
+fn getenv_checks_its_argument() {
+    assert_raises(&[(
+        "os.getenv(1)",
+        "Function os.getenv requires String as argument 1 (name), got Int",
+    )]);
+    assert_arity("getenv", "1", &[0, 2]);
+}
+
+// --- pid ---
+
+#[test]
+fn pid_is_this_process() {
+    assert_eq!(
+        script("os.pid()").run(),
+        Value::Int(i64::from(std::process::id()))
+    );
+    assert_arity("pid", "0", &[1]);
+}
+
+// --- sleep ---
+
+#[test]
+fn sleep_pauses_then_returns_null() {
+    assert_eq!(script("os.sleep(0)").run(), Value::Null);
+    // The harness runs the script once per optimization permutation; every run
+    // must sleep, so the whole takes at least that many sleeps.
+    let started = Instant::now();
+    assert_eq!(script("os.sleep(5)").run(), Value::Null);
+    assert!(started.elapsed() >= Duration::from_millis(5));
+}
+
+#[test]
+fn sleep_checks_its_argument() {
+    assert_raises(&[
+        (
+            "os.sleep(-1)",
+            "Function os.sleep requires argument 1 (ms) to be at least 0, got -1",
+        ),
+        (
+            "os.sleep(1.5)",
+            "Function os.sleep requires Int as argument 1 (ms), got Float",
+        ),
+    ]);
+    assert_arity("sleep", "1", &[0, 2]);
+}
+
+// --- run ---
+
+#[cfg(unix)]
+mod run {
+    use super::*;
+
+    #[test]
+    fn run_returns_output_and_exit_status() {
+        assert_values(&[
+            (
+                "os.run('echo', ['hello', 'world'])",
+                r"{stdout: 'hello world\n', stderr: '', exit_code: 0, signal: null}",
+            ),
+            ("os.run('sh', ['-c', 'echo oops >&2']).stderr", r"'oops\n'"),
+            ("os.run('sh', ['-c', 'exit 3']).exit_code", "3"),
+        ]);
+    }
+
+    #[test]
+    fn run_passes_each_argument_whole() {
+        assert_values(&[(
+            r#"os.run('sh', ['-c', 'printf "%s|" "$@"', 'sh', 'a b', 'c']).stdout"#,
+            "'a b|c|'",
+        )]);
+    }
+
+    #[test]
+    fn run_reports_a_signal_instead_of_an_exit_code() {
+        assert_values(&[(
+            "def r = os.run('sh', ['-c', 'kill -9 $$'])\n[r.exit_code, r.signal]",
+            "[null, 9]",
+        )]);
+    }
+
+    #[test]
+    fn run_feeds_stdin() {
+        assert_values(&[
+            ("os.run('cat', [], {stdin: 'hello'}).stdout", "'hello'"),
+            ("os.run('cat', [], {stdin: x'68690a'}).stdout", r"'hi\n'"),
+            // Without `stdin`, the program reads nothing.
+            ("os.run('cat', []).stdout", "''"),
+            // More than a pipe holds: written while the output is read.
+            (
+                "len(os.run('cat', [], {stdin: tile('x', 1000000)}).stdout)",
+                "1000000",
+            ),
+        ]);
+    }
+
+    #[test]
+    fn run_sets_the_working_directory() {
+        assert_values(&[("os.run('pwd', [], {cwd: '/'}).stdout", r"'/\n'")]);
+    }
+
+    #[test]
+    fn run_adds_to_or_replaces_the_environment() {
+        assert_values(&[
+            (
+                r#"os.run('sh', ['-c', 'echo "$FROST_VAR"'], {env: {FROST_VAR: 'value'}}).stdout"#,
+                r"'value\n'",
+            ),
+            (
+                "os.run('/usr/bin/env', [], {replace_env: {ONLY: 'this'}}).stdout",
+                r"'ONLY=this\n'",
+            ),
+        ]);
+        // `env` adds to the inherited environment.
+        let inherited =
+            script(r#"os.run('sh', ['-c', 'echo "$CARGO_PKG_NAME"'], {env: {X: 'y'}}).stdout"#)
+                .run();
+        let expected = format!("{}\n", std::env::var("CARGO_PKG_NAME").unwrap_or_default());
+        assert_eq!(inherited, Value::from(expected));
+    }
+
+    #[test]
+    fn run_requires_utf8_output_unless_binary() {
+        assert_raises(&[(
+            // The shell runs `printf '\377'`, writing the single byte 0xff.
+            r#"os.run('sh', ['-c', "printf '\\377'"])"#,
+            "Function os.run got stdout from `sh` that is not UTF-8; \
+             pass `binary: true` to get Bytes",
+        )]);
+        assert_values(&[(
+            r#"os.run('sh', ['-c', "printf '\\377'"], {binary: true})"#,
+            "{stdout: x'ff', stderr: x'', exit_code: 0, signal: null}",
+        )]);
+    }
+
+    #[test]
+    fn run_raises_when_the_program_cannot_start() {
+        let raised = script("os.run('frost-surely-no-such-program', [])").raises();
+        assert!(
+            raised.starts_with("Function os.run could not run `frost-surely-no-such-program`: "),
+            "{raised}"
+        );
+    }
+
+    #[test]
+    fn run_checks_its_options() {
+        assert_raises(&[
+            (
+                "os.run('true', [], {env: {}, replace_env: {}})",
+                "Function os.run takes option `env` or `replace_env`, not both",
+            ),
+            (
+                "os.run('true', [], {stdin: 1})",
+                "Function os.run requires String or Bytes for option `stdin`, got Int",
+            ),
+        ]);
+    }
+
+    #[test]
+    fn run_rejects_options_of_the_wrong_name_or_type() {
+        // TODO: pin each full message once the serde bridge's errors name the
+        // offending key and use Frost type names throughout.
+        for options in [
+            "{stdni: 'x'}",
+            "{[1]: 2}",
+            "{cwd: x'2f'}",
+            "{binary: 'yes'}",
+            "{env: ['A=b']}",
+            "{replace_env: {A: 1}}",
+            "{env: {[1]: 'a'}}",
+        ] {
+            let raised = script(&format!("os.run('true', [], {options})")).raises();
+            assert!(
+                raised.starts_with("Function os.run requires valid options: "),
+                "{options} is rejected as invalid options: {raised}"
+            );
+        }
+        // An unknown option is named.
+        let raised = script("os.run('true', [], {stdni: 'x'})").raises();
+        assert!(raised.contains("`stdni`"), "{raised}");
+    }
+}
+
+#[test]
+fn run_checks_its_arguments() {
+    assert_raises(&[
+        (
+            "os.run(1, [])",
+            "Function os.run requires String as argument 1 (command), got Int",
+        ),
+        (
+            "os.run('echo', 'hi')",
+            "Function os.run requires Array as argument 2 (args), got String",
+        ),
+        (
+            "os.run('echo', [1])",
+            "Function os.run requires an Array of Strings as argument 2 (args), \
+             but element 0 is Int",
+        ),
+        (
+            "os.run('echo', [], 1)",
+            "Function os.run requires Map as argument 3 (options), got Int",
+        ),
+    ]);
+    assert_arity("run", "between 2 and 3", &[0, 1, 4]);
+}

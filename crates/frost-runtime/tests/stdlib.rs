@@ -40,3 +40,44 @@ fn a_module_is_added_once() {
     let names: Vec<&str> = stdlib.modules().iter().map(StdlibModule::name).collect();
     assert_eq!(names, ["encoding"]);
 }
+
+// --- Presets ---
+
+/// The names of `stdlib`'s modules, sorted.
+fn names(stdlib: &Stdlib) -> Vec<&str> {
+    let mut names: Vec<&str> = stdlib.modules().iter().map(StdlibModule::name).collect();
+    names.sort_unstable();
+    names
+}
+
+#[test]
+fn the_pure_preset_holds_the_pure_modules() {
+    assert_eq!(names(&Stdlib::pure()), ["encoding"]);
+}
+
+#[test]
+fn the_complete_preset_holds_every_module() {
+    assert_eq!(names(&Stdlib::complete()), ["encoding", "os"]);
+}
+
+#[test]
+fn the_complete_preset_holds_every_pure_module() {
+    let complete = Stdlib::complete();
+    let complete = names(&complete);
+    for name in names(&Stdlib::pure()) {
+        assert!(complete.contains(&name), "complete holds `{name}`");
+    }
+}
+
+#[test]
+fn a_preset_still_takes_modules_but_not_ones_it_holds() {
+    for preset in [Stdlib::pure(), Stdlib::complete()] {
+        let err = preset
+            .with_module(stdlib::encoding())
+            .expect_err("a preset already holds `encoding`");
+        assert_eq!(
+            err.to_string(),
+            "standard library module `encoding` is already present"
+        );
+    }
+}
