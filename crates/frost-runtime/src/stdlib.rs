@@ -23,11 +23,13 @@
 mod encoding;
 mod math;
 mod os;
+mod regex;
 mod string;
 
 pub use encoding::encoding;
 pub use math::math;
 pub use os::os;
+pub use regex::regex;
 pub use string::string;
 
 use crate::{Stdlib, StdlibModule};
@@ -36,9 +38,9 @@ impl Stdlib {
     /// Every module that only computes: none reads or changes anything outside
     /// the script, such as files, the environment, or the clock.
     ///
-    /// Includes [`encoding`], [`math`], and [`string`].
+    /// Includes [`encoding`], [`math`], [`regex`], and [`string`].
     pub fn pure() -> Self {
-        Self::of([encoding(), math(), string()])
+        Self::of([encoding(), math(), regex(), string()])
     }
 
     /// Every module, including those with effects outside the script.

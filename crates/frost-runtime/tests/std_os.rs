@@ -4,13 +4,13 @@
 //! Each case runs with only `std.os` installed, bound as `os`. The cases that
 //! run programs use POSIX tools, so they run only on Unix.
 
-mod common;
+mod source;
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use common::Script;
 use frost_runtime::{Importer, ImporterBuilder, Stdlib, Value, stdlib};
+use source::Script;
 
 /// An importer providing only `std.os`.
 fn importer() -> Arc<Importer> {

@@ -9,10 +9,10 @@
 //! The harness runs every case under every optimization permutation, so a call
 //! over literals is checked both folded and at run time.
 
-mod common;
+mod source;
 
-use common::{Script, raises, run};
 use frost_runtime::Value;
+use source::{Script, raises, run};
 
 /// Assert each `source` runs to the value of the Frost expression `expected`.
 fn assert_values(cases: &[(&str, &str)]) {

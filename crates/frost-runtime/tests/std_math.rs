@@ -4,12 +4,12 @@
 //! takes Int or Float arguments. One computed in floating point returns a Float,
 //! and a result that would be NaN or infinite is an error.
 
-mod common;
+mod source;
 
 use std::sync::Arc;
 
-use common::Script;
 use frost_runtime::{FrostFloat, Importer, ImporterBuilder, Stdlib, Value, stdlib};
+use source::Script;
 
 /// An importer providing only `std.math`.
 fn importer() -> Arc<Importer> {

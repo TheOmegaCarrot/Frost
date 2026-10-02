@@ -10,10 +10,10 @@
 //! The harness runs every case under every optimization permutation, so a call
 //! over literals is checked both folded and at run time.
 
-mod common;
+mod source;
 
-use common::{Script, raises, run};
 use frost_runtime::Value;
+use source::{Script, raises, run};
 
 /// The source of an `mformat` call over `template`, as a raw string, and the
 /// Frost expression `replacements`.

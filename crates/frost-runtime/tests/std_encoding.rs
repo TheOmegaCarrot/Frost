@@ -5,12 +5,12 @@
 //! Content to encode or decode may be a String (its UTF-8) or Bytes; a decoder
 //! or parser given content that does not decode returns Null.
 
-mod common;
+mod source;
 
 use std::sync::Arc;
 
-use common::Script;
 use frost_runtime::{Importer, ImporterBuilder, Stdlib, Value, stdlib};
+use source::Script;
 
 /// An importer providing only `std.encoding`.
 fn importer() -> Arc<Importer> {

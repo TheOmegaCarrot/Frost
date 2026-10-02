@@ -9,10 +9,10 @@
 //! over a literal is checked both folded and at run time. Cases that capture
 //! their input are never folded.
 
-mod common;
+mod source;
 
-use common::{Script, raises, run};
 use frost_runtime::Value;
+use source::{Script, raises, run};
 
 fn bytes(octets: &[u8]) -> Value {
     Value::from(octets)

@@ -5,12 +5,12 @@
 //! take Bytes, in any mix with a String; where Bytes are involved, positions
 //! count bytes.
 
-mod common;
+mod source;
 
 use std::sync::Arc;
 
-use common::Script;
 use frost_runtime::{Importer, ImporterBuilder, Stdlib, stdlib};
+use source::Script;
 
 /// An importer providing only `std.string`.
 fn importer() -> Arc<Importer> {

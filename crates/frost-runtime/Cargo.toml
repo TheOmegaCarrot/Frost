@@ -8,6 +8,8 @@ enumset = { version = "1.1", features = ["serde"] }
 ryu = "1"
 serde = { version = "1", features = ["derive", "rc"] }
 itertools = "0.15"
+# `std.regex`: small, dependency-free, from the maintainers of `regex`.
+regex-lite = "0.1"
 strsim = "0.11.1"
 
 [dev-dependencies]
