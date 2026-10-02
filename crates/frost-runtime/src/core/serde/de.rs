@@ -4,6 +4,7 @@ use std::fmt;
 use serde::de::{self, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
 
+use crate::core::util::identifier::is_identifier_like_and_not_keyword;
 use crate::core::{FrostArray, FrostFloat, MapKey, Value, ValueMap};
 
 thread_local! {
@@ -26,12 +27,77 @@ impl Drop for IncomingGuard {
 
 // -- Error --
 
+/// A deserialization failure, and where in the value it happened.
 #[derive(Debug)]
-pub(super) struct DeError(String);
+pub(super) struct DeError {
+    message: String,
+    /// Whether the failure was in reading a Map key, rather than a value.
+    in_key: bool,
+    /// The Map keys and Array indices leading to the failure, innermost first:
+    /// each level adds its own as the error passes back out through it.
+    path: Vec<PathSegment>,
+}
 
+#[derive(Debug)]
+enum PathSegment {
+    Key(MapKey),
+    Index(usize),
+}
+
+impl DeError {
+    fn new(message: impl Into<String>) -> Self {
+        DeError {
+            message: message.into(),
+            in_key: false,
+            path: Vec::new(),
+        }
+    }
+
+    /// This error, as having happened in reading a key of the enclosing Map.
+    fn in_key(mut self) -> Self {
+        self.in_key = true;
+        self
+    }
+
+    /// `found` where `expected` was required.
+    fn mismatch(expected: &str, found: &Value) -> Self {
+        DeError::new(format!("expected {expected}, got {}", found.type_name()))
+    }
+
+    /// This error, as having happened within `segment` of the enclosing value.
+    fn within(mut self, segment: PathSegment) -> Self {
+        self.path.push(segment);
+        self
+    }
+}
+
+/// The path renders as Frost would index it: `name.inner`, `items[2]`, `["my-key"]`.
 impl fmt::Display for DeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(&self.0)
+        f.write_str(&self.message)?;
+        match (self.in_key, self.path.is_empty()) {
+            (false, true) => return Ok(()),
+            (true, true) => return f.write_str(" (at a key)"),
+            (true, false) => f.write_str(" (at a key of `")?,
+            (false, false) => f.write_str(" (at `")?,
+        }
+        for (i, segment) in self.path.iter().rev().enumerate() {
+            match segment {
+                PathSegment::Key(MapKey::String(name))
+                    if is_identifier_like_and_not_keyword(name) =>
+                {
+                    if i > 0 {
+                        f.write_str(".")?;
+                    }
+                    f.write_str(name)?;
+                }
+                PathSegment::Key(key) => {
+                    write!(f, "[{}]", Value::from(key.clone()).to_debug_string())?;
+                }
+                PathSegment::Index(index) => write!(f, "[{index}]")?,
+            }
+        }
+        f.write_str("`)")
     }
 }
 
@@ -39,7 +105,47 @@ impl std::error::Error for DeError {}
 
 impl de::Error for DeError {
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        DeError(msg.to_string())
+        DeError::new(msg.to_string())
+    }
+
+    /// Phrased as the bridge's own type errors are, naming what was found by its
+    /// Frost type. What was expected is described by the target type itself.
+    fn invalid_type(unexpected: de::Unexpected, expected: &dyn de::Expected) -> Self {
+        DeError::new(format!(
+            "expected {expected}, got {}",
+            frost_type_name(&unexpected)
+        ))
+    }
+
+    /// A value of the right type, but not one the target accepts, such as an Int
+    /// out of a narrower integer's range.
+    fn invalid_value(unexpected: de::Unexpected, expected: &dyn de::Expected) -> Self {
+        let found = match unexpected {
+            de::Unexpected::Bool(b) => b.to_string(),
+            de::Unexpected::Signed(i) => i.to_string(),
+            de::Unexpected::Unsigned(u) => u.to_string(),
+            de::Unexpected::Float(f) => f.to_string(),
+            de::Unexpected::Str(s) => Value::from(s).to_debug_string(),
+            other => frost_type_name(&other).to_string(),
+        };
+        DeError::new(format!("expected {expected}, got {found}"))
+    }
+}
+
+/// The Frost type of the value serde describes as `unexpected`.
+fn frost_type_name(unexpected: &de::Unexpected) -> std::borrow::Cow<'static, str> {
+    use de::Unexpected;
+    match unexpected {
+        Unexpected::Bool(_) => "Bool".into(),
+        Unexpected::Signed(_) | Unexpected::Unsigned(_) => "Int".into(),
+        Unexpected::Float(_) => "Float".into(),
+        Unexpected::Char(_) | Unexpected::Str(_) => "String".into(),
+        Unexpected::Bytes(_) => "Bytes".into(),
+        Unexpected::Unit | Unexpected::Option => "Null".into(),
+        Unexpected::Seq => "Array".into(),
+        Unexpected::Map => "Map".into(),
+        // Shapes no Frost value presents to a visitor; serde's own words serve.
+        other => other.to_string().into(),
     }
 }
 
@@ -49,7 +155,7 @@ impl de::Error for DeError {
 pub fn from_value<'de, T: serde::Deserialize<'de>>(
     value: Value,
 ) -> Result<T, crate::core::FrostError> {
-    T::deserialize(ValueDeserializer(value)).map_err(|e| e.0.into())
+    T::deserialize(ValueDeserializer(value)).map_err(|e| e.to_string().into())
 }
 
 // -- Deserializer --
@@ -82,14 +188,11 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
                 let len = arr.len();
                 let elements: Vec<Value> = arr.iter().cloned().collect();
                 visitor.visit_seq(ArrayAccess {
-                    iter: elements.into_iter(),
+                    iter: elements.into_iter().enumerate(),
                     len,
                 })
             }
-            _ => Err(de::Error::custom(format!(
-                "expected Array, got {}",
-                self.0.type_name()
-            ))),
+            _ => Err(DeError::mismatch("Array", &self.0)),
         }
     }
 
@@ -101,13 +204,90 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
                     .map(|(k, v)| (k.clone(), v.clone()))
                     .collect::<Vec<_>>()
                     .into_iter(),
-                pending_value: None,
+                pending: None,
             }),
-            _ => Err(de::Error::custom(format!(
-                "expected Map, got {}",
-                self.0.type_name()
-            ))),
+            _ => Err(DeError::mismatch("Map", &self.0)),
         }
+    }
+
+    // Each primitive target takes its one Frost type, and says so when given another.
+    // Routed through `deserialize_any`, a mismatch would instead be reported by the
+    // target's visitor, in its own terms.
+
+    fn deserialize_bool<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        match self.0 {
+            Value::Bool(b) => visitor.visit_bool(b),
+            _ => Err(DeError::mismatch("Bool", &self.0)),
+        }
+    }
+
+    /// Every integer target reads an Int; one narrower than an Int rejects a value
+    /// outside its range itself.
+    fn deserialize_i64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        match self.0 {
+            Value::Int(i) => visitor.visit_i64(i),
+            _ => Err(DeError::mismatch("Int", &self.0)),
+        }
+    }
+
+    /// Float targets read a Float, or an Int as the Float it equals.
+    fn deserialize_f64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        match self.0 {
+            Value::Float(f) => visitor.visit_f64(f.get()),
+            Value::Int(i) => visitor.visit_i64(i),
+            _ => Err(DeError::mismatch("Float", &self.0)),
+        }
+    }
+
+    fn deserialize_char<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_str(visitor)
+    }
+
+    fn deserialize_unit<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        match self.0 {
+            Value::Null => visitor.visit_unit(),
+            _ => Err(DeError::mismatch("Null", &self.0)),
+        }
+    }
+
+    fn deserialize_unit_struct<V: Visitor<'de>>(
+        self,
+        _name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, DeError> {
+        self.deserialize_unit(visitor)
+    }
+
+    fn deserialize_i8<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_i16<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_i32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_u8<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_u16<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_u32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_u64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_f32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
+        self.deserialize_f64(visitor)
     }
 
     fn deserialize_struct<V: Visitor<'de>>(
@@ -150,10 +330,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
                     value: value.clone(),
                 })
             }
-            _ => Err(de::Error::custom(format!(
-                "expected String or Map for enum, got {}",
-                self.0.type_name()
-            ))),
+            _ => Err(DeError::mismatch("String or Map for enum", &self.0)),
         }
     }
 
@@ -170,10 +347,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
     fn deserialize_str<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
         match self.0 {
             Value::String(ref s) => visitor.visit_str(s),
-            _ => Err(de::Error::custom(format!(
-                "expected String, got {}",
-                self.0.type_name()
-            ))),
+            _ => Err(DeError::mismatch("String", &self.0)),
         }
     }
 
@@ -189,10 +363,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
     fn deserialize_bytes<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
         match self.0 {
             Value::Bytes(ref b) => visitor.visit_bytes(b),
-            _ => Err(de::Error::custom(format!(
-                "expected Bytes, got {}",
-                self.0.type_name()
-            ))),
+            _ => Err(DeError::mismatch("Bytes", &self.0)),
         }
     }
 
@@ -208,10 +379,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
     /// method unchanged.
     fn deserialize_identifier<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
         if self.0.is_bytes() {
-            return Err(de::Error::custom(format!(
-                "expected String, got {}",
-                self.0.type_name()
-            )));
+            return Err(DeError::mismatch("String", &self.0));
         }
         self.deserialize_any(visitor)
     }
@@ -242,9 +410,6 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
     }
 
     serde::forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64
-        char
-        unit unit_struct
         tuple tuple_struct
     }
 }
@@ -252,7 +417,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
 // -- SeqAccess for Array --
 
 struct ArrayAccess {
-    iter: std::vec::IntoIter<Value>,
+    iter: std::iter::Enumerate<std::vec::IntoIter<Value>>,
     len: usize,
 }
 
@@ -264,7 +429,10 @@ impl<'de> de::SeqAccess<'de> for ArrayAccess {
         T: de::DeserializeSeed<'de>,
     {
         match self.iter.next() {
-            Some(value) => seed.deserialize(ValueDeserializer(value)).map(Some),
+            Some((index, value)) => seed
+                .deserialize(ValueDeserializer(value))
+                .map(Some)
+                .map_err(|err| err.within(PathSegment::Index(index))),
             None => Ok(None),
         }
     }
@@ -278,7 +446,8 @@ impl<'de> de::SeqAccess<'de> for ArrayAccess {
 
 struct MapAccess {
     iter: std::vec::IntoIter<(MapKey, Value)>,
-    pending_value: Option<Value>,
+    /// The entry whose key was read and whose value is next.
+    pending: Option<(MapKey, Value)>,
 }
 
 impl<'de> de::MapAccess<'de> for MapAccess {
@@ -290,9 +459,11 @@ impl<'de> de::MapAccess<'de> for MapAccess {
     {
         match self.iter.next() {
             Some((key, value)) => {
-                self.pending_value = Some(value);
-                let key_value: Value = key.into();
-                seed.deserialize(ValueDeserializer(key_value)).map(Some)
+                let key_value = Value::from(key.clone());
+                self.pending = Some((key, value));
+                seed.deserialize(ValueDeserializer(key_value))
+                    .map(Some)
+                    .map_err(DeError::in_key)
             }
             None => Ok(None),
         }
@@ -302,11 +473,12 @@ impl<'de> de::MapAccess<'de> for MapAccess {
     where
         V: de::DeserializeSeed<'de>,
     {
-        let value = self
-            .pending_value
+        let (key, value) = self
+            .pending
             .take()
             .expect("next_value_seed called before next_key_seed");
         seed.deserialize(ValueDeserializer(value))
+            .map_err(|err| err.within(PathSegment::Key(key)))
     }
 }
 
@@ -325,12 +497,29 @@ impl<'de> de::EnumAccess<'de> for EnumAccess {
     where
         V: de::DeserializeSeed<'de>,
     {
-        let variant = seed.deserialize(self.variant.into_deserializer())?;
-        Ok((variant, VariantAccess(self.value)))
+        let variant = seed.deserialize(self.variant.as_str().into_deserializer())?;
+        Ok((
+            variant,
+            VariantAccess {
+                variant: self.variant,
+                value: self.value,
+            },
+        ))
     }
 }
 
-struct VariantAccess(Value);
+/// A variant's data: the value under its name in a one-entry Map.
+struct VariantAccess {
+    variant: String,
+    value: Value,
+}
+
+impl VariantAccess {
+    /// Places an error within the entry of `variant`, for `map_err`.
+    fn within(variant: String) -> impl FnOnce(DeError) -> DeError {
+        move |err| err.within(PathSegment::Key(MapKey::from(variant)))
+    }
+}
 
 impl<'de> de::VariantAccess<'de> for VariantAccess {
     type Error = DeError;
@@ -343,14 +532,17 @@ impl<'de> de::VariantAccess<'de> for VariantAccess {
     where
         T: de::DeserializeSeed<'de>,
     {
-        seed.deserialize(ValueDeserializer(self.0))
+        seed.deserialize(ValueDeserializer(self.value))
+            .map_err(Self::within(self.variant))
     }
 
     fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, DeError>
     where
         V: Visitor<'de>,
     {
-        ValueDeserializer(self.0).deserialize_seq(visitor)
+        ValueDeserializer(self.value)
+            .deserialize_seq(visitor)
+            .map_err(Self::within(self.variant))
     }
 
     fn struct_variant<V>(
@@ -361,7 +553,9 @@ impl<'de> de::VariantAccess<'de> for VariantAccess {
     where
         V: Visitor<'de>,
     {
-        ValueDeserializer(self.0).deserialize_map(visitor)
+        ValueDeserializer(self.value)
+            .deserialize_map(visitor)
+            .map_err(Self::within(self.variant))
     }
 }
 

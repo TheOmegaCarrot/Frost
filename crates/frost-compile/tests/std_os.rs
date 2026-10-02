@@ -253,26 +253,30 @@ mod run {
 
     #[test]
     fn run_rejects_options_of_the_wrong_name_or_type() {
-        // TODO: pin each full message once the serde bridge's errors name the
-        // offending key and use Frost type names throughout.
-        for options in [
-            "{stdni: 'x'}",
-            "{[1]: 2}",
-            "{cwd: x'2f'}",
-            "{binary: 'yes'}",
-            "{env: ['A=b']}",
-            "{replace_env: {A: 1}}",
-            "{env: {[1]: 'a'}}",
+        for (options, problem) in [
+            (
+                "{stdni: 'x'}",
+                "unknown field `stdni`, expected one of `stdin`, `cwd`, `env`, \
+                 `replace_env`, `binary` (at a key)",
+            ),
+            ("{[1]: 2}", "expected field identifier, got Int (at a key)"),
+            ("{cwd: x'2f'}", "expected String, got Bytes (at `cwd`)"),
+            ("{binary: 'yes'}", "expected Bool, got String (at `binary`)"),
+            ("{env: ['A=b']}", "expected Map, got Array (at `env`)"),
+            (
+                "{replace_env: {A: 1}}",
+                "expected String, got Int (at `replace_env.A`)",
+            ),
+            (
+                "{env: {[1]: 'a'}}",
+                "expected String, got Int (at a key of `env`)",
+            ),
         ] {
-            let raised = script(&format!("os.run('true', [], {options})")).raises();
-            assert!(
-                raised.starts_with("Function os.run requires valid options: "),
-                "{options} is rejected as invalid options: {raised}"
-            );
+            assert_raises(&[(
+                &format!("os.run('true', [], {options})"),
+                &format!("Function os.run requires valid options: {problem}"),
+            )]);
         }
-        // An unknown option is named.
-        let raised = script("os.run('true', [], {stdni: 'x'})").raises();
-        assert!(raised.contains("`stdni`"), "{raised}");
     }
 }
 

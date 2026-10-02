@@ -673,3 +673,199 @@ fn bytes_and_array_targets_round_trip_independently() {
     let seq = from_value::<Vec<u8>>(to_value(&vec![1u8, 2]).unwrap()).unwrap();
     assert_eq!(seq, vec![1u8, 2]);
 }
+
+// ---- Error messages ----
+//
+// A type error names what was expected and, by its Frost type, what was found.
+// An error inside a structure names where: the path of Map keys and Array
+// indices to it, written as Frost would index it.
+
+/// The message of the error that deserializing `value` as a `T` raises.
+fn error_of<T: for<'de> Deserialize<'de> + std::fmt::Debug>(value: Value) -> String {
+    from_value::<T>(value)
+        .expect_err("deserializing fails")
+        .message()
+        .into_owned()
+}
+
+/// A Map of `entries`, whose keys may be of any key type.
+fn map_of(entries: impl IntoIterator<Item = (MapKey, Value)>) -> Value {
+    Value::from(entries.into_iter().collect::<FrostMap>())
+}
+
+#[test]
+fn a_primitive_target_names_the_type_it_requires() {
+    assert_eq!(
+        error_of::<bool>(Value::from(1i64)),
+        "expected Bool, got Int"
+    );
+    assert_eq!(
+        error_of::<i64>(Value::from("1")),
+        "expected Int, got String"
+    );
+    assert_eq!(error_of::<u8>(Value::Null), "expected Int, got Null");
+    assert_eq!(
+        error_of::<f64>(Value::from("1.5")),
+        "expected Float, got String"
+    );
+    assert_eq!(
+        error_of::<char>(Value::from(1i64)),
+        "expected String, got Int"
+    );
+    assert_eq!(
+        error_of::<()>(Value::from(false)),
+        "expected Null, got Bool"
+    );
+}
+
+#[test]
+fn a_float_target_takes_an_int() {
+    assert_eq!(from_value::<f64>(Value::from(2i64)).unwrap(), 2.0);
+}
+
+#[test]
+fn a_value_outside_a_targets_range_is_named() {
+    assert_eq!(error_of::<u8>(Value::from(300i64)), "expected u8, got 300");
+    assert_eq!(error_of::<u32>(Value::from(-1i64)), "expected u32, got -1");
+    assert_eq!(
+        error_of::<char>(Value::from("ab")),
+        r#"expected a character, got "ab""#
+    );
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[allow(dead_code)]
+struct Named {
+    name: String,
+    count: u32,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct Holder {
+    inner: Listed,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct Listed {
+    list: Vec<i64>,
+}
+
+#[test]
+fn an_error_in_a_field_names_the_field() {
+    let value = Value::map([("name", Value::from(1i64)), ("count", Value::from(2i64))]);
+    assert_eq!(
+        error_of::<Named>(value),
+        "expected String, got Int (at `name`)"
+    );
+}
+
+#[test]
+fn an_error_deep_inside_names_the_whole_path() {
+    let value = Value::map([(
+        "inner",
+        Value::map([("list", Value::array([Value::from(1i64), Value::from("x")]))]),
+    )]);
+    assert_eq!(
+        error_of::<Holder>(value),
+        "expected Int, got String (at `inner.list[1]`)"
+    );
+}
+
+#[test]
+fn an_error_in_an_array_element_names_its_index() {
+    let value = Value::array([Value::from(1i64), Value::from("x")]);
+    assert_eq!(
+        error_of::<Vec<i64>>(value),
+        "expected Int, got String (at `[1]`)"
+    );
+}
+
+#[test]
+fn a_key_that_is_not_a_name_is_written_as_an_index() {
+    let value = map_of([(str_key("my-key"), Value::from("x"))]);
+    assert_eq!(
+        error_of::<HashMap<String, i64>>(value),
+        r#"expected Int, got String (at `["my-key"]`)"#
+    );
+    // A keyword cannot follow a `.` either.
+    let value = map_of([(str_key("if"), Value::from("x"))]);
+    assert_eq!(
+        error_of::<HashMap<String, i64>>(value),
+        r#"expected Int, got String (at `["if"]`)"#
+    );
+    let value = map_of([(MapKey::Int(1), Value::from("x"))]);
+    assert_eq!(
+        error_of::<HashMap<i64, i64>>(value),
+        "expected Int, got String (at `[1]`)"
+    );
+    let value = Value::map([("outer", map_of([(str_key("my-key"), Value::from("x"))]))]);
+    assert_eq!(
+        error_of::<HashMap<String, HashMap<String, i64>>>(value),
+        r#"expected Int, got String (at `outer["my-key"]`)"#
+    );
+}
+
+#[test]
+fn an_error_in_a_key_says_so() {
+    let value = map_of([(MapKey::Int(1), Value::from(2i64))]);
+    assert_eq!(
+        error_of::<HashMap<String, i64>>(value),
+        "expected String, got Int (at a key)"
+    );
+    let value = Value::map([("env", map_of([(MapKey::Int(1), Value::from("a"))]))]);
+    assert_eq!(
+        error_of::<HashMap<String, HashMap<String, String>>>(value),
+        "expected String, got Int (at a key of `env`)"
+    );
+    // A struct's fields are named by Strings.
+    let value = map_of([(MapKey::Int(1), Value::from(2i64))]);
+    assert_eq!(
+        error_of::<Named>(value),
+        "expected field identifier, got Int (at a key)"
+    );
+}
+
+#[test]
+fn a_struct_reports_unknown_and_missing_fields() {
+    let value = Value::map([
+        ("name", Value::from("x")),
+        ("count", Value::from(1i64)),
+        ("extra", Value::from(true)),
+    ]);
+    assert_eq!(
+        error_of::<Named>(value),
+        "unknown field `extra`, expected `name` or `count` (at a key)"
+    );
+    assert_eq!(
+        error_of::<Named>(Value::map([("name", Value::from("x"))])),
+        "missing field `count`"
+    );
+    assert_eq!(
+        error_of::<Holder>(Value::map([("inner", Value::map([("x", Value::Null)]))])),
+        "missing field `list` (at `inner`)"
+    );
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+enum Figure {
+    Circle(i64),
+    Square { side: i64 },
+}
+
+#[test]
+fn an_error_in_an_enum_variant_names_the_variant() {
+    let value = Value::map([("Circle", Value::from("x"))]);
+    assert_eq!(
+        error_of::<Figure>(value),
+        "expected Int, got String (at `Circle`)"
+    );
+    let value = Value::map([("Square", Value::map([("side", Value::Null)]))]);
+    assert_eq!(
+        error_of::<Figure>(value),
+        "expected Int, got Null (at `Square.side`)"
+    );
+}
