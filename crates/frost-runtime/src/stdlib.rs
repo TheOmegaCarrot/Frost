@@ -23,6 +23,7 @@
 //! ```
 
 mod encoding;
+mod fs;
 mod math;
 mod os;
 mod random;
@@ -30,6 +31,7 @@ mod regex;
 mod string;
 
 pub use encoding::encoding;
+pub use fs::fs;
 pub use math::math;
 pub use os::os;
 pub use random::{RandomConfig, random};
@@ -55,9 +57,9 @@ impl Stdlib {
     /// Every module, including those that reach outside the script. Each
     /// configurable module is configured by its argument.
     ///
-    /// Includes everything in [`contained`](Self::contained), and [`os`].
+    /// Includes everything in [`contained`](Self::contained), and [`fs`] and [`os`].
     pub fn complete(random_config: RandomConfig) -> Self {
-        Self::contained(random_config).with_modules([os()])
+        Self::contained(random_config).with_modules([fs(), os()])
     }
 
     /// This library with `modules` added, whose names must be new to it.

@@ -63,7 +63,7 @@ fn the_contained_preset_holds_the_contained_modules() {
 fn the_complete_preset_holds_every_module() {
     assert_eq!(
         names(&Stdlib::complete(RandomConfig::default())),
-        ["encoding", "math", "os", "random", "regex", "string"]
+        ["encoding", "fs", "math", "os", "random", "regex", "string"]
     );
 }
 
