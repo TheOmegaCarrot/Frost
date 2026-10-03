@@ -22,7 +22,13 @@ fn importer() -> Arc<Importer> {
 
 /// `expression`, run with `std.encoding` bound as `enc`.
 fn script(expression: &str) -> Script {
-    Script::new(&format!("def enc = import('std.encoding')\n{expression}")).importer(importer())
+    let source = format!(
+        r"
+        def enc = import('std.encoding')
+        {expression}
+        "
+    );
+    Script::new(&source).importer(importer())
 }
 
 /// Assert each `expression` runs to the value of the Frost expression `expected`.

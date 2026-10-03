@@ -5,9 +5,11 @@
 //! start, and modules may still be added to it:
 //!
 //! ```
+//! use frost_runtime::stdlib::RandomConfig;
 //! use frost_runtime::{ImporterBuilder, Stdlib};
 //!
-//! let importer = ImporterBuilder::new().with_stdlib(Stdlib::pure()).build();
+//! let stdlib = Stdlib::contained(RandomConfig::default());
+//! let importer = ImporterBuilder::new().with_stdlib(stdlib).build();
 //! ```
 //!
 //! Or the modules can be picked one by one:
@@ -23,38 +25,44 @@
 mod encoding;
 mod math;
 mod os;
+mod random;
 mod regex;
 mod string;
 
 pub use encoding::encoding;
 pub use math::math;
 pub use os::os;
+pub use random::{RandomConfig, random};
 pub use regex::regex;
 pub use string::string;
 
 use crate::{Stdlib, StdlibModule};
 
 impl Stdlib {
-    /// Every module that only computes: none reads or changes anything outside
-    /// the script, such as files, the environment, or the clock.
+    /// Every module contained within the script: nothing a script does with
+    /// them reads or changes anything outside it, such as files, the
+    /// environment, other processes, or the clock. Each configurable module is
+    /// configured by its argument.
     ///
-    /// Includes [`encoding`], [`math`], [`regex`], and [`string`].
-    pub fn pure() -> Self {
-        Self::of([encoding(), math(), regex(), string()])
+    /// Containment is not a security boundary: a contained script can still
+    /// exhaust memory or run forever.
+    ///
+    /// Includes [`encoding`], [`math`], [`random`], [`regex`], and [`string`].
+    pub fn contained(random_config: RandomConfig) -> Self {
+        Self::new().with_modules([encoding(), math(), random(random_config), regex(), string()])
     }
 
-    /// Every module, including those with effects outside the script.
+    /// Every module, including those that reach outside the script. Each
+    /// configurable module is configured by its argument.
     ///
-    /// Includes everything in [`pure`](Self::pure), and [`os`].
-    pub fn complete() -> Self {
-        Self::pure()
-            .with_module(os())
-            .expect("the pure preset holds no effectful module")
+    /// Includes everything in [`contained`](Self::contained), and [`os`].
+    pub fn complete(random_config: RandomConfig) -> Self {
+        Self::contained(random_config).with_modules([os()])
     }
 
-    /// A library of `modules`, whose names must be distinct.
-    fn of(modules: impl IntoIterator<Item = StdlibModule>) -> Self {
-        modules.into_iter().fold(Self::new(), |stdlib, module| {
+    /// This library with `modules` added, whose names must be new to it.
+    fn with_modules(self, modules: impl IntoIterator<Item = StdlibModule>) -> Self {
+        modules.into_iter().fold(self, |stdlib, module| {
             stdlib
                 .with_module(module)
                 .expect("a preset's modules have distinct names")

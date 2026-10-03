@@ -9,6 +9,7 @@ mod source;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use frost_runtime::stdlib::RandomConfig;
 use frost_runtime::{Importer, ImporterBuilder, Stdlib, Value, stdlib};
 use source::Script;
 
@@ -22,7 +23,13 @@ fn importer() -> Arc<Importer> {
 
 /// `expression`, run with `std.os` bound as `os`.
 fn script(expression: &str) -> Script {
-    Script::new(&format!("def os = import('std.os')\n{expression}")).importer(importer())
+    let source = format!(
+        r"
+        def os = import('std.os')
+        {expression}
+        "
+    );
+    Script::new(&source).importer(importer())
 }
 
 /// Assert each `expression` runs to the value of the Frost expression `expected`.
@@ -65,9 +72,10 @@ fn the_module_holds_its_functions() {
 }
 
 #[test]
-fn the_module_is_not_pure() {
-    let pure = ImporterBuilder::new().with_stdlib(Stdlib::pure()).build();
-    let raised = Script::new("import('std.os')").importer(pure).raises();
+fn the_module_is_not_contained() {
+    let stdlib = Stdlib::contained(RandomConfig::default());
+    let contained = ImporterBuilder::new().with_stdlib(stdlib).build();
+    let raised = Script::new("import('std.os')").importer(contained).raises();
     assert_eq!(raised, "Could not resolve import 'std.os'");
 }
 
@@ -168,10 +176,11 @@ mod run {
 
     #[test]
     fn run_reports_a_signal_instead_of_an_exit_code() {
-        assert_values(&[(
-            "def r = os.run('sh', ['-c', 'kill -9 $$'])\n[r.exit_code, r.signal]",
-            "[null, 9]",
-        )]);
+        let source = r"
+            def r = os.run('sh', ['-c', 'kill -9 $$'])
+            [r.exit_code, r.signal]
+        ";
+        assert_values(&[(source, "[null, 9]")]);
     }
 
     #[test]

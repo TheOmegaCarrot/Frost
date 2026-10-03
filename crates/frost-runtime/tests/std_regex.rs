@@ -8,6 +8,7 @@ mod source;
 
 use std::sync::Arc;
 
+use frost_runtime::stdlib::RandomConfig;
 use frost_runtime::{Importer, ImporterBuilder, Stdlib, stdlib};
 use source::Script;
 
@@ -21,7 +22,13 @@ fn importer() -> Arc<Importer> {
 
 /// `expression`, run with `std.regex` bound as `re`.
 fn script(expression: &str) -> Script {
-    Script::new(&format!("def re = import('std.regex')\n{expression}")).importer(importer())
+    let source = format!(
+        r"
+        def re = import('std.regex')
+        {expression}
+        "
+    );
+    Script::new(&source).importer(importer())
 }
 
 /// Assert each `expression` runs to the value of the Frost expression `expected`.
@@ -68,10 +75,11 @@ fn the_module_holds_its_functions() {
 }
 
 #[test]
-fn the_module_is_pure() {
-    let pure = ImporterBuilder::new().with_stdlib(Stdlib::pure()).build();
+fn the_module_is_contained() {
+    let stdlib = Stdlib::contained(RandomConfig::default());
+    let contained = ImporterBuilder::new().with_stdlib(stdlib).build();
     let result = Script::new("import('std.regex').contains('abc', 'b')")
-        .importer(pure)
+        .importer(contained)
         .run();
     assert_eq!(result, frost_runtime::Value::Bool(true));
 }

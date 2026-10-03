@@ -1,7 +1,8 @@
 //! Building a [`Stdlib`] from the [`stdlib`] module constructors, through the
-//! public API alone. What each module does is tested from Frost source in
-//! `frost-compile`.
+//! public API alone. What each module does is tested from Frost source, in the
+//! `std_*` tests.
 
+use frost_runtime::stdlib::RandomConfig;
 use frost_runtime::{Stdlib, StdlibModule, Value, stdlib};
 
 #[test]
@@ -51,33 +52,38 @@ fn names(stdlib: &Stdlib) -> Vec<&str> {
 }
 
 #[test]
-fn the_pure_preset_holds_the_pure_modules() {
+fn the_contained_preset_holds_the_contained_modules() {
     assert_eq!(
-        names(&Stdlib::pure()),
-        ["encoding", "math", "regex", "string"]
+        names(&Stdlib::contained(RandomConfig::default())),
+        ["encoding", "math", "random", "regex", "string"]
     );
 }
 
 #[test]
 fn the_complete_preset_holds_every_module() {
     assert_eq!(
-        names(&Stdlib::complete()),
-        ["encoding", "math", "os", "regex", "string"]
+        names(&Stdlib::complete(RandomConfig::default())),
+        ["encoding", "math", "os", "random", "regex", "string"]
     );
 }
 
 #[test]
-fn the_complete_preset_holds_every_pure_module() {
-    let complete = Stdlib::complete();
+fn the_complete_preset_holds_every_contained_module() {
+    let complete = Stdlib::complete(RandomConfig::default());
     let complete = names(&complete);
-    for name in names(&Stdlib::pure()) {
+    let contained = Stdlib::contained(RandomConfig::default());
+    for name in names(&contained) {
         assert!(complete.contains(&name), "complete holds `{name}`");
     }
 }
 
 #[test]
 fn a_preset_still_takes_modules_but_not_ones_it_holds() {
-    for preset in [Stdlib::pure(), Stdlib::complete()] {
+    let presets = [
+        Stdlib::contained(RandomConfig::default()),
+        Stdlib::complete(RandomConfig::default()),
+    ];
+    for preset in presets {
         let err = preset
             .with_module(stdlib::encoding())
             .expect_err("a preset already holds `encoding`");

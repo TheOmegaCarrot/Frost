@@ -8,6 +8,7 @@ mod source;
 
 use std::sync::Arc;
 
+use frost_runtime::stdlib::RandomConfig;
 use frost_runtime::{FrostFloat, Importer, ImporterBuilder, Stdlib, Value, stdlib};
 use source::Script;
 
@@ -21,7 +22,13 @@ fn importer() -> Arc<Importer> {
 
 /// `expression`, run with `std.math` bound as `math`.
 fn script(expression: &str) -> Script {
-    Script::new(&format!("def math = import('std.math')\n{expression}")).importer(importer())
+    let source = format!(
+        r"
+        def math = import('std.math')
+        {expression}
+        "
+    );
+    Script::new(&source).importer(importer())
 }
 
 fn run(expression: &str) -> Value {
@@ -113,10 +120,11 @@ fn the_module_holds_its_functions_and_constants() {
 }
 
 #[test]
-fn the_module_is_pure() {
-    let pure = ImporterBuilder::new().with_stdlib(Stdlib::pure()).build();
+fn the_module_is_contained() {
+    let stdlib = Stdlib::contained(RandomConfig::default());
+    let contained = ImporterBuilder::new().with_stdlib(stdlib).build();
     let result = Script::new("import('std.math').sqrt(4)")
-        .importer(pure)
+        .importer(contained)
         .run();
     assert_eq!(result, float(2.0));
 }
