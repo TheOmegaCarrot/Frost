@@ -38,14 +38,12 @@ A workspace of focused crates:
 | Crate | Purpose |
 |---|---|
 | `frost-parse` | Source text to AST: lexer, recursive-descent parser, diagnostics. Grammar only; semantics belong to the compiler. Intentionally lax in what it accepts, deferring many errors to the compiler. |
-| `frost-runtime` | The `core` (the `Value` type, its variants, operators, conversions) and the `vm` (bytecode execution, globals, native functions, arity/type params, import, serialization). |
+| `frost-runtime` | The `core` (the `Value` type, its variants, operators, conversions, serde bridge), the `vm` (bytecode execution, globals, native functions, arity/type params, import, serialization), and the `stdlib` (the `std.*` modules a host opts into). |
 | `frost-compile` | AST to bytecode: scope resolution, capture discovery, constant folding and propagation, assembly. |
-| `frost-cli` | The `frost` binary; runs a `.frst` file. |
+| `frost-driver` | A complete command-line interface built around a host's configuration: importer, runtime limits, optimizations. |
+| `frost-repl` | An interactive read-eval-print loop. |
+| `frost-cli` | The `frost` binary, built on `frost-driver`. |
 | `frost-astviz` | AST visualization; compiles the tree-sitter Frost grammar from `editor/`. |
-
-The compiler is under active development: unimplemented lowerings are `todo!()`. Some
-globals are intentionally stubbed until the compiler can compile the Frost-source tests that
-will cover them.
 
 Design documents and working scratch live in `tmp/` (git-ignored) at the repo root.
 
@@ -176,7 +174,7 @@ match value {
 - Alternatives (`|`) work at any nesting level; all branches must bind the same set of names.
 - `as` whole-value binding is map-only, not arrays.
 - Type constraints: `Null`, `Int`, `Float`, `Bool`, `String`, `Bytes`, `Array`, `Map`,
-  `Function`, `Primitive`, `Numeric`, `Structured`, `Flat`, `Nonnull`.
+  `Function`, `Opaque`, `Primitive`, `Numeric`, `Structured`, `Flat`, `Nonnull`.
 
 ### Map / filter / reduce expressions
 
@@ -225,8 +223,7 @@ The pipeline-friendly function forms are `transform`, `select`, and `fold`.
 
 - Strongly prefer black-box tests (public API only). Reach for white-box tests only when
   something genuinely prevents a black-box test.
-- Black-box tests live in `crates/*/tests/`. White-box tests are unavoidable only when
-  something genuinely prevents a black-box test.
+- Black-box tests live in `crates/*/tests/`.
 - Tests always go in their own file, never inline in a source file. A white-box test module is
   declared `#[cfg(test)] mod name;` and lives in a sibling file, never an inline `mod tests { ... }`.
 - Tests are deterministic, reliable, thorough, comprehensive, and borderline paranoid.
