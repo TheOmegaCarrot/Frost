@@ -233,6 +233,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Token::Identifier("Array") => TypeConstraint::Array,
             Token::Identifier("Map") => TypeConstraint::Map,
             Token::Identifier("Function") => TypeConstraint::Function,
+            Token::Identifier("Opaque") => TypeConstraint::Opaque,
             Token::Identifier("Primitive") => TypeConstraint::Primitive,
             Token::Identifier("Numeric") => TypeConstraint::Numeric,
             Token::Identifier("Structured") => TypeConstraint::Structured,

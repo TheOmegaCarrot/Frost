@@ -19,9 +19,9 @@
 //        4  Call           1
 //        5  LogicalNot
 //        6  JumpIfFalse    L0   ; +8
-//        7  LoadGlobal     102  ; error
+//        7  LoadGlobal     103  ; error
 //        8  LoadConst      0    ; "Function inv requires Function as ar...
-//        9  LoadGlobal     14   ; type
+//        9  LoadGlobal     15   ; type
 //       10  LoadLocal      0    ; f
 //       11  Call           1
 //       12  Concat         2
@@ -43,7 +43,7 @@
 //   code
 //        0  DefLocal      1    ; args
 //        1  DefLocal      2    ; inv_fn
-//        2  LoadGlobal    100  ; call
+//        2  LoadGlobal    101  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  1    ; args
 //        5  Call          2
@@ -68,9 +68,9 @@
 //        5  Call           1
 //        6  LogicalNot
 //        7  JumpIfFalse    L0   ; +8
-//        8  LoadGlobal     102  ; error
+//        8  LoadGlobal     103  ; error
 //        9  LoadConst      0    ; "Function curry requires Function as ...
-//       10  LoadGlobal     14   ; type
+//       10  LoadGlobal     15   ; type
 //       11  LoadLocal      1    ; f
 //       12  Call           1
 //       13  Concat         2
@@ -94,7 +94,7 @@
 //   code
 //        0  DefLocal      2    ; inner
 //        1  DefLocal      3    ; curry_fn
-//        2  LoadGlobal    100  ; call
+//        2  LoadGlobal    101  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  1    ; outer
 //        5  ConsumeLocal  2    ; inner
@@ -120,9 +120,9 @@
 //        5  Call           1
 //        6  LogicalNot
 //        7  JumpIfFalse    L0   ; +8
-//        8  LoadGlobal     102  ; error
+//        8  LoadGlobal     103  ; error
 //        9  LoadConst      0    ; "Function bcurry requires Function as...
-//       10  LoadGlobal     14   ; type
+//       10  LoadGlobal     15   ; type
 //       11  LoadLocal      1    ; f
 //       12  Call           1
 //       13  Concat         2
@@ -146,7 +146,7 @@
 //   code
 //        0  DefLocal      2    ; inner
 //        1  DefLocal      3    ; bcurry_fn
-//        2  LoadGlobal    100  ; call
+//        2  LoadGlobal    101  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  2    ; inner
 //        5  ConsumeLocal  1    ; outer
@@ -180,9 +180,9 @@
 //        4  Call           1
 //        5  LogicalNot
 //        6  JumpIfFalse    L0   ; +8
-//        7  LoadGlobal     102  ; error
+//        7  LoadGlobal     103  ; error
 //        8  LoadConst      0    ; "Function spread requires Function as...
-//        9  LoadGlobal     14   ; type
+//        9  LoadGlobal     15   ; type
 //       10  LoadLocal      0    ; f
 //       11  Call           1
 //       12  Concat         2
@@ -204,7 +204,7 @@
 //   code
 //        0  DefLocal      1    ; arr
 //        1  DefLocal      2    ; spread_fn
-//        2  LoadGlobal    100  ; call
+//        2  LoadGlobal    101  ; call
 //        3  ConsumeLocal  0    ; f
 //        4  ConsumeLocal  1    ; arr
 //        5  TailCall      2
@@ -226,9 +226,9 @@
 //        4  Call           1
 //        5  LogicalNot
 //        6  JumpIfFalse    L0   ; +8
-//        7  LoadGlobal     102  ; error
+//        7  LoadGlobal     103  ; error
 //        8  LoadConst      0    ; "Function rev_args requires Function ...
-//        9  LoadGlobal     14   ; type
+//        9  LoadGlobal     15   ; type
 //       10  LoadLocal      0    ; f
 //       11  Call           1
 //       12  Concat         2
@@ -250,9 +250,9 @@
 //   code
 //        0  DefLocal      1    ; args
 //        1  DefLocal      2    ; rev_args_fn
-//        2  LoadGlobal    100  ; call
+//        2  LoadGlobal    101  ; call
 //        3  ConsumeLocal  0    ; f
-//        4  LoadGlobal    66   ; reverse
+//        4  LoadGlobal    67   ; reverse
 //        5  ConsumeLocal  1    ; args
 //        6  Call          1
 //        7  TailCall      2
@@ -274,9 +274,9 @@
 //        5  Call          1
 //        6  LogicalNot
 //        7  JumpIfFalse   L0   ; +8
-//        8  LoadGlobal    102  ; error
+//        8  LoadGlobal    103  ; error
 //        9  LoadConst     0    ; "Function tap requires Function as ar...
-//       10  LoadGlobal    14   ; type
+//       10  LoadGlobal    15   ; type
 //       11  LoadLocal     0    ; f
 //       12  Call          1
 //       13  Concat        2
@@ -340,9 +340,9 @@
 //        7  LoadLocal          0    ; rest
 //        8  Add
 //        9  DefLocal           4    ; functions
-//       10  LoadGlobal         96   ; each
-//       11  LoadGlobal         49   ; range
-//       12  LoadGlobal         48   ; len
+//       10  LoadGlobal         97   ; each
+//       11  LoadGlobal         50   ; range
+//       12  LoadGlobal         49   ; len
 //       13  LoadLocal          4    ; functions
 //       14  Call               1
 //       15  Call               1
@@ -372,7 +372,7 @@
 //       38  DropBelow          0
 //       39  DropMark
 //       40  DropBelow          0
-//       41  LoadGlobal         100  ; call
+//       41  LoadGlobal         101  ; call
 //       42  ConsumeLocal       3    ; compose
 //       43  ConsumeLocal       5    ; compose2
 //       44  ConsumeLocal       2    ; f
@@ -412,13 +412,13 @@
 //        8  Call                1
 //        9  LogicalNot
 //       10  JumpIfFalse         L0   ; +12
-//       11  LoadGlobal          102  ; error
+//       11  LoadGlobal          103  ; error
 //       12  LoadConst           0    ; "Function compose requires Function a...
 //       13  ConsumeLocal        1    ; i
 //       14  PushInt             1
 //       15  Add
 //       16  LoadConst           1    ; ", got "
-//       17  LoadGlobal          14   ; type
+//       17  LoadGlobal          15   ; type
 //       18  ConsumeLocal        2    ; h
 //       19  Call                1
 //       20  Concat              4
@@ -456,7 +456,7 @@
 //        0  DefLocal      2    ; args
 //        1  DefLocal      3    ; compose_fn
 //        2  ConsumeLocal  0    ; f2
-//        3  LoadGlobal    100  ; call
+//        3  LoadGlobal    101  ; call
 //        4  ConsumeLocal  1    ; f1
 //        5  ConsumeLocal  2    ; args
 //        6  Call          2
@@ -503,7 +503,7 @@
 //        2  DefLocal       2   ; dig
 //        3  CreateClosure  0   ; step, 0 captures
 //        4  DefLocal       3   ; step
-//        5  LoadGlobal     79  ; fold
+//        5  LoadGlobal     80  ; fold
 //        6  ConsumeLocal   0   ; keys
 //        7  ConsumeLocal   3   ; step
 //        8  ConsumeLocal   1   ; structure
@@ -547,7 +547,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(2))]),
                         map([(string("DefLocal"), int(3))]),
-                        map([(string("LoadGlobal"), int(100))]),
+                        map([(string("LoadGlobal"), int(101))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(2))]),
                         map([(string("ConsumeLocal"), int(1))]),
@@ -585,9 +585,9 @@ pub(super) fn functions() -> Value {
                 map([(string("Call"), int(1))]),
                 string("LogicalNot"),
                 map([(string("JumpIfFalse"), int(8))]),
-                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadGlobal"), int(103))]),
                 map([(string("LoadConst"), int(0))]),
-                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadGlobal"), int(15))]),
                 map([(string("LoadLocal"), int(1))]),
                 map([(string("Call"), int(1))]),
                 map([(string("Concat"), int(2))]),
@@ -650,13 +650,13 @@ pub(super) fn functions() -> Value {
                         map([(string("Call"), int(1))]),
                         string("LogicalNot"),
                         map([(string("JumpIfFalse"), int(12))]),
-                        map([(string("LoadGlobal"), int(102))]),
+                        map([(string("LoadGlobal"), int(103))]),
                         map([(string("LoadConst"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("PushInt"), int(1))]),
                         string("Add"),
                         map([(string("LoadConst"), int(1))]),
-                        map([(string("LoadGlobal"), int(14))]),
+                        map([(string("LoadGlobal"), int(15))]),
                         map([(string("ConsumeLocal"), int(2))]),
                         map([(string("Call"), int(1))]),
                         map([(string("Concat"), int(4))]),
@@ -693,7 +693,7 @@ pub(super) fn functions() -> Value {
                                 map([(string("DefLocal"), int(2))]),
                                 map([(string("DefLocal"), int(3))]),
                                 map([(string("ConsumeLocal"), int(0))]),
-                                map([(string("LoadGlobal"), int(100))]),
+                                map([(string("LoadGlobal"), int(101))]),
                                 map([(string("ConsumeLocal"), int(1))]),
                                 map([(string("ConsumeLocal"), int(2))]),
                                 map([(string("Call"), int(2))]),
@@ -758,9 +758,9 @@ pub(super) fn functions() -> Value {
                 map([(string("LoadLocal"), int(0))]),
                 string("Add"),
                 map([(string("DefLocal"), int(4))]),
-                map([(string("LoadGlobal"), int(96))]),
+                map([(string("LoadGlobal"), int(97))]),
+                map([(string("LoadGlobal"), int(50))]),
                 map([(string("LoadGlobal"), int(49))]),
-                map([(string("LoadGlobal"), int(48))]),
                 map([(string("LoadLocal"), int(4))]),
                 map([(string("Call"), int(1))]),
                 map([(string("Call"), int(1))]),
@@ -789,7 +789,7 @@ pub(super) fn functions() -> Value {
                 map([(string("DropBelow"), int(0))]),
                 string("DropMark"),
                 map([(string("DropBelow"), int(0))]),
-                map([(string("LoadGlobal"), int(100))]),
+                map([(string("LoadGlobal"), int(101))]),
                 map([(string("ConsumeLocal"), int(3))]),
                 map([(string("ConsumeLocal"), int(5))]),
                 map([(string("ConsumeLocal"), int(2))]),
@@ -870,7 +870,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(2))]),
                         map([(string("DefLocal"), int(3))]),
-                        map([(string("LoadGlobal"), int(100))]),
+                        map([(string("LoadGlobal"), int(101))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("ConsumeLocal"), int(2))]),
@@ -908,9 +908,9 @@ pub(super) fn functions() -> Value {
                 map([(string("Call"), int(1))]),
                 string("LogicalNot"),
                 map([(string("JumpIfFalse"), int(8))]),
-                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadGlobal"), int(103))]),
                 map([(string("LoadConst"), int(0))]),
-                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadGlobal"), int(15))]),
                 map([(string("LoadLocal"), int(1))]),
                 map([(string("Call"), int(1))]),
                 map([(string("Concat"), int(2))]),
@@ -981,7 +981,7 @@ pub(super) fn functions() -> Value {
                 map([(string("DefLocal"), int(2))]),
                 map([(string("CreateClosure"), int(0))]),
                 map([(string("DefLocal"), int(3))]),
-                map([(string("LoadGlobal"), int(79))]),
+                map([(string("LoadGlobal"), int(80))]),
                 map([(string("ConsumeLocal"), int(0))]),
                 map([(string("ConsumeLocal"), int(3))]),
                 map([(string("ConsumeLocal"), int(1))]),
@@ -1055,7 +1055,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
                         map([(string("DefLocal"), int(2))]),
-                        map([(string("LoadGlobal"), int(100))]),
+                        map([(string("LoadGlobal"), int(101))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("Call"), int(2))]),
@@ -1087,9 +1087,9 @@ pub(super) fn functions() -> Value {
                 map([(string("Call"), int(1))]),
                 string("LogicalNot"),
                 map([(string("JumpIfFalse"), int(8))]),
-                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadGlobal"), int(103))]),
                 map([(string("LoadConst"), int(0))]),
-                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadGlobal"), int(15))]),
                 map([(string("LoadLocal"), int(0))]),
                 map([(string("Call"), int(1))]),
                 map([(string("Concat"), int(2))]),
@@ -1123,9 +1123,9 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
                         map([(string("DefLocal"), int(2))]),
-                        map([(string("LoadGlobal"), int(100))]),
+                        map([(string("LoadGlobal"), int(101))]),
                         map([(string("ConsumeLocal"), int(0))]),
-                        map([(string("LoadGlobal"), int(66))]),
+                        map([(string("LoadGlobal"), int(67))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("Call"), int(1))]),
                         map([(string("TailCall"), int(2))]),
@@ -1156,9 +1156,9 @@ pub(super) fn functions() -> Value {
                 map([(string("Call"), int(1))]),
                 string("LogicalNot"),
                 map([(string("JumpIfFalse"), int(8))]),
-                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadGlobal"), int(103))]),
                 map([(string("LoadConst"), int(0))]),
-                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadGlobal"), int(15))]),
                 map([(string("LoadLocal"), int(0))]),
                 map([(string("Call"), int(1))]),
                 map([(string("Concat"), int(2))]),
@@ -1192,7 +1192,7 @@ pub(super) fn functions() -> Value {
                     (string("code"), array([
                         map([(string("DefLocal"), int(1))]),
                         map([(string("DefLocal"), int(2))]),
-                        map([(string("LoadGlobal"), int(100))]),
+                        map([(string("LoadGlobal"), int(101))]),
                         map([(string("ConsumeLocal"), int(0))]),
                         map([(string("ConsumeLocal"), int(1))]),
                         map([(string("TailCall"), int(2))]),
@@ -1220,9 +1220,9 @@ pub(super) fn functions() -> Value {
                 map([(string("Call"), int(1))]),
                 string("LogicalNot"),
                 map([(string("JumpIfFalse"), int(8))]),
-                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadGlobal"), int(103))]),
                 map([(string("LoadConst"), int(0))]),
-                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadGlobal"), int(15))]),
                 map([(string("LoadLocal"), int(0))]),
                 map([(string("Call"), int(1))]),
                 map([(string("Concat"), int(2))]),
@@ -1259,9 +1259,9 @@ pub(super) fn functions() -> Value {
                 map([(string("Call"), int(1))]),
                 string("LogicalNot"),
                 map([(string("JumpIfFalse"), int(8))]),
-                map([(string("LoadGlobal"), int(102))]),
+                map([(string("LoadGlobal"), int(103))]),
                 map([(string("LoadConst"), int(0))]),
-                map([(string("LoadGlobal"), int(14))]),
+                map([(string("LoadGlobal"), int(15))]),
                 map([(string("LoadLocal"), int(0))]),
                 map([(string("Call"), int(1))]),
                 map([(string("Concat"), int(2))]),

@@ -318,6 +318,7 @@ mod bindings {
             ("Array", TypeConstraint::Array),
             ("Map", TypeConstraint::Map),
             ("Function", TypeConstraint::Function),
+            ("Opaque", TypeConstraint::Opaque),
             ("Primitive", TypeConstraint::Primitive),
             ("Numeric", TypeConstraint::Numeric),
             ("Structured", TypeConstraint::Structured),

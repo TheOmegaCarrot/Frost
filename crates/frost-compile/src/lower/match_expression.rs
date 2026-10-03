@@ -492,6 +492,7 @@ fn type_test(constraint: TypeConstraint) -> Bytecode {
         TypeConstraint::Array => FrostType::ARRAY,
         TypeConstraint::Map => FrostType::MAP,
         TypeConstraint::Function => FrostType::FUNCTION,
+        TypeConstraint::Opaque => FrostType::OPAQUE,
         TypeConstraint::Primitive => FrostType::PRIMITIVE,
         TypeConstraint::Numeric => FrostType::NUMERIC,
         TypeConstraint::Structured => FrostType::STRUCTURED,

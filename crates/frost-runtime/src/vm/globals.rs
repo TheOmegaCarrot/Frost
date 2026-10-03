@@ -90,6 +90,7 @@ define_globals! {
     "is_array"              [Pure]   => is_array_global(),
     "is_map"                [Pure]   => is_map_global(),
     "is_function"           [Pure]   => is_function_global(),
+    "is_opaque"             [Pure]   => is_opaque_global(),
     "is_nonnull"            [Pure]   => is_nonnull_global(),
     "is_numeric"            [Pure]   => is_numeric_global(),
     "is_primitive"          [Pure]   => is_primitive_global(),

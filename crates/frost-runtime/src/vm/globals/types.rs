@@ -62,6 +62,10 @@ pub(super) fn is_function_global() -> Value {
     type_predicate("is_function", FrostType::FUNCTION)
 }
 
+pub(super) fn is_opaque_global() -> Value {
+    type_predicate("is_opaque", FrostType::OPAQUE)
+}
+
 pub(super) fn is_nonnull_global() -> Value {
     type_predicate("is_nonnull", FrostType::NONNULL)
 }

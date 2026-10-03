@@ -267,6 +267,8 @@ fn a_type_constraint_admits_only_its_types() {
         ("Array", "[0, 0, 0, 0, 0, 0, 1, 0, 0]"),
         ("Map", "[0, 0, 0, 0, 0, 0, 0, 1, 0]"),
         ("Function", "[0, 0, 0, 0, 0, 0, 0, 0, 1]"),
+        // Frost source cannot make an Opaque; the runtime's tests match a host's.
+        ("Opaque", "[0, 0, 0, 0, 0, 0, 0, 0, 0]"),
         ("Primitive", "[1, 1, 1, 1, 1, 1, 0, 0, 0]"),
         ("Numeric", "[0, 0, 1, 1, 0, 0, 0, 0, 0]"),
         ("Structured", "[0, 0, 0, 0, 0, 0, 1, 1, 0]"),

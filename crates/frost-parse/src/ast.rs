@@ -418,6 +418,8 @@ pub enum TypeConstraint {
     Map,
     /// `is Function`
     Function,
+    /// `is Opaque`
+    Opaque,
     /// `is Primitive`
     Primitive,
     /// `is Numeric`

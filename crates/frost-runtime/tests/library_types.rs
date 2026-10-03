@@ -15,7 +15,9 @@
 
 mod source;
 
-use frost_runtime::Value;
+use std::borrow::Cow;
+
+use frost_runtime::{FrostOpaque, Value};
 use source::assertions::{Library, library_assertions};
 use source::{Script, raises, run};
 
@@ -53,7 +55,29 @@ const SAMPLES: &[(&str, &str)] = &[
     ("type", "Function"),
     ("plus", "Function"),
     ("inv", "Function"),
+    ("opaque", "Opaque"),
 ];
+
+/// Host data for the `opaque` sample: Frost source cannot make an Opaque.
+#[derive(Debug)]
+struct Payload;
+
+impl FrostOpaque for Payload {
+    fn type_name(&self) -> Cow<'static, str> {
+        Cow::Borrowed("Payload")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        None
+    }
+}
+
+/// Run `source`, which may use the samples, with `opaque` captured.
+fn run_over_samples(source: &str) -> Value {
+    Script::new(source)
+        .capture("opaque", Value::opaque(Payload))
+        .run()
+}
 
 /// Each type predicate, with the types it accepts.
 const PREDICATES: &[(&str, &[&str])] = &[
@@ -66,10 +90,11 @@ const PREDICATES: &[(&str, &[&str])] = &[
     ("is_array", &["Array"]),
     ("is_map", &["Map"]),
     ("is_function", &["Function"]),
+    ("is_opaque", &["Opaque"]),
     (
         "is_nonnull",
         &[
-            "Bool", "Int", "Float", "String", "Bytes", "Array", "Map", "Function",
+            "Bool", "Int", "Float", "String", "Bytes", "Array", "Map", "Function", "Opaque",
         ],
     ),
     ("is_numeric", &["Int", "Float"]),
@@ -113,7 +138,7 @@ fn each_type_predicate_accepts_exactly_its_types() {
             .map(|(_, ty)| Value::Bool(accepted.contains(ty)))
             .collect();
         assert_eq!(
-            run(&applied_to_samples(predicate)),
+            run_over_samples(&applied_to_samples(predicate)),
             expected,
             "{predicate} over {SAMPLES:?}"
         );
@@ -133,8 +158,8 @@ fn each_type_predicate_agrees_with_its_match_constraint() {
             })
             .collect();
         assert_eq!(
-            run(&applied_to_samples(predicate)),
-            run(&format!("[{}]", matches.join(", "))),
+            run_over_samples(&applied_to_samples(predicate)),
+            run_over_samples(&format!("[{}]", matches.join(", "))),
             "{predicate} is the constraint {constraint}"
         );
     }
@@ -160,7 +185,7 @@ fn type_predicates_take_exactly_one_argument() {
 #[test]
 fn type_names_the_type_of_its_argument() {
     let expected: Value = SAMPLES.iter().map(|(_, ty)| Value::from(*ty)).collect();
-    assert_eq!(run(&applied_to_samples("type")), expected);
+    assert_eq!(run_over_samples(&applied_to_samples("type")), expected);
 }
 
 #[test]
@@ -202,8 +227,8 @@ fn to_string_renders_the_compact_form() {
 fn to_string_is_what_a_format_string_interpolates() {
     for (sample, _) in SAMPLES {
         assert_eq!(
-            run(&format!("to_string({sample})")),
-            run(&format!("$'${{{sample}}}'")),
+            run_over_samples(&format!("to_string({sample})")),
+            run_over_samples(&format!("$'${{{sample}}}'")),
             "{sample}"
         );
     }
