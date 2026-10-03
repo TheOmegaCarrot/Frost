@@ -204,6 +204,53 @@ mod if_newlines {
     }
 
     #[test]
+    fn each_branch_may_start_on_the_line_after_its_colon() {
+        let source = r"
+            if a:
+                1
+            elif b:
+                2
+            else:
+                3
+        ";
+        let expr = parse_expr(source);
+        let (_, then, alt) = assert_if(&expr);
+        assert!(is_int(then, 1));
+        let (_, then2, alt2) = assert_if(alt.unwrap());
+        assert!(is_int(then2, 2));
+        assert!(is_int(alt2.unwrap(), 3));
+    }
+
+    #[test]
+    fn blank_lines_and_a_comment_may_follow_a_colon() {
+        let source = r"
+            if a: # a note
+
+                1
+            else: # another
+
+                2
+        ";
+        let expr = parse_expr(source);
+        let (_, then, alt) = assert_if(&expr);
+        assert!(is_int(then, 1));
+        assert!(is_int(alt.unwrap(), 2));
+    }
+
+    #[test]
+    fn a_branch_on_its_own_line_still_ends_at_its_newline() {
+        let source = r"
+            def v = if a:
+                1
+            else:
+                2
+            v
+        ";
+        let program = parse(source);
+        assert_eq!(program.statements.len(), 2, "{program:?}");
+    }
+
+    #[test]
     fn if_without_else_then_newline_statement() {
         let source = r"
             if true: 1

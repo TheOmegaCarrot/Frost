@@ -109,7 +109,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
         &mut self,
     ) -> ParseResult<(Vec<Spanned<Statement>>, Spanned<Expr>, usize)> {
         self.expect(Token::SlimArrow)?;
-        self.maybe_skip_nl();
+        // A body may start on the line after its arrow.
+        self.skip_nl();
 
         match brace_disambiguation(self) {
             BraceKind::Block => self.parse_block_body(),

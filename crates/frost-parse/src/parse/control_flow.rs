@@ -13,6 +13,8 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
 
         let condition = self.parse_expression()?;
         self.expect(Token::Colon)?;
+        // A branch may start on the line after its colon.
+        self.skip_nl();
         let consequent = self.parse_expression()?;
 
         let alternate = self.parse_tail()?;
@@ -43,6 +45,7 @@ impl<'src, 'f> ParseCtx<'src, 'f> {
             Token::KwElse => {
                 self.expect(Token::KwElse)?;
                 self.expect(Token::Colon)?;
+                self.skip_nl();
                 let alternate = self.parse_expression()?;
                 Ok(Some(alternate))
             }

@@ -360,6 +360,104 @@ mod map_body {
 }
 
 // ============================================================
+// A body on the line after its arrow
+// ============================================================
+
+mod body_after_newline {
+    use super::*;
+
+    #[test]
+    fn expression_body() {
+        let source = r"
+            fn x ->
+                x + 1
+        ";
+        let expr = parse_expr(source);
+        let lam = assert_lambda(&expr);
+        assert!(lam.body.is_empty());
+        assert!(is_binop(lam.return_expr).is_some());
+    }
+
+    #[test]
+    fn block_body() {
+        let source = r"
+            fn x ->
+            {
+                def y = 1
+                x + y
+            }
+        ";
+        let expr = parse_expr(source);
+        let lam = assert_lambda(&expr);
+        assert_eq!(lam.body.len(), 1);
+        assert!(is_binop(lam.return_expr).is_some());
+    }
+
+    #[test]
+    fn map_body() {
+        let source = r"
+            fn ->
+                {foo: 1}
+        ";
+        let expr = parse_expr(source);
+        let lam = assert_lambda(&expr);
+        assert!(lam.body.is_empty());
+        assert!(matches!(&lam.return_expr.node, Expr::Map(_)));
+    }
+
+    #[test]
+    fn after_blank_lines_and_a_comment() {
+        let source = r"
+            fn x -> # a note
+
+                x
+        ";
+        let expr = parse_expr(source);
+        let lam = assert_lambda(&expr);
+        assert!(matches!(&lam.return_expr.node, Expr::NameLookup(n) if n == "x"));
+    }
+
+    #[test]
+    fn curried() {
+        let source = r"
+            fn x -> fn y ->
+                x + y
+        ";
+        let expr = parse_expr(source);
+        let outer = assert_lambda(&expr);
+        let inner = assert_lambda(outer.return_expr);
+        assert!(is_binop(inner.return_expr).is_some());
+    }
+
+    #[test]
+    fn defn_body() {
+        let source = r"
+            defn inc(x) ->
+                x + 1
+        ";
+        let program = parse(source);
+        let [statement] = program.statements.as_slice() else {
+            panic!("expected one statement, got {program:?}");
+        };
+        assert!(
+            matches!(&statement.node, Statement::Def { .. }),
+            "{statement:?}"
+        );
+    }
+
+    #[test]
+    fn the_body_still_ends_at_its_newline() {
+        let source = r"
+            def f = fn x ->
+                x
+            f(1)
+        ";
+        let program = parse(source);
+        assert_eq!(program.statements.len(), 2, "{program:?}");
+    }
+}
+
+// ============================================================
 // Lambda in expressions
 // ============================================================
 
@@ -444,11 +542,14 @@ mod errors {
 
     #[test]
     fn missing_body() {
-        let err = parse_err("fn x ->");
-        assert!(
-            err.contains("end of input") || err.contains("unexpected"),
-            "error was: {err}"
-        );
+        // Even with lines after the arrow, there must be a body.
+        for source in ["fn x ->", "fn x ->\n", "fn x ->\n\n# only a comment\n"] {
+            let err = parse_err(source);
+            assert!(
+                err.contains("end of input") || err.contains("unexpected"),
+                "{source:?}: error was: {err}"
+            );
+        }
     }
 
     #[test]
