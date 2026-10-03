@@ -8,11 +8,9 @@
 //! [`Frontend`].
 //!
 //! ```no_run
-//! use std::io;
+//! use frost_repl::{Repl, SessionError};
 //!
-//! use frost_repl::Repl;
-//!
-//! fn main() -> io::Result<()> {
+//! fn main() -> Result<(), SessionError> {
 //!     let mut frontend = frost_repl::default_frontend(true);
 //!     Repl::new().run(&mut *frontend)
 //! }
@@ -23,15 +21,21 @@
 //! - `line-editor` (default): [`TerminalFrontend`], with line editing,
 //!   history, and syntax highlighting.
 
+mod builtins;
 mod frontend;
 #[cfg(feature = "line-editor")]
 mod highlight;
+mod metacommand;
 mod scripted;
 mod segment;
 #[cfg(feature = "line-editor")]
 mod terminal;
 
 pub use frontend::{Frontend, LineFrontend};
+pub use metacommand::{
+    InvalidMetacommand, Invocation, MetacommandHandler, MetacommandProblem, MetacommandSpec,
+    MetacommandTable,
+};
 pub use scripted::{ScriptedFrontend, Transcript};
 pub use segment::complete_segment;
 #[cfg(feature = "line-editor")]
@@ -44,7 +48,10 @@ use std::sync::Arc;
 
 use frost_compile::{CompilerErrors, CompilerOptions, OptimizationOptions, compile_in_scope};
 use frost_parse::{Token, tokens};
-use frost_runtime::{FrostError, IdleVm, Importer, Value, Vm, VmRuntimeConfiguration};
+use frost_runtime::{Closure, FrostError, IdleVm, Importer, Value, Vm, VmRuntimeConfiguration};
+
+use builtins::{Reply, metacommand_error};
+use metacommand::{Handler, Registry};
 
 /// The name diagnostics give an input.
 const INPUT_NAME: &str = "<repl>";
@@ -82,6 +89,18 @@ const RESULTS: &str = "results";
 ///
 /// `results` is an ordinary name. Once an input or a seeded binding binds it,
 /// the REPL leaves it alone and keeps no more results.
+///
+/// # Metacommands
+///
+/// In a session [`run`](Self::run), a segment starting with `:` and then a
+/// name, as `:help` does, is a metacommand: an instruction to the REPL or its
+/// frontend, not Frost source. Whatever follows the name is its
+/// [argument](Invocation::argument).
+///
+/// The REPL's own are `:help`, `:quit`, `:bindings`, `:undef`,
+/// `:disassemble`, and `:ast`. `:help` describes them, with any its frontend
+/// adds (see [`Frontend::metacommands`]). A failed metacommand is shown as a
+/// failed input is, and the session carries on.
 pub struct Repl {
     configuration: VmRuntimeConfiguration,
     importer: Arc<Importer>,
@@ -175,22 +194,7 @@ impl Repl {
     /// itself are kept only if it compiles and runs without error; a failed
     /// input changes nothing.
     pub fn evaluate(&mut self, source: &str) -> Result<Value, ReplError> {
-        let mut bindings = self.bindings.clone();
-        if self.keeps_results() {
-            bindings.insert(RESULTS.to_string(), self.results.iter().cloned().collect());
-        }
-        let scope: Vec<&str> = bindings.keys().map(String::as_str).collect();
-        let options = CompilerOptions {
-            optimization_options: self.optimization,
-            // Each top-level binding is exported, to be kept for later inputs.
-            implicit_export: true,
-        };
-        let program = compile_in_scope(INPUT_NAME, source, options, &scope)
-            .map_err(ReplError::Compile)?
-            .code;
-        let closure = program
-            .close(bindings)
-            .expect("every name in scope is bound");
+        let closure = self.compile(source)?;
         let vm = match self.idle_vm.take() {
             Some(idle_vm) => idle_vm.build(closure),
             None => Vm::factory()
@@ -233,25 +237,106 @@ impl Repl {
             .map(|(name, value)| (name.as_str(), value))
     }
 
+    /// [`evaluate`](Self::evaluate) each segment `frontend` reads, and have it
+    /// [`render`](Frontend::render) the outcome, until it has no more or
+    /// `:quit` ends the session. A failed input does not end the session.
+    ///
+    /// A segment that is a [metacommand](Self#metacommands) is run as one, not
+    /// evaluated. What inputs `print` goes to the configuration's
+    /// [`print_sink`](VmRuntimeConfiguration::print_sink), not the frontend.
+    ///
+    /// Fails if `frontend` fails, or if one of its
+    /// [metacommands](Frontend::metacommands) is refused; then it reads
+    /// nothing.
+    pub fn run(&mut self, frontend: &mut dyn Frontend) -> Result<(), SessionError> {
+        let registry = Registry::new(frontend.metacommands()).map_err(SessionError::Metacommand)?;
+        while let Some(segment) = frontend.read_segment()? {
+            let Some(invocation) = Invocation::parse(&segment) else {
+                frontend.render(self.evaluate(&segment).as_ref())?;
+                continue;
+            };
+            let reply = match registry.find(invocation.name()) {
+                Some(Handler::Builtin(builtin)) => {
+                    self.run_builtin(builtin, &invocation, &registry, frontend.ansi_styling())
+                }
+                Some(Handler::Frontend) => {
+                    frontend.metacommand(&invocation)?;
+                    continue;
+                }
+                None => Err(metacommand_error(format!(
+                    "there is no metacommand `:{}`; `:help` lists them",
+                    invocation.name()
+                ))),
+            };
+            match reply {
+                Ok(Reply::Text(text)) => frontend.render_text(&text)?,
+                Ok(Reply::Nothing) => {}
+                Ok(Reply::Quit) => break,
+                Err(error) => frontend.render(Err(&error))?,
+            }
+        }
+        Ok(())
+    }
+
+    /// The input `source` compiles to, ready to run with every binding in
+    /// scope.
+    fn compile(&self, source: &str) -> Result<Arc<Closure>, ReplError> {
+        let mut bindings = self.bindings.clone();
+        if self.keeps_results() {
+            bindings.insert(RESULTS.to_string(), self.results.iter().cloned().collect());
+        }
+        let scope: Vec<&str> = bindings.keys().map(String::as_str).collect();
+        let options = CompilerOptions {
+            optimization_options: self.optimization,
+            // Each top-level binding is exported, to be kept for later inputs.
+            implicit_export: true,
+        };
+        let program = compile_in_scope(INPUT_NAME, source, options, &scope)
+            .map_err(ReplError::Compile)?
+            .code;
+        Ok(program
+            .close(bindings)
+            .expect("every name in scope is bound"))
+    }
+
     /// Whether the REPL binds `results`: it keeps some, and no input or seed
     /// has taken the name.
     fn keeps_results(&self) -> bool {
         self.results_kept > 0 && !self.bindings.contains_key(RESULTS)
     }
+}
 
-    /// [`evaluate`](Self::evaluate) each segment `frontend` reads, and have it
-    /// [`render`](Frontend::render) the outcome, until it has no more. A failed
-    /// input does not end the session.
-    ///
-    /// What inputs `print` goes to the configuration's
-    /// [`print_sink`](VmRuntimeConfiguration::print_sink), not the frontend.
-    ///
-    /// Returns an error only if `frontend` fails.
-    pub fn run(&mut self, frontend: &mut dyn Frontend) -> io::Result<()> {
-        while let Some(segment) = frontend.read_segment()? {
-            frontend.render(self.evaluate(&segment).as_ref())?;
+/// Why [`Repl::run`] ended a session early.
+#[derive(Debug)]
+pub enum SessionError {
+    /// The frontend failed.
+    Frontend(io::Error),
+    /// The REPL refused one of the frontend's metacommands, before reading
+    /// anything.
+    Metacommand(InvalidMetacommand),
+}
+
+impl From<io::Error> for SessionError {
+    fn from(error: io::Error) -> Self {
+        Self::Frontend(error)
+    }
+}
+
+impl fmt::Display for SessionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Frontend(error) => write!(f, "{error}"),
+            Self::Metacommand(invalid) => write!(f, "{invalid}"),
         }
-        Ok(())
+    }
+}
+
+impl std::error::Error for SessionError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Frontend(error) => Some(error),
+            Self::Metacommand(invalid) => Some(invalid),
+        }
     }
 }
 
@@ -263,7 +348,8 @@ impl Repl {
 pub enum ReplError {
     /// The input did not compile.
     Compile(CompilerErrors),
-    /// The input raised an error while running.
+    /// The input raised an error while running, or the metacommand it invoked
+    /// failed.
     Run(FrostError),
 }
 

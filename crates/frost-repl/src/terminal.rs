@@ -1,18 +1,21 @@
 //! [`TerminalFrontend`]: line editing, history, and highlighting on a terminal.
 
 use std::borrow::Cow;
+use std::env;
 use std::io::{self, Write};
 use std::path::PathBuf;
+use std::process::{self, Command};
+use std::sync::LazyLock;
 
-use frost_runtime::Value;
+use frost_runtime::{FrostError, Value};
 use nu_ansi_term::{Color, Style};
 use reedline::{
     FileBackedHistory, HISTORY_SIZE, Highlighter, Prompt, PromptEditMode, PromptHistorySearch,
-    Reedline, Signal, StyledText, ValidationResult, Validator,
+    Reedline, SearchDirection, SearchQuery, Signal, StyledText, ValidationResult, Validator,
 };
 
 use crate::highlight::{self, Class};
-use crate::{Frontend, ReplError, complete_segment};
+use crate::{Frontend, Invocation, MetacommandSpec, MetacommandTable, ReplError, complete_segment};
 
 /// A [`Frontend`] for a person at a terminal, with line editing, history, and
 /// syntax highlighting.
@@ -21,6 +24,8 @@ use crate::{Frontend, ReplError, complete_segment};
 /// it.
 ///
 /// Ctrl-C discards the segment being typed; Ctrl-D on an empty line ends input.
+/// Ctrl-O opens the segment being typed in the editor `$VISUAL` or `$EDITOR`
+/// names, if either is set.
 ///
 /// Each value other than Null is written pretty-printed, as by
 /// [`Value::to_pretty_string`], to standard output; a failure is written to
@@ -84,14 +89,39 @@ impl TerminalFrontend {
     fn editor(&mut self) -> &mut Reedline {
         self.editor.get_or_insert_with(|| {
             let history = self.history.take().unwrap_or_else(default_history);
-            Reedline::create()
+            let editor = Reedline::create()
                 .with_validator(Box::new(FrostValidator))
                 .with_highlighter(Box::new(FrostHighlighter))
                 .with_history(Box::new(history))
                 .with_ansi_colors(self.color)
-                .use_bracketed_paste(true)
+                .use_bracketed_paste(true);
+            match external_editor() {
+                Some(command) => editor.with_buffer_editor(command, edit_file()),
+                None => editor,
+            }
         })
     }
+}
+
+/// The editor `$VISUAL`, or else `$EDITOR`, names, if either is set.
+fn external_editor() -> Option<Command> {
+    let line = ["VISUAL", "EDITOR"]
+        .into_iter()
+        .filter_map(env::var_os)
+        .find(|line| !line.is_empty())?
+        .into_string()
+        .ok()?;
+    // An editor may be named with arguments, as `code --wait` is.
+    let mut words = line.split_whitespace();
+    let mut command = Command::new(words.next()?);
+    command.args(words);
+    Some(command)
+}
+
+/// The file the external editor edits a segment in. Its extension lets the
+/// editor recognize Frost source.
+fn edit_file() -> PathBuf {
+    env::temp_dir().join(format!("frost-edit-{}.frst", process::id()))
 }
 
 /// History in the platform's default file, or for the session only if there
@@ -141,6 +171,96 @@ impl Frontend for TerminalFrontend {
                 stderr.flush()
             }
         }
+    }
+
+    fn render_text(&mut self, text: &str) -> io::Result<()> {
+        let mut stdout = io::stdout().lock();
+        writeln!(stdout, "{text}")?;
+        stdout.flush()
+    }
+
+    fn ansi_styling(&self) -> bool {
+        self.color
+    }
+
+    fn metacommands(&self) -> Vec<MetacommandSpec> {
+        METACOMMANDS.specs()
+    }
+
+    fn metacommand(&mut self, invocation: &Invocation) -> io::Result<()> {
+        METACOMMANDS.dispatch(self, invocation)
+    }
+}
+
+static METACOMMANDS: LazyLock<MetacommandTable<TerminalFrontend>> = LazyLock::new(|| {
+    MetacommandTable::new()
+        .with(
+            MetacommandSpec::new("history", "List the history, oldest first"),
+            show_history,
+        )
+        .with(
+            MetacommandSpec::new(
+                "clear-history",
+                "Forget the history, and its file's contents",
+            ),
+            clear_history,
+        )
+});
+
+fn show_history(frontend: &mut TerminalFrontend, invocation: &Invocation) -> io::Result<()> {
+    if !takes_no_argument(frontend, invocation)? {
+        return Ok(());
+    }
+    let query = SearchQuery::everything(SearchDirection::Forward, None);
+    let entries = match frontend.editor().history().search(query) {
+        Ok(entries) => entries,
+        Err(error) => return frontend.fail(&format!("cannot read the history: {error}")),
+    };
+    // Each entry is numbered, its further lines aligned under its first.
+    let width = entries.len().to_string().len();
+    let mut stdout = io::stdout().lock();
+    for (number, entry) in (1..).zip(&entries) {
+        let mut lines = entry.command_line.lines();
+        writeln!(stdout, "{number:>width$}  {}", lines.next().unwrap_or(""))?;
+        for line in lines {
+            writeln!(stdout, "{:width$}  {line}", "")?;
+        }
+    }
+    stdout.flush()
+}
+
+fn clear_history(frontend: &mut TerminalFrontend, invocation: &Invocation) -> io::Result<()> {
+    if !takes_no_argument(frontend, invocation)? {
+        return Ok(());
+    }
+    let history = frontend.editor().history_mut();
+    // Clearing removes the history's file, which syncing first ensures exists.
+    let cleared = history
+        .sync()
+        .map_err(|error| error.to_string())
+        .and_then(|()| history.clear().map_err(|error| error.to_string()));
+    match cleared {
+        Ok(()) => Ok(()),
+        Err(error) => frontend.fail(&format!("cannot clear the history: {error}")),
+    }
+}
+
+/// Whether `invocation` came without an argument, as it must. If not, the
+/// frontend says so.
+fn takes_no_argument(frontend: &mut TerminalFrontend, invocation: &Invocation) -> io::Result<bool> {
+    if invocation.argument().is_empty() {
+        return Ok(true);
+    }
+    frontend.fail(&format!("`:{}` takes no argument", invocation.name()))?;
+    Ok(false)
+}
+
+impl TerminalFrontend {
+    /// Show that a metacommand failed, as `message` explains, the way a failed
+    /// input is shown.
+    fn fail(&mut self, message: &str) -> io::Result<()> {
+        let error = ReplError::Run(FrostError::from(message.to_string()));
+        self.render(Err(&error))
     }
 }
 

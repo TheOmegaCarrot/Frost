@@ -76,6 +76,36 @@ fn frontends_given_one_transcript_record_to_it_in_turn() {
 }
 
 #[test]
+fn it_records_each_text_apart_from_outcomes() {
+    let mut frontend = ScriptedFrontend::new(Vec::<String>::new());
+    frontend.render_text("one").unwrap();
+    frontend.render(Ok(&Value::Int(2))).unwrap();
+    frontend.render_text("three\nlines").unwrap();
+    let transcript = frontend.transcript();
+    assert_eq!(transcript.texts(), ["one", "three\nlines"]);
+    assert!(
+        matches!(transcript.outcomes().as_slice(), [Ok(Value::Int(2))]),
+        "{:?}",
+        transcript.outcomes()
+    );
+}
+
+#[test]
+fn it_takes_ansi_styling_only_if_told_to() {
+    assert!(!ScriptedFrontend::new(["1"]).ansi_styling());
+    assert!(
+        ScriptedFrontend::new(["1"])
+            .with_ansi_styling(true)
+            .ansi_styling()
+    );
+    assert!(
+        !ScriptedFrontend::new(["1"])
+            .with_ansi_styling(false)
+            .ansi_styling()
+    );
+}
+
+#[test]
 fn a_transcripts_clones_share_its_record() {
     let transcript = Transcript::default();
     let clone = transcript.clone();

@@ -4,7 +4,7 @@ use std::io::{self, BufRead, Stderr, StdinLock, Stdout, Write};
 
 use frost_runtime::Value;
 
-use crate::{ReplError, complete_segment};
+use crate::{Invocation, MetacommandSpec, ReplError, complete_segment};
 
 /// Where a [`Repl`](crate::Repl) session happens: it supplies each input and
 /// shows what became of it. A terminal, a notebook, or an in-application
@@ -12,14 +12,44 @@ use crate::{ReplError, complete_segment};
 pub trait Frontend {
     /// The next segment, or `None` once input has ended.
     ///
-    /// A segment is one complete piece of source for the REPL to run, however
-    /// many lines it spans. Where a segment ends is the frontend's decision:
-    /// the REPL runs each one exactly as given.
+    /// A segment is one complete piece of source for the REPL to run, or one
+    /// [metacommand](crate::Repl#metacommands), however many lines it spans.
+    /// Where a segment ends is the frontend's decision: the REPL runs each one
+    /// exactly as given.
     fn read_segment(&mut self) -> io::Result<Option<String>>;
 
     /// Show the outcome of the segment last read: its value, Null included, or
     /// why it failed.
     fn render(&mut self, outcome: Result<&Value, &ReplError>) -> io::Result<()>;
+
+    /// Show text one of the REPL's metacommands produced, which has no
+    /// trailing newline. It carries ANSI styling only if
+    /// [`ansi_styling`](Self::ansi_styling) says it may.
+    fn render_text(&mut self, text: &str) -> io::Result<()>;
+
+    /// Whether text the REPL gives [`render_text`](Self::render_text) may
+    /// carry ANSI styling. By default, it may not.
+    fn ansi_styling(&self) -> bool {
+        false
+    }
+
+    /// The metacommands this frontend adds to the REPL's own. The REPL asks
+    /// once, as a session starts, and refuses the session if one has an
+    /// invalid name or a name already taken (see [`Repl::run`](crate::Repl::run)).
+    /// By default, there are none.
+    fn metacommands(&self) -> Vec<MetacommandSpec> {
+        Vec::new()
+    }
+
+    /// Run `invocation`, of one of the metacommands
+    /// [`metacommands`](Self::metacommands) lists. The frontend shows whatever
+    /// comes of it itself. An error ends the session.
+    fn metacommand(&mut self, invocation: &Invocation) -> io::Result<()> {
+        Err(io::Error::other(format!(
+            "this frontend has no metacommand `:{}`",
+            invocation.name()
+        )))
+    }
 }
 
 /// The simplest [`Frontend`]: it reads lines, each after writing a prompt.
@@ -29,8 +59,9 @@ pub trait Frontend {
 /// the unfinished segment is run as it is, for the compiler to report.
 ///
 /// Each value other than Null is written pretty-printed, as by
-/// [`Value::to_pretty_string`], after the prompts; a failure is written
-/// separately, as [`ReplError`]'s [`Display`](std::fmt::Display) shows it.
+/// [`Value::to_pretty_string`], after the prompts, as is a metacommand's
+/// text, unstyled. A failure is written separately, as [`ReplError`]'s
+/// [`Display`](std::fmt::Display) shows it.
 pub struct LineFrontend<R, W, E> {
     lines: R,
     output: W,
@@ -125,5 +156,10 @@ impl<R: BufRead, W: Write, E: Write> Frontend for LineFrontend<R, W, E> {
                 self.errors.flush()
             }
         }
+    }
+
+    fn render_text(&mut self, text: &str) -> io::Result<()> {
+        writeln!(self.output, "{text}")?;
+        self.output.flush()
     }
 }

@@ -178,3 +178,25 @@ fn a_session_runs_a_segment_spanning_lines_as_one_input() {
     assert_eq!(output, "> . > 2\n> \n");
     assert_eq!(errors, "");
 }
+
+#[test]
+fn text_is_written_unstyled_on_its_own_line() {
+    let (mut output, mut errors) = (Vec::new(), Vec::new());
+    let mut frontend = LineFrontend::new(Cursor::new(""), &mut output, &mut errors);
+    assert!(!frontend.ansi_styling());
+    frontend.render_text("first\nsecond").unwrap();
+    assert_eq!(String::from_utf8(output).unwrap(), "first\nsecond\n");
+    assert!(errors.is_empty());
+}
+
+#[test]
+fn a_session_reads_a_metacommand_as_one_line() {
+    // Its trailing `:` would leave Frost source unfinished. Read alone, the
+    // source it disassembles ends early.
+    let (output, errors) = session("def x = 1\n:bindings\n:disassemble if x:\n2\n");
+    assert_eq!(output, "> > results  Array\nx        Int\n> > 2\n> \n");
+    assert!(
+        errors.contains("unexpected end of input"),
+        "the `:disassemble` should fail to parse: {errors}"
+    );
+}

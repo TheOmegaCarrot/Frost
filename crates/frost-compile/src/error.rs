@@ -134,11 +134,11 @@ impl CompilerError {
         self
     }
 
-    /// Lift a parser error into a compiler diagnostic, so parse and compile
-    /// failures reach the caller through one error type. The parser stops at the
-    /// first error, so this is always a single diagnostic; its first label is
-    /// primary, the rest add context.
-    pub(crate) fn from_parse_error(error: &ParseError, filename: &str, source: &str) -> Self {
+    /// Lift `error`, from parsing `source` as `filename`, into a compiler
+    /// diagnostic, so that parse and compile failures can be reported alike.
+    pub fn from_parse_error(error: &ParseError, filename: &str, source: &str) -> Self {
+        // The parser stops at its first error, so this is one diagnostic. Its
+        // first label is primary; the rest add context.
         let mut diagnostic = Self::error(error.message().to_string())
             .source(filename.to_string(), source.to_string());
         for (i, label) in error.labels().iter().enumerate() {

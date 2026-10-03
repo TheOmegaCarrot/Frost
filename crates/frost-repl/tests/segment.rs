@@ -132,3 +132,34 @@ fn a_backslash_that_is_no_line_continuation_is_kept() {
         "x # a note \\\ny",
     ]);
 }
+
+// --- Metacommands ---
+
+#[test]
+fn a_metacommand_is_complete_at_the_end_of_its_line() {
+    // What would leave Frost source unfinished does not count.
+    assert_complete_as_is(&[
+        ":help",
+        ":disassemble if x:",
+        ":disassemble fn x ->",
+        ":ast f(1,",
+        ":ast 'open",
+        ":",
+        ":undef x # not a comment",
+    ]);
+}
+
+#[test]
+fn a_metacommand_continues_after_a_line_continuation() {
+    assert_unfinished(&[":disassemble f(1, \\", ":undef a \\\n b \\"]);
+    assert_eq!(
+        complete_segment(":disassemble f(1, \\\n2)").as_deref(),
+        Some(":disassemble f(1, \n2)")
+    );
+}
+
+#[test]
+fn only_a_colon_first_makes_a_metacommand_line() {
+    // Frost source rules apply to the rest, which these do not finish.
+    assert_unfinished(&[" :ast f(", "x :", "f(\n:ast"]);
+}

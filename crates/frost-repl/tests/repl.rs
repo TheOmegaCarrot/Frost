@@ -7,7 +7,9 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 
 use frost_compile::{CompilerErrors, OptimizationOptions};
-use frost_repl::{Frontend, InvalidName, Repl, ReplError, ScriptedFrontend, check_name};
+use frost_repl::{
+    Frontend, InvalidName, Repl, ReplError, ScriptedFrontend, SessionError, check_name,
+};
 use frost_runtime::{Extension, FrostError, ImporterBuilder, Value, VmRuntimeConfiguration};
 
 /// Evaluate each of `inputs` in turn on a fresh REPL, returning the last
@@ -546,9 +548,14 @@ fn a_session_stops_on_a_failure_to_read_input() {
         fn render(&mut self, _: Result<&Value, &ReplError>) -> io::Result<()> {
             panic!("nothing was read, so nothing should be rendered");
         }
+        fn render_text(&mut self, _: &str) -> io::Result<()> {
+            panic!("nothing was read, so nothing should be rendered");
+        }
     }
-    let result = Repl::new().run(&mut Broken);
-    assert_eq!(result.unwrap_err().to_string(), "input is gone");
+    match Repl::new().run(&mut Broken) {
+        Err(SessionError::Frontend(error)) => assert_eq!(error.to_string(), "input is gone"),
+        other => panic!("the frontend's failure should end the session, but gave {other:?}"),
+    }
 }
 
 #[test]
@@ -565,10 +572,15 @@ fn a_session_stops_on_a_failure_to_render() {
         fn render(&mut self, _: Result<&Value, &ReplError>) -> io::Result<()> {
             Err(io::Error::other("output is gone"))
         }
+        fn render_text(&mut self, _: &str) -> io::Result<()> {
+            Err(io::Error::other("output is gone"))
+        }
     }
     let mut frontend = Mute { reads: 0 };
-    let result = Repl::new().run(&mut frontend);
-    assert_eq!(result.unwrap_err().to_string(), "output is gone");
+    match Repl::new().run(&mut frontend) {
+        Err(SessionError::Frontend(error)) => assert_eq!(error.to_string(), "output is gone"),
+        other => panic!("the frontend's failure should end the session, but gave {other:?}"),
+    }
     assert_eq!(frontend.reads, 1, "the session should stop at the failure");
 }
 

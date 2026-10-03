@@ -16,15 +16,30 @@ use frost_parse::{Token, tokens};
 /// format String, left open. A bracket, `:`, `->`, or `\` inside a String or
 /// comment does not count.
 ///
+/// Source starting with `:` is a [metacommand](crate::Repl#metacommands), not
+/// Frost source: it needs more lines only after a line continuation.
+///
 /// ```
 /// use frost_repl::complete_segment;
 ///
 /// assert_eq!(complete_segment("f(1,"), None);
 /// assert_eq!(complete_segment("f(1,\n2)").as_deref(), Some("f(1,\n2)"));
 /// assert_eq!(complete_segment("1 + \\\n2").as_deref(), Some("1 + \n2"));
+/// assert_eq!(complete_segment(":disassemble if x:").as_deref(), Some(":disassemble if x:"));
 /// ```
 pub fn complete_segment(source: &str) -> Option<String> {
-    (!is_unfinished(source)).then(|| remove_line_continuations(source))
+    let unfinished = if source.starts_with(':') {
+        ends_in_line_continuation(source)
+    } else {
+        is_unfinished(source)
+    };
+    (!unfinished).then(|| remove_line_continuations(source))
+}
+
+fn ends_in_line_continuation(source: &str) -> bool {
+    tokens(source)
+        .last()
+        .is_some_and(|(token, span)| token.is_err() && is_line_continuation(source, span))
 }
 
 fn is_unfinished(source: &str) -> bool {

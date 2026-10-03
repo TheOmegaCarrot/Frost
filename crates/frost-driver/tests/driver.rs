@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 
 use frost_compile::OptimizationOptions;
 use frost_driver::{Driver, Exit, ReplSettings};
-use frost_repl::{Frontend, InvalidName, ReplError, ScriptedFrontend, Transcript};
+use frost_repl::{Frontend, InvalidName, MetacommandSpec, ReplError, ScriptedFrontend, Transcript};
 use frost_runtime::{Extension, ImporterBuilder, Value, VmRuntimeConfiguration};
 
 /// What one run produced.
@@ -587,11 +587,50 @@ fn a_session_whose_frontend_fails_is_a_usage_error() {
         fn render(&mut self, _: Result<&Value, &ReplError>) -> io::Result<()> {
             panic!("nothing was read, so nothing should be rendered");
         }
+        fn render_text(&mut self, _: &str) -> io::Result<()> {
+            panic!("nothing was read, so nothing should be rendered");
+        }
     }
     let driver = Driver::new().with_repl(ReplSettings::new().with_frontend(|| Box::new(Broken)));
     let ran = run_configured(driver, |_| {}, &["repl"]);
     assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
     assert!(ran.stderr.contains("input is gone"), "{}", ran.stderr);
+}
+
+#[test]
+fn a_session_whose_frontend_brings_a_refused_metacommand_is_a_usage_error() {
+    /// Claims `:help`, which is the REPL's own.
+    struct Usurper;
+    impl Frontend for Usurper {
+        fn read_segment(&mut self) -> io::Result<Option<String>> {
+            panic!("a refused frontend should read nothing");
+        }
+        fn render(&mut self, _: Result<&Value, &ReplError>) -> io::Result<()> {
+            panic!("a refused frontend should be shown nothing");
+        }
+        fn render_text(&mut self, _: &str) -> io::Result<()> {
+            panic!("a refused frontend should be shown nothing");
+        }
+        fn metacommands(&self) -> Vec<MetacommandSpec> {
+            vec![MetacommandSpec::new("help", "Help, but mine")]
+        }
+    }
+    let driver = Driver::new().with_repl(ReplSettings::new().with_frontend(|| Box::new(Usurper)));
+    let ran = run_configured(driver, |_| {}, &["repl"]);
+    assert_eq!(ran.exit, Exit::UsageError, "{ran:?}");
+    assert!(
+        ran.stderr
+            .contains("`:help` would replace a built-in metacommand"),
+        "{}",
+        ran.stderr
+    );
+}
+
+#[test]
+fn a_session_ends_at_quit() {
+    let session = run_session(&["1", ":quit", "2"], &["repl"]);
+    assert_eq!(session.ran.exit, Exit::Success, "{session:?}");
+    assert_eq!(session.values(), [Value::Int(1)]);
 }
 
 #[test]
