@@ -121,10 +121,12 @@ fn a_function() -> Value {
     )))
 }
 
-/// An opaque host value, also forbidden since a cell can't see inside it to rule out a cycle.
+/// An opaque host value owning heap data, also forbidden since a cell can't see
+/// inside it to rule out a cycle.
 fn an_opaque() -> Value {
     #[derive(Debug)]
-    struct Blob;
+    #[allow(dead_code)]
+    struct Blob(String);
 
     impl FrostOpaque for Blob {
         fn type_name(&self) -> std::borrow::Cow<'static, str> {
@@ -136,7 +138,7 @@ fn an_opaque() -> Value {
         }
     }
 
-    Value::opaque(Blob)
+    Value::opaque(Blob("data".to_string()))
 }
 
 fn arr(elems: Vec<Value>) -> Value {
@@ -249,7 +251,7 @@ fn accepts_a_function_free_structure() {
 
 #[test]
 fn rejects_an_opaque_at_init() {
-    // Opaque can smuggle a cycle we can't inspect, so it's forbidden wholesale.
+    // An Opaque owning heap data can smuggle a cycle we can't inspect.
     let err = new_cell(Some(an_opaque())).unwrap_err();
     assert!(
         err.message().contains("Opaque"),

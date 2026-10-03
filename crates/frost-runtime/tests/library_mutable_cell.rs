@@ -4,13 +4,18 @@
 //! `mutable_cell(initial?)` returns a cell holding `initial`, or Null without
 //! one: a Map of two Functions over the same state. `get()` returns the value
 //! held, and `exchange(value)` holds `value` and returns the value it replaces.
-//! A cell never holds a Function, even nested in an Array or Map.
+//! A cell never holds a Function, nor an Opaque whose type has drop glue, even
+//! nested in an Array or Map.
 //!
 //! The harness runs every case under every optimization permutation, so each is
 //! checked with and without folding the calls around a cell.
 
 mod source;
 
+use std::borrow::Cow;
+
+use frost_runtime::{FrostOpaque, SpecialFloat, Value};
+use source::Script;
 use source::assertions::{Library, library_assertions};
 
 library_assertions!(Library::GLOBALS);
@@ -144,6 +149,69 @@ fn a_cell_rejects_a_function() {
     ] {
         assert_raises(&[(&format!("mutable_cell({value})"), message)]);
         assert_raises(&[(&format!("mutable_cell().exchange({value})"), message)]);
+    }
+}
+
+/// An Opaque payload with no drop glue: provably holds no Value.
+#[derive(Debug)]
+struct Plain(#[allow(dead_code)] u64);
+
+impl FrostOpaque for Plain {
+    fn type_name(&self) -> Cow<'static, str> {
+        Cow::Borrowed("Plain")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        None
+    }
+}
+
+/// An Opaque payload owning heap data, which a cell cannot see into.
+#[derive(Debug)]
+struct Owning(#[allow(dead_code)] Vec<u8>);
+
+impl FrostOpaque for Owning {
+    fn type_name(&self) -> Cow<'static, str> {
+        Cow::Borrowed("Owning")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        None
+    }
+}
+
+#[test]
+fn a_cell_holds_an_opaque_that_holds_no_value() {
+    let plain = Value::opaque(Plain(7));
+    let special = Value::opaque(SpecialFloat::new(f64::INFINITY).unwrap());
+    let source = r"
+        def cell = mutable_cell([plain])
+        def first = cell.get()
+        cell.exchange({s: special})
+        [first, cell.get()]
+    ";
+    let held = Script::new(source)
+        .captures(&[("plain", plain.clone()), ("special", special.clone())])
+        .run();
+    assert_eq!(
+        held,
+        Value::array([Value::array([plain]), Value::map([("s", special)])])
+    );
+}
+
+#[test]
+fn a_cell_rejects_an_opaque_owning_heap_data() {
+    let message =
+        "A mutable cell may not store an Opaque Owning, which could refer back to the cell";
+    for source in [
+        "mutable_cell(owning)",
+        "mutable_cell().exchange(owning)",
+        "mutable_cell({a: [owning]})",
+    ] {
+        let raised = Script::new(source)
+            .capture("owning", Value::opaque(Owning(vec![1])))
+            .raises();
+        assert_eq!(raised, message, "{source}");
     }
 }
 

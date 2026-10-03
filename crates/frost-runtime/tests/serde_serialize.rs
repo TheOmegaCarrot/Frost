@@ -77,16 +77,6 @@ fn serialize_f64() {
 }
 
 #[test]
-fn serialize_f64_nan_errors() {
-    assert!(to_value(&f64::NAN).is_err());
-}
-
-#[test]
-fn serialize_f64_infinity_errors() {
-    assert!(to_value(&f64::INFINITY).is_err());
-}
-
-#[test]
 fn serialize_str() {
     assert_eq!(to_value(&"hello").unwrap(), Value::from("hello"));
 }

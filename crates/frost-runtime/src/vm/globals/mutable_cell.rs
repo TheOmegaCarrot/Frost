@@ -9,11 +9,14 @@ fn forbid_cycle(value: &Value) -> Result<(), FrostError> {
         Value::NativeFunction(_) | Value::Closure(_) => Err(FrostError::from_static(
             "A mutable cell may not store a Function value",
         )),
-        // Opaque wraps an arbitrary host value that could itself hold a cycle, and we
-        // cannot see inside it: reject it wholesale so the guarantee stays sound.
-        Value::Opaque(_) => Err(FrostError::from_static(
-            "A mutable cell may not store an Opaque value",
-        )),
+        // We cannot see inside an Opaque, so one that might hold a Value (and through
+        // it, this cell) is rejected. One with no drop glue provably holds none: it
+        // cannot own the `Arc` behind a Value.
+        Value::Opaque(o) if o.needs_drop() => Err(format!(
+            "A mutable cell may not store an Opaque {}, which could refer back to the cell",
+            o.type_name()
+        )
+        .into()),
         Value::Array(arr) => arr.iter().try_for_each(forbid_cycle),
         Value::Map(map) => map.values().try_for_each(forbid_cycle),
         _ => Ok(()),

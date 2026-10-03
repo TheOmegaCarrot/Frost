@@ -15,7 +15,7 @@ impl PartialEq for Value {
             (Value::Map(l), Value::Map(r)) => l == r,
             (Value::NativeFunction(l), Value::NativeFunction(r)) => Arc::ptr_eq(l, r),
             (Value::Closure(l), Value::Closure(r)) => Arc::ptr_eq(l, r),
-            (Value::Opaque(l), Value::Opaque(r)) => Arc::ptr_eq(l, r),
+            (Value::Opaque(l), Value::Opaque(r)) => l.frost_eq(r),
             _ => false,
         }
     }

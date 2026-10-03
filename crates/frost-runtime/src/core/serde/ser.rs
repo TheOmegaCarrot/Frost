@@ -3,7 +3,8 @@ use std::fmt;
 
 use serde::ser::{self, Serialize};
 
-use crate::core::{FrostArray, FrostFloat, MapKey, Value, ValueMap};
+use crate::core::serde::{float_value, special_float};
+use crate::core::{FrostArray, MapKey, Value, ValueMap};
 
 thread_local! {
     /// Set while our own serializer is lifting a `Value` out of a [`ValueCarrier`], so the
@@ -100,9 +101,7 @@ impl ser::Serializer for ValueSerializer {
     }
 
     fn serialize_f64(self, v: f64) -> Result<Value, SerError> {
-        FrostFloat::new(v)
-            .map(Value::from)
-            .map_err(ser::Error::custom)
+        Ok(float_value(v))
     }
 
     fn serialize_char(self, v: char) -> Result<Value, SerError> {
@@ -380,7 +379,8 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
 
 // -- Serialize impl for Value itself --
 
-/// Serializes a `Value`'s data through any serializer, erroring on Functions and Opaques.
+/// Serializes a `Value`'s data through any serializer, erroring on Functions and on
+/// Opaques other than a [`SpecialFloat`](crate::SpecialFloat), which is its float.
 /// This is the path a foreign serializer takes for a `Value`; our own serializer lifts the
 /// value whole instead (see [`ValueCarrier`]).
 fn serialize_data<S: ser::Serializer>(value: &Value, serializer: S) -> Result<S::Ok, S::Error> {
@@ -411,13 +411,16 @@ fn serialize_data<S: ser::Serializer>(value: &Value, serializer: S) -> Result<S:
         Value::NativeFunction(_) | Value::Closure(_) => {
             Err(ser::Error::custom("cannot serialize Function"))
         }
-        Value::Opaque(_) => Err(ser::Error::custom("cannot serialize Opaque")),
+        Value::Opaque(_) => match special_float(value) {
+            Some(f) => serializer.serialize_f64(f),
+            None => Err(ser::Error::custom("cannot serialize Opaque")),
+        },
     }
 }
 
 /// Wraps a `Value` so it can cross serde's generic `serialize_newtype_struct` boundary,
 /// where the receiving serializer sees only an opaque `&impl Serialize`. A foreign
-/// serializer serializes the value's data (erroring on Functions and Opaques); our own
+/// serializer serializes the value's data (see [`serialize_data`]); our own
 /// serializer sets [`LIFTING_VALUE`], and the carrier deposits the value whole instead.
 struct ValueCarrier<'a>(&'a Value);
 

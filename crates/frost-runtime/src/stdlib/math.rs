@@ -1,17 +1,21 @@
 //! `std.math`: roots, powers, logarithms, trigonometry, rounding, and numeric
 //! constants.
 //!
-//! Every function takes Int or Float arguments. One computed in floating point
-//! returns a Float, and a result that would be NaN or infinite is an error:
-//! a Float is always finite.
+//! Every function but `special_float` takes Int or Float arguments. One computed
+//! in floating point returns a Float, and a result that would be NaN or infinite
+//! is an error: a Float is always finite.
 
 use std::f64::consts;
 
-use crate::{FrostError, FrostFloat, FrostResult, FrostType, Param, Params, StdlibModule, Value};
+use crate::{
+    FrostError, FrostFloat, FrostResult, FrostType, Param, Params, SpecialFloat, StdlibModule,
+    Value,
+};
 
 /// The `std.math` module: floating-point functions (roots, powers, logarithms,
 /// trigonometric and hyperbolic functions), rounding to Int, `abs`, `min`,
-/// `max`, `clamp`, `lerp`, and the numeric constants under `nums`.
+/// `max`, `clamp`, `lerp`, the numeric constants under `nums`, and
+/// `special_float`, which makes a [`SpecialFloat`] from its name.
 ///
 /// It only computes: it reads and changes nothing outside the script.
 pub fn math() -> StdlibModule {
@@ -51,6 +55,7 @@ pub fn math() -> StdlibModule {
             ("hypot", hypot()),
             ("clamp", clamp()),
             ("lerp", lerp()),
+            ("special_float", special_float()),
             ("nums", nums()),
         ]),
     )
@@ -191,6 +196,21 @@ fn lerp() -> Value {
         // Weighting both ends, rather than `a + (b - a) * t`, makes `t` of 0 and
         // 1 give exactly `a` and `b`.
         finite("math.lerp", (1.0 - t) * a + t * b, args)
+    })
+}
+
+/// The [`SpecialFloat`] Opaque that a String names as Rust parses floats (`NaN`,
+/// `inf`, `-infinity`, in any case), or Null for any other String.
+fn special_float() -> Value {
+    const PARAMS: Params = Params::new(&[Param::of(FrostType::STRING)]);
+    Value::checked_native("math.special_float", PARAMS, |_, args| {
+        let text = args[0].as_str().expect("type-checked as String");
+        // A name has no digits; a numeral such as `1e999` parses as infinite too.
+        let is_name = !text.contains(|c: char| c.is_ascii_digit());
+        let special = text.parse::<f64>().ok().and_then(SpecialFloat::new);
+        Ok(special
+            .filter(|_| is_name)
+            .map_or(Value::Null, Value::opaque))
     })
 }
 

@@ -4,8 +4,9 @@ use std::fmt;
 use serde::de::{self, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
 
+use crate::core::serde::{float_value, special_float};
 use crate::core::util::identifier::is_identifier_like_and_not_keyword;
-use crate::core::{FrostArray, FrostFloat, MapKey, Value, ValueMap};
+use crate::core::{FrostArray, MapKey, Value, ValueMap};
 
 thread_local! {
     /// Carries a whole `Value` from our own [`ValueDeserializer::deserialize_newtype_struct`]
@@ -178,7 +179,10 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
             Value::NativeFunction(_) | Value::Closure(_) => {
                 Err(de::Error::custom("cannot deserialize Function"))
             }
-            Value::Opaque(_) => Err(de::Error::custom("cannot deserialize Opaque")),
+            Value::Opaque(_) => match special_float(&self.0) {
+                Some(f) => visitor.visit_f64(f),
+                None => Err(de::Error::custom("cannot deserialize Opaque")),
+            },
         }
     }
 
@@ -230,12 +234,16 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer {
         }
     }
 
-    /// Float targets read a Float, or an Int as the Float it equals.
+    /// Float targets read a Float, an Int as the Float it equals, or a
+    /// [`SpecialFloat`](crate::SpecialFloat) as the float it holds.
     fn deserialize_f64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, DeError> {
         match self.0 {
             Value::Float(f) => visitor.visit_f64(f.get()),
             Value::Int(i) => visitor.visit_i64(i),
-            _ => Err(DeError::mismatch("Float", &self.0)),
+            _ => match special_float(&self.0) {
+                Some(f) => visitor.visit_f64(f),
+                None => Err(DeError::mismatch("Float", &self.0)),
+            },
         }
     }
 
@@ -601,10 +609,8 @@ impl<'de> Visitor<'de> for ValueVisitor {
             .map_err(|_| de::Error::custom("u64 value exceeds i64 range"))
     }
 
-    fn visit_f64<E: de::Error>(self, v: f64) -> Result<Value, E> {
-        FrostFloat::new(v)
-            .map(Value::from)
-            .map_err(de::Error::custom)
+    fn visit_f64<E>(self, v: f64) -> Result<Value, E> {
+        Ok(float_value(v))
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Value, E> {

@@ -116,9 +116,8 @@ fn function_placeholder() {
 }
 
 // -- Opaque renderings --
-// The exact format is unpinned; these tests hold the two decided properties:
-// every rendering names the payload's type, and an approximation never renders
-// as if it were a bare String value.
+// `<TypeName>`, or `<TypeName: approximation>` when the payload has one: the same
+// in every rendering, so an approximation never renders as a bare String.
 
 /// An opaque payload with no string approximation.
 #[derive(Debug)]
@@ -148,33 +147,54 @@ impl frost_runtime::FrostOpaque for Gizmo {
     }
 }
 
-#[test]
-fn opaque_renderings_show_the_type_name() {
-    let v = Value::opaque(Widget);
-    for s in [
-        v.to_frost_string(),
-        v.to_pretty_string(),
-        v.to_debug_string(),
+/// An opaque payload whose approximation needs escaping.
+#[derive(Debug)]
+struct Note;
+
+impl frost_runtime::FrostOpaque for Note {
+    fn type_name(&self) -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("Note")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        Some("say \"hi\"\n\tthen\\leave\u{7}".to_string())
+    }
+}
+
+/// Assert `value` renders as `expected` compactly, pretty, and for debugging.
+fn assert_renders_everywhere(value: &Value, expected: &str) {
+    for (rendering, rendered) in [
+        ("to_frost_string", value.to_frost_string()),
+        ("to_pretty_string", value.to_pretty_string()),
+        ("to_debug_string", value.to_debug_string()),
     ] {
-        assert!(s.contains("Widget"), "expected the type name, got: {s}");
+        assert_eq!(rendered, expected, "{rendering}");
     }
 }
 
 #[test]
-fn opaque_approximation_is_never_a_bare_string() {
-    // A rendering may use try_to_string, but must stay visibly opaque:
-    // never byte-identical to the approximation as a plain String.
-    let v = Value::opaque(Gizmo);
-    for s in [
-        v.to_frost_string(),
-        v.to_pretty_string(),
-        v.to_debug_string(),
-    ] {
-        assert_ne!(
-            s, "running gizmo",
-            "approximation rendered as a bare String"
-        );
-    }
+fn opaque_without_an_approximation_renders_as_its_type_name() {
+    assert_renders_everywhere(&Value::opaque(Widget), "<Widget>");
+}
+
+#[test]
+fn opaque_with_an_approximation_renders_it_after_its_type_name() {
+    assert_renders_everywhere(&Value::opaque(Gizmo), "<Gizmo: running gizmo>");
+}
+
+#[test]
+fn opaque_approximation_is_escaped_as_string_contents_are() {
+    assert_renders_everywhere(
+        &Value::opaque(Note),
+        r#"<Note: say \"hi\"\n\tthen\\leave\u{7}>"#,
+    );
+}
+
+#[test]
+fn opaque_in_a_structure_renders_the_same() {
+    let array = Value::Array(FrostArray::from(vec![Value::opaque(Gizmo)]));
+    assert_eq!(array.to_frost_string(), "[ <Gizmo: running gizmo> ]");
+    assert_eq!(array.to_pretty_string(), "[\n    <Gizmo: running gizmo>\n]");
 }
 
 // -- Primitives: to_debug_string --

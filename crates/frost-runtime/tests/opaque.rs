@@ -3,8 +3,9 @@
 //! steal-when-unique / give-back-when-not contract.
 //!
 //! Value-level accessors (`as_opaque`, `downcast_opaque`, `try_into_opaque`)
-//! are covered in `value_accessors.rs`; identity equality in
-//! `value_equality.rs`; stringify properties in `value_to_string.rs`.
+//! are covered in `value_accessors.rs`; equality in `value_equality.rs`;
+//! rendering in `value_to_string.rs`; which payloads a mutable cell accepts in
+//! `library_mutable_cell.rs`.
 
 use std::borrow::Cow;
 use std::sync::Arc;

@@ -254,11 +254,76 @@ fn closures_compare_by_identity() {
 }
 
 #[test]
-fn opaques_compare_by_identity() {
+fn an_opaque_without_equals_compares_by_identity() {
     let o: Arc<dyn FrostOpaque> = Arc::new(Marker(42));
     assert_eq!(Value::Opaque(o.clone()), Value::Opaque(o));
     // Distinct instances, even with equal payloads, are never equal.
     assert_ne!(Value::opaque(Marker(1)), Value::opaque(Marker(1)));
+}
+
+/// An opaque payload that defers `==` to its derived `Eq`.
+#[derive(Debug, PartialEq, Eq)]
+struct Tag(i64);
+
+impl FrostOpaque for Tag {
+    fn type_name(&self) -> Cow<'static, str> {
+        Cow::Borrowed("Tag")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        None
+    }
+
+    fn equals(&self, other: &dyn FrostOpaque) -> bool {
+        other
+            .downcast_ref::<Self>()
+            .is_some_and(|other| self == other)
+    }
+}
+
+/// An opaque payload claiming to equal anything, to show what Frost never asks it.
+#[derive(Debug)]
+struct EqualsAnything;
+
+impl FrostOpaque for EqualsAnything {
+    fn type_name(&self) -> Cow<'static, str> {
+        Cow::Borrowed("EqualsAnything")
+    }
+
+    fn try_to_string(&self) -> Option<String> {
+        None
+    }
+
+    fn equals(&self, _: &dyn FrostOpaque) -> bool {
+        true
+    }
+}
+
+#[test]
+fn an_opaque_with_equals_compares_by_it() {
+    assert_eq!(Value::opaque(Tag(1)), Value::opaque(Tag(1)));
+    assert_ne!(Value::opaque(Tag(1)), Value::opaque(Tag(2)));
+}
+
+#[test]
+fn opaques_compare_by_equals_inside_a_structure() {
+    let holding = |n| Value::array([Value::map([("tag", Value::opaque(Tag(n)))])]);
+    assert_eq!(holding(1), holding(1));
+    assert_ne!(holding(1), holding(2));
+}
+
+#[test]
+fn opaques_of_different_types_are_never_equal() {
+    // `equals` is never asked about a payload of another type, either way round.
+    assert_eq!(Value::opaque(EqualsAnything), Value::opaque(EqualsAnything));
+    assert_ne!(Value::opaque(EqualsAnything), Value::opaque(Marker(1)));
+    assert_ne!(Value::opaque(Marker(1)), Value::opaque(EqualsAnything));
+}
+
+#[test]
+fn an_opaque_never_equals_a_non_opaque() {
+    assert_ne!(Value::opaque(EqualsAnything), Value::Null);
+    assert_ne!(Value::opaque(EqualsAnything), Value::from("EqualsAnything"));
 }
 
 #[test]

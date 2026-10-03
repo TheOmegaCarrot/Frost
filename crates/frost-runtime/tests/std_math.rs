@@ -1,13 +1,13 @@
 //! `std.math`, from Frost source.
 //!
 //! Each case runs with only `std.math` installed, bound as `math`. Every function
-//! takes Int or Float arguments. One computed in floating point returns a Float,
-//! and a result that would be NaN or infinite is an error.
+//! but `special_float` takes Int or Float arguments. One computed in floating
+//! point returns a Float, and a result that would be NaN or infinite is an error.
 
 mod source;
 
 use frost_runtime::stdlib::RandomConfig;
-use frost_runtime::{FrostFloat, ImporterBuilder, Stdlib, Value, stdlib};
+use frost_runtime::{FrostFloat, ImporterBuilder, SpecialFloat, Stdlib, Value, stdlib};
 use source::Script;
 use source::assertions::{Library, library_assertions};
 
@@ -59,7 +59,7 @@ fn the_module_holds_its_functions_and_constants() {
             "['abs', 'acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 'cbrt', \
              'ceil', 'clamp', 'cos', 'cosh', 'exp', 'exp2', 'expm1', 'floor', 'hypot', \
              'lerp', 'log', 'log10', 'log1p', 'log2', 'max', 'min', 'nums', 'pow', 'round', \
-             'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'trunc']",
+             'sin', 'sinh', 'special_float', 'sqrt', 'tan', 'tanh', 'trunc']",
         ),
         (
             "sorted(keys(math.nums))",
@@ -364,6 +364,79 @@ fn nums_holds_the_constants() {
     ] {
         assert_eq!(run(&format!("math.nums.{name}")), expected, "{name}");
     }
+}
+
+// --- special_float ---
+
+#[test]
+fn special_float_makes_the_float_its_argument_spells() {
+    // Any spelling Rust parses as a non-finite float.
+    for (text, expected) in [
+        ("NaN", f64::NAN),
+        ("nan", f64::NAN),
+        ("inf", f64::INFINITY),
+        ("+inf", f64::INFINITY),
+        ("Infinity", f64::INFINITY),
+        ("-inf", f64::NEG_INFINITY),
+        ("-INFINITY", f64::NEG_INFINITY),
+    ] {
+        let made = run(&format!("math.special_float('{text}')"));
+        let held = made
+            .downcast_opaque::<SpecialFloat>()
+            .unwrap_or_else(|| panic!("{text:?} made {made:?}"))
+            .get();
+        if expected.is_nan() {
+            assert!(held.is_nan(), "{text:?} made {held}");
+        } else {
+            assert_eq!(held, expected, "{text:?}");
+        }
+    }
+}
+
+#[test]
+fn special_float_returns_null_for_any_other_string() {
+    for text in ["1.5", "0", "1e999", "", "infinite", " inf", "nan!", "none"] {
+        assert_eq!(
+            run(&format!("math.special_float('{text}')")),
+            Value::Null,
+            "{text:?}"
+        );
+    }
+}
+
+#[test]
+fn special_float_makes_an_opaque_equal_to_one_spelled_the_same() {
+    assert_values(&[
+        ("is_opaque(math.special_float('inf'))", "true"),
+        ("type(math.special_float('inf'))", "'Opaque'"),
+        (
+            "math.special_float('inf') == math.special_float('Infinity')",
+            "true",
+        ),
+        (
+            "math.special_float('inf') == math.special_float('-inf')",
+            "false",
+        ),
+        (
+            "to_string(math.special_float('-inf'))",
+            "'<SpecialFloat: -inf>'",
+        ),
+    ]);
+}
+
+#[test]
+fn special_float_requires_a_string() {
+    assert_raises(&[
+        (
+            "math.special_float(x'6e616e')",
+            "Function math.special_float requires String as argument 1, got Bytes",
+        ),
+        (
+            "math.special_float(1.5)",
+            "Function math.special_float requires String as argument 1, got Float",
+        ),
+    ]);
+    assert_arity("special_float", "1", &[0, 2]);
 }
 
 // --- Arguments ---

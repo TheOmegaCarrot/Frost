@@ -6,11 +6,13 @@ use std::{any::Any, borrow::Cow, fmt::Debug, sync::Arc};
 ///
 /// Implementing this trait is all a host type needs to be handed into Frost:
 /// wrap an instance with [`Value::opaque`](crate::Value::opaque) and it flows through scripts as an
-/// inert value of Frost type `Opaque`. Frost code can store it and pass it
-/// around, but never looks inside; equality is identity, and opaque values
-/// refuse serialization. A native function receiving it back recovers the
-/// concrete type with [`Value::downcast_opaque`](crate::Value::downcast_opaque), or steals it back out with
-/// `try_extract`.
+/// inert value of Frost type `Opaque`. Frost code can store it, pass it
+/// around, and compare it with `==` (see [`equals`](Self::equals)), but never
+/// looks inside. Opaque values refuse serialization, except a
+/// [`SpecialFloat`](crate::SpecialFloat). A native function receiving it back
+/// recovers the concrete type with
+/// [`Value::downcast_opaque`](crate::Value::downcast_opaque), or steals it back
+/// out with `try_extract`.
 pub trait FrostOpaque: Any + Debug + Send + Sync {
     /// The host-facing name of this kind of value.
     ///
@@ -20,12 +22,59 @@ pub trait FrostOpaque: Any + Debug + Send + Sync {
 
     /// A human-readable approximation of this value, if it has one.
     ///
-    /// `None` means nothing more useful than [`type_name`](Self::type_name)
-    /// exists. The result is a rendering aid, never parsed back.
+    /// Frost renders the value as `<TypeName: approximation>`, or as
+    /// `<TypeName>` when this is `None`. The result is a rendering aid, never
+    /// parsed back.
     fn try_to_string(&self) -> Option<String>;
+
+    /// Whether this equals `other`, for Frost's `==`.
+    ///
+    /// Frost calls this only for two distinct handles to payloads of the same
+    /// concrete type, so `other` always downcasts to `Self`; a handle always
+    /// equals itself, and payloads of different types are never equal. It must
+    /// be an equivalence relation, as [`Eq`] requires.
+    ///
+    /// The default, `false`, makes `==` identity. A type that implements
+    /// [`Eq`] can defer to it:
+    ///
+    /// ```ignore
+    /// fn equals(&self, other: &dyn FrostOpaque) -> bool {
+    ///     other.downcast_ref::<Self>().is_some_and(|other| self == other)
+    /// }
+    /// ```
+    fn equals(&self, other: &dyn FrostOpaque) -> bool {
+        let _ = other;
+        false
+    }
+
+    /// Whether this payload's type has drop glue.
+    ///
+    /// The token type is unnameable outside this crate, so no implementation
+    /// can override this: its answer is the compiler's, per concrete type.
+    #[doc(hidden)]
+    fn has_drop_glue(&self, _: sealed::Token) -> bool {
+        std::mem::needs_drop::<Self>()
+    }
+}
+
+pub(crate) mod sealed {
+    /// Proof of a call from inside this crate; see
+    /// [`FrostOpaque::has_drop_glue`](super::FrostOpaque::has_drop_glue).
+    pub struct Token;
 }
 
 impl dyn FrostOpaque {
+    /// Frost's `==` between two Opaques; see [`FrostOpaque::equals`].
+    pub(crate) fn frost_eq(self: &Arc<Self>, other: &Arc<Self>) -> bool {
+        let same_type = (**self).type_id() == (**other).type_id();
+        Arc::ptr_eq(self, other) || (same_type && self.equals(&**other))
+    }
+
+    /// [`std::mem::needs_drop`] for the payload's concrete type.
+    pub(crate) fn needs_drop(&self) -> bool {
+        self.has_drop_glue(sealed::Token)
+    }
+
     /// Borrows the concrete `T`, or `None` if the payload is some other type.
     pub fn downcast_ref<T: FrostOpaque>(&self) -> Option<&T> {
         (self as &dyn Any).downcast_ref::<T>()

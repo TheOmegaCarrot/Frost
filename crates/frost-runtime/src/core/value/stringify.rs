@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use crate::core::util::identifier::is_identifier_like_and_not_keyword;
-use crate::core::{FrostMap, MapKey, Value};
+use crate::core::{FrostMap, FrostOpaque, MapKey, Value};
 
 impl Value {
     /// Converts to a compact string representation.
@@ -84,8 +84,20 @@ fn stringify(value: &Value, buf: &mut String, ctx: &StringifyContext) {
         Value::Array(arr) => stringify_array(arr.as_slice(), buf, ctx),
         Value::Map(map) => stringify_map(map, buf, ctx),
         Value::NativeFunction(_) | Value::Closure(_) => buf.push_str("<Function>"),
-        Value::Opaque(o) => write!(buf, "<{}>", o.type_name()).unwrap(),
+        Value::Opaque(o) => stringify_opaque(o.as_ref(), buf),
     }
+}
+
+/// `<TypeName>`, or `<TypeName: approximation>` with the approximation escaped
+/// as a String's contents are, so it cannot break a pretty layout.
+fn stringify_opaque(opaque: &dyn FrostOpaque, buf: &mut String) {
+    buf.push('<');
+    buf.push_str(&opaque.type_name());
+    if let Some(approximation) = opaque.try_to_string() {
+        buf.push_str(": ");
+        escape_chars(&approximation, buf);
+    }
+    buf.push('>');
 }
 
 fn stringify_float(f: f64, buf: &mut String) {
@@ -112,9 +124,15 @@ fn stringify_bytes(bytes: &[u8], buf: &mut String) {
 }
 
 /// Escapes a String for display inside a structure.
-/// Printable text passes through as itself, so a non-ASCII character renders as the character it is.
 fn escape_string(s: &str, buf: &mut String) {
     buf.push('"');
+    escape_chars(s, buf);
+    buf.push('"');
+}
+
+/// Escapes text without quoting it. Printable text passes through as itself, so a
+/// non-ASCII character renders as the character it is.
+fn escape_chars(s: &str, buf: &mut String) {
     for ch in s.chars() {
         match ch {
             '"' => buf.push_str("\\\""),
@@ -130,7 +148,6 @@ fn escape_string(s: &str, buf: &mut String) {
             c => buf.push(c),
         }
     }
-    buf.push('"');
 }
 
 fn stringify_array(elems: &[Value], buf: &mut String, ctx: &StringifyContext) {
