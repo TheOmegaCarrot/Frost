@@ -5,15 +5,21 @@
 //! UTF-8 raises. A relative path is resolved against the host process's working
 //! directory, which scripts can read but not change.
 
+use std::ffi::OsStr;
 use std::fs::{self, File, Metadata, OpenOptions};
 use std::io::{self, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
+use serde::Deserialize;
+
 use crate::stdlib::stream::{self, Kind};
-use crate::{Arity, FrostError, FrostResult, FrostType, Param, Params, StdlibModule, Value};
+use crate::{
+    Arity, FrostError, FrostResult, FrostType, Param, Params, StdlibModule, Value, from_value,
+};
 
 /// The `std.fs` module: path manipulation, file metadata and type tests,
-/// directory listing, reading and writing files whole or as streams, and
+/// directory listing and glob matching, reading and writing files whole or as
+/// streams, and
 /// creating, copying, moving, linking, and removing files and directories.
 ///
 /// It reaches outside the script: a script with it can read and change any
@@ -57,6 +63,7 @@ pub fn fs() -> StdlibModule {
             ("size", path_function("fs.size", size)),
             ("cwd", cwd()),
             ("list", path_function("fs.list", list)),
+            ("glob", glob()),
             (
                 "list_recursively",
                 path_function("fs.list_recursively", list_recursively),
@@ -92,12 +99,17 @@ fn path_arg(arg: &Value) -> &Path {
 
 /// `path` as a String, if it is UTF-8; `function` names it in the error.
 fn path_value(function: &str, path: &Path) -> FrostResult {
-    path.to_str().map(Value::from).ok_or_else(|| {
-        FrostError::from_string(format!(
-            "Function {function} found a path that is not UTF-8: {}",
-            path.display()
-        ))
-    })
+    path.to_str()
+        .map(Value::from)
+        .ok_or_else(|| not_utf8(function, path))
+}
+
+/// The error for `function` finding `path`, which is not UTF-8.
+fn not_utf8(function: &str, path: &Path) -> FrostError {
+    FrostError::from_string(format!(
+        "Function {function} found a path that is not UTF-8: {}",
+        path.display()
+    ))
 }
 
 /// The error for `function` failing with `err` on `path`.
@@ -450,6 +462,204 @@ fn list_recursively(name: &str, path: &Path) -> FrostResult {
         found.push(entry);
     }
     sorted_paths(name, found)
+}
+
+/// The options `fs.glob` takes in its optional second argument.
+#[derive(Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct GlobOptions {
+    /// Whether a wildcard may match a name's leading `.`.
+    hidden: bool,
+    /// Off, an ASCII letter matches either case; any other letter still
+    /// matches only as written.
+    case_sensitive: bool,
+}
+
+impl Default for GlobOptions {
+    fn default() -> Self {
+        Self {
+            hidden: false,
+            case_sensitive: true,
+        }
+    }
+}
+
+/// `glob(pattern, options?)`: the paths that `pattern` matches, sorted.
+fn glob() -> Value {
+    const PARAMS: Params = Params::new(&[
+        Param::of(FrostType::STRING).named("pattern"),
+        Param::of(FrostType::MAP).named("options").optional(),
+    ]);
+    Value::checked_native("fs.glob", PARAMS, |_, args| {
+        let pattern = args[0].as_str().expect("type-checked as a String");
+        let options = match args.get(1) {
+            Some(options) => from_value(options.clone()).map_err(|err| {
+                FrostError::from_string(format!(
+                    "Function fs.glob requires valid options: {}",
+                    err.message()
+                ))
+            })?,
+            None => GlobOptions::default(),
+        };
+        glob_paths(pattern, &options)
+    })
+}
+
+/// One component of a glob pattern.
+enum GlobStep<'a> {
+    /// A component without wildcards, such as `src`, `..`, or the root,
+    /// followed as written.
+    Exact(&'a OsStr),
+    /// A name with wildcards, matched against a directory's entries.
+    Wildcard(glob::Pattern),
+    /// `**`: any number of directories, the current one included.
+    AnyDirectories,
+}
+
+/// The paths `pattern` matches.
+fn glob_paths(pattern: &str, options: &GlobOptions) -> FrostResult {
+    const NAME: &str = "fs.glob";
+    let invalid = |err: glob::PatternError| {
+        FrostError::from_string(format!(
+            "Function {NAME} got an invalid pattern {}: {err}",
+            Value::from(pattern).to_debug_string()
+        ))
+    };
+    // Checked whole first, so an error's position is within the whole pattern.
+    glob::Pattern::new(pattern).map_err(invalid)?;
+    let mut steps = Path::new(pattern)
+        .components()
+        .map(|component| {
+            let name = component.as_os_str();
+            Ok(match name.to_str().expect("a component of a String") {
+                "**" => GlobStep::AnyDirectories,
+                text if text.contains(['*', '?', '[']) => {
+                    GlobStep::Wildcard(glob::Pattern::new(text).map_err(invalid)?)
+                }
+                _ => GlobStep::Exact(name),
+            })
+        })
+        .collect::<Result<Vec<_>, FrostError>>()?;
+    // Repeated, `**` would find the same paths again; last, it means `**/*`.
+    steps.dedup_by(|a, b| {
+        matches!(a, GlobStep::AnyDirectories) && matches!(b, GlobStep::AnyDirectories)
+    });
+    if matches!(steps.last(), Some(GlobStep::AnyDirectories)) {
+        let any = glob::Pattern::new("*").expect("`*` is a valid pattern");
+        steps.push(GlobStep::Wildcard(any));
+    }
+
+    let mut glob = Glob {
+        hidden: options.hidden,
+        match_options: glob::MatchOptions {
+            case_sensitive: options.case_sensitive,
+            require_literal_leading_dot: !options.hidden,
+            ..glob::MatchOptions::new()
+        },
+        found: Vec::new(),
+    };
+    // An empty pattern names nothing.
+    if !steps.is_empty() {
+        glob.expand(PathBuf::new(), &steps)?;
+    }
+    let mut found = glob.found;
+    // A trailing separator, which `components` drops, matches only directories.
+    if pattern.ends_with(std::path::is_separator) {
+        found.retain(|path| path.is_dir());
+    }
+    // Different ways through two `**`s can reach the same path.
+    found.sort();
+    found.dedup();
+    sorted_paths(NAME, found)
+}
+
+/// A glob search in progress.
+struct Glob {
+    hidden: bool,
+    match_options: glob::MatchOptions,
+    found: Vec<PathBuf>,
+}
+
+impl Glob {
+    /// Finds what `steps` match from `path`.
+    fn expand(&mut self, path: PathBuf, steps: &[GlobStep]) -> Result<(), FrostError> {
+        let Some((step, rest)) = steps.split_first() else {
+            self.found.push(path);
+            return Ok(());
+        };
+        match step {
+            GlobStep::Exact(name) => {
+                let next = path.join(name);
+                if fs::symlink_metadata(&next).is_ok() {
+                    self.expand(next, rest)?;
+                }
+            }
+            GlobStep::Wildcard(pattern) => {
+                for entry in glob_entries(&path)? {
+                    if pattern.matches_with(&entry.name, self.match_options) {
+                        self.expand(entry.path, rest)?;
+                    }
+                }
+            }
+            GlobStep::AnyDirectories => {
+                self.expand(path.clone(), rest)?;
+                for entry in glob_entries(&path)? {
+                    // Never through a symlink, which could loop.
+                    let hidden = entry.name.starts_with('.');
+                    if entry.is_real_directory && (self.hidden || !hidden) {
+                        self.expand(entry.path, steps)?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+/// An entry of a directory a glob searches.
+struct GlobEntry {
+    name: String,
+    path: PathBuf,
+    /// A directory, not a symlink to one.
+    is_real_directory: bool,
+}
+
+/// The entries of `dir`, the current directory if empty. A path that is not a
+/// directory, or one the process cannot read, has none.
+fn glob_entries(dir: &Path) -> Result<Vec<GlobEntry>, FrostError> {
+    const NAME: &str = "fs.glob";
+    let on_disk = if dir.as_os_str().is_empty() {
+        Path::new(".")
+    } else {
+        dir
+    };
+    let read = match fs::read_dir(on_disk) {
+        Ok(read) => read,
+        Err(err)
+            if matches!(
+                err.kind(),
+                io::ErrorKind::NotFound
+                    | io::ErrorKind::NotADirectory
+                    | io::ErrorKind::PermissionDenied
+            ) =>
+        {
+            return Ok(Vec::new());
+        }
+        Err(err) => return Err(io_error(NAME, on_disk, &err)),
+    };
+    read.map(|entry| {
+        let entry = entry.map_err(|err| io_error(NAME, on_disk, &err))?;
+        let path = dir.join(entry.file_name());
+        let Ok(name) = entry.file_name().into_string() else {
+            return Err(not_utf8(NAME, &path));
+        };
+        Ok(GlobEntry {
+            name,
+            is_real_directory: entry.file_type().is_ok_and(|kind| kind.is_dir()),
+            path,
+        })
+    })
+    .collect()
 }
 
 // --- Changing the filesystem ---

@@ -112,7 +112,8 @@ fn the_module_holds_its_functions() {
         scratch.run("sorted(keys(fs))"),
         frost(
             "['absolute', 'append', 'canonical', 'concat', 'copy', 'cwd', 'exists', \
-             'extension', 'filename', 'is_block', 'is_character', 'is_directory', 'is_fifo', \
+             'extension', 'filename', 'glob', 'is_block', 'is_character', 'is_directory', \
+             'is_fifo', \
              'is_file', 'is_socket', 'is_symlink', 'list', 'list_recursively', 'mkdir', 'move', \
              'open_append', 'open_read', 'open_write', 'parent', 'read', 'read_bytes', \
              'read_link', 'remove', 'remove_recursively', 'size', 'stat', 'stem', 'symlink', \
@@ -472,11 +473,294 @@ fn a_path_that_is_not_utf8_is_an_error() {
     let scratch = Scratch::new("utf8");
     let name = std::ffi::OsStr::from_bytes(b"bad\xff");
     fs::write(scratch.path("").join(name), "").expect("a non-UTF-8 name is written");
-    let raised = scratch.raises("fs.list(dir)");
+    for (call, function) in [
+        ("fs.list(dir)", "fs.list"),
+        ("fs.glob(dir + '*')", "fs.glob"),
+    ] {
+        let raised = scratch.raises(call);
+        assert!(
+            raised.starts_with(&format!(
+                "Function {function} found a path that is not UTF-8: "
+            )),
+            "{raised}"
+        );
+    }
+}
+
+// --- glob ---
+
+/// A tree for glob cases: files at several depths, hidden files and a hidden
+/// directory, and symlinks to a directory and to the tree itself.
+fn glob_tree(test: &str) -> Scratch {
+    let scratch = Scratch::new(test);
+    scratch
+        .file("a.rs", "")
+        .file("b.txt", "")
+        .file(".hidden.rs", "")
+        .file("src/c.rs", "")
+        .file("src/d.rs", "")
+        .file("src/.f.rs", "")
+        .file("src/sub/e.rs", "")
+        .file(".git/g.rs", "")
+        .link("linked", scratch.path("src"))
+        .link("src/loop", "..");
+    scratch
+}
+
+/// Assert `fs.glob` of each pattern, written below the scratch directory and
+/// given `options` (Frost source for the second argument, or empty), finds
+/// exactly the paths named, below the scratch directory, in order.
+fn assert_globs(scratch: &Scratch, options: &str, cases: &[(&str, &[&str])]) {
+    let options = if options.is_empty() {
+        String::new()
+    } else {
+        format!(", {options}")
+    };
+    for (pattern, expected) in cases {
+        let call = format!("fs.glob(dir + '{pattern}'{options})");
+        let expected =
+            Value::from_iter(expected.iter().map(|name| Value::from(scratch.text(name))));
+        assert_eq!(scratch.run(&call), expected, "{call}");
+    }
+}
+
+#[test]
+fn glob_matches_wildcards_within_a_name() {
+    let scratch = glob_tree("glob_wildcards");
+    assert_globs(
+        &scratch,
+        "",
+        &[
+            ("*.rs", &["a.rs"]),
+            ("src/*.rs", &["src/c.rs", "src/d.rs"]),
+            ("?.*", &["a.rs", "b.txt"]),
+            ("[ab].*", &["a.rs", "b.txt"]),
+            ("[!a]*", &["b.txt", "linked", "src"]),
+            (
+                "*/*.rs",
+                &["linked/c.rs", "linked/d.rs", "src/c.rs", "src/d.rs"],
+            ),
+            ("*.none", &[]),
+        ],
+    );
+}
+
+#[test]
+fn glob_matches_any_depth_with_a_double_star() {
+    let scratch = glob_tree("glob_double_star");
+    assert_globs(
+        &scratch,
+        "",
+        &[
+            // The symlinks match, but are not entered: no loop, no duplicates.
+            ("**/*.rs", &["a.rs", "src/c.rs", "src/d.rs", "src/sub/e.rs"]),
+            ("src/**/*.rs", &["src/c.rs", "src/d.rs", "src/sub/e.rs"]),
+            ("**/sub", &["src/sub"]),
+            ("**/l*", &["linked", "src/loop"]),
+            // `*` follows `linked` into `src`; the `**` within it does not
+            // follow `loop`.
+            (
+                "*/**/*.rs",
+                &[
+                    "linked/c.rs",
+                    "linked/d.rs",
+                    "linked/sub/e.rs",
+                    "src/c.rs",
+                    "src/d.rs",
+                    "src/sub/e.rs",
+                ],
+            ),
+        ],
+    );
+}
+
+#[test]
+fn glob_ending_in_a_double_star_matches_everything_below() {
+    let scratch = glob_tree("glob_trailing_double_star");
+    assert_globs(
+        &scratch,
+        "",
+        &[(
+            "src/**",
+            &[
+                "src/c.rs",
+                "src/d.rs",
+                "src/loop",
+                "src/sub",
+                "src/sub/e.rs",
+            ],
+        )],
+    );
+}
+
+#[test]
+fn glob_finds_each_path_once() {
+    let scratch = glob_tree("glob_once");
+    assert_globs(
+        &scratch,
+        "",
+        &[
+            // `src/sub/e.rs` is reached with either `**` taking `sub`. The `*`
+            // follows `src/loop` back to the top, once.
+            (
+                "**/*/**/e.rs",
+                &["linked/sub/e.rs", "src/loop/src/sub/e.rs", "src/sub/e.rs"],
+            ),
+            (
+                "**/**/*.rs",
+                &["a.rs", "src/c.rs", "src/d.rs", "src/sub/e.rs"],
+            ),
+        ],
+    );
+}
+
+#[test]
+fn glob_follows_symlinked_directories_a_single_component_matches() {
+    let scratch = glob_tree("glob_symlinks");
+    // Without `**` the depth is bounded, so even `loop` cannot loop.
+    assert_globs(
+        &scratch,
+        "",
+        &[("*/*/a.rs", &["linked/loop/a.rs", "src/loop/a.rs"])],
+    );
+}
+
+#[test]
+fn glob_wildcards_skip_hidden_names_unless_asked() {
+    let scratch = glob_tree("glob_hidden");
+    assert_globs(
+        &scratch,
+        "",
+        &[
+            // A `.` written in the pattern matches one.
+            (".*", &[".git", ".hidden.rs"]),
+            (".git/*", &[".git/g.rs"]),
+            ("**/.f.rs", &["src/.f.rs"]),
+        ],
+    );
+    assert_globs(
+        &scratch,
+        "{hidden: true}",
+        &[
+            ("*.rs", &[".hidden.rs", "a.rs"]),
+            (
+                "**/*.rs",
+                &[
+                    ".git/g.rs",
+                    ".hidden.rs",
+                    "a.rs",
+                    "src/.f.rs",
+                    "src/c.rs",
+                    "src/d.rs",
+                    "src/sub/e.rs",
+                ],
+            ),
+        ],
+    );
+    assert_globs(&scratch, "{hidden: false}", &[("*.rs", &["a.rs"])]);
+}
+
+#[test]
+fn glob_matches_case_sensitively_unless_asked() {
+    let scratch = glob_tree("glob_case");
+    assert_globs(&scratch, "", &[("*.RS", &[]), ("[A-B].*", &[])]);
+    assert_globs(
+        &scratch,
+        "{case_sensitive: false}",
+        &[("*.RS", &["a.rs"]), ("[A-B].*", &["a.rs", "b.txt"])],
+    );
+    assert_globs(&scratch, "{case_sensitive: true}", &[("*.RS", &[])]);
+}
+
+#[test]
+fn glob_with_a_trailing_separator_matches_directories() {
+    let scratch = glob_tree("glob_directories");
+    // A symlink to a directory counts; the path drops the separator.
+    assert_globs(&scratch, "", &[("*/", &["linked", "src"]), ("a.rs/", &[])]);
+    assert_globs(&scratch, "", &[("src/", &["src"])]);
+}
+
+#[test]
+fn glob_follows_the_directories_a_pattern_writes_out() {
+    let scratch = glob_tree("glob_literal_prefix");
+    // Written out, a symlink to a directory is searched like a directory.
+    assert_globs(
+        &scratch,
+        "",
+        &[("linked/*.rs", &["linked/c.rs", "linked/d.rs"])],
+    );
+}
+
+#[test]
+fn glob_without_wildcards_names_one_path() {
+    let scratch = glob_tree("glob_literal");
+    assert_globs(
+        &scratch,
+        "",
+        &[
+            ("a.rs", &["a.rs"]),
+            ("src/sub", &["src/sub"]),
+            ("missing", &[]),
+            ("src/loop", &["src/loop"]),
+        ],
+    );
+    assert_eq!(scratch.run("fs.glob('')"), frost("[]"), "an empty pattern");
+}
+
+#[test]
+fn glob_finds_nothing_below_what_is_not_a_directory() {
+    let scratch = glob_tree("glob_missing");
+    assert_globs(&scratch, "", &[("missing/*", &[]), ("a.rs/*", &[])]);
+}
+
+#[test]
+fn glob_keeps_a_relative_pattern_relative() {
+    // Relative to the working directory, which tests run in: this crate's root.
+    let scratch = Scratch::new("glob_relative");
+    assert_eq!(
+        scratch.run("fs.glob('Cargo.tom?')"),
+        frost("['Cargo.toml']")
+    );
+    assert_eq!(
+        scratch.run("fs.glob('./src/stdlib/f?.rs')"),
+        frost("['./src/stdlib/fs.rs']")
+    );
+}
+
+#[test]
+fn glob_checks_its_pattern_and_options() {
+    let scratch = Scratch::new("glob_arguments");
+    let raised = scratch.raises("fs.glob('[a')");
     assert!(
-        raised.starts_with("Function fs.list found a path that is not UTF-8: "),
+        raised.starts_with(r#"Function fs.glob got an invalid pattern "[a": "#),
         "{raised}"
     );
+    assert_eq!(
+        scratch.raises("fs.glob('*', {hiden: true})"),
+        "Function fs.glob requires valid options: unknown field `hiden`, expected \
+         `hidden` or `case_sensitive` (at a key)"
+    );
+    assert_eq!(
+        scratch.raises("fs.glob('*', {hidden: 1})"),
+        "Function fs.glob requires valid options: expected Bool, got Int (at `hidden`)"
+    );
+    assert_eq!(
+        scratch.raises("fs.glob(1)"),
+        "Function fs.glob requires String as argument 1 (pattern), got Int"
+    );
+    assert_eq!(
+        scratch.raises("fs.glob('*', true)"),
+        "Function fs.glob requires Map as argument 2 (options), got Bool"
+    );
+    for argc in [0, 3] {
+        let args = vec!["'*'"; argc].join(", ");
+        assert_eq!(
+            scratch.raises(&format!("fs.glob({args})")),
+            format!(
+                "Function fs.glob expects between 1 and 2 arguments, but was called with {argc}"
+            )
+        );
+    }
 }
 
 // --- Changing the filesystem ---
